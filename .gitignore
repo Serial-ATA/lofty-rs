@@ -11,5 +11,6 @@ Cargo.lock
 
 *.mp3
 *.m4a
+*.flac
 src/main.rs
 .lib1.rs

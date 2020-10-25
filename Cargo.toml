@@ -1,6 +1,6 @@
 [package]
 name = "audiotags"
-version = "0.0.2"
+version = "0.1.0"
 authors = ["Tianyi <ShiTianyi2001@outlook.com>"]
 edition = "2018"
 description = "Unified IO for different types of audio metadata"
@@ -13,3 +13,4 @@ repository = "https://github.com/TianyiShi2001/audiotags"
 id3 = "0.5.1"
 mp4ameta = "0.5.1"
 strum = {version = "0.19.5", features = ["derive"]}
+metaflac = "0.2"
