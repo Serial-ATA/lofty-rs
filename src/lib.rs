@@ -72,26 +72,32 @@ pub fn from_path(path: impl AsRef<Path>) -> Result<Box<dyn AudioTagsIo>, BoxedEr
     }
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum PictureType {
+    Png,
+    Jpeg,
+    Tiff,
+    Bmp,
+    Gif,
+}
+
 #[derive(Debug, Clone)]
-pub enum Picture {
-    Png(Vec<u8>),
-    Jpeg(Vec<u8>),
-    Tiff(Vec<u8>),
-    Bmp(Vec<u8>),
-    Gif(Vec<u8>),
-    Unknown,
+pub struct Picture {
+    pub data: Vec<u8>,
+    pub picture_type: PictureType,
 }
 
 impl Picture {
-    pub fn with_mime(data: Vec<u8>, mime: &str) -> Self {
-        match mime {
-            "image/jpeg" => Self::Jpeg(data),
-            "image/png" => Self::Png(data),
-            "image/tiff" => Self::Tiff(data),
-            "image/bmp" => Self::Bmp(data),
-            "image/gif" => Self::Gif(data),
-            _ => Self::Unknown,
-        }
+    pub fn try_with_mime(data: Vec<u8>, mime: &str) -> Result<Self, ()> {
+        let picture_type = match mime {
+            "image/jpeg" => PictureType::Jpeg,
+            "image/png" => PictureType::Png,
+            "image/tiff" => PictureType::Tiff,
+            "image/bmp" => PictureType::Bmp,
+            "image/gif" => PictureType::Gif,
+            _ => return Err(()),
+        };
+        Ok(Self { data, picture_type })
     }
 }
 
@@ -121,8 +127,11 @@ pub trait AudioTagsIo {
     fn set_album_artist(&mut self, v: &str);
     fn set_album_cover(&mut self, cover: Picture);
     fn track(&self) -> (Option<u16>, Option<u16>);
-    fn set_track(&mut self, track: u16);
+    fn set_track_number(&mut self, track_number: u16);
     fn set_total_tracks(&mut self, total_track: u16);
+    fn disc(&self) -> (Option<u16>, Option<u16>);
+    fn set_disc_number(&mut self, disc_number: u16);
+    fn set_total_discs(&mut self, total_discs: u16);
     fn write_to(&self, file: &File) -> Result<(), BoxedError>;
     // cannot use impl AsRef<Path>
     fn write_to_path(&self, path: &str) -> Result<(), BoxedError>;
@@ -173,11 +182,17 @@ impl AudioTagsIo for Id3Tags {
         self.inner.album_artist()
     }
     fn album_cover(&self) -> Option<Picture> {
-        self.inner
+        if let Some(Ok(pic)) = self
+            .inner
             .pictures()
             .filter(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
             .next()
-            .map(|pic| Picture::with_mime(pic.data.clone(), &pic.mime_type))
+            .map(|pic| Picture::try_with_mime(pic.data.clone(), &pic.mime_type))
+        {
+            Some(pic)
+        } else {
+            None
+        }
     }
     fn set_album(&mut self, album: Album) {
         self.inner.set_album(album.title);
@@ -202,38 +217,37 @@ impl AudioTagsIo for Id3Tags {
     fn set_album_cover(&mut self, cover: Picture) {
         self.inner
             .remove_picture_by_type(id3::frame::PictureType::CoverFront);
-        self.inner.add_picture(match cover {
-            Picture::Jpeg(data) => id3::frame::Picture {
+        self.inner.add_picture(match cover.picture_type {
+            PictureType::Jpeg => id3::frame::Picture {
                 mime_type: "jpeg".to_owned(),
                 picture_type: id3::frame::PictureType::CoverFront,
                 description: "".to_owned(),
-                data: data,
+                data: cover.data,
             },
-            Picture::Png(data) => id3::frame::Picture {
+            PictureType::Png => id3::frame::Picture {
                 mime_type: "png".to_owned(),
                 picture_type: id3::frame::PictureType::CoverFront,
                 description: "".to_owned(),
-                data: data,
+                data: cover.data,
             },
-            Picture::Tiff(data) => id3::frame::Picture {
+            PictureType::Tiff => id3::frame::Picture {
                 mime_type: "tiff".to_owned(),
                 picture_type: id3::frame::PictureType::CoverFront,
                 description: "".to_owned(),
-                data: data,
+                data: cover.data,
             },
-            Picture::Bmp(data) => id3::frame::Picture {
+            PictureType::Bmp => id3::frame::Picture {
                 mime_type: "bmp".to_owned(),
                 picture_type: id3::frame::PictureType::CoverFront,
                 description: "".to_owned(),
-                data: data,
+                data: cover.data,
             },
-            Picture::Gif(data) => id3::frame::Picture {
+            PictureType::Gif => id3::frame::Picture {
                 mime_type: "gif".to_owned(),
                 picture_type: id3::frame::PictureType::CoverFront,
                 description: "".to_owned(),
-                data: data,
+                data: cover.data,
             },
-            _ => panic!("Picture format not supported!"),
         });
     }
     fn track(&self) -> (Option<u16>, Option<u16>) {
@@ -242,11 +256,23 @@ impl AudioTagsIo for Id3Tags {
             self.inner.total_tracks().map(|x| x as u16),
         )
     }
-    fn set_track(&mut self, track: u16) {
+    fn set_track_number(&mut self, track: u16) {
         self.inner.set_track(track as u32);
     }
     fn set_total_tracks(&mut self, total_track: u16) {
         self.inner.set_total_tracks(total_track as u32);
+    }
+    fn disc(&self) -> (Option<u16>, Option<u16>) {
+        (
+            self.inner.disc().map(|x| x as u16),
+            self.inner.total_discs().map(|x| x as u16),
+        )
+    }
+    fn set_disc_number(&mut self, disc_number: u16) {
+        self.inner.set_disc(disc_number as u32)
+    }
+    fn set_total_discs(&mut self, total_discs: u16) {
+        self.inner.set_total_discs(total_discs as u32)
     }
     fn write_to(&self, file: &File) -> Result<(), BoxedError> {
         self.inner.write_to(file, id3::Version::Id3v24)?;
@@ -301,11 +327,21 @@ impl AudioTagsIo for M4aTags {
     }
     fn album_cover(&self) -> Option<Picture> {
         use mp4ameta::Data::*;
-        self.inner.artwork().map(|data| match data {
-            Jpeg(d) => Picture::Jpeg(d.clone()),
-            Png(d) => Picture::Png(d.clone()),
-            _ => Picture::Unknown,
-        })
+        if let Some(Some(pic)) = self.inner.artwork().map(|data| match data {
+            Jpeg(d) => Some(Picture {
+                data: d.clone(),
+                picture_type: PictureType::Jpeg,
+            }),
+            Png(d) => Some(Picture {
+                data: d.clone(),
+                picture_type: PictureType::Png,
+            }),
+            _ => None,
+        }) {
+            Some(pic)
+        } else {
+            None
+        }
     }
     fn album_title(&self) -> Option<&str> {
         self.inner.album()
@@ -328,9 +364,9 @@ impl AudioTagsIo for M4aTags {
     }
     fn set_album_cover(&mut self, cover: Picture) {
         self.inner.remove_artwork();
-        self.inner.add_artwork(match cover {
-            Picture::Png(data) => mp4ameta::Data::Png(data),
-            Picture::Jpeg(data) => mp4ameta::Data::Jpeg(data),
+        self.inner.add_artwork(match cover.picture_type {
+            PictureType::Png => mp4ameta::Data::Png(cover.data),
+            PictureType::Jpeg => mp4ameta::Data::Jpeg(cover.data),
             _ => panic!("Only png and jpeg are supported in m4a"),
         });
     }
@@ -343,11 +379,20 @@ impl AudioTagsIo for M4aTags {
     fn track(&self) -> (Option<u16>, Option<u16>) {
         self.inner.track()
     }
-    fn set_track(&mut self, track: u16) {
+    fn set_track_number(&mut self, track: u16) {
         self.inner.set_track_number(track);
     }
     fn set_total_tracks(&mut self, total_track: u16) {
         self.inner.set_total_tracks(total_track);
+    }
+    fn disc(&self) -> (Option<u16>, Option<u16>) {
+        self.inner.disc()
+    }
+    fn set_disc_number(&mut self, disc_number: u16) {
+        self.inner.set_disc_number(disc_number)
+    }
+    fn set_total_discs(&mut self, total_discs: u16) {
+        self.inner.set_total_discs(total_discs)
     }
     fn write_to(&self, file: &File) -> Result<(), BoxedError> {
         self.inner.write_to(file)?;
@@ -356,13 +401,5 @@ impl AudioTagsIo for M4aTags {
     fn write_to_path(&self, path: &str) -> Result<(), BoxedError> {
         self.inner.write_to_path(path)?;
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
     }
 }
