@@ -1,0 +1,11 @@
+[package]
+name = "mp4ameta_proc"
+version = "0.1.1"
+authors = ["Saecki <tobiasschmitz2001@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "Procedural macros to generate common accessors for the mp4ameta crate."
+repository = "https://github.com/Saecki/rust-mp4ameta"
+edition = "2018"
+
+[lib]
+proc-macro = true

@@ -1,0 +1,15 @@
+[package]
+name = "audiotags"
+version = "0.0.1"
+authors = ["Tianyi <ShiTianyi2001@outlook.com>"]
+edition = "2018"
+description = "Unified IO for different types of audio metadata"
+license = "MIT"
+repository = "https://github.com/TianyiShi2001/audiotags"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+id3 = "0.5.1"
+mp4ameta = {path = "./rust-mp4ameta"}
+strum = {version = "0.19.5", features = ["derive"]}
