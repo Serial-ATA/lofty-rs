@@ -41,11 +41,11 @@
 //! ```
 
 mod id3_tag;
-pub use id3_tag::Id3Tag;
+pub use id3_tag::Id3v2Tag;
 mod flac_tag;
 mod mp4_tag;
-// use flac_tag::FlacTag;
-use mp4_tag::Mp4Tag;
+pub use flac_tag::FlacTag;
+pub use mp4_tag::Mp4Tag;
 
 use std::convert::From;
 use std::fs::File;
@@ -55,6 +55,14 @@ use strum::Display;
 use beef::lean::Cow;
 
 use std::convert::{TryFrom, TryInto};
+
+#[macro_export]
+macro_rules! convert_tag {
+    ($tag:expr, $target:ty) => {{
+        let target_tag: $target = $tag.into_anytag().into();
+        target_tag
+    }};
+}
 
 type BoxedError = Box<dyn std::error::Error>;
 
@@ -72,6 +80,8 @@ impl std::error::Error for Error {}
 
 #[derive(Clone, Copy, Debug)]
 pub enum TagType {
+    // /// Guess the tag type based on the file extension
+    // Guess,
     /// ## Common file extensions
     ///
     /// `.mp3`
@@ -108,36 +118,36 @@ pub struct Tag {
     tag_type: Option<TagType>,
 }
 
-// impl Tag {
-//     pub fn with_tag_type(tag_type: TagType) -> Self {
-//         Self {
-//             tag_type: Some(tag_type),
-//         }
-//     }
+impl Tag {
+    pub fn with_tag_type(tag_type: TagType) -> Self {
+        Self {
+            tag_type: Some(tag_type),
+        }
+    }
 
-//     pub fn read_from_path(
-//         &self,
-//         path: impl AsRef<Path>,
-//     ) -> Result<Box<dyn AudioTagsIo>, BoxedError> {
-//         match self.tag_type.unwrap_or(TagType::try_from_ext(
-//             path.as_ref()
-//                 .extension()
-//                 .unwrap()
-//                 .to_string_lossy()
-//                 .to_string()
-//                 .to_lowercase()
-//                 .as_str(),
-//         )?) {
-//             TagType::Id3v2 => Ok(Box::new(Id3Tag::read_from_path(path)?)),
-//             TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
-//             TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
-//         }
-//     }
-// }
+    pub fn read_from_path(
+        &self,
+        path: impl AsRef<Path>,
+    ) -> StdResult<Box<dyn AudioTagIo>, BoxedError> {
+        match self.tag_type.unwrap_or(TagType::try_from_ext(
+            path.as_ref()
+                .extension()
+                .unwrap()
+                .to_string_lossy()
+                .to_string()
+                .to_lowercase()
+                .as_str(),
+        )?) {
+            TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
+            TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
+            TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
+        }
+    }
+}
 
 // // ? deprecate?
 // /// Guesses the audio metadata handler from the file extension, and returns the `Box`ed IO handler.
-// pub fn read_from_path(path: impl AsRef<Path>) -> Result<Box<dyn AudioTagsIo>, BoxedError> {
+// pub fn read_from_path(path: impl AsRef<Path>) -> Result<Box<dyn AudioTagIo>, BoxedError> {
 //     Tag::default().read_from_path(path)
 // }
 
@@ -164,15 +174,21 @@ impl TryFrom<&str> for MimeType {
     }
 }
 
-impl From<MimeType> for String {
+impl From<MimeType> for &'static str {
     fn from(mt: MimeType) -> Self {
         match mt {
-            MimeType::Jpeg => "image/jpeg".to_owned(),
-            MimeType::Png => "image/png".to_owned(),
-            MimeType::Tiff => "image/tiff".to_owned(),
-            MimeType::Bmp => "image/bmp".to_owned(),
-            MimeType::Gif => "image/gif".to_owned(),
+            MimeType::Jpeg => "image/jpeg",
+            MimeType::Png => "image/png",
+            MimeType::Tiff => "image/tiff",
+            MimeType::Bmp => "image/bmp",
+            MimeType::Gif => "image/gif",
         }
+    }
+}
+
+impl From<MimeType> for String {
+    fn from(mt: MimeType) -> Self {
+        <MimeType as Into<&'static str>>::into(mt).to_owned()
     }
 }
 
@@ -183,12 +199,11 @@ pub struct Picture<'a> {
 }
 
 impl<'a> Picture<'a> {
-    pub fn try_with_mime(data: Vec<u8>, mime: &str) -> Result<Self> {
-        let mime_type: MimeType = mime.try_into()?;
-        Ok(Self {
-            data: Cow::owned(data),
+    pub fn new(data: &'a [u8], mime_type: MimeType) -> Self {
+        Self {
+            data: Cow::borrowed(data),
             mime_type,
-        })
+        }
     }
 }
 
@@ -281,113 +296,128 @@ pub trait TagIo {
 }
 
 // impl<'a> AnyTag<'a> {
-//     fn read_from_path<>
+//     fn read_from_path(path: &str, tag_type: TagType) -> StdResult<Self, BoxedError> {
+//         match tag_type {
+//             TagType::Id3v2 => Ok(Id3v2Tag::read_from_path(path)?.into()),
+//             _ => Err(Box::new(Error::UnsupportedFormat(".".to_owned()))),
+//         }
+//     }
 // }
 
-fn read_from_path<T>(path: &str) -> StdResult<AnyTag, BoxedError>
-where
-    T: TagIo,
-{
-    T::read_from_path(path)
+// fn read_from_path<T>(path: &str) -> StdResult<AnyTag, BoxedError>
+// where
+//     T: TagIo,
+// {
+//     T::read_from_path(path)
+// }
+
+/// Implementors of this trait are able to read and write audio metadata.
+///
+/// Constructor methods e.g. `from_file` should be implemented separately.
+pub trait AudioTagIo {
+    fn title(&self) -> Option<&str>;
+    fn set_title(&mut self, title: &str);
+    fn remove_title(&mut self);
+
+    fn artist(&self) -> Option<&str>;
+    fn set_artist(&mut self, artist: &str);
+    fn remove_artist(&mut self);
+
+    fn year(&self) -> Option<i32>;
+    fn set_year(&mut self, year: i32);
+    fn remove_year(&mut self);
+
+    fn album(&self) -> Option<Album<'_>> {
+        self.album_title().map(|title| Album {
+            title: Cow::borrowed(title),
+            artist: self.album_artist().map(Cow::borrowed),
+            cover: self.album_cover(),
+        })
+    }
+    fn set_album(&mut self, album: Album) {
+        self.set_album_title(&album.title);
+        if let Some(artist) = album.artist {
+            self.set_album_artist(&artist)
+        } else {
+            self.remove_album_artist()
+        }
+        if let Some(pic) = album.cover {
+            self.set_album_cover(pic)
+        } else {
+            self.remove_album_cover()
+        }
+    }
+    fn remove_album(&mut self) {
+        self.remove_album_title();
+        self.remove_album_artist();
+        self.remove_album_cover();
+    }
+
+    fn album_title(&self) -> Option<&str>;
+    fn set_album_title(&mut self, v: &str);
+    fn remove_album_title(&mut self);
+
+    fn album_artist(&self) -> Option<&str>;
+    fn set_album_artist(&mut self, v: &str);
+    fn remove_album_artist(&mut self);
+
+    fn album_cover(&self) -> Option<Picture>;
+    fn set_album_cover(&mut self, cover: Picture);
+    fn remove_album_cover(&mut self);
+
+    fn track(&self) -> (Option<u16>, Option<u16>) {
+        (self.track_number(), self.total_tracks())
+    }
+    fn set_track(&mut self, track: (u16, u16)) {
+        self.set_track_number(track.0);
+        self.set_total_tracks(track.1);
+    }
+    fn remove_track(&mut self) {
+        self.remove_track_number();
+        self.remove_total_tracks();
+    }
+
+    fn track_number(&self) -> Option<u16>;
+    fn set_track_number(&mut self, track_number: u16);
+    fn remove_track_number(&mut self);
+
+    fn total_tracks(&self) -> Option<u16>;
+    fn set_total_tracks(&mut self, total_track: u16);
+    fn remove_total_tracks(&mut self);
+
+    fn disc(&self) -> (Option<u16>, Option<u16>) {
+        (self.disc_number(), self.total_discs())
+    }
+    fn set_disc(&mut self, disc: (u16, u16)) {
+        self.set_disc_number(disc.0);
+        self.set_total_discs(disc.1);
+    }
+    fn remove_disc(&mut self) {
+        self.remove_disc_number();
+        self.remove_total_discs();
+    }
+
+    fn disc_number(&self) -> Option<u16>;
+    fn set_disc_number(&mut self, disc_number: u16);
+    fn remove_disc_number(&mut self);
+
+    fn total_discs(&self) -> Option<u16>;
+    fn set_total_discs(&mut self, total_discs: u16);
+    fn remove_total_discs(&mut self);
+
+    fn write_to(&mut self, file: &mut File) -> StdResult<(), BoxedError>;
+    // cannot use impl AsRef<Path>
+    fn write_to_path(&mut self, path: &str) -> StdResult<(), BoxedError>;
+
+    fn into_anytag(&self) -> AnyTag<'_>;
 }
 
-// Implementors of this trait are able to read and write audio metadata.
-//
-// Constructor methods e.g. `from_file` should be implemented separately.
-// pub trait AudioTagsIo {
-//     fn title(&self) -> Option<Cow<str>>;
-//     fn set_title(&mut self, title: &str);
-//     fn remove_title(&mut self);
+// pub trait IntoTag: AudioTagIo {
 
-//     fn artist(&self) -> Option<&str>;
-//     fn set_artist(&mut self, artist: &str);
-//     fn remove_artist(&mut self);
-
-//     fn year(&self) -> Option<i32>;
-//     fn set_year(&mut self, year: i32);
-//     fn remove_year(&mut self);
-
-//     fn album(&self) -> Option<Album> {
-//         self.album_title().map(|title| Album {
-//             title: title.to_owned(),
-//             artist: self.album_artist().map(|x| x.to_owned()),
-//             cover: self.album_cover(),
-//         })
+//     fn into_tag<'a, T>(&'a self) -> T
+//     where T: From<AnyTag<'a> {
+//         self.into_anytag().into()
 //     }
-//     fn set_album(&mut self, album: Album) {
-//         self.set_album_title(&album.title);
-//         if let Some(artist) = album.artist {
-//             self.set_album_artist(&artist)
-//         } else {
-//             self.remove_album_artist()
-//         }
-//         if let Some(pic) = album.cover {
-//             self.set_album_cover(pic)
-//         } else {
-//             self.remove_album_cover()
-//         }
-//     }
-//     fn remove_album(&mut self) {
-//         self.remove_album_title();
-//         self.remove_album_artist();
-//         self.remove_album_cover();
-//     }
-
-//     fn album_title(&self) -> Option<&str>;
-//     fn set_album_title(&mut self, v: &str);
-//     fn remove_album_title(&mut self);
-
-//     fn album_artist(&self) -> Option<&str>;
-//     fn set_album_artist(&mut self, v: &str);
-//     fn remove_album_artist(&mut self);
-
-//     fn album_cover(&self) -> Option<Picture>;
-//     fn set_album_cover(&mut self, cover: Picture);
-//     fn remove_album_cover(&mut self);
-
-//     fn track(&self) -> (Option<u16>, Option<u16>) {
-//         (self.track_number(), self.total_tracks())
-//     }
-//     fn set_track(&mut self, track: (u16, u16)) {
-//         self.set_track_number(track.0);
-//         self.set_total_tracks(track.1);
-//     }
-//     fn remove_track(&mut self) {
-//         self.remove_track_number();
-//         self.remove_total_tracks();
-//     }
-
-//     fn track_number(&self) -> Option<u16>;
-//     fn set_track_number(&mut self, track_number: u16);
-//     fn remove_track_number(&mut self);
-
-//     fn total_tracks(&self) -> Option<u16>;
-//     fn set_total_tracks(&mut self, total_track: u16);
-//     fn remove_total_tracks(&mut self);
-
-//     fn disc(&self) -> (Option<u16>, Option<u16>) {
-//         (self.disc_number(), self.total_discs())
-//     }
-//     fn set_disc(&mut self, disc: (u16, u16)) {
-//         self.set_disc_number(disc.0);
-//         self.set_total_discs(disc.1);
-//     }
-//     fn remove_disc(&mut self) {
-//         self.remove_disc_number();
-//         self.remove_total_discs();
-//     }
-
-//     fn disc_number(&self) -> Option<u16>;
-//     fn set_disc_number(&mut self, disc_number: u16);
-//     fn remove_disc_number(&mut self);
-
-//     fn total_discs(&self) -> Option<u16>;
-//     fn set_total_discs(&mut self, total_discs: u16);
-//     fn remove_total_discs(&mut self);
-
-//     fn write_to(&mut self, file: &mut File) -> Result<(), BoxedError>;
-//     // cannot use impl AsRef<Path>
-//     fn write_to_path(&mut self, path: &str) -> Result<(), BoxedError>;
 // }
 
 // impl AnyTag {
