@@ -133,12 +133,15 @@ pub trait AudioTagsIo {
     fn title(&self) -> Option<&str>;
     fn set_title(&mut self, title: &str);
     fn remove_title(&mut self);
+
     fn artist(&self) -> Option<&str>;
-    fn remove_artist(&mut self);
     fn set_artist(&mut self, artist: &str);
+    fn remove_artist(&mut self);
+
     fn year(&self) -> Option<i32>;
     fn set_year(&mut self, year: i32);
     fn remove_year(&mut self);
+
     fn album(&self) -> Option<Album> {
         self.album_title().map(|title| Album {
             title: title.to_owned(),
@@ -146,17 +149,6 @@ pub trait AudioTagsIo {
             cover: self.album_cover(),
         })
     }
-    fn remove_album(&mut self) {
-        self.remove_album_title();
-        self.remove_album_artist();
-        self.remove_album_cover();
-    }
-    fn album_title(&self) -> Option<&str>;
-    fn remove_album_title(&mut self);
-    fn album_artist(&self) -> Option<&str>;
-    fn remove_album_artist(&mut self);
-    fn album_cover(&self) -> Option<Picture>;
-    fn remove_album_cover(&mut self);
     fn set_album(&mut self, album: Album) {
         self.set_album_title(&album.title);
         if let Some(artist) = album.artist {
@@ -170,9 +162,24 @@ pub trait AudioTagsIo {
             self.remove_album_cover()
         }
     }
+    fn remove_album(&mut self) {
+        self.remove_album_title();
+        self.remove_album_artist();
+        self.remove_album_cover();
+    }
+
+    fn album_title(&self) -> Option<&str>;
     fn set_album_title(&mut self, v: &str);
+    fn remove_album_title(&mut self);
+
+    fn album_artist(&self) -> Option<&str>;
     fn set_album_artist(&mut self, v: &str);
+    fn remove_album_artist(&mut self);
+
+    fn album_cover(&self) -> Option<Picture>;
     fn set_album_cover(&mut self, cover: Picture);
+    fn remove_album_cover(&mut self);
+
     fn track(&self) -> (Option<u16>, Option<u16>) {
         (self.track_number(), self.total_tracks())
     }
@@ -184,12 +191,15 @@ pub trait AudioTagsIo {
         self.remove_track_number();
         self.remove_total_tracks();
     }
+
     fn track_number(&self) -> Option<u16>;
     fn set_track_number(&mut self, track_number: u16);
     fn remove_track_number(&mut self);
+
     fn total_tracks(&self) -> Option<u16>;
     fn set_total_tracks(&mut self, total_track: u16);
     fn remove_total_tracks(&mut self);
+
     fn disc(&self) -> (Option<u16>, Option<u16>) {
         (self.disc_number(), self.total_discs())
     }
@@ -201,12 +211,15 @@ pub trait AudioTagsIo {
         self.remove_disc_number();
         self.remove_total_discs();
     }
+
     fn disc_number(&self) -> Option<u16>;
     fn set_disc_number(&mut self, disc_number: u16);
     fn remove_disc_number(&mut self);
+
     fn total_discs(&self) -> Option<u16>;
     fn set_total_discs(&mut self, total_discs: u16);
     fn remove_total_discs(&mut self);
+
     fn write_to(&mut self, file: &mut File) -> Result<(), BoxedError>;
     // cannot use impl AsRef<Path>
     fn write_to_path(&mut self, path: &str) -> Result<(), BoxedError>;
@@ -234,6 +247,7 @@ impl AudioTagsIo for Id3Tags {
     fn remove_title(&mut self) {
         self.inner.remove_title();
     }
+
     fn artist(&self) -> Option<&str> {
         self.inner.artist()
     }
@@ -243,6 +257,7 @@ impl AudioTagsIo for Id3Tags {
     fn remove_artist(&mut self) {
         self.inner.remove_artist();
     }
+
     fn year(&self) -> Option<i32> {
         self.inner.year()
     }
@@ -250,14 +265,30 @@ impl AudioTagsIo for Id3Tags {
         self.inner.set_year(year)
     }
     fn remove_year(&mut self) {
+        self.inner.remove("TYER")
         // self.inner.remove_year(); // TODO
     }
+
     fn album_title(&self) -> Option<&str> {
         self.inner.album()
     }
+    fn set_album_title(&mut self, v: &str) {
+        self.inner.set_album(v)
+    }
+    fn remove_album_title(&mut self) {
+        self.inner.remove_album();
+    }
+
     fn album_artist(&self) -> Option<&str> {
         self.inner.album_artist()
     }
+    fn set_album_artist(&mut self, v: &str) {
+        self.inner.set_album_artist(v)
+    }
+    fn remove_album_artist(&mut self) {
+        self.inner.remove_album_artist();
+    }
+
     fn album_cover(&self) -> Option<Picture> {
         if let Some(Ok(pic)) = self
             .inner
@@ -271,62 +302,22 @@ impl AudioTagsIo for Id3Tags {
             None
         }
     }
-    fn set_album_title(&mut self, v: &str) {
-        self.inner.set_album(v)
-    }
-    fn set_album_artist(&mut self, v: &str) {
-        self.inner.set_album_artist(v)
-    }
     fn set_album_cover(&mut self, cover: Picture) {
         self.remove_album_cover();
-        self.inner.add_picture(match cover.mime_type {
-            MimeType::Jpeg => id3::frame::Picture {
-                mime_type: "jpeg".to_owned(),
-                picture_type: id3::frame::PictureType::CoverFront,
-                description: "".to_owned(),
-                data: cover.data,
-            },
-            MimeType::Png => id3::frame::Picture {
-                mime_type: "png".to_owned(),
-                picture_type: id3::frame::PictureType::CoverFront,
-                description: "".to_owned(),
-                data: cover.data,
-            },
-            MimeType::Tiff => id3::frame::Picture {
-                mime_type: "tiff".to_owned(),
-                picture_type: id3::frame::PictureType::CoverFront,
-                description: "".to_owned(),
-                data: cover.data,
-            },
-            MimeType::Bmp => id3::frame::Picture {
-                mime_type: "bmp".to_owned(),
-                picture_type: id3::frame::PictureType::CoverFront,
-                description: "".to_owned(),
-                data: cover.data,
-            },
-            MimeType::Gif => id3::frame::Picture {
-                mime_type: "gif".to_owned(),
-                picture_type: id3::frame::PictureType::CoverFront,
-                description: "".to_owned(),
-                data: cover.data,
-            },
+        self.inner.add_picture(id3::frame::Picture {
+            mime_type: String::from(cover.mime_type),
+            picture_type: id3::frame::PictureType::CoverFront,
+            description: "".to_owned(),
+            data: cover.data,
         });
-    }
-    fn remove_album_title(&mut self) {
-        self.inner.remove_album();
-    }
-    fn remove_album_artist(&mut self) {
-        self.inner.remove_album_artist();
     }
     fn remove_album_cover(&mut self) {
         self.inner
             .remove_picture_by_type(id3::frame::PictureType::CoverFront);
     }
+
     fn track_number(&self) -> Option<u16> {
         self.inner.track().map(|x| x as u16)
-    }
-    fn total_tracks(&self) -> Option<u16> {
-        self.inner.total_tracks().map(|x| x as u16)
     }
     fn set_track_number(&mut self, track: u16) {
         self.inner.set_track(track as u32);
@@ -334,17 +325,19 @@ impl AudioTagsIo for Id3Tags {
     fn remove_track_number(&mut self) {
         self.inner.remove_track();
     }
+
+    fn total_tracks(&self) -> Option<u16> {
+        self.inner.total_tracks().map(|x| x as u16)
+    }
     fn set_total_tracks(&mut self, total_track: u16) {
         self.inner.set_total_tracks(total_track as u32);
     }
     fn remove_total_tracks(&mut self) {
         self.inner.remove_total_tracks();
     }
+
     fn disc_number(&self) -> Option<u16> {
         self.inner.disc().map(|x| x as u16)
-    }
-    fn total_discs(&self) -> Option<u16> {
-        self.inner.total_discs().map(|x| x as u16)
     }
     fn set_disc_number(&mut self, disc_number: u16) {
         self.inner.set_disc(disc_number as u32)
@@ -352,12 +345,17 @@ impl AudioTagsIo for Id3Tags {
     fn remove_disc_number(&mut self) {
         self.inner.remove_disc();
     }
+
+    fn total_discs(&self) -> Option<u16> {
+        self.inner.total_discs().map(|x| x as u16)
+    }
     fn set_total_discs(&mut self, total_discs: u16) {
         self.inner.set_total_discs(total_discs as u32)
     }
     fn remove_total_discs(&mut self) {
         self.inner.remove_total_discs();
     }
+
     fn write_to(&mut self, file: &mut File) -> Result<(), BoxedError> {
         self.inner.write_to(file, id3::Version::Id3v24)?;
         Ok(())
@@ -387,12 +385,14 @@ impl AudioTagsIo for M4aTags {
     fn set_title(&mut self, title: &str) {
         self.inner.set_title(title)
     }
+
     fn artist(&self) -> Option<&str> {
         self.inner.artist()
     }
     fn set_artist(&mut self, artist: &str) {
         self.inner.set_title(artist)
     }
+
     fn year(&self) -> Option<i32> {
         match self.inner.year() {
             Some(year) => str::parse(year).ok(),
@@ -402,6 +402,21 @@ impl AudioTagsIo for M4aTags {
     fn set_year(&mut self, year: i32) {
         self.inner.set_year(year.to_string())
     }
+
+    fn album_title(&self) -> Option<&str> {
+        self.inner.album()
+    }
+    fn set_album_title(&mut self, v: &str) {
+        self.inner.set_album(v)
+    }
+
+    fn album_artist(&self) -> Option<&str> {
+        self.inner.album_artist()
+    }
+    fn set_album_artist(&mut self, v: &str) {
+        self.inner.set_album_artist(v)
+    }
+
     fn album_cover(&self) -> Option<Picture> {
         use mp4ameta::Data::*;
         if let Some(Some(pic)) = self.inner.artwork().map(|data| match data {
@@ -420,12 +435,6 @@ impl AudioTagsIo for M4aTags {
             None
         }
     }
-    fn album_title(&self) -> Option<&str> {
-        self.inner.album()
-    }
-    fn album_artist(&self) -> Option<&str> {
-        self.inner.album_artist()
-    }
     fn set_album_cover(&mut self, cover: Picture) {
         self.remove_album_cover();
         self.inner.add_artwork(match cover.mime_type {
@@ -434,12 +443,7 @@ impl AudioTagsIo for M4aTags {
             _ => panic!("Only png and jpeg are supported in m4a"),
         });
     }
-    fn set_album_title(&mut self, v: &str) {
-        self.inner.set_album(v)
-    }
-    fn set_album_artist(&mut self, v: &str) {
-        self.inner.set_album_artist(v)
-    }
+
     fn track_number(&self) -> Option<u16> {
         self.inner.track_number()
     }
@@ -452,6 +456,7 @@ impl AudioTagsIo for M4aTags {
     fn set_total_tracks(&mut self, total_track: u16) {
         self.inner.set_total_tracks(total_track);
     }
+
     fn disc_number(&self) -> Option<u16> {
         self.inner.disc_number()
     }
@@ -464,10 +469,12 @@ impl AudioTagsIo for M4aTags {
     fn set_total_discs(&mut self, total_discs: u16) {
         self.inner.set_total_discs(total_discs)
     }
+
     fn remove_title(&mut self) {
         self.inner.remove_title();
     }
     fn remove_artist(&mut self) {
+        //self.inner.
         // self.inner.remove_artist(); // TODO:
     }
     fn remove_year(&mut self) {
@@ -486,6 +493,7 @@ impl AudioTagsIo for M4aTags {
         self.inner.remove_track();
     }
     fn remove_track_number(&mut self) {
+        // self.inner.remove_data(mp4ameta::atom::TRACK_NUMBER); not correct
         // TODO: self.inner.remove_track_number();
     }
     fn remove_total_tracks(&mut self) {
@@ -495,11 +503,13 @@ impl AudioTagsIo for M4aTags {
         self.inner.remove_disc();
     }
     fn remove_disc_number(&mut self) {
+        // self.inner.remove_data(mp4ameta::atom::DISC_NUMBER); not correct
         // TODO: self.inner.remove_disc_number();
     }
     fn remove_total_discs(&mut self) {
         // TODO: self.inner.remove_total_discs();
     }
+
     fn write_to(&mut self, file: &mut File) -> Result<(), BoxedError> {
         self.inner.write_to(file)?;
         Ok(())
@@ -512,20 +522,10 @@ impl AudioTagsIo for M4aTags {
 
 struct FlacTags {
     inner: metaflac::Tag,
-    //vorbis_comments: std::collections::HashMap<String, Vec<String>>,
 }
 
 impl FlacTags {
     pub fn read_from_path(path: impl AsRef<Path>) -> Result<Self, BoxedError> {
-        // let tag = metaflac::Tag::read_from_path(path)?;
-        // let vorbis_comments = tag
-        //     .vorbis_comments()
-        //     .map(|x| x.comments)
-        //     .unwrap_or(HashMap::default());
-        // Ok(Self {
-        //     tag,
-        //     vorbis_comments,
-        // })
         Ok(Self {
             inner: metaflac::Tag::read_from_path(path)?,
         })
@@ -556,12 +556,14 @@ impl AudioTagsIo for FlacTags {
     fn set_title(&mut self, title: &str) {
         self.set_first("TITLE", title);
     }
+
     fn artist(&self) -> Option<&str> {
         self.get_first("ARTIST")
     }
     fn set_artist(&mut self, artist: &str) {
         self.set_first("ARTIST", artist)
     }
+
     fn year(&self) -> Option<i32> {
         if let Some(Ok(y)) = self
             .get_first("DATE")
@@ -578,18 +580,21 @@ impl AudioTagsIo for FlacTags {
         self.set_first("DATE", &year.to_string());
         self.set_first("YEAR", &year.to_string());
     }
+
     fn album_title(&self) -> Option<&str> {
         self.get_first("ALBUM")
     }
     fn set_album_title(&mut self, title: &str) {
         self.set_first("ALBUM", title)
     }
+
     fn album_artist(&self) -> Option<&str> {
         self.get_first("ALBUMARTIST")
     }
     fn set_album_artist(&mut self, v: &str) {
         self.set_first("ALBUMARTIST", v)
     }
+
     fn album_cover(&self) -> Option<Picture> {
         if let Some(Ok(pic)) = self
             .inner
@@ -609,6 +614,7 @@ impl AudioTagsIo for FlacTags {
         let picture_type = metaflac::block::PictureType::CoverFront;
         self.inner.add_picture(mime, picture_type, cover.data);
     }
+
     fn track_number(&self) -> Option<u16> {
         if let Some(Ok(n)) = self.get_first("TRACKNUMBER").map(|x| x.parse::<u16>()) {
             Some(n)
@@ -619,6 +625,7 @@ impl AudioTagsIo for FlacTags {
     fn set_track_number(&mut self, v: u16) {
         self.set_first("TRACKNUMBER", &v.to_string())
     }
+
     // ! not standard
     fn total_tracks(&self) -> Option<u16> {
         if let Some(Ok(n)) = self.get_first("TOTALTRACKS").map(|x| x.parse::<u16>()) {
@@ -630,6 +637,7 @@ impl AudioTagsIo for FlacTags {
     fn set_total_tracks(&mut self, v: u16) {
         self.set_first("TOTALTRACKS", &v.to_string())
     }
+
     fn disc_number(&self) -> Option<u16> {
         if let Some(Ok(n)) = self.get_first("DISCNUMBER").map(|x| x.parse::<u16>()) {
             Some(n)
@@ -640,6 +648,7 @@ impl AudioTagsIo for FlacTags {
     fn set_disc_number(&mut self, v: u16) {
         self.set_first("DISCNUMBER", &v.to_string())
     }
+
     // ! not standard
     fn total_discs(&self) -> Option<u16> {
         if let Some(Ok(n)) = self.get_first("TOTALDISCS").map(|x| x.parse::<u16>()) {
@@ -651,6 +660,7 @@ impl AudioTagsIo for FlacTags {
     fn set_total_discs(&mut self, v: u16) {
         self.set_first("TOTALDISCS", &v.to_string())
     }
+
     fn remove_title(&mut self) {
         self.remove("TITLE");
     }
