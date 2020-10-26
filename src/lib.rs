@@ -48,7 +48,7 @@ pub use flac_tag::FlacTag;
 pub use mp4_tag::Mp4Tag;
 
 pub mod utils;
-pub use utils::{AudioTagsError, AudioTagsResult};
+pub use utils::{Error, Result};
 
 use std::convert::From;
 use std::fs::File;
@@ -93,12 +93,12 @@ pub enum TagType {
 
 #[rustfmt::skip]
 impl TagType {
-    fn try_from_ext(ext: &str) -> AudioTagsResult<Self> {
+    fn try_from_ext(ext: &str) -> crate::Result<Self> {
         match ext {
                                                      "mp3" => Ok(Self::Id3v2),
             "m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
                                                     "flac" => Ok(Self::Flac),
-            p @ _ => Err(AudioTagsError::UnsupportedFormat(p.to_owned())),
+            p @ _ => Err(crate::Error::UnsupportedFormat(p.to_owned())),
         }
     }
 }
@@ -115,7 +115,7 @@ impl Tag {
         }
     }
 
-    pub fn read_from_path(&self, path: impl AsRef<Path>) -> AudioTagsResult<Box<dyn AudioTagIo>> {
+    pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTagIo>> {
         match self.tag_type.unwrap_or(TagType::try_from_ext(
             path.as_ref()
                 .extension()
@@ -148,15 +148,15 @@ pub enum MimeType {
 }
 
 impl TryFrom<&str> for MimeType {
-    type Error = AudioTagsError;
-    fn try_from(inp: &str) -> AudioTagsResult<Self> {
+    type Error = crate::Error;
+    fn try_from(inp: &str) -> crate::Result<Self> {
         Ok(match inp {
             "image/jpeg" => MimeType::Jpeg,
             "image/png" => MimeType::Png,
             "image/tiff" => MimeType::Tiff,
             "image/bmp" => MimeType::Bmp,
             "image/gif" => MimeType::Gif,
-            _ => return Err(AudioTagsError::UnsupportedMimeType(inp.to_owned())),
+            _ => return Err(crate::Error::UnsupportedMimeType(inp.to_owned())),
         })
     }
 }
@@ -278,8 +278,8 @@ impl<'a> AnyTag<'a> {
 }
 
 pub trait TagIo {
-    fn read_from_path(path: &str) -> AudioTagsResult<AnyTag>;
-    fn write_to_path(path: &str) -> AudioTagsResult<()>;
+    fn read_from_path(path: &str) -> crate::Result<AnyTag>;
+    fn write_to_path(path: &str) -> crate::Result<()>;
 }
 
 // impl<'a> AnyTag<'a> {
@@ -392,9 +392,9 @@ pub trait AudioTagIo {
     fn set_total_discs(&mut self, total_discs: u16);
     fn remove_total_discs(&mut self);
 
-    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()>;
+    fn write_to(&mut self, file: &mut File) -> crate::Result<()>;
     // cannot use impl AsRef<Path>
-    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()>;
+    fn write_to_path(&mut self, path: &str) -> crate::Result<()>;
 
     fn into_anytag(&self) -> AnyTag<'_>;
 }

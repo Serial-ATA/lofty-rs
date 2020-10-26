@@ -2,8 +2,8 @@
 use thiserror::Error;
 
 /// Error types that could occur in this library.
-#[derive(Error, Debug)]
-pub enum AudioTagsError {
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
     /// Fail to guess the metadata format based on the file extension.
     #[error("Fail to guess the metadata format based on the file extension.")]
     UnknownFileExtension(String),
@@ -33,4 +33,4 @@ pub enum AudioTagsError {
     Id3TagError(#[from] id3::Error),
 }
 
-pub type AudioTagsResult<T> = Result<T, AudioTagsError>;
+pub type Result<T> = std::result::Result<T, Error>;

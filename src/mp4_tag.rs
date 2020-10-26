@@ -6,7 +6,7 @@ pub struct Mp4Tag {
 }
 
 impl Mp4Tag {
-    pub fn read_from_path(path: impl AsRef<Path>) -> AudioTagsResult<Self> {
+    pub fn read_from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
         Ok(Self {
             inner: mp4ameta::Tag::read_from_path(path)?,
         })
@@ -63,8 +63,8 @@ impl<'a> From<AnyTag<'a>> for mp4ameta::Tag {
 }
 
 impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
-    type Error = crate::AudioTagsError;
-    fn try_from(inp: &'a mp4ameta::Data) -> AudioTagsResult<Self> {
+    type Error = crate::Error;
+    fn try_from(inp: &'a mp4ameta::Data) -> crate::Result<Self> {
         Ok(match *inp {
             mp4ameta::Data::Png(ref data) => Self {
                 data: Cow::borrowed(data),
@@ -74,7 +74,7 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
                 data: Cow::borrowed(data),
                 mime_type: MimeType::Jpeg,
             },
-            _ => return Err(AudioTagsError::NotAPicture),
+            _ => return Err(crate::Error::NotAPicture),
         })
     }
 }
@@ -206,11 +206,11 @@ impl AudioTagIo for Mp4Tag {
         self.inner.remove_total_discs();
     }
 
-    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()> {
+    fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
         self.inner.write_to(file)?;
         Ok(())
     }
-    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()> {
+    fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
         self.inner.write_to_path(path)?;
         Ok(())
     }
