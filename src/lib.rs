@@ -43,7 +43,6 @@
 use id3;
 use metaflac;
 use mp4ameta;
-use std::collections::HashMap;
 use std::convert::From;
 use std::fs::File;
 use std::path::Path;
@@ -78,7 +77,7 @@ pub fn read_from_path(path: impl AsRef<Path>) -> Result<Box<dyn AudioTagsIo>, Bo
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MimeType {
     Png,
     Jpeg,
@@ -99,7 +98,7 @@ impl From<MimeType> for String {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture {
     pub data: Vec<u8>,
     pub mime_type: MimeType,
@@ -390,7 +389,7 @@ impl AudioTagsIo for M4aTags {
         self.inner.artist()
     }
     fn set_artist(&mut self, artist: &str) {
-        self.inner.set_title(artist)
+        self.inner.set_artist(artist)
     }
 
     fn year(&self) -> Option<i32> {
@@ -474,7 +473,7 @@ impl AudioTagsIo for M4aTags {
         self.inner.remove_title();
     }
     fn remove_artist(&mut self) {
-        //self.inner.
+        self.inner.remove_data(mp4ameta::atom::ARTIST);
         // self.inner.remove_artist(); // TODO:
     }
     fn remove_year(&mut self) {
@@ -484,6 +483,7 @@ impl AudioTagsIo for M4aTags {
         self.inner.remove_album();
     }
     fn remove_album_artist(&mut self) {
+        self.inner.remove_data(mp4ameta::atom::ALBUM_ARTIST);
         // self.inner.remove_album_artist(); // TODO:
     }
     fn remove_album_cover(&mut self) {
