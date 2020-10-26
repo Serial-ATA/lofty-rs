@@ -238,7 +238,7 @@ impl AudioTagsIo for Id3Tags {
         self.inner.artist()
     }
     fn set_artist(&mut self, artist: &str) {
-        self.inner.set_title(artist)
+        self.inner.set_artist(artist)
     }
     fn remove_artist(&mut self) {
         self.inner.remove_artist();
