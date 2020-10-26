@@ -45,7 +45,7 @@ impl Default for FlacTag {
 }
 
 impl FlacTag {
-    pub fn read_from_path(path: impl AsRef<Path>) -> StdResult<Self, BoxedError> {
+    pub fn read_from_path(path: impl AsRef<Path>) -> AudioTagsResult<Self> {
         Ok(Self {
             inner: metaflac::Tag::read_from_path(path)?,
         })
@@ -216,11 +216,11 @@ impl AudioTagIo for FlacTag {
     fn remove_total_discs(&mut self) {
         self.remove("TOTALDISCS");
     }
-    fn write_to(&mut self, file: &mut File) -> StdResult<(), BoxedError> {
+    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()> {
         self.inner.write_to(file)?;
         Ok(())
     }
-    fn write_to_path(&mut self, path: &str) -> StdResult<(), BoxedError> {
+    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()> {
         self.inner.write_to_path(path)?;
         Ok(())
     }

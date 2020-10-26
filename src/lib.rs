@@ -47,10 +47,12 @@ mod mp4_tag;
 pub use flac_tag::FlacTag;
 pub use mp4_tag::Mp4Tag;
 
+pub mod utils;
+pub use utils::{AudioTagsError, AudioTagsResult};
+
 use std::convert::From;
 use std::fs::File;
 use std::path::Path;
-use strum::Display;
 
 use beef::lean::Cow;
 
@@ -65,18 +67,6 @@ macro_rules! convert_tag {
 }
 
 type BoxedError = Box<dyn std::error::Error>;
-
-#[derive(Debug, Display)]
-pub enum Error {
-    UnsupportedFormat(String),
-    UnsupportedMimeType(String),
-    NotAPicture,
-}
-
-pub type StdResult<T, E> = std::result::Result<T, E>;
-pub type Result<T> = std::result::Result<T, Error>;
-
-impl std::error::Error for Error {}
 
 #[derive(Clone, Copy, Debug)]
 pub enum TagType {
@@ -103,12 +93,12 @@ pub enum TagType {
 
 #[rustfmt::skip]
 impl TagType {
-    fn try_from_ext(ext: &str) -> StdResult<Self, BoxedError> {
+    fn try_from_ext(ext: &str) -> AudioTagsResult<Self> {
         match ext {
                                                      "mp3" => Ok(Self::Id3v2),
             "m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
                                                     "flac" => Ok(Self::Flac),
-            p @ _ => Err(Box::new(Error::UnsupportedFormat(p.to_owned()))),
+            p @ _ => Err(AudioTagsError::UnsupportedFormat(p.to_owned())),
         }
     }
 }
@@ -125,10 +115,7 @@ impl Tag {
         }
     }
 
-    pub fn read_from_path(
-        &self,
-        path: impl AsRef<Path>,
-    ) -> StdResult<Box<dyn AudioTagIo>, BoxedError> {
+    pub fn read_from_path(&self, path: impl AsRef<Path>) -> AudioTagsResult<Box<dyn AudioTagIo>> {
         match self.tag_type.unwrap_or(TagType::try_from_ext(
             path.as_ref()
                 .extension()
@@ -161,15 +148,15 @@ pub enum MimeType {
 }
 
 impl TryFrom<&str> for MimeType {
-    type Error = Error;
-    fn try_from(inp: &str) -> Result<Self> {
+    type Error = AudioTagsError;
+    fn try_from(inp: &str) -> AudioTagsResult<Self> {
         Ok(match inp {
             "image/jpeg" => MimeType::Jpeg,
             "image/png" => MimeType::Png,
             "image/tiff" => MimeType::Tiff,
             "image/bmp" => MimeType::Bmp,
             "image/gif" => MimeType::Gif,
-            _ => return Err(Error::UnsupportedMimeType(inp.to_owned())),
+            _ => return Err(AudioTagsError::UnsupportedMimeType(inp.to_owned())),
         })
     }
 }
@@ -291,8 +278,8 @@ impl<'a> AnyTag<'a> {
 }
 
 pub trait TagIo {
-    fn read_from_path(path: &str) -> StdResult<AnyTag, BoxedError>;
-    fn write_to_path(path: &str) -> StdResult<(), BoxedError>;
+    fn read_from_path(path: &str) -> AudioTagsResult<AnyTag>;
+    fn write_to_path(path: &str) -> AudioTagsResult<()>;
 }
 
 // impl<'a> AnyTag<'a> {
@@ -304,12 +291,12 @@ pub trait TagIo {
 //     }
 // }
 
-// fn read_from_path<T>(path: &str) -> StdResult<AnyTag, BoxedError>
-// where
-//     T: TagIo,
-// {
-//     T::read_from_path(path)
-// }
+pub struct SuperTag<T>
+where
+    T: AudioTagIo,
+{
+    inner: T,
+}
 
 /// Implementors of this trait are able to read and write audio metadata.
 ///
@@ -405,11 +392,15 @@ pub trait AudioTagIo {
     fn set_total_discs(&mut self, total_discs: u16);
     fn remove_total_discs(&mut self);
 
-    fn write_to(&mut self, file: &mut File) -> StdResult<(), BoxedError>;
+    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()>;
     // cannot use impl AsRef<Path>
-    fn write_to_path(&mut self, path: &str) -> StdResult<(), BoxedError>;
+    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()>;
 
     fn into_anytag(&self) -> AnyTag<'_>;
+}
+
+pub trait IntoTag<'a>: AudioTagIo {
+    fn into_tag<T: From<AnyTag<'a>>>(&self) -> T;
 }
 
 // pub trait IntoTag: AudioTagIo {

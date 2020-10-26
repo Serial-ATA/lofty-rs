@@ -6,7 +6,7 @@ pub struct Mp4Tag {
 }
 
 impl Mp4Tag {
-    pub fn read_from_path(path: impl AsRef<Path>) -> StdResult<Self, BoxedError> {
+    pub fn read_from_path(path: impl AsRef<Path>) -> AudioTagsResult<Self> {
         Ok(Self {
             inner: mp4ameta::Tag::read_from_path(path)?,
         })
@@ -63,8 +63,8 @@ impl<'a> From<AnyTag<'a>> for mp4ameta::Tag {
 }
 
 impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
-    type Error = crate::Error;
-    fn try_from(inp: &'a mp4ameta::Data) -> Result<Self> {
+    type Error = crate::AudioTagsError;
+    fn try_from(inp: &'a mp4ameta::Data) -> AudioTagsResult<Self> {
         Ok(match *inp {
             mp4ameta::Data::Png(ref data) => Self {
                 data: Cow::borrowed(data),
@@ -74,7 +74,7 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
                 data: Cow::borrowed(data),
                 mime_type: MimeType::Jpeg,
             },
-            _ => return Err(Error::NotAPicture),
+            _ => return Err(AudioTagsError::NotAPicture),
         })
     }
 }
@@ -99,10 +99,7 @@ impl AudioTagIo for Mp4Tag {
     }
 
     fn year(&self) -> Option<i32> {
-        match self.inner.year() {
-            Some(year) => str::parse(year).ok(),
-            None => None,
-        }
+        self.inner.year().and_then(|x| str::parse(x).ok())
     }
     fn set_year(&mut self, year: i32) {
         self.inner.set_year(year.to_string())
@@ -175,7 +172,6 @@ impl AudioTagIo for Mp4Tag {
         self.inner.remove_title();
     }
     fn remove_artist(&mut self) {
-        self.inner.remove_data(mp4ameta::atom::ARTIST);
         self.inner.remove_artists();
     }
     fn remove_year(&mut self) {
@@ -210,11 +206,11 @@ impl AudioTagIo for Mp4Tag {
         self.inner.remove_total_discs();
     }
 
-    fn write_to(&mut self, file: &mut File) -> StdResult<(), BoxedError> {
+    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()> {
         self.inner.write_to(file)?;
         Ok(())
     }
-    fn write_to_path(&mut self, path: &str) -> StdResult<(), BoxedError> {
+    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()> {
         self.inner.write_to_path(path)?;
         Ok(())
     }

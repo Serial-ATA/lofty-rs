@@ -19,7 +19,7 @@ impl Id3v2Tag {
             inner: id3::Tag::default(),
         }
     }
-    pub fn read_from_path(path: impl AsRef<Path>) -> StdResult<Self, BoxedError> {
+    pub fn read_from_path(path: impl AsRef<Path>) -> AudioTagsResult<Self> {
         Ok(Self {
             inner: id3::Tag::read_from_path(path)?,
         })
@@ -97,8 +97,8 @@ impl<'a> From<AnyTag<'a>> for id3::Tag {
 }
 
 impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
-    type Error = crate::Error;
-    fn try_from(inp: &'a id3::frame::Picture) -> Result<Self> {
+    type Error = crate::AudioTagsError;
+    fn try_from(inp: &'a id3::frame::Picture) -> AudioTagsResult<Self> {
         let &id3::frame::Picture {
             ref mime_type,
             ref data,
@@ -113,8 +113,8 @@ impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
 }
 
 impl<'a> std::convert::TryFrom<id3::frame::Picture> for Picture<'a> {
-    type Error = crate::Error;
-    fn try_from(inp: id3::frame::Picture) -> Result<Self> {
+    type Error = crate::AudioTagsError;
+    fn try_from(inp: id3::frame::Picture) -> AudioTagsResult<Self> {
         let id3::frame::Picture {
             mime_type, data, ..
         } = inp;
@@ -244,11 +244,11 @@ impl AudioTagIo for Id3v2Tag {
         self.inner.remove_total_discs();
     }
 
-    fn write_to(&mut self, file: &mut File) -> StdResult<(), BoxedError> {
+    fn write_to(&mut self, file: &mut File) -> AudioTagsResult<()> {
         self.inner.write_to(file, id3::Version::Id3v24)?;
         Ok(())
     }
-    fn write_to_path(&mut self, path: &str) -> StdResult<(), BoxedError> {
+    fn write_to_path(&mut self, path: &str) -> AudioTagsResult<()> {
         self.inner.write_to_path(path, id3::Version::Id3v24)?;
         Ok(())
     }
