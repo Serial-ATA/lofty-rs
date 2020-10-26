@@ -110,7 +110,7 @@ impl AudioTagsIo for Mp4Tag {
     }
     fn remove_artist(&mut self) {
         self.inner.remove_data(mp4ameta::atom::ARTIST);
-        // self.inner.remove_artist(); // TODO:
+        self.inner.remove_artists();
     }
     fn remove_year(&mut self) {
         self.inner.remove_year();
@@ -120,13 +120,13 @@ impl AudioTagsIo for Mp4Tag {
     }
     fn remove_album_artist(&mut self) {
         self.inner.remove_data(mp4ameta::atom::ALBUM_ARTIST);
-        // self.inner.remove_album_artist(); // TODO:
+        self.inner.remove_album_artists();
     }
     fn remove_album_cover(&mut self) {
         self.inner.remove_artwork();
     }
     fn remove_track(&mut self) {
-        self.inner.remove_track();
+        self.inner.remove_track(); // faster than removing separately
     }
     fn remove_track_number(&mut self) {
         // self.inner.remove_data(mp4ameta::atom::TRACK_NUMBER); not correct
