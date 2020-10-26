@@ -14,10 +14,10 @@ This crate aims to provide a unified trait for parsers and writers of different 
 (Due to copyright restrictions I cannot upload the actual audio files here)
 
 ```rust
-use audiotags;
+use audiotags::Tag;
 fn main() {
     const MP3: &'static str = "a.mp3";
-    let mut tags = audiotags::read_from_path(MP3).unwrap();
+    let mut tags = Tag::default().read_from_path(MP3).unwrap();
     // without this crate you would call id3::Tag::read_from_path()
     println!("Title: {:?}", tags.title());
     println!("Artist: {:?}", tags.artist());
@@ -31,7 +31,7 @@ fn main() {
     // Album title and artist: ("THE IDOLM@STER CINDERELLA GIRLS ANIMATION PROJECT 01 Star!!", Some("CINDERELLA PROJECT"))
     // Track: (Some(2), Some(4))
     const M4A: &'static str = "b.m4a";
-    let mut tags = audiotags::read_from_path(M4A).unwrap();
+    let mut tags = Tag::default().read_from_path(M4A).unwrap();
     // without this crate you would call mp4ameta::Tag::read_from_path()
     println!("Title: {:?}", tags.title());
     println!("Artist: {:?}", tags.artist());
@@ -45,7 +45,7 @@ fn main() {
     // Album title and artist: ("ふわふわ時間", Some("桜高軽音部 [平沢唯・秋山澪・田井中律・琴吹紬(CV:豊崎愛生、日笠陽子、佐藤聡美、寿美菜子)]"))
     // Track: (Some(1), Some(4))
     const FLAC: &'static str = "c.flac";
-    let mut tags = audiotags::read_from_path(FLAC).unwrap();
+    let mut tags = Tag::default().read_from_path(FLAC).unwrap();
     // without this crate you would call metaflac::Tag::read_from_path()
     println!("Title: {:?}", tags.title());
     println!("Artist: {:?}", tags.artist());

@@ -1,10 +1,10 @@
-use audiotags::{MimeType, Picture};
+use audiotags::{MimeType, Picture, Tag};
 
 macro_rules! test_file {
     ( $function:ident, $file:expr ) => {
         #[test]
         fn $function() {
-            let mut tags = audiotags::read_from_path($file).unwrap();
+            let mut tags = Tag::default().read_from_path($file).unwrap();
             tags.set_title("foo title");
             assert_eq!(tags.title(), Some("foo title"));
             tags.remove_title();
