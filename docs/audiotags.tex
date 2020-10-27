@@ -131,6 +131,23 @@
 
 Thank you for considering \textbf{audiotags}!
 
+\hypertarget{examples-in-this-manual}{%
+\subsection*{Examples in this manual}\label{examples-in-this-manual}}
+\addcontentsline{toc}{subsection}{Examples in this manual}
+
+If you want to run the examples in this book:
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  clone the \href{https://github.com/TianyiShi2001/audiotags}{repo} and navigate into it
+\item
+  create \texttt{src/main.rs}
+\item
+  all examples, unless otherwise specified, can be copied verbatim from this book to \texttt{src/main.rs} and run with \texttt{cargo\ run} (if you're reading it online, the copy button wil show if you hover over a code block)
+\end{enumerate}
+
 \hypertarget{start-simple}{%
 \chapter{Start Simple}\label{start-simple}}
 
@@ -175,10 +192,114 @@ The following example shows how you can read an audio file, parse, set, and save
 \end{Highlighting}
 \end{Shaded}
 
-\hypertarget{final-words}{%
-\chapter{Final Words}\label{final-words}}
+\hypertarget{conversion}{%
+\chapter{Conversion}\label{conversion}}
 
-We have finished a nice book.
+The following example shows how you can read the tag in an \texttt{mp3} file, convert it into an \texttt{mp4} tag, and write it to an \texttt{m4a} file.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\NormalTok{Config}\OperatorTok{,}\NormalTok{ Tag}\OperatorTok{,}\NormalTok{ TagType}\OperatorTok{\};}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \CommentTok{// we have an mp3 and an m4a file}
+    \KeywordTok{const}\NormalTok{ MP3\_FILE}\OperatorTok{:} \OperatorTok{\&}\OtherTok{\textquotesingle{}static} \DataTypeTok{str} \OperatorTok{=} \StringTok{"assets/a.mp3"}\OperatorTok{;}
+    \KeywordTok{const}\NormalTok{ M4A\_FILE}\OperatorTok{:} \OperatorTok{\&}\OtherTok{\textquotesingle{}static} \DataTypeTok{str} \OperatorTok{=} \StringTok{"assets/a.m4a"}\OperatorTok{;}
+    \CommentTok{// read tag from the mp3 file. Using \textasciigrave{}default()\textasciigrave{} so that the type of tag is guessed from the file extension}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp3tag }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{read\_from\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \CommentTok{// set the title}
+\NormalTok{    mp3tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"title from mp3 file"}\NormalTok{)}\OperatorTok{;}
+    \CommentTok{// we can convert it to an mp4 tag and save it to an m4a file.}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=}\NormalTok{ mp3tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}\OperatorTok{;}
+\NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{write\_to\_path(M4A\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+
+    \CommentTok{// reload the tag from the m4a file; this time specifying the tag type (you can also use \textasciigrave{}default()\textasciigrave{})}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}
+        \OperatorTok{.}\NormalTok{read\_from\_path(M4A\_FILE)}
+        \OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \CommentTok{// the tag originated from an mp3 file is successfully written to an m4a file!}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(mp4tag}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"title from mp3 file"}\NormalTok{))}\OperatorTok{;}
+    \CommentTok{// multiple artists}
+\NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{add\_artist(}\StringTok{"artist1 of mp4"}\NormalTok{)}\OperatorTok{;}
+\NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{add\_artist(}\StringTok{"artist2 of mp4"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(}
+\NormalTok{        mp4tag}\OperatorTok{.}\NormalTok{artists()}\OperatorTok{,}
+        \ConstantTok{Some}\NormalTok{(}\PreprocessorTok{vec!}\NormalTok{[}\StringTok{"artist1 of mp4"}\OperatorTok{,} \StringTok{"artist2 of mp4"}\NormalTok{])}
+\NormalTok{    )}\OperatorTok{;}
+    \CommentTok{// convert to id3 tag, which does not support multiple artists}
+\NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{set\_config(}\PreprocessorTok{Config::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{sep\_artist(}\StringTok{"/"}\NormalTok{))}\OperatorTok{;}
+    \CommentTok{// separator is by default \textasciigrave{};\textasciigrave{} but we can customise it}
+    \KeywordTok{let}\NormalTok{ mp3tag }\OperatorTok{=}\NormalTok{ mp4tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(mp3tag}\OperatorTok{.}\NormalTok{artist()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"artist1 of mp4/artist2 of mp4"}\NormalTok{))}\OperatorTok{;}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{anytag}{%
+\chapter{\texorpdfstring{\texttt{AnyTag}}{AnyTag}}\label{anytag}}
+
+The following example shows how you can create a ``generic'' \texttt{AnyTag} and convert it into a specific tag type.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\NormalTok{AnyTag}\OperatorTok{,}\NormalTok{ AudioTagEdit}\OperatorTok{,}\NormalTok{ Id3v2Tag}\OperatorTok{\};}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{AnyTag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"foo"}\NormalTok{)}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{set\_year(}\DecValTok{2001}\NormalTok{)}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ tag}\OperatorTok{:}\NormalTok{ Id3v2Tag }\OperatorTok{=}\NormalTok{ tag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(tag}\OperatorTok{.}\NormalTok{year()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\DecValTok{2001}\NormalTok{))}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{downcast}{%
+\chapter{Downcast}\label{downcast}}
+
+The following example shows how you can downcast a \texttt{Box\textless{}dyn\ AudioTag\textgreater{}} into its ``backend'' tag type. This allows you to set the uncommon metadata supported by the corresponding backend but not by \textbf{audiotags}.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{*;}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ innertag }\OperatorTok{=} \PreprocessorTok{metaflac::Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{;}
+\NormalTok{    innertag}
+        \OperatorTok{.}\NormalTok{vorbis\_comments\_mut()}
+        \OperatorTok{.}\NormalTok{set\_title(}\PreprocessorTok{vec!}\NormalTok{[}\StringTok{"title from metaflac::Tag"}\NormalTok{])}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ tag}\OperatorTok{:}\NormalTok{ FlacTag }\OperatorTok{=}\NormalTok{ innertag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag }\OperatorTok{=}\NormalTok{ tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
+\NormalTok{    id3tag}
+        \OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
+        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to write!"}\NormalTok{)}\OperatorTok{;}
+
+    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}
+        \OperatorTok{.}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
+        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"title from metaflac::Tag"}\NormalTok{))}\OperatorTok{;}
+
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag\_inner}\OperatorTok{:} \PreprocessorTok{id3::}\NormalTok{Tag }\OperatorTok{=} \PreprocessorTok{downcast!}\NormalTok{(id3tag\_reload}\OperatorTok{,}\NormalTok{ Id3v2Tag)}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ timestamp }\OperatorTok{=} \PreprocessorTok{id3::}\NormalTok{Timestamp }\OperatorTok{\{}
+\NormalTok{        year}\OperatorTok{:} \DecValTok{2013}\OperatorTok{,}
+\NormalTok{        month}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{2u8}\NormalTok{)}\OperatorTok{,}
+\NormalTok{        day}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{5u8}\NormalTok{)}\OperatorTok{,}
+\NormalTok{        hour}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{6u8}\NormalTok{)}\OperatorTok{,}
+\NormalTok{        minute}\OperatorTok{:} \ConstantTok{None}\OperatorTok{,}
+\NormalTok{        second}\OperatorTok{:} \ConstantTok{None}\OperatorTok{,}
+    \OperatorTok{\};}
+\NormalTok{    id3tag\_inner}\OperatorTok{.}\NormalTok{set\_date\_recorded(timestamp}\OperatorTok{.}\NormalTok{clone())}\OperatorTok{;}
+\NormalTok{    id3tag\_inner}
+        \OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\OperatorTok{,} \PreprocessorTok{id3::Version::}\NormalTok{Id3v24)}
+        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to write!"}\NormalTok{)}\OperatorTok{;}
+
+    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{id3::Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{date\_recorded()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(timestamp))}\OperatorTok{;}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
 
   \bibliography{book.bib,packages.bib}
 

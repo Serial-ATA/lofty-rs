@@ -1,3 +1,8 @@
+# Conversion
+
+The following example shows how you can read the tag in an `mp3` file, convert it into an `mp4` tag, and write it to an `m4a` file.
+
+```rust
 use audiotags::{Config, Tag, TagType};
 
 fn main() {
@@ -31,3 +36,4 @@ fn main() {
     let mp3tag = mp4tag.into_tag(TagType::Id3v2);
     assert_eq!(mp3tag.artist(), Some("artist1 of mp4/artist2 of mp4"));
 }
+```

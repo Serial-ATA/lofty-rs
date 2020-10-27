@@ -4,6 +4,7 @@
 [![Crate](https://img.shields.io/crates/d/audiotags.svg)](https://crates.io/crates/audiotags)
 [![Crate](https://img.shields.io/crates/l/audiotags.svg)](https://crates.io/crates/audiotags)
 [![Documentation](https://docs.rs/audiotags/badge.svg)](https://docs.rs/audiotags/)
+[![Manual](https://img.shields.io/badge/RTFM-Manual-blue)](https://tianyishi2001.github.io/audiotags)
 
 This crate makes it easier to parse, convert and write metadata (a.k.a tag) in audio files of different file types.
 

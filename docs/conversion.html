@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 1 Start Simple | audiotags Manual</title>
+  <title>Chapter 2 Conversion | audiotags Manual</title>
   <meta name="description" content="This is the manual of the Rust crate ‘audiotags’" />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 1 Start Simple | audiotags Manual" />
+  <meta property="og:title" content="Chapter 2 Conversion | audiotags Manual" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 1 Start Simple | audiotags Manual" />
+  <meta name="twitter:title" content="Chapter 2 Conversion | audiotags Manual" />
   
   <meta name="twitter:description" content="This is the manual of the Rust crate ‘audiotags’" />
   
@@ -31,8 +31,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="index.html"/>
-<link rel="next" href="conversion.html"/>
+<link rel="prev" href="start-simple.html"/>
+<link rel="next" href="anytag.html"/>
 <script src="libs/header-attrs-2.4/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -162,43 +162,42 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           <div class="page-inner">
 
             <section class="normal" id="section-">
-<div id="start-simple" class="section level1" number="1">
-<h1><span class="header-section-number">Chapter 1</span> Start Simple</h1>
-<p>The following example shows how you can read an audio file, parse, set, and save its metadata:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="start-simple.html#cb1-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">audiotags::</span><span class="op">{</span>MimeType<span class="op">,</span> Picture<span class="op">,</span> Tag<span class="op">,</span> TagType<span class="op">};</span></span>
-<span id="cb1-2"><a href="start-simple.html#cb1-2" aria-hidden="true"></a></span>
-<span id="cb1-3"><a href="start-simple.html#cb1-3" aria-hidden="true"></a><span class="kw">const</span> MP3_FILE<span class="op">:</span> <span class="op">&amp;</span><span class="ot">&#39;static</span> <span class="dt">str</span> <span class="op">=</span> <span class="st">&quot;assets/a.mp3&quot;</span><span class="op">;</span></span>
-<span id="cb1-4"><a href="start-simple.html#cb1-4" aria-hidden="true"></a></span>
-<span id="cb1-5"><a href="start-simple.html#cb1-5" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
-<span id="cb1-6"><a href="start-simple.html#cb1-6" aria-hidden="true"></a>    <span class="co">// using `default()` so that the metadata format is guessed</span></span>
-<span id="cb1-7"><a href="start-simple.html#cb1-7" aria-hidden="true"></a>    <span class="co">// (from the file extension) (in this case, Id3v2 tag is read)</span></span>
-<span id="cb1-8"><a href="start-simple.html#cb1-8" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> tag <span class="op">=</span> <span class="pp">Tag::</span><span class="kw">default</span>()<span class="op">.</span>read_from_path(MP3_FILE)<span class="op">.</span>unwrap()<span class="op">;</span></span>
-<span id="cb1-9"><a href="start-simple.html#cb1-9" aria-hidden="true"></a>    <span class="co">// You can also specify the metadata format (tag type):</span></span>
-<span id="cb1-10"><a href="start-simple.html#cb1-10" aria-hidden="true"></a>    <span class="kw">let</span> _tag <span class="op">=</span> <span class="pp">Tag::</span>with_tag_type(<span class="pp">TagType::</span>Id3v2)</span>
-<span id="cb1-11"><a href="start-simple.html#cb1-11" aria-hidden="true"></a>        <span class="op">.</span>read_from_path(MP3_FILE)</span>
-<span id="cb1-12"><a href="start-simple.html#cb1-12" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to read!&quot;</span>)<span class="op">;</span></span>
-<span id="cb1-13"><a href="start-simple.html#cb1-13" aria-hidden="true"></a></span>
-<span id="cb1-14"><a href="start-simple.html#cb1-14" aria-hidden="true"></a>    tag<span class="op">.</span>set_title(<span class="st">&quot;foo title&quot;</span>)<span class="op">;</span></span>
-<span id="cb1-15"><a href="start-simple.html#cb1-15" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(tag<span class="op">.</span>title()<span class="op">,</span> <span class="cn">Some</span>(<span class="st">&quot;foo title&quot;</span>))<span class="op">;</span></span>
-<span id="cb1-16"><a href="start-simple.html#cb1-16" aria-hidden="true"></a>    tag<span class="op">.</span>remove_title()<span class="op">;</span></span>
-<span id="cb1-17"><a href="start-simple.html#cb1-17" aria-hidden="true"></a>    <span class="pp">assert!</span>(tag<span class="op">.</span>title()<span class="op">.</span>is_none())<span class="op">;</span></span>
-<span id="cb1-18"><a href="start-simple.html#cb1-18" aria-hidden="true"></a>    tag<span class="op">.</span>remove_title()<span class="op">;</span></span>
-<span id="cb1-19"><a href="start-simple.html#cb1-19" aria-hidden="true"></a>    <span class="co">// trying to remove a field that&#39;s already empty won&#39;t hurt</span></span>
-<span id="cb1-20"><a href="start-simple.html#cb1-20" aria-hidden="true"></a></span>
-<span id="cb1-21"><a href="start-simple.html#cb1-21" aria-hidden="true"></a>    <span class="kw">let</span> cover <span class="op">=</span> Picture <span class="op">{</span></span>
-<span id="cb1-22"><a href="start-simple.html#cb1-22" aria-hidden="true"></a>        mime_type<span class="op">:</span> <span class="pp">MimeType::</span>Jpeg<span class="op">,</span></span>
-<span id="cb1-23"><a href="start-simple.html#cb1-23" aria-hidden="true"></a>        data<span class="op">:</span> <span class="op">&amp;</span><span class="pp">vec!</span>[<span class="dv">0u8</span><span class="op">;</span> <span class="dv">10</span>]<span class="op">,</span></span>
-<span id="cb1-24"><a href="start-simple.html#cb1-24" aria-hidden="true"></a>    <span class="op">};</span></span>
-<span id="cb1-25"><a href="start-simple.html#cb1-25" aria-hidden="true"></a></span>
-<span id="cb1-26"><a href="start-simple.html#cb1-26" aria-hidden="true"></a>    tag<span class="op">.</span>set_album_cover(cover<span class="op">.</span>clone())<span class="op">;</span></span>
-<span id="cb1-27"><a href="start-simple.html#cb1-27" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(tag<span class="op">.</span>album_cover()<span class="op">,</span> <span class="cn">Some</span>(cover))<span class="op">;</span></span>
-<span id="cb1-28"><a href="start-simple.html#cb1-28" aria-hidden="true"></a>    tag<span class="op">.</span>remove_album_cover()<span class="op">;</span></span>
-<span id="cb1-29"><a href="start-simple.html#cb1-29" aria-hidden="true"></a>    <span class="pp">assert!</span>(tag<span class="op">.</span>album_cover()<span class="op">.</span>is_none())<span class="op">;</span></span>
-<span id="cb1-30"><a href="start-simple.html#cb1-30" aria-hidden="true"></a>    tag<span class="op">.</span>remove_album_cover()<span class="op">;</span></span>
-<span id="cb1-31"><a href="start-simple.html#cb1-31" aria-hidden="true"></a></span>
-<span id="cb1-32"><a href="start-simple.html#cb1-32" aria-hidden="true"></a>    tag<span class="op">.</span>save_to_path(MP3_FILE)<span class="op">.</span>expect(<span class="st">&quot;Fail to save&quot;</span>)<span class="op">;</span></span>
-<span id="cb1-33"><a href="start-simple.html#cb1-33" aria-hidden="true"></a>    <span class="co">// </span><span class="al">TASK</span><span class="co">: reload the file and prove the data have been saved</span></span>
-<span id="cb1-34"><a href="start-simple.html#cb1-34" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<div id="conversion" class="section level1" number="2">
+<h1><span class="header-section-number">Chapter 2</span> Conversion</h1>
+<p>The following example shows how you can read the tag in an <code>mp3</code> file, convert it into an <code>mp4</code> tag, and write it to an <code>m4a</code> file.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="conversion.html#cb2-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">audiotags::</span><span class="op">{</span>Config<span class="op">,</span> Tag<span class="op">,</span> TagType<span class="op">};</span></span>
+<span id="cb2-2"><a href="conversion.html#cb2-2" aria-hidden="true"></a></span>
+<span id="cb2-3"><a href="conversion.html#cb2-3" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb2-4"><a href="conversion.html#cb2-4" aria-hidden="true"></a>    <span class="co">// we have an mp3 and an m4a file</span></span>
+<span id="cb2-5"><a href="conversion.html#cb2-5" aria-hidden="true"></a>    <span class="kw">const</span> MP3_FILE<span class="op">:</span> <span class="op">&amp;</span><span class="ot">&#39;static</span> <span class="dt">str</span> <span class="op">=</span> <span class="st">&quot;assets/a.mp3&quot;</span><span class="op">;</span></span>
+<span id="cb2-6"><a href="conversion.html#cb2-6" aria-hidden="true"></a>    <span class="kw">const</span> M4A_FILE<span class="op">:</span> <span class="op">&amp;</span><span class="ot">&#39;static</span> <span class="dt">str</span> <span class="op">=</span> <span class="st">&quot;assets/a.m4a&quot;</span><span class="op">;</span></span>
+<span id="cb2-7"><a href="conversion.html#cb2-7" aria-hidden="true"></a>    <span class="co">// read tag from the mp3 file. Using `default()` so that the type of tag is guessed from the file extension</span></span>
+<span id="cb2-8"><a href="conversion.html#cb2-8" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> mp3tag <span class="op">=</span> <span class="pp">Tag::</span><span class="kw">default</span>()<span class="op">.</span>read_from_path(MP3_FILE)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb2-9"><a href="conversion.html#cb2-9" aria-hidden="true"></a>    <span class="co">// set the title</span></span>
+<span id="cb2-10"><a href="conversion.html#cb2-10" aria-hidden="true"></a>    mp3tag<span class="op">.</span>set_title(<span class="st">&quot;title from mp3 file&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-11"><a href="conversion.html#cb2-11" aria-hidden="true"></a>    <span class="co">// we can convert it to an mp4 tag and save it to an m4a file.</span></span>
+<span id="cb2-12"><a href="conversion.html#cb2-12" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> mp4tag <span class="op">=</span> mp3tag<span class="op">.</span>into_tag(<span class="pp">TagType::</span>Mp4)<span class="op">;</span></span>
+<span id="cb2-13"><a href="conversion.html#cb2-13" aria-hidden="true"></a>    mp4tag<span class="op">.</span>write_to_path(M4A_FILE)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb2-14"><a href="conversion.html#cb2-14" aria-hidden="true"></a></span>
+<span id="cb2-15"><a href="conversion.html#cb2-15" aria-hidden="true"></a>    <span class="co">// reload the tag from the m4a file; this time specifying the tag type (you can also use `default()`)</span></span>
+<span id="cb2-16"><a href="conversion.html#cb2-16" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> mp4tag <span class="op">=</span> <span class="pp">Tag::</span>with_tag_type(<span class="pp">TagType::</span>Mp4)</span>
+<span id="cb2-17"><a href="conversion.html#cb2-17" aria-hidden="true"></a>        <span class="op">.</span>read_from_path(M4A_FILE)</span>
+<span id="cb2-18"><a href="conversion.html#cb2-18" aria-hidden="true"></a>        <span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb2-19"><a href="conversion.html#cb2-19" aria-hidden="true"></a>    <span class="co">// the tag originated from an mp3 file is successfully written to an m4a file!</span></span>
+<span id="cb2-20"><a href="conversion.html#cb2-20" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(mp4tag<span class="op">.</span>title()<span class="op">,</span> <span class="cn">Some</span>(<span class="st">&quot;title from mp3 file&quot;</span>))<span class="op">;</span></span>
+<span id="cb2-21"><a href="conversion.html#cb2-21" aria-hidden="true"></a>    <span class="co">// multiple artists</span></span>
+<span id="cb2-22"><a href="conversion.html#cb2-22" aria-hidden="true"></a>    mp4tag<span class="op">.</span>add_artist(<span class="st">&quot;artist1 of mp4&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-23"><a href="conversion.html#cb2-23" aria-hidden="true"></a>    mp4tag<span class="op">.</span>add_artist(<span class="st">&quot;artist2 of mp4&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-24"><a href="conversion.html#cb2-24" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(</span>
+<span id="cb2-25"><a href="conversion.html#cb2-25" aria-hidden="true"></a>        mp4tag<span class="op">.</span>artists()<span class="op">,</span></span>
+<span id="cb2-26"><a href="conversion.html#cb2-26" aria-hidden="true"></a>        <span class="cn">Some</span>(<span class="pp">vec!</span>[<span class="st">&quot;artist1 of mp4&quot;</span><span class="op">,</span> <span class="st">&quot;artist2 of mp4&quot;</span>])</span>
+<span id="cb2-27"><a href="conversion.html#cb2-27" aria-hidden="true"></a>    )<span class="op">;</span></span>
+<span id="cb2-28"><a href="conversion.html#cb2-28" aria-hidden="true"></a>    <span class="co">// convert to id3 tag, which does not support multiple artists</span></span>
+<span id="cb2-29"><a href="conversion.html#cb2-29" aria-hidden="true"></a>    mp4tag<span class="op">.</span>set_config(<span class="pp">Config::</span><span class="kw">default</span>()<span class="op">.</span>sep_artist(<span class="st">&quot;/&quot;</span>))<span class="op">;</span></span>
+<span id="cb2-30"><a href="conversion.html#cb2-30" aria-hidden="true"></a>    <span class="co">// separator is by default `;` but we can customise it</span></span>
+<span id="cb2-31"><a href="conversion.html#cb2-31" aria-hidden="true"></a>    <span class="kw">let</span> mp3tag <span class="op">=</span> mp4tag<span class="op">.</span>into_tag(<span class="pp">TagType::</span>Id3v2)<span class="op">;</span></span>
+<span id="cb2-32"><a href="conversion.html#cb2-32" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(mp3tag<span class="op">.</span>artist()<span class="op">,</span> <span class="cn">Some</span>(<span class="st">&quot;artist1 of mp4/artist2 of mp4&quot;</span>))<span class="op">;</span></span>
+<span id="cb2-33"><a href="conversion.html#cb2-33" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 
 </div>
             </section>
@@ -206,8 +205,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
         </div>
       </div>
-<a href="index.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="conversion.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="start-simple.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+<a href="anytag.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

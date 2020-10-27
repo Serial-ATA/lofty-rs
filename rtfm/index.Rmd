@@ -22,3 +22,11 @@ Before you start, please let me introduce to you some great features of **bookdo
 - If you believe that serious stuff must be rendered by LaTeX as I do, there is a LaTex-rendered PDF for you to download (click the download button on the top)
 - If you love to read on a Kindle, there is also an epub output (click the download button on the top).
 '`
+
+### Examples in this manual {-}
+
+If you want to run the examples in this book:
+
+1. clone the [repo](https://github.com/TianyiShi2001/audiotags) and navigate into it
+2. create `src/main.rs`
+3. all examples, unless otherwise specified, can be copied verbatim from this book to `src/main.rs` and run with `cargo run` (if you're reading it online, the copy button wil show if you hover over a code block)

@@ -1,7 +1,11 @@
+# Downcast
+
+The following example shows how you can downcast a `Box<dyn AudioTag>` into its "backend" tag type. This allows you to set the uncommon metadata supported by the corresponding backend but not by **audiotags**.
+
+```rust
 use audiotags::*;
 
-#[test]
-fn test_inner() {
+fn main() {
     let mut innertag = metaflac::Tag::default();
     innertag
         .vorbis_comments_mut()
@@ -34,3 +38,4 @@ fn test_inner() {
     let id3tag_reload = id3::Tag::read_from_path("assets/a.mp3").expect("Fail to read!");
     assert_eq!(id3tag_reload.date_recorded(), Some(timestamp));
 }
+```
