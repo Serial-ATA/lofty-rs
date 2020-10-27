@@ -1,7 +1,6 @@
 use audiotags::{Config, Tag, TagType};
 
-#[test]
-fn test_convert_mp3_to_mp4() {
+fn main() {
     // we have an mp3 and an m4a file
     const MP3_FILE: &'static str = "assets/a.mp3";
     const M4A_FILE: &'static str = "assets/a.m4a";

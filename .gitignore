@@ -14,3 +14,9 @@ Cargo.lock
 ./*.flac
 src/main.rs
 .lib1.rs
+
+
+rtfm/.Rproj.user
+rtfm/.Rhistory
+rtfm/.RData
+rtfm/.Ruserdata
