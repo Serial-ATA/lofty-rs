@@ -1,9 +1,8 @@
 use super::*;
 use metaflac;
+use metaflac::Tag as InnerTag;
 
-pub struct FlacTag {
-    inner: metaflac::Tag,
-}
+impl_tag!(FlacTag, InnerTag);
 
 impl<'a> From<AnyTag<'a>> for FlacTag {
     fn from(inp: AnyTag<'a>) -> Self {
@@ -13,7 +12,7 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
             .map(|i| {
                 i.iter().fold(String::new(), |mut v, a| {
                     v.push_str(&a);
-                    v.push_str(SEP_ARTIST);
+                    v.push_str(inp.config.sep_artist);
                     v
                 })
             })
@@ -24,7 +23,7 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
             .map(|i| {
                 i.iter().fold(String::new(), |mut v, a| {
                     v.push_str(&a);
-                    v.push_str(SEP_ARTIST);
+                    v.push_str(inp.config.sep_artist);
                     v
                 })
             })
@@ -41,10 +40,14 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
     fn from(inp: &'a FlacTag) -> Self {
         let mut t = Self::default();
         t.title = inp.title().map(Cow::borrowed);
-        t.artists = inp.artist().map(|v| vec![Cow::borrowed(v)]);
+        t.artists = inp
+            .artists()
+            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
         t.year = inp.year();
         t.album_title = inp.album_title().map(Cow::borrowed);
-        t.album_artists = inp.album_artist().map(|v| vec![Cow::borrowed(v)]);
+        t.album_artists = inp
+            .album_artists()
+            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
         t.album_cover = inp.album_cover();
         t.track_number = inp.track_number();
         t.total_tracks = inp.total_tracks();
@@ -54,20 +57,7 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
     }
 }
 
-impl Default for FlacTag {
-    fn default() -> Self {
-        Self {
-            inner: metaflac::Tag::default(),
-        }
-    }
-}
-
 impl FlacTag {
-    pub fn read_from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-        Ok(Self {
-            inner: metaflac::Tag::read_from_path(path)?,
-        })
-    }
     pub fn get_first(&self, key: &str) -> Option<&str> {
         if let Some(Some(v)) = self.inner.vorbis_comments().map(|c| c.get(key)) {
             if !v.is_empty() {
@@ -87,10 +77,7 @@ impl FlacTag {
     }
 }
 
-impl AudioTagIo for FlacTag {
-    fn into_anytag(&self) -> AnyTag<'_> {
-        self.into()
-    }
+impl AudioTag for FlacTag {
     fn title(&self) -> Option<&str> {
         self.get_first("TITLE")
     }

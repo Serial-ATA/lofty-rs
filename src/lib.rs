@@ -107,7 +107,7 @@
 //! ## Getters and Setters
 //!
 //! ```ignore
-//! pub trait AudioTagIo {
+//! pub trait AudioTag {
 //!     fn title(&self) -> Option<&str>;
 //!     fn set_title(&mut self, title: &str);
 //!     fn remove_title(&mut self);
@@ -153,6 +153,8 @@
 //! }
 //! ```
 
+pub(crate) use audiotags_dev_macro::*;
+
 mod id3_tag;
 pub use id3_tag::Id3v2Tag;
 mod flac_tag;
@@ -162,6 +164,9 @@ pub use mp4_tag::Mp4Tag;
 
 pub mod error;
 pub use error::{Error, Result};
+
+pub mod config;
+pub use config::Config;
 
 use std::convert::From;
 use std::fs::File;
@@ -209,16 +214,30 @@ impl TagType {
 #[derive(Default)]
 pub struct Tag {
     tag_type: Option<TagType>,
+    config: Config,
 }
 
 impl Tag {
     pub fn with_tag_type(tag_type: TagType) -> Self {
         Self {
             tag_type: Some(tag_type),
+            config: Config::default(),
         }
     }
+    // pub fn with_config(config: Config) -> Self {
+    //     Self {
+    //         tag_type: None,
+    //         config: config.clone(),
+    //     }
+    // }
+    // pub fn with_tag_type_and_config(tag_type: TagType, config: Config) -> Self {
+    //     Self {
+    //         tag_type: Some(tag_type),
+    //         config: config.clone(),
+    //     }
+    // }
 
-    pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTagIo>> {
+    pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTag>> {
         match self.tag_type.unwrap_or(TagType::try_from_ext(
             path.as_ref()
                 .extension()
@@ -228,9 +247,15 @@ impl Tag {
                 .to_lowercase()
                 .as_str(),
         )?) {
-            TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
-            TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
-            TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
+            TagType::Id3v2 => Ok(Box::new(
+                Id3v2Tag::read_from_path(path)?, //).with_config(self.config.clone()),
+            )),
+            TagType::Mp4 => Ok(Box::new(
+                Mp4Tag::read_from_path(path)?, //).with_config(self.config.clone()),
+            )),
+            TagType::Flac => Ok(Box::new(
+                FlacTag::read_from_path(path)?, //.with_config(self.config.clone()),
+            )),
         }
     }
 }
@@ -328,10 +353,9 @@ impl<'a> Album<'a> {
     }
 }
 
-const SEP_ARTIST: &'static str = ";";
-
 #[derive(Default)]
 pub struct AnyTag<'a> {
+    pub config: Config,
     pub title: Option<Cow<'a, str>>,
     pub artists: Option<Vec<Cow<'a, str>>>, // ? iterator
     pub year: Option<i32>,
@@ -344,7 +368,7 @@ pub struct AnyTag<'a> {
     pub total_discs: Option<u16>,
 }
 
-impl<'a> AnyTag<'a> {
+impl AnyTag<'_> {
     pub fn title(&self) -> Option<&str> {
         self.title.as_deref()
     }
@@ -374,24 +398,26 @@ impl<'a> AnyTag<'a> {
     }
 }
 
+impl AnyTag<'_> {
+    pub fn artists_as_string(&self) -> Option<String> {
+        self.artists()
+            .map(|artists| artists.join(self.config.sep_artist))
+    }
+    pub fn album_artists_as_string(&self) -> Option<String> {
+        self.album_artists()
+            .map(|artists| artists.join(self.config.sep_artist))
+    }
+}
+
 pub trait TagIo {
     fn read_from_path(path: &str) -> crate::Result<AnyTag>;
     fn write_to_path(path: &str) -> crate::Result<()>;
 }
 
-// impl<'a> AnyTag<'a> {
-//     fn read_from_path(path: &str, tag_type: TagType) -> StdResult<Self, BoxedError> {
-//         match tag_type {
-//             TagType::Id3v2 => Ok(Id3v2Tag::read_from_path(path)?.into()),
-//             _ => Err(Box::new(Error::UnsupportedFormat(".".to_owned()))),
-//         }
-//     }
-// }
-
 /// Implementors of this trait are able to read and write audio metadata.
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
-pub trait AudioTagIo {
+pub trait AudioTag: AudioTagCommon {
     fn title(&self) -> Option<&str>;
     fn set_title(&mut self, title: &str);
     fn remove_title(&mut self);
@@ -401,7 +427,12 @@ pub trait AudioTagIo {
     fn remove_artist(&mut self);
 
     fn artists(&self) -> Option<Vec<&str>> {
-        self.artist().map(|v| vec![v])
+        if self.config().parse_multiple_artists {
+            self.artist()
+                .map(|a| a.split(self.config().sep_artist).collect::<Vec<&str>>())
+        } else {
+            self.artist().map(|v| vec![v])
+        }
     }
     fn add_artist(&mut self, artist: &str) {
         self.set_artist(artist);
@@ -446,7 +477,12 @@ pub trait AudioTagIo {
     fn remove_album_artist(&mut self);
 
     fn album_artists(&self) -> Option<Vec<&str>> {
-        self.artist().map(|v| vec![v])
+        if self.config().parse_multiple_artists {
+            self.album_artist()
+                .map(|a| a.split(self.config().sep_artist).collect::<Vec<&str>>())
+        } else {
+            self.album_artist().map(|v| vec![v])
+        }
     }
     fn add_album_artist(&mut self, artist: &str) {
         self.set_album_artist(artist);
@@ -499,11 +535,15 @@ pub trait AudioTagIo {
     fn write_to(&mut self, file: &mut File) -> crate::Result<()>;
     // cannot use impl AsRef<Path>
     fn write_to_path(&mut self, path: &str) -> crate::Result<()>;
+}
 
+pub trait AudioTagCommon {
+    fn config(&self) -> &Config;
+    fn with_config(&self, config: Config) -> Box<dyn AudioTag>;
     fn into_anytag(&self) -> AnyTag<'_>;
 
     /// Convert the tag type, which can be lossy.
-    fn into_tag(&self, tag_type: TagType) -> Box<dyn AudioTagIo> {
+    fn into_tag(&self, tag_type: TagType) -> Box<dyn AudioTag> {
         match tag_type {
             TagType::Id3v2 => Box::new(Id3v2Tag::from(self.into_anytag())),
             TagType::Mp4 => Box::new(Mp4Tag::from(self.into_anytag())),
@@ -516,23 +556,6 @@ pub trait AudioTagIo {
 //     fn into_anytag<'a>(&'a self) -> AnyTag<'a>;
 //     fn into_tag<'a, T: From<AnyTag<'a>>>(&'a self) -> T {
 //         self.into_anytag().into()
-//     }
-// }
-
-// pub trait IntoTag: AudioTagIo {
-
-//     fn into_tag<'a, T>(&'a self) -> T
-//     where T: From<AnyTag<'a> {
-//         self.into_anytag().into()
-//     }
-// }
-
-// impl AnyTag {
-//     pub fn artists_as_string(&self, sep: &str) -> Option<String> {
-//         self.artists().map(|artists| artists.join(sep))
-//     }
-//     pub fn album_artists_as_string(&self, sep: &str) -> Option<String> {
-//         self.album_artists().map(|artists| artists.join(sep))
 //     }
 // }
 

@@ -1,94 +1,67 @@
 use super::*;
 use id3;
 
-pub struct Id3v2Tag {
-    inner: id3::Tag,
-}
+use id3::Tag as InnerTag;
 
-impl Default for Id3v2Tag {
-    fn default() -> Self {
-        Self {
-            inner: id3::Tag::default(),
-        }
-    }
-}
-
-impl Id3v2Tag {
-    pub fn new() -> Self {
-        Self {
-            inner: id3::Tag::default(),
-        }
-    }
-    pub fn read_from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-        Ok(Self {
-            inner: id3::Tag::read_from_path(path)?,
-        })
-    }
-}
+impl_tag!(Id3v2Tag, InnerTag);
 
 impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
     fn from(inp: &'a Id3v2Tag) -> Self {
-        (&inp.inner).into()
+        Self {
+            config: inp.config.clone(),
+
+            title: inp.title().map(Cow::borrowed),
+            artists: inp
+                .artists()
+                .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>()),
+            year: inp.year(),
+            album_title: inp.album_title().map(Cow::borrowed),
+            album_artists: inp
+                .album_artists()
+                .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>()),
+            album_cover: inp.album_cover(),
+            track_number: inp.track_number(),
+            total_tracks: inp.total_tracks(),
+            disc_number: inp.disc_number(),
+            total_discs: inp.total_discs(),
+        }
     }
 }
 
 impl<'a> From<AnyTag<'a>> for Id3v2Tag {
     fn from(inp: AnyTag<'a>) -> Self {
-        Self { inner: inp.into() }
-    }
-}
-
-impl<'a> From<&'a id3::Tag> for AnyTag<'a> {
-    fn from(inp: &'a id3::Tag) -> Self {
-        let u32tou16 = |x: u32| x as u16;
-        let mut t = Self::default();
-        t.title = inp.title().map(Cow::borrowed);
-        t.artists = inp.artist().map(|v| vec![Cow::borrowed(v)]);
-        t.year = inp.year();
-        t.album_title = inp.album().map(Cow::borrowed);
-        t.album_artists = inp.album_artist().map(|v| vec![Cow::borrowed(v)]);
-        t.album_cover = inp
-            .pictures()
-            .filter(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
-            .next()
-            .and_then(|pic| Picture::try_from(pic).ok());
-        t.track_number = inp.track().map(u32tou16);
-        t.total_tracks = inp.total_tracks().map(u32tou16);
-        t.disc_number = inp.disc().map(u32tou16);
-        t.total_discs = inp.total_discs().map(u32tou16);
-        t
-    }
-}
-
-impl<'a> From<AnyTag<'a>> for id3::Tag {
-    fn from(inp: AnyTag<'a>) -> Self {
-        let mut t = id3::Tag::new();
-        inp.title().map(|v| t.set_title(v));
-        inp.artists()
-            .map(|i| {
-                i.iter().fold(String::new(), |mut v, a| {
-                    v.push_str(&a);
-                    v.push_str(SEP_ARTIST);
-                    v
-                })
-            })
-            .map(|v| t.set_artist(&v[..v.len() - 1]));
-        inp.year.map(|v| t.set_year(v));
-        inp.album_title().map(|v| t.set_album(v));
-        inp.album_artists()
-            .map(|i| {
-                i.iter().fold(String::new(), |mut v, a| {
-                    v.push_str(&a);
-                    v.push_str(SEP_ARTIST);
-                    v
-                })
-            })
-            .map(|v| t.set_album_artist(&v[..v.len() - 1]));
-        inp.track_number().map(|v| t.set_track(v as u32));
-        inp.total_tracks().map(|v| t.set_total_tracks(v as u32));
-        inp.disc_number().map(|v| t.set_disc(v as u32));
-        inp.total_discs().map(|v| t.set_total_discs(v as u32));
-        t
+        Self {
+            config: inp.config.clone(),
+            inner: {
+                let mut t = id3::Tag::new();
+                inp.title().map(|v| t.set_title(v));
+                inp.artists()
+                    .map(|i| {
+                        i.iter().fold(String::new(), |mut v, a| {
+                            v.push_str(&a);
+                            v.push_str(inp.config.sep_artist);
+                            v
+                        })
+                    })
+                    .map(|v| t.set_artist(&v[..v.len() - 1]));
+                inp.year.map(|v| t.set_year(v));
+                inp.album_title().map(|v| t.set_album(v));
+                inp.album_artists()
+                    .map(|i| {
+                        i.iter().fold(String::new(), |mut v, a| {
+                            v.push_str(&a);
+                            v.push_str(inp.config.sep_artist);
+                            v
+                        })
+                    })
+                    .map(|v| t.set_album_artist(&v[..v.len() - 1]));
+                inp.track_number().map(|v| t.set_track(v as u32));
+                inp.total_tracks().map(|v| t.set_total_tracks(v as u32));
+                inp.disc_number().map(|v| t.set_disc(v as u32));
+                inp.total_discs().map(|v| t.set_total_discs(v as u32));
+                t
+            },
+        }
     }
 }
 
@@ -122,7 +95,7 @@ impl<'a> std::convert::TryFrom<id3::frame::Picture> for Picture<'a> {
     }
 }
 
-impl AudioTagIo for Id3v2Tag {
+impl AudioTag for Id3v2Tag {
     fn title(&self) -> Option<&str> {
         self.inner.title()
     }
@@ -247,10 +220,6 @@ impl AudioTagIo for Id3v2Tag {
     fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
         self.inner.write_to_path(path, id3::Version::Id3v24)?;
         Ok(())
-    }
-
-    fn into_anytag(&self) -> AnyTag<'_> {
-        self.into()
     }
 }
 

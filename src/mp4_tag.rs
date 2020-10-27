@@ -1,84 +1,64 @@
 use super::*;
 use mp4ameta;
 
-pub struct Mp4Tag {
-    inner: mp4ameta::Tag,
-}
+use mp4ameta::Tag as InnerTag;
 
-impl Mp4Tag {
-    pub fn read_from_path(path: impl AsRef<Path>) -> crate::Result<Self> {
-        Ok(Self {
-            inner: mp4ameta::Tag::read_from_path(path)?,
-        })
-    }
-}
+impl_tag!(Mp4Tag, InnerTag);
 
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
     fn from(inp: &'a Mp4Tag) -> Self {
-        (&inp.inner).into()
+        let title = inp.title().map(Cow::borrowed);
+        let artists = inp
+            .artists()
+            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+        let year = inp.year();
+        let album_title = inp.album_title().map(Cow::borrowed);
+        let album_artists = inp
+            .album_artists()
+            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+        let album_cover = inp.album_cover();
+        let (a, b) = inp.track();
+        let track_number = a;
+        let total_tracks = b;
+        let (a, b) = inp.disc();
+        let disc_number = a;
+        let total_discs = b;
+        Self {
+            config: inp.config.clone(),
+            title,
+            artists,
+            year,
+            album_title,
+            album_cover,
+            album_artists,
+            track_number,
+            total_tracks,
+            disc_number,
+            total_discs,
+        }
     }
 }
 
 impl<'a> From<AnyTag<'a>> for Mp4Tag {
     fn from(inp: AnyTag<'a>) -> Self {
-        Self { inner: inp.into() }
-    }
-}
-
-impl<'a> From<&'a mp4ameta::Tag> for AnyTag<'a> {
-    fn from(inp: &'a mp4ameta::Tag) -> Self {
-        let mut t = Self::default();
-        t.title = inp.title().map(Cow::borrowed);
-        let artists = inp.artists().fold(Vec::new(), |mut v, a| {
-            v.push(Cow::borrowed(a));
-            v
-        });
-        t.artists = if artists.len() > 0 {
-            Some(artists)
-        } else {
-            None
-        };
-        if let Some(Ok(y)) = inp.year().map(|y| y.parse()) {
-            t.year = Some(y);
+        Self {
+            config: inp.config.clone(),
+            inner: {
+                let mut t = mp4ameta::Tag::default();
+                inp.title().map(|v| t.set_title(v));
+                inp.artists()
+                    .map(|i| i.iter().for_each(|a| t.add_artist(a.as_ref())));
+                inp.year.map(|v| t.set_year(v.to_string()));
+                inp.album_title().map(|v| t.set_album(v));
+                inp.album_artists()
+                    .map(|i| i.iter().for_each(|a| t.add_album_artist(a.as_ref())));
+                inp.track_number().map(|v| t.set_track_number(v));
+                inp.total_tracks().map(|v| t.set_total_tracks(v));
+                inp.disc_number().map(|v| t.set_disc_number(v));
+                inp.total_discs().map(|v| t.set_total_discs(v));
+                t
+            },
         }
-        t.album_title = inp.album().map(Cow::borrowed);
-        let album_artists = inp.album_artists().fold(Vec::new(), |mut v, a| {
-            v.push(Cow::borrowed(a));
-            v
-        });
-        t.album_artists = if album_artists.len() > 0 {
-            Some(album_artists)
-        } else {
-            None
-        };
-        if let Some(Ok(img)) = inp.artwork().map(|a| a.try_into()) {
-            t.album_cover = Some(img);
-        }
-        let (a, b) = inp.track();
-        t.track_number = a;
-        t.total_tracks = b;
-        let (a, b) = inp.disc();
-        t.disc_number = a;
-        t.total_discs = b;
-        t
-    }
-}
-
-impl<'a> From<AnyTag<'a>> for mp4ameta::Tag {
-    fn from(inp: AnyTag<'a>) -> Self {
-        let mut t = mp4ameta::Tag::default();
-        inp.title().map(|v| t.set_title(v));
-        inp.artists()
-            .map(|i| i.iter().for_each(|a| t.add_artist(a.as_ref())));
-        inp.year.map(|v| t.set_year(v.to_string()));
-        inp.album_title().map(|v| t.set_album(v));
-        inp.album_artists()
-            .map(|i| i.iter().for_each(|a| t.add_album_artist(a.as_ref())));
-        inp.track_number().map(|v| t.set_track_number(v));
-        inp.total_tracks().map(|v| t.set_total_tracks(v));
-        inp.disc_number().map(|v| t.set_disc_number(v));
-        inp.total_discs().map(|v| t.set_total_discs(v));
-        t
     }
 }
 
@@ -99,11 +79,7 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
     }
 }
 
-impl AudioTagIo for Mp4Tag {
-    fn into_anytag(&self) -> AnyTag<'_> {
-        self.into()
-    }
-
+impl AudioTag for Mp4Tag {
     fn title(&self) -> Option<&str> {
         self.inner.title()
     }

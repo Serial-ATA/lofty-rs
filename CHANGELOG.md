@@ -1,3 +1,7 @@
+## [0.2.5] 2020-10-27
+
+- Naive implementation of config
+
 ## [0.2.3] 2020-10-27
 
 - multiple artists

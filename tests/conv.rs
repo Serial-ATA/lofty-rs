@@ -1,4 +1,4 @@
-use audiotags::{Tag, TagType};
+use audiotags::{Config, Tag, TagType};
 
 #[test]
 fn test_convert_mp3_to_mp4() {
@@ -27,6 +27,8 @@ fn test_convert_mp3_to_mp4() {
         Some(vec!["artist1 of mp4", "artist2 of mp4"])
     );
     // convert to id3 tag, which does not support multiple artists
-    let mp3tag = mp4tag.into_tag(TagType::Id3v2);
-    assert_eq!(mp3tag.artist(), Some("artist1 of mp4;artist2 of mp4"));
+    let mp3tag = mp4tag
+        .with_config(Config::default().sep_artist("/")) // separator is by default `;`
+        .into_tag(TagType::Id3v2);
+    assert_eq!(mp3tag.artist(), Some("artist1 of mp4/artist2 of mp4"));
 }

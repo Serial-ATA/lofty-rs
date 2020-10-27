@@ -100,8 +100,10 @@ fn main() {
         Some(vec!["artist1 of mp4", "artist2 of mp4"])
     );
     // convert to id3 tag, which does not support multiple artists
-    let mp3tag = mp4tag.into_tag(TagType::Id3v2);
-    assert_eq!(mp3tag.artist(), Some("artist1 of mp4;artist2 of mp4"));
+    let mp3tag = mp4tag
+        .with_config(Config::default().sep_artist("/")) // separator is by default `;`
+        .into_tag(TagType::Id3v2);
+    assert_eq!(mp3tag.artist(), Some("artist1 of mp4/artist2 of mp4"));
 }
 ```
 
@@ -116,7 +118,7 @@ fn main() {
 ## Getters and Setters
 
 ```rust
-pub trait AudioTagIo {
+pub trait AudioTag {
     fn title(&self) -> Option<&str>;
     fn set_title(&mut self, title: &str);
     fn remove_title(&mut self);
