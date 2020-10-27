@@ -13,11 +13,12 @@ fn test_inner() {
     let id3tag_reload = Tag::default().read_from_path("assets/a.mp3").unwrap();
     assert_eq!(id3tag_reload.title(), Some("title from metaflac::Tag"));
 
-    let mut id3tag_inner: id3::Tag = id3tag_reload
-        .into_any()
-        .downcast_ref::<Id3v2Tag>()
-        .unwrap()
-        .into();
+    // let mut id3tag_inner: id3::Tag = id3tag_reload
+    //     .into_any()
+    //     .downcast_ref::<Id3v2Tag>()
+    //     .unwrap()
+    //     .into();
+    let mut id3tag_inner: id3::Tag = downcast!(id3tag_reload, Id3v2Tag);
     let timestamp = id3::Timestamp {
         year: 2013,
         month: Some(2u8),
