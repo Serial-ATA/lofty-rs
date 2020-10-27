@@ -40,5 +40,20 @@ macro_rules! impl_tag {
         }
 
         impl AudioTag for $tag {}
+
+        impl From<$tag> for $inner {
+            fn from(inp: $tag) -> Self {
+                inp.inner
+            }
+        }
+
+        impl From<$inner> for $tag {
+            fn from(inp: $inner) -> Self {
+                Self {
+                    inner: inp,
+                    config: Config::default(),
+                }
+            }
+        }
     };
 }

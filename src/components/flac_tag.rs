@@ -1,8 +1,9 @@
 use crate::*;
 use metaflac;
-use metaflac::Tag as InnerTag;
 
-impl_tag!(FlacTag, InnerTag);
+pub use metaflac::Tag as FlacInnerTag;
+
+impl_tag!(FlacTag, FlacInnerTag);
 
 impl<'a> From<AnyTag<'a>> for FlacTag {
     fn from(inp: AnyTag<'a>) -> Self {

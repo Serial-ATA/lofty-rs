@@ -1,9 +1,9 @@
 use crate::*;
 use id3;
 
-use id3::Tag as InnerTag;
+pub use id3::Tag as Id3v2InnerTag;
 
-impl_tag!(Id3v2Tag, InnerTag);
+impl_tag!(Id3v2Tag, Id3v2InnerTag);
 
 impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
     fn from(inp: &'a Id3v2Tag) -> Self {

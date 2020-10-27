@@ -1,9 +1,9 @@
 use crate::*;
 use mp4ameta;
 
-use mp4ameta::Tag as InnerTag;
+pub use mp4ameta::Tag as Mp4InnerTag;
 
-impl_tag!(Mp4Tag, InnerTag);
+impl_tag!(Mp4Tag, Mp4InnerTag);
 
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
     fn from(inp: &'a Mp4Tag) -> Self {
