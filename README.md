@@ -11,7 +11,7 @@ This crate aims to provide a unified trait for parsers and writers of different 
 
 ## Performace
 
-Using **audiotags** incurs a little overhead due to vtables if you want to guess the metadata format (from file extension). Apart from this there is the performance if no different from directly calling function provided by the 'specialized' crates.
+Using **audiotags** incurs a little overhead due to vtables if you want to guess the metadata format (from file extension). Apart from this the performance is almost the same as directly calling function provided by those 'specialized' crates.
 
 No copies will be made if you only need to read and write metadata of one format. If you want to convert between tags, copying is unavoidable no matter if you use **audiotags** or use getters and setters provided by specialized libraries. **audiotags** is not making additional unnecessary copies.
 
