@@ -117,6 +117,20 @@ impl AudioTagIo for Mp4Tag {
     fn set_artist(&mut self, artist: &str) {
         self.inner.set_artist(artist)
     }
+    fn artists(&self) -> Option<Vec<&str>> {
+        let v = self.inner.artists().fold(Vec::new(), |mut v, a| {
+            v.push(a);
+            v
+        });
+        if v.len() > 0 {
+            Some(v)
+        } else {
+            None
+        }
+    }
+    fn add_artist(&mut self, v: &str) {
+        self.inner.add_artist(v);
+    }
 
     fn year(&self) -> Option<i32> {
         self.inner.year().and_then(|x| str::parse(x).ok())
@@ -137,6 +151,21 @@ impl AudioTagIo for Mp4Tag {
     }
     fn set_album_artist(&mut self, v: &str) {
         self.inner.set_album_artist(v)
+    }
+
+    fn album_artists(&self) -> Option<Vec<&str>> {
+        let v = self.inner.album_artists().fold(Vec::new(), |mut v, a| {
+            v.push(a);
+            v
+        });
+        if v.len() > 0 {
+            Some(v)
+        } else {
+            None
+        }
+    }
+    fn add_album_artist(&mut self, v: &str) {
+        self.inner.add_album_artist(v);
     }
 
     fn album_cover(&self) -> Option<Picture> {

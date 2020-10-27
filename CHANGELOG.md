@@ -1,4 +1,8 @@
-## [0.2.2] 2020-10-28
+## [0.2.3] 2020-10-27
+
+- multiple artists
+
+## [0.2.2] 2020-10-27
 
 - Conversion between tag types without macro; removed the macro introduced in v0.2.0
 

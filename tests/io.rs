@@ -1,4 +1,5 @@
 use audiotags::{MimeType, Picture, Tag};
+use beef::lean::Cow;
 
 macro_rules! test_file {
     ( $function:ident, $file:expr ) => {
@@ -35,16 +36,16 @@ macro_rules! test_file {
             assert!(tags.album_artist().is_none());
             tags.remove_album_artist();
 
-            // let cover = Picture {
-            //     mime_type: MimeType::Jpeg,
-            //     data: vec![0u8; 10],
-            // };
+            let cover = Picture {
+                mime_type: MimeType::Jpeg,
+                data: Cow::owned(vec![0u8; 10]),
+            };
 
-            // tags.set_album_cover(cover.clone());
-            // assert_eq!(tags.album_cover(), Some(cover));
-            // tags.remove_album_cover();
-            // assert!(tags.album_cover().is_none());
-            // tags.remove_album_cover();
+            tags.set_album_cover(cover.clone());
+            assert_eq!(tags.album_cover(), Some(cover));
+            tags.remove_album_cover();
+            assert!(tags.album_cover().is_none());
+            tags.remove_album_cover();
         }
     };
 }

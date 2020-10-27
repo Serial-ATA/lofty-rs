@@ -87,13 +87,22 @@ fn main() {
     mp4tag.write_to_path(M4A_FILE).unwrap();
 
     // reload the tag from the m4a file; this time specifying the tag type (you can also use `default()`)
-    let mp4tag_reload = Tag::with_tag_type(TagType::Mp4)
+    let mut mp4tag = Tag::with_tag_type(TagType::Mp4)
         .read_from_path(M4A_FILE)
         .unwrap();
     // the tag originated from an mp3 file is successfully written to an m4a file!
-    assert_eq!(mp4tag_reload.title(), Some("title from mp3 file"));
+    assert_eq!(mp4tag.title(), Some("title from mp3 file"));
+    // multiple artists
+    mp4tag.add_artist("artist1 of mp4");
+    mp4tag.add_artist("artist2 of mp4");
+    assert_eq!(
+        mp4tag.artists(),
+        Some(vec!["artist1 of mp4", "artist2 of mp4"])
+    );
+    // convert to id3 tag, which does not support multiple artists
+    let mp3tag = mp4tag.into_tag(TagType::Id3v2);
+    assert_eq!(mp3tag.artist(), Some("artist1 of mp4;artist2 of mp4"));
 }
-
 ```
 
 ## Supported Formats

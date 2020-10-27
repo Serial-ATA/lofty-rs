@@ -9,22 +9,26 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
     fn from(inp: AnyTag<'a>) -> Self {
         let mut t = FlacTag::default();
         inp.title().map(|v| t.set_title(v));
-        inp.artists().map(|i| {
-            i.iter().fold(String::new(), |mut v, a| {
-                v.push_str(&a);
-                v.push_str(SEP_ARTIST);
-                v
+        inp.artists()
+            .map(|i| {
+                i.iter().fold(String::new(), |mut v, a| {
+                    v.push_str(&a);
+                    v.push_str(SEP_ARTIST);
+                    v
+                })
             })
-        });
+            .map(|v| t.set_artist(&v[..v.len() - 1]));
         inp.year.map(|v| t.set_year(v));
         inp.album_title().map(|v| t.set_album_title(v));
-        inp.album_artists().map(|i| {
-            i.iter().fold(String::new(), |mut v, a| {
-                v.push_str(&a);
-                v.push_str(SEP_ARTIST);
-                v
+        inp.album_artists()
+            .map(|i| {
+                i.iter().fold(String::new(), |mut v, a| {
+                    v.push_str(&a);
+                    v.push_str(SEP_ARTIST);
+                    v
+                })
             })
-        });
+            .map(|v| t.set_album_artist(&v[..v.len() - 1]));
         inp.track_number().map(|v| t.set_track_number(v));
         inp.total_tracks().map(|v| t.set_total_tracks(v));
         inp.disc_number().map(|v| t.set_disc_number(v));
