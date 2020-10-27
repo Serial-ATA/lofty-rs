@@ -10,15 +10,11 @@ impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
         Self {
             config: inp.config.clone(),
 
-            title: inp.title().map(Cow::borrowed),
-            artists: inp
-                .artists()
-                .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>()),
+            title: inp.title(),
+            artists: inp.artists(),
             year: inp.year(),
-            album_title: inp.album_title().map(Cow::borrowed),
-            album_artists: inp
-                .album_artists()
-                .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>()),
+            album_title: inp.album_title(),
+            album_artists: inp.album_artists(),
             album_cover: inp.album_cover(),
             track_number: inp.track_number(),
             total_tracks: inp.total_tracks(),
@@ -75,21 +71,7 @@ impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
         } = inp;
         let mime_type: MimeType = mime_type.as_str().try_into()?;
         Ok(Self {
-            data: Cow::borrowed(&data),
-            mime_type,
-        })
-    }
-}
-
-impl<'a> std::convert::TryFrom<id3::frame::Picture> for Picture<'a> {
-    type Error = crate::Error;
-    fn try_from(inp: id3::frame::Picture) -> crate::Result<Self> {
-        let id3::frame::Picture {
-            mime_type, data, ..
-        } = inp;
-        let mime_type: MimeType = mime_type.as_str().try_into()?;
-        Ok(Self {
-            data: Cow::owned(data),
+            data: &data,
             mime_type,
         })
     }
@@ -154,7 +136,7 @@ impl AudioTag for Id3v2Tag {
             .next()
             .and_then(|pic| {
                 Some(Picture {
-                    data: Cow::borrowed(&pic.data),
+                    data: &pic.data,
                     mime_type: (pic.mime_type.as_str()).try_into().ok()?,
                 })
             })
@@ -165,7 +147,7 @@ impl AudioTag for Id3v2Tag {
             mime_type: String::from(cover.mime_type),
             picture_type: id3::frame::PictureType::CoverFront,
             description: "".to_owned(),
-            data: cover.data.into_owned(),
+            data: cover.data.to_owned(),
         });
     }
     fn remove_album_cover(&mut self) {

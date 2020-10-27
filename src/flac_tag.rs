@@ -39,15 +39,11 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
 impl<'a> From<&'a FlacTag> for AnyTag<'a> {
     fn from(inp: &'a FlacTag) -> Self {
         let mut t = Self::default();
-        t.title = inp.title().map(Cow::borrowed);
-        t.artists = inp
-            .artists()
-            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+        t.title = inp.title();
+        t.artists = inp.artists();
         t.year = inp.year();
-        t.album_title = inp.album_title().map(Cow::borrowed);
-        t.album_artists = inp
-            .album_artists()
-            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+        t.album_title = inp.album_title();
+        t.album_artists = inp.album_artists();
         t.album_cover = inp.album_cover();
         t.track_number = inp.track_number();
         t.total_tracks = inp.total_tracks();
@@ -130,7 +126,7 @@ impl AudioTag for FlacTag {
             .next()
             .and_then(|pic| {
                 Some(Picture {
-                    data: Cow::borrowed(&pic.data),
+                    data: &pic.data,
                     mime_type: (pic.mime_type.as_str()).try_into().ok()?,
                 })
             })
@@ -140,7 +136,7 @@ impl AudioTag for FlacTag {
         let mime = String::from(cover.mime_type);
         let picture_type = metaflac::block::PictureType::CoverFront;
         self.inner
-            .add_picture(mime, picture_type, cover.data.into_owned());
+            .add_picture(mime, picture_type, (cover.data).to_owned());
     }
 
     fn track_number(&self) -> Option<u16> {

@@ -7,15 +7,13 @@ impl_tag!(Mp4Tag, InnerTag);
 
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
     fn from(inp: &'a Mp4Tag) -> Self {
-        let title = inp.title().map(Cow::borrowed);
-        let artists = inp
-            .artists()
-            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+        let title = inp.title();
+        let artists = inp.artists().map(|i| i.into_iter().collect::<Vec<_>>());
         let year = inp.year();
-        let album_title = inp.album_title().map(Cow::borrowed);
+        let album_title = inp.album_title();
         let album_artists = inp
             .album_artists()
-            .map(|i| i.into_iter().map(Cow::borrowed).collect::<Vec<_>>());
+            .map(|i| i.into_iter().collect::<Vec<_>>());
         let album_cover = inp.album_cover();
         let (a, b) = inp.track();
         let track_number = a;
@@ -47,11 +45,11 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
                 let mut t = mp4ameta::Tag::default();
                 inp.title().map(|v| t.set_title(v));
                 inp.artists()
-                    .map(|i| i.iter().for_each(|a| t.add_artist(a.as_ref())));
+                    .map(|i| i.iter().for_each(|&a| t.add_artist(a)));
                 inp.year.map(|v| t.set_year(v.to_string()));
                 inp.album_title().map(|v| t.set_album(v));
                 inp.album_artists()
-                    .map(|i| i.iter().for_each(|a| t.add_album_artist(a.as_ref())));
+                    .map(|i| i.iter().for_each(|&a| t.add_album_artist(a)));
                 inp.track_number().map(|v| t.set_track_number(v));
                 inp.total_tracks().map(|v| t.set_total_tracks(v));
                 inp.disc_number().map(|v| t.set_disc_number(v));
@@ -67,11 +65,11 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
     fn try_from(inp: &'a mp4ameta::Data) -> crate::Result<Self> {
         Ok(match *inp {
             mp4ameta::Data::Png(ref data) => Self {
-                data: Cow::borrowed(data),
+                data,
                 mime_type: MimeType::Png,
             },
             mp4ameta::Data::Jpeg(ref data) => Self {
-                data: Cow::borrowed(data),
+                data,
                 mime_type: MimeType::Jpeg,
             },
             _ => return Err(crate::Error::NotAPicture),
@@ -148,11 +146,11 @@ impl AudioTag for Mp4Tag {
         use mp4ameta::Data::*;
         self.inner.artwork().and_then(|data| match data {
             Jpeg(d) => Some(Picture {
-                data: Cow::borrowed(d),
+                data: d,
                 mime_type: MimeType::Jpeg,
             }),
             Png(d) => Some(Picture {
-                data: Cow::borrowed(d),
+                data: d,
                 mime_type: MimeType::Png,
             }),
             _ => None,
@@ -161,8 +159,8 @@ impl AudioTag for Mp4Tag {
     fn set_album_cover(&mut self, cover: Picture) {
         self.remove_album_cover();
         self.inner.add_artwork(match cover.mime_type {
-            MimeType::Png => mp4ameta::Data::Png(cover.data.into_owned()),
-            MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data.into_owned()),
+            MimeType::Png => mp4ameta::Data::Png(cover.data.to_owned()),
+            MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data.to_owned()),
             _ => panic!("Only png and jpeg are supported in m4a"),
         });
     }
