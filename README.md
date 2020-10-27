@@ -10,6 +10,8 @@
 
 This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3, flac, and m4a files with a single function: `Tag::default().read_from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
 
+I'm relatively new to Rust and programming in general, and this is my first attempt to make a non-trivial crate. If you see anything that you think isn't right, just say it!
+
 ## Examples
 
 Examples can be found in the [manual](https://tianyishi2001.github.io/audiotags).

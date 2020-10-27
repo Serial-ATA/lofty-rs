@@ -144,10 +144,3 @@ impl Tag {
         }
     }
 }
-
-#[macro_export]
-macro_rules! downcast {
-    ($tag:expr, $type:ty) => {
-        $tag.into_any().downcast_ref::<$type>().unwrap().into()
-    };
-}

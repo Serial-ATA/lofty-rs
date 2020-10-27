@@ -1,4 +1,11 @@
 #[macro_export]
+macro_rules! downcast {
+    ($tag:expr, $type:ty) => {
+        $tag.into_any().downcast_ref::<$type>().unwrap().into()
+    };
+}
+
+#[macro_export]
 macro_rules! impl_audiotag_config {
     ($tag:ident) => {
         impl AudioTagConfig for $tag {
@@ -56,6 +63,12 @@ macro_rules! impl_tag {
                     inner: inp,
                     config: Config::default(),
                 }
+            }
+        }
+
+        impl From<Box<dyn AudioTag>> for $inner {
+            fn from(inp: Box<dyn AudioTag>) -> Self {
+                downcast!(inp, $tag)
             }
         }
     };
