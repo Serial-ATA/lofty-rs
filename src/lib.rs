@@ -38,8 +38,6 @@ use std::convert::From;
 use std::fs::File;
 use std::path::Path;
 
-use beef::lean::Cow;
-
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Copy, Debug)]
@@ -175,51 +173,44 @@ impl From<MimeType> for String {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture<'a> {
-    pub data: Cow<'a, [u8]>,
+    pub data: &'a [u8],
     pub mime_type: MimeType,
 }
 
 impl<'a> Picture<'a> {
     pub fn new(data: &'a [u8], mime_type: MimeType) -> Self {
-        Self {
-            data: Cow::borrowed(data),
-            mime_type,
-        }
+        Self { data, mime_type }
     }
 }
 
 /// A struct for representing an album for convinience.
 #[derive(Debug)]
 pub struct Album<'a> {
-    pub title: Cow<'a, str>,
-    pub artist: Option<Cow<'a, str>>,
+    pub title: &'a str,
+    pub artist: Option<&'a str>,
     pub cover: Option<Picture<'a>>,
 }
 
 impl<'a> Album<'a> {
-    pub fn with_title(title: impl Into<String>) -> Self {
+    pub fn with_title(title: &'a str) -> Self {
         Self {
-            title: Cow::owned(title.into()),
+            title: title,
             artist: None,
             cover: None,
         }
     }
-    pub fn and_artist(mut self, artist: impl Into<String>) -> Self {
-        self.artist = Some(Cow::owned(artist.into()));
+    pub fn and_artist(mut self, artist: &'a str) -> Self {
+        self.artist = Some(artist);
         self
     }
     pub fn and_cover(mut self, cover: Picture<'a>) -> Self {
         self.cover = Some(cover);
         self
     }
-    pub fn with_all(
-        title: impl Into<String>,
-        artist: impl Into<String>,
-        cover: Picture<'a>,
-    ) -> Self {
+    pub fn with_all(title: &'a str, artist: &'a str, cover: Picture<'a>) -> Self {
         Self {
-            title: Cow::owned(title.into()),
-            artist: Some(Cow::owned(artist.into())),
+            title,
+            artist: Some(artist),
             cover: Some(cover),
         }
     }
@@ -228,11 +219,11 @@ impl<'a> Album<'a> {
 #[derive(Default)]
 pub struct AnyTag<'a> {
     pub config: Config,
-    pub title: Option<Cow<'a, str>>,
-    pub artists: Option<Vec<Cow<'a, str>>>, // ? iterator
+    pub title: Option<&'a str>,
+    pub artists: Option<Vec<&'a str>>, // ? iterator
     pub year: Option<i32>,
-    pub album_title: Option<Cow<'a, str>>,
-    pub album_artists: Option<Vec<Cow<'a, str>>>, // ? iterator
+    pub album_title: Option<&'a str>,
+    pub album_artists: Option<Vec<&'a str>>, // ? iterator
     pub album_cover: Option<Picture<'a>>,
     pub track_number: Option<u16>,
     pub total_tracks: Option<u16>,
@@ -244,7 +235,7 @@ impl AnyTag<'_> {
     pub fn title(&self) -> Option<&str> {
         self.title.as_deref()
     }
-    pub fn artists(&self) -> Option<&[Cow<str>]> {
+    pub fn artists(&self) -> Option<&[&str]> {
         self.artists.as_deref()
     }
     pub fn year(&self) -> Option<i32> {
@@ -253,7 +244,7 @@ impl AnyTag<'_> {
     pub fn album_title(&self) -> Option<&str> {
         self.album_title.as_deref()
     }
-    pub fn album_artists(&self) -> Option<&[Cow<str>]> {
+    pub fn album_artists(&self) -> Option<&[&str]> {
         self.album_artists.as_deref()
     }
     pub fn track_number(&self) -> Option<u16> {
@@ -316,8 +307,8 @@ pub trait AudioTag: AudioTagCommon {
 
     fn album(&self) -> Option<Album<'_>> {
         self.album_title().map(|title| Album {
-            title: Cow::borrowed(title),
-            artist: self.album_artist().map(Cow::borrowed),
+            title,
+            artist: self.album_artist(),
             cover: self.album_cover(),
         })
     }

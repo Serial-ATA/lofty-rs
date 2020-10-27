@@ -1,5 +1,4 @@
 use audiotags::{MimeType, Picture, Tag};
-use beef::lean::Cow;
 
 macro_rules! test_file {
     ( $function:ident, $file:expr ) => {
@@ -38,7 +37,7 @@ macro_rules! test_file {
 
             let cover = Picture {
                 mime_type: MimeType::Jpeg,
-                data: Cow::owned(vec![0u8; 10]),
+                data: &vec![0u8; 10],
             };
 
             tags.set_album_cover(cover.clone());
