@@ -1,4 +1,18 @@
 #[macro_export]
+macro_rules! impl_audiotag_config {
+    ($tag:ident) => {
+        impl AudioTagConfig for $tag {
+            fn config(&self) -> &Config {
+                &self.config
+            }
+            fn set_config(&mut self, config: Config) {
+                self.config = config.clone();
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! impl_tag {
     ($tag:ident , $inner:ident) => {
         #[derive(Default)]
@@ -17,13 +31,9 @@ macro_rules! impl_tag {
                 })
             }
         }
-        impl AudioTagCommon for $tag {
-            fn config(&self) -> &Config {
-                &self.config
-            }
-            fn set_config(&mut self, config: Config) {
-                self.config = config.clone();
-            }
+        impl_audiotag_config!($tag);
+
+        impl IntoAnyTag for $tag {
             fn into_anytag(&self) -> AnyTag<'_> {
                 self.into()
             }
