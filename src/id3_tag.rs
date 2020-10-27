@@ -31,26 +31,10 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
             inner: {
                 let mut t = id3::Tag::new();
                 inp.title().map(|v| t.set_title(v));
-                inp.artists()
-                    .map(|i| {
-                        i.iter().fold(String::new(), |mut v, a| {
-                            v.push_str(&a);
-                            v.push_str(inp.config.sep_artist);
-                            v
-                        })
-                    })
-                    .map(|v| t.set_artist(&v[..v.len() - 1]));
+                inp.artists_as_string().map(|v| t.set_artist(&v));
                 inp.year.map(|v| t.set_year(v));
                 inp.album_title().map(|v| t.set_album(v));
-                inp.album_artists()
-                    .map(|i| {
-                        i.iter().fold(String::new(), |mut v, a| {
-                            v.push_str(&a);
-                            v.push_str(inp.config.sep_artist);
-                            v
-                        })
-                    })
-                    .map(|v| t.set_album_artist(&v[..v.len() - 1]));
+                inp.album_artists_as_string().map(|v| t.set_artist(&v));
                 inp.track_number().map(|v| t.set_track(v as u32));
                 inp.total_tracks().map(|v| t.set_total_tracks(v as u32));
                 inp.disc_number().map(|v| t.set_disc(v as u32));
