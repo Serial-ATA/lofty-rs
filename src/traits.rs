@@ -142,6 +142,8 @@ pub trait IntoAnyTag {
 
     /// Convert the tag type, which can be lossy.
     fn into_tag(&self, tag_type: TagType) -> Box<dyn AudioTag> {
+        // TODO: write a macro or something that implement this method for every tag type so that if the
+        // TODO: target type is the same, just return self
         match tag_type {
             TagType::Id3v2 => Box::new(Id3v2Tag::from(self.into_anytag())),
             TagType::Mp4 => Box::new(Mp4Tag::from(self.into_anytag())),

@@ -205,7 +205,8 @@ The following example shows how you can read the tag in an \texttt{mp3} file, co
     \CommentTok{// we have an mp3 and an m4a file}
     \KeywordTok{const}\NormalTok{ MP3\_FILE}\OperatorTok{:} \OperatorTok{\&}\OtherTok{\textquotesingle{}static} \DataTypeTok{str} \OperatorTok{=} \StringTok{"assets/a.mp3"}\OperatorTok{;}
     \KeywordTok{const}\NormalTok{ M4A\_FILE}\OperatorTok{:} \OperatorTok{\&}\OtherTok{\textquotesingle{}static} \DataTypeTok{str} \OperatorTok{=} \StringTok{"assets/a.m4a"}\OperatorTok{;}
-    \CommentTok{// read tag from the mp3 file. Using \textasciigrave{}default()\textasciigrave{} so that the type of tag is guessed from the file extension}
+    \CommentTok{// read tag from the mp3 file. Using \textasciigrave{}default()\textasciigrave{} so that the}
+    \CommentTok{// type of tag is guessed from the file extension}
     \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp3tag }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{read\_from\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
     \CommentTok{// set the title}
 \NormalTok{    mp3tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"title from mp3 file"}\NormalTok{)}\OperatorTok{;}
@@ -213,11 +214,13 @@ The following example shows how you can read the tag in an \texttt{mp3} file, co
     \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=}\NormalTok{ mp3tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}\OperatorTok{;}
 \NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{write\_to\_path(M4A\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
 
-    \CommentTok{// reload the tag from the m4a file; this time specifying the tag type (you can also use \textasciigrave{}default()\textasciigrave{})}
+    \CommentTok{// reload the tag from the m4a file; this time specifying the}
+    \CommentTok{// tag type (you can also use \textasciigrave{}default()\textasciigrave{})}
     \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}
         \OperatorTok{.}\NormalTok{read\_from\_path(M4A\_FILE)}
         \OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
-    \CommentTok{// the tag originated from an mp3 file is successfully written to an m4a file!}
+    \CommentTok{// the tag originated from an mp3 file is successfully written}
+    \CommentTok{// to an m4a file!}
     \PreprocessorTok{assert\_eq!}\NormalTok{(mp4tag}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"title from mp3 file"}\NormalTok{))}\OperatorTok{;}
     \CommentTok{// multiple artists}
 \NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{add\_artist(}\StringTok{"artist1 of mp4"}\NormalTok{)}\OperatorTok{;}
@@ -280,7 +283,9 @@ The following example shows how you can downcast a \texttt{Box\textless{}dyn\ Au
         \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
     \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"title from metaflac::Tag"}\NormalTok{))}\OperatorTok{;}
 
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag\_inner}\OperatorTok{:} \PreprocessorTok{id3::}\NormalTok{Tag }\OperatorTok{=} \PreprocessorTok{downcast!}\NormalTok{(id3tag\_reload}\OperatorTok{,}\NormalTok{ Id3v2Tag)}\OperatorTok{;}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag\_inner}\OperatorTok{:} \PreprocessorTok{id3::}\NormalTok{Tag }\OperatorTok{=}\NormalTok{ id3tag\_reload}\OperatorTok{.}\NormalTok{try\_into()}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \CommentTok{// this would fail if \textasciigrave{}id3tag\_reload\textasciigrave{} isn\textquotesingle{}t really a id3 tag.}
+
     \KeywordTok{let}\NormalTok{ timestamp }\OperatorTok{=} \PreprocessorTok{id3::}\NormalTok{Timestamp }\OperatorTok{\{}
 \NormalTok{        year}\OperatorTok{:} \DecValTok{2013}\OperatorTok{,}
 \NormalTok{        month}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{2u8}\NormalTok{)}\OperatorTok{,}
@@ -294,7 +299,8 @@ The following example shows how you can downcast a \texttt{Box\textless{}dyn\ Au
         \OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\OperatorTok{,} \PreprocessorTok{id3::Version::}\NormalTok{Id3v24)}
         \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to write!"}\NormalTok{)}\OperatorTok{;}
 
-    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{id3::Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{id3::Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
+        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
     \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{date\_recorded()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(timestamp))}\OperatorTok{;}
 \OperatorTok{\}}
 \end{Highlighting}

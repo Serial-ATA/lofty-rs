@@ -183,23 +183,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-16"><a href="downcast.html#cb4-16" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to read!&quot;</span>)<span class="op">;</span></span>
 <span id="cb4-17"><a href="downcast.html#cb4-17" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(id3tag_reload<span class="op">.</span>title()<span class="op">,</span> <span class="cn">Some</span>(<span class="st">&quot;title from metaflac::Tag&quot;</span>))<span class="op">;</span></span>
 <span id="cb4-18"><a href="downcast.html#cb4-18" aria-hidden="true"></a></span>
-<span id="cb4-19"><a href="downcast.html#cb4-19" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> id3tag_inner<span class="op">:</span> <span class="pp">id3::</span>Tag <span class="op">=</span> <span class="pp">downcast!</span>(id3tag_reload<span class="op">,</span> Id3v2Tag)<span class="op">;</span></span>
-<span id="cb4-20"><a href="downcast.html#cb4-20" aria-hidden="true"></a>    <span class="kw">let</span> timestamp <span class="op">=</span> <span class="pp">id3::</span>Timestamp <span class="op">{</span></span>
-<span id="cb4-21"><a href="downcast.html#cb4-21" aria-hidden="true"></a>        year<span class="op">:</span> <span class="dv">2013</span><span class="op">,</span></span>
-<span id="cb4-22"><a href="downcast.html#cb4-22" aria-hidden="true"></a>        month<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">2u8</span>)<span class="op">,</span></span>
-<span id="cb4-23"><a href="downcast.html#cb4-23" aria-hidden="true"></a>        day<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">5u8</span>)<span class="op">,</span></span>
-<span id="cb4-24"><a href="downcast.html#cb4-24" aria-hidden="true"></a>        hour<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">6u8</span>)<span class="op">,</span></span>
-<span id="cb4-25"><a href="downcast.html#cb4-25" aria-hidden="true"></a>        minute<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
-<span id="cb4-26"><a href="downcast.html#cb4-26" aria-hidden="true"></a>        second<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
-<span id="cb4-27"><a href="downcast.html#cb4-27" aria-hidden="true"></a>    <span class="op">};</span></span>
-<span id="cb4-28"><a href="downcast.html#cb4-28" aria-hidden="true"></a>    id3tag_inner<span class="op">.</span>set_date_recorded(timestamp<span class="op">.</span>clone())<span class="op">;</span></span>
-<span id="cb4-29"><a href="downcast.html#cb4-29" aria-hidden="true"></a>    id3tag_inner</span>
-<span id="cb4-30"><a href="downcast.html#cb4-30" aria-hidden="true"></a>        <span class="op">.</span>write_to_path(<span class="st">&quot;assets/a.mp3&quot;</span><span class="op">,</span> <span class="pp">id3::Version::</span>Id3v24)</span>
-<span id="cb4-31"><a href="downcast.html#cb4-31" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to write!&quot;</span>)<span class="op">;</span></span>
-<span id="cb4-32"><a href="downcast.html#cb4-32" aria-hidden="true"></a></span>
-<span id="cb4-33"><a href="downcast.html#cb4-33" aria-hidden="true"></a>    <span class="kw">let</span> id3tag_reload <span class="op">=</span> <span class="pp">id3::Tag::</span>read_from_path(<span class="st">&quot;assets/a.mp3&quot;</span>)<span class="op">.</span>expect(<span class="st">&quot;Fail to read!&quot;</span>)<span class="op">;</span></span>
-<span id="cb4-34"><a href="downcast.html#cb4-34" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(id3tag_reload<span class="op">.</span>date_recorded()<span class="op">,</span> <span class="cn">Some</span>(timestamp))<span class="op">;</span></span>
-<span id="cb4-35"><a href="downcast.html#cb4-35" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<span id="cb4-19"><a href="downcast.html#cb4-19" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> id3tag_inner<span class="op">:</span> <span class="pp">id3::</span>Tag <span class="op">=</span> id3tag_reload<span class="op">.</span>try_into()<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb4-20"><a href="downcast.html#cb4-20" aria-hidden="true"></a>    <span class="co">// this would fail if `id3tag_reload` isn&#39;t really a id3 tag.</span></span>
+<span id="cb4-21"><a href="downcast.html#cb4-21" aria-hidden="true"></a></span>
+<span id="cb4-22"><a href="downcast.html#cb4-22" aria-hidden="true"></a>    <span class="kw">let</span> timestamp <span class="op">=</span> <span class="pp">id3::</span>Timestamp <span class="op">{</span></span>
+<span id="cb4-23"><a href="downcast.html#cb4-23" aria-hidden="true"></a>        year<span class="op">:</span> <span class="dv">2013</span><span class="op">,</span></span>
+<span id="cb4-24"><a href="downcast.html#cb4-24" aria-hidden="true"></a>        month<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">2u8</span>)<span class="op">,</span></span>
+<span id="cb4-25"><a href="downcast.html#cb4-25" aria-hidden="true"></a>        day<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">5u8</span>)<span class="op">,</span></span>
+<span id="cb4-26"><a href="downcast.html#cb4-26" aria-hidden="true"></a>        hour<span class="op">:</span> <span class="cn">Some</span>(<span class="dv">6u8</span>)<span class="op">,</span></span>
+<span id="cb4-27"><a href="downcast.html#cb4-27" aria-hidden="true"></a>        minute<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
+<span id="cb4-28"><a href="downcast.html#cb4-28" aria-hidden="true"></a>        second<span class="op">:</span> <span class="cn">None</span><span class="op">,</span></span>
+<span id="cb4-29"><a href="downcast.html#cb4-29" aria-hidden="true"></a>    <span class="op">};</span></span>
+<span id="cb4-30"><a href="downcast.html#cb4-30" aria-hidden="true"></a>    id3tag_inner<span class="op">.</span>set_date_recorded(timestamp<span class="op">.</span>clone())<span class="op">;</span></span>
+<span id="cb4-31"><a href="downcast.html#cb4-31" aria-hidden="true"></a>    id3tag_inner</span>
+<span id="cb4-32"><a href="downcast.html#cb4-32" aria-hidden="true"></a>        <span class="op">.</span>write_to_path(<span class="st">&quot;assets/a.mp3&quot;</span><span class="op">,</span> <span class="pp">id3::Version::</span>Id3v24)</span>
+<span id="cb4-33"><a href="downcast.html#cb4-33" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to write!&quot;</span>)<span class="op">;</span></span>
+<span id="cb4-34"><a href="downcast.html#cb4-34" aria-hidden="true"></a></span>
+<span id="cb4-35"><a href="downcast.html#cb4-35" aria-hidden="true"></a>    <span class="kw">let</span> id3tag_reload <span class="op">=</span> <span class="pp">id3::Tag::</span>read_from_path(<span class="st">&quot;assets/a.mp3&quot;</span>)</span>
+<span id="cb4-36"><a href="downcast.html#cb4-36" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to read!&quot;</span>)<span class="op">;</span></span>
+<span id="cb4-37"><a href="downcast.html#cb4-37" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(id3tag_reload<span class="op">.</span>date_recorded()<span class="op">,</span> <span class="cn">Some</span>(timestamp))<span class="op">;</span></span>
+<span id="cb4-38"><a href="downcast.html#cb4-38" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 
 </div>
             </section>
