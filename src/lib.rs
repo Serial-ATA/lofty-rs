@@ -101,7 +101,7 @@ impl Tag {
         }
     }
 
-    pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTag>> {
+    pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTagEdit>> {
         match self.tag_type.unwrap_or(TagType::try_from_ext(
             path.as_ref()
                 .extension()
@@ -272,15 +272,17 @@ impl AnyTag<'_> {
     }
 }
 
-pub trait TagIo {
-    fn read_from_path(path: &str) -> crate::Result<AnyTag>;
-    fn write_to_path(path: &str) -> crate::Result<()>;
-}
+pub trait AudioTag: AudioTagEdit + AudioTagWrite {}
+
+// pub trait TagIo {
+//     fn read_from_path(path: &str) -> crate::Result<AnyTag>;
+//     fn write_to_path(path: &str) -> crate::Result<()>;
+// }
 
 /// Implementors of this trait are able to read and write audio metadata.
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
-pub trait AudioTag: AudioTagCommon {
+pub trait AudioTagEdit: AudioTagCommon {
     fn title(&self) -> Option<&str>;
     fn set_title(&mut self, title: &str);
     fn remove_title(&mut self);
@@ -394,7 +396,9 @@ pub trait AudioTag: AudioTagCommon {
     fn total_discs(&self) -> Option<u16>;
     fn set_total_discs(&mut self, total_discs: u16);
     fn remove_total_discs(&mut self);
+}
 
+pub trait AudioTagWrite {
     fn write_to(&mut self, file: &mut File) -> crate::Result<()>;
     // cannot use impl AsRef<Path>
     fn write_to_path(&mut self, path: &str) -> crate::Result<()>;

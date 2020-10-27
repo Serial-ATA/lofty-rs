@@ -77,7 +77,7 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
     }
 }
 
-impl AudioTag for Mp4Tag {
+impl AudioTagEdit for Mp4Tag {
     fn title(&self) -> Option<&str> {
         self.inner.title()
     }
@@ -228,7 +228,9 @@ impl AudioTag for Mp4Tag {
     fn remove_total_discs(&mut self) {
         self.inner.remove_total_discs();
     }
+}
 
+impl AudioTagWrite for Mp4Tag {
     fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
         self.inner.write_to(file)?;
         Ok(())

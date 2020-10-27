@@ -28,5 +28,7 @@ macro_rules! impl_tag {
                 self.into()
             }
         }
+
+        impl AudioTag for $tag {}
     };
 }

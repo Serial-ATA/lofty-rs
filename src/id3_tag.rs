@@ -61,7 +61,7 @@ impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
     }
 }
 
-impl AudioTag for Id3v2Tag {
+impl AudioTagEdit for Id3v2Tag {
     fn title(&self) -> Option<&str> {
         self.inner.title()
     }
@@ -178,7 +178,9 @@ impl AudioTag for Id3v2Tag {
     fn remove_total_discs(&mut self) {
         self.inner.remove_total_discs();
     }
+}
 
+impl AudioTagWrite for Id3v2Tag {
     fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
         self.inner.write_to(file, id3::Version::Id3v24)?;
         Ok(())

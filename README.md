@@ -118,7 +118,7 @@ fn main() {
 ## Getters and Setters
 
 ```rust
-pub trait AudioTag {
+pub trait AudioTagEdit{
     fn title(&self) -> Option<&str>;
     fn set_title(&mut self, title: &str);
     fn remove_title(&mut self);

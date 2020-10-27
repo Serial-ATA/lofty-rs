@@ -57,7 +57,7 @@ impl FlacTag {
     }
 }
 
-impl AudioTag for FlacTag {
+impl AudioTagEdit for FlacTag {
     fn title(&self) -> Option<&str> {
         self.get_first("TITLE")
     }
@@ -201,6 +201,9 @@ impl AudioTag for FlacTag {
     fn remove_total_discs(&mut self) {
         self.remove("TOTALDISCS");
     }
+}
+
+impl AudioTagWrite for FlacTag {
     fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
         self.inner.write_to(file)?;
         Ok(())
