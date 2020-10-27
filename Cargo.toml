@@ -15,4 +15,4 @@ mp4ameta = "0.6"
 metaflac = "0.2"
 beef = "0.4.4"
 thiserror = "1.0.21"
-audiotags-dev-macro = {path = "./audiotags-dev-macro"}
+audiotags-dev-macro = "0.1.0"
