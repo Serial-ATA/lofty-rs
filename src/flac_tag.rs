@@ -9,8 +9,22 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
     fn from(inp: AnyTag<'a>) -> Self {
         let mut t = FlacTag::default();
         inp.title().map(|v| t.set_title(v));
+        inp.artists().map(|i| {
+            i.iter().fold(String::new(), |mut v, a| {
+                v.push_str(&a);
+                v.push_str(SEP_ARTIST);
+                v
+            })
+        });
         inp.year.map(|v| t.set_year(v));
         inp.album_title().map(|v| t.set_album_title(v));
+        inp.album_artists().map(|i| {
+            i.iter().fold(String::new(), |mut v, a| {
+                v.push_str(&a);
+                v.push_str(SEP_ARTIST);
+                v
+            })
+        });
         inp.track_number().map(|v| t.set_track_number(v));
         inp.total_tracks().map(|v| t.set_total_tracks(v));
         inp.disc_number().map(|v| t.set_disc_number(v));
@@ -23,10 +37,10 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
     fn from(inp: &'a FlacTag) -> Self {
         let mut t = Self::default();
         t.title = inp.title().map(Cow::borrowed);
-        // artist
+        t.artists = inp.artist().map(|v| vec![Cow::borrowed(v)]);
         t.year = inp.year();
         t.album_title = inp.album_title().map(Cow::borrowed);
-        // album_artist
+        t.album_artists = inp.album_artist().map(|v| vec![Cow::borrowed(v)]);
         t.album_cover = inp.album_cover();
         t.track_number = inp.track_number();
         t.total_tracks = inp.total_tracks();

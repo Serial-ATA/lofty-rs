@@ -5,9 +5,17 @@
 [![Crate](https://img.shields.io/crates/l/audiotags.svg)](https://crates.io/crates/audiotags)
 [![Documentation](https://docs.rs/audiotags/badge.svg)](https://docs.rs/audiotags/)
 
-This crate makes it easier to parse tags/metadata in audio files of different file types.
+This crate makes it easier to parse, convert and write metadata (a.k.a tag) in audio files of different file types.
 
-This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3 and m4a files with a single function: `audiotags::from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
+This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3, flac, and m4a files with a single function: `Tag::default().read_from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
+
+## Performace
+
+Using **audiotags** incurs a little overhead due to vtables if you want to guess the metadata format (from file extension). Apart from this there is the performance if no different from directly calling function provided by the 'specialized' crates.
+
+No copies will be made if you only need to read and write metadata of one format. If you want to convert between tags, copying is unavoidable no matter if you use **audiotags** or use getters and setters provided by specialized libraries. **audiotags** is not making additional unnecessary copies.
+
+Theoretically it is possible to achieve zero-copy conversions if all parsers can parse into a unified struct. However, this is going to be a lot of work. I might be able to implement them, but it will be no sooner than the Christmas vacation.
 
 ## Example
 

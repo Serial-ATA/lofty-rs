@@ -43,10 +43,10 @@ impl<'a> From<&'a id3::Tag> for AnyTag<'a> {
         let u32tou16 = |x: u32| x as u16;
         let mut t = Self::default();
         t.title = inp.title().map(Cow::borrowed);
-        // artist
+        t.artists = inp.artist().map(|v| vec![Cow::borrowed(v)]);
         t.year = inp.year();
         t.album_title = inp.album().map(Cow::borrowed);
-        // album_artist
+        t.album_artists = inp.album_artist().map(|v| vec![Cow::borrowed(v)]);
         t.album_cover = inp
             .pictures()
             .filter(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
@@ -60,34 +60,26 @@ impl<'a> From<&'a id3::Tag> for AnyTag<'a> {
     }
 }
 
-// impl<'a> From<id3::Tag> for AnyTag<'a> {
-//     fn from(inp: id3::Tag) -> Self {
-//         let u32tou16 = |x: u32| x as u16;
-//         let mut t = Self::default();
-//         t.title = inp.title().map(|v| Cow::owned(v.to_owned()));
-//         // artist
-//         t.year = inp.year();
-//         t.album_title = inp.album().map(|v| Cow::owned(v.to_owned()));
-//         // album_artist
-//         t.album_cover = inp
-//             .pictures()
-//             .filter(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
-//             .next()
-//             .and_then(|pic| Picture::try_from(pic.clone()).ok());
-//         t.track_number = inp.track().map(u32tou16);
-//         t.total_tracks = inp.total_tracks().map(u32tou16);
-//         t.disc_number = inp.disc().map(u32tou16);
-//         t.total_discs = inp.total_discs().map(u32tou16);
-//         t
-//     }
-// }
-
 impl<'a> From<AnyTag<'a>> for id3::Tag {
     fn from(inp: AnyTag<'a>) -> Self {
         let mut t = id3::Tag::new();
         inp.title().map(|v| t.set_title(v));
+        inp.artists().map(|i| {
+            i.iter().fold(String::new(), |mut v, a| {
+                v.push_str(&a);
+                v.push_str(SEP_ARTIST);
+                v
+            })
+        });
         inp.year.map(|v| t.set_year(v));
         inp.album_title().map(|v| t.set_album(v));
+        inp.album_artists().map(|i| {
+            i.iter().fold(String::new(), |mut v, a| {
+                v.push_str(&a);
+                v.push_str(SEP_ARTIST);
+                v
+            })
+        });
         inp.track_number().map(|v| t.set_track(v as u32));
         inp.total_tracks().map(|v| t.set_total_tracks(v as u32));
         inp.disc_number().map(|v| t.set_disc(v as u32));
