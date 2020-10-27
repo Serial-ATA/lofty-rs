@@ -35,7 +35,8 @@ fn main() {
         .write_to_path("assets/a.mp3", id3::Version::Id3v24)
         .expect("Fail to write!");
 
-    let id3tag_reload = id3::Tag::read_from_path("assets/a.mp3").expect("Fail to read!");
+    let id3tag_reload = id3::Tag::read_from_path("assets/a.mp3")
+        .expect("Fail to read!");
     assert_eq!(id3tag_reload.date_recorded(), Some(timestamp));
 }
 ```
