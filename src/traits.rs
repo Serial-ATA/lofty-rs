@@ -148,4 +148,5 @@ pub trait IntoAnyTag {
             TagType::Flac => Box::new(FlacTag::from(self.into_anytag())),
         }
     }
+    fn into_any(&self) -> &dyn std::any::Any;
 }

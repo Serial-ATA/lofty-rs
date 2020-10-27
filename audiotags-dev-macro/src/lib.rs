@@ -37,13 +37,16 @@ macro_rules! impl_tag {
             fn into_anytag(&self) -> AnyTag<'_> {
                 self.into()
             }
+            fn into_any(&self) -> &dyn std::any::Any {
+                self
+            }
         }
 
         impl AudioTag for $tag {}
 
-        impl From<$tag> for $inner {
-            fn from(inp: $tag) -> Self {
-                inp.inner
+        impl From<&$tag> for $inner {
+            fn from(inp: &$tag) -> Self {
+                inp.inner.clone()
             }
         }
 
