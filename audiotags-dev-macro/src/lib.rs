@@ -61,14 +61,14 @@ macro_rules! impl_tag {
 
         // downcasting
 
-        // impl std::convert::TryFrom<Box<dyn AudioTag>> for &$tag {
-        //     type Error = crate::Error;
-        //     fn try_from(inp: Box<dyn AudioTag>) -> crate::Result<Self> {
-        //         inp.into_any()
-        //             .downcast_ref::<$tag>()
-        //             .ok_or(crate::Error::DowncastError)
-        //     }
-        // }
+        impl<'a> std::convert::TryFrom<&'a Box<dyn AudioTag>> for &'a $tag {
+            type Error = crate::Error;
+            fn try_from(inp: &'a Box<dyn AudioTag>) -> crate::Result<Self> {
+                inp.into_any()
+                    .downcast_ref::<$tag>()
+                    .ok_or(crate::Error::DowncastError)
+            }
+        }
 
         impl std::convert::TryFrom<Box<dyn AudioTag>> for $inner {
             type Error = crate::Error;
