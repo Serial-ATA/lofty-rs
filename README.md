@@ -9,7 +9,7 @@ This crate makes it easier to parse, convert and write metadata (a.k.a tag) in a
 
 This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3, flac, and m4a files with a single function: `Tag::default().read_from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
 
-## Performace
+## Performance
 
 Using **audiotags** incurs a little overhead due to vtables if you want to guess the metadata format (from file extension). Apart from this the performance is almost the same as directly calling function provided by those 'specialized' crates.
 

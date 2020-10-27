@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 use metaflac;
 use metaflac::Tag as InnerTag;
 

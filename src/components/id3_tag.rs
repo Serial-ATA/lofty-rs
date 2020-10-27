@@ -1,4 +1,4 @@
-use super::*;
+use crate::*;
 use id3;
 
 use id3::Tag as InnerTag;
