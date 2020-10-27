@@ -53,7 +53,7 @@ use std::convert::From;
 use std::fs::File;
 use std::path::Path;
 
-use std::convert::{TryFrom, TryInto};
+pub use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone, Copy, Debug)]
 pub enum TagType {

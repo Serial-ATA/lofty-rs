@@ -17,7 +17,7 @@ fn test_inner() {
         .expect("Fail to read!");
     assert_eq!(id3tag_reload.title(), Some("title from metaflac::Tag"));
 
-    let mut id3tag_inner: id3::Tag = id3tag_reload.into();
+    let mut id3tag_inner: id3::Tag = id3tag_reload.try_into().unwrap();
     let timestamp = id3::Timestamp {
         year: 2013,
         month: Some(2u8),

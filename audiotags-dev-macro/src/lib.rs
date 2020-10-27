@@ -1,11 +1,4 @@
 #[macro_export]
-macro_rules! downcast {
-    ($tag:expr, $type:ty) => {
-        $tag.into_any().downcast_ref::<$type>().unwrap().into()
-    };
-}
-
-#[macro_export]
 macro_rules! impl_audiotag_config {
     ($tag:ident) => {
         impl AudioTagConfig for $tag {
@@ -66,9 +59,25 @@ macro_rules! impl_tag {
             }
         }
 
-        impl From<Box<dyn AudioTag>> for $inner {
-            fn from(inp: Box<dyn AudioTag>) -> Self {
-                downcast!(inp, $tag)
+        // downcasting
+
+        // impl std::convert::TryFrom<Box<dyn AudioTag>> for &$tag {
+        //     type Error = crate::Error;
+        //     fn try_from(inp: Box<dyn AudioTag>) -> crate::Result<Self> {
+        //         inp.into_any()
+        //             .downcast_ref::<$tag>()
+        //             .ok_or(crate::Error::DowncastError)
+        //     }
+        // }
+
+        impl std::convert::TryFrom<Box<dyn AudioTag>> for $inner {
+            type Error = crate::Error;
+            fn try_from(inp: Box<dyn AudioTag>) -> crate::Result<Self> {
+                let t: &$tag = inp
+                    .into_any()
+                    .downcast_ref::<$tag>()
+                    .ok_or(crate::Error::DowncastError)?;
+                Ok(t.into())
             }
         }
     };
