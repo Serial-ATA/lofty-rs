@@ -1,6 +1,3 @@
-//use strum::Display;
-use thiserror::Error;
-
 /// Error types that could occur in this library.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -16,9 +13,9 @@ pub enum Error {
     #[error(transparent)]
     IOError(#[from] std::io::Error),
 
-    #[error("")]
+    #[error("Unsupported format: {0}")]
     UnsupportedFormat(String),
-    #[error("")]
+    #[error("Unsupported mime type: {0}")]
     UnsupportedMimeType(String),
     #[error("")]
     NotAPicture,

@@ -64,7 +64,7 @@ fn main() {
 You can convert between different tag types:
 
 ```rust
-use audiotags::{convert, AudioTagIo, Mp4Tag, Tag, TagType};
+use audiotags::{Tag, TagType};
 
 fn main() {
     // we have an mp3 and an m4a file
@@ -75,7 +75,7 @@ fn main() {
     // set the title
     mp3tag.set_title("title from mp3 file");
     // we can convert it to an mp4 tag and save it to an m4a file.
-    let mut mp4tag = convert_tag!(mp3tag, Mp4Tag);
+    let mut mp4tag = mp3tag.into_tag(TagType::Mp4);
     mp4tag.write_to_path(M4A_FILE).unwrap();
 
     // reload the tag from the m4a file; this time specifying the tag type (you can also use `default()`)
@@ -85,6 +85,7 @@ fn main() {
     // the tag originated from an mp3 file is successfully written to an m4a file!
     assert_eq!(mp4tag_reload.title(), Some("title from mp3 file"));
 }
+
 ```
 
 ## Supported Formats
@@ -95,7 +96,7 @@ fn main() {
 | `m4a/mp4/...` | MPEG-4 audio metadata | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
 | `flac`        | Vorbis comment        | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
 
-## Supported Methods
+## Getters and Setters
 
 ```rust
 pub trait AudioTagIo {
@@ -108,68 +109,30 @@ pub trait AudioTagIo {
     fn year(&self) -> Option<i32>;
     fn set_year(&mut self, year: i32);
     fn remove_year(&mut self);
-    fn album(&self) -> Option<Album> {
-        self.album_title().map(|title| Album {
-            title: title.to_owned(),
-            artist: self.album_artist().map(|x| x.to_owned()),
-            cover: self.album_cover(),
-        })
-    }
-    fn remove_album(&mut self) {
-        self.remove_album_title();
-        self.remove_album_artist();
-        self.remove_album_cover();
-    }
+    fn album(&self) -> Option<Album>;
+    fn remove_album(&mut self);
     fn album_title(&self) -> Option<&str>;
     fn remove_album_title(&mut self);
     fn album_artist(&self) -> Option<&str>;
     fn remove_album_artist(&mut self);
     fn album_cover(&self) -> Option<Picture>;
     fn remove_album_cover(&mut self);
-    fn set_album(&mut self, album: Album) {
-        self.set_album_title(&album.title);
-        if let Some(artist) = album.artist {
-            self.set_album_artist(&artist)
-        } else {
-            self.remove_album_artist()
-        }
-        if let Some(pic) = album.cover {
-            self.set_album_cover(pic)
-        } else {
-            self.remove_album_cover()
-        }
-    }
+    fn set_album(&mut self, album: Album);
     fn set_album_title(&mut self, v: &str);
     fn set_album_artist(&mut self, v: &str);
     fn set_album_cover(&mut self, cover: Picture);
-    fn track(&self) -> (Option<u16>, Option<u16>) {
-        (self.track_number(), self.total_tracks())
-    }
-    fn set_track(&mut self, track: (u16, u16)) {
-        self.set_track_number(track.0);
-        self.set_total_tracks(track.1);
-    }
-    fn remove_track(&mut self) {
-        self.remove_track_number();
-        self.remove_total_tracks();
-    }
+    fn track(&self) -> (Option<u16>, Option<u16>);
+    fn set_track(&mut self, track: (u16, u16));
+    fn remove_track(&mut self);
     fn track_number(&self) -> Option<u16>;
     fn set_track_number(&mut self, track_number: u16);
     fn remove_track_number(&mut self);
     fn total_tracks(&self) -> Option<u16>;
     fn set_total_tracks(&mut self, total_track: u16);
     fn remove_total_tracks(&mut self);
-    fn disc(&self) -> (Option<u16>, Option<u16>) {
-        (self.disc_number(), self.total_discs())
-    }
-    fn set_disc(&mut self, disc: (u16, u16)) {
-        self.set_disc_number(disc.0);
-        self.set_total_discs(disc.1);
-    }
-    fn remove_disc(&mut self) {
-        self.remove_disc_number();
-        self.remove_total_discs();
-    }
+    fn disc(&self) -> (Option<u16>, Option<u16>);
+    fn set_disc(&mut self, disc: (u16, u16));
+    fn remove_disc(&mut self);
     fn disc_number(&self) -> Option<u16>;
     fn set_disc_number(&mut self, disc_number: u16);
     fn remove_disc_number(&mut self);

@@ -1,4 +1,4 @@
-use audiotags::{convert_tag, AudioTagIo, Mp4Tag, Tag, TagType};
+use audiotags::{Tag, TagType};
 
 #[test]
 fn test_convert_mp3_to_mp4() {
@@ -10,7 +10,7 @@ fn test_convert_mp3_to_mp4() {
     // set the title
     mp3tag.set_title("title from mp3 file");
     // we can convert it to an mp4 tag and save it to an m4a file.
-    let mut mp4tag = convert_tag!(mp3tag, Mp4Tag);
+    let mut mp4tag = mp3tag.into_tag(TagType::Mp4);
     mp4tag.write_to_path(M4A_FILE).unwrap();
 
     // reload the tag from the m4a file; this time specifying the tag type (you can also use `default()`)

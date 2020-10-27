@@ -58,14 +58,6 @@ use beef::lean::Cow;
 
 use std::convert::{TryFrom, TryInto};
 
-#[macro_export]
-macro_rules! convert_tag {
-    ($tag:expr, $target:ty) => {{
-        let target_tag: $target = $tag.into_anytag().into();
-        target_tag
-    }};
-}
-
 type BoxedError = Box<dyn std::error::Error>;
 
 #[derive(Clone, Copy, Debug)]
@@ -291,13 +283,6 @@ pub trait TagIo {
 //     }
 // }
 
-pub struct SuperTag<T>
-where
-    T: AudioTagIo,
-{
-    inner: T,
-}
-
 /// Implementors of this trait are able to read and write audio metadata.
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
@@ -397,11 +382,23 @@ pub trait AudioTagIo {
     fn write_to_path(&mut self, path: &str) -> crate::Result<()>;
 
     fn into_anytag(&self) -> AnyTag<'_>;
+
+    /// Convert the tag type, which can be lossy.
+    fn into_tag(&self, tag_type: TagType) -> Box<dyn AudioTagIo> {
+        match tag_type {
+            TagType::Id3v2 => Box::new(Id3v2Tag::from(self.into_anytag())),
+            TagType::Mp4 => Box::new(Mp4Tag::from(self.into_anytag())),
+            TagType::Flac => Box::new(FlacTag::from(self.into_anytag())),
+        }
+    }
 }
 
-pub trait IntoTag<'a>: AudioTagIo {
-    fn into_tag<T: From<AnyTag<'a>>>(&self) -> T;
-}
+// pub trait IntoAnyTag {
+//     fn into_anytag<'a>(&'a self) -> AnyTag<'a>;
+//     fn into_tag<'a, T: From<AnyTag<'a>>>(&'a self) -> T {
+//         self.into_anytag().into()
+//     }
+// }
 
 // pub trait IntoTag: AudioTagIo {
 
