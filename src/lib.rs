@@ -539,7 +539,7 @@ pub trait AudioTag: AudioTagCommon {
 
 pub trait AudioTagCommon {
     fn config(&self) -> &Config;
-    fn with_config(&self, config: Config) -> Box<dyn AudioTag>;
+    fn set_config(&mut self, config: Config);
     fn into_anytag(&self) -> AnyTag<'_>;
 
     /// Convert the tag type, which can be lossy.

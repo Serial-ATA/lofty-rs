@@ -21,11 +21,8 @@ macro_rules! impl_tag {
             fn config(&self) -> &Config {
                 &self.config
             }
-            fn with_config(&self, config: Config) -> Box<dyn AudioTag> {
-                Box::new(Self {
-                    inner: self.inner.clone(),
-                    config,
-                })
+            fn set_config(&mut self, config: Config) {
+                self.config = config.clone();
             }
             fn into_anytag(&self) -> AnyTag<'_> {
                 self.into()
