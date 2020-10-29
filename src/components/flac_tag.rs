@@ -3,7 +3,7 @@ use metaflac;
 
 pub use metaflac::Tag as FlacInnerTag;
 
-impl_tag!(FlacTag, FlacInnerTag);
+impl_tag!(FlacTag, FlacInnerTag, TagType::Flac);
 
 impl<'a> From<AnyTag<'a>> for FlacTag {
     fn from(inp: AnyTag<'a>) -> Self {

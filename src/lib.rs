@@ -27,7 +27,7 @@
 //! struct. However, this is going to be a lot of work. I might be able to implement them, but it will be no
 //! sooner than the Christmas vacation.
 //!
-//! See [README](https://github.com/TianyiShi2001/audiotags) for some examples.
+//! Read the [manual](https://tianyishi2001.github.io/audiotags) for some examples.
 
 pub(crate) use audiotags_dev_macro::*;
 

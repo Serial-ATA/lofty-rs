@@ -1,3 +1,11 @@
+## [0.2.718] 2020-10-27
+
+- downcasting
+
+## [0.2.71] 2020-10-27
+
+- Remove use of `Cow`
+
 ## [0.2.5] 2020-10-27
 
 - Naive implementation of config

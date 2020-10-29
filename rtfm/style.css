@@ -14,15 +14,6 @@ pre code {
 }
 
 
-
-@font-face {
-  font-family: 'Merriweather';
-  font-style: normal;
-  font-weight: 400;
-  src: local('Merriweather'), local('Merriweather-Regular'),
-       url('https://tianyishi2001.github.io/ox/fonts/merriweather-v13-latin-regular.woff2') format('woff2'),
-       url('https://tianyishi2001.github.io/ox/fonts/merriweather-v13-latin-regular.woff') format('woff');
-}
 @font-face {
   font-family: 'Lato';
   font-style: normal;

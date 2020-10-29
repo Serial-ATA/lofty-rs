@@ -3,7 +3,7 @@ use mp4ameta;
 
 pub use mp4ameta::Tag as Mp4InnerTag;
 
-impl_tag!(Mp4Tag, Mp4InnerTag);
+impl_tag!(Mp4Tag, Mp4InnerTag, TagType::Mp4);
 
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
     fn from(inp: &'a Mp4Tag) -> Self {

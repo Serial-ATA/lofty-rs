@@ -151,4 +151,18 @@ pub trait IntoAnyTag {
         }
     }
     fn into_any(&self) -> &dyn std::any::Any;
+    fn into_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
+
+// struct BoxedAudioTagWrapper {
+//     inner: Box<dyn AudioTag>,
+// }
+
+// impl<'a> BoxedAudioTagWrapper {
+//     fn into_tag<T>(self) -> T
+//     where
+//         T: From<AnyTag<'a>>,
+//     {
+//         self.inner.into_anytag().into()
+//     }
+// }

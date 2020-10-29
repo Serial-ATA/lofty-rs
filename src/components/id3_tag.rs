@@ -3,7 +3,7 @@ use id3;
 
 pub use id3::Tag as Id3v2InnerTag;
 
-impl_tag!(Id3v2Tag, Id3v2InnerTag);
+impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2);
 
 impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
     fn from(inp: &'a Id3v2Tag) -> Self {
