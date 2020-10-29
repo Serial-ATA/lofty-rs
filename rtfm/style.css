@@ -13,6 +13,17 @@ pre code {
   white-space: inherit;
 }
 
+
+
+@font-face {
+  font-family: 'Lato';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Lato Regular'), local('Lato-Regular'),
+       url('https://tianyishi2001.github.io/ox/fonts/lato-v11-latin-regular.woff2') format('woff2'),
+       url('https://tianyishi2001.github.io/ox/fonts/lato-v11-latin-regular.woff') format('woff');
+}
+
 @font-face {
   font-family: "nexus-serif";
   src: url("https://tianyishi2001.github.io/ox/fonts/nexus-serif/NexusSerifWebPro-Regular.woff");
