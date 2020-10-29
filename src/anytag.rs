@@ -4,20 +4,16 @@ use crate::*;
 pub struct AnyTag<'a> {
     pub config: Config,
     pub title: Option<&'a str>,
-    pub artists: Option<Vec<&'a str>>, // ? iterator
+    pub artists: Option<Vec<&'a str>>,
     pub year: Option<i32>,
     pub album_title: Option<&'a str>,
-    pub album_artists: Option<Vec<&'a str>>, // ? iterator
+    pub album_artists: Option<Vec<&'a str>>,
     pub album_cover: Option<Picture<'a>>,
     pub track_number: Option<u16>,
     pub total_tracks: Option<u16>,
     pub disc_number: Option<u16>,
     pub total_discs: Option<u16>,
 }
-
-// impl<'a> From<&'a AnyTag> for AnyTag<'a> {
-//     fn from(inp: &'a AnyTag)
-// }
 
 impl AudioTagConfig for AnyTag<'_> {
     fn config(&self) -> &Config {

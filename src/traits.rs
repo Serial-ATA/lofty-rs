@@ -1,6 +1,6 @@
 use super::*;
 
-pub trait AudioTag: AudioTagEdit + AudioTagWrite + IntoAnyTag {}
+pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
 // pub trait TagIo {
 //     fn read_from_path(path: &str) -> crate::Result<AnyTag>;
@@ -137,32 +137,22 @@ pub trait AudioTagConfig {
     fn set_config(&mut self, config: Config);
 }
 
-pub trait IntoAnyTag {
-    fn into_anytag(&self) -> AnyTag<'_>;
+pub trait ToAnyTag: ToAny {
+    fn to_anytag(&self) -> AnyTag<'_>;
 
     /// Convert the tag type, which can be lossy.
-    fn into_tag(&self, tag_type: TagType) -> Box<dyn AudioTag> {
+    fn to_dyn_tag(&self, tag_type: TagType) -> Box<dyn AudioTag> {
         // TODO: write a macro or something that implement this method for every tag type so that if the
         // TODO: target type is the same, just return self
         match tag_type {
-            TagType::Id3v2 => Box::new(Id3v2Tag::from(self.into_anytag())),
-            TagType::Mp4 => Box::new(Mp4Tag::from(self.into_anytag())),
-            TagType::Flac => Box::new(FlacTag::from(self.into_anytag())),
+            TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
+            TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
+            TagType::Flac => Box::new(FlacTag::from(self.to_anytag())),
         }
     }
-    fn into_any(&self) -> &dyn std::any::Any;
-    fn into_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
-// struct BoxedAudioTagWrapper {
-//     inner: Box<dyn AudioTag>,
-// }
-
-// impl<'a> BoxedAudioTagWrapper {
-//     fn into_tag<T>(self) -> T
-//     where
-//         T: From<AnyTag<'a>>,
-//     {
-//         self.inner.into_anytag().into()
-//     }
-// }
+pub trait ToAny {
+    fn to_any(&self) -> &dyn std::any::Any;
+    fn to_any_mut(&mut self) -> &mut dyn std::any::Any;
+}

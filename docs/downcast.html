@@ -173,7 +173,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb4-6"><a href="downcast.html#cb4-6" aria-hidden="true"></a>        <span class="op">.</span>vorbis_comments_mut()</span>
 <span id="cb4-7"><a href="downcast.html#cb4-7" aria-hidden="true"></a>        <span class="op">.</span>set_title(<span class="pp">vec!</span>[<span class="st">&quot;title from metaflac::Tag&quot;</span>])<span class="op">;</span></span>
 <span id="cb4-8"><a href="downcast.html#cb4-8" aria-hidden="true"></a>    <span class="kw">let</span> tag<span class="op">:</span> FlacTag <span class="op">=</span> innertag<span class="op">.</span>into()<span class="op">;</span></span>
-<span id="cb4-9"><a href="downcast.html#cb4-9" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> id3tag <span class="op">=</span> tag<span class="op">.</span>into_tag(<span class="pp">TagType::</span>Id3v2)<span class="op">;</span></span>
+<span id="cb4-9"><a href="downcast.html#cb4-9" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> id3tag <span class="op">=</span> tag<span class="op">.</span>to_dyn_tag(<span class="pp">TagType::</span>Id3v2)<span class="op">;</span></span>
 <span id="cb4-10"><a href="downcast.html#cb4-10" aria-hidden="true"></a>    id3tag</span>
 <span id="cb4-11"><a href="downcast.html#cb4-11" aria-hidden="true"></a>        <span class="op">.</span>write_to_path(<span class="st">&quot;assets/a.mp3&quot;</span>)</span>
 <span id="cb4-12"><a href="downcast.html#cb4-12" aria-hidden="true"></a>        <span class="op">.</span>expect(<span class="st">&quot;Fail to write!&quot;</span>)<span class="op">;</span></span>

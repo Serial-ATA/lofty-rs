@@ -15,3 +15,7 @@ mp4ameta = "0.6"
 metaflac = "0.2"
 thiserror = "1.0.21"
 audiotags-dev-macro = {path = "./audiotags-dev-macro", version = "0.1"}
+
+[features]
+defualt = ['from']
+from = []

@@ -4,11 +4,11 @@
 
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <title>Chapter 3 AnyTag | audiotags Manual</title>
+  <title>3 AnyTag | audiotags Manual</title>
   <meta name="description" content="This is the manual of the Rust crate ‘audiotags’" />
   <meta name="generator" content="bookdown 0.21 and GitBook 2.6.7" />
 
-  <meta property="og:title" content="Chapter 3 AnyTag | audiotags Manual" />
+  <meta property="og:title" content="3 AnyTag | audiotags Manual" />
   <meta property="og:type" content="book" />
   
   
@@ -16,7 +16,7 @@
   
 
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="Chapter 3 AnyTag | audiotags Manual" />
+  <meta name="twitter:title" content="3 AnyTag | audiotags Manual" />
   
   <meta name="twitter:description" content="This is the manual of the Rust crate ‘audiotags’" />
   
@@ -24,15 +24,15 @@
 <meta name="author" content="Tianyi Shi" />
 
 
-<meta name="date" content="2020-10-27" />
+<meta name="date" content="2020-10-29" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black" />
   
   
-<link rel="prev" href="conversion.html"/>
-<link rel="next" href="downcast.html"/>
+<link rel="prev" href="conversion-and-downcast.html"/>
+
 <script src="libs/header-attrs-2.4/header-attrs.js"></script>
 <script src="libs/jquery-2.2.3/jquery.min.js"></script>
 <link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
@@ -138,10 +138,13 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li class="chapter" data-level="" data-path="index.html"><a href="index.html#examples-in-this-manual"><i class="fa fa-check"></i>Examples in this manual</a></li>
 </ul></li>
 <li class="chapter" data-level="1" data-path="start-simple.html"><a href="start-simple.html"><i class="fa fa-check"></i><b>1</b> Start Simple</a></li>
-<li class="chapter" data-level="2" data-path="conversion.html"><a href="conversion.html"><i class="fa fa-check"></i><b>2</b> Conversion</a></li>
+<li class="chapter" data-level="2" data-path="conversion-and-downcast.html"><a href="conversion-and-downcast.html"><i class="fa fa-check"></i><b>2</b> Conversion and Downcast</a>
+<ul>
+<li class="chapter" data-level="2.1" data-path="conversion-and-downcast.html"><a href="conversion-and-downcast.html#converting-from-a-boxdyn-audiotag-to-another"><i class="fa fa-check"></i><b>2.1</b> Converting from a <code>Box&lt;dyn AudioTag</code> to Another</a></li>
+<li class="chapter" data-level="2.2" data-path="conversion-and-downcast.html"><a href="conversion-and-downcast.html#converting-into-a-concrete-type-downcasting"><i class="fa fa-check"></i><b>2.2</b> Converting into a Concrete Type (Downcasting)</a></li>
+<li class="chapter" data-level="2.3" data-path="conversion-and-downcast.html"><a href="conversion-and-downcast.html#upcasting"><i class="fa fa-check"></i><b>2.3</b> Upcasting</a></li>
+</ul></li>
 <li class="chapter" data-level="3" data-path="anytag.html"><a href="anytag.html"><i class="fa fa-check"></i><b>3</b> <code>AnyTag</code></a></li>
-<li class="chapter" data-level="4" data-path="downcast.html"><a href="downcast.html"><i class="fa fa-check"></i><b>4</b> Downcast</a></li>
-<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
 <li class="divider"></li>
 <li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
 
@@ -163,18 +166,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
             <section class="normal" id="section-">
 <div id="anytag" class="section level1" number="3">
-<h1><span class="header-section-number">Chapter 3</span> <code>AnyTag</code></h1>
+<h1><span class="header-section-number">3</span> <code>AnyTag</code></h1>
 <p>The following example shows how you can create a “generic” <code>AnyTag</code> and convert it into a specific tag type.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb3-1"><a href="anytag.html#cb3-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">audiotags::</span><span class="op">{</span>AnyTag<span class="op">,</span> AudioTagEdit<span class="op">,</span> Id3v2Tag<span class="op">};</span></span>
-<span id="cb3-2"><a href="anytag.html#cb3-2" aria-hidden="true"></a></span>
-<span id="cb3-3"><a href="anytag.html#cb3-3" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
-<span id="cb3-4"><a href="anytag.html#cb3-4" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> tag <span class="op">=</span> <span class="pp">AnyTag::</span><span class="kw">default</span>()<span class="op">;</span></span>
-<span id="cb3-5"><a href="anytag.html#cb3-5" aria-hidden="true"></a>    tag<span class="op">.</span>set_title(<span class="st">&quot;foo&quot;</span>)<span class="op">;</span></span>
-<span id="cb3-6"><a href="anytag.html#cb3-6" aria-hidden="true"></a>    tag<span class="op">.</span>set_year(<span class="dv">2001</span>)<span class="op">;</span></span>
-<span id="cb3-7"><a href="anytag.html#cb3-7" aria-hidden="true"></a>    <span class="kw">let</span> tag<span class="op">:</span> Id3v2Tag <span class="op">=</span> tag<span class="op">.</span>into()<span class="op">;</span></span>
-<span id="cb3-8"><a href="anytag.html#cb3-8" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(tag<span class="op">.</span>year()<span class="op">,</span> <span class="cn">Some</span>(<span class="dv">2001</span>))<span class="op">;</span></span>
-<span id="cb3-9"><a href="anytag.html#cb3-9" aria-hidden="true"></a>    tag<span class="op">.</span>write_to_path(<span class="st">&quot;assets/a.mp3&quot;</span>)<span class="op">.</span>unwrap()<span class="op">;</span></span>
-<span id="cb3-10"><a href="anytag.html#cb3-10" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb7-1"><a href="anytag.html#cb7-1" aria-hidden="true"></a><span class="kw">use</span> <span class="pp">audiotags::</span><span class="op">{</span>AnyTag<span class="op">,</span> AudioTagEdit<span class="op">,</span> Id3v2Tag<span class="op">};</span></span>
+<span id="cb7-2"><a href="anytag.html#cb7-2" aria-hidden="true"></a></span>
+<span id="cb7-3"><a href="anytag.html#cb7-3" aria-hidden="true"></a><span class="kw">fn</span> main() <span class="op">{</span></span>
+<span id="cb7-4"><a href="anytag.html#cb7-4" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> tag <span class="op">=</span> <span class="pp">AnyTag::</span><span class="kw">default</span>()<span class="op">;</span></span>
+<span id="cb7-5"><a href="anytag.html#cb7-5" aria-hidden="true"></a>    tag<span class="op">.</span>set_title(<span class="st">&quot;foo&quot;</span>)<span class="op">;</span></span>
+<span id="cb7-6"><a href="anytag.html#cb7-6" aria-hidden="true"></a>    tag<span class="op">.</span>set_year(<span class="dv">2001</span>)<span class="op">;</span></span>
+<span id="cb7-7"><a href="anytag.html#cb7-7" aria-hidden="true"></a>    <span class="kw">let</span> tag<span class="op">:</span> Id3v2Tag <span class="op">=</span> tag<span class="op">.</span>into()<span class="op">;</span></span>
+<span id="cb7-8"><a href="anytag.html#cb7-8" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(tag<span class="op">.</span>year()<span class="op">,</span> <span class="cn">Some</span>(<span class="dv">2001</span>))<span class="op">;</span></span>
+<span id="cb7-9"><a href="anytag.html#cb7-9" aria-hidden="true"></a>    tag<span class="op">.</span>write_to_path(<span class="st">&quot;assets/a.mp3&quot;</span>)<span class="op">.</span>unwrap()<span class="op">;</span></span>
+<span id="cb7-10"><a href="anytag.html#cb7-10" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 
 </div>
             </section>
@@ -182,8 +185,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
           </div>
         </div>
       </div>
-<a href="conversion.html" class="navigation navigation-prev " aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
-<a href="downcast.html" class="navigation navigation-next " aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+<a href="conversion-and-downcast.html" class="navigation navigation-prev navigation-unique" aria-label="Previous page"><i class="fa fa-angle-left"></i></a>
+
     </div>
   </div>
 <script src="libs/gitbook-2.6.7/js/app.min.js"></script>

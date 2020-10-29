@@ -1,3 +1,8 @@
+## [0.2.7182] 2020-10-29
+
+- Improve docs
+- Ergonomic conversions
+
 ## [0.2.718] 2020-10-27
 
 - downcasting

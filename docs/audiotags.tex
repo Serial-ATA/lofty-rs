@@ -116,7 +116,7 @@
 
 \title{audiotags Manual}
 \author{Tianyi Shi}
-\date{2020-10-27}
+\date{2020-10-29}
 
 \begin{document}
 \maketitle
@@ -155,16 +155,13 @@ The following example shows how you can read an audio file, parse, set, and save
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\NormalTok{MimeType}\OperatorTok{,}\NormalTok{ Picture}\OperatorTok{,}\NormalTok{ Tag}\OperatorTok{,}\NormalTok{ TagType}\OperatorTok{\};}
-
-\KeywordTok{const}\NormalTok{ MP3\_FILE}\OperatorTok{:} \OperatorTok{\&}\OtherTok{\textquotesingle{}static} \DataTypeTok{str} \OperatorTok{=} \StringTok{"assets/a.mp3"}\OperatorTok{;}
-
 \KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
-    \CommentTok{// using \textasciigrave{}default()\textasciigrave{} so that the metadata format is guessed}
-    \CommentTok{// (from the file extension) (in this case, Id3v2 tag is read)}
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{read\_from\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \CommentTok{// using \textasciigrave{}default()\textasciigrave{} or \textasciigrave{}new()\textasciigrave{} alone so that the metadata format is}
+    \CommentTok{// guessed (from the file extension) (in this case, Id3v2 tag is read)}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{new()}\OperatorTok{.}\NormalTok{read\_from\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
     \CommentTok{// You can also specify the metadata format (tag type):}
-    \KeywordTok{let}\NormalTok{ \_tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}
+    \KeywordTok{let}\NormalTok{ \_tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{new()}
+        \OperatorTok{.}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}
         \OperatorTok{.}\NormalTok{read\_from\_path(MP3\_FILE)}
         \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
 
@@ -186,19 +183,45 @@ The following example shows how you can read an audio file, parse, set, and save
     \PreprocessorTok{assert!}\NormalTok{(tag}\OperatorTok{.}\NormalTok{album\_cover()}\OperatorTok{.}\NormalTok{is\_none())}\OperatorTok{;}
 \NormalTok{    tag}\OperatorTok{.}\NormalTok{remove\_album\_cover()}\OperatorTok{;}
 
-\NormalTok{    tag}\OperatorTok{.}\NormalTok{save\_to\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to save"}\NormalTok{)}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{write\_to\_path(MP3\_FILE)}\OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to save"}\NormalTok{)}\OperatorTok{;}
     \CommentTok{// }\AlertTok{TASK}\CommentTok{: reload the file and prove the data have been saved}
 \OperatorTok{\}}
 \end{Highlighting}
 \end{Shaded}
 
-\hypertarget{conversion}{%
-\chapter{Conversion}\label{conversion}}
-
-The following example shows how you can read the tag in an \texttt{mp3} file, convert it into an \texttt{mp4} tag, and write it to an \texttt{m4a} file.
+Note that \texttt{Tag} always reads into a \texttt{Box\textless{}dyn\ AudioTag\textgreater{}}. If you do not want a trait object, you can use the underlying concrete types. However, you'll also need to manually bring the traits into scope if you prefer not to write \texttt{audiotags::*}.
 
 \begin{Shaded}
 \begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\PreprocessorTok{traits::}\OperatorTok{*,}\NormalTok{ FlacTag}\OperatorTok{,}\NormalTok{ Id3v2Tag}\OperatorTok{,}\NormalTok{ Mp4Tag}\OperatorTok{\};}
+\CommentTok{// or alternatively \textasciigrave{}use audiotags::*\textasciigrave{}}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{FlacTag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.flac"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"foo"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(tag}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"foo"}\NormalTok{))}\OperatorTok{;}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{Mp4Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.m4a"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"foo"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(tag}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"foo"}\NormalTok{))}\OperatorTok{;}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ tag }\OperatorTok{=} \PreprocessorTok{Id3v2Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+\NormalTok{    tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"foo"}\NormalTok{)}\OperatorTok{;}
+    \PreprocessorTok{assert\_eq!}\NormalTok{(tag}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"foo"}\NormalTok{))}\OperatorTok{;}
+    \CommentTok{// all other methods in trait \textasciigrave{}AudioTagEdit\textasciigrave{} are available, not just title}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{conversion-and-downcast}{%
+\chapter{Conversion and Downcast}\label{conversion-and-downcast}}
+
+The following example shows how you can read the tag in an \texttt{mp3} file, convert it into an \texttt{mp4} tag, and write it to an \texttt{m4a} file.
+
+\hypertarget{converting-from-a-boxdyn-audiotag-to-another}{%
+\section{\texorpdfstring{Converting from a \texttt{Box\textless{}dyn\ AudioTag} to Another}{Converting from a Box\textless dyn AudioTag to Another}}\label{converting-from-a-boxdyn-audiotag-to-another}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+
 \KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\NormalTok{Config}\OperatorTok{,}\NormalTok{ Tag}\OperatorTok{,}\NormalTok{ TagType}\OperatorTok{\};}
 
 \KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
@@ -211,12 +234,13 @@ The following example shows how you can read the tag in an \texttt{mp3} file, co
     \CommentTok{// set the title}
 \NormalTok{    mp3tag}\OperatorTok{.}\NormalTok{set\_title(}\StringTok{"title from mp3 file"}\NormalTok{)}\OperatorTok{;}
     \CommentTok{// we can convert it to an mp4 tag and save it to an m4a file.}
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=}\NormalTok{ mp3tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}\OperatorTok{;}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=}\NormalTok{ mp3tag}\OperatorTok{.}\NormalTok{to\_dyn\_tag(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}\OperatorTok{;}
 \NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{write\_to\_path(M4A\_FILE)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
 
     \CommentTok{// reload the tag from the m4a file; this time specifying the}
     \CommentTok{// tag type (you can also use \textasciigrave{}default()\textasciigrave{})}
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ mp4tag }\OperatorTok{=} \PreprocessorTok{Tag::}\NormalTok{new()}
+        \OperatorTok{.}\NormalTok{with\_tag\_type(}\PreprocessorTok{TagType::}\NormalTok{Mp4)}
         \OperatorTok{.}\NormalTok{read\_from\_path(M4A\_FILE)}
         \OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
     \CommentTok{// the tag originated from an mp3 file is successfully written}
@@ -232,8 +256,72 @@ The following example shows how you can read the tag in an \texttt{mp3} file, co
     \CommentTok{// convert to id3 tag, which does not support multiple artists}
 \NormalTok{    mp4tag}\OperatorTok{.}\NormalTok{set\_config(}\PreprocessorTok{Config::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{sep\_artist(}\StringTok{"/"}\NormalTok{))}\OperatorTok{;}
     \CommentTok{// separator is by default \textasciigrave{};\textasciigrave{} but we can customise it}
-    \KeywordTok{let}\NormalTok{ mp3tag }\OperatorTok{=}\NormalTok{ mp4tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ mp3tag }\OperatorTok{=}\NormalTok{ mp4tag}\OperatorTok{.}\NormalTok{to\_dyn\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
     \PreprocessorTok{assert\_eq!}\NormalTok{(mp3tag}\OperatorTok{.}\NormalTok{artist()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"artist1 of mp4/artist2 of mp4"}\NormalTok{))}\OperatorTok{;}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\hypertarget{converting-into-a-concrete-type-downcasting}{%
+\section{Converting into a Concrete Type (Downcasting)}\label{converting-into-a-concrete-type-downcasting}}
+
+\begin{quote}
+Can I convert into a concrete type?
+\end{quote}
+
+Yes, you can directly convert \texttt{.into()} it (this is technically known as a ``downcast''):
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{\{}\NormalTok{FlacTag}\OperatorTok{,}\NormalTok{ Tag}\OperatorTok{\};}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let}\NormalTok{ id3v2tag }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ \_flactag}\OperatorTok{:}\NormalTok{ FlacTag }\OperatorTok{=}\NormalTok{ id3v2tag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;}
+    \CommentTok{// of course, you can \textasciigrave{}let id3v2tag\_concrete: Id3v2Tag = id3v2tag.into();\textasciigrave{}}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+You can even convert \texttt{.into()} the `backend' tag type:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\NormalTok{Tag}\OperatorTok{;}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let}\NormalTok{ mp3tag }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{.}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ flactag}\OperatorTok{:} \PreprocessorTok{metaflac::}\NormalTok{Tag }\OperatorTok{=}\NormalTok{ mp3tag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;} \CommentTok{// into the \textquotesingle{}backend\textquotesingle{} tag}
+    \CommentTok{// then you can use methods specific to metaflac}
+    \KeywordTok{let}\NormalTok{ \_ }\OperatorTok{=}\NormalTok{ flactag}\OperatorTok{.}\NormalTok{get\_streaminfo()}\OperatorTok{;}
+\OperatorTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+This is useful when you really need to use the methods not provided by \texttt{audiotags::traits::*}.
+
+You can also downcast the concrete \texttt{audiotags::FlacTag} to \texttt{metaflac::Tag} and so no.
+
+\hypertarget{upcasting}{%
+\section{Upcasting}\label{upcasting}}
+
+Since you're allowed to downcast, naturally you can also upcast:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{*;}
+
+\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
+    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ innertag }\OperatorTok{=} \PreprocessorTok{metaflac::Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{;}
+\NormalTok{    innertag}
+        \OperatorTok{.}\NormalTok{vorbis\_comments\_mut()}
+        \OperatorTok{.}\NormalTok{set\_title(}\PreprocessorTok{vec!}\NormalTok{[}\StringTok{"title from metaflac::Tag"}\NormalTok{])}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ tag}\OperatorTok{:}\NormalTok{ FlacTag }\OperatorTok{=}\NormalTok{ innertag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;}
+    \KeywordTok{let}\NormalTok{ \_id3tag }\OperatorTok{=}\NormalTok{ tag}\OperatorTok{.}\NormalTok{to\_dyn\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
+    \CommentTok{// in this case the "title" metadata will be}
+    \CommentTok{// losslessly written into the id3tag.}
+    \CommentTok{// However, if you have FLAC{-}specific fields,}
+    \CommentTok{// they will be lost upon conversion}
 \OperatorTok{\}}
 \end{Highlighting}
 \end{Shaded}
@@ -258,55 +346,7 @@ The following example shows how you can create a ``generic'' \texttt{AnyTag} and
 \end{Highlighting}
 \end{Shaded}
 
-\hypertarget{downcast}{%
-\chapter{Downcast}\label{downcast}}
 
-The following example shows how you can downcast a \texttt{Box\textless{}dyn\ AudioTag\textgreater{}} into its ``backend'' tag type. This allows you to set the uncommon metadata supported by the corresponding backend but not by \textbf{audiotags}.
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\KeywordTok{use} \PreprocessorTok{audiotags::}\OperatorTok{*;}
-
-\KeywordTok{fn}\NormalTok{ main() }\OperatorTok{\{}
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ innertag }\OperatorTok{=} \PreprocessorTok{metaflac::Tag::}\KeywordTok{default}\NormalTok{()}\OperatorTok{;}
-\NormalTok{    innertag}
-        \OperatorTok{.}\NormalTok{vorbis\_comments\_mut()}
-        \OperatorTok{.}\NormalTok{set\_title(}\PreprocessorTok{vec!}\NormalTok{[}\StringTok{"title from metaflac::Tag"}\NormalTok{])}\OperatorTok{;}
-    \KeywordTok{let}\NormalTok{ tag}\OperatorTok{:}\NormalTok{ FlacTag }\OperatorTok{=}\NormalTok{ innertag}\OperatorTok{.}\NormalTok{into()}\OperatorTok{;}
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag }\OperatorTok{=}\NormalTok{ tag}\OperatorTok{.}\NormalTok{into\_tag(}\PreprocessorTok{TagType::}\NormalTok{Id3v2)}\OperatorTok{;}
-\NormalTok{    id3tag}
-        \OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
-        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to write!"}\NormalTok{)}\OperatorTok{;}
-
-    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{Tag::}\KeywordTok{default}\NormalTok{()}
-        \OperatorTok{.}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
-        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
-    \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{title()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(}\StringTok{"title from metaflac::Tag"}\NormalTok{))}\OperatorTok{;}
-
-    \KeywordTok{let} \KeywordTok{mut}\NormalTok{ id3tag\_inner}\OperatorTok{:} \PreprocessorTok{id3::}\NormalTok{Tag }\OperatorTok{=}\NormalTok{ id3tag\_reload}\OperatorTok{.}\NormalTok{try\_into()}\OperatorTok{.}\NormalTok{unwrap()}\OperatorTok{;}
-    \CommentTok{// this would fail if \textasciigrave{}id3tag\_reload\textasciigrave{} isn\textquotesingle{}t really a id3 tag.}
-
-    \KeywordTok{let}\NormalTok{ timestamp }\OperatorTok{=} \PreprocessorTok{id3::}\NormalTok{Timestamp }\OperatorTok{\{}
-\NormalTok{        year}\OperatorTok{:} \DecValTok{2013}\OperatorTok{,}
-\NormalTok{        month}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{2u8}\NormalTok{)}\OperatorTok{,}
-\NormalTok{        day}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{5u8}\NormalTok{)}\OperatorTok{,}
-\NormalTok{        hour}\OperatorTok{:} \ConstantTok{Some}\NormalTok{(}\DecValTok{6u8}\NormalTok{)}\OperatorTok{,}
-\NormalTok{        minute}\OperatorTok{:} \ConstantTok{None}\OperatorTok{,}
-\NormalTok{        second}\OperatorTok{:} \ConstantTok{None}\OperatorTok{,}
-    \OperatorTok{\};}
-\NormalTok{    id3tag\_inner}\OperatorTok{.}\NormalTok{set\_date\_recorded(timestamp}\OperatorTok{.}\NormalTok{clone())}\OperatorTok{;}
-\NormalTok{    id3tag\_inner}
-        \OperatorTok{.}\NormalTok{write\_to\_path(}\StringTok{"assets/a.mp3"}\OperatorTok{,} \PreprocessorTok{id3::Version::}\NormalTok{Id3v24)}
-        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to write!"}\NormalTok{)}\OperatorTok{;}
-
-    \KeywordTok{let}\NormalTok{ id3tag\_reload }\OperatorTok{=} \PreprocessorTok{id3::Tag::}\NormalTok{read\_from\_path(}\StringTok{"assets/a.mp3"}\NormalTok{)}
-        \OperatorTok{.}\NormalTok{expect(}\StringTok{"Fail to read!"}\NormalTok{)}\OperatorTok{;}
-    \PreprocessorTok{assert\_eq!}\NormalTok{(id3tag\_reload}\OperatorTok{.}\NormalTok{date\_recorded()}\OperatorTok{,} \ConstantTok{Some}\NormalTok{(timestamp))}\OperatorTok{;}
-\OperatorTok{\}}
-\end{Highlighting}
-\end{Shaded}
-
-
-  \bibliography{book.bib,packages.bib}
+  \bibliography{book.bib}
 
 \end{document}

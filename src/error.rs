@@ -1,9 +1,6 @@
-/// Error types that could occur in this library.
+/// Error that could occur in this library.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("")]
-    DowncastError,
-
     /// Fail to guess the metadata format based on the file extension.
     #[error("Fail to guess the metadata format based on the file extension.")]
     UnknownFileExtension(String),

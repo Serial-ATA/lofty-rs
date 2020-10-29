@@ -177,7 +177,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-10"><a href="conversion.html#cb2-10" aria-hidden="true"></a>    <span class="co">// set the title</span></span>
 <span id="cb2-11"><a href="conversion.html#cb2-11" aria-hidden="true"></a>    mp3tag<span class="op">.</span>set_title(<span class="st">&quot;title from mp3 file&quot;</span>)<span class="op">;</span></span>
 <span id="cb2-12"><a href="conversion.html#cb2-12" aria-hidden="true"></a>    <span class="co">// we can convert it to an mp4 tag and save it to an m4a file.</span></span>
-<span id="cb2-13"><a href="conversion.html#cb2-13" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> mp4tag <span class="op">=</span> mp3tag<span class="op">.</span>into_tag(<span class="pp">TagType::</span>Mp4)<span class="op">;</span></span>
+<span id="cb2-13"><a href="conversion.html#cb2-13" aria-hidden="true"></a>    <span class="kw">let</span> <span class="kw">mut</span> mp4tag <span class="op">=</span> mp3tag<span class="op">.</span>to_dyn_tag(<span class="pp">TagType::</span>Mp4)<span class="op">;</span></span>
 <span id="cb2-14"><a href="conversion.html#cb2-14" aria-hidden="true"></a>    mp4tag<span class="op">.</span>write_to_path(M4A_FILE)<span class="op">.</span>unwrap()<span class="op">;</span></span>
 <span id="cb2-15"><a href="conversion.html#cb2-15" aria-hidden="true"></a></span>
 <span id="cb2-16"><a href="conversion.html#cb2-16" aria-hidden="true"></a>    <span class="co">// reload the tag from the m4a file; this time specifying the</span></span>
@@ -198,7 +198,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-31"><a href="conversion.html#cb2-31" aria-hidden="true"></a>    <span class="co">// convert to id3 tag, which does not support multiple artists</span></span>
 <span id="cb2-32"><a href="conversion.html#cb2-32" aria-hidden="true"></a>    mp4tag<span class="op">.</span>set_config(<span class="pp">Config::</span><span class="kw">default</span>()<span class="op">.</span>sep_artist(<span class="st">&quot;/&quot;</span>))<span class="op">;</span></span>
 <span id="cb2-33"><a href="conversion.html#cb2-33" aria-hidden="true"></a>    <span class="co">// separator is by default `;` but we can customise it</span></span>
-<span id="cb2-34"><a href="conversion.html#cb2-34" aria-hidden="true"></a>    <span class="kw">let</span> mp3tag <span class="op">=</span> mp4tag<span class="op">.</span>into_tag(<span class="pp">TagType::</span>Id3v2)<span class="op">;</span></span>
+<span id="cb2-34"><a href="conversion.html#cb2-34" aria-hidden="true"></a>    <span class="kw">let</span> mp3tag <span class="op">=</span> mp4tag<span class="op">.</span>to_dyn_tag(<span class="pp">TagType::</span>Id3v2)<span class="op">;</span></span>
 <span id="cb2-35"><a href="conversion.html#cb2-35" aria-hidden="true"></a>    <span class="pp">assert_eq!</span>(mp3tag<span class="op">.</span>artist()<span class="op">,</span> <span class="cn">Some</span>(<span class="st">&quot;artist1 of mp4/artist2 of mp4&quot;</span>))<span class="op">;</span></span>
 <span id="cb2-36"><a href="conversion.html#cb2-36" aria-hidden="true"></a><span class="op">}</span></span></code></pre></div>
 
