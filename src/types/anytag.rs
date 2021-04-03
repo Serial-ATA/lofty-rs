@@ -1,4 +1,4 @@
-use crate::*;
+use crate::Picture;
 
 #[derive(Default)]
 pub struct AnyTag<'a> {

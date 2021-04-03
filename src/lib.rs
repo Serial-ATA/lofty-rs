@@ -65,11 +65,12 @@
 #[doc(hidden)]
 mod macros;
 
-mod anytag;
-pub use crate::anytag::AnyTag;
-
 mod types;
-pub use crate::types::{Album, MimeType, Picture};
+pub use crate::types::{
+	album::Album,
+	anytag::AnyTag,
+	picture::{MimeType, Picture},
+};
 
 mod tag;
 pub use crate::tag::{Tag, TagType};

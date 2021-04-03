@@ -1,8 +1,8 @@
-mod flac_tag;
-mod id3_tag;
-mod mp4_tag;
-mod opus_tag;
-mod vorbis_tag;
+pub(crate) mod flac_tag;
+pub(crate) mod id3_tag;
+pub(crate) mod mp4_tag;
+pub(crate) mod opus_tag;
+pub(crate) mod vorbis_tag;
 
 pub use flac_tag::FlacTag;
 pub use id3_tag::Id3v2Tag;
