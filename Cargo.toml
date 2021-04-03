@@ -1,11 +1,13 @@
 [package]
 name = "lofty"
-version = "0.2.7182"
+version = "0.1.0"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>", "Tianyi <ShiTianyi2001@outlook.com>"]
 edition = "2018"
-description = "Fork of https://github.com/TianyiShi2001/audiotags, adding support for more file types and (optionally) duration"
 license = "MIT"
+description = "Fork of https://github.com/TianyiShi2001/audiotags, adding support for more file types and (optionally) duration"
 repository = "https://github.com/Serial-ATA/lofty"
+keywords = ["tags", "audio", "metadata"]
+categories = ["accessiblity", "multimedia::audio"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
