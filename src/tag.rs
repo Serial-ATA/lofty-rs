@@ -28,7 +28,7 @@ impl Tag {
 	}
 }
 
-/// The type
+/// The tag type, based on the file extension.
 #[derive(Clone, Copy, Debug)]
 pub enum TagType {
 	/// Common file extensions: `.mp3`

@@ -1,6 +1,7 @@
 use crate::{Error, Result};
 use std::convert::TryFrom;
 
+/// Mime types for covers.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MimeType {
 	Png,
@@ -42,6 +43,7 @@ impl From<MimeType> for String {
 	}
 }
 
+/// Represents a picture, with its data and mime type.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture<'a> {
 	pub data: &'a [u8],

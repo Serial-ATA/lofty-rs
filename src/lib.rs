@@ -39,6 +39,16 @@
 //! assert_eq!(tag.title(), Some("Foo"));
 //! ```
 //!
+//! # Features
+//!
+//! By default, `tags` and `duration` are enabled.
+//!
+//! `tags` provides all the track metadata (`artists`, `album`, etc.) in [AnyTag].
+//!
+//! `duration` provides the `duration` field in [AnyTag].
+//!
+//! Either one can be disabled if it doesn't fit your use case.
+//!
 //! ## Performance
 //!
 //! Using lofty incurs a little overhead due to vtables if you want to guess the metadata format (from file extension).

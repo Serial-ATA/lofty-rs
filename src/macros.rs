@@ -2,6 +2,7 @@
 #[macro_export]
 macro_rules! impl_tag {
 	($tag:ident , $inner:ident, $tag_type:expr) => {
+		#[doc(hidden)]
 		pub struct $tag($inner);
 
 		impl Default for $tag {

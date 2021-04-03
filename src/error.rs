@@ -1,4 +1,4 @@
-/// Errors that could occur in this library.
+/// Errors that could occur within Lofty.
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
 	/// Unknown file extension.
@@ -28,4 +28,5 @@ pub enum Error {
 	IOError(#[from] std::io::Error),
 }
 
+/// Type alias for the result of tag operations.
 pub type Result<T> = std::result::Result<T, Error>;
