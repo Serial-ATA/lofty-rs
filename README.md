@@ -26,6 +26,8 @@ Theoretically it is possible to achieve zero-copy conversions if all parsers can
 | File Format   | Metadata Format | Backend                                                     |
 |---------------|-----------------|-------------------------------------------------------------|
 | `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)            |
+| `wav`         | TODO            | TODO                                                        |
+| `ape`         | TODO            | TODO                                                        |
 | `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers) |
 | `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton)           |
 | `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
