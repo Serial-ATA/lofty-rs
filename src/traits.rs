@@ -1,4 +1,7 @@
-use super::*;
+use crate::{
+	Album, AnyTag, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Picture, Result, TagType, VorbisTag,
+};
+use std::{fs::File, path::Path};
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 

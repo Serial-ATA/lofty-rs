@@ -1,5 +1,8 @@
-use crate::*;
-use mp4ameta;
+use crate::{
+	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
+};
+use std::{fs::File, path::Path};
 
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 
@@ -56,7 +59,7 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 }
 
 impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
-	type Error = TaggedError;
+	type Error = Error;
 	fn try_from(inp: &'a mp4ameta::Data) -> crate::Result<Self> {
 		Ok(match *inp {
 			mp4ameta::Data::Png(ref data) => Self {
@@ -67,7 +70,7 @@ impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
 				data,
 				mime_type: MimeType::Jpeg,
 			},
-			_ => return Err(TaggedError::NotAPicture),
+			_ => return Err(Error::NotAPicture),
 		})
 	}
 }

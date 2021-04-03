@@ -1,10 +1,15 @@
-use crate::*;
-use lewton;
+use crate::{
+	impl_tag, traits::MissingImplementations, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
+	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
+};
+use std::{
+	collections::{hash_map::RandomState, HashMap},
+	convert::TryInto,
+	fs::File,
+	path::Path,
+};
 
-use lewton::header::CommentHeader as VorbisInnerTag;
-use lewton::inside_ogg::OggStreamReader;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
+use lewton::{header::CommentHeader as VorbisInnerTag, inside_ogg::OggStreamReader};
 
 impl MissingImplementations for VorbisInnerTag {
 	fn default() -> Self {

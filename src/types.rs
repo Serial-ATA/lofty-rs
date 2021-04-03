@@ -1,7 +1,5 @@
-pub use super::*;
-
-#[doc(hidden)]
-pub type Result<T> = std::result::Result<T, TaggedError>;
+use super::{Error, Result};
+use std::convert::TryFrom;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MimeType {
@@ -13,15 +11,15 @@ pub enum MimeType {
 }
 
 impl TryFrom<&str> for MimeType {
-	type Error = TaggedError;
-	fn try_from(inp: &str) -> crate::Result<Self> {
+	type Error = Error;
+	fn try_from(inp: &str) -> Result<Self> {
 		Ok(match inp {
 			"image/jpeg" => MimeType::Jpeg,
 			"image/png" => MimeType::Png,
 			"image/tiff" => MimeType::Tiff,
 			"image/bmp" => MimeType::Bmp,
 			"image/gif" => MimeType::Gif,
-			_ => return Err(TaggedError::UnsupportedMimeType(inp.to_owned())),
+			_ => return Err(Error::UnsupportedMimeType(inp.to_owned())),
 		})
 	}
 }

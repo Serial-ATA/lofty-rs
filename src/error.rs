@@ -1,6 +1,6 @@
 /// Errors that could occur in this library.
 #[derive(thiserror::Error, Debug)]
-pub enum TaggedError {
+pub enum Error {
 	/// Unknown file extension.
 	#[error("Failed to guess the metadata format based on the file extension.")]
 	UnknownFileExtension(String),
@@ -27,3 +27,5 @@ pub enum TaggedError {
 	#[error(transparent)]
 	IOError(#[from] std::io::Error),
 }
+
+pub type Result<T> = std::result::Result<T, Error>;

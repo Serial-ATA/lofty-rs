@@ -1,10 +1,15 @@
-use crate::*;
-use opus_headers;
+use crate::{
+	impl_tag, traits::MissingImplementations, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite,
+	Picture, Result, TagType, ToAny, ToAnyTag,
+};
+use std::{
+	borrow::BorrowMut,
+	collections::{hash_map::RandomState, HashMap},
+	fs::File,
+	path::Path,
+};
 
 use opus_headers::{CommentHeader, IdentificationHeader, OpusHeaders as OpusInnerTag};
-use std::borrow::BorrowMut;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
 
 impl MissingImplementations for OpusInnerTag {
 	fn default() -> Self {

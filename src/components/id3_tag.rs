@@ -1,5 +1,8 @@
-use crate::*;
-use id3;
+use crate::{
+	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
+};
+use std::{convert::TryInto, fs::File, path::Path};
 
 pub use id3::Tag as Id3v2InnerTag;
 
@@ -44,7 +47,7 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 }
 
 impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
-	type Error = TaggedError;
+	type Error = Error;
 	fn try_from(inp: &'a id3::frame::Picture) -> crate::Result<Self> {
 		let &id3::frame::Picture {
 			ref mime_type,

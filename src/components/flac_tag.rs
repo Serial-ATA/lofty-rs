@@ -1,5 +1,8 @@
-use crate::*;
-use metaflac;
+use crate::{
+	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
+};
+use std::{convert::TryInto, fs::File, path::Path};
 
 pub use metaflac::Tag as FlacInnerTag;
 
