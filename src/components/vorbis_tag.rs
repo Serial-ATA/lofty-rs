@@ -71,9 +71,7 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 impl VorbisTag {
 	// TODO: rename these
 	pub fn get_first(&self, key: &str) -> Option<&str> {
-		let comments = &self.0.comment_list;
-
-		for (k, v) in comments {
+		for (k, v) in &self.0.comment_list {
 			if k.as_str() == key {
 				return Some(v.as_str());
 			}
@@ -81,19 +79,20 @@ impl VorbisTag {
 
 		None
 	}
+
 	pub fn set_first(&mut self, key: &str, val: &str) {
 		let mut comments: HashMap<String, String, RandomState> =
 			self.0.comment_list.clone().into_iter().collect();
-		match comments.get_mut(key) {
-			Some(mut v) => v = &mut val.to_string(),
-			None => {},
-		}
+		let _ = comments.insert(key.to_string(), val.to_string());
+		self.0.comment_list = comments.into_iter().map(|a| a).collect();
 	}
+
 	pub fn remove(&mut self, key: &str) {
-		let mut comments: HashMap<String, String, RandomState> =
-			self.0.comment_list.clone().into_iter().collect();
-		comments.retain(|k, _| k != key)
+		let mut comments = self.0.comment_list.clone();
+		comments.retain(|c| c.0 != key);
+		self.0.comment_list = comments.into_iter().map(|a| a).collect();
 	}
+
 	pub fn pictures(&self) {}
 }
 
