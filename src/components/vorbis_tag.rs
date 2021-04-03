@@ -69,8 +69,7 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 }
 
 impl VorbisTag {
-	// TODO: rename these
-	pub fn get_first(&self, key: &str) -> Option<&str> {
+	pub fn get_value(&self, key: &str) -> Option<&str> {
 		for (k, v) in &self.0.comment_list {
 			if k.as_str() == key {
 				return Some(v.as_str());
@@ -80,7 +79,7 @@ impl VorbisTag {
 		None
 	}
 
-	pub fn set_first(&mut self, key: &str, val: &str) {
+	pub fn set_value(&mut self, key: &str, val: &str) {
 		let mut comments: HashMap<String, String, RandomState> =
 			self.0.comment_list.clone().into_iter().collect();
 		let _ = comments.insert(key.to_string(), val.to_string());
@@ -98,21 +97,21 @@ impl VorbisTag {
 
 impl AudioTagEdit for VorbisTag {
 	fn title(&self) -> Option<&str> {
-		self.get_first("TITLE")
+		self.get_value("TITLE")
 	}
 	fn set_title(&mut self, title: &str) {
-		self.set_first("TITLE", title);
+		self.set_value("TITLE", title);
 	}
 
 	fn remove_title(&mut self) {
 		self.remove("TITLE");
 	}
 	fn artist(&self) -> Option<&str> {
-		self.get_first("ARTIST")
+		self.get_value("ARTIST")
 	}
 
 	fn set_artist(&mut self, artist: &str) {
-		self.set_first("ARTIST", artist)
+		self.set_value("ARTIST", artist)
 	}
 	fn remove_artist(&mut self) {
 		self.remove("ARTIST");
@@ -120,19 +119,19 @@ impl AudioTagEdit for VorbisTag {
 
 	fn year(&self) -> Option<u16> {
 		if let Some(Ok(y)) = self
-			.get_first("DATE")
+			.get_value("DATE")
 			.map(|s| s.chars().take(4).collect::<String>().parse::<i32>())
 		{
 			Some(y as u16)
-		} else if let Some(Ok(y)) = self.get_first("YEAR").map(|s| s.parse::<i32>()) {
+		} else if let Some(Ok(y)) = self.get_value("YEAR").map(|s| s.parse::<i32>()) {
 			Some(y as u16)
 		} else {
 			None
 		}
 	}
 	fn set_year(&mut self, year: u16) {
-		self.set_first("DATE", &year.to_string());
-		self.set_first("YEAR", &year.to_string());
+		self.set_value("DATE", &year.to_string());
+		self.set_value("YEAR", &year.to_string());
 	}
 
 	fn remove_year(&mut self) {
@@ -140,21 +139,21 @@ impl AudioTagEdit for VorbisTag {
 		self.remove("DATE");
 	}
 	fn album_title(&self) -> Option<&str> {
-		self.get_first("ALBUM")
+		self.get_value("ALBUM")
 	}
 
 	fn set_album_title(&mut self, title: &str) {
-		self.set_first("ALBUM", title)
+		self.set_value("ALBUM", title)
 	}
 	fn remove_album_title(&mut self) {
 		self.remove("ALBUM");
 	}
 
 	fn album_artist(&self) -> Option<&str> {
-		self.get_first("ALBUMARTIST")
+		self.get_value("ALBUMARTIST")
 	}
 	fn set_album_artist(&mut self, v: &str) {
-		self.set_first("ALBUMARTIST", v)
+		self.set_value("ALBUMARTIST", v)
 	}
 
 	fn remove_album_artist(&mut self) {
@@ -162,7 +161,7 @@ impl AudioTagEdit for VorbisTag {
 	}
 	// TODO
 	fn album_cover(&self) -> Option<Picture> {
-		// self.get_first("PICTURE")
+		// self.get_value("PICTURE")
 		// self.0
 		//     .pictures()
 		//     .filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
@@ -191,14 +190,14 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn track_number(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.get_first("TRACKNUMBER").map(|x| x.parse::<u16>()) {
+		if let Some(Ok(n)) = self.get_value("TRACKNUMBER").map(|x| x.parse::<u16>()) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_track_number(&mut self, v: u16) {
-		self.set_first("TRACKNUMBER", &v.to_string())
+		self.set_value("TRACKNUMBER", &v.to_string())
 	}
 
 	fn remove_track_number(&mut self) {
@@ -206,41 +205,41 @@ impl AudioTagEdit for VorbisTag {
 	}
 	// ! not standard
 	fn total_tracks(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.get_first("TOTALTRACKS").map(|x| x.parse::<u16>()) {
+		if let Some(Ok(n)) = self.get_value("TOTALTRACKS").map(|x| x.parse::<u16>()) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_total_tracks(&mut self, v: u16) {
-		self.set_first("TOTALTRACKS", &v.to_string())
+		self.set_value("TOTALTRACKS", &v.to_string())
 	}
 	fn remove_total_tracks(&mut self) {
 		self.remove("TOTALTRACKS");
 	}
 	fn disc_number(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.get_first("DISCNUMBER").map(|x| x.parse::<u16>()) {
+		if let Some(Ok(n)) = self.get_value("DISCNUMBER").map(|x| x.parse::<u16>()) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_disc_number(&mut self, v: u16) {
-		self.set_first("DISCNUMBER", &v.to_string())
+		self.set_value("DISCNUMBER", &v.to_string())
 	}
 	fn remove_disc_number(&mut self) {
 		self.remove("DISCNUMBER");
 	}
 	// ! not standard
 	fn total_discs(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.get_first("TOTALDISCS").map(|x| x.parse::<u16>()) {
+		if let Some(Ok(n)) = self.get_value("TOTALDISCS").map(|x| x.parse::<u16>()) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_total_discs(&mut self, v: u16) {
-		self.set_first("TOTALDISCS", &v.to_string())
+		self.set_value("TOTALDISCS", &v.to_string())
 	}
 	fn remove_total_discs(&mut self) {
 		self.remove("TOTALDISCS");

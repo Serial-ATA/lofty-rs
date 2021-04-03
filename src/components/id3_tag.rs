@@ -90,8 +90,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.set_year(year as i32)
 	}
 	fn remove_year(&mut self) {
-		self.0.remove("TYER")
-		// self.0.remove_year(); // TODO
+		self.0.remove_year()
 	}
 
 	fn album_title(&self) -> Option<&str> {
