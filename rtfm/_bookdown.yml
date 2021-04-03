@@ -1,7 +1,0 @@
-book_filename: "audiotags"
-rmd_files: ["index.Rmd", "simple.Rmd", "convert.Rmd", "anytag.Rmd"] #, "downcast.Rmd"]
-output_dir: "../docs"
-delete_merged_file: true
-# language:
-#   ui:
-#     chapter_name: "Chapter "
