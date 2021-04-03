@@ -1,3 +1,4 @@
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_tag {
 	($tag:ident , $inner:ident, $tag_type:expr) => {
@@ -76,5 +77,13 @@ macro_rules! impl_tag {
 				t.into()
 			}
 		}
+	};
+}
+
+/// Convert a concrete tag type into another
+#[macro_export]
+macro_rules! convert {
+	($inp:expr, $target_type:ty) => {
+		$target_type::from(inp.to_anytag())
 	};
 }

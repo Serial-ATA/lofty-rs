@@ -1,5 +1,8 @@
 pub use super::*;
 
+#[doc(hidden)]
+pub type Result<T> = std::result::Result<T, TaggedError>;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum MimeType {
 	Png,
