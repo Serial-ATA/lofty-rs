@@ -17,7 +17,6 @@ mp4ameta = {version = "0.9.1", optional = true}
 id3 = {version = "0.6.2", optional = true}
 mp3-duration = {version = "0.1.10", optional = true}
 thiserror = "1.0.24"
-audiotags-dev-macro = {path = "./audiotags-dev-macro", version = "0.1.4"}
 
 [features]
 default = ["tags", "duration"]

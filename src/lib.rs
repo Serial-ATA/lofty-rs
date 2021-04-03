@@ -40,7 +40,8 @@
 	clippy::module_name_repetitions
 )]
 
-pub(crate) use audiotags_dev_macro::*;
+mod macros;
+pub use macros::*;
 
 pub mod anytag;
 pub use anytag::*;
@@ -58,6 +59,7 @@ pub mod types;
 pub use types::*;
 
 pub mod config;
+
 pub use config::Config;
 
 use std::convert::From;
