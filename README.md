@@ -4,7 +4,6 @@
 [![Crate](https://img.shields.io/crates/d/lofty.svg)](https://crates.io/crates/lofty)
 [![Crate](https://img.shields.io/crates/l/lofty.svg)](https://crates.io/crates/lofty)
 [![Documentation](https://docs.rs/lofty/badge.svg)](https://docs.rs/lofty/)
-[![Manual](https://img.shields.io/badge/RTFM-Manual-blue)](https://tianyishi2001.github.io/lofty)
 
 **Lofty** makes it easier to **parse, convert and write metadata** in audio files of different file types.
 
@@ -12,7 +11,7 @@ This crate aims to provide a unified trait for parsers and writers of different 
 
 ## Examples
 
-Examples can be found in the [manual](https://tianyishi2001.github.io/audiotags).
+TODO
 
 ## Performance
 
