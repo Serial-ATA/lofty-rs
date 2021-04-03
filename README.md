@@ -6,11 +6,9 @@
 [![Documentation](https://docs.rs/lofty/badge.svg)](https://docs.rs/lofty/)
 [![Manual](https://img.shields.io/badge/RTFM-Manual-blue)](https://tianyishi2001.github.io/lofty)
 
-**Lofty** makes it easier to **parse, convert and write metadata** (a.k.a tag) in audio files of different file types.
+**Lofty** makes it easier to **parse, convert and write metadata** in audio files of different file types.
 
-This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3, flac, and m4a files with a single function: `Tag::default().read_from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
-
-I'm relatively new to Rust and programming in general, and this is my first attempt to make a non-trivial crate. If you see anything that you think isn't right, just say it!
+This crate aims to provide a unified trait for parsers and writers of different audio file formats. This means that you can parse tags in mp3, opus, ogg, flac, and m4a files with a single function: `Tag::default().read_from_path()` and get fields by directly calling `.album()`, `.artist()` on its result. Without this crate, you would otherwise need to learn different APIs in **id3**, **mp4ameta** etc. in order to parse metadata in different file formats.
 
 ## Examples
 
@@ -22,15 +20,17 @@ Using **Lofty** incurs a little overhead due to vtables if you want to guess the
 
 No copies will be made if you only need to read and write metadata of one format. If you want to convert between tags, copying is unavoidable no matter if you use **Lofty** or use getters and setters provided by specialized libraries. **Lofty** is not making additional unnecessary copies.
 
-Theoretically it is possible to achieve zero-copy conversions if all parsers can parse into a unified struct. However, this is going to be a lot of work. I might be able to implement them, but it will be no sooner than the Christmas vacation.
+Theoretically it is possible to achieve zero-copy conversions if all parsers can parse into a unified struct. However, this is going to be a lot of work.
 
 ## Supported Formats
 
-| File Fomat    | Metadata Format       | backend                                                     |
-| ------------- | --------------------- | ----------------------------------------------------------- |
-| `mp3`         | id3v2.4               | [**id3**](https://github.com/polyfloyd/rust-id3)            |
-| `m4a/mp4/...` | MPEG-4 audio metadata | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
-| `flac`        | Vorbis comment        | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
+| File Format   | Metadata Format | Backend                                                     |
+|---------------|-----------------|-------------------------------------------------------------|
+| `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)            |
+| `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers) |
+| `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton)           |
+| `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
+| `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
 
 ## Getters and Setters
 
