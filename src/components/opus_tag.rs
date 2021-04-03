@@ -1,13 +1,43 @@
 use crate::*;
-use metaflac;
+use opus_headers;
 
-pub use metaflac::Tag as FlacInnerTag;
+use opus_headers::{CommentHeader, IdentificationHeader, OpusHeaders as OpusInnerTag};
+use std::borrow::BorrowMut;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
-impl_tag!(FlacTag, FlacInnerTag, TagType::Flac);
+impl MissingImplementations for OpusInnerTag {
+	fn default() -> Self {
+		Self {
+			id: IdentificationHeader {
+				version: 0,
+				channel_count: 0,
+				pre_skip: 0,
+				input_sample_rate: 0,
+				output_gain: 0,
+				channel_mapping_family: 0,
+				channel_mapping_table: None,
+			},
+			comments: CommentHeader {
+				vendor: "".to_string(),
+				user_comments: Default::default(),
+			},
+		}
+	}
 
-impl<'a> From<AnyTag<'a>> for FlacTag {
+	fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		todo!()
+	}
+}
+
+impl_tag!(OpusTag, OpusInnerTag, TagType::Opus);
+
+impl<'a> From<AnyTag<'a>> for OpusTag {
 	fn from(inp: AnyTag<'a>) -> Self {
-		let mut t = FlacTag::default();
+		let mut t = OpusTag::default();
 		inp.title().map(|v| t.set_title(v));
 		inp.artists_as_string().map(|v| t.set_artist(&v));
 		inp.year.map(|v| t.set_year(v as u16));
@@ -21,8 +51,8 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
 	}
 }
 
-impl<'a> From<&'a FlacTag> for AnyTag<'a> {
-	fn from(inp: &'a FlacTag) -> Self {
+impl<'a> From<&'a OpusTag> for AnyTag<'a> {
+	fn from(inp: &'a OpusTag) -> Self {
 		let mut t = Self::default();
 		t.title = inp.title();
 		t.artists = inp.artists();
@@ -38,11 +68,13 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
 	}
 }
 
-impl FlacTag {
+impl OpusTag {
 	pub fn get_first(&self, key: &str) -> Option<&str> {
-		if let Some(Some(v)) = self.0.vorbis_comments().map(|c| c.get(key)) {
-			if !v.is_empty() {
-				Some(v[0].as_str())
+		let comments = &self.0.comments.user_comments;
+
+		if let Some(pair) = comments.get_key_value(key) {
+			if !pair.1.is_empty() {
+				Some(pair.1.as_str())
 			} else {
 				None
 			}
@@ -51,14 +83,21 @@ impl FlacTag {
 		}
 	}
 	pub fn set_first(&mut self, key: &str, val: &str) {
-		self.0.vorbis_comments_mut().set(key, vec![val]);
+		let comments: &mut HashMap<String, String, RandomState> =
+			self.0.comments.user_comments.borrow_mut();
+		match comments.get_mut(key) {
+			Some(mut v) => v = &mut val.to_string(),
+			None => {},
+		}
 	}
-	pub fn remove(&mut self, k: &str) {
-		self.0.vorbis_comments_mut().comments.remove(k);
+	pub fn remove(&mut self, key: &str) {
+		let comments: &mut HashMap<String, String, RandomState> =
+			self.0.comments.user_comments.borrow_mut();
+		comments.retain(|k, _| k != key)
 	}
 }
 
-impl AudioTagEdit for FlacTag {
+impl AudioTagEdit for OpusTag {
 	fn title(&self) -> Option<&str> {
 		self.get_first("TITLE")
 	}
@@ -123,28 +162,32 @@ impl AudioTagEdit for FlacTag {
 		self.remove("ALBUMARTIST");
 	}
 	fn album_cover(&self) -> Option<Picture> {
-		self.0
-			.pictures()
-			.filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
-			.next()
-			.and_then(|pic| {
-				Some(Picture {
-					data: &pic.data,
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-				})
-			})
+		// TODO
+		// self.0
+		//     .pictures()
+		//     .filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
+		//     .next()
+		//     .and_then(|pic| {
+		//         Some(Picture {
+		//             data: &pic.data,
+		//             mime_type: (pic.mime_type.as_str()).try_into().ok()?,
+		//         })
+		//     })
+		None
 	}
 
 	fn set_album_cover(&mut self, cover: Picture) {
-		self.remove_album_cover();
-		let mime = String::from(cover.mime_type);
-		let picture_type = metaflac::block::PictureType::CoverFront;
-		self.0
-			.add_picture(mime, picture_type, (cover.data).to_owned());
+		// TODO
+		// self.remove_album_cover();
+		// let mime = String::from(cover.mime_type);
+		// let picture_type = metaflac::block::PictureType::CoverFront;
+		// self.0
+		//     .add_picture(mime, picture_type, (cover.data).to_owned());
 	}
 	fn remove_album_cover(&mut self) {
-		self.0
-			.remove_picture_type(metaflac::block::PictureType::CoverFront)
+		// TODO
+		// self.0
+		//     .remove_picture_type(metaflac::block::PictureType::CoverFront)
 	}
 
 	fn track_number(&self) -> Option<u16> {
@@ -204,13 +247,13 @@ impl AudioTagEdit for FlacTag {
 	}
 }
 
-impl AudioTagWrite for FlacTag {
+impl AudioTagWrite for OpusTag {
 	fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
-		self.0.write_to(file)?;
+		// self.0.write_to(file)?; TODO
 		Ok(())
 	}
 	fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
-		self.0.write_to_path(path)?;
+		// self.0.write_to_path(path)?; TODO
 		Ok(())
 	}
 }

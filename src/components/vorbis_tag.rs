@@ -1,18 +1,43 @@
 use crate::*;
-use metaflac;
+use lewton;
 
-pub use metaflac::Tag as FlacInnerTag;
+use lewton::header::CommentHeader as VorbisInnerTag;
+use lewton::inside_ogg::OggStreamReader;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
-impl_tag!(FlacTag, FlacInnerTag, TagType::Flac);
+impl MissingImplementations for VorbisInnerTag {
+	fn default() -> Self {
+		Self {
+			vendor: "".to_string(),
+			comment_list: vec![],
+		}
+	}
 
-impl<'a> From<AnyTag<'a>> for FlacTag {
+	fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		let stream = OggStreamReader::new(File::open(path).unwrap()).unwrap();
+
+		Ok(Self {
+			vendor: stream.comment_hdr.vendor,
+			comment_list: stream.comment_hdr.comment_list,
+		})
+	}
+}
+
+impl_tag!(VorbisTag, VorbisInnerTag, TagType::Vorbis);
+
+impl<'a> From<AnyTag<'a>> for VorbisTag {
 	fn from(inp: AnyTag<'a>) -> Self {
-		let mut t = FlacTag::default();
+		let mut t = VorbisTag::default();
 		inp.title().map(|v| t.set_title(v));
-		inp.artists_as_string().map(|v| t.set_artist(&v));
+		inp.artists_as_string().map(|v| t.set_artist(v.as_str()));
 		inp.year.map(|v| t.set_year(v as u16));
 		inp.album_title().map(|v| t.set_album_title(v));
-		inp.album_artists_as_string().map(|v| t.set_artist(&v));
+		inp.album_artists_as_string()
+			.map(|v| t.set_artist(v.as_str()));
 		inp.track_number().map(|v| t.set_track_number(v));
 		inp.total_tracks().map(|v| t.set_total_tracks(v));
 		inp.disc_number().map(|v| t.set_disc_number(v));
@@ -21,8 +46,8 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
 	}
 }
 
-impl<'a> From<&'a FlacTag> for AnyTag<'a> {
-	fn from(inp: &'a FlacTag) -> Self {
+impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
+	fn from(inp: &'a VorbisTag) -> Self {
 		let mut t = Self::default();
 		t.title = inp.title();
 		t.artists = inp.artists();
@@ -38,27 +63,36 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
 	}
 }
 
-impl FlacTag {
+impl VorbisTag {
+	// TODO: rename these
 	pub fn get_first(&self, key: &str) -> Option<&str> {
-		if let Some(Some(v)) = self.0.vorbis_comments().map(|c| c.get(key)) {
-			if !v.is_empty() {
-				Some(v[0].as_str())
-			} else {
-				None
+		let comments = &self.0.comment_list;
+
+		for (k, v) in comments {
+			if k.as_str() == key {
+				return Some(v.as_str());
 			}
-		} else {
-			None
 		}
+
+		None
 	}
 	pub fn set_first(&mut self, key: &str, val: &str) {
-		self.0.vorbis_comments_mut().set(key, vec![val]);
+		let mut comments: HashMap<String, String, RandomState> =
+			self.0.comment_list.clone().into_iter().collect();
+		match comments.get_mut(key) {
+			Some(mut v) => v = &mut val.to_string(),
+			None => {},
+		}
 	}
-	pub fn remove(&mut self, k: &str) {
-		self.0.vorbis_comments_mut().comments.remove(k);
+	pub fn remove(&mut self, key: &str) {
+		let mut comments: HashMap<String, String, RandomState> =
+			self.0.comment_list.clone().into_iter().collect();
+		comments.retain(|k, _| k != key)
 	}
+	pub fn pictures(&self) {}
 }
 
-impl AudioTagEdit for FlacTag {
+impl AudioTagEdit for VorbisTag {
 	fn title(&self) -> Option<&str> {
 		self.get_first("TITLE")
 	}
@@ -122,29 +156,34 @@ impl AudioTagEdit for FlacTag {
 	fn remove_album_artist(&mut self) {
 		self.remove("ALBUMARTIST");
 	}
+	// TODO
 	fn album_cover(&self) -> Option<Picture> {
-		self.0
-			.pictures()
-			.filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
-			.next()
-			.and_then(|pic| {
-				Some(Picture {
-					data: &pic.data,
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-				})
-			})
+		// self.get_first("PICTURE")
+		// self.0
+		//     .pictures()
+		//     .filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
+		//     .next()
+		//     .and_then(|pic| {
+		//         Some(Picture {
+		//             data: &pic.data,
+		//             mime_type: (pic.mime_type.as_str()).try_into().ok()?,
+		//         })
+		//     })
+		None
 	}
 
 	fn set_album_cover(&mut self, cover: Picture) {
-		self.remove_album_cover();
-		let mime = String::from(cover.mime_type);
-		let picture_type = metaflac::block::PictureType::CoverFront;
-		self.0
-			.add_picture(mime, picture_type, (cover.data).to_owned());
+		// TODO
+		// self.remove_album_cover();
+		// let mime = String::from(cover.mime_type);
+		// let picture_type = metaflac::block::PictureType::CoverFront;
+		// self.0
+		//     .add_picture(mime, picture_type, (cover.data).to_owned());
 	}
 	fn remove_album_cover(&mut self) {
-		self.0
-			.remove_picture_type(metaflac::block::PictureType::CoverFront)
+		// TODO
+		// self.0
+		//     .remove_picture_type(metaflac::block::PictureType::CoverFront)
 	}
 
 	fn track_number(&self) -> Option<u16> {
@@ -203,14 +242,16 @@ impl AudioTagEdit for FlacTag {
 		self.remove("TOTALDISCS");
 	}
 }
-
-impl AudioTagWrite for FlacTag {
+// TODO
+impl AudioTagWrite for VorbisTag {
 	fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
-		self.0.write_to(file)?;
+		// TODO
+		// self.0.write_to(file)?;
 		Ok(())
 	}
 	fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
-		self.0.write_to_path(path)?;
+		// TODO
+		// self.0.write_to_path(path)?;
 		Ok(())
 	}
 }

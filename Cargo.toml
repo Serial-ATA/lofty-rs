@@ -1,21 +1,25 @@
 [package]
-name = "audiotags"
+name = "lofty"
 version = "0.2.7182"
-authors = ["Tianyi <ShiTianyi2001@outlook.com>"]
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>", "Tianyi <ShiTianyi2001@outlook.com>"]
 edition = "2018"
-description = "Unified IO for different types of audio metadata"
+description = "Fork of https://github.com/TianyiShi2001/audiotags, adding support for more file types and (optionally) duration"
 license = "MIT"
-repository = "https://github.com/TianyiShi2001/audiotags"
+repository = "https://github.com/Serial-ATA/lofty"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-id3 = "0.5.1"
-mp4ameta = "0.6"
-metaflac = "0.2"
-thiserror = "1.0.21"
+opus_headers = {version = "0.1.2", optional = true}
+lewton = {version = "0.10.2", optional = true}
+metaflac = {version = "0.2.4", optional = true}
+mp4ameta = {version = "0.9.1", optional = true}
+id3 = {version = "0.6.2", optional = true}
+mp3-duration = {version = "0.1.10", optional = true}
+thiserror = "1.0.24"
 audiotags-dev-macro = {path = "./audiotags-dev-macro", version = "0.1.4"}
 
 [features]
-defualt = ['from']
-from = []
+default = ["tags", "duration"]
+tags = ["opus_headers", "lewton", "metaflac", "mp4ameta", "id3"]
+duration = ["mp3-duration"]
