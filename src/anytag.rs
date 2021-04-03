@@ -28,7 +28,15 @@ impl<'a> AnyTag<'a> {
 	pub fn artists(&self) -> Option<&[&str]> {
 		self.artists.as_deref()
 	}
-	// set_artists; add_artist TODO?
+	pub fn set_artists(&mut self, artists: Vec<&'a str>) {
+		self.artists = Some(artists)
+	}
+	pub fn add_artist(&mut self, artist: &'a str) {
+		self.artists = self.artists.clone().map(|mut a| {
+			a.push(artist);
+			a
+		});
+	}
 	pub fn year(&self) -> Option<i32> {
 		self.year
 	}

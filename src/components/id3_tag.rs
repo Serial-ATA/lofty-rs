@@ -179,11 +179,11 @@ impl AudioTagEdit for Id3v2Tag {
 }
 
 impl AudioTagWrite for Id3v2Tag {
-	fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
+	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		self.0.write_to(file, id3::Version::Id3v24)?;
 		Ok(())
 	}
-	fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
+	fn write_to_path(&mut self, path: &str) -> Result<()> {
 		self.0.write_to_path(path, id3::Version::Id3v24)?;
 		Ok(())
 	}

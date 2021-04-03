@@ -75,12 +75,12 @@ pub use std::convert::{TryFrom, TryInto};
 /// ```
 /// use lofty::{Tag, TagType};
 ///
-/// // Guess the format by default
+/// // Guess the format from the extension, in this case `mp3`
 /// let mut tag = Tag::new().read_from_path("assets/a.mp3").unwrap();
 /// tag.set_title("Foo");
-/// // you can convert the tag type and save the metadata to another file.
+/// // You can convert the tag type and save the metadata to another file.
 /// tag.to_dyn_tag(TagType::Mp4).write_to_path("assets/a.m4a");
-/// // you can specify the tag type (but when you want to do this, also consider directly using the concrete type)
+/// // You can specify the tag type (but when you want to do this, also consider directly using the concrete type)
 /// let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("assets/a.m4a").unwrap();
 /// assert_eq!(tag.title(), Some("Foo"));
 /// ```
@@ -89,26 +89,26 @@ pub use std::convert::{TryFrom, TryInto};
 pub struct Tag(Option<TagType>);
 
 impl Tag {
-	/// Initiate a new Tag (a builder for `Box<dyn AudioTag>`) with default configurations.
-	/// You can then optionally chain `with_tag_type` and/or `with_config`.
-	/// Finally, you `read_from_path`
+	/// Initiate a new Tag (a builder for `Box<dyn AudioTag>`).
+	/// You can then optionally chain `with_tag_type`.
+	/// Finally, you `read_from_path`.
 	pub fn new() -> Self {
 		Self::default()
 	}
-	/// Specify the tag type
+	/// Specify the TagType
 	pub fn with_tag_type(self, tag_type: TagType) -> Self {
 		Self(Some(tag_type))
 	}
-
+	/// Path of the file to read
 	pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTag>> {
 		let extension = path.as_ref().extension().unwrap().to_str().unwrap();
 
 		match self.0.unwrap_or(TagType::try_from_ext(extension)?) {
-			TagType::Id3v2 => Ok(Box::new({ Id3v2Tag::read_from_path(path)? })),
-			TagType::Vorbis => Ok(Box::new({ VorbisTag::read_from_path(path)? })),
-			TagType::Opus => Ok(Box::new({ OpusTag::read_from_path(path)? })),
-			TagType::Flac => Ok(Box::new({ FlacTag::read_from_path(path)? })),
-			TagType::Mp4 => Ok(Box::new({ Mp4Tag::read_from_path(path)? })),
+			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
+			TagType::Vorbis => Ok(Box::new(VorbisTag::read_from_path(path)?)),
+			TagType::Opus => Ok(Box::new(OpusTag::read_from_path(path)?)),
+			TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
+			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 		}
 	}
 }

@@ -226,11 +226,11 @@ impl AudioTagEdit for Mp4Tag {
 }
 
 impl AudioTagWrite for Mp4Tag {
-	fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
+	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		self.0.write_to(file)?;
 		Ok(())
 	}
-	fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
+	fn write_to_path(&mut self, path: &str) -> Result<()> {
 		self.0.write_to_path(path)?;
 		Ok(())
 	}
