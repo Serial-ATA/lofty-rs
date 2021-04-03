@@ -36,7 +36,10 @@ impl MissingImplementations for OpusInnerTag {
 	{
 		let headers = opus_headers::parse_from_path(path)?;
 
-		Ok(Self { id: headers.id, comments: headers.comments })
+		Ok(Self {
+			id: headers.id,
+			comments: headers.comments,
+		})
 	}
 }
 
