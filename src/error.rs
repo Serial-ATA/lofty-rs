@@ -12,13 +12,15 @@ pub enum Error {
 	UnsupportedMimeType(String),
 
 	#[error(transparent)]
-	Id3TagError(#[from] id3::Error),
-	#[error(transparent)]
-	VorbisError(#[from] lewton::VorbisError),
-	#[error(transparent)]
 	FlacTagError(#[from] metaflac::Error),
 	#[error(transparent)]
+	Id3TagError(#[from] id3::Error),
+	#[error(transparent)]
 	Mp4TagError(#[from] mp4ameta::Error),
+	#[error(transparent)]
+	OpusTagError(#[from] opus_headers::ParseError),
+	#[error(transparent)]
+	VorbisTagError(#[from] lewton::VorbisError),
 
 	#[error("")]
 	NotAPicture,

@@ -48,7 +48,7 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 
 impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
 	type Error = Error;
-	fn try_from(inp: &'a id3::frame::Picture) -> crate::Result<Self> {
+	fn try_from(inp: &'a id3::frame::Picture) -> Result<Self> {
 		let &id3::frame::Picture {
 			ref mime_type,
 			ref data,

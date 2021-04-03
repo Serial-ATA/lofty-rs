@@ -15,7 +15,7 @@ impl Tag {
 		Self(Some(tag_type))
 	}
 	/// Path of the file to read
-	pub fn read_from_path(&self, path: impl AsRef<Path>) -> crate::Result<Box<dyn AudioTag>> {
+	pub fn read_from_path(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
 		let extension = path.as_ref().extension().unwrap().to_str().unwrap();
 
 		match self.0.unwrap_or(TagType::try_from_ext(extension)?) {

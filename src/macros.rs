@@ -15,7 +15,7 @@ macro_rules! impl_tag {
 			pub fn new() -> Self {
 				Self::default()
 			}
-			pub fn read_from_path<P>(path: P) -> crate::Result<Self>
+			pub fn read_from_path<P>(path: P) -> Result<Self>
 			where
 				P: AsRef<Path>,
 			{

@@ -34,7 +34,9 @@ impl MissingImplementations for OpusInnerTag {
 	where
 		P: AsRef<Path>,
 	{
-		todo!()
+		let headers = opus_headers::parse_from_path(path)?;
+
+		Ok(Self { id: headers.id, comments: headers.comments })
 	}
 }
 
@@ -88,17 +90,14 @@ impl OpusTag {
 		}
 	}
 	pub fn set_value(&mut self, key: &str, val: &str) {
-		let comments: &mut HashMap<String, String, RandomState> =
-			self.0.comments.user_comments.borrow_mut();
-		match comments.get_mut(key) {
-			Some(mut v) => v = &mut val.to_string(),
-			None => {},
-		}
+		let mut comments = self.0.comments.user_comments.clone();
+		let _ = comments.insert(key.to_string(), val.to_string());
+		self.0.comments.user_comments = comments;
 	}
 	pub fn remove(&mut self, key: &str) {
-		let comments: &mut HashMap<String, String, RandomState> =
-			self.0.comments.user_comments.borrow_mut();
-		comments.retain(|k, _| k != key)
+		let mut comments = self.0.comments.user_comments.clone();
+		comments.retain(|k, _| k != key);
+		self.0.comments.user_comments = comments;
 	}
 }
 
@@ -253,11 +252,11 @@ impl AudioTagEdit for OpusTag {
 }
 
 impl AudioTagWrite for OpusTag {
-	fn write_to(&mut self, file: &mut File) -> crate::Result<()> {
+	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		// self.0.write_to(file)?; TODO
 		Ok(())
 	}
-	fn write_to_path(&mut self, path: &str) -> crate::Result<()> {
+	fn write_to_path(&mut self, path: &str) -> Result<()> {
 		// self.0.write_to_path(path)?; TODO
 		Ok(())
 	}

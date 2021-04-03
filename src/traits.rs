@@ -6,8 +6,8 @@ use std::{fs::File, path::Path};
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
 // pub trait TagIo {
-//     fn read_from_path(path: &str) -> crate::Result<AnyTag>;
-//     fn write_to_path(path: &str) -> crate::Result<()>;
+//     fn read_from_path(path: &str) -> Result<AnyTag>;
+//     fn write_to_path(path: &str) -> Result<()>;
 // }
 
 /// Implementors of this trait are able to read and write audio metadata.
@@ -100,9 +100,9 @@ pub trait AudioTagEdit {
 }
 
 pub trait AudioTagWrite {
-	fn write_to(&mut self, file: &mut File) -> crate::Result<()>;
+	fn write_to(&mut self, file: &mut File) -> Result<()>;
 	// cannot use impl AsRef<Path>
-	fn write_to_path(&mut self, path: &str) -> crate::Result<()>;
+	fn write_to_path(&mut self, path: &str) -> Result<()>;
 }
 
 pub trait ToAnyTag: ToAny {

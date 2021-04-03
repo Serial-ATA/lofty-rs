@@ -60,7 +60,7 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 
 impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
 	type Error = Error;
-	fn try_from(inp: &'a mp4ameta::Data) -> crate::Result<Self> {
+	fn try_from(inp: &'a mp4ameta::Data) -> Result<Self> {
 		Ok(match *inp {
 			mp4ameta::Data::Png(ref data) => Self {
 				data,
