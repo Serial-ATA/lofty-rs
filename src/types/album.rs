@@ -19,6 +19,7 @@ impl<'a> Default for Album<'a> {
 }
 
 impl<'a> Album<'a> {
+	/// Create a new `Album`
 	pub fn new(
 		title: Option<&'a str>,
 		artists: Option<Vec<&'a str>>,
@@ -30,6 +31,7 @@ impl<'a> Album<'a> {
 			cover,
 		}
 	}
+	/// Create a new album with the specified title
 	pub fn with_title(title: &'a str) -> Self {
 		Self {
 			title: Some(title),
@@ -37,10 +39,12 @@ impl<'a> Album<'a> {
 			cover: None,
 		}
 	}
+	/// Set the album artists
 	pub fn set_artists(mut self, artists: Vec<&'a str>) -> Self {
 		self.artists = Some(artists);
 		self
 	}
+	/// Appends an artist to the `artists` vec
 	pub fn append_artist(mut self, artist: &'a str) {
 		if let Some(mut artists) = self.artists {
 			artists.push(artist)
@@ -48,17 +52,20 @@ impl<'a> Album<'a> {
 			self.artists = Some(vec![artist])
 		}
 	}
+	/// Set the album cover
 	pub fn set_cover(mut self, cover: Picture<'a>) -> Self {
 		self.cover = Some(cover);
 		self
 	}
+	/// Clears the `artists` field
 	pub fn remove_artists(mut self) {
 		self.artists = None
 	}
+	/// Clears the `cover` field
 	pub fn remove_cover(mut self) {
 		self.cover = None
 	}
-	/// Turns `album` artists into a comma separated String
+	/// Turns `artists` vec into a comma separated String
 	pub fn artists_as_string(&self) -> Option<String> {
 		self.artists.as_ref().map(|artists| artists.join(","))
 	}
