@@ -20,41 +20,31 @@ pub trait AudioTagEdit {
 
 	fn artist(&self) -> Option<&str>;
 	fn set_artist(&mut self, artist: &str);
-	fn remove_artist(&mut self);
+	fn add_artist(&mut self, artist: &str);
 
-	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|v| vec![v])
-	}
-	fn add_artist(&mut self, artist: &str) {
-		self.set_artist(artist);
-	}
+	fn artists(&self) -> Option<Vec<&str>>;
+	fn remove_artist(&mut self);
 
 	fn year(&self) -> Option<u16>;
 	fn set_year(&mut self, year: u16);
 	fn remove_year(&mut self);
 
-	fn album(&self) -> Option<Album<'_>> {
-		self.album_title().map(|title| Album {
-			title,
-			artist: self.album_artist(),
+	fn album(&self) -> Album<'_> {
+		Album {
+			title: self.album_title(),
+			artists: self.album_artists(),
 			cover: self.album_cover(),
-		})
+		}
 	}
 
 	fn album_title(&self) -> Option<&str>;
 	fn set_album_title(&mut self, v: &str);
 	fn remove_album_title(&mut self);
 
-	fn album_artist(&self) -> Option<&str>;
-	fn set_album_artist(&mut self, v: &str);
-	fn remove_album_artist(&mut self);
-
-	fn album_artists(&self) -> Option<Vec<&str>> {
-		self.album_artist().map(|v| vec![v])
-	}
-	fn add_album_artist(&mut self, artist: &str) {
-		self.set_album_artist(artist);
-	}
+	fn album_artists(&self) -> Option<Vec<&str>>;
+	fn set_album_artists(&mut self, artists: String);
+	fn add_album_artist(&mut self, artist: &str);
+	fn remove_album_artists(&mut self);
 
 	fn album_cover(&self) -> Option<Picture>;
 	fn set_album_cover(&mut self, cover: Picture);

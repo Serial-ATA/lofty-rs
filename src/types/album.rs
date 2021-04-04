@@ -1,34 +1,65 @@
 use super::picture::Picture;
 
 /// A struct for representing an album for convenience.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Album<'a> {
-	pub title: &'a str,
-	pub artist: Option<&'a str>,
+	pub title: Option<&'a str>,
+	pub artists: Option<Vec<&'a str>>,
 	pub cover: Option<Picture<'a>>,
 }
 
-impl<'a> Album<'a> {
-	pub fn title(title: &'a str) -> Self {
+impl<'a> Default for Album<'a> {
+	fn default() -> Self {
 		Self {
-			title,
-			artist: None,
+			title: None,
+			artists: None,
 			cover: None,
 		}
 	}
-	pub fn artist(mut self, artist: &'a str) -> Self {
-		self.artist = Some(artist);
+}
+
+impl<'a> Album<'a> {
+	pub fn new(
+		title: Option<&'a str>,
+		artists: Option<Vec<&'a str>>,
+		cover: Option<Picture<'a>>,
+	) -> Self {
+		Self {
+			title,
+			artists,
+			cover,
+		}
+	}
+	pub fn with_title(title: &'a str) -> Self {
+		Self {
+			title: Some(title),
+			artists: None,
+			cover: None,
+		}
+	}
+	pub fn set_artists(mut self, artists: Vec<&'a str>) -> Self {
+		self.artists = Some(artists);
 		self
 	}
-	pub fn cover(mut self, cover: Picture<'a>) -> Self {
+	pub fn append_artist(mut self, artist: &'a str) {
+		if let Some(mut artists) = self.artists {
+			artists.push(artist)
+		} else {
+			self.artists = Some(vec![artist])
+		}
+	}
+	pub fn set_cover(mut self, cover: Picture<'a>) -> Self {
 		self.cover = Some(cover);
 		self
 	}
-	pub fn full(title: &'a str, artist: &'a str, cover: Picture<'a>) -> Self {
-		Self {
-			title,
-			artist: Some(artist),
-			cover: Some(cover),
-		}
+	pub fn remove_artists(mut self) {
+		self.artists = None
+	}
+	pub fn remove_cover(mut self) {
+		self.cover = None
+	}
+	/// Turns `album` artists into a comma separated String
+	pub fn artists_as_string(&self) -> Option<String> {
+		self.artists.as_ref().map(|artists| artists.join(","))
 	}
 }

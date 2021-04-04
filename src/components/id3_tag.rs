@@ -1,6 +1,6 @@
 use crate::{
-	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
-	TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
 use std::{convert::TryInto, fs::File, path::Path};
 
@@ -14,9 +14,7 @@ impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
 			title: inp.title(),
 			artists: inp.artists(),
 			year: inp.year().map(|y| y as i32),
-			album: inp.album_title(),
-			album_artists: inp.album_artists(),
-			cover: inp.album_cover(),
+			album: Album::new(inp.album_title(), inp.album_artists(), inp.album_cover()),
 			track_number: inp.track_number(),
 			total_tracks: inp.total_tracks(),
 			disc_number: inp.disc_number(),
@@ -35,9 +33,10 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 		inp.title().map(|v| tag.set_title(v));
 		inp.artists_as_string().map(|v| tag.set_artist(v.as_str()));
 		inp.year.map(|v| tag.set_year(v as u16));
-		inp.album_title().map(|v| tag.set_album_title(v));
-		inp.album_artists_as_string()
-			.map(|v| tag.set_album_artist(v.as_str()));
+		inp.album().title.map(|v| tag.set_album_title(v));
+		inp.album()
+			.artists
+			.map(|v| tag.set_album_artists(v.join(", ")));
 		inp.track_number().map(|v| tag.set_track(v as u16));
 		inp.total_tracks().map(|v| tag.set_total_tracks(v as u16));
 		inp.disc_number().map(|v| tag.set_disc(v as u16));
@@ -76,11 +75,27 @@ impl AudioTagEdit for Id3v2Tag {
 	fn artist(&self) -> Option<&str> {
 		self.0.artist()
 	}
+
 	fn set_artist(&mut self, artist: &str) {
 		self.0.set_artist(artist)
 	}
+
+	fn add_artist(&mut self, artist: &str) {
+		if let Some(artists) = self.artist() {
+			let mut artists: Vec<&str> = artists.split(", ").collect();
+			artists.push(artist);
+			self.set_artist(&artists.join(", "))
+		} else {
+			self.set_artist(artist)
+		}
+	}
+
+	fn artists(&self) -> Option<Vec<&str>> {
+		todo!()
+	}
+
 	fn remove_artist(&mut self) {
-		self.0.remove_artist();
+		self.0.remove_artist()
 	}
 
 	fn year(&self) -> Option<u16> {
@@ -103,14 +118,20 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.remove_album();
 	}
 
-	fn album_artist(&self) -> Option<&str> {
-		self.0.album_artist()
+	fn album_artists(&self) -> Option<Vec<&str>> {
+		self.0.album_artist().map(|a| a.split(", ").collect())
 	}
-	fn set_album_artist(&mut self, v: &str) {
-		self.0.set_album_artist(v)
+
+	fn set_album_artists(&mut self, artists: String) {
+		self.0.set_album_artist(artists)
 	}
-	fn remove_album_artist(&mut self) {
-		self.0.remove_album_artist();
+
+	fn add_album_artist(&mut self, artist: &str) {
+		todo!()
+	}
+
+	fn remove_album_artists(&mut self) {
+		self.0.remove_album_artist()
 	}
 
 	fn album_cover(&self) -> Option<Picture> {

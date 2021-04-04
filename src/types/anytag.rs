@@ -1,12 +1,12 @@
-use crate::Picture;
+use crate::Album;
+use std::borrow::Borrow;
 
 /// The tag returned from `read_from_path`
 #[derive(Default)]
 pub struct AnyTag<'a> {
 	pub title: Option<&'a str>,
 	pub artists: Option<Vec<&'a str>>,
-	pub album: Option<&'a str>,
-	pub album_artists: Option<Vec<&'a str>>,
+	pub album: Album<'a>,
 	pub comments: Option<Vec<&'a str>>,
 	pub year: Option<i32>,
 	pub date: Option<&'a str>,
@@ -14,7 +14,6 @@ pub struct AnyTag<'a> {
 	pub total_tracks: Option<u16>,
 	pub disc_number: Option<u16>,
 	pub total_discs: Option<u16>,
-	pub cover: Option<Picture<'a>>,
 	#[cfg(feature = "duration")]
 	pub duration_ms: Option<u32>,
 }
@@ -43,6 +42,14 @@ impl<'a> AnyTag<'a> {
 			a
 		});
 	}
+	/// Returns `album`
+	pub fn album(&self) -> Album {
+		self.album.clone()
+	}
+	/// Replaces `album`
+	pub fn set_album(&mut self, album: Album<'a>) {
+		self.album = album
+	}
 	/// Returns `year`
 	pub fn year(&self) -> Option<i32> {
 		self.year
@@ -50,14 +57,6 @@ impl<'a> AnyTag<'a> {
 	/// Replaces `year`
 	pub fn set_year(&mut self, year: i32) {
 		self.year = Some(year);
-	}
-	/// Returns the name of `album`
-	pub fn album_title(&self) -> Option<&str> {
-		self.album.as_deref()
-	}
-	/// Returns the artists of `album`
-	pub fn album_artists(&self) -> Option<&[&str]> {
-		self.album_artists.as_deref()
 	}
 	/// Returns `track number`
 	pub fn track_number(&self) -> Option<u16> {
@@ -85,10 +84,6 @@ impl<'a> AnyTag<'a> {
 impl AnyTag<'_> {
 	/// Turns `artists` into a comma separated String
 	pub fn artists_as_string(&self) -> Option<String> {
-		self.artists().map(|artists| artists.join(","))
-	}
-	/// Turns `album` artists into a comma separated String
-	pub fn album_artists_as_string(&self) -> Option<String> {
-		self.album_artists().map(|artists| artists.join(","))
+		self.artists.as_ref().map(|artists| artists.join(","))
 	}
 }

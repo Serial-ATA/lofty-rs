@@ -1,6 +1,6 @@
 use crate::{
-	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
-	TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
 use std::{fs::File, path::Path};
 
@@ -13,11 +13,7 @@ impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
 		let title = inp.title();
 		let artists = inp.artists().map(|i| i.into_iter().collect::<Vec<_>>());
 		let year = inp.year().map(|y| y as i32);
-		let album = inp.album_title();
-		let album_artists = inp
-			.album_artists()
-			.map(|i| i.into_iter().collect::<Vec<_>>());
-		let cover = inp.album_cover();
+		let album = Album::new(inp.album_title(), inp.album_artists(), inp.album_cover());
 		let (track_number, total_tracks) = inp.track();
 		let (disc_number, total_discs) = inp.disc();
 
@@ -26,8 +22,6 @@ impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
 			artists,
 			year,
 			album,
-			cover,
-			album_artists,
 			track_number,
 			total_tracks,
 			disc_number,
@@ -47,8 +41,9 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 		inp.artists()
 			.map(|i| i.iter().for_each(|&a| tag.add_artist(a)));
 		inp.year.map(|v| tag.set_year(v as u16));
-		inp.album_title().map(|v| tag.set_album_title(v));
-		inp.album_artists()
+		inp.album().title.map(|v| tag.set_album_title(v));
+		inp.album()
+			.artists
 			.map(|i| i.iter().for_each(|&a| tag.add_album_artist(a)));
 		inp.track_number().map(|v| tag.set_track_number(v));
 		inp.total_tracks().map(|v| tag.set_total_tracks(v));
@@ -92,8 +87,9 @@ impl AudioTagEdit for Mp4Tag {
 	fn set_artist(&mut self, artist: &str) {
 		self.0.set_artist(artist)
 	}
-	fn remove_artist(&mut self) {
-		self.0.remove_artists();
+
+	fn add_artist(&mut self, artist: &str) {
+		self.0.add_artist(artist);
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {
@@ -107,8 +103,8 @@ impl AudioTagEdit for Mp4Tag {
 			None
 		}
 	}
-	fn add_artist(&mut self, v: &str) {
-		self.0.add_artist(v);
+	fn remove_artist(&mut self) {
+		self.0.remove_artists();
 	}
 
 	fn year(&self) -> Option<u16> {
@@ -132,30 +128,27 @@ impl AudioTagEdit for Mp4Tag {
 		self.0.remove_album();
 	}
 
-	fn album_artist(&self) -> Option<&str> {
-		self.0.album_artist()
-	}
-	fn set_album_artist(&mut self, v: &str) {
-		self.0.set_album_artist(v)
-	}
-
-	fn remove_album_artist(&mut self) {
-		self.0.remove_data(&FourCC(*b"aART"));
-		self.0.remove_album_artists();
-	}
 	fn album_artists(&self) -> Option<Vec<&str>> {
-		let v = self.0.album_artists().fold(Vec::new(), |mut v, a| {
-			v.push(a);
-			v
-		});
-		if v.len() > 0 {
-			Some(v)
+		let mut album_artists = self.0.album_artists().peekable();
+
+		if album_artists.peek().is_some() {
+			Some(album_artists.collect())
 		} else {
 			None
 		}
 	}
-	fn add_album_artist(&mut self, v: &str) {
-		self.0.add_album_artist(v);
+
+	fn set_album_artists(&mut self, artists: String) {
+		self.0.set_album_artist(artists)
+	}
+
+	fn add_album_artist(&mut self, artist: &str) {
+		self.0.add_album_artist(artist)
+	}
+
+	fn remove_album_artists(&mut self) {
+		self.0.remove_data(&FourCC(*b"aART"));
+		self.0.remove_album_artists();
 	}
 	fn album_cover(&self) -> Option<Picture> {
 		use mp4ameta::Data::*;

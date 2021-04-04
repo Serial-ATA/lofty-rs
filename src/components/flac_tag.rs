@@ -1,6 +1,6 @@
 use crate::{
-	impl_tag, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
-	TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
 use std::{convert::TryInto, fs::File, path::Path};
 
@@ -14,8 +14,8 @@ impl<'a> From<AnyTag<'a>> for FlacTag {
 		inp.title().map(|v| t.set_title(v));
 		inp.artists_as_string().map(|v| t.set_artist(&v));
 		inp.year.map(|v| t.set_year(v as u16));
-		inp.album_title().map(|v| t.set_album_title(v));
-		inp.album_artists_as_string().map(|v| t.set_artist(&v));
+		inp.album().title.map(|v| t.set_album_title(v));
+		inp.album().artists_as_string().map(|v| t.set_artist(&v));
 		inp.track_number().map(|v| t.set_track_number(v));
 		inp.total_tracks().map(|v| t.set_total_tracks(v));
 		inp.disc_number().map(|v| t.set_disc_number(v));
@@ -30,9 +30,7 @@ impl<'a> From<&'a FlacTag> for AnyTag<'a> {
 		t.title = inp.title();
 		t.artists = inp.artists();
 		t.year = inp.year().map(|y| y as i32);
-		t.album = inp.album_title();
-		t.album_artists = inp.album_artists();
-		t.cover = inp.album_cover();
+		t.album = Album::new(inp.album_title(), inp.album_artists(), inp.album_cover());
 		t.track_number = inp.track_number();
 		t.total_tracks = inp.total_tracks();
 		t.disc_number = inp.disc_number();
@@ -53,7 +51,10 @@ impl FlacTag {
 			None
 		}
 	}
-	pub fn set_value(&mut self, key: &str, val: &str) {
+	pub fn set_value<V>(&mut self, key: &str, val: V)
+	where
+		V: Into<String>,
+	{
 		self.0.vorbis_comments_mut().set(key, vec![val]);
 	}
 	pub fn remove(&mut self, k: &str) {
@@ -79,8 +80,17 @@ impl AudioTagEdit for FlacTag {
 	fn set_artist(&mut self, artist: &str) {
 		self.set_value("ARTIST", artist)
 	}
+
+	fn add_artist(&mut self, artist: &str) {
+		todo!()
+	}
+
+	fn artists(&self) -> Option<Vec<&str>> {
+		todo!()
+	}
+
 	fn remove_artist(&mut self) {
-		self.remove("ARTIST");
+		self.remove("ARTIST")
 	}
 
 	fn year(&self) -> Option<u16> {
@@ -104,6 +114,7 @@ impl AudioTagEdit for FlacTag {
 		self.remove("YEAR");
 		self.remove("DATE");
 	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("ALBUM")
 	}
@@ -115,16 +126,28 @@ impl AudioTagEdit for FlacTag {
 		self.remove("ALBUM");
 	}
 
-	fn album_artist(&self) -> Option<&str> {
-		self.get_value("ALBUMARTIST")
-	}
-	fn set_album_artist(&mut self, v: &str) {
-		self.set_value("ALBUMARTIST", v)
+	fn album_artists(&self) -> Option<Vec<&str>> {
+		if let Some(comments) = self.0.vorbis_comments() {
+			comments
+				.album_artist()
+				.map(|mut a| a.iter().map(|s| s as &str).collect())
+		} else {
+			None
+		}
 	}
 
-	fn remove_album_artist(&mut self) {
-		self.remove("ALBUMARTIST");
+	fn set_album_artists(&mut self, artists: String) {
+		self.set_value("ALBUMARTIST", artists)
 	}
+
+	fn add_album_artist(&mut self, artist: &str) {
+		todo!()
+	}
+
+	fn remove_album_artists(&mut self) {
+		self.remove("ALBUMARTIST")
+	}
+
 	fn album_cover(&self) -> Option<Picture> {
 		self.0
 			.pictures()
@@ -148,6 +171,18 @@ impl AudioTagEdit for FlacTag {
 	fn remove_album_cover(&mut self) {
 		self.0
 			.remove_picture_type(metaflac::block::PictureType::CoverFront)
+	}
+
+	fn track(&self) -> (Option<u16>, Option<u16>) {
+		todo!()
+	}
+
+	fn set_track(&mut self, track: u16) {
+		todo!()
+	}
+
+	fn remove_track(&mut self) {
+		todo!()
 	}
 
 	fn track_number(&self) -> Option<u16> {
@@ -178,6 +213,19 @@ impl AudioTagEdit for FlacTag {
 	fn remove_total_tracks(&mut self) {
 		self.remove("TOTALTRACKS");
 	}
+
+	fn disc(&self) -> (Option<u16>, Option<u16>) {
+		todo!()
+	}
+
+	fn set_disc(&mut self, disc: u16) {
+		todo!()
+	}
+
+	fn remove_disc(&mut self) {
+		todo!()
+	}
+
 	fn disc_number(&self) -> Option<u16> {
 		if let Some(Ok(n)) = self.get_value("DISCNUMBER").map(|x| x.parse::<u16>()) {
 			Some(n)

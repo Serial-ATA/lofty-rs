@@ -29,11 +29,11 @@ macro_rules! test_file {
 			assert!(tags.album_title().is_none());
 			tags.remove_album_title();
 
-			tags.set_album_artist("foo album artist");
-			assert_eq!(tags.album_artist(), Some("foo album artist"));
-			tags.remove_album_artist();
-			assert!(tags.album_artist().is_none());
-			tags.remove_album_artist();
+			tags.set_album_artists("foo album artist".to_string());
+			assert_eq!(tags.album_artists(), Some(vec!["foo album artist"]));
+			tags.remove_album_artists();
+			assert!(tags.album_artists().is_none());
+			tags.remove_album_artists();
 			// TODO
 			// let cover = Picture {
 			// 	mime_type: MimeType::Jpeg,

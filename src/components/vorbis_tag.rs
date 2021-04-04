@@ -1,6 +1,6 @@
 use crate::{
-	impl_tag, traits::MissingImplementations, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
-	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
+	impl_tag, traits::MissingImplementations, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite,
+	Error, MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 use std::{
 	collections::{hash_map::RandomState, HashMap},
@@ -40,8 +40,9 @@ impl<'a> From<AnyTag<'a>> for VorbisTag {
 		inp.title().map(|v| t.set_title(v));
 		inp.artists_as_string().map(|v| t.set_artist(v.as_str()));
 		inp.year.map(|v| t.set_year(v as u16));
-		inp.album_title().map(|v| t.set_album_title(v));
-		inp.album_artists_as_string()
+		inp.album().title.map(|v| t.set_album_title(v));
+		inp.album()
+			.artists_as_string()
 			.map(|v| t.set_artist(v.as_str()));
 		inp.track_number().map(|v| t.set_track_number(v));
 		inp.total_tracks().map(|v| t.set_total_tracks(v));
@@ -57,9 +58,7 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 		t.title = inp.title();
 		t.artists = inp.artists();
 		t.year = inp.year().map(|y| y as i32);
-		t.album = inp.album_title();
-		t.album_artists = inp.album_artists();
-		t.cover = inp.album_cover();
+		t.album = Album::new(inp.album_title(), inp.album_artists(), inp.album_cover());
 		t.track_number = inp.track_number();
 		t.total_tracks = inp.total_tracks();
 		t.disc_number = inp.disc_number();
@@ -79,10 +78,13 @@ impl VorbisTag {
 		None
 	}
 
-	pub fn set_value(&mut self, key: &str, val: &str) {
+	pub fn set_value<V>(&mut self, key: &str, val: V)
+	where
+		V: Into<String>,
+	{
 		let mut comments: HashMap<String, String, RandomState> =
 			self.0.comment_list.clone().into_iter().collect();
-		let _ = comments.insert(key.to_string(), val.to_string());
+		let _ = comments.insert(key.to_string(), val.into());
 		self.0.comment_list = comments.into_iter().map(|a| a).collect();
 	}
 
@@ -113,8 +115,24 @@ impl AudioTagEdit for VorbisTag {
 	fn set_artist(&mut self, artist: &str) {
 		self.set_value("ARTIST", artist)
 	}
+
+	fn add_artist(&mut self, artist: &str) {
+		let artists = if let Some(mut artists_existing) = self.artists() {
+			artists_existing.push(artist);
+			artists_existing
+		} else {
+			vec![artist]
+		};
+
+		self.set_value("ARTIST", artists.join(", "))
+	}
+
+	fn artists(&self) -> Option<Vec<&str>> {
+		self.artist().map(|a| a.split(", ").collect())
+	}
+
 	fn remove_artist(&mut self) {
-		self.remove("ARTIST");
+		self.remove("ARTIST")
 	}
 
 	fn year(&self) -> Option<u16> {
@@ -149,14 +167,18 @@ impl AudioTagEdit for VorbisTag {
 		self.remove("ALBUM");
 	}
 
-	fn album_artist(&self) -> Option<&str> {
-		self.get_value("ALBUMARTIST")
+	fn album_artists(&self) -> Option<Vec<&str>> {
+		self.get_value("ALBUMARTIST").map(|a| vec![a])
 	}
-	fn set_album_artist(&mut self, v: &str) {
-		self.set_value("ALBUMARTIST", v)
+	fn set_album_artists(&mut self, artists: String) {
+		self.set_value("ALBUMARTIST", artists)
 	}
 
-	fn remove_album_artist(&mut self) {
+	fn add_album_artist(&mut self, artist: &str) {
+		todo!()
+	}
+
+	fn remove_album_artists(&mut self) {
 		self.remove("ALBUMARTIST");
 	}
 	// TODO
