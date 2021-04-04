@@ -12,7 +12,7 @@ Parse, convert, and write metadata to audio files of different file types.
 Without this crate, you would otherwise need to learn the different APIs in **id3**, **mp4ameta**, etc.
 in order to parse metadata in different file formats.
 
-# Supported Formats
+## Supported Formats
 
 | File Format   | Metadata Format | Backend                                                     |
 |---------------|-----------------|-------------------------------------------------------------|
@@ -23,6 +23,9 @@ in order to parse metadata in different file formats.
 | `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton)           |
 | `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
 | `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
+
+## Documentation
+Available [here](https://docs.rs/lofty)
 
 ## License
 
