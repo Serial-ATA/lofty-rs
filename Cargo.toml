@@ -5,7 +5,7 @@ authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>", "Tianyi <Shi
 edition = "2018"
 license = "MIT OR Apache-2.0"
 description = "Fork of https://github.com/TianyiShi2001/audiotags, adding support for more file types and (optionally) duration"
-repository = "https://github.com/Serial-ATA/lofty"
+repository = "https://github.com/Serial-ATA/lofty-rs"
 keywords = ["tags", "audio", "metadata"]
 categories = ["accessiblity", "multimedia::audio"]
 
