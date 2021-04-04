@@ -3,6 +3,8 @@
 //! [![Crate](https://img.shields.io/crates/l/lofty.svg)](https://crates.io/crates/lofty)
 //! [![Documentation](https://docs.rs/lofty/badge.svg)](https://docs.rs/lofty/)
 //!
+//! This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types and (optionally) duration.
+//!
 //! Parse, convert, and write metadata to audio files of different file types.
 //!
 //! This crate aims to provide a unified trait for parsers and writers of different audio file formats.
