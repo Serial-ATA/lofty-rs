@@ -1,5 +1,5 @@
 use crate::{
-	Album, AnyTag, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Picture, Result, TagType, VorbisTag,
+	Album, AnyTag, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Picture, Result, TagType, OggTag,
 };
 use std::{fs::File, path::Path};
 
@@ -104,7 +104,7 @@ pub trait ToAnyTag: ToAny {
 		// TODO: target type is the same, just return self
 		match tag_type {
 			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
-			TagType::Vorbis => Box::new(VorbisTag::from(self.to_anytag())),
+			TagType::Ogg => Box::new(OggTag::from(self.to_anytag())),
 			TagType::Opus => Box::new(OpusTag::from(self.to_anytag())),
 			TagType::Flac => Box::new(FlacTag::from(self.to_anytag())),
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),

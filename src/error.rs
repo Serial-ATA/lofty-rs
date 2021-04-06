@@ -20,7 +20,7 @@ pub enum Error {
 	#[error(transparent)]
 	OpusTagError(#[from] opus_headers::ParseError),
 	#[error(transparent)]
-	VorbisTagError(#[from] lewton::VorbisError),
+	OggTagError(#[from] lewton::VorbisError),
 
 	#[error("")]
 	NotAPicture,

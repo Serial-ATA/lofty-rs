@@ -91,7 +91,7 @@ mod error;
 pub use crate::error::{Error, Result};
 
 mod components;
-pub use crate::components::{FlacTag, Id3v2Tag, Mp4Tag, OpusTag, VorbisTag};
+pub use crate::components::{FlacTag, Id3v2Tag, Mp4Tag, OpusTag, OggTag};
 
 mod traits;
 pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};

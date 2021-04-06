@@ -7,9 +7,9 @@ use std::{
 	path::Path,
 };
 
-use lewton::{header::CommentHeader as VorbisInnerTag, inside_ogg::OggStreamReader};
+use lewton::{header::CommentHeader as OggInnerTag, inside_ogg::OggStreamReader};
 
-impl MissingImplementations for VorbisInnerTag {
+impl MissingImplementations for OggInnerTag {
 	fn default() -> Self {
 		Self {
 			vendor: "".to_string(),
@@ -30,11 +30,11 @@ impl MissingImplementations for VorbisInnerTag {
 	}
 }
 
-impl_tag!(VorbisTag, VorbisInnerTag, TagType::Vorbis);
+impl_tag!(OggTag, OggInnerTag, TagType::Ogg);
 
-impl<'a> From<AnyTag<'a>> for VorbisTag {
+impl<'a> From<AnyTag<'a>> for OggTag {
 	fn from(inp: AnyTag<'a>) -> Self {
-		let mut t = VorbisTag::default();
+		let mut t = OggTag::default();
 		inp.title().map(|v| t.set_title(v));
 		inp.artists_as_string().map(|v| t.set_artist(v.as_str()));
 		inp.year.map(|v| t.set_year(v as u16));
@@ -50,8 +50,8 @@ impl<'a> From<AnyTag<'a>> for VorbisTag {
 	}
 }
 
-impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
-	fn from(inp: &'a VorbisTag) -> Self {
+impl<'a> From<&'a OggTag> for AnyTag<'a> {
+	fn from(inp: &'a OggTag) -> Self {
 		let mut t = Self::default();
 		t.title = inp.title();
 		t.artists = inp.artists();
@@ -65,7 +65,7 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 	}
 }
 
-impl VorbisTag {
+impl OggTag {
 	pub fn get_value(&self, key: &str) -> Option<&str> {
 		for (k, v) in &self.0.comment_list {
 			if k.as_str() == key {
@@ -95,7 +95,7 @@ impl VorbisTag {
 	pub fn pictures(&self) {}
 }
 
-impl AudioTagEdit for VorbisTag {
+impl AudioTagEdit for OggTag {
 	fn title(&self) -> Option<&str> {
 		self.get_value("TITLE")
 	}
@@ -266,7 +266,7 @@ impl AudioTagEdit for VorbisTag {
 	}
 }
 // TODO
-impl AudioTagWrite for VorbisTag {
+impl AudioTagWrite for OggTag {
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		// TODO
 		// self.0.write_to(file)?;

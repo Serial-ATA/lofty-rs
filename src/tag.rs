@@ -1,4 +1,4 @@
-use super::{AudioTag, Error, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Result, VorbisTag};
+use super::{AudioTag, Error, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Result, OggTag};
 use std::path::Path;
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
@@ -20,7 +20,7 @@ impl Tag {
 
 		match self.0.unwrap_or(TagType::try_from_ext(extension)?) {
 			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
-			TagType::Vorbis => Ok(Box::new(VorbisTag::read_from_path(path)?)),
+			TagType::Ogg => Ok(Box::new(OggTag::read_from_path(path)?)),
 			TagType::Opus => Ok(Box::new(OpusTag::read_from_path(path)?)),
 			TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
@@ -33,8 +33,8 @@ impl Tag {
 pub enum TagType {
 	/// Common file extensions: `.mp3`
 	Id3v2,
-	/// Common file extensions:  `.ogg`
-	Vorbis,
+	/// Common file extensions:  `.ogg, .oga`
+	Ogg,
 	/// Common file extensions: `.opus`
 	Opus,
 	/// Common file extensions: `.flac`
@@ -47,9 +47,9 @@ impl TagType {
 	fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
 			"mp3" => Ok(Self::Id3v2),
-			"ogg" => Ok(Self::Vorbis),
 			"opus" => Ok(Self::Opus),
 			"flac" => Ok(Self::Flac),
+			"ogg" | "oga" => Ok(Self::Ogg),
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
