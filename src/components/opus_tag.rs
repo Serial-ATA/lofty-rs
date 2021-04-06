@@ -131,7 +131,7 @@ impl AudioTagEdit for OpusTag {
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {
-		todo!()
+		self.artist().map(|a| a.split(", ").collect())
 	}
 
 	fn remove_artist(&mut self) {

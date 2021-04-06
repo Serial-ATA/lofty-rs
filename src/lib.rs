@@ -29,15 +29,15 @@
 //! use lofty::{Tag, TagType};
 //!
 //! // Guess the format from the extension, in this case `mp3`
-//! let mut tag = Tag::new().read_from_path("assets/a.mp3").unwrap();
+//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
 //! tag.set_title("Foo");
 //!
 //! // You can convert the tag type and save the metadata to another file.
-//! tag.to_dyn_tag(TagType::Mp4).write_to_path("assets/a.m4a");
+//! tag.to_dyn_tag(TagType::Mp4).write_to_path("tests/assets/a.m4a");
 //!
 //! // You can specify the tag type, but when you want to do this
 //! // also consider directly using the concrete type
-//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("assets/a.m4a").unwrap();
+//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
 //! assert_eq!(tag.title(), Some("Foo"));
 //! ```
 //!
