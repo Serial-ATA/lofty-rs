@@ -3,8 +3,6 @@ use crate::{
 	Picture, Result, TagType, ToAny, ToAnyTag,
 };
 use std::{
-	borrow::BorrowMut,
-	collections::{hash_map::RandomState, HashMap},
 	fs::File,
 	path::Path,
 };

@@ -1,5 +1,5 @@
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
 use std::{convert::TryInto, fs::File, path::Path};
@@ -130,7 +130,7 @@ impl AudioTagEdit for FlacTag {
 		if let Some(comments) = self.0.vorbis_comments() {
 			comments
 				.album_artist()
-				.map(|mut a| a.iter().map(|s| s as &str).collect())
+				.map(|a| a.iter().map(|s| s as &str).collect())
 		} else {
 			None
 		}

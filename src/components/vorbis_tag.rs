@@ -1,10 +1,8 @@
 use crate::{
-	impl_tag, traits::MissingImplementations, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite,
-	Error, MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
+	impl_tag, traits::MissingImplementations, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 use std::{
 	collections::{hash_map::RandomState, HashMap},
-	convert::TryInto,
 	fs::File,
 	path::Path,
 };
