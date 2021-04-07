@@ -2,15 +2,19 @@
 
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, ToAny, ToAnyTag, TagType
+	Result, TagType, ToAny, ToAnyTag,
 };
 use std::{fs::File, path::Path};
 
-pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 use crate::traits::ReadPath;
+pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 
 impl ReadPath for Mp4InnerTag {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self> where P: AsRef<std::path::Path>, Self: Sized {
+	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	where
+		P: AsRef<std::path::Path>,
+		Self: Sized,
+	{
 		Ok(Self::read_from_path(path)?)
 	}
 }

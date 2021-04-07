@@ -1,6 +1,6 @@
 use super::{components::*, AudioTag, Error, Result};
-use std::path::Path;
 use crate::vorbis_tag::VorbisTag;
+use std::path::Path;
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
 #[derive(Default)]
@@ -19,13 +19,20 @@ impl Tag {
 	pub fn read_from_path(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
 		let extension = path.as_ref().extension().unwrap().to_str().unwrap();
 
-		match self.0.as_ref().unwrap_or(&TagType::try_from_ext(extension)?) {
+		match self
+			.0
+			.as_ref()
+			.unwrap_or(&TagType::try_from_ext(extension)?)
+		{
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "vorbis")]
-			id @ _ => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.to_owned()))?)),
+			id @ _ => Ok(Box::new(VorbisTag::read_from_path(
+				path,
+				Some(id.to_owned()),
+			)?)),
 		}
 	}
 }

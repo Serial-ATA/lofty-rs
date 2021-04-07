@@ -12,7 +12,7 @@ pub enum Error {
 	UnsupportedMimeType(String),
 
 	#[error(transparent)]
-	FlacTagError(#[from] claxon::Error),
+	FlacTagError(#[from] metaflac::Error),
 	#[error(transparent)]
 	Id3TagError(#[from] id3::Error),
 	#[error(transparent)]

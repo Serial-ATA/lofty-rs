@@ -1,6 +1,6 @@
+use crate::vorbis_tag::VorbisTag;
 use crate::{components::*, Album, AnyTag, Picture, Result, TagType};
 use std::fs::File;
-use crate::vorbis_tag::VorbisTag;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
@@ -122,5 +122,8 @@ pub trait ToAny {
 }
 
 pub trait ReadPath {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self> where P: AsRef<std::path::Path>, Self: Sized;
+	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	where
+		P: AsRef<std::path::Path>,
+		Self: Sized;
 }

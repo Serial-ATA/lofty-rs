@@ -2,7 +2,7 @@
 #[macro_export]
 macro_rules! impl_tag {
 	($tag:ident, $inner:ident, $tag_type:expr) => {
-				#[doc(hidden)]
+		#[doc(hidden)]
 		pub struct $tag($inner);
 
 		impl Default for $tag {
@@ -79,7 +79,7 @@ macro_rules! impl_tag {
 				t.into()
 			}
 		}
-	}
+	};
 }
 
 /// Convert a concrete tag type into another

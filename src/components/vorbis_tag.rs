@@ -1,7 +1,10 @@
 #![cfg(feature = "vorbis")]
 
-use crate::{impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, ToAny, ToAnyTag, TagType};
-use std::{fs::File, path::Path, collections::HashMap};
+use crate::{
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
+	ToAny, ToAnyTag,
+};
+use std::{collections::HashMap, fs::File, path::Path};
 
 struct VorbisInnerTag {
 	tag_type: Option<TagType>,
@@ -12,7 +15,7 @@ impl Default for VorbisInnerTag {
 	fn default() -> Self {
 		Self {
 			tag_type: None,
-			comments: Default::default()
+			comments: Default::default(),
 		}
 	}
 }
@@ -30,8 +33,10 @@ impl VorbisInnerTag {
 		}
 	}
 
-	fn set_value<V>(&mut self, key: &str, val: V) where
-		V: Into<String> {
+	fn set_value<V>(&mut self, key: &str, val: V)
+	where
+		V: Into<String>,
+	{
 		let mut comments = self.comments.clone();
 		let _ = comments.insert(key.to_string(), val.into());
 		self.comments = comments;
@@ -44,13 +49,14 @@ impl VorbisInnerTag {
 	}
 
 	fn from_path<P>(path: P, tag_type: Option<TagType>) -> Result<Self>
-		where
-			P: AsRef<Path>,
+	where
+		P: AsRef<Path>,
 	{
 		if let Some(tag_type) = tag_type {
 			match tag_type {
 				TagType::Ogg => {
-					let headers = lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
+					let headers =
+						lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
 					let comments: HashMap<String, String> =
 						headers.comment_hdr.comment_list.into_iter().collect();
 
@@ -58,7 +64,7 @@ impl VorbisInnerTag {
 						tag_type: Some(tag_type),
 						comments,
 					})
-				}
+				},
 				TagType::Opus => {
 					let headers = opus_headers::parse_from_path(path)?;
 
@@ -66,16 +72,24 @@ impl VorbisInnerTag {
 						tag_type: Some(tag_type),
 						comments: headers.comments.user_comments,
 					})
-				}
+				},
 				TagType::Flac => {
-					let headers = claxon::FlacReader::new(File::open(path)?).unwrap();
-					let comments = headers.tags().map(|(k, v)| (k.to_string(), v.to_string())).collect();
+					let headers = metaflac::Tag::read_from_path(path)?;
+					let comments = headers.vorbis_comments().unwrap();
+					let mut comment_collection = Vec::new();
+
+					for (k, v) in comments.comments.clone() {
+						for e in v {
+							comment_collection.push((k.clone(), e.clone()))
+						}
+					}
+
 					Ok(Self {
 						tag_type: Some(tag_type),
-						comments,
+						comments: comment_collection.into_iter().collect(),
 					})
-				}
-				_ => unreachable!()
+				},
+				_ => unreachable!(),
 			}
 		} else {
 			unreachable!()
@@ -118,6 +132,36 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 	}
 }
 
+impl From<metaflac::Tag> for VorbisTag {
+	fn from(inp: metaflac::Tag) -> Self {
+		let mut t = Self::default();
+
+		let comments = if let Some(comments) = inp.vorbis_comments() {
+			let mut comment_collection = Vec::new();
+
+			for (k, v) in comments.comments.clone() {
+				for e in v {
+					comment_collection.push((k.clone(), e.clone()))
+				}
+			}
+
+			let comment_collection: HashMap<String, String> =
+				comment_collection.into_iter().collect();
+			comment_collection
+		} else {
+			let comments: HashMap<String, String> = HashMap::new();
+			comments
+		};
+
+		t.0 = VorbisInnerTag {
+			tag_type: Some(TagType::Flac),
+			comments,
+		};
+
+		t
+	}
+}
+
 impl AudioTagEdit for VorbisTag {
 	fn title(&self) -> Option<&str> {
 		self.0.get_value("TITLE")
@@ -150,7 +194,8 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn year(&self) -> Option<u16> {
-		if let Some(Ok(y)) = self.0
+		if let Some(Ok(y)) = self
+			.0
 			.get_value("DATE")
 			.map(|s| s.chars().take(4).collect::<String>().parse::<i32>())
 		{
