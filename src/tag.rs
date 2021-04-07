@@ -1,5 +1,6 @@
-use super::{AudioTag, Error, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Result, OggTag};
+use super::{components::*, AudioTag, Error, Result};
 use std::path::Path;
+use crate::vorbis_tag::VorbisTag;
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
 #[derive(Default)]
@@ -18,27 +19,33 @@ impl Tag {
 	pub fn read_from_path(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
 		let extension = path.as_ref().extension().unwrap().to_str().unwrap();
 
-		match self.0.unwrap_or(TagType::try_from_ext(extension)?) {
-			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
-			TagType::Ogg => Ok(Box::new(OggTag::read_from_path(path)?)),
-			TagType::Opus => Ok(Box::new(OpusTag::read_from_path(path)?)),
-			TagType::Flac => Ok(Box::new(FlacTag::read_from_path(path)?)),
-			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
+		match self.0.as_ref().unwrap_or(&TagType::try_from_ext(extension)?) {
+			#[cfg(feature = "mp3")]
+			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
+			#[cfg(feature = "mp4")]
+			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
+			#[cfg(feature = "vorbis")]
+			id @ _ => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.to_owned()))?)),
 		}
 	}
 }
 
 /// The tag type, based on the file extension.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
+	#[cfg(feature = "mp3")]
 	/// Common file extensions: `.mp3`
 	Id3v2,
+	#[cfg(feature = "vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
 	Ogg,
+	#[cfg(feature = "vorbis")]
 	/// Common file extensions: `.opus`
 	Opus,
+	#[cfg(feature = "vorbis")]
 	/// Common file extensions: `.flac`
 	Flac,
+	#[cfg(feature = "mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
 }
@@ -46,10 +53,15 @@ pub enum TagType {
 impl TagType {
 	fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
+			#[cfg(feature = "mp3")]
 			"mp3" => Ok(Self::Id3v2),
+			#[cfg(feature = "vorbis")]
 			"opus" => Ok(Self::Opus),
+			#[cfg(feature = "vorbis")]
 			"flac" => Ok(Self::Flac),
+			#[cfg(feature = "vorbis")]
 			"ogg" | "oga" => Ok(Self::Ogg),
+			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}

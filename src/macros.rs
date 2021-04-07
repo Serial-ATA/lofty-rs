@@ -1,8 +1,8 @@
 #[doc(hidden)]
 #[macro_export]
 macro_rules! impl_tag {
-	($tag:ident , $inner:ident, $tag_type:expr) => {
-		#[doc(hidden)]
+	($tag:ident, $inner:ident, $tag_type:expr) => {
+				#[doc(hidden)]
 		pub struct $tag($inner);
 
 		impl Default for $tag {
@@ -15,11 +15,11 @@ macro_rules! impl_tag {
 			pub fn new() -> Self {
 				Self::default()
 			}
-			pub fn read_from_path<P>(path: P) -> Result<Self>
+			pub fn read_from_path<P>(path: P, tag_type: Option<TagType>) -> Result<Self>
 			where
 				P: AsRef<Path>,
 			{
-				Ok(Self($inner::read_from_path(path)?))
+				Ok(Self($inner::from_path(path, tag_type)?))
 			}
 		}
 
@@ -71,14 +71,15 @@ macro_rules! impl_tag {
 				}
 			}
 		}
+
 		// From dyn AudioTag to inner (any type)
-		impl std::convert::From<Box<dyn AudioTag>> for $inner {
+		impl From<Box<dyn AudioTag>> for $inner {
 			fn from(inp: Box<dyn AudioTag>) -> Self {
 				let t: $tag = inp.into();
 				t.into()
 			}
 		}
-	};
+	}
 }
 
 /// Convert a concrete tag type into another

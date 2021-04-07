@@ -1,6 +1,8 @@
+#![cfg(feature = "flac")]
+
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
+	ToAny, ToAnyTag,
 };
 use std::{convert::TryInto, fs::File, path::Path};
 

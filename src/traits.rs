@@ -1,7 +1,6 @@
-use crate::{
-	Album, AnyTag, FlacTag, Id3v2Tag, Mp4Tag, OpusTag, Picture, Result, TagType, OggTag,
-};
-use std::{fs::File, path::Path};
+use crate::{components::*, Album, AnyTag, Picture, Result, TagType};
+use std::fs::File;
+use crate::vorbis_tag::VorbisTag;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
@@ -103,10 +102,15 @@ pub trait ToAnyTag: ToAny {
 		// TODO: write a macro or something that implement this method for every tag type so that if the
 		// TODO: target type is the same, just return self
 		match tag_type {
+			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
-			TagType::Ogg => Box::new(OggTag::from(self.to_anytag())),
-			TagType::Opus => Box::new(OpusTag::from(self.to_anytag())),
-			TagType::Flac => Box::new(FlacTag::from(self.to_anytag())),
+			#[cfg(feature = "vorbis")]
+			TagType::Ogg => Box::new(VorbisTag::from(self.to_anytag())),
+			#[cfg(feature = "vorbis")]
+			TagType::Opus => Box::new(VorbisTag::from(self.to_anytag())),
+			#[cfg(feature = "vorbis")]
+			TagType::Flac => Box::new(VorbisTag::from(self.to_anytag())),
+			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
 		}
 	}
@@ -117,10 +121,6 @@ pub trait ToAny {
 	fn to_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
-pub trait MissingImplementations {
-	fn default() -> Self;
-	fn read_from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<Path>,
-		Self: Sized;
+pub trait ReadPath {
+	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self> where P: AsRef<std::path::Path>, Self: Sized;
 }

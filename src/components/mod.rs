@@ -1,11 +1,11 @@
-pub(crate) mod flac_tag;
 pub(crate) mod id3_tag;
 pub(crate) mod mp4_tag;
-pub(crate) mod opus_tag;
-pub(crate) mod ogg_tag;
+pub(crate) mod vorbis_tag;
+pub(crate) mod wav_tag;
 
-pub use flac_tag::FlacTag;
+#[cfg(feature = "vorbis")]
+pub use vorbis_tag::VorbisTag;
+#[cfg(feature = "mp3")]
 pub use id3_tag::Id3v2Tag;
+#[cfg(feature = "mp4")]
 pub use mp4_tag::Mp4Tag;
-pub use opus_tag::OpusTag;
-pub use ogg_tag::OggTag;

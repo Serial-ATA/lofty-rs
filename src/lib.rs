@@ -43,13 +43,16 @@
 //!
 //! # Features
 //!
-//! By default, `tags` and `duration` are enabled.
+//! By default, `full` (`all_tags` and `duration`) are enabled.
 //!
-//! `tags` provides all the track metadata (`artists`, `album`, etc.) in [AnyTag].
+//! `all_tags` provides all the track metadata (`artists`, `album`, etc.) in [AnyTag].
 //!
 //! `duration` provides the `duration` field in [AnyTag].
 //!
 //! Either one can be disabled if it doesn't fit your use case.
+//!
+//! In addition to this, each format can be individually enabled.
+//! All features are: `opus, ogg, flac, mp4, mp3, wav`.
 //!
 //! ## Performance
 //!
@@ -91,7 +94,7 @@ mod error;
 pub use crate::error::{Error, Result};
 
 mod components;
-pub use crate::components::{FlacTag, Id3v2Tag, Mp4Tag, OpusTag, OggTag};
+pub use crate::components::*;
 
 mod traits;
 pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};

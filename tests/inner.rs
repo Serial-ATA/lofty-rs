@@ -1,6 +1,7 @@
 use lofty::*;
 
 #[test]
+#[cfg(all(feature = "mp3", feature = "flac"))]
 fn test_inner() {
 	let mut innertag = metaflac::Tag::default();
 	innertag

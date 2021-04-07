@@ -1,6 +1,5 @@
 use crate::Album;
 
-
 /// The tag returned from `read_from_path`
 #[derive(Default)]
 pub struct AnyTag<'a> {
