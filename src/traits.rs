@@ -88,9 +88,9 @@ pub trait AudioTagEdit {
 }
 
 pub trait AudioTagWrite {
-	fn write_to(&mut self, file: &mut File) -> Result<()>;
+	fn write_to(&self, file: &mut File) -> Result<()>;
 	// cannot use impl AsRef<Path>
-	fn write_to_path(&mut self, path: &str) -> Result<()>;
+	fn write_to_path(&self, path: &str) -> Result<()>;
 }
 
 pub trait ToAnyTag: ToAny {

@@ -5,7 +5,9 @@ macro_rules! full_test {
 	($function:ident, $file:expr) => {
 		#[test]
 		fn $function() {
+			println!("-- Adding tags --");
 			add_tags!($file);
+			println!("-- Removing tags --");
 			remove_tags!($file);
 		}
 	};
@@ -13,20 +15,26 @@ macro_rules! full_test {
 
 macro_rules! add_tags {
 	($file:expr) => {
+		println!("Reading file");
 		let mut tag = Tag::default().read_from_path($file).unwrap();
 
+		println!("Setting title");
 		tag.set_title("foo title");
 		assert_eq!(tag.title(), Some("foo title"));
 
+		println!("Setting artist");
 		tag.set_artist("foo artist");
 		assert_eq!(tag.artist(), Some("foo artist"));
 
+		println!("Setting artist");
 		tag.set_year(2020);
 		assert_eq!(tag.year(), Some(2020));
 
+		println!("Setting album title");
 		tag.set_album_title("foo album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
+		println!("Setting album artists");
 		tag.set_album_artists("foo album artist".to_string());
 		assert_eq!(tag.album_artists(), Some(vec!["foo album artist"]));
 
@@ -39,31 +47,40 @@ macro_rules! add_tags {
 		// tags.set_album_cover(cover.clone());
 		// assert_eq!(tags.album_cover(), Some(cover));
 
+		println!("Writing");
 		tag.write_to_path($file).unwrap();
 	};
 }
 
 macro_rules! remove_tags {
 	($file:expr) => {
+		println!("Reading file");
 		let mut tag = Tag::default().read_from_path($file).unwrap();
+
+		println!("Checking title");
 		assert_eq!(tag.title(), Some("foo title"));
 
+		println!("Removing title");
 		tag.remove_title();
 		assert!(tag.title().is_none());
 		tag.remove_title(); // should not panic
 
+		println!("Removing artist");
 		tag.remove_artist();
 		assert!(tag.artist().is_none());
 		tag.remove_artist();
 
+		println!("Removing year");
 		tag.remove_year();
 		assert!(tag.year().is_none());
 		tag.remove_year();
 
+		println!("Removing album title");
 		tag.remove_album_title();
 		assert!(tag.album_title().is_none());
 		tag.remove_album_title();
 
+		println!("Removing album artists");
 		tag.remove_album_artists();
 		assert!(tag.album_artists().is_none());
 		tag.remove_album_artists();
@@ -73,6 +90,7 @@ macro_rules! remove_tags {
 		// assert!(tags.album_cover().is_none());
 		// tags.remove_album_cover();
 
+		println!("Writing");
 		tag.write_to_path($file).unwrap();
 	};
 }

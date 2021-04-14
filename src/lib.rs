@@ -13,15 +13,15 @@
 //!
 //! # Supported Formats
 //!
-//! | File Format   | Metadata Format | Backend                                                     |
-//! |---------------|-----------------|-------------------------------------------------------------|
-//! | `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)            |
-//! | `wav`         | TODO            | TODO                                                        |
-//! | `ape`         | TODO            | TODO                                                        |
-//! | `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers) |
-//! | `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton)           |
-//! | `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
-//! | `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
+//! | File Format   | Metadata Format | Backend                                                                                                             |
+//! |---------------|-----------------|---------------------------------------------------------------------------------------------------------------------|
+//! | `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
+//! | `wav`         | TODO            | TODO                                                                                                                |
+//! | `ape`         | TODO            | TODO                                                                                                                |
+//! | `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
+//! | `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
+//! | `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |
+//! | `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)                                                             |
 //!
 //! # Examples
 //!
@@ -52,7 +52,7 @@
 //! Either one can be disabled if it doesn't fit your use case.
 //!
 //! In addition to this, each format can be individually enabled.
-//! All features are: `opus, ogg, flac, mp4, mp3, wav`.
+//! All features are: `ape, mp3, vorbis, wav`.
 //!
 //! ## Performance
 //!

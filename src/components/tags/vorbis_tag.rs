@@ -4,6 +4,7 @@ use crate::{
 	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
+use metaflac::Tag;
 use std::borrow::BorrowMut;
 use std::fs::OpenOptions;
 use std::io::{Cursor, Seek, SeekFrom};
@@ -14,7 +15,7 @@ const END_BYTE: u8 = 1;
 
 struct VorbisInnerTag {
 	tag_type: Option<TagType>,
-	vendor: Option<String>,
+	vendor: String,
 	comments: HashMap<String, String>,
 }
 
@@ -22,7 +23,7 @@ impl Default for VorbisInnerTag {
 	fn default() -> Self {
 		Self {
 			tag_type: None,
-			vendor: None,
+			vendor: "".to_string(),
 			comments: Default::default(),
 		}
 	}
@@ -73,16 +74,17 @@ impl VorbisInnerTag {
 
 					Ok(Self {
 						tag_type: Some(tag_type),
-						vendor: Some(vendor),
+						vendor,
 						comments,
 					})
 				},
 				TagType::Opus => {
 					let headers = opus_headers::parse_from_path(path)?;
+					let vendor = headers.comments.vendor;
 
 					Ok(Self {
 						tag_type: Some(tag_type),
-						vendor: None,
+						vendor,
 						comments: headers.comments.user_comments,
 					})
 				},
@@ -99,7 +101,7 @@ impl VorbisInnerTag {
 
 					Ok(Self {
 						tag_type: Some(tag_type),
-						vendor: None,
+						vendor: comments.vendor_string.clone(),
 						comments: comment_collection.into_iter().collect(),
 					})
 				},
@@ -148,9 +150,9 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 
 impl From<metaflac::Tag> for VorbisTag {
 	fn from(inp: metaflac::Tag) -> Self {
-		let mut t = Self::default();
+		let mut tag = Self::default();
 
-		let comments = if let Some(comments) = inp.vorbis_comments() {
+		let (comments, vendor) = if let Some(comments) = inp.vorbis_comments() {
 			let mut comment_collection = Vec::new();
 
 			for (k, v) in comments.comments.clone() {
@@ -161,19 +163,48 @@ impl From<metaflac::Tag> for VorbisTag {
 
 			let comment_collection: HashMap<String, String> =
 				comment_collection.into_iter().collect();
-			comment_collection
+
+			let vendor = comments.vendor_string.clone();
+
+			(comment_collection, vendor)
 		} else {
 			let comments: HashMap<String, String> = HashMap::new();
-			comments
+			let vendor = String::new();
+
+			(comments, vendor)
 		};
 
-		t.0 = VorbisInnerTag {
+		tag.0 = VorbisInnerTag {
 			tag_type: Some(TagType::Flac),
-			vendor: None,
+			vendor,
 			comments,
 		};
 
-		t
+		tag
+	}
+}
+
+impl From<&VorbisTag> for metaflac::Tag {
+	fn from(inp: &VorbisTag) -> Self {
+		let mut tag = Self::default();
+
+		tag.remove_blocks(metaflac::BlockType::VorbisComment);
+
+		let vendor = inp.0.vendor.clone();
+		let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
+
+		for (k, v) in inp.0.comments.clone().into_iter() {
+			comment_collection.insert(k, vec![v]);
+		}
+
+		tag.push_block(metaflac::Block::VorbisComment(
+			metaflac::block::VorbisComment {
+				vendor_string: vendor,
+				comments: comment_collection,
+			},
+		));
+
+		tag
 	}
 }
 
@@ -343,11 +374,11 @@ impl AudioTagEdit for VorbisTag {
 }
 
 impl AudioTagWrite for VorbisTag {
-	fn write_to(&mut self, file: &mut File) -> Result<()> {
+	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(tag_type) = self.0.tag_type.clone() {
 			match tag_type {
 				TagType::Ogg => {
-					let vendor = self.0.vendor.clone().unwrap();
+					let vendor = self.0.vendor.clone();
 					let vendor_bytes = vendor.as_bytes();
 
 					let comments: Vec<(String, String)> = self
@@ -392,7 +423,11 @@ impl AudioTagWrite for VorbisTag {
 					file.write_all(&data)?;
 				},
 				TagType::Opus => {},
-				TagType::Flac => {},
+				TagType::Flac => {
+					let mut flac_tag: metaflac::Tag = self.into();
+
+					flac_tag.write_to(file);
+				},
 				TagType::Mp4 => {},
 				_ => unreachable!(),
 			}
@@ -400,7 +435,7 @@ impl AudioTagWrite for VorbisTag {
 		// self.0.write_to(file)?; TODO
 		Ok(())
 	}
-	fn write_to_path(&mut self, path: &str) -> Result<()> {
+	fn write_to_path(&self, path: &str) -> Result<()> {
 		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
 
 		Ok(())
