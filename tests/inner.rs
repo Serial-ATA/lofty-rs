@@ -1,5 +1,4 @@
-use lofty::VorbisTag;
-use lofty::*;
+use lofty::{Tag, TagType, ToAnyTag, VorbisTag};
 
 #[test]
 #[cfg(all(feature = "mp3", feature = "vorbis"))]

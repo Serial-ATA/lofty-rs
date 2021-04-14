@@ -1,5 +1,4 @@
-use super::{components::*, AudioTag, Error, Result};
-use crate::vorbis_tag::VorbisTag;
+use super::{components::tags::*, AudioTag, Error, Result};
 use std::path::Path;
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.

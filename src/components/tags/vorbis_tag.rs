@@ -1,13 +1,20 @@
 #![cfg(feature = "vorbis")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
-	ToAny, ToAnyTag,
+	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
-use std::{collections::HashMap, fs::File, path::Path};
+use std::borrow::BorrowMut;
+use std::fs::OpenOptions;
+use std::io::{Cursor, Seek, SeekFrom};
+use std::{collections::HashMap, fs::File, io::Write, path::Path};
+
+const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
+const END_BYTE: u8 = 1;
 
 struct VorbisInnerTag {
 	tag_type: Option<TagType>,
+	vendor: Option<String>,
 	comments: HashMap<String, String>,
 }
 
@@ -15,6 +22,7 @@ impl Default for VorbisInnerTag {
 	fn default() -> Self {
 		Self {
 			tag_type: None,
+			vendor: None,
 			comments: Default::default(),
 		}
 	}
@@ -57,11 +65,15 @@ impl VorbisInnerTag {
 				TagType::Ogg => {
 					let headers =
 						lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
+
+					let vendor = headers.comment_hdr.vendor;
+
 					let comments: HashMap<String, String> =
 						headers.comment_hdr.comment_list.into_iter().collect();
 
 					Ok(Self {
 						tag_type: Some(tag_type),
+						vendor: Some(vendor),
 						comments,
 					})
 				},
@@ -70,6 +82,7 @@ impl VorbisInnerTag {
 
 					Ok(Self {
 						tag_type: Some(tag_type),
+						vendor: None,
 						comments: headers.comments.user_comments,
 					})
 				},
@@ -86,6 +99,7 @@ impl VorbisInnerTag {
 
 					Ok(Self {
 						tag_type: Some(tag_type),
+						vendor: None,
 						comments: comment_collection.into_iter().collect(),
 					})
 				},
@@ -155,6 +169,7 @@ impl From<metaflac::Tag> for VorbisTag {
 
 		t.0 = VorbisInnerTag {
 			tag_type: Some(TagType::Flac),
+			vendor: None,
 			comments,
 		};
 
@@ -329,11 +344,65 @@ impl AudioTagEdit for VorbisTag {
 
 impl AudioTagWrite for VorbisTag {
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
+		if let Some(tag_type) = self.0.tag_type.clone() {
+			match tag_type {
+				TagType::Ogg => {
+					let vendor = self.0.vendor.clone().unwrap();
+					let vendor_bytes = vendor.as_bytes();
+
+					let comments: Vec<(String, String)> = self
+						.0
+						.comments
+						.iter()
+						.map(|(a, b)| (a.to_string(), b.to_string()))
+						.collect();
+
+					let vendor_len = vendor.len() as u32;
+					let comments_len = comments.len() as u32;
+
+					let mut packet = Vec::new();
+
+					packet.extend(START_SIGNATURE.iter());
+
+					packet.extend(vendor_len.to_le_bytes().iter());
+					packet.extend(vendor_bytes.iter());
+
+					packet.extend(comments_len.to_le_bytes().iter());
+
+					let mut comment_str = Vec::new();
+
+					for (a, b) in comments.into_iter() {
+						comment_str.push(format!("{}={}", a, b));
+						let last = comment_str.last().unwrap();
+						let len = last.as_bytes().len() as u32;
+						packet.extend(len.to_le_bytes().iter());
+						packet.extend(last.as_bytes().iter());
+					}
+
+					packet.push(END_BYTE);
+
+					let mut file_bytes = Vec::new();
+					std::io::copy(file.borrow_mut(), &mut file_bytes)?;
+
+					let data =
+						logic::write::ogg(Cursor::new(file_bytes.clone()), packet)?.into_inner();
+
+					file.seek(SeekFrom::Start(0))?;
+					file.set_len(0)?;
+					file.write_all(&data)?;
+				},
+				TagType::Opus => {},
+				TagType::Flac => {},
+				TagType::Mp4 => {},
+				_ => unreachable!(),
+			}
+		}
 		// self.0.write_to(file)?; TODO
 		Ok(())
 	}
 	fn write_to_path(&mut self, path: &str) -> Result<()> {
-		// self.0.write_to_path(path)?; TODO
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
+
 		Ok(())
 	}
 }

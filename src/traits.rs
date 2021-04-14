@@ -1,5 +1,4 @@
-use crate::vorbis_tag::VorbisTag;
-use crate::{components::*, Album, AnyTag, Picture, Result, TagType};
+use crate::{components::tags::*, Album, AnyTag, Picture, Result, TagType};
 use std::fs::File;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}

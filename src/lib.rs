@@ -67,6 +67,7 @@
 //! However, this is going to be a lot of work.
 
 //#![forbid(unused_crate_dependencies, unused_import_braces)]
+#![feature(box_into_boxed_slice)]
 #![warn(clippy::pedantic)]
 #![allow(
 	clippy::too_many_lines,
@@ -94,7 +95,7 @@ mod error;
 pub use crate::error::{Error, Result};
 
 mod components;
-pub use crate::components::*;
+pub use crate::components::tags::*;
 
 mod traits;
 pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};

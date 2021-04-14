@@ -236,7 +236,7 @@ impl AudioTagEdit for Mp4Tag {
 
 impl AudioTagWrite for Mp4Tag {
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
-		self.0.write_to(file)?;
+		self.0.write_to(&file)?;
 		Ok(())
 	}
 	fn write_to_path(&mut self, path: &str) -> Result<()> {
