@@ -1,3 +1,4 @@
+#[allow(clippy::wildcard_imports)]
 use super::{components::tags::*, AudioTag, Error, Result};
 use std::path::Path;
 
@@ -10,28 +11,37 @@ impl Tag {
 	pub fn new() -> Self {
 		Self::default()
 	}
+
 	/// This function can be used to specify a `TagType`, so there's no guessing
+	#[allow(clippy::unused_self)]
 	pub fn with_tag_type(self, tag_type: TagType) -> Self {
 		Self(Some(tag_type))
 	}
+
 	/// Path of the file to read
+	///
+	/// # Errors
+	///
+	/// This function will return `Err` if `path` either has no extension, or the extension is
+	/// not valid unicode
 	pub fn read_from_path(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
-		let extension = path.as_ref().extension().unwrap().to_str().unwrap();
+		let extension = path
+			.as_ref()
+			.extension()
+			.ok_or(Error::UnknownFileExtension)?;
+		let extension_str = extension.to_str().ok_or(Error::UnknownFileExtension)?;
 
 		match self
 			.0
 			.as_ref()
-			.unwrap_or(&TagType::try_from_ext(extension)?)
+			.unwrap_or(&TagType::try_from_ext(extension_str)?)
 		{
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "vorbis")]
-			id @ _ => Ok(Box::new(VorbisTag::read_from_path(
-				path,
-				Some(id.to_owned()),
-			)?)),
+			id => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.clone()))?)),
 		}
 	}
 }

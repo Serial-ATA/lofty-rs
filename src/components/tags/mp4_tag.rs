@@ -50,18 +50,33 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 	fn from(inp: AnyTag<'a>) -> Self {
 		let mut tag = Mp4Tag::new();
 
-		inp.title().map(|v| tag.set_title(v));
-		inp.artists()
-			.map(|i| i.iter().for_each(|&a| tag.add_artist(a)));
-		inp.year.map(|v| tag.set_year(v as u16));
-		inp.album().title.map(|v| tag.set_album_title(v));
-		inp.album()
-			.artists
-			.map(|i| i.iter().for_each(|&a| tag.add_album_artist(a)));
-		inp.track_number().map(|v| tag.set_track_number(v));
-		inp.total_tracks().map(|v| tag.set_total_tracks(v));
-		inp.disc_number().map(|v| tag.set_disc_number(v));
-		inp.total_discs().map(|v| tag.set_total_discs(v));
+		if let Some(v) = inp.title() {
+			tag.set_title(v)
+		}
+		if let Some(i) = inp.artists() {
+			i.iter().for_each(|&a| tag.add_artist(a))
+		}
+		if let Some(v) = inp.year {
+			tag.set_year(v)
+		}
+		if let Some(v) = inp.album().title {
+			tag.set_album_title(v)
+		}
+		if let Some(i) = inp.album().artists {
+			i.iter().for_each(|&a| tag.add_album_artist(a))
+		}
+		if let Some(v) = inp.track_number() {
+			tag.set_track_number(v)
+		}
+		if let Some(v) = inp.total_tracks() {
+			tag.set_total_tracks(v)
+		}
+		if let Some(v) = inp.disc_number() {
+			tag.set_disc_number(v)
+		}
+		if let Some(v) = inp.total_discs() {
+			tag.set_total_discs(v)
+		}
 		tag
 	}
 }
@@ -110,20 +125,20 @@ impl AudioTagEdit for Mp4Tag {
 			v.push(a);
 			v
 		});
-		if v.len() > 0 {
-			Some(v)
-		} else {
+		if v.is_empty() {
 			None
+		} else {
+			Some(v)
 		}
 	}
 	fn remove_artist(&mut self) {
 		self.0.remove_artists();
 	}
 
-	fn year(&self) -> Option<u16> {
+	fn year(&self) -> Option<i32> {
 		self.0.year().and_then(|x| str::parse(x).ok())
 	}
-	fn set_year(&mut self, year: u16) {
+	fn set_year(&mut self, year: i32) {
 		self.0.set_year(year.to_string())
 	}
 
@@ -164,7 +179,8 @@ impl AudioTagEdit for Mp4Tag {
 		self.0.remove_album_artists();
 	}
 	fn album_cover(&self) -> Option<Picture> {
-		use mp4ameta::Data::*;
+		use mp4ameta::Data::{Jpeg, Png};
+
 		self.0.artwork().and_then(|data| match data {
 			Jpeg(d) => Some(Picture {
 				data: d,
@@ -192,21 +208,21 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_track(&mut self) {
 		self.0.remove_track(); // faster than removing separately
 	}
-	fn track_number(&self) -> Option<u16> {
-		self.0.track_number()
+	fn track_number(&self) -> Option<u32> {
+		self.0.track_number().map(u32::from)
 	}
 
-	fn set_track_number(&mut self, track: u16) {
-		self.0.set_track_number(track);
+	fn set_track_number(&mut self, track: u32) {
+		self.0.set_track_number(track as u16);
 	}
 	fn remove_track_number(&mut self) {
 		self.0.remove_track_number();
 	}
-	fn total_tracks(&self) -> Option<u16> {
-		self.0.total_tracks()
+	fn total_tracks(&self) -> Option<u32> {
+		self.0.total_tracks().map(u32::from)
 	}
-	fn set_total_tracks(&mut self, total_track: u16) {
-		self.0.set_total_tracks(total_track);
+	fn set_total_tracks(&mut self, total_track: u32) {
+		self.0.set_total_tracks(total_track as u16);
 	}
 	fn remove_total_tracks(&mut self) {
 		self.0.remove_total_tracks();
@@ -214,20 +230,20 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_disc(&mut self) {
 		self.0.remove_disc();
 	}
-	fn disc_number(&self) -> Option<u16> {
-		self.0.disc_number()
+	fn disc_number(&self) -> Option<u32> {
+		self.0.disc_number().map(u32::from)
 	}
-	fn set_disc_number(&mut self, disc_number: u16) {
-		self.0.set_disc_number(disc_number)
+	fn set_disc_number(&mut self, disc_number: u32) {
+		self.0.set_disc_number(disc_number as u16)
 	}
 	fn remove_disc_number(&mut self) {
 		self.0.remove_disc_number();
 	}
-	fn total_discs(&self) -> Option<u16> {
-		self.0.total_discs()
+	fn total_discs(&self) -> Option<u32> {
+		self.0.total_discs().map(u32::from)
 	}
-	fn set_total_discs(&mut self, total_discs: u16) {
-		self.0.set_total_discs(total_discs)
+	fn set_total_discs(&mut self, total_discs: u32) {
+		self.0.set_total_discs(total_discs as u16)
 	}
 	fn remove_total_discs(&mut self) {
 		self.0.remove_total_discs();

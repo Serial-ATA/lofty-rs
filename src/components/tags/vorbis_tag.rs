@@ -4,11 +4,15 @@ use crate::{
 	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
-use metaflac::Tag;
-use std::borrow::BorrowMut;
-use std::fs::OpenOptions;
-use std::io::{Cursor, Seek, SeekFrom};
-use std::{collections::HashMap, fs::File, io::Write, path::Path};
+use std::{
+	borrow::BorrowMut,
+	collections::HashMap,
+	fs::File,
+	fs::OpenOptions,
+	io::Write,
+	io::{Cursor, Seek, SeekFrom},
+	path::Path,
+};
 
 const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
 const END_BYTE: u8 = 1;
@@ -24,22 +28,20 @@ impl Default for VorbisInnerTag {
 		Self {
 			tag_type: None,
 			vendor: "".to_string(),
-			comments: Default::default(),
+			comments: std::collections::HashMap::default(),
 		}
 	}
 }
 
 impl VorbisInnerTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		if let Some(pair) = self.comments.get_key_value(key) {
-			if !pair.1.is_empty() {
-				Some(pair.1.as_str())
-			} else {
+		self.comments.get_key_value(key).and_then(|pair| {
+			if pair.1.is_empty() {
 				None
+			} else {
+				Some(pair.1.as_str())
 			}
-		} else {
-			None
-		}
+		})
 	}
 
 	fn set_value<V>(&mut self, key: &str, val: V)
@@ -117,34 +119,53 @@ impl_tag!(VorbisTag, VorbisInnerTag, TagType::Ogg);
 
 impl<'a> From<AnyTag<'a>> for VorbisTag {
 	fn from(inp: AnyTag<'a>) -> Self {
-		let mut t = VorbisTag::default();
-		inp.title().map(|v| t.set_title(v));
-		inp.artists_as_string().map(|v| t.set_artist(&v));
-		inp.year.map(|v| t.set_year(v as u16));
-		inp.album().title.map(|v| t.set_album_title(v));
-		inp.album()
-			.artists
-			.map(|v| t.set_album_artists(v.join(", ")));
-		inp.track_number().map(|v| t.set_track_number(v));
-		inp.total_tracks().map(|v| t.set_total_tracks(v));
-		inp.disc_number().map(|v| t.set_disc_number(v));
-		inp.total_discs().map(|v| t.set_total_discs(v));
-		t
+		let mut tag = VorbisTag::default();
+
+		if let Some(v) = inp.title() {
+			tag.set_title(v)
+		}
+		if let Some(v) = inp.artists_as_string() {
+			tag.set_artist(&v)
+		}
+		if let Some(v) = inp.year {
+			tag.set_year(v)
+		}
+		if let Some(v) = inp.album().title {
+			tag.set_album_title(v)
+		}
+		if let Some(v) = inp.album().artists {
+			tag.set_album_artists(v.join(", "))
+		}
+		if let Some(v) = inp.track_number() {
+			tag.set_track_number(v)
+		}
+		if let Some(v) = inp.total_tracks() {
+			tag.set_total_tracks(v)
+		}
+		if let Some(v) = inp.disc_number() {
+			tag.set_disc_number(v)
+		}
+		if let Some(v) = inp.total_discs() {
+			tag.set_total_discs(v)
+		}
+
+		tag
 	}
 }
 
 impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 	fn from(inp: &'a VorbisTag) -> Self {
-		let mut t = Self::default();
-		t.title = inp.title();
-		t.artists = inp.artists();
-		t.year = inp.year().map(|y| y as i32);
-		t.album = Album::new(inp.album_title(), inp.album_artists(), inp.album_cover());
-		t.track_number = inp.track_number();
-		t.total_tracks = inp.total_tracks();
-		t.disc_number = inp.disc_number();
-		t.total_discs = inp.total_discs();
-		t
+		Self {
+			title: inp.title(),
+			artists: inp.artists(),
+			year: inp.year().map(|y| y as i32),
+			album: Album::new(inp.album_title(), inp.album_artists(), inp.album_cover()),
+			track_number: inp.track_number(),
+			total_tracks: inp.total_tracks(),
+			disc_number: inp.disc_number(),
+			total_discs: inp.total_discs(),
+			..AnyTag::default()
+		}
 	}
 }
 
@@ -193,7 +214,7 @@ impl From<&VorbisTag> for metaflac::Tag {
 		let vendor = inp.0.vendor.clone();
 		let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
 
-		for (k, v) in inp.0.comments.clone().into_iter() {
+		for (k, v) in inp.0.comments.clone() {
 			comment_collection.insert(k, vec![v]);
 		}
 
@@ -227,7 +248,7 @@ impl AudioTagEdit for VorbisTag {
 		self.0.set_value("ARTIST", artist)
 	}
 
-	fn add_artist(&mut self, artist: &str) {
+	fn add_artist(&mut self, _artist: &str) {
 		todo!()
 	}
 
@@ -239,20 +260,20 @@ impl AudioTagEdit for VorbisTag {
 		self.0.remove_key("ARTIST");
 	}
 
-	fn year(&self) -> Option<u16> {
+	fn year(&self) -> Option<i32> {
 		if let Some(Ok(y)) = self
 			.0
 			.get_value("DATE")
 			.map(|s| s.chars().take(4).collect::<String>().parse::<i32>())
 		{
-			Some(y as u16)
-		} else if let Some(Ok(y)) = self.0.get_value("YEAR").map(|s| s.parse::<i32>()) {
-			Some(y as u16)
+			Some(y)
+		} else if let Some(Ok(y)) = self.0.get_value("YEAR").map(str::parse::<i32>) {
+			Some(y)
 		} else {
 			None
 		}
 	}
-	fn set_year(&mut self, year: u16) {
+	fn set_year(&mut self, year: i32) {
 		self.0.set_value("DATE", &year.to_string());
 		self.0.set_value("YEAR", &year.to_string());
 	}
@@ -278,7 +299,7 @@ impl AudioTagEdit for VorbisTag {
 		self.0.set_value("ALBUMARTIST", artists)
 	}
 
-	fn add_album_artist(&mut self, artist: &str) {
+	fn add_album_artist(&mut self, _artist: &str) {
 		todo!()
 	}
 
@@ -300,7 +321,7 @@ impl AudioTagEdit for VorbisTag {
 		//     })
 		None
 	}
-	fn set_album_cover(&mut self, cover: Picture) {
+	fn set_album_cover(&mut self, _cover: Picture) {
 		// TODO
 		// self.remove_album_cover();
 		// let mime = String::from(cover.mime_type);
@@ -314,14 +335,14 @@ impl AudioTagEdit for VorbisTag {
 		//     .remove_picture_type(metaflac::block::PictureType::CoverFront)
 	}
 
-	fn track_number(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.0.get_value("TRACKNUMBER").map(|x| x.parse::<u16>()) {
+	fn track_number(&self) -> Option<u32> {
+		if let Some(Ok(n)) = self.0.get_value("TRACKNUMBER").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
-	fn set_track_number(&mut self, v: u16) {
+	fn set_track_number(&mut self, v: u32) {
 		self.0.set_value("TRACKNUMBER", &v.to_string())
 	}
 	fn remove_track_number(&mut self) {
@@ -329,28 +350,28 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	// ! not standard
-	fn total_tracks(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.0.get_value("TOTALTRACKS").map(|x| x.parse::<u16>()) {
+	fn total_tracks(&self) -> Option<u32> {
+		if let Some(Ok(n)) = self.0.get_value("TOTALTRACKS").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
-	fn set_total_tracks(&mut self, v: u16) {
+	fn set_total_tracks(&mut self, v: u32) {
 		self.0.set_value("TOTALTRACKS", &v.to_string())
 	}
 	fn remove_total_tracks(&mut self) {
 		self.0.remove_key("TOTALTRACKS");
 	}
 
-	fn disc_number(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.0.get_value("DISCNUMBER").map(|x| x.parse::<u16>()) {
+	fn disc_number(&self) -> Option<u32> {
+		if let Some(Ok(n)) = self.0.get_value("DISCNUMBER").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
-	fn set_disc_number(&mut self, v: u16) {
+	fn set_disc_number(&mut self, v: u32) {
 		self.0.set_value("DISCNUMBER", &v.to_string())
 	}
 	fn remove_disc_number(&mut self) {
@@ -358,14 +379,14 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	// ! not standard
-	fn total_discs(&self) -> Option<u16> {
-		if let Some(Ok(n)) = self.0.get_value("TOTALDISCS").map(|x| x.parse::<u16>()) {
+	fn total_discs(&self) -> Option<u32> {
+		if let Some(Ok(n)) = self.0.get_value("TOTALDISCS").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
-	fn set_total_discs(&mut self, v: u16) {
+	fn set_total_discs(&mut self, v: u32) {
 		self.0.set_value("TOTALDISCS", &v.to_string())
 	}
 	fn remove_total_discs(&mut self) {
@@ -402,7 +423,7 @@ impl AudioTagWrite for VorbisTag {
 
 					let mut comment_str = Vec::new();
 
-					for (a, b) in comments.into_iter() {
+					for (a, b) in comments {
 						comment_str.push(format!("{}={}", a, b));
 						let last = comment_str.last().unwrap();
 						let len = last.as_bytes().len() as u32;
@@ -415,8 +436,7 @@ impl AudioTagWrite for VorbisTag {
 					let mut file_bytes = Vec::new();
 					std::io::copy(file.borrow_mut(), &mut file_bytes)?;
 
-					let data =
-						logic::write::ogg(Cursor::new(file_bytes.clone()), packet)?.into_inner();
+					let data = logic::write::ogg(Cursor::new(file_bytes), &*packet)?.into_inner();
 
 					file.seek(SeekFrom::Start(0))?;
 					file.set_len(0)?;
@@ -426,7 +446,7 @@ impl AudioTagWrite for VorbisTag {
 				TagType::Flac => {
 					let mut flac_tag: metaflac::Tag = self.into();
 
-					flac_tag.write_to(file);
+					flac_tag.write_to(file)?;
 				},
 				TagType::Mp4 => {},
 				_ => unreachable!(),

@@ -43,17 +43,34 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 	fn from(inp: AnyTag<'a>) -> Self {
 		let mut tag = Id3v2Tag::new();
 
-		inp.title().map(|v| tag.set_title(v));
-		inp.artists_as_string().map(|v| tag.set_artist(v.as_str()));
-		inp.year.map(|v| tag.set_year(v as u16));
-		inp.album().title.map(|v| tag.set_album_title(v));
-		inp.album()
-			.artists
-			.map(|v| tag.set_album_artists(v.join(", ")));
-		inp.track_number().map(|v| tag.set_track(v as u16));
-		inp.total_tracks().map(|v| tag.set_total_tracks(v as u16));
-		inp.disc_number().map(|v| tag.set_disc(v as u16));
-		inp.total_discs().map(|v| tag.set_total_discs(v as u16));
+		if let Some(v) = inp.title() {
+			tag.set_title(v)
+		}
+		if let Some(v) = inp.artists_as_string() {
+			tag.set_artist(v.as_str())
+		}
+		if let Some(v) = inp.year {
+			tag.set_year(v)
+		}
+		if let Some(v) = inp.album().title {
+			tag.set_album_title(v)
+		}
+		if let Some(v) = inp.album().artists {
+			tag.set_album_artists(v.join(", "))
+		}
+		if let Some(v) = inp.track_number() {
+			tag.set_track(v)
+		}
+		if let Some(v) = inp.total_tracks() {
+			tag.set_total_tracks(v)
+		}
+		if let Some(v) = inp.disc_number() {
+			tag.set_disc(v)
+		}
+		if let Some(v) = inp.total_discs() {
+			tag.set_total_discs(v)
+		}
+
 		tag
 	}
 }
@@ -111,10 +128,10 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.remove_artist()
 	}
 
-	fn year(&self) -> Option<u16> {
-		self.0.year().map(|y| y as u16)
+	fn year(&self) -> Option<i32> {
+		self.0.year()
 	}
-	fn set_year(&mut self, year: u16) {
+	fn set_year(&mut self, year: i32) {
 		self.0.set_year(year as i32)
 	}
 	fn remove_year(&mut self) {
@@ -139,7 +156,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.set_album_artist(artists)
 	}
 
-	fn add_album_artist(&mut self, artist: &str) {
+	fn add_album_artist(&mut self, _artist: &str) {
 		todo!()
 	}
 
@@ -150,8 +167,7 @@ impl AudioTagEdit for Id3v2Tag {
 	fn album_cover(&self) -> Option<Picture> {
 		self.0
 			.pictures()
-			.filter(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
-			.next()
+			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
 			.and_then(|pic| {
 				Some(Picture {
 					data: &pic.data,
@@ -173,41 +189,41 @@ impl AudioTagEdit for Id3v2Tag {
 			.remove_picture_by_type(id3::frame::PictureType::CoverFront);
 	}
 
-	fn track_number(&self) -> Option<u16> {
-		self.0.track().map(|x| x as u16)
+	fn track_number(&self) -> Option<u32> {
+		self.0.track()
 	}
-	fn set_track_number(&mut self, track: u16) {
-		self.0.set_track(track as u32);
+	fn set_track_number(&mut self, track: u32) {
+		self.0.set_track(track);
 	}
 	fn remove_track_number(&mut self) {
 		self.0.remove_track();
 	}
 
-	fn total_tracks(&self) -> Option<u16> {
-		self.0.total_tracks().map(|x| x as u16)
+	fn total_tracks(&self) -> Option<u32> {
+		self.0.total_tracks()
 	}
-	fn set_total_tracks(&mut self, total_track: u16) {
+	fn set_total_tracks(&mut self, total_track: u32) {
 		self.0.set_total_tracks(total_track as u32);
 	}
 	fn remove_total_tracks(&mut self) {
 		self.0.remove_total_tracks();
 	}
 
-	fn disc_number(&self) -> Option<u16> {
-		self.0.disc().map(|x| x as u16)
+	fn disc_number(&self) -> Option<u32> {
+		self.0.disc()
 	}
-	fn set_disc_number(&mut self, disc_number: u16) {
+	fn set_disc_number(&mut self, disc_number: u32) {
 		self.0.set_disc(disc_number as u32)
 	}
 	fn remove_disc_number(&mut self) {
 		self.0.remove_disc();
 	}
 
-	fn total_discs(&self) -> Option<u16> {
-		self.0.total_discs().map(|x| x as u16)
+	fn total_discs(&self) -> Option<u32> {
+		self.0.total_discs()
 	}
-	fn set_total_discs(&mut self, total_discs: u16) {
-		self.0.set_total_discs(total_discs as u32)
+	fn set_total_discs(&mut self, total_discs: u32) {
+		self.0.set_total_discs(total_discs)
 	}
 	fn remove_total_discs(&mut self) {
 		self.0.remove_total_discs();

@@ -3,7 +3,7 @@
 pub enum Error {
 	/// Unknown file extension.
 	#[error("Failed to guess the metadata format based on the file extension.")]
-	UnknownFileExtension(String),
+	UnknownFileExtension,
 
 	/// Unsupported file extension
 	#[error("Unsupported format: {0}")]
@@ -12,24 +12,24 @@ pub enum Error {
 	UnsupportedMimeType(String),
 
 	#[error(transparent)]
-	FlacTagError(#[from] metaflac::Error),
+	FlacTag(#[from] metaflac::Error),
 	#[error(transparent)]
-	Id3TagError(#[from] id3::Error),
+	Id3Tag(#[from] id3::Error),
 	#[error(transparent)]
-	Mp4TagError(#[from] mp4ameta::Error),
+	Mp4Tag(#[from] mp4ameta::Error),
 	#[error(transparent)]
-	OpusTagError(#[from] opus_headers::ParseError),
+	OpusTag(#[from] opus_headers::ParseError),
 	#[error(transparent)]
-	LewtonError(#[from] lewton::VorbisError),
+	Lewton(#[from] lewton::VorbisError),
 	#[error(transparent)]
-	OggError(#[from] ogg::OggReadError),
+	Ogg(#[from] ogg::OggReadError),
 
 	#[error("")]
 	NotAPicture,
 
 	/// Represents all cases of `std::io::Error`.
 	#[error(transparent)]
-	IOError(#[from] std::io::Error),
+	IO(#[from] std::io::Error),
 }
 
 /// Type alias for the result of tag operations.

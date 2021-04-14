@@ -2,7 +2,7 @@ use crate::Result;
 use ogg::PacketWriteEndInfo;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-pub(crate) fn ogg<T>(data: T, packet: Vec<u8>) -> Result<Cursor<Vec<u8>>>
+pub(crate) fn ogg<T>(data: T, packet: &[u8]) -> Result<Cursor<Vec<u8>>>
 where
 	T: Read + Seek,
 {
@@ -28,12 +28,9 @@ where
 				if !replaced {
 					let comment_header = lewton::header::read_header_comment(&p.data);
 
-					match comment_header {
-						Ok(_) => {
-							p.data = packet.clone();
-							replaced = true;
-						},
-						Err(_) => {},
+					if comment_header.is_ok() {
+						p.data = packet.to_vec();
+						replaced = true;
 					}
 				}
 

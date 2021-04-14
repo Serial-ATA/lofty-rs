@@ -1,3 +1,4 @@
+#[allow(clippy::wildcard_imports)]
 use crate::{components::tags::*, Album, AnyTag, Picture, Result, TagType};
 use std::fs::File;
 
@@ -23,8 +24,8 @@ pub trait AudioTagEdit {
 	fn artists(&self) -> Option<Vec<&str>>;
 	fn remove_artist(&mut self);
 
-	fn year(&self) -> Option<u16>;
-	fn set_year(&mut self, year: u16);
+	fn year(&self) -> Option<i32>;
+	fn set_year(&mut self, year: i32);
 	fn remove_year(&mut self);
 
 	fn album(&self) -> Album<'_> {
@@ -48,10 +49,10 @@ pub trait AudioTagEdit {
 	fn set_album_cover(&mut self, cover: Picture);
 	fn remove_album_cover(&mut self);
 
-	fn track(&self) -> (Option<u16>, Option<u16>) {
+	fn track(&self) -> (Option<u32>, Option<u32>) {
 		(self.track_number(), self.total_tracks())
 	}
-	fn set_track(&mut self, track: u16) {
+	fn set_track(&mut self, track: u32) {
 		self.set_track_number(track);
 	}
 	fn remove_track(&mut self) {
@@ -59,18 +60,18 @@ pub trait AudioTagEdit {
 		self.remove_total_tracks();
 	}
 
-	fn track_number(&self) -> Option<u16>;
-	fn set_track_number(&mut self, track_number: u16);
+	fn track_number(&self) -> Option<u32>;
+	fn set_track_number(&mut self, track_number: u32);
 	fn remove_track_number(&mut self);
 
-	fn total_tracks(&self) -> Option<u16>;
-	fn set_total_tracks(&mut self, total_track: u16);
+	fn total_tracks(&self) -> Option<u32>;
+	fn set_total_tracks(&mut self, total_track: u32);
 	fn remove_total_tracks(&mut self);
 
-	fn disc(&self) -> (Option<u16>, Option<u16>) {
+	fn disc(&self) -> (Option<u32>, Option<u32>) {
 		(self.disc_number(), self.total_discs())
 	}
-	fn set_disc(&mut self, disc: u16) {
+	fn set_disc(&mut self, disc: u32) {
 		self.set_disc_number(disc);
 	}
 	fn remove_disc(&mut self) {
@@ -78,12 +79,12 @@ pub trait AudioTagEdit {
 		self.remove_total_discs();
 	}
 
-	fn disc_number(&self) -> Option<u16>;
-	fn set_disc_number(&mut self, disc_number: u16);
+	fn disc_number(&self) -> Option<u32>;
+	fn set_disc_number(&mut self, disc_number: u32);
 	fn remove_disc_number(&mut self);
 
-	fn total_discs(&self) -> Option<u16>;
-	fn set_total_discs(&mut self, total_discs: u16);
+	fn total_discs(&self) -> Option<u32>;
+	fn set_total_discs(&mut self, total_discs: u32);
 	fn remove_total_discs(&mut self);
 }
 
@@ -104,11 +105,7 @@ pub trait ToAnyTag: ToAny {
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
 			#[cfg(feature = "vorbis")]
-			TagType::Ogg => Box::new(VorbisTag::from(self.to_anytag())),
-			#[cfg(feature = "vorbis")]
-			TagType::Opus => Box::new(VorbisTag::from(self.to_anytag())),
-			#[cfg(feature = "vorbis")]
-			TagType::Flac => Box::new(VorbisTag::from(self.to_anytag())),
+			TagType::Ogg | TagType::Opus | TagType::Flac => Box::new(VorbisTag::from(self.to_anytag())),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
 		}

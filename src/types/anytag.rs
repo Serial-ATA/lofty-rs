@@ -9,10 +9,10 @@ pub struct AnyTag<'a> {
 	pub comments: Option<Vec<&'a str>>,
 	pub year: Option<i32>,
 	pub date: Option<&'a str>,
-	pub track_number: Option<u16>,
-	pub total_tracks: Option<u16>,
-	pub disc_number: Option<u16>,
-	pub total_discs: Option<u16>,
+	pub track_number: Option<u32>,
+	pub total_tracks: Option<u32>,
+	pub disc_number: Option<u32>,
+	pub total_discs: Option<u32>,
 	#[cfg(feature = "duration")]
 	pub duration_ms: Option<u32>,
 }
@@ -58,19 +58,19 @@ impl<'a> AnyTag<'a> {
 		self.year = Some(year);
 	}
 	/// Returns `track number`
-	pub fn track_number(&self) -> Option<u16> {
+	pub fn track_number(&self) -> Option<u32> {
 		self.track_number
 	}
 	/// Returns `total_tracks`
-	pub fn total_tracks(&self) -> Option<u16> {
+	pub fn total_tracks(&self) -> Option<u32> {
 		self.total_tracks
 	}
 	/// Returns `disc_number`
-	pub fn disc_number(&self) -> Option<u16> {
-		self.track_number
+	pub fn disc_number(&self) -> Option<u32> {
+		self.disc_number
 	}
 	/// Returns `total_discs`
-	pub fn total_discs(&self) -> Option<u16> {
+	pub fn total_discs(&self) -> Option<u32> {
 		self.total_tracks
 	}
 	#[cfg(feature = "duration")]

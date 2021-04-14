@@ -15,7 +15,7 @@ fn test_inner() {
 	let tag: VorbisTag = innertag.into();
 
 	// Turn the VorbisTag into a Box<dyn AudioTag>
-	let mut id3tag = tag.to_dyn_tag(TagType::Id3v2);
+	let id3tag = tag.to_dyn_tag(TagType::Id3v2);
 
 	// Write Box<dyn AudioTag> to `a.mp3`
 	id3tag
@@ -42,7 +42,7 @@ fn test_inner() {
 		minute: None,
 		second: None,
 	};
-	id3tag_inner.set_date_recorded(timestamp.clone());
+	id3tag_inner.set_date_recorded(timestamp);
 
 	// Write id3::Tag to `a.mp3`
 	id3tag_inner

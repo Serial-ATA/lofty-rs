@@ -45,9 +45,9 @@
 //!
 //! By default, `full` (`all_tags` and `duration`) are enabled.
 //!
-//! `all_tags` provides all the track metadata (`artists`, `album`, etc.) in [AnyTag].
+//! `all_tags` provides all the track metadata (`artists`, `album`, etc.) in [`AnyTag`].
 //!
-//! `duration` provides the `duration` field in [AnyTag].
+//! `duration` provides the `duration` field in [`AnyTag`].
 //!
 //! Either one can be disabled if it doesn't fit your use case.
 //!
@@ -75,7 +75,10 @@
 	clippy::cast_sign_loss,
 	clippy::cast_possible_wrap,
 	clippy::clippy::cast_possible_truncation,
-	clippy::module_name_repetitions
+	clippy::module_name_repetitions,
+	clippy::must_use_candidate,
+	clippy::doc_markdown,
+	clippy::let_underscore_drop
 )]
 
 #[doc(hidden)]
