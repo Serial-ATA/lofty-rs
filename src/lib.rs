@@ -17,7 +17,7 @@
 //! |---------------|-----------------|---------------------------------------------------------------------------------------------------------------------|
 //! | `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
 //! | `wav`         | TODO            | TODO                                                                                                                |
-//! | `ape`         | TODO            | TODO                                                                                                                |
+//! | `ape`         | APEv2           | [**ape**](https://github.com/rossnomann/rust-ape)                                                                                                                |
 //! | `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
 //! | `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
 //! | `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |

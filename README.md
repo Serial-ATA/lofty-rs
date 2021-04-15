@@ -14,15 +14,15 @@ in order to parse metadata in different file formats.
 
 ## Supported Formats
 
-| File Format   | Metadata Format | Backend                                                     |
-|---------------|-----------------|-------------------------------------------------------------|
-| `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)            |
-| `wav`         | TODO            | TODO                                                        |
-| `ape`         | TODO            | TODO                                                        |
-| `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers) |
-| `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton)           |
-| `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac) |
-| `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)     |
+| File Format   | Metadata Format | Backend                                                                                                             |
+|---------------|-----------------|---------------------------------------------------------------------------------------------------------------------|
+| `mp3`         | ID3v2.4         | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
+| `wav`         | TODO            | TODO                                                                                                                |
+| `ape`         | APEv2           | [**ape**](https://github.com/rossnomann/rust-ape)                                                                                                                |
+| `opus`        | Vorbis Comment  | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
+| `ogg`         | Vorbis Comment  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
+| `flac`        | Vorbis Comment  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |
+| `m4a/mp4/...` | Vorbis Comment  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)
 
 ## Documentation
 Available [here](https://docs.rs/lofty)
