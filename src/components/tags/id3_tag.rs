@@ -1,12 +1,11 @@
 #![cfg(feature = "mp3")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
+	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 use std::{convert::TryInto, fs::File, path::Path};
 
-use crate::traits::ReadPath;
 pub use id3::Tag as Id3v2InnerTag;
 
 impl ReadPath for Id3v2InnerTag {
@@ -111,13 +110,16 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 
 	fn add_artist(&mut self, artist: &str) {
-		if let Some(artists) = self.artist() {
-			let mut artists: Vec<&str> = artists.split(", ").collect();
-			artists.push(artist);
-			self.set_artist(&artists.join(", "))
-		} else {
-			self.set_artist(artist)
-		}
+		let artist = self.artist().as_ref().map_or_else(
+			|| String::from(artist),
+			|artist| {
+				let mut artists: Vec<&str> = artist.split(", ").collect();
+				artists.push(artist);
+				artists.join(", ")
+			},
+		);
+
+		self.set_artist(artist.as_str())
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {

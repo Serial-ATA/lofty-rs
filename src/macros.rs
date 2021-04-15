@@ -15,6 +15,7 @@ macro_rules! impl_tag {
 			pub fn new() -> Self {
 				Self::default()
 			}
+			#[allow(clippy::missing_errors_doc)]
 			pub fn read_from_path<P>(path: P, tag_type: Option<TagType>) -> Result<Self>
 			where
 				P: AsRef<Path>,

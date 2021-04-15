@@ -1,12 +1,11 @@
 #![cfg(feature = "mp4")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
+	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 use std::{fs::File, path::Path};
 
-use crate::traits::ReadPath;
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 
 impl ReadPath for Mp4InnerTag {

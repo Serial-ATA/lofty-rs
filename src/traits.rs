@@ -4,11 +4,6 @@ use std::fs::File;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
-// pub trait TagIo {
-//     fn read_from_path(path: &str) -> Result<AnyTag>;
-//     fn write_to_path(path: &str) -> Result<()>;
-// }
-
 /// Implementors of this trait are able to read and write audio metadata.
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
@@ -89,8 +84,17 @@ pub trait AudioTagEdit {
 }
 
 pub trait AudioTagWrite {
+	/// Write tag to a [`File`][std::fs::File]
+	///
+	/// # Errors
+	///
+	/// Will return `Err` if unable to write to the `File`
 	fn write_to(&self, file: &mut File) -> Result<()>;
-	// cannot use impl AsRef<Path>
+	/// Write tag to a path
+	///
+	/// # Errors
+	///
+	/// Will return `Err` if `path` doesn't exist
 	fn write_to_path(&self, path: &str) -> Result<()>;
 }
 

@@ -442,17 +442,19 @@ impl AudioTagWrite for VorbisTag {
 					file.set_len(0)?;
 					file.write_all(&data)?;
 				},
-				TagType::Opus => {},
 				TagType::Flac => {
 					let mut flac_tag: metaflac::Tag = self.into();
 
 					flac_tag.write_to(file)?;
 				},
+				TagType::Opus => {
+					todo!()
+				},
 				TagType::Mp4 => {},
 				_ => unreachable!(),
 			}
 		}
-		// self.0.write_to(file)?; TODO
+
 		Ok(())
 	}
 	fn write_to_path(&self, path: &str) -> Result<()> {

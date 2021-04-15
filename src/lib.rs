@@ -78,7 +78,8 @@
 	clippy::module_name_repetitions,
 	clippy::must_use_candidate,
 	clippy::doc_markdown,
-	clippy::let_underscore_drop
+	clippy::let_underscore_drop,
+	clippy::match_wildcard_for_single_variants
 )]
 
 #[doc(hidden)]
