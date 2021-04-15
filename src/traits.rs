@@ -106,6 +106,8 @@ pub trait ToAnyTag: ToAny {
 		// TODO: write a macro or something that implement this method for every tag type so that if the
 		// TODO: target type is the same, just return self
 		match tag_type {
+			#[cfg(feature = "ape")]
+			TagType::Ape => Box::new(ApeTag::from(self.to_anytag())),
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
 			#[cfg(feature = "vorbis")]

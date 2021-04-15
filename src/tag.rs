@@ -36,11 +36,13 @@ impl Tag {
 			.as_ref()
 			.unwrap_or(&TagType::try_from_ext(extension_str)?)
 		{
+			#[cfg(feature = "ape")]
+			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path, None)?)),
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
-			#[cfg(feature = "vorbis")]
+			#[cfg(feature = "vorbis")] // TODO: this isn't ideal, make this better somehow
 			id => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.clone()))?)),
 		}
 	}
@@ -49,6 +51,9 @@ impl Tag {
 /// The tag type, based on the file extension.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
+	#[cfg(feature = "ape")]
+	/// Common file extensions: `.ape`
+	Ape,
 	#[cfg(feature = "mp3")]
 	/// Common file extensions: `.mp3`
 	Id3v2,
@@ -69,6 +74,8 @@ pub enum TagType {
 impl TagType {
 	fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
+			#[cfg(feature = "ape")]
+			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "mp3")]
 			"mp3" => Ok(Self::Id3v2),
 			#[cfg(feature = "vorbis")]

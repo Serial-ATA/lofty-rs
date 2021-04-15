@@ -12,6 +12,8 @@ pub enum Error {
 	UnsupportedMimeType(String),
 
 	#[error(transparent)]
+	ApeTag(#[from] ape::Error),
+	#[error(transparent)]
 	FlacTag(#[from] metaflac::Error),
 	#[error(transparent)]
 	Id3Tag(#[from] id3::Error),
