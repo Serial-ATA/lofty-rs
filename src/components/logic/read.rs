@@ -1,8 +1,8 @@
 use super::constants::{ID3_ID, LIST_ID};
-use crate::{AnyTag, Error, Id3v2Tag, Result, ToAnyTag};
-use byteorder::{BigEndian, ByteOrder, LittleEndian, ReadBytesExt};
+use crate::{Error, Result, ToAnyTag};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek};
 
 pub(crate) fn wav<T>(mut data: T) -> Result<Option<HashMap<String, String>>>
 where
@@ -13,7 +13,6 @@ where
 	let mut list: Option<riff::Chunk> = None;
 
 	for child in chunk.iter(&mut data) {
-		println!("{}", child.id());
 		let chunk_id = child.id();
 		let value_upper = std::str::from_utf8(&chunk_id.value)?.to_uppercase();
 		let value_bytes = value_upper.as_bytes();
@@ -45,7 +44,6 @@ where
 			// TODO
 		}
 
-		println!("{:?}", content);
 		content.drain(0..4); // Get rid of the chunk ID
 		let mut cursor = Cursor::new(&*content);
 

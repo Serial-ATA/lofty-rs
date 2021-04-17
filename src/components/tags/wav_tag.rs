@@ -1,8 +1,8 @@
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Id3v2Tag,
+	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite,
 	Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use std::borrow::BorrowMut;
+
 use std::{collections::HashMap, fs::File, path::Path};
 
 struct WavInnerTag {
@@ -259,18 +259,6 @@ impl AudioTagEdit for WavTag {
 
 impl AudioTagWrite for WavTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		// let (tag, data) = {
-		// 	let mut data = Vec::new();
-		//
-		// 	let tag = if self.0.id3.is_some() {
-		// 		"ID3 "
-		// 	} else {
-		// 		"INFO"
-		// 	};
-		//
-		// };
-		//
-		// crate::components::logic::write::wav(file, )
 		Ok(())
 	}
 
