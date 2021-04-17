@@ -15,7 +15,8 @@ categories = ["accessiblity", "multimedia::audio"]
 # Ape
 ape = {version = "0.3.0", optional = true}
 # Wav
-hound = {version = "3.4.0", optional = true}
+sndfile-sys = {version = "0.2.2", optional = true}
+riff = {version = "1.0.1", optional = true}
 # Mp3
 id3 = {version = "0.6.2", optional = true} # De/Encoding
 mp3-duration = {version = "0.1.10", optional = true} # Duration
@@ -30,6 +31,7 @@ metaflac = {version = "0.2.4", optional = true}
 opus_headers = {version = "0.1.2", optional = true}
 # Errors
 thiserror = "1.0.24"
+byteorder = "1.4.3"
 filepath = "0.1.1"
 
 [features]
@@ -37,7 +39,7 @@ default = ["full"]
 full = ["all_tags", "duration"]
 mp4 = ["mp4ameta"]
 mp3 = ["id3"]
-wav = ["hound"]
+wav = ["sndfile-sys", "riff"]
 vorbis = ["lewton", "metaflac", "opus_headers", "ogg"]
 all_tags = ["vorbis", "mp4", "mp3", "wav", "ape"]
 duration = ["mp3-duration"]

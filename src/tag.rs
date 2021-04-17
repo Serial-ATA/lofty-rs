@@ -1,5 +1,6 @@
 #[allow(clippy::wildcard_imports)]
 use super::{components::tags::*, AudioTag, Error, Result};
+use crate::{Id3v2Tag, WavTag};
 use std::path::Path;
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
@@ -42,6 +43,8 @@ impl Tag {
 			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
+			#[cfg(feature = "wav")]
+			TagType::Wav => Ok(Box::new(WavTag::read_from_path(path, None)?)),
 			#[cfg(feature = "vorbis")] // TODO: this isn't ideal, make this better somehow
 			id => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.clone()))?)),
 		}
@@ -57,6 +60,9 @@ pub enum TagType {
 	#[cfg(feature = "mp3")]
 	/// Common file extensions: `.mp3`
 	Id3v2,
+	#[cfg(feature = "mp4")]
+	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
+	Mp4,
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
 	Ogg,
@@ -66,9 +72,9 @@ pub enum TagType {
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions: `.flac`
 	Flac,
-	#[cfg(feature = "mp4")]
-	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
-	Mp4,
+	#[cfg(feature = "wav")]
+	/// Common file extensions: `.wav, .wave`
+	Wav,
 }
 
 impl TagType {
@@ -86,6 +92,8 @@ impl TagType {
 			"ogg" | "oga" => Ok(Self::Ogg),
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
+			#[cfg(feature = "wav")]
+			"wav" | "wave" => Ok(Self::Wav),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
 	}

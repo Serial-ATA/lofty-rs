@@ -1,7 +1,7 @@
 use crate::Album;
 
 /// The tag returned from `read_from_path`
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct AnyTag<'a> {
 	pub title: Option<&'a str>,
 	pub artists: Option<Vec<&'a str>>,

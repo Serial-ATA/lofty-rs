@@ -1,3 +1,4 @@
+use crate::WavTag;
 #[allow(clippy::wildcard_imports)]
 use crate::{components::tags::*, Album, AnyTag, Picture, Result, TagType};
 use std::fs::File;
@@ -110,10 +111,12 @@ pub trait ToAnyTag: ToAny {
 			TagType::Ape => Box::new(ApeTag::from(self.to_anytag())),
 			#[cfg(feature = "mp3")]
 			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
-			#[cfg(feature = "vorbis")]
-			TagType::Ogg | TagType::Opus | TagType::Flac => Box::new(VorbisTag::from(self.to_anytag())),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
+			#[cfg(feature = "vorbis")]
+			TagType::Ogg | TagType::Opus | TagType::Flac => Box::new(VorbisTag::from(self.to_anytag())),
+			#[cfg(feature = "wav")]
+			TagType::Wav => Box::new(WavTag::from(self.to_anytag())),
 		}
 	}
 }

@@ -68,6 +68,7 @@
 
 //#![forbid(unused_crate_dependencies, unused_import_braces)]
 #![feature(box_into_boxed_slice)]
+#![feature(in_band_lifetimes)]
 #![warn(clippy::pedantic)]
 #![allow(
 	clippy::too_many_lines,

@@ -1,6 +1,6 @@
 use crate::Result;
 use ogg::PacketWriteEndInfo;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 pub(crate) fn ogg<T>(data: T, packet: &[u8]) -> Result<Cursor<Vec<u8>>>
 where
@@ -50,4 +50,15 @@ where
 
 	c.seek(SeekFrom::Start(0))?;
 	Ok(c)
+}
+
+pub(crate) fn wav<T>(mut data: T, packet: Vec<u8>, four_cc: &str) -> Result<()>
+where
+	T: Read + Seek + Write,
+{
+	let contents = riff::ChunkContents::Data(riff::ChunkId::new(four_cc).unwrap(), packet);
+	contents.write(&mut data)?;
+
+	data.seek(SeekFrom::Start(0))?;
+	Ok(())
 }

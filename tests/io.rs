@@ -26,7 +26,7 @@ macro_rules! add_tags {
 		tag.set_artist("foo artist");
 		assert_eq!(tag.artist(), Some("foo artist"));
 
-		println!("Setting artist");
+		println!("Setting year");
 		tag.set_year(2020);
 		assert_eq!(tag.year(), Some(2020));
 

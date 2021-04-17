@@ -12,3 +12,5 @@ pub use id3_tag::Id3v2Tag;
 pub use mp4_tag::Mp4Tag;
 #[cfg(feature = "vorbis")]
 pub use vorbis_tag::VorbisTag;
+#[cfg(feature = "wav")]
+pub use wav_tag::WavTag;

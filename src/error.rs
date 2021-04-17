@@ -25,10 +25,16 @@ pub enum Error {
 	Lewton(#[from] lewton::VorbisError),
 	#[error(transparent)]
 	Ogg(#[from] ogg::OggReadError),
+	#[error("{0}")]
+	Wav(String),
 
 	#[error("")]
 	NotAPicture,
 
+	#[error(transparent)]
+	Utf8(#[from] std::str::Utf8Error),
+	#[error(transparent)]
+	FromUtf8(#[from] std::string::FromUtf8Error),
 	/// Represents all cases of `std::io::Error`.
 	#[error(transparent)]
 	IO(#[from] std::io::Error),
