@@ -1,6 +1,6 @@
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite,
-	Picture, Result, TagType, ToAny, ToAnyTag,
+	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
+	Result, TagType, ToAny, ToAnyTag, components::logic
 };
 
 use std::{collections::HashMap, fs::File, path::Path};
@@ -15,7 +15,7 @@ impl ReadPath for WavInnerTag {
 		P: AsRef<std::path::Path>,
 		Self: Sized,
 	{
-		let data = crate::components::logic::read::wav(File::open(path)?)?;
+		let data = logic::read::wav(File::open(path)?)?;
 
 		Ok(Self { data })
 	}

@@ -50,7 +50,9 @@ where
 		let chunk_len = list.len();
 		let mut metadata: HashMap<String, String> = HashMap::with_capacity(chunk_len as usize);
 
-		for _ in 0..chunk_len {
+		let mut reading = true;
+
+		while reading {
 			let fourcc = cursor.read_u32::<LittleEndian>()? as u32;
 			let size = cursor.read_u32::<LittleEndian>()? as u32;
 
@@ -61,13 +63,17 @@ where
 
 					let val = std::str::from_utf8(&*buf)?;
 					metadata.insert(key, val.trim_matches(char::from(0)).to_string());
-
-					// Skip null byte
-					if size as usize % 2 != 0 {
-						cursor.set_position(cursor.position() + 1)
-					}
 				},
 				None => cursor.set_position(cursor.position() + u64::from(size)),
+			}
+
+			// Skip null byte
+			if size as usize % 2 != 0 {
+				cursor.set_position(cursor.position() + 1)
+			}
+
+			if cursor.position() >= cursor.get_ref().len() as u64 {
+				reading = false
 			}
 		}
 
