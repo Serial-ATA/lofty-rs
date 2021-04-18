@@ -13,11 +13,20 @@ pub trait AudioTagEdit {
 	fn set_title(&mut self, title: &str);
 	fn remove_title(&mut self);
 
-	fn artist(&self) -> Option<&str>;
+	fn artist_str(&self) -> Option<&str>;
 	fn set_artist(&mut self, artist: &str);
-	fn add_artist(&mut self, artist: &str);
+	fn add_artist(&mut self, artist: &str) {
+		if let Some(mut artists) = self.artists_vec() {
+			artists.push(artist);
+			self.set_artist(&artists.join("/"))
+		} else {
+			self.set_artist(artist)
+		}
+	}
 
-	fn artists(&self) -> Option<Vec<&str>>;
+	fn artists_vec(&self) -> Option<Vec<&str>> {
+		self.artist_str().map(|a| a.split('/').collect())
+	}
 	fn remove_artist(&mut self);
 
 	fn year(&self) -> Option<i32>;
@@ -27,7 +36,7 @@ pub trait AudioTagEdit {
 	fn album(&self) -> Album<'_> {
 		Album {
 			title: self.album_title(),
-			artists: self.album_artists(),
+			artists: self.album_artists_vec(),
 			cover: self.album_cover(),
 		}
 	}
@@ -36,9 +45,19 @@ pub trait AudioTagEdit {
 	fn set_album_title(&mut self, v: &str);
 	fn remove_album_title(&mut self);
 
-	fn album_artists(&self) -> Option<Vec<&str>>;
-	fn set_album_artists(&mut self, artists: String);
-	fn add_album_artist(&mut self, artist: &str);
+	fn album_artist_str(&self) -> Option<&str>;
+	fn album_artists_vec(&self) -> Option<Vec<&str>> {
+		self.album_artist_str().map(|a| a.split('/').collect())
+	}
+	fn set_album_artist(&mut self, artist: &str);
+	fn add_album_artist(&mut self, artist: &str) {
+		if let Some(mut artists) = self.album_artists_vec() {
+			artists.push(artist);
+			self.set_album_artist(&artists.join("/"))
+		} else {
+			self.set_album_artist(artist)
+		}
+	}
 	fn remove_album_artists(&mut self);
 
 	fn album_cover(&self) -> Option<Picture>;

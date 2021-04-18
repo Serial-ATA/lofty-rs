@@ -36,9 +36,13 @@ impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
 	fn from(inp: &'a Id3v2Tag) -> Self {
 		Self {
 			title: inp.title(),
-			artists: inp.artists(),
+			artists: inp.artists_vec(),
 			year: inp.year().map(|y| y as i32),
-			album: Album::new(inp.album_title(), inp.album_artists(), inp.album_cover()),
+			album: Album::new(
+				inp.album_title(),
+				inp.album_artists_vec(),
+				inp.album_cover(),
+			),
 			track_number: inp.track_number(),
 			total_tracks: inp.total_tracks(),
 			disc_number: inp.disc_number(),
@@ -67,7 +71,7 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join("/"))
+			tag.set_album_artist(&v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track(v)
@@ -113,7 +117,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.remove_title();
 	}
 
-	fn artist(&self) -> Option<&str> {
+	fn artist_str(&self) -> Option<&str> {
 		self.0.artist()
 	}
 
@@ -121,21 +125,8 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.set_artist(artist)
 	}
 
-	fn add_artist(&mut self, artist: &str) {
-		let artist = self.artist().as_ref().map_or_else(
-			|| String::from(artist),
-			|artist| {
-				let mut artists: Vec<&str> = artist.split('/').collect();
-				artists.push(artist);
-				artists.join("/")
-			},
-		);
-
-		self.set_artist(artist.as_str())
-	}
-
-	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split('/').collect())
+	fn artists_vec(&self) -> Option<Vec<&str>> {
+		self.artist_str().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
@@ -162,16 +153,16 @@ impl AudioTagEdit for Id3v2Tag {
 		self.0.remove_album();
 	}
 
-	fn album_artists(&self) -> Option<Vec<&str>> {
+	fn album_artist_str(&self) -> Option<&str> {
+		self.0.album_artist()
+	}
+
+	fn album_artists_vec(&self) -> Option<Vec<&str>> {
 		self.0.album_artist().map(|a| a.split('/').collect())
 	}
 
-	fn set_album_artists(&mut self, artists: String) {
+	fn set_album_artist(&mut self, artists: &str) {
 		self.0.set_album_artist(artists)
-	}
-
-	fn add_album_artist(&mut self, _artist: &str) {
-		todo!()
 	}
 
 	fn remove_album_artists(&mut self) {

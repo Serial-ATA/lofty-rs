@@ -139,7 +139,7 @@ impl<'a> From<AnyTag<'a>> for VorbisTag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join("/"))
+			tag.set_album_artist(&v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track_number(v)
@@ -162,9 +162,13 @@ impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
 	fn from(inp: &'a VorbisTag) -> Self {
 		Self {
 			title: inp.title(),
-			artists: inp.artists(),
+			artists: inp.artists_vec(),
 			year: inp.year().map(|y| y as i32),
-			album: Album::new(inp.album_title(), inp.album_artists(), inp.album_cover()),
+			album: Album::new(
+				inp.album_title(),
+				inp.album_artists_vec(),
+				inp.album_cover(),
+			),
 			track_number: inp.track_number(),
 			total_tracks: inp.total_tracks(),
 			disc_number: inp.disc_number(),
@@ -245,20 +249,12 @@ impl AudioTagEdit for VorbisTag {
 	fn remove_title(&mut self) {
 		self.0.remove_key("TITLE");
 	}
-	fn artist(&self) -> Option<&str> {
+	fn artist_str(&self) -> Option<&str> {
 		self.0.get_value("ARTIST")
 	}
 
 	fn set_artist(&mut self, artist: &str) {
 		self.0.set_value("ARTIST", artist)
-	}
-
-	fn add_artist(&mut self, _artist: &str) {
-		todo!()
-	}
-
-	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
@@ -297,15 +293,18 @@ impl AudioTagEdit for VorbisTag {
 		self.0.remove_key("ALBUM");
 	}
 
-	fn album_artists(&self) -> Option<Vec<&str>> {
-		self.0.get_value("ALBUMARTIST").map(|a| vec![a])
-	}
-	fn set_album_artists(&mut self, artists: String) {
-		self.0.set_value("ALBUMARTIST", artists)
+	fn album_artist_str(&self) -> Option<&str> {
+		self.0.get_value("ALBUMARTIST")
 	}
 
-	fn add_album_artist(&mut self, _artist: &str) {
-		todo!()
+	fn album_artists_vec(&self) -> Option<Vec<&str>> {
+		self.0
+			.get_value("ALBUMARTIST")
+			.map(|a| a.split('/').collect())
+	}
+
+	fn set_album_artist(&mut self, artist: &str) {
+		self.0.set_value("ALBUMARTIST", artist)
 	}
 
 	fn remove_album_artists(&mut self) {

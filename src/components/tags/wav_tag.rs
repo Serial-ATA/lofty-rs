@@ -51,7 +51,7 @@ impl<'a> From<AnyTag<'a>> for WavTag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join("/"))
+			tag.set_album_artist(&v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track_number(v)
@@ -74,9 +74,13 @@ impl<'a> From<&'a WavTag> for AnyTag<'a> {
 	fn from(inp: &'a WavTag) -> Self {
 		Self {
 			title: inp.title(),
-			artists: inp.artists(),
+			artists: inp.artists_vec(),
 			year: inp.year().map(|y| y as i32),
-			album: Album::new(inp.album_title(), inp.album_artists(), inp.album_cover()),
+			album: Album::new(
+				inp.album_title(),
+				inp.album_artists_vec(),
+				inp.album_cover(),
+			),
 			track_number: inp.track_number(),
 			total_tracks: inp.total_tracks(),
 			disc_number: inp.disc_number(),
@@ -141,20 +145,12 @@ impl AudioTagEdit for WavTag {
 		self.remove_key("Title")
 	}
 
-	fn artist(&self) -> Option<&str> {
+	fn artist_str(&self) -> Option<&str> {
 		self.get_value("Artist")
 	}
 
 	fn set_artist(&mut self, artist: &str) {
 		self.set_value("Artist", artist)
-	}
-
-	fn add_artist(&mut self, _artist: &str) {
-		todo!()
-	}
-
-	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
@@ -189,16 +185,12 @@ impl AudioTagEdit for WavTag {
 		self.remove_key("Album")
 	}
 
-	fn album_artists(&self) -> Option<Vec<&str>> {
-		self.get_value("AlbumArtist").map(|a| vec![a]) // TODO
+	fn album_artist_str(&self) -> Option<&str> {
+		self.get_value("AlbumArtist")
 	}
 
-	fn set_album_artists(&mut self, artists: String) {
-		self.set_value("AlbumArtist", artists)
-	}
-
-	fn add_album_artist(&mut self, _artist: &str) {
-		todo!()
+	fn set_album_artist(&mut self, artist: &str) {
+		self.set_value("AlbumArtist", artist)
 	}
 
 	fn remove_album_artists(&mut self) {

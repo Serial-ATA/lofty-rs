@@ -34,9 +34,13 @@ impl Mp4Tag {
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
 	fn from(inp: &'a Mp4Tag) -> Self {
 		let title = inp.title();
-		let artists = inp.artists().map(|i| i.into_iter().collect::<Vec<_>>());
+		let artists = inp.artists_vec().map(|i| i.into_iter().collect::<Vec<_>>());
 		let year = inp.year().map(|y| y as i32);
-		let album = Album::new(inp.album_title(), inp.album_artists(), inp.album_cover());
+		let album = Album::new(
+			inp.album_title(),
+			inp.album_artists_vec(),
+			inp.album_cover(),
+		);
 		let (track_number, total_tracks) = inp.track();
 		let (disc_number, total_discs) = inp.disc();
 
@@ -119,7 +123,7 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_title(&mut self) {
 		self.0.remove_title();
 	}
-	fn artist(&self) -> Option<&str> {
+	fn artist_str(&self) -> Option<&str> {
 		self.0.artist()
 	}
 	fn set_artist(&mut self, artist: &str) {
@@ -130,17 +134,6 @@ impl AudioTagEdit for Mp4Tag {
 		self.0.add_artist(artist);
 	}
 
-	fn artists(&self) -> Option<Vec<&str>> {
-		let v = self.0.artists().fold(Vec::new(), |mut v, a| {
-			v.push(a);
-			v
-		});
-		if v.is_empty() {
-			None
-		} else {
-			Some(v)
-		}
-	}
 	fn remove_artist(&mut self) {
 		self.0.remove_artists();
 	}
@@ -166,7 +159,10 @@ impl AudioTagEdit for Mp4Tag {
 		self.0.remove_album();
 	}
 
-	fn album_artists(&self) -> Option<Vec<&str>> {
+	fn album_artist_str(&self) -> Option<&str> {
+		self.0.album_artist()
+	}
+	fn album_artists_vec(&self) -> Option<Vec<&str>> {
 		let mut album_artists = self.0.album_artists().peekable();
 
 		if album_artists.peek().is_some() {
@@ -176,7 +172,7 @@ impl AudioTagEdit for Mp4Tag {
 		}
 	}
 
-	fn set_album_artists(&mut self, artists: String) {
+	fn set_album_artist(&mut self, artists: &str) {
 		self.0.set_album_artist(artists)
 	}
 

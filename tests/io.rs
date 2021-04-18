@@ -24,7 +24,7 @@ macro_rules! add_tags {
 
 		println!("Setting artist");
 		tag.set_artist("foo artist");
-		assert_eq!(tag.artist(), Some("foo artist"));
+		assert_eq!(tag.artist_str(), Some("foo artist"));
 
 		println!("Setting year");
 		tag.set_year(2020);
@@ -35,8 +35,8 @@ macro_rules! add_tags {
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
 		println!("Setting album artists");
-		tag.set_album_artists("foo album artist".to_string());
-		assert_eq!(tag.album_artists(), Some(vec!["foo album artist"]));
+		tag.set_album_artist("foo album artist");
+		assert_eq!(tag.album_artists_vec(), Some(vec!["foo album artist"]));
 
 		// TODO
 		// let cover = Picture {
@@ -67,7 +67,7 @@ macro_rules! remove_tags {
 
 		println!("Removing artist");
 		tag.remove_artist();
-		assert!(tag.artist().is_none());
+		assert!(tag.artist_str().is_none());
 		tag.remove_artist();
 
 		println!("Removing year");
@@ -82,7 +82,7 @@ macro_rules! remove_tags {
 
 		println!("Removing album artists");
 		tag.remove_album_artists();
-		assert!(tag.album_artists().is_none());
+		assert!(tag.album_artists_vec().is_none());
 		tag.remove_album_artists();
 
 		// TODO
