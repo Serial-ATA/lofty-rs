@@ -66,7 +66,7 @@ impl<'a> From<AnyTag<'a>> for ApeTag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join(", "))
+			tag.set_album_artists(v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track(v)
@@ -136,9 +136,9 @@ impl AudioTagEdit for ApeTag {
 		let artist = self.artist().as_ref().map_or_else(
 			|| String::from(artist),
 			|artist| {
-				let mut artists: Vec<&str> = artist.split(", ").collect();
+				let mut artists: Vec<&str> = artist.split('/').collect();
 				artists.push(artist);
-				artists.join(", ")
+				artists.join("/")
 			},
 		);
 
@@ -146,7 +146,7 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split(", ").collect())
+		self.artist().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
@@ -185,7 +185,7 @@ impl AudioTagEdit for ApeTag {
 	// Album artists aren't standard?
 	fn album_artists(&self) -> Option<Vec<&str>> {
 		self.get_value("Album artist")
-			.map(|a| a.split(", ").collect())
+			.map(|a| a.split('/').collect())
 	}
 
 	fn set_album_artists(&mut self, artists: String) {
@@ -271,15 +271,7 @@ impl AudioTagEdit for ApeTag {
 		}
 	}
 
-	// TODO: unsure what to do with these, disc information isn't standard
-	// Just using keys that would make sense, but it's a guess
 	fn disc_number(&self) -> Option<u32> {
-		if let Some(disc_num) = self.get_value("Disc") {
-			if let Ok(num) = disc_num.parse::<u32>() {
-				return Some(num);
-			}
-		}
-
 		if let Some(disc_num) = self.get_value("Disc") {
 			if let Ok(num) = disc_num.parse::<u32>() {
 				return Some(num);

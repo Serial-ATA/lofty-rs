@@ -67,7 +67,7 @@ impl<'a> From<AnyTag<'a>> for Id3v2Tag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join(", "))
+			tag.set_album_artists(v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track(v)
@@ -125,9 +125,9 @@ impl AudioTagEdit for Id3v2Tag {
 		let artist = self.artist().as_ref().map_or_else(
 			|| String::from(artist),
 			|artist| {
-				let mut artists: Vec<&str> = artist.split(", ").collect();
+				let mut artists: Vec<&str> = artist.split('/').collect();
 				artists.push(artist);
-				artists.join(", ")
+				artists.join("/")
 			},
 		);
 
@@ -135,7 +135,7 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split(", ").collect())
+		self.artist().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
@@ -163,7 +163,7 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 
 	fn album_artists(&self) -> Option<Vec<&str>> {
-		self.0.album_artist().map(|a| a.split(", ").collect())
+		self.0.album_artist().map(|a| a.split('/').collect())
 	}
 
 	fn set_album_artists(&mut self, artists: String) {

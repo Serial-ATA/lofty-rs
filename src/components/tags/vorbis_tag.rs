@@ -139,7 +139,7 @@ impl<'a> From<AnyTag<'a>> for VorbisTag {
 			tag.set_album_title(v)
 		}
 		if let Some(v) = inp.album().artists {
-			tag.set_album_artists(v.join(", "))
+			tag.set_album_artists(v.join("/"))
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track_number(v)
@@ -258,7 +258,7 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn artists(&self) -> Option<Vec<&str>> {
-		self.artist().map(|a| a.split(", ").collect())
+		self.artist().map(|a| a.split('/').collect())
 	}
 
 	fn remove_artist(&mut self) {
