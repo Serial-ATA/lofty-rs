@@ -9,7 +9,7 @@ pub const IART: [u8; 4] = [73, 65, 82, 84];
 pub const ICMT: [u8; 4] = [73, 67, 77, 84];
 pub const ICRD: [u8; 4] = [73, 67, 82, 68];
 pub const INAM: [u8; 4] = [73, 78, 65, 77];
-pub const IPRD: [u8; 4] = [49, 50, 52, 44]; // Represents album title
+pub const IPRD: [u8; 4] = [73, 80, 82, 68]; // Represents album title
 
 // Non-standard
 pub const ITRK: [u8; 4] = [73, 84, 82, 75]; // Can represent track number

@@ -72,7 +72,8 @@ where
 							Err(_) => continue,
 						}
 					},
-					None => cursor.set_position(cursor.position() + u64::from(size)),
+					#[allow(clippy::cast_lossless)]
+					None => cursor.set_position(cursor.position() + size as u64),
 				}
 
 				// Skip null byte

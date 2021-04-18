@@ -60,6 +60,12 @@ where
 
 	let (mut list_pos, mut list_len): (Option<u32>, Option<u32>) = (None, None);
 
+	if chunk.id() != riff::RIFF_ID {
+		return Err(Error::Wav(
+			"This file does not contain a RIFF chunk".to_string(),
+		));
+	}
+
 	for child in chunk.iter(&mut data) {
 		if child.id() == riff::LIST_ID {
 			list_pos = Some(child.offset() as u32);
@@ -72,10 +78,13 @@ where
 	let mut content = Vec::new();
 	std::io::copy(&mut data, &mut content)?;
 
-	if let (Some(pos), Some(len)) = (list_pos, list_len) {
-		let end = (pos + len) as usize;
+	if let (Some(list_pos), Some(list_len)) = (list_pos, list_len) {
+		let list_end = (list_pos + list_len) as usize;
 
-		let _ = content.splice(pos as usize..end, packet);
+		let _ = content.splice(list_pos as usize..list_end, packet);
+
+		let total_size = (content.len() - 8) as u32;
+		let _ = content.splice(4..8, total_size.to_le_bytes().to_vec());
 
 		Ok(content)
 	} else {

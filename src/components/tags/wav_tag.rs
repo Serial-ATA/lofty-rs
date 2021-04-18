@@ -139,7 +139,7 @@ impl AudioTagEdit for WavTag {
 		self.set_value("Artist", artist)
 	}
 
-	fn add_artist(&mut self, artist: &str) {
+	fn add_artist(&mut self, _artist: &str) {
 		todo!()
 	}
 
@@ -187,7 +187,7 @@ impl AudioTagEdit for WavTag {
 		self.set_value("AlbumArtist", artists)
 	}
 
-	fn add_album_artist(&mut self, artist: &str) {
+	fn add_album_artist(&mut self, _artist: &str) {
 		todo!()
 	}
 
@@ -199,7 +199,7 @@ impl AudioTagEdit for WavTag {
 		todo!()
 	}
 
-	fn set_album_cover(&mut self, cover: Picture<'a>) {
+	fn set_album_cover(&mut self, _cover: Picture) {
 		todo!()
 	}
 
