@@ -1,8 +1,11 @@
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag, components::logic
+	components::logic, impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit,
+	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
+use std::borrow::BorrowMut;
+use std::fs::OpenOptions;
+use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::{collections::HashMap, fs::File, path::Path};
 
 struct WavInnerTag {
@@ -117,23 +120,23 @@ impl WavTag {
 
 impl AudioTagEdit for WavTag {
 	fn title(&self) -> Option<&str> {
-		self.get_value("title")
+		self.get_value("Title")
 	}
 
 	fn set_title(&mut self, title: &str) {
-		self.set_value("title", title)
+		self.set_value("Title", title)
 	}
 
 	fn remove_title(&mut self) {
-		self.remove_key("title")
+		self.remove_key("Title")
 	}
 
 	fn artist(&self) -> Option<&str> {
-		self.get_value("artist")
+		self.get_value("Artist")
 	}
 
 	fn set_artist(&mut self, artist: &str) {
-		self.set_value("artist", artist)
+		self.set_value("Artist", artist)
 	}
 
 	fn add_artist(&mut self, artist: &str) {
@@ -145,11 +148,11 @@ impl AudioTagEdit for WavTag {
 	}
 
 	fn remove_artist(&mut self) {
-		self.remove_key("artist")
+		self.remove_key("Artist")
 	}
 
 	fn year(&self) -> Option<i32> {
-		if let Some(Ok(y)) = self.get_value("year").map(str::parse::<i32>) {
+		if let Some(Ok(y)) = self.get_value("Year").map(str::parse::<i32>) {
 			Some(y)
 		} else {
 			None
@@ -157,31 +160,31 @@ impl AudioTagEdit for WavTag {
 	}
 
 	fn set_year(&mut self, year: i32) {
-		self.set_value("year", year.to_string())
+		self.set_value("Year", year.to_string())
 	}
 
 	fn remove_year(&mut self) {
-		self.remove_key("year")
+		self.remove_key("Year")
 	}
 
 	fn album_title(&self) -> Option<&str> {
-		self.get_value("album")
+		self.get_value("Album")
 	}
 
 	fn set_album_title(&mut self, v: &str) {
-		self.remove_key("albumartist")
+		self.set_value("Album", v)
 	}
 
 	fn remove_album_title(&mut self) {
-		self.remove_key("albumtitle")
+		self.remove_key("Album")
 	}
 
 	fn album_artists(&self) -> Option<Vec<&str>> {
-		self.get_value("albumartist").map(|a| vec![a]) // TODO
+		self.get_value("AlbumArtist").map(|a| vec![a]) // TODO
 	}
 
 	fn set_album_artists(&mut self, artists: String) {
-		self.set_value("albumartist", artists)
+		self.set_value("AlbumArtist", artists)
 	}
 
 	fn add_album_artist(&mut self, artist: &str) {
@@ -189,7 +192,7 @@ impl AudioTagEdit for WavTag {
 	}
 
 	fn remove_album_artists(&mut self) {
-		self.remove_key("albumartist")
+		self.remove_key("AlbumArtist")
 	}
 
 	fn album_cover(&self) -> Option<Picture> {
@@ -205,7 +208,7 @@ impl AudioTagEdit for WavTag {
 	}
 
 	fn track_number(&self) -> Option<u32> {
-		if let Some(Ok(y)) = self.get_value("tracknumber").map(str::parse::<u32>) {
+		if let Some(Ok(y)) = self.get_value("TrackNumber").map(str::parse::<u32>) {
 			Some(y)
 		} else {
 			None
@@ -213,56 +216,112 @@ impl AudioTagEdit for WavTag {
 	}
 
 	fn set_track_number(&mut self, track_number: u32) {
-		todo!()
+		self.set_value("TrackNumber", track_number.to_string())
 	}
 
 	fn remove_track_number(&mut self) {
-		todo!()
+		self.remove_key("TrackNumber")
 	}
 
 	fn total_tracks(&self) -> Option<u32> {
-		todo!()
+		if let Some(Ok(tt)) = self.get_value("TrackTotal").map(str::parse::<u32>) {
+			Some(tt)
+		} else {
+			None
+		}
 	}
 
 	fn set_total_tracks(&mut self, total_track: u32) {
-		todo!()
+		self.set_value("TrackTotal", total_track.to_string())
 	}
 
 	fn remove_total_tracks(&mut self) {
-		todo!()
+		self.remove_key("TrackTotal")
 	}
 
 	fn disc_number(&self) -> Option<u32> {
-		todo!()
+		if let Some(Ok(dn)) = self.get_value("DiscNumber").map(str::parse::<u32>) {
+			Some(dn)
+		} else {
+			None
+		}
 	}
 
 	fn set_disc_number(&mut self, disc_number: u32) {
-		todo!()
+		self.set_value("DiscNumber", disc_number.to_string())
 	}
 
 	fn remove_disc_number(&mut self) {
-		todo!()
+		self.remove_key("DiscNumber")
 	}
 
 	fn total_discs(&self) -> Option<u32> {
-		todo!()
+		if let Some(Ok(td)) = self.get_value("DiscTotal").map(str::parse::<u32>) {
+			Some(td)
+		} else {
+			None
+		}
 	}
 
 	fn set_total_discs(&mut self, total_discs: u32) {
-		todo!()
+		self.set_value("DiscTotal", total_discs.to_string())
 	}
 
 	fn remove_total_discs(&mut self) {
-		todo!()
+		self.remove_key("DiscTotal")
 	}
 }
 
 impl AudioTagWrite for WavTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
+		if let Some(data) = self.0.data.clone() {
+			let mut chunk = Vec::new();
+
+			chunk.extend(riff::LIST_ID.value.iter());
+
+			let fourcc = "INFO"; // TODO: ID3
+			chunk.extend(fourcc.as_bytes().iter());
+
+			for (k, v) in data {
+				if let Some(fcc) = logic::read::key_to_fourcc(&*k) {
+					let mut val = v.as_bytes().to_vec();
+
+					if val.len() % 2 != 0 {
+						val.push(0)
+					}
+
+					let size = val.len() as u32;
+
+					chunk.extend(fcc.iter());
+					chunk.extend(size.to_le_bytes().iter());
+					chunk.extend(val.iter());
+				}
+			}
+
+			let mut file_bytes = Vec::new();
+			std::io::copy(file.borrow_mut(), &mut file_bytes)?;
+
+			let len = (chunk.len() - 4) as u32;
+			let size = len.to_le_bytes();
+
+			#[allow(clippy::needless_range_loop)]
+			for i in 0..4 {
+				chunk.insert(i + 4, size[i]);
+			}
+
+			let data = logic::write::wav(Cursor::new(file_bytes), chunk)?;
+
+			file.seek(SeekFrom::Start(0))?;
+			file.set_len(0)?;
+			file.write_all(&*data)?;
+		}
+
 		Ok(())
 	}
 
 	fn write_to_path(&self, path: &str) -> Result<()> {
-		todo!()
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
+
+		Ok(())
 	}
 }

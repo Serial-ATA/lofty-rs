@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use ogg::PacketWriteEndInfo;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -52,13 +52,35 @@ where
 	Ok(c)
 }
 
-pub(crate) fn wav<T>(mut data: T, packet: Vec<u8>, four_cc: &str) -> Result<()>
+pub(crate) fn wav<T>(mut data: T, packet: Vec<u8>) -> Result<Vec<u8>>
 where
 	T: Read + Seek + Write,
 {
-	let contents = riff::ChunkContents::Data(riff::ChunkId::new(four_cc).unwrap(), packet);
-	contents.write(&mut data)?;
+	let chunk = riff::Chunk::read(&mut data, 0)?;
+
+	let (mut list_pos, mut list_len): (Option<u32>, Option<u32>) = (None, None);
+
+	for child in chunk.iter(&mut data) {
+		if child.id() == riff::LIST_ID {
+			list_pos = Some(child.offset() as u32);
+			list_len = Some(child.len());
+		}
+	}
 
 	data.seek(SeekFrom::Start(0))?;
-	Ok(())
+
+	let mut content = Vec::new();
+	std::io::copy(&mut data, &mut content)?;
+
+	if let (Some(pos), Some(len)) = (list_pos, list_len) {
+		let end = (pos + len) as usize;
+
+		let _ = content.splice(pos as usize..end, packet);
+
+		Ok(content)
+	} else {
+		Err(Error::Wav(
+			"This file does not contain an INFO chunk".to_string(),
+		))
+	}
 }

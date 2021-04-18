@@ -1,5 +1,5 @@
 use super::constants::{ID3_ID, LIST_ID};
-use crate::{Error, Result, ToAnyTag};
+use crate::{Error, Result};
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Seek};
@@ -18,6 +18,7 @@ where
 		let value_bytes = value_upper.as_bytes();
 
 		if value_bytes == LIST_ID {
+			// TODO: actually check for the INFO id rather than any LIST
 			list = Some(child);
 			break;
 		}
@@ -53,26 +54,36 @@ where
 		let mut reading = true;
 
 		while reading {
-			let fourcc = cursor.read_u32::<LittleEndian>()? as u32;
-			let size = cursor.read_u32::<LittleEndian>()? as u32;
+			if let (Ok(fourcc), Ok(size)) = (
+				cursor.read_u32::<LittleEndian>(),
+				cursor.read_u32::<LittleEndian>(),
+			) {
+				match create_wav_key(&fourcc.to_le_bytes()) {
+					Some(key) => {
+						let mut buf = vec![0; size as usize];
+						cursor.read_exact(&mut buf)?;
 
-			match create_wav_key(&fourcc.to_le_bytes()) {
-				Some(key) => {
-					let mut buf = vec![0; size as usize];
-					cursor.read_exact(&mut buf)?;
+						// Just skip any values that can't be converted
+						match std::string::String::from_utf8(buf) {
+							Ok(val) => {
+								let _ = metadata
+									.insert(key, val.trim_matches(char::from(0)).to_string());
+							},
+							Err(_) => continue,
+						}
+					},
+					None => cursor.set_position(cursor.position() + u64::from(size)),
+				}
 
-					let val = std::str::from_utf8(&*buf)?;
-					metadata.insert(key, val.trim_matches(char::from(0)).to_string());
-				},
-				None => cursor.set_position(cursor.position() + u64::from(size)),
-			}
+				// Skip null byte
+				if size as usize % 2 != 0 {
+					cursor.set_position(cursor.position() + 1)
+				}
 
-			// Skip null byte
-			if size as usize % 2 != 0 {
-				cursor.set_position(cursor.position() + 1)
-			}
-
-			if cursor.position() >= cursor.get_ref().len() as u64 {
+				if cursor.position() >= cursor.get_ref().len() as u64 {
+					reading = false
+				}
+			} else {
 				reading = false
 			}
 		}
@@ -80,7 +91,7 @@ where
 		Ok(Some(metadata))
 	} else {
 		Err(Error::Wav(
-			"This file does not contain an INFO chunk".to_string(),
+			"This file doesn't contain an INFO chunk".to_string(),
 		))
 	};
 }
@@ -91,7 +102,30 @@ fn create_wav_key(fourcc: &[u8]) -> Option<String> {
 		fcc if fcc == super::constants::ICMT => Some("Comment".to_string()),
 		fcc if fcc == super::constants::ICRD => Some("Date".to_string()),
 		fcc if fcc == super::constants::INAM => Some("Title".to_string()),
-		fcc if fcc == super::constants::ISFT => Some("Title".to_string()),
+		fcc if fcc == super::constants::IPRD => Some("Album".to_string()),
+
+		// Non-standard
+		fcc if fcc == super::constants::ITRK || fcc == super::constants::IPRT => {
+			Some("TrackNumber".to_string())
+		},
+		fcc if fcc == super::constants::IFRM => Some("TrackTotal".to_string()),
+		fcc if fcc == super::constants::ALBU => Some("Album".to_string()),
+		fcc if fcc == super::constants::TRAC => Some("TrackNumber".to_string()),
+		fcc if fcc == super::constants::DISC => Some("DiscNumber".to_string()),
+		_ => None,
+	}
+}
+
+pub fn key_to_fourcc(key: &str) -> Option<[u8; 4]> {
+	match key {
+		"Artist" => Some(super::constants::IART),
+		"Comment" => Some(super::constants::ICMT),
+		"Date" => Some(super::constants::ICRD),
+		"Title" => Some(super::constants::INAM),
+		"Album" => Some(super::constants::IPRD),
+		"TrackTotal" => Some(super::constants::IFRM),
+		"TrackNumber" => Some(super::constants::TRAC),
+		"DiscNumber" | "DiscTotal" => Some(super::constants::DISC),
 		_ => None,
 	}
 }
