@@ -4,12 +4,13 @@ use crate::{
 	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
 	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use std::{fs::File, path::Path};
 
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
+use std::fs::File;
+use std::path::Path;
 
 impl ReadPath for Mp4InnerTag {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<std::path::Path>,
 		Self: Sized,
@@ -19,6 +20,16 @@ impl ReadPath for Mp4InnerTag {
 }
 
 impl_tag!(Mp4Tag, Mp4InnerTag, TagType::Mp4);
+
+impl Mp4Tag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self(Mp4InnerTag::from_path(path)?))
+	}
+}
 
 impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
 	fn from(inp: &'a Mp4Tag) -> Self {

@@ -4,12 +4,14 @@ use crate::{
 	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
 	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use std::{convert::TryInto, fs::File, path::Path};
 
 pub use id3::Tag as Id3v2InnerTag;
+use std::convert::TryInto;
+use std::fs::File;
+use std::path::Path;
 
 impl ReadPath for Id3v2InnerTag {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<std::path::Path>,
 		Self: Sized,
@@ -19,6 +21,16 @@ impl ReadPath for Id3v2InnerTag {
 }
 
 impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2);
+
+impl Id3v2Tag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self(Id3v2InnerTag::from_path(path)?))
+	}
+}
 
 impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
 	fn from(inp: &'a Id3v2Tag) -> Self {

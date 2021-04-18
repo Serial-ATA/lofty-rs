@@ -38,15 +38,15 @@ impl Tag {
 			.unwrap_or(&TagType::try_from_ext(extension_str)?)
 		{
 			#[cfg(feature = "ape")]
-			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path, None)?)),
+			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
 			#[cfg(feature = "mp3")]
-			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path, None)?)),
+			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
 			#[cfg(feature = "mp4")]
-			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path, None)?)),
+			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 			#[cfg(feature = "wav")]
-			TagType::Wav => Ok(Box::new(WavTag::read_from_path(path, None)?)),
-			#[cfg(feature = "vorbis")] // TODO: this isn't ideal, make this better somehow
-			id => Ok(Box::new(VorbisTag::read_from_path(path, Some(id.clone()))?)),
+			TagType::Wav => Ok(Box::new(WavTag::read_from_path(path)?)),
+			#[cfg(feature = "vorbis")]
+			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
 		}
 	}
 }
@@ -64,6 +64,17 @@ pub enum TagType {
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
 	#[cfg(feature = "vorbis")]
+	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
+	Vorbis(VorbisFormat),
+	#[cfg(feature = "wav")]
+	/// Common file extensions: `.wav, .wave`
+	Wav,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+#[cfg(feature = "vorbis")]
+pub enum VorbisFormat {
+	#[cfg(feature = "vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
 	Ogg,
 	#[cfg(feature = "vorbis")]
@@ -72,9 +83,6 @@ pub enum TagType {
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions: `.flac`
 	Flac,
-	#[cfg(feature = "wav")]
-	/// Common file extensions: `.wav, .wave`
-	Wav,
 }
 
 impl TagType {
@@ -85,11 +93,11 @@ impl TagType {
 			#[cfg(feature = "mp3")]
 			"mp3" => Ok(Self::Id3v2),
 			#[cfg(feature = "vorbis")]
-			"opus" => Ok(Self::Opus),
+			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
 			#[cfg(feature = "vorbis")]
-			"flac" => Ok(Self::Flac),
+			"flac" => Ok(Self::Vorbis(VorbisFormat::Flac)),
 			#[cfg(feature = "vorbis")]
-			"ogg" | "oga" => Ok(Self::Ogg),
+			"ogg" | "oga" => Ok(Self::Vorbis(VorbisFormat::Ogg)),
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			#[cfg(feature = "wav")]

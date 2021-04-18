@@ -13,7 +13,7 @@ struct WavInnerTag {
 }
 
 impl ReadPath for WavInnerTag {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<std::path::Path>,
 		Self: Sized,
@@ -31,6 +31,8 @@ impl Default for WavInnerTag {
 		Self { data }
 	}
 }
+
+impl_tag!(WavTag, WavInnerTag, TagType::Wav);
 
 impl<'a> From<AnyTag<'a>> for WavTag {
 	fn from(inp: AnyTag<'a>) -> Self {
@@ -84,7 +86,15 @@ impl<'a> From<&'a WavTag> for AnyTag<'a> {
 	}
 }
 
-impl_tag!(WavTag, WavInnerTag, TagType::Wav);
+impl WavTag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self(WavInnerTag::from_path(path)?))
+	}
+}
 
 impl WavTag {
 	fn get_value(&self, key: &str) -> Option<&str> {

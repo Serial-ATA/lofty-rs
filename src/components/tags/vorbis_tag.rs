@@ -1,24 +1,21 @@
 #![cfg(feature = "vorbis")]
 
 use crate::{
-	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	components::logic, impl_tag, tag::VorbisFormat, Album, AnyTag, AudioTag, AudioTagEdit,
+	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use std::{
-	borrow::BorrowMut,
-	collections::HashMap,
-	fs::File,
-	fs::OpenOptions,
-	io::Write,
-	io::{Cursor, Seek, SeekFrom},
-	path::Path,
-};
+
+use std::borrow::BorrowMut;
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
+use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::path::Path;
 
 const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
 const END_BYTE: u8 = 1;
 
 struct VorbisInnerTag {
-	tag_type: Option<TagType>,
+	format: Option<VorbisFormat>,
 	vendor: String,
 	comments: HashMap<String, String>,
 }
@@ -26,7 +23,7 @@ struct VorbisInnerTag {
 impl Default for VorbisInnerTag {
 	fn default() -> Self {
 		Self {
-			tag_type: None,
+			format: None,
 			vendor: "".to_string(),
 			comments: std::collections::HashMap::default(),
 		}
@@ -59,63 +56,71 @@ impl VorbisInnerTag {
 		self.comments = comments;
 	}
 
-	fn from_path<P>(path: P, tag_type: Option<TagType>) -> Result<Self>
+	fn from_path<P>(path: P, format: VorbisFormat) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
-		if let Some(tag_type) = tag_type {
-			match tag_type {
-				TagType::Ogg => {
-					let headers =
-						lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
+		match format {
+			VorbisFormat::Ogg => {
+				let headers = lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
 
-					let vendor = headers.comment_hdr.vendor;
+				let vendor = headers.comment_hdr.vendor;
 
-					let comments: HashMap<String, String> =
-						headers.comment_hdr.comment_list.into_iter().collect();
+				let comments: HashMap<String, String> =
+					headers.comment_hdr.comment_list.into_iter().collect();
 
-					Ok(Self {
-						tag_type: Some(tag_type),
-						vendor,
-						comments,
-					})
-				},
-				TagType::Opus => {
-					let headers = opus_headers::parse_from_path(path)?;
-					let vendor = headers.comments.vendor;
+				Ok(Self {
+					format: Some(format),
+					vendor,
+					comments,
+				})
+			},
+			VorbisFormat::Opus => {
+				let headers = opus_headers::parse_from_path(path)?;
+				let vendor = headers.comments.vendor;
 
-					Ok(Self {
-						tag_type: Some(tag_type),
-						vendor,
-						comments: headers.comments.user_comments,
-					})
-				},
-				TagType::Flac => {
-					let headers = metaflac::Tag::read_from_path(path)?;
-					let comments = headers.vorbis_comments().unwrap();
-					let mut comment_collection = Vec::new();
+				Ok(Self {
+					format: Some(format),
+					vendor,
+					comments: headers.comments.user_comments,
+				})
+			},
+			VorbisFormat::Flac => {
+				let headers = metaflac::Tag::read_from_path(path)?;
+				let comments = headers.vorbis_comments().unwrap();
+				let mut comment_collection = Vec::new();
 
-					for (k, v) in comments.comments.clone() {
-						for e in v {
-							comment_collection.push((k.clone(), e.clone()))
-						}
+				for (k, v) in comments.comments.clone() {
+					for e in v {
+						comment_collection.push((k.clone(), e.clone()))
 					}
+				}
 
-					Ok(Self {
-						tag_type: Some(tag_type),
-						vendor: comments.vendor_string.clone(),
-						comments: comment_collection.into_iter().collect(),
-					})
-				},
-				_ => unreachable!(),
-			}
-		} else {
-			unreachable!()
+				Ok(Self {
+					format: Some(format),
+					vendor: comments.vendor_string.clone(),
+					comments: comment_collection.into_iter().collect(),
+				})
+			},
 		}
 	}
 }
 
-impl_tag!(VorbisTag, VorbisInnerTag, TagType::Ogg);
+impl_tag!(
+	VorbisTag,
+	VorbisInnerTag,
+	TagType::Vorbis(VorbisFormat::Ogg)
+);
+
+impl VorbisTag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P, format: VorbisFormat) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self(VorbisInnerTag::from_path(path, format)?))
+	}
+}
 
 impl<'a> From<AnyTag<'a>> for VorbisTag {
 	fn from(inp: AnyTag<'a>) -> Self {
@@ -196,7 +201,7 @@ impl From<metaflac::Tag> for VorbisTag {
 		};
 
 		tag.0 = VorbisInnerTag {
-			tag_type: Some(TagType::Flac),
+			format: Some(VorbisFormat::Flac),
 			vendor,
 			comments,
 		};
@@ -396,9 +401,9 @@ impl AudioTagEdit for VorbisTag {
 
 impl AudioTagWrite for VorbisTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		if let Some(tag_type) = self.0.tag_type.clone() {
-			match tag_type {
-				TagType::Ogg => {
+		if let Some(format) = self.0.format.clone() {
+			match format {
+				VorbisFormat::Ogg => {
 					let vendor = self.0.vendor.clone();
 					let vendor_bytes = vendor.as_bytes();
 
@@ -442,16 +447,14 @@ impl AudioTagWrite for VorbisTag {
 					file.set_len(0)?;
 					file.write_all(&data)?;
 				},
-				TagType::Flac => {
+				VorbisFormat::Flac => {
 					let mut flac_tag: metaflac::Tag = self.into();
 
 					flac_tag.write_to(file)?;
 				},
-				TagType::Opus => {
+				VorbisFormat::Opus => {
 					todo!()
 				},
-				TagType::Mp4 => {},
-				_ => unreachable!(),
 			}
 		}
 

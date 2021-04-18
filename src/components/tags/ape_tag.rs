@@ -4,13 +4,13 @@ use crate::{
 	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
-use std::{fs::File, path::Path};
 
 pub use ape::Tag as ApeInnerTag;
 use filepath::FilePath;
+use std::{fs::File, path::Path};
 
 impl ReadPath for ApeInnerTag {
-	fn from_path<P>(path: P, _tag_type: Option<TagType>) -> Result<Self>
+	fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<std::path::Path>,
 		Self: Sized,
@@ -20,6 +20,16 @@ impl ReadPath for ApeInnerTag {
 }
 
 impl_tag!(ApeTag, ApeInnerTag, TagType::Ape);
+
+impl ApeTag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self(ApeInnerTag::from_path(path)?))
+	}
+}
 
 impl<'a> From<&'a ApeTag> for AnyTag<'a> {
 	fn from(inp: &'a ApeTag) -> Self {
