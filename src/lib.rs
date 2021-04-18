@@ -13,15 +13,15 @@
 //!
 //! # Supported Formats
 //!
-//! | File Format   | Extensions          | Read | Write | Backend                                                                                                             |
-//! |---------------|---------------------|------|-------|---------------------------------------------------------------------------------------------------------------------|
-//! | Ape           | `ape`               |**X** |**X**  | [**ape**](https://github.com/rossnomann/rust-ape)                                                                   |
-//! | FLAC          | `flac`              |**X** |**X**  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |
-//! | MP3           | `mp3`               |**X** |**X**  | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
-//! | MP4           | `mp4`, `m4a`, `m4b` |**X** |**X**  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)                                                             |
-//! | Opus          | `opus`              |**X** |       | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
-//! | Ogg Vorbis    | `ogg`, `oga`        |**X** |**X**  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
-//! | WAV(*)        | `wav`, `wave`       |**X** |**X**  | [**riff**](https://github.com/frabert/riff)                                                                         |
+//! | File Format   | Extensions                                | Read | Write | Backend                                                                                                             |
+//! |---------------|-------------------------------------------|------|-------|---------------------------------------------------------------------------------------------------------------------|
+//! | Ape           | `ape`                                     |**X** |**X**  | [**ape**](https://github.com/rossnomann/rust-ape)                                                                   |
+//! | FLAC          | `flac`                                    |**X** |**X**  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |
+//! | MP3           | `mp3`                                     |**X** |**X**  | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
+//! | MP4           | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)                                                             |
+//! | Opus          | `opus`                                    |**X** |       | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
+//! | Ogg Vorbis    | `ogg`, `oga`                              |**X** |**X**  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
+//! | WAV(*)        | `wav`, `wave`                             |**X** |**X**  | [**riff**](https://github.com/frabert/riff)                                                                         |
 //!
 //! * NOTE: Only RIFF LIST type INFO is supported for now. This means there's less data available,
 //! and it's less likely to be accurate due to the use of non-standard INFO IDs. ID3 support will come soon.
