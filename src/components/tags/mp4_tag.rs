@@ -158,15 +158,6 @@ impl AudioTagEdit for Mp4Tag {
 	fn album_artist_str(&self) -> Option<&str> {
 		self.0.album_artist()
 	}
-	fn album_artists_vec(&self) -> Option<Vec<&str>> {
-		let mut album_artists = self.0.album_artists().peekable();
-
-		if album_artists.peek().is_some() {
-			Some(album_artists.collect())
-		} else {
-			None
-		}
-	}
 
 	fn set_album_artist(&mut self, artists: &str) {
 		self.0.set_album_artist(artists)
