@@ -1,23 +1,13 @@
 #![cfg(feature = "mp4")]
 
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
 	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 use std::fs::File;
 use std::path::Path;
-
-impl ReadPath for Mp4InnerTag {
-	fn from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<std::path::Path>,
-		Self: Sized,
-	{
-		Ok(Self::read_from_path(path)?)
-	}
-}
 
 impl_tag!(Mp4Tag, Mp4InnerTag, TagType::Mp4);
 
@@ -27,7 +17,7 @@ impl Mp4Tag {
 	where
 		P: AsRef<Path>,
 	{
-		Ok(Self(Mp4InnerTag::from_path(path)?))
+		Ok(Self(Mp4InnerTag::read_from_path(path)?))
 	}
 }
 
@@ -164,7 +154,6 @@ impl AudioTagEdit for Mp4Tag {
 	}
 
 	fn remove_album_artists(&mut self) {
-		self.0.remove_data(&FourCC(*b"aART"));
 		self.0.remove_album_artists();
 	}
 	fn album_cover(&self) -> Option<Picture> {

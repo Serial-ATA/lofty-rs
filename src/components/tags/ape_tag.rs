@@ -1,23 +1,13 @@
 #![cfg(feature = "ape")]
 
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
 
 pub use ape::Tag as ApeInnerTag;
 use filepath::FilePath;
 use std::{fs::File, path::Path};
-
-impl ReadPath for ApeInnerTag {
-	fn from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<std::path::Path>,
-		Self: Sized,
-	{
-		Ok(ape::read(path)?)
-	}
-}
 
 impl_tag!(ApeTag, ApeInnerTag, TagType::Ape);
 
@@ -27,7 +17,7 @@ impl ApeTag {
 	where
 		P: AsRef<Path>,
 	{
-		Ok(Self(ApeInnerTag::from_path(path)?))
+		Ok(Self(ape::read(path)?))
 	}
 }
 

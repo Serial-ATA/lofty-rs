@@ -85,6 +85,7 @@ pub trait AudioTagEdit {
 	fn total_discs(&self) -> Option<u32>;
 	fn set_total_discs(&mut self, total_discs: u32);
 	fn remove_total_discs(&mut self);
+
 }
 
 pub trait AudioTagWrite {
@@ -127,11 +128,4 @@ pub trait ToAnyTag: ToAny {
 pub trait ToAny {
 	fn to_any(&self) -> &dyn std::any::Any;
 	fn to_any_mut(&mut self) -> &mut dyn std::any::Any;
-}
-
-pub trait ReadPath {
-	fn from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<std::path::Path>,
-		Self: Sized;
 }

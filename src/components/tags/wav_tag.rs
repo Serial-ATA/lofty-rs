@@ -1,5 +1,5 @@
 use crate::{
-	components::logic, impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit,
+	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit,
 	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
@@ -12,23 +12,23 @@ struct WavInnerTag {
 	data: Option<HashMap<String, String>>,
 }
 
-impl ReadPath for WavInnerTag {
-	fn from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<std::path::Path>,
-		Self: Sized,
-	{
-		let data = logic::read::wav(File::open(path)?)?;
-
-		Ok(Self { data })
-	}
-}
-
 impl Default for WavInnerTag {
 	fn default() -> Self {
 		let data: Option<HashMap<String, String>> = Some(HashMap::new());
 
 		Self { data }
+	}
+}
+
+impl WavTag {
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P) -> Result<Self>
+		where
+			P: AsRef<Path>,
+	{
+		Ok(Self(WavInnerTag {
+			data: logic::read::wav(File::open(path)?)?
+		}))
 	}
 }
 
@@ -87,16 +87,6 @@ impl<'a> From<&'a WavTag> for AnyTag<'a> {
 			total_discs: inp.total_discs(),
 			..AnyTag::default()
 		}
-	}
-}
-
-impl WavTag {
-	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<Path>,
-	{
-		Ok(Self(WavInnerTag::from_path(path)?))
 	}
 }
 

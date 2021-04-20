@@ -1,7 +1,7 @@
 #![cfg(feature = "mp3")]
 
 use crate::{
-	impl_tag, traits::ReadPath, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error,
 	MimeType, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
@@ -9,16 +9,6 @@ pub use id3::Tag as Id3v2InnerTag;
 use std::convert::TryInto;
 use std::fs::File;
 use std::path::Path;
-
-impl ReadPath for Id3v2InnerTag {
-	fn from_path<P>(path: P) -> Result<Self>
-	where
-		P: AsRef<std::path::Path>,
-		Self: Sized,
-	{
-		Ok(Self::read_from_path(path)?)
-	}
-}
 
 impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2);
 
@@ -28,7 +18,7 @@ impl Id3v2Tag {
 	where
 		P: AsRef<Path>,
 	{
-		Ok(Self(Id3v2InnerTag::from_path(path)?))
+		Ok(Self(Id3v2InnerTag::read_from_path(path)?))
 	}
 }
 
