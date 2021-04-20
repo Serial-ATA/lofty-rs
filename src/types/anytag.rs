@@ -1,4 +1,6 @@
 use crate::Album;
+#[cfg(feature = "duration")]
+use std::time::Duration;
 
 /// The tag returned from `read_from_path`
 #[derive(Default, Debug)]
@@ -14,7 +16,7 @@ pub struct AnyTag<'a> {
 	pub disc_number: Option<u32>,
 	pub total_discs: Option<u32>,
 	#[cfg(feature = "duration")]
-	pub duration_ms: Option<u32>,
+	pub duration: Option<Duration>,
 }
 
 impl<'a> AnyTag<'a> {
@@ -75,8 +77,8 @@ impl<'a> AnyTag<'a> {
 	}
 	#[cfg(feature = "duration")]
 	/// Returns `duration`
-	pub fn duration(&self) -> Option<u32> {
-		self.duration_ms
+	pub fn duration(&self) -> Option<Duration> {
+		self.duration
 	}
 }
 

@@ -1,12 +1,15 @@
 use crate::{
-	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit,
-	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
+	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::BorrowMut;
-use std::fs::OpenOptions;
+use std::collections::HashMap;
+use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Seek, SeekFrom, Write};
-use std::{collections::HashMap, fs::File, path::Path};
+use std::path::Path;
+#[cfg(feature = "duration")]
+use std::time::Duration;
 
 struct WavInnerTag {
 	data: Option<HashMap<String, String>>,
@@ -23,12 +26,16 @@ impl Default for WavInnerTag {
 impl WavTag {
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P) -> Result<Self>
-		where
-			P: AsRef<Path>,
+	where
+		P: AsRef<Path>,
 	{
-		Ok(Self(WavInnerTag {
-			data: logic::read::wav(File::open(path)?)?
-		}))
+		Ok(Self {
+			inner: WavInnerTag {
+				data: logic::read::wav(File::open(path)?)?,
+			},
+			#[cfg(feature = "duration")]
+			duration: None,
+		})
 	}
 }
 
@@ -92,7 +99,7 @@ impl<'a> From<&'a WavTag> for AnyTag<'a> {
 
 impl WavTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		self.0
+		self.inner
 			.data
 			.as_ref()
 			.unwrap()
@@ -110,15 +117,15 @@ impl WavTag {
 	where
 		V: Into<String>,
 	{
-		let mut data = self.0.data.clone().unwrap();
+		let mut data = self.inner.data.clone().unwrap();
 		let _ = data.insert(key.to_string(), val.into());
-		self.0.data = Some(data);
+		self.inner.data = Some(data);
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		let mut data = self.0.data.clone().unwrap();
+		let mut data = self.inner.data.clone().unwrap();
 		data.retain(|k, _| k != key);
-		self.0.data = Some(data);
+		self.inner.data = Some(data);
 	}
 }
 
@@ -266,7 +273,7 @@ impl AudioTagEdit for WavTag {
 
 impl AudioTagWrite for WavTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		if let Some(data) = self.0.data.clone() {
+		if let Some(data) = self.inner.data.clone() {
 			let mut chunk = Vec::new();
 
 			chunk.extend(riff::LIST_ID.value.iter());

@@ -3,11 +3,19 @@
 macro_rules! impl_tag {
 	($tag:ident, $inner:ident, $tag_type:expr) => {
 		#[doc(hidden)]
-		pub struct $tag($inner);
+		pub struct $tag {
+			inner: $inner,
+			#[cfg(feature = "duration")]
+			duration: Option<Duration>,
+		}
 
 		impl Default for $tag {
 			fn default() -> Self {
-				Self($inner::default())
+				Self {
+					inner: $inner::default(),
+					#[cfg(feature = "duration")]
+					duration: None,
+				}
 			}
 		}
 
@@ -39,14 +47,18 @@ macro_rules! impl_tag {
 		// From wrapper to inner (same type)
 		impl From<$tag> for $inner {
 			fn from(inp: $tag) -> Self {
-				inp.0
+				inp.inner
 			}
 		}
 
 		// From inner to wrapper (same type)
 		impl From<$inner> for $tag {
 			fn from(inp: $inner) -> Self {
-				Self(inp)
+				Self {
+					inner: inp,
+					#[cfg(feature = "duration")]
+					duration: None,
+				}
 			}
 		}
 

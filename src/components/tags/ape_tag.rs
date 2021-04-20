@@ -1,13 +1,16 @@
 #![cfg(feature = "ape")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
+	ToAny, ToAnyTag,
 };
 
 pub use ape::Tag as ApeInnerTag;
 use filepath::FilePath;
-use std::{fs::File, path::Path};
+use std::fs::File;
+use std::path::Path;
+#[cfg(feature = "duration")]
+use std::time::Duration;
 
 impl_tag!(ApeTag, ApeInnerTag, TagType::Ape);
 
@@ -17,7 +20,11 @@ impl ApeTag {
 	where
 		P: AsRef<Path>,
 	{
-		Ok(Self(ape::read(path)?))
+		Ok(Self {
+			inner: ape::read(&path)?,
+			#[cfg(feature = "duration")]
+			duration: None, // TODO
+		})
 	}
 }
 
@@ -38,7 +45,8 @@ impl<'a> From<&'a ApeTag> for AnyTag<'a> {
 			total_discs: inp.total_discs(),
 			comments: None,
 			date: None, // TODO
-			duration_ms: None,
+			#[cfg(feature = "duration")]
+			duration: None,
 		}
 	}
 }
@@ -81,7 +89,7 @@ impl<'a> From<AnyTag<'a>> for ApeTag {
 
 impl ApeTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		if let Some(item) = self.0.item(key) {
+		if let Some(item) = self.inner.item(key) {
 			if let ape::ItemValue::Text(val) = &item.value {
 				return Some(&*val);
 			}
@@ -99,11 +107,11 @@ impl ApeTag {
 			value: ape::ItemValue::Text(val.into()),
 		};
 
-		self.0.set_item(item)
+		self.inner.set_item(item)
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		let _ = self.0.remove_item(key);
+		let _ = self.inner.remove_item(key);
 	}
 }
 
@@ -284,11 +292,11 @@ impl AudioTagEdit for ApeTag {
 impl AudioTagWrite for ApeTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		// Write only uses paths, this is annoying
-		ape::write(&self.0, file.path()?)?;
+		ape::write(&self.inner, file.path()?)?;
 		Ok(())
 	}
 	fn write_to_path(&self, path: &str) -> Result<()> {
-		ape::write(&self.0, path)?;
+		ape::write(&self.inner, path)?;
 		Ok(())
 	}
 }

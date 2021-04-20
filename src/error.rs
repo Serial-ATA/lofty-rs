@@ -17,6 +17,9 @@ pub enum Error {
 	FlacTag(#[from] metaflac::Error),
 	#[error(transparent)]
 	Id3Tag(#[from] id3::Error),
+	#[cfg(feature = "duration")]
+	#[error(transparent)]
+	MP3Duration(#[from] mp3_duration::MP3DurationError),
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
 	#[error(transparent)]

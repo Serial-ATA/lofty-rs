@@ -85,7 +85,6 @@ pub trait AudioTagEdit {
 	fn total_discs(&self) -> Option<u32>;
 	fn set_total_discs(&mut self, total_discs: u32);
 	fn remove_total_discs(&mut self);
-
 }
 
 pub trait AudioTagWrite {
