@@ -15,14 +15,6 @@ pub trait AudioTagEdit {
 
 	fn artist_str(&self) -> Option<&str>;
 	fn set_artist(&mut self, artist: &str);
-	fn add_artist(&mut self, artist: &str) {
-		if let Some(mut artists) = self.artists_vec() {
-			artists.push(artist);
-			self.set_artist(&artists.join("/"))
-		} else {
-			self.set_artist(artist)
-		}
-	}
 
 	fn artists_vec(&self) -> Option<Vec<&str>> {
 		self.artist_str().map(|a| a.split('/').collect())
@@ -50,14 +42,6 @@ pub trait AudioTagEdit {
 		self.album_artist_str().map(|a| a.split('/').collect())
 	}
 	fn set_album_artist(&mut self, artist: &str);
-	fn add_album_artist(&mut self, artist: &str) {
-		if let Some(mut artists) = self.album_artists_vec() {
-			artists.push(artist);
-			self.set_album_artist(&artists.join("/"))
-		} else {
-			self.set_album_artist(artist)
-		}
-	}
 	fn remove_album_artists(&mut self);
 
 	fn album_cover(&self) -> Option<Picture>;

@@ -67,8 +67,8 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 		if let Some(v) = inp.title() {
 			tag.set_title(v)
 		}
-		if let Some(i) = inp.artists() {
-			i.iter().for_each(|&a| tag.add_artist(a))
+		if let Some(i) = inp.artists_as_string() {
+			tag.set_artist(&*i)
 		}
 		if let Some(v) = inp.year {
 			tag.set_year(v)
@@ -76,8 +76,8 @@ impl<'a> From<AnyTag<'a>> for Mp4Tag {
 		if let Some(v) = inp.album().title {
 			tag.set_album_title(v)
 		}
-		if let Some(i) = inp.album().artists {
-			i.iter().for_each(|&a| tag.add_album_artist(a))
+		if let Some(i) = inp.album().artists_as_string() {
+			tag.set_album_artist(&*i)
 		}
 		if let Some(v) = inp.track_number() {
 			tag.set_track_number(v)
@@ -130,10 +130,6 @@ impl AudioTagEdit for Mp4Tag {
 		self.0.set_artist(artist)
 	}
 
-	fn add_artist(&mut self, artist: &str) {
-		self.0.add_artist(artist);
-	}
-
 	fn remove_artist(&mut self) {
 		self.0.remove_artists();
 	}
@@ -174,10 +170,6 @@ impl AudioTagEdit for Mp4Tag {
 
 	fn set_album_artist(&mut self, artists: &str) {
 		self.0.set_album_artist(artists)
-	}
-
-	fn add_album_artist(&mut self, artist: &str) {
-		self.0.add_album_artist(artist)
 	}
 
 	fn remove_album_artists(&mut self) {
