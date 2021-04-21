@@ -112,7 +112,8 @@ pub enum TagType {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg(feature = "vorbis")]
+#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
+/// File formats using vorbis comments
 pub enum VorbisFormat {
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
@@ -127,6 +128,7 @@ pub enum VorbisFormat {
 
 #[derive(Clone, Debug, PartialEq)]
 #[cfg(feature = "riff")]
+/// Metadata format in the RIFF chunk
 pub enum RiffFormat {
 	/// Metadata is stored in a RIFF INFO list
 	Info,

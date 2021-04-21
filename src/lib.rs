@@ -89,7 +89,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{DetermineFrom, Tag, TagType};
+pub use crate::tag::{DetermineFrom, Tag, TagType, VorbisFormat, RiffFormat};
 
 mod error;
 pub use crate::error::{Error, Result};
