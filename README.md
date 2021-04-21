@@ -14,20 +14,32 @@ in order to parse metadata in different file formats.
 
 ## Supported Formats
 
-| File Format   | Extensions                                | Read | Write | Backend                                                                                                             |
-|---------------|-------------------------------------------|------|-------|---------------------------------------------------------------------------------------------------------------------|
-| Ape           | `ape`                                     |**X** |**X**  | [**ape**](https://github.com/rossnomann/rust-ape)                                                                   |
-| FLAC          | `flac`                                    |**X** |**X**  | [**metaflac**](https://github.com/jameshurst/rust-metaflac)                                                         |
-| MP3           | `mp3`                                     |**X** |**X**  | [**id3**](https://github.com/polyfloyd/rust-id3)                                                                    |
-| MP4           | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  | [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)                                                             |
-| Opus          | `opus`                                    |**X** |       | [**opus_headers**](https://github.com/zaethan/opus_headers)                                                         |
-| Ogg Vorbis    | `ogg`, `oga`                              |**X** |**X**  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
-| WAV(*)        | `wav`, `wave`                             |**X** |**X**  | [**riff**](https://github.com/frabert/riff)                                                                         |
-
-* Both ID3 tags and RIFF INFO lists are supported
+| File Format | Extensions                                | Read | Write | Metadata Format(s)   |
+|-------------|-------------------------------------------|------|-------|----------------------|
+| Ape         | `ape`                                     |**X** |**X**  | `APEv2`              |
+| FLAC        | `flac`                                    |**X** |**X**  | `Vorbis Comments`    |
+| MP3         | `mp3`                                     |**X** |**X**  | `ID3v2`              |
+| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  | `Vorbis Comments`    |
+| Opus        | `opus`                                    |**X** |       | `Vorbis Comments`    |
+| Ogg         | `ogg`, `oga`                              |**X** |**X**  | `Vorbis Comments`    |
+| WAV         | `wav`, `wave`                             |**X** |**X**  | `RIFF INFO`, `ID3v2` |
 
 ## Documentation
+
 Available [here](https://docs.rs/lofty)
+
+## Thanks
+
+All these great projects helped make this crate possible. (*Sorted alphabetically*)
+
+* [**ape**](https://github.com/rossnomann/rust-ape)
+* [**id3**](https://github.com/polyfloyd/rust-id3)
+* [**lewton**](https://github.com/RustAudio/lewton)
+* [**metaflac**](https://github.com/jameshurst/rust-metaflac)
+* [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)
+* [**ogg**](https://github.com/RustAudio/ogg)
+* [**opus_headers**](https://github.com/zaethan/opus_headers)
+* [**riff**](https://github.com/frabert/riff)
 
 ## License
 
