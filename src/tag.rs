@@ -50,6 +50,11 @@ impl Tag {
 	/// * `path` either has no extension, or the extension is not valid unicode (DetermineFrom::Extension)
 	/// * `path` has an unsupported/unknown extension (DetermineFrom::Extension)
 	/// * `path` does not exist (DetermineFrom::Signature)
+	///
+	/// # Warning
+	/// Using DetermineFrom::Extension on a `wav`/`wave` file will **always** assume there's an ID3 tag.
+	/// DetermineFrom::Signature is recommended instead, in the event that a RIFF INFO list is present instead.
+	/// However, if both are present, only the ID3 tag is read.
 	pub fn read_from_path(
 		&self,
 		path: impl AsRef<Path>,
@@ -65,20 +70,20 @@ impl Tag {
 
 				TagType::try_from_ext(extension_str)?
 			},
-			DetermineFrom::Signature => {
-				TagType::try_from_sig(&std::fs::read(path.as_ref())?[0..36])?
-			},
+			DetermineFrom::Signature => TagType::try_from_sig(&std::fs::read(path.as_ref())?)?,
 		};
 
 		match tag_type {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
 			#[cfg(feature = "mp3")]
-			TagType::Id3v2 => Ok(Box::new(Id3v2Tag::read_from_path(path)?)),
+			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => {
+				Ok(Box::new(Id3v2Tag::read_from_path(path, tag_type)?))
+			},
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 			#[cfg(feature = "wav")]
-			TagType::Riff => Ok(Box::new(RiffTag::read_from_path(path)?)),
+			TagType::Riff(RiffFormat::Info) => Ok(Box::new(RiffTag::read_from_path(path)?)),
 			#[cfg(feature = "vorbis")]
 			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
 		}
@@ -101,8 +106,8 @@ pub enum TagType {
 	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
 	Vorbis(VorbisFormat),
 	#[cfg(feature = "wav")]
-	/// Common file extensions: `.wav, .wave`
-	Riff,
+	/// Represents multiple formats, see [`RiffFormat`] for extensions.
+	Riff(RiffFormat),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -117,6 +122,17 @@ pub enum VorbisFormat {
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions: `.flac`
 	Flac,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+#[cfg(feature = "wav")]
+pub enum RiffFormat {
+	#[cfg(feature = "wav")]
+	/// Metadata is stored in a RIFF INFO list
+	Info,
+	#[cfg(feature = "mp3")]
+	/// Metadata is stored in an ID3 tag
+	ID3,
 }
 
 impl TagType {
@@ -135,7 +151,7 @@ impl TagType {
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			#[cfg(feature = "wav")]
-			"wav" | "wave" => Ok(Self::Riff),
+			"wav" | "wave" => Ok(Self::Id3v2),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
 	}
@@ -149,7 +165,6 @@ impl TagType {
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "mp3")]
 			73 if data.starts_with(&ID3) => Ok(Self::Id3v2),
-			#[cfg(feature = "mp4")]
 			#[cfg(feature = "vorbis")]
 			102 if data.starts_with(&FLAC) => Ok(Self::Vorbis(VorbisFormat::Flac)),
 			#[cfg(feature = "vorbis")]
@@ -165,7 +180,40 @@ impl TagType {
 				Err(Error::UnknownFormat)
 			},
 			#[cfg(feature = "wav")]
-			82 if data.starts_with(&RIFF) => Ok(Self::Riff),
+			82 if data.starts_with(&RIFF) => {
+				#[cfg(feature = "mp3")]
+				{
+					use byteorder::{LittleEndian, ReadBytesExt};
+					use std::io::Cursor;
+
+					let mut data = Cursor::new(&data[12..]);
+
+					let mut reading = true;
+					let mut found_id3 = false;
+
+					while reading {
+						if let (Ok(fourcc), Ok(size)) = (
+							data.read_u32::<LittleEndian>(),
+							data.read_u32::<LittleEndian>(),
+						) {
+							if &fourcc.to_le_bytes() == b"ID3 " {
+								found_id3 = true;
+								break;
+							}
+
+							data.set_position(data.position() + size as u64)
+						} else {
+							reading = false
+						}
+					}
+
+					if found_id3 {
+						return Ok(Self::Riff(RiffFormat::ID3));
+					}
+				}
+
+				Ok(Self::Riff(RiffFormat::Info))
+			},
 			#[cfg(feature = "mp4")]
 			_ if data[4..8] == FTYP => Ok(Self::Mp4),
 			_ => Err(Error::UnknownFormat),

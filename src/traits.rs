@@ -1,6 +1,7 @@
 #[allow(clippy::wildcard_imports)]
 use crate::{components::tags::*, Album, AnyTag, Picture, Result, TagType};
 
+use crate::tag::RiffFormat;
 use std::fs::File;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
@@ -113,13 +114,13 @@ pub trait ToAnyTag: ToAny {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Box::new(ApeTag::from(self.to_anytag())),
 			#[cfg(feature = "mp3")]
-			TagType::Id3v2 => Box::new(Id3v2Tag::from(self.to_anytag())),
+			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => Box::new(Id3v2Tag::from(self.to_anytag())),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
 			#[cfg(feature = "vorbis")]
 			TagType::Vorbis(_) => Box::new(VorbisTag::from(self.to_anytag())),
 			#[cfg(feature = "wav")]
-			TagType::Riff => Box::new(RiffTag::from(self.to_anytag())),
+			TagType::Riff(RiffFormat::Info) => Box::new(RiffTag::from(self.to_anytag())),
 		}
 	}
 }

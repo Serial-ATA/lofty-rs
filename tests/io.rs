@@ -58,7 +58,7 @@ macro_rules! remove_tags {
 	($file:expr) => {
 		println!("Reading file");
 		let mut tag = Tag::default()
-			.read_from_path($file, DetermineFrom::Extension)
+			.read_from_path($file, DetermineFrom::Signature)
 			.unwrap();
 
 		println!("Checking title");

@@ -1,6 +1,6 @@
 use crate::{
-	components::logic, impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	components::logic, impl_tag, tag::RiffFormat, Album, AnyTag, AudioTag, AudioTagEdit,
+	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::BorrowMut;
@@ -39,7 +39,7 @@ impl RiffTag {
 	}
 }
 
-impl_tag!(RiffTag, RiffInnerTag, TagType::Riff);
+impl_tag!(RiffTag, RiffInnerTag, TagType::Riff(RiffFormat::Info));
 
 impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {

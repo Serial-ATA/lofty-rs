@@ -17,7 +17,7 @@ ape = {version = "0.3.0", optional = true}
 # Wav
 riff = {version = "1.0.1", optional = true}
 # Mp3
-id3 = {version = "0.6.2", optional = true} # De/Encoding
+id3 = {version = "0.6.3", optional = true} # De/Encoding
 mp3-duration = {version = "0.1.10", optional = true} # Duration
 # Ogg
 lewton = {version = "0.10.2", optional = true} # Decoding

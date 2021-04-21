@@ -5,9 +5,12 @@ use crate::{
 	Result, TagType, ToAny, ToAnyTag,
 };
 
+use crate::tag::RiffFormat;
+use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
 use std::convert::TryInto;
 use std::fs::File;
+use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
@@ -16,15 +19,23 @@ impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2);
 
 impl Id3v2Tag {
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P) -> Result<Self>
+	pub fn read_from_path<P>(path: P, format: TagType) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
-		Ok(Self {
-			inner: Id3v2InnerTag::read_from_path(&path)?,
-			#[cfg(feature = "duration")]
-			duration: Some(mp3_duration::from_path(&path)?), // TODO
-		})
+		return match format {
+			TagType::Id3v2 => Ok(Self {
+				inner: Id3v2InnerTag::read_from_path(&path)?,
+				#[cfg(feature = "duration")]
+				duration: Some(mp3_duration::from_path(&path)?),
+			}),
+			TagType::Riff(RiffFormat::ID3) => Ok(Self {
+				inner: Id3v2InnerTag::read_from_wav(&path)?,
+				#[cfg(feature = "duration")]
+				duration: None, // TODO
+			}),
+			_ => unreachable!(),
+		};
 	}
 }
 
@@ -175,11 +186,28 @@ impl AudioTagEdit for Id3v2Tag {
 
 impl AudioTagWrite for Id3v2Tag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		self.inner.write_to(file, id3::Version::Id3v24)?;
+		let mut id = [0; 4];
+		file.read(&mut id)?;
+		file.seek(SeekFrom::Start(0))?;
+
+		if &id == b"RIFF" {
+			self.inner
+				.write_to_wav(file.path()?, id3::Version::Id3v24)?;
+		} else {
+			self.inner.write_to(file, id3::Version::Id3v24)?;
+		}
+
 		Ok(())
 	}
 	fn write_to_path(&self, path: &str) -> Result<()> {
-		self.inner.write_to_path(path, id3::Version::Id3v24)?;
+		let id = &std::fs::read(&path)?[0..4];
+
+		if &id == b"RIFF" {
+			self.inner.write_to_wav(path, id3::Version::Id3v24)?;
+		} else {
+			self.inner.write_to_path(path, id3::Version::Id3v24)?;
+		}
+
 		Ok(())
 	}
 }
