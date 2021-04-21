@@ -1,3 +1,5 @@
+#![cfg(feature = "riff")]
+
 use crate::components::logic;
 use crate::tag::RiffFormat;
 use crate::{

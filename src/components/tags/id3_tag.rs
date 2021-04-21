@@ -1,4 +1,4 @@
-#![cfg(feature = "mp3")]
+#![cfg(feature = "id3")]
 
 use crate::tag::RiffFormat;
 use crate::{

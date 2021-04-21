@@ -1,4 +1,4 @@
-#![cfg(feature = "vorbis")]
+#![cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
 
 use crate::components::logic;
 use crate::{

@@ -5,19 +5,19 @@ use std::path::Path;
 
 #[cfg(feature = "ape")]
 const MAC: [u8; 3] = [77, 65, 67];
-#[cfg(feature = "mp3")]
+#[cfg(feature = "id3")]
 const ID3: [u8; 3] = [73, 68, 51];
 #[cfg(feature = "mp4")]
 const FTYP: [u8; 4] = [102, 116, 121, 112];
-#[cfg(feature = "vorbis")]
+#[cfg(feature = "opus")]
 const OPUSHEAD: [u8; 8] = [79, 112, 117, 115, 72, 101, 97, 100];
-#[cfg(feature = "vorbis")]
+#[cfg(feature = "flac")]
 const FLAC: [u8; 4] = [102, 76, 97, 67];
-#[cfg(feature = "vorbis")]
+#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
 const OGGS: [u8; 4] = [79, 103, 103, 83];
 #[cfg(feature = "vorbis")]
 const VORBIS: [u8; 6] = [118, 111, 114, 98, 105, 115];
-#[cfg(feature = "wav")]
+#[cfg(feature = "riff")]
 const RIFF: [u8; 4] = [82, 73, 70, 70];
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
@@ -77,15 +77,15 @@ impl Tag {
 		match tag_type {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
-			#[cfg(feature = "mp3")]
+			#[cfg(feature = "id3")]
 			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => {
 				Ok(Box::new(Id3v2Tag::read_from_path(path, tag_type)?))
 			},
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
-			#[cfg(feature = "wav")]
+			#[cfg(feature = "riff")]
 			TagType::Riff(RiffFormat::Info) => Ok(Box::new(RiffTag::read_from_path(path)?)),
-			#[cfg(feature = "vorbis")]
+			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
 			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
 		}
 	}
@@ -97,7 +97,7 @@ pub enum TagType {
 	#[cfg(feature = "ape")]
 	/// Common file extensions: `.ape`
 	Ape,
-	#[cfg(feature = "mp3")]
+	#[cfg(feature = "id3")]
 	/// Common file extensions: `.mp3`
 	Id3v2,
 	#[cfg(feature = "mp4")]
@@ -106,7 +106,7 @@ pub enum TagType {
 	#[cfg(feature = "vorbis")]
 	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
 	Vorbis(VorbisFormat),
-	#[cfg(feature = "wav")]
+	#[cfg(feature = "riff")]
 	/// Represents multiple formats, see [`RiffFormat`] for extensions.
 	Riff(RiffFormat),
 }
@@ -117,21 +117,20 @@ pub enum VorbisFormat {
 	#[cfg(feature = "vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
 	Ogg,
-	#[cfg(feature = "vorbis")]
+	#[cfg(feature = "opus")]
 	/// Common file extensions: `.opus`
 	Opus,
-	#[cfg(feature = "vorbis")]
+	#[cfg(feature = "flac")]
 	/// Common file extensions: `.flac`
 	Flac,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg(feature = "wav")]
+#[cfg(feature = "riff")]
 pub enum RiffFormat {
-	#[cfg(feature = "wav")]
 	/// Metadata is stored in a RIFF INFO list
 	Info,
-	#[cfg(feature = "mp3")]
+	#[cfg(feature = "id3")]
 	/// Metadata is stored in an ID3 tag
 	ID3,
 }
@@ -141,17 +140,17 @@ impl TagType {
 		match ext {
 			#[cfg(feature = "ape")]
 			"ape" => Ok(Self::Ape),
-			#[cfg(feature = "mp3")]
+			#[cfg(feature = "id3")]
 			"mp3" => Ok(Self::Id3v2),
-			#[cfg(feature = "vorbis")]
+			#[cfg(feature = "opus")]
 			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
-			#[cfg(feature = "vorbis")]
+			#[cfg(feature = "flac")]
 			"flac" => Ok(Self::Vorbis(VorbisFormat::Flac)),
 			#[cfg(feature = "vorbis")]
 			"ogg" | "oga" => Ok(Self::Vorbis(VorbisFormat::Ogg)),
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
-			#[cfg(feature = "wav")]
+			#[cfg(all(feature = "riff", feature = "id3"))]
 			"wav" | "wave" => Ok(Self::Riff(RiffFormat::ID3)),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
@@ -164,11 +163,11 @@ impl TagType {
 		match data[0] {
 			#[cfg(feature = "ape")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
-			#[cfg(feature = "mp3")]
+			#[cfg(feature = "id3")]
 			73 if data.starts_with(&ID3) => Ok(Self::Id3v2),
-			#[cfg(feature = "vorbis")]
+			#[cfg(feature = "flac")]
 			102 if data.starts_with(&FLAC) => Ok(Self::Vorbis(VorbisFormat::Flac)),
-			#[cfg(feature = "vorbis")]
+			#[cfg(any(feature = "vorbis", feature = "opus"))]
 			79 if data.starts_with(&OGGS) => {
 				if data[29..35] == VORBIS {
 					return Ok(Self::Vorbis(VorbisFormat::Ogg));
@@ -180,9 +179,9 @@ impl TagType {
 
 				Err(Error::UnknownFormat)
 			},
-			#[cfg(feature = "wav")]
+			#[cfg(feature = "riff")]
 			82 if data.starts_with(&RIFF) => {
-				#[cfg(feature = "mp3")]
+				#[cfg(feature = "id3")]
 				{
 					use byteorder::{LittleEndian, ReadBytesExt};
 					use std::io::Cursor;

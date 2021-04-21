@@ -6,11 +6,11 @@ pub(crate) mod vorbis_tag;
 
 #[cfg(feature = "ape")]
 pub use ape_tag::ApeTag;
-#[cfg(feature = "mp3")]
+#[cfg(feature = "id3")]
 pub use id3_tag::Id3v2Tag;
 #[cfg(feature = "mp4")]
 pub use mp4_tag::Mp4Tag;
-#[cfg(feature = "wav")]
+#[cfg(feature = "riff")]
 pub use riff_tag::RiffTag;
-#[cfg(feature = "vorbis")]
+#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
 pub use vorbis_tag::VorbisTag;

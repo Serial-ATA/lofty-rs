@@ -1,6 +1,5 @@
 // Used to determine the WAV metadata format
 pub const LIST_ID: &[u8; 4] = b"LIST";
-pub const ID3_ID: &[u8; 4] = b"ID3 "; // TODO
 
 // FourCC
 

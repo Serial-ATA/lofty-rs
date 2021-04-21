@@ -1,5 +1,6 @@
-use super::constants::{ID3_ID, LIST_ID};
+use super::constants::LIST_ID;
 use crate::{Error, Result};
+
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::io::{Cursor, Read, Seek};
@@ -22,28 +23,10 @@ where
 			list = Some(child);
 			break;
 		}
-
-		if value_bytes == ID3_ID {
-			#[cfg(feature = "mp3")]
-			{
-				list = Some(child);
-				break;
-			}
-
-			#[cfg(not(feature = "mp3"))]
-			return Err(Error::Wav(
-				"WAV file has an id3 tag, but `mp3` feature is not enabled.",
-			));
-		}
 	}
 
 	return if let Some(list) = list {
 		let mut content = list.read_contents(&mut data)?;
-
-		#[cfg(feature = "mp3")]
-		if &list.id().value == ID3_ID {
-			// TODO
-		}
 
 		content.drain(0..4); // Get rid of the chunk ID
 		let mut cursor = Cursor::new(&*content);

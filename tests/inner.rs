@@ -1,7 +1,7 @@
 use lofty::{DetermineFrom, Tag, TagType, ToAnyTag, VorbisTag};
 
 #[test]
-#[cfg(all(feature = "mp3", feature = "vorbis"))]
+#[cfg(all(feature = "id3", feature = "flac"))]
 fn test_inner() {
 	// New flac tag
 	let mut innertag = metaflac::Tag::new();

@@ -114,13 +114,13 @@ pub trait ToAnyTag: ToAny {
 		match tag_type {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Box::new(ApeTag::from(self.to_anytag())),
-			#[cfg(feature = "mp3")]
+			#[cfg(feature = "id3")]
 			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => Box::new(Id3v2Tag::from(self.to_anytag())),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
-			#[cfg(feature = "vorbis")]
+			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
 			TagType::Vorbis(_) => Box::new(VorbisTag::from(self.to_anytag())),
-			#[cfg(feature = "wav")]
+			#[cfg(feature = "riff")]
 			TagType::Riff(RiffFormat::Info) => Box::new(RiffTag::from(self.to_anytag())),
 		}
 	}
