@@ -92,7 +92,9 @@ impl<'a> From<&'a WavTag> for AnyTag<'a> {
 			total_tracks: inp.total_tracks(),
 			disc_number: inp.disc_number(),
 			total_discs: inp.total_discs(),
-			..AnyTag::default()
+			comments: None,
+			date: None,
+			duration: inp.duration
 		}
 	}
 }

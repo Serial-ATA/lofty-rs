@@ -46,7 +46,7 @@ impl<'a> From<&'a ApeTag> for AnyTag<'a> {
 			comments: None,
 			date: None, // TODO
 			#[cfg(feature = "duration")]
-			duration: None,
+			duration: inp.duration,
 		}
 	}
 }

@@ -5,6 +5,11 @@ pub enum Error {
 	#[error("Failed to guess the metadata format based on the file extension.")]
 	UnknownFileExtension,
 
+	#[error("No format could be determined from the provided file.")]
+	UnknownFormat,
+	#[error("File contains no data")]
+	EmptyFile,
+
 	/// Unsupported file extension
 	#[error("Unsupported format: {0}")]
 	UnsupportedFormat(String),

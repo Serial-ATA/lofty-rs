@@ -29,10 +29,10 @@
 //! # Examples
 //!
 //! ```
-//! use lofty::{Tag, TagType};
+//! use lofty::{Tag, TagType, DetermineFrom};
 //!
 //! // Guess the format from the extension, in this case `mp3`
-//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
+//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3", DetermineFrom::Extension).unwrap();
 //! tag.set_title("Foo");
 //!
 //! // You can convert the tag type and save the metadata to another file.
@@ -40,7 +40,7 @@
 //!
 //! // You can specify the tag type, but when you want to do this
 //! // also consider directly using the concrete type
-//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
+//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a", DetermineFrom::Extension).unwrap();
 //! assert_eq!(tag.title(), Some("Foo"));
 //! ```
 //!
@@ -95,7 +95,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{Tag, TagType};
+pub use crate::tag::{DetermineFrom, Tag, TagType};
 
 mod error;
 pub use crate::error::{Error, Result};

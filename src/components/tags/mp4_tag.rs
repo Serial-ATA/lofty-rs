@@ -52,7 +52,7 @@ impl<'a> From<&'a Mp4Tag> for AnyTag<'a> {
 			comments: None,
 			date: None,
 			#[cfg(feature = "duration")]
-			duration: None, // TODO?
+			duration: inp.duration, // TODO?
 		}
 	}
 }

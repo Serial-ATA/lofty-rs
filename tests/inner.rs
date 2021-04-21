@@ -1,4 +1,4 @@
-use lofty::{Tag, TagType, ToAnyTag, VorbisTag};
+use lofty::{DetermineFrom, Tag, TagType, ToAnyTag, VorbisTag};
 
 #[test]
 #[cfg(all(feature = "mp3", feature = "vorbis"))]
@@ -24,7 +24,7 @@ fn test_inner() {
 
 	// Read from `a.mp3`
 	let id3tag_reload = Tag::default()
-		.read_from_path("tests/assets/a.mp3")
+		.read_from_path("tests/assets/a.mp3", DetermineFrom::Extension)
 		.expect("Fail to read!");
 
 	// Confirm title still matches
