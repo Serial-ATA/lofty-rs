@@ -1,5 +1,6 @@
 #[allow(clippy::wildcard_imports)]
-use super::{components::tags::*, AudioTag, Error, Result};
+use crate::components::tags::*;
+use crate::{AudioTag, Error, Result};
 use std::path::Path;
 
 #[cfg(feature = "ape")]

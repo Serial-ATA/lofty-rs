@@ -1,13 +1,14 @@
 #![cfg(feature = "mp3")]
 
+use crate::tag::RiffFormat;
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
 	Result, TagType, ToAny, ToAnyTag,
 };
 
-use crate::tag::RiffFormat;
-use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
+
+use filepath::FilePath;
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};

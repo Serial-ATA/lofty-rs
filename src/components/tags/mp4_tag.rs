@@ -6,6 +6,7 @@ use crate::{
 };
 
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
+
 use std::fs::File;
 use std::path::Path;
 #[cfg(feature = "duration")]

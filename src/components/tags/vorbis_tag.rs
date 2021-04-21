@@ -1,8 +1,9 @@
 #![cfg(feature = "vorbis")]
 
+use crate::components::logic;
 use crate::{
-	components::logic, impl_tag, tag::VorbisFormat, Album, AnyTag, AudioTag, AudioTagEdit,
-	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
+	impl_tag, tag::VorbisFormat, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
+	Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::BorrowMut;

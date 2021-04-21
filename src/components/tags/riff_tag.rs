@@ -1,6 +1,8 @@
+use crate::components::logic;
+use crate::tag::RiffFormat;
 use crate::{
-	components::logic, impl_tag, tag::RiffFormat, Album, AnyTag, AudioTag, AudioTagEdit,
-	AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
+	ToAny, ToAnyTag,
 };
 
 use std::borrow::BorrowMut;

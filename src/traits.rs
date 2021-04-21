@@ -1,7 +1,8 @@
 #[allow(clippy::wildcard_imports)]
-use crate::{components::tags::*, Album, AnyTag, Picture, Result, TagType};
-
+use crate::components::tags::*;
 use crate::tag::RiffFormat;
+use crate::{Album, AnyTag, Picture, Result, TagType};
+
 use std::fs::File;
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
