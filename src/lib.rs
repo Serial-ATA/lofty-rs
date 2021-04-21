@@ -63,7 +63,6 @@
 //! unavoidable, no matter if you use lofty or use getters and setters provided by specialized libraries. Lofty is not making additional
 //! unnecessary copies.
 
-//#![forbid(unused_crate_dependencies, unused_import_braces)]
 #![warn(clippy::pedantic)]
 #![allow(
 	clippy::too_many_lines,
