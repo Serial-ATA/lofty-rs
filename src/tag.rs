@@ -1,6 +1,5 @@
 #[allow(clippy::wildcard_imports)]
 use super::{components::tags::*, AudioTag, Error, Result};
-use crate::{Id3v2Tag, WavTag};
 use std::path::Path;
 
 #[cfg(feature = "ape")]
@@ -79,7 +78,7 @@ impl Tag {
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 			#[cfg(feature = "wav")]
-			TagType::Wav => Ok(Box::new(WavTag::read_from_path(path)?)),
+			TagType::Riff => Ok(Box::new(RiffTag::read_from_path(path)?)),
 			#[cfg(feature = "vorbis")]
 			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
 		}
@@ -103,7 +102,7 @@ pub enum TagType {
 	Vorbis(VorbisFormat),
 	#[cfg(feature = "wav")]
 	/// Common file extensions: `.wav, .wave`
-	Wav,
+	Riff,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -136,7 +135,7 @@ impl TagType {
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			#[cfg(feature = "wav")]
-			"wav" | "wave" => Ok(Self::Wav),
+			"wav" | "wave" => Ok(Self::Riff),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
 	}
@@ -166,7 +165,7 @@ impl TagType {
 				Err(Error::UnknownFormat)
 			},
 			#[cfg(feature = "wav")]
-			82 if data.starts_with(&RIFF) => Ok(Self::Wav),
+			82 if data.starts_with(&RIFF) => Ok(Self::Riff),
 			#[cfg(feature = "mp4")]
 			_ if data[4..8] == FTYP => Ok(Self::Mp4),
 			_ => Err(Error::UnknownFormat),

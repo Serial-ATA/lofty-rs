@@ -79,8 +79,6 @@ macro_rules! impl_tag {
 					total_discs: inp.total_discs(),
 					comments: None,
 					date: None, // TODO
-					#[cfg(feature = "duration")]
-					duration: inp.duration,
 				}
 			}
 		}

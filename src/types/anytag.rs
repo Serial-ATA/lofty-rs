@@ -1,8 +1,6 @@
 use crate::Album;
-#[cfg(feature = "duration")]
-use std::time::Duration;
 
-/// The tag returned from `read_from_path`
+/// Used to convert between tags
 #[derive(Default, Debug)]
 pub struct AnyTag<'a> {
 	pub title: Option<&'a str>,
@@ -15,8 +13,6 @@ pub struct AnyTag<'a> {
 	pub total_tracks: Option<u32>,
 	pub disc_number: Option<u32>,
 	pub total_discs: Option<u32>,
-	#[cfg(feature = "duration")]
-	pub duration: Option<Duration>,
 }
 
 impl<'a> AnyTag<'a> {
@@ -75,16 +71,11 @@ impl<'a> AnyTag<'a> {
 	pub fn total_discs(&self) -> Option<u32> {
 		self.total_tracks
 	}
-	#[cfg(feature = "duration")]
-	/// Returns `duration`
-	pub fn duration(&self) -> Option<Duration> {
-		self.duration
-	}
 }
 
 impl AnyTag<'_> {
 	/// Turns `artists` into a comma separated String
 	pub fn artists_as_string(&self) -> Option<String> {
-		self.artists.as_ref().map(|artists| artists.join(","))
+		self.artists.as_ref().map(|artists| artists.join("/"))
 	}
 }

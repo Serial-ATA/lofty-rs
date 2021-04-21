@@ -11,11 +11,11 @@ use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
-struct WavInnerTag {
+struct RiffInnerTag {
 	data: Option<HashMap<String, String>>,
 }
 
-impl Default for WavInnerTag {
+impl Default for RiffInnerTag {
 	fn default() -> Self {
 		let data: Option<HashMap<String, String>> = Some(HashMap::new());
 
@@ -23,14 +23,14 @@ impl Default for WavInnerTag {
 	}
 }
 
-impl WavTag {
+impl RiffTag {
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
 		Ok(Self {
-			inner: WavInnerTag {
+			inner: RiffInnerTag {
 				data: logic::read::wav(File::open(path)?)?,
 			},
 			#[cfg(feature = "duration")]
@@ -39,9 +39,9 @@ impl WavTag {
 	}
 }
 
-impl_tag!(WavTag, WavInnerTag, TagType::Wav);
+impl_tag!(RiffTag, RiffInnerTag, TagType::Riff);
 
-impl WavTag {
+impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
 		self.inner
 			.data
@@ -73,7 +73,7 @@ impl WavTag {
 	}
 }
 
-impl AudioTagEdit for WavTag {
+impl AudioTagEdit for RiffTag {
 	fn title(&self) -> Option<&str> {
 		self.get_value("Title")
 	}
@@ -215,7 +215,7 @@ impl AudioTagEdit for WavTag {
 	}
 }
 
-impl AudioTagWrite for WavTag {
+impl AudioTagWrite for RiffTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(data) = self.inner.data.clone() {
 			let mut chunk = Vec::new();

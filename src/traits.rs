@@ -119,7 +119,7 @@ pub trait ToAnyTag: ToAny {
 			#[cfg(feature = "vorbis")]
 			TagType::Vorbis(_) => Box::new(VorbisTag::from(self.to_anytag())),
 			#[cfg(feature = "wav")]
-			TagType::Wav => Box::new(WavTag::from(self.to_anytag())),
+			TagType::Riff => Box::new(RiffTag::from(self.to_anytag())),
 		}
 	}
 }
