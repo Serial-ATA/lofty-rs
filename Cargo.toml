@@ -42,3 +42,14 @@ wav = ["riff"]
 vorbis = ["lewton", "metaflac", "opus_headers", "ogg"]
 all_tags = ["vorbis", "mp4", "mp3", "wav", "ape"]
 duration = ["mp3-duration"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "read_from_extension"
+harness = false
+
+[[bench]]
+name = "read_from_signature"
+harness = false

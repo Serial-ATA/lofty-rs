@@ -152,7 +152,7 @@ impl TagType {
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			#[cfg(feature = "wav")]
-			"wav" | "wave" => Ok(Self::Id3v2),
+			"wav" | "wave" => Ok(Self::Riff(RiffFormat::ID3)),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
 	}
