@@ -128,64 +128,6 @@ impl VorbisTag {
 	}
 }
 
-impl<'a> From<AnyTag<'a>> for VorbisTag {
-	fn from(inp: AnyTag<'a>) -> Self {
-		let mut tag = VorbisTag::default();
-
-		if let Some(v) = inp.title() {
-			tag.set_title(v)
-		}
-		if let Some(v) = inp.artists_as_string() {
-			tag.set_artist(&v)
-		}
-		if let Some(v) = inp.year {
-			tag.set_year(v)
-		}
-		if let Some(v) = inp.album().title {
-			tag.set_album_title(v)
-		}
-		if let Some(v) = inp.album().artists {
-			tag.set_album_artist(&v.join("/"))
-		}
-		if let Some(v) = inp.track_number() {
-			tag.set_track_number(v)
-		}
-		if let Some(v) = inp.total_tracks() {
-			tag.set_total_tracks(v)
-		}
-		if let Some(v) = inp.disc_number() {
-			tag.set_disc_number(v)
-		}
-		if let Some(v) = inp.total_discs() {
-			tag.set_total_discs(v)
-		}
-
-		tag
-	}
-}
-
-impl<'a> From<&'a VorbisTag> for AnyTag<'a> {
-	fn from(inp: &'a VorbisTag) -> Self {
-		Self {
-			title: inp.title(),
-			artists: inp.artists_vec(),
-			year: inp.year().map(|y| y as i32),
-			album: Album::new(
-				inp.album_title(),
-				inp.album_artists_vec(),
-				inp.album_cover(),
-			),
-			track_number: inp.track_number(),
-			total_tracks: inp.total_tracks(),
-			disc_number: inp.disc_number(),
-			total_discs: inp.total_discs(),
-			comments: None,
-			date: None,
-			duration: inp.duration
-		}
-	}
-}
-
 impl From<metaflac::Tag> for VorbisTag {
 	fn from(inp: metaflac::Tag) -> Self {
 		let mut tag = Self::default();

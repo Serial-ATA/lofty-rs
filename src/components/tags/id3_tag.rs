@@ -28,65 +28,6 @@ impl Id3v2Tag {
 	}
 }
 
-impl<'a> From<&'a Id3v2Tag> for AnyTag<'a> {
-	fn from(inp: &'a Id3v2Tag) -> Self {
-		Self {
-			title: inp.title(),
-			artists: inp.artists_vec(),
-			year: inp.year().map(|y| y as i32),
-			album: Album::new(
-				inp.album_title(),
-				inp.album_artists_vec(),
-				inp.album_cover(),
-			),
-			track_number: inp.track_number(),
-			total_tracks: inp.total_tracks(),
-			disc_number: inp.disc_number(),
-			total_discs: inp.total_discs(),
-			comments: None,
-			date: None, // TODO
-			#[cfg(feature = "duration")]
-			duration: inp.duration,
-		}
-	}
-}
-
-impl<'a> From<AnyTag<'a>> for Id3v2Tag {
-	fn from(inp: AnyTag<'a>) -> Self {
-		let mut tag = Id3v2Tag::new();
-
-		if let Some(v) = inp.title() {
-			tag.set_title(v)
-		}
-		if let Some(v) = inp.artists_as_string() {
-			tag.set_artist(v.as_str())
-		}
-		if let Some(v) = inp.year {
-			tag.set_year(v)
-		}
-		if let Some(v) = inp.album().title {
-			tag.set_album_title(v)
-		}
-		if let Some(v) = inp.album().artists {
-			tag.set_album_artist(&v.join("/"))
-		}
-		if let Some(v) = inp.track_number() {
-			tag.set_track(v)
-		}
-		if let Some(v) = inp.total_tracks() {
-			tag.set_total_tracks(v)
-		}
-		if let Some(v) = inp.disc_number() {
-			tag.set_disc(v)
-		}
-		if let Some(v) = inp.total_discs() {
-			tag.set_total_discs(v)
-		}
-
-		tag
-	}
-}
-
 impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
 	type Error = Error;
 	fn try_from(inp: &'a id3::frame::Picture) -> Result<Self> {
