@@ -6,6 +6,7 @@ macro_rules! impl_tag {
 		pub struct $tag {
 			inner: $inner,
 			#[cfg(feature = "duration")]
+			#[allow(dead_code)]
 			duration: Option<Duration>,
 		}
 
