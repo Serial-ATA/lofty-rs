@@ -103,7 +103,7 @@ pub enum TagType {
 	#[cfg(feature = "mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
-	#[cfg(feature = "vorbis")]
+	#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
 	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
 	Vorbis(VorbisFormat),
 	#[cfg(feature = "riff")]
