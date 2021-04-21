@@ -23,8 +23,7 @@
 //! | Ogg Vorbis    | `ogg`, `oga`                              |**X** |**X**  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
 //! | WAV(*)        | `wav`, `wave`                             |**X** |**X**  | [**riff**](https://github.com/frabert/riff)                                                                         |
 //!
-//! * NOTE: Only RIFF LIST type INFO is supported for now. This means there's less data available,
-//! and it's less likely to be accurate due to the use of non-standard INFO IDs. ID3 support will come soon.
+//! * Both ID3 tags and RIFF INFO lists are supported
 //!
 //! # Examples
 //!
@@ -48,14 +47,14 @@
 //!
 //! By default, `full` (`all_tags` and `duration`) are enabled.
 //!
-//! `all_tags` provides all the track metadata (`artists`, `album`, etc.) in [`AnyTag`].
+//! `all_tags` provides all tag types (ID3, RIFF, Vorbis, etc).
 //!
-//! `duration` provides the `duration` field in [`AnyTag`].
+//! `duration` provides the `duration` field in each tag (ex. Tag.duration).
 //!
 //! Either one can be disabled if it doesn't fit your use case.
 //!
 //! In addition to this, each format can be individually enabled.
-//! All features are: `ape, mp3, vorbis, wav`.
+//! All features are: `ape, mp3, mp4, vorbis, wav`.
 //!
 //! ## Performance
 //!
@@ -65,9 +64,6 @@
 //! No copies will be made if you only need to read and write metadata of one format. If you want to convert between tags, copying is
 //! unavoidable, no matter if you use lofty or use getters and setters provided by specialized libraries. Lofty is not making additional
 //! unnecessary copies.
-//!
-//! Theoretically, it is possible to achieve zero-copy conversions if all parsers can parse into a unified struct.
-//! However, this is going to be a lot of work.
 
 //#![forbid(unused_crate_dependencies, unused_import_braces)]
 #![warn(clippy::pedantic)]

@@ -24,7 +24,7 @@ in order to parse metadata in different file formats.
 | Ogg Vorbis    | `ogg`, `oga`                              |**X** |**X**  | [**lewton**](https://github.com/RustAudio/lewton) (decoding) [**ogg**](https://github.com/RustAudio/ogg) (encoding) |
 | WAV(*)        | `wav`, `wave`                             |**X** |**X**  | [**riff**](https://github.com/frabert/riff)                                                                         |
 
-* NOTE: Only RIFF LIST type INFO is supported for now. This means there's less data available, and it's less likely to be accurate due to the use of non-standard INFO IDs. ID3 support will come soon.
+* Both ID3 tags and RIFF INFO lists are supported
 
 ## Documentation
 Available [here](https://docs.rs/lofty)
