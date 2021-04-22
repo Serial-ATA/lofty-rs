@@ -16,7 +16,11 @@ use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
-impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(ID3Underlying::Default));
+impl_tag!(
+	Id3v2Tag,
+	Id3v2InnerTag,
+	TagType::Id3v2(ID3Underlying::Default)
+);
 
 impl Id3v2Tag {
 	#[allow(clippy::missing_errors_doc)]
@@ -40,7 +44,6 @@ impl Id3v2Tag {
 				#[cfg(feature = "duration")]
 				duration: None, // TODO
 			}),
-			_ => unreachable!(),
 		};
 	}
 }
@@ -212,12 +215,8 @@ impl AudioTagWrite for Id3v2Tag {
 		let id = &std::fs::read(&path)?[0..4];
 
 		match id {
-			b"RIFF" => self
-				.inner
-				.write_to_wav(path, id3::Version::Id3v24)?,
-			b"FORM" => self
-				.inner
-				.write_to_aiff(path, id3::Version::Id3v24)?,
+			b"RIFF" => self.inner.write_to_wav(path, id3::Version::Id3v24)?,
+			b"FORM" => self.inner.write_to_aiff(path, id3::Version::Id3v24)?,
 			_ => self.inner.write_to_path(path, id3::Version::Id3v24)?,
 		}
 

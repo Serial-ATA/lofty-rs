@@ -174,7 +174,7 @@ impl TagType {
 			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(ID3Underlying::Default)),
 			#[cfg(feature = "id3")]
 			70 if data.starts_with(&FORM) => {
-				use byteorder::{LittleEndian, BigEndian, ReadBytesExt};
+				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 				use std::io::{Cursor, SeekFrom};
 
 				let mut data = Cursor::new(data);

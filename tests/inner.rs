@@ -1,4 +1,4 @@
-use lofty::{DetermineFrom, Tag, TagType, ToAnyTag, VorbisTag, ID3Underlying};
+use lofty::{DetermineFrom, ID3Underlying, Tag, TagType, ToAnyTag, VorbisTag};
 
 #[test]
 #[cfg(all(feature = "id3", feature = "flac"))]
