@@ -40,9 +40,8 @@ impl<'a> Album<'a> {
 		}
 	}
 	/// Set the album artists
-	pub fn set_artists(mut self, artists: Vec<&'a str>) -> Self {
+	pub fn set_artists(mut self, artists: Vec<&'a str>) {
 		self.artists = Some(artists);
-		self
 	}
 	/// Appends an artist to the `artists` vec
 	pub fn append_artist(mut self, artist: &'a str) {
@@ -52,21 +51,20 @@ impl<'a> Album<'a> {
 			self.artists = Some(vec![artist])
 		}
 	}
-	/// Set the album cover
-	pub fn set_cover(mut self, cover: Picture<'a>) -> Self {
-		self.cover = Some(cover);
-		self
-	}
 	/// Clears the `artists` field
 	pub fn remove_artists(mut self) {
 		self.artists = None
+	}
+	/// Set the album cover
+	pub fn set_cover(mut self, cover: Picture<'a>) {
+		self.cover = Some(cover);
 	}
 	/// Clears the `cover` field
 	pub fn remove_cover(mut self) {
 		self.cover = None
 	}
-	/// Turns `artists` vec into a comma separated String
+	/// Turns `artists` vec into a String
 	pub fn artists_as_string(&self) -> Option<String> {
-		self.artists.as_ref().map(|artists| artists.join(","))
+		self.artists.as_ref().map(|artists| artists.join("/"))
 	}
 }

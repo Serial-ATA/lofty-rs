@@ -1,4 +1,4 @@
-// Used to determine the WAV metadata format
+// Used to determine the RIFF metadata format
 pub const LIST_ID: &[u8; 4] = b"LIST";
 
 // FourCC

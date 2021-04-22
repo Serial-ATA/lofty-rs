@@ -1,9 +1,10 @@
 #![cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
 
 use crate::components::logic;
+use crate::tag::VorbisFormat;
 use crate::{
-	impl_tag, tag::VorbisFormat, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
+	ToAny, ToAnyTag,
 };
 
 use std::borrow::BorrowMut;
@@ -13,9 +14,6 @@ use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
-
-const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
-const END_BYTE: u8 = 1;
 
 struct VorbisInnerTag {
 	format: Option<VorbisFormat>,
@@ -27,8 +25,8 @@ impl Default for VorbisInnerTag {
 	fn default() -> Self {
 		Self {
 			format: None,
-			vendor: "".to_string(),
-			comments: std::collections::HashMap::default(),
+			vendor: String::new(),
+			comments: HashMap::default(),
 		}
 	}
 }
@@ -354,6 +352,9 @@ impl AudioTagWrite for VorbisTag {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
 				VorbisFormat::Ogg => {
+					const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
+					const END_BYTE: u8 = 1;
+
 					let vendor = self.inner.vendor.clone();
 					let vendor_bytes = vendor.as_bytes();
 

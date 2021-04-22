@@ -99,12 +99,18 @@ macro_rules! remove_tags {
 	};
 }
 
+// APEv2
 full_test!(test_ape, "tests/assets/a.ape");
-full_test!(test_m4a, "tests/assets/a.m4a");
+
+// ID3v2
 full_test!(test_mp3, "tests/assets/a.mp3");
-full_test!(test_wav, "tests/assets/a.wav");
+full_test!(test_wav_id3, "tests/assets/a-id3.wav");
+
+// RIFF INFO
+full_test!(test_wav_riff_info, "tests/assets/a.wav");
 
 // Vorbis comments
 full_test!(test_flac, "tests/assets/a.flac");
+full_test!(test_m4a, "tests/assets/a.m4a");
 full_test!(test_ogg, "tests/assets/a.ogg");
 full_test!(test_opus, "tests/assets/a.opus");
