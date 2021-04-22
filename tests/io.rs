@@ -7,6 +7,8 @@ macro_rules! full_test {
 		fn $function() {
 			println!("-- Adding tags --");
 			add_tags!($file);
+			println!("-- Verifying tags --");
+			verify_write!($file);
 			println!("-- Removing tags --");
 			remove_tags!($file);
 		}
@@ -22,23 +24,18 @@ macro_rules! add_tags {
 
 		println!("Setting title");
 		tag.set_title("foo title");
-		assert_eq!(tag.title(), Some("foo title"));
 
 		println!("Setting artist");
 		tag.set_artist("foo artist");
-		assert_eq!(tag.artist_str(), Some("foo artist"));
 
 		println!("Setting year");
 		tag.set_year(2020);
-		assert_eq!(tag.year(), Some(2020));
 
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
-		assert_eq!(tag.album_title(), Some("foo album title"));
 
 		println!("Setting album artists");
 		tag.set_album_artist("foo album artist");
-		assert_eq!(tag.album_artists_vec(), Some(vec!["foo album artist"]));
 
 		// TODO
 		// let cover = Picture {
@@ -54,15 +51,44 @@ macro_rules! add_tags {
 	};
 }
 
+macro_rules! verify_write {
+	($file:expr) => {
+		println!("Reading file");
+		let tag = Tag::default()
+			.read_from_path($file, DetermineFrom::Signature)
+			.unwrap();
+
+		let file_name = stringify!($file);
+
+		println!("Verifying title");
+		assert_eq!(tag.title(), Some("foo title"));
+
+		println!("Verifying artist");
+		assert_eq!(tag.artist_str(), Some("foo artist"));
+
+		// Skip this since RIFF INFO doesn't support year
+		if file_name != stringify!("tests/assets/a.wav") {
+			println!("Verifying year");
+			assert_eq!(tag.year(), Some(2020));
+		}
+
+		println!("Verifying album title");
+		assert_eq!(tag.album_title(), Some("foo album title"));
+
+		// Skip this since RIFF INFO doesn't guarantee album artist
+		if file_name != stringify!("tests/assets/a.wav") {
+			println!("Verifying album artist");
+			assert_eq!(tag.album_artists_vec(), Some(vec!["foo album artist"]));
+		}
+	};
+}
+
 macro_rules! remove_tags {
 	($file:expr) => {
 		println!("Reading file");
 		let mut tag = Tag::default()
 			.read_from_path($file, DetermineFrom::Signature)
 			.unwrap();
-
-		println!("Checking title");
-		assert_eq!(tag.title(), Some("foo title"));
 
 		println!("Removing title");
 		tag.remove_title();

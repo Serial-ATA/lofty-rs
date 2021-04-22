@@ -95,7 +95,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.year()
 	}
 	fn set_year(&mut self, year: i32) {
-		self.inner.set_year(year as i32)
+		self.inner.set_year(year)
 	}
 	fn remove_year(&mut self) {
 		self.inner.remove_year()
