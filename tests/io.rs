@@ -1,5 +1,5 @@
 #![cfg(feature = "default")]
-use lofty::{DetermineFrom, MimeType, Picture, Tag};
+use lofty::{MimeType, Picture, Tag};
 
 macro_rules! full_test {
 	($function:ident, $file:expr) => {
@@ -18,9 +18,7 @@ macro_rules! full_test {
 macro_rules! add_tags {
 	($file:expr) => {
 		println!("Reading file");
-		let mut tag = Tag::default()
-			.read_from_path($file, DetermineFrom::Signature)
-			.unwrap();
+		let mut tag = Tag::default().read_from_path_signature($file).unwrap();
 
 		println!("Setting title");
 		tag.set_title("foo title");
@@ -54,9 +52,7 @@ macro_rules! add_tags {
 macro_rules! verify_write {
 	($file:expr) => {
 		println!("Reading file");
-		let tag = Tag::default()
-			.read_from_path($file, DetermineFrom::Signature)
-			.unwrap();
+		let tag = Tag::default().read_from_path_signature($file).unwrap();
 
 		let file_name = stringify!($file);
 
@@ -86,9 +82,7 @@ macro_rules! verify_write {
 macro_rules! remove_tags {
 	($file:expr) => {
 		println!("Reading file");
-		let mut tag = Tag::default()
-			.read_from_path($file, DetermineFrom::Signature)
-			.unwrap();
+		let mut tag = Tag::default().read_from_path_signature($file).unwrap();
 
 		println!("Removing title");
 		tag.remove_title();

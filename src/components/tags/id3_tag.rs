@@ -1,6 +1,6 @@
 #![cfg(feature = "id3")]
 
-use crate::tag::ID3Underlying;
+use crate::tag::ID3Format;
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
 	Result, TagType, ToAny, ToAnyTag,
@@ -16,30 +16,26 @@ use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
-impl_tag!(
-	Id3v2Tag,
-	Id3v2InnerTag,
-	TagType::Id3v2(ID3Underlying::Default)
-);
+impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(ID3Format::Default));
 
 impl Id3v2Tag {
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: ID3Underlying) -> Result<Self>
+	pub fn read_from_path<P>(path: P, format: ID3Format) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
 		return match format {
-			ID3Underlying::Default => Ok(Self {
+			ID3Format::Default => Ok(Self {
 				inner: Id3v2InnerTag::read_from_path(&path)?,
 				#[cfg(feature = "duration")]
 				duration: Some(mp3_duration::from_path(&path)?),
 			}),
-			ID3Underlying::RIFF => Ok(Self {
+			ID3Format::RIFF => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav(&path)?,
 				#[cfg(feature = "duration")]
 				duration: None, // TODO
 			}),
-			ID3Underlying::Form => Ok(Self {
+			ID3Format::Form => Ok(Self {
 				inner: Id3v2InnerTag::read_from_aiff(&path)?,
 				#[cfg(feature = "duration")]
 				duration: None, // TODO

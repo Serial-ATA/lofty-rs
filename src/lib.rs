@@ -27,18 +27,22 @@
 //! # Examples
 //!
 //! ```
-//! use lofty::{Tag, TagType, DetermineFrom};
+//! use lofty::{Tag, TagType};
 //!
 //! // Guess the format from the extension, in this case `mp3`
-//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3", DetermineFrom::Extension).unwrap();
+//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
 //! tag.set_title("Foo");
+//!
+//! // You can also guess the format from the file signature
+//! let mut tag_sig = Tag::new().read_from_path_signature("tests/assets/a.wav").unwrap();
+//! tag_sig.set_artist("Foo artist");
 //!
 //! // You can convert the tag type and save the metadata to another file.
 //! tag.to_dyn_tag(TagType::Mp4).write_to_path("tests/assets/a.m4a");
 //!
 //! // You can specify the tag type, but when you want to do this
 //! // also consider directly using the concrete type
-//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a", DetermineFrom::Extension).unwrap();
+//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
 //! assert_eq!(tag.title(), Some("Foo"));
 //! ```
 //!
@@ -89,7 +93,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{DetermineFrom, ID3Underlying, Tag, TagType, VorbisFormat};
+pub use crate::tag::{ID3Format, Tag, TagType, VorbisFormat};
 
 mod error;
 pub use crate::error::{Error, Result};

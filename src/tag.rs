@@ -27,14 +27,6 @@ const RIFF: [u8; 4] = [82, 73, 70, 70];
 #[derive(Default)]
 pub struct Tag(Option<TagType>);
 
-/// Used in Tag::read_from_path to choose the method to determine the tag type
-pub enum DetermineFrom {
-	/// Determine the format from the file extension
-	Extension,
-	/// Determine the format by reading the file, and matching the signature
-	Signature,
-}
-
 impl Tag {
 	/// Initiate a new Tag
 	pub fn new() -> Self {
@@ -47,36 +39,56 @@ impl Tag {
 		Self(Some(tag_type))
 	}
 
-	/// Path of the file to read, and the method to determine the tag type
+	/// Attempts to get the tag format based on the file extension
+	///
+	/// NOTE: Since this only looks at the extension, the result could be incorrect.
+	///
 	///
 	/// # Errors
 	///
-	/// * `path` either has no extension, or the extension is not valid unicode (DetermineFrom::Extension)
-	/// * `path` has an unsupported/unknown extension (DetermineFrom::Extension)
-	/// * `path` does not exist (DetermineFrom::Signature)
+	/// * `path` either has no extension, or the extension is not valid unicode
+	/// * `path` has an unsupported/unknown extension
 	///
 	/// # Warning
-	/// Using DetermineFrom::Extension on a `wav`/`wave` file will **always** assume there's an ID3 tag.
-	/// DetermineFrom::Signature is recommended instead, in the event that a RIFF INFO list is present instead.
-	/// However, if both are present, only the ID3 tag is read.
-	pub fn read_from_path(
-		&self,
-		path: impl AsRef<Path>,
-		method: DetermineFrom,
-	) -> Result<Box<dyn AudioTag>> {
-		let tag_type = match method {
-			DetermineFrom::Extension => {
-				let extension = path
-					.as_ref()
-					.extension()
-					.ok_or(Error::UnknownFileExtension)?;
-				let extension_str = extension.to_str().ok_or(Error::UnknownFileExtension)?;
+	/// Using this on a `wav`/`wave`/`riff` file will **always** assume there's an ID3 tag.
+	/// [`read_from_path_signature`](Tag::read_from_path_signature) is recommended, in the event that a RIFF INFO list is present instead.
+	pub fn read_from_path(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
+		let tag_type = self.0.clone().unwrap_or({
+			let extension = path
+				.as_ref()
+				.extension()
+				.ok_or(Error::UnknownFileExtension)?;
+			let extension_str = extension.to_str().ok_or(Error::UnknownFileExtension)?;
 
-				TagType::try_from_ext(extension_str)?
-			},
-			DetermineFrom::Signature => TagType::try_from_sig(&std::fs::read(path.as_ref())?)?,
-		};
+			TagType::try_from_ext(extension_str)?
+		});
 
+		Self::match_tag(path, tag_type)
+	}
+
+	/// Attempts to get the tag format based on the file signature
+	///
+	/// NOTE: This is *slightly* slower than reading from extension, but more accurate.
+	/// The only times were this would really be necessary is if the file format being read
+	/// supports more than one metadata format (ex. RIFF), or there is no file extension.
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * The tag is non-existent/invalid/unknown
+	///
+	/// # Warning
+	/// In the event that a riff file contains both an ID3 tag *and* a RIFF INFO chunk, the ID3 tag will **always** be chosen.
+	pub fn read_from_path_signature(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
+		let tag_type = self
+			.0
+			.clone()
+			.unwrap_or(TagType::try_from_sig(&std::fs::read(path.as_ref())?)?);
+
+		Self::match_tag(path, tag_type)
+	}
+
+	fn match_tag(path: impl AsRef<Path>, tag_type: TagType) -> Result<Box<dyn AudioTag>> {
 		match tag_type {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
@@ -99,13 +111,13 @@ pub enum TagType {
 	/// Common file extensions: `.ape`
 	Ape,
 	#[cfg(feature = "id3")]
-	/// Represents multiple formats, see [`ID3Format`] for extensions.
-	Id3v2(ID3Underlying),
+	/// Represents multiple formats, see [`ID3Format`](ID3Format) for extensions.
+	Id3v2(ID3Format),
 	#[cfg(feature = "mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
 	#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
-	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
+	/// Represents multiple formats, see [`VorbisFormat`](VorbisFormat) for extensions.
 	Vorbis(VorbisFormat),
 	#[cfg(feature = "riff")]
 	/// Metadata stored in a RIFF INFO chunk
@@ -131,12 +143,12 @@ pub enum VorbisFormat {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg(feature = "id3")]
 /// ID3 tag's underlying format
-pub enum ID3Underlying {
+pub enum ID3Format {
 	/// MP3
 	Default,
 	/// AIFF
 	Form,
-	/// WAV/WAVE
+	/// RIFF/WAV/WAVE
 	RIFF,
 }
 
@@ -146,11 +158,11 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			"aiff" | "aif" => Ok(Self::Id3v2(ID3Underlying::Form)),
+			"aiff" | "aif" => Ok(Self::Id3v2(ID3Format::Form)),
 			#[cfg(feature = "id3")]
-			"mp3" => Ok(Self::Id3v2(ID3Underlying::Default)),
+			"mp3" => Ok(Self::Id3v2(ID3Format::Default)),
 			#[cfg(all(feature = "riff", feature = "id3"))]
-			"wav" | "wave" | "riff" => Ok(Self::Id3v2(ID3Underlying::RIFF)),
+			"wav" | "wave" | "riff" => Ok(Self::Id3v2(ID3Format::RIFF)),
 			#[cfg(feature = "opus")]
 			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
 			#[cfg(feature = "flac")]
@@ -171,7 +183,7 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(ID3Underlying::Default)),
+			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(ID3Format::Default)),
 			#[cfg(feature = "id3")]
 			70 if data.starts_with(&FORM) => {
 				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
@@ -204,7 +216,7 @@ impl TagType {
 				}
 
 				if found_id3 {
-					return Ok(Self::Id3v2(ID3Underlying::Form));
+					return Ok(Self::Id3v2(ID3Format::Form));
 				}
 
 				// TODO: support AIFF chunks?
@@ -252,7 +264,7 @@ impl TagType {
 					}
 
 					if found_id3 {
-						return Ok(Self::Id3v2(ID3Underlying::RIFF));
+						return Ok(Self::Id3v2(ID3Format::RIFF));
 					}
 				}
 

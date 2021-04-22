@@ -1,12 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use lofty::{DetermineFrom, Tag};
+use lofty::Tag;
 
 macro_rules! test_read {
 	($function:ident, $path:expr) => {
 		fn $function() {
-			let _ = Tag::new()
-				.read_from_path($path, DetermineFrom::Extension)
-				.unwrap();
+			let _ = Tag::new().read_from_path($path).unwrap();
 		}
 	};
 }
