@@ -1,4 +1,4 @@
-use lofty::{DetermineFrom, Tag, TagType, ToAnyTag, VorbisTag};
+use lofty::{DetermineFrom, Tag, TagType, ToAnyTag, VorbisTag, ID3Underlying};
 
 #[test]
 #[cfg(all(feature = "id3", feature = "flac"))]
@@ -15,7 +15,7 @@ fn test_inner() {
 	let tag: VorbisTag = innertag.into();
 
 	// Turn the VorbisTag into a Box<dyn AudioTag>
-	let id3tag = tag.to_dyn_tag(TagType::Id3v2);
+	let id3tag = tag.to_dyn_tag(TagType::Id3v2(ID3Underlying::Default));
 
 	// Write Box<dyn AudioTag> to `a.mp3`
 	id3tag

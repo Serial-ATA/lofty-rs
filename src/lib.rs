@@ -16,6 +16,7 @@
 //! | File Format | Extensions                                | Read | Write | Metadata Format(s)   |
 //! |-------------|-------------------------------------------|------|-------|----------------------|
 //! | Ape         | `ape`                                     |**X** |**X**  | `APEv2`              |
+//! | AIFF        | `aiff`                                    |**X** |**X**  | `ID3v2`              |
 //! | FLAC        | `flac`                                    |**X** |**X**  | `Vorbis Comments`    |
 //! | MP3         | `mp3`                                     |**X** |**X**  | `ID3v2`              |
 //! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  | `Vorbis Comments`    |
@@ -88,7 +89,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{DetermineFrom, RiffFormat, Tag, TagType, VorbisFormat};
+pub use crate::tag::{DetermineFrom, ID3Underlying, Tag, TagType, VorbisFormat};
 
 mod error;
 pub use crate::error::{Error, Result};

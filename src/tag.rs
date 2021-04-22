@@ -1,12 +1,15 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
 use crate::{AudioTag, Error, Result};
+use std::io::Seek;
 use std::path::Path;
 
 #[cfg(feature = "ape")]
 const MAC: [u8; 3] = [77, 65, 67];
 #[cfg(feature = "id3")]
 const ID3: [u8; 3] = [73, 68, 51];
+#[cfg(feature = "id3")]
+const FORM: [u8; 4] = [70, 79, 82, 77];
 #[cfg(feature = "mp4")]
 const FTYP: [u8; 4] = [102, 116, 121, 112];
 #[cfg(feature = "opus")]
@@ -78,13 +81,11 @@ impl Tag {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
 			#[cfg(feature = "id3")]
-			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => {
-				Ok(Box::new(Id3v2Tag::read_from_path(path, tag_type)?))
-			},
+			TagType::Id3v2(underlying) => Ok(Box::new(Id3v2Tag::read_from_path(path, underlying)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 			#[cfg(feature = "riff")]
-			TagType::Riff(RiffFormat::Info) => Ok(Box::new(RiffTag::read_from_path(path)?)),
+			TagType::RiffInfo => Ok(Box::new(RiffTag::read_from_path(path)?)),
 			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
 			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
 		}
@@ -98,8 +99,8 @@ pub enum TagType {
 	/// Common file extensions: `.ape`
 	Ape,
 	#[cfg(feature = "id3")]
-	/// Common file extensions: `.mp3`
-	Id3v2,
+	/// Represents multiple formats, see [`ID3Format`] for extensions.
+	Id3v2(ID3Underlying),
 	#[cfg(feature = "mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
@@ -107,8 +108,9 @@ pub enum TagType {
 	/// Represents multiple formats, see [`VorbisFormat`] for extensions.
 	Vorbis(VorbisFormat),
 	#[cfg(feature = "riff")]
-	/// Represents multiple formats, see [`RiffFormat`] for extensions.
-	Riff(RiffFormat),
+	/// Metadata stored in a RIFF INFO chunk
+	/// Common file extensions: `.wav, .wave, .riff`
+	RiffInfo,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -127,14 +129,15 @@ pub enum VorbisFormat {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg(feature = "riff")]
-/// Metadata format in the RIFF chunk
-pub enum RiffFormat {
-	/// Metadata is stored in a RIFF INFO list
-	Info,
-	#[cfg(feature = "id3")]
-	/// Metadata is stored in an ID3 tag
-	ID3,
+#[cfg(feature = "id3")]
+/// ID3 tag's underlying format
+pub enum ID3Underlying {
+	/// MP3
+	Default,
+	/// AIFF
+	Form,
+	/// WAV/WAVE
+	RIFF,
 }
 
 impl TagType {
@@ -143,7 +146,11 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			"mp3" => Ok(Self::Id3v2),
+			"aiff" => Ok(Self::Id3v2(ID3Underlying::Form)),
+			#[cfg(feature = "id3")]
+			"mp3" => Ok(Self::Id3v2(ID3Underlying::Default)),
+			#[cfg(all(feature = "riff", feature = "id3"))]
+			"wav" | "wave" | "riff" => Ok(Self::Id3v2(ID3Underlying::RIFF)),
 			#[cfg(feature = "opus")]
 			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
 			#[cfg(feature = "flac")]
@@ -152,8 +159,6 @@ impl TagType {
 			"ogg" | "oga" => Ok(Self::Vorbis(VorbisFormat::Ogg)),
 			#[cfg(feature = "mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
-			#[cfg(all(feature = "riff", feature = "id3"))]
-			"wav" | "wave" => Ok(Self::Riff(RiffFormat::ID3)),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
 	}
@@ -166,7 +171,45 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			73 if data.starts_with(&ID3) => Ok(Self::Id3v2),
+			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(ID3Underlying::Default)),
+			#[cfg(feature = "id3")]
+			70 if data.starts_with(&FORM) => {
+				use byteorder::{LittleEndian, BigEndian, ReadBytesExt};
+				use std::io::{Cursor, SeekFrom};
+
+				let mut data = Cursor::new(data);
+				let mut found_id3 = false;
+
+				loop {
+					if let (Ok(fourcc), Ok(size)) = (
+						data.read_u32::<LittleEndian>(),
+						data.read_u32::<BigEndian>(),
+					) {
+						if fourcc.to_le_bytes() == FORM {
+							data.seek(SeekFrom::Current(4))?;
+							continue;
+						}
+
+						if fourcc.to_le_bytes()[..3] == ID3 {
+							found_id3 = true;
+							break;
+						}
+
+						data.seek(SeekFrom::Current(
+							u32::from_be_bytes(size.to_be_bytes()) as i64
+						))?;
+					} else {
+						break;
+					}
+				}
+
+				if found_id3 {
+					return Ok(Self::Id3v2(ID3Underlying::Form));
+				}
+
+				// TODO: support AIFF chunks?
+				Err(Error::UnknownFormat)
+			},
 			#[cfg(feature = "flac")]
 			102 if data.starts_with(&FLAC) => Ok(Self::Vorbis(VorbisFormat::Flac)),
 			#[cfg(any(feature = "vorbis", feature = "opus"))]
@@ -190,10 +233,9 @@ impl TagType {
 
 					let mut data = Cursor::new(&data[12..]);
 
-					let mut reading = true;
 					let mut found_id3 = false;
 
-					while reading {
+					loop {
 						if let (Ok(fourcc), Ok(size)) = (
 							data.read_u32::<LittleEndian>(),
 							data.read_u32::<LittleEndian>(),
@@ -205,16 +247,16 @@ impl TagType {
 
 							data.set_position(data.position() + size as u64)
 						} else {
-							reading = false
+							break;
 						}
 					}
 
 					if found_id3 {
-						return Ok(Self::Riff(RiffFormat::ID3));
+						return Ok(Self::Id3v2(ID3Underlying::RIFF));
 					}
 				}
 
-				Ok(Self::Riff(RiffFormat::Info))
+				Ok(Self::RiffInfo)
 			},
 			#[cfg(feature = "mp4")]
 			_ if data[4..8] == FTYP => Ok(Self::Mp4),

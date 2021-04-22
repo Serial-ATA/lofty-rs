@@ -1,6 +1,6 @@
 #![cfg(feature = "id3")]
 
-use crate::tag::RiffFormat;
+use crate::tag::ID3Underlying;
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
 	Result, TagType, ToAny, ToAnyTag,
@@ -16,22 +16,27 @@ use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
-impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2);
+impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(ID3Underlying::Default));
 
 impl Id3v2Tag {
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: TagType) -> Result<Self>
+	pub fn read_from_path<P>(path: P, format: ID3Underlying) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
 		return match format {
-			TagType::Id3v2 => Ok(Self {
+			ID3Underlying::Default => Ok(Self {
 				inner: Id3v2InnerTag::read_from_path(&path)?,
 				#[cfg(feature = "duration")]
 				duration: Some(mp3_duration::from_path(&path)?),
 			}),
-			TagType::Riff(RiffFormat::ID3) => Ok(Self {
+			ID3Underlying::RIFF => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav(&path)?,
+				#[cfg(feature = "duration")]
+				duration: None, // TODO
+			}),
+			ID3Underlying::Form => Ok(Self {
+				inner: Id3v2InnerTag::read_from_aiff(&path)?,
 				#[cfg(feature = "duration")]
 				duration: None, // TODO
 			}),
@@ -191,11 +196,14 @@ impl AudioTagWrite for Id3v2Tag {
 		file.read(&mut id)?;
 		file.seek(SeekFrom::Start(0))?;
 
-		if &id == b"RIFF" {
-			self.inner
-				.write_to_wav(file.path()?, id3::Version::Id3v24)?;
-		} else {
-			self.inner.write_to(file, id3::Version::Id3v24)?;
+		match &id {
+			b"RIFF" => self
+				.inner
+				.write_to_wav(file.path()?, id3::Version::Id3v24)?,
+			b"FORM" => self
+				.inner
+				.write_to_aiff(file.path()?, id3::Version::Id3v24)?,
+			_ => self.inner.write_to(file, id3::Version::Id3v24)?,
 		}
 
 		Ok(())
@@ -203,10 +211,14 @@ impl AudioTagWrite for Id3v2Tag {
 	fn write_to_path(&self, path: &str) -> Result<()> {
 		let id = &std::fs::read(&path)?[0..4];
 
-		if &id == b"RIFF" {
-			self.inner.write_to_wav(path, id3::Version::Id3v24)?;
-		} else {
-			self.inner.write_to_path(path, id3::Version::Id3v24)?;
+		match id {
+			b"RIFF" => self
+				.inner
+				.write_to_wav(path, id3::Version::Id3v24)?,
+			b"FORM" => self
+				.inner
+				.write_to_aiff(path, id3::Version::Id3v24)?,
+			_ => self.inner.write_to_path(path, id3::Version::Id3v24)?,
 		}
 
 		Ok(())

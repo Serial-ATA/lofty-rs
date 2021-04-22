@@ -1,7 +1,6 @@
 #![cfg(feature = "riff")]
 
 use crate::components::logic;
-use crate::tag::RiffFormat;
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
 	ToAny, ToAnyTag,
@@ -43,7 +42,7 @@ impl RiffTag {
 	}
 }
 
-impl_tag!(RiffTag, RiffInnerTag, TagType::Riff(RiffFormat::Info));
+impl_tag!(RiffTag, RiffInnerTag, TagType::RiffInfo);
 
 impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {

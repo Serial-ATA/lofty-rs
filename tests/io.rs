@@ -104,6 +104,7 @@ full_test!(test_ape, "tests/assets/a.ape");
 
 // ID3v2
 full_test!(test_mp3, "tests/assets/a.mp3");
+full_test!(test_aiff, "tests/assets/a.aiff");
 full_test!(test_wav_id3, "tests/assets/a-id3.wav");
 
 // RIFF INFO

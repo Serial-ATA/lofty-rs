@@ -1,5 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use lofty::{DetermineFrom, Tag};
+use lofty::{DetermineFrom, Tag, TagType};
 
 macro_rules! test_read {
 	($function:ident, $path:expr) => {

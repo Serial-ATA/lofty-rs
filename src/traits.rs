@@ -1,6 +1,5 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
-use crate::tag::RiffFormat;
 use crate::{Album, AnyTag, Picture, Result, TagType};
 
 use std::fs::File;
@@ -115,13 +114,13 @@ pub trait ToAnyTag: ToAny {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Box::new(ApeTag::from(self.to_anytag())),
 			#[cfg(feature = "id3")]
-			TagType::Id3v2 | TagType::Riff(RiffFormat::ID3) => Box::new(Id3v2Tag::from(self.to_anytag())),
+			TagType::Id3v2(_) => Box::new(Id3v2Tag::from(self.to_anytag())),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Box::new(Mp4Tag::from(self.to_anytag())),
 			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
 			TagType::Vorbis(_) => Box::new(VorbisTag::from(self.to_anytag())),
 			#[cfg(feature = "riff")]
-			TagType::Riff(RiffFormat::Info) => Box::new(RiffTag::from(self.to_anytag())),
+			TagType::RiffInfo => Box::new(RiffTag::from(self.to_anytag())),
 		}
 	}
 }
