@@ -146,7 +146,7 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			"aiff" => Ok(Self::Id3v2(ID3Underlying::Form)),
+			"aiff" | "aif" => Ok(Self::Id3v2(ID3Underlying::Form)),
 			#[cfg(feature = "id3")]
 			"mp3" => Ok(Self::Id3v2(ID3Underlying::Default)),
 			#[cfg(all(feature = "riff", feature = "id3"))]
