@@ -7,13 +7,15 @@ use crate::{
 	ToAny, ToAnyTag,
 };
 
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 #[cfg(feature = "duration")]
 use std::time::Duration;
+
+const VORBIS: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
+const OPUSTAGS: [u8; 8] = [79, 112, 117, 115, 84, 97, 103, 115];
 
 struct VorbisInnerTag {
 	format: Option<VorbisFormat>,
@@ -352,51 +354,7 @@ impl AudioTagWrite for VorbisTag {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
 				VorbisFormat::Ogg => {
-					const START_SIGNATURE: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
-					const END_BYTE: u8 = 1;
-
-					let vendor = self.inner.vendor.clone();
-					let vendor_bytes = vendor.as_bytes();
-
-					let comments: Vec<(String, String)> = self
-						.inner
-						.comments
-						.iter()
-						.map(|(a, b)| (a.to_string(), b.to_string()))
-						.collect();
-
-					let vendor_len = vendor.len() as u32;
-					let comments_len = comments.len() as u32;
-
-					let mut packet = Vec::new();
-
-					packet.extend(START_SIGNATURE.iter());
-
-					packet.extend(vendor_len.to_le_bytes().iter());
-					packet.extend(vendor_bytes.iter());
-
-					packet.extend(comments_len.to_le_bytes().iter());
-
-					let mut comment_str = Vec::new();
-
-					for (a, b) in comments {
-						comment_str.push(format!("{}={}", a, b));
-						let last = comment_str.last().unwrap();
-						let len = last.as_bytes().len() as u32;
-						packet.extend(len.to_le_bytes().iter());
-						packet.extend(last.as_bytes().iter());
-					}
-
-					packet.push(END_BYTE);
-
-					let mut file_bytes = Vec::new();
-					std::io::copy(file.borrow_mut(), &mut file_bytes)?;
-
-					let data = logic::write::ogg(Cursor::new(file_bytes), &*packet)?.into_inner();
-
-					file.seek(SeekFrom::Start(0))?;
-					file.set_len(0)?;
-					file.write_all(&data)?;
+					write(file, &VORBIS, &self.inner.vendor, &self.inner.comments)?;
 				},
 				VorbisFormat::Flac => {
 					let mut flac_tag: metaflac::Tag = self.into();
@@ -404,7 +362,7 @@ impl AudioTagWrite for VorbisTag {
 					flac_tag.write_to(file)?;
 				},
 				VorbisFormat::Opus => {
-					todo!()
+					write(file, &OPUSTAGS, &self.inner.vendor, &self.inner.comments)?;
 				},
 			}
 		}
@@ -416,4 +374,55 @@ impl AudioTagWrite for VorbisTag {
 
 		Ok(())
 	}
+}
+
+fn write(
+	file: &mut File,
+	sig: &[u8],
+	vendor: &str,
+	comments: &HashMap<String, String>,
+) -> Result<()> {
+	let mut packet = Vec::new();
+	packet.extend(sig.iter());
+
+	let comments: Vec<(String, String)> = comments
+		.iter()
+		.map(|(a, b)| (a.to_string(), b.to_string()))
+		.collect();
+
+	let vendor_len = vendor.len() as u32;
+	packet.extend(vendor_len.to_le_bytes().iter());
+	packet.extend(vendor.as_bytes().iter());
+
+	let comments_len = comments.len() as u32;
+	packet.extend(comments_len.to_le_bytes().iter());
+
+	let mut comment_str = Vec::new();
+
+	for (a, b) in comments {
+		comment_str.push(format!("{}={}", a, b));
+		let last = comment_str.last().unwrap();
+		let len = last.as_bytes().len() as u32;
+		packet.extend(len.to_le_bytes().iter());
+		packet.extend(last.as_bytes().iter());
+	}
+
+	if sig == VORBIS {
+		packet.push(1);
+	}
+
+	let mut file_bytes = Vec::new();
+	file.read_to_end(&mut file_bytes)?;
+
+	let data = if sig == VORBIS {
+		logic::write::ogg(Cursor::new(file_bytes), &*packet)?
+	} else {
+		logic::write::opus(Cursor::new(file_bytes), &*packet)?
+	};
+
+	file.seek(SeekFrom::Start(0))?;
+	file.set_len(0)?;
+	file.write_all(&data)?;
+
+	Ok(())
 }
