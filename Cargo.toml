@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = "Fork of https://github.com/TianyiShi2001/audiotags, adding support for more file types and (optionally) duration"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 keywords = ["tags", "audio", "metadata"]
-categories = ["accessiblity", "multimedia::audio"]
+categories = ["accessibility", "multimedia::audio"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
