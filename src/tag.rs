@@ -111,8 +111,8 @@ pub enum TagType {
 	/// Common file extensions: `.ape`
 	Ape,
 	#[cfg(feature = "id3")]
-	/// Represents multiple formats, see [`ID3Format`](ID3Format) for extensions.
-	Id3v2(ID3Format),
+	/// Represents multiple formats, see [`Id3Format`](Id3Format) for extensions.
+	Id3v2(Id3Format),
 	#[cfg(feature = "mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
@@ -143,13 +143,13 @@ pub enum VorbisFormat {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg(feature = "id3")]
 /// ID3 tag's underlying format
-pub enum ID3Format {
+pub enum Id3Format {
 	/// MP3
 	Default,
 	/// AIFF
 	Form,
 	/// RIFF/WAV/WAVE
-	RIFF,
+	Riff,
 }
 
 impl TagType {
@@ -158,11 +158,11 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			"aiff" | "aif" => Ok(Self::Id3v2(ID3Format::Form)),
+			"aiff" | "aif" => Ok(Self::Id3v2(Id3Format::Form)),
 			#[cfg(feature = "id3")]
-			"mp3" => Ok(Self::Id3v2(ID3Format::Default)),
+			"mp3" => Ok(Self::Id3v2(Id3Format::Default)),
 			#[cfg(all(feature = "riff", feature = "id3"))]
-			"wav" | "wave" | "riff" => Ok(Self::Id3v2(ID3Format::RIFF)),
+			"wav" | "wave" | "riff" => Ok(Self::Id3v2(Id3Format::Riff)),
 			#[cfg(feature = "opus")]
 			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
 			#[cfg(feature = "flac")]
@@ -183,7 +183,7 @@ impl TagType {
 			#[cfg(feature = "ape")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
-			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(ID3Format::Default)),
+			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),
 			#[cfg(feature = "id3")]
 			70 if data.starts_with(&FORM) => {
 				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
@@ -216,7 +216,7 @@ impl TagType {
 				}
 
 				if found_id3 {
-					return Ok(Self::Id3v2(ID3Format::Form));
+					return Ok(Self::Id3v2(Id3Format::Form));
 				}
 
 				// TODO: support AIFF chunks?
@@ -264,7 +264,7 @@ impl TagType {
 					}
 
 					if found_id3 {
-						return Ok(Self::Id3v2(ID3Format::RIFF));
+						return Ok(Self::Id3v2(Id3Format::Riff));
 					}
 				}
 

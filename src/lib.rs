@@ -93,7 +93,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{ID3Format, Tag, TagType, VorbisFormat};
+pub use crate::tag::{Id3Format, Tag, TagType, VorbisFormat};
 
 mod error;
 pub use crate::error::{Error, Result};

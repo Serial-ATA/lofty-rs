@@ -24,7 +24,7 @@ pub enum Error {
 	Id3Tag(#[from] id3::Error),
 	#[cfg(feature = "duration")]
 	#[error(transparent)]
-	MP3Duration(#[from] mp3_duration::MP3DurationError),
+	Mp3Duration(#[from] mp3_duration::MP3DurationError),
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
 	#[error(transparent)]
@@ -45,6 +45,7 @@ pub enum Error {
 	FromUtf8(#[from] std::string::FromUtf8Error),
 	/// Represents all cases of `std::io::Error`.
 	#[error(transparent)]
+	#[allow(clippy::upper_case_acronyms)]
 	IO(#[from] std::io::Error),
 }
 
