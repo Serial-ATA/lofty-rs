@@ -127,5 +127,6 @@ pub trait ToAnyTag: ToAny {
 
 pub trait ToAny {
 	fn to_any(&self) -> &dyn std::any::Any;
+	#[allow(clippy::wrong_self_convention)]
 	fn to_any_mut(&mut self) -> &mut dyn std::any::Any;
 }

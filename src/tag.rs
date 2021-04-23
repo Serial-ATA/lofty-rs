@@ -93,13 +93,13 @@ impl Tag {
 			#[cfg(feature = "ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
 			#[cfg(feature = "id3")]
-			TagType::Id3v2(underlying) => Ok(Box::new(Id3v2Tag::read_from_path(path, underlying)?)),
+			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from_path(path, &format)?)),
 			#[cfg(feature = "mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
 			#[cfg(feature = "riff")]
 			TagType::RiffInfo => Ok(Box::new(RiffTag::read_from_path(path)?)),
 			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
-			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format.clone())?)),
+			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format)?)),
 		}
 	}
 }
@@ -175,7 +175,7 @@ impl TagType {
 		}
 	}
 	fn try_from_sig(data: &[u8]) -> Result<Self> {
-		if data.len() < 1 {
+		if data.is_empty() {
 			return Err(Error::EmptyFile);
 		}
 
@@ -192,27 +192,23 @@ impl TagType {
 				let mut data = Cursor::new(data);
 				let mut found_id3 = false;
 
-				loop {
-					if let (Ok(fourcc), Ok(size)) = (
-						data.read_u32::<LittleEndian>(),
-						data.read_u32::<BigEndian>(),
-					) {
-						if fourcc.to_le_bytes() == FORM {
-							data.seek(SeekFrom::Current(4))?;
-							continue;
-						}
+				while let (Ok(fourcc), Ok(size)) = (
+					data.read_u32::<LittleEndian>(),
+					data.read_u32::<BigEndian>(),
+				) {
+					if fourcc.to_le_bytes() == FORM {
+						data.seek(SeekFrom::Current(4))?;
+						continue;
+					}
 
-						if fourcc.to_le_bytes()[..3] == ID3 {
-							found_id3 = true;
-							break;
-						}
-
-						data.seek(SeekFrom::Current(
-							u32::from_be_bytes(size.to_be_bytes()) as i64
-						))?;
-					} else {
+					if fourcc.to_le_bytes()[..3] == ID3 {
+						found_id3 = true;
 						break;
 					}
+
+					data.seek(SeekFrom::Current(i64::from(u32::from_be_bytes(
+						size.to_be_bytes(),
+					))))?;
 				}
 
 				if found_id3 {
@@ -247,20 +243,16 @@ impl TagType {
 
 					let mut found_id3 = false;
 
-					loop {
-						if let (Ok(fourcc), Ok(size)) = (
-							data.read_u32::<LittleEndian>(),
-							data.read_u32::<LittleEndian>(),
-						) {
-							if &fourcc.to_le_bytes() == b"ID3 " {
-								found_id3 = true;
-								break;
-							}
-
-							data.set_position(data.position() + size as u64)
-						} else {
+					while let (Ok(fourcc), Ok(size)) = (
+						data.read_u32::<LittleEndian>(),
+						data.read_u32::<LittleEndian>(),
+					) {
+						if &fourcc.to_le_bytes() == b"ID3 " {
+							found_id3 = true;
 							break;
 						}
+
+						data.set_position(data.position() + u64::from(size))
 					}
 
 					if found_id3 {

@@ -1,5 +1,5 @@
 #![cfg(feature = "default")]
-use lofty::{MimeType, Picture, Tag};
+use lofty::Tag;
 
 macro_rules! full_test {
 	($function:ident, $file:expr) => {

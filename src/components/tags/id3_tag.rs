@@ -20,11 +20,11 @@ impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(Id3Format::Default));
 
 impl Id3v2Tag {
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: Id3Format) -> Result<Self>
+	pub fn read_from_path<P>(path: P, format: &Id3Format) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
-		return match format {
+		match format {
 			Id3Format::Default => Ok(Self {
 				inner: Id3v2InnerTag::read_from_path(&path)?,
 				#[cfg(feature = "duration")]
@@ -40,7 +40,7 @@ impl Id3v2Tag {
 				#[cfg(feature = "duration")]
 				duration: None, // TODO
 			}),
-		};
+		}
 	}
 }
 
@@ -192,7 +192,7 @@ impl AudioTagEdit for Id3v2Tag {
 impl AudioTagWrite for Id3v2Tag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		let mut id = [0; 4];
-		file.read(&mut id)?;
+		file.read_exact(&mut id)?;
 		file.seek(SeekFrom::Start(0))?;
 
 		match &id {

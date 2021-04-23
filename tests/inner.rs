@@ -36,9 +36,9 @@ fn test_inner() {
 	// Create timestamp and change date_recorded
 	let timestamp = id3::Timestamp {
 		year: 2013,
-		month: Some(2u8),
-		day: Some(5u8),
-		hour: Some(6u8),
+		month: Some(2_u8),
+		day: Some(5_u8),
+		hour: Some(6_u8),
 		minute: None,
 		second: None,
 	};
