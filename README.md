@@ -1,8 +1,8 @@
 # Lofty
-[![Crate](https://img.shields.io/crates/v/lofty.svg)](https://crates.io/crates/lofty)
-[![Crate](https://img.shields.io/crates/d/lofty.svg)](https://crates.io/crates/lofty)
-[![Crate](https://img.shields.io/crates/l/lofty.svg)](https://crates.io/crates/lofty)
-[![Documentation](https://docs.rs/lofty/badge.svg)](https://docs.rs/lofty/)
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Serial-ATA/lofty-rs/Test?style=for-the-badge&logo=github)](https://github.com/Serial-ATA/lofty-rs/actions/workflows/test.yml)
+[![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/lofty)
+[![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/lofty)
+[![Documentation](https://img.shields.io/badge/docs.rs-lofty-informational?style=for-the-badge&logo=read-the-docs)](https://docs.rs/lofty/)
 
 This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types and (optionally) duration.
 
@@ -17,8 +17,8 @@ in order to parse metadata in different file formats.
 | File Format | Extensions                                | Read | Write | Metadata Format(s)   |
 |-------------|-------------------------------------------|------|-------|----------------------|
 | Ape         | `ape`                                     |**X** |**X**  | `APEv2`              |
-| AIFF        | `aiff`, `aif`                             |**X** |**X**  | `ID3v2`              |
-| FLAC        | `flac`                                    |**X** |**X**  | `Vorbis Comments`    |
+| AIFF        | `aiff`, `aif`                              |**X** |**X**  | `ID3v2`              |
+| FLAC        | `flac`                                     |**X** |**X**  | `Vorbis Comments`    |
 | MP3         | `mp3`                                     |**X** |**X**  | `ID3v2`              |
 | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  | `Vorbis Comments`    |
 | Opus        | `opus`                                    |**X** |       | `Vorbis Comments`    |
