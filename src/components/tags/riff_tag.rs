@@ -225,7 +225,7 @@ impl AudioTagWrite for RiffTag {
 
 			chunk.extend(riff::LIST_ID.value.iter());
 
-			let fourcc = "INFO"; // TODO: ID3
+			let fourcc = "INFO";
 			chunk.extend(fourcc.as_bytes().iter());
 
 			for (k, v) in data {

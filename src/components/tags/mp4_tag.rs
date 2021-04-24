@@ -28,15 +28,15 @@ impl Mp4Tag {
 	}
 }
 
-impl<'a> std::convert::TryFrom<&'a mp4ameta::Data> for Picture<'a> {
+impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 	type Error = Error;
-	fn try_from(inp: &'a mp4ameta::Data) -> Result<Self> {
-		Ok(match *inp {
-			mp4ameta::Data::Png(ref data) => Self {
+	fn try_from(inp: mp4ameta::Data) -> Result<Self> {
+		Ok(match inp {
+			mp4ameta::Data::Png(data) => Self {
 				data,
 				mime_type: MimeType::Png,
 			},
-			mp4ameta::Data::Jpeg(ref data) => Self {
+			mp4ameta::Data::Jpeg(data) => Self {
 				data,
 				mime_type: MimeType::Jpeg,
 			},
@@ -104,11 +104,11 @@ impl AudioTagEdit for Mp4Tag {
 
 		self.inner.artwork().and_then(|data| match data {
 			Jpeg(d) => Some(Picture {
-				data: d,
+				data: d.clone(),
 				mime_type: MimeType::Jpeg,
 			}),
 			Png(d) => Some(Picture {
-				data: d,
+				data: d.clone(),
 				mime_type: MimeType::Png,
 			}),
 			_ => None,
@@ -118,8 +118,8 @@ impl AudioTagEdit for Mp4Tag {
 	fn set_album_cover(&mut self, cover: Picture) {
 		self.remove_album_cover();
 		self.inner.add_artwork(match cover.mime_type {
-			MimeType::Png => mp4ameta::Data::Png(cover.data.to_owned()),
-			MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data.to_owned()),
+			MimeType::Png => mp4ameta::Data::Png(cover.data),
+			MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data),
 			_ => panic!("Only png and jpeg are supported in m4a"),
 		});
 	}

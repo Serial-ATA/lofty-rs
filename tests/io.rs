@@ -1,5 +1,5 @@
 #![cfg(feature = "default")]
-use lofty::Tag;
+use lofty::{MimeType, Picture, Tag};
 
 macro_rules! full_test {
 	($function:ident, $file:expr) => {
@@ -35,14 +35,13 @@ macro_rules! add_tags {
 		println!("Setting album artists");
 		tag.set_album_artist("foo album artist");
 
-		// TODO
-		// let cover = Picture {
-		// 	mime_type: MimeType::Jpeg,
-		// 	data: &vec![0u8; 10],
-		// };
-		//
-		// tags.set_album_cover(cover.clone());
-		// assert_eq!(tags.album_cover(), Some(cover));
+		let _cover = Picture {
+			mime_type: MimeType::Jpeg,
+			data: vec![0; 10],
+		};
+
+		// tag.set_album_cover(cover.clone());
+		// assert_eq!(tag.album_cover(), Some(cover));
 
 		println!("Writing");
 		tag.write_to_path($file).unwrap();
@@ -109,10 +108,9 @@ macro_rules! remove_tags {
 		assert!(tag.album_artists_vec().is_none());
 		tag.remove_album_artists();
 
-		// TODO
-		// tags.remove_album_cover();
-		// assert!(tags.album_cover().is_none());
-		// tags.remove_album_cover();
+		// tag.remove_album_cover();
+		// assert!(tag.album_cover().is_none());
+		// tag.remove_album_cover();
 
 		println!("Writing");
 		tag.write_to_path($file).unwrap();

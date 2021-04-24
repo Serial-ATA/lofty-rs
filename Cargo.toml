@@ -30,6 +30,7 @@ metaflac = {version = "0.2.4", optional = true}
 opus_headers = {version = "0.1.2", optional = true}
 # Errors
 thiserror = "1.0.24"
+base64 = "0.13.0"
 byteorder = "1.4.3"
 filepath = "0.1.1"
 

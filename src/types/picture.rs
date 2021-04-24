@@ -45,13 +45,13 @@ impl From<MimeType> for String {
 
 /// Represents a picture, with its data and mime type.
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Picture<'a> {
-	pub data: &'a [u8],
+pub struct Picture {
+	pub data: Vec<u8>,
 	pub mime_type: MimeType,
 }
 
-impl<'a> Picture<'a> {
-	pub fn new(data: &'a [u8], mime_type: MimeType) -> Self {
+impl Picture {
+	pub fn new(data: Vec<u8>, mime_type: MimeType) -> Self {
 		Self { data, mime_type }
 	}
 }

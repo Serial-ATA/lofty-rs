@@ -3,11 +3,12 @@
 use crate::components::logic;
 use crate::tag::VorbisFormat;
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
-	ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
 };
 
 use std::collections::HashMap;
+use std::convert::{TryFrom, TryInto};
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::path::Path;
@@ -263,31 +264,84 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn album_cover(&self) -> Option<Picture> {
-		// TODO
-		// self.inner
-		//     .pictures()
-		//     .filter(|&pic| matches!(pic.picture_type, metaflac::block::PictureType::CoverFront))
-		//     .next()
-		//     .and_then(|pic| {
-		//         Some(Picture {
-		//             data: &pic.data,
-		//             mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-		//         })
-		//     })
-		None
+		let picture = self.inner.get_value("METADATA_BLOCK_PICTURE");
+
+		return match picture {
+			None => None,
+			Some(data) => {
+				let data_str = data.to_string();
+				let data = data_str.as_bytes();
+
+				if data.is_empty() {
+					return None;
+				}
+
+				let data = match base64::decode(data) {
+					Ok(o) => o,
+					Err(_) => data.to_vec(),
+				};
+
+				let mut i = 0;
+
+				let picture_type = u32::from_le_bytes(match (&data[i..i + 4]).try_into() {
+					Ok(o) => o,
+					Err(_) => return None,
+				});
+
+				if picture_type != 3 {
+					return None;
+				}
+
+				i += 4;
+				match data[i..i + 4].try_into() {
+					Ok(mime_len) => {
+						i += 4;
+						let mime_len = u32::from_le_bytes(mime_len);
+
+						match String::from_utf8(data[i..i + mime_len as usize].to_vec()) {
+							Ok(mime_type) => {
+								let mime_type = MimeType::try_from(&*mime_type);
+
+								match mime_type {
+									Ok(mime_type) => {
+										let content = data[(8 + mime_len) as usize..].to_vec();
+
+										Some(Picture {
+											data: content,
+											mime_type,
+										})
+									},
+									Err(_) => return None,
+								}
+							},
+							Err(_) => return None,
+						}
+					},
+					Err(_) => return None,
+				}
+			},
+		};
 	}
-	fn set_album_cover(&mut self, _cover: Picture) {
-		// TODO
-		// self.remove_album_cover();
-		// let mime = String::from(cover.mime_type);
-		// let picture_type = metaflac::block::PictureType::CoverFront;
-		// self.inner
-		//     .add_picture(mime, picture_type, (cover.data).to_owned());
+	fn set_album_cover(&mut self, cover: Picture) {
+		self.remove_album_cover();
+		let mime = String::from(cover.mime_type);
+		let mime_len = (mime.len() as u32).to_le_bytes();
+
+		let picture_type = 3_u32.to_le_bytes();
+		let data = cover.data;
+
+		let mut encoded = Vec::new();
+		encoded.extend(picture_type.iter());
+		encoded.extend(mime_len.iter());
+		encoded.extend(mime.as_bytes().iter());
+		encoded.extend(data.iter());
+
+		let encoded = base64::encode(encoded);
+
+		self.inner.set_value("METADATA_BLOCK_PICTURE", encoded);
 	}
 	fn remove_album_cover(&mut self) {
-		// TODO
-		// self.inner
-		//     .remove_picture_type(metaflac::block::PictureType::CoverFront)
+		self.inner.remove_key("METADATA_BLOCK_PICTURE")
 	}
 
 	fn track_number(&self) -> Option<u32> {

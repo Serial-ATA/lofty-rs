@@ -5,7 +5,7 @@ use super::picture::Picture;
 pub struct Album<'a> {
 	pub title: Option<&'a str>,
 	pub artists: Option<Vec<&'a str>>,
-	pub cover: Option<Picture<'a>>,
+	pub cover: Option<Picture>,
 }
 
 impl<'a> Default for Album<'a> {
@@ -23,7 +23,7 @@ impl<'a> Album<'a> {
 	pub fn new(
 		title: Option<&'a str>,
 		artists: Option<Vec<&'a str>>,
-		cover: Option<Picture<'a>>,
+		cover: Option<Picture>,
 	) -> Self {
 		Self {
 			title,
@@ -56,7 +56,7 @@ impl<'a> Album<'a> {
 		self.artists = None
 	}
 	/// Set the album cover
-	pub fn set_cover(mut self, cover: Picture<'a>) {
+	pub fn set_cover(mut self, cover: Picture) {
 		self.cover = Some(cover);
 	}
 	/// Clears the `cover` field

@@ -44,19 +44,16 @@ impl Id3v2Tag {
 	}
 }
 
-impl<'a> std::convert::TryFrom<&'a id3::frame::Picture> for Picture<'a> {
+impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 	type Error = Error;
-	fn try_from(inp: &'a id3::frame::Picture) -> Result<Self> {
-		let &id3::frame::Picture {
+	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
+		let id3::frame::Picture {
 			ref mime_type,
-			ref data,
+			data,
 			..
 		} = inp;
 		let mime_type: MimeType = mime_type.as_str().try_into()?;
-		Ok(Self {
-			data: &data,
-			mime_type,
-		})
+		Ok(Self { data, mime_type })
 	}
 }
 
@@ -129,7 +126,7 @@ impl AudioTagEdit for Id3v2Tag {
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
 			.and_then(|pic| {
 				Some(Picture {
-					data: &pic.data,
+					data: pic.data.clone(),
 					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
 				})
 			})
@@ -140,7 +137,7 @@ impl AudioTagEdit for Id3v2Tag {
 			mime_type: String::from(cover.mime_type),
 			picture_type: id3::frame::PictureType::CoverFront,
 			description: "".to_owned(),
-			data: cover.data.to_owned(),
+			data: cover.data,
 		});
 	}
 	fn remove_album_cover(&mut self) {
