@@ -359,50 +359,42 @@ impl AudioTagEdit for VorbisTag {
 		self.inner.remove_key("ALBUMARTIST");
 	}
 
-	fn album_cover(&self) -> Option<Picture> {
-		match &self.inner.pictures {
-			None => None,
-			Some(pictures) => {
-				for pic in pictures {
-					if pic.pic_type == PictureType::CoverFront {
-						return Some(pic.clone());
-					}
-				}
+	fn front_cover(&self) -> Option<Picture> {
+		get_cover(PictureType::CoverFront, &self.inner.pictures)
+	}
 
-				None
-			},
+	fn set_front_cover(&mut self, cover: Picture) {
+		self.remove_front_cover();
+
+		let pictures = create_cover(cover, self.inner.pictures.clone());
+		self.inner.pictures = pictures
+	}
+
+	fn remove_front_cover(&mut self) {
+		if let Some(mut p) = self.inner.pictures.clone() {
+			p.retain(|pic| Some(pic) != self.front_cover().as_ref())
 		}
 	}
 
-	fn set_album_cover(&mut self, cover: Picture) {
-		self.remove_album_cover();
-		let mime = String::from(cover.mime_type);
-		let mime_len = (mime.len() as u32).to_le_bytes();
+	fn back_cover(&self) -> Option<Picture> {
+		get_cover(PictureType::CoverBack, &self.inner.pictures)
+	}
 
-		let picture_type = 3_u32.to_le_bytes();
-		let data = cover.data;
+	fn set_back_cover(&mut self, cover: Picture) {
+		self.remove_front_cover();
 
-		let mut encoded = Vec::new();
-		encoded.extend(picture_type.iter());
-		encoded.extend(mime_len.iter());
-		encoded.extend(mime.as_bytes().iter());
-		encoded.extend(data.iter());
+		let pictures = create_cover(cover, self.inner.pictures.clone());
+		self.inner.pictures = pictures
+	}
 
-		let encoded = base64::encode(encoded);
-
-		if let Ok(Some(pic)) = picture_from_data(&*encoded) {
-			if let Some(mut pictures) = self.inner.pictures.clone() {
-				pictures.retain(|p| p.pic_type != PictureType::CoverFront);
-				pictures.push(pic);
-				self.inner.pictures = Some(pictures)
-			} else {
-				self.inner.pictures = Some(vec![pic])
-			}
+	fn remove_back_cover(&mut self) {
+		if let Some(mut p) = self.inner.pictures.clone() {
+			p.retain(|pic| Some(pic) != self.back_cover().as_ref())
 		}
 	}
 
-	fn remove_album_cover(&mut self) {
-		self.inner.remove_key("METADATA_BLOCK_PICTURE")
+	fn pictures(&self) -> Option<Vec<Picture>> {
+		self.inner.pictures.clone()
 	}
 
 	fn track_number(&self) -> Option<u32> {
@@ -461,6 +453,54 @@ impl AudioTagEdit for VorbisTag {
 	}
 	fn remove_total_discs(&mut self) {
 		self.inner.remove_key("TOTALDISCS");
+	}
+}
+
+fn get_cover(p_type: PictureType, pictures: &Option<Vec<Picture>>) -> Option<Picture> {
+	match pictures {
+		None => None,
+		Some(pictures) => {
+			for pic in pictures {
+				if pic.pic_type == p_type {
+					return Some(pic.clone());
+				}
+			}
+
+			None
+		},
+	}
+}
+
+fn create_cover(cover: Picture, pictures: Option<Vec<Picture>>) -> Option<Vec<Picture>> {
+	let mime = String::from(cover.mime_type);
+	let mime_len = (mime.len() as u32).to_le_bytes();
+
+	let picture_type = match cover.pic_type {
+		PictureType::CoverFront => 3_u32.to_le_bytes(),
+		PictureType::CoverBack => 4_u32.to_le_bytes(),
+		PictureType::Other => unreachable!(),
+	};
+
+	let data = cover.data;
+
+	let mut encoded = Vec::new();
+	encoded.extend(picture_type.iter());
+	encoded.extend(mime_len.iter());
+	encoded.extend(mime.as_bytes().iter());
+	encoded.extend(data.iter());
+
+	let encoded = base64::encode(encoded);
+
+	if let Ok(Some(pic)) = picture_from_data(&*encoded) {
+		if let Some(mut pictures) = pictures {
+			pictures.retain(|p| p.pic_type != PictureType::CoverBack);
+			pictures.push(pic);
+			Some(pictures)
+		} else {
+			Some(vec![pic])
+		}
+	} else {
+		None
 	}
 }
 

@@ -57,7 +57,7 @@ pub trait AudioTagEdit {
 		Album {
 			title: self.album_title(),
 			artists: self.album_artists_vec(),
-			cover: self.album_cover(),
+			covers: self.album_covers(),
 		}
 	}
 
@@ -79,12 +79,32 @@ pub trait AudioTagEdit {
 	/// Removes the album artist string
 	fn remove_album_artists(&mut self);
 
-	/// Returns the album cover
-	fn album_cover(&self) -> Option<Picture>;
-	/// Sets the album cover
-	fn set_album_cover(&mut self, cover: Picture);
-	/// Removes the album cover
-	fn remove_album_cover(&mut self);
+	/// Returns the front and back album covers
+	fn album_covers(&self) -> (Option<Picture>, Option<Picture>) {
+		(self.front_cover(), self.back_cover())
+	}
+	/// Removes both album covers
+	fn remove_album_covers(&mut self) {
+		self.remove_front_cover();
+		self.remove_back_cover();
+	}
+
+	/// Returns the front cover
+	fn front_cover(&self) -> Option<Picture>;
+	/// Sets the front cover
+	fn set_front_cover(&mut self, cover: Picture);
+	/// Removes the front cover
+	fn remove_front_cover(&mut self);
+
+	/// Returns the front cover
+	fn back_cover(&self) -> Option<Picture>;
+	/// Sets the front cover
+	fn set_back_cover(&mut self, cover: Picture);
+	/// Removes the front cover
+	fn remove_back_cover(&mut self);
+
+	/// Returns an `Iterator` over all pictures stored in the track
+	fn pictures(&self) -> Option<Vec<Picture>>;
 
 	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {

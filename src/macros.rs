@@ -73,7 +73,7 @@ macro_rules! impl_tag {
 					album: Album::new(
 						inp.album_title(),
 						inp.album_artists_vec(),
-						inp.album_cover(),
+						inp.album_covers(),
 					),
 					track_number: inp.track_number(),
 					total_tracks: inp.total_tracks(),

@@ -70,6 +70,16 @@ impl From<&id3PicType> for PictureType {
 	}
 }
 
+impl From<PictureType> for id3PicType {
+	fn from(inp: PictureType) -> Self {
+		match inp {
+			PictureType::CoverFront => id3PicType::CoverFront,
+			PictureType::CoverBack => id3PicType::CoverBack,
+			_ => id3PicType::Other,
+		}
+	}
+}
+
 /// Represents a picture, with its data and mime type.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture {

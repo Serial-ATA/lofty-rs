@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::path::Path;
+
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
@@ -143,15 +144,31 @@ impl AudioTagEdit for RiffTag {
 	}
 
 	/// This will always return `None`, as this is non-standard
-	fn album_cover(&self) -> Option<Picture> {
+	fn front_cover(&self) -> Option<Picture> {
 		None
 	}
 
 	/// This will not do anything, as this is non-standard
-	fn set_album_cover(&mut self, _cover: Picture) {}
+	fn set_front_cover(&mut self, _cover: Picture) {}
 
 	/// This will not do anything, as this is non-standard
-	fn remove_album_cover(&mut self) {}
+	fn remove_front_cover(&mut self) {}
+
+	/// This will always return `None`, as this is non-standard
+	fn back_cover(&self) -> Option<Picture> {
+		None
+	}
+
+	/// This will not do anything, as this is non-standard
+	fn set_back_cover(&mut self, _cover: Picture) {}
+
+	/// This will not do anything, as this is non-standard
+	fn remove_back_cover(&mut self) {}
+
+	/// This will always return `None`, as this is non-standard
+	fn pictures(&self) -> Option<Vec<Picture>> {
+		None
+	}
 
 	fn track_number(&self) -> Option<u32> {
 		if let Some(Ok(y)) = self.get_value("TrackNumber").map(str::parse::<u32>) {

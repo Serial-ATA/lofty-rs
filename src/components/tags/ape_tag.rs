@@ -11,6 +11,7 @@ use ape::Item;
 use filepath::FilePath;
 use std::fs::File;
 use std::path::Path;
+
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
@@ -143,19 +144,40 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Album artist")
 	}
 
-	fn album_cover(&self) -> Option<Picture> {
+	fn front_cover(&self) -> Option<Picture> {
 		if let Some(val) = self.inner.item("Cover Art (Front)") {
 			return get_picture(val);
 		}
 
 		None
 	}
-	fn set_album_cover(&mut self, cover: Picture) {
+
+	fn set_front_cover(&mut self, cover: Picture) {
 		// TODO
-		self.set_value("Cover Art (Front)", "TODO")
 	}
-	fn remove_album_cover(&mut self) {
+
+	fn remove_front_cover(&mut self) {
 		self.remove_key("Cover Art (Front)")
+	}
+
+	fn back_cover(&self) -> Option<Picture> {
+		if let Some(val) = self.inner.item("Cover Art (Back)") {
+			return get_picture(val);
+		}
+
+		None
+	}
+
+	fn set_back_cover(&mut self, cover: Picture) {
+		// TODO
+	}
+
+	fn remove_back_cover(&mut self) {
+		self.remove_key("Cover Art (Back)")
+	}
+
+	fn pictures(&self) -> Option<Vec<Picture>> {
+		todo!()
 	}
 
 	// Track number and total tracks are stored together as num/total?

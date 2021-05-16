@@ -14,6 +14,7 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
+
 #[cfg(feature = "duration")]
 use std::time::Duration;
 
@@ -46,9 +47,9 @@ impl Id3v2Tag {
 	}
 }
 
-impl std::convert::TryFrom<id3::frame::Picture> for Picture {
+impl std::convert::TryFrom<&id3::frame::Picture> for Picture {
 	type Error = Error;
-	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
+	fn try_from(inp: &id3::frame::Picture) -> Result<Self> {
 		let id3::frame::Picture {
 			ref mime_type,
 			data,
@@ -61,7 +62,19 @@ impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 		Ok(Self {
 			pic_type,
 			mime_type,
-			data,
+			data: data.clone(),
+		})
+	}
+}
+
+impl std::convert::TryFrom<Picture> for id3::frame::Picture {
+	type Error = Error;
+	fn try_from(inp: Picture) -> Result<Self> {
+		Ok(Self {
+			mime_type: String::from(inp.mime_type),
+			picture_type: inp.pic_type.into(),
+			description: "".to_string(),
+			data: inp.data,
 		})
 	}
 }
@@ -156,7 +169,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.remove_album_artist()
 	}
 
-	fn album_cover(&self) -> Option<Picture> {
+	fn front_cover(&self) -> Option<Picture> {
 		self.inner
 			.pictures()
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
@@ -168,18 +181,63 @@ impl AudioTagEdit for Id3v2Tag {
 				})
 			})
 	}
-	fn set_album_cover(&mut self, cover: Picture) {
-		self.remove_album_cover();
-		self.inner.add_picture(id3::frame::Picture {
-			mime_type: String::from(cover.mime_type),
-			picture_type: id3::frame::PictureType::CoverFront,
-			description: "".to_owned(),
-			data: cover.data,
-		});
+
+	fn set_front_cover(&mut self, cover: Picture) {
+		self.remove_front_cover();
+
+		if let Ok(pic) = cover.try_into() {
+			self.inner.add_picture(pic)
+		}
 	}
-	fn remove_album_cover(&mut self) {
+
+	fn remove_front_cover(&mut self) {
 		self.inner
 			.remove_picture_by_type(id3::frame::PictureType::CoverFront);
+	}
+
+	fn back_cover(&self) -> Option<Picture> {
+		self.inner
+			.pictures()
+			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverBack))
+			.and_then(|pic| {
+				Some(Picture {
+					pic_type: PictureType::CoverBack,
+					data: pic.data.clone(),
+					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
+				})
+			})
+	}
+
+	fn set_back_cover(&mut self, cover: Picture) {
+		self.remove_back_cover();
+
+		if let Ok(pic) = cover.try_into() {
+			self.inner.add_picture(pic)
+		}
+	}
+
+	fn remove_back_cover(&mut self) {
+		self.inner
+			.remove_picture_by_type(id3::frame::PictureType::CoverBack);
+	}
+
+	fn pictures(&self) -> Option<Vec<Picture>> {
+		let mut pictures = self.inner.pictures().peekable();
+
+		if pictures.peek().is_some() {
+			let mut collection = Vec::new();
+
+			for pic in pictures {
+				match TryInto::<Picture>::try_into(pic) {
+					Ok(p) => collection.push(p),
+					Err(_) => return None,
+				}
+			}
+
+			return Some(collection);
+		}
+
+		None
 	}
 
 	fn track_number(&self) -> Option<u32> {

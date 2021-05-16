@@ -8,8 +8,7 @@ pub struct Album<'a> {
 	/// A `Vec` of the album artists
 	pub artists: Option<Vec<&'a str>>,
 	/// The album's front cover
-	// TODO: also store the back cover
-	pub cover: Option<Picture>,
+	pub covers: (Option<Picture>, Option<Picture>),
 }
 
 impl<'a> Default for Album<'a> {
@@ -17,7 +16,7 @@ impl<'a> Default for Album<'a> {
 		Self {
 			title: None,
 			artists: None,
-			cover: None,
+			covers: (None, None),
 		}
 	}
 }
@@ -27,12 +26,12 @@ impl<'a> Album<'a> {
 	pub fn new(
 		title: Option<&'a str>,
 		artists: Option<Vec<&'a str>>,
-		cover: Option<Picture>,
+		covers: (Option<Picture>, Option<Picture>),
 	) -> Self {
 		Self {
 			title,
 			artists,
-			cover,
+			covers,
 		}
 	}
 	/// Create a new album with the specified title
@@ -40,7 +39,7 @@ impl<'a> Album<'a> {
 		Self {
 			title: Some(title),
 			artists: None,
-			cover: None,
+			covers: (None, None),
 		}
 	}
 	/// Set the album artists
@@ -60,12 +59,12 @@ impl<'a> Album<'a> {
 		self.artists = None
 	}
 	/// Set the album cover
-	pub fn set_cover(mut self, cover: Picture) {
-		self.cover = Some(cover);
+	pub fn set_covers(mut self, covers: (Option<Picture>, Option<Picture>)) {
+		self.covers = covers
 	}
-	/// Clears the `cover` field
-	pub fn remove_cover(mut self) {
-		self.cover = None
+	/// Clears the `covers` field
+	pub fn remove_covers(mut self) {
+		self.covers = (None, None)
 	}
 	/// Turns `artists` vec into a String
 	pub fn artists_as_string(&self) -> Option<String> {

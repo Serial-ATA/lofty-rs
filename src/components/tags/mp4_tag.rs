@@ -5,7 +5,7 @@ use crate::{
 	Result, TagType, ToAny, ToAnyTag,
 };
 
-pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
+pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
 use crate::types::picture::PictureType;
 use std::fs::File;
@@ -43,6 +43,11 @@ impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 				pic_type: PictureType::CoverFront, // TODO
 				data,
 				mime_type: MimeType::Jpeg,
+			},
+			mp4ameta::Data::Bmp(data) => Self {
+				pic_type: PictureType::CoverFront,
+				mime_type: MimeType::Bmp,
+				data,
 			},
 			_ => return Err(Error::NotAPicture),
 		})
@@ -103,35 +108,59 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_album_artists(&mut self) {
 		self.inner.remove_album_artists();
 	}
-	fn album_cover(&self) -> Option<Picture> {
-		use mp4ameta::Data::{Jpeg, Png};
 
+	fn front_cover(&self) -> Option<Picture> {
 		self.inner.artwork().and_then(|data| match data {
-			Jpeg(d) => Some(Picture {
+			mp4ameta::Data::Jpeg(d) => Some(Picture {
 				pic_type: PictureType::CoverFront, // TODO
 				data: d.clone(),
 				mime_type: MimeType::Jpeg,
 			}),
-			Png(d) => Some(Picture {
+			mp4ameta::Data::Png(d) => Some(Picture {
 				pic_type: PictureType::CoverFront, // TODO
 				data: d.clone(),
 				mime_type: MimeType::Png,
+			}),
+			mp4ameta::Data::Bmp(d) => Some(Picture {
+				pic_type: PictureType::CoverFront, // TODO
+				data: d.clone(),
+				mime_type: MimeType::Bmp,
 			}),
 			_ => None,
 		})
 	}
 
-	fn set_album_cover(&mut self, cover: Picture) {
-		self.remove_album_cover();
+	fn set_front_cover(&mut self, cover: Picture) {
+		self.remove_front_cover();
+
 		self.inner.add_artwork(match cover.mime_type {
 			MimeType::Png => mp4ameta::Data::Png(cover.data),
 			MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data),
-			_ => panic!("Only png and jpeg are supported in m4a"),
+			MimeType::Bmp => mp4ameta::Data::Bmp(cover.data),
+			_ => panic!("Attempt to add an invalid image format to MP4"),
 		});
 	}
-	fn remove_album_cover(&mut self) {
+
+	fn remove_front_cover(&mut self) {
 		self.inner.remove_artwork();
 	}
+
+	fn back_cover(&self) -> Option<Picture> {
+		todo!()
+	}
+
+	fn set_back_cover(&mut self, cover: Picture) {
+		todo!()
+	}
+
+	fn remove_back_cover(&mut self) {
+		todo!()
+	}
+
+	fn pictures(&self) -> Option<Vec<Picture>> {
+		todo!()
+	}
+
 	fn remove_track(&mut self) {
 		self.inner.remove_track(); // faster than removing separately
 	}

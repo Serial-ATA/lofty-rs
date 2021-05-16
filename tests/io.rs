@@ -35,17 +35,29 @@ macro_rules! add_tags {
 		println!("Setting album artists");
 		tag.set_album_artist("foo album artist");
 
-		let cover = Picture {
-			pic_type: PictureType::CoverFront,
-			mime_type: MimeType::Jpeg,
-			data: vec![0; 10],
-		};
+		let covers = (
+			Picture {
+				pic_type: PictureType::CoverFront,
+				mime_type: MimeType::Jpeg,
+				data: vec![0; 10],
+			},
+			Picture {
+				pic_type: PictureType::CoverBack,
+				mime_type: MimeType::Jpeg,
+				data: vec![0; 11],
+			},
+		);
 
 		let file_name = stringify!($file);
 
 		if file_name != stringify!("tests/assets/a.wav") {
-			tag.set_album_cover(cover.clone());
-			assert_eq!(tag.album_cover(), Some(cover));
+			println!("Setting front cover");
+			tag.set_front_cover(covers.0.clone());
+			assert_eq!(tag.front_cover(), Some(covers.0));
+
+			println!("Setting back cover");
+			tag.set_back_cover(covers.1.clone());
+			assert_eq!(tag.back_cover(), Some(covers.1));
 		}
 
 		println!("Writing");
@@ -113,9 +125,9 @@ macro_rules! remove_tags {
 		assert!(tag.album_artists_vec().is_none());
 		tag.remove_album_artists();
 
-		tag.remove_album_cover();
-		assert!(tag.album_cover().is_none());
-		tag.remove_album_cover();
+		tag.remove_album_covers();
+		assert_eq!(tag.album_covers(), (None, None));
+		tag.remove_album_covers();
 
 		println!("Writing");
 		tag.write_to_path($file).unwrap();
