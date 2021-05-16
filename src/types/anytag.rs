@@ -3,15 +3,25 @@ use crate::Album;
 /// Used to convert between tags
 #[derive(Default, Debug)]
 pub struct AnyTag<'a> {
+	/// The track title
 	pub title: Option<&'a str>,
+	/// The track artists
 	pub artists: Option<Vec<&'a str>>,
+	/// The track [`Album`]
 	pub album: Album<'a>,
+	/// Collection of user comments
 	pub comments: Option<Vec<&'a str>>,
+	/// The track year
 	pub year: Option<i32>,
+	/// The track date
 	pub date: Option<&'a str>,
+	/// The track number
 	pub track_number: Option<u32>,
+	/// The total tracks
 	pub total_tracks: Option<u32>,
+	/// The disc number
 	pub disc_number: Option<u32>,
+	/// The total discs
 	pub total_discs: Option<u32>,
 }
 

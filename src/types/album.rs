@@ -3,8 +3,12 @@ use super::picture::Picture;
 /// A struct for representing an album for convenience.
 #[derive(Debug, Clone)]
 pub struct Album<'a> {
+	/// The title of the album
 	pub title: Option<&'a str>,
+	/// A `Vec` of the album artists
 	pub artists: Option<Vec<&'a str>>,
+	/// The album's front cover
+	// TODO: also store the back cover
 	pub cover: Option<Picture>,
 }
 

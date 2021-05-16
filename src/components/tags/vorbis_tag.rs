@@ -4,7 +4,7 @@ use crate::components::logic;
 use crate::tag::VorbisFormat;
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, TagType, ToAny, ToAnyTag, PictureType
+	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::collections::HashMap;
@@ -184,6 +184,7 @@ impl_tag!(
 );
 
 impl VorbisTag {
+	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P, format: VorbisFormat) -> Result<Self>
 	where
@@ -350,7 +351,7 @@ impl AudioTagEdit for VorbisTag {
 			Some(pictures) => {
 				for pic in pictures {
 					if pic.pic_type == PictureType::CoverFront {
-						return Some(pic.clone())
+						return Some(pic.clone());
 					}
 				}
 
@@ -375,7 +376,7 @@ impl AudioTagEdit for VorbisTag {
 
 		let encoded = base64::encode(encoded);
 
-		if let Ok(Some(pic))= picture_from_data(&*encoded) {
+		if let Ok(Some(pic)) = picture_from_data(&*encoded) {
 			if let Some(mut pictures) = self.inner.pictures.clone() {
 				pictures.retain(|p| p.pic_type != PictureType::CoverFront);
 				pictures.push(pic);

@@ -16,6 +16,7 @@ use std::time::Duration;
 impl_tag!(Mp4Tag, Mp4InnerTag, TagType::Mp4);
 
 impl Mp4Tag {
+	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P) -> Result<Self>
 	where

@@ -4,28 +4,40 @@ use crate::{Album, AnyTag, Picture, Result, TagType};
 
 use std::fs::{File, OpenOptions};
 
+/// Combination of [`AudioTagEdit`], [`AudioTagWrite`], and [`ToAnyTag`]
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
 /// Implementors of this trait are able to read and write audio metadata.
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
 pub trait AudioTagEdit {
+	/// Returns the track title
 	fn title(&self) -> Option<&str>;
+	/// Sets the track title
 	fn set_title(&mut self, title: &str);
+	/// Removes the track title
 	fn remove_title(&mut self);
 
+	/// Returns the artist(s) as a string
 	fn artist_str(&self) -> Option<&str>;
+	/// Sets the artist string
 	fn set_artist(&mut self, artist: &str);
 
+	/// Splits the artist string into a `Vec`
 	fn artists_vec(&self) -> Option<Vec<&str>> {
 		self.artist_str().map(|a| a.split('/').collect())
 	}
+	/// Removes the artist string
 	fn remove_artist(&mut self);
 
+	/// Returns the track year
 	fn year(&self) -> Option<i32>;
+	/// Sets the track year
 	fn set_year(&mut self, year: i32);
+	/// Removes the track year
 	fn remove_year(&mut self);
 
+	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {
 			title: self.album_title(),
@@ -34,60 +46,85 @@ pub trait AudioTagEdit {
 		}
 	}
 
+	/// Returns the album title
 	fn album_title(&self) -> Option<&str>;
+	/// Sets the album title
 	fn set_album_title(&mut self, v: &str);
+	/// Removes the album title
 	fn remove_album_title(&mut self);
 
+	/// Returns the album artist string
 	fn album_artist_str(&self) -> Option<&str>;
+	/// Splits the artist string into a `Vec`
 	fn album_artists_vec(&self) -> Option<Vec<&str>> {
 		self.album_artist_str().map(|a| a.split('/').collect())
 	}
+	/// Sets the album artist string
 	fn set_album_artist(&mut self, artist: &str);
+	/// Removes the album artist string
 	fn remove_album_artists(&mut self);
 
+	/// Returns the album cover
 	fn album_cover(&self) -> Option<Picture>;
+	/// Sets the album cover
 	fn set_album_cover(&mut self, cover: Picture);
+	/// Removes the album cover
 	fn remove_album_cover(&mut self);
 
+	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {
 		(self.track_number(), self.total_tracks())
 	}
+	/// Sets the track number
 	fn set_track(&mut self, track: u32) {
 		self.set_track_number(track);
 	}
+	/// Removes the track number and total tracks
 	fn remove_track(&mut self) {
 		self.remove_track_number();
 		self.remove_total_tracks();
 	}
 
+	/// Returns the track number
 	fn track_number(&self) -> Option<u32>;
+	/// Sets the track number
 	fn set_track_number(&mut self, track_number: u32);
+	/// Removes the track number
 	fn remove_track_number(&mut self);
 
+	/// Returns the total tracks
 	fn total_tracks(&self) -> Option<u32>;
+	/// Sets the total tracks
 	fn set_total_tracks(&mut self, total_track: u32);
+	/// Removes the total tracks
 	fn remove_total_tracks(&mut self);
 
+	/// Returns the disc number and total discs
 	fn disc(&self) -> (Option<u32>, Option<u32>) {
 		(self.disc_number(), self.total_discs())
 	}
-	fn set_disc(&mut self, disc: u32) {
-		self.set_disc_number(disc);
-	}
+	/// Removes the disc number and total discs
 	fn remove_disc(&mut self) {
 		self.remove_disc_number();
 		self.remove_total_discs();
 	}
 
+	/// Returns the disc number
 	fn disc_number(&self) -> Option<u32>;
+	/// Sets the disc number
 	fn set_disc_number(&mut self, disc_number: u32);
+	/// Removes the disc number
 	fn remove_disc_number(&mut self);
 
+	/// Returns the total discs
 	fn total_discs(&self) -> Option<u32>;
+	/// Sets the total discs
 	fn set_total_discs(&mut self, total_discs: u32);
+	/// Removes the total discs
 	fn remove_total_discs(&mut self);
 }
 
+/// Functions for writing to a file
 pub trait AudioTagWrite {
 	/// Write tag to a [`File`][std::fs::File]
 	///
@@ -107,7 +144,9 @@ pub trait AudioTagWrite {
 	}
 }
 
+/// Conversions between tag types
 pub trait ToAnyTag: ToAny {
+	/// Converts the tag to [`AnyTag`]
 	fn to_anytag(&self) -> AnyTag<'_>;
 
 	/// Convert the tag type, which can be lossy.
@@ -129,8 +168,11 @@ pub trait ToAnyTag: ToAny {
 	}
 }
 
+/// Tag conversion to `Any`
 pub trait ToAny {
+	/// Convert tag to `Any`
 	fn to_any(&self) -> &dyn std::any::Any;
+	/// Mutably convert tag to `Any`
 	#[allow(clippy::wrong_self_convention)]
 	fn to_any_mut(&mut self) -> &mut dyn std::any::Any;
 }

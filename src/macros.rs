@@ -21,6 +21,7 @@ macro_rules! impl_tag {
 		}
 
 		impl $tag {
+			/// Creates a new default tag
 			pub fn new() -> Self {
 				Self::default()
 			}

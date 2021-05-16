@@ -68,6 +68,7 @@
 //! unnecessary copies.
 
 #![warn(clippy::pedantic)]
+#![warn(missing_docs)]
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,

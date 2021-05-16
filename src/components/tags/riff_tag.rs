@@ -27,6 +27,7 @@ impl Default for RiffInnerTag {
 }
 
 impl RiffTag {
+	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P) -> Result<Self>
 	where

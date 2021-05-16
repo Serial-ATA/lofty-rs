@@ -16,6 +16,7 @@ use std::time::Duration;
 impl_tag!(ApeTag, ApeInnerTag, TagType::Ape);
 
 impl ApeTag {
+	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P) -> Result<Self>
 	where

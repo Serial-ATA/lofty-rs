@@ -20,6 +20,7 @@ use std::time::Duration;
 impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(Id3Format::Default));
 
 impl Id3v2Tag {
+	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from_path<P>(path: P, format: &Id3Format) -> Result<Self>
 	where
@@ -59,8 +60,8 @@ impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 
 		Ok(Self {
 			pic_type,
-			data,
 			mime_type,
+			data,
 		})
 	}
 }
