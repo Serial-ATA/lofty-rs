@@ -131,13 +131,15 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn album_cover(&self) -> Option<Picture> {
-		None // TODO
+		// TODO
+		None
 	}
 	fn set_album_cover(&mut self, _cover: Picture) {
 		// TODO
 	}
+
 	fn remove_album_cover(&mut self) {
-		// TODO
+		self.remove_key("Cover Art (Front)")
 	}
 
 	// Track number and total tracks are stored together as num/total?
