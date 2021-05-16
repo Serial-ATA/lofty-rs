@@ -1,0 +1,10 @@
+{
+  "extends": [
+    "config:base"
+  ],
+  "timezone": "America/New_York",
+  "labels": ["dependency"],
+  "schedule": [
+    "every weekend"
+  ]
+}
