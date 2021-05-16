@@ -9,6 +9,8 @@ pub enum Error {
 	UnknownFormat,
 	#[error("File contains no data")]
 	EmptyFile,
+	#[error("File has invalid data")]
+	InvalidData,
 
 	/// Unsupported file extension
 	#[error("Unsupported format: {0}")]

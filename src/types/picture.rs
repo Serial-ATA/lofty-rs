@@ -1,4 +1,5 @@
 use crate::{Error, Result};
+use id3::frame::PictureType as id3PicType;
 use std::convert::TryFrom;
 
 /// Mime types for covers.
@@ -43,15 +44,38 @@ impl From<MimeType> for String {
 	}
 }
 
+/// The picture type
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum PictureType {
+	CoverFront,
+	CoverBack,
+	Other,
+}
+
+impl From<&id3PicType> for PictureType {
+	fn from(inp: &id3PicType) -> Self {
+		match inp {
+			id3PicType::CoverFront => PictureType::CoverFront,
+			id3PicType::CoverBack => PictureType::CoverBack,
+			_ => PictureType::Other,
+		}
+	}
+}
+
 /// Represents a picture, with its data and mime type.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture {
+	pub pic_type: PictureType,
 	pub data: Vec<u8>,
 	pub mime_type: MimeType,
 }
 
 impl Picture {
-	pub fn new(data: Vec<u8>, mime_type: MimeType) -> Self {
-		Self { data, mime_type }
+	pub fn new(pic_type: PictureType, data: Vec<u8>, mime_type: MimeType) -> Self {
+		Self {
+			pic_type,
+			data,
+			mime_type,
+		}
 	}
 }
