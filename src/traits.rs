@@ -2,7 +2,7 @@
 use crate::components::tags::*;
 use crate::{Album, AnyTag, Picture, Result, TagType};
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
@@ -100,7 +100,11 @@ pub trait AudioTagWrite {
 	/// # Errors
 	///
 	/// Will return `Err` if `path` doesn't exist
-	fn write_to_path(&self, path: &str) -> Result<()>;
+	fn write_to_path(&self, path: &str) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
+
+		Ok(())
+	}
 }
 
 pub trait ToAnyTag: ToAny {

@@ -8,6 +8,7 @@ use crate::{
 
 pub use id3::Tag as Id3v2InnerTag;
 
+use crate::types::picture::PictureType;
 use filepath::FilePath;
 use std::convert::TryInto;
 use std::fs::File;
@@ -50,10 +51,17 @@ impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 		let id3::frame::Picture {
 			ref mime_type,
 			data,
+			ref picture_type,
 			..
 		} = inp;
 		let mime_type: MimeType = mime_type.as_str().try_into()?;
-		Ok(Self { data, mime_type })
+		let pic_type: PictureType = picture_type.into();
+
+		Ok(Self {
+			pic_type,
+			data,
+			mime_type,
+		})
 	}
 }
 
@@ -126,6 +134,7 @@ impl AudioTagEdit for Id3v2Tag {
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
 			.and_then(|pic| {
 				Some(Picture {
+					pic_type: PictureType::CoverFront,
 					data: pic.data.clone(),
 					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
 				})

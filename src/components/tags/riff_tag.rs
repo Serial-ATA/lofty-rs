@@ -8,7 +8,7 @@ use crate::{
 
 use std::borrow::BorrowMut;
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::path::Path;
 #[cfg(feature = "duration")]
@@ -141,17 +141,16 @@ impl AudioTagEdit for RiffTag {
 		self.remove_key("AlbumArtist")
 	}
 
+	/// This will always return `None`, as this is non-standard
 	fn album_cover(&self) -> Option<Picture> {
-		todo!()
+		None
 	}
 
-	fn set_album_cover(&mut self, _cover: Picture) {
-		todo!()
-	}
+	/// This will not do anything, as this is non-standard
+	fn set_album_cover(&mut self, _cover: Picture) {}
 
-	fn remove_album_cover(&mut self) {
-		todo!()
-	}
+	/// This will not do anything, as this is non-standard
+	fn remove_album_cover(&mut self) {}
 
 	fn track_number(&self) -> Option<u32> {
 		if let Some(Ok(y)) = self.get_value("TrackNumber").map(str::parse::<u32>) {
@@ -261,12 +260,6 @@ impl AudioTagWrite for RiffTag {
 			file.set_len(0)?;
 			file.write_all(&*data)?;
 		}
-
-		Ok(())
-	}
-
-	fn write_to_path(&self, path: &str) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
 
 		Ok(())
 	}

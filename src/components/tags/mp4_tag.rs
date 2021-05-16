@@ -7,6 +7,7 @@ use crate::{
 
 pub use mp4ameta::{FourCC, Tag as Mp4InnerTag};
 
+use crate::types::picture::PictureType;
 use std::fs::File;
 use std::path::Path;
 #[cfg(feature = "duration")]
@@ -33,10 +34,12 @@ impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 	fn try_from(inp: mp4ameta::Data) -> Result<Self> {
 		Ok(match inp {
 			mp4ameta::Data::Png(data) => Self {
+				pic_type: PictureType::CoverFront, // TODO
 				data,
 				mime_type: MimeType::Png,
 			},
 			mp4ameta::Data::Jpeg(data) => Self {
+				pic_type: PictureType::CoverFront, // TODO
 				data,
 				mime_type: MimeType::Jpeg,
 			},
@@ -104,10 +107,12 @@ impl AudioTagEdit for Mp4Tag {
 
 		self.inner.artwork().and_then(|data| match data {
 			Jpeg(d) => Some(Picture {
+				pic_type: PictureType::CoverFront, // TODO
 				data: d.clone(),
 				mime_type: MimeType::Jpeg,
 			}),
 			Png(d) => Some(Picture {
+				pic_type: PictureType::CoverFront, // TODO
 				data: d.clone(),
 				mime_type: MimeType::Png,
 			}),
