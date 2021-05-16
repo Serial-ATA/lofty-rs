@@ -11,72 +11,83 @@ where
 {
 	let chunk = riff::Chunk::read(&mut data, 0)?;
 
-	let mut list: Option<riff::Chunk> = None;
+	let mut lists: Vec<riff::Chunk> = Vec::new();
 
 	for child in chunk.iter(&mut data) {
 		let chunk_id = child.id();
-		let value_upper = std::str::from_utf8(&chunk_id.value)?.to_uppercase();
-		let value_bytes = value_upper.as_bytes();
 
-		if value_bytes == LIST_ID {
-			// TODO: actually check for the INFO id rather than any LIST
-			list = Some(child);
-			break;
+		if &chunk_id.value == LIST_ID {
+			lists.push(child)
 		}
 	}
 
-	return if let Some(list) = list {
-		let mut content = list.read_contents(&mut data)?;
+	return if lists.is_empty() {
+		Err(Error::Wav(
+			"This file doesn't contain a LIST chunk".to_string(),
+		))
+	} else {
+		let mut info: Option<riff::Chunk> = None;
 
-		content.drain(0..4); // Get rid of the chunk ID
-		let mut cursor = Cursor::new(&*content);
-
-		let chunk_len = list.len();
-		let mut metadata: HashMap<String, String> = HashMap::with_capacity(chunk_len as usize);
-
-		let mut reading = true;
-
-		while reading {
-			if let (Ok(fourcc), Ok(size)) = (
-				cursor.read_u32::<LittleEndian>(),
-				cursor.read_u32::<LittleEndian>(),
-			) {
-				match create_wav_key(&fourcc.to_le_bytes()) {
-					Some(key) => {
-						let mut buf = vec![0; size as usize];
-						cursor.read_exact(&mut buf)?;
-
-						// Just skip any values that can't be converted
-						match std::string::String::from_utf8(buf) {
-							Ok(val) => {
-								let _ = metadata
-									.insert(key, val.trim_matches(char::from(0)).to_string());
-							},
-							Err(_) => continue,
-						}
-					},
-					#[allow(clippy::cast_lossless)]
-					None => cursor.set_position(cursor.position() + size as u64),
-				}
-
-				// Skip null byte
-				if size as usize % 2 != 0 {
-					cursor.set_position(cursor.position() + 1)
-				}
-
-				if cursor.position() >= cursor.get_ref().len() as u64 {
-					reading = false
-				}
-			} else {
-				reading = false
+		for child in lists {
+			if &child.read_type(&mut data)?.value == b"INFO" {
+				info = Some(child);
+				break;
 			}
 		}
 
-		Ok(Some(metadata))
-	} else {
-		Err(Error::Wav(
-			"This file doesn't contain an INFO chunk".to_string(),
-		))
+		if let Some(list) = info {
+			let mut content = list.read_contents(&mut data)?;
+
+			content.drain(0..4); // Get rid of the chunk ID
+			let mut cursor = Cursor::new(&*content);
+
+			let chunk_len = list.len();
+			let mut metadata: HashMap<String, String> = HashMap::with_capacity(chunk_len as usize);
+
+			let mut reading = true;
+
+			while reading {
+				if let (Ok(fourcc), Ok(size)) = (
+					cursor.read_u32::<LittleEndian>(),
+					cursor.read_u32::<LittleEndian>(),
+				) {
+					match create_wav_key(&fourcc.to_le_bytes()) {
+						Some(key) => {
+							let mut buf = vec![0; size as usize];
+							cursor.read_exact(&mut buf)?;
+
+							// Just skip any values that can't be converted
+							match std::string::String::from_utf8(buf) {
+								Ok(val) => {
+									let _ = metadata
+										.insert(key, val.trim_matches(char::from(0)).to_string());
+								},
+								Err(_) => continue,
+							}
+						},
+						#[allow(clippy::cast_lossless)]
+						None => cursor.set_position(cursor.position() + size as u64),
+					}
+
+					// Skip null byte
+					if size as usize % 2 != 0 {
+						cursor.set_position(cursor.position() + 1)
+					}
+
+					if cursor.position() >= cursor.get_ref().len() as u64 {
+						reading = false
+					}
+				} else {
+					reading = false
+				}
+			}
+
+			Ok(Some(metadata))
+		} else {
+			Err(Error::Wav(
+				"This file doesn't contain an INFO chunk".to_string(),
+			))
+		}
 	};
 }
 
