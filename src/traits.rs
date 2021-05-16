@@ -30,6 +30,21 @@ pub trait AudioTagEdit {
 	/// Removes the artist string
 	fn remove_artist(&mut self);
 
+	/// Returns the track date
+	fn date(&self) -> Option<String> {
+		self.year().map(|y| y.to_string())
+	}
+	/// Sets the track date
+	fn set_date(&mut self, date: &str) {
+		if let Ok(d) = date.parse::<i32>() {
+			self.set_year(d)
+		}
+	}
+	/// Removes the track date
+	fn remove_date(&mut self) {
+		self.remove_year()
+	}
+
 	/// Returns the track year
 	fn year(&self) -> Option<i32>;
 	/// Sets the track year

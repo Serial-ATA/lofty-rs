@@ -79,8 +79,8 @@ macro_rules! impl_tag {
 					total_tracks: inp.total_tracks(),
 					disc_number: inp.disc_number(),
 					total_discs: inp.total_discs(),
-					comments: None,
-					date: None, // TODO
+					comments: None, // TODO
+					date: inp.date(),
 				}
 			}
 		}

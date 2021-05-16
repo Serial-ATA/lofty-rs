@@ -7,6 +7,7 @@ use crate::{
 
 pub use ape::Tag as ApeInnerTag;
 
+use ape::Item;
 use filepath::FilePath;
 use std::fs::File;
 use std::path::Path;
@@ -85,6 +86,18 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Artist")
 	}
 
+	fn date(&self) -> Option<String> {
+		self.get_value("Date").map(std::string::ToString::to_string)
+	}
+
+	fn set_date(&mut self, date: &str) {
+		self.set_value("Date", date)
+	}
+
+	fn remove_date(&mut self) {
+		self.remove_key("Date")
+	}
+
 	fn year(&self) -> Option<i32> {
 		if let Some(Ok(y)) = self
 			.get_value("Date")
@@ -131,13 +144,16 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn album_cover(&self) -> Option<Picture> {
-		// TODO
+		if let Some(val) = self.inner.item("Cover Art (Front)") {
+			return get_picture(val);
+		}
+
 		None
 	}
-	fn set_album_cover(&mut self, _cover: Picture) {
+	fn set_album_cover(&mut self, cover: Picture) {
 		// TODO
+		self.set_value("Cover Art (Front)", "TODO")
 	}
-
 	fn remove_album_cover(&mut self) {
 		self.remove_key("Cover Art (Front)")
 	}
@@ -232,6 +248,14 @@ impl AudioTagEdit for ApeTag {
 	fn remove_total_discs(&mut self) {
 		self.remove_key("Disc")
 	}
+}
+
+fn get_picture(item: &Item) -> Option<Picture> {
+	if let ape::ItemValue::Binary(bin) = &item.value {
+		// TODO
+	}
+
+	None
 }
 
 impl AudioTagWrite for ApeTag {

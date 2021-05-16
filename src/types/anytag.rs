@@ -14,7 +14,7 @@ pub struct AnyTag<'a> {
 	/// The track year
 	pub year: Option<i32>,
 	/// The track date
-	pub date: Option<&'a str>,
+	pub date: Option<String>,
 	/// The track number
 	pub track_number: Option<u32>,
 	/// The total tracks

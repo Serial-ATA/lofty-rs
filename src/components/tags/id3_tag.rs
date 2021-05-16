@@ -93,6 +93,33 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.remove_artist()
 	}
 
+	fn date(&self) -> Option<String> {
+		if let Some(released) = self.inner.get("TDRL") {
+			if let id3::frame::Content::Text(date) = &released.content() {
+				return Some(date.clone());
+			}
+		}
+
+		if let Some(recorded) = self.inner.get("TRDC") {
+			if let id3::frame::Content::Text(date) = &recorded.content() {
+				return Some(date.clone());
+			}
+		}
+
+		None
+	}
+
+	fn set_date(&mut self, date: &str) {
+		if let Ok(t) = date.parse::<id3::Timestamp>() {
+			self.inner.set_date_released(t)
+		}
+	}
+
+	fn remove_date(&mut self) {
+		self.inner.remove_date_released();
+		self.inner.remove_date_recorded();
+	}
+
 	fn year(&self) -> Option<i32> {
 		self.inner.year()
 	}
