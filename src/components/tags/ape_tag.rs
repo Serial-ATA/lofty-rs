@@ -1,4 +1,4 @@
-#![cfg(feature = "ape")]
+#![cfg(feature = "monkey")]
 
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,

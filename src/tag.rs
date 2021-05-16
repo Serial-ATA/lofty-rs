@@ -4,7 +4,7 @@ use crate::{AudioTag, Error, Result};
 use std::io::Seek;
 use std::path::Path;
 
-#[cfg(feature = "ape")]
+#[cfg(feature = "monkey")]
 const MAC: [u8; 3] = [77, 65, 67];
 #[cfg(feature = "id3")]
 const ID3: [u8; 3] = [73, 68, 51];
@@ -90,7 +90,7 @@ impl Tag {
 
 	fn match_tag(path: impl AsRef<Path>, tag_type: TagType) -> Result<Box<dyn AudioTag>> {
 		match tag_type {
-			#[cfg(feature = "ape")]
+			#[cfg(feature = "monkey")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
 			#[cfg(feature = "id3")]
 			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from_path(path, &format)?)),
@@ -107,7 +107,7 @@ impl Tag {
 /// The tag type, based on the file extension.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
-	#[cfg(feature = "ape")]
+	#[cfg(feature = "monkey")]
 	/// Common file extensions: `.ape`
 	Ape,
 	#[cfg(feature = "id3")]
@@ -155,7 +155,7 @@ pub enum Id3Format {
 impl TagType {
 	fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
-			#[cfg(feature = "ape")]
+			#[cfg(feature = "monkey")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
 			"aiff" | "aif" => Ok(Self::Id3v2(Id3Format::Form)),
@@ -180,7 +180,7 @@ impl TagType {
 		}
 
 		match data[0] {
-			#[cfg(feature = "ape")]
+			#[cfg(feature = "monkey")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "id3")]
 			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),

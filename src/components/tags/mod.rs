@@ -4,7 +4,7 @@ pub(crate) mod mp4_tag;
 pub(crate) mod riff_tag;
 pub(crate) mod vorbis_tag;
 
-#[cfg(feature = "ape")]
+#[cfg(feature = "monkey")]
 pub use ape_tag::ApeTag;
 #[cfg(feature = "id3")]
 pub use id3_tag::Id3v2Tag;

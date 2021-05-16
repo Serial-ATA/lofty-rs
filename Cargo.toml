@@ -12,6 +12,7 @@ categories = ["accessibility", "multimedia::audio"]
 [dependencies]
 # Ape
 ape = {version = "0.3.0", optional = true}
+filepath = { version = "0.1.1", optional = true } # ape crate only accepts paths for some reason
 # Wav
 riff = {version = "1.0.1", optional = true}
 # Mp3
@@ -28,9 +29,9 @@ metaflac = {version = "0.2.4", optional = true}
 opus_headers = {version = "0.1.2", optional = true}
 # Errors
 thiserror = "1.0.24"
+
 base64 = "0.13.0"
 byteorder = "1.4.3"
-filepath = "0.1.1"
 
 [features]
 default = ["full"]
@@ -39,7 +40,8 @@ mp4 = ["mp4ameta"]
 flac = ["metaflac"]
 opus = ["opus_headers"]
 vorbis = ["lewton", "ogg"]
-all_tags = ["vorbis", "opus", "flac", "mp4", "id3", "riff", "ape"]
+monkey = ["ape", "filepath"]
+all_tags = ["vorbis", "opus", "flac", "mp4", "id3", "riff", "monkey"]
 duration = ["mp3-duration"]
 
 [dev-dependencies]
