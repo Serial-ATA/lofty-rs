@@ -50,8 +50,8 @@ macro_rules! add_tags {
 
 		let file = stringify!($file);
 
-		// Skip this since RIFF INFO doesn't store images
-		if file != stringify!("tests/assets/a.wav") {
+		// Skip this since RIFF INFO doesn't store images, and MP4 doesn't specify what pictures are
+		if file != stringify!("tests/assets/a.wav") && file != stringify!("tests/assets/a.m4a") {
 			println!("Setting front cover");
 			tag.set_front_cover(covers.0.clone());
 			assert_eq!(tag.front_cover(), Some(covers.0));
@@ -59,6 +59,19 @@ macro_rules! add_tags {
 			println!("Setting back cover");
 			tag.set_back_cover(covers.1.clone());
 			assert_eq!(tag.back_cover(), Some(covers.1));
+		}
+
+		// All MP4 Pictures are PictureType::Other
+		if file == stringify!("tests/assets/a.m4a") {
+			let cover = Picture {
+				pic_type: PictureType::Other,
+				mime_type: MimeType::Jpeg,
+				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+			};
+
+			println!("Setting cover");
+			tag.set_front_cover(cover.clone());
+			assert_eq!(tag.front_cover(), Some(cover));
 		}
 
 		println!("Writing");
