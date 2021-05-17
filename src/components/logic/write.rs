@@ -135,6 +135,7 @@ where
 	let last_len = (packet.len() % 255) as u8;
 	let needed = (packet.len() / 255) + 1;
 
+	// TODO: multi page support
 	let mut segments = Vec::with_capacity(needed);
 
 	for i in 0..needed {
