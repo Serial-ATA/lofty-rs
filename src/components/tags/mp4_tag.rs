@@ -35,17 +35,17 @@ impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 	fn try_from(inp: mp4ameta::Data) -> Result<Self> {
 		Ok(match inp {
 			mp4ameta::Data::Png(data) => Self {
-				pic_type: PictureType::CoverFront, // TODO
+				pic_type: PictureType::Other,
 				data,
 				mime_type: MimeType::Png,
 			},
 			mp4ameta::Data::Jpeg(data) => Self {
-				pic_type: PictureType::CoverFront, // TODO
+				pic_type: PictureType::Other,
 				data,
 				mime_type: MimeType::Jpeg,
 			},
 			mp4ameta::Data::Bmp(data) => Self {
-				pic_type: PictureType::CoverFront,
+				pic_type: PictureType::Other,
 				mime_type: MimeType::Bmp,
 				data,
 			},
