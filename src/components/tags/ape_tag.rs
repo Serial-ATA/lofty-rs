@@ -1,15 +1,17 @@
 #![cfg(feature = "monkey")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
-	ToAny, ToAnyTag,
+	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, MimeType, Picture, PictureType,
+	Result, TagType, ToAny, ToAnyTag,
 };
 
 pub use ape::Tag as ApeInnerTag;
 
 use ape::Item;
+use byteorder::{LittleEndian, ReadBytesExt};
 use filepath::FilePath;
 use std::fs::File;
+use std::io::{Cursor, Seek, SeekFrom};
 use std::path::Path;
 
 #[cfg(feature = "duration")]
@@ -153,7 +155,11 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn set_front_cover(&mut self, cover: Picture) {
-		// TODO
+		self.remove_front_cover();
+
+		if let Ok(item) = ape::Item::from_binary("Cover Art (Front)", cover.data) {
+			self.inner.set_item(item)
+		}
 	}
 
 	fn remove_front_cover(&mut self) {
@@ -169,7 +175,11 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn set_back_cover(&mut self, cover: Picture) {
-		// TODO
+		self.remove_back_cover();
+
+		if let Ok(item) = ape::Item::from_binary("Cover Art (Back)", cover.data) {
+			self.inner.set_item(item)
+		}
 	}
 
 	fn remove_back_cover(&mut self) {
@@ -177,7 +187,8 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn pictures(&self) -> Option<Vec<Picture>> {
-		todo!()
+		// TODO
+		None
 	}
 
 	// Track number and total tracks are stored together as num/total?
@@ -274,7 +285,42 @@ impl AudioTagEdit for ApeTag {
 
 fn get_picture(item: &Item) -> Option<Picture> {
 	if let ape::ItemValue::Binary(bin) = &item.value {
-		// TODO
+		if !bin.is_empty() {
+			let pic_type = match &*item.key {
+				"Cover Art (Front)" => PictureType::CoverFront,
+				"Cover Art (Back)" => PictureType::CoverBack,
+				_ => PictureType::Other,
+			};
+
+			let data_pos: Option<usize> =
+				if bin.starts_with(&[b'\xff']) || bin.starts_with(&[b'\x89']) {
+					Some(0)
+				} else {
+					bin.iter().find(|x| x == &&b'\0').map(|pos| *pos as usize)
+				};
+
+			if let Some(pos) = data_pos {
+				let mut cursor = Cursor::new(bin.clone());
+
+				if cursor.seek(SeekFrom::Start((pos + 1) as u64)).is_ok() {
+					if let Ok(mime) = cursor.read_u32::<LittleEndian>() {
+						if let Some(mime_type) = match &mime.to_le_bytes() {
+							b"PNG\0" => Some(MimeType::Png),
+							b"JPEG" => Some(MimeType::Jpeg),
+							_ => None,
+						} {
+							cursor.set_position(0_u64);
+
+							return Some(Picture {
+								pic_type,
+								mime_type,
+								data: cursor.into_inner(),
+							});
+						}
+					}
+				}
+			}
+		}
 	}
 
 	None

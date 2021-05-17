@@ -39,18 +39,19 @@ macro_rules! add_tags {
 			Picture {
 				pic_type: PictureType::CoverFront,
 				mime_type: MimeType::Jpeg,
-				data: vec![0; 10],
+				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			},
 			Picture {
 				pic_type: PictureType::CoverBack,
 				mime_type: MimeType::Jpeg,
-				data: vec![0; 11],
+				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 			},
 		);
 
-		let file_name = stringify!($file);
+		let file = stringify!($file);
 
-		if file_name != stringify!("tests/assets/a.wav") {
+		// Skip this since RIFF INFO doesn't store images
+		if file != stringify!("tests/assets/a.wav") {
 			println!("Setting front cover");
 			tag.set_front_cover(covers.0.clone());
 			assert_eq!(tag.front_cover(), Some(covers.0));
