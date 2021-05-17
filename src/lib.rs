@@ -56,7 +56,7 @@
 //! Either one can be disabled if it doesn't fit your use case.
 //!
 //! In addition to this, each format can be individually enabled.
-//! All features are: `ape, flac, id3, mp4, opus, vorbis, riff`.
+//! Features: `format-ape, format-flac, format-id3, format-mp4, format-opus, format-vorbis, format-riff`.
 //!
 //! ## Performance
 //!

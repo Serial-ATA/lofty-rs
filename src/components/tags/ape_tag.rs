@@ -1,4 +1,4 @@
-#![cfg(feature = "monkey")]
+#![cfg(feature = "format-ape")]
 
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, MimeType, Picture, PictureType,

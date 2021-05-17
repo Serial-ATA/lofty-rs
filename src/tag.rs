@@ -4,23 +4,27 @@ use crate::{AudioTag, Error, Result};
 use std::io::Seek;
 use std::path::Path;
 
-#[cfg(feature = "monkey")]
+#[cfg(feature = "format-ape")]
 const MAC: [u8; 3] = [77, 65, 67];
-#[cfg(feature = "id3")]
+#[cfg(feature = "format-id3")]
 const ID3: [u8; 3] = [73, 68, 51];
-#[cfg(feature = "id3")]
+#[cfg(feature = "format-id3")]
 const FORM: [u8; 4] = [70, 79, 82, 77];
-#[cfg(feature = "mp4")]
+#[cfg(feature = "format-mp4")]
 const FTYP: [u8; 4] = [102, 116, 121, 112];
-#[cfg(feature = "opus")]
+#[cfg(feature = "format-opus")]
 const OPUSHEAD: [u8; 8] = [79, 112, 117, 115, 72, 101, 97, 100];
-#[cfg(feature = "flac")]
+#[cfg(feature = "format-flac")]
 const FLAC: [u8; 4] = [102, 76, 97, 67];
-#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
+#[cfg(any(
+	feature = "format-vorbis",
+	feature = "format-opus",
+	feature = "format-flac"
+))]
 const OGGS: [u8; 4] = [79, 103, 103, 83];
-#[cfg(feature = "vorbis")]
+#[cfg(feature = "format-vorbis")]
 const VORBIS: [u8; 6] = [118, 111, 114, 98, 105, 115];
-#[cfg(feature = "riff")]
+#[cfg(feature = "format-riff")]
 const RIFF: [u8; 4] = [82, 73, 70, 70];
 
 /// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
@@ -90,15 +94,19 @@ impl Tag {
 
 	fn match_tag(path: impl AsRef<Path>, tag_type: TagType) -> Result<Box<dyn AudioTag>> {
 		match tag_type {
-			#[cfg(feature = "monkey")]
+			#[cfg(feature = "format-ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from_path(path)?)),
-			#[cfg(feature = "id3")]
+			#[cfg(feature = "format-id3")]
 			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from_path(path, &format)?)),
-			#[cfg(feature = "mp4")]
+			#[cfg(feature = "format-mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from_path(path)?)),
-			#[cfg(feature = "riff")]
+			#[cfg(feature = "format-riff")]
 			TagType::RiffInfo => Ok(Box::new(RiffTag::read_from_path(path)?)),
-			#[cfg(any(feature = "vorbis", feature = "flac", feature = "opus"))]
+			#[cfg(any(
+				feature = "format-vorbis",
+				feature = "format-flac",
+				feature = "format-opus"
+			))]
 			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format)?)),
 		}
 	}
@@ -107,41 +115,49 @@ impl Tag {
 /// The tag type, based on the file extension.
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
-	#[cfg(feature = "monkey")]
+	#[cfg(feature = "format-ape")]
 	/// Common file extensions: `.ape`
 	Ape,
-	#[cfg(feature = "id3")]
+	#[cfg(feature = "format-id3")]
 	/// Represents multiple formats, see [`Id3Format`](Id3Format) for extensions.
 	Id3v2(Id3Format),
-	#[cfg(feature = "mp4")]
+	#[cfg(feature = "format-mp4")]
 	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
 	Mp4,
-	#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
+	#[cfg(any(
+		feature = "format-vorbis",
+		feature = "format-opus",
+		feature = "format-flac"
+	))]
 	/// Represents multiple formats, see [`VorbisFormat`](VorbisFormat) for extensions.
 	Vorbis(VorbisFormat),
-	#[cfg(feature = "riff")]
+	#[cfg(feature = "format-riff")]
 	/// Metadata stored in a RIFF INFO chunk
 	/// Common file extensions: `.wav, .wave, .riff`
 	RiffInfo,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
+#[cfg(any(
+	feature = "format-vorbis",
+	feature = "format-opus",
+	feature = "format-flac"
+))]
 /// File formats using vorbis comments
 pub enum VorbisFormat {
-	#[cfg(feature = "vorbis")]
+	#[cfg(feature = "format-vorbis")]
 	/// Common file extensions:  `.ogg, .oga`
 	Ogg,
-	#[cfg(feature = "opus")]
+	#[cfg(feature = "format-opus")]
 	/// Common file extensions: `.opus`
 	Opus,
-	#[cfg(feature = "flac")]
+	#[cfg(feature = "format-flac")]
 	/// Common file extensions: `.flac`
 	Flac,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-#[cfg(feature = "id3")]
+#[cfg(feature = "format-id3")]
 /// ID3 tag's underlying format
 pub enum Id3Format {
 	/// MP3
@@ -155,21 +171,21 @@ pub enum Id3Format {
 impl TagType {
 	fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
-			#[cfg(feature = "monkey")]
+			#[cfg(feature = "format-ape")]
 			"ape" => Ok(Self::Ape),
-			#[cfg(feature = "id3")]
+			#[cfg(feature = "format-id3")]
 			"aiff" | "aif" => Ok(Self::Id3v2(Id3Format::Form)),
-			#[cfg(feature = "id3")]
+			#[cfg(feature = "format-id3")]
 			"mp3" => Ok(Self::Id3v2(Id3Format::Default)),
-			#[cfg(all(feature = "riff", feature = "id3"))]
+			#[cfg(all(feature = "format-riff", feature = "format-id3"))]
 			"wav" | "wave" | "riff" => Ok(Self::Id3v2(Id3Format::Riff)),
-			#[cfg(feature = "opus")]
+			#[cfg(feature = "format-opus")]
 			"opus" => Ok(Self::Vorbis(VorbisFormat::Opus)),
-			#[cfg(feature = "flac")]
+			#[cfg(feature = "format-flac")]
 			"flac" => Ok(Self::Vorbis(VorbisFormat::Flac)),
-			#[cfg(feature = "vorbis")]
+			#[cfg(feature = "format-vorbis")]
 			"ogg" | "oga" => Ok(Self::Vorbis(VorbisFormat::Ogg)),
-			#[cfg(feature = "mp4")]
+			#[cfg(feature = "format-mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
 			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
 		}
@@ -180,11 +196,11 @@ impl TagType {
 		}
 
 		match data[0] {
-			#[cfg(feature = "monkey")]
+			#[cfg(feature = "format-ape")]
 			77 if data.starts_with(&MAC) => Ok(Self::Ape),
-			#[cfg(feature = "id3")]
+			#[cfg(feature = "format-id3")]
 			73 if data.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),
-			#[cfg(feature = "id3")]
+			#[cfg(feature = "format-id3")]
 			70 if data.starts_with(&FORM) => {
 				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 				use std::io::{Cursor, SeekFrom};
@@ -218,9 +234,9 @@ impl TagType {
 				// TODO: support AIFF chunks?
 				Err(Error::UnknownFormat)
 			},
-			#[cfg(feature = "flac")]
+			#[cfg(feature = "format-flac")]
 			102 if data.starts_with(&FLAC) => Ok(Self::Vorbis(VorbisFormat::Flac)),
-			#[cfg(any(feature = "vorbis", feature = "opus"))]
+			#[cfg(any(feature = "format-vorbis", feature = "format-opus"))]
 			79 if data.starts_with(&OGGS) => {
 				if data[29..35] == VORBIS {
 					return Ok(Self::Vorbis(VorbisFormat::Ogg));
@@ -232,9 +248,9 @@ impl TagType {
 
 				Err(Error::UnknownFormat)
 			},
-			#[cfg(feature = "riff")]
+			#[cfg(feature = "format-riff")]
 			82 if data.starts_with(&RIFF) => {
-				#[cfg(feature = "id3")]
+				#[cfg(feature = "format-id3")]
 				{
 					use byteorder::{LittleEndian, ReadBytesExt};
 					use std::io::Cursor;
@@ -262,7 +278,7 @@ impl TagType {
 
 				Ok(Self::RiffInfo)
 			},
-			#[cfg(feature = "mp4")]
+			#[cfg(feature = "format-mp4")]
 			_ if data[4..8] == FTYP => Ok(Self::Mp4),
 			_ => Err(Error::UnknownFormat),
 		}

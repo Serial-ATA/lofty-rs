@@ -1,4 +1,4 @@
-#![cfg(feature = "id3")]
+#![cfg(feature = "format-id3")]
 
 use crate::tag::Id3Format;
 use crate::{

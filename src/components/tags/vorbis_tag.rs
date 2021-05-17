@@ -1,4 +1,8 @@
-#![cfg(any(feature = "vorbis", feature = "opus", feature = "flac"))]
+#![cfg(any(
+	feature = "format-vorbis",
+	feature = "format-opus",
+	feature = "format-flac"
+))]
 
 use crate::components::logic;
 use crate::tag::VorbisFormat;

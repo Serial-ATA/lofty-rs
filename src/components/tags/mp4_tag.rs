@@ -1,4 +1,4 @@
-#![cfg(feature = "mp4")]
+#![cfg(feature = "format-mp4")]
 
 use crate::{
 	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,

@@ -1,4 +1,4 @@
-#![cfg(feature = "riff")]
+#![cfg(feature = "format-riff")]
 
 use crate::components::logic;
 use crate::{
