@@ -1,0 +1,17 @@
+[package]
+name = "lofty_attr"
+version = "0.1.0"
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Serial-ATA/lofty-rs"
+edition = "2018"
+
+[dependencies]
+quote = "1.0.9"
+
+[dependencies.syn]
+version = "1.0.72"
+features = ["full"]
+
+[lib]
+proc-macro = true
