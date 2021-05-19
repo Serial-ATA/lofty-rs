@@ -2,6 +2,7 @@
 name = "lofty_attr"
 version = "0.1.0"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
+description = "Macro for Lofty tag struct creation"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 edition = "2018"
