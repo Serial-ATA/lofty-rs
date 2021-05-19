@@ -82,9 +82,6 @@
 	clippy::match_wildcard_for_single_variants
 )]
 
-#[doc(hidden)]
-mod macros;
-
 mod types;
 pub use crate::types::{
 	album::Album,
