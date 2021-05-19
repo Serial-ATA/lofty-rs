@@ -335,6 +335,7 @@ dependencies = [
  "filepath",
  "id3",
  "lewton",
+ "lofty_attr",
  "metaflac",
  "mp3-duration",
  "mp4ameta",
@@ -342,6 +343,14 @@ dependencies = [
  "opus_headers",
  "riff",
  "thiserror",
+]
+
+[[package]]
+name = "lofty_attr"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -640,9 +649,9 @@ dependencies = [
 
 [[package]]
 name = "syn"
-version = "1.0.68"
+version = "1.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ce15dd3ed8aa2f8eeac4716d6ef5ab58b6b9256db41d7e1a0224c2788e8fd87"
+checksum = "a1e8cdbefb79a9a5a65e0db8b47b723ee907b7c7f8496c76a1770b5c310bab82"
 dependencies = [
  "proc-macro2",
  "quote",

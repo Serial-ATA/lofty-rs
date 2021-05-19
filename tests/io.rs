@@ -1,5 +1,6 @@
 #![cfg(feature = "default")]
 use lofty::{MimeType, Picture, PictureType, Tag};
+use std::borrow::Cow;
 
 macro_rules! full_test {
 	($function:ident, $file:expr) => {
@@ -39,12 +40,14 @@ macro_rules! add_tags {
 			Picture {
 				pic_type: PictureType::CoverFront,
 				mime_type: MimeType::Jpeg,
-				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				description: Some(Cow::from("test")),
+				data: Cow::from(vec![0; 11]),
 			},
 			Picture {
 				pic_type: PictureType::CoverBack,
 				mime_type: MimeType::Jpeg,
-				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				description: Some(Cow::from("test")),
+				data: Cow::from(vec![0; 11]),
 			},
 		);
 
@@ -66,7 +69,8 @@ macro_rules! add_tags {
 			let cover = Picture {
 				pic_type: PictureType::Other,
 				mime_type: MimeType::Jpeg,
-				data: vec![0, 74, 80, 69, 71, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+				description: None,
+				data: Cow::from(vec![0; 11]),
 			};
 
 			println!("Setting cover");

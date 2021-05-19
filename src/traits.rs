@@ -2,6 +2,7 @@
 use crate::components::tags::*;
 use crate::{Album, AnyTag, Picture, Result, TagType};
 
+use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 
 /// Combination of [`AudioTagEdit`], [`AudioTagWrite`], and [`ToAnyTag`]
@@ -104,7 +105,7 @@ pub trait AudioTagEdit {
 	fn remove_back_cover(&mut self);
 
 	/// Returns an `Iterator` over all pictures stored in the track
-	fn pictures(&self) -> Option<Vec<Picture>>;
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>>;
 
 	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {

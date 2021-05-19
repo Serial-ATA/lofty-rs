@@ -1,4 +1,5 @@
 use lofty::{Id3Format, Tag, TagType, ToAnyTag, VorbisTag};
+use std::convert::TryInto;
 
 #[test]
 #[cfg(all(feature = "format-id3", feature = "format-flac"))]
@@ -12,7 +13,7 @@ fn test_inner() {
 		.set_title(vec!["title from metaflac::Tag"]);
 
 	// Turn the flac tag into a VorbisTag
-	let tag: VorbisTag = innertag.into();
+	let tag: VorbisTag = innertag.try_into().unwrap();
 
 	// Turn the VorbisTag into a Box<dyn AudioTag>
 	let id3tag = tag.to_dyn_tag(TagType::Id3v2(Id3Format::Default));

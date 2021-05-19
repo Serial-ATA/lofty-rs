@@ -1,19 +1,20 @@
 #![cfg(feature = "format-mp4")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
 };
+use lofty_attr::impl_tag;
 
 pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
 use crate::types::picture::PictureType;
+use std::borrow::Cow;
 use std::fs::File;
 use std::path::Path;
-#[cfg(feature = "duration")]
-use std::time::Duration;
 
-impl_tag!(Mp4Tag, Mp4InnerTag, TagType::Mp4);
+#[impl_tag(Mp4InnerTag, TagType::Mp4)]
+pub struct Mp4Tag {}
 
 impl Mp4Tag {
 	#[allow(missing_docs)]
@@ -36,18 +37,21 @@ impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 		Ok(match inp {
 			mp4ameta::Data::Png(data) => Self {
 				pic_type: PictureType::Other,
-				data,
 				mime_type: MimeType::Png,
+				description: None,
+				data: Cow::from(data),
 			},
 			mp4ameta::Data::Jpeg(data) => Self {
 				pic_type: PictureType::Other,
-				data,
 				mime_type: MimeType::Jpeg,
+				description: None,
+				data: Cow::from(data),
 			},
 			mp4ameta::Data::Bmp(data) => Self {
 				pic_type: PictureType::Other,
 				mime_type: MimeType::Bmp,
-				data,
+				description: None,
+				data: Cow::from(data),
 			},
 			_ => return Err(Error::NotAPicture),
 		})
@@ -110,33 +114,40 @@ impl AudioTagEdit for Mp4Tag {
 	}
 
 	fn front_cover(&self) -> Option<Picture> {
-		self.inner.artwork().and_then(|data| match data {
-			mp4ameta::Data::Jpeg(d) => Some(Picture {
-				pic_type: PictureType::Other,
-				data: d.clone(),
-				mime_type: MimeType::Jpeg,
-			}),
-			mp4ameta::Data::Png(d) => Some(Picture {
-				pic_type: PictureType::Other,
-				data: d.clone(),
-				mime_type: MimeType::Png,
-			}),
-			mp4ameta::Data::Bmp(d) => Some(Picture {
-				pic_type: PictureType::Other,
-				data: d.clone(),
-				mime_type: MimeType::Bmp,
-			}),
-			_ => None,
-		})
+		if let Some(picture) = &self.inner.artwork() {
+			return match picture {
+				mp4ameta::Data::Jpeg(d) => Some(Picture {
+					pic_type: PictureType::Other,
+					mime_type: MimeType::Jpeg,
+					description: None,
+					data: Cow::from(d.clone()),
+				}),
+				mp4ameta::Data::Png(d) => Some(Picture {
+					pic_type: PictureType::Other,
+					mime_type: MimeType::Png,
+					description: None,
+					data: Cow::from(d.clone()),
+				}),
+				mp4ameta::Data::Bmp(d) => Some(Picture {
+					pic_type: PictureType::Other,
+					mime_type: MimeType::Bmp,
+					description: None,
+					data: Cow::from(d.clone()),
+				}),
+				_ => None,
+			};
+		}
+
+		None
 	}
 
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.inner.remove_artwork();
 
 		self.inner.add_artwork(match cover.mime_type {
-			MimeType::Png => mp4ameta::Data::Png(cover.data),
-			MimeType::Jpeg => mp4ameta::Data::Jpeg(cover.data),
-			MimeType::Bmp => mp4ameta::Data::Bmp(cover.data),
+			MimeType::Png => mp4ameta::Data::Png(Vec::from(cover.data)),
+			MimeType::Jpeg => mp4ameta::Data::Jpeg(Vec::from(cover.data)),
+			MimeType::Bmp => mp4ameta::Data::Bmp(Vec::from(cover.data)),
 			_ => panic!("Attempt to add an invalid image format to MP4"),
 		});
 	}
@@ -157,7 +168,7 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_artwork();
 	}
 
-	fn pictures(&self) -> Option<Vec<Picture>> {
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		let mut pictures = Vec::new();
 
 		for art in self.inner.artworks() {
@@ -172,7 +183,8 @@ impl AudioTagEdit for Mp4Tag {
 				pictures.push(Picture {
 					pic_type: PictureType::Other,
 					mime_type,
-					data,
+					description: None,
+					data: Cow::from(data),
 				})
 			}
 		}
@@ -180,7 +192,7 @@ impl AudioTagEdit for Mp4Tag {
 		if pictures.is_empty() {
 			None
 		} else {
-			Some(pictures)
+			Some(Cow::from(pictures))
 		}
 	}
 

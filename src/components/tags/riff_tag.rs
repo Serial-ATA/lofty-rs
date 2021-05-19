@@ -2,18 +2,15 @@
 
 use crate::components::logic;
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType,
-	ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
+use lofty_attr::impl_tag;
 
-use std::borrow::BorrowMut;
+use std::borrow::{BorrowMut, Cow};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::path::Path;
-
-#[cfg(feature = "duration")]
-use std::time::Duration;
 
 struct RiffInnerTag {
 	data: Option<HashMap<String, String>>,
@@ -26,6 +23,9 @@ impl Default for RiffInnerTag {
 		Self { data }
 	}
 }
+
+#[impl_tag(RiffInnerTag, TagType::RiffInfo)]
+pub struct RiffTag;
 
 impl RiffTag {
 	#[allow(missing_docs)]
@@ -43,8 +43,6 @@ impl RiffTag {
 		})
 	}
 }
-
-impl_tag!(RiffTag, RiffInnerTag, TagType::RiffInfo);
 
 impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
@@ -166,7 +164,7 @@ impl AudioTagEdit for RiffTag {
 	fn remove_back_cover(&mut self) {}
 
 	/// This will always return `None`, as this is non-standard
-	fn pictures(&self) -> Option<Vec<Picture>> {
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		None
 	}
 

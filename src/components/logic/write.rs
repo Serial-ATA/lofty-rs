@@ -1,7 +1,62 @@
+use crate::vorbis_tag::VORBIS;
 use crate::{Error, Result};
+
 #[cfg(feature = "ogg")]
 use ogg::PacketWriteEndInfo;
+use std::collections::HashMap;
+use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+
+pub(crate) fn vorbis_generic(
+	file: &mut File,
+	sig: &[u8],
+	vendor: &str,
+	comments: &HashMap<String, String>,
+) -> Result<()> {
+	let mut packet = Vec::new();
+	packet.extend(sig.iter());
+
+	let comments: Vec<(String, String)> = comments
+		.iter()
+		.map(|(a, b)| (a.to_string(), b.to_string()))
+		.collect();
+
+	let vendor_len = vendor.len() as u32;
+	packet.extend(vendor_len.to_le_bytes().iter());
+	packet.extend(vendor.as_bytes().iter());
+
+	let comments_len = comments.len() as u32;
+	packet.extend(comments_len.to_le_bytes().iter());
+
+	let mut comment_str = Vec::new();
+
+	for (a, b) in comments {
+		comment_str.push(format!("{}={}", a, b));
+		let last = comment_str.last().unwrap();
+		let len = last.as_bytes().len() as u32;
+		packet.extend(len.to_le_bytes().iter());
+		packet.extend(last.as_bytes().iter());
+	}
+
+	if sig == VORBIS {
+		packet.push(1);
+	}
+
+	let mut file_bytes = Vec::new();
+	file.read_to_end(&mut file_bytes)?;
+
+	let data = if sig == VORBIS {
+		ogg(Cursor::new(file_bytes), &*packet)?
+	} else {
+		opus(Cursor::new(file_bytes), &*packet)?
+	};
+
+	file.seek(SeekFrom::Start(0))?;
+	file.set_len(0)?;
+	file.write_all(&data)?;
+
+	Ok(())
+}
 
 pub(crate) fn ogg<T>(data: T, packet: &[u8]) -> Result<Vec<u8>>
 where

@@ -4,29 +4,30 @@
 	feature = "format-flac"
 ))]
 
-use crate::components::logic;
-use crate::tag::VorbisFormat;
+use crate::components::logic::write::vorbis_generic;
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, Picture, PictureType, Result,
+	TagType, ToAny, ToAnyTag, VorbisFormat,
 };
+use lofty_attr::impl_tag;
 
+use lewton::inside_ogg::OggStreamReader;
+use opus_headers::OpusHeaders;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::Write;
 use std::path::Path;
-#[cfg(feature = "duration")]
-use std::time::Duration;
 
-const VORBIS: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
+pub const VORBIS: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
 const OPUSTAGS: [u8; 8] = [79, 112, 117, 115, 84, 97, 103, 115];
 
 struct VorbisInnerTag {
 	format: Option<VorbisFormat>,
 	vendor: String,
 	comments: HashMap<String, String>,
-	pictures: Option<Vec<Picture>>,
+	pictures: Option<Cow<'static, [Picture]>>,
 }
 
 impl Default for VorbisInnerTag {
@@ -66,147 +67,109 @@ impl VorbisInnerTag {
 		self.comments = comments;
 	}
 
-	fn from_path<P>(path: P, format: VorbisFormat) -> Result<Self>
+	fn from_path<P>(path: P, format: &VorbisFormat) -> Result<Self>
 	where
 		P: AsRef<Path>,
 	{
 		match format {
 			VorbisFormat::Ogg => {
-				let headers = lewton::inside_ogg::OggStreamReader::new(File::open(path)?).unwrap();
+				let tag = lewton::inside_ogg::OggStreamReader::new(File::open(path)?)?;
+				let vorbis_tag: VorbisTag = tag.try_into()?;
 
-				let vendor = headers.comment_hdr.vendor;
-
-				let mut comments = headers.comment_hdr.comment_list;
-
-				let mut pictures: Vec<Picture> = Vec::new();
-
-				if let Some(p) = comments
-					.iter()
-					.position(|(k, _)| *k == "METADATA_BLOCK_PICTURE")
-				{
-					let kv = comments.remove(p);
-					if let Some(pic) = picture_from_data(&*kv.1)? {
-						pictures.push(pic)
-					}
-				}
-
-				Ok(Self {
-					format: Some(format),
-					vendor,
-					comments: comments.into_iter().collect(),
-					pictures: if pictures.is_empty() {
-						None
-					} else {
-						Some(pictures)
-					},
-				})
+				Ok(vorbis_tag.inner)
 			},
 			VorbisFormat::Opus => {
-				let headers = opus_headers::parse_from_path(path)?;
-				let vendor = headers.comments.vendor;
+				let tag = opus_headers::parse_from_path(path)?;
+				let vorbis_tag: VorbisTag = tag.try_into()?;
 
-				let mut comments = headers.comments.user_comments;
-
-				// TODO: opus_headers doesn't store all keys
-				let pictures = if let Some(data) = comments.remove("METADATA_BLOCK_PICTURE") {
-					picture_from_data(&*data)?.map(|pic| vec![pic])
-				} else {
-					None
-				};
-
-				Ok(Self {
-					format: Some(format),
-					vendor,
-					comments,
-					pictures,
-				})
+				Ok(vorbis_tag.inner)
 			},
 			VorbisFormat::Flac => {
-				let headers = metaflac::Tag::read_from_path(path)?;
-				let as_vorbis: VorbisTag = headers.into();
+				let tag = metaflac::Tag::read_from_path(path)?;
+				let vorbis_tag: VorbisTag = tag.try_into()?;
 
-				Ok(as_vorbis.inner)
+				Ok(vorbis_tag.inner)
 			},
 		}
 	}
 }
 
-fn picture_from_data(data: &str) -> Result<Option<Picture>> {
-	let data = match base64::decode(data) {
-		Ok(o) => o,
-		Err(_) => data.as_bytes().to_vec(),
-	};
+#[impl_tag(VorbisInnerTag, TagType::Vorbis(VorbisFormat::Ogg))]
+pub struct VorbisTag;
 
-	let mut i = 0;
+#[cfg(feature = "format-vorbis")]
+impl TryFrom<lewton::inside_ogg::OggStreamReader<File>> for VorbisTag {
+	type Error = crate::Error;
 
-	let picture_type_b = u32::from_le_bytes(match (&data[i..i + 4]).try_into() {
-		Ok(o) => o,
-		Err(_) => return Err(Error::InvalidData),
-	});
-
-	let picture_type = match picture_type_b {
-		3 => PictureType::CoverFront,
-		4 => PictureType::CoverBack,
-		_ => PictureType::Other,
-	};
-
-	i += 4;
-
-	match data[i..i + 4].try_into() {
-		Ok(mime_len) => {
-			i += 4;
-			let mime_len = u32::from_le_bytes(mime_len);
-
-			match String::from_utf8(data[i..i + mime_len as usize].to_vec()) {
-				Ok(mime_type) => {
-					let mime_type = MimeType::try_from(&*mime_type);
-
-					match mime_type {
-						Ok(mime_type) => {
-							let content = data[(8 + mime_len) as usize..].to_vec();
-
-							Ok(Some(Picture {
-								pic_type: picture_type,
-								data: content,
-								mime_type,
-							}))
-						},
-						Err(_) => Ok(None),
-					}
-				},
-				Err(_) => Ok(None),
-			}
-		},
-		Err(_) => Ok(None),
-	}
-}
-
-impl_tag!(
-	VorbisTag,
-	VorbisInnerTag,
-	TagType::Vorbis(VorbisFormat::Ogg)
-);
-
-impl VorbisTag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: VorbisFormat) -> Result<Self>
-	where
-		P: AsRef<Path>,
-	{
-		Ok(Self {
-			inner: VorbisInnerTag::from_path(path, format)?,
-			#[cfg(feature = "duration")]
-			duration: None,
-		})
-	}
-}
-
-impl From<metaflac::Tag> for VorbisTag {
-	fn from(inp: metaflac::Tag) -> Self {
+	fn try_from(inp: OggStreamReader<File>) -> Result<Self> {
 		let mut tag = Self::default();
 
-		let (comments, vendor, pictures) = if let Some(comments) = inp.vorbis_comments() {
+		let mut comments = inp.comment_hdr.comment_list;
+
+		let mut pictures: Vec<Picture> = Vec::new();
+
+		if let Some(p) = comments
+			.iter()
+			.position(|(k, _)| *k == "METADATA_BLOCK_PICTURE")
+		{
+			let kv = comments.remove(p);
+			if let Ok(pic) = Picture::from_apic_bytes(&kv.1.as_bytes()) {
+				pictures.push(pic)
+			}
+		}
+
+		tag.inner = VorbisInnerTag {
+			format: Some(VorbisFormat::Ogg),
+			vendor: inp.comment_hdr.vendor,
+			comments: comments.into_iter().collect(),
+			pictures: if pictures.is_empty() {
+				None
+			} else {
+				Some(Cow::from(pictures))
+			},
+		};
+
+		Ok(tag)
+	}
+}
+
+#[cfg(feature = "format-opus")]
+impl TryFrom<opus_headers::OpusHeaders> for VorbisTag {
+	type Error = crate::Error;
+
+	fn try_from(inp: OpusHeaders) -> Result<Self> {
+		let mut tag = Self::default();
+
+		let mut comments = inp.comments.user_comments;
+
+		// TODO: opus_headers doesn't store all keys
+		let mut pictures = None;
+
+		if let Some(data) = comments.remove("METADATA_BLOCK_PICTURE") {
+			if let Ok(pic) = Picture::from_apic_bytes(&data.as_bytes()) {
+				pictures = Some(Cow::from(vec![pic]))
+			}
+		}
+
+		tag.inner = VorbisInnerTag {
+			format: Some(VorbisFormat::Opus),
+			vendor: inp.comments.vendor,
+			comments,
+			pictures,
+		};
+
+		Ok(tag)
+	}
+}
+
+#[cfg(feature = "format-flac")]
+impl TryFrom<metaflac::Tag> for VorbisTag {
+	type Error = crate::Error;
+
+	fn try_from(inp: metaflac::Tag) -> Result<Self> {
+		let mut tag = Self::default();
+
+		if let Some(comments) = inp.vorbis_comments() {
 			let comments = comments.clone();
 			let mut user_comments = comments.comments;
 
@@ -214,7 +177,7 @@ impl From<metaflac::Tag> for VorbisTag {
 
 			if let Some(data) = user_comments.remove("METADATA_BLOCK_PICTURE") {
 				for item in data {
-					if let Ok(Some(pic)) = picture_from_data(&*item) {
+					if let Ok(pic) = Picture::from_apic_bytes(&item.as_bytes()) {
 						pictures.push(pic)
 					}
 				}
@@ -231,48 +194,32 @@ impl From<metaflac::Tag> for VorbisTag {
 			let comment_collection: HashMap<String, String> =
 				comment_collection.into_iter().collect();
 
-			let vendor = comments.vendor_string;
+			tag.inner = VorbisInnerTag {
+				format: Some(VorbisFormat::Flac),
+				vendor: comments.vendor_string,
+				comments: comment_collection,
+				pictures: Some(Cow::from(pictures)),
+			};
 
-			(comment_collection, vendor, Some(pictures))
-		} else {
-			let comments: HashMap<String, String> = HashMap::new();
-			let vendor = String::new();
+			return Ok(tag);
+		}
 
-			(comments, vendor, None)
-		};
-
-		tag.inner = VorbisInnerTag {
-			format: Some(VorbisFormat::Flac),
-			vendor,
-			comments,
-			pictures,
-		};
-
-		tag
+		Err(Error::InvalidData)
 	}
 }
 
-impl From<&VorbisTag> for metaflac::Tag {
-	fn from(inp: &VorbisTag) -> Self {
-		let mut tag = Self::default();
-
-		tag.remove_blocks(metaflac::BlockType::VorbisComment);
-
-		let vendor = inp.inner.vendor.clone();
-		let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
-
-		for (k, v) in inp.inner.comments.clone() {
-			comment_collection.insert(k, vec![v]);
-		}
-
-		tag.push_block(metaflac::Block::VorbisComment(
-			metaflac::block::VorbisComment {
-				vendor_string: vendor,
-				comments: comment_collection,
-			},
-		));
-
-		tag
+impl VorbisTag {
+	#[allow(missing_docs)]
+	#[allow(clippy::missing_errors_doc)]
+	pub fn read_from_path<P>(path: P, format: &VorbisFormat) -> Result<Self>
+	where
+		P: AsRef<Path>,
+	{
+		Ok(Self {
+			inner: VorbisInnerTag::from_path(path, &format)?,
+			#[cfg(feature = "duration")]
+			duration: None,
+		})
 	}
 }
 
@@ -370,13 +317,15 @@ impl AudioTagEdit for VorbisTag {
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
-		let pictures = create_cover(cover, self.inner.pictures.clone());
+		let pictures = create_cover(&cover, &self.inner.pictures);
 		self.inner.pictures = pictures
 	}
 
 	fn remove_front_cover(&mut self) {
-		if let Some(mut p) = self.inner.pictures.clone() {
-			p.retain(|pic| Some(pic) != self.front_cover().as_ref())
+		if let Some(p) = self.inner.pictures.clone() {
+			let mut p = p.to_vec();
+			p.retain(|pic| Some(pic) != self.front_cover().as_ref());
+			self.inner.pictures = Some(Cow::from(p));
 		}
 	}
 
@@ -387,17 +336,19 @@ impl AudioTagEdit for VorbisTag {
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
-		let pictures = create_cover(cover, self.inner.pictures.clone());
+		let pictures = create_cover(&cover, &self.inner.pictures);
 		self.inner.pictures = pictures
 	}
 
 	fn remove_back_cover(&mut self) {
-		if let Some(mut p) = self.inner.pictures.clone() {
-			p.retain(|pic| Some(pic) != self.back_cover().as_ref())
+		if let Some(p) = self.inner.pictures.clone() {
+			let mut p = p.to_vec();
+			p.retain(|pic| Some(pic) != self.back_cover().as_ref());
+			self.inner.pictures = Some(Cow::from(p));
 		}
 	}
 
-	fn pictures(&self) -> Option<Vec<Picture>> {
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		self.inner.pictures.clone()
 	}
 
@@ -460,11 +411,11 @@ impl AudioTagEdit for VorbisTag {
 	}
 }
 
-fn get_cover(p_type: PictureType, pictures: &Option<Vec<Picture>>) -> Option<Picture> {
+fn get_cover(p_type: PictureType, pictures: &Option<Cow<'static, [Picture]>>) -> Option<Picture> {
 	match pictures {
 		None => None,
 		Some(pictures) => {
-			for pic in pictures {
+			for pic in pictures.iter() {
 				if pic.pic_type == p_type {
 					return Some(pic.clone());
 				}
@@ -475,37 +426,25 @@ fn get_cover(p_type: PictureType, pictures: &Option<Vec<Picture>>) -> Option<Pic
 	}
 }
 
-fn create_cover(cover: Picture, pictures: Option<Vec<Picture>>) -> Option<Vec<Picture>> {
-	let mime = String::from(cover.mime_type);
-	let mime_len = (mime.len() as u32).to_le_bytes();
+fn create_cover(
+	cover: &Picture,
+	pictures: &Option<Cow<'static, [Picture]>>,
+) -> Option<Cow<'static, [Picture]>> {
+	if cover.pic_type == PictureType::CoverFront || cover.pic_type == PictureType::CoverBack {
+		if let Ok(pic) = Picture::from_apic_bytes(&cover.as_apic_bytes()) {
+			if let Some(pictures) = pictures {
+				let mut pictures = pictures.to_vec();
+				pictures.retain(|p| p.pic_type != PictureType::CoverBack);
 
-	let picture_type = match cover.pic_type {
-		PictureType::CoverFront => 3_u32.to_le_bytes(),
-		PictureType::CoverBack => 4_u32.to_le_bytes(),
-		PictureType::Other => unreachable!(),
-	};
+				pictures.push(pic);
+				return Some(Cow::from(pictures));
+			}
 
-	let data = cover.data;
-
-	let mut encoded = Vec::new();
-	encoded.extend(picture_type.iter());
-	encoded.extend(mime_len.iter());
-	encoded.extend(mime.as_bytes().iter());
-	encoded.extend(data.iter());
-
-	let encoded = base64::encode(encoded);
-
-	if let Ok(Some(pic)) = picture_from_data(&*encoded) {
-		if let Some(mut pictures) = pictures {
-			pictures.retain(|p| p.pic_type != PictureType::CoverBack);
-			pictures.push(pic);
-			Some(pictures)
-		} else {
-			Some(vec![pic])
+			return Some(Cow::from(vec![pic]));
 		}
-	} else {
-		None
 	}
+
+	None
 }
 
 impl AudioTagWrite for VorbisTag {
@@ -513,70 +452,51 @@ impl AudioTagWrite for VorbisTag {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
 				VorbisFormat::Ogg => {
-					write(file, &VORBIS, &self.inner.vendor, &self.inner.comments)?;
-				},
-				VorbisFormat::Flac => {
-					let mut flac_tag: metaflac::Tag = self.into();
-
-					flac_tag.write_to(file)?;
+					vorbis_generic(file, &VORBIS, &self.inner.vendor, &self.inner.comments)?;
 				},
 				VorbisFormat::Opus => {
-					write(file, &OPUSTAGS, &self.inner.vendor, &self.inner.comments)?;
+					vorbis_generic(file, &OPUSTAGS, &self.inner.vendor, &self.inner.comments)?;
+				},
+				VorbisFormat::Flac => {
+					// TODO
+					let tag = metaflac::Tag::read_from(file)?;
+
+					let mut blocks: Vec<metaflac::Block> =
+						tag.blocks().map(std::borrow::ToOwned::to_owned).collect();
+
+					let mut pictures: Vec<metaflac::Block> = Vec::new();
+					let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
+
+					if let Some(pics) = self.inner.pictures.clone() {
+						for pic in pics.iter() {
+							pictures.push(metaflac::Block::Picture(
+								metaflac::block::Picture::from_bytes(&*pic.as_apic_bytes())?,
+							))
+						}
+					}
+
+					for (k, v) in self.inner.comments.clone() {
+						comment_collection.insert(k, vec![v]);
+					}
+
+					blocks[1] = metaflac::Block::VorbisComment(metaflac::block::VorbisComment {
+						vendor_string: self.inner.vendor.clone(),
+						comments: comment_collection,
+					});
+
+					blocks.append(&mut pictures);
+
+					file.write_all(b"fLaC")?;
+
+					let total = blocks.len();
+
+					for (i, block) in blocks.iter().enumerate() {
+						block.write_to(i == total - 1, file)?;
+					}
 				},
 			}
 		}
 
 		Ok(())
 	}
-}
-
-fn write(
-	file: &mut File,
-	sig: &[u8],
-	vendor: &str,
-	comments: &HashMap<String, String>,
-) -> Result<()> {
-	let mut packet = Vec::new();
-	packet.extend(sig.iter());
-
-	let comments: Vec<(String, String)> = comments
-		.iter()
-		.map(|(a, b)| (a.to_string(), b.to_string()))
-		.collect();
-
-	let vendor_len = vendor.len() as u32;
-	packet.extend(vendor_len.to_le_bytes().iter());
-	packet.extend(vendor.as_bytes().iter());
-
-	let comments_len = comments.len() as u32;
-	packet.extend(comments_len.to_le_bytes().iter());
-
-	let mut comment_str = Vec::new();
-
-	for (a, b) in comments {
-		comment_str.push(format!("{}={}", a, b));
-		let last = comment_str.last().unwrap();
-		let len = last.as_bytes().len() as u32;
-		packet.extend(len.to_le_bytes().iter());
-		packet.extend(last.as_bytes().iter());
-	}
-
-	if sig == VORBIS {
-		packet.push(1);
-	}
-
-	let mut file_bytes = Vec::new();
-	file.read_to_end(&mut file_bytes)?;
-
-	let data = if sig == VORBIS {
-		logic::write::ogg(Cursor::new(file_bytes), &*packet)?
-	} else {
-		logic::write::opus(Cursor::new(file_bytes), &*packet)?
-	};
-
-	file.seek(SeekFrom::Start(0))?;
-	file.set_len(0)?;
-	file.write_all(&data)?;
-
-	Ok(())
 }

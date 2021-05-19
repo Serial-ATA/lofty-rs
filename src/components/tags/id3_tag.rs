@@ -2,23 +2,23 @@
 
 use crate::tag::Id3Format;
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture,
-	Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
+	TagType, ToAny, ToAnyTag,
 };
+use lofty_attr::impl_tag;
 
 pub use id3::Tag as Id3v2InnerTag;
 
 use crate::types::picture::PictureType;
 use filepath::FilePath;
-use std::convert::TryInto;
+use std::borrow::Cow;
+use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
 
-#[cfg(feature = "duration")]
-use std::time::Duration;
-
-impl_tag!(Id3v2Tag, Id3v2InnerTag, TagType::Id3v2(Id3Format::Default));
+#[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Default))]
+pub struct Id3v2Tag;
 
 impl Id3v2Tag {
 	#[allow(missing_docs)]
@@ -36,45 +36,54 @@ impl Id3v2Tag {
 			Id3Format::Riff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav(&path)?,
 				#[cfg(feature = "duration")]
-				duration: None, // TODO
+				duration: None,
 			}),
 			Id3Format::Form => Ok(Self {
 				inner: Id3v2InnerTag::read_from_aiff(&path)?,
 				#[cfg(feature = "duration")]
-				duration: None, // TODO
+				duration: None,
 			}),
 		}
 	}
 }
 
-impl std::convert::TryFrom<&id3::frame::Picture> for Picture {
+impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 	type Error = Error;
-	fn try_from(inp: &id3::frame::Picture) -> Result<Self> {
+	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
 		let id3::frame::Picture {
 			ref mime_type,
 			data,
 			ref picture_type,
+			description,
 			..
 		} = inp;
 		let mime_type: MimeType = mime_type.as_str().try_into()?;
-		let pic_type: PictureType = picture_type.into();
+		let pic_type = *picture_type;
+		let description = if description == String::new() {
+			None
+		} else {
+			Some(Cow::from(description))
+		};
 
 		Ok(Self {
 			pic_type,
 			mime_type,
-			data: data.clone(),
+			description,
+			data: Cow::from(data),
 		})
 	}
 }
 
-impl std::convert::TryFrom<Picture> for id3::frame::Picture {
+impl TryFrom<Picture> for id3::frame::Picture {
 	type Error = Error;
 	fn try_from(inp: Picture) -> Result<Self> {
 		Ok(Self {
 			mime_type: String::from(inp.mime_type),
-			picture_type: inp.pic_type.into(),
-			description: "".to_string(),
-			data: inp.data,
+			picture_type: inp.pic_type,
+			description: inp
+				.description
+				.map_or_else(|| "".to_string(), |d| d.to_string()),
+			data: Vec::from(inp.data),
 		})
 	}
 }
@@ -176,8 +185,13 @@ impl AudioTagEdit for Id3v2Tag {
 			.and_then(|pic| {
 				Some(Picture {
 					pic_type: PictureType::CoverFront,
-					data: pic.data.clone(),
+					data: Cow::from(pic.data.clone()),
 					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
+					description: if pic.description == String::new() {
+						None
+					} else {
+						Some(Cow::from(pic.description.clone()))
+					},
 				})
 			})
 	}
@@ -202,8 +216,13 @@ impl AudioTagEdit for Id3v2Tag {
 			.and_then(|pic| {
 				Some(Picture {
 					pic_type: PictureType::CoverBack,
-					data: pic.data.clone(),
+					data: Cow::from(pic.data.clone()),
 					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
+					description: if pic.description == String::new() {
+						None
+					} else {
+						Some(Cow::from(pic.description.clone()))
+					},
 				})
 			})
 	}
@@ -221,20 +240,20 @@ impl AudioTagEdit for Id3v2Tag {
 			.remove_picture_by_type(id3::frame::PictureType::CoverBack);
 	}
 
-	fn pictures(&self) -> Option<Vec<Picture>> {
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		let mut pictures = self.inner.pictures().peekable();
 
 		if pictures.peek().is_some() {
 			let mut collection = Vec::new();
 
 			for pic in pictures {
-				match TryInto::<Picture>::try_into(pic) {
+				match TryInto::<Picture>::try_into(pic.clone()) {
 					Ok(p) => collection.push(p),
 					Err(_) => return None,
 				}
 			}
 
-			return Some(collection);
+			return Some(Cow::from(collection));
 		}
 
 		None

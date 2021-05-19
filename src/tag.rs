@@ -107,7 +107,7 @@ impl Tag {
 				feature = "format-flac",
 				feature = "format-opus"
 			))]
-			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, format)?)),
+			TagType::Vorbis(format) => Ok(Box::new(VorbisTag::read_from_path(path, &format)?)),
 		}
 	}
 }

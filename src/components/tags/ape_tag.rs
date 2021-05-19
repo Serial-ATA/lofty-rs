@@ -1,23 +1,21 @@
 #![cfg(feature = "format-ape")]
 
 use crate::{
-	impl_tag, Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, MimeType, Picture, PictureType,
-	Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
+use lofty_attr::impl_tag;
 
 pub use ape::Tag as ApeInnerTag;
 
+use crate::types::picture::APE_PICTYPES;
 use ape::Item;
-use byteorder::{LittleEndian, ReadBytesExt};
 use filepath::FilePath;
+use std::borrow::Cow;
 use std::fs::File;
-use std::io::{Cursor, Seek, SeekFrom};
 use std::path::Path;
 
-#[cfg(feature = "duration")]
-use std::time::Duration;
-
-impl_tag!(ApeTag, ApeInnerTag, TagType::Ape);
+#[impl_tag(ApeInnerTag, TagType::Ape)]
+pub struct ApeTag;
 
 impl ApeTag {
 	#[allow(missing_docs)]
@@ -39,6 +37,17 @@ impl ApeTag {
 		if let Some(item) = self.inner.item(key) {
 			if let ape::ItemValue::Text(val) = &item.value {
 				return Some(&*val);
+			}
+		}
+
+		None
+	}
+
+	#[allow(clippy::unused_self)]
+	fn get_picture(&self, item: &Item) -> Option<Picture> {
+		if let ape::ItemValue::Binary(bin) = &item.value {
+			if let Ok(pic) = Picture::from_ape_bytes(&item.key, bin) {
+				return Some(pic);
 			}
 		}
 
@@ -148,7 +157,7 @@ impl AudioTagEdit for ApeTag {
 
 	fn front_cover(&self) -> Option<Picture> {
 		if let Some(val) = self.inner.item("Cover Art (Front)") {
-			return get_picture(val);
+			return self.get_picture(val);
 		}
 
 		None
@@ -157,7 +166,7 @@ impl AudioTagEdit for ApeTag {
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
-		if let Ok(item) = ape::Item::from_binary("Cover Art (Front)", cover.data) {
+		if let Ok(item) = ape::Item::from_binary("Cover Art (Front)", cover.as_ape_bytes()) {
 			self.inner.set_item(item)
 		}
 	}
@@ -168,7 +177,7 @@ impl AudioTagEdit for ApeTag {
 
 	fn back_cover(&self) -> Option<Picture> {
 		if let Some(val) = self.inner.item("Cover Art (Back)") {
-			return get_picture(val);
+			return self.get_picture(val);
 		}
 
 		None
@@ -177,7 +186,7 @@ impl AudioTagEdit for ApeTag {
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
 
-		if let Ok(item) = ape::Item::from_binary("Cover Art (Back)", cover.data) {
+		if let Ok(item) = ape::Item::from_binary("Cover Art (Back)", cover.as_ape_bytes()) {
 			self.inner.set_item(item)
 		}
 	}
@@ -186,9 +195,22 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Cover Art (Back)")
 	}
 
-	fn pictures(&self) -> Option<Vec<Picture>> {
-		// TODO
-		None
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
+		let mut pics = Vec::new();
+
+		for pic_type in &APE_PICTYPES {
+			if let Some(item) = self.inner.item(pic_type) {
+				if let Some(pic) = self.get_picture(item) {
+					pics.push(pic)
+				}
+			}
+		}
+
+		if pics.is_empty() {
+			None
+		} else {
+			Some(Cow::from(pics))
+		}
 	}
 
 	// Track number and total tracks are stored together as num/total?
@@ -281,49 +303,6 @@ impl AudioTagEdit for ApeTag {
 	fn remove_total_discs(&mut self) {
 		self.remove_key("Disc")
 	}
-}
-
-fn get_picture(item: &Item) -> Option<Picture> {
-	if let ape::ItemValue::Binary(bin) = &item.value {
-		if !bin.is_empty() {
-			let pic_type = match &*item.key {
-				"Cover Art (Front)" => PictureType::CoverFront,
-				"Cover Art (Back)" => PictureType::CoverBack,
-				_ => PictureType::Other,
-			};
-
-			let data_pos: Option<usize> =
-				if bin.starts_with(&[b'\xff']) || bin.starts_with(&[b'\x89']) {
-					Some(0)
-				} else {
-					bin.iter().find(|x| x == &&b'\0').map(|pos| *pos as usize)
-				};
-
-			if let Some(pos) = data_pos {
-				let mut cursor = Cursor::new(bin.clone());
-
-				if cursor.seek(SeekFrom::Start((pos + 1) as u64)).is_ok() {
-					if let Ok(mime) = cursor.read_u32::<LittleEndian>() {
-						if let Some(mime_type) = match &mime.to_le_bytes() {
-							b"PNG\0" => Some(MimeType::Png),
-							b"JPEG" => Some(MimeType::Jpeg),
-							_ => None,
-						} {
-							cursor.set_position(0_u64);
-
-							return Some(Picture {
-								pic_type,
-								mime_type,
-								data: cursor.into_inner(),
-							});
-						}
-					}
-				}
-			}
-		}
-	}
-
-	None
 }
 
 impl AudioTagWrite for ApeTag {
