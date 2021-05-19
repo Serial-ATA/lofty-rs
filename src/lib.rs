@@ -19,7 +19,7 @@
 //! | FLAC        | `flac`                                    |**X** |**X**  |          | `Vorbis Comments`    |
 //! | MP3         | `mp3`                                     |**X** |**X**  |**X**     | `ID3v2`              |
 //! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |          | `Vorbis Comments`    |
-//! | Opus        | `opus`                                    |**X** |**X**  |          | `Vorbis Comments`    |
+//! | Opus        | `opus`                                    |**X** |       |          | `Vorbis Comments`    |
 //! | Ogg         | `ogg`, `oga`                              |**X** |**X**  |          | `Vorbis Comments`    |
 //! | WAV         | `wav`, `wave`                             |**X** |**X**  |          | `RIFF INFO`, `ID3v2` |
 //!
