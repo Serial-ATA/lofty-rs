@@ -6,10 +6,9 @@ use crate::{
 };
 use lofty_attr::impl_tag;
 
-use std::borrow::{BorrowMut, Cow};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::path::Path;
 
 struct RiffInnerTag {
@@ -236,45 +235,7 @@ impl AudioTagEdit for RiffTag {
 impl AudioTagWrite for RiffTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(data) = self.inner.data.clone() {
-			let mut chunk = Vec::new();
-
-			chunk.extend(riff::LIST_ID.value.iter());
-
-			let fourcc = "INFO";
-			chunk.extend(fourcc.as_bytes().iter());
-
-			for (k, v) in data {
-				if let Some(fcc) = logic::read::key_to_fourcc(&*k) {
-					let mut val = v.as_bytes().to_vec();
-
-					if val.len() % 2 != 0 {
-						val.push(0)
-					}
-
-					let size = val.len() as u32;
-
-					chunk.extend(fcc.iter());
-					chunk.extend(size.to_le_bytes().iter());
-					chunk.extend(val.iter());
-				}
-			}
-
-			let mut file_bytes = Vec::new();
-			std::io::copy(file.borrow_mut(), &mut file_bytes)?;
-
-			let len = (chunk.len() - 4) as u32;
-			let size = len.to_le_bytes();
-
-			#[allow(clippy::needless_range_loop)]
-			for i in 0..4 {
-				chunk.insert(i + 4, size[i]);
-			}
-
-			let data = logic::write::wav(Cursor::new(file_bytes), chunk)?;
-
-			file.seek(SeekFrom::Start(0))?;
-			file.set_len(0)?;
-			file.write_all(&*data)?;
+			crate::components::logic::write::riff(file, data)?;
 		}
 
 		Ok(())

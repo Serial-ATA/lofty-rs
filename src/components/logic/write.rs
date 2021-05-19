@@ -1,12 +1,16 @@
 use crate::vorbis_tag::VORBIS;
-use crate::{Error, Result};
+use crate::{Error, Picture, Result};
 
-#[cfg(feature = "ogg")]
+#[cfg(feature = "format-flac")]
+use metaflac::BlockType;
+#[cfg(feature = "format-vorbis")]
 use ogg::PacketWriteEndInfo;
+use std::borrow::{BorrowMut, Cow};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+#[cfg(any(feature = "format-vorbis", feature = "format-opus"))]
 pub(crate) fn vorbis_generic(
 	file: &mut File,
 	sig: &[u8],
@@ -58,6 +62,66 @@ pub(crate) fn vorbis_generic(
 	Ok(())
 }
 
+#[cfg(feature = "format-flac")]
+pub(crate) fn flac<T>(
+	mut data: T,
+	vendor: &str,
+	comments: &HashMap<String, String>,
+	pictures: &Option<Cow<'static, [Picture]>>,
+) -> Result<()>
+where
+	T: Read + Write + Seek,
+{
+	let mut tag = metaflac::Tag::read_from(&mut data)?;
+
+	tag.remove_blocks(BlockType::VorbisComment);
+	tag.remove_blocks(BlockType::Picture);
+
+	let mut padding = None;
+
+	if let Some(pad) = tag.get_blocks(BlockType::Padding).last() {
+		padding = Some(pad.clone());
+		tag.remove_blocks(BlockType::Padding)
+	}
+
+	let mut pics_final: Vec<metaflac::Block> = Vec::new();
+	let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
+
+	if let Some(pics) = pictures.clone() {
+		for pic in pics.iter() {
+			pics_final.push(metaflac::Block::Picture(
+				metaflac::block::Picture::from_bytes(&*pic.as_apic_bytes())?,
+			))
+		}
+	}
+
+	for (k, v) in comments.clone() {
+		comment_collection.insert(k, vec![v]);
+	}
+
+	let comments = metaflac::Block::VorbisComment(metaflac::block::VorbisComment {
+		vendor_string: vendor.to_string(),
+		comments: comment_collection,
+	});
+
+	tag.push_block(comments);
+
+	for pic in pics_final {
+		tag.push_block(pic)
+	}
+
+	if let Some(padding) = padding {
+		tag.push_block(padding)
+	}
+
+	data.seek(SeekFrom::Start(0))?;
+
+	tag.write_to(&mut data)?;
+
+	Ok(())
+}
+
+#[cfg(feature = "format-vorbis")]
 pub(crate) fn ogg<T>(data: T, packet: &[u8]) -> Result<Vec<u8>>
 where
 	T: Read + Seek,
@@ -108,6 +172,7 @@ where
 	Ok(c.into_inner())
 }
 
+#[cfg(feature = "format-opus")]
 struct Page {
 	pub size_idx: usize,
 	pub content: Vec<u8>,
@@ -116,6 +181,7 @@ struct Page {
 	pub end: usize,
 }
 
+#[cfg(feature = "format-opus")]
 pub(crate) fn opus<T>(mut data: T, packet: &[u8]) -> Result<Vec<u8>>
 where
 	T: Read + Seek,
@@ -214,11 +280,45 @@ where
 	Ok(content)
 }
 
-pub(crate) fn wav<T>(mut data: T, packet: Vec<u8>) -> Result<Vec<u8>>
-where
-	T: Read + Seek + Write,
-{
-	let chunk = riff::Chunk::read(&mut data, 0)?;
+#[cfg(feature = "format-riff")]
+pub(crate) fn riff(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
+	let mut packet = Vec::new();
+
+	packet.extend(riff::LIST_ID.value.iter());
+
+	let fourcc = "INFO";
+	packet.extend(fourcc.as_bytes().iter());
+
+	for (k, v) in metadata {
+		if let Some(fcc) = super::read::key_to_fourcc(&*k) {
+			let mut val = v.as_bytes().to_vec();
+
+			if val.len() % 2 != 0 {
+				val.push(0)
+			}
+
+			let size = val.len() as u32;
+
+			packet.extend(fcc.iter());
+			packet.extend(size.to_le_bytes().iter());
+			packet.extend(val.iter());
+		}
+	}
+
+	let mut file_bytes = Vec::new();
+	std::io::copy(data.borrow_mut(), &mut file_bytes)?;
+
+	let len = (packet.len() - 4) as u32;
+	let size = len.to_le_bytes();
+
+	#[allow(clippy::needless_range_loop)]
+	for i in 0..4 {
+		packet.insert(i + 4, size[i]);
+	}
+
+	let mut file = Cursor::new(file_bytes);
+
+	let chunk = riff::Chunk::read(&mut file, 0)?;
 
 	let (mut list_pos, mut list_len): (Option<u32>, Option<u32>) = (None, None);
 
@@ -228,17 +328,17 @@ where
 		));
 	}
 
-	for child in chunk.iter(&mut data) {
+	for child in chunk.iter(&mut file) {
 		if child.id() == riff::LIST_ID {
 			list_pos = Some(child.offset() as u32);
 			list_len = Some(child.len());
 		}
 	}
 
-	data.seek(SeekFrom::Start(0))?;
+	file.seek(SeekFrom::Start(0))?;
 
 	let mut content = Vec::new();
-	std::io::copy(&mut data, &mut content)?;
+	std::io::copy(&mut file, &mut content)?;
 
 	if let (Some(list_pos), Some(list_len)) = (list_pos, list_len) {
 		let list_end = (list_pos + list_len) as usize;
@@ -248,7 +348,11 @@ where
 		let total_size = (content.len() - 8) as u32;
 		let _ = content.splice(4..8, total_size.to_le_bytes().to_vec());
 
-		Ok(content)
+		data.seek(SeekFrom::Start(0))?;
+		data.set_len(0)?;
+		data.write_all(&*content)?;
+
+		Ok(())
 	} else {
 		Err(Error::Wav(
 			"This file does not contain an INFO chunk".to_string(),

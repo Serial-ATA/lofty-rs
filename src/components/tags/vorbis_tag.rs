@@ -17,7 +17,6 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 
 pub const VORBIS: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
@@ -458,41 +457,12 @@ impl AudioTagWrite for VorbisTag {
 					vorbis_generic(file, &OPUSTAGS, &self.inner.vendor, &self.inner.comments)?;
 				},
 				VorbisFormat::Flac => {
-					// TODO
-					let tag = metaflac::Tag::read_from(file)?;
-
-					let mut blocks: Vec<metaflac::Block> =
-						tag.blocks().map(std::borrow::ToOwned::to_owned).collect();
-
-					let mut pictures: Vec<metaflac::Block> = Vec::new();
-					let mut comment_collection: HashMap<String, Vec<String>> = HashMap::new();
-
-					if let Some(pics) = self.inner.pictures.clone() {
-						for pic in pics.iter() {
-							pictures.push(metaflac::Block::Picture(
-								metaflac::block::Picture::from_bytes(&*pic.as_apic_bytes())?,
-							))
-						}
-					}
-
-					for (k, v) in self.inner.comments.clone() {
-						comment_collection.insert(k, vec![v]);
-					}
-
-					blocks[1] = metaflac::Block::VorbisComment(metaflac::block::VorbisComment {
-						vendor_string: self.inner.vendor.clone(),
-						comments: comment_collection,
-					});
-
-					blocks.append(&mut pictures);
-
-					file.write_all(b"fLaC")?;
-
-					let total = blocks.len();
-
-					for (i, block) in blocks.iter().enumerate() {
-						block.write_to(i == total - 1, file)?;
-					}
+					crate::components::logic::write::flac(
+						file,
+						&self.inner.vendor,
+						&self.inner.comments,
+						&self.inner.pictures,
+					)?;
 				},
 			}
 		}
