@@ -33,9 +33,7 @@ thiserror = "1.0.24"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 
-[dependencies.lofty_attr]
-path = "./lofty-attr"
-version = "0.1.0"
+lofty_attr = "0.1.0"
 
 [features]
 default = ["full"]

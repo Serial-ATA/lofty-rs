@@ -348,6 +348,8 @@ dependencies = [
 [[package]]
 name = "lofty_attr"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d52bab5d43183b8022bc4f29af84eb32d2f812f789860be83cf16612b066815e"
 dependencies = [
  "quote",
  "syn",
