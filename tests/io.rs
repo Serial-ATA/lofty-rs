@@ -41,13 +41,17 @@ macro_rules! add_tags {
 				pic_type: PictureType::CoverFront,
 				mime_type: MimeType::Jpeg,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 11]),
+				data: Cow::from(vec![
+					51, 50, 51, 50, 51, 50, 51, 50, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+				]),
 			},
 			Picture {
 				pic_type: PictureType::CoverBack,
 				mime_type: MimeType::Jpeg,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 11]),
+				data: Cow::from(vec![
+					51, 50, 51, 50, 51, 50, 51, 50, 49, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
+				]),
 			},
 		);
 

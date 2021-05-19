@@ -1,6 +1,6 @@
 use crate::{Error, Result};
 
-use byteorder::{LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::{Cursor, Read};
@@ -303,42 +303,29 @@ impl Picture {
 	/// * Id3v2 APIC
 	/// * Vorbis METADATA_BLOCK_PICTURE
 	pub fn as_apic_bytes(&self) -> Vec<u8> {
-		let picture_type = self.pic_type.as_u32().to_le_bytes();
+		let picture_type = self.pic_type.as_u32().to_be_bytes();
 
 		let mime_str = String::from(self.mime_type);
 		let mime_len = mime_str.len() as u32;
 
 		let mut data: Vec<u8> = Vec::new();
 		data.extend(picture_type.iter());
-		data.extend(mime_len.to_le_bytes().iter());
+		data.extend(mime_len.to_be_bytes().iter());
 		data.extend(mime_str.as_bytes().iter());
 
 		if let Some(desc) = self.description.clone() {
 			let desc_str = desc.to_string();
 			let desc_len = desc_str.len() as u32;
 
-			data.extend(desc_len.to_le_bytes().iter());
+			data.extend(desc_len.to_be_bytes().iter());
 			data.extend(desc_str.as_bytes().iter());
 		}
 
-		data.extend(self.data.iter());
+		let pic_data = &self.data;
+		let pic_data_len = pic_data.len() as u32;
 
-		data
-	}
-	/// Convert the `Picture` back to an APEv2 byte vec:
-	///
-	/// * APEv2 Cover Art
-	pub fn as_ape_bytes(&self) -> Vec<u8> {
-		let mut data: Vec<u8> = Vec::new();
-
-		if let Some(desc) = self.description.clone() {
-			let desc_str = desc.to_string();
-			data.extend(desc_str.as_bytes().iter());
-			data.extend([0].iter())
-		}
-
-		data.extend(self.mime_type.as_ape().iter());
-		data.extend(self.data.iter());
+		data.extend(pic_data_len.to_be_bytes().iter());
+		data.extend(pic_data.iter());
 
 		data
 	}
@@ -358,10 +345,10 @@ impl Picture {
 
 		let mut cursor = Cursor::new(data);
 
-		if let Ok(bytes) = cursor.read_u32::<LittleEndian>() {
+		if let Ok(bytes) = cursor.read_u32::<BigEndian>() {
 			let picture_type = PictureType::from_u32(bytes);
 
-			if let Ok(mime_len) = cursor.read_u32::<LittleEndian>() {
+			if let Ok(mime_len) = cursor.read_u32::<BigEndian>() {
 				let mut buf = vec![0; mime_len as usize];
 				cursor.read_exact(&mut buf)?;
 
@@ -369,7 +356,7 @@ impl Picture {
 					if let Ok(mime_type) = MimeType::try_from(&*mime_type_str) {
 						let mut description = None;
 
-						if let Ok(desc_len) = cursor.read_u32::<LittleEndian>() {
+						if let Ok(desc_len) = cursor.read_u32::<BigEndian>() {
 							if cursor.get_ref().len()
 								>= (cursor.position() as u32 + desc_len) as usize
 							{
@@ -384,21 +371,43 @@ impl Picture {
 							}
 						}
 
-						let pos = (cursor.position()) as usize;
-						let content = &cursor.into_inner()[pos..];
+						if let Ok(_data_len) = cursor.read_u32::<BigEndian>() {
+							let pos = (cursor.position()) as usize;
+							let content = &cursor.into_inner()[pos..];
 
-						return Ok(Self {
-							pic_type: picture_type,
-							mime_type,
-							description,
-							data: Cow::from(content.to_vec()),
-						});
+							return Ok(Self {
+								pic_type: picture_type,
+								mime_type,
+								description,
+								data: Cow::from(content.to_vec()),
+							});
+						}
 					}
 				}
 			}
 		}
 
 		Err(Error::InvalidData)
+	}
+	/// Convert the `Picture` back to an APEv2 byte vec:
+	///
+	/// * APEv2 Cover Art
+	pub fn as_ape_bytes(&self) -> Vec<u8> {
+		const NULL: [u8; 1] = [0];
+
+		let mut data: Vec<u8> = Vec::new();
+
+		if let Some(desc) = self.description.clone() {
+			let desc_str = desc.to_string();
+			data.extend(desc_str.as_bytes().iter());
+			data.extend(NULL.iter());
+		}
+
+		data.extend(self.mime_type.as_ape().iter());
+		data.extend(NULL.iter());
+		data.extend(self.data.iter());
+
+		data
 	}
 	/// Get a `Picture` from APEv2 bytes:
 	///
@@ -460,10 +469,7 @@ impl Picture {
 
 			if let Some(mime_type) = mime_type {
 				let pos = cursor.position() as usize;
-				let mut data = cursor.into_inner()[pos..].to_vec();
-				data.insert(0, 0);
-
-				let data = Cow::from(data);
+				let data = Cow::from(cursor.into_inner()[pos..].to_vec());
 
 				return Ok(Picture {
 					pic_type,
