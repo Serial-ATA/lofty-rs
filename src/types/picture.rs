@@ -298,7 +298,7 @@ impl Picture {
 			data,
 		}
 	}
-	/// Convert the `Picture` back to an APIC byte vec:
+	/// Convert the [`Picture`] back to an APIC byte vec:
 	///
 	/// * Id3v2 APIC
 	/// * Vorbis METADATA_BLOCK_PICTURE
@@ -329,7 +329,7 @@ impl Picture {
 
 		data
 	}
-	/// Get a `Picture` from APIC bytes:
+	/// Get a [`Picture`] from APIC bytes:
 	///
 	/// * Id3v2 APIC
 	/// * Vorbis METADATA_BLOCK_PICTURE
@@ -389,7 +389,7 @@ impl Picture {
 
 		Err(Error::InvalidData)
 	}
-	/// Convert the `Picture` back to an APEv2 byte vec:
+	/// Convert the [`Picture`] back to an APEv2 byte vec:
 	///
 	/// * APEv2 Cover Art
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
@@ -409,7 +409,7 @@ impl Picture {
 
 		data
 	}
-	/// Get a `Picture` from APEv2 bytes:
+	/// Get a [`Picture`] from APEv2 bytes:
 	///
 	/// * APEv2 Cover Art
 	///

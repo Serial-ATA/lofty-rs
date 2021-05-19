@@ -25,38 +25,66 @@
 //!
 //! # Examples
 //!
+//! ## Guessing from extension
 //! ```
 //! use lofty::{Tag, TagType};
 //!
-//! // Guess the format from the extension, in this case `mp3`
 //! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
 //! tag.set_title("Foo");
 //!
-//! // You can also guess the format from the file signature
+//! assert_eq!(tag.title(), Some("Foo"));
+//! ```
+//!
+//! ## Guessing from file signature
+//! ```
+//! use lofty::Tag;
+//!
 //! let mut tag_sig = Tag::new().read_from_path_signature("tests/assets/a.wav").unwrap();
 //! tag_sig.set_artist("Foo artist");
 //!
+//! assert_eq!(tag_sig.artist_str(), Some("Foo artist"));
+//! ```
+//!
+//! ## Specifying a TagType
+//! ```
+//! use lofty::{Tag, TagType};
+//!
+//! let mut tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
+//! tag.set_album_title("Foo album title");
+//!
+//! assert_eq!(tag.album_title(), Some("Foo album title"));
+//! ```
+//!
+//! ## Converting between TagTypes
+//! ```
+//! use lofty::{Tag, TagType};
+//!
+//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
+//! tag.set_title("Foo");
+//!
 //! // You can convert the tag type and save the metadata to another file.
 //! tag.to_dyn_tag(TagType::Mp4).write_to_path("tests/assets/a.m4a");
-//!
-//! // You can specify the tag type, but when you want to do this
-//! // also consider directly using the concrete type
-//! let tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
 //! assert_eq!(tag.title(), Some("Foo"));
 //! ```
 //!
 //! # Features
 //!
-//! By default, `full` (`all_tags` and `duration`) are enabled.
+//! ## Applies to all
+//! * `full` - Combines both `all_tags` and `duration` (*default*)
+//! * `all_tags` - Enables all formats
+//! * `duration` - Provides the `duration` field in each tag
 //!
-//! `all_tags` provides all tag types (ID3, RIFF, Vorbis, etc).
+//! ## Individual formats
+//! These features are available if you have a specific usecase, or just don't want certain formats.
 //!
-//! `duration` provides the `duration` field in each tag (ex. Tag.duration).
-//!
-//! Either one can be disabled if it doesn't fit your use case.
-//!
-//! In addition to this, each format can be individually enabled.
-//! Features: `format-ape, format-flac, format-id3, format-mp4, format-opus, format-vorbis, format-riff`.
+//! All format features a prefixed with `format-`
+//! * `format-ape`
+//! * `format-flac`
+//! * `format-id3`
+//! * `format-mp4`
+//! * `format-opus`
+//! * `format-vorbis`
+//! * `format-riff`
 //!
 //! ## Performance
 //!
