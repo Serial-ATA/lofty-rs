@@ -86,6 +86,11 @@
 //! * `format-vorbis`
 //! * `format-riff`
 //!
+//! ## Umbrella features
+//! These cover all formats under a container format.
+//!
+//! * `format-ogg` (`format-opus`, `format-vorbis`, `format-flac`)
+//!
 //! ## Performance
 //!
 //! Using lofty incurs a little overhead due to vtables if you want to guess the metadata format (from file extension).
