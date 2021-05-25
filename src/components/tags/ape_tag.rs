@@ -9,7 +9,6 @@ pub use ape::Tag as ApeInnerTag;
 
 use crate::types::picture::APE_PICTYPES;
 use ape::Item;
-use filepath::FilePath;
 use std::borrow::Cow;
 use std::fs::File;
 use std::path::Path;
@@ -25,7 +24,7 @@ impl ApeTag {
 		P: AsRef<Path>,
 	{
 		Ok(Self {
-			inner: ape::read(&path)?,
+			inner: ape::read_from_path(&path)?,
 			#[cfg(feature = "duration")]
 			duration: None, // TODO
 		})
@@ -308,11 +307,11 @@ impl AudioTagEdit for ApeTag {
 impl AudioTagWrite for ApeTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		// Write only uses paths, this is annoying
-		ape::write(&self.inner, file.path()?)?;
+		ape::write_to(&self.inner, file)?;
 		Ok(())
 	}
 	fn write_to_path(&self, path: &str) -> Result<()> {
-		ape::write(&self.inner, path)?;
+		ape::write_to_path(&self.inner, path)?;
 		Ok(())
 	}
 }

@@ -11,12 +11,12 @@ categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
 # Ape
-ape = {version = "0.3.0", optional = true}
-filepath = { version = "0.1.1", optional = true } # ape crate only accepts paths for some reason
+ape = {version = "0.3.0", optional = true, git="https://github.com/rossnomann/rust-ape"}
 # Wav
 riff = {version = "1.0.1", optional = true}
 # Mp3
 id3 = {version = "0.6.4", optional = true} # De/Encoding
+filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 mp3-duration = {version = "0.1.10", optional = true} # Duration
 # Ogg
 lewton = {version = "0.10.2", optional = true} # Decoding
@@ -25,8 +25,6 @@ ogg = {version = "0.8.0", optional = true} # Encoding
 mp4ameta = {version = "0.10.2", optional = true}
 # Flac
 metaflac = {version = "0.2.4", optional = true}
-# Opus
-opus_headers = {version = "0.1.2", optional = true}
 # Errors
 thiserror = "1.0.24"
 
@@ -40,10 +38,10 @@ default = ["full"]
 full = ["all_tags", "duration"]
 format-mp4 = ["mp4ameta"]
 format-flac = ["metaflac"]
-format-opus = ["opus_headers"]
+format-opus = []
 format-vorbis = ["lewton", "ogg"]
-format-ape = ["ape", "filepath"]
-format-id3 = ["id3"]
+format-ape = ["ape"]
+format-id3 = ["id3", "filepath"]
 format-riff = ["riff"]
 format-ogg = ["format-flac", "format-opus", "format-vorbis"]
 all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape"]
