@@ -1,6 +1,6 @@
 /// Errors that could occur within Lofty.
 #[derive(thiserror::Error, Debug)]
-pub enum Error {
+pub enum LoftyError {
 	/// Unknown file extension.
 	#[error("Failed to guess the metadata format based on the file extension.")]
 	UnknownFileExtension,
@@ -38,9 +38,6 @@ pub enum Error {
 	/// Any error from [`mp4ameta`]
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
-	/// Any error from [`opus_headers`]
-	#[error(transparent)]
-	OpusTag(#[from] opus_headers::ParseError),
 	/// Any error from [`lewton`]
 	#[error(transparent)]
 	Lewton(#[from] lewton::VorbisError),
@@ -48,11 +45,14 @@ pub enum Error {
 	#[error(transparent)]
 	Ogg(#[from] ogg::OggReadError),
 	/// Errors that arise while reading/writing to wav files
-	#[error("{0}")]
-	Wav(String),
+	#[error("Invalid Riff file: {0}")]
+	Riff(String),
+	/// Errors that arise while reading/writing to opus files
+	#[error("Invalid Opus file: {0}")]
+	Opus(String),
 
-	/// Failed to convert data to a picture
-	#[error("")]
+	/// Arises when provided an invalid picture
+	#[error("Picture contains invalid data")]
 	NotAPicture,
 
 	/// If a string isn't Utf8
@@ -68,4 +68,4 @@ pub enum Error {
 }
 
 /// Type for the result of tag operations.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, LoftyError>;

@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{LoftyError, Result};
 
 use byteorder::{BigEndian, ReadBytesExt};
 use std::borrow::Cow;
@@ -59,7 +59,8 @@ impl MimeType {
 }
 
 impl TryFrom<&str> for MimeType {
-	type Error = Error;
+	type Error = LoftyError;
+
 	fn try_from(inp: &str) -> Result<Self> {
 		Ok(match inp {
 			"image/jpeg" => MimeType::Jpeg,
@@ -67,7 +68,7 @@ impl TryFrom<&str> for MimeType {
 			"image/tiff" => MimeType::Tiff,
 			"image/bmp" => MimeType::Bmp,
 			"image/gif" => MimeType::Gif,
-			_ => return Err(Error::UnsupportedMimeType(inp.to_owned())),
+			_ => return Err(LoftyError::UnsupportedMimeType(inp.to_owned())),
 		})
 	}
 }
@@ -387,7 +388,7 @@ impl Picture {
 			}
 		}
 
-		Err(Error::InvalidData)
+		Err(LoftyError::NotAPicture)
 	}
 	/// Convert the [`Picture`] back to an APEv2 byte vec:
 	///
@@ -480,6 +481,6 @@ impl Picture {
 			}
 		}
 
-		Err(Error::InvalidData)
+		Err(LoftyError::NotAPicture)
 	}
 }

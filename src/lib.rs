@@ -126,7 +126,7 @@ mod tag;
 pub use crate::tag::{Id3Format, Tag, TagType, VorbisFormat};
 
 mod error;
-pub use crate::error::{Error, Result};
+pub use crate::error::{LoftyError, Result};
 
 mod components;
 pub use crate::components::tags::*;

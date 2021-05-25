@@ -1,6 +1,6 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
-use crate::{AudioTag, Error, Result};
+use crate::{AudioTag, LoftyError, Result};
 use std::io::Seek;
 use std::path::Path;
 
@@ -61,8 +61,8 @@ impl Tag {
 			let extension = path
 				.as_ref()
 				.extension()
-				.ok_or(Error::UnknownFileExtension)?;
-			let extension_str = extension.to_str().ok_or(Error::UnknownFileExtension)?;
+				.ok_or(LoftyError::UnknownFileExtension)?;
+			let extension_str = extension.to_str().ok_or(LoftyError::UnknownFileExtension)?;
 
 			TagType::try_from_ext(extension_str)?
 		});
@@ -187,12 +187,12 @@ impl TagType {
 			"ogg" | "oga" => Ok(Self::Vorbis(VorbisFormat::Ogg)),
 			#[cfg(feature = "format-mp4")]
 			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::Mp4),
-			_ => Err(Error::UnsupportedFormat(ext.to_owned())),
+			_ => Err(LoftyError::UnsupportedFormat(ext.to_owned())),
 		}
 	}
 	fn try_from_sig(data: &[u8]) -> Result<Self> {
 		if data.is_empty() {
-			return Err(Error::EmptyFile);
+			return Err(LoftyError::EmptyFile);
 		}
 
 		match data[0] {
@@ -232,7 +232,7 @@ impl TagType {
 				}
 
 				// TODO: support AIFF chunks?
-				Err(Error::UnknownFormat)
+				Err(LoftyError::UnknownFormat)
 			},
 			#[cfg(feature = "format-flac")]
 			102 if data.starts_with(&FLAC) => Ok(Self::Vorbis(VorbisFormat::Flac)),
@@ -246,7 +246,7 @@ impl TagType {
 					return Ok(Self::Vorbis(VorbisFormat::Opus));
 				}
 
-				Err(Error::UnknownFormat)
+				Err(LoftyError::UnknownFormat)
 			},
 			#[cfg(feature = "format-riff")]
 			82 if data.starts_with(&RIFF) => {
@@ -280,7 +280,7 @@ impl TagType {
 			},
 			#[cfg(feature = "format-mp4")]
 			_ if data[4..8] == FTYP => Ok(Self::Mp4),
-			_ => Err(Error::UnknownFormat),
+			_ => Err(LoftyError::UnknownFormat),
 		}
 	}
 }
