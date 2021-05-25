@@ -26,7 +26,7 @@ mp4ameta = {version = "0.10.2", optional = true}
 # Flac
 metaflac = {version = "0.2.4", optional = true}
 # Errors
-thiserror = "1.0.24"
+thiserror = "1.0.25"
 
 base64 = "0.13.0"
 byteorder = "1.4.3"
