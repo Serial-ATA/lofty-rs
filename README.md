@@ -6,11 +6,7 @@
 
 This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types and (optionally) duration.
 
-Parse, convert, and write metadata to audio files of different file types.
-
-**Lofty** aims to provide a unified trait for parsers and writers of different audio file formats.
-Without this crate, you would otherwise need to learn the different APIs in **id3**, **mp4ameta**, etc.
-in order to parse metadata in different file formats.
+Parse, convert, and write metadata to various audio formats.
 
 ## Supported Formats
 
@@ -21,8 +17,8 @@ in order to parse metadata in different file formats.
 | FLAC        | `flac`                                    |**X** |**X**  |          | `Vorbis Comments`    |
 | MP3         | `mp3`                                     |**X** |**X**  |**X**     | `ID3v2`              |
 | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |          | `Vorbis Comments`    |
-| Opus        | `opus`                                    |**X** |**X**  |          | `Vorbis Comments`    |
-| Ogg         | `ogg`, `oga`                              |**X** |**X**  |          | `Vorbis Comments`    |
+| Opus        | `opus`                                    |**X** |       |          | `Vorbis Comments`    |
+| Ogg         | `ogg`, `oga`                              |**X** |       |          | `Vorbis Comments`    |
 | WAV         | `wav`, `wave`                             |**X** |**X**  |          | `RIFF INFO`, `ID3v2` |
 
 ## Documentation
