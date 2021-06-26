@@ -1,17 +1,16 @@
 #![cfg(feature = "format-mp4")]
 
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
-	TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
+	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 use lofty_attr::impl_tag;
 
 pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
-use crate::types::picture::PictureType;
 use std::borrow::Cow;
 use std::fs::File;
-use std::path::Path;
+use std::io::{Read, Seek};
 
 #[impl_tag(Mp4InnerTag, TagType::Mp4)]
 pub struct Mp4Tag {}
@@ -19,12 +18,12 @@ pub struct Mp4Tag {}
 impl Mp4Tag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: Mp4InnerTag::read_from_path(path)?,
+			inner: Mp4InnerTag::read_from(reader)?,
 			#[cfg(feature = "duration")]
 			duration: None,
 		})
@@ -32,7 +31,8 @@ impl Mp4Tag {
 }
 
 impl std::convert::TryFrom<mp4ameta::Data> for Picture {
-	type Error = Error;
+	type Error = LoftyError;
+
 	fn try_from(inp: mp4ameta::Data) -> Result<Self> {
 		Ok(match inp {
 			mp4ameta::Data::Png(data) => Self {
@@ -53,7 +53,7 @@ impl std::convert::TryFrom<mp4ameta::Data> for Picture {
 				description: None,
 				data: Cow::from(data),
 			},
-			_ => return Err(Error::NotAPicture),
+			_ => return Err(LoftyError::NotAPicture),
 		})
 	}
 }

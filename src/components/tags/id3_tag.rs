@@ -2,20 +2,18 @@
 
 use crate::tag::Id3Format;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, MimeType, Picture, Result,
-	TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
+	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 use lofty_attr::impl_tag;
 
 pub use id3::Tag as Id3v2InnerTag;
 
-use crate::types::picture::PictureType;
 use filepath::FilePath;
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
-use std::path::Path;
 
 #[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Default))]
 pub struct Id3v2Tag;
@@ -23,23 +21,23 @@ pub struct Id3v2Tag;
 impl Id3v2Tag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: &Id3Format) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R, format: &Id3Format) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		match format {
 			Id3Format::Default => Ok(Self {
-				inner: Id3v2InnerTag::read_from_path(&path)?,
+				inner: Id3v2InnerTag::read_from(reader)?,
 				#[cfg(feature = "duration")]
-				duration: Some(mp3_duration::from_path(&path)?),
+				duration: None, // TODO
 			}),
 			Id3Format::Riff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_wav(&path)?,
+				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
 				#[cfg(feature = "duration")]
 				duration: None,
 			}),
 			Id3Format::Form => Ok(Self {
-				inner: Id3v2InnerTag::read_from_aiff(&path)?,
+				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
 				#[cfg(feature = "duration")]
 				duration: None,
 			}),
@@ -48,7 +46,8 @@ impl Id3v2Tag {
 }
 
 impl std::convert::TryFrom<id3::frame::Picture> for Picture {
-	type Error = Error;
+	type Error = LoftyError;
+
 	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
 		let id3::frame::Picture {
 			ref mime_type,
@@ -75,7 +74,8 @@ impl std::convert::TryFrom<id3::frame::Picture> for Picture {
 }
 
 impl TryFrom<Picture> for id3::frame::Picture {
-	type Error = Error;
+	type Error = LoftyError;
+
 	fn try_from(inp: Picture) -> Result<Self> {
 		Ok(Self {
 			mime_type: String::from(inp.mime_type),

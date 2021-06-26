@@ -4,26 +4,29 @@
 	feature = "format-flac"
 ))]
 
-use crate::components::logic::write::vorbis_generic;
-use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Error, Picture, PictureType, Result,
-	TagType, ToAny, ToAnyTag, VorbisFormat,
+use crate::components::logic::constants::{
+	OPUSHEAD, OPUSTAGS, VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD,
 };
+use crate::components::logic::{flac, ogg_generic};
+use crate::{
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, OggFormat, Picture,
+	PictureType, Result, TagType, ToAny, ToAnyTag,
+};
+
+#[cfg(feature = "format-opus")]
+use crate::components::logic::ogg_generic::OGGTags;
+
 use lofty_attr::impl_tag;
 
 use lewton::inside_ogg::OggStreamReader;
-use opus_headers::OpusHeaders;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::path::Path;
-
-pub const VORBIS: [u8; 7] = [3, 118, 111, 114, 98, 105, 115];
-const OPUSTAGS: [u8; 8] = [79, 112, 117, 115, 84, 97, 103, 115];
+use std::io::{Read, Seek};
 
 struct VorbisInnerTag {
-	format: Option<VorbisFormat>,
+	format: Option<OggFormat>,
 	vendor: String,
 	comments: HashMap<String, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
@@ -66,25 +69,25 @@ impl VorbisInnerTag {
 		self.comments = comments;
 	}
 
-	fn from_path<P>(path: P, format: &VorbisFormat) -> Result<Self>
+	fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		match format {
-			VorbisFormat::Ogg => {
-				let tag = lewton::inside_ogg::OggStreamReader::new(File::open(path)?)?;
+			OggFormat::Vorbis => {
+				let tag = ogg_generic::read_from(reader, &VORBIS_IDENT_HEAD, &VORBIS_COMMENT_HEAD)?;
 				let vorbis_tag: VorbisTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
-			VorbisFormat::Opus => {
-				let tag = opus_headers::parse_from_path(path)?;
+			OggFormat::Opus => {
+				let tag = ogg_generic::read_from(reader, &OPUSHEAD, &OPUSTAGS)?;
 				let vorbis_tag: VorbisTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
-			VorbisFormat::Flac => {
-				let tag = metaflac::Tag::read_from_path(path)?;
+			OggFormat::Flac => {
+				let tag = metaflac::Tag::read_from(reader)?;
 				let vorbis_tag: VorbisTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
@@ -93,12 +96,12 @@ impl VorbisInnerTag {
 	}
 }
 
-#[impl_tag(VorbisInnerTag, TagType::Vorbis(VorbisFormat::Ogg))]
+#[impl_tag(VorbisInnerTag, TagType::Ogg(OggFormat::Vorbis))]
 pub struct VorbisTag;
 
 #[cfg(feature = "format-vorbis")]
 impl TryFrom<lewton::inside_ogg::OggStreamReader<File>> for VorbisTag {
-	type Error = crate::Error;
+	type Error = LoftyError;
 
 	fn try_from(inp: OggStreamReader<File>) -> Result<Self> {
 		let mut tag = Self::default();
@@ -118,7 +121,7 @@ impl TryFrom<lewton::inside_ogg::OggStreamReader<File>> for VorbisTag {
 		}
 
 		tag.inner = VorbisInnerTag {
-			format: Some(VorbisFormat::Ogg),
+			format: Some(OggFormat::Vorbis),
 			vendor: inp.comment_hdr.vendor,
 			comments: comments.into_iter().collect(),
 			pictures: if pictures.is_empty() {
@@ -133,28 +136,34 @@ impl TryFrom<lewton::inside_ogg::OggStreamReader<File>> for VorbisTag {
 }
 
 #[cfg(feature = "format-opus")]
-impl TryFrom<opus_headers::OpusHeaders> for VorbisTag {
-	type Error = crate::Error;
+impl TryFrom<OGGTags> for VorbisTag {
+	type Error = LoftyError;
 
-	fn try_from(inp: OpusHeaders) -> Result<Self> {
+	fn try_from(inp: OGGTags) -> Result<Self> {
 		let mut tag = Self::default();
 
-		let mut comments = inp.comments.user_comments;
+		let read_pictures = inp.1;
+		let comments = inp.2;
 
-		// TODO: opus_headers doesn't store all keys
-		let mut pictures = None;
+		let mut pictures = Vec::new();
 
-		if let Some(data) = comments.remove("METADATA_BLOCK_PICTURE") {
-			if let Ok(pic) = Picture::from_apic_bytes(&data.as_bytes()) {
-				pictures = Some(Cow::from(vec![pic]))
+		if !read_pictures.is_empty() {
+			for pic in read_pictures {
+				if let Ok(pic) = Picture::from_apic_bytes(&pic.as_bytes()) {
+					pictures.push(pic)
+				}
 			}
 		}
 
 		tag.inner = VorbisInnerTag {
-			format: Some(VorbisFormat::Opus),
-			vendor: inp.comments.vendor,
-			comments,
-			pictures,
+			format: Some(inp.3),
+			vendor: inp.0,
+			comments: comments.into_iter().collect(),
+			pictures: if pictures.is_empty() {
+				None
+			} else {
+				Some(Cow::from(pictures))
+			},
 		};
 
 		Ok(tag)
@@ -163,7 +172,7 @@ impl TryFrom<opus_headers::OpusHeaders> for VorbisTag {
 
 #[cfg(feature = "format-flac")]
 impl TryFrom<metaflac::Tag> for VorbisTag {
-	type Error = crate::Error;
+	type Error = LoftyError;
 
 	fn try_from(inp: metaflac::Tag) -> Result<Self> {
 		let mut tag = Self::default();
@@ -194,7 +203,7 @@ impl TryFrom<metaflac::Tag> for VorbisTag {
 				comment_collection.into_iter().collect();
 
 			tag.inner = VorbisInnerTag {
-				format: Some(VorbisFormat::Flac),
+				format: Some(OggFormat::Flac),
 				vendor: comments.vendor_string,
 				comments: comment_collection,
 				pictures: Some(Cow::from(pictures)),
@@ -203,19 +212,19 @@ impl TryFrom<metaflac::Tag> for VorbisTag {
 			return Ok(tag);
 		}
 
-		Err(Error::InvalidData)
+		Err(LoftyError::InvalidData("Flac file contains invalid data"))
 	}
 }
 
 impl VorbisTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P, format: &VorbisFormat) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: VorbisInnerTag::from_path(path, &format)?,
+			inner: VorbisInnerTag::read_from(reader, format)?,
 			#[cfg(feature = "duration")]
 			duration: None,
 		})
@@ -314,10 +323,10 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn set_front_cover(&mut self, cover: Picture) {
-		self.remove_front_cover();
-
-		let pictures = create_cover(&cover, &self.inner.pictures);
-		self.inner.pictures = pictures
+		if let Some(pic) = create_cover(&cover) {
+			self.remove_front_cover();
+			self.inner.pictures = Some(replace_pic(pic, &self.inner.pictures))
+		}
 	}
 
 	fn remove_front_cover(&mut self) {
@@ -333,10 +342,10 @@ impl AudioTagEdit for VorbisTag {
 	}
 
 	fn set_back_cover(&mut self, cover: Picture) {
-		self.remove_front_cover();
-
-		let pictures = create_cover(&cover, &self.inner.pictures);
-		self.inner.pictures = pictures
+		if let Some(pic) = create_cover(&cover) {
+			self.remove_back_cover();
+			self.inner.pictures = Some(replace_pic(pic, &self.inner.pictures))
+		}
 	}
 
 	fn remove_back_cover(&mut self) {
@@ -425,39 +434,56 @@ fn get_cover(p_type: PictureType, pictures: &Option<Cow<'static, [Picture]>>) ->
 	}
 }
 
-fn create_cover(
-	cover: &Picture,
-	pictures: &Option<Cow<'static, [Picture]>>,
-) -> Option<Cow<'static, [Picture]>> {
+fn create_cover(cover: &Picture) -> Option<Picture> {
 	if cover.pic_type == PictureType::CoverFront || cover.pic_type == PictureType::CoverBack {
 		if let Ok(pic) = Picture::from_apic_bytes(&cover.as_apic_bytes()) {
-			if let Some(pictures) = pictures {
-				let mut pictures = pictures.to_vec();
-				pictures.retain(|p| p.pic_type != PictureType::CoverBack);
-
-				pictures.push(pic);
-				return Some(Cow::from(pictures));
-			}
-
-			return Some(Cow::from(vec![pic]));
+			return Some(pic);
 		}
 	}
 
 	None
 }
 
+fn replace_pic(
+	pic: Picture,
+	pictures: &Option<Cow<'static, [Picture]>>,
+) -> Cow<'static, [Picture]> {
+	if let Some(pictures) = pictures {
+		let mut pictures = pictures.to_vec();
+		pictures.retain(|p| p.pic_type != pic.pic_type);
+
+		pictures.push(pic);
+
+		Cow::from(pictures)
+	} else {
+		Cow::from(vec![pic])
+	}
+}
+
 impl AudioTagWrite for VorbisTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
-				VorbisFormat::Ogg => {
-					vorbis_generic(file, &VORBIS, &self.inner.vendor, &self.inner.comments)?;
+				OggFormat::Vorbis => {
+					ogg_generic::create_pages(
+						file,
+						&VORBIS_COMMENT_HEAD,
+						&self.inner.vendor,
+						&self.inner.comments,
+						&self.inner.pictures,
+					)?;
 				},
-				VorbisFormat::Opus => {
-					vorbis_generic(file, &OPUSTAGS, &self.inner.vendor, &self.inner.comments)?;
+				OggFormat::Opus => {
+					ogg_generic::create_pages(
+						file,
+						&OPUSTAGS,
+						&self.inner.vendor,
+						&self.inner.comments,
+						&self.inner.pictures,
+					)?;
 				},
-				VorbisFormat::Flac => {
-					crate::components::logic::write::flac(
+				OggFormat::Flac => {
+					flac::write_to(
 						file,
 						&self.inner.vendor,
 						&self.inner.comments,

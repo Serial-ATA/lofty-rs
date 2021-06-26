@@ -1,6 +1,6 @@
 #![cfg(feature = "format-riff")]
 
-use crate::components::logic;
+use crate::components::logic::riff;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
@@ -9,7 +9,7 @@ use lofty_attr::impl_tag;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
-use std::path::Path;
+use std::io::{Read, Seek};
 
 struct RiffInnerTag {
 	data: Option<HashMap<String, String>>,
@@ -29,13 +29,13 @@ pub struct RiffTag;
 impl RiffTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		Ok(Self {
 			inner: RiffInnerTag {
-				data: logic::read::wav(File::open(path)?)?,
+				data: riff::read_from(reader)?,
 			},
 			#[cfg(feature = "duration")]
 			duration: None,
@@ -235,7 +235,7 @@ impl AudioTagEdit for RiffTag {
 impl AudioTagWrite for RiffTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(data) = self.inner.data.clone() {
-			crate::components::logic::write::riff(file, data)?;
+			riff::write_to(file, data)?;
 		}
 
 		Ok(())

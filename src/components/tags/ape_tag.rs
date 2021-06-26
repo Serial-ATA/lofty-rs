@@ -11,7 +11,7 @@ use crate::types::picture::APE_PICTYPES;
 use ape::Item;
 use std::borrow::Cow;
 use std::fs::File;
-use std::path::Path;
+use std::io::{Read, Seek};
 
 #[impl_tag(ApeInnerTag, TagType::Ape)]
 pub struct ApeTag;
@@ -19,12 +19,12 @@ pub struct ApeTag;
 impl ApeTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from_path<P>(path: P) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
-		P: AsRef<Path>,
+		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: ape::read_from_path(&path)?,
+			inner: ape::read_from(reader)?,
 			#[cfg(feature = "duration")]
 			duration: None, // TODO
 		})
