@@ -68,7 +68,7 @@ impl TryFrom<&str> for MimeType {
 			"image/tiff" => MimeType::Tiff,
 			"image/bmp" => MimeType::Bmp,
 			"image/gif" => MimeType::Gif,
-			_ => return Err(LoftyError::UnsupportedMimeType(inp.to_owned())),
+			_ => return Err(LoftyError::UnsupportedMimeType(inp.to_string())),
 		})
 	}
 }
@@ -99,8 +99,6 @@ pub trait PicType {
 		feature = "format-flac"
 	))]
 	fn as_u32(&self) -> u32;
-	#[cfg(feature = "format-ape")]
-	fn as_ape_key(&self) -> &str;
 	#[cfg(any(
 		feature = "format-id3",
 		feature = "format-vorbis",
@@ -108,6 +106,8 @@ pub trait PicType {
 		feature = "format-flac"
 	))]
 	fn from_u32(bytes: u32) -> PictureType;
+	#[cfg(feature = "format-ape")]
+	fn as_ape_key(&self) -> &str;
 	#[cfg(feature = "format-ape")]
 	fn from_ape_key(key: &str) -> PictureType;
 }
@@ -148,6 +148,8 @@ pub type PictureType = PictureType;
 pub type PictureType = id3::frame::PictureType;
 
 impl PicType for PictureType {
+	// ID3/OGG specific methods
+
 	#[cfg(any(
 		feature = "format-id3",
 		feature = "format-vorbis",
@@ -181,34 +183,6 @@ impl PicType for PictureType {
 		}
 	}
 
-	#[cfg(feature = "format-ape")]
-	fn as_ape_key(&self) -> &str {
-		match self {
-			Self::Other => "Cover Art (Other)",
-			Self::Icon => "Cover Art (Png Icon)",
-			Self::OtherIcon => "Cover Art (Icon)",
-			Self::CoverFront => "Cover Art (Front)",
-			Self::CoverBack => "Cover Art (Back)",
-			Self::Leaflet => "Cover Art (Leaflet)",
-			Self::Media => "Cover Art (Media)",
-			Self::LeadArtist => "Cover Art (Lead Artist)",
-			Self::Artist => "Cover Art (Artist)",
-			Self::Conductor => "Cover Art (Conductor)",
-			Self::Band => "Cover Art (Band)",
-			Self::Composer => "Cover Art (Composer)",
-			Self::Lyricist => "Cover Art (Lyricist)",
-			Self::RecordingLocation => "Cover Art (Recording Location)",
-			Self::DuringRecording => "Cover Art (During Recording)",
-			Self::DuringPerformance => "Cover Art (During Performance)",
-			Self::ScreenCapture => "Cover Art (Video Capture)",
-			Self::BrightFish => "Cover Art (Fish)",
-			Self::Illustration => "Cover Art (Illustration)",
-			Self::BandLogo => "Cover Art (Band Logotype)",
-			Self::PublisherLogo => "Cover Art (Publisher Logotype)",
-			Self::Undefined(_) => "",
-		}
-	}
-
 	#[cfg(any(
 		feature = "format-id3",
 		feature = "format-vorbis",
@@ -239,6 +213,36 @@ impl PicType for PictureType {
 			19 => Self::BandLogo,
 			20 => Self::PublisherLogo,
 			i => Self::Undefined(i as u8),
+		}
+	}
+
+	// APE specific methods
+
+	#[cfg(feature = "format-ape")]
+	fn as_ape_key(&self) -> &str {
+		match self {
+			Self::Other => "Cover Art (Other)",
+			Self::Icon => "Cover Art (Png Icon)",
+			Self::OtherIcon => "Cover Art (Icon)",
+			Self::CoverFront => "Cover Art (Front)",
+			Self::CoverBack => "Cover Art (Back)",
+			Self::Leaflet => "Cover Art (Leaflet)",
+			Self::Media => "Cover Art (Media)",
+			Self::LeadArtist => "Cover Art (Lead Artist)",
+			Self::Artist => "Cover Art (Artist)",
+			Self::Conductor => "Cover Art (Conductor)",
+			Self::Band => "Cover Art (Band)",
+			Self::Composer => "Cover Art (Composer)",
+			Self::Lyricist => "Cover Art (Lyricist)",
+			Self::RecordingLocation => "Cover Art (Recording Location)",
+			Self::DuringRecording => "Cover Art (During Recording)",
+			Self::DuringPerformance => "Cover Art (During Performance)",
+			Self::ScreenCapture => "Cover Art (Video Capture)",
+			Self::BrightFish => "Cover Art (Fish)",
+			Self::Illustration => "Cover Art (Illustration)",
+			Self::BandLogo => "Cover Art (Band Logotype)",
+			Self::PublisherLogo => "Cover Art (Publisher Logotype)",
+			Self::Undefined(_) => "",
 		}
 	}
 
@@ -299,6 +303,7 @@ impl Picture {
 			data,
 		}
 	}
+
 	/// Convert the [`Picture`] back to an APIC byte vec:
 	///
 	/// * Id3v2 APIC
@@ -330,6 +335,7 @@ impl Picture {
 
 		data
 	}
+
 	/// Get a [`Picture`] from APIC bytes:
 	///
 	/// * Id3v2 APIC
@@ -390,6 +396,7 @@ impl Picture {
 
 		Err(LoftyError::NotAPicture)
 	}
+
 	/// Convert the [`Picture`] back to an APEv2 byte vec:
 	///
 	/// * APEv2 Cover Art
@@ -410,6 +417,7 @@ impl Picture {
 
 		data
 	}
+
 	/// Get a [`Picture`] from APEv2 bytes:
 	///
 	/// * APEv2 Cover Art

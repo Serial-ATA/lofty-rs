@@ -7,7 +7,7 @@ pub struct Album<'a> {
 	pub title: Option<&'a str>,
 	/// A `Vec` of the album artists
 	pub artists: Option<Vec<&'a str>>,
-	/// The album's front cover
+	/// The album's covers (Front, Back)
 	pub covers: (Option<Picture>, Option<Picture>),
 }
 
