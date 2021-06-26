@@ -54,6 +54,9 @@ pub enum LoftyError {
 	/// Any error from [`ogg`]
 	#[error(transparent)]
 	Ogg(#[from] ogg::OggReadError),
+	/// Errors that arrist while parsing OGG pages
+	#[error(transparent)]
+	OggPage(#[from] ogg_pager::PageError),
 	/// Errors that arise while reading/writing to wav files
 	#[error("Invalid Riff file: {0}")]
 	Riff(&'static str),
