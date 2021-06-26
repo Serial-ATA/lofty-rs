@@ -1,27 +1,37 @@
 /// Errors that could occur within Lofty.
 #[derive(thiserror::Error, Debug)]
 pub enum LoftyError {
+	// File extension/format related errors
 	/// Unknown file extension.
 	#[error("Failed to guess the metadata format based on the file extension.")]
 	UnknownFileExtension,
-
+	/// Unsupported file extension
+	#[error("Unsupported format: {0}")]
+	UnsupportedFormat(String),
 	/// Unable to guess the format
 	#[error("No format could be determined from the provided file.")]
 	UnknownFormat,
+
+	// File data related errors
 	/// Provided an empty file
 	#[error("File contains no data")]
 	EmptyFile,
 	/// Provided a file with invalid/malformed data
-	#[error("File has invalid data")]
-	InvalidData,
+	#[error("File has invalid data: {0}")]
+	InvalidData(&'static str),
+	/// Attempting to write an abnormally large amount of data
+	#[error("An abnormally large amount of data was provided, and an overflow occurred")]
+	TooMuchData,
 
-	/// Unsupported file extension
-	#[error("Unsupported format: {0}")]
-	UnsupportedFormat(String),
+	// Picture related errors
 	/// Picture has an unsupported mime type
 	#[error("Unsupported mime type: {0}")]
 	UnsupportedMimeType(String),
+	/// Provided an invalid picture
+	#[error("Picture contains invalid data")]
+	NotAPicture,
 
+	// Tag related errors
 	/// Any error from [`ape`]
 	#[error(transparent)]
 	ApeTag(#[from] ape::Error),
@@ -46,26 +56,16 @@ pub enum LoftyError {
 	Ogg(#[from] ogg::OggReadError),
 	/// Errors that arise while reading/writing to wav files
 	#[error("Invalid Riff file: {0}")]
-	Riff(String),
-	/// Errors that arise while reading/writing to opus files
-	#[error("Invalid Opus file: {0}")]
-	Opus(String),
+	Riff(&'static str),
 
-	/// Arises when provided an invalid picture
-	#[error("Picture contains invalid data")]
-	NotAPicture,
-
-	/// If a string isn't Utf8
-	#[error(transparent)]
-	Utf8(#[from] std::str::Utf8Error),
+	// Conversions for std Errors
 	/// Unable to convert bytes to a String
 	#[error(transparent)]
 	FromUtf8(#[from] std::string::FromUtf8Error),
 	/// Represents all cases of `std::io::Error`.
 	#[error(transparent)]
-	#[allow(clippy::upper_case_acronyms)]
-	IO(#[from] std::io::Error),
+	Io(#[from] std::io::Error),
 }
 
-/// Type for the result of tag operations.
+/// Result of tag operations.
 pub type Result<T> = std::result::Result<T, LoftyError>;

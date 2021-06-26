@@ -118,7 +118,7 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{Id3Format, Tag, TagType, VorbisFormat};
+pub use crate::tag::{Id3Format, OggFormat, Tag, TagType};
 
 mod error;
 pub use crate::error::{LoftyError, Result};
