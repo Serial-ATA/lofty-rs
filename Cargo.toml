@@ -49,7 +49,7 @@ all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape
 duration = ["mp3-duration"]
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
 name = "read_from_extension"
