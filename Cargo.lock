@@ -339,6 +339,7 @@ dependencies = [
  "mp3-duration",
  "mp4ameta",
  "ogg",
+ "ogg_pager",
  "riff",
  "thiserror",
 ]
@@ -447,6 +448,13 @@ name = "ogg"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6951b4e8bf21c8193da321bcce9c9dd2e13c858fe078bf9054a288b419ae5d6e"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
+name = "ogg_pager"
+version = "0.1.0"
 dependencies = [
  "byteorder",
 ]

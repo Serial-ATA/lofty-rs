@@ -2,8 +2,6 @@
 pub(crate) mod constants;
 
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
-mod crc;
-#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 pub(crate) mod ogg_generic;
 
 #[cfg(feature = "format-flac")]
