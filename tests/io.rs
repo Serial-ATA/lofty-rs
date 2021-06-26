@@ -5,6 +5,7 @@ use std::borrow::Cow;
 macro_rules! full_test {
 	($function:ident, $file:expr) => {
 		#[test]
+		#[allow(clippy::shadow_same)]
 		fn $function() {
 			println!("-- Adding tags --");
 			add_tags!($file);
@@ -41,13 +42,13 @@ macro_rules! add_tags {
 				pic_type: PictureType::CoverFront,
 				mime_type: MimeType::Jpeg,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 20]),
+				data: Cow::from(vec![0; 50000]),
 			},
 			Picture {
 				pic_type: PictureType::CoverBack,
 				mime_type: MimeType::Jpeg,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 20]),
+				data: Cow::from(vec![0; 50000]),
 			},
 		);
 
@@ -70,7 +71,7 @@ macro_rules! add_tags {
 				pic_type: PictureType::Other,
 				mime_type: MimeType::Jpeg,
 				description: None,
-				data: Cow::from(vec![0; 11]),
+				data: Cow::from(vec![0; 50000]),
 			};
 
 			println!("Setting cover");
@@ -105,10 +106,50 @@ macro_rules! verify_write {
 		println!("Verifying album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
-		// Skip this since RIFF INFO doesn't guarantee album artist
+		// Skip this since RIFF INFO doesn't store images
 		if file_name != stringify!("tests/assets/a.wav") {
+			let covers = if file_name == stringify!("tests/assets/a.m4a") {
+				(
+					Picture {
+						pic_type: PictureType::Other,
+						mime_type: MimeType::Jpeg,
+						description: None,
+						data: Cow::from(vec![0; 50000]),
+					},
+					Picture {
+						pic_type: PictureType::Other,
+						mime_type: MimeType::Jpeg,
+						description: None,
+						data: Cow::from(vec![0; 50000]),
+					},
+				)
+			} else {
+				(
+					Picture {
+						pic_type: PictureType::CoverFront,
+						mime_type: MimeType::Jpeg,
+						description: Some(Cow::from("test")),
+						data: Cow::from(vec![0; 50000]),
+					},
+					Picture {
+						pic_type: PictureType::CoverBack,
+						mime_type: MimeType::Jpeg,
+						description: Some(Cow::from("test")),
+						data: Cow::from(vec![0; 50000]),
+					},
+				)
+			};
+
 			println!("Verifying album artist");
 			assert_eq!(tag.album_artists_vec(), Some(vec!["foo album artist"]));
+
+			println!("Verifying album covers");
+
+			println!("Verifying front cover");
+			assert_eq!(tag.front_cover(), Some(covers.0));
+
+			println!("Verifying back cover");
+			assert_eq!(tag.back_cover(), Some(covers.1));
 		}
 	};
 }
@@ -143,6 +184,7 @@ macro_rules! remove_tags {
 		assert!(tag.album_artists_vec().is_none());
 		tag.remove_album_artists();
 
+		println!("Removing album covers");
 		tag.remove_album_covers();
 		assert_eq!(tag.album_covers(), (None, None));
 		tag.remove_album_covers();
