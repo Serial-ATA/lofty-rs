@@ -1,11 +1,13 @@
 use super::constants::LIST_ID;
-use crate::{Error, Result};
+use crate::{LoftyError, Result};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use std::borrow::BorrowMut;
 use std::collections::HashMap;
-use std::io::{Cursor, Read, Seek};
+use std::fs::File;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-pub(crate) fn wav<T>(mut data: T) -> Result<Option<HashMap<String, String>>>
+pub(crate) fn read_from<T>(mut data: T) -> Result<Option<HashMap<String, String>>>
 where
 	T: Read + Seek,
 {
@@ -22,9 +24,7 @@ where
 	}
 
 	return if lists.is_empty() {
-		Err(Error::Wav(
-			"This file doesn't contain a LIST chunk".to_string(),
-		))
+		Err(LoftyError::Riff("This file doesn't contain a LIST chunk"))
 	} else {
 		let mut info: Option<riff::Chunk> = None;
 
@@ -51,7 +51,7 @@ where
 					cursor.read_u32::<LittleEndian>(),
 					cursor.read_u32::<LittleEndian>(),
 				) {
-					match create_wav_key(&fourcc.to_le_bytes()) {
+					match create_key(&fourcc.to_le_bytes()) {
 						Some(key) => {
 							let mut buf = vec![0; size as usize];
 							cursor.read_exact(&mut buf)?;
@@ -84,14 +84,12 @@ where
 
 			Ok(Some(metadata))
 		} else {
-			Err(Error::Wav(
-				"This file doesn't contain an INFO chunk".to_string(),
-			))
+			Err(LoftyError::Riff("This file doesn't contain an INFO chunk"))
 		}
 	};
 }
 
-fn create_wav_key(fourcc: &[u8]) -> Option<String> {
+fn create_key(fourcc: &[u8]) -> Option<String> {
 	match fourcc {
 		fcc if fcc == super::constants::IART => Some("Artist".to_string()),
 		fcc if fcc == super::constants::ICMT => Some("Comment".to_string()),
@@ -122,5 +120,81 @@ pub fn key_to_fourcc(key: &str) -> Option<[u8; 4]> {
 		"TrackNumber" => Some(super::constants::TRAC),
 		"DiscNumber" | "DiscTotal" => Some(super::constants::DISC),
 		_ => None,
+	}
+}
+
+#[cfg(feature = "format-riff")]
+pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
+	let mut packet = Vec::new();
+
+	packet.extend(riff::LIST_ID.value.iter());
+
+	let fourcc = "INFO";
+	packet.extend(fourcc.as_bytes().iter());
+
+	for (k, v) in metadata {
+		if let Some(fcc) = key_to_fourcc(&*k) {
+			let mut val = v.as_bytes().to_vec();
+
+			if val.len() % 2 != 0 {
+				val.push(0)
+			}
+
+			let size = val.len() as u32;
+
+			packet.extend(fcc.iter());
+			packet.extend(size.to_le_bytes().iter());
+			packet.extend(val.iter());
+		}
+	}
+
+	let mut file_bytes = Vec::new();
+	std::io::copy(data.borrow_mut(), &mut file_bytes)?;
+
+	let len = (packet.len() - 4) as u32;
+	let size = len.to_le_bytes();
+
+	#[allow(clippy::needless_range_loop)]
+	for i in 0..4 {
+		packet.insert(i + 4, size[i]);
+	}
+
+	let mut file = Cursor::new(file_bytes);
+
+	let chunk = riff::Chunk::read(&mut file, 0)?;
+
+	let (mut list_pos, mut list_len): (Option<u32>, Option<u32>) = (None, None);
+
+	if chunk.id() != riff::RIFF_ID {
+		return Err(LoftyError::Riff("This file does not contain a RIFF chunk"));
+	}
+
+	for child in chunk.iter(&mut file) {
+		if child.id() == riff::LIST_ID {
+			list_pos = Some(child.offset() as u32);
+			list_len = Some(child.len());
+		}
+	}
+
+	file.seek(SeekFrom::Start(0))?;
+
+	let mut content = Vec::new();
+	std::io::copy(&mut file, &mut content)?;
+
+	if let (Some(list_pos), Some(list_len)) = (list_pos, list_len) {
+		let list_end = (list_pos + list_len) as usize;
+
+		let _ = content.splice(list_pos as usize..list_end, packet);
+
+		let total_size = (content.len() - 8) as u32;
+		let _ = content.splice(4..8, total_size.to_le_bytes().to_vec());
+
+		data.seek(SeekFrom::Start(0))?;
+		data.set_len(0)?;
+		data.write_all(&*content)?;
+
+		Ok(())
+	} else {
+		Err(LoftyError::Riff("This file does not contain an INFO chunk"))
 	}
 }
