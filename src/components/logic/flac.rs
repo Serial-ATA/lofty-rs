@@ -18,6 +18,9 @@ where
 {
 	let mut tag = metaflac::Tag::read_from(&mut data)?;
 
+	let mut remaining = Vec::new();
+	data.read_to_end(&mut remaining)?;
+
 	tag.remove_blocks(BlockType::VorbisComment);
 	tag.remove_blocks(BlockType::Picture);
 	tag.remove_blocks(BlockType::Padding);
@@ -48,6 +51,7 @@ where
 	data.seek(SeekFrom::Start(0))?;
 
 	tag.write_to(&mut data)?;
+	data.write_all(&*remaining)?;
 
 	Ok(())
 }
