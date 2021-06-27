@@ -18,7 +18,7 @@ riff = {version = "1.0.1", optional = true}
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 # Ogg
-ogg_pager = { version = "0.1.3", optional = true, git = "https://github.com/Serial-ATA/lofty-rs" }
+ogg_pager = { version = "0.1.4", optional = true }
 # Mp4
 mp4ameta = {version = "0.10.2", optional = true}
 # Flac
@@ -29,7 +29,7 @@ thiserror = "1.0.25"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 
-lofty_attr = { version = "0.1.2", git = "https://github.com/Serial-ATA/lofty-rs" }
+lofty_attr = "0.1.2"
 
 [features]
 default = ["all_tags"]
