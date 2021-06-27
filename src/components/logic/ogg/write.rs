@@ -70,10 +70,14 @@ fn vorbis_write(
 	let mut remaining = Vec::new();
 
 	let reached_md_end: bool;
+
+	// Find the total comment count in the first page's content
 	let mut c = Cursor::new(first_md_content);
 
+	// Skip the header
 	c.seek(SeekFrom::Start(7))?;
 
+	// Skip the vendor
 	let vendor_len = c.read_u32::<LittleEndian>()?;
 	c.seek(SeekFrom::Current(i64::from(vendor_len)))?;
 
@@ -113,6 +117,7 @@ fn vorbis_write(
 		));
 	}
 
+	// Comments should be followed by the setup header
 	let mut header_ident = [0; 7];
 	c.read_exact(&mut header_ident)?;
 
@@ -133,7 +138,10 @@ fn vorbis_write(
 		p.serial = ser;
 
 		if i == pages_len {
+			// Add back the framing bit
 			p.content.push(1);
+
+			// The segment tables of current page and the setup header have to be combined
 			let mut seg_table = Vec::new();
 			seg_table.extend(p.segments().iter());
 			seg_table.extend(ogg_pager::segments(&*setup));
@@ -152,6 +160,7 @@ fn vorbis_write(
 			let mut p_bytes = p.as_bytes();
 			let seg_count = p_bytes[26] as usize;
 
+			// Replace segment table and checksum
 			p_bytes.splice(26..27 + seg_count, seg_table);
 			p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes().to_vec());
 
