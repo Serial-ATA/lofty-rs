@@ -142,18 +142,8 @@ impl TryFrom<OGGTags> for VorbisTag {
 	fn try_from(inp: OGGTags) -> Result<Self> {
 		let mut tag = Self::default();
 
-		let read_pictures = inp.1;
+		let pictures = inp.1;
 		let comments = inp.2;
-
-		let mut pictures = Vec::new();
-
-		if !read_pictures.is_empty() {
-			for pic in read_pictures {
-				if let Ok(pic) = Picture::from_apic_bytes(&pic.as_bytes()) {
-					pictures.push(pic)
-				}
-			}
-		}
 
 		tag.inner = VorbisInnerTag {
 			format: Some(inp.3),
