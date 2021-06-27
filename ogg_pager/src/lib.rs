@@ -6,6 +6,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 pub use error::{PageError, Result};
+pub use crc::crc32;
 
 #[derive(Clone)]
 pub struct Page {
