@@ -67,11 +67,11 @@ const CRC_LOOKUP_ARRAY : &[u32] = &[
 ];
 
 pub fn crc32(page: &[u8]) -> u32 {
-    let mut crc: u32 = 0;
+	let mut crc: u32 = 0;
 
-    for p in page {
-        crc = (crc << 8) ^ CRC_LOOKUP_ARRAY[(u32::from(*p) ^ (crc >> 24)) as usize];
-    }
+	for p in page {
+		crc = (crc << 8) ^ CRC_LOOKUP_ARRAY[(u32::from(*p) ^ (crc >> 24)) as usize];
+	}
 
-    crc
+	crc
 }
