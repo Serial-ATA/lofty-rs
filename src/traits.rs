@@ -111,9 +111,10 @@ pub trait AudioTagEdit {
 	fn track(&self) -> (Option<u32>, Option<u32>) {
 		(self.track_number(), self.total_tracks())
 	}
-	/// Sets the track number
-	fn set_track(&mut self, track: u32) {
-		self.set_track_number(track);
+	/// Sets the track number and total tracks
+	fn set_track(&mut self, track_number: u32, total_tracks: u32) {
+		self.set_track_number(track_number);
+		self.set_total_tracks(total_tracks);
 	}
 	/// Removes the track number and total tracks
 	fn remove_track(&mut self) {
