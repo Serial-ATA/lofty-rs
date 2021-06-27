@@ -66,9 +66,7 @@
 //! # Features
 //!
 //! ## Applies to all
-//! * `full` - Combines both `all_tags` and `duration` (*default*)
 //! * `all_tags` - Enables all formats
-//! * `duration` - Provides the `duration` field in each tag
 //!
 //! ## Individual formats
 //! These features are available if you have a specific usecase, or just don't want certain formats.
