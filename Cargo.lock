@@ -454,7 +454,8 @@ dependencies = [
 
 [[package]]
 name = "ogg_pager"
-version = "0.1.0"
+version = "0.1.3"
+source = "git+https://github.com/Serial-ATA/lofty-rs#54810611499625a3c4b99220f50fe5b22f73ea50"
 dependencies = [
  "byteorder",
 ]

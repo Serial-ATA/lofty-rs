@@ -13,7 +13,7 @@ test_read!(read_ape, "tests/assets/a.ape");
 test_read!(read_flac, "tests/assets/a.flac");
 test_read!(read_m4a, "tests/assets/a.m4a");
 test_read!(read_mp3, "tests/assets/a.mp3");
-//test_read!(read_ogg, "tests/assets/a.ogg");
+// test_read!(read_ogg, "tests/assets/a.ogg");
 test_read!(read_opus, "tests/assets/a.opus");
 test_read!(read_wav, "tests/assets/a.wav");
 
@@ -23,7 +23,7 @@ fn bench_sig(c: &mut Criterion) {
 	g.bench_function("FLAC", |b| b.iter(read_flac));
 	g.bench_function("MP4", |b| b.iter(read_m4a));
 	g.bench_function("MP3", |b| b.iter(read_mp3));
-	//g.bench_function("OGG", |b| b.iter(read_ogg));
+	// g.bench_function("OGG", |b| b.iter(read_ogg));
 	g.bench_function("OPUS", |b| b.iter(read_opus));
 	g.bench_function("WAV", |b| b.iter(read_wav));
 }
