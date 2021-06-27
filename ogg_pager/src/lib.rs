@@ -100,6 +100,42 @@ impl Page {
 	pub fn gen_crc(&mut self) {
 		self.checksum = crc::crc32(&*self.as_bytes());
 	}
+
+	pub fn extend(&mut self, content: &[u8]) -> Option<Page> {
+		let self_len = self.content.len();
+		let content_len = content.len();
+
+		if self_len <= 65025 && self_len + content_len <= 65025 {
+			self.content.extend(content.iter());
+			self.end += content_len;
+
+			return None;
+		}
+
+		if content_len <= 65025 {
+			let remaining = 65025 - self_len;
+
+			self.content.extend(content[0..remaining].iter());
+			self.end += remaining;
+
+			let mut p = Page {
+				content: content[remaining..].to_vec(),
+				header_type: 1,
+				abgp: 0,
+				serial: self.serial,
+				seq_num: self.seq_num + 1,
+				checksum: 0,
+				start: self.end,
+				end: self.start + content.len(),
+			};
+
+			p.gen_crc();
+
+			return Some(p);
+		}
+
+		None
+	}
 }
 
 pub fn segments(cont: &[u8]) -> Vec<u8> {
