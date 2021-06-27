@@ -2,22 +2,22 @@
 //! [![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 //! [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 //!
-//! This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types and (optionally) duration.
+//! This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types.
 //!
 //! Parse, convert, and write metadata to audio formats.
 //!
 //! # Supported Formats
 //!
-//! | File Format | Extensions                                | Read | Write | Duration | Metadata Format(s)   |
-//! |-------------|-------------------------------------------|------|-------|----------|----------------------|
-//! | Ape         | `ape`                                     |**X** |**X**  |          | `APEv2`              |
-//! | AIFF        | `aiff`, `aif`                             |**X** |**X**  |          | `ID3v2`              |
-//! | FLAC        | `flac`                                    |**X** |**X**  |          | `Vorbis Comments`    |
-//! | MP3         | `mp3`                                     |**X** |**X**  |**X**     | `ID3v2`              |
-//! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |          | `Vorbis Comments`    |
-//! | Opus        | `opus`                                    |**X** |**X**  |          | `Vorbis Comments`    |
-//! | Ogg         | `ogg`, `oga`                              |**X** |**X**  |          | `Vorbis Comments`    |
-//! | WAV         | `wav`, `wave`                             |**X** |**X**  |          | `RIFF INFO`, `ID3v2` |
+//!| File Format | Extensions                                | Read | Write | Metadata Format(s)  |
+//!|-------------|-------------------------------------------|------|-------|---------------------|
+//!| Ape         | `ape`                                     |**X** |**X**  |`APEv2`              |
+//!| AIFF        | `aiff`, `aif`                             |**X** |**X**  |`ID3v2`              |
+//!| FLAC        | `flac`                                    |**X** |**X**  |`Vorbis Comments`    |
+//!| MP3         | `mp3`                                     |**X** |**X**  |`ID3v2`              |
+//!| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |`Vorbis Comments`    |
+//!| Opus        | `opus`                                    |**X** |**X**  |`Vorbis Comments`    |
+//!| Ogg         | `ogg`, `oga`                              |**X** |**X**  |`Vorbis Comments`    |
+//!| WAV         | `wav`, `wave`                             |**X** |**X**  |`RIFF INFO`, `ID3v2` |
 //!
 //! # Examples
 //!

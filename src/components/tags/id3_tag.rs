@@ -28,18 +28,12 @@ impl Id3v2Tag {
 		match format {
 			Id3Format::Default => Ok(Self {
 				inner: Id3v2InnerTag::read_from(reader)?,
-				#[cfg(feature = "duration")]
-				duration: None, // TODO
 			}),
 			Id3Format::Riff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
-				#[cfg(feature = "duration")]
-				duration: None,
 			}),
 			Id3Format::Form => Ok(Self {
 				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
-				#[cfg(feature = "duration")]
-				duration: None,
 			}),
 		}
 	}

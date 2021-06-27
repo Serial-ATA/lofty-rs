@@ -178,8 +178,6 @@ impl VorbisTag {
 	{
 		Ok(Self {
 			inner: VorbisInnerTag::read_from(reader, format)?,
-			#[cfg(feature = "duration")]
-			duration: None,
 		})
 	}
 }

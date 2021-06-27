@@ -25,8 +25,6 @@ impl ApeTag {
 	{
 		Ok(Self {
 			inner: ape::read_from(reader)?,
-			#[cfg(feature = "duration")]
-			duration: None, // TODO
 		})
 	}
 }

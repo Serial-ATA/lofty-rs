@@ -17,8 +17,6 @@ riff = {version = "1.0.1", optional = true}
 # Id3
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
-# Mp3
-mp3-duration = {version = "0.1.10", optional = true} # Duration
 # Ogg
 ogg_pager = { version = "0.1.3", optional = true, git = "https://github.com/Serial-ATA/lofty-rs" }
 # Mp4
@@ -31,11 +29,10 @@ thiserror = "1.0.25"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 
-lofty_attr = "0.1.0"
+lofty_attr = { version = "0.1.2", git = "https://github.com/Serial-ATA/lofty-rs" }
 
 [features]
-default = ["full"]
-full = ["all_tags", "duration"]
+default = ["all_tags"]
 format-mp4 = ["mp4ameta"]
 format-flac = ["metaflac"]
 format-opus = ["ogg_pager"]
@@ -45,7 +42,6 @@ format-id3 = ["id3", "filepath"]
 format-riff = ["riff"]
 format-ogg = ["format-flac", "format-opus", "format-vorbis"]
 all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape"]
-duration = ["mp3-duration"]
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }

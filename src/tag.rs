@@ -27,7 +27,7 @@ const VORBIS: [u8; 6] = [118, 111, 114, 98, 105, 115];
 #[cfg(feature = "format-riff")]
 const RIFF: [u8; 4] = [82, 73, 70, 70];
 
-/// A builder for `Box<dyn AudioTag>`. If you do not want a trait object, you can use individual types.
+/// A builder for `Box<dyn AudioTag>`
 #[derive(Default)]
 pub struct Tag(Option<TagType>);
 
@@ -37,7 +37,7 @@ impl Tag {
 		Self::default()
 	}
 
-	/// This function can be used to specify a `TagType`, so there's no guessing
+	/// This function can be used to specify a `TagType` to skip the guessing entirely
 	#[allow(clippy::unused_self)]
 	pub fn with_tag_type(self, tag_type: TagType) -> Self {
 		Self(Some(tag_type))

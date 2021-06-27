@@ -24,8 +24,6 @@ impl Mp4Tag {
 	{
 		Ok(Self {
 			inner: Mp4InnerTag::read_from(reader)?,
-			#[cfg(feature = "duration")]
-			duration: None,
 		})
 	}
 }

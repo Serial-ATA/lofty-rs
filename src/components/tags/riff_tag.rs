@@ -37,8 +37,6 @@ impl RiffTag {
 			inner: RiffInnerTag {
 				data: riff::read_from(reader)?,
 			},
-			#[cfg(feature = "duration")]
-			duration: None,
 		})
 	}
 }
