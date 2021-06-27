@@ -1,6 +1,6 @@
 [package]
 name = "lofty_attr"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "Macro for Lofty tag struct creation"
 license = "MIT OR Apache-2.0"
@@ -11,7 +11,7 @@ edition = "2018"
 quote = "1.0.9"
 
 [dependencies.syn]
-version = "1.0.73"
+version = "1.0.72"
 features = ["full"]
 
 [lib]
