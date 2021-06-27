@@ -29,7 +29,7 @@ thiserror = "1.0.25"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 
-lofty_attr = { git = "https://github.com/Serial-ATA/lofty-rs" }
+lofty_attr = { version = "0.1.2", git = "https://github.com/Serial-ATA/lofty-rs" }
 
 [features]
 default = ["all_tags"]
