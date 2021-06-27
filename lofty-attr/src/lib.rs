@@ -27,16 +27,12 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 				#[doc(hidden)]
 				pub struct #input_ident {
 					inner: #inner,
-					#[cfg(feature = "duration")]
-					duration: Option<std::time::Duration>
 				}
 
 				impl Default for #input_ident {
 					fn default() -> Self {
 						Self {
 							inner: #inner::default(),
-							#[cfg(feature = "duration")]
-							duration: None,
 						}
 					}
 				}
