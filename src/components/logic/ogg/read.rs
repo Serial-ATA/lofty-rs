@@ -1,6 +1,6 @@
 use crate::components::logic::constants::OPUSHEAD;
 use crate::components::logic::ogg::{is_metadata, reach_metadata};
-use crate::{LoftyError, OggFormat, Result, Picture};
+use crate::{LoftyError, OggFormat, Picture, Result};
 
 use std::collections::HashMap;
 use std::io::{Read, Seek};
