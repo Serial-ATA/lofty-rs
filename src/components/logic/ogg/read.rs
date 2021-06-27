@@ -1,6 +1,6 @@
 use crate::components::logic::constants::OPUSHEAD;
 use crate::components::logic::ogg::{is_metadata, reach_metadata};
-use crate::{LoftyError, OggFormat, Result};
+use crate::{LoftyError, OggFormat, Result, Picture};
 
 use std::collections::HashMap;
 use std::io::{Read, Seek};
@@ -8,7 +8,7 @@ use std::io::{Read, Seek};
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-pub type OGGTags = (String, Vec<String>, HashMap<String, String>, OggFormat);
+pub type OGGTags = (String, Vec<Picture>, HashMap<String, String>, OggFormat);
 
 pub(crate) fn read_from<T>(mut data: T, header_sig: &[u8], comment_sig: &[u8]) -> Result<OGGTags>
 where
@@ -66,7 +66,7 @@ where
 		let split: Vec<&str> = comment.splitn(2, '=').collect();
 
 		if split[0] == "METADATA_BLOCK_PICTURE" {
-			pictures.push(split[1].to_string())
+			pictures.push(Picture::from_apic_bytes(split[1].as_bytes())?)
 		} else {
 			md.insert(split[0].to_string(), split[1].to_string());
 		}
