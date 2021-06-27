@@ -18,7 +18,6 @@ use crate::components::logic::ogg::read::OGGTags;
 
 use lofty_attr::impl_tag;
 
-use lewton::inside_ogg::OggStreamReader;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
@@ -99,43 +98,7 @@ impl VorbisInnerTag {
 #[impl_tag(VorbisInnerTag, TagType::Ogg(OggFormat::Vorbis))]
 pub struct VorbisTag;
 
-#[cfg(feature = "format-vorbis")]
-impl TryFrom<lewton::inside_ogg::OggStreamReader<File>> for VorbisTag {
-	type Error = LoftyError;
-
-	fn try_from(inp: OggStreamReader<File>) -> Result<Self> {
-		let mut tag = Self::default();
-
-		let mut comments = inp.comment_hdr.comment_list;
-
-		let mut pictures: Vec<Picture> = Vec::new();
-
-		if let Some(p) = comments
-			.iter()
-			.position(|(k, _)| *k == "METADATA_BLOCK_PICTURE")
-		{
-			let kv = comments.remove(p);
-			if let Ok(pic) = Picture::from_apic_bytes(&kv.1.as_bytes()) {
-				pictures.push(pic)
-			}
-		}
-
-		tag.inner = VorbisInnerTag {
-			format: Some(OggFormat::Vorbis),
-			vendor: inp.comment_hdr.vendor,
-			comments: comments.into_iter().collect(),
-			pictures: if pictures.is_empty() {
-				None
-			} else {
-				Some(Cow::from(pictures))
-			},
-		};
-
-		Ok(tag)
-	}
-}
-
-#[cfg(feature = "format-opus")]
+#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 impl TryFrom<OGGTags> for VorbisTag {
 	type Error = LoftyError;
 

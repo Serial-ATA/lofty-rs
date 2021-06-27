@@ -48,12 +48,6 @@ pub enum LoftyError {
 	/// Any error from [`mp4ameta`]
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
-	/// Any error from [`lewton`]
-	#[error(transparent)]
-	Lewton(#[from] lewton::VorbisError),
-	/// Any error from [`ogg`]
-	#[error(transparent)]
-	Ogg(#[from] ogg::OggReadError),
 	/// Errors that arrist while parsing OGG pages
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),

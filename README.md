@@ -31,10 +31,8 @@ All these great projects helped make this crate possible. (*Sorted alphabeticall
 
 * [**ape**](https://github.com/rossnomann/rust-ape)
 * [**id3**](https://github.com/polyfloyd/rust-id3)
-* [**lewton**](https://github.com/RustAudio/lewton)
 * [**metaflac**](https://github.com/jameshurst/rust-metaflac)
 * [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)
-* [**ogg**](https://github.com/RustAudio/ogg)
 * [**opus_headers**](https://github.com/zaethan/opus_headers)
 * [**riff**](https://github.com/frabert/riff)
 
