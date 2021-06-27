@@ -7,14 +7,14 @@
 use crate::components::logic::constants::{
 	OPUSHEAD, OPUSTAGS, VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD,
 };
-use crate::components::logic::{flac, ogg_generic};
+use crate::components::logic::{flac, ogg};
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, OggFormat, Picture,
 	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
 #[cfg(feature = "format-opus")]
-use crate::components::logic::ogg_generic::OGGTags;
+use crate::components::logic::ogg::read::OGGTags;
 
 use lofty_attr::impl_tag;
 
@@ -75,13 +75,13 @@ impl VorbisInnerTag {
 	{
 		match format {
 			OggFormat::Vorbis => {
-				let tag = ogg_generic::read_from(reader, &VORBIS_IDENT_HEAD, &VORBIS_COMMENT_HEAD)?;
+				let tag = ogg::read::read_from(reader, &VORBIS_IDENT_HEAD, &VORBIS_COMMENT_HEAD)?;
 				let vorbis_tag: VorbisTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
 			OggFormat::Opus => {
-				let tag = ogg_generic::read_from(reader, &OPUSHEAD, &OPUSTAGS)?;
+				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS)?;
 				let vorbis_tag: VorbisTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
@@ -465,7 +465,7 @@ impl AudioTagWrite for VorbisTag {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
 				OggFormat::Vorbis => {
-					ogg_generic::create_pages(
+					ogg::write::create_pages(
 						file,
 						&VORBIS_COMMENT_HEAD,
 						&self.inner.vendor,
@@ -474,7 +474,7 @@ impl AudioTagWrite for VorbisTag {
 					)?;
 				},
 				OggFormat::Opus => {
-					ogg_generic::create_pages(
+					ogg::write::create_pages(
 						file,
 						&OPUSTAGS,
 						&self.inner.vendor,
