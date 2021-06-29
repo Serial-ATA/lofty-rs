@@ -24,41 +24,41 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 			let input_ident = input.ident;
 
 			let mut anytag_convert = quote! {
-								impl<'a> From<AnyTag<'a>> for #input_ident {
-							fn from(inp: AnyTag<'a>) -> Self {
-								let mut tag = #input_ident::default();
+				impl<'a> From<AnyTag<'a>> for #input_ident {
+					fn from(inp: AnyTag<'a>) -> Self {
+						let mut tag = #input_ident::default();
 
-								if let Some(v) = inp.title() {
-									tag.set_title(v)
-								}
-								if let Some(v) = inp.artists_as_string() {
-									tag.set_artist(&v)
-								}
-								if let Some(v) = inp.year {
-									tag.set_year(v)
-								}
-								if let Some(v) = inp.album().title {
-									tag.set_album_title(v)
-								}
-								if let Some(v) = inp.album().artists {
-									tag.set_album_artist(&v.join("/"))
-								}
-								if let Some(v) = inp.track_number() {
-									tag.set_track_number(v)
-								}
-								if let Some(v) = inp.total_tracks() {
-									tag.set_total_tracks(v)
-								}
-								if let Some(v) = inp.disc_number() {
-									tag.set_disc_number(v)
-								}
-								if let Some(v) = inp.total_discs() {
-									tag.set_total_discs(v)
-								}
-
-								tag
-							}
+						if let Some(v) = inp.title() {
+							tag.set_title(v)
 						}
+						if let Some(v) = inp.artists_as_string() {
+							tag.set_artist(&v)
+						}
+						if let Some(v) = inp.year {
+							tag.set_year(v)
+						}
+						if let Some(v) = inp.album().title {
+							tag.set_album_title(v)
+						}
+						if let Some(v) = inp.album().artists {
+							tag.set_album_artist(&v.join("/"))
+						}
+						if let Some(v) = inp.track_number() {
+							tag.set_track_number(v)
+						}
+						if let Some(v) = inp.total_tracks() {
+							tag.set_total_tracks(v)
+						}
+						if let Some(v) = inp.disc_number() {
+							tag.set_disc_number(v)
+						}
+						if let Some(v) = inp.total_discs() {
+							tag.set_total_discs(v)
+						}
+
+						tag
+					}
+				}
 			};
 
 			if let Some(attr) = input.attrs.first() {
