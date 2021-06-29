@@ -202,7 +202,7 @@ pub trait ToAnyTag: ToAny {
 				feature = "format-flac",
 				feature = "format-opus"
 			))]
-			TagType::Ogg(_) => Box::new(VorbisTag::from(self.to_anytag())),
+			TagType::Ogg(f) => Box::new(VorbisTag::from((self.to_anytag(), f))),
 			#[cfg(feature = "format-riff")]
 			TagType::RiffInfo => Box::new(RiffTag::from(self.to_anytag())),
 		}

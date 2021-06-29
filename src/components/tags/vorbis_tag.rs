@@ -96,7 +96,48 @@ impl VorbisInnerTag {
 }
 
 #[impl_tag(VorbisInnerTag, TagType::Ogg(OggFormat::Vorbis))]
+#[custom_convert]
 pub struct VorbisTag;
+
+impl<'a> From<(AnyTag<'a>, OggFormat)> for VorbisTag {
+	fn from(inp: (AnyTag<'a>, OggFormat)) -> Self {
+		let mut tag = VorbisTag::default();
+
+		let anytag = inp.0;
+
+		if let Some(v) = anytag.title() {
+			tag.set_title(v)
+		}
+		if let Some(v) = anytag.artists_as_string() {
+			tag.set_artist(&v)
+		}
+		if let Some(v) = anytag.year {
+			tag.set_year(v)
+		}
+		if let Some(v) = anytag.album().title {
+			tag.set_album_title(v)
+		}
+		if let Some(v) = anytag.album().artists {
+			tag.set_album_artist(&v.join("/"))
+		}
+		if let Some(v) = anytag.track_number() {
+			tag.set_track_number(v)
+		}
+		if let Some(v) = anytag.total_tracks() {
+			tag.set_total_tracks(v)
+		}
+		if let Some(v) = anytag.disc_number() {
+			tag.set_disc_number(v)
+		}
+		if let Some(v) = anytag.total_discs() {
+			tag.set_total_discs(v)
+		}
+
+		tag.inner.format = Some(inp.1);
+
+		tag
+	}
+}
 
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 impl TryFrom<OGGTags> for VorbisTag {
