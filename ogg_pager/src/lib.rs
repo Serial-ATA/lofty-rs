@@ -21,6 +21,7 @@ pub struct Page {
 }
 
 impl Page {
+	/// Convert the Page to Vec<u8> for writing
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = Vec::new();
 		let segments = self.segments();
@@ -40,10 +41,12 @@ impl Page {
 		bytes
 	}
 
+	/// Returns the Page's segment table as Vec<u8>
 	pub fn segments(&self) -> Vec<u8> {
 		segments(&*self.content)
 	}
 
+	/// Attempts to get a Page from a reader
 	pub fn read<V>(mut data: V) -> Result<Self>
 	where
 		V: Read + Seek,
@@ -97,10 +100,12 @@ impl Page {
 		})
 	}
 
+	/// Generates the CRC checksum of the page
 	pub fn gen_crc(&mut self) {
 		self.checksum = crc::crc32(&*self.as_bytes());
 	}
 
+	/// Extends the Page's content, returning another Page if too much data was provided
 	pub fn extend(&mut self, content: &[u8]) -> Option<Page> {
 		let self_len = self.content.len();
 		let content_len = content.len();

@@ -5,9 +5,13 @@ pub type Result<T> = std::result::Result<T, PageError>;
 
 #[derive(Debug)]
 pub enum PageError {
+	/// The reader contains a page with a nonzero version
 	InvalidVersion,
+	/// The reader contains a page with a segment count < 1
 	BadSegmentCount,
+	/// The reader contains a page without a magic signature (OggS)
 	MissingMagic,
+	/// Any std::io::Error
 	Io(std::io::Error),
 }
 
