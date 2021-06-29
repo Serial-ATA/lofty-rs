@@ -304,7 +304,6 @@ impl AudioTagEdit for ApeTag {
 
 impl AudioTagWrite for ApeTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		// Write only uses paths, this is annoying
 		ape::write_to(&self.inner, file)?;
 		Ok(())
 	}
