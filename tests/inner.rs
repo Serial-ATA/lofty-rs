@@ -43,6 +43,7 @@ fn test_inner() {
 		minute: None,
 		second: None,
 	};
+
 	id3tag_inner.set_date_recorded(timestamp);
 
 	// Write id3::Tag to `a.mp3`
