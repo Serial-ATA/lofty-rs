@@ -1,4 +1,4 @@
-use lofty::{Id3Format, Tag, TagType, ToAnyTag, OggTag};
+use lofty::{Id3Format, OggTag, Tag, TagType, ToAnyTag};
 use std::convert::TryInto;
 
 #[test]

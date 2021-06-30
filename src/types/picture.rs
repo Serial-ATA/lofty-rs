@@ -304,6 +304,12 @@ impl Picture {
 		}
 	}
 
+	#[cfg(any(
+		feature = "format-id3",
+		feature = "format-opus",
+		feature = "format-vorbis",
+		feature = "format-flac"
+	))]
 	/// Convert the [`Picture`] back to an APIC byte vec:
 	///
 	/// * Id3v2 APIC
@@ -336,6 +342,12 @@ impl Picture {
 		data
 	}
 
+	#[cfg(any(
+		feature = "format-id3",
+		feature = "format-opus",
+		feature = "format-vorbis",
+		feature = "format-flac"
+	))]
 	/// Get a [`Picture`] from APIC bytes:
 	///
 	/// * Id3v2 APIC
@@ -397,6 +409,7 @@ impl Picture {
 		Err(LoftyError::NotAPicture)
 	}
 
+	#[cfg(feature = "format-ape")]
 	/// Convert the [`Picture`] back to an APEv2 byte vec:
 	///
 	/// * APEv2 Cover Art
@@ -418,6 +431,7 @@ impl Picture {
 		data
 	}
 
+	#[cfg(feature = "format-ape")]
 	/// Get a [`Picture`] from APEv2 bytes:
 	///
 	/// * APEv2 Cover Art

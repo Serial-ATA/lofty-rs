@@ -31,26 +31,32 @@ pub enum LoftyError {
 	#[error("Picture contains invalid data")]
 	NotAPicture,
 
+	#[cfg(feature = "format-ape")]
 	// Tag related errors
 	/// Any error from [`ape`]
 	#[error(transparent)]
 	ApeTag(#[from] ape::Error),
+	#[cfg(feature = "format-flac")]
 	/// Any error from [`metaflac`]
 	#[error(transparent)]
 	FlacTag(#[from] metaflac::Error),
+	#[cfg(feature = "format-id3")]
 	/// Any error from [`id3`]
 	#[error(transparent)]
 	Id3Tag(#[from] id3::Error),
-	/// Any error from [`mp3_duration`]
-	#[cfg(feature = "duration")]
-	#[error(transparent)]
-	Mp3Duration(#[from] mp3_duration::MP3DurationError),
+	#[cfg(feature = "format-mp4")]
 	/// Any error from [`mp4ameta`]
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
 	/// Errors that arrist while parsing OGG pages
+	#[cfg(any(
+		feature = "format-opus",
+		feature = "format-vorbis",
+		feature = "format-flac"
+	))]
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),
+	#[cfg(feature = "format-riff")]
 	/// Errors that arise while reading/writing to wav files
 	#[error("Invalid Riff file: {0}")]
 	Riff(&'static str),

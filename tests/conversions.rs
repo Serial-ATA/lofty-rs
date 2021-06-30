@@ -1,4 +1,4 @@
-use lofty::{OggFormat, Tag, TagType, Id3Format};
+use lofty::{Id3Format, OggFormat, Tag, TagType};
 
 macro_rules! convert_tag {
 	($tag: ident) => {

@@ -107,7 +107,15 @@ pub use crate::types::{
 };
 
 mod tag;
-pub use crate::tag::{Id3Format, OggFormat, Tag, TagType};
+#[cfg(feature = "format-id3")]
+pub use crate::tag::Id3Format;
+#[cfg(any(
+	feature = "format-opus",
+	feature = "format-vorbis",
+	feature = "format-flac"
+))]
+pub use crate::tag::OggFormat;
+pub use crate::tag::{Tag, TagType};
 
 mod error;
 pub use crate::error::{LoftyError, Result};
