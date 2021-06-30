@@ -5,8 +5,8 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub use error::{PageError, Result};
 pub use crc::crc32;
+pub use error::{PageError, Result};
 
 #[derive(Clone)]
 pub struct Page {
@@ -47,7 +47,7 @@ impl Page {
 	}
 
 	/// Attempts to get a Page from a reader
-	pub fn read<V>(mut data: V) -> Result<Self>
+	pub fn read<V>(data: &mut V) -> Result<Self>
 	where
 		V: Read + Seek,
 	{
