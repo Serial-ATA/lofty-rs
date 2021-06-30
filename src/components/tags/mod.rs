@@ -23,10 +23,10 @@ pub use riff_tag::RiffTag;
 	feature = "format-opus",
 	feature = "format-flac"
 ))]
-pub(crate) mod vorbis_tag;
+pub(crate) mod ogg_tag;
 #[cfg(any(
 	feature = "format-vorbis",
 	feature = "format-opus",
 	feature = "format-flac"
 ))]
-pub use vorbis_tag::VorbisTag;
+pub use ogg_tag::OggTag;

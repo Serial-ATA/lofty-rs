@@ -129,7 +129,7 @@ impl Tag {
 				feature = "format-flac",
 				feature = "format-opus"
 			))]
-			TagType::Ogg(format) => Ok(Box::new(VorbisTag::read_from(reader, &format)?)),
+			TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, &format)?)),
 		}
 	}
 }

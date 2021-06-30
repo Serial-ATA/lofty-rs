@@ -13,7 +13,7 @@ use crate::{
 	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
-#[cfg(feature = "format-opus")]
+#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg::read::OGGTags;
 
 use lofty_attr::impl_tag;
@@ -24,14 +24,14 @@ use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek};
 
-struct VorbisInnerTag {
+struct OggInnerTag {
 	format: Option<OggFormat>,
 	vendor: String,
 	comments: HashMap<String, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
 }
 
-impl Default for VorbisInnerTag {
+impl Default for OggInnerTag {
 	fn default() -> Self {
 		Self {
 			format: None,
@@ -42,7 +42,7 @@ impl Default for VorbisInnerTag {
 	}
 }
 
-impl VorbisInnerTag {
+impl OggInnerTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
 		self.comments.get_key_value(key).and_then(|pair| {
 			if pair.1.is_empty() {
@@ -75,19 +75,19 @@ impl VorbisInnerTag {
 		match format {
 			OggFormat::Vorbis => {
 				let tag = ogg::read::read_from(reader, &VORBIS_IDENT_HEAD, &VORBIS_COMMENT_HEAD)?;
-				let vorbis_tag: VorbisTag = tag.try_into()?;
+				let vorbis_tag: OggTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
 			OggFormat::Opus => {
 				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS)?;
-				let vorbis_tag: VorbisTag = tag.try_into()?;
+				let vorbis_tag: OggTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
 			OggFormat::Flac => {
 				let tag = metaflac::Tag::read_from(reader)?;
-				let vorbis_tag: VorbisTag = tag.try_into()?;
+				let vorbis_tag: OggTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
@@ -95,13 +95,13 @@ impl VorbisInnerTag {
 	}
 }
 
-#[impl_tag(VorbisInnerTag, TagType::Ogg(OggFormat::Vorbis))]
+#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Vorbis))]
 #[custom_convert]
-pub struct VorbisTag;
+pub struct OggTag;
 
-impl<'a> From<(AnyTag<'a>, OggFormat)> for VorbisTag {
+impl<'a> From<(AnyTag<'a>, OggFormat)> for OggTag {
 	fn from(inp: (AnyTag<'a>, OggFormat)) -> Self {
-		let mut tag = VorbisTag::default();
+		let mut tag = OggTag::default();
 
 		let anytag = inp.0;
 
@@ -140,7 +140,7 @@ impl<'a> From<(AnyTag<'a>, OggFormat)> for VorbisTag {
 }
 
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
-impl TryFrom<OGGTags> for VorbisTag {
+impl TryFrom<OGGTags> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: OGGTags) -> Result<Self> {
@@ -149,7 +149,7 @@ impl TryFrom<OGGTags> for VorbisTag {
 		let pictures = inp.1;
 		let comments = inp.2;
 
-		tag.inner = VorbisInnerTag {
+		tag.inner = OggInnerTag {
 			format: Some(inp.3),
 			vendor: inp.0,
 			comments: comments.into_iter().collect(),
@@ -165,7 +165,7 @@ impl TryFrom<OGGTags> for VorbisTag {
 }
 
 #[cfg(feature = "format-flac")]
-impl TryFrom<metaflac::Tag> for VorbisTag {
+impl TryFrom<metaflac::Tag> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: metaflac::Tag) -> Result<Self> {
@@ -196,7 +196,7 @@ impl TryFrom<metaflac::Tag> for VorbisTag {
 			let comment_collection: HashMap<String, String> =
 				comment_collection.into_iter().collect();
 
-			tag.inner = VorbisInnerTag {
+			tag.inner = OggInnerTag {
 				format: Some(OggFormat::Flac),
 				vendor: comments.vendor_string,
 				comments: comment_collection,
@@ -210,7 +210,7 @@ impl TryFrom<metaflac::Tag> for VorbisTag {
 	}
 }
 
-impl VorbisTag {
+impl OggTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
@@ -218,12 +218,12 @@ impl VorbisTag {
 		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: VorbisInnerTag::read_from(reader, format)?,
+			inner: OggInnerTag::read_from(reader, format)?,
 		})
 	}
 }
 
-impl AudioTagEdit for VorbisTag {
+impl AudioTagEdit for OggTag {
 	fn title(&self) -> Option<&str> {
 		self.inner.get_value("TITLE")
 	}
@@ -452,7 +452,7 @@ fn replace_pic(
 	}
 }
 
-impl AudioTagWrite for VorbisTag {
+impl AudioTagWrite for OggTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
 		if let Some(format) = self.inner.format.clone() {
 			match format {
