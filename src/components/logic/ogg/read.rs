@@ -1,4 +1,3 @@
-use crate::components::logic::constants::OPUSHEAD;
 use crate::components::logic::ogg::{is_metadata, reach_metadata};
 use crate::{LoftyError, OggFormat, Picture, Result};
 
@@ -10,7 +9,12 @@ use ogg_pager::Page;
 
 pub type OGGTags = (String, Vec<Picture>, HashMap<String, String>, OggFormat);
 
-pub(crate) fn read_from<T>(mut data: T, header_sig: &[u8], comment_sig: &[u8]) -> Result<OGGTags>
+pub(crate) fn read_from<T>(
+	mut data: T,
+	header_sig: &[u8],
+	comment_sig: &[u8],
+	format: OggFormat,
+) -> Result<OGGTags>
 where
 	T: Read + Seek,
 {
@@ -72,11 +76,5 @@ where
 		}
 	}
 
-	let vorbis_format = if header_sig == OPUSHEAD {
-		OggFormat::Opus
-	} else {
-		OggFormat::Vorbis
-	};
-
-	Ok((vendor_str, pictures, md, vorbis_format))
+	Ok((vendor_str, pictures, md, format))
 }

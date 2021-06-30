@@ -1,3 +1,5 @@
+#![cfg(feature = "default")]
+
 use lofty::{Id3Format, OggFormat, Tag, TagType};
 
 macro_rules! convert_tag {

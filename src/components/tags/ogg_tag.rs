@@ -4,10 +4,14 @@
 	feature = "format-flac"
 ))]
 
-use crate::components::logic::constants::{
-	OPUSHEAD, OPUSTAGS, VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD,
-};
-use crate::components::logic::{flac, ogg};
+#[cfg(feature = "format-flac")]
+use crate::components::logic::flac;
+#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
+use crate::components::logic::ogg;
+#[cfg(feature = "format-opus")]
+use crate::components::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
+#[cfg(feature = "format-vorbis")]
+use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, OggFormat, Picture,
 	PictureType, Result, TagType, ToAny, ToAnyTag,
@@ -22,10 +26,9 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 struct OggInnerTag {
-	format: Option<OggFormat>,
 	vendor: String,
 	comments: HashMap<String, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
@@ -34,7 +37,6 @@ struct OggInnerTag {
 impl Default for OggInnerTag {
 	fn default() -> Self {
 		Self {
-			format: None,
 			vendor: String::new(),
 			comments: HashMap::default(),
 			pictures: None,
@@ -73,18 +75,26 @@ impl OggInnerTag {
 		R: Read + Seek,
 	{
 		match format {
+			#[cfg(feature = "format-vorbis")]
 			OggFormat::Vorbis => {
-				let tag = ogg::read::read_from(reader, &VORBIS_IDENT_HEAD, &VORBIS_COMMENT_HEAD)?;
+				let tag = ogg::read::read_from(
+					reader,
+					&VORBIS_IDENT_HEAD,
+					&VORBIS_COMMENT_HEAD,
+					OggFormat::Vorbis,
+				)?;
 				let vorbis_tag: OggTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
+			#[cfg(feature = "format-opus")]
 			OggFormat::Opus => {
-				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS)?;
+				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS, OggFormat::Opus)?;
 				let vorbis_tag: OggTag = tag.try_into()?;
 
 				Ok(vorbis_tag.inner)
 			},
+			#[cfg(feature = "format-flac")]
 			OggFormat::Flac => {
 				let tag = metaflac::Tag::read_from(reader)?;
 				let vorbis_tag: OggTag = tag.try_into()?;
@@ -95,47 +105,16 @@ impl OggInnerTag {
 	}
 }
 
-#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Vorbis))]
-#[custom_convert]
-pub struct OggTag;
-
-impl<'a> From<(AnyTag<'a>, OggFormat)> for OggTag {
-	fn from(inp: (AnyTag<'a>, OggFormat)) -> Self {
-		let mut tag = OggTag::default();
-
-		let anytag = inp.0;
-
-		if let Some(v) = anytag.title() {
-			tag.set_title(v)
-		}
-		if let Some(v) = anytag.artists_as_string() {
-			tag.set_artist(&v)
-		}
-		if let Some(v) = anytag.year {
-			tag.set_year(v)
-		}
-		if let Some(v) = anytag.album().title {
-			tag.set_album_title(v)
-		}
-		if let Some(v) = anytag.album().artists {
-			tag.set_album_artist(&v.join("/"))
-		}
-		if let Some(v) = anytag.track_number() {
-			tag.set_track_number(v)
-		}
-		if let Some(v) = anytag.total_tracks() {
-			tag.set_total_tracks(v)
-		}
-		if let Some(v) = anytag.disc_number() {
-			tag.set_disc_number(v)
-		}
-		if let Some(v) = anytag.total_discs() {
-			tag.set_total_discs(v)
-		}
-
-		tag.inner.format = Some(inp.1);
-
-		tag
+cfg_if::cfg_if! {
+	if #[cfg(feature = "format-opus")] {
+		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Opus))]
+		pub struct OggTag;
+	} else if #[cfg(feature = "format-vorbis")] {
+		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Vorbis))]
+		pub struct OggTag;
+	} else {
+		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Flac))]
+		pub struct OggTag;
 	}
 }
 
@@ -150,7 +129,6 @@ impl TryFrom<OGGTags> for OggTag {
 		let comments = inp.2;
 
 		tag.inner = OggInnerTag {
-			format: Some(inp.3),
 			vendor: inp.0,
 			comments: comments.into_iter().collect(),
 			pictures: if pictures.is_empty() {
@@ -197,7 +175,6 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				comment_collection.into_iter().collect();
 
 			tag.inner = OggInnerTag {
-				format: Some(OggFormat::Flac),
 				vendor: comments.vendor_string,
 				comments: comment_collection,
 				pictures: Some(Cow::from(pictures)),
@@ -454,34 +431,45 @@ fn replace_pic(
 
 impl AudioTagWrite for OggTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		if let Some(format) = self.inner.format.clone() {
-			match format {
-				OggFormat::Vorbis => {
-					ogg::write::create_pages(
-						file,
-						&VORBIS_COMMENT_HEAD,
-						&self.inner.vendor,
-						&self.inner.comments,
-						&self.inner.pictures,
-					)?;
-				},
-				OggFormat::Opus => {
-					ogg::write::create_pages(
-						file,
-						&OPUSTAGS,
-						&self.inner.vendor,
-						&self.inner.comments,
-						&self.inner.pictures,
-					)?;
-				},
-				OggFormat::Flac => {
-					flac::write_to(
-						file,
-						&self.inner.vendor,
-						&self.inner.comments,
-						&self.inner.pictures,
-					)?;
-				},
+		let mut sig = [0; 4];
+		file.read_exact(&mut sig)?;
+		file.seek(SeekFrom::Start(0))?;
+
+		#[cfg(feature = "format-flac")]
+		if &sig == b"fLaC" {
+			return flac::write_to(
+				file,
+				&self.inner.vendor,
+				&self.inner.comments,
+				&self.inner.pictures,
+			);
+		}
+
+		#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
+		{
+			let p = ogg_pager::Page::read(file)?;
+			file.seek(SeekFrom::Start(0))?;
+
+			#[cfg(feature = "format-opus")]
+			if p.content.starts_with(&OPUSHEAD) {
+				return ogg::write::create_pages(
+					file,
+					&OPUSTAGS,
+					&self.inner.vendor,
+					&self.inner.comments,
+					&self.inner.pictures,
+				);
+			}
+
+			#[cfg(feature = "format-vorbis")]
+			if p.content.starts_with(&VORBIS_IDENT_HEAD) {
+				return ogg::write::create_pages(
+					file,
+					&VORBIS_COMMENT_HEAD,
+					&self.inner.vendor,
+					&self.inner.comments,
+					&self.inner.pictures,
+				);
 			}
 		}
 

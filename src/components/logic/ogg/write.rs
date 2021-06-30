@@ -1,6 +1,9 @@
 use crate::{LoftyError, Picture, Result};
 
-use crate::components::logic::constants::{VORBIS_COMMENT_HEAD, VORBIS_SETUP_HEAD};
+#[cfg(feature = "format-opus")]
+use crate::components::logic::ogg::constants::OPUSTAGS;
+#[cfg(feature = "format-vorbis")]
+use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_SETUP_HEAD};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use std::borrow::Cow;
@@ -60,6 +63,7 @@ pub(crate) fn create_pages(
 	Ok(())
 }
 
+#[cfg(feature = "format-vorbis")]
 fn vorbis_write(
 	mut data: &mut File,
 	writer: &mut Vec<u8>,
@@ -186,7 +190,6 @@ fn vorbis_write(
 }
 
 fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
-	let vorbis = sig == VORBIS_COMMENT_HEAD;
 	let first_page = Page::read(&mut data)?;
 
 	let ser = first_page.serial;
@@ -197,9 +200,13 @@ fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
 	let first_md_page = Page::read(&mut data)?;
 	is_metadata(&first_md_page, sig)?;
 
-	if vorbis {
+	#[cfg(feature = "format-vorbis")]
+	if sig == VORBIS_COMMENT_HEAD {
 		vorbis_write(data, &mut writer, first_md_page.content, ser, pages)?;
-	} else {
+	}
+
+	#[cfg(feature = "format-opus")]
+	if sig == OPUSTAGS {
 		let reached_md_end: bool;
 		let mut remaining = Vec::new();
 
@@ -227,7 +234,7 @@ fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
 		}
 
 		writer.write_all(&*remaining)?;
-	};
+	}
 
 	data.seek(SeekFrom::Start(0))?;
 	data.set_len(0)?;

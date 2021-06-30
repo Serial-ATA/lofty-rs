@@ -1,8 +1,9 @@
+#![cfg(feature = "default")]
+
 use lofty::{Id3Format, OggTag, Tag, TagType, ToAnyTag};
 use std::convert::TryInto;
 
 #[test]
-#[cfg(all(feature = "format-id3", feature = "format-flac"))]
 fn test_inner() {
 	// New flac tag
 	let mut innertag = metaflac::Tag::new();

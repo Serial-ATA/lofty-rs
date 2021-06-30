@@ -1,9 +1,22 @@
 use crate::{LoftyError, Result};
 
+#[cfg(any(
+	feature = "format-id3",
+	feature = "format-opus",
+	feature = "format-vorbis",
+	feature = "format-flac",
+))]
 use byteorder::{BigEndian, ReadBytesExt};
+#[cfg(any(
+feature = "format-id3",
+feature = "format-opus",
+feature = "format-vorbis",
+feature = "format-flac",
+feature = "format-ape",
+))]
+use std::io::{Cursor, Read};
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::io::{Cursor, Read};
 
 #[cfg(feature = "format-ape")]
 pub const APE_PICTYPES: [&str; 21] = [
@@ -114,6 +127,7 @@ pub trait PicType {
 
 /// The picture type
 #[cfg(not(feature = "format-id3"))]
+#[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum PictureType {
 	Other,

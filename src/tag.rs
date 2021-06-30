@@ -278,10 +278,12 @@ impl TagType {
 
 				data.seek(SeekFrom::Start(0))?;
 
+				#[cfg(feature = "format-vorbis")]
 				if ident_sig[1..7] == VORBIS {
 					return Ok(Self::Ogg(OggFormat::Vorbis));
 				}
 
+				#[cfg(feature = "format-opus")]
 				if ident_sig[..] == OPUSHEAD {
 					return Ok(Self::Ogg(OggFormat::Opus));
 				}

@@ -1,10 +1,3 @@
-#[cfg(any(
-	feature = "format-opus",
-	feature = "format-vorbis",
-	feature = "format-riff"
-))]
-pub(crate) mod constants;
-
 #[cfg(feature = "format-flac")]
 pub(crate) mod flac;
 

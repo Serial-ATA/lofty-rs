@@ -1,9 +1,12 @@
-pub(crate) mod read;
-pub(crate) mod write;
+use std::io::{Read, Seek};
+
+use ogg_pager::Page;
 
 use crate::{LoftyError, Result};
-use ogg_pager::Page;
-use std::io::{Read, Seek};
+
+pub(crate) mod constants;
+pub(crate) mod read;
+pub(crate) mod write;
 
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
