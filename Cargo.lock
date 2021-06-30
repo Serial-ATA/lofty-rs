@@ -422,9 +422,9 @@ dependencies = [
 
 [[package]]
 name = "ogg_pager"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d9fb798aa3ccc5882d7c81282dead5c21526de60efb98ec62b07c76e3d959c6"
+checksum = "ccf5bd48d1b8abee3f76817b94092f8928ff08eaa78e3c2333cc4954d4b25663"
 dependencies = [
  "byteorder",
 ]

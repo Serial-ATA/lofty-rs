@@ -84,15 +84,6 @@
 //! These cover all formats under a container format.
 //!
 //! * `format-ogg` (`format-opus`, `format-vorbis`, `format-flac`)
-//!
-//! ## Performance
-//!
-//! Using lofty incurs a little overhead due to vtables if you want to guess the metadata format (from file extension).
-//! Apart from this, the performance is almost the same as directly calling the function provided from those ‘specialized’ crates.
-//!
-//! No copies will be made if you only need to read and write metadata of one format. If you want to convert between tags, copying is
-//! unavoidable, no matter if you use lofty or use getters and setters provided by specialized libraries. Lofty is not making additional
-//! unnecessary copies.
 
 #![deny(clippy::pedantic, clippy::all, missing_docs)]
 #![allow(
