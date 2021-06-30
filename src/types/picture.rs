@@ -141,9 +141,6 @@ pub enum PictureType {
 }
 
 /// Alias for PictureType
-#[cfg(not(feature = "format-id3"))]
-pub type PictureType = PictureType;
-/// Alias for PictureType
 #[cfg(feature = "format-id3")]
 pub type PictureType = id3::frame::PictureType;
 
