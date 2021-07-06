@@ -26,6 +26,10 @@ pub struct AnyTag<'a> {
 }
 
 impl<'a> AnyTag<'a> {
+	/// Create an empty [`AnyTag`]
+	pub fn new() -> Self {
+		Self::default()
+	}
 	/// Returns `title`.
 	pub fn title(&self) -> Option<&str> {
 		self.title.as_deref()
