@@ -78,6 +78,13 @@
 //! assert_eq!(oggtag.artist_str(), Some("Foo artist"));
 //! ```
 //!
+//! # Concrete types
+//! * ApeTag
+//! * Id3v2Tag
+//! * Mp4Tag
+//! * OggTag
+//! * RiffTag (RIFF LIST INFO)
+//!
 //! # Features
 //!
 //! ## Applies to all
