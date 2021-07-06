@@ -85,11 +85,11 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 					fn from(inp: &'a #input_ident) -> Self {
 						Self {
 							title: inp.title(),
-							artists: inp.artists_vec(),
+							artist: inp.artist_str(),
 							year: inp.year().map(|y| y as i32),
 							album: Album::new(
 								inp.album_title(),
-								inp.album_artists_vec(),
+								inp.album_artist_str(),
 								inp.album_covers(),
 							),
 							track_number: inp.track_number(),
@@ -109,17 +109,11 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 						if let Some(v) = inp.title() {
 							tag.set_title(v)
 						}
-						if let Some(v) = inp.artists_as_string() {
+						if let Some(v) = inp.artist() {
 							tag.set_artist(&v)
 						}
 						if let Some(v) = inp.year {
 							tag.set_year(v)
-						}
-						if let Some(v) = inp.album().title {
-							tag.set_album_title(v)
-						}
-						if let Some(v) = inp.album().artists {
-							tag.set_album_artist(&v.join("/"))
 						}
 						if let Some(v) = inp.track_number() {
 							tag.set_track_number(v)
@@ -132,6 +126,21 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 						}
 						if let Some(v) = inp.total_discs() {
 							tag.set_total_discs(v)
+						}
+
+						let album = inp.album();
+
+						if let Some(v) = album.title {
+							tag.set_album_title(v)
+						}
+						if let Some(v) = album.artist {
+							tag.set_album_artist(v)
+						}
+						if let Some(v) = album.covers.0 {
+							tag.set_front_cover(v)
+						}
+						if let Some(v) = album.covers.1 {
+							tag.set_back_cover(v)
 						}
 
 						tag
