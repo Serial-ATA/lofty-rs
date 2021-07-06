@@ -97,11 +97,11 @@ impl Tag {
 
 	/// Attempts to get the tag format based on the data in the reader
 	///
-	/// See [`read_from_path_signature`] for important notes, errors, and warnings.
+	/// See [`read_from_path_signature`][Tag::read_from_path_signature] for important notes, errors, and warnings.
 	///
 	/// # Errors
 	///
-	/// Same as [`read_from_path_signature`]
+	/// Same as [`read_from_path_signature`][Tag::read_from_path_signature]
 	pub fn read_from_reader<R>(&self, reader: &mut R) -> Result<Box<dyn AudioTag>>
 	where
 		R: Read + Seek,

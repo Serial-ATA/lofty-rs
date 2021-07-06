@@ -58,9 +58,24 @@
 //! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
 //! tag.set_title("Foo");
 //!
-//! // You can convert the tag type and save the metadata to another file.
+//! // You can convert the tag type and save it to another file.
 //! tag.to_dyn_tag(TagType::Mp4).write_to_path("tests/assets/a.m4a");
 //! assert_eq!(tag.title(), Some("Foo"));
+//! ```
+//!
+//! ## Converting from [`AnyTag`]
+//! ```
+//! use lofty::{AnyTag, OggTag, AudioTagEdit};
+//!
+//! let mut anytag = AnyTag::new();
+//!
+//! anytag.title = Some("Foo title");
+//! anytag.artist = Some("Foo artist");
+//!
+//! let oggtag: OggTag = anytag.into();
+//!
+//! assert_eq!(oggtag.title(), Some("Foo title"));
+//! assert_eq!(oggtag.artist_str(), Some("Foo artist"));
 //! ```
 //!
 //! # Features
