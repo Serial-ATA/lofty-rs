@@ -12,8 +12,6 @@ categories = ["accessibility", "multimedia::audio"]
 [dependencies]
 # Ape
 ape = {version = "0.3.0", optional = true, git = "https://github.com/rossnomann/rust-ape"}
-# Riff
-riff = {version = "1.0.1", optional = true}
 # Id3
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
@@ -40,7 +38,7 @@ format-opus = ["ogg_pager"]
 format-vorbis = ["ogg_pager"]
 format-ape = ["ape"]
 format-id3 = ["id3", "filepath"]
-format-riff = ["riff"]
+format-riff = []
 format-ogg = ["format-flac", "format-opus", "format-vorbis"]
 all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape"]
 

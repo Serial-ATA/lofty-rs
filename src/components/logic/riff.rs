@@ -1,7 +1,6 @@
 use crate::{LoftyError, Result};
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use std::borrow::BorrowMut;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -28,86 +27,108 @@ pub const ALBU: [u8; 4] = [65, 76, 66, 85]; // Can album artist OR album title
 pub const TRAC: [u8; 4] = [84, 82, 65, 67]; // Can represent track number OR total tracks
 pub const DISC: [u8; 4] = [68, 73, 83, 67]; // Can represent disc number OR total discs
 
-pub(crate) fn read_from<T>(mut data: T) -> Result<Option<HashMap<String, String>>>
+pub(crate) fn read_from<T>(data: &mut T) -> Result<Option<HashMap<String, String>>>
 where
 	T: Read + Seek,
 {
-	let chunk = riff::Chunk::read(&mut data, 0)?;
+	verify_riff(data)?;
 
-	let mut lists: Vec<riff::Chunk> = Vec::new();
+	data.seek(SeekFrom::Current(8))?;
 
-	for child in chunk.iter(&mut data) {
-		let chunk_id = child.id();
+	find_info_list(data)?;
 
-		if &chunk_id.value == LIST_ID {
-			lists.push(child)
+	let mut info_list_size = [0; 4];
+	data.read_exact(&mut info_list_size)?;
+
+	let mut info_list = vec![0; u32::from_le_bytes(info_list_size) as usize];
+	data.read_exact(&mut info_list)?;
+
+	info_list.drain(0..4); // Get rid of the chunk ID
+	let mut cursor = Cursor::new(&*info_list);
+
+	let chunk_len = info_list.len();
+	let mut metadata: HashMap<String, String> = HashMap::with_capacity(chunk_len as usize);
+
+	let mut reading = true;
+
+	while reading {
+		if let (Ok(fourcc), Ok(size)) = (
+			cursor.read_u32::<LittleEndian>(),
+			cursor.read_u32::<LittleEndian>(),
+		) {
+			match create_key(&fourcc.to_le_bytes()) {
+				Some(key) => {
+					let mut buf = vec![0; size as usize];
+					cursor.read_exact(&mut buf)?;
+
+					// Just skip any values that can't be converted
+					match std::string::String::from_utf8(buf) {
+						Ok(val) => {
+							let _ =
+								metadata.insert(key, val.trim_matches(char::from(0)).to_string());
+						},
+						Err(_) => continue,
+					}
+				},
+				#[allow(clippy::cast_lossless)]
+				None => cursor.set_position(cursor.position() + size as u64),
+			}
+
+			// Skip null byte
+			if size as usize % 2 != 0 {
+				cursor.set_position(cursor.position() + 1)
+			}
+
+			if cursor.position() >= cursor.get_ref().len() as u64 {
+				reading = false
+			}
+		} else {
+			reading = false
 		}
 	}
 
-	return if lists.is_empty() {
-		Err(LoftyError::Riff("This file doesn't contain a LIST chunk"))
-	} else {
-		let mut info: Option<riff::Chunk> = None;
+	Ok(Some(metadata))
+}
 
-		for child in lists {
-			if &child.read_type(&mut data)?.value == b"INFO" {
-				info = Some(child);
-				break;
-			}
-		}
+fn find_info_list<T>(data: &mut T) -> Result<()>
+where
+	T: Read + Seek,
+{
+	loop {
+		let mut chunk_name = [0; 4];
+		data.read_exact(&mut chunk_name)?;
 
-		if let Some(list) = info {
-			let mut content = list.read_contents(&mut data)?;
+		if &chunk_name == LIST_ID {
+			data.seek(SeekFrom::Current(4))?;
 
-			content.drain(0..4); // Get rid of the chunk ID
-			let mut cursor = Cursor::new(&*content);
+			let mut list_type = [0; 4];
+			data.read_exact(&mut list_type)?;
 
-			let chunk_len = list.len();
-			let mut metadata: HashMap<String, String> = HashMap::with_capacity(chunk_len as usize);
-
-			let mut reading = true;
-
-			while reading {
-				if let (Ok(fourcc), Ok(size)) = (
-					cursor.read_u32::<LittleEndian>(),
-					cursor.read_u32::<LittleEndian>(),
-				) {
-					match create_key(&fourcc.to_le_bytes()) {
-						Some(key) => {
-							let mut buf = vec![0; size as usize];
-							cursor.read_exact(&mut buf)?;
-
-							// Just skip any values that can't be converted
-							match std::string::String::from_utf8(buf) {
-								Ok(val) => {
-									let _ = metadata
-										.insert(key, val.trim_matches(char::from(0)).to_string());
-								},
-								Err(_) => continue,
-							}
-						},
-						#[allow(clippy::cast_lossless)]
-						None => cursor.set_position(cursor.position() + size as u64),
-					}
-
-					// Skip null byte
-					if size as usize % 2 != 0 {
-						cursor.set_position(cursor.position() + 1)
-					}
-
-					if cursor.position() >= cursor.get_ref().len() as u64 {
-						reading = false
-					}
-				} else {
-					reading = false
-				}
+			if &list_type == b"INFO" {
+				data.seek(SeekFrom::Current(-8))?;
+				return Ok(());
 			}
 
-			Ok(Some(metadata))
-		} else {
-			Err(LoftyError::Riff("This file doesn't contain an INFO chunk"))
+			data.seek(SeekFrom::Current(-8))?;
 		}
-	};
+
+		let size = data.read_u32::<LittleEndian>()?;
+		data.seek(SeekFrom::Current(i64::from(size)))?;
+	}
+}
+
+fn verify_riff<T>(data: &mut T) -> Result<()>
+where
+	T: Read + Seek,
+{
+	let mut id = [0; 4];
+	data.read_exact(&mut id)?;
+
+	if &id != b"RIFF" {
+		return Err(LoftyError::Riff("RIFF file doesn't contain a RIFF chunk"));
+	}
+
+	Ok(())
 }
 
 fn create_key(fourcc: &[u8]) -> Option<String> {
@@ -146,10 +167,8 @@ pub fn key_to_fourcc(key: &str) -> Option<[u8; 4]> {
 pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
 	let mut packet = Vec::new();
 
-	packet.extend(riff::LIST_ID.value.iter());
-
-	let fourcc = "INFO";
-	packet.extend(fourcc.as_bytes().iter());
+	packet.extend(LIST_ID.iter());
+	packet.extend(b"INFO".iter());
 
 	for (k, v) in metadata {
 		if let Some(fcc) = key_to_fourcc(&*k) {
@@ -167,53 +186,37 @@ pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Re
 		}
 	}
 
-	let mut file_bytes = Vec::new();
-	std::io::copy(data.borrow_mut(), &mut file_bytes)?;
-
-	let len = (packet.len() - 4) as u32;
-	let size = len.to_le_bytes();
+	let size = ((packet.len() - 4) as u32).to_le_bytes();
 
 	#[allow(clippy::needless_range_loop)]
 	for i in 0..4 {
 		packet.insert(i + 4, size[i]);
 	}
 
-	let mut file = Cursor::new(file_bytes);
+	verify_riff(data)?;
 
-	let chunk = riff::Chunk::read(&mut file, 0)?;
+	data.seek(SeekFrom::Current(8))?;
 
-	let (mut list_pos, mut list_len): (Option<u32>, Option<u32>) = (None, None);
+	find_info_list(data)?;
 
-	if chunk.id() != riff::RIFF_ID {
-		return Err(LoftyError::Riff("This file does not contain a RIFF chunk"));
-	}
+	let info_list_size = data.read_u32::<LittleEndian>()? as usize;
+	data.seek(SeekFrom::Current(-8))?;
 
-	for child in chunk.iter(&mut file) {
-		if child.id() == riff::LIST_ID {
-			list_pos = Some(child.offset() as u32);
-			list_len = Some(child.len());
-		}
-	}
+	let info_list_start = data.seek(SeekFrom::Current(0))? as usize;
+	let info_list_end = info_list_start + 8 + info_list_size;
 
-	file.seek(SeekFrom::Start(0))?;
+	data.seek(SeekFrom::Start(0))?;
+	let mut file_bytes = Vec::new();
+	data.read_to_end(&mut file_bytes)?;
 
-	let mut content = Vec::new();
-	std::io::copy(&mut file, &mut content)?;
+	let _ = file_bytes.splice(info_list_start..info_list_end, packet);
 
-	if let (Some(list_pos), Some(list_len)) = (list_pos, list_len) {
-		let list_end = (list_pos + list_len) as usize;
+	let total_size = (file_bytes.len() - 8) as u32;
+	let _ = file_bytes.splice(4..8, total_size.to_le_bytes().to_vec());
 
-		let _ = content.splice(list_pos as usize..list_end, packet);
+	data.seek(SeekFrom::Start(0))?;
+	data.set_len(0)?;
+	data.write_all(&*file_bytes)?;
 
-		let total_size = (content.len() - 8) as u32;
-		let _ = content.splice(4..8, total_size.to_le_bytes().to_vec());
-
-		data.seek(SeekFrom::Start(0))?;
-		data.set_len(0)?;
-		data.write_all(&*content)?;
-
-		Ok(())
-	} else {
-		Err(LoftyError::Riff("This file does not contain an INFO chunk"))
-	}
+	Ok(())
 }
