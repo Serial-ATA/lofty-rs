@@ -25,8 +25,8 @@ pub trait AudioTagEdit {
 	fn set_artist(&mut self, artist: &str);
 
 	/// Splits the artist string into a `Vec`
-	fn artists_vec(&self) -> Option<Vec<&str>> {
-		self.artist_str().map(|a| a.split('/').collect())
+	fn artists(&self, delimiter: &str) -> Option<Vec<&str>> {
+		self.artist_str().map(|a| a.split(delimiter).collect())
 	}
 	/// Removes the artist string
 	fn remove_artist(&mut self);
@@ -57,7 +57,7 @@ pub trait AudioTagEdit {
 	fn album(&self) -> Album<'_> {
 		Album {
 			title: self.album_title(),
-			artists: self.album_artists_vec(),
+			artist: self.album_artist_str(),
 			covers: self.album_covers(),
 		}
 	}
@@ -72,8 +72,9 @@ pub trait AudioTagEdit {
 	/// Returns the album artist string
 	fn album_artist_str(&self) -> Option<&str>;
 	/// Splits the artist string into a `Vec`
-	fn album_artists_vec(&self) -> Option<Vec<&str>> {
-		self.album_artist_str().map(|a| a.split('/').collect())
+	fn album_artists(&self, delimiter: &str) -> Option<Vec<&str>> {
+		self.album_artist_str()
+			.map(|a| a.split(delimiter).collect())
 	}
 	/// Sets the album artist string
 	fn set_album_artist(&mut self, artist: &str);

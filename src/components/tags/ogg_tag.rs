@@ -273,12 +273,6 @@ impl AudioTagEdit for OggTag {
 		self.inner.get_value("ALBUMARTIST")
 	}
 
-	fn album_artists_vec(&self) -> Option<Vec<&str>> {
-		self.inner
-			.get_value("ALBUMARTIST")
-			.map(|a| a.split('/').collect())
-	}
-
 	fn set_album_artist(&mut self, artist: &str) {
 		self.inner.set_value("ALBUMARTIST", artist)
 	}

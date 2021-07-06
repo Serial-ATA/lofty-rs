@@ -6,7 +6,7 @@ pub struct Album<'a> {
 	/// The title of the album
 	pub title: Option<&'a str>,
 	/// A `Vec` of the album artists
-	pub artists: Option<Vec<&'a str>>,
+	pub artist: Option<&'a str>,
 	/// The album's covers (Front, Back)
 	pub covers: (Option<Picture>, Option<Picture>),
 }
@@ -15,7 +15,7 @@ impl<'a> Default for Album<'a> {
 	fn default() -> Self {
 		Self {
 			title: None,
-			artists: None,
+			artist: None,
 			covers: (None, None),
 		}
 	}
@@ -25,12 +25,12 @@ impl<'a> Album<'a> {
 	/// Create a new `Album`
 	pub fn new(
 		title: Option<&'a str>,
-		artists: Option<Vec<&'a str>>,
+		artist: Option<&'a str>,
 		covers: (Option<Picture>, Option<Picture>),
 	) -> Self {
 		Self {
 			title,
-			artists,
+			artist,
 			covers,
 		}
 	}
@@ -38,36 +38,24 @@ impl<'a> Album<'a> {
 	pub fn with_title(title: &'a str) -> Self {
 		Self {
 			title: Some(title),
-			artists: None,
+			artist: None,
 			covers: (None, None),
 		}
 	}
 	/// Set the album artists
-	pub fn set_artists(mut self, artists: Vec<&'a str>) {
-		self.artists = Some(artists);
-	}
-	/// Appends an artist to the `artists` vec
-	pub fn append_artist(mut self, artist: &'a str) {
-		if let Some(mut artists) = self.artists {
-			artists.push(artist)
-		} else {
-			self.artists = Some(vec![artist])
-		}
+	pub fn set_artists(&mut self, artist_str: &'a str) {
+		self.artist = Some(artist_str);
 	}
 	/// Clears the `artists` field
-	pub fn remove_artists(mut self) {
-		self.artists = None
+	pub fn remove_artist(mut self) {
+		self.artist = None
 	}
 	/// Set the album cover
-	pub fn set_covers(mut self, covers: (Option<Picture>, Option<Picture>)) {
+	pub fn set_covers(&mut self, covers: (Option<Picture>, Option<Picture>)) {
 		self.covers = covers
 	}
 	/// Clears the `covers` field
 	pub fn remove_covers(mut self) {
 		self.covers = (None, None)
-	}
-	/// Turns `artists` vec into a String
-	pub fn artists_as_string(&self) -> Option<String> {
-		self.artists.as_ref().map(|artists| artists.join("/"))
 	}
 }

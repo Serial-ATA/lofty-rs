@@ -101,10 +101,6 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.set_artist(artist)
 	}
 
-	fn artists_vec(&self) -> Option<Vec<&str>> {
-		self.artist_str().map(|a| a.split('/').collect())
-	}
-
 	fn remove_artist(&mut self) {
 		self.inner.remove_artist()
 	}
@@ -158,10 +154,6 @@ impl AudioTagEdit for Id3v2Tag {
 
 	fn album_artist_str(&self) -> Option<&str> {
 		self.inner.album_artist()
-	}
-
-	fn album_artists_vec(&self) -> Option<Vec<&str>> {
-		self.inner.album_artist().map(|a| a.split('/').collect())
 	}
 
 	fn set_album_artist(&mut self, artists: &str) {

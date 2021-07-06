@@ -6,7 +6,7 @@ pub struct AnyTag<'a> {
 	/// The track title
 	pub title: Option<&'a str>,
 	/// The track artists
-	pub artists: Option<Vec<&'a str>>,
+	pub artist: Option<&'a str>,
 	/// The track [`Album`]
 	pub album: Album<'a>,
 	/// Collection of user comments
@@ -38,20 +38,9 @@ impl<'a> AnyTag<'a> {
 	pub fn set_title(&mut self, title: &'a str) {
 		self.title = Some(title);
 	}
-	/// Returns `artists`.
-	pub fn artists(&self) -> Option<&[&str]> {
-		self.artists.as_deref()
-	}
-	/// Replaces `artists`.
-	pub fn set_artists(&mut self, artists: Vec<&'a str>) {
-		self.artists = Some(artists)
-	}
-	/// Appends an artist to `artists`
-	pub fn add_artist(&mut self, artist: &'a str) {
-		self.artists = self.artists.clone().map(|mut a| {
-			a.push(artist);
-			a
-		});
+	/// Returns `artist`
+	pub fn artist(&self) -> Option<&str> {
+		self.artist
 	}
 	/// Returns `album`
 	pub fn album(&self) -> Album {
@@ -84,12 +73,5 @@ impl<'a> AnyTag<'a> {
 	/// Returns `total_discs`
 	pub fn total_discs(&self) -> Option<u32> {
 		self.total_tracks
-	}
-}
-
-impl AnyTag<'_> {
-	/// Turns `artists` into a comma separated String
-	pub fn artists_as_string(&self) -> Option<String> {
-		self.artists.as_ref().map(|artists| artists.join("/"))
 	}
 }

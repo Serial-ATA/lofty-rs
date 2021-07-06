@@ -141,7 +141,7 @@ macro_rules! verify_write {
 			};
 
 			println!("Verifying album artist");
-			assert_eq!(tag.album_artists_vec(), Some(vec!["foo album artist"]));
+			assert_eq!(tag.album_artist_str(), Some("foo album artist"));
 
 			println!("Verifying album covers");
 
@@ -181,7 +181,7 @@ macro_rules! remove_tags {
 
 		println!("Removing album artists");
 		tag.remove_album_artists();
-		assert!(tag.album_artists_vec().is_none());
+		assert!(tag.album_artist_str().is_none());
 		tag.remove_album_artists();
 
 		println!("Removing album covers");

@@ -87,10 +87,6 @@ impl AudioTagEdit for ApeTag {
 		self.set_value("Artist", artist)
 	}
 
-	fn artists_vec(&self) -> Option<Vec<&str>> {
-		self.artist_str().map(|a| a.split('/').collect())
-	}
-
 	fn remove_artist(&mut self) {
 		self.remove_key("Artist")
 	}
@@ -139,9 +135,6 @@ impl AudioTagEdit for ApeTag {
 	// Album artists aren't standard?
 	fn album_artist_str(&self) -> Option<&str> {
 		self.get_value("Album artist")
-	}
-	fn album_artists_vec(&self) -> Option<Vec<&str>> {
-		self.album_artist_str().map(|a| a.split('/').collect())
 	}
 
 	fn set_album_artist(&mut self, artists: &str) {

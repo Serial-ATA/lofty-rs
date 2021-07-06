@@ -7,16 +7,16 @@ use crate::{LoftyError, Result};
 	feature = "format-flac",
 ))]
 use byteorder::{BigEndian, ReadBytesExt};
-#[cfg(any(
-feature = "format-id3",
-feature = "format-opus",
-feature = "format-vorbis",
-feature = "format-flac",
-feature = "format-ape",
-))]
-use std::io::{Cursor, Read};
 use std::borrow::Cow;
 use std::convert::TryFrom;
+#[cfg(any(
+	feature = "format-id3",
+	feature = "format-opus",
+	feature = "format-vorbis",
+	feature = "format-flac",
+	feature = "format-ape",
+))]
+use std::io::{Cursor, Read};
 
 #[cfg(feature = "format-ape")]
 pub const APE_PICTYPES: [&str; 21] = [
