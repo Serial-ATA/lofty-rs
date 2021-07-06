@@ -209,9 +209,8 @@ impl AudioTagEdit for ApeTag {
 
 		if let Some(numbers) = numbers {
 			let split: Vec<&str> = numbers.split('/').collect();
-			let track_number = split[0];
 
-			if !track_number.is_empty() {
+			if let Some(track_number) = split.first() {
 				if let Ok(num) = track_number.parse::<u32>() {
 					return Some(num);
 				}
@@ -237,10 +236,9 @@ impl AudioTagEdit for ApeTag {
 
 		if let Some(numbers) = numbers {
 			let split: Vec<&str> = numbers.split('/').collect();
-			let track_number = split[1];
 
-			if !track_number.is_empty() {
-				if let Ok(num) = track_number.parse::<u32>() {
+			if let Some(total_tracks) = split.last() {
+				if let Ok(num) = total_tracks.parse::<u32>() {
 					return Some(num);
 				}
 			}

@@ -6,7 +6,7 @@ macro_rules! convert_tag {
 	($tag: ident) => {
 		assert_eq!($tag.title(), Some("Title Updated"));
 		assert_eq!($tag.artist_str(), Some("Artist Updated"));
-		assert_eq!($tag.album_artist_str(), Some("Album Artist Updated"));
+		assert_eq!($tag.track_number(), Some(5));
 	};
 }
 
@@ -16,7 +16,7 @@ fn test_conversions() {
 
 	tag.set_title("Title Updated");
 	tag.set_artist("Artist Updated");
-	tag.set_album_artist("Album Artist Updated");
+	tag.set_track_number(5);
 	convert_tag!(tag);
 
 	let tag = tag.to_dyn_tag(TagType::Ape);
