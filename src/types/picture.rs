@@ -59,6 +59,7 @@ pub enum MimeType {
 }
 
 impl MimeType {
+	#[cfg(feature = "format-ape")]
 	/// Converts the `MimeType` to an ape str
 	pub fn as_ape(self) -> &'static [u8; 4] {
 		match self {
