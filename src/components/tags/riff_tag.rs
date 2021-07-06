@@ -127,16 +127,12 @@ impl AudioTagEdit for RiffTag {
 	}
 
 	fn album_artist_str(&self) -> Option<&str> {
-		self.get_value("AlbumArtist")
+		None
 	}
 
-	fn set_album_artist(&mut self, artist: &str) {
-		self.set_value("AlbumArtist", artist)
-	}
+	fn set_album_artist(&mut self, _artist: &str) {}
 
-	fn remove_album_artists(&mut self) {
-		self.remove_key("AlbumArtist")
-	}
+	fn remove_album_artists(&mut self) {}
 
 	/// This will always return `None`, as this is non-standard
 	fn front_cover(&self) -> Option<Picture> {
