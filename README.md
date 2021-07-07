@@ -10,16 +10,16 @@ Parse, convert, and write metadata to various audio formats.
 
 ## Supported Formats
 
-| File Format | Extensions                                | Read | Write | Metadata Format(s)  |
-|-------------|-------------------------------------------|------|-------|---------------------|
-| Ape         | `ape`                                     |**X** |**X**  |`APEv2`              |
-| AIFF        | `aiff`, `aif`                             |**X** |**X**  |`ID3v2`              |
-| FLAC        | `flac`                                    |**X** |**X**  |`Vorbis Comments`    |
-| MP3         | `mp3`                                     |**X** |**X**  |`ID3v2`              |
-| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |`Vorbis Comments`    |
-| Opus        | `opus`                                    |**X** |**X**  |`Vorbis Comments`    |
-| Ogg         | `ogg`, `oga`                              |**X** |**X**  |`Vorbis Comments`    |
-| WAV         | `wav`, `wave`                             |**X** |**X**  |`RIFF INFO`, `ID3v2` |
+| File Format | Extensions                                | Read | Write | Metadata Format(s)    |
+|-------------|-------------------------------------------|------|-------|-----------------------|
+| Ape         | `ape`                                     |**X** |**X**  |`APEv2`                |
+| AIFF        | `aiff`, `aif`                             |**X** |**X**  |`ID3v2`, `Text Chunks` |
+| FLAC        | `flac`                                    |**X** |**X**  |`Vorbis Comments`      |
+| MP3         | `mp3`                                     |**X** |**X**  |`ID3v2`                |
+| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |`Vorbis Comments`      |
+| Opus        | `opus`                                    |**X** |**X**  |`Vorbis Comments`      |
+| Ogg         | `ogg`, `oga`                              |**X** |**X**  |`Vorbis Comments`      |
+| WAV         | `wav`, `wave`                             |**X** |**X**  |`ID3v2`, `RIFF INFO`   |
 
 ## Documentation
 
