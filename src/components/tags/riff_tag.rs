@@ -42,13 +42,7 @@ impl RiffTag {
 
 impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		self.inner.data.get_key_value(key).and_then(|pair| {
-			if pair.1.is_empty() {
-				None
-			} else {
-				Some(pair.1.as_str())
-			}
-		})
+		self.inner.data.get_key_value(key).map(|(_, v)| v.as_str())
 	}
 
 	fn set_value<V>(&mut self, key: &str, val: V)
@@ -59,61 +53,53 @@ impl RiffTag {
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		self.inner.data.retain(|k, _| k != key);
+		self.inner.data.remove(key);
 	}
 }
 
 impl AudioTagEdit for RiffTag {
 	fn title(&self) -> Option<&str> {
-		self.get_value("Title")
+		self.get_value("INAM")
 	}
 
 	fn set_title(&mut self, title: &str) {
-		self.set_value("Title", title)
+		self.set_value("INAM", title)
 	}
 
 	fn remove_title(&mut self) {
-		self.remove_key("Title")
+		self.remove_key("INAM")
 	}
 
 	fn artist_str(&self) -> Option<&str> {
-		self.get_value("Artist")
+		self.get_value("IART")
 	}
 
 	fn set_artist(&mut self, artist: &str) {
-		self.set_value("Artist", artist)
+		self.set_value("IART", artist)
 	}
 
 	fn remove_artist(&mut self) {
-		self.remove_key("Artist")
+		self.remove_key("IART")
 	}
 
 	fn year(&self) -> Option<i32> {
-		if let Some(Ok(y)) = self.get_value("Year").map(str::parse::<i32>) {
-			Some(y)
-		} else {
-			None
-		}
+		None
 	}
 
-	fn set_year(&mut self, year: i32) {
-		self.set_value("Year", year.to_string())
-	}
+	fn set_year(&mut self, _year: i32) {}
 
-	fn remove_year(&mut self) {
-		self.remove_key("Year")
-	}
+	fn remove_year(&mut self) {}
 
 	fn album_title(&self) -> Option<&str> {
-		self.get_value("Album")
+		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
 	}
 
 	fn set_album_title(&mut self, v: &str) {
-		self.set_value("Album", v)
+		self.set_value("IPRD", v)
 	}
 
 	fn remove_album_title(&mut self) {
-		self.remove_key("Album")
+		self.remove_key("IPRD")
 	}
 
 	fn album_artist_str(&self) -> Option<&str> {
@@ -152,67 +138,68 @@ impl AudioTagEdit for RiffTag {
 	}
 
 	fn track_number(&self) -> Option<u32> {
-		if let Some(Ok(y)) = self.get_value("TrackNumber").map(str::parse::<u32>) {
-			Some(y)
-		} else {
-			None
+		if let Some(Ok(track_num)) = self
+			.get_value("ITRK")
+			.or_else(|| self.get_value("IPRT"))
+			.or_else(|| self.get_value("TRAC"))
+			.map(str::parse::<u32>)
+		{
+			return Some(track_num);
 		}
+
+		None
 	}
 
 	fn set_track_number(&mut self, track_number: u32) {
-		self.set_value("TrackNumber", track_number.to_string())
+		self.set_value("ITRK", track_number.to_string())
 	}
 
 	fn remove_track_number(&mut self) {
-		self.remove_key("TrackNumber")
+		self.remove_key("ITRK")
 	}
 
 	fn total_tracks(&self) -> Option<u32> {
-		if let Some(Ok(tt)) = self.get_value("TrackTotal").map(str::parse::<u32>) {
-			Some(tt)
-		} else {
-			None
+		if let Some(Ok(total_tracks)) = self.get_value("IFRM").map(str::parse::<u32>) {
+			return Some(total_tracks);
 		}
+
+		None
 	}
 
 	fn set_total_tracks(&mut self, total_track: u32) {
-		self.set_value("TrackTotal", total_track.to_string())
+		self.set_value("IFRM", total_track.to_string())
 	}
 
 	fn remove_total_tracks(&mut self) {
-		self.remove_key("TrackTotal")
+		self.remove_key("IFRM")
 	}
 
 	fn disc_number(&self) -> Option<u32> {
-		if let Some(Ok(dn)) = self.get_value("DiscNumber").map(str::parse::<u32>) {
-			Some(dn)
-		} else {
-			None
+		if let Some(Ok(disc_number)) = self.get_value("DISC").map(str::parse::<u32>) {
+			return Some(disc_number);
 		}
+
+		None
 	}
 
 	fn set_disc_number(&mut self, disc_number: u32) {
-		self.set_value("DiscNumber", disc_number.to_string())
+		self.set_value("DISC", disc_number.to_string())
 	}
 
 	fn remove_disc_number(&mut self) {
-		self.remove_key("DiscNumber")
+		self.remove_key("DISC")
 	}
 
 	fn total_discs(&self) -> Option<u32> {
-		if let Some(Ok(td)) = self.get_value("DiscTotal").map(str::parse::<u32>) {
-			Some(td)
-		} else {
-			None
-		}
+		self.disc_number()
 	}
 
 	fn set_total_discs(&mut self, total_discs: u32) {
-		self.set_value("DiscTotal", total_discs.to_string())
+		self.set_disc_number(total_discs)
 	}
 
 	fn remove_total_discs(&mut self) {
-		self.remove_key("DiscTotal")
+		self.remove_disc_number()
 	}
 }
 

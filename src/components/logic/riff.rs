@@ -6,23 +6,6 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-// Standard
-pub const IART: &[u8] = &[73, 65, 82, 84];
-pub const ICMT: &[u8] = &[73, 67, 77, 84];
-pub const ICRD: &[u8] = &[73, 67, 82, 68];
-pub const INAM: &[u8] = &[73, 78, 65, 77];
-pub const IPRD: &[u8] = &[73, 80, 82, 68]; // Represents album title
-
-// Non-standard
-pub const ITRK: &[u8] = &[73, 84, 82, 75]; // Can represent track number
-pub const IPRT: &[u8] = &[73, 80, 82, 84]; // Can also represent track number
-pub const IFRM: &[u8] = &[73, 70, 82, 77]; // Can represent total tracks
-
-// Very non-standard
-pub const ALBU: &[u8] = &[65, 76, 66, 85]; // Can album artist OR album title
-pub const TRAC: &[u8] = &[84, 82, 65, 67]; // Can represent track number OR total tracks
-pub const DISC: &[u8] = &[68, 73, 83, 67]; // Can represent disc number OR total discs
-
 pub(crate) fn read_from<T>(data: &mut T) -> Result<HashMap<String, String>>
 where
 	T: Read + Seek,
@@ -45,19 +28,18 @@ where
 
 	#[allow(clippy::cast_lossless)]
 	while cursor.position() < info_list_size as u64 {
-		let fourcc = cursor.read_u32::<LittleEndian>()?;
+		let mut fourcc = vec![0; 4];
+		cursor.read_exact(&mut fourcc)?;
+
 		let size = cursor.read_u32::<LittleEndian>()?;
 
-		match create_key(&fourcc.to_le_bytes()) {
-			Some(key) => {
-				let mut buf = vec![0; size as usize];
-				cursor.read_exact(&mut buf)?;
+		let key = String::from_utf8(fourcc)?;
 
-				let val = String::from_utf8(buf)?;
-				metadata.insert(key.to_string(), val.trim_matches('\0').to_string());
-			},
-			None => cursor.set_position(cursor.position() + size as u64),
-		}
+		let mut buf = vec![0; size as usize];
+		cursor.read_exact(&mut buf)?;
+
+		let val = String::from_utf8(buf)?;
+		metadata.insert(key.to_string(), val.trim_matches('\0').to_string());
 	}
 
 	Ok(metadata)
@@ -104,34 +86,6 @@ where
 	Ok(())
 }
 
-fn create_key(fourcc: &[u8]) -> Option<&str> {
-	match fourcc {
-		IART => Some("Artist"),
-		ICMT => Some("Comment"),
-		ICRD => Some("Date"),
-		INAM => Some("Title"),
-		IPRD | ALBU => Some("Album"),
-		ITRK | IPRT | TRAC => Some("TrackNumber"),
-		IFRM => Some("TrackTotal"),
-		DISC => Some("DiscNumber"),
-		_ => None,
-	}
-}
-
-pub fn key_to_fourcc(key: &str) -> Option<&[u8]> {
-	match key {
-		"Artist" => Some(IART),
-		"Comment" => Some(ICMT),
-		"Date" => Some(ICRD),
-		"Title" => Some(INAM),
-		"Album" => Some(IPRD),
-		"TrackTotal" => Some(IFRM),
-		"TrackNumber" => Some(TRAC),
-		"DiscNumber" | "DiscTotal" => Some(DISC),
-		_ => None,
-	}
-}
-
 #[cfg(feature = "format-riff")]
 pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
 	let mut packet = Vec::new();
@@ -140,19 +94,17 @@ pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Re
 	packet.extend(b"INFO".iter());
 
 	for (k, v) in metadata {
-		if let Some(fcc) = key_to_fourcc(&*k) {
-			let mut val = v.as_bytes().to_vec();
+		let mut val = v.as_bytes().to_vec();
 
-			if val.len() % 2 != 0 {
-				val.push(0)
-			}
-
-			let size = val.len() as u32;
-
-			packet.extend(fcc.iter());
-			packet.extend(size.to_le_bytes().iter());
-			packet.extend(val.iter());
+		if val.len() % 2 != 0 {
+			val.push(0)
 		}
+
+		let size = val.len() as u32;
+
+		packet.extend(k.as_bytes().iter());
+		packet.extend(size.to_le_bytes().iter());
+		packet.extend(val.iter());
 	}
 
 	let packet_size = packet.len() - 4;
