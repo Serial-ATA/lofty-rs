@@ -47,11 +47,11 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the track year
-	fn year(&self) -> Option<i32>;
+	fn year(&self) -> Option<i32> { None }
 	/// Sets the track year
-	fn set_year(&mut self, year: i32);
+	fn set_year(&mut self, _year: i32) {}
 	/// Removes the track year
-	fn remove_year(&mut self);
+	fn remove_year(&mut self) {}
 
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
@@ -63,23 +63,23 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the album title
-	fn album_title(&self) -> Option<&str>;
+	fn album_title(&self) -> Option<&str> { None }
 	/// Sets the album title
-	fn set_album_title(&mut self, v: &str);
+	fn set_album_title(&mut self, v: &str) {}
 	/// Removes the album title
-	fn remove_album_title(&mut self);
+	fn remove_album_title(&mut self) {}
 
 	/// Returns the album artist string
-	fn album_artist_str(&self) -> Option<&str>;
+	fn album_artist_str(&self) -> Option<&str> { None }
 	/// Splits the artist string into a `Vec`
 	fn album_artists(&self, delimiter: &str) -> Option<Vec<&str>> {
 		self.album_artist_str()
 			.map(|a| a.split(delimiter).collect())
 	}
 	/// Sets the album artist string
-	fn set_album_artist(&mut self, artist: &str);
+	fn set_album_artist(&mut self, _artist: &str) {}
 	/// Removes the album artist string
-	fn remove_album_artists(&mut self);
+	fn remove_album_artists(&mut self) {}
 
 	/// Returns the front and back album covers
 	fn album_covers(&self) -> (Option<Picture>, Option<Picture>) {
@@ -92,21 +92,21 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the front cover
-	fn front_cover(&self) -> Option<Picture>;
+	fn front_cover(&self) -> Option<Picture> { None }
 	/// Sets the front cover
-	fn set_front_cover(&mut self, cover: Picture);
+	fn set_front_cover(&mut self, _cover: Picture) {}
 	/// Removes the front cover
-	fn remove_front_cover(&mut self);
+	fn remove_front_cover(&mut self) {}
 
 	/// Returns the front cover
-	fn back_cover(&self) -> Option<Picture>;
+	fn back_cover(&self) -> Option<Picture> { None }
 	/// Sets the front cover
-	fn set_back_cover(&mut self, cover: Picture);
+	fn set_back_cover(&mut self, _cover: Picture) {}
 	/// Removes the front cover
-	fn remove_back_cover(&mut self);
+	fn remove_back_cover(&mut self) {}
 
 	/// Returns an `Iterator` over all pictures stored in the track
-	fn pictures(&self) -> Option<Cow<'static, [Picture]>>;
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> { None }
 
 	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {
@@ -124,18 +124,18 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the track number
-	fn track_number(&self) -> Option<u32>;
+	fn track_number(&self) -> Option<u32> { None }
 	/// Sets the track number
-	fn set_track_number(&mut self, track_number: u32);
+	fn set_track_number(&mut self, _track_number: u32) {}
 	/// Removes the track number
-	fn remove_track_number(&mut self);
+	fn remove_track_number(&mut self) {}
 
 	/// Returns the total tracks
-	fn total_tracks(&self) -> Option<u32>;
+	fn total_tracks(&self) -> Option<u32> { None }
 	/// Sets the total tracks
-	fn set_total_tracks(&mut self, total_track: u32);
+	fn set_total_tracks(&mut self, _total_track: u32) {}
 	/// Removes the total tracks
-	fn remove_total_tracks(&mut self);
+	fn remove_total_tracks(&mut self) {}
 
 	/// Returns the disc number and total discs
 	fn disc(&self) -> (Option<u32>, Option<u32>) {
@@ -148,18 +148,18 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the disc number
-	fn disc_number(&self) -> Option<u32>;
+	fn disc_number(&self) -> Option<u32> { None }
 	/// Sets the disc number
-	fn set_disc_number(&mut self, disc_number: u32);
+	fn set_disc_number(&mut self, _disc_number: u32) {}
 	/// Removes the disc number
-	fn remove_disc_number(&mut self);
+	fn remove_disc_number(&mut self) {}
 
 	/// Returns the total discs
-	fn total_discs(&self) -> Option<u32>;
+	fn total_discs(&self) -> Option<u32> { None }
 	/// Sets the total discs
-	fn set_total_discs(&mut self, total_discs: u32);
+	fn set_total_discs(&mut self, _total_discs: u32) {}
 	/// Removes the total discs
-	fn remove_total_discs(&mut self);
+	fn remove_total_discs(&mut self) {}
 }
 
 /// Functions for writing to a file

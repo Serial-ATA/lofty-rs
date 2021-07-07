@@ -82,14 +82,6 @@ impl AudioTagEdit for RiffTag {
 		self.remove_key("IART")
 	}
 
-	fn year(&self) -> Option<i32> {
-		None
-	}
-
-	fn set_year(&mut self, _year: i32) {}
-
-	fn remove_year(&mut self) {}
-
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
 	}
@@ -100,41 +92,6 @@ impl AudioTagEdit for RiffTag {
 
 	fn remove_album_title(&mut self) {
 		self.remove_key("IPRD")
-	}
-
-	fn album_artist_str(&self) -> Option<&str> {
-		None
-	}
-
-	fn set_album_artist(&mut self, _artist: &str) {}
-
-	fn remove_album_artists(&mut self) {}
-
-	/// This will always return `None`, as this is non-standard
-	fn front_cover(&self) -> Option<Picture> {
-		None
-	}
-
-	/// This will not do anything, as this is non-standard
-	fn set_front_cover(&mut self, _cover: Picture) {}
-
-	/// This will not do anything, as this is non-standard
-	fn remove_front_cover(&mut self) {}
-
-	/// This will always return `None`, as this is non-standard
-	fn back_cover(&self) -> Option<Picture> {
-		None
-	}
-
-	/// This will not do anything, as this is non-standard
-	fn set_back_cover(&mut self, _cover: Picture) {}
-
-	/// This will not do anything, as this is non-standard
-	fn remove_back_cover(&mut self) {}
-
-	/// This will always return `None`, as this is non-standard
-	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
-		None
 	}
 
 	fn track_number(&self) -> Option<u32> {
