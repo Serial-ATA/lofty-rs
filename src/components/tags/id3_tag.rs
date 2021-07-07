@@ -143,8 +143,8 @@ impl AudioTagEdit for Id3v2Tag {
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}
-	fn set_album_title(&mut self, v: &str) {
-		self.inner.set_album(v)
+	fn set_album_title(&mut self, title: &str) {
+		self.inner.set_album(title)
 	}
 	fn remove_album_title(&mut self) {
 		self.inner.remove_album();

@@ -24,6 +24,12 @@ pub use riff_tag::RiffTag;
 	feature = "format-flac"
 ))]
 pub(crate) mod ogg_tag;
+
+#[cfg(feature = "format-aiff")]
+pub(crate) mod aiff_tag;
+#[cfg(feature = "format-aiff")]
+pub use aiff_tag::AiffTag;
+
 #[cfg(any(
 	feature = "format-vorbis",
 	feature = "format-opus",

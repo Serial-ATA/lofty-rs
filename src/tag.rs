@@ -131,6 +131,8 @@ impl Tag {
 				feature = "format-opus"
 			))]
 			TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, &format)?)),
+			#[cfg(feature = "format-aiff")]
+			TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
 		}
 	}
 }
@@ -158,6 +160,10 @@ pub enum TagType {
 	/// Metadata stored in a RIFF INFO chunk
 	/// Common file extensions: `.wav, .wave, .riff`
 	RiffInfo,
+	#[cfg(feature = "format-aiff")]
+	/// Metadata stored in AIFF text chunks
+	/// Common file extensions: `.aiff, .aif`
+	AiffText,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -238,17 +244,21 @@ impl TagType {
 			70 if sig.starts_with(&FORM) => {
 				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
+				data.seek(SeekFrom::Start(8))?;
+
+				let mut id = [0; 4];
+				data.read_exact(&mut id)?;
+
+				if &id != b"AIFF" && &id != b"AIFC" {
+					return Err(LoftyError::UnknownFormat);
+				}
+
 				let mut found_id3 = false;
 
 				while let (Ok(fourcc), Ok(size)) = (
 					data.read_u32::<LittleEndian>(),
 					data.read_u32::<BigEndian>(),
 				) {
-					if fourcc.to_le_bytes() == FORM {
-						data.seek(SeekFrom::Current(4))?;
-						continue;
-					}
-
 					if fourcc.to_le_bytes()[..3] == ID3 {
 						found_id3 = true;
 						break;
@@ -265,8 +275,7 @@ impl TagType {
 					return Ok(Self::Id3v2(Id3Format::Form));
 				}
 
-				// TODO: support AIFF chunks?
-				Err(LoftyError::UnknownFormat)
+				Ok(Self::AiffText)
 			},
 			#[cfg(feature = "format-flac")]
 			102 if sig.starts_with(&FLAC) => Ok(Self::Ogg(OggFormat::Flac)),

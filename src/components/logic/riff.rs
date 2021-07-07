@@ -86,7 +86,6 @@ where
 	Ok(())
 }
 
-#[cfg(feature = "format-riff")]
 pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
 	let mut packet = Vec::new();
 

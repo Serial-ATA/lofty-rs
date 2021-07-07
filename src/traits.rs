@@ -47,7 +47,9 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the track year
-	fn year(&self) -> Option<i32> { None }
+	fn year(&self) -> Option<i32> {
+		None
+	}
 	/// Sets the track year
 	fn set_year(&mut self, _year: i32) {}
 	/// Removes the track year
@@ -63,14 +65,18 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the album title
-	fn album_title(&self) -> Option<&str> { None }
+	fn album_title(&self) -> Option<&str> {
+		None
+	}
 	/// Sets the album title
-	fn set_album_title(&mut self, v: &str) {}
+	fn set_album_title(&mut self, _title: &str) {}
 	/// Removes the album title
 	fn remove_album_title(&mut self) {}
 
 	/// Returns the album artist string
-	fn album_artist_str(&self) -> Option<&str> { None }
+	fn album_artist_str(&self) -> Option<&str> {
+		None
+	}
 	/// Splits the artist string into a `Vec`
 	fn album_artists(&self, delimiter: &str) -> Option<Vec<&str>> {
 		self.album_artist_str()
@@ -92,21 +98,27 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the front cover
-	fn front_cover(&self) -> Option<Picture> { None }
+	fn front_cover(&self) -> Option<Picture> {
+		None
+	}
 	/// Sets the front cover
 	fn set_front_cover(&mut self, _cover: Picture) {}
 	/// Removes the front cover
 	fn remove_front_cover(&mut self) {}
 
 	/// Returns the front cover
-	fn back_cover(&self) -> Option<Picture> { None }
+	fn back_cover(&self) -> Option<Picture> {
+		None
+	}
 	/// Sets the front cover
 	fn set_back_cover(&mut self, _cover: Picture) {}
 	/// Removes the front cover
 	fn remove_back_cover(&mut self) {}
 
 	/// Returns an `Iterator` over all pictures stored in the track
-	fn pictures(&self) -> Option<Cow<'static, [Picture]>> { None }
+	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
+		None
+	}
 
 	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {
@@ -124,14 +136,18 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the track number
-	fn track_number(&self) -> Option<u32> { None }
+	fn track_number(&self) -> Option<u32> {
+		None
+	}
 	/// Sets the track number
 	fn set_track_number(&mut self, _track_number: u32) {}
 	/// Removes the track number
 	fn remove_track_number(&mut self) {}
 
 	/// Returns the total tracks
-	fn total_tracks(&self) -> Option<u32> { None }
+	fn total_tracks(&self) -> Option<u32> {
+		None
+	}
 	/// Sets the total tracks
 	fn set_total_tracks(&mut self, _total_track: u32) {}
 	/// Removes the total tracks
@@ -148,14 +164,18 @@ pub trait AudioTagEdit {
 	}
 
 	/// Returns the disc number
-	fn disc_number(&self) -> Option<u32> { None }
+	fn disc_number(&self) -> Option<u32> {
+		None
+	}
 	/// Sets the disc number
 	fn set_disc_number(&mut self, _disc_number: u32) {}
 	/// Removes the disc number
 	fn remove_disc_number(&mut self) {}
 
 	/// Returns the total discs
-	fn total_discs(&self) -> Option<u32> { None }
+	fn total_discs(&self) -> Option<u32> {
+		None
+	}
 	/// Sets the total discs
 	fn set_total_discs(&mut self, _total_discs: u32) {}
 	/// Removes the total discs
@@ -206,6 +226,8 @@ pub trait ToAnyTag: ToAny {
 			TagType::Ogg(_) => Box::new(OggTag::from(self.to_anytag())),
 			#[cfg(feature = "format-riff")]
 			TagType::RiffInfo => Box::new(RiffTag::from(self.to_anytag())),
+			#[cfg(feature = "format-aiff")]
+			TagType::AiffText => Box::new(AiffTag::from(self.to_anytag())),
 		}
 	}
 }

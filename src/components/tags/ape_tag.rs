@@ -123,8 +123,8 @@ impl AudioTagEdit for ApeTag {
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("Album")
 	}
-	fn set_album_title(&mut self, v: &str) {
-		self.set_value("Album", v)
+	fn set_album_title(&mut self, title: &str) {
+		self.set_value("Album", title)
 	}
 	fn remove_album_title(&mut self) {
 		self.remove_key("Album")

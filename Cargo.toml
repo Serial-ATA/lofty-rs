@@ -38,9 +38,10 @@ format-opus = ["ogg_pager"]
 format-vorbis = ["ogg_pager"]
 format-ape = ["ape"]
 format-id3 = ["id3", "filepath"]
+format-aiff = []
 format-riff = []
 format-ogg = ["format-flac", "format-opus", "format-vorbis"]
-all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape"]
+all_tags = ["format-ogg", "format-mp4", "format-id3", "format-riff", "format-ape", "format-aiff"]
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["html_reports"] }

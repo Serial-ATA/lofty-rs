@@ -1,9 +1,8 @@
 use crate::components::logic::riff;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Result, TagType, ToAny, ToAnyTag,
 };
 
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek};
@@ -86,8 +85,8 @@ impl AudioTagEdit for RiffTag {
 		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
 	}
 
-	fn set_album_title(&mut self, v: &str) {
-		self.set_value("IPRD", v)
+	fn set_album_title(&mut self, title: &str) {
+		self.set_value("IPRD", title)
 	}
 
 	fn remove_album_title(&mut self) {

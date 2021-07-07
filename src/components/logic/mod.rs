@@ -6,3 +6,6 @@ pub(crate) mod riff;
 
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 pub(crate) mod ogg;
+
+#[cfg(feature = "format-aiff")]
+pub(crate) mod aiff;

@@ -210,3 +210,40 @@ full_test!(test_flac, "tests/assets/a.flac");
 full_test!(test_m4a, "tests/assets/a.m4a");
 full_test!(test_ogg, "tests/assets/a.ogg");
 full_test!(test_opus, "tests/assets/a.opus");
+
+// AIFF text chunks only provide 2 values
+#[test]
+fn test_aiff_text() {
+	let file = "tests/assets/a_text.aiff";
+	println!("-- Adding tags --");
+
+	println!("Reading file");
+	let mut tag = Tag::default().read_from_path_signature(file).unwrap();
+
+	println!("Setting title");
+	tag.set_title("foo title");
+	println!("Setting artist");
+	tag.set_artist("foo artist");
+
+	println!("Writing");
+	tag.write_to_path(file).unwrap();
+
+	println!("-- Verifying tags --");
+	println!("Reading file");
+	let mut tag = Tag::default().read_from_path_signature(file).unwrap();
+
+	println!("Verifying title");
+	assert_eq!(tag.title(), Some("foo title"));
+	println!("Verifying artist");
+	assert_eq!(tag.artist_str(), Some("foo artist"));
+
+	println!("-- Removing tags --");
+
+	println!("Removing title");
+	tag.remove_title();
+	println!("Removing artist");
+	tag.remove_artist();
+
+	println!("Writing");
+	tag.write_to_path(file).unwrap()
+}
