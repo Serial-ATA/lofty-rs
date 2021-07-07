@@ -1,4 +1,4 @@
-use crate::components::logic::ogg::{is_metadata, reach_metadata};
+use super::{is_metadata, reach_metadata};
 use crate::{LoftyError, OggFormat, Picture, Result};
 
 use std::collections::HashMap;

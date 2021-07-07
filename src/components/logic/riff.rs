@@ -29,7 +29,7 @@ pub const DISC: &[u8] = &[68, 73, 83, 67]; // Can represent disc number OR total
 
 pub const NULL_CHAR: char = '\0';
 
-pub(crate) fn read_from<T>(data: &mut T) -> Result<Option<HashMap<String, String>>>
+pub(crate) fn read_from<T>(data: &mut T) -> Result<HashMap<String, String>>
 where
 	T: Read + Seek,
 {
@@ -49,42 +49,24 @@ where
 
 	let mut metadata: HashMap<String, String> = HashMap::new();
 
-	let mut reading = true;
-
 	#[allow(clippy::cast_lossless)]
-	while reading {
-		if let (Ok(fourcc), Ok(size)) = (
-			cursor.read_u32::<LittleEndian>(),
-			cursor.read_u32::<LittleEndian>(),
-		) {
-			match create_key(&fourcc.to_le_bytes()) {
-				Some(key) => {
-					let mut buf = vec![0; size as usize];
-					cursor.read_exact(&mut buf)?;
+	while cursor.position() < info_list_size as u64 {
+		let fourcc = cursor.read_u32::<LittleEndian>()?;
+		let size = cursor.read_u32::<LittleEndian>()?;
 
-					match std::string::String::from_utf8(buf) {
-						Ok(val) => {
-							let _ = metadata.insert(key, val.trim_matches(NULL_CHAR).to_string());
-						},
-						Err(_) => {
-							return Err(LoftyError::InvalidData(
-								"RIFF file contains non UTF-8 strings",
-							))
-						},
-					}
-				},
-				None => cursor.set_position(cursor.position() + size as u64),
-			}
+		match create_key(&fourcc.to_le_bytes()) {
+			Some(key) => {
+				let mut buf = vec![0; size as usize];
+				cursor.read_exact(&mut buf)?;
 
-			if cursor.position() >= info_list_size as u64 {
-				reading = false
-			}
-		} else {
-			reading = false
+				let val = String::from_utf8(buf)?;
+				metadata.insert(key.to_string(), val.trim_matches(NULL_CHAR).to_string());
+			},
+			None => cursor.set_position(cursor.position() + size as u64),
 		}
 	}
 
-	Ok(Some(metadata))
+	Ok(metadata)
 }
 
 fn find_info_list<T>(data: &mut T) -> Result<()>
@@ -128,16 +110,16 @@ where
 	Ok(())
 }
 
-fn create_key(fourcc: &[u8]) -> Option<String> {
+fn create_key(fourcc: &[u8]) -> Option<&str> {
 	match fourcc {
-		IART => Some("Artist".to_string()),
-		ICMT => Some("Comment".to_string()),
-		ICRD => Some("Date".to_string()),
-		INAM => Some("Title".to_string()),
-		IPRD | ALBU => Some("Album".to_string()),
-		ITRK | IPRT | TRAC => Some("TrackNumber".to_string()),
-		IFRM => Some("TrackTotal".to_string()),
-		DISC => Some("DiscNumber".to_string()),
+		IART => Some("Artist"),
+		ICMT => Some("Comment"),
+		ICRD => Some("Date"),
+		INAM => Some("Title"),
+		IPRD | ALBU => Some("Album"),
+		ITRK | IPRT | TRAC => Some("TrackNumber"),
+		IFRM => Some("TrackTotal"),
+		DISC => Some("DiscNumber"),
 		_ => None,
 	}
 }

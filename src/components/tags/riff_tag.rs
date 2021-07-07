@@ -12,12 +12,12 @@ use std::fs::File;
 use std::io::{Read, Seek};
 
 struct RiffInnerTag {
-	data: Option<HashMap<String, String>>,
+	data: HashMap<String, String>,
 }
 
 impl Default for RiffInnerTag {
 	fn default() -> Self {
-		let data: Option<HashMap<String, String>> = Some(HashMap::new());
+		let data: HashMap<String, String> = HashMap::new();
 
 		Self { data }
 	}
@@ -43,33 +43,24 @@ impl RiffTag {
 
 impl RiffTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		self.inner
-			.data
-			.as_ref()
-			.unwrap()
-			.get_key_value(key)
-			.and_then(|pair| {
-				if pair.1.is_empty() {
-					None
-				} else {
-					Some(pair.1.as_str())
-				}
-			})
+		self.inner.data.get_key_value(key).and_then(|pair| {
+			if pair.1.is_empty() {
+				None
+			} else {
+				Some(pair.1.as_str())
+			}
+		})
 	}
 
 	fn set_value<V>(&mut self, key: &str, val: V)
 	where
 		V: Into<String>,
 	{
-		let mut data = self.inner.data.clone().unwrap();
-		let _ = data.insert(key.to_string(), val.into());
-		self.inner.data = Some(data);
+		self.inner.data.insert(key.to_string(), val.into());
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		let mut data = self.inner.data.clone().unwrap();
-		data.retain(|k, _| k != key);
-		self.inner.data = Some(data);
+		self.inner.data.retain(|k, _| k != key);
 	}
 }
 
@@ -228,10 +219,6 @@ impl AudioTagEdit for RiffTag {
 
 impl AudioTagWrite for RiffTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		if let Some(data) = self.inner.data.clone() {
-			riff::write_to(file, data)?;
-		}
-
-		Ok(())
+		riff::write_to(file, self.inner.data.clone())
 	}
 }
