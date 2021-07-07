@@ -177,7 +177,7 @@ impl TryFrom<metaflac::Tag> for OggTag {
 			return Ok(tag);
 		}
 
-		Err(LoftyError::InvalidData("Flac file contains invalid data"))
+		Err(LoftyError::InvalidData("Flac file contains no vorbis comment blocks"))
 	}
 }
 
