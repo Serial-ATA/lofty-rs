@@ -27,8 +27,6 @@ pub const ALBU: &[u8] = &[65, 76, 66, 85]; // Can album artist OR album title
 pub const TRAC: &[u8] = &[84, 82, 65, 67]; // Can represent track number OR total tracks
 pub const DISC: &[u8] = &[68, 73, 83, 67]; // Can represent disc number OR total discs
 
-pub const NULL_CHAR: char = '\0';
-
 pub(crate) fn read_from<T>(data: &mut T) -> Result<HashMap<String, String>>
 where
 	T: Read + Seek,
@@ -60,7 +58,7 @@ where
 				cursor.read_exact(&mut buf)?;
 
 				let val = String::from_utf8(buf)?;
-				metadata.insert(key.to_string(), val.trim_matches(NULL_CHAR).to_string());
+				metadata.insert(key.to_string(), val.trim_matches('\0').to_string());
 			},
 			None => cursor.set_position(cursor.position() + size as u64),
 		}
