@@ -1,9 +1,3 @@
-#![cfg(any(
-	feature = "format-vorbis",
-	feature = "format-opus",
-	feature = "format-flac"
-))]
-
 #[cfg(feature = "format-flac")]
 use crate::components::logic::flac;
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
@@ -20,13 +14,13 @@ use crate::{
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg::read::OGGTags;
 
-use lofty_attr::impl_tag;
-
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
+
+use lofty_attr::impl_tag;
 
 struct OggInnerTag {
 	vendor: String,

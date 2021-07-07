@@ -1,14 +1,10 @@
 use crate::{LoftyError, Result};
 
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-// Used to determine the RIFF metadata format
-pub const LIST_ID: &[u8] = b"LIST";
-
-// FourCC
+use byteorder::{LittleEndian, ReadBytesExt};
 
 // Standard
 pub const IART: &[u8] = &[73, 65, 82, 84];
@@ -75,7 +71,7 @@ where
 		let mut chunk_name = [0; 4];
 		data.read_exact(&mut chunk_name)?;
 
-		if chunk_name == LIST_ID {
+		if &chunk_name == b"LIST" {
 			data.seek(SeekFrom::Current(4))?;
 
 			let mut list_type = [0; 4];
@@ -140,7 +136,7 @@ pub fn key_to_fourcc(key: &str) -> Option<&[u8]> {
 pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
 	let mut packet = Vec::new();
 
-	packet.extend(LIST_ID.iter());
+	packet.extend(b"LIST".iter());
 	packet.extend(b"INFO".iter());
 
 	for (k, v) in metadata {

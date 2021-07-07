@@ -1,3 +1,4 @@
+use super::{is_metadata, page_from_packet};
 use crate::{LoftyError, Picture, Result};
 
 #[cfg(feature = "format-opus")]
@@ -5,14 +6,13 @@ use crate::components::logic::ogg::constants::OPUSTAGS;
 #[cfg(feature = "format-vorbis")]
 use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_SETUP_HEAD};
 
-use byteorder::{LittleEndian, ReadBytesExt};
 use std::borrow::Cow;
 use std::collections::HashMap;
-
-use crate::components::logic::ogg::{is_metadata, page_from_packet};
-use ogg_pager::Page;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+
+use byteorder::{LittleEndian, ReadBytesExt};
+use ogg_pager::Page;
 
 pub(crate) fn create_pages(
 	file: &mut File,

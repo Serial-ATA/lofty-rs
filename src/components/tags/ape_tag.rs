@@ -1,17 +1,15 @@
-#![cfg(feature = "format-ape")]
-
+use crate::types::picture::APE_PICTYPES;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use lofty_attr::impl_tag;
 
-pub use ape::Tag as ApeInnerTag;
-
-use crate::types::picture::APE_PICTYPES;
-use ape::Item;
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{Read, Seek};
+
+use ape::Item;
+pub use ape::Tag as ApeInnerTag;
+use lofty_attr::impl_tag;
 
 #[impl_tag(ApeInnerTag, TagType::Ape)]
 pub struct ApeTag;

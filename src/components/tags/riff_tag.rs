@@ -1,15 +1,14 @@
-#![cfg(feature = "format-riff")]
-
 use crate::components::logic::riff;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
-use lofty_attr::impl_tag;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek};
+
+use lofty_attr::impl_tag;
 
 struct RiffInnerTag {
 	data: HashMap<String, String>,

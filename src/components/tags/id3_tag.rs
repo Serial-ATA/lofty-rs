@@ -1,19 +1,17 @@
-#![cfg(feature = "format-id3")]
-
 use crate::tag::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
 	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
-use lofty_attr::impl_tag;
 
-pub use id3::Tag as Id3v2InnerTag;
-
-use filepath::FilePath;
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
+
+use filepath::FilePath;
+pub use id3::Tag as Id3v2InnerTag;
+use lofty_attr::impl_tag;
 
 #[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Default))]
 pub struct Id3v2Tag;

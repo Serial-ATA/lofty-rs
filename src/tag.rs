@@ -1,6 +1,7 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
 use crate::{AudioTag, LoftyError, Result};
+
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 

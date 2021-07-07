@@ -1,11 +1,10 @@
-#![cfg(feature = "format-flac")]
-
 use crate::{Picture, Result};
 
-use metaflac::BlockType;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom, Write};
+
+use metaflac::BlockType;
 
 pub(crate) fn write_to<T>(
 	mut data: T,

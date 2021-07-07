@@ -1,16 +1,14 @@
-#![cfg(feature = "format-mp4")]
-
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
 	PictureType, Result, TagType, ToAny, ToAnyTag,
 };
-use lofty_attr::impl_tag;
-
-pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
 use std::borrow::Cow;
 use std::fs::File;
 use std::io::{Read, Seek};
+
+use lofty_attr::impl_tag;
+pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
 #[impl_tag(Mp4InnerTag, TagType::Mp4)]
 pub struct Mp4Tag {}
