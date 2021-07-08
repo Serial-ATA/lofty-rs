@@ -5,29 +5,6 @@ use crate::{AudioTag, LoftyError, Result};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
-#[cfg(feature = "format-ape")]
-const MAC: [u8; 3] = [77, 65, 67];
-#[cfg(feature = "format-id3")]
-const ID3: [u8; 3] = [73, 68, 51];
-#[cfg(feature = "format-id3")]
-const FORM: [u8; 4] = [70, 79, 82, 77];
-#[cfg(feature = "format-mp4")]
-const FTYP: [u8; 4] = [102, 116, 121, 112];
-#[cfg(feature = "format-opus")]
-const OPUSHEAD: [u8; 8] = [79, 112, 117, 115, 72, 101, 97, 100];
-#[cfg(feature = "format-flac")]
-const FLAC: [u8; 4] = [102, 76, 97, 67];
-#[cfg(any(
-	feature = "format-vorbis",
-	feature = "format-opus",
-	feature = "format-flac"
-))]
-const OGGS: [u8; 4] = [79, 103, 103, 83];
-#[cfg(feature = "format-vorbis")]
-const VORBIS: [u8; 6] = [118, 111, 114, 98, 105, 115];
-#[cfg(feature = "format-riff")]
-const RIFF: [u8; 4] = [82, 73, 70, 70];
-
 /// A builder for `Box<dyn AudioTag>`
 #[derive(Default)]
 pub struct Tag(Option<TagType>);
@@ -237,11 +214,11 @@ impl TagType {
 
 		match sig.first().unwrap() {
 			#[cfg(feature = "format-ape")]
-			77 if sig.starts_with(&MAC) => Ok(Self::Ape),
+			77 if sig.starts_with(b"MAC") => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
-			73 if sig.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),
+			73 if sig.starts_with(b"ID3") || sig.starts_with(b"id3") => Ok(Self::Id3v2(Id3Format::Default)),
 			#[cfg(any(feature = "format-id3", feature = "format-aiff"))]
-			70 if sig.starts_with(&FORM) => {
+			70 if sig.starts_with(b"FORM") => {
 				data.seek(SeekFrom::Start(8))?;
 
 				let mut id = [0; 4];
@@ -258,7 +235,9 @@ impl TagType {
 							data.read_u32::<LittleEndian>(),
 							data.read_u32::<BigEndian>(),
 						) {
-							if fourcc.to_le_bytes()[..3] == ID3 {
+							if &fourcc.to_le_bytes()[..3] == b"ID3"
+								|| &fourcc.to_le_bytes()[..3] == b"id3"
+							{
 								found_id3 = true;
 								break;
 							}
@@ -282,9 +261,9 @@ impl TagType {
 				Err(LoftyError::UnknownFormat)
 			},
 			#[cfg(feature = "format-flac")]
-			102 if sig.starts_with(&FLAC) => Ok(Self::Ogg(OggFormat::Flac)),
+			102 if sig.starts_with(b"fLaC") => Ok(Self::Ogg(OggFormat::Flac)),
 			#[cfg(any(feature = "format-vorbis", feature = "format-opus"))]
-			79 if sig.starts_with(&OGGS) => {
+			79 if sig.starts_with(b"OggS") => {
 				data.seek(SeekFrom::Start(28))?;
 
 				let mut ident_sig = vec![0; 8];
@@ -293,19 +272,19 @@ impl TagType {
 				data.seek(SeekFrom::Start(0))?;
 
 				#[cfg(feature = "format-vorbis")]
-				if ident_sig[1..7] == VORBIS {
+				if &ident_sig[1..7] == b"vorbis" {
 					return Ok(Self::Ogg(OggFormat::Vorbis));
 				}
 
 				#[cfg(feature = "format-opus")]
-				if ident_sig[..] == OPUSHEAD {
+				if &ident_sig[..] == b"OpusHead" {
 					return Ok(Self::Ogg(OggFormat::Opus));
 				}
 
 				Err(LoftyError::UnknownFormat)
 			},
 			#[cfg(feature = "format-riff")]
-			82 if sig.starts_with(&RIFF) => {
+			82 if sig.starts_with(b"RIFF") => {
 				#[cfg(feature = "format-id3")]
 				{
 					use byteorder::{LittleEndian, ReadBytesExt};
@@ -318,7 +297,9 @@ impl TagType {
 						data.read_u32::<LittleEndian>(),
 						data.read_u32::<LittleEndian>(),
 					) {
-						if &fourcc.to_le_bytes() == b"ID3 " {
+						if &fourcc.to_le_bytes()[..3] == b"ID3"
+							|| &fourcc.to_le_bytes()[..3] == b"id3"
+						{
 							found_id3 = true;
 							break;
 						}
@@ -336,7 +317,7 @@ impl TagType {
 				Ok(Self::RiffInfo)
 			},
 			#[cfg(feature = "format-mp4")]
-			_ if sig[4..8] == FTYP => Ok(Self::Mp4),
+			_ if &sig[4..8] == b"ftyp" => Ok(Self::Mp4),
 			_ => Err(LoftyError::UnknownFormat),
 		}
 	}
