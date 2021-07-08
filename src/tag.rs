@@ -143,12 +143,12 @@ pub enum TagType {
 	AiffText,
 }
 
-#[derive(Clone, Debug, PartialEq)]
 #[cfg(any(
 	feature = "format-vorbis",
 	feature = "format-opus",
 	feature = "format-flac"
 ))]
+#[derive(Clone, Debug, PartialEq)]
 /// File formats using vorbis comments
 pub enum OggFormat {
 	#[cfg(feature = "format-vorbis")]
@@ -162,8 +162,8 @@ pub enum OggFormat {
 	Flac,
 }
 
-#[derive(Clone, Debug, PartialEq)]
 #[cfg(feature = "format-id3")]
+#[derive(Clone, Debug, PartialEq)]
 /// ID3 tag's underlying format
 pub enum Id3Format {
 	/// MP3
