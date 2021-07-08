@@ -124,13 +124,10 @@ pub(crate) fn write_to(
 			file_bytes.splice(single_value.0..single_value.1, text_chunks);
 		},
 		(title, author, copyright) => {
-			let items: Vec<(usize, usize)> = vec![title, author, copyright]
-				.iter()
-				.filter(|i| i.is_some())
-				.map(|v| v.unwrap())
-				.collect();
+			let items = vec![title, author, copyright];
+			let remaining: Vec<&(usize, usize)> = items.iter().flatten().collect();
 
-			if let (Some(first), Some(last)) = (items.iter().min(), items.iter().max()) {
+			if let (Some(first), Some(last)) = (remaining.iter().min(), remaining.iter().max()) {
 				file_bytes.drain(last.0..last.1);
 				file_bytes.splice(first.0..first.1, text_chunks);
 			}
