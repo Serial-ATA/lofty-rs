@@ -28,12 +28,15 @@ where
 
 	#[allow(clippy::cast_lossless)]
 	while cursor.position() < info_list_size as u64 {
+		if cursor.read_u8()? != 0 {
+			cursor.seek(SeekFrom::Current(-1))?;
+		}
+
 		let mut fourcc = vec![0; 4];
 		cursor.read_exact(&mut fourcc)?;
 
-		let size = cursor.read_u32::<LittleEndian>()?;
-
 		let key = String::from_utf8(fourcc)?;
+		let size = cursor.read_u32::<LittleEndian>()?;
 
 		let mut buf = vec![0; size as usize];
 		cursor.read_exact(&mut buf)?;

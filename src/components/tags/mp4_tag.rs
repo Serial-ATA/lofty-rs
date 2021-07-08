@@ -61,17 +61,16 @@ impl AudioTagEdit for Mp4Tag {
 	fn set_title(&mut self, title: &str) {
 		self.inner.set_title(title)
 	}
-
 	fn remove_title(&mut self) {
 		self.inner.remove_title();
 	}
+
 	fn artist_str(&self) -> Option<&str> {
 		self.inner.artist()
 	}
 	fn set_artist(&mut self, artist: &str) {
 		self.inner.set_artist(artist)
 	}
-
 	fn remove_artist(&mut self) {
 		self.inner.remove_artists();
 	}
@@ -82,14 +81,23 @@ impl AudioTagEdit for Mp4Tag {
 	fn set_year(&mut self, year: i32) {
 		self.inner.set_year(year.to_string())
 	}
-
 	fn remove_year(&mut self) {
 		self.inner.remove_year();
 	}
+
+	fn copyright(&self) -> Option<&str> {
+		self.inner.copyright()
+	}
+	fn set_copyright(&mut self, copyright: &str) {
+		self.inner.set_copyright(copyright)
+	}
+	fn remove_copyright(&mut self) {
+		self.inner.remove_copyright()
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}
-
 	fn set_album_title(&mut self, title: &str) {
 		self.inner.set_album(title)
 	}
@@ -100,11 +108,9 @@ impl AudioTagEdit for Mp4Tag {
 	fn album_artist_str(&self) -> Option<&str> {
 		self.inner.album_artist()
 	}
-
 	fn set_album_artist(&mut self, artists: &str) {
 		self.inner.set_album_artist(artists)
 	}
-
 	fn remove_album_artists(&mut self) {
 		self.inner.remove_album_artists();
 	}
@@ -155,11 +161,9 @@ impl AudioTagEdit for Mp4Tag {
 	fn back_cover(&self) -> Option<Picture> {
 		self.front_cover()
 	}
-
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.set_front_cover(cover)
 	}
-
 	fn remove_back_cover(&mut self) {
 		self.inner.remove_artwork();
 	}

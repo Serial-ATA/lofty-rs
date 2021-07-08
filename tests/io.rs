@@ -31,6 +31,9 @@ macro_rules! add_tags {
 		println!("Setting year");
 		tag.set_year(2020);
 
+		println!("Setting copyright");
+		tag.set_copyright("1988");
+
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
 
@@ -103,6 +106,9 @@ macro_rules! verify_write {
 			assert_eq!(tag.year(), Some(2020));
 		}
 
+		println!("Verifying copyright");
+		assert_eq!(tag.copyright(), Some("1988"));
+
 		println!("Verifying album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
@@ -174,6 +180,11 @@ macro_rules! remove_tags {
 		assert!(tag.year().is_none());
 		tag.remove_year();
 
+		println!("Removing copyright");
+		tag.remove_copyright();
+		assert!(tag.copyright().is_none());
+		tag.remove_copyright();
+
 		println!("Removing album title");
 		tag.remove_album_title();
 		assert!(tag.album_title().is_none());
@@ -224,11 +235,14 @@ fn test_aiff_text() {
 	tag.set_title("foo title");
 	println!("Setting artist");
 	tag.set_artist("foo artist");
+	println!("Setting copyright");
+	tag.set_copyright("1988");
 
 	println!("Writing");
 	tag.write_to_path(file).unwrap();
 
 	println!("-- Verifying tags --");
+
 	println!("Reading file");
 	let mut tag = Tag::default().read_from_path_signature(file).unwrap();
 
@@ -236,6 +250,8 @@ fn test_aiff_text() {
 	assert_eq!(tag.title(), Some("foo title"));
 	println!("Verifying artist");
 	assert_eq!(tag.artist_str(), Some("foo artist"));
+	println!("Verifying copyright");
+	assert_eq!(tag.copyright(), Some("1988"));
 
 	println!("-- Removing tags --");
 
@@ -243,6 +259,8 @@ fn test_aiff_text() {
 	tag.remove_title();
 	println!("Removing artist");
 	tag.remove_artist();
+	println!("Removing copyright");
+	tag.remove_copyright();
 
 	println!("Writing");
 	tag.write_to_path(file).unwrap()

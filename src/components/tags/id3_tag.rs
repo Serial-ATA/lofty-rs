@@ -105,15 +105,17 @@ impl AudioTagEdit for Id3v2Tag {
 
 	fn date(&self) -> Option<String> {
 		if let Some(released) = self.inner.get("TDRL") {
-			if let id3::frame::Content::Text(date) = &released.content() {
-				return Some(date.clone());
-			}
+			return released
+				.content()
+				.text()
+				.map(std::string::ToString::to_string);
 		}
 
 		if let Some(recorded) = self.inner.get("TRDC") {
-			if let id3::frame::Content::Text(date) = &recorded.content() {
-				return Some(date.clone());
-			}
+			return recorded
+				.content()
+				.text()
+				.map(std::string::ToString::to_string);
 		}
 
 		None
@@ -138,6 +140,20 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 	fn remove_year(&mut self) {
 		self.inner.remove_year()
+	}
+
+	fn copyright(&self) -> Option<&str> {
+		if let Some(frame) = self.inner.get("TCOP") {
+			return frame.content().text();
+		}
+
+		None
+	}
+	fn set_copyright(&mut self, copyright: &str) {
+		self.inner.set_text("TCOP", copyright)
+	}
+	fn remove_copyright(&mut self) {
+		self.inner.remove("TCOP")
 	}
 
 	fn album_title(&self) -> Option<&str> {

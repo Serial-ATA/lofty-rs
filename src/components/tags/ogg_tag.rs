@@ -236,6 +236,16 @@ impl AudioTagEdit for OggTag {
 		self.inner.remove_key("YEAR");
 	}
 
+	fn copyright(&self) -> Option<&str> {
+		self.inner.get_value("COPYRIGHT")
+	}
+	fn set_copyright(&mut self, copyright: &str) {
+		self.inner.set_value("COPYRIGHT", copyright)
+	}
+	fn remove_copyright(&mut self) {
+		self.inner.remove_key("COPYRIGHT")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.get_value("ALBUM")
 	}

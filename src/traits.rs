@@ -55,6 +55,15 @@ pub trait AudioTagEdit {
 	/// Removes the track year
 	fn remove_year(&mut self) {}
 
+	/// Returns the copyright
+	fn copyright(&self) -> Option<&str> {
+		None
+	}
+	/// Sets the copyright
+	fn set_copyright(&mut self, _copyright: &str) {}
+	/// Removes the copyright
+	fn remove_copyright(&mut self) {}
+
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {

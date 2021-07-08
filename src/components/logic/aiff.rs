@@ -1,16 +1,17 @@
 use crate::{LoftyError, Result};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-use std::cmp::{max, min};
+
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-pub(crate) fn read_from<T>(data: &mut T) -> Result<(Option<String>, Option<String>)>
+pub(crate) fn read_from<T>(data: &mut T) -> Result<(Option<String>, Option<String>, Option<String>)>
 where
 	T: Read + Seek,
 {
 	let mut name_id: Option<String> = None;
 	let mut author_id: Option<String> = None;
+	let mut copyright_id: Option<String> = None;
 
 	data.seek(SeekFrom::Start(12))?;
 
@@ -31,22 +32,28 @@ where
 
 				author_id = Some(String::from_utf8(auth)?);
 			},
+			f if f == b"(c) " && copyright_id.is_none() => {
+				let mut copy = vec![0; size as usize];
+				data.read_exact(&mut copy)?;
+
+				copyright_id = Some(String::from_utf8(copy)?);
+			},
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
 			},
 		}
 	}
 
-	if (&None, &None) == (&name_id, &author_id) {
+	if (&None, &None, &None) == (&name_id, &author_id, &copyright_id) {
 		return Err(LoftyError::InvalidData("AIFF file contains no text chunks"));
 	}
 
-	Ok((name_id, author_id))
+	Ok((name_id, author_id, copyright_id))
 }
 
 pub(crate) fn write_to(
 	data: &mut File,
-	metadata: (Option<&String>, Option<&String>),
+	metadata: (Option<&String>, Option<&String>, Option<&String>),
 ) -> Result<()> {
 	let mut text_chunks = Vec::new();
 
@@ -66,10 +73,19 @@ pub(crate) fn write_to(
 		text_chunks.extend(author_id.as_bytes().iter());
 	}
 
+	if let Some(copyright_id) = metadata.2 {
+		let len = (copyright_id.len() as u32).to_be_bytes();
+
+		text_chunks.extend(b"(c) ".iter());
+		text_chunks.extend(len.iter());
+		text_chunks.extend(copyright_id.as_bytes().iter());
+	}
+
 	data.seek(SeekFrom::Start(12))?;
 
 	let mut name: Option<(usize, usize)> = None;
 	let mut auth: Option<(usize, usize)> = None;
+	let mut copy: Option<(usize, usize)> = None;
 
 	while let (Ok(fourcc), Ok(size)) = (
 		data.read_u32::<LittleEndian>(),
@@ -80,6 +96,7 @@ pub(crate) fn write_to(
 		match &fourcc.to_le_bytes() {
 			f if f == b"NAME" && name.is_none() => name = Some((pos, (pos + 8 + size as usize))),
 			f if f == b"AUTH" && auth.is_none() => auth = Some((pos, (pos + 8 + size as usize))),
+			f if f == b"(c) " && copy.is_none() => copy = Some((pos, (pos + 8 + size as usize))),
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
 			},
@@ -91,21 +108,8 @@ pub(crate) fn write_to(
 	let mut file_bytes = Vec::new();
 	data.read_to_end(&mut file_bytes)?;
 
-	match (name, auth) {
-		(Some((n_pos, n_end)), Some((a_pos, a_end))) => {
-			let first_start = min(n_pos, a_pos);
-			let first_end = min(n_end, a_end);
-
-			let last_start = max(n_pos, a_pos);
-			let last_end = max(n_end, a_end);
-
-			file_bytes.drain(last_start..last_end);
-			file_bytes.splice(first_start..first_end, text_chunks);
-		},
-		(Some((start, end)), None) | (None, Some((start, end))) => {
-			file_bytes.splice(start..end, text_chunks);
-		},
-		(None, None) => {
+	match (name, auth, copy) {
+		(None, None, None) => {
 			data.seek(SeekFrom::Start(16))?;
 
 			let mut size = [0; 4];
@@ -113,6 +117,23 @@ pub(crate) fn write_to(
 
 			let comm_end = (20 + u32::from_le_bytes(size)) as usize;
 			file_bytes.splice(comm_end..comm_end, text_chunks);
+		},
+		(Some(single_value), None, None)
+		| (None, Some(single_value), None)
+		| (None, None, Some(single_value)) => {
+			file_bytes.splice(single_value.0..single_value.1, text_chunks);
+		},
+		(title, author, copyright) => {
+			let items: Vec<(usize, usize)> = vec![title, author, copyright]
+				.iter()
+				.filter(|i| i.is_some())
+				.map(|v| v.unwrap())
+				.collect();
+
+			if let (Some(first), Some(last)) = (items.iter().min(), items.iter().max()) {
+				file_bytes.drain(last.0..last.1);
+				file_bytes.splice(first.0..first.1, text_chunks);
+			}
 		},
 	}
 

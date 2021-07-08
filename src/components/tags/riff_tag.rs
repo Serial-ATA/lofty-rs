@@ -60,11 +60,9 @@ impl AudioTagEdit for RiffTag {
 	fn title(&self) -> Option<&str> {
 		self.get_value("INAM")
 	}
-
 	fn set_title(&mut self, title: &str) {
 		self.set_value("INAM", title)
 	}
-
 	fn remove_title(&mut self) {
 		self.remove_key("INAM")
 	}
@@ -72,23 +70,29 @@ impl AudioTagEdit for RiffTag {
 	fn artist_str(&self) -> Option<&str> {
 		self.get_value("IART")
 	}
-
 	fn set_artist(&mut self, artist: &str) {
 		self.set_value("IART", artist)
 	}
-
 	fn remove_artist(&mut self) {
 		self.remove_key("IART")
+	}
+
+	fn copyright(&self) -> Option<&str> {
+		self.get_value("ICOP")
+	}
+	fn set_copyright(&mut self, copyright: &str) {
+		self.set_value("ICOP", copyright)
+	}
+	fn remove_copyright(&mut self) {
+		self.remove_key("ICOP")
 	}
 
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
 	}
-
 	fn set_album_title(&mut self, title: &str) {
 		self.set_value("IPRD", title)
 	}
-
 	fn remove_album_title(&mut self) {
 		self.remove_key("IPRD")
 	}
