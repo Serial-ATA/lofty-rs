@@ -34,26 +34,22 @@ pub(crate) fn create_pages(
 
 	packet.extend(comments_len.to_le_bytes().iter());
 
-	let mut comment_str = Vec::new();
-
 	for (a, b) in comments {
-		comment_str.push(format!("{}={}", a, b));
-		let last = comment_str.last().unwrap();
-		let len = last.as_bytes().len() as u32;
-		packet.extend(len.to_le_bytes().iter());
-		packet.extend(last.as_bytes().iter());
+		let comment = format!("{}={}", a, b);
+		let comment_b = comment.as_bytes();
+		packet.extend((comment_b.len() as u32).to_le_bytes().iter());
+		packet.extend(comment_b.iter());
 	}
 
 	if let Some(pics) = pictures {
 		for pic in pics.iter() {
-			comment_str.push(format!(
+			let comment = format!(
 				"METADATA_BLOCK_PICTURE={}",
 				base64::encode(pic.as_apic_bytes())
-			));
-			let last = comment_str.last().unwrap();
-			let len = last.as_bytes().len() as u32;
-			packet.extend(len.to_le_bytes().iter());
-			packet.extend(last.as_bytes().iter());
+			);
+			let comment_b = comment.as_bytes();
+			packet.extend((comment_b.len() as u32).to_le_bytes().iter());
+			packet.extend(comment_b.iter());
 		}
 	}
 
