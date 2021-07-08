@@ -242,8 +242,6 @@ impl TagType {
 			73 if sig.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),
 			#[cfg(any(feature = "format-id3", feature = "format-aiff"))]
 			70 if sig.starts_with(&FORM) => {
-				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-
 				data.seek(SeekFrom::Start(8))?;
 
 				let mut id = [0; 4];
@@ -252,6 +250,8 @@ impl TagType {
 				if &id == b"AIFF" || &id == b"AIFC" {
 					#[cfg(feature = "format-id3")]
 					{
+						use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+
 						let mut found_id3 = false;
 
 						while let (Ok(fourcc), Ok(size)) = (
