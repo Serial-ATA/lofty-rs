@@ -240,7 +240,7 @@ impl TagType {
 			77 if sig.starts_with(&MAC) => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
 			73 if sig.starts_with(&ID3) => Ok(Self::Id3v2(Id3Format::Default)),
-			#[cfg(feature = "format-id3")]
+			#[cfg(any(feature = "format-id3", feature = "format-aiff"))]
 			70 if sig.starts_with(&FORM) => {
 				use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
@@ -249,33 +249,37 @@ impl TagType {
 				let mut id = [0; 4];
 				data.read_exact(&mut id)?;
 
-				if &id != b"AIFF" && &id != b"AIFC" {
-					return Err(LoftyError::UnknownFormat);
-				}
+				if &id == b"AIFF" || &id == b"AIFC" {
+					#[cfg(feature = "format-id3")]
+					{
+						let mut found_id3 = false;
 
-				let mut found_id3 = false;
+						while let (Ok(fourcc), Ok(size)) = (
+							data.read_u32::<LittleEndian>(),
+							data.read_u32::<BigEndian>(),
+						) {
+							if fourcc.to_le_bytes()[..3] == ID3 {
+								found_id3 = true;
+								break;
+							}
 
-				while let (Ok(fourcc), Ok(size)) = (
-					data.read_u32::<LittleEndian>(),
-					data.read_u32::<BigEndian>(),
-				) {
-					if fourcc.to_le_bytes()[..3] == ID3 {
-						found_id3 = true;
-						break;
+							data.seek(SeekFrom::Current(i64::from(u32::from_be_bytes(
+								size.to_be_bytes(),
+							))))?;
+						}
+
+						data.seek(SeekFrom::Start(0))?;
+
+						if found_id3 {
+							return Ok(Self::Id3v2(Id3Format::Form));
+						}
 					}
 
-					data.seek(SeekFrom::Current(i64::from(u32::from_be_bytes(
-						size.to_be_bytes(),
-					))))?;
+					#[cfg(feature = "format-aiff")]
+					return Ok(Self::AiffText);
 				}
 
-				data.seek(SeekFrom::Start(0))?;
-
-				if found_id3 {
-					return Ok(Self::Id3v2(Id3Format::Form));
-				}
-
-				Ok(Self::AiffText)
+				Err(LoftyError::UnknownFormat)
 			},
 			#[cfg(feature = "format-flac")]
 			102 if sig.starts_with(&FLAC) => Ok(Self::Ogg(OggFormat::Flac)),

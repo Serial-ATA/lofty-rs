@@ -9,6 +9,7 @@ macro_rules! test_read {
 	};
 }
 
+test_read!(read_aiff, "tests/assets/a_text.aiff");
 test_read!(read_ape, "tests/assets/a.ape");
 test_read!(read_flac, "tests/assets/a.flac");
 test_read!(read_m4a, "tests/assets/a.m4a");
@@ -19,6 +20,7 @@ test_read!(read_riff, "tests/assets/a.wav");
 
 fn bench_sig(c: &mut Criterion) {
 	let mut g = c.benchmark_group("From signature");
+	g.bench_function("AIFF", |b| b.iter(read_aiff));
 	g.bench_function("APE", |b| b.iter(read_ape));
 	g.bench_function("FLAC", |b| b.iter(read_flac));
 	g.bench_function("MP4", |b| b.iter(read_m4a));
