@@ -273,7 +273,7 @@ impl AudioTagEdit for OggTag {
 	fn set_front_cover(&mut self, cover: Picture) {
 		if PictureType::CoverFront == cover.pic_type {
 			if let Ok(pic) = Picture::from_apic_bytes(&cover.as_apic_bytes()) {
-				self.remove_back_cover();
+				self.remove_front_cover();
 
 				if let Some(p) = self.inner.pictures.as_mut().map(std::borrow::Cow::to_mut) {
 					p.push(pic)
