@@ -43,16 +43,20 @@ impl<'a> Album<'a> {
 		}
 	}
 	/// Set the album artists
-	pub fn set_artists(&mut self, artist_str: &'a str) {
+	pub fn set_artist(&mut self, artist_str: &'a str) {
 		self.artist = Some(artist_str);
 	}
 	/// Clears the `artists` field
 	pub fn remove_artist(mut self) {
 		self.artist = None
 	}
-	/// Set the album cover
-	pub fn set_covers(&mut self, covers: (Option<Picture>, Option<Picture>)) {
-		self.covers = covers
+	/// Sets the album's front cover
+	pub fn set_front_cover(&mut self, cover: Picture) {
+		self.covers.0 = Some(cover)
+	}
+	/// Sets the album's back cover
+	pub fn set_back_cover(&mut self, cover: Picture) {
+		self.covers.1 = Some(cover)
 	}
 	/// Clears the `covers` field
 	pub fn remove_covers(mut self) {

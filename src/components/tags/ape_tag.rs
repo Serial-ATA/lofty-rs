@@ -1,4 +1,4 @@
-use crate::types::picture::{APE_PICTYPES, PicType};
+use crate::types::picture::{PicType, APE_PICTYPES};
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };

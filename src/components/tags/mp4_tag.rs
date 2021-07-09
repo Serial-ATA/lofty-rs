@@ -185,9 +185,15 @@ impl AudioTagEdit for Mp4Tag {
 
 	fn set_front_cover(&mut self, cover: Picture) {
 		match cover.mime_type {
-			MimeType::Png => self.inner.add_artwork(mp4ameta::Data::Png(Vec::from(cover.data))),
-			MimeType::Jpeg => self.inner.add_artwork(mp4ameta::Data::Jpeg(Vec::from(cover.data))),
-			MimeType::Bmp => self.inner.add_artwork(mp4ameta::Data::Bmp(Vec::from(cover.data))),
+			MimeType::Png => self
+				.inner
+				.add_artwork(mp4ameta::Data::Png(Vec::from(cover.data))),
+			MimeType::Jpeg => self
+				.inner
+				.add_artwork(mp4ameta::Data::Jpeg(Vec::from(cover.data))),
+			MimeType::Bmp => self
+				.inner
+				.add_artwork(mp4ameta::Data::Bmp(Vec::from(cover.data))),
 			_ => {},
 		}
 	}
@@ -240,7 +246,7 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_pictures(&mut self) {
 		self.inner.remove_artwork()
 	}
-	
+
 	fn track_number(&self) -> Option<u32> {
 		self.inner.track_number().map(u32::from)
 	}

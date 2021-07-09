@@ -165,7 +165,8 @@ pub(crate) fn write_to(
 	Ok(())
 }
 
-fn verify_aiff<T>(data: &mut T) -> Result<()> where
+fn verify_aiff<T>(data: &mut T) -> Result<()>
+where
 	T: Read + Seek,
 {
 	let mut id = [0; 12];
@@ -173,7 +174,7 @@ fn verify_aiff<T>(data: &mut T) -> Result<()> where
 	data.seek(SeekFrom::Current(-12))?;
 
 	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[..8] == b"AIFC")) {
-		return Err(LoftyError::UnknownFormat)
+		return Err(LoftyError::UnknownFormat);
 	}
 
 	Ok(())
