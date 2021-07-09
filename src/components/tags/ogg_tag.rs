@@ -72,21 +72,6 @@ impl OggInnerTag {
 			},
 		}
 	}
-
-	fn get_value(&self, key: &str) -> Option<&str> {
-		self.comments.get_key_value(key).map(|(_, v)| v.as_str())
-	}
-
-	fn set_value<V>(&mut self, key: &str, val: V)
-	where
-		V: Into<String>,
-	{
-		self.comments.insert(key.to_string(), val.into());
-	}
-
-	fn remove_key(&mut self, key: &str) {
-		self.comments.remove(key);
-	}
 }
 
 cfg_if::cfg_if! {
@@ -177,137 +162,153 @@ impl OggTag {
 			inner: OggInnerTag::read_from(reader, format)?,
 		})
 	}
+
+	fn get_value(&self, key: &str) -> Option<&str> {
+		self.inner
+			.comments
+			.get_key_value(key)
+			.map(|(_, v)| v.as_str())
+	}
+
+	fn set_value<V>(&mut self, key: &str, val: V)
+	where
+		V: Into<String>,
+	{
+		self.inner.comments.insert(key.to_string(), val.into());
+	}
+
+	fn remove_key(&mut self, key: &str) {
+		self.inner.comments.remove(key);
+	}
 }
 
 impl AudioTagEdit for OggTag {
 	fn title(&self) -> Option<&str> {
-		self.inner.get_value("TITLE")
+		self.get_value("TITLE")
 	}
 	fn set_title(&mut self, title: &str) {
-		self.inner.set_value("TITLE", title);
+		self.set_value("TITLE", title);
 	}
 	fn remove_title(&mut self) {
-		self.inner.remove_key("TITLE");
+		self.remove_key("TITLE");
 	}
 
 	fn artist(&self) -> Option<&str> {
-		self.inner.get_value("ARTIST")
+		self.get_value("ARTIST")
 	}
 	fn set_artist(&mut self, artist: &str) {
-		self.inner.set_value("ARTIST", artist)
+		self.set_value("ARTIST", artist)
 	}
 	fn remove_artist(&mut self) {
-		self.inner.remove_key("ARTIST");
+		self.remove_key("ARTIST");
 	}
 
 	fn date(&self) -> Option<String> {
-		self.inner
-			.get_value("DATE")
-			.map(std::string::ToString::to_string)
+		self.get_value("DATE").map(std::string::ToString::to_string)
 	}
 	fn set_date(&mut self, date: &str) {
-		self.inner.set_value("DATE", date)
+		self.set_value("DATE", date)
 	}
 	fn remove_date(&mut self) {
-		self.inner.remove_key("DATE")
+		self.remove_key("DATE")
 	}
 
 	fn year(&self) -> Option<i32> {
-		if let Some(Ok(y)) = self.inner.get_value("YEAR").map(str::parse::<i32>) {
+		if let Some(Ok(y)) = self.get_value("YEAR").map(str::parse::<i32>) {
 			return Some(y);
 		}
 
 		None
 	}
 	fn set_year(&mut self, year: i32) {
-		self.inner.set_value("YEAR", &year.to_string());
+		self.set_value("YEAR", &year.to_string());
 	}
 	fn remove_year(&mut self) {
-		self.inner.remove_key("YEAR");
+		self.remove_key("YEAR");
 	}
 
 	fn copyright(&self) -> Option<&str> {
-		self.inner.get_value("COPYRIGHT")
+		self.get_value("COPYRIGHT")
 	}
 	fn set_copyright(&mut self, copyright: &str) {
-		self.inner.set_value("COPYRIGHT", copyright)
+		self.set_value("COPYRIGHT", copyright)
 	}
 	fn remove_copyright(&mut self) {
-		self.inner.remove_key("COPYRIGHT")
+		self.remove_key("COPYRIGHT")
 	}
 
 	fn genre(&self) -> Option<&str> {
-		self.inner.get_value("GENRE")
+		self.get_value("GENRE")
 	}
 	fn set_genre(&mut self, genre: &str) {
-		self.inner.set_value("GENRE", genre)
+		self.set_value("GENRE", genre)
 	}
 	fn remove_genre(&mut self) {
-		self.inner.remove_key("GENRE")
+		self.remove_key("GENRE")
 	}
 
 	fn lyrics(&self) -> Option<&str> {
-		self.inner.get_value("LYRICS")
+		self.get_value("LYRICS")
 	}
 	fn set_lyrics(&mut self, lyrics: &str) {
-		self.inner.set_value("LYRICS", lyrics)
+		self.set_value("LYRICS", lyrics)
 	}
 	fn remove_lyrics(&mut self) {
-		self.inner.remove_key("LYRICS")
+		self.remove_key("LYRICS")
 	}
 
 	fn lyricist(&self) -> Option<&str> {
-		self.inner.get_value("LYRICIST")
+		self.get_value("LYRICIST")
 	}
 	fn set_lyricist(&mut self, lyricist: &str) {
-		self.inner.set_value("LYRICIST", lyricist)
+		self.set_value("LYRICIST", lyricist)
 	}
 	fn remove_lyricist(&mut self) {
-		self.inner.remove_key("LYRICIST")
+		self.remove_key("LYRICIST")
 	}
 
 	fn composer(&self) -> Option<&str> {
-		self.inner.get_value("COMPOSER")
+		self.get_value("COMPOSER")
 	}
 	fn set_composer(&mut self, composer: &str) {
-		self.inner.set_value("COMPOSER", composer)
+		self.set_value("COMPOSER", composer)
 	}
 	fn remove_composer(&mut self) {
-		self.inner.remove_key("COMPOSER")
+		self.remove_key("COMPOSER")
 	}
 
 	fn bpm(&self) -> Option<u16> {
-		if let Some(bpm) = self.inner.get_value("BPM") {
+		if let Some(bpm) = self.get_value("BPM") {
 			return bpm.parse::<u16>().ok();
 		}
 
 		None
 	}
 	fn set_bpm(&mut self, bpm: u16) {
-		self.inner.set_value("BPM", bpm.to_string())
+		self.set_value("BPM", bpm.to_string())
 	}
 	fn remove_bpm(&mut self) {
-		self.inner.remove_key("BPM")
+		self.remove_key("BPM")
 	}
 
 	fn album_title(&self) -> Option<&str> {
-		self.inner.get_value("ALBUM")
+		self.get_value("ALBUM")
 	}
 	fn set_album_title(&mut self, title: &str) {
-		self.inner.set_value("ALBUM", title)
+		self.set_value("ALBUM", title)
 	}
 	fn remove_album_title(&mut self) {
-		self.inner.remove_key("ALBUM");
+		self.remove_key("ALBUM");
 	}
 
 	fn album_artist(&self) -> Option<&str> {
-		self.inner.get_value("ALBUMARTIST")
+		self.get_value("ALBUMARTIST")
 	}
 	fn set_album_artist(&mut self, album_artist: &str) {
-		self.inner.set_value("ALBUMARTIST", album_artist)
+		self.set_value("ALBUMARTIST", album_artist)
 	}
 	fn remove_album_artist(&mut self) {
-		self.inner.remove_key("ALBUMARTIST");
+		self.remove_key("ALBUMARTIST");
 	}
 
 	fn front_cover(&self) -> Option<Picture> {
@@ -320,7 +321,6 @@ impl AudioTagEdit for OggTag {
 
 		None
 	}
-
 	#[allow(clippy::collapsible_if)]
 	fn set_front_cover(&mut self, cover: Picture) {
 		if PictureType::CoverFront == cover.pic_type {
@@ -335,7 +335,6 @@ impl AudioTagEdit for OggTag {
 			}
 		}
 	}
-
 	fn remove_front_cover(&mut self) {
 		if let Some(p) = self.inner.pictures.as_mut().map(std::borrow::Cow::to_mut) {
 			p.retain(|pic| pic.pic_type != PictureType::CoverFront)
@@ -352,7 +351,6 @@ impl AudioTagEdit for OggTag {
 
 		None
 	}
-
 	#[allow(clippy::collapsible_if)]
 	fn set_back_cover(&mut self, cover: Picture) {
 		if PictureType::CoverBack == cover.pic_type {
@@ -367,7 +365,6 @@ impl AudioTagEdit for OggTag {
 			}
 		}
 	}
-
 	fn remove_back_cover(&mut self) {
 		if let Some(p) = self.inner.pictures.as_mut().map(std::borrow::Cow::to_mut) {
 			p.retain(|pic| pic.pic_type != PictureType::CoverBack)
@@ -386,61 +383,61 @@ impl AudioTagEdit for OggTag {
 	}
 
 	fn track_number(&self) -> Option<u32> {
-		if let Some(Ok(n)) = self.inner.get_value("TRACKNUMBER").map(str::parse::<u32>) {
+		if let Some(Ok(n)) = self.get_value("TRACKNUMBER").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_track_number(&mut self, v: u32) {
-		self.inner.set_value("TRACKNUMBER", &v.to_string())
+		self.set_value("TRACKNUMBER", &v.to_string())
 	}
 	fn remove_track_number(&mut self) {
-		self.inner.remove_key("TRACKNUMBER");
+		self.remove_key("TRACKNUMBER");
 	}
 
 	// ! not standard
 	fn total_tracks(&self) -> Option<u32> {
-		if let Some(Ok(n)) = self.inner.get_value("TOTALTRACKS").map(str::parse::<u32>) {
+		if let Some(Ok(n)) = self.get_value("TOTALTRACKS").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_total_tracks(&mut self, v: u32) {
-		self.inner.set_value("TOTALTRACKS", &v.to_string())
+		self.set_value("TOTALTRACKS", &v.to_string())
 	}
 	fn remove_total_tracks(&mut self) {
-		self.inner.remove_key("TOTALTRACKS");
+		self.remove_key("TOTALTRACKS");
 	}
 
 	fn disc_number(&self) -> Option<u32> {
-		if let Some(Ok(n)) = self.inner.get_value("DISCNUMBER").map(str::parse::<u32>) {
+		if let Some(Ok(n)) = self.get_value("DISCNUMBER").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_disc_number(&mut self, v: u32) {
-		self.inner.set_value("DISCNUMBER", &v.to_string())
+		self.set_value("DISCNUMBER", &v.to_string())
 	}
 	fn remove_disc_number(&mut self) {
-		self.inner.remove_key("DISCNUMBER");
+		self.remove_key("DISCNUMBER");
 	}
 
 	// ! not standard
 	fn total_discs(&self) -> Option<u32> {
-		if let Some(Ok(n)) = self.inner.get_value("TOTALDISCS").map(str::parse::<u32>) {
+		if let Some(Ok(n)) = self.get_value("TOTALDISCS").map(str::parse::<u32>) {
 			Some(n)
 		} else {
 			None
 		}
 	}
 	fn set_total_discs(&mut self, v: u32) {
-		self.inner.set_value("TOTALDISCS", &v.to_string())
+		self.set_value("TOTALDISCS", &v.to_string())
 	}
 	fn remove_total_discs(&mut self) {
-		self.inner.remove_key("TOTALDISCS");
+		self.remove_key("TOTALDISCS");
 	}
 }
 
