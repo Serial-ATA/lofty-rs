@@ -82,7 +82,7 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.set_year(year.to_string())
 	}
 	fn remove_year(&mut self) {
-		self.inner.remove_year();
+		self.inner.remove_year()
 	}
 
 	fn copyright(&self) -> Option<&str> {

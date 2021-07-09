@@ -5,7 +5,7 @@ use crate::{Album, AnyTag, Picture, Result, TagType};
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 
-use lofty_attr::{str_accessor, u32_accessor, i32_accessor, u16_accessor};
+use lofty_attr::{i32_accessor, str_accessor, u16_accessor, u32_accessor};
 
 /// Combination of [`AudioTagEdit`], [`AudioTagWrite`], and [`ToAnyTag`]
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
@@ -22,22 +22,16 @@ pub trait AudioTagEdit {
 		self.artist().map(|a| a.split(delimiter).collect())
 	}
 
-	/// Returns the track date
+	i32_accessor!(year);
+
+	/// Returns the date
 	fn date(&self) -> Option<String> {
 		self.year().map(|y| y.to_string())
 	}
-	/// Sets the track date
-	fn set_date(&mut self, date: &str) {
-		if let Ok(d) = date.parse::<i32>() {
-			self.set_year(d)
-		}
-	}
-	/// Removes the track date
-	fn remove_date(&mut self) {
-		self.remove_year()
-	}
-
-	i32_accessor!(year);
+	/// Sets the date
+	fn set_date(&mut self, _date: &str) {}
+	/// Removes the date
+	fn remove_date(&mut self) {}
 
 	str_accessor!(copyright);
 	str_accessor!(genre);
@@ -59,8 +53,7 @@ pub trait AudioTagEdit {
 
 	/// Splits the artist string into a `Vec`
 	fn album_artists(&self, delimiter: &str) -> Option<Vec<&str>> {
-		self.album_artist()
-			.map(|a| a.split(delimiter).collect())
+		self.album_artist().map(|a| a.split(delimiter).collect())
 	}
 
 	/// Returns the front and back album covers

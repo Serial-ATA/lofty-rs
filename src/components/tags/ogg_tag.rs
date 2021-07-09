@@ -205,23 +205,15 @@ impl AudioTagEdit for OggTag {
 			.get_value("DATE")
 			.map(std::string::ToString::to_string)
 	}
-
 	fn set_date(&mut self, date: &str) {
 		self.inner.set_value("DATE", date)
 	}
-
 	fn remove_date(&mut self) {
 		self.inner.remove_key("DATE")
 	}
 
 	fn year(&self) -> Option<i32> {
 		if let Some(Ok(y)) = self.inner.get_value("YEAR").map(str::parse::<i32>) {
-			return Some(y);
-		} else if let Some(Ok(y)) = self
-			.inner
-			.get_value("DATE")
-			.map(|d| (&d[..4]).parse::<i32>())
-		{
 			return Some(y);
 		}
 

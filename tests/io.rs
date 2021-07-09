@@ -33,6 +33,9 @@ macro_rules! add_tags {
 		println!("Setting year");
 		tag.set_year(2020);
 
+		println!("Setting date");
+		tag.set_date("20200415");
+
 		println!("Setting copyright");
 		tag.set_copyright("1988");
 
@@ -118,6 +121,11 @@ macro_rules! verify_write {
 		if file_name != stringify!("tests/assets/a.wav") {
 			println!("Verifying year");
 			assert_eq!(tag.year(), Some(2020));
+		}
+
+		if file_name != stringify!("tests/assets/a.m4a") {
+			println!("Verifying date");
+			assert_eq!(tag.date(), Some("20200415".to_string()));
 		}
 
 		println!("Verifying copyright");
@@ -207,6 +215,11 @@ macro_rules! remove_tags {
 		tag.remove_year();
 		assert!(tag.year().is_none());
 		tag.remove_year();
+
+		println!("Removing date");
+		tag.remove_date();
+		assert!(tag.date().is_none());
+		tag.remove_date();
 
 		println!("Removing copyright");
 		tag.remove_copyright();

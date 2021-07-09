@@ -102,16 +102,11 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn year(&self) -> Option<i32> {
-		if let Some(Ok(y)) = self
-			.get_value("Date")
-			.map(|s| s.chars().take(4).collect::<String>().parse::<i32>())
-		{
-			Some(y)
-		} else if let Some(Ok(y)) = self.get_value("Year").map(str::parse::<i32>) {
-			Some(y)
-		} else {
-			None
+		if let Some(Ok(y)) = self.get_value("Year").map(str::parse::<i32>) {
+			return Some(y);
 		}
+
+		None
 	}
 	fn set_year(&mut self, year: i32) {
 		self.set_value("Year", year.to_string())
