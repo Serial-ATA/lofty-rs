@@ -1,4 +1,4 @@
-use crate::types::picture::APE_PICTYPES;
+use crate::types::picture::{APE_PICTYPES, PicType};
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
 };
@@ -257,6 +257,22 @@ impl AudioTagEdit for ApeTag {
 			None
 		} else {
 			Some(Cow::from(pics))
+		}
+	}
+	fn set_pictures(&mut self, pictures: Vec<Picture>) {
+		self.remove_pictures();
+
+		for p in pictures {
+			let key = p.pic_type.as_ape_key();
+
+			if let Ok(item) = ape::Item::from_binary(key, p.as_ape_bytes()) {
+				self.inner.set_item(item)
+			}
+		}
+	}
+	fn remove_pictures(&mut self) {
+		for key in &APE_PICTYPES {
+			self.inner.remove_item(key);
 		}
 	}
 

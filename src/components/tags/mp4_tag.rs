@@ -184,14 +184,12 @@ impl AudioTagEdit for Mp4Tag {
 	}
 
 	fn set_front_cover(&mut self, cover: Picture) {
-		self.inner.remove_artwork();
-
-		self.inner.add_artwork(match cover.mime_type {
-			MimeType::Png => mp4ameta::Data::Png(Vec::from(cover.data)),
-			MimeType::Jpeg => mp4ameta::Data::Jpeg(Vec::from(cover.data)),
-			MimeType::Bmp => mp4ameta::Data::Bmp(Vec::from(cover.data)),
-			_ => panic!("Attempt to add an invalid image format to MP4"),
-		});
+		match cover.mime_type {
+			MimeType::Png => self.inner.add_artwork(mp4ameta::Data::Png(Vec::from(cover.data))),
+			MimeType::Jpeg => self.inner.add_artwork(mp4ameta::Data::Jpeg(Vec::from(cover.data))),
+			MimeType::Bmp => self.inner.add_artwork(mp4ameta::Data::Bmp(Vec::from(cover.data))),
+			_ => {},
+		}
 	}
 
 	fn remove_front_cover(&mut self) {
@@ -203,9 +201,6 @@ impl AudioTagEdit for Mp4Tag {
 	}
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.set_front_cover(cover)
-	}
-	fn remove_back_cover(&mut self) {
-		self.inner.remove_artwork();
 	}
 
 	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
@@ -235,7 +230,17 @@ impl AudioTagEdit for Mp4Tag {
 			Some(Cow::from(pictures))
 		}
 	}
+	fn set_pictures(&mut self, pictures: Vec<Picture>) {
+		self.remove_pictures();
 
+		for p in pictures {
+			self.set_front_cover(p)
+		}
+	}
+	fn remove_pictures(&mut self) {
+		self.inner.remove_artwork()
+	}
+	
 	fn track_number(&self) -> Option<u32> {
 		self.inner.track_number().map(u32::from)
 	}

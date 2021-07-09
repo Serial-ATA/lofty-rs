@@ -377,6 +377,13 @@ impl AudioTagEdit for OggTag {
 	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		self.inner.pictures.clone()
 	}
+	fn set_pictures(&mut self, pictures: Vec<Picture>) {
+		self.remove_pictures();
+		self.inner.pictures = Some(Cow::from(pictures))
+	}
+	fn remove_pictures(&mut self) {
+		self.inner.pictures = None
+	}
 
 	fn track_number(&self) -> Option<u32> {
 		if let Some(Ok(n)) = self.inner.get_value("TRACKNUMBER").map(str::parse::<u32>) {

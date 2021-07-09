@@ -91,6 +91,10 @@ pub trait AudioTagEdit {
 	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		None
 	}
+	/// Replace all pictures
+	fn set_pictures(&mut self, _pictures: Vec<Picture>) {}
+	/// Remove all pictures
+	fn remove_pictures(&mut self) {}
 
 	/// Returns the track number and total tracks
 	fn track(&self) -> (Option<u32>, Option<u32>) {

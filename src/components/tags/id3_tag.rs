@@ -310,6 +310,18 @@ impl AudioTagEdit for Id3v2Tag {
 
 		None
 	}
+	fn set_pictures(&mut self, pictures: Vec<Picture>) {
+		self.remove_pictures();
+
+		for p in pictures {
+			if let Ok(pic) = TryInto::<id3::frame::Picture>::try_into(p) {
+				self.inner.add_picture(pic)
+			}
+		}
+	}
+	fn remove_pictures(&mut self) {
+		self.inner.remove_all_pictures()
+	}
 
 	fn track_number(&self) -> Option<u32> {
 		self.inner.track()
