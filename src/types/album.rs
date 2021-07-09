@@ -47,7 +47,7 @@ impl<'a> Album<'a> {
 		self.artist = Some(artist_str);
 	}
 	/// Clears the `artists` field
-	pub fn remove_artist(mut self) {
+	pub fn remove_artist(&mut self) {
 		self.artist = None
 	}
 	/// Sets the album's front cover
@@ -59,7 +59,7 @@ impl<'a> Album<'a> {
 		self.covers.1 = Some(cover)
 	}
 	/// Clears the `covers` field
-	pub fn remove_covers(mut self) {
+	pub fn remove_covers(&mut self) {
 		self.covers = (None, None)
 	}
 }
