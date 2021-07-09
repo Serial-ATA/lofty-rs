@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek};
 
-use lofty_attr::impl_tag;
+use lofty_attr::{get_set_methods, impl_tag};
 
 struct RiffInnerTag {
 	data: HashMap<String, String>,
@@ -57,25 +57,11 @@ impl RiffTag {
 }
 
 impl AudioTagEdit for RiffTag {
-	fn title(&self) -> Option<&str> {
-		self.get_value("INAM")
-	}
-	fn set_title(&mut self, title: &str) {
-		self.set_value("INAM", title)
-	}
-	fn remove_title(&mut self) {
-		self.remove_key("INAM")
-	}
-
-	fn artist(&self) -> Option<&str> {
-		self.get_value("IART")
-	}
-	fn set_artist(&mut self, artist: &str) {
-		self.set_value("IART", artist)
-	}
-	fn remove_artist(&mut self) {
-		self.remove_key("IART")
-	}
+	get_set_methods!(title, "INAM");
+	get_set_methods!(artist, "IART");
+	get_set_methods!(copyright, "ICOP");
+	get_set_methods!(genre, "IGNR");
+	get_set_methods!(album_title, "IPRD");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("ICRD").map(std::string::ToString::to_string)
@@ -85,36 +71,6 @@ impl AudioTagEdit for RiffTag {
 	}
 	fn remove_date(&mut self) {
 		self.remove_key("ICRD")
-	}
-
-	fn copyright(&self) -> Option<&str> {
-		self.get_value("ICOP")
-	}
-	fn set_copyright(&mut self, copyright: &str) {
-		self.set_value("ICOP", copyright)
-	}
-	fn remove_copyright(&mut self) {
-		self.remove_key("ICOP")
-	}
-
-	fn genre(&self) -> Option<&str> {
-		self.get_value("IGNR")
-	}
-	fn set_genre(&mut self, genre: &str) {
-		self.set_value("IGNR", genre)
-	}
-	fn remove_genre(&mut self) {
-		self.remove_key("IGNR")
-	}
-
-	fn album_title(&self) -> Option<&str> {
-		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
-	}
-	fn set_album_title(&mut self, title: &str) {
-		self.set_value("IPRD", title)
-	}
-	fn remove_album_title(&mut self) {
-		self.remove_key("IPRD")
 	}
 
 	fn track_number(&self) -> Option<u32> {
