@@ -100,7 +100,7 @@ pub(crate) fn write_to(
 			f if f == b"(c) " && copy.is_none() => copy = Some((pos, (pos + 8 + size as usize))),
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-				continue
+				continue;
 			},
 		}
 

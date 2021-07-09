@@ -77,6 +77,16 @@ impl AudioTagEdit for RiffTag {
 		self.remove_key("IART")
 	}
 
+	fn date(&self) -> Option<String> {
+		self.get_value("ICRD").map(std::string::ToString::to_string)
+	}
+	fn set_date(&mut self, date: &str) {
+		self.set_value("ICRD", date)
+	}
+	fn remove_date(&mut self) {
+		self.remove_key("ICRD")
+	}
+
 	fn copyright(&self) -> Option<&str> {
 		self.get_value("ICOP")
 	}
