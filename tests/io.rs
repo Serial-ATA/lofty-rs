@@ -192,9 +192,9 @@ macro_rules! remove_tags {
 		tag.remove_copyright();
 
 		println!("Removing genre");
-		tag.remove_copyright();
-		assert!(tag.copyright().is_none());
-		tag.remove_copyright();
+		tag.remove_genre();
+		assert!(tag.genre().is_none());
+		tag.remove_genre();
 
 		println!("Removing album title");
 		tag.remove_album_title();

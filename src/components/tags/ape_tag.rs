@@ -140,6 +140,26 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Genre")
 	}
 
+	fn lyrics(&self) -> Option<&str> {
+		self.get_value("Lyrics")
+	}
+	fn set_lyrics(&mut self, lyrics: &str) {
+		self.set_value("Lyrics", lyrics)
+	}
+	fn remove_lyrics(&mut self) {
+		self.remove_key("Lyrics")
+	}
+
+	fn bpm(&self) -> Option<&str> {
+		self.get_value("BPM")
+	}
+	fn set_bpm(&mut self, bpm: &str) {
+		self.set_value("BPM", bpm)
+	}
+	fn remove_bpm(&mut self) {
+		self.remove_key("BPM")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("Album")
 	}

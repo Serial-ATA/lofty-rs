@@ -73,6 +73,24 @@ pub trait AudioTagEdit {
 	/// Removes the genre
 	fn remove_genre(&mut self) {}
 
+	/// Returns the lyrics
+	fn lyrics(&self) -> Option<&str> {
+		None
+	}
+	/// Sets the lyrics
+	fn set_lyrics(&mut self, _lyrics: &str) {}
+	/// Removes the lyrics
+	fn remove_lyrics(&mut self) {}
+
+	/// Returns the lyrics
+	fn bpm(&self) -> Option<&str> {
+		None
+	}
+	/// Sets the lyrics
+	fn set_bpm(&mut self, _bpm: &str) {}
+	/// Removes the lyrics
+	fn remove_bpm(&mut self) {}
+
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {

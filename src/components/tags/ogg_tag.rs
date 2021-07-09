@@ -256,6 +256,26 @@ impl AudioTagEdit for OggTag {
 		self.inner.remove_key("GENRE")
 	}
 
+	fn lyrics(&self) -> Option<&str> {
+		self.inner.get_value("LYRICS")
+	}
+	fn set_lyrics(&mut self, lyrics: &str) {
+		self.inner.set_value("LYRICS", lyrics)
+	}
+	fn remove_lyrics(&mut self) {
+		self.inner.remove_key("LYRICS")
+	}
+
+	fn bpm(&self) -> Option<&str> {
+		self.inner.get_value("BPM")
+	}
+	fn set_bpm(&mut self, bpm: &str) {
+		self.inner.set_value("BPM", bpm)
+	}
+	fn remove_bpm(&mut self) {
+		self.inner.remove_key("BPM")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.get_value("ALBUM")
 	}

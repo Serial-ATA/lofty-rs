@@ -105,6 +105,25 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_genres()
 	}
 
+	fn lyrics(&self) -> Option<&str> {
+		self.inner.lyrics()
+	}
+	fn set_lyrics(&mut self, lyrics: &str) {
+		self.inner.set_lyrics(lyrics)
+	}
+	fn remove_lyrics(&mut self) {
+		self.inner.remove_lyrics()
+	}
+
+	fn set_bpm(&mut self, bpm: &str) {
+		if let Ok(bpm) = bpm.parse::<u16>() {
+			self.inner.set_bpm(bpm)
+		}
+	}
+	fn remove_bpm(&mut self) {
+		self.inner.remove_bpm()
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}
