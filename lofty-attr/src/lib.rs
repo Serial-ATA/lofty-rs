@@ -85,11 +85,11 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 					fn from(inp: &'a #input_ident) -> Self {
 						Self {
 							title: inp.title(),
-							artist: inp.artist_str(),
+							artist: inp.artist(),
 							year: inp.year().map(|y| y as i32),
 							album: Album::new(
 								inp.album_title(),
-								inp.album_artist_str(),
+								inp.album_artist(),
 								inp.album_covers(),
 							),
 							track_number: inp.track_number(),
@@ -179,4 +179,92 @@ pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
 	Error::new(input.ident.span(), "impl_tag provided invalid arguments")
 		.to_compile_error()
 		.into()
+}
+
+#[proc_macro]
+pub fn str_accessor(input: TokenStream) -> TokenStream {
+	let input_str = input.to_string();
+	let name = input_str.replace("_", " ");
+
+	format!(
+		"/// Returns the {display}
+			fn {ident}(&self) -> Option<&str> {{
+				None
+			}}
+			/// Sets the {display}
+			fn set_{ident}(&mut self, _{ident}: &str) {{}}
+			/// Removes the {display}
+			fn remove_{ident}(&mut self) {{}}
+			",
+		ident = input_str,
+		display = name,
+	)
+	.parse()
+	.expect("Unable to parse str accessor:")
+}
+
+#[proc_macro]
+pub fn u16_accessor(input: TokenStream) -> TokenStream {
+	let input_str = input.to_string();
+	let name = input_str.replace("_", " ");
+
+	format!(
+		"/// Returns the {display}
+			fn {ident}(&self) -> Option<u16> {{
+				None
+			}}
+			/// Sets the {display}
+			fn set_{ident}(&mut self, _{ident}: u16) {{}}
+			/// Removes the {display}
+			fn remove_{ident}(&mut self) {{}}
+			",
+		ident = input_str,
+		display = name,
+	)
+		.parse()
+		.expect("Unable to parse u16 accessor:")
+}
+
+#[proc_macro]
+pub fn u32_accessor(input: TokenStream) -> TokenStream {
+	let input_str = input.to_string();
+	let name = input_str.replace("_", " ");
+
+	format!(
+		"/// Returns the {display}
+			fn {ident}(&self) -> Option<u32> {{
+				None
+			}}
+			/// Sets the {display}
+			fn set_{ident}(&mut self, _{ident}: u32) {{}}
+			/// Removes the {display}
+			fn remove_{ident}(&mut self) {{}}
+			",
+		ident = input_str,
+		display = name,
+	)
+		.parse()
+		.expect("Unable to parse u32 accessor:")
+}
+
+#[proc_macro]
+pub fn i32_accessor(input: TokenStream) -> TokenStream {
+	let input_str = input.to_string();
+	let name = input_str.replace("_", " ");
+
+	format!(
+		"/// Returns the {display}
+			fn {ident}(&self) -> Option<i32> {{
+				None
+			}}
+			/// Sets the {display}
+			fn set_{ident}(&mut self, _{ident}: i32) {{}}
+			/// Removes the {display}
+			fn remove_{ident}(&mut self) {{}}
+			",
+		ident = input_str,
+		display = name,
+	)
+		.parse()
+		.expect("Unable to parse i32 accessor:")
 }
