@@ -108,11 +108,6 @@ pub trait AudioTagEdit {
 	fn disc(&self) -> (Option<u32>, Option<u32>) {
 		(self.disc_number(), self.total_discs())
 	}
-	/// Removes the disc number and total discs
-	fn remove_disc(&mut self) {
-		self.remove_disc_number();
-		self.remove_total_discs();
-	}
 
 	u32_accessor!(disc_number);
 	u32_accessor!(total_discs);

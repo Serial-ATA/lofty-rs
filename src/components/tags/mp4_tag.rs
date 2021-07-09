@@ -182,7 +182,6 @@ impl AudioTagEdit for Mp4Tag {
 
 		None
 	}
-
 	fn set_front_cover(&mut self, cover: Picture) {
 		match cover.mime_type {
 			MimeType::Png => self
@@ -197,7 +196,6 @@ impl AudioTagEdit for Mp4Tag {
 			_ => {},
 		}
 	}
-
 	fn remove_front_cover(&mut self) {
 		self.inner.remove_artwork();
 	}
@@ -250,13 +248,13 @@ impl AudioTagEdit for Mp4Tag {
 	fn track_number(&self) -> Option<u32> {
 		self.inner.track_number().map(u32::from)
 	}
-
 	fn set_track_number(&mut self, track: u32) {
 		self.inner.set_track_number(track as u16);
 	}
 	fn remove_track_number(&mut self) {
 		self.inner.remove_track_number();
 	}
+
 	fn total_tracks(&self) -> Option<u32> {
 		self.inner.total_tracks().map(u32::from)
 	}
@@ -266,9 +264,7 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_total_tracks(&mut self) {
 		self.inner.remove_total_tracks();
 	}
-	fn remove_disc(&mut self) {
-		self.inner.remove_disc();
-	}
+
 	fn disc_number(&self) -> Option<u32> {
 		self.inner.disc_number().map(u32::from)
 	}
@@ -278,6 +274,7 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_disc_number(&mut self) {
 		self.inner.remove_disc_number();
 	}
+
 	fn total_discs(&self) -> Option<u32> {
 		self.inner.total_discs().map(u32::from)
 	}
