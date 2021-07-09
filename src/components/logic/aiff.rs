@@ -10,6 +10,8 @@ pub(crate) fn read_from<T>(data: &mut T) -> Result<(Option<String>, Option<Strin
 where
 	T: Read + Seek,
 {
+	verify_aiff(data)?;
+
 	let mut name_id: Option<String> = None;
 	let mut author_id: Option<String> = None;
 	let mut copyright_id: Option<String> = None;
@@ -56,6 +58,8 @@ pub(crate) fn write_to(
 	data: &mut File,
 	metadata: (Option<&String>, Option<&String>, Option<&String>),
 ) -> Result<()> {
+	verify_aiff(data)?;
+
 	let mut text_chunks = Vec::new();
 
 	if let Some(name_id) = metadata.0 {
@@ -157,6 +161,20 @@ pub(crate) fn write_to(
 	data.seek(SeekFrom::Start(0))?;
 	data.set_len(0)?;
 	data.write_all(&*file_bytes)?;
+
+	Ok(())
+}
+
+fn verify_aiff<T>(data: &mut T) -> Result<()> where
+	T: Read + Seek,
+{
+	let mut id = [0; 12];
+	data.read_exact(&mut id)?;
+	data.seek(SeekFrom::Current(-12))?;
+
+	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[..8] == b"AIFC")) {
+		return Err(LoftyError::UnknownFormat)
+	}
 
 	Ok(())
 }
