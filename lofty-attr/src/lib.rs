@@ -221,8 +221,8 @@ pub fn u16_accessor(input: TokenStream) -> TokenStream {
 		ident = input_str,
 		display = name,
 	)
-		.parse()
-		.expect("Unable to parse u16 accessor:")
+	.parse()
+	.expect("Unable to parse u16 accessor:")
 }
 
 #[proc_macro]
@@ -243,8 +243,8 @@ pub fn u32_accessor(input: TokenStream) -> TokenStream {
 		ident = input_str,
 		display = name,
 	)
-		.parse()
-		.expect("Unable to parse u32 accessor:")
+	.parse()
+	.expect("Unable to parse u32 accessor:")
 }
 
 #[proc_macro]
@@ -265,6 +265,32 @@ pub fn i32_accessor(input: TokenStream) -> TokenStream {
 		ident = input_str,
 		display = name,
 	)
-		.parse()
-		.expect("Unable to parse i32 accessor:")
+	.parse()
+	.expect("Unable to parse i32 accessor:")
+}
+
+/// Used to create simple tag methods for getting/setting/removing based on a key
+#[proc_macro]
+pub fn get_set_methods(input: TokenStream) -> TokenStream {
+	let input = input.to_string();
+	let mut input_split = input.split(',');
+
+	let name = input_split.next().expect("No identifier provided");
+	let key = input_split.next().expect("No key provided");
+
+	format!(
+		"fn {ident}(&self) -> Option<&str> {{
+		self.get_value({key})
+	}}
+	fn set_{ident}(&mut self, {ident}: &str) {{
+		self.set_value({key}, {ident})
+	}}
+	fn remove_{ident}(&mut self) {{
+		self.remove_key({key})
+	}}",
+		ident = name,
+		key = key
+	)
+	.parse()
+	.expect("Unable to parse getters/setters:")
 }
