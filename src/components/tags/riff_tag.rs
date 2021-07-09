@@ -97,6 +97,16 @@ impl AudioTagEdit for RiffTag {
 		self.remove_key("ICOP")
 	}
 
+	fn genre(&self) -> Option<&str> {
+		self.get_value("IGNR")
+	}
+	fn set_genre(&mut self, genre: &str) {
+		self.set_value("IGNR", genre)
+	}
+	fn remove_genre(&mut self) {
+		self.remove_key("IGNR")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("IPRD").or_else(|| self.get_value("ALBU"))
 	}

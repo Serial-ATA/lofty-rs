@@ -130,6 +130,16 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Copyright")
 	}
 
+	fn genre(&self) -> Option<&str> {
+		self.get_value("Genre")
+	}
+	fn set_genre(&mut self, genre: &str) {
+		self.set_value("Genre", genre)
+	}
+	fn remove_genre(&mut self) {
+		self.remove_key("Genre")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("Album")
 	}

@@ -95,6 +95,16 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_copyright()
 	}
 
+	fn genre(&self) -> Option<&str> {
+		self.inner.genre()
+	}
+	fn set_genre(&mut self, genre: &str) {
+		self.inner.set_genre(genre)
+	}
+	fn remove_genre(&mut self) {
+		self.inner.remove_genres()
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}

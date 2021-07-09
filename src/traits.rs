@@ -64,6 +64,15 @@ pub trait AudioTagEdit {
 	/// Removes the copyright
 	fn remove_copyright(&mut self) {}
 
+	/// Returns the genre
+	fn genre(&self) -> Option<&str> {
+		None
+	}
+	/// Sets the genre
+	fn set_genre(&mut self, _genre: &str) {}
+	/// Removes the genre
+	fn remove_genre(&mut self) {}
+
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {

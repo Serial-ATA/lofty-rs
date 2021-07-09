@@ -34,6 +34,9 @@ macro_rules! add_tags {
 		println!("Setting copyright");
 		tag.set_copyright("1988");
 
+		println!("Setting genre");
+		tag.set_genre("Country");
+
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
 
@@ -109,6 +112,9 @@ macro_rules! verify_write {
 		println!("Verifying copyright");
 		assert_eq!(tag.copyright(), Some("1988"));
 
+		println!("Verifying genre");
+		assert_eq!(tag.genre(), Some("Country"));
+
 		println!("Verifying album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
@@ -181,6 +187,11 @@ macro_rules! remove_tags {
 		tag.remove_year();
 
 		println!("Removing copyright");
+		tag.remove_copyright();
+		assert!(tag.copyright().is_none());
+		tag.remove_copyright();
+
+		println!("Removing genre");
 		tag.remove_copyright();
 		assert!(tag.copyright().is_none());
 		tag.remove_copyright();
