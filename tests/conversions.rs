@@ -5,7 +5,7 @@ use lofty::{Id3Format, OggFormat, Tag, TagType};
 macro_rules! convert_tag {
 	($tag: ident) => {
 		assert_eq!($tag.title(), Some("Title Updated"));
-		assert_eq!($tag.artist_str(), Some("Artist Updated"));
+		assert_eq!($tag.artist(), Some("Artist Updated"));
 		assert_eq!($tag.track_number(), Some(5));
 	};
 }

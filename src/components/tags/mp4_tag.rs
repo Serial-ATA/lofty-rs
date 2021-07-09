@@ -65,7 +65,7 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_title();
 	}
 
-	fn artist_str(&self) -> Option<&str> {
+	fn artist(&self) -> Option<&str> {
 		self.inner.artist()
 	}
 	fn set_artist(&mut self, artist: &str) {
@@ -135,13 +135,13 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_album();
 	}
 
-	fn album_artist_str(&self) -> Option<&str> {
+	fn album_artist(&self) -> Option<&str> {
 		self.inner.album_artist()
 	}
-	fn set_album_artist(&mut self, artists: &str) {
-		self.inner.set_album_artist(artists)
+	fn set_album_artist(&mut self, album_artist: &str) {
+		self.inner.set_album_artist(album_artist)
 	}
-	fn remove_album_artists(&mut self) {
+	fn remove_album_artist(&mut self) {
 		self.inner.remove_album_artists();
 	}
 
@@ -226,9 +226,6 @@ impl AudioTagEdit for Mp4Tag {
 		}
 	}
 
-	fn remove_track(&mut self) {
-		self.inner.remove_track(); // faster than removing separately
-	}
 	fn track_number(&self) -> Option<u32> {
 		self.inner.track_number().map(u32::from)
 	}

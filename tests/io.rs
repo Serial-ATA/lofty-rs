@@ -112,7 +112,7 @@ macro_rules! verify_write {
 		assert_eq!(tag.title(), Some("foo title"));
 
 		println!("Verifying artist");
-		assert_eq!(tag.artist_str(), Some("foo artist"));
+		assert_eq!(tag.artist(), Some("foo artist"));
 
 		// Skip this since RIFF INFO doesn't support year
 		if file_name != stringify!("tests/assets/a.wav") {
@@ -175,7 +175,7 @@ macro_rules! verify_write {
 			assert_eq!(tag.bpm(), Some(50));
 
 			println!("Verifying album artist");
-			assert_eq!(tag.album_artist_str(), Some("foo album artist"));
+			assert_eq!(tag.album_artist(), Some("foo album artist"));
 
 			println!("Verifying album covers");
 
@@ -200,7 +200,7 @@ macro_rules! remove_tags {
 
 		println!("Removing artist");
 		tag.remove_artist();
-		assert!(tag.artist_str().is_none());
+		assert!(tag.artist().is_none());
 		tag.remove_artist();
 
 		println!("Removing year");
@@ -234,9 +234,9 @@ macro_rules! remove_tags {
 		tag.remove_album_title();
 
 		println!("Removing album artists");
-		tag.remove_album_artists();
-		assert!(tag.album_artist_str().is_none());
-		tag.remove_album_artists();
+		tag.remove_album_artist();
+		assert!(tag.album_artist().is_none());
+		tag.remove_album_artist();
 
 		println!("Removing album covers");
 		tag.remove_album_covers();
@@ -292,7 +292,7 @@ fn test_aiff_text() {
 	println!("Verifying title");
 	assert_eq!(tag.title(), Some("foo title"));
 	println!("Verifying artist");
-	assert_eq!(tag.artist_str(), Some("foo artist"));
+	assert_eq!(tag.artist(), Some("foo artist"));
 	println!("Verifying copyright");
 	assert_eq!(tag.copyright(), Some("1988"));
 

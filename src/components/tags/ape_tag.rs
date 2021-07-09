@@ -77,7 +77,7 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Title")
 	}
 
-	fn artist_str(&self) -> Option<&str> {
+	fn artist(&self) -> Option<&str> {
 		self.get_value("Artist")
 	}
 
@@ -167,15 +167,15 @@ impl AudioTagEdit for ApeTag {
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("Album")
 	}
-	fn set_album_title(&mut self, title: &str) {
-		self.set_value("Album", title)
+	fn set_album_title(&mut self, album_title: &str) {
+		self.set_value("Album", album_title)
 	}
 	fn remove_album_title(&mut self) {
 		self.remove_key("Album")
 	}
 
 	// Album artists aren't standard?
-	fn album_artist_str(&self) -> Option<&str> {
+	fn album_artist(&self) -> Option<&str> {
 		self.get_value("Album artist")
 	}
 
@@ -183,7 +183,7 @@ impl AudioTagEdit for ApeTag {
 		self.set_value("Album artist", artists)
 	}
 
-	fn remove_album_artists(&mut self) {
+	fn remove_album_artist(&mut self) {
 		self.remove_key("Album artist")
 	}
 

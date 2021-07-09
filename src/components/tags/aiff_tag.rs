@@ -41,23 +41,19 @@ impl AudioTagEdit for AiffTag {
 	fn title(&self) -> Option<&str> {
 		self.inner.name_id.as_deref()
 	}
-
 	fn set_title(&mut self, title: &str) {
 		self.inner.name_id = Some(title.to_string())
 	}
-
 	fn remove_title(&mut self) {
 		self.inner.name_id = None
 	}
 
-	fn artist_str(&self) -> Option<&str> {
+	fn artist(&self) -> Option<&str> {
 		self.inner.author_id.as_deref()
 	}
-
 	fn set_artist(&mut self, artist: &str) {
 		self.inner.author_id = Some(artist.to_string())
 	}
-
 	fn remove_artist(&mut self) {
 		self.inner.author_id = None
 	}

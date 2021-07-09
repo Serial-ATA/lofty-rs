@@ -67,7 +67,7 @@ impl AudioTagEdit for RiffTag {
 		self.remove_key("INAM")
 	}
 
-	fn artist_str(&self) -> Option<&str> {
+	fn artist(&self) -> Option<&str> {
 		self.get_value("IART")
 	}
 	fn set_artist(&mut self, artist: &str) {
@@ -129,11 +129,9 @@ impl AudioTagEdit for RiffTag {
 
 		None
 	}
-
 	fn set_track_number(&mut self, track_number: u32) {
 		self.set_value("ITRK", track_number.to_string())
 	}
-
 	fn remove_track_number(&mut self) {
 		self.remove_key("ITRK")
 	}
@@ -145,11 +143,9 @@ impl AudioTagEdit for RiffTag {
 
 		None
 	}
-
 	fn set_total_tracks(&mut self, total_track: u32) {
 		self.set_value("IFRM", total_track.to_string())
 	}
-
 	fn remove_total_tracks(&mut self) {
 		self.remove_key("IFRM")
 	}
@@ -161,11 +157,9 @@ impl AudioTagEdit for RiffTag {
 
 		None
 	}
-
 	fn set_disc_number(&mut self, disc_number: u32) {
 		self.set_value("DISC", disc_number.to_string())
 	}
-
 	fn remove_disc_number(&mut self) {
 		self.remove_key("DISC")
 	}
@@ -173,11 +167,9 @@ impl AudioTagEdit for RiffTag {
 	fn total_discs(&self) -> Option<u32> {
 		self.disc_number()
 	}
-
 	fn set_total_discs(&mut self, total_discs: u32) {
 		self.set_disc_number(total_discs)
 	}
-
 	fn remove_total_discs(&mut self) {
 		self.remove_disc_number()
 	}

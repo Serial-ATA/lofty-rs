@@ -186,18 +186,16 @@ impl AudioTagEdit for OggTag {
 	fn set_title(&mut self, title: &str) {
 		self.inner.set_value("TITLE", title);
 	}
-
 	fn remove_title(&mut self) {
 		self.inner.remove_key("TITLE");
 	}
-	fn artist_str(&self) -> Option<&str> {
+
+	fn artist(&self) -> Option<&str> {
 		self.inner.get_value("ARTIST")
 	}
-
 	fn set_artist(&mut self, artist: &str) {
 		self.inner.set_value("ARTIST", artist)
 	}
-
 	fn remove_artist(&mut self) {
 		self.inner.remove_key("ARTIST");
 	}
@@ -290,15 +288,13 @@ impl AudioTagEdit for OggTag {
 		self.inner.remove_key("ALBUM");
 	}
 
-	fn album_artist_str(&self) -> Option<&str> {
+	fn album_artist(&self) -> Option<&str> {
 		self.inner.get_value("ALBUMARTIST")
 	}
-
-	fn set_album_artist(&mut self, artist: &str) {
-		self.inner.set_value("ALBUMARTIST", artist)
+	fn set_album_artist(&mut self, album_artist: &str) {
+		self.inner.set_value("ALBUMARTIST", album_artist)
 	}
-
-	fn remove_album_artists(&mut self) {
+	fn remove_album_artist(&mut self) {
 		self.inner.remove_key("ALBUMARTIST");
 	}
 

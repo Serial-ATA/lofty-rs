@@ -38,7 +38,7 @@
 //! let mut tag_sig = Tag::new().read_from_path_signature("tests/assets/a.wav").unwrap();
 //! tag_sig.set_artist("Foo artist");
 //!
-//! assert_eq!(tag_sig.artist_str(), Some("Foo artist"));
+//! assert_eq!(tag_sig.artist(), Some("Foo artist"));
 //! ```
 //!
 //! ## Specifying a TagType
@@ -75,7 +75,7 @@
 //! let oggtag: OggTag = anytag.into();
 //!
 //! assert_eq!(oggtag.title(), Some("Foo title"));
-//! assert_eq!(oggtag.artist_str(), Some("Foo artist"));
+//! assert_eq!(oggtag.artist(), Some("Foo artist"));
 //! ```
 //!
 //! # Concrete types

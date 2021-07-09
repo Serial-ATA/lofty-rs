@@ -5,6 +5,8 @@ use crate::{Album, AnyTag, Picture, Result, TagType};
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 
+use lofty_attr::{str_accessor, u32_accessor, i32_accessor, u16_accessor};
+
 /// Combination of [`AudioTagEdit`], [`AudioTagWrite`], and [`ToAnyTag`]
 pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 
@@ -12,24 +14,13 @@ pub trait AudioTag: AudioTagEdit + AudioTagWrite + ToAnyTag {}
 ///
 /// Constructor methods e.g. `from_file` should be implemented separately.
 pub trait AudioTagEdit {
-	/// Returns the track title
-	fn title(&self) -> Option<&str>;
-	/// Sets the track title
-	fn set_title(&mut self, title: &str);
-	/// Removes the track title
-	fn remove_title(&mut self);
-
-	/// Returns the artist(s) as a string
-	fn artist_str(&self) -> Option<&str>;
-	/// Sets the artist string
-	fn set_artist(&mut self, artist: &str);
+	str_accessor!(title);
+	str_accessor!(artist);
 
 	/// Splits the artist string into a `Vec`
 	fn artists(&self, delimiter: &str) -> Option<Vec<&str>> {
-		self.artist_str().map(|a| a.split(delimiter).collect())
+		self.artist().map(|a| a.split(delimiter).collect())
 	}
-	/// Removes the artist string
-	fn remove_artist(&mut self);
 
 	/// Returns the track date
 	fn date(&self) -> Option<String> {
@@ -46,82 +37,31 @@ pub trait AudioTagEdit {
 		self.remove_year()
 	}
 
-	/// Returns the track year
-	fn year(&self) -> Option<i32> {
-		None
-	}
-	/// Sets the track year
-	fn set_year(&mut self, _year: i32) {}
-	/// Removes the track year
-	fn remove_year(&mut self) {}
+	i32_accessor!(year);
 
-	/// Returns the copyright
-	fn copyright(&self) -> Option<&str> {
-		None
-	}
-	/// Sets the copyright
-	fn set_copyright(&mut self, _copyright: &str) {}
-	/// Removes the copyright
-	fn remove_copyright(&mut self) {}
+	str_accessor!(copyright);
+	str_accessor!(genre);
+	str_accessor!(lyrics);
 
-	/// Returns the genre
-	fn genre(&self) -> Option<&str> {
-		None
-	}
-	/// Sets the genre
-	fn set_genre(&mut self, _genre: &str) {}
-	/// Removes the genre
-	fn remove_genre(&mut self) {}
-
-	/// Returns the lyrics
-	fn lyrics(&self) -> Option<&str> {
-		None
-	}
-	/// Sets the lyrics
-	fn set_lyrics(&mut self, _lyrics: &str) {}
-	/// Removes the lyrics
-	fn remove_lyrics(&mut self) {}
-
-	/// Returns the lyrics
-	fn bpm(&self) -> Option<u16> {
-		None
-	}
-	/// Sets the lyrics
-	fn set_bpm(&mut self, _bpm: u16) {}
-	/// Removes the lyrics
-	fn remove_bpm(&mut self) {}
+	u16_accessor!(bpm);
 
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {
 			title: self.album_title(),
-			artist: self.album_artist_str(),
+			artist: self.album_artist(),
 			covers: self.album_covers(),
 		}
 	}
 
-	/// Returns the album title
-	fn album_title(&self) -> Option<&str> {
-		None
-	}
-	/// Sets the album title
-	fn set_album_title(&mut self, _title: &str) {}
-	/// Removes the album title
-	fn remove_album_title(&mut self) {}
+	str_accessor!(album_title);
+	str_accessor!(album_artist);
 
-	/// Returns the album artist string
-	fn album_artist_str(&self) -> Option<&str> {
-		None
-	}
 	/// Splits the artist string into a `Vec`
 	fn album_artists(&self, delimiter: &str) -> Option<Vec<&str>> {
-		self.album_artist_str()
+		self.album_artist()
 			.map(|a| a.split(delimiter).collect())
 	}
-	/// Sets the album artist string
-	fn set_album_artist(&mut self, _artist: &str) {}
-	/// Removes the album artist string
-	fn remove_album_artists(&mut self) {}
 
 	/// Returns the front and back album covers
 	fn album_covers(&self) -> (Option<Picture>, Option<Picture>) {
@@ -160,34 +100,9 @@ pub trait AudioTagEdit {
 	fn track(&self) -> (Option<u32>, Option<u32>) {
 		(self.track_number(), self.total_tracks())
 	}
-	/// Sets the track number and total tracks
-	fn set_track(&mut self, track_number: u32, total_tracks: u32) {
-		self.set_track_number(track_number);
-		self.set_total_tracks(total_tracks);
-	}
-	/// Removes the track number and total tracks
-	fn remove_track(&mut self) {
-		self.remove_track_number();
-		self.remove_total_tracks();
-	}
 
-	/// Returns the track number
-	fn track_number(&self) -> Option<u32> {
-		None
-	}
-	/// Sets the track number
-	fn set_track_number(&mut self, _track_number: u32) {}
-	/// Removes the track number
-	fn remove_track_number(&mut self) {}
-
-	/// Returns the total tracks
-	fn total_tracks(&self) -> Option<u32> {
-		None
-	}
-	/// Sets the total tracks
-	fn set_total_tracks(&mut self, _total_track: u32) {}
-	/// Removes the total tracks
-	fn remove_total_tracks(&mut self) {}
+	u32_accessor!(track_number);
+	u32_accessor!(total_tracks);
 
 	/// Returns the disc number and total discs
 	fn disc(&self) -> (Option<u32>, Option<u32>) {
@@ -199,23 +114,8 @@ pub trait AudioTagEdit {
 		self.remove_total_discs();
 	}
 
-	/// Returns the disc number
-	fn disc_number(&self) -> Option<u32> {
-		None
-	}
-	/// Sets the disc number
-	fn set_disc_number(&mut self, _disc_number: u32) {}
-	/// Removes the disc number
-	fn remove_disc_number(&mut self) {}
-
-	/// Returns the total discs
-	fn total_discs(&self) -> Option<u32> {
-		None
-	}
-	/// Sets the total discs
-	fn set_total_discs(&mut self, _total_discs: u32) {}
-	/// Removes the total discs
-	fn remove_total_discs(&mut self) {}
+	u32_accessor!(disc_number);
+	u32_accessor!(total_discs);
 }
 
 /// Functions for writing to a file
