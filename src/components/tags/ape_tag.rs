@@ -150,11 +150,15 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Lyrics")
 	}
 
-	fn bpm(&self) -> Option<&str> {
-		self.get_value("BPM")
+	fn bpm(&self) -> Option<u16> {
+		if let Some(bpm) = self.get_value("BPM") {
+			return bpm.parse::<u16>().ok();
+		}
+
+		None
 	}
-	fn set_bpm(&mut self, bpm: &str) {
-		self.set_value("BPM", bpm)
+	fn set_bpm(&mut self, bpm: u16) {
+		self.set_value("BPM", bpm.to_string())
 	}
 	fn remove_bpm(&mut self) {
 		self.remove_key("BPM")

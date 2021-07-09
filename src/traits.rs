@@ -83,11 +83,11 @@ pub trait AudioTagEdit {
 	fn remove_lyrics(&mut self) {}
 
 	/// Returns the lyrics
-	fn bpm(&self) -> Option<&str> {
+	fn bpm(&self) -> Option<u16> {
 		None
 	}
 	/// Sets the lyrics
-	fn set_bpm(&mut self, _bpm: &str) {}
+	fn set_bpm(&mut self, _bpm: u16) {}
 	/// Removes the lyrics
 	fn remove_bpm(&mut self) {}
 

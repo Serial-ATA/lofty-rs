@@ -22,6 +22,8 @@ macro_rules! add_tags {
 		println!("Reading file");
 		let mut tag = Tag::default().read_from_path_signature($file).unwrap();
 
+		let file = stringify!($file);
+
 		println!("Setting title");
 		tag.set_title("foo title");
 
@@ -36,6 +38,17 @@ macro_rules! add_tags {
 
 		println!("Setting genre");
 		tag.set_genre("Country");
+
+		if file != stringify!("tests/assets/a.mp3")
+			&& file != stringify!("tests/assets/a.aiff")
+			&& file != stringify!("tests/assets/a-id3.wav")
+		{
+			println!("Setting Lyrics");
+			tag.set_lyrics("foo bar baz");
+		}
+
+		println!("Setting BPM");
+		tag.set_bpm(50);
 
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
@@ -57,8 +70,6 @@ macro_rules! add_tags {
 				data: Cow::from(vec![0; 50000]),
 			},
 		);
-
-		let file = stringify!($file);
 
 		// Skip this since RIFF INFO doesn't store images, and MP4 doesn't specify what pictures are
 		if file != stringify!("tests/assets/a.wav") && file != stringify!("tests/assets/a.m4a") {
@@ -152,6 +163,17 @@ macro_rules! verify_write {
 				)
 			};
 
+			if file_name != stringify!("tests/assets/a.mp3")
+				&& file_name != stringify!("tests/assets/a.aiff")
+				&& file_name != stringify!("tests/assets/a-id3.wav")
+			{
+				println!("Verifying lyrics");
+				assert_eq!(tag.lyrics(), Some("foo bar baz"));
+			}
+
+			println!("Verifying BPM");
+			assert_eq!(tag.bpm(), Some(50));
+
 			println!("Verifying album artist");
 			assert_eq!(tag.album_artist_str(), Some("foo album artist"));
 
@@ -195,6 +217,16 @@ macro_rules! remove_tags {
 		tag.remove_genre();
 		assert!(tag.genre().is_none());
 		tag.remove_genre();
+
+		println!("Removing lyrics");
+		tag.remove_lyrics();
+		assert!(tag.lyrics().is_none());
+		tag.remove_lyrics();
+
+		println!("Removing BPM");
+		tag.remove_bpm();
+		assert!(tag.bpm().is_none());
+		tag.remove_bpm();
 
 		println!("Removing album title");
 		tag.remove_album_title();

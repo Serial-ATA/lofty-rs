@@ -115,10 +115,11 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_lyrics()
 	}
 
-	fn set_bpm(&mut self, bpm: &str) {
-		if let Ok(bpm) = bpm.parse::<u16>() {
-			self.inner.set_bpm(bpm)
-		}
+	fn bpm(&self) -> Option<u16> {
+		self.inner.bpm()
+	}
+	fn set_bpm(&mut self, bpm: u16) {
+		self.inner.set_bpm(bpm)
 	}
 	fn remove_bpm(&mut self) {
 		self.inner.remove_bpm()

@@ -266,11 +266,15 @@ impl AudioTagEdit for OggTag {
 		self.inner.remove_key("LYRICS")
 	}
 
-	fn bpm(&self) -> Option<&str> {
-		self.inner.get_value("BPM")
+	fn bpm(&self) -> Option<u16> {
+		if let Some(bpm) = self.inner.get_value("BPM") {
+			return bpm.parse::<u16>().ok();
+		}
+
+		None
 	}
-	fn set_bpm(&mut self, bpm: &str) {
-		self.inner.set_value("BPM", bpm)
+	fn set_bpm(&mut self, bpm: u16) {
+		self.inner.set_value("BPM", bpm.to_string())
 	}
 	fn remove_bpm(&mut self) {
 		self.inner.remove_key("BPM")

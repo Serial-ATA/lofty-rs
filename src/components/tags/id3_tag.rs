@@ -166,15 +166,17 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.remove_genre()
 	}
 
-	fn bpm(&self) -> Option<&str> {
+	fn bpm(&self) -> Option<u16> {
 		if let Some(frame) = self.inner.get("TBPM") {
-			return frame.content().text();
+			if let Some(text) = frame.content().text() {
+				return text.parse::<u16>().ok();
+			}
 		}
 
 		None
 	}
-	fn set_bpm(&mut self, bpm: &str) {
-		self.inner.set_text("TBPM", bpm)
+	fn set_bpm(&mut self, bpm: u16) {
+		self.inner.set_text("TBPM", bpm.to_string())
 	}
 	fn remove_bpm(&mut self) {
 		self.inner.remove("TBPM")
