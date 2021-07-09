@@ -257,8 +257,11 @@ fn test_aiff_text() {
 
 	println!("Removing title");
 	tag.remove_title();
-	println!("Removing artist");
-	tag.remove_artist();
+
+	// Keep artist around so there's something to read
+	// println!("Removing artist");
+	// tag.remove_artist();
+
 	println!("Removing copyright");
 	tag.remove_copyright();
 

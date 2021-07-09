@@ -2,6 +2,7 @@ use crate::{LoftyError, Result};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
+use std::cmp::{max, min};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -99,8 +100,11 @@ pub(crate) fn write_to(
 			f if f == b"(c) " && copy.is_none() => copy = Some((pos, (pos + 8 + size as usize))),
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
+				continue
 			},
 		}
+
+		data.seek(SeekFrom::Current(i64::from(size)))?;
 	}
 
 	data.seek(SeekFrom::Start(0))?;
@@ -123,14 +127,27 @@ pub(crate) fn write_to(
 		| (None, None, Some(single_value)) => {
 			file_bytes.splice(single_value.0..single_value.1, text_chunks);
 		},
-		(title, author, copyright) => {
-			let items = vec![title, author, copyright];
-			let remaining: Vec<&(usize, usize)> = items.iter().flatten().collect();
+		#[rustfmt::skip]
+		(Some(a), Some(b), None)
+		| (Some(a), None, Some(b))
+		| (None, Some(a), Some(b)) => {
+			let first = min(a, b);
+			let end = max(a, b);
 
-			if let (Some(first), Some(last)) = (remaining.iter().min(), remaining.iter().max()) {
-				file_bytes.drain(last.0..last.1);
-				file_bytes.splice(first.0..first.1, text_chunks);
-			}
+			file_bytes.drain(end.0..end.1);
+			file_bytes.splice(first.0..first.1, text_chunks);
+		},
+		(Some(title), Some(author), Some(copyright)) => {
+			let mut items = vec![title, author, copyright];
+			items.sort_unstable();
+
+			let first = items[0];
+			let mid = items[1];
+			let end = items[2];
+
+			file_bytes.drain(end.0..end.1);
+			file_bytes.drain(mid.0..mid.1);
+			file_bytes.splice(first.0..first.1, text_chunks);
 		},
 	}
 
