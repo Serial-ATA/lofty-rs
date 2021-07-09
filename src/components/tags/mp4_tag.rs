@@ -125,6 +125,16 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_bpm()
 	}
 
+	fn lyricist(&self) -> Option<&str> {
+		self.inner.lyricist()
+	}
+	fn set_lyricist(&mut self, lyricist: &str) {
+		self.inner.set_lyricist(lyricist);
+	}
+	fn remove_lyricist(&mut self) {
+		self.inner.remove_lyricists()
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}

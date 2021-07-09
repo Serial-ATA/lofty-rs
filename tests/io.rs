@@ -53,6 +53,12 @@ macro_rules! add_tags {
 		println!("Setting BPM");
 		tag.set_bpm(50);
 
+		println!("Setting lyricist");
+		tag.set_lyricist("Serial-ATA");
+
+		println!("Setting composer");
+		tag.set_composer("Serial-ATA1");
+
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
 
@@ -126,6 +132,14 @@ macro_rules! verify_write {
 		if file_name != stringify!("tests/assets/a.m4a") {
 			println!("Verifying date");
 			assert_eq!(tag.date(), Some("20200415".to_string()));
+
+			if file_name != stringify!("tests/assets/a.wav") {
+				println!("Verifying lyricist");
+				assert_eq!(tag.lyricist(), Some("Serial-ATA"));
+
+				println!("Verifying composer");
+				assert_eq!(tag.composer(), Some("Serial-ATA1"));
+			}
 		}
 
 		println!("Verifying copyright");
@@ -230,6 +244,16 @@ macro_rules! remove_tags {
 		tag.remove_genre();
 		assert!(tag.genre().is_none());
 		tag.remove_genre();
+
+		println!("Removing lyricist");
+		tag.remove_lyricist();
+		assert!(tag.lyricist().is_none());
+		tag.remove_lyricist();
+
+		println!("Removing composer");
+		tag.remove_composer();
+		assert!(tag.composer().is_none());
+		tag.remove_composer();
 
 		println!("Removing lyrics");
 		tag.remove_lyrics();

@@ -256,6 +256,26 @@ impl AudioTagEdit for OggTag {
 		self.inner.remove_key("LYRICS")
 	}
 
+	fn lyricist(&self) -> Option<&str> {
+		self.inner.get_value("LYRICIST")
+	}
+	fn set_lyricist(&mut self, lyricist: &str) {
+		self.inner.set_value("LYRICIST", lyricist)
+	}
+	fn remove_lyricist(&mut self) {
+		self.inner.remove_key("LYRICIST")
+	}
+
+	fn composer(&self) -> Option<&str> {
+		self.inner.get_value("COMPOSER")
+	}
+	fn set_composer(&mut self, composer: &str) {
+		self.inner.set_value("COMPOSER", composer)
+	}
+	fn remove_composer(&mut self) {
+		self.inner.remove_key("COMPOSER")
+	}
+
 	fn bpm(&self) -> Option<u16> {
 		if let Some(bpm) = self.inner.get_value("BPM") {
 			return bpm.parse::<u16>().ok();

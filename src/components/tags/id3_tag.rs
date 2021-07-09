@@ -182,6 +182,34 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.remove("TBPM")
 	}
 
+	fn lyricist(&self) -> Option<&str> {
+		if let Some(frame) = self.inner.get("TEXT") {
+			return frame.content().text();
+		}
+
+		None
+	}
+	fn set_lyricist(&mut self, lyricist: &str) {
+		self.inner.set_text("TEXT", lyricist)
+	}
+	fn remove_lyricist(&mut self) {
+		self.inner.remove("TEXT")
+	}
+
+	fn composer(&self) -> Option<&str> {
+		if let Some(frame) = self.inner.get("TCOM") {
+			return frame.content().text();
+		}
+
+		None
+	}
+	fn set_composer(&mut self, composer: &str) {
+		self.inner.set_text("TCOM", composer)
+	}
+	fn remove_composer(&mut self) {
+		self.inner.remove("TCOM")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}

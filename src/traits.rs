@@ -39,6 +39,9 @@ pub trait AudioTagEdit {
 
 	u16_accessor!(bpm);
 
+	str_accessor!(lyricist);
+	str_accessor!(composer);
+
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {

@@ -159,6 +159,26 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("BPM")
 	}
 
+	fn lyricist(&self) -> Option<&str> {
+		self.get_value("Lyricist")
+	}
+	fn set_lyricist(&mut self, lyricist: &str) {
+		self.set_value("Lyricist", lyricist)
+	}
+	fn remove_lyricist(&mut self) {
+		self.remove_key("Lyricist")
+	}
+
+	fn composer(&self) -> Option<&str> {
+		self.get_value("Composer")
+	}
+	fn set_composer(&mut self, composer: &str) {
+		self.set_value("Composer", composer)
+	}
+	fn remove_composer(&mut self) {
+		self.remove_key("Composer")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.get_value("Album")
 	}
