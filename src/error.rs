@@ -31,8 +31,8 @@ pub enum LoftyError {
 	#[error("Picture contains invalid data")]
 	NotAPicture,
 
-	#[cfg(feature = "format-ape")]
 	// Tag related errors
+	#[cfg(feature = "format-ape")]
 	/// Any error from [`ape`]
 	#[error(transparent)]
 	ApeTag(#[from] ape::Error),
