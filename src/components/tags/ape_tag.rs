@@ -9,7 +9,7 @@ use std::io::{Read, Seek};
 
 use ape::Item;
 pub use ape::Tag as ApeInnerTag;
-use lofty_attr::impl_tag;
+use lofty_attr::{get_set_methods, impl_tag};
 
 #[impl_tag(ApeInnerTag, TagType::Ape)]
 pub struct ApeTag;
@@ -67,36 +67,24 @@ impl ApeTag {
 }
 
 impl AudioTagEdit for ApeTag {
-	fn title(&self) -> Option<&str> {
-		self.get_value("Title")
-	}
-	fn set_title(&mut self, title: &str) {
-		self.set_value("Title", title)
-	}
-	fn remove_title(&mut self) {
-		self.remove_key("Title")
-	}
+	get_set_methods!(title, "Title");
+	get_set_methods!(artist, "Artist");
+	get_set_methods!(copyright, "Copyright");
+	get_set_methods!(genre, "Genre");
+	get_set_methods!(lyrics, "Lyrics");
+	get_set_methods!(lyricist, "Lyricist");
+	get_set_methods!(composer, "Composer");
+	get_set_methods!(album_title, "Album");
 
-	fn artist(&self) -> Option<&str> {
-		self.get_value("Artist")
-	}
-
-	fn set_artist(&mut self, artist: &str) {
-		self.set_value("Artist", artist)
-	}
-
-	fn remove_artist(&mut self) {
-		self.remove_key("Artist")
-	}
+	// Album artists aren't standard?
+	get_set_methods!(album_artist, "Album artist");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("Date").map(std::string::ToString::to_string)
 	}
-
 	fn set_date(&mut self, date: &str) {
 		self.set_value("Date", date)
 	}
-
 	fn remove_date(&mut self) {
 		self.remove_key("Date")
 	}
@@ -115,36 +103,6 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("Year")
 	}
 
-	fn copyright(&self) -> Option<&str> {
-		self.get_value("Copyright")
-	}
-	fn set_copyright(&mut self, copyright: &str) {
-		self.set_value("Copyright", copyright)
-	}
-	fn remove_copyright(&mut self) {
-		self.remove_key("Copyright")
-	}
-
-	fn genre(&self) -> Option<&str> {
-		self.get_value("Genre")
-	}
-	fn set_genre(&mut self, genre: &str) {
-		self.set_value("Genre", genre)
-	}
-	fn remove_genre(&mut self) {
-		self.remove_key("Genre")
-	}
-
-	fn lyrics(&self) -> Option<&str> {
-		self.get_value("Lyrics")
-	}
-	fn set_lyrics(&mut self, lyrics: &str) {
-		self.set_value("Lyrics", lyrics)
-	}
-	fn remove_lyrics(&mut self) {
-		self.remove_key("Lyrics")
-	}
-
 	fn bpm(&self) -> Option<u16> {
 		if let Some(bpm) = self.get_value("BPM") {
 			return bpm.parse::<u16>().ok();
@@ -159,49 +117,6 @@ impl AudioTagEdit for ApeTag {
 		self.remove_key("BPM")
 	}
 
-	fn lyricist(&self) -> Option<&str> {
-		self.get_value("Lyricist")
-	}
-	fn set_lyricist(&mut self, lyricist: &str) {
-		self.set_value("Lyricist", lyricist)
-	}
-	fn remove_lyricist(&mut self) {
-		self.remove_key("Lyricist")
-	}
-
-	fn composer(&self) -> Option<&str> {
-		self.get_value("Composer")
-	}
-	fn set_composer(&mut self, composer: &str) {
-		self.set_value("Composer", composer)
-	}
-	fn remove_composer(&mut self) {
-		self.remove_key("Composer")
-	}
-
-	fn album_title(&self) -> Option<&str> {
-		self.get_value("Album")
-	}
-	fn set_album_title(&mut self, album_title: &str) {
-		self.set_value("Album", album_title)
-	}
-	fn remove_album_title(&mut self) {
-		self.remove_key("Album")
-	}
-
-	// Album artists aren't standard?
-	fn album_artist(&self) -> Option<&str> {
-		self.get_value("Album artist")
-	}
-
-	fn set_album_artist(&mut self, artists: &str) {
-		self.set_value("Album artist", artists)
-	}
-
-	fn remove_album_artist(&mut self) {
-		self.remove_key("Album artist")
-	}
-
 	fn front_cover(&self) -> Option<Picture> {
 		if let Some(val) = self.inner.item("Cover Art (Front)") {
 			return self.get_picture(val);
@@ -209,7 +124,6 @@ impl AudioTagEdit for ApeTag {
 
 		None
 	}
-
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
@@ -217,7 +131,6 @@ impl AudioTagEdit for ApeTag {
 			self.inner.set_item(item)
 		}
 	}
-
 	fn remove_front_cover(&mut self) {
 		self.remove_key("Cover Art (Front)")
 	}
@@ -229,7 +142,6 @@ impl AudioTagEdit for ApeTag {
 
 		None
 	}
-
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
 
@@ -237,7 +149,6 @@ impl AudioTagEdit for ApeTag {
 			self.inner.set_item(item)
 		}
 	}
-
 	fn remove_back_cover(&mut self) {
 		self.remove_key("Cover Art (Back)")
 	}

@@ -94,11 +94,9 @@ impl AudioTagEdit for Id3v2Tag {
 	fn artist(&self) -> Option<&str> {
 		self.inner.artist()
 	}
-
 	fn set_artist(&mut self, artist: &str) {
 		self.inner.set_artist(artist)
 	}
-
 	fn remove_artist(&mut self) {
 		self.inner.remove_artist()
 	}
@@ -120,13 +118,11 @@ impl AudioTagEdit for Id3v2Tag {
 
 		None
 	}
-
 	fn set_date(&mut self, date: &str) {
 		if let Ok(t) = date.parse::<id3::Timestamp>() {
 			self.inner.set_date_released(t)
 		}
 	}
-
 	fn remove_date(&mut self) {
 		self.inner.remove_date_released();
 		self.inner.remove_date_recorded();
@@ -247,7 +243,6 @@ impl AudioTagEdit for Id3v2Tag {
 				})
 			})
 	}
-
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
@@ -255,7 +250,6 @@ impl AudioTagEdit for Id3v2Tag {
 			self.inner.add_picture(pic)
 		}
 	}
-
 	fn remove_front_cover(&mut self) {
 		self.inner
 			.remove_picture_by_type(id3::frame::PictureType::CoverFront);
@@ -278,7 +272,6 @@ impl AudioTagEdit for Id3v2Tag {
 				})
 			})
 	}
-
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
 
@@ -286,7 +279,6 @@ impl AudioTagEdit for Id3v2Tag {
 			self.inner.add_picture(pic)
 		}
 	}
-
 	fn remove_back_cover(&mut self) {
 		self.inner
 			.remove_picture_by_type(id3::frame::PictureType::CoverBack);

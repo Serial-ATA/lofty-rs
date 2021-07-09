@@ -20,7 +20,7 @@ use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
-use lofty_attr::impl_tag;
+use lofty_attr::{get_set_methods, impl_tag};
 
 struct OggInnerTag {
 	vendor: String,
@@ -183,25 +183,15 @@ impl OggTag {
 }
 
 impl AudioTagEdit for OggTag {
-	fn title(&self) -> Option<&str> {
-		self.get_value("TITLE")
-	}
-	fn set_title(&mut self, title: &str) {
-		self.set_value("TITLE", title);
-	}
-	fn remove_title(&mut self) {
-		self.remove_key("TITLE");
-	}
-
-	fn artist(&self) -> Option<&str> {
-		self.get_value("ARTIST")
-	}
-	fn set_artist(&mut self, artist: &str) {
-		self.set_value("ARTIST", artist)
-	}
-	fn remove_artist(&mut self) {
-		self.remove_key("ARTIST");
-	}
+	get_set_methods!(title, "TITLE");
+	get_set_methods!(artist, "ARTIST");
+	get_set_methods!(copyright, "COPYRIGHT");
+	get_set_methods!(genre, "GENRE");
+	get_set_methods!(lyrics, "LYRICS");
+	get_set_methods!(lyricist, "LYRICIST");
+	get_set_methods!(composer, "COMPOSER");
+	get_set_methods!(album_title, "ALBUM");
+	get_set_methods!(album_artist, "ALBUMARTIST");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("DATE").map(std::string::ToString::to_string)
@@ -227,56 +217,6 @@ impl AudioTagEdit for OggTag {
 		self.remove_key("YEAR");
 	}
 
-	fn copyright(&self) -> Option<&str> {
-		self.get_value("COPYRIGHT")
-	}
-	fn set_copyright(&mut self, copyright: &str) {
-		self.set_value("COPYRIGHT", copyright)
-	}
-	fn remove_copyright(&mut self) {
-		self.remove_key("COPYRIGHT")
-	}
-
-	fn genre(&self) -> Option<&str> {
-		self.get_value("GENRE")
-	}
-	fn set_genre(&mut self, genre: &str) {
-		self.set_value("GENRE", genre)
-	}
-	fn remove_genre(&mut self) {
-		self.remove_key("GENRE")
-	}
-
-	fn lyrics(&self) -> Option<&str> {
-		self.get_value("LYRICS")
-	}
-	fn set_lyrics(&mut self, lyrics: &str) {
-		self.set_value("LYRICS", lyrics)
-	}
-	fn remove_lyrics(&mut self) {
-		self.remove_key("LYRICS")
-	}
-
-	fn lyricist(&self) -> Option<&str> {
-		self.get_value("LYRICIST")
-	}
-	fn set_lyricist(&mut self, lyricist: &str) {
-		self.set_value("LYRICIST", lyricist)
-	}
-	fn remove_lyricist(&mut self) {
-		self.remove_key("LYRICIST")
-	}
-
-	fn composer(&self) -> Option<&str> {
-		self.get_value("COMPOSER")
-	}
-	fn set_composer(&mut self, composer: &str) {
-		self.set_value("COMPOSER", composer)
-	}
-	fn remove_composer(&mut self) {
-		self.remove_key("COMPOSER")
-	}
-
 	fn bpm(&self) -> Option<u16> {
 		if let Some(bpm) = self.get_value("BPM") {
 			return bpm.parse::<u16>().ok();
@@ -289,26 +229,6 @@ impl AudioTagEdit for OggTag {
 	}
 	fn remove_bpm(&mut self) {
 		self.remove_key("BPM")
-	}
-
-	fn album_title(&self) -> Option<&str> {
-		self.get_value("ALBUM")
-	}
-	fn set_album_title(&mut self, title: &str) {
-		self.set_value("ALBUM", title)
-	}
-	fn remove_album_title(&mut self) {
-		self.remove_key("ALBUM");
-	}
-
-	fn album_artist(&self) -> Option<&str> {
-		self.get_value("ALBUMARTIST")
-	}
-	fn set_album_artist(&mut self, album_artist: &str) {
-		self.set_value("ALBUMARTIST", album_artist)
-	}
-	fn remove_album_artist(&mut self) {
-		self.remove_key("ALBUMARTIST");
 	}
 
 	fn front_cover(&self) -> Option<Picture> {
