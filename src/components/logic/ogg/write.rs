@@ -13,12 +13,13 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
+use unicase::UniCase;
 
 pub(crate) fn create_pages(
 	file: &mut File,
 	sig: &[u8],
 	vendor: &str,
-	comments: &HashMap<String, String>,
+	comments: &HashMap<UniCase<String>, String>,
 	pictures: &Option<Cow<'static, [Picture]>>,
 ) -> Result<()> {
 	let mut packet = Vec::new();

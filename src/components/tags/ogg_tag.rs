@@ -21,10 +21,11 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
 use lofty_attr::{get_set_methods, impl_tag};
+use unicase::UniCase;
 
 struct OggInnerTag {
 	vendor: String,
-	comments: HashMap<String, String>,
+	comments: HashMap<UniCase<String>, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
 }
 
@@ -128,11 +129,11 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				})
 			}
 
-			let mut comment_collection: HashMap<String, String> = HashMap::new();
+			let mut comment_collection: HashMap<UniCase<String>, String> = HashMap::new();
 
 			for (k, v) in user_comments.clone() {
 				for e in v {
-					comment_collection.insert(k.clone(), e.clone());
+					comment_collection.insert(UniCase::from(k.clone()), e.clone());
 				}
 			}
 
@@ -166,7 +167,7 @@ impl OggTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
 		self.inner
 			.comments
-			.get_key_value(key)
+			.get_key_value(&UniCase::from(key.to_string()))
 			.map(|(_, v)| v.as_str())
 	}
 
@@ -174,11 +175,11 @@ impl OggTag {
 	where
 		V: Into<String>,
 	{
-		self.inner.comments.insert(key.to_string(), val.into());
+		self.inner.comments.insert(UniCase::from(key.to_string()), val.into());
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		self.inner.comments.remove(key);
+		self.inner.comments.remove(&UniCase::from(key.to_string()));
 	}
 }
 

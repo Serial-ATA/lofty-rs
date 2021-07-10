@@ -6,8 +6,9 @@ use std::io::{Read, Seek};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
+use unicase::UniCase;
 
-pub type OGGTags = (String, Vec<Picture>, HashMap<String, String>, OggFormat);
+pub type OGGTags = (String, Vec<Picture>, HashMap<UniCase<String>, String>, OggFormat);
 
 pub(crate) fn read_from<T>(
 	mut data: T,
@@ -39,7 +40,7 @@ where
 		}
 	}
 
-	let mut md: HashMap<String, String> = HashMap::new();
+	let mut md: HashMap<UniCase<String>, String> = HashMap::new();
 	let mut pictures = Vec::new();
 
 	let reader = &mut &md_pages[..];
@@ -72,7 +73,7 @@ where
 		if split[0] == "METADATA_BLOCK_PICTURE" {
 			pictures.push(Picture::from_apic_bytes(split[1].as_bytes())?)
 		} else {
-			md.insert(split[0].to_string(), split[1].to_string());
+			md.insert(UniCase::from(split[0].to_string()), split[1].to_string());
 		}
 	}
 

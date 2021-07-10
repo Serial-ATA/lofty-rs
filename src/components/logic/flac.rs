@@ -5,11 +5,12 @@ use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom, Write};
 
 use metaflac::BlockType;
+use unicase::UniCase;
 
 pub(crate) fn write_to<T>(
 	mut data: T,
 	vendor: &str,
-	comments: &HashMap<String, String>,
+	comments: &HashMap<UniCase<String>, String>,
 	pictures: &Option<Cow<'static, [Picture]>>,
 ) -> Result<()>
 where
@@ -37,7 +38,7 @@ where
 	}
 
 	for (k, v) in comments.clone() {
-		comment_collection.insert(k, vec![v]);
+		comment_collection.insert(k.into_inner(), vec![v]);
 	}
 
 	let comments = metaflac::Block::VorbisComment(metaflac::block::VorbisComment {

@@ -10,9 +10,9 @@ keywords = ["tags", "audio", "metadata"]
 categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
+unicase = { version = "2.6.0", optional = true }
 # Ape
 ape = {version = "0.3.0", optional = true, git = "https://github.com/rossnomann/rust-ape"}
-unicase = { version = "2.6.0", optional = true }
 # Id3
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
@@ -35,8 +35,8 @@ lofty_attr = "0.1.7"
 default = ["all_tags"]
 format-mp4 = ["mp4ameta"]
 format-flac = ["metaflac"]
-format-opus = ["ogg_pager"]
-format-vorbis = ["ogg_pager"]
+format-opus = ["ogg_pager", "unicase"]
+format-vorbis = ["ogg_pager", "unicase"]
 format-ape = ["ape", "unicase"]
 format-id3 = ["id3", "filepath"]
 format-aiff = []
