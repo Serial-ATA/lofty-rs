@@ -34,13 +34,13 @@ impl<'a> Album<'a> {
 			covers,
 		}
 	}
-	/// Create a new album with the specified title
-	pub fn with_title(title: &'a str) -> Self {
-		Self {
-			title: Some(title),
-			artist: None,
-			covers: (None, None),
-		}
+	/// Sets the album title
+	pub fn set_title(&mut self, title: &'a str) {
+		self.title = Some(title)
+	}
+	/// Clears the `title` field
+	pub fn remove_title(&mut self) {
+		self.title = None
 	}
 	/// Set the album artists
 	pub fn set_artist(&mut self, artist_str: &'a str) {

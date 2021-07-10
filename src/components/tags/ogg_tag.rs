@@ -175,7 +175,9 @@ impl OggTag {
 	where
 		V: Into<String>,
 	{
-		self.inner.comments.insert(UniCase::from(key.to_string()), val.into());
+		self.inner
+			.comments
+			.insert(UniCase::from(key.to_string()), val.into());
 	}
 
 	fn remove_key(&mut self, key: &str) {

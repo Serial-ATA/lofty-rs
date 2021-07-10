@@ -8,7 +8,12 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 use unicase::UniCase;
 
-pub type OGGTags = (String, Vec<Picture>, HashMap<UniCase<String>, String>, OggFormat);
+pub type OGGTags = (
+	String,
+	Vec<Picture>,
+	HashMap<UniCase<String>, String>,
+	OggFormat,
+);
 
 pub(crate) fn read_from<T>(
 	mut data: T,
