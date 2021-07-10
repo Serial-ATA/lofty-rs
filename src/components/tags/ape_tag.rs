@@ -10,6 +10,7 @@ use std::io::{Read, Seek};
 use ape::Item;
 pub use ape::Tag as ApeInnerTag;
 use lofty_attr::{get_set_methods, impl_tag};
+use unicase::UniCase;
 
 #[impl_tag(ApeInnerTag, TagType::Ape)]
 pub struct ApeTag;
@@ -28,8 +29,8 @@ impl ApeTag {
 }
 
 impl ApeTag {
-	fn get_value(&self, key: &str) -> Option<&str> {
-		if let Some(item) = self.inner.item(key) {
+	fn get_value(&self, key: UniCase<&str>) -> Option<&str> {
+		if let Some(item) = self.inner.item(&key) {
 			if let ape::ItemValue::Text(val) = &item.value {
 				return Some(&*val);
 			}
@@ -49,7 +50,7 @@ impl ApeTag {
 		None
 	}
 
-	fn set_value<V>(&mut self, key: &str, val: V)
+	fn set_value<V>(&mut self, key: UniCase<&str>, val: V)
 	where
 		V: Into<String>,
 	{
@@ -61,61 +62,62 @@ impl ApeTag {
 		self.inner.set_item(item)
 	}
 
-	fn remove_key(&mut self, key: &str) {
-		let _ = self.inner.remove_item(key);
+	fn remove_key(&mut self, key: UniCase<&str>) {
+		let _ = self.inner.remove_item(&key);
 	}
 }
 
 impl AudioTagEdit for ApeTag {
-	get_set_methods!(title, "Title");
-	get_set_methods!(artist, "Artist");
-	get_set_methods!(copyright, "Copyright");
-	get_set_methods!(genre, "Genre");
-	get_set_methods!(lyrics, "Lyrics");
-	get_set_methods!(lyricist, "Lyricist");
-	get_set_methods!(composer, "Composer");
-	get_set_methods!(album_title, "Album");
-	get_set_methods!(encoder, "Encoder");
+	get_set_methods!(title, UniCase::new("Title"));
+	get_set_methods!(artist, UniCase::new("Artist"));
+	get_set_methods!(copyright, UniCase::new("Copyright"));
+	get_set_methods!(genre, UniCase::new("Genre"));
+	get_set_methods!(lyrics, UniCase::new("Lyrics"));
+	get_set_methods!(lyricist, UniCase::new("Lyricist"));
+	get_set_methods!(composer, UniCase::new("Composer"));
+	get_set_methods!(album_title, UniCase::new("Album"));
+	get_set_methods!(encoder, UniCase::new("Encoder"));
 
 	// Album artists aren't standard?
-	get_set_methods!(album_artist, "Album artist");
+	get_set_methods!(album_artist, UniCase::new("AlbumArtist"));
 
 	fn date(&self) -> Option<String> {
-		self.get_value("Date").map(std::string::ToString::to_string)
+		self.get_value(UniCase::from("Date"))
+			.map(std::string::ToString::to_string)
 	}
 	fn set_date(&mut self, date: &str) {
-		self.set_value("Date", date)
+		self.set_value(UniCase::from("Date"), date)
 	}
 	fn remove_date(&mut self) {
-		self.remove_key("Date")
+		self.remove_key(UniCase::from("Date"))
 	}
 
 	fn year(&self) -> Option<i32> {
-		if let Some(Ok(y)) = self.get_value("Year").map(str::parse::<i32>) {
+		if let Some(Ok(y)) = self.get_value(UniCase::from("Year")).map(str::parse::<i32>) {
 			return Some(y);
 		}
 
 		None
 	}
 	fn set_year(&mut self, year: i32) {
-		self.set_value("Year", year.to_string())
+		self.set_value(UniCase::from("Year"), year.to_string())
 	}
 	fn remove_year(&mut self) {
-		self.remove_key("Year")
+		self.remove_key(UniCase::from("Year"))
 	}
 
 	fn bpm(&self) -> Option<u16> {
-		if let Some(bpm) = self.get_value("BPM") {
+		if let Some(bpm) = self.get_value(UniCase::from("BPM")) {
 			return bpm.parse::<u16>().ok();
 		}
 
 		None
 	}
 	fn set_bpm(&mut self, bpm: u16) {
-		self.set_value("BPM", bpm.to_string())
+		self.set_value(UniCase::from("BPM"), bpm.to_string())
 	}
 	fn remove_bpm(&mut self) {
-		self.remove_key("BPM")
+		self.remove_key(UniCase::from("BPM"))
 	}
 
 	fn front_cover(&self) -> Option<Picture> {
@@ -133,7 +135,7 @@ impl AudioTagEdit for ApeTag {
 		}
 	}
 	fn remove_front_cover(&mut self) {
-		self.remove_key("Cover Art (Front)")
+		self.remove_key(UniCase::from("Cover Art (Front)"))
 	}
 
 	fn back_cover(&self) -> Option<Picture> {
@@ -151,7 +153,7 @@ impl AudioTagEdit for ApeTag {
 		}
 	}
 	fn remove_back_cover(&mut self) {
-		self.remove_key("Cover Art (Back)")
+		self.remove_key(UniCase::from("Cover Art (Back)"))
 	}
 
 	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
@@ -190,7 +192,7 @@ impl AudioTagEdit for ApeTag {
 
 	// Track number and total tracks are stored together as num/total?
 	fn track_number(&self) -> Option<u32> {
-		let numbers = self.get_value("Track");
+		let numbers = self.get_value(UniCase::from("Track"));
 
 		if let Some(numbers) = numbers {
 			let split: Vec<&str> = numbers.split('/').collect();
@@ -207,17 +209,17 @@ impl AudioTagEdit for ApeTag {
 	fn set_track_number(&mut self, track: u32) {
 		if let (_, Some(total)) = self.track() {
 			let track_str = format!("{}/{}", track, total);
-			self.set_value("Track", track_str)
+			self.set_value(UniCase::from("Track"), track_str)
 		} else {
-			self.set_value("Track", track.to_string())
+			self.set_value(UniCase::from("Track"), track.to_string())
 		}
 	}
 	fn remove_track_number(&mut self) {
-		self.remove_key("Track")
+		self.remove_key(UniCase::from("Track"))
 	}
 
 	fn total_tracks(&self) -> Option<u32> {
-		let numbers = self.get_value("Track");
+		let numbers = self.get_value(UniCase::from("Track"));
 
 		if let Some(numbers) = numbers {
 			let split: Vec<&str> = numbers.split('/').collect();
@@ -234,21 +236,21 @@ impl AudioTagEdit for ApeTag {
 	fn set_total_tracks(&mut self, total_track: u32) {
 		if let (Some(track_number), _) = self.track() {
 			let track_str = format!("{}/{}", track_number, total_track);
-			self.set_value("Track", track_str)
+			self.set_value(UniCase::from("Track"), track_str)
 		} else {
-			self.set_value("Track", format!("0/{}", total_track))
+			self.set_value(UniCase::from("Track"), format!("0/{}", total_track))
 		}
 	}
 	fn remove_total_tracks(&mut self) {
 		if let (Some(track_number), _) = self.track() {
-			self.set_value("Track", track_number.to_string())
+			self.set_value(UniCase::from("Track"), track_number.to_string())
 		} else {
 			self.remove_track_number()
 		}
 	}
 
 	fn disc_number(&self) -> Option<u32> {
-		if let Some(disc_num) = self.get_value("Disc") {
+		if let Some(disc_num) = self.get_value(UniCase::from("Disc")) {
 			if let Ok(num) = disc_num.parse::<u32>() {
 				return Some(num);
 			}
@@ -257,24 +259,24 @@ impl AudioTagEdit for ApeTag {
 		None
 	}
 	fn set_disc_number(&mut self, disc_number: u32) {
-		self.set_value("Disc", disc_number.to_string())
+		self.set_value(UniCase::from("Disc"), disc_number.to_string())
 	}
 	fn remove_disc_number(&mut self) {
-		self.remove_key("Disc");
+		self.remove_key(UniCase::from("Disc"));
 	}
 
 	fn total_discs(&self) -> Option<u32> {
-		if let Some(Ok(num)) = self.get_value("Disc").map(str::parse::<u32>) {
+		if let Some(Ok(num)) = self.get_value(UniCase::from("Disc")).map(str::parse::<u32>) {
 			return Some(num);
 		}
 
 		None
 	}
 	fn set_total_discs(&mut self, total_discs: u32) {
-		self.set_value("Disc", total_discs.to_string())
+		self.set_value(UniCase::from("Disc"), total_discs.to_string())
 	}
 	fn remove_total_discs(&mut self) {
-		self.remove_key("Disc")
+		self.remove_key(UniCase::from("Disc"))
 	}
 }
 
