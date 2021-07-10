@@ -76,7 +76,7 @@ impl AudioTagEdit for ApeTag {
 	get_set_methods!(lyricist, UniCase::new("Lyricist"));
 	get_set_methods!(composer, UniCase::new("Composer"));
 	get_set_methods!(album_title, UniCase::new("Album"));
-	get_set_methods!(encoder, UniCase::new("Encoder"));
+	get_set_methods!(encoder, UniCase::new("EncoderSettings"));
 
 	// Album artists aren't standard?
 	get_set_methods!(album_artist, UniCase::new("AlbumArtist"));
