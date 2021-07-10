@@ -87,7 +87,7 @@ pub trait AudioTagEdit {
 	/// Removes the front cover
 	fn remove_back_cover(&mut self) {}
 
-	/// Returns an `Iterator` over all pictures stored in the track
+	/// Returns all pictures stored in the track, or `None` if empty
 	fn pictures(&self) -> Option<Cow<'static, [Picture]>> {
 		None
 	}

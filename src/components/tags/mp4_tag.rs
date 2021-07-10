@@ -228,11 +228,7 @@ impl AudioTagEdit for Mp4Tag {
 			}
 		}
 
-		if pictures.is_empty() {
-			None
-		} else {
-			Some(Cow::from(pictures))
-		}
+		(!(pictures.is_empty())).then(|| Cow::from(pictures))
 	}
 	fn set_pictures(&mut self, pictures: Vec<Picture>) {
 		self.remove_pictures();

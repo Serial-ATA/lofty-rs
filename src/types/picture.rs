@@ -306,14 +306,14 @@ impl Picture {
 	pub fn new(
 		pic_type: PictureType,
 		mime_type: MimeType,
-		description: Option<Cow<'static, str>>,
-		data: Cow<'static, [u8]>,
+		description: Option<String>,
+		data: Vec<u8>,
 	) -> Self {
 		Self {
 			pic_type,
 			mime_type,
-			description,
-			data,
+			description: description.map(Cow::from),
+			data: Cow::from(data),
 		}
 	}
 
