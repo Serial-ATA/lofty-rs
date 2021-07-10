@@ -59,6 +59,9 @@ macro_rules! add_tags {
 		println!("Setting composer");
 		tag.set_composer("Serial-ATA1");
 
+		println!("Setting encoder");
+		tag.set_encoder("Lofty");
+
 		println!("Setting album title");
 		tag.set_album_title("foo album title");
 
@@ -147,6 +150,9 @@ macro_rules! verify_write {
 
 		println!("Verifying genre");
 		assert_eq!(tag.genre(), Some("Country"));
+
+		println!("Verifying encoder");
+		assert_eq!(tag.encoder(), Some("Lofty"));
 
 		println!("Verifying album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
@@ -264,6 +270,11 @@ macro_rules! remove_tags {
 		tag.remove_bpm();
 		assert!(tag.bpm().is_none());
 		tag.remove_bpm();
+
+		println!("Removing encoder");
+		tag.remove_encoder();
+		assert!(tag.encoder().is_none());
+		tag.remove_encoder();
 
 		println!("Removing album title");
 		tag.remove_album_title();
