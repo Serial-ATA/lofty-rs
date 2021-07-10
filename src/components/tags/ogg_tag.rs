@@ -192,6 +192,7 @@ impl AudioTagEdit for OggTag {
 	get_set_methods!(composer, "COMPOSER");
 	get_set_methods!(album_title, "ALBUM");
 	get_set_methods!(album_artist, "ALBUMARTIST");
+	get_set_methods!(encoder, "ENCODER");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("DATE").map(std::string::ToString::to_string)

@@ -42,6 +42,8 @@ pub trait AudioTagEdit {
 	str_accessor!(lyricist);
 	str_accessor!(composer);
 
+	str_accessor!(encoder);
+
 	/// Returns the track's [`Album`]
 	fn album(&self) -> Album<'_> {
 		Album {

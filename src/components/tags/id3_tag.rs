@@ -206,6 +206,20 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner.remove("TCOM")
 	}
 
+	fn encoder(&self) -> Option<&str> {
+		if let Some(frame) = self.inner.get("TSSE") {
+			return frame.content().text();
+		}
+
+		None
+	}
+	fn set_encoder(&mut self, encoder: &str) {
+		self.inner.set_text("TSSE", encoder)
+	}
+	fn remove_encoder(&mut self) {
+		self.inner.remove("TSSE")
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}

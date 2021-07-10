@@ -62,6 +62,7 @@ impl AudioTagEdit for RiffTag {
 	get_set_methods!(copyright, "ICOP");
 	get_set_methods!(genre, "IGNR");
 	get_set_methods!(album_title, "IPRD");
+	get_set_methods!(encoder, "ISFT");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("ICRD").map(std::string::ToString::to_string)

@@ -75,6 +75,7 @@ impl AudioTagEdit for ApeTag {
 	get_set_methods!(lyricist, "Lyricist");
 	get_set_methods!(composer, "Composer");
 	get_set_methods!(album_title, "Album");
+	get_set_methods!(encoder, "Encoder");
 
 	// Album artists aren't standard?
 	get_set_methods!(album_artist, "Album artist");

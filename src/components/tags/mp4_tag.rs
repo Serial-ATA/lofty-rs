@@ -135,6 +135,16 @@ impl AudioTagEdit for Mp4Tag {
 		self.inner.remove_lyricists()
 	}
 
+	fn encoder(&self) -> Option<&str> {
+		self.inner.encoder()
+	}
+	fn set_encoder(&mut self, encoder: &str) {
+		self.inner.set_encoder(encoder)
+	}
+	fn remove_encoder(&mut self) {
+		self.inner.remove_encoder()
+	}
+
 	fn album_title(&self) -> Option<&str> {
 		self.inner.album()
 	}
