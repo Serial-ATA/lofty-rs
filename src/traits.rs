@@ -116,6 +116,16 @@ pub trait AudioTagEdit {
 
 	/// Returns the TagType
 	fn tag_type(&self) -> TagType;
+
+	/// Gets a value by its key
+	///
+	/// NOTE: keys are format-specific, it is recommended to use this in
+	/// combination with [`tag_type`][AudioTagEdit::tag_type] if formats are unknown
+	fn get_key(&self, _key: &str) -> Option<&str> { None }
+	/// Remove's a key/value pair
+	///
+	/// See [`get_key`][AudioTagEdit::get_key]'s note
+	fn remove_key(&mut self, _key: &str) {}
 }
 
 /// Functions for writing to a file

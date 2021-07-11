@@ -134,6 +134,13 @@ impl AudioTagEdit for RiffTag {
 	fn tag_type(&self) -> TagType {
 		TagType::RiffInfo
 	}
+
+	fn get_key(&self, key: &str) -> Option<&str> {
+		self.get_value(key)
+	}
+	fn remove_key(&mut self, key: &str) {
+		self.remove_key(key)
+	}
 }
 
 impl AudioTagWrite for RiffTag {

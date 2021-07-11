@@ -171,7 +171,7 @@ impl OggTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
 		self.inner
 			.comments
-			.get_key_value(&UniCase::from(key.to_string()))
+			.get_key_value(&UniCase::new(key.to_string()))
 			.map(|(_, v)| v.as_str())
 	}
 
@@ -181,11 +181,11 @@ impl OggTag {
 	{
 		self.inner
 			.comments
-			.insert(UniCase::from(key.to_string()), val.into());
+			.insert(UniCase::new(key.to_string()), val.into());
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		self.inner.comments.remove(&UniCase::from(key.to_string()));
+		self.inner.comments.remove(&UniCase::new(key.to_string()));
 	}
 }
 
@@ -372,6 +372,13 @@ impl AudioTagEdit for OggTag {
 		// A format is added when the OggTag is created, and it is **never** None.
 		// This is safe to unwrap
 		TagType::Ogg(self.inner.format.clone().unwrap())
+	}
+
+	fn get_key(&self, key: &str) -> Option<&str> {
+		self.get_value(key)
+	}
+	fn remove_key(&mut self, key: &str) {
+		self.remove_key(key)
 	}
 }
 

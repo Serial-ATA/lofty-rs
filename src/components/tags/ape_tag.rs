@@ -282,6 +282,13 @@ impl AudioTagEdit for ApeTag {
 	fn tag_type(&self) -> TagType {
 		TagType::Ape
 	}
+
+	fn get_key(&self, key: &str) -> Option<&str> {
+		self.get_value(UniCase::new(key))
+	}
+	fn remove_key(&mut self, key: &str) {
+		self.remove_key(UniCase::new(key))
+	}
 }
 
 impl AudioTagWrite for ApeTag {

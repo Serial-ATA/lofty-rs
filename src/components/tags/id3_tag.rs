@@ -374,6 +374,17 @@ impl AudioTagEdit for Id3v2Tag {
 		// Shouldn't matter much for ID3 though
 		TagType::Id3v2(Id3Format::Mp3)
 	}
+
+	fn get_key(&self, key: &str) -> Option<&str> {
+		if let Some(frame) = self.inner.get(key) {
+			return frame.content().text()
+		}
+
+		None
+	}
+	fn remove_key(&mut self, key: &str) {
+		self.inner.remove(key)
+	}
 }
 
 impl AudioTagWrite for Id3v2Tag {
