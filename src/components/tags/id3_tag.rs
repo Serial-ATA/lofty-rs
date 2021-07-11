@@ -13,7 +13,7 @@ use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
 use lofty_attr::impl_tag;
 
-#[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Default))]
+#[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Mp3))]
 pub struct Id3v2Tag;
 
 impl Id3v2Tag {
@@ -24,13 +24,13 @@ impl Id3v2Tag {
 		R: Read + Seek,
 	{
 		match format {
-			Id3Format::Default => Ok(Self {
+			Id3Format::Mp3 => Ok(Self {
 				inner: Id3v2InnerTag::read_from(reader)?,
 			}),
 			Id3Format::Riff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
 			}),
-			Id3Format::Form => Ok(Self {
+			Id3Format::Aiff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
 			}),
 		}
@@ -367,6 +367,12 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 	fn remove_total_discs(&mut self) {
 		self.inner.remove_total_discs();
+	}
+
+	fn tag_type(&self) -> TagType {
+		// Unsure how to get the Id3Format back
+		// Shouldn't matter much for ID3 though
+		TagType::Id3v2(Id3Format::Mp3)
 	}
 }
 

@@ -31,6 +31,6 @@ fn test_conversions() {
 	let tag = tag.to_dyn_tag(TagType::Ogg(OggFormat::Vorbis));
 	convert_tag!(tag);
 
-	let tag = tag.to_dyn_tag(TagType::Id3v2(Id3Format::Form));
+	let tag = tag.to_dyn_tag(TagType::Id3v2(Id3Format::Aiff));
 	convert_tag!(tag);
 }

@@ -67,6 +67,10 @@ impl AudioTagEdit for AiffTag {
 	fn remove_copyright(&mut self) {
 		self.inner.copyright_id = None
 	}
+
+	fn tag_type(&self) -> TagType {
+		TagType::AiffText
+	}
 }
 
 impl AudioTagWrite for AiffTag {

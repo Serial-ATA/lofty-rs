@@ -27,6 +27,7 @@ struct OggInnerTag {
 	vendor: String,
 	comments: HashMap<UniCase<String>, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
+	format: Option<OggFormat>,
 }
 
 impl Default for OggInnerTag {
@@ -35,6 +36,7 @@ impl Default for OggInnerTag {
 			vendor: String::new(),
 			comments: HashMap::default(),
 			pictures: None,
+			format: None,
 		}
 	}
 }
@@ -103,6 +105,7 @@ impl TryFrom<OGGTags> for OggTag {
 			vendor,
 			comments,
 			pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
+			format: Some(inp.3),
 		};
 
 		Ok(tag)
@@ -141,6 +144,7 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				vendor: comments.vendor_string.clone(),
 				comments: comment_collection,
 				pictures: Some(Cow::from(pictures)),
+				format: Some(OggFormat::Flac),
 			};
 
 			return Ok(tag);
@@ -362,6 +366,12 @@ impl AudioTagEdit for OggTag {
 	}
 	fn remove_total_discs(&mut self) {
 		self.remove_key("TOTALDISCS");
+	}
+
+	fn tag_type(&self) -> TagType {
+		// A format is added when the OggTag is created, and it is **never** None.
+		// This is safe to unwrap
+		TagType::Ogg(self.inner.format.clone().unwrap())
 	}
 }
 

@@ -113,6 +113,9 @@ pub trait AudioTagEdit {
 
 	u32_accessor!(disc_number);
 	u32_accessor!(total_discs);
+
+	/// Returns the TagType
+	fn tag_type(&self) -> TagType;
 }
 
 /// Functions for writing to a file

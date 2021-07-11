@@ -278,6 +278,10 @@ impl AudioTagEdit for ApeTag {
 	fn remove_total_discs(&mut self) {
 		self.remove_key(UniCase::from("Disc"))
 	}
+
+	fn tag_type(&self) -> TagType {
+		TagType::Ape
+	}
 }
 
 impl AudioTagWrite for ApeTag {

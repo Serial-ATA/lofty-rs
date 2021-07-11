@@ -130,6 +130,10 @@ impl AudioTagEdit for RiffTag {
 	fn remove_total_discs(&mut self) {
 		self.remove_disc_number()
 	}
+
+	fn tag_type(&self) -> TagType {
+		TagType::RiffInfo
+	}
 }
 
 impl AudioTagWrite for RiffTag {

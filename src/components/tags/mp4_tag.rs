@@ -290,6 +290,10 @@ impl AudioTagEdit for Mp4Tag {
 	fn remove_total_discs(&mut self) {
 		self.inner.remove_total_discs();
 	}
+
+	fn tag_type(&self) -> TagType {
+		TagType::Mp4
+	}
 }
 
 impl AudioTagWrite for Mp4Tag {

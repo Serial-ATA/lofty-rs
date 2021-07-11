@@ -17,7 +17,7 @@ fn test_inner() {
 	let tag: OggTag = innertag.try_into().unwrap();
 
 	// Turn the VorbisTag into a Box<dyn AudioTag>
-	let id3tag = tag.to_dyn_tag(TagType::Id3v2(Id3Format::Default));
+	let id3tag = tag.to_dyn_tag(TagType::Id3v2(Id3Format::Mp3));
 
 	// Write Box<dyn AudioTag> to `a.mp3`
 	id3tag

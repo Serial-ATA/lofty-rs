@@ -167,9 +167,9 @@ pub enum OggFormat {
 /// ID3 tag's underlying format
 pub enum Id3Format {
 	/// MP3
-	Default,
+	Mp3,
 	/// AIFF
-	Form,
+	Aiff,
 	/// RIFF/WAV/WAVE
 	Riff,
 }
@@ -180,9 +180,9 @@ impl TagType {
 			#[cfg(feature = "format-ape")]
 			"ape" => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
-			"aiff" | "aif" => Ok(Self::Id3v2(Id3Format::Form)),
+			"aiff" | "aif" => Ok(Self::Id3v2(Id3Format::Aiff)),
 			#[cfg(feature = "format-id3")]
-			"mp3" => Ok(Self::Id3v2(Id3Format::Default)),
+			"mp3" => Ok(Self::Id3v2(Id3Format::Mp3)),
 			#[cfg(all(feature = "format-riff", feature = "format-id3"))]
 			"wav" | "wave" | "riff" => Ok(Self::Id3v2(Id3Format::Riff)),
 			#[cfg(feature = "format-opus")]
@@ -216,7 +216,7 @@ impl TagType {
 			#[cfg(feature = "format-ape")]
 			77 if sig.starts_with(b"MAC") => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
-			73 if sig.starts_with(b"ID3") || sig.starts_with(b"id3") => Ok(Self::Id3v2(Id3Format::Default)),
+			73 if sig.starts_with(b"ID3") || sig.starts_with(b"id3") => Ok(Self::Id3v2(Id3Format::Mp3)),
 			#[cfg(any(feature = "format-id3", feature = "format-aiff"))]
 			70 if sig.starts_with(b"FORM") => {
 				data.seek(SeekFrom::Start(8))?;
@@ -250,7 +250,7 @@ impl TagType {
 						data.seek(SeekFrom::Start(0))?;
 
 						if found_id3 {
-							return Ok(Self::Id3v2(Id3Format::Form));
+							return Ok(Self::Id3v2(Id3Format::Aiff));
 						}
 					}
 
