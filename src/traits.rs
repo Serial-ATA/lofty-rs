@@ -121,7 +121,9 @@ pub trait AudioTagEdit {
 	///
 	/// NOTE: keys are format-specific, it is recommended to use this in
 	/// combination with [`tag_type`][AudioTagEdit::tag_type] if formats are unknown
-	fn get_key(&self, _key: &str) -> Option<&str> { None }
+	fn get_key(&self, _key: &str) -> Option<&str> {
+		None
+	}
 	/// Remove's a key/value pair
 	///
 	/// See [`get_key`][AudioTagEdit::get_key]'s note

@@ -377,7 +377,7 @@ impl AudioTagEdit for Id3v2Tag {
 
 	fn get_key(&self, key: &str) -> Option<&str> {
 		if let Some(frame) = self.inner.get(key) {
-			return frame.content().text()
+			return frame.content().text();
 		}
 
 		None
