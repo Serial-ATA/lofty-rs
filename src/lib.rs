@@ -79,6 +79,7 @@
 //! ```
 //!
 //! # Concrete types
+//! * AiffTag (AIFF Text Chunks)
 //! * ApeTag
 //! * Id3v2Tag
 //! * Mp4Tag
