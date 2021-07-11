@@ -11,7 +11,7 @@ categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
 # Ape
-ape = {path = "../rust-ape", optional = true}
+ape = { git = "https://github.com/Serial-ATA/rust-ape", branch = "temporary", optional = true }
 # Id3
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
