@@ -7,8 +7,8 @@ use crate::components::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
 #[cfg(feature = "format-vorbis")]
 use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, OggFormat, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, OggFormat,
+	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
 #[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
@@ -81,6 +81,7 @@ cfg_if::cfg_if! {
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Opus))]
 			_format: TagType,
 		}
@@ -89,6 +90,7 @@ cfg_if::cfg_if! {
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Vorbis))]
 			_format: TagType,
 		}
@@ -97,6 +99,7 @@ cfg_if::cfg_if! {
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Flac))]
 			_format: TagType,
 		}
@@ -108,21 +111,19 @@ impl TryFrom<OGGTags> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: OGGTags) -> Result<Self> {
-		let mut tag = Self::new();
-
 		let vendor = inp.0;
 		let pictures = inp.1;
 		let comments = inp.2;
 
-		tag._format = TagType::Ogg(inp.3);
-
-		tag.inner = OggInnerTag {
-			vendor,
-			comments,
-			pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
-		};
-
-		Ok(tag)
+		Ok(Self {
+			inner: OggInnerTag {
+				vendor,
+				comments,
+				pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
+			},
+			properties: FileProperties::default(), // TODO
+			_format: TagType::Ogg(inp.3),
+		})
 	}
 }
 
@@ -131,8 +132,6 @@ impl TryFrom<metaflac::Tag> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: metaflac::Tag) -> Result<Self> {
-		let mut tag = Self::new();
-
 		if let Some(comments) = inp.vorbis_comments() {
 			let mut user_comments = comments.comments.clone();
 
@@ -154,15 +153,15 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				}
 			}
 
-			tag._format = TagType::Ogg(OggFormat::Flac);
-
-			tag.inner = OggInnerTag {
-				vendor: comments.vendor_string.clone(),
-				comments: comment_collection,
-				pictures: Some(Cow::from(pictures)),
-			};
-
-			return Ok(tag);
+			return Ok(Self {
+				inner: OggInnerTag {
+					vendor: comments.vendor_string.clone(),
+					comments: comment_collection,
+					pictures: Some(Cow::from(pictures)),
+				},
+				properties: FileProperties::default(), // TODO
+				_format: TagType::Ogg(OggFormat::Flac),
+			})
 		}
 
 		Err(LoftyError::InvalidData(
@@ -180,6 +179,7 @@ impl OggTag {
 	{
 		Ok(Self {
 			inner: OggInnerTag::read_from(reader, &format)?,
+			properties: FileProperties::default(), // TODO
 			_format: TagType::Ogg(format),
 		})
 	}

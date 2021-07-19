@@ -64,6 +64,7 @@ pub fn impl_tag(input: TokenStream) -> TokenStream {
 			pub fn new() -> Self {
 				Self {
 					inner: #inner::default(),
+					properties: FileProperties::default(),
 					_format: #tag_type
 				}
 			}
@@ -100,6 +101,7 @@ pub fn impl_tag(input: TokenStream) -> TokenStream {
 			fn from(inp: #inner) -> Self {
 				Self {
 					inner: inp,
+					properties: FileProperties::default(),
 					_format: #tag_type
 				}
 			}

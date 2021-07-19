@@ -1,7 +1,7 @@
 use crate::tag::Id3Format;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
+	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::Cow;
@@ -17,6 +17,7 @@ use lofty_attr::LoftyTag;
 /// Represents an ID3 tag
 pub struct Id3v2Tag {
 	inner: Id3v2InnerTag,
+	properties: FileProperties,
 	#[expected(TagType::Id3v2(Id3Format::Mp3))]
 	_format: TagType,
 }
@@ -28,20 +29,17 @@ impl Id3v2Tag {
 	where
 		R: Read + Seek,
 	{
-		match format {
-			Id3Format::Mp3 => Ok(Self {
-				inner: Id3v2InnerTag::read_from(reader)?,
-				_format: TagType::Id3v2(format),
-			}),
-			Id3Format::Riff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
-				_format: TagType::Id3v2(format),
-			}),
-			Id3Format::Aiff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
-				_format: TagType::Id3v2(format),
-			}),
-		}
+		let inner = match format {
+			Id3Format::Mp3 => Id3v2InnerTag::read_from(reader)?,
+			Id3Format::Riff => Id3v2InnerTag::read_from_wav_reader(reader)?,
+			Id3Format::Aiff => Id3v2InnerTag::read_from_aiff_reader(reader)?,
+		};
+
+		Ok(Self {
+			inner,
+			properties: FileProperties::default(), // TODO
+			_format: TagType::Id3v2(format),
+		})
 	}
 }
 

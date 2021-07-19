@@ -1,6 +1,7 @@
 use crate::components::logic::aiff;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Result, TagType, ToAny,
+	ToAnyTag,
 };
 
 use std::fs::File;
@@ -19,6 +20,7 @@ struct AiffInnerTag {
 /// Represents Aiff Text Chunks
 pub struct AiffTag {
 	inner: AiffInnerTag,
+	properties: FileProperties,
 	#[expected(TagType::AiffText)]
 	_format: TagType,
 }
@@ -38,6 +40,7 @@ impl AiffTag {
 				author_id,
 				copyright_id,
 			},
+			properties: FileProperties::default(), // TODO
 			_format: TagType::AiffText,
 		})
 	}

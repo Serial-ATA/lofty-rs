@@ -146,7 +146,7 @@ mod error;
 pub use crate::error::{LoftyError, Result};
 
 mod components;
-pub use crate::components::tags::*;
+pub use crate::components::{tags::*, FileProperties};
 
 mod traits;
 pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};
