@@ -42,3 +42,15 @@ jobs:
           override: true
       - run: rustup component add clippy
       - run: cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic
+  style:
+    name: Style
+    runs-on: ubuntu-latest
+    steps:
+      -   uses: actions/checkout@v2
+      -   uses: actions-rs/toolchain@v1
+          with:
+            profile: minimal
+            toolchain: stable
+            override: true
+      -   run: rustup component add clippy
+      -   run: cargo fmt -- --check
