@@ -1,6 +1,6 @@
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
+	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::Cow;
@@ -14,6 +14,7 @@ pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 /// Represents an MPEG-4 tag
 pub struct Mp4Tag {
 	inner: Mp4InnerTag,
+	properties: FileProperties,
 	#[expected(TagType::Mp4)]
 	_format: TagType,
 }
@@ -24,8 +25,22 @@ impl Mp4Tag {
 	where
 		R: Read + Seek,
 	{
+		let inner = Mp4InnerTag::read_from(reader)?;
+
+		// TODO
+		let duration = inner.duration();
+		let bitrate = inner.avg_bitrate();
+		let channels = inner.channel_config().map(|cc| cc.channel_count());
+		let sample_rate = inner.sample_rate().map(|sr| sr.hz());
+
 		Ok(Self {
-			inner: Mp4InnerTag::read_from(reader)?,
+			inner,
+			properties: FileProperties::new(
+				duration.unwrap_or_default(),
+				bitrate,
+				sample_rate,
+				channels,
+			),
 			_format: TagType::Mp4,
 		})
 	}
@@ -302,6 +317,10 @@ impl AudioTagEdit for Mp4Tag {
 
 	fn tag_type(&self) -> TagType {
 		TagType::Mp4
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
 	}
 }
 

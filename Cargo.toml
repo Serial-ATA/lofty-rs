@@ -16,12 +16,10 @@ ape = { git = "https://github.com/Serial-ATA/rust-ape", branch = "temporary", op
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 # Ogg
-ogg_pager = { version = "0.1.6", optional = true }
+ogg_pager = { path = "ogg_pager", optional = true }
 unicase = { version = "2.6.0", optional = true }
 # Mp4
 mp4ameta = {version = "0.11.0", optional = true}
-# Flac
-metaflac = {version = "0.2.4", optional = true}
 # Errors
 thiserror = "1.0.26"
 
@@ -29,12 +27,12 @@ base64 = "0.13.0"
 byteorder = "1.4.3"
 cfg-if = "1.0.0"
 
-lofty_attr = "0.1.8"
+lofty_attr = {path = "lofty-attr"}
 
 [features]
 default = ["all_tags"]
 format-mp4 = ["mp4ameta"]
-format-flac = ["metaflac"]
+format-flac = ["unicase"]
 format-opus = ["ogg_pager", "unicase"]
 format-vorbis = ["ogg_pager", "unicase"]
 format-ape = ["ape"]

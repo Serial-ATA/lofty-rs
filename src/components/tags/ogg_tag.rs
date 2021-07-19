@@ -1,18 +1,13 @@
-#[cfg(feature = "format-flac")]
-use crate::components::logic::flac;
-#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg;
 #[cfg(feature = "format-opus")]
 use crate::components::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
 #[cfg(feature = "format-vorbis")]
 use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
-use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, OggFormat, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
-};
-
-#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg::read::OGGTags;
+use crate::{
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, OggFormat,
+	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
+};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -31,48 +26,13 @@ struct OggInnerTag {
 	pictures: Option<Cow<'static, [Picture]>>,
 }
 
-impl OggInnerTag {
-	fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
-	where
-		R: Read + Seek,
-	{
-		match format {
-			#[cfg(feature = "format-vorbis")]
-			OggFormat::Vorbis => {
-				let tag = ogg::read::read_from(
-					reader,
-					&VORBIS_IDENT_HEAD,
-					&VORBIS_COMMENT_HEAD,
-					OggFormat::Vorbis,
-				)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-			#[cfg(feature = "format-opus")]
-			OggFormat::Opus => {
-				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS, OggFormat::Opus)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-			#[cfg(feature = "format-flac")]
-			OggFormat::Flac => {
-				let tag = metaflac::Tag::read_from(reader)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-		}
-	}
-}
-
 cfg_if::cfg_if! {
 	if #[cfg(feature = "format-opus")] {
 		#[derive(LoftyTag)]
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Opus))]
 			_format: TagType,
 		}
@@ -81,6 +41,7 @@ cfg_if::cfg_if! {
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Vorbis))]
 			_format: TagType,
 		}
@@ -89,6 +50,7 @@ cfg_if::cfg_if! {
 		/// Represents vorbis comments from multiple OGG formats
 		pub struct OggTag {
 			inner: OggInnerTag,
+			properties: FileProperties,
 			#[expected(TagType::Ogg(OggFormat::Flac))]
 			_format: TagType,
 		}
@@ -100,66 +62,19 @@ impl TryFrom<OGGTags> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: OGGTags) -> Result<Self> {
-		let mut tag = Self::new();
-
 		let vendor = inp.0;
 		let pictures = inp.1;
 		let comments = inp.2;
 
-		tag._format = TagType::Ogg(inp.3);
-
-		tag.inner = OggInnerTag {
-			vendor,
-			comments,
-			pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
-		};
-
-		Ok(tag)
-	}
-}
-
-#[cfg(feature = "format-flac")]
-impl TryFrom<metaflac::Tag> for OggTag {
-	type Error = LoftyError;
-
-	fn try_from(inp: metaflac::Tag) -> Result<Self> {
-		let mut tag = Self::new();
-
-		if let Some(comments) = inp.vorbis_comments() {
-			let mut user_comments = comments.comments.clone();
-
-			let mut pictures = Vec::new();
-
-			if let Some(pics) = user_comments.remove("METADATA_BLOCK_PICTURE") {
-				pics.iter().for_each(|item| {
-					if let Ok(pic) = Picture::from_apic_bytes(item.as_bytes()) {
-						pictures.push(pic)
-					}
-				})
-			}
-
-			let mut comment_collection: HashMap<UniCase<String>, String> = HashMap::new();
-
-			for (k, v) in user_comments.clone() {
-				for e in v {
-					comment_collection.insert(UniCase::from(k.clone()), e.clone());
-				}
-			}
-
-			tag._format = TagType::Ogg(OggFormat::Flac);
-
-			tag.inner = OggInnerTag {
-				vendor: comments.vendor_string.clone(),
-				comments: comment_collection,
-				pictures: Some(Cow::from(pictures)),
-			};
-
-			return Ok(tag);
-		}
-
-		Err(LoftyError::InvalidData(
-			"Flac file contains no vorbis comment blocks",
-		))
+		Ok(Self {
+			inner: OggInnerTag {
+				vendor,
+				comments,
+				pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
+			},
+			properties: inp.3,
+			_format: TagType::Ogg(inp.4),
+		})
 	}
 }
 
@@ -169,25 +84,45 @@ impl OggTag {
 	where
 		R: Read + Seek,
 	{
-		Ok(Self {
-			inner: OggInnerTag::read_from(reader, &format)?,
-			_format: TagType::Ogg(format),
-		})
+		let tag: Self = match format {
+			#[cfg(feature = "format-vorbis")]
+			OggFormat::Vorbis => {
+				let tag = ogg::read::read_from(
+					reader,
+					&VORBIS_IDENT_HEAD,
+					&VORBIS_COMMENT_HEAD,
+					OggFormat::Vorbis,
+				)?;
+
+				tag.try_into()?
+			},
+			#[cfg(feature = "format-opus")]
+			OggFormat::Opus => {
+				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS, OggFormat::Opus)?;
+
+				tag.try_into()?
+			},
+			#[cfg(feature = "format-flac")]
+			OggFormat::Flac => {
+				let tag = ogg::flac::read_from(reader)?;
+
+				tag.try_into()?
+			},
+		};
+
+		Ok(tag)
 	}
 
 	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn remove_from(file: &mut File, format: &OggFormat) -> Result<()> {
 		if &OggFormat::Flac == format {
-			let mut tag = metaflac::Tag::read_from(file)?;
-			tag.remove_blocks(metaflac::BlockType::VorbisComment);
-			tag.write_to(file)?;
-
+			// TODO
 			return Ok(());
 		}
 
 		// Skip identification page
-		ogg_pager::Page::read(file)?;
-		let reader = &mut &ogg_pager::Page::read(file)?.content[..];
+		ogg_pager::Page::read(file, true)?;
+		let reader = &mut &ogg_pager::Page::read(file, false)?.content[..];
 
 		let sig = if format == &OggFormat::Opus {
 			&OPUSTAGS[..]
@@ -424,6 +359,10 @@ impl AudioTagEdit for OggTag {
 	fn remove_key(&mut self, key: &str) {
 		self.remove_key(key)
 	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 impl AudioTagWrite for OggTag {
@@ -434,7 +373,7 @@ impl AudioTagWrite for OggTag {
 
 		#[cfg(feature = "format-flac")]
 		if &sig == b"fLaC" {
-			return flac::write_to(
+			return ogg::flac::write_to(
 				file,
 				&self.inner.vendor,
 				&self.inner.comments,
@@ -444,7 +383,7 @@ impl AudioTagWrite for OggTag {
 
 		#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 		{
-			let p = ogg_pager::Page::read(file)?;
+			let p = ogg_pager::Page::read(file, false)?;
 			file.seek(SeekFrom::Start(0))?;
 
 			#[cfg(feature = "format-opus")]

@@ -1,25 +1,32 @@
+use crate::{LoftyError, Result};
+
 use std::io::{Read, Seek};
 
 use ogg_pager::Page;
 
-use crate::{LoftyError, Result};
-
 pub(crate) mod constants;
 pub(crate) mod read;
 pub(crate) mod write;
+
+#[cfg(feature = "format-flac")]
+pub(crate) mod flac;
+#[cfg(feature = "format-opus")]
+mod opus;
+#[cfg(feature = "format-vorbis")]
+mod vorbis;
 
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 
 	let reader = &mut &packet[..];
 
-	let mut start = 0_usize;
+	let mut start = 0_u64;
 	let mut i = 0;
 
 	while !reader.is_empty() {
 		let header_type = if i == 0 { 0 } else { 1_u8 };
 
-		let size = std::cmp::min(65025, reader.len());
+		let size = std::cmp::min(65025_u64, reader.len() as u64);
 
 		if i != 0 {
 			if let Some(s) = start.checked_add(size) {
@@ -29,7 +36,7 @@ pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 			}
 		}
 
-		let mut content = vec![0; size];
+		let mut content = vec![0; size as usize];
 		reader.read_exact(&mut content)?;
 
 		let end = start + size;
@@ -51,39 +58,25 @@ pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 	Ok(pages)
 }
 
-pub(self) fn reach_metadata<T>(mut data: T, sig: &[u8]) -> Result<()>
-where
-	T: Read + Seek,
-{
-	let first_page = Page::read(&mut data)?;
+pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
+	let sig_len = sig.len();
 
-	let head = first_page.content;
-	let (ident, head) = head.split_at(sig.len());
-
-	if ident != sig {
-		return Err(LoftyError::InvalidData("OGG file missing magic signature"));
-	}
-
-	if head[10] != 0 {
-		let mut channel_mapping_info = [0; 1];
-		data.read_exact(&mut channel_mapping_info)?;
-
-		let mut channel_mapping = vec![0; channel_mapping_info[0] as usize];
-		data.read_exact(&mut channel_mapping)?;
+	if page.content.len() < sig_len || &page.content[..sig_len] != sig {
+		return Err(LoftyError::Ogg("File missing magic signature"));
 	}
 
 	Ok(())
 }
 
-// Verify the 2nd page contains the comment header
-pub(self) fn is_metadata(page: &Page, sig: &[u8]) -> Result<()> {
-	let sig_len = sig.len();
+pub(self) fn find_last_page<R>(data: &mut R) -> Result<Page>
+where
+	R: Read + Seek,
+{
+	let mut last_page = Page::read(data, true)?;
 
-	if page.content.len() < sig_len || &page.content[0..sig_len] != sig {
-		return Err(LoftyError::InvalidData(
-			"OGG file missing the mandatory comment header",
-		));
+	while let Ok(page) = Page::read(data, true) {
+		last_page = page
 	}
 
-	Ok(())
+	Ok(last_page)
 }

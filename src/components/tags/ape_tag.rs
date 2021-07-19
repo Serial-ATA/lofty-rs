@@ -1,6 +1,7 @@
 use crate::types::picture::{PicType, APE_PICTYPES};
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Picture, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Picture, Result, TagType,
+	ToAny, ToAnyTag,
 };
 
 use std::borrow::Cow;
@@ -15,6 +16,7 @@ use lofty_attr::{get_set_methods, LoftyTag};
 /// Represents an APEv2 tag
 pub struct ApeTag {
 	inner: ApeInnerTag,
+	properties: FileProperties,
 	#[expected(TagType::Ape)]
 	_format: TagType,
 }
@@ -27,6 +29,7 @@ impl ApeTag {
 	{
 		Ok(Self {
 			inner: ape::read_from(reader).unwrap_or_else(|_| ape::Tag::new()),
+			properties: FileProperties::default(), // TODO
 			_format: TagType::Ape,
 		})
 	}
@@ -295,6 +298,10 @@ impl AudioTagEdit for ApeTag {
 	}
 	fn remove_key(&mut self, key: &str) {
 		self.remove_key(key)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
 	}
 }
 

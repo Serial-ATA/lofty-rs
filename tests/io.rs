@@ -1,5 +1,7 @@
 #![cfg(feature = "default")]
+
 use lofty::{MimeType, Picture, PictureType, Tag};
+
 use std::borrow::Cow;
 
 macro_rules! full_test {
