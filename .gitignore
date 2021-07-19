@@ -8,5 +8,7 @@
 # Project configuration
 **/.idea/
 
+**/Cargo.lock
+
 # Test assets
 /tests/assets/
