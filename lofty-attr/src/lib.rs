@@ -1,184 +1,200 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse_macro_input, AttributeArgs, Error, ItemStruct, Meta, NestedMeta};
+use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Meta};
 
-#[proc_macro_attribute]
+#[proc_macro_derive(LoftyTag, attributes(expected))]
 #[allow(clippy::too_many_lines)]
-pub fn impl_tag(args: TokenStream, input: TokenStream) -> TokenStream {
-	let input = parse_macro_input!(input as ItemStruct);
-	let args = parse_macro_input!(args as AttributeArgs);
+pub fn impl_tag(input: TokenStream) -> TokenStream {
+	let input = parse_macro_input!(input as DeriveInput);
+	let name = input.ident;
 
-	if args.len() != 2 {
-		return Error::new(
-			input.ident.span(),
-			"impl_tag requires an inner tag and TagType",
-		)
-		.to_compile_error()
-		.into();
-	}
+	let data = match input.data {
+		Data::Struct(data) => data,
+		_ => {
+			return Error::new(name.span(), "LoftyTag is only applicable to structs")
+				.into_compile_error()
+				.into()
+		},
+	};
 
-	if let (NestedMeta::Meta(Meta::Path(inner)), NestedMeta::Meta(tag_type)) =
-		(args[0].clone(), args[1].clone())
-	{
-		if let Some(inner) = inner.get_ident() {
-			let input_ident = input.ident;
+	let fields = match data.fields {
+		Fields::Named(fields) => fields.named,
+		_ => {
+			return Error::new(name.span(), format!("`{}` has no named fields", name))
+				.into_compile_error()
+				.into()
+		},
+	};
 
-			let expanded = quote! {
-				#[doc(hidden)]
-				pub struct #input_ident {
-					inner: #inner,
-				}
+	let inner_ident = "inner".to_string();
+	let format_ident = "_format".to_string();
 
-				impl Default for #input_ident {
-					fn default() -> Self {
-						Self {
-							inner: #inner::default(),
-						}
-					}
-				}
+	let mut inner_ty = None;
+	let mut tag_type = None;
 
-				impl #input_ident {
-					/// Creates a new default tag
-					pub fn new() -> Self {
-						Self::default()
-					}
-				}
+	for field in fields.iter() {
+		let ident = field.ident.as_ref().unwrap().to_string();
 
-				use std::any::Any;
+		if ident == inner_ident {
+			inner_ty = Some(field.ty.clone())
+		}
 
-				impl ToAnyTag for #input_ident {
-					fn to_anytag(&self) -> AnyTag<'_> {
-						self.into()
-					}
-				}
+		if ident == format_ident {
+			let expected_attr = field
+				.attrs
+				.iter()
+				.find(|a| a.path.is_ident("expected"))
+				.expect(&*format!(
+					"`{}`'s `_format` field has no `expected` attribute",
+					name
+				));
 
-				impl ToAny for #input_ident {
-					fn to_any(&self) -> &dyn Any {
-						self
-					}
-					fn to_any_mut(&mut self) -> &mut dyn Any {
-						self
-					}
-				}
-
-				impl AudioTag for #input_ident {}
-
-				// From wrapper to inner (same type)
-				impl From<#input_ident> for #inner {
-					fn from(inp: #input_ident) -> Self {
-						inp.inner
-					}
-				}
-
-				// From inner to wrapper (same type)
-				impl From<#inner> for #input_ident {
-					fn from(inp: #inner) -> Self {
-						Self {
-							inner: inp,
-							#[cfg(feature = "duration")]
-							duration: None,
-						}
-					}
-				}
-
-				impl<'a> From<&'a #input_ident> for AnyTag<'a> {
-					fn from(inp: &'a #input_ident) -> Self {
-						Self {
-							title: inp.title(),
-							artist: inp.artist(),
-							year: inp.year().map(|y| y as i32),
-							album: Album::new(
-								inp.album_title(),
-								inp.album_artist(),
-								inp.album_covers(),
-							),
-							track_number: inp.track_number(),
-							total_tracks: inp.total_tracks(),
-							disc_number: inp.disc_number(),
-							total_discs: inp.total_discs(),
-							comments: None, // TODO
-							date: inp.date(),
-						}
-					}
-				}
-
-				impl<'a> From<AnyTag<'a>> for #input_ident {
-					fn from(inp: AnyTag<'a>) -> Self {
-						let mut tag = #input_ident::default();
-
-						if let Some(v) = inp.title() {
-							tag.set_title(v)
-						}
-						if let Some(v) = inp.artist() {
-							tag.set_artist(&v)
-						}
-						if let Some(v) = inp.year {
-							tag.set_year(v)
-						}
-						if let Some(v) = inp.track_number() {
-							tag.set_track_number(v)
-						}
-						if let Some(v) = inp.total_tracks() {
-							tag.set_total_tracks(v)
-						}
-						if let Some(v) = inp.disc_number() {
-							tag.set_disc_number(v)
-						}
-						if let Some(v) = inp.total_discs() {
-							tag.set_total_discs(v)
-						}
-
-						let album = inp.album();
-
-						if let Some(v) = album.title {
-							tag.set_album_title(v)
-						}
-						if let Some(v) = album.artist {
-							tag.set_album_artist(v)
-						}
-						if let Some(v) = album.covers.0 {
-							tag.set_front_cover(v)
-						}
-						if let Some(v) = album.covers.1 {
-							tag.set_back_cover(v)
-						}
-
-						tag
-					}
-				}
-
-				// From dyn AudioTag to wrapper (any type)
-				impl From<Box<dyn AudioTag>> for #input_ident {
-					fn from(inp: Box<dyn AudioTag>) -> Self {
-						let mut inp = inp;
-						if let Some(t_refmut) = inp.to_any_mut().downcast_mut::<#input_ident>() {
-							let t = std::mem::replace(t_refmut, #input_ident::new()); // TODO: can we avoid creating the dummy tag?
-							t
-						} else {
-							let mut t = inp.to_dyn_tag(#tag_type);
-							let t_refmut = t.to_any_mut().downcast_mut::<#input_ident>().unwrap();
-							let t = std::mem::replace(t_refmut, #input_ident::new());
-							t
-						}
-					}
-				}
-
-				// From dyn AudioTag to inner (any type)
-				impl From<Box<dyn AudioTag>> for #inner {
-					fn from(inp: Box<dyn AudioTag>) -> Self {
-						let t: #input_ident = inp.into();
-						t.into()
-					}
-				}
-			};
-
-			return TokenStream::from(expanded);
+			if let Ok(Meta::List(list)) = expected_attr.parse_meta() {
+				tag_type = Some(list.nested)
+			}
 		}
 	}
 
-	Error::new(input.ident.span(), "impl_tag provided invalid arguments")
-		.to_compile_error()
-		.into()
+	let inner = inner_ty.expect(&*format!("`{}` has no `inner` field", name));
+	let tag_type = tag_type.expect(&*format!("`{}` has no `_format` field", name));
+
+	TokenStream::from(quote! {
+		impl #name {
+			/// Creates a new default tag
+			pub fn new() -> Self {
+				Self {
+					inner: #inner::default(),
+					_format: #tag_type
+				}
+			}
+		}
+
+		use std::any::Any;
+
+		impl ToAnyTag for #name {
+			fn to_anytag(&self) -> AnyTag<'_> {
+				self.into()
+			}
+		}
+
+		impl ToAny for #name {
+			fn to_any(&self) -> &dyn Any {
+				self
+			}
+			fn to_any_mut(&mut self) -> &mut dyn Any {
+				self
+			}
+		}
+
+		impl AudioTag for #name {}
+
+		// From wrapper to inner (same type)
+		impl From<#name> for #inner {
+			fn from(inp: #name) -> Self {
+				inp.inner
+			}
+		}
+
+		// From inner to wrapper (same type)
+		impl From<#inner> for #name {
+			fn from(inp: #inner) -> Self {
+				Self {
+					inner: inp,
+					_format: #tag_type
+				}
+			}
+		}
+
+		impl<'a> From<&'a #name> for AnyTag<'a> {
+			fn from(inp: &'a #name) -> Self {
+				Self {
+					title: inp.title(),
+					artist: inp.artist(),
+					year: inp.year().map(|y| y as i32),
+					album: Album::new(
+						inp.album_title(),
+						inp.album_artist(),
+						inp.album_covers(),
+					),
+					track_number: inp.track_number(),
+					total_tracks: inp.total_tracks(),
+					disc_number: inp.disc_number(),
+					total_discs: inp.total_discs(),
+					comments: None, // TODO
+					date: inp.date(),
+				}
+			}
+		}
+
+		impl<'a> From<AnyTag<'a>> for #name {
+			fn from(inp: AnyTag<'a>) -> Self {
+				let mut tag = #name::new();
+
+				if let Some(v) = inp.title() {
+					tag.set_title(v)
+				}
+				if let Some(v) = inp.artist() {
+					tag.set_artist(&v)
+				}
+				if let Some(v) = inp.year {
+					tag.set_year(v)
+				}
+				if let Some(v) = inp.track_number() {
+					tag.set_track_number(v)
+				}
+				if let Some(v) = inp.total_tracks() {
+					tag.set_total_tracks(v)
+				}
+				if let Some(v) = inp.disc_number() {
+					tag.set_disc_number(v)
+				}
+				if let Some(v) = inp.total_discs() {
+					tag.set_total_discs(v)
+				}
+
+				let album = inp.album();
+
+				if let Some(v) = album.title {
+					tag.set_album_title(v)
+				}
+				if let Some(v) = album.artist {
+					tag.set_album_artist(v)
+				}
+				if let Some(v) = album.covers.0 {
+					tag.set_front_cover(v)
+				}
+				if let Some(v) = album.covers.1 {
+					tag.set_back_cover(v)
+				}
+
+				tag
+			}
+		}
+
+		// From dyn AudioTag to wrapper (any type)
+		impl From<Box<dyn AudioTag>> for #name {
+			fn from(inp: Box<dyn AudioTag>) -> Self {
+				let mut inp = inp;
+				if let Some(t_refmut) = inp.to_any_mut().downcast_mut::<#name>() {
+					let t = std::mem::replace(t_refmut, #name::new()); // TODO: can we avoid creating the dummy tag?
+					t
+				} else {
+					let mut t = inp.to_dyn_tag(#tag_type);
+					let t_refmut = t.to_any_mut().downcast_mut::<#name>().unwrap();
+					let t = std::mem::replace(t_refmut, #name::new());
+					t
+				}
+			}
+		}
+
+		// From dyn AudioTag to inner (any type)
+		impl From<Box<dyn AudioTag>> for #inner {
+			fn from(inp: Box<dyn AudioTag>) -> Self {
+				let t: #name = inp.into();
+				t.into()
+			}
+		}
+	})
 }
 
 #[proc_macro]

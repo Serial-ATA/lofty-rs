@@ -1,6 +1,6 @@
 [package]
 name = "lofty_attr"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "Macros for Lofty tag struct creation"
 license = "MIT OR Apache-2.0"
@@ -12,7 +12,7 @@ quote = "1.0.9"
 
 [dependencies.syn]
 version = "1.0.72"
-features = ["full"]
+features = ["derive"]
 
 [lib]
 proc-macro = true
