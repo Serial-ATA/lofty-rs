@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek};
 
-use lofty_attr::{get_set_methods, impl_tag};
+use lofty_attr::{get_set_methods, LoftyTag};
 
 struct RiffInnerTag {
 	data: HashMap<String, String>,
@@ -21,8 +21,13 @@ impl Default for RiffInnerTag {
 	}
 }
 
-#[impl_tag(RiffInnerTag, TagType::RiffInfo)]
-pub struct RiffTag;
+#[derive(LoftyTag)]
+/// Represents a RIFF INFO LIST
+pub struct RiffTag {
+	inner: RiffInnerTag,
+	#[expected(TagType::RiffInfo)]
+	_format: TagType,
+}
 
 impl RiffTag {
 	#[allow(missing_docs)]
@@ -35,6 +40,7 @@ impl RiffTag {
 			inner: RiffInnerTag {
 				data: riff::read_from(reader)?,
 			},
+			_format: TagType::RiffInfo,
 		})
 	}
 }

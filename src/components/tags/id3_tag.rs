@@ -11,27 +11,35 @@ use std::io::{Read, Seek, SeekFrom};
 
 use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
-use lofty_attr::impl_tag;
+use lofty_attr::LoftyTag;
 
-#[impl_tag(Id3v2InnerTag, TagType::Id3v2(Id3Format::Mp3))]
-pub struct Id3v2Tag;
+#[derive(LoftyTag)]
+/// Represents an ID3 tag
+pub struct Id3v2Tag {
+	inner: Id3v2InnerTag,
+	#[expected(TagType::Id3v2(Id3Format::Mp3))]
+	_format: TagType,
+}
 
 impl Id3v2Tag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from<R>(reader: &mut R, format: &Id3Format) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R, format: Id3Format) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
 		match format {
 			Id3Format::Mp3 => Ok(Self {
 				inner: Id3v2InnerTag::read_from(reader)?,
+				_format: TagType::Id3v2(format),
 			}),
 			Id3Format::Riff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
+				_format: TagType::Id3v2(format),
 			}),
 			Id3Format::Aiff => Ok(Self {
 				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
+				_format: TagType::Id3v2(format),
 			}),
 		}
 	}
@@ -370,9 +378,7 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 
 	fn tag_type(&self) -> TagType {
-		// Unsure how to get the Id3Format back
-		// Shouldn't matter much for ID3 though
-		TagType::Id3v2(Id3Format::Mp3)
+		self._format.clone()
 	}
 
 	fn get_key(&self, key: &str) -> Option<&str> {

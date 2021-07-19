@@ -6,7 +6,7 @@ use crate::{
 use std::fs::File;
 use std::io::{Read, Seek};
 
-use lofty_attr::impl_tag;
+use lofty_attr::LoftyTag;
 
 #[derive(Default)]
 struct AiffInnerTag {
@@ -15,8 +15,13 @@ struct AiffInnerTag {
 	copyright_id: Option<String>,
 }
 
-#[impl_tag(AiffInnerTag, TagType::AiffText)]
-pub struct AiffTag;
+#[derive(LoftyTag)]
+/// Represents Aiff Text Chunks
+pub struct AiffTag {
+	inner: AiffInnerTag,
+	#[expected(TagType::AiffText)]
+	_format: TagType,
+}
 
 impl AiffTag {
 	#[allow(missing_docs)]
@@ -33,6 +38,7 @@ impl AiffTag {
 				author_id,
 				copyright_id,
 			},
+			_format: TagType::AiffText,
 		})
 	}
 }

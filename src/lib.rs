@@ -120,7 +120,8 @@
 	clippy::doc_markdown,
 	clippy::let_underscore_drop,
 	clippy::match_wildcard_for_single_variants,
-	clippy::semicolon_if_nothing_returned
+	clippy::semicolon_if_nothing_returned,
+	clippy::used_underscore_binding
 )]
 
 mod types;

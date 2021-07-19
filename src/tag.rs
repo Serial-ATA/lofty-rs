@@ -97,7 +97,7 @@ impl Tag {
 			#[cfg(feature = "format-ape")]
 			TagType::Ape => Ok(Box::new(ApeTag::read_from(reader)?)),
 			#[cfg(feature = "format-id3")]
-			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from(reader, &format)?)),
+			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from(reader, format)?)),
 			#[cfg(feature = "format-mp4")]
 			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from(reader)?)),
 			#[cfg(feature = "format-riff")]
@@ -107,7 +107,7 @@ impl Tag {
 				feature = "format-flac",
 				feature = "format-opus"
 			))]
-			TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, &format)?)),
+			TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
 			#[cfg(feature = "format-aiff")]
 			TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
 		}

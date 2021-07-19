@@ -20,14 +20,13 @@ use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
-use lofty_attr::{get_set_methods, impl_tag};
+use lofty_attr::{get_set_methods, LoftyTag};
 use unicase::UniCase;
 
 struct OggInnerTag {
 	vendor: String,
 	comments: HashMap<UniCase<String>, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
-	format: Option<OggFormat>,
 }
 
 impl Default for OggInnerTag {
@@ -36,7 +35,6 @@ impl Default for OggInnerTag {
 			vendor: String::new(),
 			comments: HashMap::default(),
 			pictures: None,
-			format: None,
 		}
 	}
 }
@@ -79,14 +77,29 @@ impl OggInnerTag {
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "format-opus")] {
-		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Opus))]
-		pub struct OggTag;
+		#[derive(LoftyTag)]
+		/// Represents vorbis comments from multiple OGG formats
+		pub struct OggTag {
+			inner: OggInnerTag,
+			#[expected(TagType::Ogg(OggFormat::Opus))]
+			_format: TagType,
+		}
 	} else if #[cfg(feature = "format-vorbis")] {
-		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Vorbis))]
-		pub struct OggTag;
+		#[derive(LoftyTag)]
+		/// Represents vorbis comments from multiple OGG formats
+		pub struct OggTag {
+			inner: OggInnerTag,
+			#[expected(TagType::Ogg(OggFormat::Vorbis))]
+			_format: TagType,
+		}
 	} else {
-		#[impl_tag(OggInnerTag, TagType::Ogg(OggFormat::Flac))]
-		pub struct OggTag;
+		#[derive(LoftyTag)]
+		/// Represents vorbis comments from multiple OGG formats
+		pub struct OggTag {
+			inner: OggInnerTag,
+			#[expected(TagType::Ogg(OggFormat::Flac))]
+			_format: TagType,
+		}
 	}
 }
 
@@ -95,17 +108,18 @@ impl TryFrom<OGGTags> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: OGGTags) -> Result<Self> {
-		let mut tag = Self::default();
+		let mut tag = Self::new();
 
 		let vendor = inp.0;
 		let pictures = inp.1;
 		let comments = inp.2;
 
+		tag._format = TagType::Ogg(inp.3);
+
 		tag.inner = OggInnerTag {
 			vendor,
 			comments,
 			pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
-			format: Some(inp.3),
 		};
 
 		Ok(tag)
@@ -117,7 +131,7 @@ impl TryFrom<metaflac::Tag> for OggTag {
 	type Error = LoftyError;
 
 	fn try_from(inp: metaflac::Tag) -> Result<Self> {
-		let mut tag = Self::default();
+		let mut tag = Self::new();
 
 		if let Some(comments) = inp.vorbis_comments() {
 			let mut user_comments = comments.comments.clone();
@@ -140,11 +154,12 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				}
 			}
 
+			tag._format = TagType::Ogg(OggFormat::Flac);
+
 			tag.inner = OggInnerTag {
 				vendor: comments.vendor_string.clone(),
 				comments: comment_collection,
 				pictures: Some(Cow::from(pictures)),
-				format: Some(OggFormat::Flac),
 			};
 
 			return Ok(tag);
@@ -159,12 +174,13 @@ impl TryFrom<metaflac::Tag> for OggTag {
 impl OggTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
-	pub fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R, format: OggFormat) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: OggInnerTag::read_from(reader, format)?,
+			inner: OggInnerTag::read_from(reader, &format)?,
+			_format: TagType::Ogg(format),
 		})
 	}
 
@@ -369,9 +385,7 @@ impl AudioTagEdit for OggTag {
 	}
 
 	fn tag_type(&self) -> TagType {
-		// A format is added when the OggTag is created, and it is **never** None.
-		// This is safe to unwrap
-		TagType::Ogg(self.inner.format.clone().unwrap())
+		self._format.clone()
 	}
 
 	fn get_key(&self, key: &str) -> Option<&str> {

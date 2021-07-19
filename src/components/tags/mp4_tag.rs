@@ -7,11 +7,16 @@ use std::borrow::Cow;
 use std::fs::File;
 use std::io::{Read, Seek};
 
-use lofty_attr::impl_tag;
+use lofty_attr::LoftyTag;
 pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
-#[impl_tag(Mp4InnerTag, TagType::Mp4)]
-pub struct Mp4Tag {}
+#[derive(LoftyTag)]
+/// Represents an MPEG-4 tag
+pub struct Mp4Tag {
+	inner: Mp4InnerTag,
+	#[expected(TagType::Mp4)]
+	_format: TagType,
+}
 
 impl Mp4Tag {
 	#[allow(missing_docs)]
@@ -22,6 +27,7 @@ impl Mp4Tag {
 	{
 		Ok(Self {
 			inner: Mp4InnerTag::read_from(reader)?,
+			_format: TagType::Mp4,
 		})
 	}
 }

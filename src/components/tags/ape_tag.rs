@@ -9,10 +9,15 @@ use std::io::{Read, Seek};
 
 use ape::Item;
 pub use ape::Tag as ApeInnerTag;
-use lofty_attr::{get_set_methods, impl_tag};
+use lofty_attr::{get_set_methods, LoftyTag};
 
-#[impl_tag(ApeInnerTag, TagType::Ape)]
-pub struct ApeTag;
+#[derive(LoftyTag)]
+/// Represents an APEv2 tag
+pub struct ApeTag {
+	inner: ApeInnerTag,
+	#[expected(TagType::Ape)]
+	_format: TagType,
+}
 
 impl ApeTag {
 	#[allow(missing_docs)]
@@ -23,6 +28,7 @@ impl ApeTag {
 	{
 		Ok(Self {
 			inner: ape::read_from(reader)?,
+			_format: TagType::Ape,
 		})
 	}
 }
