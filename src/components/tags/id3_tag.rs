@@ -30,15 +30,15 @@ impl Id3v2Tag {
 	{
 		match format {
 			Id3Format::Mp3 => Ok(Self {
-				inner: Id3v2InnerTag::read_from(reader)?,
+				inner: Id3v2InnerTag::read_from(reader).unwrap_or_else(|| Id3v2InnerTag::new()),
 				_format: TagType::Id3v2(format),
 			}),
 			Id3Format::Riff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_wav_reader(reader)?,
+				inner: Id3v2InnerTag::read_from_wav_reader(reader).unwrap_or_else(|| Id3v2InnerTag::new()),
 				_format: TagType::Id3v2(format),
 			}),
 			Id3Format::Aiff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_aiff_reader(reader)?,
+				inner: Id3v2InnerTag::read_from_aiff_reader(reader).unwrap_or_else(|| Id3v2InnerTag::new()),
 				_format: TagType::Id3v2(format),
 			}),
 		}

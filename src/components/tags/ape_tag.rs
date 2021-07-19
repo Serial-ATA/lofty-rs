@@ -27,7 +27,7 @@ impl ApeTag {
 		R: Read + Seek,
 	{
 		Ok(Self {
-			inner: ape::read_from(reader)?,
+			inner: ape::read_from(reader).unwrap_or_else(|| ape::Tag::new()),
 			_format: TagType::Ape,
 		})
 	}
