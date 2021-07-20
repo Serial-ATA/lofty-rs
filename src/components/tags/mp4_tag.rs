@@ -19,8 +19,7 @@ pub struct Mp4Tag {
 }
 
 impl Mp4Tag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -29,6 +28,11 @@ impl Mp4Tag {
 			inner: Mp4InnerTag::read_from(reader)?,
 			_format: TagType::Mp4,
 		})
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File) -> Result<()> {
+		Ok(()) // TODO
 	}
 }
 

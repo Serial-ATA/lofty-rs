@@ -22,8 +22,7 @@ pub struct Id3v2Tag {
 }
 
 impl Id3v2Tag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R, format: Id3Format) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -44,6 +43,12 @@ impl Id3v2Tag {
 				_format: TagType::Id3v2(format),
 			}),
 		}
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File) -> Result<()> {
+		Id3v2InnerTag::remove_from(file)?;
+		Ok(())
 	}
 }
 

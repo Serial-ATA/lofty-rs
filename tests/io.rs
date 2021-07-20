@@ -11,8 +11,10 @@ macro_rules! full_test {
 			add_tags!($file);
 			println!("-- Verifying tags --");
 			verify_write!($file);
-			println!("-- Removing tags --");
-			remove_tags!($file);
+			println!("-- Emptying tag --");
+			empty_tag!($file);
+			println!("-- Removing tag --");
+			remove_tag!($file);
 		}
 	};
 }
@@ -216,7 +218,7 @@ macro_rules! verify_write {
 	};
 }
 
-macro_rules! remove_tags {
+macro_rules! empty_tag {
 	($file:expr) => {
 		println!("Reading file");
 		let mut tag = Tag::default().read_from_path_signature($file).unwrap();
@@ -293,6 +295,12 @@ macro_rules! remove_tags {
 
 		println!("Writing");
 		tag.write_to_path($file).unwrap();
+	};
+}
+
+macro_rules! remove_tag {
+	($file:expr) => {
+		Tag::new().remove_from_path($file).unwrap();
 	};
 }
 

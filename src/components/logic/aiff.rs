@@ -47,10 +47,6 @@ where
 		}
 	}
 
-	if (&None, &None, &None) == (&name_id, &author_id, &copyright_id) {
-		return Err(LoftyError::InvalidData("AIFF file contains no text chunks"));
-	}
-
 	Ok((name_id, author_id, copyright_id))
 }
 
@@ -123,7 +119,7 @@ pub(crate) fn write_to(
 			let mut size = [0; 4];
 			data.read_exact(&mut size)?;
 
-			let comm_end = (20 + u32::from_le_bytes(size)) as usize;
+			let comm_end = (20 + u32::from_be_bytes(size)) as usize;
 			file_bytes.splice(comm_end..comm_end, text_chunks);
 		},
 		(Some(single_value), None, None)

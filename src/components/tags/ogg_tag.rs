@@ -20,23 +20,15 @@ use std::convert::{TryFrom, TryInto};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
+use byteorder::{LittleEndian, ReadBytesExt};
 use lofty_attr::{get_set_methods, LoftyTag};
 use unicase::UniCase;
 
+#[derive(Default)]
 struct OggInnerTag {
 	vendor: String,
 	comments: HashMap<UniCase<String>, String>,
 	pictures: Option<Cow<'static, [Picture]>>,
-}
-
-impl Default for OggInnerTag {
-	fn default() -> Self {
-		Self {
-			vendor: String::new(),
-			comments: HashMap::default(),
-			pictures: None,
-		}
-	}
 }
 
 impl OggInnerTag {
@@ -172,8 +164,7 @@ impl TryFrom<metaflac::Tag> for OggTag {
 }
 
 impl OggTag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R, format: OggFormat) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -182,6 +173,45 @@ impl OggTag {
 			inner: OggInnerTag::read_from(reader, &format)?,
 			_format: TagType::Ogg(format),
 		})
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File, format: &OggFormat) -> Result<()> {
+		if &OggFormat::Flac == format {
+			let mut tag = metaflac::Tag::read_from(file)?;
+			tag.remove_blocks(metaflac::BlockType::VorbisComment);
+			tag.write_to(file)?;
+
+			return Ok(());
+		}
+
+		// Skip identification page
+		ogg_pager::Page::read(file)?;
+		let reader = &mut &ogg_pager::Page::read(file)?.content[..];
+
+		let sig = if format == &OggFormat::Opus {
+			&OPUSTAGS[..]
+		} else {
+			&VORBIS_COMMENT_HEAD[..]
+		};
+
+		let reader = &mut &reader[sig.len()..];
+
+		let vendor_len = reader.read_u32::<LittleEndian>()?;
+		let mut vendor = vec![0; vendor_len as usize];
+		reader.read_exact(&mut vendor)?;
+
+		file.seek(SeekFrom::Start(0))?;
+
+		ogg::write::create_pages(
+			file,
+			sig,
+			&*String::from_utf8(vendor)?,
+			&HashMap::new(),
+			&None,
+		)?;
+
+		Ok(())
 	}
 
 	fn get_value(&self, key: &str) -> Option<&str> {

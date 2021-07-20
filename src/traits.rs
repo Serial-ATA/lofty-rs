@@ -144,7 +144,8 @@ pub trait AudioTagWrite {
 	///
 	/// Will return `Err` if `path` doesn't exist
 	fn write_to_path(&self, path: &str) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)?;
+		let mut file = OpenOptions::new().read(true).write(true).open(path)?;
+		self.write_to(&mut file)?;
 
 		Ok(())
 	}

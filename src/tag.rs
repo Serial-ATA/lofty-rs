@@ -2,6 +2,9 @@
 use crate::components::tags::*;
 use crate::{AudioTag, LoftyError, Result};
 
+use byteorder::ReadBytesExt;
+use std::convert::TryInto;
+use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
@@ -49,7 +52,7 @@ impl Tag {
 			TagType::try_from_ext(extension_str)?
 		});
 
-		Self::match_tag(&mut c, tag_type)
+		_read_from(&mut c, tag_type)
 	}
 
 	/// Attempts to get the tag format based on the file signature
@@ -67,10 +70,9 @@ impl Tag {
 	/// In the event that a riff file contains both an ID3 tag *and* a RIFF INFO chunk, the ID3 tag will **always** be chosen.
 	pub fn read_from_path_signature(&self, path: impl AsRef<Path>) -> Result<Box<dyn AudioTag>> {
 		let mut c = Cursor::new(std::fs::read(&path)?);
-
 		let tag_type = self.0.clone().unwrap_or(TagType::try_from_sig(&mut c)?);
 
-		Self::match_tag(&mut c, tag_type)
+		_read_from(&mut c, tag_type)
 	}
 
 	/// Attempts to get the tag format based on the data in the reader
@@ -80,37 +82,82 @@ impl Tag {
 	/// # Errors
 	///
 	/// Same as [`read_from_path_signature`][Tag::read_from_path_signature]
-	pub fn read_from_reader<R>(&self, reader: &mut R) -> Result<Box<dyn AudioTag>>
+	pub fn read_from<R>(&self, reader: &mut R) -> Result<Box<dyn AudioTag>>
 	where
 		R: Read + Seek,
 	{
 		let tag_type = self.0.clone().unwrap_or(TagType::try_from_sig(reader)?);
 
-		Self::match_tag(reader, tag_type)
+		_read_from(reader, tag_type)
 	}
 
-	fn match_tag<R>(reader: &mut R, tag_type: TagType) -> Result<Box<dyn AudioTag>>
-	where
-		R: Read + Seek,
-	{
-		match tag_type {
-			#[cfg(feature = "format-ape")]
-			TagType::Ape => Ok(Box::new(ApeTag::read_from(reader)?)),
-			#[cfg(feature = "format-id3")]
-			TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from(reader, format)?)),
-			#[cfg(feature = "format-mp4")]
-			TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from(reader)?)),
-			#[cfg(feature = "format-riff")]
-			TagType::RiffInfo => Ok(Box::new(RiffTag::read_from(reader)?)),
-			#[cfg(any(
-				feature = "format-vorbis",
-				feature = "format-flac",
-				feature = "format-opus"
-			))]
-			TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
-			#[cfg(feature = "format-aiff")]
-			TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
-		}
+	/// Attempts to remove the tag from a path
+	///
+	/// NOTE: It is not an error if the file doesn't contain a tag
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	pub fn remove_from_path(self, path: impl AsRef<Path>) -> Result<()> {
+		self.remove_from(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	/// Attempts to remove the tag from a [`File`][std::fs::File]
+	///
+	/// NOTE: It is not an error if the file doesn't contain a tag
+	///
+	/// # Errors
+	///
+	/// * The file contains invalid data
+	pub fn remove_from(self, file: &mut File) -> Result<()> {
+		let tag_type = self.0.unwrap_or(TagType::try_from_sig(file)?);
+
+		_remove_from(file, &tag_type)
+	}
+}
+
+fn _remove_from(file: &mut File, tag_type: &TagType) -> Result<()> {
+	match tag_type {
+		#[cfg(feature = "format-ape")]
+		TagType::Ape => ApeTag::remove_from(file),
+		#[cfg(feature = "format-id3")]
+		TagType::Id3v2(_) => Id3v2Tag::remove_from(file),
+		#[cfg(feature = "format-mp4")]
+		TagType::Mp4 => Mp4Tag::remove_from(file),
+		#[cfg(feature = "format-riff")]
+		TagType::RiffInfo => RiffTag::remove_from(file),
+		#[cfg(any(
+			feature = "format-vorbis",
+			feature = "format-flac",
+			feature = "format-opus"
+		))]
+		TagType::Ogg(ref format) => OggTag::remove_from(file, format),
+		#[cfg(feature = "format-aiff")]
+		TagType::AiffText => AiffTag::remove_from(file),
+	}
+}
+
+fn _read_from<R>(reader: &mut R, tag_type: TagType) -> Result<Box<dyn AudioTag>>
+where
+	R: Read + Seek,
+{
+	match tag_type {
+		#[cfg(feature = "format-ape")]
+		TagType::Ape => Ok(Box::new(ApeTag::read_from(reader)?)),
+		#[cfg(feature = "format-id3")]
+		TagType::Id3v2(format) => Ok(Box::new(Id3v2Tag::read_from(reader, format)?)),
+		#[cfg(feature = "format-mp4")]
+		TagType::Mp4 => Ok(Box::new(Mp4Tag::read_from(reader)?)),
+		#[cfg(feature = "format-riff")]
+		TagType::RiffInfo => Ok(Box::new(RiffTag::read_from(reader)?)),
+		#[cfg(any(
+			feature = "format-vorbis",
+			feature = "format-flac",
+			feature = "format-opus"
+		))]
+		TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
+		#[cfg(feature = "format-aiff")]
+		TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
 	}
 }
 
@@ -201,13 +248,18 @@ impl TagType {
 	where
 		R: Read + Seek,
 	{
+		#[cfg(feature = "format-id3")]
+		fn verify_mp3(byte_1: u8, byte_2: u8) -> bool {
+			byte_1 == 0xFF && byte_2 != 0xFF && (byte_2 & 0xE0) == 0xE0
+		}
+
 		if data.seek(SeekFrom::End(0))? == 0 {
 			return Err(LoftyError::EmptyFile);
 		}
 
 		data.seek(SeekFrom::Start(0))?;
 
-		let mut sig = vec![0; 8];
+		let mut sig = vec![0; 10];
 		data.read_exact(&mut sig)?;
 
 		data.seek(SeekFrom::Start(0))?;
@@ -216,7 +268,30 @@ impl TagType {
 			#[cfg(feature = "format-ape")]
 			77 if sig.starts_with(b"MAC") => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
-			73 if sig.starts_with(b"ID3") || sig.starts_with(b"id3") => Ok(Self::Id3v2(Id3Format::Mp3)),
+			_ if verify_mp3(sig[0], sig[1])
+				|| ((sig.starts_with(b"ID3") || sig.starts_with(b"id3")) && {
+					fn decode_u32(n: u32) -> u32 {
+						n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
+					}
+
+					let size = decode_u32(u32::from_be_bytes(
+						sig[6..10]
+							.try_into()
+							.map_err(|_| LoftyError::UnknownFormat)?,
+					));
+
+					data.seek(SeekFrom::Start(u64::from(10 + size)))?;
+
+					let b1 = data.read_u8()?;
+					let b2 = data.read_u8()?;
+
+					data.seek(SeekFrom::Start(0))?;
+
+					verify_mp3(b1, b2)
+				}) =>
+			{
+				Ok(Self::Id3v2(Id3Format::Mp3))
+			},
 			#[cfg(any(feature = "format-id3", feature = "format-aiff"))]
 			70 if sig.starts_with(b"FORM") => {
 				data.seek(SeekFrom::Start(8))?;
@@ -227,7 +302,7 @@ impl TagType {
 				if &id == b"AIFF" || &id == b"AIFC" {
 					#[cfg(feature = "format-id3")]
 					{
-						use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+						use byteorder::{BigEndian, LittleEndian};
 
 						let mut found_id3 = false;
 
@@ -287,7 +362,7 @@ impl TagType {
 			82 if sig.starts_with(b"RIFF") => {
 				#[cfg(feature = "format-id3")]
 				{
-					use byteorder::{LittleEndian, ReadBytesExt};
+					use byteorder::LittleEndian;
 
 					data.seek(SeekFrom::Start(12))?;
 

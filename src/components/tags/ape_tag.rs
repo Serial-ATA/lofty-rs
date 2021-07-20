@@ -20,8 +20,7 @@ pub struct ApeTag {
 }
 
 impl ApeTag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -30,6 +29,12 @@ impl ApeTag {
 			inner: ape::read_from(reader).unwrap_or_else(|_| ape::Tag::new()),
 			_format: TagType::Ape,
 		})
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File) -> Result<()> {
+		ape::remove_from(file)?;
+		Ok(())
 	}
 }
 

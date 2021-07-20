@@ -24,8 +24,7 @@ pub struct AiffTag {
 }
 
 impl AiffTag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -40,6 +39,12 @@ impl AiffTag {
 			},
 			_format: TagType::AiffText,
 		})
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File) -> Result<()> {
+		aiff::write_to(file, (None, None, None))?;
+		Ok(())
 	}
 }
 

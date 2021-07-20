@@ -9,16 +9,9 @@ use std::io::{Read, Seek};
 
 use lofty_attr::{get_set_methods, LoftyTag};
 
+#[derive(Default)]
 struct RiffInnerTag {
 	data: HashMap<String, String>,
-}
-
-impl Default for RiffInnerTag {
-	fn default() -> Self {
-		let data: HashMap<String, String> = HashMap::new();
-
-		Self { data }
-	}
 }
 
 #[derive(LoftyTag)]
@@ -30,8 +23,7 @@ pub struct RiffTag {
 }
 
 impl RiffTag {
-	#[allow(missing_docs)]
-	#[allow(clippy::missing_errors_doc)]
+	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -42,6 +34,12 @@ impl RiffTag {
 			},
 			_format: TagType::RiffInfo,
 		})
+	}
+
+	#[allow(missing_docs, clippy::missing_errors_doc)]
+	pub fn remove_from(file: &mut File) -> Result<()> {
+		riff::write_to(file, HashMap::new())?;
+		Ok(())
 	}
 }
 
