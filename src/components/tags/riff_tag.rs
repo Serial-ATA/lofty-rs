@@ -30,7 +30,7 @@ impl RiffTag {
 	{
 		Ok(Self {
 			inner: RiffInnerTag {
-				data: riff::read_from(reader)?,
+				data: riff::read_from(reader).unwrap_or_default(),
 			},
 			_format: TagType::RiffInfo,
 		})
