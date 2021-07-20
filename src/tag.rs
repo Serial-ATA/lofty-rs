@@ -270,6 +270,7 @@ impl TagType {
 			#[cfg(feature = "format-id3")]
 			_ if verify_mp3(sig[0], sig[1])
 				|| ((sig.starts_with(b"ID3") || sig.starts_with(b"id3")) && {
+					// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
 					fn decode_u32(n: u32) -> u32 {
 						n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
 					}
