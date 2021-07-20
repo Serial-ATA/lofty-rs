@@ -47,7 +47,7 @@ impl Page {
 	}
 
 	/// Attempts to get a Page from a reader
-	pub fn read<V>(data: &mut V) -> Result<Self>
+	pub fn read<V>(data: &mut V, skip_content: bool) -> Result<Self>
 	where
 		V: Read + Seek,
 	{
@@ -83,8 +83,15 @@ impl Page {
 		let mut segment_table = vec![0; segments as usize];
 		data.read_exact(&mut segment_table)?;
 
-		let mut content = vec![0; segment_table.iter().map(|&b| b as usize).sum()];
-		data.read_exact(&mut content)?;
+		let mut content: Vec<u8> = Vec::new();
+		let content_len = segment_table.iter().map(|&b| b as i64).sum();
+
+		if skip_content {
+			data.seek(SeekFrom::Current(content_len))?;
+		} else {
+			content = vec![0; content_len as usize];
+			data.read_exact(&mut content)?;
+		}
 
 		let end = data.seek(SeekFrom::Current(0))? as usize;
 

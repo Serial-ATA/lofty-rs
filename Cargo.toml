@@ -16,7 +16,7 @@ ape = { git = "https://github.com/Serial-ATA/rust-ape", branch = "temporary", op
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 # Ogg
-ogg_pager = { version = "0.1.6", optional = true }
+ogg_pager = { path = "ogg_pager", optional = true }
 unicase = { version = "2.6.0", optional = true }
 # Mp4
 mp4ameta = {version = "0.10.2", optional = true}
