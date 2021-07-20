@@ -32,7 +32,8 @@ impl Mp4Tag {
 
 	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn remove_from(file: &mut File) -> Result<()> {
-		Ok(()) // TODO
+		Mp4InnerTag::default().write_to(file)?;
+		Ok(())
 	}
 }
 
@@ -177,26 +178,25 @@ impl AudioTagEdit for Mp4Tag {
 
 	fn front_cover(&self) -> Option<Picture> {
 		if let Some(picture) = &self.inner.artwork() {
-			return match picture {
-				mp4ameta::Data::Jpeg(d) => Some(Picture {
-					pic_type: PictureType::Other,
-					mime_type: MimeType::Jpeg,
-					description: None,
-					data: Cow::from(d.clone()),
-				}),
-				mp4ameta::Data::Png(d) => Some(Picture {
+			return match picture.fmt {
+				mp4ameta::ImgFmt::Png => Some(Picture {
 					pic_type: PictureType::Other,
 					mime_type: MimeType::Png,
 					description: None,
-					data: Cow::from(d.clone()),
+					data: Cow::from(picture.data.to_vec()),
 				}),
-				mp4ameta::Data::Bmp(d) => Some(Picture {
+				mp4ameta::ImgFmt::Jpeg => Some(Picture {
+					pic_type: PictureType::Other,
+					mime_type: MimeType::Jpeg,
+					description: None,
+					data: Cow::from(picture.data.to_vec()),
+				}),
+				mp4ameta::ImgFmt::Bmp => Some(Picture {
 					pic_type: PictureType::Other,
 					mime_type: MimeType::Bmp,
 					description: None,
-					data: Cow::from(d.clone()),
+					data: Cow::from(picture.data.to_vec()),
 				}),
-				_ => None,
 			};
 		}
 
@@ -206,18 +206,18 @@ impl AudioTagEdit for Mp4Tag {
 		match cover.mime_type {
 			MimeType::Png => self
 				.inner
-				.add_artwork(mp4ameta::Data::Png(Vec::from(cover.data))),
+				.add_artwork(mp4ameta::Img::new(mp4ameta::ImgFmt::Png, cover.data)),
 			MimeType::Jpeg => self
 				.inner
-				.add_artwork(mp4ameta::Data::Jpeg(Vec::from(cover.data))),
+				.add_artwork(mp4ameta::Img::new(mp4ameta::ImgFmt::Jpeg, cover.data)),
 			MimeType::Bmp => self
 				.inner
-				.add_artwork(mp4ameta::Data::Bmp(Vec::from(cover.data))),
+				.add_artwork(mp4ameta::Img::new(mp4ameta::ImgFmt::Bmp, cover.data)),
 			_ => {},
 		}
 	}
 	fn remove_front_cover(&mut self) {
-		self.inner.remove_artwork();
+		self.inner.remove_artworks();
 	}
 
 	fn back_cover(&self) -> Option<Picture> {
@@ -231,11 +231,10 @@ impl AudioTagEdit for Mp4Tag {
 		let mut pictures = Vec::new();
 
 		for art in self.inner.artworks() {
-			let info = match art {
-				mp4ameta::Data::Png(d) => Some((MimeType::Png, d.clone())),
-				mp4ameta::Data::Jpeg(d) => Some((MimeType::Jpeg, d.clone())),
-				mp4ameta::Data::Bmp(d) => Some((MimeType::Bmp, d.clone())),
-				_ => None,
+			let info = match art.fmt {
+				mp4ameta::ImgFmt::Png => Some((MimeType::Png, art.data.to_vec())),
+				mp4ameta::ImgFmt::Jpeg => Some((MimeType::Jpeg, art.data.to_vec())),
+				mp4ameta::ImgFmt::Bmp => Some((MimeType::Bmp, art.data.to_vec())),
 			};
 
 			if let Some((mime_type, data)) = info {
@@ -258,7 +257,7 @@ impl AudioTagEdit for Mp4Tag {
 		}
 	}
 	fn remove_pictures(&mut self) {
-		self.inner.remove_artwork()
+		self.inner.remove_artworks()
 	}
 
 	fn track_number(&self) -> Option<u32> {
