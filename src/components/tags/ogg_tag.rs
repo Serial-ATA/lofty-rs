@@ -161,7 +161,7 @@ impl TryFrom<metaflac::Tag> for OggTag {
 				},
 				properties: FileProperties::default(), // TODO
 				_format: TagType::Ogg(OggFormat::Flac),
-			})
+			});
 		}
 
 		Err(LoftyError::InvalidData(
@@ -414,7 +414,7 @@ impl AudioTagWrite for OggTag {
 
 		#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 		{
-			let p = ogg_pager::Page::read(file)?;
+			let p = ogg_pager::Page::read(file, false)?;
 			file.seek(SeekFrom::Start(0))?;
 
 			#[cfg(feature = "format-opus")]

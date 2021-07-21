@@ -88,7 +88,7 @@ fn vorbis_write(
 	c.seek(SeekFrom::End(0))?;
 
 	loop {
-		let p = Page::read(&mut data)?;
+		let p = Page::read(&mut data, false)?;
 
 		if p.header_type != 1 {
 			data.seek(SeekFrom::Start(p.start as u64))?;
@@ -187,14 +187,14 @@ fn vorbis_write(
 }
 
 fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
-	let first_page = Page::read(&mut data)?;
+	let first_page = Page::read(&mut data, false)?;
 
 	let ser = first_page.serial;
 
 	let mut writer = Vec::new();
 	writer.write_all(&*first_page.as_bytes())?;
 
-	let first_md_page = Page::read(&mut data)?;
+	let first_md_page = Page::read(&mut data, false)?;
 	is_metadata(&first_md_page, sig)?;
 
 	#[cfg(feature = "format-vorbis")]
@@ -208,7 +208,7 @@ fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
 		let mut remaining = Vec::new();
 
 		loop {
-			let p = Page::read(&mut data)?;
+			let p = Page::read(&mut data, false)?;
 
 			if p.header_type != 1 {
 				data.seek(SeekFrom::Start(p.start as u64))?;

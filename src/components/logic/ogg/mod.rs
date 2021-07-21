@@ -5,7 +5,9 @@ use ogg_pager::Page;
 use crate::{LoftyError, Result};
 
 pub(crate) mod constants;
+mod opus;
 pub(crate) mod read;
+mod vorbis;
 pub(crate) mod write;
 
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
@@ -55,7 +57,7 @@ pub(self) fn reach_metadata<T>(mut data: T, sig: &[u8]) -> Result<()>
 where
 	T: Read + Seek,
 {
-	let first_page = Page::read(&mut data)?;
+	let first_page = Page::read(&mut data, false)?;
 
 	let head = first_page.content;
 	let (ident, head) = head.split_at(sig.len());
