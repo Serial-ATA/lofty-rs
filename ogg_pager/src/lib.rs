@@ -16,8 +16,8 @@ pub struct Page {
 	pub serial: u32,
 	pub seq_num: u32,
 	pub checksum: u32,
-	pub start: usize,
-	pub end: usize,
+	pub start: u64,
+	pub end: u64,
 }
 
 impl Page {
@@ -51,7 +51,7 @@ impl Page {
 	where
 		V: Read + Seek,
 	{
-		let start = data.seek(SeekFrom::Current(0))? as usize;
+		let start = data.seek(SeekFrom::Current(0))?;
 
 		let mut sig = [0; 4];
 		data.read_exact(&mut sig)?;
@@ -93,7 +93,7 @@ impl Page {
 			data.read_exact(&mut content)?;
 		}
 
-		let end = data.seek(SeekFrom::Current(0))? as usize;
+		let end = data.seek(SeekFrom::Current(0))?;
 
 		Ok(Page {
 			content,
@@ -119,7 +119,7 @@ impl Page {
 
 		if self_len <= 65025 && self_len + content_len <= 65025 {
 			self.content.extend(content.iter());
-			self.end += content_len;
+			self.end += content_len as u64;
 
 			return None;
 		}
@@ -128,7 +128,7 @@ impl Page {
 			let remaining = 65025 - self_len;
 
 			self.content.extend(content[0..remaining].iter());
-			self.end += remaining;
+			self.end += remaining as u64;
 
 			let mut p = Page {
 				content: content[remaining..].to_vec(),
@@ -138,7 +138,7 @@ impl Page {
 				seq_num: self.seq_num + 1,
 				checksum: 0,
 				start: self.end,
-				end: self.start + content.len(),
+				end: self.start + content.len() as u64,
 			};
 
 			p.gen_crc();
