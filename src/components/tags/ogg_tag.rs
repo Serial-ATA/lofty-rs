@@ -39,42 +39,6 @@ impl Default for OggInnerTag {
 	}
 }
 
-impl OggInnerTag {
-	fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
-	where
-		R: Read + Seek,
-	{
-		match format {
-			#[cfg(feature = "format-vorbis")]
-			OggFormat::Vorbis => {
-				let tag = ogg::read::read_from(
-					reader,
-					&VORBIS_IDENT_HEAD,
-					&VORBIS_COMMENT_HEAD,
-					OggFormat::Vorbis,
-				)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-			#[cfg(feature = "format-opus")]
-			OggFormat::Opus => {
-				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS, OggFormat::Opus)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-			#[cfg(feature = "format-flac")]
-			OggFormat::Flac => {
-				let tag = metaflac::Tag::read_from(reader)?;
-				let vorbis_tag: OggTag = tag.try_into()?;
-
-				Ok(vorbis_tag.inner)
-			},
-		}
-	}
-}
-
 cfg_if::cfg_if! {
 	if #[cfg(feature = "format-opus")] {
 		#[derive(LoftyTag)]
@@ -121,8 +85,8 @@ impl TryFrom<OGGTags> for OggTag {
 				comments,
 				pictures: (!pictures.is_empty()).then(|| Cow::from(pictures)),
 			},
-			properties: FileProperties::default(), // TODO
-			_format: TagType::Ogg(inp.3),
+			properties: inp.3,
+			_format: TagType::Ogg(inp.4),
 		})
 	}
 }
@@ -177,11 +141,33 @@ impl OggTag {
 	where
 		R: Read + Seek,
 	{
-		Ok(Self {
-			inner: OggInnerTag::read_from(reader, &format)?,
-			properties: FileProperties::default(), // TODO
-			_format: TagType::Ogg(format),
-		})
+		let tag: Self = match format {
+			#[cfg(feature = "format-vorbis")]
+			OggFormat::Vorbis => {
+				let tag = ogg::read::read_from(
+					reader,
+					&VORBIS_IDENT_HEAD,
+					&VORBIS_COMMENT_HEAD,
+					OggFormat::Vorbis,
+				)?;
+
+				tag.try_into()?
+			},
+			#[cfg(feature = "format-opus")]
+			OggFormat::Opus => {
+				let tag = ogg::read::read_from(reader, &OPUSHEAD, &OPUSTAGS, OggFormat::Opus)?;
+
+				tag.try_into()?
+			},
+			#[cfg(feature = "format-flac")]
+			OggFormat::Flac => {
+				let tag = metaflac::Tag::read_from(reader)?;
+
+				tag.try_into()?
+			},
+		};
+
+		Ok(tag)
 	}
 
 	fn get_value(&self, key: &str) -> Option<&str> {

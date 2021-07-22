@@ -1,11 +1,11 @@
-use super::{is_metadata, reach_metadata};
+use super::verify_signature;
 use crate::components::logic::ogg::constants::OPUSHEAD;
+use crate::components::logic::ogg::{opus, vorbis};
 use crate::{FileProperties, LoftyError, OggFormat, Picture, Result};
 
 use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::components::logic::ogg::{opus, vorbis};
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 use unicase::UniCase;
@@ -14,10 +14,11 @@ pub type OGGTags = (
 	String,
 	Vec<Picture>,
 	HashMap<UniCase<String>, String>,
+	FileProperties,
 	OggFormat,
 );
 
-fn read_properties<R>(data: &mut R, header_sig: &[u8]) -> Result<FileProperties>
+fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: Page) -> Result<FileProperties>
 where
 	R: Read + Seek,
 {
@@ -26,10 +27,8 @@ where
 		let end = data.seek(SeekFrom::End(0))?;
 		data.seek(SeekFrom::Start(current))?;
 
-		end - current
+		end - first_page.start
 	};
-
-	let first_page = Page::read(data, false)?;
 
 	let properties = if header_sig == OPUSHEAD {
 		opus::read_properties(data, first_page, stream_len)?
@@ -41,7 +40,7 @@ where
 }
 
 pub(crate) fn read_from<T>(
-	mut data: T,
+	data: &mut T,
 	header_sig: &[u8],
 	comment_sig: &[u8],
 	format: OggFormat,
@@ -49,16 +48,17 @@ pub(crate) fn read_from<T>(
 where
 	T: Read + Seek,
 {
-	reach_metadata(&mut data, header_sig)?;
+	let first_page = Page::read(data, false)?;
+	verify_signature(&first_page, header_sig)?;
 
-	let md_page = Page::read(&mut data, false)?;
-	is_metadata(&md_page, comment_sig)?;
+	let md_page = Page::read(data, false)?;
+	verify_signature(&md_page, comment_sig)?;
 
 	let mut md_pages: Vec<u8> = Vec::new();
 
 	md_pages.extend(md_page.content[comment_sig.len()..].iter());
 
-	while let Ok(page) = Page::read(&mut data, false) {
+	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
 			return Err(LoftyError::TooMuchData);
 		}
@@ -66,6 +66,7 @@ where
 		if page.header_type == 1 {
 			md_pages.extend(page.content.iter());
 		} else {
+			data.seek(SeekFrom::Start(page.start))?;
 			break;
 		}
 	}
@@ -107,5 +108,7 @@ where
 		}
 	}
 
-	Ok((vendor_str, pictures, md, format))
+	let properties = read_properties(data, header_sig, first_page)?;
+
+	Ok((vendor_str, pictures, md, properties, format))
 }

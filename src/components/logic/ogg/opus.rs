@@ -1,9 +1,11 @@
-use crate::{FileProperties, Result, LoftyError};
+use super::find_last_page;
+use crate::{FileProperties, LoftyError, Result};
 
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
+use std::fs::File;
 use std::time::Duration;
 
 pub(in crate::components) fn read_properties<R>(
@@ -14,62 +16,80 @@ pub(in crate::components) fn read_properties<R>(
 where
 	R: Read + Seek,
 {
-	let first_page_abgp = first_page.abgp as i64;
-
-	let mut cursor = Cursor::new(&*first_page.content);
+	let first_page_abgp = first_page.abgp;
 
 	// Skip identification header and version
-	cursor.seek(SeekFrom::Start(11))?;
+	let first_page_content = &mut &first_page.content[11..];
 
-	let channels = cursor.read_u8()?;
-	let pre_skip = cursor.read_u16::<LittleEndian>()?;
-	let sample_rate = cursor.read_u32::<LittleEndian>()?;
+	let channels = first_page_content.read_u8()?;
+	let pre_skip = first_page_content.read_u16::<LittleEndian>()?;
+	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
 	let _first_comment_page = Page::read(data, true)?;
 
-    // Skip over the metadata packet
-    loop {
-        let page = Page::read(data, true)?;
+	// Skip over the metadata packet
+	loop {
+		let page = Page::read(data, true)?;
 
-        if page.header_type != 1 {
-            data.seek(SeekFrom::Start(page.start as u64))?;
-            break
-        }
-    }
+		if page.header_type != 1 {
+			data.seek(SeekFrom::Start(page.start as u64))?;
+			break;
+		}
+	}
 
 	// Subtract the identification and metadata packet length from the total
 	let audio_size = stream_len - data.seek(SeekFrom::Current(0))?;
 
-    let next_page = Page::read(data, true)?;
+	let last_page = find_last_page(data)?;
+	let last_page_abgp = last_page.abgp;
 
-    // Find the last page
-    let mut pages: Vec<Page> = vec![next_page];
+	return if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp + pre_skip as u64)
+	{
+		let length = frame_count * 1000 / 48000;
+		let duration = Duration::from_millis(length as u64);
+		let bitrate = ((audio_size * 8) / length) as u32;
 
-    let last_page = loop {
-        if let Ok(current) = Page::read(data, true) {
-            pages.push(current)
-        } else {
-            // Safe to unwrap since the Vec starts off with a Page
-            break pages.pop().unwrap()
-        }
-    };
+		Ok(FileProperties {
+			duration,
+			bitrate: Some(bitrate),
+			sample_rate: Some(sample_rate),
+			channels: Some(channels),
+		})
+	} else {
+		Err(LoftyError::InvalidData(
+			"OGG file contains incorrect PCM values",
+		))
+	};
+}
 
-    let last_page_abgp = last_page.abgp as i64;
+pub fn write_to(data: &mut File, writer: &mut Vec<u8>, ser: u32, pages: &mut [Page]) -> Result<()> {
+	let reached_md_end: bool;
+	let mut remaining = Vec::new();
 
-    let frame_count = last_page_abgp - first_page_abgp - pre_skip as i64;
+	loop {
+		let p = Page::read(data, true)?;
 
-    if frame_count < 0 {
-        return Err(LoftyError::InvalidData("OGG file contains incorrect PCM values"))
-    }
+		if p.header_type != 1 {
+			data.seek(SeekFrom::Start(p.start as u64))?;
+			reached_md_end = true;
+			break;
+		}
+	}
 
-    let length = frame_count * 1000 / 48000;
-    let duration = Duration::from_millis(length as u64);
-    let bitrate = (audio_size * 8 / length) as u32;
+	if !reached_md_end {
+		return Err(LoftyError::InvalidData("OGG file ends with comment header"));
+	}
 
-	Ok(FileProperties {
-        duration,
-        bitrate: Some(bitrate),
-        sample_rate: Some(sample_rate),
-        channels: Some(channels)
-    })
+	data.read_to_end(&mut remaining)?;
+
+	for mut p in pages.iter_mut() {
+		p.serial = ser;
+		p.gen_crc();
+
+		writer.write_all(&*p.as_bytes())?;
+	}
+
+	writer.write_all(&*remaining)?;
+
+	Ok(())
 }
