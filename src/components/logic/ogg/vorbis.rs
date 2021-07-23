@@ -11,7 +11,7 @@ use std::time::Duration;
 
 pub(in crate::components) fn read_properties<R>(
 	data: &mut R,
-	first_page: Page,
+	first_page: &Page,
 	stream_len: u64,
 ) -> Result<FileProperties>
 where
@@ -46,8 +46,10 @@ where
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;
 
-	return if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp) {
-		let length = frame_count * 1000 / sample_rate as u64;
+	last_page_abgp.checked_sub(first_page_abgp).map_or_else(|| Err(LoftyError::InvalidData(
+			"OGG file contains incorrect PCM values",
+		)), |frame_count| {
+		let length = frame_count * 1000 / u64::from(sample_rate);
 		let duration = Duration::from_millis(length as u64);
 		let bitrate = ((audio_size * 8) / length) as u32;
 
@@ -57,11 +59,7 @@ where
 			sample_rate: Some(sample_rate),
 			channels: Some(channels),
 		})
-	} else {
-		Err(LoftyError::InvalidData(
-			"OGG file contains incorrect PCM values",
-		))
-	};
+	})
 }
 
 pub fn write_to(

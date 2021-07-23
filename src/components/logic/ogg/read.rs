@@ -18,7 +18,7 @@ pub type OGGTags = (
 	OggFormat,
 );
 
-fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: Page) -> Result<FileProperties>
+fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: &Page) -> Result<FileProperties>
 where
 	R: Read + Seek,
 {
@@ -108,7 +108,7 @@ where
 		}
 	}
 
-	let properties = read_properties(data, header_sig, first_page)?;
+	let properties = read_properties(data, header_sig, &first_page)?;
 
 	Ok((vendor_str, pictures, md, properties, format))
 }
