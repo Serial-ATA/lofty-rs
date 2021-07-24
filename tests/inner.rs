@@ -1,6 +1,6 @@
 #![cfg(feature = "default")]
 
-use lofty::{Id3Format, OggTag, Tag, TagType, ToAnyTag, OggFormat, AudioTagEdit};
+use lofty::{AudioTagEdit, Id3Format, OggFormat, OggTag, Tag, TagType, ToAnyTag};
 
 use std::io::Cursor;
 
