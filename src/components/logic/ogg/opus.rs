@@ -25,18 +25,6 @@ where
 	let pre_skip = first_page_content.read_u16::<LittleEndian>()?;
 	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
-	let _first_comment_page = Page::read(data, true)?;
-
-	// Skip over the metadata packet
-	loop {
-		let page = Page::read(data, true)?;
-
-		if page.header_type != 1 {
-			data.seek(SeekFrom::Start(page.start as u64))?;
-			break;
-		}
-	}
-
 	// Subtract the identification and metadata packet length from the total
 	let audio_size = stream_len - data.seek(SeekFrom::Current(0))?;
 
