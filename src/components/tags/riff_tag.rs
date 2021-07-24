@@ -42,7 +42,7 @@ impl RiffTag {
 			inner: RiffInnerTag {
 				data: riff::read_from(reader)?,
 			},
-			properties: FileProperties::default(),
+			properties: FileProperties::default(), // TODO
 			_format: TagType::RiffInfo,
 		})
 	}
