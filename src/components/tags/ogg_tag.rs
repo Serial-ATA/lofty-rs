@@ -10,8 +10,6 @@ use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, OggFormat,
 	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
 };
-
-#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg::read::OGGTags;
 
 use std::borrow::Cow;
@@ -161,7 +159,7 @@ impl OggTag {
 			},
 			#[cfg(feature = "format-flac")]
 			OggFormat::Flac => {
-				let tag = metaflac::Tag::read_from(reader)?;
+				let tag = ogg::flac::read_from(reader)?;
 
 				tag.try_into()?
 			},
@@ -379,6 +377,10 @@ impl AudioTagEdit for OggTag {
 	}
 	fn remove_key(&mut self, key: &str) {
 		self.remove_key(key)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
 	}
 }
 

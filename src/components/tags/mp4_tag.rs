@@ -314,6 +314,10 @@ impl AudioTagEdit for Mp4Tag {
 	fn tag_type(&self) -> TagType {
 		TagType::Mp4
 	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 impl AudioTagWrite for Mp4Tag {

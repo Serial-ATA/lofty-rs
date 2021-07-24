@@ -294,6 +294,10 @@ impl AudioTagEdit for ApeTag {
 	fn remove_key(&mut self, key: &str) {
 		self.remove_key(key)
 	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 impl AudioTagWrite for ApeTag {

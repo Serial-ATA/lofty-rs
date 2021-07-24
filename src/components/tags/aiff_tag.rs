@@ -80,6 +80,10 @@ impl AudioTagEdit for AiffTag {
 	fn tag_type(&self) -> TagType {
 		TagType::AiffText
 	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 impl AudioTagWrite for AiffTag {

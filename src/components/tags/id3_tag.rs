@@ -389,6 +389,10 @@ impl AudioTagEdit for Id3v2Tag {
 	fn remove_key(&mut self, key: &str) {
 		self.inner.remove(key)
 	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 impl AudioTagWrite for Id3v2Tag {

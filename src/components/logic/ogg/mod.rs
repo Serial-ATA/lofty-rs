@@ -8,6 +8,8 @@ pub(crate) mod constants;
 pub(crate) mod read;
 pub(crate) mod write;
 
+#[cfg(feature = "format-flac")]
+pub(crate) mod flac;
 #[cfg(feature = "format-opus")]
 mod opus;
 #[cfg(feature = "format-vorbis")]

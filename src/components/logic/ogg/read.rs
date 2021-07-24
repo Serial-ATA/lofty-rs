@@ -39,6 +39,50 @@ where
 	Ok(properties)
 }
 
+pub(crate) fn read_comments<R>(
+	data: &mut R,
+	storage: &mut HashMap<UniCase<String>, String>,
+	pictures: &mut Vec<Picture>,
+) -> Result<String>
+where
+	R: Read,
+{
+	let vendor_len = data.read_u32::<LittleEndian>()?;
+
+	let mut vendor = vec![0; vendor_len as usize];
+	data.read_exact(&mut vendor)?;
+
+	let vendor = match String::from_utf8(vendor) {
+		Ok(v) => v,
+		Err(_) => {
+			return Err(LoftyError::InvalidData(
+				"OGG file has an invalid vendor string",
+			))
+		},
+	};
+
+	let comments_total_len = data.read_u32::<LittleEndian>()?;
+
+	for _ in 0..comments_total_len {
+		let comment_len = data.read_u32::<LittleEndian>()?;
+
+		let mut comment_bytes = vec![0; comment_len as usize];
+		data.read_exact(&mut comment_bytes)?;
+
+		let comment = String::from_utf8(comment_bytes)?;
+
+		let split: Vec<&str> = comment.splitn(2, '=').collect();
+
+		if split[0] == "METADATA_BLOCK_PICTURE" {
+			pictures.push(Picture::from_apic_bytes(split[1].as_bytes())?)
+		} else {
+			storage.insert(UniCase::from(split[0].to_string()), split[1].to_string());
+		}
+	}
+
+	Ok(vendor)
+}
+
 pub(crate) fn read_from<T>(
 	data: &mut T,
 	header_sig: &[u8],
@@ -75,40 +119,9 @@ where
 	let mut pictures = Vec::new();
 
 	let reader = &mut &md_pages[..];
-
-	let vendor_len = reader.read_u32::<LittleEndian>()?;
-	let mut vendor = vec![0; vendor_len as usize];
-	reader.read_exact(&mut vendor)?;
-
-	let vendor_str = match String::from_utf8(vendor) {
-		Ok(v) => v,
-		Err(_) => {
-			return Err(LoftyError::InvalidData(
-				"OGG file has an invalid vendor string",
-			))
-		},
-	};
-
-	let comments_total_len = reader.read_u32::<LittleEndian>()?;
-
-	for _ in 0..comments_total_len {
-		let comment_len = reader.read_u32::<LittleEndian>()?;
-
-		let mut comment_bytes = vec![0; comment_len as usize];
-		reader.read_exact(&mut comment_bytes)?;
-
-		let comment = String::from_utf8(comment_bytes)?;
-
-		let split: Vec<&str> = comment.splitn(2, '=').collect();
-
-		if split[0] == "METADATA_BLOCK_PICTURE" {
-			pictures.push(Picture::from_apic_bytes(split[1].as_bytes())?)
-		} else {
-			md.insert(UniCase::from(split[0].to_string()), split[1].to_string());
-		}
-	}
+	let vendor = read_comments(reader, &mut md, &mut pictures)?;
 
 	let properties = read_properties(data, header_sig, &first_page)?;
 
-	Ok((vendor_str, pictures, md, properties, format))
+	Ok((vendor, pictures, md, properties, format))
 }
