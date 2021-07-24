@@ -89,49 +89,6 @@ impl TryFrom<OGGTags> for OggTag {
 	}
 }
 
-#[cfg(feature = "format-flac")]
-impl TryFrom<metaflac::Tag> for OggTag {
-	type Error = LoftyError;
-
-	fn try_from(inp: metaflac::Tag) -> Result<Self> {
-		if let Some(comments) = inp.vorbis_comments() {
-			let mut user_comments = comments.comments.clone();
-
-			let mut pictures = Vec::new();
-
-			if let Some(pics) = user_comments.remove("METADATA_BLOCK_PICTURE") {
-				pics.iter().for_each(|item| {
-					if let Ok(pic) = Picture::from_apic_bytes(item.as_bytes()) {
-						pictures.push(pic)
-					}
-				})
-			}
-
-			let mut comment_collection: HashMap<UniCase<String>, String> = HashMap::new();
-
-			for (k, v) in user_comments.clone() {
-				for e in v {
-					comment_collection.insert(UniCase::from(k.clone()), e.clone());
-				}
-			}
-
-			return Ok(Self {
-				inner: OggInnerTag {
-					vendor: comments.vendor_string.clone(),
-					comments: comment_collection,
-					pictures: Some(Cow::from(pictures)),
-				},
-				properties: FileProperties::default(), // TODO
-				_format: TagType::Ogg(OggFormat::Flac),
-			});
-		}
-
-		Err(LoftyError::InvalidData(
-			"Flac file contains no vorbis comment blocks",
-		))
-	}
-}
-
 impl OggTag {
 	#[allow(missing_docs)]
 	#[allow(clippy::missing_errors_doc)]
