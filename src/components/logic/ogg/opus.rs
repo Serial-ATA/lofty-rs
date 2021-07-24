@@ -19,7 +19,7 @@ where
 	let first_page_abgp = first_page.abgp;
 
 	// Skip identification header and version
-	let first_page_content = &mut &first_page.content[11..];
+	let first_page_content = &mut &first_page.content[9..];
 
 	let channels = first_page_content.read_u8()?;
 	let pre_skip = first_page_content.read_u16::<LittleEndian>()?;
@@ -54,7 +54,7 @@ where
 			|frame_count| {
 				let length = frame_count * 1000 / 48000;
 				let duration = Duration::from_millis(length as u64);
-				let bitrate = ((audio_size * 8) / length) as u32;
+				let bitrate = (audio_size * 8 / length) as u32;
 
 				Ok(FileProperties {
 					duration,
