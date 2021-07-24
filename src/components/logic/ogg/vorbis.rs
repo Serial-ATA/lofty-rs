@@ -12,7 +12,6 @@ use std::time::Duration;
 pub(in crate::components) fn read_properties<R>(
 	data: &mut R,
 	first_page: &Page,
-	stream_len: u64,
 ) -> Result<FileProperties>
 where
 	R: Read + Seek,
@@ -25,23 +24,8 @@ where
 	let channels = first_page_content.read_u8()?;
 	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
-	// Identification and metadata packets have already been skipped
-	// Have to find the end of the setup packet now
-	let header_end = loop {
-		let page = Page::read(data, false)?;
-		let segments = page.segments();
-
-		if let Some(seg_end) = segments.iter().position(|s| s != &255_u8) {
-			let packet_size: usize = segments[..seg_end].iter().map(|s| *s as usize).sum();
-
-			// Position in stream + page header (26 bytes long) + segment table + however long the packet is
-			let header_end = page.start + 26 + segments.len() as u64 + packet_size as u64;
-
-			break header_end;
-		}
-	};
-
-	let audio_size = stream_len - header_end;
+	let _bitrate_max = first_page_content.read_u32::<LittleEndian>()?;
+	let bitrate_nominal = first_page_content.read_u32::<LittleEndian>()?;
 
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;
@@ -55,7 +39,7 @@ where
 		|frame_count| {
 			let length = frame_count * 1000 / u64::from(sample_rate);
 			let duration = Duration::from_millis(length as u64);
-			let bitrate = (audio_size * 8 / length) as u32;
+			let bitrate = bitrate_nominal / 1000;
 
 			Ok(FileProperties {
 				duration,

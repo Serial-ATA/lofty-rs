@@ -22,18 +22,18 @@ fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: &Page) -> Res
 where
 	R: Read + Seek,
 {
-	let stream_len = {
-		let current = data.seek(SeekFrom::Current(0))?;
-		let end = data.seek(SeekFrom::End(0))?;
-		data.seek(SeekFrom::Start(current))?;
-
-		end - first_page.start
-	};
-
 	let properties = if header_sig == OPUSHEAD {
+		let stream_len = {
+			let current = data.seek(SeekFrom::Current(0))?;
+			let end = data.seek(SeekFrom::End(0))?;
+			data.seek(SeekFrom::Start(current))?;
+
+			end - first_page.start
+		};
+
 		opus::read_properties(data, first_page, stream_len)?
 	} else {
-		vorbis::read_properties(data, first_page, stream_len)?
+		vorbis::read_properties(data, first_page)?
 	};
 
 	Ok(properties)
