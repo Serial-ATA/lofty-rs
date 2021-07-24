@@ -6,11 +6,11 @@ use crate::components::logic::ogg;
 use crate::components::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
 #[cfg(feature = "format-vorbis")]
 use crate::components::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
+use crate::components::logic::ogg::read::OGGTags;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, OggFormat,
 	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
 };
-use crate::components::logic::ogg::read::OGGTags;
 
 use std::borrow::Cow;
 use std::collections::HashMap;

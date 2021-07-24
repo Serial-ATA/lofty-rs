@@ -55,7 +55,7 @@ where
 		|frame_count| {
 			let length = frame_count * 1000 / u64::from(sample_rate);
 			let duration = Duration::from_millis(length as u64);
-			let bitrate = ((audio_size * 8) / length) as u32;
+			let bitrate = (audio_size * 8 / length) as u32;
 
 			Ok(FileProperties {
 				duration,

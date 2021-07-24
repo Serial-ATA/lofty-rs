@@ -16,31 +16,28 @@ where
 	// Skip 4 bytes
 	// Minimum block size (2)
 	// Maximum block size (2)
-	stream_info.read_u16::<BigEndian>()?;
+	stream_info.read_u32::<BigEndian>()?;
 
 	// Skip 6 bytes
 	// Minimum frame size (3)
 	// Maximum frame size (3)
 	stream_info.read_uint::<BigEndian>(6)?;
 
-	// Read 24 bits
-	// Sample rate (20)
-	// Number of channels (3)
-	// First bit of bits per sample (1)
-	let info = stream_info.read_uint::<BigEndian>(3)?;
+	// Read 4 bytes
+	// Sample rate (20 bits)
+	// Number of channels (3 bits)
+	// Bits per sample (5 bits)
+	// Total samples (first 4 bits)
+	let info = stream_info.read_u32::<BigEndian>()?;
 
-	let sample_rate = info >> 4;
-	let channels = (info & 0x15) + 1;
-
-	// There are still 4 bits remaining of the bits per sample
-	// This number isn't used, so just discard it
-	let total_samples_first = stream_info.read_u8()? << 4;
+	let sample_rate = info >> 12;
+	let channels = ((info >> 9) & 7) + 1;
 
 	// Read the remaining 32 bits of the total samples
-	let total_samples = stream_info.read_u32::<BigEndian>()? | u32::from(total_samples_first);
+	let total_samples = stream_info.read_u32::<BigEndian>()? | (info << 28);
 
 	let (duration, bitrate) = if sample_rate > 0 && total_samples > 0 {
-		let length = (u64::from(total_samples) * 1000) / sample_rate;
+		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
 
 		(
 			Duration::from_millis(length),
@@ -72,19 +69,21 @@ where
 	}
 
 	let mut byte = data.read_u8()?;
+	let mut last_block = (byte & 0x80) != 0;
+	let mut block_type = byte & 0x7f;
 
-	if (byte & 0x7f) != 0 {
+	if block_type != 0 {
 		return Err(LoftyError::InvalidData(
 			"FLAC file missing mandatory STREAMINFO block",
 		));
 	}
 
-	let mut last_block = (byte & 0x80) != 0;
-
 	let stream_info_len = data.read_uint::<BigEndian>(3)? as u32;
 
 	if stream_info_len < 18 {
-		return Err(LoftyError::InvalidData("FLAC file has an invalid STREAMINFO block size (< 18)"))
+		return Err(LoftyError::InvalidData(
+			"FLAC file has an invalid STREAMINFO block size (< 18)",
+		));
 	}
 
 	let mut stream_info_data = vec![0; stream_info_len as usize];
@@ -97,7 +96,7 @@ where
 	while !last_block {
 		byte = data.read_u8()?;
 		last_block = (byte & 0x80) != 0;
-		let block_type = byte & 0x7f;
+		block_type = byte & 0x7f;
 
 		let block_len = data.read_uint::<BigEndian>(3)? as u32;
 

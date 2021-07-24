@@ -1,6 +1,6 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
-use crate::{Album, AnyTag, Picture, Result, TagType, FileProperties};
+use crate::{Album, AnyTag, FileProperties, Picture, Result, TagType};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};

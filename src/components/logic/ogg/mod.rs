@@ -72,17 +72,11 @@ pub(self) fn find_last_page<R>(data: &mut R) -> Result<Page>
 where
 	R: Read + Seek,
 {
-	let next_page = Page::read(data, true)?;
+	let mut last_page = Page::read(data, true)?;
 
-	// Find the last page
-	let mut pages: Vec<Page> = vec![next_page];
-
-	loop {
-		if let Ok(current) = Page::read(data, true) {
-			pages.push(current)
-		} else {
-			// Safe to unwrap since the Vec starts off with a Page
-			break Ok(pages.pop().unwrap());
-		}
+	while let Ok(page) = Page::read(data, true) {
+		last_page = page
 	}
+
+	Ok(last_page)
 }
