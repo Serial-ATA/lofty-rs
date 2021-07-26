@@ -111,12 +111,12 @@ where
 		(Duration::ZERO, 0)
 	};
 
-	Ok(FileProperties {
+	Ok(FileProperties::new(
 		duration,
-		bitrate: Some(bitrate),
-		sample_rate: Some(sample_rate as u32),
-		channels: Some(channels as u8),
-	})
+		Some(bitrate),
+		Some(sample_rate as u32),
+		Some(channels as u8),
+	))
 }
 
 pub(crate) fn read_from<R>(data: &mut R) -> Result<OGGTags>

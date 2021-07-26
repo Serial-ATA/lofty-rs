@@ -8,5 +8,5 @@ pub(crate) mod riff;
 ))]
 pub(crate) mod ogg;
 
-#[cfg(feature = "format-aiff")]
+#[cfg(any(feature = "format-aiff", feature = "format-id3"))]
 pub(crate) mod aiff;

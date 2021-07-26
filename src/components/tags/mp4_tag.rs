@@ -28,6 +28,7 @@ impl Mp4Tag {
 	{
 		let inner = Mp4InnerTag::read_from(reader)?;
 
+		// TODO
 		let duration = inner.info.duration;
 		let bitrate = inner.info.avg_bitrate;
 		let channels = inner.info.channel_config.map(|cc| cc.value());
@@ -35,12 +36,12 @@ impl Mp4Tag {
 
 		Ok(Self {
 			inner,
-			properties: FileProperties {
-				duration: duration.unwrap_or_default(),
+			properties: FileProperties::new(
+				duration.unwrap_or_default(),
 				bitrate,
 				sample_rate,
 				channels,
-			},
+			),
 			_format: TagType::Mp4,
 		})
 	}

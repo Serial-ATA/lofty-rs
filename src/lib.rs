@@ -128,7 +128,8 @@ mod types;
 pub use crate::types::{
 	album::Album,
 	anytag::AnyTag,
-	picture::{MimeType, Picture, PictureType}, properties::FileProperties
+	picture::{MimeType, Picture, PictureType},
+	properties::FileProperties,
 };
 
 mod tag;

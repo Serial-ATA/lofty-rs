@@ -44,12 +44,12 @@ where
 				let duration = Duration::from_millis(length as u64);
 				let bitrate = (audio_size * 8 / length) as u32;
 
-				Ok(FileProperties {
+				Ok(FileProperties::new(
 					duration,
-					bitrate: Some(bitrate),
-					sample_rate: Some(sample_rate),
-					channels: Some(channels),
-				})
+					Some(bitrate),
+					Some(sample_rate),
+					Some(channels),
+				))
 			},
 		)
 }

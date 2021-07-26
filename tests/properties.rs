@@ -40,3 +40,4 @@ properties_test!(test_opus, "tests/assets/a.opus", OPUS_PROPERTIES);
 properties_test!(test_vorbis, "tests/assets/a.ogg", VORBIS_PROPERTIES);
 properties_test!(test_flac, "tests/assets/a.flac", FLAC_PROPERTIES);
 properties_test!(test_aiff_text, "tests/assets/a_text.aiff", AIFF_PROPERTIES);
+properties_test!(test_aiff, "tests/assets/a.aiff", AIFF_PROPERTIES);
