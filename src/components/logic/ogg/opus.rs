@@ -2,11 +2,11 @@ use super::find_last_page;
 use crate::{FileProperties, LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::fs::File;
+use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
-use std::fs::File;
-use std::time::Duration;
 
 pub(in crate::components) fn read_properties<R>(
 	data: &mut R,

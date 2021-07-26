@@ -1,10 +1,9 @@
 use super::{opus, page_from_packet, verify_signature, vorbis};
-use crate::{Picture, Result};
-
 #[cfg(feature = "format-opus")]
 use crate::components::logic::ogg::constants::OPUSTAGS;
 #[cfg(feature = "format-vorbis")]
 use crate::components::logic::ogg::constants::VORBIS_COMMENT_HEAD;
+use crate::{Picture, Result};
 
 use std::borrow::Cow;
 use std::collections::HashMap;

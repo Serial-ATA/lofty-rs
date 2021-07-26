@@ -1,8 +1,8 @@
+use crate::{LoftyError, Result};
+
 use std::io::{Read, Seek};
 
 use ogg_pager::Page;
-
-use crate::{LoftyError, Result};
 
 pub(crate) mod constants;
 pub(crate) mod read;

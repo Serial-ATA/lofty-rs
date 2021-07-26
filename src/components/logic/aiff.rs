@@ -1,11 +1,11 @@
 use crate::{FileProperties, LoftyError, Result};
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-
 use std::cmp::{max, min};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
+
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
 fn verify_aiff<T>(data: &mut T) -> Result<()>
 where
