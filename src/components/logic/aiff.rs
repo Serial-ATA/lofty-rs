@@ -1,16 +1,80 @@
-use crate::{LoftyError, Result};
+use crate::{FileProperties, LoftyError, Result};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 
 use std::cmp::{max, min};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::time::Duration;
 
-pub(crate) fn read_from<T>(data: &mut T) -> Result<(Option<String>, Option<String>, Option<String>)>
+fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
+	let channels = comm.read_u16::<BigEndian>()? as u8;
+	let sample_frames = comm.read_u32::<BigEndian>()?;
+	let _sample_size = comm.read_u16::<BigEndian>()?;
+
+	let mut sample_rate_bytes = [0; 10];
+	comm.read_exact(&mut sample_rate_bytes)?;
+
+	let sign = u64::from(sample_rate_bytes[0] & 0x80);
+
+	sample_rate_bytes[0] &= 0x7f;
+
+	let mut exponent = u16::from(sample_rate_bytes[0]) << 8 | u16::from(sample_rate_bytes[1]);
+	exponent = exponent - 16383 + 1023;
+
+	let fraction = &mut sample_rate_bytes[2..];
+	fraction[0] &= 0x7f;
+
+	let fraction: Vec<u64> = fraction.iter_mut().map(|v| u64::from(*v)).collect();
+
+	let fraction = fraction[0] << 56
+		| fraction[1] << 48
+		| fraction[2] << 40
+		| fraction[3] << 32
+		| fraction[4] << 24
+		| fraction[5] << 16
+		| fraction[6] << 8
+		| fraction[7];
+
+	let f64_bytes = sign << 56 | u64::from(exponent) << 52 | fraction >> 11;
+	let float = f64::from_be_bytes(f64_bytes.to_be_bytes());
+
+	let sample_rate = float.round() as u32;
+
+	let (duration, bitrate) = if sample_rate > 0 && sample_frames > 0 {
+		let length = (u64::from(sample_frames) * 1000) / u64::from(sample_rate);
+
+		(
+			Duration::from_millis(length),
+			(u64::from(stream_len * 8) / length) as u32,
+		)
+	} else {
+		(Duration::ZERO, 0)
+	};
+
+	Ok(FileProperties {
+		duration,
+		bitrate: Some(bitrate),
+		sample_rate: Some(sample_rate),
+		channels: Some(channels),
+	})
+}
+
+type AiffTags = (
+	Option<String>,
+	Option<String>,
+	Option<String>,
+	FileProperties,
+);
+
+pub(crate) fn read_from<T>(data: &mut T) -> Result<AiffTags>
 where
 	T: Read + Seek,
 {
 	verify_aiff(data)?;
+
+	let mut comm = None;
+	let mut stream_len = 0;
 
 	let mut name_id: Option<String> = None;
 	let mut author_id: Option<String> = None;
@@ -23,6 +87,19 @@ where
 		data.read_u32::<BigEndian>(),
 	) {
 		match &fourcc.to_le_bytes() {
+			f if f == b"COMM" && comm.is_none() => {
+				if size < 18 {
+					return Err(LoftyError::InvalidData(
+						"AIFF file has an invalid COMM chunk size (< 18)",
+					));
+				}
+
+				let mut comm_data = vec![0; size as usize];
+				data.read_exact(&mut comm_data)?;
+
+				comm = Some(comm_data);
+			},
+			f if f == b"SSND" => stream_len = size,
 			f if f == b"NAME" && name_id.is_none() => {
 				let mut name = vec![0; size as usize];
 				data.read_exact(&mut name)?;
@@ -47,11 +124,21 @@ where
 		}
 	}
 
-	if (&None, &None, &None) == (&name_id, &author_id, &copyright_id) {
-		return Err(LoftyError::InvalidData("AIFF file contains no text chunks"));
+	if comm.is_none() {
+		return Err(LoftyError::InvalidData(
+			"AIFF file does not contain a COMM chunk",
+		));
 	}
 
-	Ok((name_id, author_id, copyright_id))
+	if stream_len == 0 {
+		return Err(LoftyError::InvalidData(
+			"AIFF file does not contain a SSND chunk",
+		));
+	}
+
+	let properties = read_properties(&mut &*comm.unwrap(), stream_len)?;
+
+	Ok((name_id, author_id, copyright_id, properties))
 }
 
 pub(crate) fn write_to(

@@ -32,7 +32,7 @@ impl AiffTag {
 	where
 		R: Read + Seek,
 	{
-		let (name_id, author_id, copyright_id) = aiff::read_from(reader)?;
+		let (name_id, author_id, copyright_id, properties) = aiff::read_from(reader)?;
 
 		Ok(Self {
 			inner: AiffInnerTag {
@@ -40,7 +40,7 @@ impl AiffTag {
 				author_id,
 				copyright_id,
 			},
-			properties: FileProperties::default(), // TODO
+			properties,
 			_format: TagType::AiffText,
 		})
 	}
