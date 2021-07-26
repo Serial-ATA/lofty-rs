@@ -14,6 +14,15 @@ use std::io::{Seek, SeekFrom, Write};
 use ogg_pager::Page;
 use unicase::UniCase;
 
+pub(crate) fn create_comments(packet: &mut Vec<u8>, comments: &HashMap<UniCase<String>, String>) {
+	for (a, b) in comments {
+		let comment = format!("{}={}", a, b);
+		let comment_b = comment.as_bytes();
+		packet.extend((comment_b.len() as u32).to_le_bytes().iter());
+		packet.extend(comment_b.iter());
+	}
+}
+
 pub(crate) fn create_pages(
 	file: &mut File,
 	sig: &[u8],
@@ -33,13 +42,7 @@ pub(crate) fn create_pages(
 	);
 
 	packet.extend(comments_len.to_le_bytes().iter());
-
-	for (a, b) in comments {
-		let comment = format!("{}={}", a, b);
-		let comment_b = comment.as_bytes();
-		packet.extend((comment_b.len() as u32).to_le_bytes().iter());
-		packet.extend(comment_b.iter());
-	}
+	create_comments(&mut packet, comments);
 
 	if let Some(pics) = pictures {
 		for pic in pics.iter() {

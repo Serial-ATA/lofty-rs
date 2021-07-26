@@ -1,6 +1,3 @@
-#[cfg(feature = "format-flac")]
-use crate::components::logic::flac;
-#[cfg(any(feature = "format-opus", feature = "format-vorbis"))]
 use crate::components::logic::ogg;
 #[cfg(feature = "format-opus")]
 use crate::components::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
@@ -349,7 +346,7 @@ impl AudioTagWrite for OggTag {
 
 		#[cfg(feature = "format-flac")]
 		if &sig == b"fLaC" {
-			return flac::write_to(
+			return ogg::flac::write_to(
 				file,
 				&self.inner.vendor,
 				&self.inner.comments,

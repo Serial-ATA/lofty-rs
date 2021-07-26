@@ -36,10 +36,6 @@ pub enum LoftyError {
 	/// Any error from [`ape`]
 	#[error(transparent)]
 	ApeTag(#[from] ape::Error),
-	#[cfg(feature = "format-flac")]
-	/// Any error from [`metaflac`]
-	#[error(transparent)]
-	FlacTag(#[from] metaflac::Error),
 	#[cfg(feature = "format-id3")]
 	/// Any error from [`id3`]
 	#[error(transparent)]
