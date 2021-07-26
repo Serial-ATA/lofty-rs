@@ -128,7 +128,7 @@ mod types;
 pub use crate::types::{
 	album::Album,
 	anytag::AnyTag,
-	picture::{MimeType, Picture, PictureType},
+	picture::{MimeType, Picture, PictureType}, properties::FileProperties
 };
 
 mod tag;
@@ -146,7 +146,7 @@ mod error;
 pub use crate::error::{LoftyError, Result};
 
 mod components;
-pub use crate::components::{tags::*, FileProperties};
+pub use crate::components::tags::*;
 
 mod traits;
 pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};
