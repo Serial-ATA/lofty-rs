@@ -3,7 +3,7 @@ use crate::components::logic::aiff::AiffMetadataType;
 use crate::tag::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
-	Picture, PictureType, Result, TagType, ToAny, ToAnyTag,
+	Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::Cow;
@@ -63,30 +63,30 @@ impl Id3v2Tag {
 	}
 }
 
-impl std::convert::TryFrom<id3::frame::Picture> for Picture {
+impl std::convert::TryFrom<&id3::frame::Picture> for Picture {
 	type Error = LoftyError;
 
-	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
+	fn try_from(inp: &id3::frame::Picture) -> Result<Self> {
 		let id3::frame::Picture {
-			ref mime_type,
+			mime_type,
 			data,
-			ref picture_type,
+			picture_type,
 			description,
 			..
 		} = inp;
 		let mime_type: MimeType = mime_type.as_str().try_into()?;
 		let pic_type = *picture_type;
-		let description = if description == String::new() {
+		let description = if description == &String::new() {
 			None
 		} else {
-			Some(Cow::from(description))
+			Some(Cow::from(description.clone()))
 		};
 
 		Ok(Self {
 			pic_type,
 			mime_type,
 			description,
-			data: Cow::from(data),
+			data: Cow::from(data.clone()),
 		})
 	}
 }
@@ -270,18 +270,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner
 			.pictures()
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
-			.and_then(|pic| {
-				Some(Picture {
-					pic_type: PictureType::CoverFront,
-					data: Cow::from(pic.data.clone()),
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-					description: if pic.description == String::new() {
-						None
-					} else {
-						Some(Cow::from(pic.description.clone()))
-					},
-				})
-			})
+			.and_then(|pic| TryInto::<Picture>::try_into(pic).ok())
 	}
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
@@ -299,18 +288,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner
 			.pictures()
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverBack))
-			.and_then(|pic| {
-				Some(Picture {
-					pic_type: PictureType::CoverBack,
-					data: Cow::from(pic.data.clone()),
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-					description: if pic.description == String::new() {
-						None
-					} else {
-						Some(Cow::from(pic.description.clone()))
-					},
-				})
-			})
+			.and_then(|pic| TryInto::<Picture>::try_into(pic).ok())
 	}
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
@@ -331,7 +309,7 @@ impl AudioTagEdit for Id3v2Tag {
 			let mut collection = Vec::new();
 
 			for pic in pictures {
-				match TryInto::<Picture>::try_into(pic.clone()) {
+				match TryInto::<Picture>::try_into(pic) {
 					Ok(p) => collection.push(p),
 					Err(_) => return None,
 				}
