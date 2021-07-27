@@ -1,4 +1,5 @@
 use crate::components::logic::aiff;
+use crate::components::logic::aiff::AiffMetadataType;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Result, TagType, ToAny,
 	ToAnyTag,
@@ -31,13 +32,16 @@ impl AiffTag {
 	where
 		R: Read + Seek,
 	{
-		let (data, properties) = aiff::read_from(reader)?;
+		let (data, properties) = aiff::read_from(reader, false)?;
 
-		Ok(Self {
-			inner: AiffInnerTag { data },
-			properties,
-			_format: TagType::AiffText,
-		})
+		match data {
+			Some(AiffMetadataType::TextChunks(data)) => Ok(Self {
+				inner: AiffInnerTag { data },
+				properties,
+				_format: TagType::AiffText,
+			}),
+			_ => unreachable!(),
+		}
 	}
 
 	fn get_value(&self, key: &str) -> Option<&str> {

@@ -1,15 +1,20 @@
 use crate::{FileProperties, LoftyError, Result};
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-use std::collections::HashMap;
 
-fn verify_aiff<T>(data: &mut T) -> Result<()>
+pub(crate) enum AiffMetadataType {
+	Id3(Vec<u8>),
+	TextChunks(HashMap<String, String>),
+}
+
+fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
-	T: Read + Seek,
+	R: Read + Seek,
 {
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
@@ -21,63 +26,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_properties<R>(data: &mut R) -> Result<FileProperties>
-where
-	R: Read + Seek,
-{
-	verify_aiff(data)?;
-
-	let mut comm = None;
-	let mut stream_len = 0;
-
-	let start = data.seek(SeekFrom::Current(0))?;
-
-	while let (Ok(fourcc), Ok(size)) = (
-		data.read_u32::<LittleEndian>(),
-		data.read_u32::<BigEndian>(),
-	) {
-		if comm.is_some() && stream_len > 0 {
-			break;
-		}
-
-		match &fourcc.to_le_bytes() {
-			b"COMM" => {
-				if comm.is_none() {
-					if size < 18 {
-						return Err(LoftyError::InvalidData(
-							"AIFF file has an invalid COMM chunk size (< 18)",
-						));
-					}
-
-					let mut comm_data = vec![0; size as usize];
-					data.read_exact(&mut comm_data)?;
-
-					comm = Some(comm_data);
-				}
-			},
-			b"SSND" => stream_len = size,
-			_ => {
-				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
-		}
-	}
-
-	data.seek(SeekFrom::Start(start))?;
-
-	if comm.is_none() {
-		return Err(LoftyError::InvalidData(
-			"AIFF file does not contain a COMM chunk",
-		));
-	}
-
-	if stream_len == 0 {
-		return Err(LoftyError::InvalidData(
-			"AIFF file does not contain a SSND chunk",
-		));
-	}
-
-	let comm = &mut &*comm.unwrap();
-
+pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 	let sample_frames = comm.read_u32::<BigEndian>()?;
 	let _sample_size = comm.read_u16::<BigEndian>()?;
@@ -130,39 +79,94 @@ where
 	))
 }
 
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	expect_id3: bool,
+) -> Result<(Option<AiffMetadataType>, FileProperties)>
+where
+	R: Read + Seek,
+{
+	verify_aiff(data)?;
+
+	let mut comm = None;
+	let mut stream_len = 0;
+
+	let mut metadata = HashMap::<String, String>::new();
+	let mut id3 = (false, Vec::new());
+
+	while let (Ok(fourcc), Ok(size)) = (
+		data.read_u32::<LittleEndian>(),
+		data.read_u32::<BigEndian>(),
+	) {
+		let fourcc_b = &fourcc.to_le_bytes();
+
+		match fourcc_b {
+			b"NAME" | b"AUTH" | b"(c) " => {
+				let mut value = vec![0; size as usize];
+				data.read_exact(&mut value)?;
+
+				metadata.insert(
+					String::from_utf8(fourcc_b.to_vec())?,
+					String::from_utf8(value)?,
+				);
+			},
+			b"ID3 " | b"id3 " => {
+				let mut value = vec![0; size as usize];
+				data.read_exact(&mut value)?;
+
+				id3 = (true, value)
+			},
+			b"COMM" => {
+				if comm.is_none() {
+					if size < 18 {
+						return Err(LoftyError::InvalidData(
+							"AIFF file has an invalid COMM chunk size (< 18)",
+						));
+					}
+
+					let mut comm_data = vec![0; size as usize];
+					data.read_exact(&mut comm_data)?;
+
+					comm = Some(comm_data);
+				}
+			},
+			b"SSND" => {
+				stream_len = size;
+				data.seek(SeekFrom::Current(i64::from(size)))?;
+			},
+			_ => {
+				data.seek(SeekFrom::Current(i64::from(size)))?;
+			},
+		}
+	}
+
+	if comm.is_none() {
+		return Err(LoftyError::InvalidData(
+			"AIFF file does not contain a COMM chunk",
+		));
+	}
+
+	if stream_len == 0 {
+		return Err(LoftyError::InvalidData(
+			"AIFF file does not contain a SSND chunk",
+		));
+	}
+
+	let properties = read_properties(&mut &*comm.unwrap(), stream_len)?;
+
+	let metadata = if id3.0 && expect_id3 {
+		Some(AiffMetadataType::Id3(id3.1))
+	} else if expect_id3 && !id3.0 {
+		None
+	} else {
+		Some(AiffMetadataType::TextChunks(metadata))
+	};
+
+	Ok((metadata, properties))
+}
+
 cfg_if::cfg_if! {
 	if #[cfg(feature = "format-aiff")] {
-		pub(crate) fn read_from<T>(data: &mut T) -> Result<(HashMap<String, String>, FileProperties)>
-		where
-			T: Read + Seek,
-		{
-			let mut metadata = HashMap::<String, String>::new();
-
-			let properties = read_properties(data)?;
-
-			while let (Ok(fourcc), Ok(size)) = (
-				data.read_u32::<LittleEndian>(),
-				data.read_u32::<BigEndian>(),
-			) {
-				let fourcc_b = &fourcc.to_le_bytes();
-
-				if fourcc_b == b"NAME" || fourcc_b == b"AUTH" || fourcc_b == b"(c) " {
-					let mut value = vec![0; size as usize];
-					data.read_exact(&mut value)?;
-
-					metadata.insert(
-						String::from_utf8(fourcc_b.to_vec())?,
-						String::from_utf8(value)?,
-					);
-					continue;
-				}
-
-				data.seek(SeekFrom::Current(i64::from(size)))?;
-			}
-
-			Ok((metadata, properties))
-		}
-
 		pub(crate) fn write_to(data: &mut File, metadata: &HashMap<String, String>) -> Result<()> {
 			verify_aiff(data)?;
 

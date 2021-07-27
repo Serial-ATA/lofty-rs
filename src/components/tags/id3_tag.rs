@@ -1,4 +1,5 @@
 use crate::components::logic::aiff;
+use crate::components::logic::aiff::AiffMetadataType;
 use crate::tag::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
@@ -8,7 +9,7 @@ use crate::{
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
@@ -40,10 +41,17 @@ impl Id3v2Tag {
 				Id3v2InnerTag::read_from_wav_reader(reader)?,
 			),
 			Id3Format::Aiff => {
-				let properties = aiff::read_properties(reader)?;
-				reader.seek(SeekFrom::Start(0))?;
+				let (data, properties) = aiff::read_from(reader, true)?;
 
-				(properties, Id3v2InnerTag::read_from_aiff_reader(reader)?)
+				let inner = match data {
+					Some(AiffMetadataType::Id3(id3_data)) => {
+						Id3v2InnerTag::read_from(Cursor::new(id3_data))?
+					},
+					None => Id3v2InnerTag::new(),
+					_ => unreachable!(),
+				};
+
+				(properties, inner)
 			},
 		};
 
