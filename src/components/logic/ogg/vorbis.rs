@@ -2,8 +2,8 @@ use super::find_last_page;
 use crate::components::logic::ogg::constants::VORBIS_SETUP_HEAD;
 use crate::{FileProperties, LoftyError, Result};
 
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::fs::File;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};

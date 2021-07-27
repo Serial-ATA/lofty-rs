@@ -8,8 +8,8 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
-use unicase::UniCase;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use unicase::UniCase;
 
 struct Block {
 	byte: u8,

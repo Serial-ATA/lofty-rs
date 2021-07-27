@@ -1,8 +1,8 @@
 use super::find_last_page;
 use crate::{FileProperties, LoftyError, Result};
 
-use std::io::{Read, Seek, SeekFrom, Write};
 use std::fs::File;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
