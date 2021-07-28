@@ -1,4 +1,4 @@
-use crate::components::logic::riff;
+use crate::components::logic::iff::riff;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Result, TagType, ToAny,
 	ToAnyTag,

@@ -1,5 +1,5 @@
-use crate::components::logic::aiff;
-use crate::components::logic::aiff::AiffMetadataType;
+use crate::components::logic::iff;
+use crate::components::logic::iff::aiff::AiffMetadataType;
 use crate::tag::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
@@ -41,7 +41,7 @@ impl Id3v2Tag {
 				Id3v2InnerTag::read_from_wav_reader(reader)?,
 			),
 			Id3Format::Aiff => {
-				let (data, properties) = aiff::read_from(reader, true)?;
+				let (data, properties) = iff::aiff::read_from(reader, true)?;
 
 				let inner = match data {
 					Some(AiffMetadataType::Id3(id3_data)) => {

@@ -1,5 +1,5 @@
-use crate::components::logic::aiff;
-use crate::components::logic::aiff::AiffMetadataType;
+use crate::components::logic::iff::aiff;
+use crate::components::logic::iff::aiff::AiffMetadataType;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Result, TagType, ToAny,
 	ToAnyTag,

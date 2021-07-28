@@ -1,6 +1,3 @@
-#[cfg(feature = "format-riff")]
-pub(crate) mod riff;
-
 #[cfg(any(
 	feature = "format-opus",
 	feature = "format-vorbis",
@@ -9,4 +6,4 @@ pub(crate) mod riff;
 pub(crate) mod ogg;
 
 #[cfg(any(feature = "format-aiff", feature = "format-id3"))]
-pub(crate) mod aiff;
+pub(crate) mod iff;
