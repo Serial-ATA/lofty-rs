@@ -155,7 +155,7 @@ where
 			feature = "format-flac",
 			feature = "format-opus"
 		))]
-		TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
+		TagType::Ogg(ref format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
 		#[cfg(feature = "format-aiff")]
 		TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
 	}

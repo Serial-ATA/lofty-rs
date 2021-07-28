@@ -8,7 +8,7 @@ use std::io::Cursor;
 fn test_inner() {
 	// Create a new flac OggTag
 	let mut flac_data = Cursor::new(std::fs::read("tests/assets/a.flac").unwrap());
-	let mut flac_tag = OggTag::read_from(&mut flac_data, OggFormat::Flac).unwrap();
+	let mut flac_tag = OggTag::read_from(&mut flac_data, &OggFormat::Flac).unwrap();
 
 	// Set the title of the flac tag
 	flac_tag.set_title("Foo title");

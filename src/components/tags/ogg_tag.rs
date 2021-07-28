@@ -80,7 +80,7 @@ impl TryFrom<OGGTags> for OggTag {
 
 impl OggTag {
 	#[allow(missing_docs, clippy::missing_errors_doc)]
-	pub fn read_from<R>(reader: &mut R, format: OggFormat) -> Result<Self>
+	pub fn read_from<R>(reader: &mut R, format: &OggFormat) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
