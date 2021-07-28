@@ -26,7 +26,7 @@ pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileP
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 
 	if channels == 0 {
-		return Err(LoftyError::InvalidData("AIFF file contains 0 channels"));
+		return Err(LoftyError::Aiff("File contains 0 channels"));
 	}
 
 	let sample_frames = comm.read_u32::<BigEndian>()?;
@@ -114,8 +114,8 @@ where
 			b"COMM" => {
 				if comm.is_none() {
 					if size < 18 {
-						return Err(LoftyError::InvalidData(
-							"AIFF file has an invalid COMM chunk size (< 18)",
+						return Err(LoftyError::Aiff(
+							"File has an invalid \"COMM\" chunk size (< 18)",
 						));
 					}
 
@@ -136,15 +136,11 @@ where
 	}
 
 	if comm.is_none() {
-		return Err(LoftyError::InvalidData(
-			"AIFF file does not contain a COMM chunk",
-		));
+		return Err(LoftyError::Aiff("File does not contain a \"COMM\" chunk"));
 	}
 
 	if stream_len == 0 {
-		return Err(LoftyError::InvalidData(
-			"AIFF file does not contain a SSND chunk",
-		));
+		return Err(LoftyError::Aiff("File does not contain a \"SSND\" chunk"));
 	}
 
 	let properties = read_properties(&mut &*comm.unwrap(), stream_len)?;

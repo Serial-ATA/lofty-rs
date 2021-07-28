@@ -31,11 +31,7 @@ where
 	let last_page_abgp = last_page.abgp;
 
 	last_page_abgp.checked_sub(first_page_abgp).map_or_else(
-		|| {
-			Err(LoftyError::InvalidData(
-				"OGG file contains incorrect PCM values",
-			))
-		},
+		|| Err(LoftyError::Vorbis("File contains incorrect PCM values")),
 		|frame_count| {
 			let length = frame_count * 1000 / u64::from(sample_rate);
 			let duration = Duration::from_millis(length as u64);
@@ -92,7 +88,7 @@ pub fn write_to(
 	}
 
 	if !reached_md_end {
-		return Err(LoftyError::InvalidData("OGG file ends with comment header"));
+		return Err(LoftyError::Vorbis("File ends with comment header"));
 	}
 
 	c.seek(SeekFrom::Start(comments_pos))?;
@@ -103,9 +99,7 @@ pub fn write_to(
 	}
 
 	if c.read_u8()? != 1 {
-		return Err(LoftyError::InvalidData(
-			"OGG Vorbis file is missing a framing bit",
-		));
+		return Err(LoftyError::Vorbis("File is missing a framing bit"));
 	}
 
 	// Comments should be followed by the setup header
@@ -113,9 +107,7 @@ pub fn write_to(
 	c.read_exact(&mut header_ident)?;
 
 	if header_ident != VORBIS_SETUP_HEAD {
-		return Err(LoftyError::InvalidData(
-			"OGG Vorbis file is missing setup header",
-		));
+		return Err(LoftyError::Vorbis("File is missing setup header"));
 	}
 
 	c.seek(SeekFrom::Current(-7))?;

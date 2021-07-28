@@ -34,11 +34,7 @@ where
 	last_page_abgp
 		.checked_sub(first_page_abgp + u64::from(pre_skip))
 		.map_or_else(
-			|| {
-				Err(LoftyError::InvalidData(
-					"OGG file contains incorrect PCM values",
-				))
-			},
+			|| Err(LoftyError::Opus("File contains incorrect PCM values")),
 			|frame_count| {
 				let length = frame_count * 1000 / 48000;
 				let duration = Duration::from_millis(length as u64);
@@ -69,7 +65,7 @@ pub fn write_to(data: &mut File, writer: &mut Vec<u8>, ser: u32, pages: &mut [Pa
 	}
 
 	if !reached_md_end {
-		return Err(LoftyError::InvalidData("OGG file ends with comment header"));
+		return Err(LoftyError::Opus("File ends with comment header"));
 	}
 
 	data.read_to_end(&mut remaining)?;

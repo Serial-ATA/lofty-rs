@@ -62,7 +62,7 @@ pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();
 
 	if page.content.len() < sig_len || &page.content[..sig_len] != sig {
-		return Err(LoftyError::InvalidData("OGG file missing magic signature"));
+		return Err(LoftyError::Ogg("File missing magic signature"));
 	}
 
 	Ok(())

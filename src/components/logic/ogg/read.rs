@@ -54,11 +54,7 @@ where
 
 	let vendor = match String::from_utf8(vendor) {
 		Ok(v) => v,
-		Err(_) => {
-			return Err(LoftyError::InvalidData(
-				"OGG file has an invalid vendor string",
-			))
-		},
+		Err(_) => return Err(LoftyError::Ogg("File has an invalid vendor string")),
 	};
 
 	let comments_total_len = data.read_u32::<LittleEndian>()?;

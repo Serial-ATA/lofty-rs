@@ -57,17 +57,13 @@ where
 	data.read_exact(&mut marker)?;
 
 	if &marker != b"fLaC" {
-		return Err(LoftyError::InvalidData(
-			"FLAC file missing \"fLaC\" stream marker",
-		));
+		return Err(LoftyError::Flac("File missing \"fLaC\" stream marker"));
 	}
 
 	let block = Block::read(data)?;
 
 	if block.ty != 0 {
-		return Err(LoftyError::InvalidData(
-			"FLAC file missing mandatory STREAMINFO block",
-		));
+		return Err(LoftyError::Flac("File missing mandatory STREAMINFO block"));
 	}
 
 	Ok(block)
@@ -127,8 +123,8 @@ where
 	let stream_info_len = (stream_info.end - stream_info.start) as u32;
 
 	if stream_info_len < 18 {
-		return Err(LoftyError::InvalidData(
-			"FLAC file has an invalid STREAMINFO block size (< 18)",
+		return Err(LoftyError::Flac(
+			"File has an invalid STREAMINFO block size (< 18)",
 		));
 	}
 
