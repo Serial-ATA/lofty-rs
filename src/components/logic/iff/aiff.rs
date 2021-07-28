@@ -1,3 +1,4 @@
+use crate::components::logic::iff::IffData;
 use crate::{FileProperties, LoftyError, Result};
 
 use std::collections::HashMap;
@@ -6,11 +7,6 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
-
-pub(crate) enum AiffMetadataType {
-	Id3(Vec<u8>),
-	TextChunks(HashMap<String, String>),
-}
 
 fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
@@ -79,10 +75,7 @@ pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileP
 	))
 }
 
-pub(crate) fn read_from<R>(
-	data: &mut R,
-	expect_id3: bool,
-) -> Result<(Option<AiffMetadataType>, FileProperties)>
+pub(crate) fn read_from<R>(data: &mut R) -> Result<IffData>
 where
 	R: Read + Seek,
 {
@@ -92,7 +85,7 @@ where
 	let mut stream_len = 0;
 
 	let mut metadata = HashMap::<String, String>::new();
-	let mut id3 = (false, Vec::new());
+	let mut id3 = Vec::new();
 
 	while let (Ok(fourcc), Ok(size)) = (
 		data.read_u32::<LittleEndian>(),
@@ -114,7 +107,7 @@ where
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
 
-				id3 = (true, value)
+				id3 = value
 			},
 			b"COMM" => {
 				if comm.is_none() {
@@ -154,15 +147,13 @@ where
 
 	let properties = read_properties(&mut &*comm.unwrap(), stream_len)?;
 
-	let metadata = if id3.0 && expect_id3 {
-		Some(AiffMetadataType::Id3(id3.1))
-	} else if expect_id3 && !id3.0 {
-		None
-	} else {
-		Some(AiffMetadataType::TextChunks(metadata))
+	let metadata = IffData {
+		properties,
+		metadata,
+		id3: (!id3.is_empty()).then(|| id3),
 	};
 
-	Ok((metadata, properties))
+	Ok(metadata)
 }
 
 cfg_if::cfg_if! {
