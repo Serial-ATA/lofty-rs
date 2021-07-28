@@ -38,11 +38,13 @@ impl RiffTag {
 	where
 		R: Read + Seek,
 	{
+		let data = riff::read_from(reader)?;
+
 		Ok(Self {
 			inner: RiffInnerTag {
-				data: riff::read_from(reader)?,
+				data: data.metadata,
 			},
-			properties: FileProperties::default(), // TODO
+			properties: data.properties,
 			_format: TagType::RiffInfo,
 		})
 	}

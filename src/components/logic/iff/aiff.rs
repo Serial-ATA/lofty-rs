@@ -24,6 +24,11 @@ where
 
 pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
 	let channels = comm.read_u16::<BigEndian>()? as u8;
+
+	if channels == 0 {
+		return Err(LoftyError::InvalidData("AIFF file contains 0 channels"));
+	}
+
 	let sample_frames = comm.read_u32::<BigEndian>()?;
 	let _sample_size = comm.read_u16::<BigEndian>()?;
 
@@ -87,19 +92,16 @@ where
 	let mut metadata = HashMap::<String, String>::new();
 	let mut id3 = Vec::new();
 
-	while let (Ok(fourcc), Ok(size)) = (
-		data.read_u32::<LittleEndian>(),
-		data.read_u32::<BigEndian>(),
-	) {
-		let fourcc_b = &fourcc.to_le_bytes();
+	let mut fourcc = [0; 4];
 
-		match fourcc_b {
+	while let (Ok(()), Ok(size)) = (data.read_exact(&mut fourcc), data.read_u32::<BigEndian>()) {
+		match &fourcc {
 			b"NAME" | b"AUTH" | b"(c) " => {
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
 
 				metadata.insert(
-					String::from_utf8(fourcc_b.to_vec())?,
+					String::from_utf8(fourcc.to_vec())?,
 					String::from_utf8(value)?,
 				);
 			},

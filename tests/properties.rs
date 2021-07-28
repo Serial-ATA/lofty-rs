@@ -22,6 +22,13 @@ const AIFF_PROPERTIES: FileProperties = FileProperties::new(
 	Some(2),
 );
 
+const RIFF_PROPERTIES: FileProperties = FileProperties::new(
+	Duration::from_millis(1428),
+	Some(1536),
+	Some(48000),
+	Some(2),
+);
+
 macro_rules! properties_test {
 	($function:ident, $path:expr, $expected:ident) => {
 		#[test]
@@ -36,8 +43,12 @@ macro_rules! properties_test {
 	};
 }
 
+properties_test!(test_aiff_id3, "tests/assets/a.aiff", AIFF_PROPERTIES);
+properties_test!(test_aiff_text, "tests/assets/a_text.aiff", AIFF_PROPERTIES);
+
 properties_test!(test_opus, "tests/assets/a.opus", OPUS_PROPERTIES);
 properties_test!(test_vorbis, "tests/assets/a.ogg", VORBIS_PROPERTIES);
 properties_test!(test_flac, "tests/assets/a.flac", FLAC_PROPERTIES);
-properties_test!(test_aiff_text, "tests/assets/a_text.aiff", AIFF_PROPERTIES);
-properties_test!(test_aiff, "tests/assets/a.aiff", AIFF_PROPERTIES);
+
+properties_test!(test_wav_id3, "tests/assets/a-id3.wav", RIFF_PROPERTIES);
+properties_test!(test_wav_info, "tests/assets/a.wav", RIFF_PROPERTIES);
