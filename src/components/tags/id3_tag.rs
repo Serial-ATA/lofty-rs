@@ -1,4 +1,5 @@
 use crate::components::logic::iff::{aiff, riff};
+use crate::components::logic::mpeg;
 use crate::tag::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
@@ -30,10 +31,16 @@ impl Id3v2Tag {
 		R: Read + Seek,
 	{
 		let (properties, inner) = match format {
-			Id3Format::Mp3 => (
-				FileProperties::default(), // TODO
-				Id3v2InnerTag::read_from(reader),
-			),
+			Id3Format::Mp3 => {
+				let data = mpeg::read::read_from(reader)?;
+
+				let inner = match data.id3 {
+					Some(id3) => Id3v2InnerTag::read_from(Cursor::new(id3)),
+					None => Ok(Id3v2InnerTag::new()),
+				};
+
+				(data.properties, inner)
+			},
 			Id3Format::Riff => {
 				let data = riff::read_from(reader)?;
 

@@ -11,3 +11,6 @@ pub(crate) mod ogg;
 	feature = "format-id3"
 ))]
 pub(crate) mod iff;
+
+#[cfg(feature = "format-id3")] // TODO: new feature?
+pub(crate) mod mpeg;

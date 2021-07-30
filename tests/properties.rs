@@ -29,6 +29,13 @@ const RIFF_PROPERTIES: FileProperties = FileProperties::new(
 	Some(2),
 );
 
+const MPEG_PROPERTIES: FileProperties = FileProperties::new(
+	Duration::from_millis(1464),
+	Some(63),
+	Some(48000),
+	Some(2),
+);
+
 macro_rules! properties_test {
 	($function:ident, $path:expr, $expected:ident) => {
 		#[test]
@@ -52,3 +59,5 @@ properties_test!(test_flac, "tests/assets/a.flac", FLAC_PROPERTIES);
 
 properties_test!(test_wav_id3, "tests/assets/a-id3.wav", RIFF_PROPERTIES);
 properties_test!(test_wav_info, "tests/assets/a.wav", RIFF_PROPERTIES);
+
+properties_test!(test_mp3, "tests/assets/a.mp3", MPEG_PROPERTIES);

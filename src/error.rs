@@ -77,6 +77,10 @@ pub enum LoftyError {
 	/// Errors that arise while reading/writing to OGG files
 	#[error("OGG: {0}")]
 	Ogg(&'static str),
+	// TODO: feature
+	/// Errors that arise while reading/writing to MPEG files
+	#[error("MPEG: {0}")]
+	Mpeg(&'static str),
 
 	// Conversions for std Errors
 	/// Unable to convert bytes to a String
