@@ -27,9 +27,8 @@ impl Mp4Tag {
 	{
 		let inner = Mp4InnerTag::read_from(reader)?;
 
-		// TODO
 		let duration = inner.duration();
-		let bitrate = inner.avg_bitrate();
+		let bitrate = inner.avg_bitrate().map(|b| b / 1000);
 		let channels = inner.channel_config().map(|cc| cc.channel_count());
 		let sample_rate = inner.sample_rate().map(|sr| sr.hz());
 
