@@ -116,7 +116,7 @@ impl OggTag {
 	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn remove_from(file: &mut File, format: &OggFormat) -> Result<()> {
 		if &OggFormat::Flac == format {
-			// TODO
+			ogg::flac::write_to(file, "", &HashMap::new(), &None)?;
 			return Ok(());
 		}
 
