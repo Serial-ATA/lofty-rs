@@ -16,9 +16,6 @@ pub enum LoftyError {
 	/// Provided an empty file
 	#[error("File contains no data")]
 	EmptyFile,
-	/// Provided a file with invalid/malformed data
-	#[error("File has invalid data: {0}")]
-	InvalidData(&'static str),
 	/// Attempting to write an abnormally large amount of data
 	#[error("An abnormally large amount of data was provided, and an overflow occurred")]
 	TooMuchData,
@@ -32,14 +29,6 @@ pub enum LoftyError {
 	NotAPicture,
 
 	// Tag related errors
-	#[cfg(feature = "format-ape")]
-	/// Any error from [`ape`]
-	#[error(transparent)]
-	ApeTag(#[from] ape::Error),
-	#[cfg(feature = "format-flac")]
-	/// Any error from [`metaflac`]
-	#[error(transparent)]
-	FlacTag(#[from] metaflac::Error),
 	#[cfg(feature = "format-id3")]
 	/// Any error from [`id3`]
 	#[error(transparent)]
@@ -57,9 +46,41 @@ pub enum LoftyError {
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),
 	#[cfg(feature = "format-riff")]
-	/// Errors that arise while reading/writing to wav files
-	#[error("Invalid Riff file: {0}")]
+	/// Errors that arise while reading/writing to RIFF files
+	#[error("Riff: {0}")]
 	Riff(&'static str),
+	#[cfg(feature = "format-aiff")]
+	/// Errors that arise while reading/writing to AIFF files
+	#[error("Aiff: {0}")]
+	Aiff(&'static str),
+	#[cfg(feature = "format-flac")]
+	/// Errors that arise while reading/writing to FLAC files
+	#[error("Flac: {0}")]
+	Flac(&'static str),
+	#[cfg(feature = "format-opus")]
+	/// Errors that arise while reading/writing to OPUS files
+	#[error("Opus: {0}")]
+	Opus(&'static str),
+	#[cfg(feature = "format-vorbis")]
+	/// Errors that arise while reading/writing to OGG Vorbis files
+	#[error("Vorbis: {0}")]
+	Vorbis(&'static str),
+	#[cfg(any(
+		feature = "format-opus",
+		feature = "format-vorbis",
+		feature = "format-flac"
+	))]
+	/// Errors that arise while reading/writing to OGG files
+	#[error("OGG: {0}")]
+	Ogg(&'static str),
+	// TODO: feature
+	/// Errors that arise while reading/writing to MPEG files
+	#[error("MPEG: {0}")]
+	Mpeg(&'static str),
+	#[cfg(feature = "format-ape")]
+	/// Errors that arise while reading/writing to APE files
+	#[error("APE: {0}")]
+	Ape(&'static str),
 
 	// Conversions for std Errors
 	/// Unable to convert bytes to a String

@@ -1,6 +1,6 @@
 #[allow(clippy::wildcard_imports)]
 use crate::components::tags::*;
-use crate::{Album, AnyTag, Picture, Result, TagType};
+use crate::{Album, AnyTag, FileProperties, Picture, Result, TagType};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -128,6 +128,9 @@ pub trait AudioTagEdit {
 	///
 	/// See [`get_key`][AudioTagEdit::get_key]'s note
 	fn remove_key(&mut self, _key: &str) {}
+
+	/// Returns the [`FileProperties`][crate::FileProperties]
+	fn properties(&self) -> &FileProperties;
 }
 
 /// Functions for writing to a file

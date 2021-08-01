@@ -1,6 +1,7 @@
-use crate::components::logic::riff;
+use crate::components::logic::iff::riff;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Result, TagType, ToAny,
+	ToAnyTag,
 };
 
 use std::collections::HashMap;
@@ -18,6 +19,7 @@ struct RiffInnerTag {
 /// Represents a RIFF INFO LIST
 pub struct RiffTag {
 	inner: RiffInnerTag,
+	properties: FileProperties,
 	#[expected(TagType::RiffInfo)]
 	_format: TagType,
 }
@@ -28,10 +30,13 @@ impl RiffTag {
 	where
 		R: Read + Seek,
 	{
+		let data = riff::read_from(reader)?;
+
 		Ok(Self {
 			inner: RiffInnerTag {
-				data: riff::read_from(reader).unwrap_or_default(),
+				data: data.metadata,
 			},
+			properties: data.properties,
 			_format: TagType::RiffInfo,
 		})
 	}
@@ -144,6 +149,10 @@ impl AudioTagEdit for RiffTag {
 	}
 	fn remove_key(&mut self, key: &str) {
 		self.remove_key(key)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
 	}
 }
 

@@ -155,7 +155,7 @@ where
 			feature = "format-flac",
 			feature = "format-opus"
 		))]
-		TagType::Ogg(format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
+		TagType::Ogg(ref format) => Ok(Box::new(OggTag::read_from(reader, format)?)),
 		#[cfg(feature = "format-aiff")]
 		TagType::AiffText => Ok(Box::new(AiffTag::read_from(reader)?)),
 	}
@@ -249,9 +249,7 @@ impl TagType {
 		R: Read + Seek,
 	{
 		#[cfg(feature = "format-id3")]
-		fn verify_mp3(byte_1: u8, byte_2: u8) -> bool {
-			byte_1 == 0xFF && byte_2 != 0xFF && (byte_2 & 0xE0) == 0xE0
-		}
+		use crate::components::logic::{id3::decode_u32, mpeg::header::verify_frame_sync};
 
 		if data.seek(SeekFrom::End(0))? == 0 {
 			return Err(LoftyError::EmptyFile);
@@ -268,13 +266,8 @@ impl TagType {
 			#[cfg(feature = "format-ape")]
 			77 if sig.starts_with(b"MAC") => Ok(Self::Ape),
 			#[cfg(feature = "format-id3")]
-			_ if verify_mp3(sig[0], sig[1])
+			_ if verify_frame_sync(sig[0], sig[1])
 				|| ((sig.starts_with(b"ID3") || sig.starts_with(b"id3")) && {
-					// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
-					fn decode_u32(n: u32) -> u32 {
-						n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
-					}
-
 					let size = decode_u32(u32::from_be_bytes(
 						sig[6..10]
 							.try_into()
@@ -288,7 +281,7 @@ impl TagType {
 
 					data.seek(SeekFrom::Start(0))?;
 
-					verify_mp3(b1, b2)
+					verify_frame_sync(b1, b2)
 				}) =>
 			{
 				Ok(Self::Id3v2(Id3Format::Mp3))

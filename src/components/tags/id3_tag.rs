@@ -1,13 +1,15 @@
+use crate::components::logic::iff::{aiff, riff};
+use crate::components::logic::mpeg;
 use crate::tag::Id3Format;
 use crate::{
-	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, LoftyError, MimeType, Picture,
-	PictureType, Result, TagType, ToAny, ToAnyTag,
+	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
+	Picture, Result, TagType, ToAny, ToAnyTag,
 };
 
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
@@ -17,6 +19,7 @@ use lofty_attr::LoftyTag;
 /// Represents an ID3 tag
 pub struct Id3v2Tag {
 	inner: Id3v2InnerTag,
+	properties: FileProperties,
 	#[expected(TagType::Id3v2(Id3Format::Mp3))]
 	_format: TagType,
 }
@@ -27,22 +30,44 @@ impl Id3v2Tag {
 	where
 		R: Read + Seek,
 	{
-		match format {
-			Id3Format::Mp3 => Ok(Self {
-				inner: Id3v2InnerTag::read_from(reader).unwrap_or_else(|_| Id3v2InnerTag::new()),
-				_format: TagType::Id3v2(format),
-			}),
-			Id3Format::Riff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_wav_reader(reader)
-					.unwrap_or_else(|_| Id3v2InnerTag::new()),
-				_format: TagType::Id3v2(format),
-			}),
-			Id3Format::Aiff => Ok(Self {
-				inner: Id3v2InnerTag::read_from_aiff_reader(reader)
-					.unwrap_or_else(|_| Id3v2InnerTag::new()),
-				_format: TagType::Id3v2(format),
-			}),
-		}
+		let (properties, inner) = match format {
+			Id3Format::Mp3 => {
+				let data = mpeg::read::read_from(reader)?;
+
+				let inner = match data.id3 {
+					Some(id3) => Id3v2InnerTag::read_from(Cursor::new(id3)),
+					None => Ok(Id3v2InnerTag::new()),
+				};
+
+				(data.properties, inner)
+			},
+			Id3Format::Riff => {
+				let data = riff::read_from(reader)?;
+
+				let inner = match data.id3 {
+					Some(id3) => Id3v2InnerTag::read_from(Cursor::new(id3)),
+					None => Ok(Id3v2InnerTag::new()),
+				};
+
+				(data.properties, inner)
+			},
+			Id3Format::Aiff => {
+				let data = aiff::read_from(reader)?;
+
+				let inner = match data.id3 {
+					Some(id3) => Id3v2InnerTag::read_from(Cursor::new(id3)),
+					None => Ok(Id3v2InnerTag::new()),
+				};
+
+				(data.properties, inner)
+			},
+		};
+
+		Ok(Self {
+			inner: inner.unwrap_or_else(|_| Id3v2InnerTag::new()),
+			properties,
+			_format: TagType::Id3v2(format),
+		})
 	}
 
 	#[allow(missing_docs, clippy::missing_errors_doc)]
@@ -52,30 +77,30 @@ impl Id3v2Tag {
 	}
 }
 
-impl std::convert::TryFrom<id3::frame::Picture> for Picture {
+impl std::convert::TryFrom<&id3::frame::Picture> for Picture {
 	type Error = LoftyError;
 
-	fn try_from(inp: id3::frame::Picture) -> Result<Self> {
+	fn try_from(inp: &id3::frame::Picture) -> Result<Self> {
 		let id3::frame::Picture {
-			ref mime_type,
+			mime_type,
 			data,
-			ref picture_type,
+			picture_type,
 			description,
 			..
 		} = inp;
 		let mime_type: MimeType = mime_type.as_str().try_into()?;
 		let pic_type = *picture_type;
-		let description = if description == String::new() {
+		let description = if description == &String::new() {
 			None
 		} else {
-			Some(Cow::from(description))
+			Some(Cow::from(description.clone()))
 		};
 
 		Ok(Self {
 			pic_type,
 			mime_type,
 			description,
-			data: Cow::from(data),
+			data: Cow::from(data.clone()),
 		})
 	}
 }
@@ -259,18 +284,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner
 			.pictures()
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverFront))
-			.and_then(|pic| {
-				Some(Picture {
-					pic_type: PictureType::CoverFront,
-					data: Cow::from(pic.data.clone()),
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-					description: if pic.description == String::new() {
-						None
-					} else {
-						Some(Cow::from(pic.description.clone()))
-					},
-				})
-			})
+			.and_then(|pic| TryInto::<Picture>::try_into(pic).ok())
 	}
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
@@ -288,18 +302,7 @@ impl AudioTagEdit for Id3v2Tag {
 		self.inner
 			.pictures()
 			.find(|&pic| matches!(pic.picture_type, id3::frame::PictureType::CoverBack))
-			.and_then(|pic| {
-				Some(Picture {
-					pic_type: PictureType::CoverBack,
-					data: Cow::from(pic.data.clone()),
-					mime_type: (pic.mime_type.as_str()).try_into().ok()?,
-					description: if pic.description == String::new() {
-						None
-					} else {
-						Some(Cow::from(pic.description.clone()))
-					},
-				})
-			})
+			.and_then(|pic| TryInto::<Picture>::try_into(pic).ok())
 	}
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
@@ -320,7 +323,7 @@ impl AudioTagEdit for Id3v2Tag {
 			let mut collection = Vec::new();
 
 			for pic in pictures {
-				match TryInto::<Picture>::try_into(pic.clone()) {
+				match TryInto::<Picture>::try_into(pic) {
 					Ok(p) => collection.push(p),
 					Err(_) => return None,
 				}
@@ -397,6 +400,10 @@ impl AudioTagEdit for Id3v2Tag {
 	}
 	fn remove_key(&mut self, key: &str) {
 		self.inner.remove(key)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
 	}
 }
 
