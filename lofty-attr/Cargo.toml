@@ -11,7 +11,7 @@ edition = "2018"
 quote = "1.0.9"
 
 [dependencies.syn]
-version = "1.0.72"
+version = "1.0.74"
 features = ["derive"]
 
 [lib]
