@@ -368,7 +368,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`InvalidData`][LoftyError::InvalidData] if at any point it's unable to parse the data
+	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
 	pub fn from_apic_bytes(bytes: &[u8]) -> Result<Self> {
 		let data = match base64::decode(bytes) {
 			Ok(o) => o,
@@ -451,7 +451,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`InvalidData`][LoftyError::InvalidData] if at any point it's unable to parse the data
+	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if !bytes.is_empty() {
 			fn read_text(c: &mut Cursor<Vec<u8>>) -> String {
