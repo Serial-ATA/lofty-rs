@@ -1,6 +1,6 @@
 [package]
 name = "ogg_pager"
-version = "0.1.6"
+version = "0.1.7"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2018"
 repository = "https://github.com/Serial-ATA/lofty-rs"
