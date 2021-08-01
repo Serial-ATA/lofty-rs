@@ -91,8 +91,6 @@ where
 		}
 	}
 
-	// This function does 2 things.
-	//
 	// First see if there's a ID3v1 tag
 	//
 	// Starts with ['T', 'A', 'G']

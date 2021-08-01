@@ -29,9 +29,9 @@ where
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)
+		} else {
+			data.seek(SeekFrom::Current(i64::from(size)))?;
 		}
-
-		data.seek(SeekFrom::Current(i64::from(size)))?;
 	}
 
 	Ok(id3v2)
