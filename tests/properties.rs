@@ -35,6 +35,9 @@ const MP3_PROPERTIES: FileProperties =
 const MP4_PROPERTIES: FileProperties =
 	FileProperties::new(Duration::from_millis(1450), Some(129), Some(48000), Some(2));
 
+const APE_PROPERTIES: FileProperties =
+	FileProperties::new(Duration::from_millis(1428), Some(360), Some(48000), Some(2));
+
 macro_rules! properties_test {
 	($function:ident, $path:expr, $expected:ident) => {
 		#[test]
@@ -62,3 +65,5 @@ properties_test!(test_wav_info, "tests/assets/a.wav", RIFF_PROPERTIES);
 properties_test!(test_mp3, "tests/assets/a.mp3", MP3_PROPERTIES);
 
 properties_test!(test_mp4, "tests/assets/a.m4a", MP4_PROPERTIES);
+
+properties_test!(test_ape, "tests/assets/a.ape", APE_PROPERTIES);

@@ -29,10 +29,6 @@ pub enum LoftyError {
 	NotAPicture,
 
 	// Tag related errors
-	#[cfg(feature = "format-ape")]
-	/// Any error from [`ape`]
-	#[error(transparent)]
-	ApeTag(#[from] ape::Error),
 	#[cfg(feature = "format-id3")]
 	/// Any error from [`id3`]
 	#[error(transparent)]
@@ -81,6 +77,10 @@ pub enum LoftyError {
 	/// Errors that arise while reading/writing to MPEG files
 	#[error("MPEG: {0}")]
 	Mpeg(&'static str),
+	#[cfg(feature = "format-ape")]
+	/// Errors that arise while reading/writing to APE files
+	#[error("APE: {0}")]
+	Ape(&'static str),
 
 	// Conversions for std Errors
 	/// Unable to convert bytes to a String

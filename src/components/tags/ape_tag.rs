@@ -1,3 +1,4 @@
+use crate::components::logic::ape::{self, ItemType};
 use crate::types::picture::{PicType, APE_PICTYPES};
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, Picture, Result, TagType,
@@ -5,12 +6,17 @@ use crate::{
 };
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek};
 
-use ape::Item;
-pub use ape::Tag as ApeInnerTag;
 use lofty_attr::{get_set_methods, LoftyTag};
+use unicase::UniCase;
+
+#[derive(Default)]
+struct ApeInnerTag {
+	data: HashMap<UniCase<String>, ItemType>,
+}
 
 #[derive(LoftyTag)]
 /// Represents an APEv2 tag
@@ -27,35 +33,40 @@ impl ApeTag {
 	where
 		R: Read + Seek,
 	{
+		let data = ape::read::read_from(reader)?;
+
 		Ok(Self {
-			inner: ape::read_from(reader).unwrap_or_else(|_| ape::Tag::new()),
-			properties: FileProperties::default(), // TODO
+			inner: ApeInnerTag {
+				data: data.ape.unwrap_or_default(),
+			},
+			properties: data.properties,
 			_format: TagType::Ape,
 		})
 	}
 
 	#[allow(missing_docs, clippy::missing_errors_doc)]
 	pub fn remove_from(file: &mut File) -> Result<()> {
-		ape::remove_from(file)?;
+		ape::write::write_to(file, &HashMap::<UniCase<String>, ItemType>::new())?;
 		Ok(())
 	}
 }
 
 impl ApeTag {
 	fn get_value(&self, key: &str) -> Option<&str> {
-		if let Some(item) = self.inner.item(key) {
-			if let ape::ItemValue::Text(val) = &item.value {
-				return Some(&*val);
-			}
+		if let Some(ItemType::String(val, _)) = self.inner.data.get(&UniCase::new(key.to_string()))
+		{
+			return Some(val.as_str());
 		}
 
 		None
 	}
 
 	#[allow(clippy::unused_self)]
-	fn get_picture(&self, item: &Item) -> Option<Picture> {
-		if let ape::ItemValue::Binary(bin) = &item.value {
-			if let Ok(pic) = Picture::from_ape_bytes(&item.key, bin) {
+	fn get_picture(&self, key: &str) -> Option<Picture> {
+		if let Some(ItemType::Binary(picture_data, _)) =
+			self.inner.data.get(&UniCase::new(key.to_string()))
+		{
+			if let Ok(pic) = Picture::from_ape_bytes(key, &*picture_data) {
 				return Some(pic);
 			}
 		}
@@ -67,14 +78,25 @@ impl ApeTag {
 	where
 		V: Into<String>,
 	{
-		self.inner.set_item(ape::Item {
-			key: key.to_string(),
-			value: ape::ItemValue::Text(val.into()),
-		})
+		if let Some(ItemType::String(_, read_only)) =
+			self.inner.data.get(&UniCase::new(key.to_string()))
+		{
+			if !read_only {
+				self.inner.data.insert(
+					UniCase::new(key.to_string()),
+					ItemType::String(val.into(), false),
+				);
+			}
+		} else {
+			self.inner.data.insert(
+				UniCase::new(key.to_string()),
+				ItemType::String(val.into(), false),
+			);
+		}
 	}
 
 	fn remove_key(&mut self, key: &str) {
-		self.inner.remove_item(key);
+		self.inner.data.remove(&UniCase::new(key.to_string()));
 	}
 }
 
@@ -131,36 +153,30 @@ impl AudioTagEdit for ApeTag {
 	}
 
 	fn front_cover(&self) -> Option<Picture> {
-		if let Some(val) = self.inner.item("Cover Art (Front)") {
-			return self.get_picture(val);
-		}
-
-		None
+		self.get_picture("Cover Art (Front)")
 	}
 	fn set_front_cover(&mut self, cover: Picture) {
 		self.remove_front_cover();
 
-		if let Ok(item) = ape::Item::from_binary("Cover Art (Front)", cover.as_ape_bytes()) {
-			self.inner.set_item(item)
-		}
+		self.inner.data.insert(
+			UniCase::new("Cover Art (Front)".to_string()),
+			ItemType::Binary(cover.as_ape_bytes(), false),
+		);
 	}
 	fn remove_front_cover(&mut self) {
 		self.remove_key("Cover Art (Front)")
 	}
 
 	fn back_cover(&self) -> Option<Picture> {
-		if let Some(val) = self.inner.item("Cover Art (Back)") {
-			return self.get_picture(val);
-		}
-
-		None
+		self.get_picture("Cover Art (Back)")
 	}
 	fn set_back_cover(&mut self, cover: Picture) {
 		self.remove_back_cover();
 
-		if let Ok(item) = ape::Item::from_binary("Cover Art (Back)", cover.as_ape_bytes()) {
-			self.inner.set_item(item)
-		}
+		self.inner.data.insert(
+			UniCase::new("Cover Art (Back)".to_string()),
+			ItemType::Binary(cover.as_ape_bytes(), false),
+		);
 	}
 	fn remove_back_cover(&mut self) {
 		self.remove_key("Cover Art (Back)")
@@ -170,18 +186,12 @@ impl AudioTagEdit for ApeTag {
 		let mut pics = Vec::new();
 
 		for pic_type in &APE_PICTYPES {
-			if let Some(item) = self.inner.item(pic_type) {
-				if let Some(pic) = self.get_picture(item) {
-					pics.push(pic)
-				}
+			if let Some(pic) = self.get_picture(*pic_type) {
+				pics.push(pic)
 			}
 		}
 
-		if pics.is_empty() {
-			None
-		} else {
-			Some(Cow::from(pics))
-		}
+		(!pics.is_empty()).then(|| Cow::from(pics))
 	}
 	fn set_pictures(&mut self, pictures: Vec<Picture>) {
 		self.remove_pictures();
@@ -189,14 +199,15 @@ impl AudioTagEdit for ApeTag {
 		for p in pictures {
 			let key = p.pic_type.as_ape_key();
 
-			if let Ok(item) = ape::Item::from_binary(key, p.as_ape_bytes()) {
-				self.inner.set_item(item)
-			}
+			self.inner.data.insert(
+				UniCase::new(key.to_string()),
+				ItemType::Binary(p.as_ape_bytes(), false),
+			);
 		}
 	}
 	fn remove_pictures(&mut self) {
 		for key in &APE_PICTYPES {
-			self.inner.remove_item(key);
+			self.inner.data.remove(&UniCase::new((*key).to_string()));
 		}
 	}
 
@@ -307,11 +318,7 @@ impl AudioTagEdit for ApeTag {
 
 impl AudioTagWrite for ApeTag {
 	fn write_to(&self, file: &mut File) -> Result<()> {
-		ape::write_to(&self.inner, file)?;
-		Ok(())
-	}
-	fn write_to_path(&self, path: &str) -> Result<()> {
-		ape::write_to_path(&self.inner, path)?;
+		ape::write::write_to(file, &self.inner.data)?;
 		Ok(())
 	}
 }

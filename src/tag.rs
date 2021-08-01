@@ -249,7 +249,7 @@ impl TagType {
 		R: Read + Seek,
 	{
 		#[cfg(feature = "format-id3")]
-		use crate::components::logic::mpeg::{header::verify_frame_sync, read::decode_u32};
+		use crate::components::logic::{id3::decode_u32, mpeg::header::verify_frame_sync};
 
 		if data.seek(SeekFrom::End(0))? == 0 {
 			return Err(LoftyError::EmptyFile);

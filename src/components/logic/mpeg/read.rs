@@ -1,4 +1,5 @@
 use super::header::{Header, XingHeader};
+use crate::components::logic::id3::decode_u32;
 use crate::components::logic::mpeg::MpegData;
 use crate::{FileProperties, LoftyError, Result};
 
@@ -7,11 +8,6 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
-
-// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
-pub(crate) fn decode_u32(n: u32) -> u32 {
-	n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
-}
 
 fn read_properties(
 	first_frame: (Header, u64),
