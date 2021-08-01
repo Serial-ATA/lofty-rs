@@ -16,9 +16,9 @@ Parse, convert, and write metadata to various audio formats.
 | AIFF        | `aiff`, `aif`                             |**X** |**X**  |`ID3v2`, `Text Chunks`                              |
 | FLAC        | `flac`                                    |**X** |**X**  |`Vorbis Comments`                                   |
 | MP3         | `mp3`                                     |**X** |**X**  |`ID3v2`, `ID3v1`, `APEv2`, `APEv1`                  |
-| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |`Vorbis Comments`                                   |
+| MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4v`, `isom` |**X** |**X**  |`Atoms`                                             |
 | Opus        | `opus`                                    |**X** |**X**  |`Vorbis Comments`                                   |
-| Ogg         | `ogg`, `oga`                              |**X** |**X**  |`Vorbis Comments`                                   |
+| Ogg Vorbis  | `ogg`                                     |**X** |**X**  |`Vorbis Comments`                                   |
 | WAV         | `wav`, `wave`                             |**X** |**X**  |`ID3v2`, `RIFF INFO`                                |
 
 ## Documentation
