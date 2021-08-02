@@ -18,6 +18,7 @@ use std::io::{Cursor, Read};
 	feature = "format-flac",
 ))]
 use byteorder::{BigEndian, ReadBytesExt};
+use std::io::{Seek, SeekFrom};
 
 #[cfg(feature = "format-ape")]
 pub const APE_PICTYPES: [&str; 21] = [
@@ -289,6 +290,8 @@ impl PicType for PictureType {
 }
 
 /// Represents a picture, with its data and mime type.
+///
+/// NOTE: The width, height, color_depth, and num_color fields can only be read from formats supporting FLAC pictures
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Picture {
 	/// The picture type
@@ -297,7 +300,15 @@ pub struct Picture {
 	pub mime_type: MimeType,
 	/// The picture's description
 	pub description: Option<Cow<'static, str>>,
-	/// The picture's actual data
+	/// The picture's width in pixels
+	pub width: u32,
+	/// The picture's height in pixels
+	pub height: u32,
+	/// The picture's color depth in bits per pixel
+	pub color_depth: u32,
+	/// The number of colors used
+	pub num_colors: u32,
+	/// The binary data of the picture
 	pub data: Cow<'static, [u8]>,
 }
 
@@ -307,33 +318,39 @@ impl Picture {
 		pic_type: PictureType,
 		mime_type: MimeType,
 		description: Option<String>,
+		dimensions: (u32, u32),
+		color_depth: u32,
+		num_colors: u32,
 		data: Vec<u8>,
 	) -> Self {
 		Self {
 			pic_type,
 			mime_type,
 			description: description.map(Cow::from),
+			width: dimensions.0,
+			height: dimensions.1,
+			color_depth,
+			num_colors,
 			data: Cow::from(data),
 		}
 	}
 
 	#[cfg(any(
-		feature = "format-id3",
 		feature = "format-opus",
 		feature = "format-vorbis",
 		feature = "format-flac"
 	))]
 	/// Convert the [`Picture`] back to an APIC byte vec:
 	///
-	/// * Id3v2 APIC
-	/// * Vorbis METADATA_BLOCK_PICTURE
+	/// * FLAC METADATA_BLOCK_PICTURE
 	pub fn as_apic_bytes(&self) -> Vec<u8> {
+		let mut data: Vec<u8> = Vec::new();
+
 		let picture_type = self.pic_type.as_u32().to_be_bytes();
 
 		let mime_str = String::from(self.mime_type);
 		let mime_len = mime_str.len() as u32;
 
-		let mut data: Vec<u8> = Vec::new();
 		data.extend(picture_type.iter());
 		data.extend(mime_len.to_be_bytes().iter());
 		data.extend(mime_str.as_bytes().iter());
@@ -346,6 +363,11 @@ impl Picture {
 			data.extend(desc_str.as_bytes().iter());
 		}
 
+		data.extend(self.width.to_be_bytes().iter());
+		data.extend(self.height.to_be_bytes().iter());
+		data.extend(self.color_depth.to_be_bytes().iter());
+		data.extend(self.num_colors.to_be_bytes().iter());
+
 		let pic_data = &self.data;
 		let pic_data_len = pic_data.len() as u32;
 
@@ -356,15 +378,13 @@ impl Picture {
 	}
 
 	#[cfg(any(
-		feature = "format-id3",
 		feature = "format-opus",
 		feature = "format-vorbis",
 		feature = "format-flac"
 	))]
 	/// Get a [`Picture`] from APIC bytes:
 	///
-	/// * Id3v2 APIC
-	/// * Vorbis METADATA_BLOCK_PICTURE
+	/// * FLAC METADATA_BLOCK_PICTURE
 	///
 	/// # Errors
 	///
@@ -403,16 +423,28 @@ impl Picture {
 							}
 						}
 
-						if let Ok(_data_len) = cursor.read_u32::<BigEndian>() {
-							let pos = (cursor.position()) as usize;
-							let content = &cursor.into_inner()[pos..];
+						if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
+							cursor.read_u32::<BigEndian>(),
+							cursor.read_u32::<BigEndian>(),
+							cursor.read_u32::<BigEndian>(),
+							cursor.read_u32::<BigEndian>(),
+						) {
+							if let Ok(data_len) = cursor.read_u32::<BigEndian>() {
+								let mut binary = vec![0; data_len as usize];
 
-							return Ok(Self {
-								pic_type: picture_type,
-								mime_type,
-								description,
-								data: Cow::from(content.to_vec()),
-							});
+								if let Ok(()) = cursor.read_exact(&mut binary) {
+									return Ok(Self {
+										pic_type: picture_type,
+										mime_type,
+										description,
+										width,
+										height,
+										color_depth,
+										num_colors,
+										data: Cow::from(binary.clone()),
+									});
+								}
+							}
 						}
 					}
 				}
@@ -427,37 +459,41 @@ impl Picture {
 	///
 	/// * APEv2 Cover Art
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
-		const NULL: [u8; 1] = [0];
-
 		let mut data: Vec<u8> = Vec::new();
 
-		if let Some(desc) = self.description.clone() {
-			let desc_str = desc.to_string();
-			data.extend(desc_str.as_bytes().iter());
-			data.extend(NULL.iter());
+		if let Some(desc) = &self.description {
+			data.extend(desc.as_bytes().iter());
 		}
 
-		data.extend(self.mime_type.as_ape().iter());
-		data.extend(NULL.iter());
+		data.extend([0].iter());
 		data.extend(self.data.iter());
 
 		data
 	}
 
 	#[cfg(feature = "format-ape")]
-	/// Get a [`Picture`] from APEv2 bytes:
+	/// Get a [`Picture`] from an APEv2 binary item:
 	///
 	/// * APEv2 Cover Art
+	///
+	/// NOTES:
+	///
+	/// * This function expects the key and its trailing null byte to have been removed
+	/// * Since APE tags only store the binary data, the width, height, color_depth, and num_colors fields will be zero.
 	///
 	/// # Errors
 	///
 	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if !bytes.is_empty() {
-			fn read_text(c: &mut Cursor<Vec<u8>>) -> String {
+			let pic_type = PictureType::from_ape_key(key);
+
+			let mut cursor = Cursor::new(bytes);
+
+			let description = {
 				let mut text = String::new();
 
-				while let Ok(ch) = c.read_u8() {
+				while let Ok(ch) = cursor.read_u8() {
 					if ch != b'\0' {
 						text.push(char::from(ch));
 						continue;
@@ -466,54 +502,38 @@ impl Picture {
 					break;
 				}
 
-				text
-			}
+				(!text.is_empty()).then(|| Cow::from(text))
+			};
 
-			let pic_type = PictureType::from_ape_key(key);
+			let mime_type = {
+				let mut identifier = [0; 4];
+				cursor.read_exact(&mut identifier)?;
 
-			let mut description = None;
-			let mut mime_type = None;
+				cursor.seek(SeekFrom::Current(-4))?;
 
-			let mut cursor = Cursor::new(bytes.to_vec());
-
-			let mut i = 0;
-
-			loop {
-				i += 1;
-
-				if i == 3 {
-					break;
+				match identifier {
+					[0x89, b'P', b'N', b'G'] => MimeType::Png,
+					_ if [0xFF, 0xD8] == identifier[..2] => MimeType::Jpeg,
+					_ if b"GIF" == &identifier[..3] => MimeType::Gif,
+					_ if b"BM" == &identifier[..2] => MimeType::Bmp,
+					_ if b"II" == &identifier[..2] => MimeType::Tiff,
+					_ => return Err(LoftyError::NotAPicture),
 				}
+			};
 
-				let text = read_text(&mut cursor);
+			let pos = cursor.position() as usize;
+			let data = Cow::from(cursor.into_inner()[pos..].to_vec());
 
-				let mime = match text.as_bytes() {
-					b"PNG\0" => Some(MimeType::Png),
-					b"JPEG" => Some(MimeType::Jpeg),
-					_ => None,
-				};
-
-				if mime.is_none() {
-					description = Some(Cow::from(text));
-
-					continue;
-				}
-
-				mime_type = mime;
-				break;
-			}
-
-			if let Some(mime_type) = mime_type {
-				let pos = cursor.position() as usize;
-				let data = Cow::from(cursor.into_inner()[pos..].to_vec());
-
-				return Ok(Picture {
-					pic_type,
-					mime_type,
-					description,
-					data,
-				});
-			}
+			return Ok(Picture {
+				pic_type,
+				mime_type,
+				description,
+				width: 0,
+				height: 0,
+				color_depth: 0,
+				num_colors: 0,
+				data,
+			});
 		}
 
 		Err(LoftyError::NotAPicture)

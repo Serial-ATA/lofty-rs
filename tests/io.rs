@@ -72,18 +72,31 @@ macro_rules! add_tags {
 		println!("Setting album artists");
 		tag.set_album_artist("foo album artist");
 
+		let mut picture_data = vec![0x89, b'P', b'N', b'G'];
+		let mut filler_data = vec![0; 50000];
+
+		picture_data.append(&mut filler_data);
+
 		let covers = (
 			Picture {
 				pic_type: PictureType::CoverFront,
-				mime_type: MimeType::Jpeg,
+				mime_type: MimeType::Png,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 50000]),
+				width: 0,
+				height: 0,
+				color_depth: 0,
+				num_colors: 0,
+				data: Cow::from(picture_data.clone()),
 			},
 			Picture {
 				pic_type: PictureType::CoverBack,
-				mime_type: MimeType::Jpeg,
+				mime_type: MimeType::Png,
 				description: Some(Cow::from("test")),
-				data: Cow::from(vec![0; 50000]),
+				width: 0,
+				height: 0,
+				color_depth: 0,
+				num_colors: 0,
+				data: Cow::from(picture_data.clone()),
 			},
 		);
 
@@ -102,9 +115,13 @@ macro_rules! add_tags {
 		if file == stringify!("tests/assets/a.m4a") {
 			let cover = Picture {
 				pic_type: PictureType::Other,
-				mime_type: MimeType::Jpeg,
+				mime_type: MimeType::Png,
 				description: None,
-				data: Cow::from(vec![0; 50000]),
+				width: 0,
+				height: 0,
+				color_depth: 0,
+				num_colors: 0,
+				data: Cow::from(picture_data),
 			};
 
 			println!("Setting cover");
@@ -161,36 +178,57 @@ macro_rules! verify_write {
 		println!("Verifying album title");
 		assert_eq!(tag.album_title(), Some("foo album title"));
 
+		let mut picture_data = vec![0x89, b'P', b'N', b'G'];
+		let mut filler_data = vec![0; 50000];
+
+		picture_data.append(&mut filler_data);
+
 		// Skip this since RIFF INFO doesn't store images
 		if file_name != stringify!("tests/assets/a.wav") {
 			let covers = if file_name == stringify!("tests/assets/a.m4a") {
 				(
 					Picture {
 						pic_type: PictureType::Other,
-						mime_type: MimeType::Jpeg,
+						mime_type: MimeType::Png,
 						description: None,
-						data: Cow::from(vec![0; 50000]),
+						width: 0,
+						height: 0,
+						color_depth: 0,
+						num_colors: 0,
+						data: Cow::from(picture_data.clone()),
 					},
 					Picture {
 						pic_type: PictureType::Other,
-						mime_type: MimeType::Jpeg,
+						mime_type: MimeType::Png,
 						description: None,
-						data: Cow::from(vec![0; 50000]),
+						width: 0,
+						height: 0,
+						color_depth: 0,
+						num_colors: 0,
+						data: Cow::from(picture_data),
 					},
 				)
 			} else {
 				(
 					Picture {
 						pic_type: PictureType::CoverFront,
-						mime_type: MimeType::Jpeg,
+						mime_type: MimeType::Png,
 						description: Some(Cow::from("test")),
-						data: Cow::from(vec![0; 50000]),
+						width: 0,
+						height: 0,
+						color_depth: 0,
+						num_colors: 0,
+						data: Cow::from(picture_data.clone()),
 					},
 					Picture {
 						pic_type: PictureType::CoverBack,
-						mime_type: MimeType::Jpeg,
+						mime_type: MimeType::Png,
 						description: Some(Cow::from("test")),
-						data: Cow::from(vec![0; 50000]),
+						width: 0,
+						height: 0,
+						color_depth: 0,
+						num_colors: 0,
+						data: Cow::from(picture_data),
 					},
 				)
 			};

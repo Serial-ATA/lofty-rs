@@ -100,6 +100,10 @@ impl std::convert::TryFrom<&id3::frame::Picture> for Picture {
 			pic_type,
 			mime_type,
 			description,
+			width: 0,
+			height: 0,
+			color_depth: 0,
+			num_colors: 0,
 			data: Cow::from(data.clone()),
 		})
 	}
