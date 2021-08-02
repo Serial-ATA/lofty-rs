@@ -15,6 +15,7 @@ struct AiffInnerTag {
 	data: HashMap<String, String>,
 }
 
+// TODO: AIFF -> Tag
 #[derive(LoftyTag)]
 /// Represents Aiff Text Chunks
 pub struct AiffTag {

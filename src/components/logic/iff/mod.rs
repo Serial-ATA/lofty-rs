@@ -1,14 +1,40 @@
-use crate::FileProperties;
+use crate::{FileProperties, Tag, Result};
 
-use std::collections::HashMap;
+use std::io::{Read, Seek};
 
-#[cfg(any(feature = "format-aiff", feature = "format-id3"))]
 pub(crate) mod aiff;
-#[cfg(any(feature = "format-riff", feature = "format-id3"))]
 pub(crate) mod riff;
 
-pub(crate) struct IffData {
+pub struct AiffFile {
 	pub properties: FileProperties,
-	pub metadata: HashMap<String, String>,
-	pub id3: Option<Vec<u8>>,
+	#[cfg(feature = "format-aiff")]
+	pub text_chunks: Option<Tag>,
+	#[cfg(feature = "format-id3")]
+	pub id3: Option<Tag>,
+}
+
+impl AiffFile {
+	pub(crate) fn read_from<R>(reader: &mut R) -> Result<Self>
+		where
+			R: Read + Seek,
+	{
+		self::aiff::read_from(reader)
+	}
+}
+
+pub struct WavFile {
+	pub properties: FileProperties,
+	#[cfg(feature = "format-riff")]
+	pub riff_info: Option<Tag>,
+	#[cfg(feature = "format-id3")]
+	pub id3: Option<Tag>,
+}
+
+impl WavFile {
+	pub(crate) fn read_from<R>(reader: &mut R) -> Result<Self>
+		where
+			R: Read + Seek,
+	{
+		self::riff::read_from(reader)
+	}
 }

@@ -18,6 +18,7 @@ struct ApeInnerTag {
 	data: HashMap<UniCase<String>, ItemType>,
 }
 
+// TODO: APE -> Tag
 #[derive(LoftyTag)]
 /// Represents an APEv2 tag
 pub struct ApeTag {
@@ -112,7 +113,7 @@ impl AudioTagEdit for ApeTag {
 	get_set_methods!(encoder, "EncoderSettings");
 
 	// Album artists aren't standard?
-	get_set_methods!(album_artist, "AlbumArtist");
+	get_set_methods!(album_artist, "Album Artist");
 
 	fn date(&self) -> Option<String> {
 		self.get_value("Date").map(std::string::ToString::to_string)

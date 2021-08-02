@@ -1,6 +1,6 @@
 use crate::components::logic::iff::{aiff, riff};
 use crate::components::logic::mpeg;
-use crate::tag::Id3Format;
+use crate::probe::Id3Format;
 use crate::{
 	Album, AnyTag, AudioTag, AudioTagEdit, AudioTagWrite, FileProperties, LoftyError, MimeType,
 	Picture, Result, TagType, ToAny, ToAnyTag,
@@ -15,6 +15,7 @@ use filepath::FilePath;
 pub use id3::Tag as Id3v2InnerTag;
 use lofty_attr::LoftyTag;
 
+// TODO: ID3 -> Tag
 #[derive(LoftyTag)]
 /// Represents an ID3 tag
 pub struct Id3v2Tag {

@@ -128,20 +128,15 @@ mod types;
 pub use crate::types::{
 	album::Album,
 	anytag::AnyTag,
+	file::{FileType, TaggedFile},
+	item::ItemKey,
 	picture::{MimeType, Picture, PictureType},
 	properties::FileProperties,
+	tag::{ItemValue, Tag, TagItem, TagType},
 };
 
-mod tag;
-#[cfg(feature = "format-id3")]
-pub use crate::tag::Id3Format;
-#[cfg(any(
-	feature = "format-opus",
-	feature = "format-vorbis",
-	feature = "format-flac"
-))]
-pub use crate::tag::OggFormat;
-pub use crate::tag::{Tag, TagType};
+mod probe;
+pub use crate::probe::Probe;
 
 mod error;
 pub use crate::error::{LoftyError, Result};

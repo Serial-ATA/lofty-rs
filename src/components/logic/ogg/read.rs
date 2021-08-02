@@ -15,7 +15,6 @@ pub type OGGTags = (
 	Vec<Picture>,
 	HashMap<UniCase<String>, String>,
 	FileProperties,
-	OggFormat,
 );
 
 fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: &Page) -> Result<FileProperties>
@@ -70,7 +69,7 @@ where
 		let split: Vec<&str> = comment.splitn(2, '=').collect();
 
 		if split[0] == "METADATA_BLOCK_PICTURE" {
-			pictures.push(Picture::from_apic_bytes(split[1].as_bytes())?)
+			pictures.push(Picture::from_flac_bytes(split[1].as_bytes())?)
 		} else {
 			storage.insert(UniCase::from(split[0].to_string()), split[1].to_string());
 		}
@@ -83,7 +82,6 @@ pub(crate) fn read_from<T>(
 	data: &mut T,
 	header_sig: &[u8],
 	comment_sig: &[u8],
-	format: OggFormat,
 ) -> Result<OGGTags>
 where
 	T: Read + Seek,
@@ -119,5 +117,5 @@ where
 
 	let properties = read_properties(data, header_sig, &first_page)?;
 
-	Ok((vendor, pictures, md, properties, format))
+	Ok((vendor, pictures, md, properties))
 }

@@ -1,0 +1,125 @@
+use crate::TagType;
+
+#[derive(PartialEq)]
+#[allow(missing_docs)]
+pub enum ItemKey {
+	Artist,
+	AlbumTitle,
+	AlbumArtist,
+	Composer,
+	Copyright,
+	Bpm,
+	RecordingDate,
+	ReleaseDate,
+	TotalDiscs,
+	DiscNumber,
+	Encoder,
+	Genre,
+	Lyrics,
+	Lyricist,
+	Title,
+	TotalTracks,
+	TrackNumber,
+}
+
+impl ItemKey {
+	/// Maps the variant to a format-specific key
+	///
+	/// # Returns
+	///
+	/// Will return `None` if no mapping is found
+	pub fn map_key(&self, tag_type: &TagType) -> Option<&str> {
+		match tag_type {
+			TagType::Ape => match self {
+				Self::Artist => Some("Artist"),
+				Self::AlbumTitle => Some("Album"),
+				Self::AlbumArtist => Some("Album Artist"),
+				Self::Composer => Some("Composer"),
+				Self::Copyright => Some("Copyright"),
+				Self::Bpm => Some("BPM"),
+				Self::ReleaseDate => Some("Date"),
+				Self::TotalDiscs | Self::DiscNumber => Some("Disc"),
+				Self::Encoder => Some("Encoder"),
+				Self::Genre => Some("Genre"),
+				Self::Lyrics => Some("Lyrics"),
+				Self::Lyricist => Some("Lyricist"),
+				Self::Title => Some("Title"),
+				Self::TotalTracks | Self::TrackNumber => Some("Track"),
+				_ => None,
+			},
+			TagType::Id3v2(_) => match self {
+				Self::Artist => Some("TPE1"),
+				Self::AlbumTitle => Some("TALB"),
+				Self::AlbumArtist => Some("TPE2"),
+				Self::Composer => Some("TCOM"),
+				Self::Copyright => Some("TCOP"),
+				Self::Bpm => Some("TBPM"),
+				Self::RecordingDate => Some("TDRC"),
+				Self::ReleaseDate => Some("TDOR"),
+				Self::TotalDiscs => Some(""),
+				Self::DiscNumber => Some(""),
+				Self::Encoder => Some("TSSE"),
+				Self::Genre => Some("TCON"),
+				Self::Lyrics => Some("USLT"),
+				Self::Lyricist => Some("TEXT"),
+				Self::Title => Some("TIT2"),
+				Self::TotalTracks => Some(""),
+				Self::TrackNumber => Some(""),
+			},
+			TagType::Mp4 => match self {
+				Self::Artist => Some("\u{a9}ART"),
+				Self::AlbumTitle => Some("\u{a9}alb"),
+				Self::AlbumArtist => Some("aART"),
+				Self::Composer => Some("\u{a9}wrt"),
+				Self::Copyright => Some("cprt"),
+				Self::Bpm => Some("tmpo"),
+				Self::RecordingDate => Some("\u{a9}day"),
+				Self::TotalDiscs | Self::DiscNumber => Some("disk"),
+				Self::Encoder => Some("\u{a9}too"),
+				Self::Genre => Some("\u{a9}gen"),
+				Self::Lyrics => Some("\u{a9}lyr"),
+				Self::Lyricist => Some("----:com.apple.iTunes:LYRICIST"),
+				Self::Title => Some("\u{a9}nam"),
+				Self::TotalTracks | Self::TrackNumber => Some("trkn"),
+				_ => None,
+			},
+			TagType::Ogg(_) => match self {
+				Self::Artist => Some("ARTIST"),
+				Self::AlbumTitle => Some("ALBUMTITLE"),
+				Self::AlbumArtist => Some("ALBUMARTIST"),
+				Self::Composer => Some("COMPOSER"),
+				Self::Copyright => Some("COPYRIGHT"),
+				Self::Bpm => Some("BPM"),
+				Self::RecordingDate => Some("DATE"),
+				Self::ReleaseDate => Some("ORIGINALDATE"),
+				Self::TotalDiscs => Some("TOTALDISCS"),
+				Self::DiscNumber => Some("DISCNUMBER"),
+				Self::Encoder => Some("ENCODER"),
+				Self::Genre => Some("GENRE"),
+				Self::Lyrics => Some("LYRICS"),
+				Self::Lyricist => Some("LYRICIST"),
+				Self::Title => Some("TITLE"),
+				Self::TotalTracks => Some("TOTALTRACKS"),
+				Self::TrackNumber => Some("TRACKNUMBER"),
+			},
+			TagType::RiffInfo => match self {
+				Self::Artist => Some("IART"),
+				Self::AlbumTitle => Some("IPRD"),
+				Self::Copyright => Some("ICOP"),
+				Self::RecordingDate => Some("ICRD"),
+				Self::Encoder => Some("ISFT"),
+				Self::Genre => Some("IGNR"),
+				Self::Title => Some("INAM"),
+				Self::TotalTracks => Some("IFRM"),
+				Self::TrackNumber => Some("ITRK"),
+				_ => None,
+			},
+			TagType::AiffText => match self {
+				Self::Artist => Some("AUTH"),
+				Self::Copyright => Some("(c) "),
+				Self::Title => Some("NAME"),
+				_ => None,
+			},
+		}
+	}
+}

@@ -15,6 +15,7 @@ struct RiffInnerTag {
 	data: HashMap<String, String>,
 }
 
+// TODO: WAV -> Tag
 #[derive(LoftyTag)]
 /// Represents a RIFF INFO LIST
 pub struct RiffTag {

@@ -3,22 +3,20 @@ use crate::{LoftyError, Result};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 #[cfg(any(
-	feature = "format-id3",
 	feature = "format-opus",
 	feature = "format-vorbis",
 	feature = "format-flac",
 	feature = "format-ape",
 ))]
 use std::io::{Cursor, Read};
+use std::io::{Seek, SeekFrom};
 
 #[cfg(any(
-	feature = "format-id3",
 	feature = "format-opus",
 	feature = "format-vorbis",
 	feature = "format-flac",
 ))]
 use byteorder::{BigEndian, ReadBytesExt};
-use std::io::{Seek, SeekFrom};
 
 #[cfg(feature = "format-ape")]
 pub const APE_PICTYPES: [&str; 21] = [
@@ -58,20 +56,6 @@ pub enum MimeType {
 	Bmp,
 	/// GIF image
 	Gif,
-}
-
-impl MimeType {
-	#[cfg(feature = "format-ape")]
-	/// Converts the `MimeType` to an ape str
-	pub fn as_ape(self) -> &'static [u8; 4] {
-		match self {
-			MimeType::Png => b"PNG\0",
-			MimeType::Jpeg => b"JPEG",
-			MimeType::Tiff => b"TIFF",
-			MimeType::Bmp => b"BMP\0",
-			MimeType::Gif => b"GIF\0",
-		}
-	}
 }
 
 impl TryFrom<&str> for MimeType {
@@ -340,10 +324,8 @@ impl Picture {
 		feature = "format-vorbis",
 		feature = "format-flac"
 	))]
-	/// Convert the [`Picture`] back to an APIC byte vec:
-	///
-	/// * FLAC METADATA_BLOCK_PICTURE
-	pub fn as_apic_bytes(&self) -> Vec<u8> {
+	/// Convert the [`Picture`] back to a FLAC METADATA_BLOCK_PICTURE byte vec:
+	pub fn as_flac_bytes(&self) -> Vec<u8> {
 		let mut data: Vec<u8> = Vec::new();
 
 		let picture_type = self.pic_type.as_u32().to_be_bytes();
@@ -382,14 +364,12 @@ impl Picture {
 		feature = "format-vorbis",
 		feature = "format-flac"
 	))]
-	/// Get a [`Picture`] from APIC bytes:
-	///
-	/// * FLAC METADATA_BLOCK_PICTURE
+	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes:
 	///
 	/// # Errors
 	///
 	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
-	pub fn from_apic_bytes(bytes: &[u8]) -> Result<Self> {
+	pub fn from_flac_bytes(bytes: &[u8]) -> Result<Self> {
 		let data = match base64::decode(bytes) {
 			Ok(o) => o,
 			Err(_) => bytes.to_vec(),

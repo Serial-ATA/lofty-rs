@@ -19,6 +19,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use lofty_attr::{get_set_methods, LoftyTag};
 use unicase::UniCase;
 
+// TODO: Vorbis -> Tag
 #[derive(Default)]
 struct OggInnerTag {
 	vendor: String,

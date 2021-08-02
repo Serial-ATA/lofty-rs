@@ -10,6 +10,7 @@ use std::io::{Read, Seek};
 use lofty_attr::LoftyTag;
 pub use mp4ameta::{Fourcc, Tag as Mp4InnerTag};
 
+// TODO: MP4 -> Tag
 #[derive(LoftyTag)]
 /// Represents an MPEG-4 tag
 pub struct Mp4Tag {
