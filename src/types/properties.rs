@@ -1,9 +1,6 @@
-use crate::ApeTag;
 use std::time::Duration;
 
 /// Various *immutable* audio properties
-///
-/// NOTE: All fields are invalidated after any type of conversion
 pub struct FileProperties {
 	duration: Duration,
 	bitrate: Option<u32>,
