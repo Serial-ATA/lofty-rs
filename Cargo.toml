@@ -1,7 +1,7 @@
 [package]
 name = "lofty"
 version = "0.3.0"
-authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>", "Tianyi <ShiTianyi2001@outlook.com>"]
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 description = "Unified IO for different types of audio metadata"
@@ -26,8 +26,6 @@ thiserror = "1.0.26"
 base64 = "0.13.0"
 byteorder = "1.4.3"
 cfg-if = "1.0.0"
-
-lofty_attr = "0.1.9"
 
 [features]
 default = ["all_tags"]
