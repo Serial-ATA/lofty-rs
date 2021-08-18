@@ -9,8 +9,10 @@ use std::convert::TryFrom;
 	feature = "format-ape",
 ))]
 use std::io::{Cursor, Read};
-use std::io::{Seek, SeekFrom};
+use std::io::{Seek, SeekFrom, Write};
 
+use crate::logic::id3::v2::Id3v2Version;
+use byteorder::WriteBytesExt;
 #[cfg(any(
 	feature = "format-opus",
 	feature = "format-vorbis",
@@ -98,14 +100,14 @@ pub trait PicType {
 		feature = "format-opus",
 		feature = "format-flac"
 	))]
-	fn as_u32(&self) -> u32;
+	fn as_u8(&self) -> u8;
 	#[cfg(any(
 		feature = "format-id3",
 		feature = "format-vorbis",
 		feature = "format-opus",
 		feature = "format-flac"
 	))]
-	fn from_u32(bytes: u32) -> PictureType;
+	fn from_u8(bytes: u8) -> PictureType;
 	#[cfg(feature = "format-ape")]
 	fn as_ape_key(&self) -> &str;
 	#[cfg(feature = "format-ape")]
@@ -154,7 +156,7 @@ impl PicType for PictureType {
 		feature = "format-opus",
 		feature = "format-flac"
 	))]
-	fn as_u32(&self) -> u32 {
+	fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,
 			Self::Icon => 1,
@@ -177,7 +179,7 @@ impl PicType for PictureType {
 			Self::Illustration => 18,
 			Self::BandLogo => 19,
 			Self::PublisherLogo => 20,
-			Self::Undefined(i) => u32::from(i.to_owned()),
+			Self::Undefined(i) => u8::from(i.to_owned()),
 		}
 	}
 
@@ -187,7 +189,7 @@ impl PicType for PictureType {
 		feature = "format-opus",
 		feature = "format-flac"
 	))]
-	fn from_u32(bytes: u32) -> Self {
+	fn from_u8(bytes: u8) -> Self {
 		match bytes {
 			0 => Self::Other,
 			1 => Self::Icon,
@@ -273,17 +275,22 @@ impl PicType for PictureType {
 	}
 }
 
-/// Represents a picture, with its data and mime type.
-///
-/// NOTE: The width, height, color_depth, and num_color fields can only be read from formats supporting FLAC pictures
+/// The text encoding for use in ID3v2 APIC frames
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
+pub enum TextEncoding {
+	/// ISO-8859-1
+	Latin1 = 0,
+	/// UTF-16 with a byte order mark
+	UTF16 = 1,
+	/// UTF-16 big endian
+	UTF16BE = 2,
+	/// UTF-8
+	UTF8 = 3,
+}
+
+/// Information about a [`Picture`]
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Picture {
-	/// The picture type
-	pub pic_type: PictureType,
-	/// The picture's mimetype
-	pub mime_type: MimeType,
-	/// The picture's description
-	pub description: Option<Cow<'static, str>>,
+pub struct PictureInformation {
 	/// The picture's width in pixels
 	pub width: u32,
 	/// The picture's height in pixels
@@ -292,6 +299,21 @@ pub struct Picture {
 	pub color_depth: u32,
 	/// The number of colors used
 	pub num_colors: u32,
+}
+
+/// Represents a picture.
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct Picture {
+	/// The picture type according to ID3v2 APIC
+	pub pic_type: PictureType,
+	/// **(ONLY APPLICABLE TO ID3v2)** The text encoding
+	pub text_encoding: TextEncoding,
+	/// The picture's mimetype
+	pub mime_type: MimeType,
+	/// The picture's description
+	pub description: Option<Cow<'static, str>>,
+	/// Basic information about the picture
+	pub information: PictureInformation,
 	/// The binary data of the picture
 	pub data: Cow<'static, [u8]>,
 }
@@ -302,20 +324,103 @@ impl Picture {
 		pic_type: PictureType,
 		mime_type: MimeType,
 		description: Option<String>,
-		dimensions: (u32, u32),
-		color_depth: u32,
-		num_colors: u32,
+		information: PictureInformation,
 		data: Vec<u8>,
 	) -> Self {
 		Self {
 			pic_type,
 			mime_type,
+			text_encoding: TextEncoding::UTF8,
 			description: description.map(Cow::from),
-			width: dimensions.0,
-			height: dimensions.1,
-			color_depth,
-			num_colors,
+			information,
 			data: Cow::from(data),
+		}
+	}
+
+	#[cfg(feature = "format-id3")]
+	/// Convert the [`Picture`] to a ID3v2 A/PIC byte Vec
+	pub fn as_apic_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
+		if version == Id3v2Version::V2 {
+			// ID3v2.2 PIC is pretty limited with formats
+			let format = match self.mime_type {
+				MimeType::Png => "PNG",
+				MimeType::Jpeg => "JPG",
+				_ => {
+					return Err(LoftyError::UnsupportedMimeType(String::from(
+						self.mime_type,
+					)))
+				},
+			};
+
+			let mut data = Cursor::new(vec![b'P', b'I', b'C', 0, 0, 0, self.text_encoding as u8]);
+
+			data.write_all(format.as_bytes());
+			data.write_u8(self.pic_type.as_u8());
+
+			if let Some(description) = &self.description {
+				data.write_all(&*crate::logic::id3::encode_text(
+					description,
+					self.text_encoding,
+				))?;
+			}
+
+			data.write_u8(0)?;
+			data.write_all(&*self.data);
+
+			let size = data.get_ref().len() - 6;
+
+			if size as u64 > u32::MAX as u64 {
+				return Err(LoftyError::TooMuchData);
+			}
+
+			let size = (size as u32).to_be_bytes();
+
+			if size[0] != 0 {
+				return Err(LoftyError::TooMuchData);
+			}
+
+			data.seek(SeekFrom::Start(3))?;
+
+			data.write_all(&size[1..])?;
+
+			Ok(data.into_inner())
+		} else {
+			let mut data = Cursor::new(vec![
+				b'A',
+				b'P',
+				b'I',
+				b'C',
+				0,
+				0,
+				0,
+				0,
+				self.text_encoding as u8,
+			]);
+
+			data.write_all(<&'static str>::from(self.mime_type).as_bytes())?;
+			data.write_u8(self.pic_type.as_u8())?;
+
+			if let Some(description) = &self.description {
+				data.write_all(&*crate::logic::id3::encode_text(
+					description,
+					self.text_encoding,
+				))?;
+			}
+
+			data.write_u8(0)?;
+			data.write_all(&*self.data)?;
+
+			let size = data.get_ref().len() - 8;
+
+			if size as u64 > u32::MAX as u64 {
+				return Err(LoftyError::TooMuchData);
+			}
+
+			data.seek(SeekFrom::Start(4))?;
+
+			data.write_u32::<BigEndian>(size as u32)?;
+
+			Ok(data.into_inner())
 		}
 	}
 
@@ -324,11 +429,11 @@ impl Picture {
 		feature = "format-vorbis",
 		feature = "format-flac"
 	))]
-	/// Convert the [`Picture`] back to a FLAC METADATA_BLOCK_PICTURE byte vec:
+	/// Convert the [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec:
 	pub fn as_flac_bytes(&self) -> Vec<u8> {
-		let mut data: Vec<u8> = Vec::new();
+		let mut data = Vec::<u8>::new();
 
-		let picture_type = self.pic_type.as_u32().to_be_bytes();
+		let picture_type = (self.pic_type.as_u8() as u32).to_be_bytes();
 
 		let mime_str = String::from(self.mime_type);
 		let mime_len = mime_str.len() as u32;
@@ -345,10 +450,10 @@ impl Picture {
 			data.extend(desc_str.as_bytes().iter());
 		}
 
-		data.extend(self.width.to_be_bytes().iter());
-		data.extend(self.height.to_be_bytes().iter());
-		data.extend(self.color_depth.to_be_bytes().iter());
-		data.extend(self.num_colors.to_be_bytes().iter());
+		data.extend(self.information.width.to_be_bytes().iter());
+		data.extend(self.information.height.to_be_bytes().iter());
+		data.extend(self.information.color_depth.to_be_bytes().iter());
+		data.extend(self.information.num_colors.to_be_bytes().iter());
 
 		let pic_data = &self.data;
 		let pic_data_len = pic_data.len() as u32;
@@ -378,7 +483,7 @@ impl Picture {
 		let mut cursor = Cursor::new(data);
 
 		if let Ok(bytes) = cursor.read_u32::<BigEndian>() {
-			let picture_type = PictureType::from_u32(bytes);
+			let picture_type = PictureType::from_u8(bytes as u8);
 
 			if let Ok(mime_len) = cursor.read_u32::<BigEndian>() {
 				let mut buf = vec![0; mime_len as usize];
@@ -415,12 +520,15 @@ impl Picture {
 								if let Ok(()) = cursor.read_exact(&mut binary) {
 									return Ok(Self {
 										pic_type: picture_type,
+										text_encoding: TextEncoding::UTF8,
 										mime_type,
 										description,
-										width,
-										height,
-										color_depth,
-										num_colors,
+										information: PictureInformation {
+											width,
+											height,
+											color_depth,
+											num_colors,
+										},
 										data: Cow::from(binary.clone()),
 									});
 								}
@@ -493,10 +601,10 @@ impl Picture {
 
 				match identifier {
 					[0x89, b'P', b'N', b'G'] => MimeType::Png,
-					_ if [0xFF, 0xD8] == identifier[..2] => MimeType::Jpeg,
-					_ if b"GIF" == &identifier[..3] => MimeType::Gif,
-					_ if b"BM" == &identifier[..2] => MimeType::Bmp,
-					_ if b"II" == &identifier[..2] => MimeType::Tiff,
+					[0xFF, 0xD8, ..] => MimeType::Jpeg,
+					[b'G', b'I', b'F', ..] => MimeType::Gif,
+					[b'B', b'M', ..] => MimeType::Bmp,
+					[b'I', b'I', ..] => MimeType::Tiff,
 					_ => return Err(LoftyError::NotAPicture),
 				}
 			};
@@ -506,12 +614,16 @@ impl Picture {
 
 			return Ok(Picture {
 				pic_type,
+				text_encoding: TextEncoding::UTF8,
 				mime_type,
 				description,
-				width: 0,
-				height: 0,
-				color_depth: 0,
-				num_colors: 0,
+				information: PictureInformation {
+					// TODO
+					width: 0,
+					height: 0,
+					color_depth: 0,
+					num_colors: 0,
+				},
 				data,
 			});
 		}
