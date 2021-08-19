@@ -1,26 +1,16 @@
+use crate::logic::id3::v2::Id3v2Version;
 use crate::{LoftyError, Result};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
-#[cfg(any(
-	feature = "format-opus",
-	feature = "format-vorbis",
-	feature = "format-flac",
-	feature = "format-ape",
-))]
 use std::io::{Cursor, Read};
 use std::io::{Seek, SeekFrom, Write};
 
-use crate::logic::id3::v2::Id3v2Version;
 use byteorder::WriteBytesExt;
-#[cfg(any(
-	feature = "format-opus",
-	feature = "format-vorbis",
-	feature = "format-flac",
-))]
+#[cfg(any(feature = "vorbis_comments", feature = "id3v2",))]
 use byteorder::{BigEndian, ReadBytesExt};
 
-#[cfg(feature = "format-ape")]
+#[cfg(feature = "ape")]
 pub const APE_PICTYPES: [&str; 21] = [
 	"Other",
 	"Png Icon",
@@ -94,28 +84,17 @@ impl From<MimeType> for String {
 }
 
 pub trait PicType {
-	#[cfg(any(
-		feature = "format-id3",
-		feature = "format-vorbis",
-		feature = "format-opus",
-		feature = "format-flac"
-	))]
+	#[cfg(any(feature = "id3v2", feature = "vorbis_comments",))]
 	fn as_u8(&self) -> u8;
-	#[cfg(any(
-		feature = "format-id3",
-		feature = "format-vorbis",
-		feature = "format-opus",
-		feature = "format-flac"
-	))]
+	#[cfg(any(feature = "id3v2", feature = "vorbis_comments",))]
 	fn from_u8(bytes: u8) -> PictureType;
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	fn as_ape_key(&self) -> &str;
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	fn from_ape_key(key: &str) -> PictureType;
 }
 
 /// The picture type
-#[cfg(not(feature = "format-id3"))]
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum PictureType {
@@ -143,19 +122,10 @@ pub enum PictureType {
 	Undefined(u8),
 }
 
-/// Alias for PictureType
-#[cfg(feature = "format-id3")]
-pub type PictureType = id3::frame::PictureType;
-
 impl PicType for PictureType {
 	// ID3/OGG specific methods
 
-	#[cfg(any(
-		feature = "format-id3",
-		feature = "format-vorbis",
-		feature = "format-opus",
-		feature = "format-flac"
-	))]
+	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
 	fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,
@@ -183,12 +153,7 @@ impl PicType for PictureType {
 		}
 	}
 
-	#[cfg(any(
-		feature = "format-id3",
-		feature = "format-vorbis",
-		feature = "format-opus",
-		feature = "format-flac"
-	))]
+	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
 	fn from_u8(bytes: u8) -> Self {
 		match bytes {
 			0 => Self::Other,
@@ -218,7 +183,7 @@ impl PicType for PictureType {
 
 	// APE specific methods
 
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	fn as_ape_key(&self) -> &str {
 		match self {
 			Self::Other => "Cover Art (Other)",
@@ -246,7 +211,7 @@ impl PicType for PictureType {
 		}
 	}
 
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	fn from_ape_key(key: &str) -> Self {
 		match key {
 			"Cover Art (Other)" => Self::Other,
@@ -337,7 +302,7 @@ impl Picture {
 		}
 	}
 
-	#[cfg(feature = "format-id3")]
+	#[cfg(feature = "id3v2")]
 	/// Convert the [`Picture`] to a ID3v2 A/PIC byte Vec
 	pub fn as_apic_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
 		if version == Id3v2Version::V2 {
@@ -424,12 +389,8 @@ impl Picture {
 		}
 	}
 
-	#[cfg(any(
-		feature = "format-opus",
-		feature = "format-vorbis",
-		feature = "format-flac"
-	))]
-	/// Convert the [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec:
+	#[cfg(feature = "vorbis_comments")]
+	/// Convert a [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec:
 	pub fn as_flac_bytes(&self) -> Vec<u8> {
 		let mut data = Vec::<u8>::new();
 
@@ -464,11 +425,7 @@ impl Picture {
 		data
 	}
 
-	#[cfg(any(
-		feature = "format-opus",
-		feature = "format-vorbis",
-		feature = "format-flac"
-	))]
+	#[cfg(feature = "vorbis_comments")]
 	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes:
 	///
 	/// # Errors
@@ -542,10 +499,10 @@ impl Picture {
 		Err(LoftyError::NotAPicture)
 	}
 
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	/// Convert the [`Picture`] back to an APEv2 byte vec:
 	///
-	/// * APEv2 Cover Art
+	/// * APE Cover Art
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
 		let mut data: Vec<u8> = Vec::new();
 
@@ -559,10 +516,10 @@ impl Picture {
 		data
 	}
 
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	/// Get a [`Picture`] from an APEv2 binary item:
 	///
-	/// * APEv2 Cover Art
+	/// * APE Cover Art
 	///
 	/// NOTES:
 	///

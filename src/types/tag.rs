@@ -188,27 +188,27 @@ impl Tag {
 /// The tag's format
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
-	#[cfg(feature = "format-ape")]
+	#[cfg(feature = "ape")]
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,
-	#[cfg(feature = "format-id3")]
+	#[cfg(feature = "id3v1")]
 	/// Represents an ID3v1 tag
 	Id3v1,
-	#[cfg(feature = "format-id3")]
+	#[cfg(feature = "id3v2")]
 	/// This covers all ID3v2 versions.
 	///
 	/// Due to frame differences between versions, it is necessary it be specified. See [`Id3v2Version`](crate::id3::Id3v2Version) for variants.
 	Id3v2(Id3v2Version),
-	#[cfg(feature = "format-mp4")]
+	#[cfg(feature = "mp4_atoms")]
 	/// Represents MP4 atoms
 	Mp4Atom,
-	#[cfg(feature = "format-ogg")]
+	#[cfg(feature = "vorbis_comments")]
 	/// Represents vorbis comments
 	VorbisComments,
-	#[cfg(feature = "format-riff")]
+	#[cfg(feature = "riff_info_list")]
 	/// Represents a RIFF INFO LIST
 	RiffInfo,
-	#[cfg(feature = "format-aiff")]
+	#[cfg(feature = "aiff_text_chunks")]
 	/// Represents AIFF text chunks
 	AiffText,
 }
