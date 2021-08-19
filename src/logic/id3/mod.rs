@@ -1,8 +1,11 @@
 mod constants;
+
+#[cfg(feature = "id3v1")]
 pub(crate) mod v1;
+
+#[cfg(feature = "id3v2")]
 pub(crate) mod v2;
 
-use crate::types::picture::TextEncoding;
 use crate::{LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -39,39 +42,4 @@ where
 	}
 
 	Ok((exists, size))
-}
-
-pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding) -> Vec<u8> {
-	match text_encoding {
-		TextEncoding::Latin1 => text.chars().map(|c| c as u8).collect(),
-		TextEncoding::UTF16 => {
-			if cfg!(target_endian = "little") {
-				utf16_le_encode(text)
-			} else {
-				utf16_be_encode(text)
-			}
-		},
-		TextEncoding::UTF16BE => utf16_be_encode(text),
-		TextEncoding::UTF8 => text.as_bytes().to_vec(),
-	}
-}
-
-fn utf16_be_encode(text: &str) -> Vec<u8> {
-	let mut encoded = Vec::<u8>::new();
-
-	for ch in text.encode_utf16() {
-		encoded.extend_from_slice(&ch.to_be_bytes());
-	}
-
-	encoded
-}
-
-fn utf16_le_encode(text: &str) -> Vec<u8> {
-	let mut encoded = Vec::<u8>::new();
-
-	for ch in text.encode_utf16() {
-		encoded.extend_from_slice(&ch.to_le_bytes());
-	}
-
-	encoded
 }

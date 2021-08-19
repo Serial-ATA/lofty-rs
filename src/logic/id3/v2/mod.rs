@@ -5,11 +5,12 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ByteOrder};
 
+pub(crate) mod text_utils;
 mod v2;
 mod v3;
 mod v4;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug, Clone)]
 /// The ID3v2 version
 pub enum Id3v2Version {
 	/// ID3v2.2

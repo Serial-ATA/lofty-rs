@@ -1,3 +1,4 @@
+#[cfg(feature = "id3v1")]
 pub const GENRES: [&str; 192] = [
 	"Blues",
 	"Classic rock",
