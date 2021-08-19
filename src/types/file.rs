@@ -85,7 +85,7 @@ impl TaggedFile {
 		&self.ty
 	}
 
-	/// Returns a reference to the file's [`FileProperty`]
+	/// Returns a reference to the file's [`FileProperties`]
 	pub fn properties(&self) -> &FileProperties {
 		&self.properties
 	}

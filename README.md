@@ -4,8 +4,6 @@
 [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Documentation](https://img.shields.io/badge/docs.rs-lofty-informational?style=for-the-badge&logo=read-the-docs)](https://docs.rs/lofty/)
 
-This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types.
-
 Parse, convert, and write metadata to various audio formats.
 
 ## Supported Formats

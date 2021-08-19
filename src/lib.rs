@@ -2,8 +2,6 @@
 //! [![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 //! [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 //!
-//! This is a fork of [Audiotags](https://github.com/TianyiShi2001/audiotags), adding support for more file types.
-//!
 //! Parse, convert, and write metadata to audio formats.
 //!
 //! # Supported Formats
@@ -21,69 +19,80 @@
 //!
 //! # Examples
 //!
-//! ## Guessing from extension
+//! ## Determining a file's format
+//!
+//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching against [`concrete file types`](crate::files).
+//!
+//! ### Guessing from extension
 //! ```
-//! use lofty::{Tag, TagType};
+//! use lofty::{Probe, FileType};
 //!
-//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
-//! tag.set_title("Foo");
+//! let file_type = Probe::new().file_type_from_extension("tests/assets/a.mp3").unwrap();
 //!
-//! assert_eq!(tag.title(), Some("Foo"));
-//! ```
-//!
-//! ## Guessing from file signature
-//! ```
-//! use lofty::Tag;
-//!
-//! let mut tag_sig = Tag::new().read_from_path_signature("tests/assets/a.wav").unwrap();
-//! tag_sig.set_artist("Foo artist");
-//!
-//! assert_eq!(tag_sig.artist(), Some("Foo artist"));
+//! assert_eq!(file_type, FileType::MP3)
 //! ```
 //!
-//! ## Specifying a TagType
+//! ### Guessing from file content
 //! ```
-//! use lofty::{Tag, TagType};
+//! use lofty::{Probe, FileType};
 //!
-//! let mut tag = Tag::new().with_tag_type(TagType::Mp4).read_from_path("tests/assets/a.m4a").unwrap();
-//! tag.set_album_title("Foo album title");
+//! // Probe::file_type also exists for generic readers
+//! let file_type = Probe::new().file_type_from_path("tests/assets/a.mp3").unwrap();
 //!
-//! assert_eq!(tag.album_title(), Some("Foo album title"));
-//! ```
-//!
-//! ## Converting between TagTypes
-//! ```
-//! use lofty::{Tag, TagType};
-//!
-//! let mut tag = Tag::new().read_from_path("tests/assets/a.mp3").unwrap();
-//! tag.set_title("Foo");
-//!
-//! // You can convert the tag type and save it to another file.
-//! tag.to_dyn_tag(TagType::Mp4).write_to_path("tests/assets/a.m4a");
-//! assert_eq!(tag.title(), Some("Foo"));
+//! assert_eq!(file_type, FileType::MP3)
 //! ```
 //!
-//! ## Converting from [`AnyTag`]
+//! ## Using concrete file types
 //! ```
-//! use lofty::{AnyTag, OggTag, AudioTagEdit};
+//! use lofty::files::MpegFile;
+//! use lofty::TagType;
+//! use std::fs::File;
 //!
-//! let mut anytag = AnyTag::new();
+//! let mut file_content = File::open("tests/assets/a.mp3");
 //!
-//! anytag.title = Some("Foo title");
-//! anytag.artist = Some("Foo artist");
+//! let mpeg_file = MpegFile::read_from(&mut file_content).unwrap();
 //!
-//! let oggtag: OggTag = anytag.into();
+//! assert_eq!(mpeg_file.properties().channels(), Some(2));
+//! assert!(mpeg_file.contains_tag_type(&TagType::Ape));
+//! ```
 //!
-//! assert_eq!(oggtag.title(), Some("Foo title"));
-//! assert_eq!(oggtag.artist(), Some("Foo artist"));
+//! ## Non-specific tagged files
+//!
+//! These are useful if the file format doesn't matter
+//!
+//! ### Reading
+//! ```
+//! use lofty::{Probe, FileType};
+//!
+//! // Probe::read_from also exists for generic readers
+//! let tagged_file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
+//!
+//! assert_eq!(tagged_file.file_type(), FileType::MP3);
+//! assert_eq!(tagged_file.properties().channels(), Some(2));
+//! ```
+//!
+//! ### Accessing tags
+//! ```
+//! use lofty::Probe;
+//!
+//! let tagged_file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
+//!
+//! // Get the primary tag (ID3v2 in this case)
+//! let id3v2 = tagged_file.primary_tag().unwrap();
+//!
+//! // If the primary tag doesn't exist, or the tag types
+//! // don't matter, the first tag can be retrieved
+//! let unknown_first_tag = tagged_file.first_tag().unwrap();
 //! ```
 //!
 //! # Features
 //!
-//! ## Applies to all
-//! * `all_tags` - Enables all formats
+//! NOTE: All of these are enabled by default
 //!
-//! ## Individual formats
+//! ## QOL
+//! * `quick_tag_accessors` - Adds easier getters/setters for string values (Ex. [`Tag::artist`]), adds an extra dependency
+//!
+//! ## Individual metadata formats
 //! These features are available if you have a specific use case, or just don't want certain formats.
 //!
 //! * `aiff_text_chunks`
