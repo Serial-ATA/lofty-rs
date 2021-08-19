@@ -114,7 +114,7 @@ impl FileType {
 			"opus" => Ok(Self::Opus),
 			"flac" => Ok(Self::FLAC),
 			"ogg" => Ok(Self::Vorbis),
-			"m4a" | "m4b" | "m4p" | "m4v" | "isom" | "mp4" => Ok(Self::MP4),
+			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Ok(Self::MP4),
 			"oga" => Err(LoftyError::Ogg(
 				"Files with extension \"oga\" must have their type determined by content",
 			)),

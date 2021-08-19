@@ -41,7 +41,7 @@ impl Probe {
 	pub fn file_type_from_extension(&self, path: impl AsRef<Path>) -> Option<FileType> {
 		if let Some(ext_os) = path.as_ref().extension() {
 			if let Some(ext) = ext_os.to_str() {
-				return FileType::try_from_ext(ext).ok();
+				return FileType::try_from_ext(&*ext.to_lowercase()).ok();
 			}
 		}
 

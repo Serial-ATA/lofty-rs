@@ -39,20 +39,6 @@ where
 pub(crate) fn parse_id3v1(reader: [u8; 128]) -> Tag {
 	let mut tag = Tag::new(TagType::Id3v1);
 
-	fn decode_text(key: ItemKey, data: &[u8]) -> Option<TagItem> {
-		let read = data
-			.iter()
-			.filter(|c| **c > 0x1f)
-			.map(|c| *c as char)
-			.collect::<String>();
-
-		if read.is_empty() {
-			None
-		} else {
-			Some(TagItem::new(key, ItemValue::Text(read)))
-		}
-	}
-
 	if let Some(title) = decode_text(ItemKey::Title, &reader[3..33]) {
 		tag.insert_item(title);
 	}
@@ -91,4 +77,18 @@ pub(crate) fn parse_id3v1(reader: [u8; 128]) -> Tag {
 	}
 
 	tag
+}
+
+fn decode_text(key: ItemKey, data: &[u8]) -> Option<TagItem> {
+	let read = data
+		.iter()
+		.filter(|c| **c > 0x1f)
+		.map(|c| *c as char)
+		.collect::<String>();
+
+	if read.is_empty() {
+		None
+	} else {
+		Some(TagItem::new(key, ItemValue::Text(read)))
+	}
 }
