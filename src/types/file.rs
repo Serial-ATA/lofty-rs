@@ -1,3 +1,4 @@
+use crate::logic::id3::v2::Id3v2Version;
 use crate::{FileProperties, LoftyError, Result, Tag, TagType};
 
 use byteorder::ReadBytesExt;
@@ -20,11 +21,64 @@ pub trait AudioFile {
 /// This is used when the [`FileType`] has to be guessed
 pub struct TaggedFile {
 	/// The file's type
-	pub ty: FileType,
+	ty: FileType,
 	/// The file's audio properties
-	pub properties: FileProperties,
+	properties: FileProperties,
 	/// A collection of the file's tags
-	pub tags: Vec<Tag>,
+	tags: Vec<Tag>,
+}
+
+impl TaggedFile {
+	/// Gets the file's "Primary tag", or the one most likely to be used in the target format
+	///
+	/// | [`FileType`]             | [`TagType`]      |
+	/// |--------------------------|------------------|
+	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
+	/// | `APE`                    | `Ape`            |
+	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
+	/// | `MP4`                    | `Mp4Atom`        |
+	pub fn primary_tag(&self) -> Option<&Tag> {
+		let pred = match self.ty {
+			FileType::AIFF | FileType::MP3 | FileType::WAV => {
+				|t: &&Tag| t.tag_type() == &TagType::Id3v2(Id3v2Version::V4)
+			},
+			FileType::APE => |t: &&Tag| t.tag_type() == &TagType::Ape,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
+				|t: &&Tag| t.tag_type() == &TagType::VorbisComments
+			},
+			FileType::MP4 => |t: &&Tag| t.tag_type() == &TagType::Mp4Atom,
+		};
+
+		self.tags.iter().find(pred)
+	}
+
+	/// Gets a mutable reference to the file's "Primary tag"
+	///
+	/// See [`primary_tag`](Self::primary_tag) for an explanation
+	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
+		let pred = match self.ty {
+			FileType::AIFF | FileType::MP3 | FileType::WAV => {
+				|t: &&mut Tag| t.tag_type() == &TagType::Id3v2(Id3v2Version::V4)
+			},
+			FileType::APE => |t: &&mut Tag| t.tag_type() == &TagType::Ape,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
+				|t: &&mut Tag| t.tag_type() == &TagType::VorbisComments
+			},
+			FileType::MP4 => |t: &&mut Tag| t.tag_type() == &TagType::Mp4Atom,
+		};
+
+		self.tags.iter_mut().find(pred)
+	}
+
+	/// Gets the first tag, if there are any
+	pub fn first_tag(&self) -> Option<&Tag> {
+		self.tags.first()
+	}
+
+	/// Gets a mutable reference to the first tag, if there are any
+	pub fn first_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.tags.first_mut()
+	}
 }
 
 /// The type of file read
