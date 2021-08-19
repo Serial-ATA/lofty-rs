@@ -14,6 +14,7 @@ pub trait AudioFile {
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool;
 }
 
+// TODO: store vendor string
 /// A generic representation of a file
 ///
 /// This is used when the [`FileType`] has to be guessed

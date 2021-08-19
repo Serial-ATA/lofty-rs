@@ -1,21 +1,18 @@
 use super::verify_signature;
-use crate::components::logic::ogg::constants::OPUSHEAD;
-use crate::components::logic::ogg::{opus, vorbis};
-use crate::{FileProperties, LoftyError, OggFormat, Picture, Result};
+use crate::error::{LoftyError, Result};
+use crate::logic::ogg::constants::OPUSHEAD;
+use crate::logic::ogg::{opus, vorbis};
+use crate::picture::Picture;
+use crate::types::item::ItemKey;
+use crate::types::properties::FileProperties;
+use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
 
-use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
-use unicase::UniCase;
 
-pub type OGGTags = (
-	String,
-	Vec<Picture>,
-	HashMap<UniCase<String>, String>,
-	FileProperties,
-);
+pub type OGGTags = (String, Tag, FileProperties);
 
 fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: &Page) -> Result<FileProperties>
 where
@@ -38,11 +35,7 @@ where
 	Ok(properties)
 }
 
-pub(crate) fn read_comments<R>(
-	data: &mut R,
-	storage: &mut HashMap<UniCase<String>, String>,
-	pictures: &mut Vec<Picture>,
-) -> Result<String>
+pub(crate) fn read_comments<R>(data: &mut R, tag: &mut Tag) -> Result<String>
 where
 	R: Read,
 {
@@ -69,20 +62,20 @@ where
 		let split: Vec<&str> = comment.splitn(2, '=').collect();
 
 		if split[0] == "METADATA_BLOCK_PICTURE" {
-			pictures.push(Picture::from_flac_bytes(split[1].as_bytes())?)
+			tag.push_picture(Picture::from_flac_bytes(split[1].as_bytes())?)
 		} else {
-			storage.insert(UniCase::from(split[0].to_string()), split[1].to_string());
+			// It's safe to unwrap here since any unknown key is wrapped in ItemKey::Unknown
+			tag.insert_item(TagItem::new(
+				ItemKey::from_key(&TagType::VorbisComments, split[0]).unwrap(),
+				ItemValue::Text(split[1].to_string()),
+			));
 		}
 	}
 
 	Ok(vendor)
 }
 
-pub(crate) fn read_from<T>(
-	data: &mut T,
-	header_sig: &[u8],
-	comment_sig: &[u8],
-) -> Result<OGGTags>
+pub(crate) fn read_from<T>(data: &mut T, header_sig: &[u8], comment_sig: &[u8]) -> Result<OGGTags>
 where
 	T: Read + Seek,
 {
@@ -109,13 +102,12 @@ where
 		}
 	}
 
-	let mut md: HashMap<UniCase<String>, String> = HashMap::new();
-	let mut pictures = Vec::new();
+	let mut tag = Tag::new(TagType::VorbisComments);
 
 	let reader = &mut &md_pages[..];
-	let vendor = read_comments(reader, &mut md, &mut pictures)?;
+	let vendor = read_comments(reader, &mut tag)?;
 
 	let properties = read_properties(data, header_sig, &first_page)?;
 
-	Ok((vendor, pictures, md, properties))
+	Ok((vendor, tag, properties))
 }

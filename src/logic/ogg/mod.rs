@@ -1,68 +1,16 @@
-use crate::{FileProperties, LoftyError, Picture, Result, Tag};
+use crate::{LoftyError, Result};
 
 use std::io::{Read, Seek};
 
 use ogg_pager::Page;
-use crate::components::logic::ogg::constants::{VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD, OPUSHEAD, OPUSTAGS};
 
 pub(crate) mod constants;
 pub(crate) mod read;
 pub(crate) mod write;
 
-#[cfg(feature = "format-flac")]
 pub(crate) mod flac;
-#[cfg(feature = "format-opus")]
-mod opus;
-#[cfg(feature = "format-vorbis")]
-mod vorbis;
-
-#[cfg(feature = "format-opus")]
-pub struct OpusFile {
-	pub properties: FileProperties,
-	pub pictures: Vec<Picture>,
-	pub vorbis_comments: Tag,
-}
-
-impl OpusFile {
-	pub(crate) fn read_from<R>(reader: &mut R) -> Result<Self>
-		where
-			R: Read + Seek,
-	{
-		self::flac::read_from(reader)
-	}
-}
-
-#[cfg(feature = "format-flac")]
-pub struct FlacFile {
-	pub properties: FileProperties,
-	pub pictures: Vec<Picture>,
-	pub vorbis_comments: Tag,
-}
-
-impl FlacFile {
-	pub(crate) fn read_from<R>(reader: &mut R) -> Result<Self>
-		where
-			R: Read + Seek,
-	{
-		self::read::read_from(reader, OPUSHEAD, OPUSTAGS)
-	}
-}
-
-#[cfg(feature = "format-vorbis")]
-pub struct VorbisFile {
-	pub properties: FileProperties,
-	pub pictures: Vec<Picture>,
-	pub vorbis_comments: Tag,
-}
-
-impl VorbisFile {
-	pub(crate) fn read_from<R>(reader: &mut R) -> Result<Self>
-		where
-			R: Read + Seek,
-	{
-		self::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD)
-	}
-}
+pub(crate) mod opus;
+pub(crate) mod vorbis;
 
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();

@@ -1,9 +1,8 @@
 use super::header::{Header, XingHeader};
-use crate::components::logic::id3::decode_u32;
-use crate::components::logic::mpeg::MpegData;
+use crate::files::MpegFile;
+use crate::logic::id3::decode_u32;
 use crate::{FileProperties, LoftyError, Result};
 
-use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
@@ -54,12 +53,16 @@ fn read_properties(
 }
 
 #[allow(clippy::similar_names)]
-pub(crate) fn read_from<R>(data: &mut R) -> Result<MpegData>
+pub(crate) fn read_from<R>(data: &mut R) -> Result<MpegFile>
 where
 	R: Read + Seek,
 {
-	let mut id3 = Vec::new();
-	let mut ape = Vec::new();
+	let mut mpeg_file = MpegFile {
+		id3v2: None,
+		id3v1: None,
+		ape: None,
+		properties: FileProperties::default(),
+	};
 
 	let mut first_mpeg_frame = (None, 0);
 	let mut last_mpeg_frame = (None, 0);
@@ -91,19 +94,19 @@ where
 				let size = (decode_u32(BigEndian::read_u32(&remaining_header[2..])) + 10) as usize;
 				data.seek(SeekFrom::Current(-10))?;
 
-				let mut id3v2 = vec![0; size];
-				data.read_exact(&mut id3v2)?;
+				let mut id3v2_read = vec![0; size];
+				data.read_exact(&mut id3v2_read)?;
 
-				id3 = id3v2;
+				mpeg_file.id3v2 = Some(id3v2_read);
 				continue;
 			},
 			_ if &header[..3] == b"TAG" => {
-				data.seek(SeekFrom::Current(-10))?;
+				data.seek(SeekFrom::Current(-4))?;
 
-				let mut id3v1 = vec![0; 128];
-				data.read_exact(&mut id3v1)?;
+				let mut id3v1_read = [0; 128];
+				data.read_exact(&mut id3v1_read)?;
 
-				id3 = id3v1;
+				mpeg_file.id3v1 = Some(crate::logic::id3::v1::parse_id3v1(id3v1_read));
 				continue;
 			},
 			b"APET" => {
@@ -111,22 +114,7 @@ where
 				data.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					// Skip version bytes (4)
-					let mut info = [0; 8];
-					data.read_exact(&mut info)?;
-
-					let size = u32::from_le_bytes(
-						info[4..]
-							.try_into()
-							.map_err(|_| LoftyError::Mpeg("Unreachable error"))?,
-					);
-
-					data.seek(SeekFrom::Current(-16))?;
-
-					let mut apev2 = vec![0; (32 + size) as usize];
-					data.read_exact(&mut apev2)?;
-
-					ape = apev2;
+					mpeg_file.ape = Some(crate::logic::ape::tag::read_ape_tag(data, false)?.0);
 					continue;
 				}
 			},
@@ -150,11 +138,7 @@ where
 
 	let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
 
-	let properties = read_properties(first_mpeg_frame, last_mpeg_frame, xing_header);
+	mpeg_file.properties = read_properties(first_mpeg_frame, last_mpeg_frame, xing_header);
 
-	Ok(MpegData {
-		id3: (!id3.is_empty()).then(|| id3),
-		ape: (!ape.is_empty()).then(|| ape),
-		properties,
-	})
+	Ok(mpeg_file)
 }

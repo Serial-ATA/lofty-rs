@@ -1,9 +1,8 @@
 use super::{opus, page_from_packet, verify_signature, vorbis};
-#[cfg(feature = "format-opus")]
-use crate::components::logic::ogg::constants::OPUSTAGS;
-#[cfg(feature = "format-vorbis")]
-use crate::components::logic::ogg::constants::VORBIS_COMMENT_HEAD;
-use crate::{Picture, Result};
+use crate::error::Result;
+use crate::logic::ogg::constants::OPUSTAGS;
+use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
+use crate::types::picture::Picture;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -47,7 +46,7 @@ pub(crate) fn create_pages(
 		for pic in pics.iter() {
 			let comment = format!(
 				"METADATA_BLOCK_PICTURE={}",
-				base64::encode(pic.as_apic_bytes())
+				base64::encode(pic.as_flac_bytes())
 			);
 			let comment_b = comment.as_bytes();
 			packet.extend((comment_b.len() as u32).to_le_bytes().iter());
@@ -72,14 +71,14 @@ fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
 	let first_md_page = Page::read(&mut data, false)?;
 	verify_signature(&first_md_page, sig)?;
 
-	#[cfg(feature = "format-vorbis")]
-	if sig == VORBIS_COMMENT_HEAD {
-		vorbis::write_to(data, &mut writer, first_md_page.content, ser, pages)?;
-	}
-
-	#[cfg(feature = "format-opus")]
-	if sig == OPUSTAGS {
-		opus::write_to(data, &mut writer, ser, pages)?;
+	match sig {
+		VORBIS_COMMENT_HEAD => {
+			vorbis::write_to(data, &mut writer, first_md_page.content, ser, pages)?;
+		},
+		OPUSTAGS => {
+			opus::write_to(data, &mut writer, ser, pages)?;
+		},
+		_ => unreachable!(),
 	}
 
 	data.seek(SeekFrom::Start(0))?;

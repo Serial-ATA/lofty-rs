@@ -1,5 +1,6 @@
-use crate::components::logic::iff::IffData;
-use crate::{FileProperties, LoftyError, Result};
+use crate::types::file::AudioFile;
+use crate::{FileProperties, FileType, LoftyError, Result, TagType, TaggedFile};
+use crate::{ItemKey, ItemValue, Tag, TagItem};
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -7,6 +8,65 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+
+/// An AIFF file
+pub struct AiffFile {
+	/// The file's audio properties
+	properties: FileProperties,
+	/// Any text chunks included in the file
+	text_chunks: Option<Tag>,
+	/// An ID3v2 tag
+	id3v2: Option<Tag>,
+}
+
+impl Into<TaggedFile> for AiffFile {
+	fn into(self) -> TaggedFile {
+		TaggedFile {
+			ty: FileType::AIFF,
+			properties: self.properties,
+			tags: vec![self.text_chunks, self.id3v2]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
+}
+
+impl AudioFile for AiffFile {
+	fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read + Seek,
+		Self: Sized,
+	{
+		self::read_from(reader)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
+
+	fn contains_tag(&self) -> bool {
+		self.id3v2.is_some() || self.text_chunks.is_some()
+	}
+
+	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+		match tag_type {
+			TagType::Id3v2(_) => self.id3v2.is_some(),
+			TagType::AiffText => self.text_chunks.is_some(),
+			_ => false,
+		}
+	}
+}
+
+impl AiffFile {
+	fn id3v2_tag(&self) -> Option<&Tag> {
+		self.id3v2.as_ref()
+	}
+
+	fn text_chunks(&self) -> Option<&Tag> {
+		self.text_chunks.as_ref()
+	}
+}
 
 fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
@@ -80,7 +140,7 @@ pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileP
 	))
 }
 
-pub(crate) fn read_from<R>(data: &mut R) -> Result<IffData>
+pub(crate) fn read_from<R>(data: &mut R) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
@@ -89,7 +149,7 @@ where
 	let mut comm = None;
 	let mut stream_len = 0;
 
-	let mut metadata = HashMap::<String, String>::new();
+	let mut text_chunks = Tag::new(TagType::AiffText);
 	let mut id3 = Vec::new();
 
 	let mut fourcc = [0; 4];
@@ -100,10 +160,14 @@ where
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
 
-				metadata.insert(
-					String::from_utf8(fourcc.to_vec())?,
-					String::from_utf8(value)?,
+				// It's safe to unwrap here since this code is unreachable unless the fourcc is valid
+				let item = TagItem::new(
+					ItemKey::from_key(&TagType::AiffText, std::str::from_utf8(&fourcc).unwrap())
+						.unwrap(),
+					ItemValue::Text(String::from_utf8(value)?),
 				);
+
+				text_chunks.insert_item(item);
 			},
 			b"ID3 " | b"id3 " => {
 				let mut value = vec![0; size as usize];
@@ -145,13 +209,11 @@ where
 
 	let properties = read_properties(&mut &*comm.unwrap(), stream_len)?;
 
-	let metadata = IffData {
+	Ok(AiffFile {
 		properties,
-		metadata,
-		id3: (!id3.is_empty()).then(|| id3),
-	};
-
-	Ok(metadata)
+		text_chunks: (text_chunks.item_count() > 0).then(|| text_chunks),
+		id3v2: (!id3.is_empty()).then(|| id3),
+	})
 }
 
 cfg_if::cfg_if! {

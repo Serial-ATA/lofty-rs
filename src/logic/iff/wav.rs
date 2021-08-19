@@ -1,5 +1,8 @@
-use crate::components::logic::iff::IffData;
-use crate::{FileProperties, LoftyError, Result};
+use crate::types::file::AudioFile;
+use crate::{
+	FileProperties, FileType, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType,
+	TaggedFile,
+};
 
 use std::collections::HashMap;
 use std::fs::File;
@@ -12,6 +15,65 @@ const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xfffe;
 
+/// A WAV file
+pub struct WavFile {
+	/// The file's audio properties
+	properties: FileProperties,
+	/// A RIFF INFO LIST
+	riff_info: Option<Tag>,
+	/// An ID3v2 tag
+	id3v2: Option<Tag>,
+}
+
+impl Into<TaggedFile> for WavFile {
+	fn into(self) -> TaggedFile {
+		TaggedFile {
+			ty: FileType::WAV,
+			properties: self.properties,
+			tags: vec![self.riff_info, self.id3v2]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
+}
+
+impl AudioFile for WavFile {
+	fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read + Seek,
+		Self: Sized,
+	{
+		self::read_from(reader)
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
+
+	fn contains_tag(&self) -> bool {
+		self.id3v2.is_some() || self.riff_info.is_some()
+	}
+
+	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+		match tag_type {
+			TagType::Id3v2(_) => self.id3v2.is_some(),
+			TagType::RiffInfo => self.riff_info.is_some(),
+			_ => false,
+		}
+	}
+}
+
+impl WavFile {
+	fn id3v2_tag(&self) -> Option<&Tag> {
+		self.id3v2.as_ref()
+	}
+
+	fn riff_info(&self) -> Option<&Tag> {
+		self.riff_info.as_ref()
+	}
+}
+
 fn verify_riff<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
@@ -20,7 +82,7 @@ where
 	data.read_exact(&mut id)?;
 
 	if &id != b"RIFF" {
-		return Err(LoftyError::Riff("RIFF file doesn't contain a RIFF chunk"));
+		return Err(LoftyError::Wav("RIFF file doesn't contain a RIFF chunk"));
 	}
 
 	Ok(())
@@ -35,7 +97,7 @@ pub(crate) fn read_properties(
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
 
 	if channels == 0 {
-		return Err(LoftyError::Riff("File contains 0 channels"));
+		return Err(LoftyError::Wav("File contains 0 channels"));
 	}
 
 	let sample_rate = fmt.read_u32::<LittleEndian>()?;
@@ -49,7 +111,7 @@ pub(crate) fn read_properties(
 
 	if format_tag == EXTENSIBLE {
 		if fmt.len() < 40 {
-			return Err(LoftyError::Riff(
+			return Err(LoftyError::Wav(
 				"Extensible format identified, invalid \"fmt \" chunk size found (< 40)",
 			));
 		}
@@ -66,7 +128,7 @@ pub(crate) fn read_properties(
 	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
 
 	if non_pcm && total_samples == 0 {
-		return Err(LoftyError::Riff(
+		return Err(LoftyError::Wav(
 			"Non-PCM format identified, no \"fact\" chunk found",
 		));
 	}
@@ -102,7 +164,7 @@ pub(crate) fn read_properties(
 	))
 }
 
-pub(crate) fn read_from<T>(data: &mut T) -> Result<IffData>
+pub(crate) fn read_from<T>(data: &mut T) -> Result<WavFile>
 where
 	T: Read + Seek,
 {
@@ -114,7 +176,7 @@ where
 	let mut total_samples = 0_u32;
 	let mut fmt = Vec::new();
 
-	let mut metadata = HashMap::<String, String>::new();
+	let mut riff_info = Tag::new(TagType::RiffInfo);
 	let mut id3 = Vec::new();
 
 	let mut fourcc = [0; 4];
@@ -161,17 +223,26 @@ where
 						let mut fourcc = vec![0; 4];
 						data.read_exact(&mut fourcc)?;
 
-						let key = String::from_utf8(fourcc)?;
-						let size = data.read_u32::<LittleEndian>()?;
+						if let Some(item_key) = ItemKey::from_key(
+							&TagType::RiffInfo,
+							std::str::from_utf8(&*fourcc)
+								.map_err(|_| LoftyError::Wav("Non UTF-8 key found"))?,
+						) {
+							let size = data.read_u32::<LittleEndian>()?;
 
-						let mut buf = vec![0; size as usize];
-						data.read_exact(&mut buf)?;
+							let mut buf = vec![0; size as usize];
+							data.read_exact(&mut buf)?;
 
-						let val = String::from_utf8(buf)?;
-						metadata.insert(key.to_string(), val.trim_matches('\0').to_string());
+							let val = String::from_utf8(buf)?.trim_matches('\0');
 
-						if data.read_u8()? != 0 {
-							data.seek(SeekFrom::Current(-1))?;
+							let item = TagItem::new(item_key, ItemValue::Text(val.to_string()));
+							riff_info.insert_item(item);
+
+							if data.read_u8()? != 0 {
+								data.seek(SeekFrom::Current(-1))?;
+							}
+						} else {
+							return Err(LoftyError::Wav("Found an invalid FOURCC in LIST INFO"));
 						}
 					}
 				}
@@ -189,24 +260,22 @@ where
 	}
 
 	if fmt.len() < 16 {
-		return Err(LoftyError::Riff(
+		return Err(LoftyError::Wav(
 			"File does not contain a valid \"fmt \" chunk",
 		));
 	}
 
 	if stream_len == 0 {
-		return Err(LoftyError::Riff("File does not contain a \"data\" chunk"));
+		return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
 	}
 
 	let properties = read_properties(&mut &*fmt, total_samples, stream_len)?;
 
-	let metadata = IffData {
+	Ok(WavFile {
 		properties,
-		metadata,
-		id3: (!id3.is_empty()).then(|| id3),
-	};
-
-	Ok(metadata)
+		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
+		id3v2: (!id3.is_empty()).then(|| id3),
+	})
 }
 
 fn find_info_list<T>(data: &mut T) -> Result<()>

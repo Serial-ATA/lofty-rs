@@ -1,6 +1,10 @@
 use super::find_last_page;
-use crate::components::logic::ogg::constants::VORBIS_SETUP_HEAD;
-use crate::{FileProperties, LoftyError, Result};
+use crate::error::{LoftyError, Result};
+use crate::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD, VORBIS_SETUP_HEAD};
+use crate::types::file::AudioFile;
+use crate::types::file::{FileType, TaggedFile};
+use crate::types::properties::FileProperties;
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -9,10 +13,61 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-pub(in crate::components) fn read_properties<R>(
-	data: &mut R,
-	first_page: &Page,
-) -> Result<FileProperties>
+/// An OGG Vorbis file
+pub struct VorbisFile {
+	/// The file's audio properties
+	pub properties: FileProperties,
+	/// The file vendor's name
+	pub vendor: String,
+	/// The vorbis comments contained in the file
+	///
+	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
+	pub vorbis_comments: Tag,
+}
+
+impl Into<TaggedFile> for VorbisFile {
+	fn into(self) -> TaggedFile {
+		TaggedFile {
+			ty: FileType::Vorbis,
+			properties: self.properties,
+			tags: vec![self.vorbis_comments],
+		}
+	}
+}
+
+impl AudioFile for VorbisFile {
+	fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		let file_information =
+			super::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD)?;
+
+		Ok(Self {
+			properties: file_information.2,
+			vendor: file_information.0,
+			vorbis_comments: file_information.1,
+		})
+	}
+
+	fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
+
+	fn contains_tag(&self) -> bool {
+		true
+	}
+
+	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+		if tag_type != &TagType::VorbisComments {
+			return false;
+		}
+
+		true
+	}
+}
+
+pub(crate) fn read_properties<R>(data: &mut R, first_page: &Page) -> Result<FileProperties>
 where
 	R: Read + Seek,
 {

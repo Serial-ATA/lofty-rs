@@ -1,18 +1,12 @@
 use super::constants::INVALID_KEYS;
-use super::ItemType;
-use crate::{LoftyError, Result};
+use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType};
 
-use std::collections::HashMap;
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use unicase::UniCase;
 
-pub(crate) fn read_ape_tag<R>(
-	data: &mut R,
-	footer: bool,
-) -> Result<(HashMap<UniCase<String>, ItemType>, u32)>
+pub(crate) fn read_ape_tag<R>(data: &mut R, footer: bool) -> Result<(Tag, u32)>
 where
 	R: Read + Seek,
 {
@@ -38,7 +32,7 @@ where
 		data.seek(SeekFrom::Current(12))?;
 	}
 
-	let mut items = HashMap::<UniCase<String>, ItemType>::new();
+	let mut tag = Tag::new(TagType::Ape);
 
 	for _ in 0..item_count {
 		let value_size = data.read_u32::<LittleEndian>()?;
@@ -68,30 +62,30 @@ where
 			return Err(LoftyError::Ape("Tag item contains a non ASCII key"));
 		}
 
-		let read_only = (flags & 1) == 1;
+		// TODO: reimplement read only
+		// let read_only = (flags & 1) == 1;
 		let item_type = (flags & 6) >> 1;
 
 		let mut value = vec![0; value_size as usize];
 		data.read_exact(&mut value)?;
 
 		let parsed_value = match item_type {
-			0 => ItemType::String(
-				String::from_utf8(value).map_err(|_| {
-					LoftyError::Ape("Expected a string value based on flags, found binary data")
-				})?,
-				read_only,
-			),
-			1 => ItemType::Binary(value, read_only),
-			2 => ItemType::Locator(
-				String::from_utf8(value).map_err(|_| {
-					LoftyError::Ape("Failed to convert locator item into a UTF-8 string")
-				})?,
-				read_only,
-			),
+			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
+				LoftyError::Ape("Expected a string value based on flags, found binary data")
+			})?),
+			1 => ItemValue::Binary(value),
+			2 => ItemValue::Locator(String::from_utf8(value).map_err(|_| {
+				LoftyError::Ape("Failed to convert locator item into a UTF-8 string")
+			})?),
 			_ => return Err(LoftyError::Ape("Tag item contains an invalid item type")),
 		};
 
-		items.insert(UniCase::new(key), parsed_value);
+		let item = TagItem::new(
+			ItemKey::from_key(&TagType::Ape, &*key).unwrap(),
+			parsed_value,
+		);
+
+		tag.insert_item(item);
 	}
 
 	// Version 1 doesn't include a header
@@ -99,5 +93,5 @@ where
 		size += 32
 	}
 
-	Ok((items, size))
+	Ok((tag, size))
 }

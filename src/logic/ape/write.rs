@@ -1,20 +1,16 @@
 use super::tag::read_ape_tag;
-use super::ItemType;
-use crate::components::logic::ape::constants::APE_PREAMBLE;
-use crate::components::logic::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::{LoftyError, Result};
+use crate::logic::ape::constants::APE_PREAMBLE;
+use crate::logic::id3::find_lyrics3v2;
+use crate::logic::id3::v1::find_id3v1;
+use crate::logic::id3::v2::find_id3v2;
+use crate::{ItemValue, LoftyError, Result, Tag, TagType};
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
-use unicase::UniCase;
 
-pub(crate) fn write_to(
-	data: &mut File,
-	metadata: &HashMap<UniCase<String>, ItemType>,
-) -> Result<()> {
+pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
 	find_id3v2(data, false)?;
 
@@ -22,7 +18,7 @@ pub(crate) fn write_to(
 	data.read_exact(&mut ape_preamble)?;
 
 	// We have to check the APE tag for any read only items first
-	let mut read_only_metadata = HashMap::<UniCase<String>, ItemType>::new();
+	let mut read_only = None;
 
 	// An APE tag in the beginning of a file is against the spec
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
@@ -32,12 +28,11 @@ pub(crate) fn write_to(
 		let start = data.seek(SeekFrom::Current(-8))?;
 
 		data.seek(SeekFrom::Current(8))?;
-		let (mut existing_metadata, size) = read_ape_tag(data, false)?;
+		let (mut tag, size) = read_ape_tag(data, false)?;
 
 		// Only keep metadata around that's marked read only
-		retain_read_only(&mut existing_metadata);
-
-		read_only_metadata = existing_metadata;
+		// TODO
+		read_only = retain_read_only(&mut tag);
 
 		header_ape_tag = (true, (start, start + u64::from(size)))
 	} else {
@@ -62,11 +57,9 @@ pub(crate) fn write_to(
 	if &ape_preamble == APE_PREAMBLE {
 		let start = data.seek(SeekFrom::Current(0))? as usize + 24;
 
-		let (mut existing_metadata, size) = read_ape_tag(data, true)?;
+		let (mut tag, size) = read_ape_tag(data, true)?;
 
-		retain_read_only(&mut existing_metadata);
-
-		read_only_metadata = existing_metadata;
+		read_only = retain_read_only(&mut tag);
 
 		// Since the "start" was really at the end of the tag, this sanity check seems necessary
 		if let Some(start) = start.checked_sub(size as usize) {
@@ -76,14 +69,15 @@ pub(crate) fn write_to(
 		}
 	}
 
+	// TODO
 	// Preserve any metadata marked as read only
 	// If there is any read only metadata, we will have to clone the HashMap
-	let tag = if read_only_metadata.is_empty() {
-		create_ape_tag(metadata)?
+	let tag = if let Some(read_only) = read_only {
+		create_ape_tag(tag)?
 	} else {
-		let mut metadata = metadata.clone();
+		let mut metadata = tag.clone();
 
-		for (k, v) in read_only_metadata {
+		for (k, v) in read_only {
 			metadata.insert(k, v);
 		}
 
@@ -114,43 +108,44 @@ pub(crate) fn write_to(
 	Ok(())
 }
 
-fn create_ape_tag(metadata: &HashMap<UniCase<String>, ItemType>) -> Result<Vec<u8>> {
+fn create_ape_tag(metadata: &Tag) -> Result<Vec<u8>> {
 	// Unnecessary to write anything if there's no metadata
-	if metadata.is_empty() {
+	if metadata.item_count() == 0 {
 		Ok(Vec::<u8>::new())
 	} else {
 		let mut tag = Cursor::new(Vec::<u8>::new());
 
-		let item_count = metadata.len() as u32;
+		let item_count = metadata.item_count() as u32;
 
-		for (k, v) in metadata {
-			let (size, flags, value) = match v {
-				ItemType::Binary(value, ro) => {
+		for item in metadata.iter() {
+			let (size, flags, value) = match item.value() {
+				ItemValue::Binary(value) => {
 					let mut flags = 1_u32 << 1;
 
-					if *ro {
-						flags |= 1_u32
-					}
+					// TODO
+					// if *ro {
+					// 	flags |= 1_u32
+					// }
 
 					(value.len() as u32, flags, value.as_slice())
 				},
-				ItemType::String(value, ro) => {
+				ItemValue::Text(value) => {
 					let value = value.as_bytes();
 
 					let mut flags = 0_u32;
 
-					if *ro {
-						flags |= 1_u32
-					}
+					// if *ro {
+					// 	flags |= 1_u32
+					// }
 
 					(value.len() as u32, flags, value)
 				},
-				ItemType::Locator(value, ro) => {
+				ItemValue::Locator(value) => {
 					let mut flags = 2_u32 << 1;
 
-					if *ro {
-						flags |= 1_u32
-					}
+					// if *ro {
+					// 	flags |= 1_u32
+					// }
 
 					(value.len() as u32, flags, value.as_bytes())
 				},
@@ -158,7 +153,7 @@ fn create_ape_tag(metadata: &HashMap<UniCase<String>, ItemType>) -> Result<Vec<u
 
 			tag.write_u32::<LittleEndian>(size)?;
 			tag.write_u32::<LittleEndian>(flags)?;
-			tag.write_all(k.as_bytes())?;
+			tag.write_all(item.key().map_key(&TagType::Ape).unwrap().as_bytes())?;
 			tag.write_u8(0)?;
 			tag.write_all(value)?;
 		}
@@ -206,10 +201,7 @@ fn create_ape_tag(metadata: &HashMap<UniCase<String>, ItemType>) -> Result<Vec<u
 	}
 }
 
-fn retain_read_only(existing_metadata: &mut HashMap<UniCase<String>, ItemType>) {
-	existing_metadata.retain(|_, ty| *{
-		match ty {
-			ItemType::String(_, ro) | ItemType::Binary(_, ro) | ItemType::Locator(_, ro) => ro,
-		}
-	});
+fn retain_read_only(tag: &mut Tag) {
+	// TODO
+	if tag.item_count() != 0 {}
 }
