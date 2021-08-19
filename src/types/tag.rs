@@ -2,6 +2,35 @@ use super::item::ItemKey;
 use super::picture::{Picture, PictureType};
 use crate::logic::id3::v2::Id3v2Version;
 
+#[cfg(feature = "quick_tag_accessors")]
+use paste::paste;
+
+#[cfg(feature = "quick_tag_accessors")]
+macro_rules! common_items {
+	($($item_key:ident => $name:tt),+) => {
+		paste! {
+			impl Tag {
+				$(
+					#[doc = "Gets the " $name]
+					pub fn $name(&self) -> Option<&str> {
+						self.get_item_ref(&ItemKey::$item_key).map(|i| i.value())
+					}
+
+					#[doc = "Removes the " $name]
+					pub fn [<remove_ $name>](&mut self) {
+						self.retain(|i| i.item_key != ItemKey::$item_key)
+					}
+
+					#[doc = "Sets the " $name]
+					pub fn [<set_ $name>](&mut self, value: String) {
+						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+					}
+				)+
+			}
+		}
+	}
+}
+
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
@@ -190,6 +219,9 @@ impl Tag {
 		false
 	}
 }
+
+#[cfg(feature = "quick_tag_accessors")]
+common_items!(Artist => artist, Title => title, AlbumTitle => album_title, AlbumArtist => album_artist);
 
 /// The tag's format
 #[derive(Clone, Debug, PartialEq)]
