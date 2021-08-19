@@ -29,20 +29,16 @@ pub enum LoftyError {
 	NotAPicture,
 
 	// Tag related errors
-	#[cfg(feature = "format-id3")]
+	#[cfg(feature = "id3")] // TODO
 	/// Any error from [`id3`]
 	#[error(transparent)]
 	Id3Tag(#[from] id3::Error),
-	#[cfg(feature = "format-mp4")]
+	#[cfg(feature = "mp4ameta")] // TODO
 	/// Any error from [`mp4ameta`]
 	#[error(transparent)]
 	Mp4Tag(#[from] mp4ameta::Error),
-	/// Errors that arrist while parsing OGG pages
-	#[cfg(any(
-		feature = "format-opus",
-		feature = "format-vorbis",
-		feature = "format-flac"
-	))]
+	/// Errors that arise while parsing OGG pages
+	#[cfg(feature = "vorbis_comments")]
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),
 	/// Errors that arise while reading/writing to WAV files

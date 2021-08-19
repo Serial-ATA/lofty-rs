@@ -10,7 +10,7 @@
 //!
 //! | File Format | Extensions                                | Read | Write | Metadata Format(s)                                 |
 //! |-------------|-------------------------------------------|------|-------|----------------------------------------------------|
-//! | Ape         | `ape`                                     |**X** |**X**  |`APEv2`, `APEv1`, `ID3v2` (Not officially), `ID3v1` |
+//! | APE         | `ape`                                     |**X** |**X**  |`APEv2`, `APEv1`, `ID3v2` (Not officially), `ID3v1` |
 //! | AIFF        | `aiff`, `aif`                             |**X** |**X**  |`ID3v2`, `Text Chunks`                              |
 //! | FLAC        | `flac`                                    |**X** |**X**  |`Vorbis Comments`                                   |
 //! | MP3         | `mp3`                                     |**X** |**X**  |`ID3v2`, `ID3v1`, `APEv2`, `APEv1`                  |
@@ -78,35 +78,21 @@
 //! assert_eq!(oggtag.artist(), Some("Foo artist"));
 //! ```
 //!
-//! # Concrete types
-//! * AiffTag (AIFF Text Chunks)
-//! * ApeTag
-//! * Id3v2Tag
-//! * Mp4Tag
-//! * OggTag
-//! * RiffTag (RIFF LIST INFO)
-//!
 //! # Features
 //!
 //! ## Applies to all
 //! * `all_tags` - Enables all formats
 //!
 //! ## Individual formats
-//! These features are available if you have a specific usecase, or just don't want certain formats.
+//! These features are available if you have a specific use case, or just don't want certain formats.
 //!
-//! All format features a prefixed with `format-`
-//! * `format-ape`
-//! * `format-flac`
-//! * `format-id3`
-//! * `format-mp4`
-//! * `format-opus`
-//! * `format-vorbis`
-//! * `format-riff`
-//!
-//! ## Umbrella features
-//! These cover all formats under a container format.
-//!
-//! * `format-ogg` (`format-opus`, `format-vorbis`, `format-flac`)
+//! * `aiff_text_chunks`
+//! * `ape`
+//! * `id3v1`
+//! * `id3v2`
+//! * `mp4_atoms`
+//! * `riff_info_list`
+//! * `vorbis_comments`
 
 #![deny(clippy::pedantic, clippy::all, missing_docs)]
 #![allow(
@@ -124,25 +110,42 @@
 	clippy::used_underscore_binding
 )]
 
-mod types;
+pub use crate::error::{LoftyError, Result};
+
+pub use crate::probe::Probe;
+
 pub use crate::types::{
 	album::Album,
 	anytag::AnyTag,
 	file::{FileType, TaggedFile},
 	item::ItemKey,
-	picture::{MimeType, Picture, PictureType},
 	properties::FileProperties,
 	tag::{ItemValue, Tag, TagItem, TagType},
 };
 
-mod probe;
-pub use crate::probe::Probe;
+mod types;
+
+/// Various concrete file types, used when inference is unnecessary
+pub mod files {
+	pub use crate::logic::ape::ApeFile;
+	pub use crate::logic::iff::{aiff::AiffFile, wav::WavFile};
+	pub use crate::logic::mpeg::MpegFile;
+	pub use crate::logic::ogg::{flac::FlacFile, opus::OpusFile, vorbis::VorbisFile};
+}
+
+#[cfg(any(feature = "id3v1", feature = "id3v2"))]
+/// ID3v1/v2 specific items
+pub mod id3 {
+	pub use crate::logic::id3::v2::Id3v2Version;
+}
+
+/// Various items related to [`Picture`](crate::picture::Picture)s
+pub mod picture {
+	pub use crate::types::picture::{
+		MimeType, Picture, PictureInformation, PictureType, TextEncoding,
+	};
+}
 
 mod error;
-pub use crate::error::{LoftyError, Result};
-
-mod components;
-pub use crate::components::tags::*;
-
-mod traits;
-pub use crate::traits::{AudioTag, AudioTagEdit, AudioTagWrite, ToAny, ToAnyTag};
+pub(crate) mod logic;
+mod probe;
