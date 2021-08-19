@@ -79,6 +79,16 @@ impl TaggedFile {
 	pub fn first_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tags.first_mut()
 	}
+
+	/// Returns the file's [`FileType`]
+	pub fn file_type(&self) -> &FileType {
+		&self.ty
+	}
+
+	/// Returns a reference to the file's [`FileProperty`]
+	pub fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
 }
 
 /// The type of file read
