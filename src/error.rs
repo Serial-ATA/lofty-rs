@@ -21,11 +21,11 @@ pub enum LoftyError {
 	TooMuchData,
 
 	// Picture related errors
-	/// Picture has an unsupported mime type
-	#[error("Unsupported mime type: {0}")]
-	UnsupportedMimeType(String),
+	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::logic::id3::v2::Id3v2Version)
+	#[error("Picture: Found unexpected format {0}")]
+	BadPictureFormat(String),
 	/// Provided an invalid picture
-	#[error("Picture contains invalid data")]
+	#[error("Picture: Encountered invalid data")]
 	NotAPicture,
 
 	// Tag related errors
@@ -41,6 +41,9 @@ pub enum LoftyError {
 	#[cfg(feature = "vorbis_comments")]
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),
+	/// Errors that arise while decoding ID3v2 text
+	#[error("Text decoding: {0}")]
+	TextDecode(&'static str),
 	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
 	Wav(&'static str),

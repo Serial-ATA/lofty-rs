@@ -2,7 +2,6 @@ use crate::logic::id3::v2::Id3v2Version;
 use crate::{LoftyError, Result};
 
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::io::{Cursor, Read};
 use std::io::{Seek, SeekFrom, Write};
 
@@ -36,7 +35,7 @@ pub const APE_PICTYPES: [&str; 21] = [
 ];
 
 /// Mime types for covers.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MimeType {
 	/// PNG image
 	Png,
@@ -48,50 +47,51 @@ pub enum MimeType {
 	Bmp,
 	/// GIF image
 	Gif,
+	/// Some unknown mimetype
+	Unknown(String),
+	/// No mimetype
+	None,
 }
 
-impl TryFrom<&str> for MimeType {
-	type Error = LoftyError;
-
-	fn try_from(inp: &str) -> Result<Self> {
-		Ok(match inp {
-			"image/jpeg" => MimeType::Jpeg,
-			"image/png" => MimeType::Png,
-			"image/tiff" => MimeType::Tiff,
-			"image/bmp" => MimeType::Bmp,
-			"image/gif" => MimeType::Gif,
-			_ => return Err(LoftyError::UnsupportedMimeType(inp.to_string())),
-		})
+impl MimeType {
+	/// Get a MimeType from a string
+	pub fn from_str(mime_type: &str) -> Self {
+		match &*mime_type.to_lowercase() {
+			"image/jpeg" => Self::Jpeg,
+			"image/png" => Self::Png,
+			"image/tiff" => Self::Tiff,
+			"image/bmp" => Self::Bmp,
+			"image/gif" => Self::Gif,
+			"" => Self::None,
+			_ => Self::Unknown(mime_type.to_string()),
+		}
 	}
-}
 
-impl From<MimeType> for &'static str {
-	fn from(mt: MimeType) -> Self {
-		match mt {
+	/// Get a &str from a MimeType
+	pub fn as_str(&self) -> &str {
+		match self {
 			MimeType::Jpeg => "image/jpeg",
 			MimeType::Png => "image/png",
 			MimeType::Tiff => "image/tiff",
 			MimeType::Bmp => "image/bmp",
 			MimeType::Gif => "image/gif",
+			MimeType::Unknown(unknown) => &*unknown,
+			MimeType::None => "",
 		}
 	}
-}
 
-impl From<MimeType> for String {
-	fn from(mt: MimeType) -> Self {
-		<MimeType as Into<&'static str>>::into(mt).to_owned()
+	/// Get a String from a MimeType
+	pub fn to_string(&self) -> String {
+		match self {
+			MimeType::Jpeg => "image/jpeg".to_string(),
+			MimeType::Png => "image/png".to_string(),
+			MimeType::Tiff => "image/tiff".to_string(),
+			MimeType::Bmp => "image/bmp".to_string(),
+			MimeType::Gif => "image/gif".to_string(),
+			MimeType::Unknown(unknown) => unknown.to_owned(),
+			MimeType::None => String::new(),
+		}
 	}
-}
-
-pub trait PicType {
-	#[cfg(any(feature = "id3v2", feature = "vorbis_comments",))]
-	fn as_u8(&self) -> u8;
-	#[cfg(any(feature = "id3v2", feature = "vorbis_comments",))]
-	fn from_u8(bytes: u8) -> PictureType;
-	#[cfg(feature = "ape")]
-	fn as_ape_key(&self) -> &str;
-	#[cfg(feature = "ape")]
-	fn from_ape_key(key: &str) -> PictureType;
 }
 
 /// The picture type
@@ -122,11 +122,12 @@ pub enum PictureType {
 	Undefined(u8),
 }
 
-impl PicType for PictureType {
+impl PictureType {
 	// ID3/OGG specific methods
 
+	/// Get a u8 from a PictureType according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
-	fn as_u8(&self) -> u8 {
+	pub fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,
 			Self::Icon => 1,
@@ -153,8 +154,9 @@ impl PicType for PictureType {
 		}
 	}
 
+	/// Get a PictureType from a u8 according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
-	fn from_u8(bytes: u8) -> Self {
+	pub fn from_u8(bytes: u8) -> Self {
 		match bytes {
 			0 => Self::Other,
 			1 => Self::Icon,
@@ -183,8 +185,9 @@ impl PicType for PictureType {
 
 	// APE specific methods
 
+	/// Get an APE item key from a PictureType
 	#[cfg(feature = "ape")]
-	fn as_ape_key(&self) -> &str {
+	pub fn as_ape_key(&self) -> &str {
 		match self {
 			Self::Other => "Cover Art (Other)",
 			Self::Icon => "Cover Art (Png Icon)",
@@ -211,8 +214,9 @@ impl PicType for PictureType {
 		}
 	}
 
+	/// Get a PictureType from an APE item key
 	#[cfg(feature = "ape")]
-	fn from_ape_key(key: &str) -> Self {
+	pub fn from_ape_key(key: &str) -> Self {
 		match key {
 			"Cover Art (Other)" => Self::Other,
 			"Cover Art (Png Icon)" => Self::Icon,
@@ -251,6 +255,19 @@ pub enum TextEncoding {
 	UTF16BE = 2,
 	/// UTF-8
 	UTF8 = 3,
+}
+
+impl TextEncoding {
+	/// Get a TextEncoding from a u8, must be 0-3 inclusive
+	pub fn from_u8(byte: u8) -> Option<Self> {
+		match byte {
+			0 => Some(Self::Latin1),
+			1 => Some(Self::UTF16),
+			2 => Some(Self::UTF16BE),
+			3 => Some(Self::UTF8),
+			_ => None,
+		}
+	}
 }
 
 /// Information about a [`Picture`]
@@ -303,100 +320,191 @@ impl Picture {
 	}
 
 	#[cfg(feature = "id3v2")]
-	/// Convert the [`Picture`] to a ID3v2 A/PIC byte Vec
+	/// Convert a [`Picture`] to a ID3v2 A/PIC byte Vec
+	///
+	/// NOTE: This does not include the frame header
+	///
+	/// # Errors
+	///
+	/// ID3v2.2:
+	///
+	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
+	/// * Too much data was provided
+	///
+	/// ID3v2.3/4:
+	///
+	/// * Too much data was provided
 	pub fn as_apic_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
-		if version == Id3v2Version::V2 {
-			// ID3v2.2 PIC is pretty limited with formats
-			let format = match self.mime_type {
-				MimeType::Png => "PNG",
-				MimeType::Jpeg => "JPG",
-				_ => {
-					return Err(LoftyError::UnsupportedMimeType(String::from(
-						self.mime_type,
-					)))
-				},
-			};
+		match version {
+			Id3v2Version::V2 => {
+				// ID3v2.2 PIC is pretty limited with formats
+				let format = match self.mime_type {
+					MimeType::Png => "PNG",
+					MimeType::Jpeg => "JPG",
+					_ => return Err(LoftyError::BadPictureFormat(self.mime_type.to_string())),
+				};
 
-			let mut data = Cursor::new(vec![b'P', b'I', b'C', 0, 0, 0, self.text_encoding as u8]);
+				let mut data = Cursor::new(vec![self.text_encoding as u8]);
 
-			data.write_all(format.as_bytes());
-			data.write_u8(self.pic_type.as_u8());
+				data.write_all(format.as_bytes());
+				data.write_u8(self.pic_type.as_u8());
 
-			if let Some(description) = &self.description {
-				data.write_all(&*crate::logic::id3::encode_text(
-					description,
-					self.text_encoding,
-				))?;
-			}
+				if let Some(description) = &self.description {
+					data.write_all(&*crate::logic::id3::v2::text_utils::encode_text(
+						description,
+						self.text_encoding,
+					))?;
+				}
 
-			data.write_u8(0)?;
-			data.write_all(&*self.data);
+				data.write_u8(0)?;
+				data.write_all(&*self.data);
 
-			let size = data.get_ref().len() - 6;
+				let size = data.get_ref().len() - 6;
 
-			if size as u64 > u32::MAX as u64 {
-				return Err(LoftyError::TooMuchData);
-			}
+				if size as u64 > u32::MAX as u64 {
+					return Err(LoftyError::TooMuchData);
+				}
 
-			let size = (size as u32).to_be_bytes();
+				let size = (size as u32).to_be_bytes();
 
-			if size[0] != 0 {
-				return Err(LoftyError::TooMuchData);
-			}
+				if size[0] != 0 {
+					return Err(LoftyError::TooMuchData);
+				}
 
-			data.seek(SeekFrom::Start(3))?;
+				Ok(data.into_inner())
+			},
+			_ => {
+				let mut data = Cursor::new(vec![self.text_encoding as u8]);
 
-			data.write_all(&size[1..])?;
+				data.write_all(self.mime_type.as_str().as_bytes())?;
+				data.write_u8(self.pic_type.as_u8())?;
 
-			Ok(data.into_inner())
-		} else {
-			let mut data = Cursor::new(vec![
-				b'A',
-				b'P',
-				b'I',
-				b'C',
-				0,
-				0,
-				0,
-				0,
-				self.text_encoding as u8,
-			]);
+				if let Some(description) = &self.description {
+					data.write_all(&*crate::logic::id3::v2::text_utils::encode_text(
+						description,
+						self.text_encoding,
+					))?;
+				}
 
-			data.write_all(<&'static str>::from(self.mime_type).as_bytes())?;
-			data.write_u8(self.pic_type.as_u8())?;
+				data.write_u8(0)?;
+				data.write_all(&*self.data)?;
 
-			if let Some(description) = &self.description {
-				data.write_all(&*crate::logic::id3::encode_text(
-					description,
-					self.text_encoding,
-				))?;
-			}
+				let size = data.get_ref().len();
 
-			data.write_u8(0)?;
-			data.write_all(&*self.data)?;
+				if size as u64 > u32::MAX as u64 {
+					return Err(LoftyError::TooMuchData);
+				}
 
-			let size = data.get_ref().len() - 8;
-
-			if size as u64 > u32::MAX as u64 {
-				return Err(LoftyError::TooMuchData);
-			}
-
-			data.seek(SeekFrom::Start(4))?;
-
-			data.write_u32::<BigEndian>(size as u32)?;
-
-			Ok(data.into_inner())
+				Ok(data.into_inner())
+			},
 		}
 	}
 
+	#[cfg(feature = "id3v2")]
+	/// Get a [`Picture`] from ID3v2 A/PIC bytes:
+	///
+	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
+	pub fn from_apic_bytes(bytes: &[u8], version: Id3v2Version) -> Result<Self> {
+		let mut cursor = Cursor::new(bytes);
+
+		if let Some(encoding) = TextEncoding::from_u8(cursor.read_u8()?) {
+			match version {
+				Id3v2Version::V2 => {
+					let mut format = [0; 3];
+					cursor.read_exact(&mut format)?;
+
+					let mime_type = match format {
+						[b'P', b'N', b'G'] => MimeType::Png,
+						[b'J', b'P', b'G'] => MimeType::Jpeg,
+						_ => {
+							return Err(LoftyError::BadPictureFormat(
+								String::from_utf8_lossy(&format).to_string(),
+							))
+						},
+					};
+
+					let picture_type = PictureType::from_u8(cursor.read_u8()?);
+					let description = crate::logic::id3::v2::text_utils::decode_text(
+						&mut cursor,
+						encoding,
+						true,
+					)?
+					.map(|s| Cow::from(s));
+
+					let mut data = Vec::new();
+					cursor.read_to_end(&mut data)?;
+
+					return Ok(Picture {
+						pic_type: picture_type,
+						text_encoding: encoding,
+						mime_type,
+						description,
+						information: PictureInformation {
+							width: 0,
+							height: 0,
+							color_depth: 0,
+							num_colors: 0,
+						},
+						data: Cow::from(data),
+					});
+				},
+				_ => {
+					let mime_type = if let Some(mime_type) =
+						crate::logic::id3::v2::text_utils::decode_text(&mut cursor, encoding, true)?
+					{
+						MimeType::from_str(&*mime_type)
+					} else {
+						MimeType::None
+					};
+
+					let picture_type = PictureType::from_u8(cursor.read_u8()?);
+					let description = crate::logic::id3::v2::text_utils::decode_text(
+						&mut cursor,
+						encoding,
+						true,
+					)?
+					.map(|s| Cow::from(s));
+
+					let mut data = Vec::new();
+					cursor.read_to_end(&mut data)?;
+
+					return Ok(Picture {
+						pic_type: picture_type,
+						text_encoding: encoding,
+						mime_type,
+						description,
+						information: PictureInformation {
+							width: 0,
+							height: 0,
+							color_depth: 0,
+							num_colors: 0,
+						},
+						data: Cow::from(data),
+					});
+				},
+			}
+		}
+
+		return Err(LoftyError::NotAPicture);
+	}
+
 	#[cfg(feature = "vorbis_comments")]
-	/// Convert a [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec:
+	/// Convert a [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec
+	///
+	/// NOTES:
+	///
+	/// * This does not include a key (Vorbis comments) or METADATA_BLOCK_HEADER (FLAC blocks)
+	/// * FLAC blocks have different size requirements than OGG Vorbis/Opus, size is not checked here
 	pub fn as_flac_bytes(&self) -> Vec<u8> {
 		let mut data = Vec::<u8>::new();
 
 		let picture_type = (self.pic_type.as_u8() as u32).to_be_bytes();
 
-		let mime_str = String::from(self.mime_type);
+		let mime_str = self.mime_type.to_string();
 		let mime_len = mime_str.len() as u32;
 
 		data.extend(picture_type.iter());
@@ -428,6 +536,8 @@ impl Picture {
 	#[cfg(feature = "vorbis_comments")]
 	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes:
 	///
+	/// NOTE: This expects either the key "METADATA_BLOCK_PICTURE=" (Vorbis comments) or METADATA_BLOCK_HEADER (4 bytes, FLAC blocks) to have already been skipped
+	///
 	/// # Errors
 	///
 	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
@@ -447,48 +557,47 @@ impl Picture {
 				cursor.read_exact(&mut buf)?;
 
 				if let Ok(mime_type_str) = String::from_utf8(buf) {
-					if let Ok(mime_type) = MimeType::try_from(&*mime_type_str) {
-						let mut description = None;
+					let mime_type = MimeType::from_str(&*mime_type_str);
 
-						if let Ok(desc_len) = cursor.read_u32::<BigEndian>() {
-							if cursor.get_ref().len()
-								>= (cursor.position() as u32 + desc_len) as usize
-							{
-								let mut buf = vec![0; desc_len as usize];
-								cursor.read_exact(&mut buf)?;
+					let mut description = None;
 
-								if let Ok(desc) = String::from_utf8(buf) {
-									description = Some(Cow::from(desc));
-								}
-							} else {
-								cursor.set_position(cursor.position() - 4)
+					if let Ok(desc_len) = cursor.read_u32::<BigEndian>() {
+						if cursor.get_ref().len() >= (cursor.position() as u32 + desc_len) as usize
+						{
+							let mut buf = vec![0; desc_len as usize];
+							cursor.read_exact(&mut buf)?;
+
+							if let Ok(desc) = String::from_utf8(buf) {
+								description = Some(Cow::from(desc));
 							}
+						} else {
+							cursor.set_position(cursor.position() - 4)
 						}
+					}
 
-						if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-						) {
-							if let Ok(data_len) = cursor.read_u32::<BigEndian>() {
-								let mut binary = vec![0; data_len as usize];
+					if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
+						cursor.read_u32::<BigEndian>(),
+						cursor.read_u32::<BigEndian>(),
+						cursor.read_u32::<BigEndian>(),
+						cursor.read_u32::<BigEndian>(),
+					) {
+						if let Ok(data_len) = cursor.read_u32::<BigEndian>() {
+							let mut binary = vec![0; data_len as usize];
 
-								if let Ok(()) = cursor.read_exact(&mut binary) {
-									return Ok(Self {
-										pic_type: picture_type,
-										text_encoding: TextEncoding::UTF8,
-										mime_type,
-										description,
-										information: PictureInformation {
-											width,
-											height,
-											color_depth,
-											num_colors,
-										},
-										data: Cow::from(binary.clone()),
-									});
-								}
+							if let Ok(()) = cursor.read_exact(&mut binary) {
+								return Ok(Self {
+									pic_type: picture_type,
+									text_encoding: TextEncoding::UTF8,
+									mime_type,
+									description,
+									information: PictureInformation {
+										width,
+										height,
+										color_depth,
+										num_colors,
+									},
+									data: Cow::from(binary.clone()),
+								});
 							}
 						}
 					}
@@ -500,9 +609,9 @@ impl Picture {
 	}
 
 	#[cfg(feature = "ape")]
-	/// Convert the [`Picture`] back to an APEv2 byte vec:
+	/// Convert a [`Picture`] to an APE Cover Art byte vec:
 	///
-	/// * APE Cover Art
+	/// NOTE: This is only the picture data, a key and terminating null byte will not be prepended. To map a [`PictureType`] to an APE key see [`PictureType::as_ape_key`]
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
 		let mut data: Vec<u8> = Vec::new();
 
@@ -519,8 +628,6 @@ impl Picture {
 	#[cfg(feature = "ape")]
 	/// Get a [`Picture`] from an APEv2 binary item:
 	///
-	/// * APE Cover Art
-	///
 	/// NOTES:
 	///
 	/// * This function expects the key and its trailing null byte to have been removed
@@ -528,7 +635,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
+	/// This function will return [`NotAPicture`](LoftyError::NotAPicture) if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if !bytes.is_empty() {
 			let pic_type = PictureType::from_ape_key(key);

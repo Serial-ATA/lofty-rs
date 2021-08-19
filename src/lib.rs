@@ -115,8 +115,6 @@ pub use crate::error::{LoftyError, Result};
 pub use crate::probe::Probe;
 
 pub use crate::types::{
-	album::Album,
-	anytag::AnyTag,
 	file::{FileType, TaggedFile},
 	item::ItemKey,
 	properties::FileProperties,
