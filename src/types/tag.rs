@@ -86,9 +86,7 @@ impl Tag {
 	pub fn iter(&self) -> std::slice::Iter<TagItem> {
 		self.items.iter()
 	}
-}
 
-impl Tag {
 	/// Retain tag items based on the predicate
 	///
 	/// See [`Vec::retain`](std::vec::Vec::retain)
@@ -108,6 +106,14 @@ impl Tag {
 			pictures: vec![],
 			items: vec![],
 		}
+	}
+}
+
+impl Tag {
+	/// Change the [`TagType`], remapping all items
+	pub fn re_map(&mut self, tag_type: TagType) {
+		self.retain(|i| i.re_map(&tag_type).is_some());
+		self.tag_type = tag_type
 	}
 }
 
