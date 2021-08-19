@@ -13,7 +13,11 @@ macro_rules! common_items {
 				$(
 					#[doc = "Gets the " $name]
 					pub fn $name(&self) -> Option<&str> {
-						self.get_item_ref(&ItemKey::$item_key).map(|i| i.value())
+						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(|i| i.value()) {
+							return Some(&*txt)
+						}
+
+						None
 					}
 
 					#[doc = "Removes the " $name]

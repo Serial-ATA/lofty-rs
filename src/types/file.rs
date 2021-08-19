@@ -21,11 +21,11 @@ pub trait AudioFile {
 /// This is used when the [`FileType`] has to be guessed
 pub struct TaggedFile {
 	/// The file's type
-	ty: FileType,
+	pub(crate) ty: FileType,
 	/// The file's audio properties
-	properties: FileProperties,
+	pub(crate) properties: FileProperties,
 	/// A collection of the file's tags
-	tags: Vec<Tag>,
+	pub(crate) tags: Vec<Tag>,
 }
 
 impl TaggedFile {
