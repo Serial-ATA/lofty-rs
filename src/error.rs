@@ -45,39 +45,27 @@ pub enum LoftyError {
 	))]
 	#[error(transparent)]
 	OggPage(#[from] ogg_pager::PageError),
-	#[cfg(feature = "format-riff")]
-	/// Errors that arise while reading/writing to RIFF files
+	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
-	Riff(&'static str),
-	#[cfg(feature = "format-aiff")]
+	Wav(&'static str),
 	/// Errors that arise while reading/writing to AIFF files
 	#[error("Aiff: {0}")]
 	Aiff(&'static str),
-	#[cfg(feature = "format-flac")]
 	/// Errors that arise while reading/writing to FLAC files
 	#[error("Flac: {0}")]
 	Flac(&'static str),
-	#[cfg(feature = "format-opus")]
 	/// Errors that arise while reading/writing to OPUS files
 	#[error("Opus: {0}")]
 	Opus(&'static str),
-	#[cfg(feature = "format-vorbis")]
 	/// Errors that arise while reading/writing to OGG Vorbis files
 	#[error("Vorbis: {0}")]
 	Vorbis(&'static str),
-	#[cfg(any(
-		feature = "format-opus",
-		feature = "format-vorbis",
-		feature = "format-flac"
-	))]
 	/// Errors that arise while reading/writing to OGG files
 	#[error("OGG: {0}")]
 	Ogg(&'static str),
-	// TODO: feature
 	/// Errors that arise while reading/writing to MPEG files
 	#[error("MPEG: {0}")]
 	Mpeg(&'static str),
-	#[cfg(feature = "format-ape")]
 	/// Errors that arise while reading/writing to APE files
 	#[error("APE: {0}")]
 	Ape(&'static str),
