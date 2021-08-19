@@ -1,6 +1,6 @@
 use super::item::ItemKey;
-use super::picture::Picture;
-use crate::{PictureType, TagType};
+use super::picture::{Picture, PictureType};
+use crate::logic::id3::v2::Id3v2Version;
 
 /// Represents a tag item (key/value)
 pub struct TagItem {
@@ -70,6 +70,45 @@ pub struct Tag {
 	tag_type: TagType,
 	pictures: Vec<Picture>,
 	items: Vec<TagItem>,
+}
+
+impl IntoIterator for Tag {
+	type Item = TagItem;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.into_iter()
+	}
+}
+
+impl Tag {
+	/// An iterator over the tag's items
+	pub fn iter(&self) -> std::slice::Iter<TagItem> {
+		self.items.iter()
+	}
+}
+
+impl Tag {
+	/// Retain tag items based on the predicate
+	///
+	/// See [`Vec::retain`](std::vec::Vec::retain)
+	pub fn retain<F>(&mut self, mut f: F)
+	where
+		F: FnMut(&TagItem) -> bool,
+	{
+		self.items.retain(f)
+	}
+}
+
+impl Tag {
+	/// Initialize a new tag with a certain [`TagType`]
+	pub fn new(tag_type: TagType) -> Self {
+		Self {
+			tag_type,
+			pictures: vec![],
+			items: vec![],
+		}
+	}
 }
 
 impl Tag {
@@ -146,35 +185,30 @@ impl Tag {
 	}
 }
 
+/// The tag's format
 #[derive(Clone, Debug, PartialEq)]
 pub enum TagType {
 	#[cfg(feature = "format-ape")]
-	/// Common file extensions: `.ape`
+	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,
 	#[cfg(feature = "format-id3")]
-	/// Represents multiple formats, see [`Id3Format`](Id3Format) for extensions.
-	Id3v2,
+	/// Represents an ID3v1 tag
+	Id3v1,
+	#[cfg(feature = "format-id3")]
+	/// This covers all ID3v2 versions.
+	///
+	/// Due to frame differences between versions, it is necessary it be specified. See [`Id3v2Version`](crate::id3::Id3v2Version) for variants.
+	Id3v2(Id3v2Version),
 	#[cfg(feature = "format-mp4")]
-	/// Common file extensions: `.mp4, .m4a, .m4p, .m4b, .m4r, .m4v`
-	Mp4,
-	#[cfg(feature = "format-opus")]
-	/// Metadata stored in an Opus comment header
-	/// Common file extensions: `.opus`
-	Opus,
-	#[cfg(feature = "format-vorbis")]
-	/// Metadata stored in an OGG Vorbis file
-	/// Common file extensions: `.ogg`
-	Vorbis,
-	#[cfg(feature = "format-flac")]
-	/// Metadata stored in FLAC VORBISCOMMENT/PICTURE blocks
-	/// Common file extensions: `.flac`
-	Flac,
+	/// Represents MP4 atoms
+	Mp4Atom,
+	#[cfg(feature = "format-ogg")]
+	/// Represents vorbis comments
+	VorbisComments,
 	#[cfg(feature = "format-riff")]
-	/// Metadata stored in a RIFF INFO chunk
-	/// Common file extensions: `.wav, .wave`
+	/// Represents a RIFF INFO LIST
 	RiffInfo,
 	#[cfg(feature = "format-aiff")]
-	/// Metadata stored in AIFF text chunks
-	/// Common file extensions: `.aiff, .aif`
+	/// Represents AIFF text chunks
 	AiffText,
 }
