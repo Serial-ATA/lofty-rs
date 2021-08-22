@@ -6,6 +6,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ByteOrder};
 
 pub(crate) mod text_utils;
+mod upgrade;
 mod v2;
 mod v3;
 mod v4;
