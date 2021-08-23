@@ -5,8 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ByteOrder};
 
-pub(crate) mod text_utils;
-pub(crate) mod upgrade;
+pub(crate) mod util;
 mod v2;
 mod v3;
 mod v4;

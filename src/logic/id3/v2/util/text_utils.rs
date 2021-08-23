@@ -52,7 +52,7 @@ where
 	})
 }
 
-fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
+pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
 	if reader.len() == 0 || reader.len() % 2 != 0 {
 		return Err(LoftyError::TextDecode("UTF-16 string has an odd length"));
 	}
@@ -97,26 +97,46 @@ where
 	(!text_bytes.is_empty()).then(|| text_bytes)
 }
 
-pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding) -> Vec<u8> {
+pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
 	match text_encoding {
-		TextEncoding::Latin1 => text.chars().map(|c| c as u8).collect(),
+		TextEncoding::Latin1 => {
+			let mut out = text.chars().map(|c| c as u8).collect::<Vec<u8>>();
+
+			if terminated {
+				out.push(0)
+			}
+
+			out
+		},
 		TextEncoding::UTF16 => {
 			if cfg!(target_endian = "little") {
-				utf16_encode(text, u16::to_le_bytes)
+				utf16_encode(text, u16::to_le_bytes, terminated)
 			} else {
-				utf16_encode(text, u16::to_be_bytes)
+				utf16_encode(text, u16::to_be_bytes, terminated)
 			}
 		},
-		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes),
-		TextEncoding::UTF8 => text.as_bytes().to_vec(),
+		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, terminated),
+		TextEncoding::UTF8 => {
+			let mut out = text.as_bytes().to_vec();
+
+			if terminated {
+				out.push(0);
+			}
+
+			out
+		},
 	}
 }
 
-fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2]) -> Vec<u8> {
+fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) -> Vec<u8> {
 	let mut encoded = Vec::<u8>::new();
 
 	for ch in text.encode_utf16() {
 		encoded.extend_from_slice(&endianness(ch));
+	}
+
+	if terminated {
+		encoded.extend_from_slice(&[0, 0]);
 	}
 
 	encoded

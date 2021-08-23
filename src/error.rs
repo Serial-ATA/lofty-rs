@@ -44,6 +44,9 @@ pub enum LoftyError {
 	/// Errors that arise while decoding ID3v2 text
 	#[error("Text decoding: {0}")]
 	TextDecode(&'static str),
+	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
+	#[error("ID3v2: Encountered invalid data in SYLT frame")]
+	BadSyncText,
 	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
 	Wav(&'static str),

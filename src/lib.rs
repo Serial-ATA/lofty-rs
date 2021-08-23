@@ -143,7 +143,10 @@ pub mod files {
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
 /// ID3v1/v2 specific items
 pub mod id3 {
-	pub use crate::logic::id3::v2::upgrade::{upgrade_v2, upgrade_v3};
+	pub use crate::logic::id3::v2::util::sync_text::{
+		SyncTextContentType, SynchronizedText, TimestampFormat,
+	};
+	pub use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 	pub use crate::logic::id3::v2::Id3v2Version;
 }
 

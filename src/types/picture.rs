@@ -344,22 +344,23 @@ impl Picture {
 					_ => return Err(LoftyError::BadPictureFormat(self.mime_type.to_string())),
 				};
 
-				let mut data = Cursor::new(vec![self.text_encoding as u8]);
+				let mut data = vec![self.text_encoding as u8];
 
 				data.write_all(format.as_bytes());
 				data.write_u8(self.pic_type.as_u8());
 
 				if let Some(description) = &self.description {
-					data.write_all(&*crate::logic::id3::v2::text_utils::encode_text(
+					data.write_all(&*crate::logic::id3::v2::util::text_utils::encode_text(
 						description,
 						self.text_encoding,
+						true,
 					))?;
 				}
 
 				data.write_u8(0)?;
 				data.write_all(&*self.data);
 
-				let size = data.get_ref().len() - 6;
+				let size = data.len() - 6;
 
 				if size as u64 > u32::MAX as u64 {
 					return Err(LoftyError::TooMuchData);
@@ -371,31 +372,32 @@ impl Picture {
 					return Err(LoftyError::TooMuchData);
 				}
 
-				Ok(data.into_inner())
+				Ok(data)
 			},
 			_ => {
-				let mut data = Cursor::new(vec![self.text_encoding as u8]);
+				let mut data = vec![self.text_encoding as u8];
 
 				data.write_all(self.mime_type.as_str().as_bytes())?;
 				data.write_u8(self.pic_type.as_u8())?;
 
 				if let Some(description) = &self.description {
-					data.write_all(&*crate::logic::id3::v2::text_utils::encode_text(
+					data.write_all(&*crate::logic::id3::v2::util::text_utils::encode_text(
 						description,
 						self.text_encoding,
+						true,
 					))?;
 				}
 
 				data.write_u8(0)?;
 				data.write_all(&*self.data)?;
 
-				let size = data.get_ref().len();
+				let size = data.len();
 
 				if size as u64 > u32::MAX as u64 {
 					return Err(LoftyError::TooMuchData);
 				}
 
-				Ok(data.into_inner())
+				Ok(data)
 			},
 		}
 	}
@@ -428,7 +430,7 @@ impl Picture {
 					};
 
 					let picture_type = PictureType::from_u8(cursor.read_u8()?);
-					let description = crate::logic::id3::v2::text_utils::decode_text(
+					let description = crate::logic::id3::v2::util::text_utils::decode_text(
 						&mut cursor,
 						encoding,
 						true,
@@ -454,15 +456,18 @@ impl Picture {
 				},
 				_ => {
 					let mime_type = if let Some(mime_type) =
-						crate::logic::id3::v2::text_utils::decode_text(&mut cursor, encoding, true)?
-					{
+						crate::logic::id3::v2::util::text_utils::decode_text(
+							&mut cursor,
+							encoding,
+							true,
+						)? {
 						MimeType::from_str(&*mime_type)
 					} else {
 						MimeType::None
 					};
 
 					let picture_type = PictureType::from_u8(cursor.read_u8()?);
-					let description = crate::logic::id3::v2::text_utils::decode_text(
+					let description = crate::logic::id3::v2::util::text_utils::decode_text(
 						&mut cursor,
 						encoding,
 						true,
