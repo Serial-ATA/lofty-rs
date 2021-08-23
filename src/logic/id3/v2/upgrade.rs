@@ -1,6 +1,7 @@
 macro_rules! gen_upgrades {
     (V2 => [$($($v2_key:tt)|* => $id3v24_from_v2:tt),+]; V3 => [$($($v3_key:tt)|* => $id3v24_from_v3:tt),+]) => {
-        pub(crate) const fn upgrade_v2(key: &str) -> Option<&'static str> {
+		/// Upgrade an ID3v2.2 key to an ID3v2.4 key
+        pub const fn upgrade_v2(key: &str) -> Option<&'static str> {
             match key {
                 $(
                     $($v2_key)|* => Some($id3v24_from_v2),
@@ -9,7 +10,8 @@ macro_rules! gen_upgrades {
             }
         }
 
-        pub(crate) const fn upgrade_v3(key: &str) -> Option<&'static str> {
+		/// Upgrade an ID3v2.3 key to an ID3v2.4 key
+        pub const fn upgrade_v3(key: &str) -> Option<&'static str> {
             match key {
                 $(
                     $($v3_key)|* => Some($id3v24_from_v3),

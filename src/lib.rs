@@ -144,6 +144,7 @@ pub mod files {
 /// ID3v1/v2 specific items
 pub mod id3 {
 	pub use crate::logic::id3::v2::Id3v2Version;
+	pub use crate::logic::id3::v2::upgrade::{upgrade_v2, upgrade_v3};
 }
 
 /// Various items related to [`Picture`](crate::picture::Picture)s
