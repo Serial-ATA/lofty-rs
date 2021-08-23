@@ -118,9 +118,9 @@ impl IntoIterator for Tag {
 }
 
 impl Tag {
-	/// An iterator over the tag's items
-	pub fn iter(&self) -> std::slice::Iter<TagItem> {
-		self.items.iter()
+	/// The tag's items as a slice
+	pub fn as_slice(&self) -> &[TagItem] {
+		&*self.items
 	}
 
 	/// Retain tag items based on the predicate
@@ -208,22 +208,41 @@ impl Tag {
 
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
-	/// # Returns
-	///
 	/// This returns a bool if the item was successfully inserted/replaced.
+	/// This will only fail if the [`TagItem`]'s key couldn't be remapped to the target [`TagType`]
 	///
-	/// `false` is only returned if the [`TagItem`]'s key couldn't be remapped to the target [`TagType`]
+	/// # Warning
+	///
+	/// Certain [`ItemKey`]s are unable to map to an ID3v2 frame, as they are a part of a larger collection (such as `TIPL` and `TMCL`).
+	///
+	/// For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
+	///
+	/// There are two things the caller could do:
+	///
+	/// 1. Combine `Arranger` and any other "involved people" into a `TIPL` string and change the [`ItemKey`] to `InvolvedPeople`
+	/// 2. Use [`insert_item_unchecked`](Tag::insert_item_unchecked), as it's perfectly valid in this case and will later be used to build a `TIPL` if written.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
 		if let Some(item) = item.re_map(&self.tag_type) {
-			match self.items.iter_mut().find(|i| i.item_key == item.item_key) {
-				None => self.items.push(item),
-				Some(i) => *i = item,
-			};
-
+			self.insert_item_unchecked(item);
 			return true;
 		}
 
 		false
+	}
+
+	/// Insert a [`TagItem`], replacing any existing one of the same type
+	///
+	/// # Warning
+	///
+	/// Unlike [`insert_item`](Tag::insert_item), there are no validity checks here.
+	///
+	/// When used with [`ItemKey::Unknown`], this method could potentially render the tag unreadable.
+	/// Otherwise, there is no danger in using this.
+	pub fn insert_item_unchecked(&mut self, item: TagItem) {
+		match self.items.iter_mut().find(|i| i.item_key == item.item_key) {
+			None => self.items.push(item),
+			Some(i) => *i = item,
+		};
 	}
 }
 
