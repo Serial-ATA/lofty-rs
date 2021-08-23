@@ -498,13 +498,13 @@ impl Picture {
 	}
 
 	#[cfg(feature = "vorbis_comments")]
-	/// Convert a [`Picture`] to a FLAC METADATA_BLOCK_PICTURE byte Vec
+	/// Convert a [`Picture`] to a base64 encoded FLAC METADATA_BLOCK_PICTURE String
 	///
 	/// NOTES:
 	///
 	/// * This does not include a key (Vorbis comments) or METADATA_BLOCK_HEADER (FLAC blocks)
 	/// * FLAC blocks have different size requirements than OGG Vorbis/Opus, size is not checked here
-	pub fn as_flac_bytes(&self) -> Vec<u8> {
+	pub fn as_flac_bytes(&self) -> String {
 		let mut data = Vec::<u8>::new();
 
 		let picture_type = (self.pic_type.as_u8() as u32).to_be_bytes();
@@ -535,11 +535,11 @@ impl Picture {
 		data.extend(pic_data_len.to_be_bytes().iter());
 		data.extend(pic_data.iter());
 
-		data
+		base64::encode(data)
 	}
 
 	#[cfg(feature = "vorbis_comments")]
-	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes:
+	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes (can be base64 encoded):
 	///
 	/// NOTE: This expects either the key "METADATA_BLOCK_PICTURE=" (Vorbis comments) or METADATA_BLOCK_HEADER (4 bytes, FLAC blocks) to have already been skipped
 	///
