@@ -85,12 +85,15 @@ impl TagItem {
 
 /// Represents a tag item's value
 ///
-/// NOTE: The [Locator][ItemValue::Locator] and [Binary][ItemValue::Binary] variants are only applicable to APE tags.
-/// Attempting to write either to another file/tag type will **not** error, they will just be ignored.
+/// NOTES:
+///
+/// * The [Locator][ItemValue::Locator] variant is only applicable to APE and ID3v2 tags.
+/// * The [Binary][ItemValue::Binary] variant is only applicable to APE tags.
+/// * Attempting to write either to another file/tag type will **not** error, they will just be ignored.
 pub enum ItemValue {
 	/// Any UTF-8 encoded text
 	Text(String),
-	/// **(APE ONLY)** Any UTF-8 encoded locator of external information
+	/// **(APE/ID3v2 ONLY)** Any UTF-8 encoded locator of external information
 	Locator(String),
 	/// **(APE ONLY)** Binary information, most likely a picture
 	Binary(Vec<u8>),
@@ -225,7 +228,7 @@ impl Tag {
 }
 
 #[cfg(feature = "quick_tag_accessors")]
-common_items!(Artist => artist, Title => title, AlbumTitle => album_title, AlbumArtist => album_artist);
+common_items!(TrackArtist => artist, TrackTitle => title, AlbumTitle => album_title, AlbumArtist => album_artist);
 
 /// The tag's format
 #[derive(Clone, Debug, PartialEq)]

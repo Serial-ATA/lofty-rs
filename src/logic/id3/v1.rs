@@ -39,11 +39,11 @@ where
 pub(crate) fn parse_id3v1(reader: [u8; 128]) -> Tag {
 	let mut tag = Tag::new(TagType::Id3v1);
 
-	if let Some(title) = decode_text(ItemKey::Title, &reader[3..33]) {
+	if let Some(title) = decode_text(ItemKey::TrackTitle, &reader[3..33]) {
 		tag.insert_item(title);
 	}
 
-	if let Some(artist) = decode_text(ItemKey::Artist, &reader[33..63]) {
+	if let Some(artist) = decode_text(ItemKey::TrackArtist, &reader[33..63]) {
 		tag.insert_item(artist);
 	}
 

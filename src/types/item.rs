@@ -1,338 +1,419 @@
-use crate::id3::Id3v2Version;
 use crate::TagType;
 
-macro_rules! variant_map {
-    ($self:ident, true, $($variant:ident $(| $or_variants:ident)* => $key:expr),+) => {
-		match $self {
-			$(ItemKey::$variant $(| ItemKey::$or_variants)* => Some($key),)+
-			ItemKey::Unknown(ref unknown) => Some(unknown)
-		}
-    };
-	($self:ident, false, $($variant:ident $(| $or_variants:ident)* => $key:expr),+) => {
-		match $self {
-			$(ItemKey::$variant $(| ItemKey::$or_variants)* => Some($key),)+
-			_ => None
-		}
-	}
+macro_rules! first_key {
+	($key:tt $(| $remaining:expr)*) => {
+		$key
+	};
 }
 
-macro_rules! key_map {
-    ($self:expr, true, $($key:tt $(| $or_variants:tt)* => $variant:ident),+) => {
-        match &*$self.to_uppercase() {
-			$($key $(| $or_variants)* => Some(ItemKey::$variant),)+
-			unknown => Some(ItemKey::Unknown($self.to_string()))
+// This is used to create the ItemKey enum and its to and from key conversions
+//
+// First, the TagTypes that can have unknown keys are defined.
+// Ex. "ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments];"
+//
+// This is followed by an ItemKey variant as an ident (ex. Artist), and a collection of the appropriate mappings.
+// Ex. Artist => [TagType::Ape => "Artist"]
+//
+// Some formats have multiple keys that map to the same ItemKey variant, which can be added with '|'.
+// The standard key(s) **must** come before any popular non-standard keys.
+// Keys should appear in order of popularity.
+macro_rules! item_keys {
+	(ALLOWED_UNKNOWN => [$($unknown_tag_type:pat),+]; $($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
+		#[derive(PartialEq)]
+		#[allow(missing_docs)]
+		#[non_exhaustive]
+		/// A generic representation of a tag's key
+		pub enum ItemKey {
+			$(
+				$variant,
+			)+
+			Unknown(String),
 		}
-    };
-	($self:expr, false, $($key:tt $(| $or_variants:tt)* => $variant:ident),+) => {
-		match &*$self.to_uppercase() {
-			$($key $(| $or_variants)* => Some(ItemKey::$variant),)+
-			_ => None
+
+		impl ItemKey {
+			/// Map a format specific key to an ItemKey
+			///
+			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
+			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::upgrade_v2) and [`upgrade_v3`](crate::id3::upgrade_v3)
+			pub const fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
+				match tag_type {
+					$(
+						$(
+							$($tag_type)|* if $(key.eq_ignore_ascii_case($key))||* => Some(ItemKey::$variant),
+						)+
+					)+
+					$(
+						$unknown_tag_type => Some(ItemKey::Unknown(key.to_string())),
+					)+
+					_ => None,
+				}
+			}
+
+			/// Maps the variant to a format-specific key
+			///
+			/// NOTE: Since all ID3v2 tags are upgraded to [`Id3v2Version::V4`](crate::id3::Id3v2Version), the
+			/// version provided does not matter. They cannot be downgraded.
+			pub const fn map_key(&self, tag_type: &TagType) -> Option<&str> {
+				match (tag_type, self) {
+					$(
+						$(
+							($($tag_type)|*, ItemKey::$variant) => Some(first_key!($($key)|*)),
+						)+
+					)+
+					$(
+						($unknown_tag_type, ItemKey::Unknown(unknown)) => Some(&*unknown),
+					)+
+					_ => None,
+				}
+			}
 		}
-	}
+	};
 }
 
-#[derive(PartialEq)]
-#[allow(missing_docs)]
-pub enum ItemKey {
-	Artist,
-	AlbumTitle,
-	AlbumArtist,
-	Composer,
-	Comment,
-	Copyright,
-	Bpm,
-	RecordingDate,
-	ReleaseDate,
-	Year,
-	TotalDiscs,
-	DiscNumber,
-	Encoder,
-	Genre,
-	Lyrics,
-	Lyricist,
-	Title,
-	TotalTracks,
-	TrackNumber,
-	Unknown(String),
-}
+item_keys!(
+	ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments];
+	// Titles
+	AlbumTitle => [
+		TagType::Id3v2(_) => "TALB", TagType::Mp4Atom => "\u{a9}alb",
+		TagType::VorbisComments => "ALBUM", TagType::Ape => "Album",
+		TagType::RiffInfo => "IPRD"
+	],
+	SetSubtitle => [
+		TagType::Id3v2(_) => "TSST", TagType::Mp4Atom => "----:com.apple.iTunes:DISCSUBTITLE",
+		TagType::VorbisComments => "DISCSUBTITLE", TagType::Ape => "DiscSubtitle"
+	],
+	ShowName => [
+		TagType::Mp4Atom => "tvsh"
+	],
+	ContentGroup => [
+		TagType::Id3v2(_) => "TIT1" | "GRP1", TagType::Mp4Atom => "\u{a9}grp",
+		TagType::VorbisComments => "GROUPING", TagType::Ape => "Grouping"
+	],
+	TrackTitle => [
+		TagType::Id3v2(_) => "TIT2", TagType::Mp4Atom => "\u{a9}nam",
+		TagType::VorbisComments => "TITLE", TagType::Ape => "Title",
+		TagType::RiffInfo => "INAM"
+	],
+	TrackSubtitle => [
+		TagType::Id3v2(_) => "TIT3", TagType::Mp4Atom => "----:com.apple.iTunes:SUBTITLE",
+		TagType::VorbisComments => "SUBTITLE", TagType::Ape => "Subtitle"
+	],
 
-impl ItemKey {
-	/// Map a format specific key to an ItemKey
-	pub fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
-		match tag_type {
-			TagType::Ape => key_map!(key, true,
-				"ARTIST" => Artist,
-				"ALBUM" => AlbumTitle,
-				"ALBUM ARTIST" => AlbumArtist,
-				"COMPOSER" => Composer,
-				"COPYRIGHT" => Copyright,
-				"COMMENT" => Comment,
-				"BPM" => Bpm,
-				"DATE" => ReleaseDate,
-				"YEAR" => Year,
-				"DISC" => DiscNumber,
-				"ENCODER" => Encoder,
-				"GENRE" => Genre,
-				"LYRICS" => Lyrics,
-				"LYRICIST" => Lyricist,
-				"TITLE" => Title,
-				"TRACK" => TrackNumber
-			),
-			TagType::Id3v1 => None,
-			TagType::Id3v2(version) => match version {
-				Id3v2Version::V2 => key_map!(key, false,
-					"TP1" => Artist,
-					"TAL" => AlbumTitle,
-					"TP2" => AlbumArtist,
-					"TCM" => Composer,
-					"COM" => Comment,
-					"TCR" => Copyright,
-					"TBP" => Bpm,
-					"TIM" => RecordingDate,
-					"TOR" => ReleaseDate,
-					"TYE" => Year,
-					"TPA" => DiscNumber,
-					"TSS" => Encoder,
-					"TCO" => Genre,
-					"ULT" => Lyrics,
-					"TXT" => Lyricist,
-					"TT2" => Title,
-					"TRK" => TrackNumber
-				),
-				Id3v2Version::V3 => key_map!(key, false,
-					"TPE1" => Artist,
-					"TALB" => AlbumTitle,
-					"TPE2" => AlbumArtist,
-					"TCOM" => Composer,
-					"TCOP" => Copyright,
-					"TBPM" => Bpm,
-					"TDRC" => RecordingDate,
-					"TORY" => ReleaseDate,
-					"TYER" => Year,
-					"TPOS" => DiscNumber,
-					"TSSE" => Encoder,
-					"TCON" => Genre,
-					"USLT" => Lyrics,
-					"TEXT" => Lyricist,
-					"TIT2" => Title,
-					"TRCK" => TrackNumber
-				),
-				Id3v2Version::V4 => key_map!(key, false,
-					"TPE1" => Artist,
-					"TALB" => AlbumTitle,
-					"TPE2" => AlbumArtist,
-					"TCOM" => Composer,
-					"TCOP" => Copyright,
-					"TBPM" => Bpm,
-					"TDRC" => RecordingDate,
-					"TDOR" => ReleaseDate,
-					"TDRC" => Year,
-					"TPOS" => DiscNumber,
-					"TSSE" => Encoder,
-					"TCON" => Genre,
-					"USLT" => Lyrics,
-					"TEXT" => Lyricist,
-					"TIT2" => Title,
-					"TRCK" => TrackNumber
-				),
-			},
-			TagType::Mp4Atom => key_map!(key, false,
-				"\u{a9}ART" => Artist,
-				"\u{a9}ALB" => AlbumTitle,
-				"AART" => AlbumArtist,
-				"\u{a9}WRT" => Composer,
-				"CPRT" => Copyright,
-				"©CMT" => Comment,
-				"TMPO" => Bpm,
-				"\u{a9}DAY" => RecordingDate,
-				"DISK" => DiscNumber,
-				"\u{a9}TOO" => Encoder,
-				"\u{a9}GEN" => Genre,
-				"\u{a9}LYR" => Lyrics,
-				"----:COM.APPLE.ITUNES:LYRICIST" => Lyricist,
-				"\u{a9}NAM" => Title,
-				"TRKN" => TrackNumber
-			),
-			TagType::VorbisComments => key_map!(key, true,
-				"ARTIST" => Artist,
-				"ALBUMTITLE" => AlbumTitle,
-				"ALBUMARTIST" => AlbumArtist,
-				"COMPOSER" => Composer,
-				"COPYRIGHT" => Copyright,
-				"COMMENT" => Comment,
-				"BPM" => Bpm,
-				"DATE" => RecordingDate,
-				"YEAR" => Year,
-				"ORIGINALDATE" => ReleaseDate,
-				"TOTALDISCS" => TotalDiscs,
-				"DISCNUMBER" => DiscNumber,
-				"ENCODER" => Encoder,
-				"GENRE" => Genre,
-				"LYRICS" => Lyrics,
-				"LYRICIST" => Lyricist,
-				"TITLE" => Title,
-				"TOTALTRACKS" => TotalTracks,
-				"TRACKNUMBER" => TrackNumber
-			),
-			TagType::RiffInfo => key_map!(key, false,
-				"IART" => Artist,
-				"IPRD" => AlbumTitle,
-				"ICOP" => Copyright,
-				"ICMT" => Comment,
-				"ICRD" => RecordingDate,
-				"ISFT" => Encoder,
-				"IGNR" => Genre,
-				"INAM" => Title,
-				"IFRM" => TotalTracks,
-				"ITRK" => TrackNumber
-			),
-			TagType::AiffText => key_map!(key, false,
-				"AUTH" => Artist,
-				"(c) " => Copyright,
-				"NAME" => Title
-			),
-		}
-	}
-	/// Maps the variant to a format-specific key
-	///
-	/// # Returns
-	///
-	/// Will return `None` if no mapping is found
-	pub fn map_key(&self, tag_type: &TagType) -> Option<&str> {
-		match tag_type {
-			TagType::Ape => {
-				variant_map!(self, true,
-					Artist => "Artist",
-					AlbumTitle => "Album",
-					AlbumArtist => "Album Artist",
-					Composer => "Composer",
-					Copyright => "Copyright",
-					Comment => "Comment",
-					Bpm => "BPM",
-					ReleaseDate => "Date",
-					Year => "Year",
-					TotalDiscs | DiscNumber => "Disc",
-					Encoder => "Encoder",
-					Genre => "Genre",
-					Lyrics => "Lyrics",
-					Lyricist => "Lyricist",
-					Title => "Title",
-					TotalTracks | TrackNumber => "Track"
-				)
-			},
-			TagType::Id3v1 => None,
-			TagType::Id3v2(version) => match version {
-				Id3v2Version::V2 => variant_map!(self, false,
-					Artist => "TP1",
-					AlbumTitle => "TAL",
-					AlbumArtist => "TP2",
-					Composer => "TCM",
-					Comment => "COM",
-					Copyright => "TCR",
-					Bpm => "TBP",
-					RecordingDate => "TIM",
-					ReleaseDate => "TOR",
-					Year => "TYE",
-					TotalDiscs | DiscNumber => "TPA",
-					Encoder => "TSS",
-					Genre => "TCO",
-					Lyrics => "ULT",
-					Lyricist => "TXT",
-					Title => "TT2",
-					TotalTracks | TrackNumber => "TRK"
-				),
-				Id3v2Version::V3 => variant_map!(self, false,
-					Artist => "TPE1",
-					AlbumTitle => "TALB",
-					AlbumArtist => "TPE2",
-					Composer => "TCOM",
-					Copyright => "TCOP",
-					Bpm => "TBPM",
-					RecordingDate => "TDRC",
-					ReleaseDate => "TORY",
-					Year => "TYER",
-					TotalDiscs | DiscNumber => "TPOS",
-					Encoder => "TSSE",
-					Genre => "TCON",
-					Lyrics => "USLT",
-					Lyricist => "TEXT",
-					Title => "TIT2",
-					TotalTracks | TrackNumber => "TRCK"
-				),
-				Id3v2Version::V4 => variant_map!(self, false,
-					Artist => "TPE1",
-					AlbumTitle => "TALB",
-					AlbumArtist => "TPE2",
-					Composer => "TCOM",
-					Copyright => "TCOP",
-					Bpm => "TBPM",
-					RecordingDate => "TDRC",
-					ReleaseDate => "TDOR",
-					Year => "TDRC",
-					TotalDiscs | DiscNumber => "TPOS",
-					Encoder => "TSSE",
-					Genre => "TCON",
-					Lyrics => "USLT",
-					Lyricist => "TEXT",
-					Title => "TIT2",
-					TotalTracks | TrackNumber => "TRCK"
-				),
-			},
-			TagType::Mp4Atom => variant_map!(self, false,
-				Artist => "\u{a9}ART",
-				AlbumTitle => "\u{a9}alb",
-				AlbumArtist => "aART",
-				Composer => "\u{a9}wrt",
-				Copyright => "cprt",
-				Comment => "©cmt",
-				Bpm => "tmpo",
-				RecordingDate | Year => "\u{a9}day",
-				TotalDiscs | DiscNumber => "disk",
-				Encoder => "\u{a9}too",
-				Genre => "\u{a9}gen",
-				Lyrics => "\u{a9}lyr",
-				Lyricist => "----:com.apple.iTunes:LYRICIST",
-				Title => "\u{a9}nam",
-				TotalTracks | TrackNumber => "trkn"
-			),
-			TagType::VorbisComments => variant_map!(self, true,
-				Artist => "ARTIST",
-				AlbumTitle => "ALBUMTITLE",
-				AlbumArtist => "ALBUMARTIST",
-				Composer => "COMPOSER",
-				Copyright => "COPYRIGHT",
-				Comment => "Comment",
-				Bpm => "BPM",
-				RecordingDate => "DATE",
-				ReleaseDate => "ORIGINALDATE",
-				Year => "YEAR",
-				TotalDiscs => "TOTALDISCS",
-				DiscNumber => "DISCNUMBER",
-				Encoder => "ENCODER",
-				Genre => "GENRE",
-				Lyrics => "LYRICS",
-				Lyricist => "LYRICIST",
-				Title => "TITLE",
-				TotalTracks => "TOTALTRACKS",
-				TrackNumber => "TRACKNUMBER"
-			),
-			TagType::RiffInfo => variant_map!(self, false,
-				Artist => "IART",
-				AlbumTitle => "IPRD",
-				Copyright => "ICOP",
-				Comment => "ICMT",
-				RecordingDate => "ICRD",
-				Encoder => "ISFT",
-				Genre => "IGNR",
-				Title => "INAM",
-				TotalTracks => "IFRM",
-				TrackNumber => "ITRK"
-			),
-			TagType::AiffText => variant_map!(self, false,
-				Artist => "AUTH",
-				Copyright => "(c) ",
-				Title => "NAME"
-			),
-		}
-	}
-}
+	// Original names
+	OriginalAlbumTitle => [
+		TagType::Id3v2(_) => "TOAL"
+	],
+	OriginalArtist => [
+		TagType::Id3v2(_) => "TOPE"
+	],
+	OriginalLyricist => [
+		TagType::Id3v2(_) => "TOLY"
+	],
+
+	// Sorting
+	AlbumTitleSortOrder => [
+		TagType::Id3v2(_) => "TSOA", TagType::Mp4Atom => "soal",
+		TagType::VorbisComments | TagType::Ape => "ALBUMSORT"
+	],
+	AlbumArtistSortOrder => [
+		TagType::Id3v2(_) => "TSO2", TagType::Mp4Atom => "soaa",
+		TagType::VorbisComments | TagType::Ape => "ALBUMARTISTSORT"
+	],
+	TrackTitleSortOrder => [
+		TagType::Id3v2(_) => "TSOT", TagType::Mp4Atom => "sonm",
+		TagType::VorbisComments | TagType::Ape => "TITLESORT"
+	],
+	TrackArtistSortOrder => [
+		TagType::Id3v2(_) => "TSOP", TagType::Mp4Atom => "soar",
+		TagType::VorbisComments | TagType::Ape => "ARTISTSORT"
+	],
+	ShowNameSortOrder => [
+		TagType::Mp4Atom => "sosn"
+	],
+	ComposerSortOrder => [
+		TagType::Id3v2(_) => "TSOC", TagType::Mp4Atom => "soco"
+	],
+
+
+	// People & Organizations
+	AlbumArtist => [
+		TagType::Id3v2(_) => "TPE2", TagType::Mp4Atom => "aART",
+		TagType::VorbisComments | TagType::Ape => "ALBUMARTIST"
+	],
+	TrackArtist => [
+		TagType::Id3v2(_) => "TPE1", TagType::Mp4Atom => "\u{a9}ART",
+		TagType::VorbisComments => "ARTIST", TagType::Ape => "Artist",
+		TagType::RiffInfo => "IART"
+	],
+	Arranger => [
+		TagType::VorbisComments => "ARRANGER", TagType::Ape => "Arranger"
+	],
+	Writer => [
+		TagType::Id3v2(_) => "TEXT",
+		TagType::VorbisComments => "AUTHOR" | "WRITER", TagType::Ape => "Writer",
+		TagType::RiffInfo => "IWRI"
+	],
+	Composer => [
+		TagType::Id3v2(_) => "TCOM", TagType::Mp4Atom => "\u{a9}wrt",
+		TagType::VorbisComments => "COMPOSER", TagType::Ape => "Composer",
+		TagType::RiffInfo => "IMUS"
+	],
+	Conductor => [
+		TagType::Id3v2(_) => "TPE3", TagType::Mp4Atom => "----:com.apple.iTunes:CONDUCTOR",
+		TagType::VorbisComments => "CONDUCTOR", TagType::Ape => "Conductor"
+	],
+	Engineer => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:ENGINEER", TagType::VorbisComments => "ENGINEER",
+		TagType::Ape => "Engineer"
+	],
+	InvolvedPeople => [
+		TagType::Id3v2(_) => "TIPL"
+	],
+	Lyricist => [
+		TagType::Id3v2(_) => "TEXT", TagType::Mp4Atom => "----:com.apple.iTunes:LYRICIST",
+		TagType::VorbisComments => "LYRICIST", TagType::Ape => "Lyricist"
+	],
+	MixDj => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:DJMIXER", TagType::VorbisComments => "DJMIXER",
+		TagType::Ape => "DjMixer"
+	],
+	MixEngineer => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:MIXER", TagType::VorbisComments => "MIXER",
+		TagType::Ape => "Mixer"
+	],
+	MusicianCredits => [
+		TagType::Id3v2(_) => "TMCL"
+	],
+	Performer => [
+		TagType::VorbisComments => "PERFORMER", TagType::Ape => "Performer"
+	],
+	Producer => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:PRODUCER", TagType::VorbisComments => "PRODUCER",
+		TagType::Ape => "Producer", TagType::RiffInfo => "IPRO"
+	],
+	Publisher => [
+		TagType::Id3v2(_) => "TPUB", TagType::VorbisComments => "PUBLISHER"
+	],
+	Label => [
+		TagType::Id3v2(_) => "TPUB", TagType::Mp4Atom => "----:com.apple.iTunes:LABEL",
+		TagType::VorbisComments => "LABEL", TagType::Ape => "Label"
+	],
+	InternetRadioStationName => [
+		TagType::Id3v2(_) => "TRSN"
+	],
+	InternetRadioStationOwner => [
+		TagType::Id3v2(_) => "TRSO"
+	],
+	Remixer => [
+		TagType::Id3v2(_) => "TPE4", TagType::Mp4Atom => "----:com.apple.iTunes:REMIXER",
+		TagType::VorbisComments => "REMIXER", TagType::Ape => "MixArtist"
+	],
+
+	// Counts & Indexes
+	DiscNumber => [
+		TagType::Id3v2(_) => "TPOS", TagType::Mp4Atom => "disk",
+		TagType::VorbisComments => "DISCNUMBER", TagType::Ape => "Disc"
+	],
+	DiscTotal => [
+		TagType::Id3v2(_) => "TPOS", TagType::Mp4Atom => "disk",
+		TagType::VorbisComments => "DISCTOTAL" | "TOTALDISCS", TagType::Ape => "Disc"
+	],
+	TrackNumber => [
+		TagType::Id3v2(_) => "TRCK", TagType::Mp4Atom => "trkn",
+		TagType::VorbisComments => "TRACKNUMBER", TagType::Ape => "Track",
+		TagType::RiffInfo => "IPRT" | "ITRK"
+	],
+	TrackTotal => [
+		TagType::Id3v2(_) => "TRCK", TagType::Mp4Atom => "trkn",
+		TagType::VorbisComments => "TRACKTOTAL" | "TOTALTRACKS", TagType::Ape => "Track",
+		TagType::RiffInfo => "IFRM"
+	],
+	Popularimeter => [
+		TagType::Id3v2(_) => "POPM"
+	],
+	LawRating => [
+		TagType::Mp4Atom => "rate", TagType::RiffInfo => "IRTD"
+	],
+
+	// Dates
+	RecordingDate => [
+		TagType::Id3v2(_) => "TDRC", TagType::Mp4Atom => "\u{a9}day",
+		TagType::VorbisComments => "DATE", TagType::RiffInfo => "ICRD"
+	],
+	Year => [
+		TagType::Id3v2(_) => "TDRC", TagType::VorbisComments => "DATE" | "YEAR",
+		TagType::Ape => "Year"
+	],
+	OriginalReleaseDate => [
+		TagType::Id3v2(_) => "TDOR", TagType::VorbisComments => "ORIGINALDATE"
+	],
+
+	// Identifiers
+	ISRC => [
+		TagType::Id3v2(_) => "TSRC", TagType::Mp4Atom => "----:com.apple.iTunes:ISRC",
+		TagType::VorbisComments => "ISRC", TagType::Ape => "ISRC"
+	],
+	Barcode => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:BARCODE", TagType::Ape => "Barcode"
+	],
+	CatalogNumber => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:CATALOGNUMBER", TagType::VorbisComments => "CATALOGNUMBER",
+		TagType::Ape => "CatalogNumber"
+	],
+	Movement => [
+		TagType::Id3v2(_) => "MVNM"
+	],
+	MovementIndex => [
+		TagType::Id3v2(_) => "MVIN"
+	],
+
+	// Flags
+	FlagCompilation => [
+		TagType::Id3v2(_) => "TCMP", TagType::Mp4Atom => "cpil",
+		TagType::VorbisComments => "COMPILATION", TagType::Ape => "Compilation"
+	],
+	FlagPodcast => [
+		TagType::Id3v2(_) => "PCST", TagType::Mp4Atom => "pcst"
+	],
+
+	// File information
+	FileType => [
+		TagType::Id3v2(_) => "TFLT"
+	],
+	FileOwner => [
+		TagType::Id3v2(_) => "TOWN"
+	],
+	TaggingTime => [
+		TagType::Id3v2(_) => "TDTG"
+	],
+	Length => [
+		TagType::Id3v2(_) => "TLEN"
+	],
+	OriginalFileName => [
+		TagType::Id3v2(_) => "TOFN"
+	],
+	OriginalMediaType => [
+		TagType::Id3v2(_) => "TMED", TagType::Mp4Atom => "----:com.apple.iTunes:MEDIA",
+		TagType::VorbisComments => "MEDIA", TagType::Ape => "Media",
+		TagType::RiffInfo => "ISRF"
+	],
+
+	// Encoder information
+	EncodedBy => [
+		TagType::Id3v2(_) => "TENC", TagType::VorbisComments => "ENCODED-BY",
+		TagType::Ape => "EncodedBy", TagType::RiffInfo => "ITCH"
+	],
+	EncoderSoftware => [
+		TagType::Id3v2(_) => "TSSE", TagType::Mp4Atom => "\u{a9}too",
+		TagType::VorbisComments => "ENCODER", TagType::RiffInfo => "ISFT"
+	],
+	EncoderSettings => [
+		TagType::Id3v2(_) => "TSSE", TagType::VorbisComments => "ENCODING" | "ENCODERSETTINGS"
+	],
+	EncodingTime => [
+		TagType::Id3v2(_) => "TDEN"
+	],
+
+	// URLs
+	AudioFileURL => [
+		TagType::Id3v2(_) => "WOAF"
+	],
+	AudioSourceURL => [
+		TagType::Id3v2(_) => "WOAS"
+	],
+	CommercialInformationURL => [
+		TagType::Id3v2(_) => "WCOM"
+	],
+	CopyrightURL => [
+		TagType::Id3v2(_) => "WCOP"
+	],
+	TrackArtistURL => [
+		TagType::Id3v2(_) => "WOAR"
+	],
+	RadioStationURL => [
+		TagType::Id3v2(_) => "WORS"
+	],
+	PaymentURL => [
+		TagType::Id3v2(_) => "WPAY"
+	],
+	PublisherURL => [
+		TagType::Id3v2(_) => "WPUB"
+	],
+
+
+	// Style
+	Genre => [
+		TagType::Id3v2(_) => "TCON", TagType::Mp4Atom => "\u{a9}gen",
+		TagType::VorbisComments => "GENRE", TagType::RiffInfo => "IGNR"
+	],
+	InitialKey => [
+		TagType::Id3v2(_) => "TKEY"
+	],
+	Mood => [
+		TagType::Id3v2(_) => "TMOO", TagType::Mp4Atom => "----:com.apple.iTunes:MOOD",
+		TagType::VorbisComments => "MOOD", TagType::Ape => "Mood"
+	],
+	BPM => [
+		TagType::Id3v2(_) => "TBPM", TagType::Mp4Atom => "tmpo",
+		TagType::VorbisComments => "BPM"
+	],
+
+	// Legal
+	CopyrightMessage => [
+		TagType::Id3v2(_) => "TCOP", TagType::Mp4Atom => "cprt",
+		TagType::VorbisComments => "COPYRIGHT", TagType::Ape => "Copyright",
+		TagType::RiffInfo => "ICOP"
+	],
+	License => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:LICENSE", TagType::VorbisComments => "LICENSE"
+	],
+
+	// Podcast
+	PodcastDescription => [
+		TagType::Id3v2(_) => "TDES", TagType::Mp4Atom => "ldes"
+	],
+	PodcastSeriesCategory => [
+		TagType::Id3v2(_) => "TCAT", TagType::Mp4Atom => "catg"
+	],
+	PodcastURL => [
+		TagType::Id3v2(_) => "WFED", TagType::Mp4Atom => "purl"
+	],
+	PodcastReleaseDate=> [
+		TagType::Id3v2(_) => "TDRL"
+	],
+	PodcastGlobalUniqueID => [
+		TagType::Id3v2(_) => "TGID", TagType::Mp4Atom => "egid"
+	],
+	PodcastKeywords => [
+		TagType::Id3v2(_) => "TKWD", TagType::Mp4Atom => "keyw"
+	],
+
+	// Miscellaneous
+	UserDefinedText => [
+		TagType::Id3v2(_) => "TXXX"
+	],
+	UserDefinedURL => [
+		TagType::Id3v2(_) => "WXXX"
+	],
+	Comment => [
+		TagType::Id3v2(_) => "COMM", TagType::Mp4Atom => "\u{a9}cmt",
+		TagType::VorbisComments => "COMMENT", TagType::Ape => "Comment",
+		TagType::RiffInfo => "ICMT"
+	],
+	Description => [
+		TagType::Mp4Atom => "desc"
+	],
+	Language => [
+		TagType::Id3v2(_) => "TLAN", TagType::Mp4Atom => "----:com.apple.iTunes:LANGUAGE",
+		TagType::VorbisComments => "LANGUAGE", TagType::Ape => "language",
+		TagType::RiffInfo => "ILNG"
+	],
+	Script => [
+		TagType::Mp4Atom => "----:com.apple.iTunes:SCRIPT", TagType::VorbisComments => "SCRIPT",
+		TagType::Ape => "Script"
+	],
+	Lyrics => [
+		TagType::Id3v2(_) => "USLT", TagType::Mp4Atom => "\u{a9}lyr",
+		TagType::VorbisComments => "LYRICS", TagType::Ape => "Lyrics"
+	]
+);
