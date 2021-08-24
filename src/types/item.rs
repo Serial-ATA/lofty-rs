@@ -1,5 +1,8 @@
 use crate::TagType;
 
+#[cfg(feature = "id3v2")]
+use crate::logic::id3::v2::Id3v2Frame;
+
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {
 		$key
@@ -27,6 +30,12 @@ macro_rules! item_keys {
 			$(
 				$variant,
 			)+
+			#[cfg(feature = "id3v2")]
+			/// An item that only exists in ID3v2
+			Id3v2Specific(Id3v2Frame),
+			/// When a key couldn't be mapped to another variant
+			///
+			/// This **will not** allow writing keys that are out of spec (Eg. ID3v2.4 frame IDs **must** be 4 characters)
 			Unknown(String),
 		}
 
@@ -63,6 +72,9 @@ macro_rules! item_keys {
 					$(
 						($unknown_tag_type, ItemKey::Unknown(unknown)) => Some(&*unknown),
 					)+
+					// Need a special case here to allow for checked insertion, the result isn't actually used.
+					#[cfg(feature = "id3v2")]
+					(TagType::Id3v2(_), ItemKey::Id3v2Specific(_)) => Some(""),
 					_ => None,
 				}
 			}
@@ -389,12 +401,6 @@ item_keys!(
 	],
 
 	// Miscellaneous
-	UserDefinedText => [
-		TagType::Id3v2(_) => "TXXX"
-	],
-	UserDefinedURL => [
-		TagType::Id3v2(_) => "WXXX"
-	],
 	Comment => [
 		TagType::Id3v2(_) => "COMM", TagType::Mp4Atom => "\u{a9}cmt",
 		TagType::VorbisComments => "COMMENT", TagType::Ape => "Comment",
