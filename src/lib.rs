@@ -102,6 +102,10 @@
 //! * `mp4_atoms`
 //! * `riff_info_list`
 //! * `vorbis_comments`
+//!
+//! # Notes on ID3v2
+//!
+//! See [`id3`](crate::id3) for important warnings and notes on reading tags.
 
 #![deny(clippy::pedantic, clippy::all, missing_docs)]
 #![allow(
@@ -127,7 +131,7 @@ pub use crate::types::{
 	file::{FileType, TaggedFile},
 	item::ItemKey,
 	properties::FileProperties,
-	tag::{ItemValue, Tag, TagItem, TagType},
+	tag::{ItemValue, Tag, TagItem, TagItemFlags, TagType},
 };
 
 mod types;
@@ -143,10 +147,42 @@ pub mod files {
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
 /// ID3v1/v2 specific items
 pub mod id3 {
+	//! # ID3v2 notes and warnings
+	//!
+	//! ID3v2 does things differently than other formats.
+	//!
+	//! ## Frame ID mappings
+	//!
+	//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger collection (such as `TIPL` and `TMCL`).
+	//!
+	//! For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
+	//!
+	//! There are two things the caller could do:
+	//!
+	//! 1. Combine `Arranger` and any other "involved people" into a `TIPL` string and change the [`ItemKey`](crate::ItemKey) to `InvolvedPeople`
+	//! 2. Use [`Tag::insert_item_unchecked`](crate::Tag::insert_item_unchecked), as it's perfectly valid in this case and will later be used to build a `TIPL` if written.
+	//!
+	//! ## Special frames
+	//!
+	//! ID3v2 has multiple frames that have no equivalent in other formats:
+	//!
+	//! * TXXX - User defined text
+	//! * WXXX - User defined URL
+	//! * SYLT - Synchronized text
+	//! * GEOB - Encapsulated object (file)
+	//!
+	//! These frames all require different amounts of information, so they cannot be mapped to a traditional [`ItemKey`](crate::ItemKey) variant.
+	//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::Id3v2Frame).
+	//!
+	//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
+	pub use crate::logic::id3::v2::util::encapsulated_object::{
+		GEOBInformation, GeneralEncapsulatedObject,
+	};
 	pub use crate::logic::id3::v2::util::sync_text::{
-		SyncTextContentType, SynchronizedText, TimestampFormat,
+		SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
 	};
 	pub use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
+	pub use crate::logic::id3::v2::Id3v2Frame;
 	pub use crate::logic::id3::v2::Id3v2Version;
 }
 
