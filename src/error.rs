@@ -47,6 +47,12 @@ pub enum LoftyError {
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	#[error("ID3v2: Encountered invalid data in SYLT frame")]
 	BadSyncText,
+	/// Arises when invalid data is encountered while reading an ID3v2 general encapsulated object frame
+	#[error("ID3v2: Encountered invalid data in GEOB frame")]
+	BadEncapsulatedObject,
+	/// Arists when [`std::str::from_utf8`] fails to parse a frame ID
+	#[error("ID3v2: Encountered an invalid frame ID")]
+	BadFrameID,
 	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
 	Wav(&'static str),
