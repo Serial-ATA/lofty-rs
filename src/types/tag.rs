@@ -35,10 +35,69 @@ macro_rules! common_items {
 	}
 }
 
+#[allow(clippy::struct_excessive_bools)]
+/// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
+///
+/// It is not an error to attempt to write flags to a format that doesn't support them.
+/// They will just be ignored.
+pub struct TagItemFlags {
+	/// **(ID3v2 ONLY)** Preserve frame on tag edit
+	pub tag_alter_preservation: bool,
+	/// **(ID3v2 ONLY)** Preserve frame on file edit
+	pub file_alter_preservation: bool,
+	/// **(ID3v2/APEv2 ONLY)** Item cannot be written to
+	pub read_only: bool,
+	/// **(ID3v2 ONLY)** Frame belongs in a group
+	///
+	/// In addition to setting this flag, a group identifier byte must be added.
+	/// All frames with the same group identifier byte belong to the same group.
+	pub grouping_identity: (bool, u8),
+	/// **(ID3v2 ONLY)** Frame is zlib compressed
+	///
+	/// It is **required** `data_length_indicator` be set if this is set.
+	pub compression: bool,
+	/// **(ID3v2 ONLY)** Frame is encrypted
+	///
+	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
+	///
+	/// In addition to setting this flag, an encryption method symbol must be added.
+	/// The method symbol **must** be > 0x80.
+	pub encryption: (bool, u8),
+	/// **(ID3v2 ONLY)** Frame is unsynchronised
+	///
+	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
+	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
+	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
+	pub unsynchronisation: bool,
+	/// **(ID3v2 ONLY)** Frame has a data length indicator
+	///
+	/// The data length indicator is the size of the frame if the flags were all zeroed out.
+	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
+	///
+	/// In addition to setting this flag, the final size must be added.
+	pub data_length_indicator: (bool, u32),
+}
+
+impl Default for TagItemFlags {
+	fn default() -> Self {
+		Self {
+			tag_alter_preservation: false,
+			file_alter_preservation: false,
+			read_only: false,
+			grouping_identity: (false, 0),
+			compression: false,
+			encryption: (false, 0),
+			unsynchronisation: false,
+			data_length_indicator: (false, 0),
+		}
+	}
+}
+
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
 	item_value: ItemValue,
+	flags: TagItemFlags,
 }
 
 impl TagItem {
@@ -57,6 +116,7 @@ impl TagItem {
 		item_key.map_key(tag_type).is_some().then(|| Self {
 			item_key,
 			item_value,
+			flags: TagItemFlags::default(),
 		})
 	}
 
@@ -65,7 +125,13 @@ impl TagItem {
 		Self {
 			item_key,
 			item_value,
+			flags: TagItemFlags::default(),
 		}
+	}
+
+	/// Set the item's flags
+	pub fn set_flags(&mut self, flags: TagItemFlags) {
+		self.flags = flags
 	}
 
 	/// Returns a reference to the [`ItemKey`]
@@ -76,6 +142,11 @@ impl TagItem {
 	/// Returns a reference to the [`ItemValue`]
 	pub fn value(&self) -> &ItemValue {
 		&self.item_value
+	}
+
+	/// Returns a reference to the [`TagItemFlags`]
+	pub fn flags(&self) -> &TagItemFlags {
+		&self.flags
 	}
 
 	pub(crate) fn re_map(self, tag_type: &TagType) -> Option<Self> {
@@ -131,6 +202,16 @@ impl Tag {
 		F: FnMut(&TagItem) -> bool,
 	{
 		self.items.retain(f)
+	}
+
+	/// Find the first TagItem matching the predicate
+	///
+	/// See [`Iterator::find`](std::iter::Iterator::find)
+	pub fn find<P>(&mut self, predicate: P) -> Option<&TagItem>
+	where
+		P: for<'a> FnMut(&'a &TagItem) -> bool,
+	{
+		self.items.iter().find(predicate)
 	}
 }
 
@@ -208,19 +289,15 @@ impl Tag {
 
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
-	/// This returns a bool if the item was successfully inserted/replaced.
-	/// This will only fail if the [`TagItem`]'s key couldn't be remapped to the target [`TagType`]
+	/// NOTES:
+	///
+	/// * This **will** respect [`TagItemFlags::read_only`]
+	/// * This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// # Warning
 	///
-	/// Certain [`ItemKey`]s are unable to map to an ID3v2 frame, as they are a part of a larger collection (such as `TIPL` and `TMCL`).
-	///
-	/// For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
-	///
-	/// There are two things the caller could do:
-	///
-	/// 1. Combine `Arranger` and any other "involved people" into a `TIPL` string and change the [`ItemKey`] to `InvolvedPeople`
-	/// 2. Use [`insert_item_unchecked`](Tag::insert_item_unchecked), as it's perfectly valid in this case and will later be used to build a `TIPL` if written.
+	/// When dealing with ID3v2, it may be necessary to use [`insert_item_unchecked`](Tag::insert_item_unchecked).
+	/// See [`id3`](crate::id3) for an explanation.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
 		if let Some(item) = item.re_map(&self.tag_type) {
 			self.insert_item_unchecked(item);
@@ -232,12 +309,13 @@ impl Tag {
 
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
-	/// # Warning
+	/// Notes:
 	///
-	/// Unlike [`insert_item`](Tag::insert_item), there are no validity checks here.
+	/// * This **will not** respect [`TagItemFlags::read_only`]
+	/// * This **will not** verify an [`ItemKey`] mapping exists
+	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
-	/// When used with [`ItemKey::Unknown`], this method could potentially render the tag unreadable.
-	/// Otherwise, there is no danger in using this.
+	/// This is only necessary if using [`ItemKey::Unknown`] or single [`ItemKey`]s that are parts of larger lists.
 	pub fn insert_item_unchecked(&mut self, item: TagItem) {
 		match self.items.iter_mut().find(|i| i.item_key == item.item_key) {
 			None => self.items.push(item),
