@@ -414,7 +414,7 @@ impl Picture {
 		let mut cursor = Cursor::new(bytes);
 
 		if let Some(encoding) = TextEncoding::from_u8(cursor.read_u8()?) {
-			match version {
+			return match version {
 				Id3v2Version::V2 => {
 					let mut format = [0; 3];
 					cursor.read_exact(&mut format)?;
@@ -440,7 +440,7 @@ impl Picture {
 					let mut data = Vec::new();
 					cursor.read_to_end(&mut data)?;
 
-					return Ok(Picture {
+					Ok(Picture {
 						pic_type: picture_type,
 						text_encoding: encoding,
 						mime_type,
@@ -452,7 +452,7 @@ impl Picture {
 							num_colors: 0,
 						},
 						data: Cow::from(data),
-					});
+					})
 				},
 				_ => {
 					let mime_type = if let Some(mime_type) =
@@ -477,7 +477,7 @@ impl Picture {
 					let mut data = Vec::new();
 					cursor.read_to_end(&mut data)?;
 
-					return Ok(Picture {
+					Ok(Picture {
 						pic_type: picture_type,
 						text_encoding: encoding,
 						mime_type,
@@ -489,9 +489,9 @@ impl Picture {
 							num_colors: 0,
 						},
 						data: Cow::from(data),
-					});
+					})
 				},
-			}
+			};
 		}
 
 		return Err(LoftyError::NotAPicture);
