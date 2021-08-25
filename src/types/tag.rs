@@ -260,7 +260,7 @@ impl Tag {
 			tag_type,
 			pictures: vec![],
 			items: vec![],
-			flags: TagFlags::default()
+			flags: TagFlags::default(),
 		}
 	}
 }
