@@ -61,7 +61,7 @@ impl SyncTextContentType {
 	}
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 /// Information about a [`SynchronizedText`]
 pub struct SyncTextInformation {
 	/// The text encoding (description/text)
@@ -72,7 +72,7 @@ pub struct SyncTextInformation {
 	pub timestamp_format: TimestampFormat,
 	/// The type of content stored
 	pub content_type: SyncTextContentType,
-	/// Content descriptor
+	/// Unique content description
 	pub description: Option<String>,
 }
 
@@ -94,15 +94,14 @@ impl SynchronizedText {
 	/// This function will return [`BadSyncText`][LoftyError::BadSyncText] if at any point it's unable to parse the data
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 7 {
-			return Err(LoftyError::BadSyncText);
+			return Err(LoftyError::Id3v2("SYLT frame has invalid size (< 7)"));
 		}
 
-		let mut encoding = TextEncoding::from_u8(data[0]).ok_or_else(|| LoftyError::BadSyncText)?;
+		let encoding = TextEncoding::from_u8(data[0])
+			.ok_or(LoftyError::TextDecode("Found invalid encoding"))?;
 		let lang = std::str::from_utf8(&data[1..4]).map_err(|_| LoftyError::BadSyncText)?;
-		let timestamp_format =
-			TimestampFormat::from_u8(data[4]).ok_or_else(|| LoftyError::BadSyncText)?;
-		let content_type =
-			SyncTextContentType::from_u8(data[5]).ok_or_else(|| LoftyError::BadSyncText)?;
+		let timestamp_format = TimestampFormat::from_u8(data[4]).ok_or(LoftyError::BadSyncText)?;
+		let content_type = SyncTextContentType::from_u8(data[5]).ok_or(LoftyError::BadSyncText)?;
 
 		let mut cursor = Cursor::new(&data[6..]);
 		let description = super::text_utils::decode_text(&mut cursor, encoding, true)
@@ -122,8 +121,7 @@ impl SynchronizedText {
 		}
 
 		let mut pos = 0;
-		let mut total =
-			cursor.seek(SeekFrom::Current(0))? as u32 + (cursor.get_ref().len() - 6) as u32;
+		let total = cursor.seek(SeekFrom::Current(0))? as u32 + (cursor.get_ref().len() - 6) as u32;
 
 		let mut content = Vec::new();
 
@@ -139,17 +137,17 @@ impl SynchronizedText {
 					if bom != [0xFF, 0xFE] || bom != [0xFE, 0xFF] {
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
-							return Ok(utf16_decode(&*raw_text, endianness)
-								.map_err(|_| LoftyError::BadSyncText)?);
+							return utf16_decode(&*raw_text, endianness)
+								.map_err(|_| LoftyError::BadSyncText);
 						}
 
 						return Ok(String::new());
 					}
 				}
 
-				return Ok(decode_text(&mut cursor, encoding, true)
+				Ok(decode_text(&mut cursor, encoding, true)
 					.map_err(|_| LoftyError::BadSyncText)?
-					.unwrap_or_else(|| String::new()));
+					.unwrap_or_else(String::new))
 			})()?;
 
 			pos += text.len() as u32;
@@ -164,7 +162,7 @@ impl SynchronizedText {
 			content.push((time, text));
 		}
 
-		return Ok(Self {
+		Ok(Self {
 			information: SyncTextInformation {
 				encoding,
 				language: lang.to_string(),
@@ -173,7 +171,7 @@ impl SynchronizedText {
 				description,
 			},
 			content,
-		});
+		})
 	}
 
 	/// Convert a [`SynchronizedText`] to a ID3v2 SYLT byte Vec
@@ -190,7 +188,7 @@ impl SynchronizedText {
 		let mut data = vec![information.encoding as u8];
 
 		if !information.language.len() == 3 {
-			data.write_all(&information.language.as_bytes())?;
+			data.write_all(information.language.as_bytes())?;
 			data.write_u8(information.timestamp_format as u8)?;
 			data.write_u8(information.content_type as u8)?;
 
@@ -200,12 +198,12 @@ impl SynchronizedText {
 
 			data.write_u8(0)?;
 
-			for (time, ref text) in self.content {
+			for (time, ref text) in &self.content {
 				data.write_all(&*encode_text(text, information.encoding, true))?;
-				data.write_u32::<BigEndian>(time)?;
+				data.write_u32::<BigEndian>(*time)?;
 			}
 
-			if data.len() as u64 > u32::MAX as u64 {
+			if data.len() as u64 > u64::from(u32::MAX) {
 				return Err(LoftyError::TooMuchData);
 			}
 

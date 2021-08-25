@@ -38,14 +38,14 @@ impl GeneralEncapsulatedObject {
 			return Err(LoftyError::Id3v2("GEOB frame has invalid size (< 4)"));
 		}
 
-		let encoding = TextEncoding::from_u8(data[0]).ok_or(LoftyError::TextDecode("Found invalid encoding"))?;
+		let encoding = TextEncoding::from_u8(data[0])
+			.ok_or(LoftyError::TextDecode("Found invalid encoding"))?;
 
 		let mut cursor = Cursor::new(&data[1..]);
 
 		let mime_type = decode_text(&mut cursor, TextEncoding::Latin1, true)?;
 		let file_name = decode_text(&mut cursor, encoding, true)?;
-		let description =
-			decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
+		let description = decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
