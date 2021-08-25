@@ -5,13 +5,22 @@ use byteorder::ReadBytesExt;
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
 
+/// Provides various methods for interaction with a file
 pub trait AudioFile {
+	/// Read a file from a reader
+	///
+	/// # Errors
+	///
+	/// Errors depend on the file and tags being read. See [`LoftyError`]
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized;
+	/// Returns a reference to the file's properties
 	fn properties(&self) -> &FileProperties;
+	/// Checks if the file contains any tags
 	fn contains_tag(&self) -> bool;
+	/// Checks if the file contains the given [`TagType`]
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool;
 }
 
@@ -91,8 +100,9 @@ impl TaggedFile {
 	}
 }
 
-/// The type of file read
+#[derive(PartialEq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
+/// The type of file read
 pub enum FileType {
 	AIFF,
 	APE,
