@@ -2,7 +2,7 @@ use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::text_utils::{
 	decode_text, encode_text, read_to_terminator, utf16_decode,
 };
-use crate::types::picture::TextEncoding;
+use crate::logic::id3::v2::TextEncoding;
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 

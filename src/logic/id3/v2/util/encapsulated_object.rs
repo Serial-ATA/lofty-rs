@@ -1,6 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::text_utils::decode_text;
-use crate::types::picture::TextEncoding;
+use crate::logic::id3::v2::TextEncoding;
 
 use std::io::{Cursor, Read};
 

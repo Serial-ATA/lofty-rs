@@ -1,4 +1,4 @@
-use crate::types::picture::TextEncoding;
+use crate::logic::id3::v2::TextEncoding;
 use crate::{LoftyError, Result};
 
 use std::convert::TryInto;

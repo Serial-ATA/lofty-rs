@@ -1,4 +1,4 @@
-use crate::logic::id3::v2::Id3v2Version;
+use crate::logic::id3::v2::{Id3v2Version, TextEncoding};
 use crate::{LoftyError, Result};
 
 use std::borrow::Cow;
@@ -240,32 +240,6 @@ impl PictureType {
 			"Cover Art (Band Logotype)" => Self::BandLogo,
 			"Cover Art (Publisher Logotype)" => Self::PublisherLogo,
 			_ => Self::Undefined(0),
-		}
-	}
-}
-
-/// The text encoding for use in ID3v2 APIC frames
-#[derive(Debug, Clone, Eq, PartialEq, Copy)]
-pub enum TextEncoding {
-	/// ISO-8859-1
-	Latin1 = 0,
-	/// UTF-16 with a byte order mark
-	UTF16 = 1,
-	/// UTF-16 big endian
-	UTF16BE = 2,
-	/// UTF-8
-	UTF8 = 3,
-}
-
-impl TextEncoding {
-	/// Get a TextEncoding from a u8, must be 0-3 inclusive
-	pub fn from_u8(byte: u8) -> Option<Self> {
-		match byte {
-			0 => Some(Self::Latin1),
-			1 => Some(Self::UTF16),
-			2 => Some(Self::UTF16BE),
-			3 => Some(Self::UTF8),
-			_ => None,
 		}
 	}
 }

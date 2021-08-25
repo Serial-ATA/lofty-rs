@@ -1,7 +1,6 @@
 use crate::logic::id3::decode_u32;
 use crate::logic::id3::v2::util::encapsulated_object::GEOBInformation;
 use crate::logic::id3::v2::util::sync_text::SyncTextInformation;
-use crate::types::picture::TextEncoding;
 use crate::Result;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -9,9 +8,11 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ByteOrder};
 
 mod frame;
+pub(crate) mod read;
+pub(crate) mod restrictions;
 pub(crate) mod util;
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 /// The ID3v2 version
 pub enum Id3v2Version {
 	/// ID3v2.2
@@ -22,19 +23,73 @@ pub enum Id3v2Version {
 	V4,
 }
 
-#[derive(PartialEq)]
+/// The text encoding for use in ID3v2 frames
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
+pub enum TextEncoding {
+	/// ISO-8859-1
+	Latin1 = 0,
+	/// UTF-16 with a byte order mark
+	UTF16 = 1,
+	/// UTF-16 big endian
+	UTF16BE = 2,
+	/// UTF-8
+	UTF8 = 3,
+}
+
+impl TextEncoding {
+	/// Get a TextEncoding from a u8, must be 0-3 inclusive
+	pub fn from_u8(byte: u8) -> Option<Self> {
+		match byte {
+			0 => Some(Self::Latin1),
+			1 => Some(Self::UTF16),
+			2 => Some(Self::UTF16BE),
+			3 => Some(Self::UTF8),
+			_ => None,
+		}
+	}
+}
+
+#[derive(PartialEq, Clone)]
+/// Information about an ID3v2 frame that requires a language
+pub struct LanguageSpecificFrame {
+	/// The encoding of the description and comment text
+	encoding: TextEncoding,
+	/// ISO-639-2 language code (3 bytes)
+	language: String,
+	/// Unique content description
+	description: Option<String>,
+}
+
+#[derive(PartialEq, Clone)]
 /// Different types of ID3v2 frames that require varying amounts of information
 pub enum Id3v2Frame {
+	/// Represents a "COMM" frame
+	///
+	/// Due to the amount of information needed, it is contained in a separate struct, [`LanguageSpecificFrame`]
+	Comment(LanguageSpecificFrame),
+	/// Represents a "USLT" frame
+	///
+	/// Due to the amount of information needed, it is contained in a separate struct, [`LanguageSpecificFrame`]
+	UnSyncText(LanguageSpecificFrame),
 	/// Represents a "T..." (excluding TXXX) frame
-	Text(TextEncoding),
+	///
+	/// NOTE: Text frame names **must** be unique
+	///
+	/// This can be thought of as Text(name, encoding)
+	Text(String, TextEncoding),
 	/// Represents a "TXXX" frame
 	///
 	/// This can be thought of as TXXX(encoding, description), as TXXX frames are often identified by descriptions.
 	UserText(TextEncoding, String),
 	/// Represents a "W..." (excluding WXXX) frame
 	///
-	/// Nothing needs to be provided as all URLs are [`TextEncoding::Latin1`]
-	URL,
+	/// NOTES:
+	///
+	/// * This is a fallback if there was no [`ItemKey`](crate::ItemKey) mapping
+	/// * URL frame names **must** be unique
+	///
+	/// No encoding needs to be provided as all URLs are [`TextEncoding::Latin1`]
+	URL(String),
 	/// Represents a "WXXX" frame
 	///
 	/// This can be thought of as WXXX(encoding, description), as WXXX frames are often identified by descriptions.
