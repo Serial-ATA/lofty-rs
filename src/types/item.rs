@@ -22,7 +22,7 @@ macro_rules! first_key {
 // Keys should appear in order of popularity.
 macro_rules! item_keys {
 	(ALLOWED_UNKNOWN => [$($unknown_tag_type:pat),+]; $($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
-		#[derive(PartialEq)]
+		#[derive(PartialEq, Clone)]
 		#[allow(missing_docs)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
@@ -44,7 +44,7 @@ macro_rules! item_keys {
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::upgrade_v2) and [`upgrade_v3`](crate::id3::upgrade_v3)
-			pub const fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
+			pub fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
 				match tag_type {
 					$(
 						$(
@@ -62,7 +62,7 @@ macro_rules! item_keys {
 			///
 			/// NOTE: Since all ID3v2 tags are upgraded to [`Id3v2Version::V4`](crate::id3::Id3v2Version), the
 			/// version provided does not matter. They cannot be downgraded.
-			pub const fn map_key(&self, tag_type: &TagType) -> Option<&str> {
+			pub fn map_key(&self, tag_type: &TagType) -> Option<&str> {
 				match (tag_type, self) {
 					$(
 						$(

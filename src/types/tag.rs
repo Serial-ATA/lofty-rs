@@ -1,5 +1,6 @@
 use super::item::ItemKey;
 use super::picture::{Picture, PictureType};
+use crate::logic::id3::v2::restrictions::TagRestrictions;
 use crate::logic::id3::v2::Id3v2Version;
 
 #[cfg(feature = "quick_tag_accessors")]
@@ -13,7 +14,7 @@ macro_rules! common_items {
 				$(
 					#[doc = "Gets the " $name]
 					pub fn $name(&self) -> Option<&str> {
-						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(|i| i.value()) {
+						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
 							return Some(&*txt)
 						}
 
@@ -35,6 +36,7 @@ macro_rules! common_items {
 	}
 }
 
+#[derive(Clone)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
 ///
@@ -93,6 +95,7 @@ impl Default for TagItemFlags {
 	}
 }
 
+#[derive(Clone)]
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
@@ -149,11 +152,12 @@ impl TagItem {
 		&self.flags
 	}
 
-	pub(crate) fn re_map(self, tag_type: &TagType) -> Option<Self> {
-		self.item_key.map_key(tag_type).is_some().then(|| self)
+	pub(crate) fn re_map(&self, tag_type: &TagType) -> Option<()> {
+		self.item_key.map_key(tag_type).is_some().then(|| ())
 	}
 }
 
+#[derive(Clone)]
 /// Represents a tag item's value
 ///
 /// NOTES:
@@ -166,10 +170,43 @@ pub enum ItemValue {
 	Text(String),
 	/// **(APE/ID3v2 ONLY)** Any UTF-8 encoded locator of external information
 	Locator(String),
-	/// **(APE ONLY)** Binary information, most likely a picture
+	/// **(APE/ID3v2 ONLY)** Binary information
+	///
+	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject) **and** any unknown frame.
+	///
+	/// For APEv2, no uses of this item type are documented, there's no telling what it could be.
 	Binary(Vec<u8>),
+	/// **(ID3v2 ONLY)** The content of a synchronized text frame, see [`SynchronizedText`](crate::id3::SynchronizedText)
+	SynchronizedText(Vec<(u32, String)>),
 }
 
+#[derive(Default, Copy, Clone)]
+#[allow(clippy::struct_excessive_bools)]
+/// **(ID3v2 ONLY)** Flags that apply to the entire tag
+pub struct TagFlags {
+	/// Whether or not all frames are unsynchronised. See [`TagItemFlags::unsynchronization`]
+	pub unsynchronisation: bool,
+	/// Whether or not the header is followed by an extended header
+	pub extended_header: bool,
+	/// Indicates if the tag is in an experimental stage
+	pub experimental: bool,
+	/// Indicates that the tag includes a footer
+	pub footer: bool,
+	/// Whether or not to include a CRC-32 in the extended header
+	///
+	/// NOTE: This **requires** `extended_header` to be set. Otherwise, it will be ignored.
+	///
+	/// This is calculated if the tag is written
+	pub crc: bool,
+	/// Restrictions on the tag
+	///
+	/// NOTE: This **requires** `extended_header` to be set. Otherwise, it will be ignored.
+	///
+	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]
+	pub restrictions: (bool, TagRestrictions),
+}
+
+#[derive(Clone)]
 /// Represents a parsed tag
 ///
 /// NOTE: Items and pictures are separated
@@ -177,6 +214,7 @@ pub struct Tag {
 	tag_type: TagType,
 	pictures: Vec<Picture>,
 	items: Vec<TagItem>,
+	flags: TagFlags,
 }
 
 impl IntoIterator for Tag {
@@ -222,6 +260,7 @@ impl Tag {
 			tag_type,
 			pictures: vec![],
 			items: vec![],
+			flags: TagFlags::default()
 		}
 	}
 }
@@ -299,7 +338,7 @@ impl Tag {
 	/// When dealing with ID3v2, it may be necessary to use [`insert_item_unchecked`](Tag::insert_item_unchecked).
 	/// See [`id3`](crate::id3) for an explanation.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
-		if let Some(item) = item.re_map(&self.tag_type) {
+		if item.re_map(&self.tag_type).is_some() {
 			self.insert_item_unchecked(item);
 			return true;
 		}
