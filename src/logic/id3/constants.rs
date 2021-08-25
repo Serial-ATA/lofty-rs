@@ -78,7 +78,7 @@ pub const GENRES: [&str; 192] = [
 	"Polka",
 	"Retro",
 	"Musical",
-	"Rock ’n’ Roll",
+	"Rock \u{2019}n\u{2019} Roll",
 	"Hard Rock",
 	"Folk",
 	"Folk-Rock",
