@@ -5,6 +5,7 @@ use crate::files::ApeFile;
 use crate::logic::id3::find_lyrics3v2;
 use crate::logic::id3::v1::find_id3v1;
 use crate::logic::id3::v2::find_id3v2;
+use crate::logic::id3::v2::read::parse_id3v2;
 use crate::{FileProperties, LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -51,6 +52,14 @@ where
 	// ID3v2 tags are unsupported in APE files, but still possible
 	if let Some(id3v2) = find_id3v2(data, true)? {
 		stream_len -= id3v2.len() as u64;
+
+		let id3v2 = parse_id3v2(&mut &*id3v2)?;
+
+		// Skip over the footer
+		if id3v2.flags().footer {
+			data.seek(SeekFrom::Current(10))?;
+		}
+
 		ape_file.id3v2 = Some(id3v2)
 	}
 

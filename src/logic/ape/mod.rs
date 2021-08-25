@@ -5,7 +5,7 @@ pub(crate) mod tag;
 pub(crate) mod write;
 
 use crate::types::file::AudioFile;
-use crate::{FileProperties, FileType, Result, Tag, TagType, TaggedFile};
+use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
 

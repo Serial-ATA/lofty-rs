@@ -121,7 +121,9 @@
 	clippy::let_underscore_drop,
 	clippy::match_wildcard_for_single_variants,
 	clippy::semicolon_if_nothing_returned,
-	clippy::used_underscore_binding
+	clippy::used_underscore_binding,
+	clippy::new_without_default,
+	clippy::unused_self
 )]
 
 pub use crate::error::{LoftyError, Result};

@@ -235,7 +235,7 @@ impl Tag {
 	/// Retain tag items based on the predicate
 	///
 	/// See [`Vec::retain`](std::vec::Vec::retain)
-	pub fn retain<F>(&mut self, mut f: F)
+	pub fn retain<F>(&mut self, f: F)
 	where
 		F: FnMut(&TagItem) -> bool,
 	{

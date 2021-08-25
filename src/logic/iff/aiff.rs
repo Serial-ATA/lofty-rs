@@ -1,6 +1,6 @@
 use crate::logic::id3::v2::read::parse_id3v2;
 use crate::types::file::AudioFile;
-use crate::{FileProperties, FileType, LoftyError, Result, TagType, TaggedFile};
+use crate::{FileProperties, LoftyError, Result, TagType};
 use crate::{ItemKey, ItemValue, Tag, TagItem};
 
 use std::io::{Read, Seek, SeekFrom};

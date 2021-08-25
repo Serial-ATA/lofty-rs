@@ -53,7 +53,22 @@ pub enum MimeType {
 	None,
 }
 
+impl ToString for MimeType {
+	fn to_string(&self) -> String {
+		match self {
+			MimeType::Jpeg => "image/jpeg".to_string(),
+			MimeType::Png => "image/png".to_string(),
+			MimeType::Tiff => "image/tiff".to_string(),
+			MimeType::Bmp => "image/bmp".to_string(),
+			MimeType::Gif => "image/gif".to_string(),
+			MimeType::Unknown(unknown) => unknown.clone(),
+			MimeType::None => String::new(),
+		}
+	}
+}
+
 impl MimeType {
+	#[allow(clippy::should_implement_trait)]
 	/// Get a MimeType from a string
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
@@ -77,19 +92,6 @@ impl MimeType {
 			MimeType::Gif => "image/gif",
 			MimeType::Unknown(unknown) => &*unknown,
 			MimeType::None => "",
-		}
-	}
-
-	/// Get a String from a MimeType
-	pub fn to_string(&self) -> String {
-		match self {
-			MimeType::Jpeg => "image/jpeg".to_string(),
-			MimeType::Png => "image/png".to_string(),
-			MimeType::Tiff => "image/tiff".to_string(),
-			MimeType::Bmp => "image/bmp".to_string(),
-			MimeType::Gif => "image/gif".to_string(),
-			MimeType::Unknown(unknown) => unknown.to_owned(),
-			MimeType::None => String::new(),
 		}
 	}
 }
@@ -150,7 +152,7 @@ impl PictureType {
 			Self::Illustration => 18,
 			Self::BandLogo => 19,
 			Self::PublisherLogo => 20,
-			Self::Undefined(i) => u8::from(i.to_owned()),
+			Self::Undefined(i) => *i,
 		}
 	}
 
@@ -294,6 +296,7 @@ impl Picture {
 	}
 
 	#[cfg(feature = "id3v2")]
+	#[allow(clippy::single_match_else)]
 	/// Convert a [`Picture`] to a ID3v2 A/PIC byte Vec
 	///
 	/// NOTE: This does not include the frame header
@@ -320,8 +323,8 @@ impl Picture {
 
 				let mut data = vec![self.text_encoding as u8];
 
-				data.write_all(format.as_bytes());
-				data.write_u8(self.pic_type.as_u8());
+				data.write_all(format.as_bytes())?;
+				data.write_u8(self.pic_type.as_u8())?;
 
 				if let Some(description) = &self.description {
 					data.write_all(&*crate::logic::id3::v2::util::text_utils::encode_text(
@@ -332,11 +335,11 @@ impl Picture {
 				}
 
 				data.write_u8(0)?;
-				data.write_all(&*self.data);
+				data.write_all(&*self.data)?;
 
 				let size = data.len() - 6;
 
-				if size as u64 > u32::MAX as u64 {
+				if size as u64 > u64::from(u32::MAX) {
 					return Err(LoftyError::TooMuchData);
 				}
 
@@ -367,7 +370,7 @@ impl Picture {
 
 				let size = data.len();
 
-				if size as u64 > u32::MAX as u64 {
+				if size as u64 > u64::from(u32::MAX) {
 					return Err(LoftyError::TooMuchData);
 				}
 
@@ -377,6 +380,7 @@ impl Picture {
 	}
 
 	#[cfg(feature = "id3v2")]
+	#[allow(clippy::single_match_else)]
 	/// Get a [`Picture`] from ID3v2 A/PIC bytes:
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -409,7 +413,7 @@ impl Picture {
 						encoding,
 						true,
 					)?
-					.map(|s| Cow::from(s));
+					.map(Cow::from);
 
 					let mut data = Vec::new();
 					cursor.read_to_end(&mut data)?;
@@ -429,16 +433,12 @@ impl Picture {
 					})
 				},
 				_ => {
-					let mime_type = if let Some(mime_type) =
-						crate::logic::id3::v2::util::text_utils::decode_text(
-							&mut cursor,
-							encoding,
-							true,
-						)? {
-						MimeType::from_str(&*mime_type)
-					} else {
-						MimeType::None
-					};
+					let mime_type = (crate::logic::id3::v2::util::text_utils::decode_text(
+						&mut cursor,
+						encoding,
+						true,
+					)?)
+					.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type));
 
 					let picture_type = PictureType::from_u8(cursor.read_u8()?);
 					let description = crate::logic::id3::v2::util::text_utils::decode_text(
@@ -446,7 +446,7 @@ impl Picture {
 						encoding,
 						true,
 					)?
-					.map(|s| Cow::from(s));
+					.map(Cow::from);
 
 					let mut data = Vec::new();
 					cursor.read_to_end(&mut data)?;
@@ -468,7 +468,7 @@ impl Picture {
 			};
 		}
 
-		return Err(LoftyError::NotAPicture);
+		Err(LoftyError::NotAPicture)
 	}
 
 	#[cfg(feature = "vorbis_comments")]
@@ -481,7 +481,7 @@ impl Picture {
 	pub fn as_flac_bytes(&self) -> String {
 		let mut data = Vec::<u8>::new();
 
-		let picture_type = (self.pic_type.as_u8() as u32).to_be_bytes();
+		let picture_type = u32::from(self.pic_type.as_u8()).to_be_bytes();
 
 		let mime_str = self.mime_type.to_string();
 		let mime_len = mime_str.len() as u32;

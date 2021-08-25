@@ -2,7 +2,6 @@ use super::find_last_page;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::{OPUSHEAD, OPUSTAGS};
 use crate::types::file::AudioFile;
-use crate::types::file::{FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 

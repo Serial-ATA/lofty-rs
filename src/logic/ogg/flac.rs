@@ -3,7 +3,6 @@ use super::write::create_comments;
 use crate::error::{LoftyError, Result};
 use crate::picture::Picture;
 use crate::types::file::AudioFile;
-use crate::types::file::{FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
