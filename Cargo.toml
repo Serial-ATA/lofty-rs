@@ -46,9 +46,5 @@ quick_tag_accessors = ["paste"]
 criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
-name = "read_from_extension"
-harness = false
-
-[[bench]]
-name = "read_from_signature"
+name = "read_file"
 harness = false
