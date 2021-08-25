@@ -4,7 +4,7 @@ use crate::types::picture::TextEncoding;
 
 use std::io::{Cursor, Read};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 /// Information about a [`GeneralEncapsulatedObject`]
 pub struct GEOBInformation {
 	/// The text encoding of `file_name` and `description`
@@ -32,21 +32,20 @@ impl GeneralEncapsulatedObject {
 	///
 	/// # Errors
 	///
-	/// This function will return [`BadEncapsulatedObject`][LoftyError::BadEncapsulatedObject] if at any point it's unable to parse the data
+	/// This function will return an error if at any point it's unable to parse the data
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 4 {
-			return Err(LoftyError::BadEncapsulatedObject);
+			return Err(LoftyError::Id3v2("GEOB frame has invalid size (< 4)"));
 		}
 
-		let mut encoding =
-			TextEncoding::from_u8(data[0]).ok_or_else(|| LoftyError::BadEncapsulatedObject)?;
+		let encoding = TextEncoding::from_u8(data[0]).ok_or(LoftyError::TextDecode("Found invalid encoding"))?;
 
 		let mut cursor = Cursor::new(&data[1..]);
 
 		let mime_type = decode_text(&mut cursor, TextEncoding::Latin1, true)?;
 		let file_name = decode_text(&mut cursor, encoding, true)?;
 		let description =
-			decode_text(&mut cursor, encoding, true)?.unwrap_or_else(|| String::new());
+			decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;

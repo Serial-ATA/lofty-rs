@@ -44,15 +44,26 @@ pub enum LoftyError {
 	/// Errors that arise while decoding ID3v2 text
 	#[error("Text decoding: {0}")]
 	TextDecode(&'static str),
+	/// Errors that arise while reading/writing ID3v2 tags
+	#[error("ID3v2: {0}")]
+	Id3v2(&'static str),
+	/// Arises when an invalid ID3v2 version is found
+	#[error(
+		"ID3v2: Found an invalid version (v{0}.{1}), expected any major revision in: (2, 3, 4)"
+	)]
+	BadId3v2Version(u8, u8),
+	/// Arises when [`std::str::from_utf8`] fails to parse a frame ID
+	#[error("ID3v2: ")]
+	BadFrameID,
+	/// Arises when a frame doesn't have enough data
+	#[error("ID3v2: Frame isn't long enough to extract the necessary information")]
+	BadFrameLength,
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	#[error("ID3v2: Encountered invalid data in SYLT frame")]
 	BadSyncText,
-	/// Arises when invalid data is encountered while reading an ID3v2 general encapsulated object frame
-	#[error("ID3v2: Encountered invalid data in GEOB frame")]
-	BadEncapsulatedObject,
-	/// Arists when [`std::str::from_utf8`] fails to parse a frame ID
-	#[error("ID3v2: Encountered an invalid frame ID")]
-	BadFrameID,
+	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
+	#[error("Reading: Expected a tag, found invalid data")]
+	FakeTag,
 	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
 	Wav(&'static str),
