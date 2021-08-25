@@ -104,7 +104,7 @@ item_keys!(
 	TrackTitle => [
 		TagType::Id3v2(_) => "TIT2", TagType::Mp4Atom => "\u{a9}nam",
 		TagType::VorbisComments => "TITLE", TagType::Ape => "Title",
-		TagType::RiffInfo => "INAM"
+		TagType::RiffInfo => "INAM", TagType::AiffText => "NAME"
 	],
 	TrackSubtitle => [
 		TagType::Id3v2(_) => "TIT3", TagType::Mp4Atom => "----:com.apple.iTunes:SUBTITLE",
@@ -155,7 +155,7 @@ item_keys!(
 	TrackArtist => [
 		TagType::Id3v2(_) => "TPE1", TagType::Mp4Atom => "\u{a9}ART",
 		TagType::VorbisComments => "ARTIST", TagType::Ape => "Artist",
-		TagType::RiffInfo => "IART"
+		TagType::RiffInfo => "IART", TagType::AiffText => "AUTH"
 	],
 	Arranger => [
 		TagType::VorbisComments => "ARRANGER", TagType::Ape => "Arranger"
@@ -374,7 +374,7 @@ item_keys!(
 	CopyrightMessage => [
 		TagType::Id3v2(_) => "TCOP", TagType::Mp4Atom => "cprt",
 		TagType::VorbisComments => "COPYRIGHT", TagType::Ape => "Copyright",
-		TagType::RiffInfo => "ICOP"
+		TagType::RiffInfo => "ICOP", TagType::AiffText => "(c) "
 	],
 	License => [
 		TagType::Mp4Atom => "----:com.apple.iTunes:LICENSE", TagType::VorbisComments => "LICENSE"
