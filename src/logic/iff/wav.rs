@@ -19,24 +19,11 @@ const EXTENSIBLE: u16 = 0xfffe;
 /// A WAV file
 pub struct WavFile {
 	/// The file's audio properties
-	properties: FileProperties,
+	pub(crate) properties: FileProperties,
 	/// A RIFF INFO LIST
-	riff_info: Option<Tag>,
+	pub(crate) riff_info: Option<Tag>,
 	/// An ID3v2 tag
-	id3v2: Option<Tag>,
-}
-
-impl Into<TaggedFile> for WavFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::WAV,
-			properties: self.properties,
-			tags: vec![self.riff_info, self.id3v2]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
+	pub(crate) id3v2: Option<Tag>,
 }
 
 impl AudioFile for WavFile {

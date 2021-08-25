@@ -11,24 +11,11 @@ use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
 /// An AIFF file
 pub struct AiffFile {
 	/// The file's audio properties
-	properties: FileProperties,
+	pub(crate) properties: FileProperties,
 	/// Any text chunks included in the file
-	text_chunks: Option<Tag>,
+	pub(crate) text_chunks: Option<Tag>,
 	/// An ID3v2 tag
-	id3v2: Option<Tag>,
-}
-
-impl Into<TaggedFile> for AiffFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::AIFF,
-			properties: self.properties,
-			tags: vec![self.text_chunks, self.id3v2]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
+	pub(crate) id3v2: Option<Tag>,
 }
 
 impl AudioFile for AiffFile {

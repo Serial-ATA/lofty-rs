@@ -22,19 +22,6 @@ pub struct ApeFile {
 	pub(crate) properties: FileProperties,
 }
 
-impl Into<TaggedFile> for ApeFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::APE,
-			properties: self.properties,
-			tags: vec![self.id3v1, self.id3v2, self.ape]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
-}
-
 impl AudioFile for ApeFile {
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where

@@ -1,6 +1,13 @@
 use crate::logic::id3::v2::Id3v2Version;
 use crate::{FileProperties, LoftyError, Result, Tag, TagType};
 
+use crate::logic::ape::ApeFile;
+use crate::logic::iff::aiff::AiffFile;
+use crate::logic::iff::wav::WavFile;
+use crate::logic::mpeg::MpegFile;
+use crate::logic::ogg::flac::FlacFile;
+use crate::logic::ogg::opus::OpusFile;
+use crate::logic::ogg::vorbis::VorbisFile;
 use byteorder::ReadBytesExt;
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
@@ -97,6 +104,92 @@ impl TaggedFile {
 	/// Returns a reference to the file's [`FileProperties`]
 	pub fn properties(&self) -> &FileProperties {
 		&self.properties
+	}
+}
+
+impl From<AiffFile> for TaggedFile {
+	fn from(input: AiffFile) -> Self {
+		Self {
+			ty: FileType::AIFF,
+			properties: input.properties,
+			tags: vec![input.text_chunks, input.id3v2]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
+}
+
+impl From<OpusFile> for TaggedFile {
+	fn from(input: OpusFile) -> Self {
+		Self {
+			ty: FileType::Opus,
+			properties: input.properties,
+			tags: vec![input.vorbis_comments],
+		}
+	}
+}
+
+impl From<VorbisFile> for TaggedFile {
+	fn from(input: VorbisFile) -> Self {
+		Self {
+			ty: FileType::Vorbis,
+			properties: input.properties,
+			tags: vec![input.vorbis_comments],
+		}
+	}
+}
+
+impl From<FlacFile> for TaggedFile {
+	fn from(input: FlacFile) -> Self {
+		Self {
+			ty: FileType::FLAC,
+			properties: input.properties,
+			tags: if let Some(metadata) = input.metadata {
+				vec![metadata]
+			} else {
+				Vec::new()
+			},
+		}
+	}
+}
+
+impl From<WavFile> for TaggedFile {
+	fn from(input: WavFile) -> Self {
+		Self {
+			ty: FileType::WAV,
+			properties: input.properties,
+			tags: vec![input.riff_info, input.id3v2]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
+}
+
+impl From<MpegFile> for TaggedFile {
+	fn from(input: MpegFile) -> Self {
+		Self {
+			ty: FileType::MP3,
+			properties: input.properties,
+			tags: vec![input.id3v1, input.id3v2, input.ape]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
+}
+
+impl From<ApeFile> for TaggedFile {
+	fn from(input: ApeFile) -> Self {
+		Self {
+			ty: FileType::APE,
+			properties: input.properties,
+			tags: vec![input.id3v1, input.id3v2, input.ape]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
 	}
 }
 

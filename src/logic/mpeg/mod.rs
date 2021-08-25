@@ -11,26 +11,13 @@ use std::io::{Read, Seek};
 /// An MPEG file
 pub struct MpegFile {
 	/// An ID3v2 tag
-	id3v2: Option<Tag>,
+	pub(crate) id3v2: Option<Tag>,
 	/// An ID3v1 tag
-	id3v1: Option<Tag>,
+	pub(crate) id3v1: Option<Tag>,
 	/// An APEv1/v2 tag
-	ape: Option<Tag>,
+	pub(crate) ape: Option<Tag>,
 	/// The file's audio properties
-	properties: FileProperties,
-}
-
-impl Into<TaggedFile> for MpegFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::MP3,
-			properties: self.properties,
-			tags: vec![self.id3v1, self.id3v2, self.ape]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
+	pub(crate) properties: FileProperties,
 }
 
 impl AudioFile for MpegFile {

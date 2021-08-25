@@ -18,25 +18,11 @@ use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 /// A FLAC file
 pub struct FlacFile {
 	/// The file's audio properties
-	properties: FileProperties,
+	pub(crate) properties: FileProperties,
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: This field being `Some` does not mean the file has vorbis comments, as Picture blocks exist.
-	metadata: Option<Tag>,
-}
-
-impl Into<TaggedFile> for FlacFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::FLAC,
-			properties: self.properties,
-			tags: if let Some(metadata) = self.metadata {
-				vec![metadata]
-			} else {
-				Vec::new()
-			},
-		}
-	}
+	pub(crate) metadata: Option<Tag>,
 }
 
 impl AudioFile for FlacFile {

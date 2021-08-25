@@ -16,23 +16,13 @@ use ogg_pager::Page;
 /// An OGG Opus file
 pub struct OpusFile {
 	/// The file's audio properties
-	properties: FileProperties,
+	pub(crate) properties: FileProperties,
 	/// The file vendor's name
-	vendor: String,
+	pub(crate) vendor: String,
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
-	vorbis_comments: Tag,
-}
-
-impl Into<TaggedFile> for OpusFile {
-	fn into(self) -> TaggedFile {
-		TaggedFile {
-			ty: FileType::Opus,
-			properties: self.properties,
-			tags: vec![self.vorbis_comments],
-		}
-	}
+	pub(crate) vorbis_comments: Tag,
 }
 
 impl AudioFile for OpusFile {
