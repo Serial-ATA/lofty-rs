@@ -49,7 +49,7 @@ impl TextEncoding {
 	}
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 /// Information about an ID3v2 frame that requires a language
 pub struct LanguageSpecificFrame {
 	/// The encoding of the description and comment text
@@ -60,7 +60,7 @@ pub struct LanguageSpecificFrame {
 	description: Option<String>,
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 /// Different types of ID3v2 frames that require varying amounts of information
 pub enum Id3v2Frame {
 	/// Represents a "COMM" frame

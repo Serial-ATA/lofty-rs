@@ -36,7 +36,7 @@ macro_rules! common_items {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
 ///
@@ -95,7 +95,7 @@ impl Default for TagItemFlags {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
@@ -157,7 +157,7 @@ impl TagItem {
 	}
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// Represents a tag item's value
 ///
 /// NOTES:
@@ -287,6 +287,11 @@ impl Tag {
 	/// Returns the number of [`TagItem`]s
 	pub fn item_count(&self) -> u32 {
 		self.items.len() as u32
+	}
+
+	/// Returns the [`TagFlags`]
+	pub fn flags(&self) -> &TagFlags {
+		&self.flags
 	}
 }
 

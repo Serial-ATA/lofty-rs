@@ -8,7 +8,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 /// The unit used for [`SynchronizedText`] timestamps
 pub enum TimestampFormat {
 	/// The unit is MPEG frames
@@ -28,7 +28,7 @@ impl TimestampFormat {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 #[allow(missing_docs)]
 /// The type of text stored in a [`SynchronizedText`]
 pub enum SyncTextContentType {
@@ -61,7 +61,7 @@ impl SyncTextContentType {
 	}
 }
 
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 /// Information about a [`SynchronizedText`]
 pub struct SyncTextInformation {
 	/// The text encoding (description/text)

@@ -53,7 +53,7 @@ where
 }
 
 pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
-	if reader.len() == 0 || reader.len() % 2 != 0 {
+	if reader.is_empty() || reader.len() % 2 != 0 {
 		return Err(LoftyError::TextDecode("UTF-16 string has an odd length"));
 	}
 

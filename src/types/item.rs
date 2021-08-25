@@ -22,7 +22,7 @@ macro_rules! first_key {
 // Keys should appear in order of popularity.
 macro_rules! item_keys {
 	(ALLOWED_UNKNOWN => [$($unknown_tag_type:pat),+]; $($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
-		#[derive(PartialEq, Clone)]
+		#[derive(PartialEq, Clone, Debug)]
 		#[allow(missing_docs)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
