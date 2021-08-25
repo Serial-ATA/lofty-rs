@@ -93,5 +93,8 @@ where
 		size += 32
 	}
 
+	// Skip over footer
+	data.seek(SeekFrom::Current(32))?;
+
 	Ok((tag, size))
 }
