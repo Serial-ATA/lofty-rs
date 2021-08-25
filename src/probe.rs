@@ -1,10 +1,10 @@
-use crate::logic::iff::aiff::AiffFile;
 use crate::logic::ape::ApeFile;
-use crate::logic::ogg::flac::FlacFile;
+use crate::logic::iff::aiff::AiffFile;
+use crate::logic::iff::wav::WavFile;
 use crate::logic::mpeg::MpegFile;
+use crate::logic::ogg::flac::FlacFile;
 use crate::logic::ogg::opus::OpusFile;
 use crate::logic::ogg::vorbis::VorbisFile;
-use crate::logic::iff::wav::WavFile;
 use crate::types::file::AudioFile;
 use crate::{FileType, LoftyError, Result, TaggedFile};
 
