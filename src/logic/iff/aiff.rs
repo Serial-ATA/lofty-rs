@@ -1,10 +1,9 @@
+use crate::logic::id3::v2::read::parse_id3v2;
 use crate::types::file::AudioFile;
 use crate::{FileProperties, FileType, LoftyError, Result, TagType, TaggedFile};
 use crate::{ItemKey, ItemValue, Tag, TagItem};
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
@@ -150,7 +149,7 @@ where
 	let mut stream_len = 0;
 
 	let mut text_chunks = Tag::new(TagType::AiffText);
-	let mut id3 = Vec::new();
+	let mut id3: Option<Tag> = None;
 
 	let mut fourcc = [0; 4];
 
@@ -173,7 +172,14 @@ where
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
 
-				id3 = value
+				let id3v2 = parse_id3v2(&mut &*value)?;
+
+				// Skip over the footer
+				if id3v2.flags().footer {
+					data.seek(SeekFrom::Current(10))?;
+				}
+
+				id3 = Some(id3v2)
 			},
 			b"COMM" => {
 				if comm.is_none() {
@@ -212,7 +218,7 @@ where
 	Ok(AiffFile {
 		properties,
 		text_chunks: (text_chunks.item_count() > 0).then(|| text_chunks),
-		id3v2: (!id3.is_empty()).then(|| id3),
+		id3v2: id3,
 	})
 }
 

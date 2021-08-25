@@ -1,6 +1,7 @@
 use super::header::{Header, XingHeader};
 use crate::files::MpegFile;
 use crate::logic::id3::decode_u32;
+use crate::logic::id3::v2::read::parse_id3v2;
 use crate::{FileProperties, LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -75,7 +76,7 @@ where
 	let mut header = [0; 4];
 
 	while let Ok(()) = data.read_exact(&mut header) {
-		match &header {
+		match header {
 			_ if u32::from_be_bytes(header) >> 21 == 0x7FF => {
 				let start = data.seek(SeekFrom::Current(0))? - 4;
 				let header = Header::read(u32::from_be_bytes(header))?;
@@ -87,7 +88,7 @@ where
 
 				last_mpeg_frame = (Some(header), start);
 			},
-			_ if &header[..3] == b"ID3" || &header[..3] == b"id3" => {
+			[b'I', b'D', b'3', ..] => {
 				let mut remaining_header = [0; 6];
 				data.read_exact(&mut remaining_header)?;
 
@@ -97,10 +98,18 @@ where
 				let mut id3v2_read = vec![0; size];
 				data.read_exact(&mut id3v2_read)?;
 
-				mpeg_file.id3v2 = Some(id3v2_read);
+				let id3v2 = parse_id3v2(&mut &*id3v2_read)?;
+
+				// Skip over the footer
+				if id3v2.flags().footer {
+					data.seek(SeekFrom::Current(10))?;
+				}
+
+				mpeg_file.id3v2 = Some(id3v2);
+
 				continue;
 			},
-			_ if &header[..3] == b"TAG" => {
+			[b'T', b'A', b'G', ..] => {
 				data.seek(SeekFrom::Current(-4))?;
 
 				let mut id3v1_read = [0; 128];
@@ -109,7 +118,7 @@ where
 				mpeg_file.id3v1 = Some(crate::logic::id3::v1::parse_id3v1(id3v1_read));
 				continue;
 			},
-			b"APET" => {
+			[b'A', b'P', b'E', b'T'] => {
 				let mut header_remaining = [0; 4];
 				data.read_exact(&mut header_remaining)?;
 

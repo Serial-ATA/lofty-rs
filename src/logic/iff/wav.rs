@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 
+use crate::logic::id3::v2::read::parse_id3v2;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 const PCM: u16 = 0x0001;
@@ -177,7 +178,7 @@ where
 	let mut fmt = Vec::new();
 
 	let mut riff_info = Tag::new(TagType::RiffInfo);
-	let mut id3 = Vec::new();
+	let mut id3: Option<Tag> = None;
 
 	let mut fourcc = [0; 4];
 
@@ -233,9 +234,12 @@ where
 							let mut buf = vec![0; size as usize];
 							data.read_exact(&mut buf)?;
 
-							let val = String::from_utf8(buf)?.trim_matches('\0');
+							let val = String::from_utf8(buf)?;
 
-							let item = TagItem::new(item_key, ItemValue::Text(val.to_string()));
+							let item = TagItem::new(
+								item_key,
+								ItemValue::Text(val.trim_matches('\0').to_string()),
+							);
 							riff_info.insert_item(item);
 
 							if data.read_u8()? != 0 {
@@ -251,7 +255,14 @@ where
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
 
-				id3 = value
+				let id3v2 = parse_id3v2(&mut &*value)?;
+
+				// Skip over the footer
+				if id3v2.flags().footer {
+					data.seek(SeekFrom::Current(10))?;
+				}
+
+				id3 = Some(id3v2);
 			},
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
@@ -274,7 +285,7 @@ where
 	Ok(WavFile {
 		properties,
 		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
-		id3v2: (!id3.is_empty()).then(|| id3),
+		id3v2: id3,
 	})
 }
 

@@ -45,10 +45,11 @@
 //! ## Using concrete file types
 //! ```
 //! use lofty::files::MpegFile;
+//! use lofty::files::AudioFile;
 //! use lofty::TagType;
 //! use std::fs::File;
 //!
-//! let mut file_content = File::open("tests/assets/a.mp3");
+//! let mut file_content = File::open("tests/assets/a.mp3").unwrap();
 //!
 //! let mpeg_file = MpegFile::read_from(&mut file_content).unwrap();
 //!
@@ -67,7 +68,7 @@
 //! // Probe::read_from also exists for generic readers
 //! let tagged_file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
 //!
-//! assert_eq!(tagged_file.file_type(), FileType::MP3);
+//! assert_eq!(tagged_file.file_type(), &FileType::MP3);
 //! assert_eq!(tagged_file.properties().channels(), Some(2));
 //! ```
 //!
@@ -142,6 +143,7 @@ pub mod files {
 	pub use crate::logic::iff::{aiff::AiffFile, wav::WavFile};
 	pub use crate::logic::mpeg::MpegFile;
 	pub use crate::logic::ogg::{flac::FlacFile, opus::OpusFile, vorbis::VorbisFile};
+	pub use crate::types::file::AudioFile;
 }
 
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
@@ -166,6 +168,8 @@ pub mod id3 {
 	//!
 	//! ID3v2 has multiple frames that have no equivalent in other formats:
 	//!
+	//! * COMM - Comments (Unlike comments in other formats)
+	//! * USLT - Unsynchronized text (Unlike lyrics/text in other formats)
 	//! * TXXX - User defined text
 	//! * WXXX - User defined URL
 	//! * SYLT - Synchronized text
@@ -175,6 +179,7 @@ pub mod id3 {
 	//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::Id3v2Frame).
 	//!
 	//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
+	pub use crate::logic::id3::v2::restrictions::*;
 	pub use crate::logic::id3::v2::util::encapsulated_object::{
 		GEOBInformation, GeneralEncapsulatedObject,
 	};
@@ -184,13 +189,13 @@ pub mod id3 {
 	pub use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 	pub use crate::logic::id3::v2::Id3v2Frame;
 	pub use crate::logic::id3::v2::Id3v2Version;
+	pub use crate::logic::id3::v2::LanguageSpecificFrame;
+	pub use crate::logic::id3::v2::TextEncoding;
 }
 
 /// Various items related to [`Picture`](crate::picture::Picture)s
 pub mod picture {
-	pub use crate::types::picture::{
-		MimeType, Picture, PictureInformation, PictureType, TextEncoding,
-	};
+	pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
 }
 
 mod error;

@@ -11,6 +11,7 @@ categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
 # Id3
+flate2 = { version = "1.0.20", optional = true }
 id3 = {version = "0.6.4", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 # Ogg
@@ -36,7 +37,7 @@ mp4_atoms = []
 vorbis_comments = ["ogg_pager"]
 ape = []
 id3v1 = []
-id3v2 = []
+id3v2 = ["flate2"]
 aiff_text_chunks = []
 riff_info_list = []
 quick_tag_accessors = ["paste"]

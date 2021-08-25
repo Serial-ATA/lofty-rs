@@ -1,5 +1,5 @@
 use super::constants::INVALID_KEYS;
-use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType, TagItemFlags};
+use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagItemFlags, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
@@ -64,7 +64,7 @@ where
 
 		let item_flags = TagItemFlags {
 			read_only: (flags & 1) == 1,
-			.. TagItemFlags::default()
+			..TagItemFlags::default()
 		};
 
 		let item_type = (flags & 6) >> 1;
