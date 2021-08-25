@@ -1,5 +1,5 @@
 use super::constants::INVALID_KEYS;
-use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType};
+use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType, TagItemFlags};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
@@ -62,8 +62,11 @@ where
 			return Err(LoftyError::Ape("Tag item contains a non ASCII key"));
 		}
 
-		// TODO: reimplement read only
-		// let read_only = (flags & 1) == 1;
+		let item_flags = TagItemFlags {
+			read_only: (flags & 1) == 1,
+			.. TagItemFlags::default()
+		};
+
 		let item_type = (flags & 6) >> 1;
 
 		let mut value = vec![0; value_size as usize];
@@ -80,11 +83,12 @@ where
 			_ => return Err(LoftyError::Ape("Tag item contains an invalid item type")),
 		};
 
-		let item = TagItem::new(
+		let mut item = TagItem::new(
 			ItemKey::from_key(&TagType::Ape, &*key).unwrap(),
 			parsed_value,
 		);
 
+		item.set_flags(item_flags);
 		tag.insert_item(item);
 	}
 

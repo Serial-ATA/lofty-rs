@@ -28,11 +28,14 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		let start = data.seek(SeekFrom::Current(-8))?;
 
 		data.seek(SeekFrom::Current(8))?;
-		let (mut tag, size) = read_ape_tag(data, false)?;
+		let (mut existing, size) = read_ape_tag(data, false)?;
 
 		// Only keep metadata around that's marked read only
-		// TODO
-		read_only = retain_read_only(&mut tag);
+		existing.retain(|i| i.flags().read_only);
+
+		if existing.item_count() > 0 {
+			read_only = Some(existing)
+		}
 
 		header_ape_tag = (true, (start, start + u64::from(size)))
 	} else {
@@ -57,9 +60,13 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	if &ape_preamble == APE_PREAMBLE {
 		let start = data.seek(SeekFrom::Current(0))? as usize + 24;
 
-		let (mut tag, size) = read_ape_tag(data, true)?;
+		let (mut existing, size) = read_ape_tag(data, true)?;
 
-		read_only = retain_read_only(&mut tag);
+		existing.retain(|i| i.flags().read_only);
+
+		if existing.item_count() > 0 {
+			read_only = Some(existing)
+		}
 
 		// Since the "start" was really at the end of the tag, this sanity check seems necessary
 		if let Some(start) = start.checked_sub(size as usize) {
@@ -69,19 +76,18 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		}
 	}
 
-	// TODO
 	// Preserve any metadata marked as read only
-	// If there is any read only metadata, we will have to clone the HashMap
+	// If there is any read only metadata, we will have to clone the Tag
 	let tag = if let Some(read_only) = read_only {
-		create_ape_tag(tag)?
-	} else {
 		let mut metadata = tag.clone();
 
-		for (k, v) in read_only {
-			metadata.insert(k, v);
+		for i in read_only.items().to_vec() {
+			metadata.insert_item(i);
 		}
 
 		create_ape_tag(&metadata)?
+	} else {
+		create_ape_tag(tag)?
 	};
 
 	data.seek(SeekFrom::Start(0))?;
@@ -117,15 +123,14 @@ fn create_ape_tag(metadata: &Tag) -> Result<Vec<u8>> {
 
 		let item_count = metadata.item_count() as u32;
 
-		for item in metadata.iter() {
+		for item in metadata.items() {
 			let (size, flags, value) = match item.value() {
 				ItemValue::Binary(value) => {
 					let mut flags = 1_u32 << 1;
 
-					// TODO
-					// if *ro {
-					// 	flags |= 1_u32
-					// }
+					if item.flags().read_only {
+						flags |= 1_u32
+					}
 
 					(value.len() as u32, flags, value.as_slice())
 				},
@@ -134,21 +139,22 @@ fn create_ape_tag(metadata: &Tag) -> Result<Vec<u8>> {
 
 					let mut flags = 0_u32;
 
-					// if *ro {
-					// 	flags |= 1_u32
-					// }
+					if item.flags().read_only {
+						flags |= 1_u32
+					}
 
 					(value.len() as u32, flags, value)
 				},
 				ItemValue::Locator(value) => {
 					let mut flags = 2_u32 << 1;
 
-					// if *ro {
-					// 	flags |= 1_u32
-					// }
+					if item.flags().read_only {
+						flags |= 1_u32
+					}
 
 					(value.len() as u32, flags, value.as_bytes())
 				},
+				_ => continue,
 			};
 
 			tag.write_u32::<LittleEndian>(size)?;
@@ -199,9 +205,4 @@ fn create_ape_tag(metadata: &Tag) -> Result<Vec<u8>> {
 
 		Ok(tag)
 	}
-}
-
-fn retain_read_only(tag: &mut Tag) {
-	// TODO
-	if tag.item_count() != 0 {}
 }
