@@ -126,17 +126,17 @@ fn parse_text(id: &str, content: &mut &[u8]) -> Result<TagItem> {
 
 	let text = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
 
-	Ok(TagItem::new(
-		ItemKey::Id3v2Specific(Id3v2Frame::Text(id.to_string(), encoding)),
-		ItemValue::Text(text),
-	))
+	let key = ItemKey::from_key(&TagType::Id3v2(Id3v2Version::V4), id)
+		.unwrap_or_else(|| ItemKey::Id3v2Specific(Id3v2Frame::Text(id.to_string(), encoding)));
+
+	Ok(TagItem::new(key, ItemValue::Text(text)))
 }
 
 fn parse_link(id: &str, content: &mut &[u8]) -> Result<TagItem> {
 	let link = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
 
-	Ok(TagItem::new(
-		ItemKey::Id3v2Specific(Id3v2Frame::URL(id.to_string())),
-		ItemValue::Locator(link),
-	))
+	let key = ItemKey::from_key(&TagType::Id3v2(Id3v2Version::V4), id)
+		.unwrap_or_else(|| ItemKey::Id3v2Specific(Id3v2Frame::URL(id.to_string())));
+
+	Ok(TagItem::new(key, ItemValue::Locator(link)))
 }

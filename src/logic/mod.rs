@@ -1,5 +1,6 @@
 pub(crate) mod ape;
 pub(crate) mod iff;
+pub(crate) mod mp4;
 pub(crate) mod mpeg;
 pub(crate) mod ogg;
 

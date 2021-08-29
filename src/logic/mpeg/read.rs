@@ -127,12 +127,12 @@ where
 					continue;
 				}
 			},
-			_ => return Err(LoftyError::Mpeg("File contains an invalid frame")),
+			_ => return Err(LoftyError::Mp3("File contains an invalid frame")),
 		}
 	}
 
 	if first_mpeg_frame.0.is_none() {
-		return Err(LoftyError::Mpeg("Unable to find an MPEG frame"));
+		return Err(LoftyError::Mp3("Unable to find an MPEG frame"));
 	}
 
 	let first_mpeg_frame = (first_mpeg_frame.0.unwrap(), first_mpeg_frame.1);

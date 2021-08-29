@@ -83,7 +83,7 @@ macro_rules! item_keys {
 }
 
 item_keys!(
-	ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments];
+	ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments, TagType::Mp4Atom];
 	// Titles
 	AlbumTitle => [
 		TagType::Id3v2(_) => "TALB", TagType::Mp4Atom => "\u{a9}alb",

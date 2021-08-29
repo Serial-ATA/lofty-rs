@@ -6,9 +6,6 @@ use crate::types::file::AudioFile;
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
-use std::borrow::Cow;
-use std::collections::HashMap;
-use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::time::Duration;
 

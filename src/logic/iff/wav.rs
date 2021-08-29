@@ -1,12 +1,9 @@
 use crate::types::file::AudioFile;
 use crate::{
-	FileProperties, FileType, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType,
-	TaggedFile,
+	FileProperties, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType
 };
 
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use crate::logic::id3::v2::read::parse_id3v2;
@@ -53,11 +50,13 @@ impl AudioFile for WavFile {
 }
 
 impl WavFile {
-	fn id3v2_tag(&self) -> Option<&Tag> {
+	/// Returns a reference to the ID3v2 tag if it exists
+	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
-	fn riff_info(&self) -> Option<&Tag> {
+	/// Returns a reference to the RIFF INFO tag if it exists
+	pub fn riff_info(&self) -> Option<&Tag> {
 		self.riff_info.as_ref()
 	}
 }
@@ -274,33 +273,6 @@ where
 		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
 		id3v2: id3,
 	})
-}
-
-fn find_info_list<T>(data: &mut T) -> Result<()>
-where
-	T: Read + Seek,
-{
-	loop {
-		let mut chunk_name = [0; 4];
-		data.read_exact(&mut chunk_name)?;
-
-		if &chunk_name == b"LIST" {
-			data.seek(SeekFrom::Current(4))?;
-
-			let mut list_type = [0; 4];
-			data.read_exact(&mut list_type)?;
-
-			if &list_type == b"INFO" {
-				data.seek(SeekFrom::Current(-8))?;
-				return Ok(());
-			}
-
-			data.seek(SeekFrom::Current(-8))?;
-		}
-
-		let size = data.read_u32::<LittleEndian>()?;
-		data.seek(SeekFrom::Current(i64::from(size)))?;
-	}
 }
 
 cfg_if::cfg_if! {

@@ -6,7 +6,7 @@ use crate::{ItemKey, ItemValue, Tag, TagItem};
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 
 /// An AIFF file
 pub struct AiffFile {
@@ -45,11 +45,13 @@ impl AudioFile for AiffFile {
 }
 
 impl AiffFile {
-	fn id3v2_tag(&self) -> Option<&Tag> {
+	/// Returns a reference to the ID3v2 tag if it exists
+	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
-	fn text_chunks(&self) -> Option<&Tag> {
+	/// Returns a reference to the text chunks tag if it exists
+	pub fn text_chunks(&self) -> Option<&Tag> {
 		self.text_chunks.as_ref()
 	}
 }

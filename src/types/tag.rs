@@ -1,6 +1,8 @@
 use super::item::ItemKey;
 use super::picture::{Picture, PictureType};
+#[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::restrictions::TagRestrictions;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::Id3v2Version;
 
 #[cfg(feature = "quick_tag_accessors")]
@@ -36,6 +38,7 @@ macro_rules! common_items {
 	}
 }
 
+#[cfg(any(feature = "id3v2", feature = "ape"))]
 #[derive(Clone, Debug)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
@@ -43,21 +46,27 @@ macro_rules! common_items {
 /// It is not an error to attempt to write flags to a format that doesn't support them.
 /// They will just be ignored.
 pub struct TagItemFlags {
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Preserve frame on tag edit
 	pub tag_alter_preservation: bool,
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Preserve frame on file edit
 	pub file_alter_preservation: bool,
+	#[cfg(any(feature = "id3v2", feature = "ape"))]
 	/// **(ID3v2/APEv2 ONLY)** Item cannot be written to
 	pub read_only: bool,
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Frame belongs in a group
 	///
 	/// In addition to setting this flag, a group identifier byte must be added.
 	/// All frames with the same group identifier byte belong to the same group.
 	pub grouping_identity: (bool, u8),
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Frame is zlib compressed
 	///
 	/// It is **required** `data_length_indicator` be set if this is set.
 	pub compression: bool,
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Frame is encrypted
 	///
 	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
@@ -65,12 +74,14 @@ pub struct TagItemFlags {
 	/// In addition to setting this flag, an encryption method symbol must be added.
 	/// The method symbol **must** be > 0x80.
 	pub encryption: (bool, u8),
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Frame is unsynchronised
 	///
 	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
 	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
 	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
 	pub unsynchronisation: bool,
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Frame has a data length indicator
 	///
 	/// The data length indicator is the size of the frame if the flags were all zeroed out.
@@ -170,16 +181,34 @@ pub enum ItemValue {
 	Text(String),
 	/// **(APE/ID3v2 ONLY)** Any UTF-8 encoded locator of external information
 	Locator(String),
-	/// **(APE/ID3v2 ONLY)** Binary information
+	/// **(APE/ID3v2/MP4 ONLY)** Binary information
 	///
 	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject) **and** any unknown frame.
 	///
 	/// For APEv2, no uses of this item type are documented, there's no telling what it could be.
 	Binary(Vec<u8>),
+	/// Any 32 bit unsigned integer
+	///
+	/// This is most commonly used for items such as track and disc numbers
+	UInt(u32),
+	/// **(MP4 ONLY)** Any 64 bit unsigned integer
+	///
+	/// There are no common [`ItemKey`]s that use this
+	UInt64(u64),
+	/// Any 32 bit signed integer
+	///
+	/// There are no common [`ItemKey`]s that use this
+	Int(i32),
+	/// **(MP4 ONLY)** Any 64 bit signed integer
+	///
+	/// There are no common [`ItemKey`]s that use this
+	Int64(i64),
+	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** The content of a synchronized text frame, see [`SynchronizedText`](crate::id3::SynchronizedText)
 	SynchronizedText(Vec<(u32, String)>),
 }
 
+#[cfg(feature = "id3v2")]
 #[derive(Default, Copy, Clone)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2 ONLY)** Flags that apply to the entire tag
@@ -198,6 +227,7 @@ pub struct TagFlags {
 	///
 	/// This is calculated if the tag is written
 	pub crc: bool,
+	#[cfg(feature = "id3v2_restrictions")]
 	/// Restrictions on the tag
 	///
 	/// NOTE: This **requires** `extended_header` to be set. Otherwise, it will be ignored.
@@ -214,6 +244,7 @@ pub struct Tag {
 	tag_type: TagType,
 	pictures: Vec<Picture>,
 	items: Vec<TagItem>,
+	#[cfg(feature = "id3v2")]
 	flags: TagFlags,
 }
 
@@ -261,6 +292,14 @@ impl Tag {
 			pictures: vec![],
 			items: vec![],
 			flags: TagFlags::default(),
+		}
+	}
+
+	#[cfg(feature = "id3v2")]
+	/// **(ID3v2 ONLY)** Restrict the tag's flags
+	pub fn set_flags(&mut self, flags: TagFlags) {
+		if let TagType::Id3v2(_) = self.tag_type {
+			self.flags = flags
 		}
 	}
 }

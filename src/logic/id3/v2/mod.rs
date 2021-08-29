@@ -9,6 +9,7 @@ use byteorder::{BigEndian, ByteOrder};
 
 mod frame;
 pub(crate) mod read;
+#[cfg(feature = "id3v2_restrictions")]
 pub(crate) mod restrictions;
 pub(crate) mod util;
 

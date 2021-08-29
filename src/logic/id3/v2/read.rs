@@ -1,7 +1,9 @@
 use crate::error::Result;
+#[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::decode_u32;
 use crate::logic::id3::v2::frame::content::FrameContent;
 use crate::logic::id3::v2::frame::Frame;
+#[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::restrictions::{
 	ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
 };
@@ -11,6 +13,7 @@ use crate::{LoftyError, TagType};
 
 use std::io::Read;
 
+#[cfg(feature = "id3v2_restrictions")]
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
@@ -46,9 +49,11 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 		footer: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x10 == 0x10,
 		crc: false,                                        // Retrieved later if applicable
+		#[cfg(feature = "id3v2_restrictions")]
 		restrictions: (false, TagRestrictions::default()), // Retrieved later if applicable
 	};
 
+	#[cfg(feature = "id3v2_restrictions")]
 	if flags_parsed.extended_header {
 		let extended_size = decode_u32(bytes.read_u32::<BigEndian>()?);
 
@@ -79,7 +84,16 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 		}
 	}
 
+	#[cfg(not(feature = "id3v2_restrictions"))]
 	let mut tag = Tag::new(TagType::Id3v2(Id3v2Version::V4));
+
+	#[cfg(feature = "id3v2_restrictions")]
+	let mut tag = {
+		let mut tag = Tag::new(TagType::Id3v2(Id3v2Version::V4));
+		tag.set_flags(flags_parsed);
+
+		tag
+	};
 
 	loop {
 		match Frame::read(bytes, version)? {
@@ -97,6 +111,7 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 	Ok(tag)
 }
 
+#[cfg(feature = "id3v2_restrictions")]
 fn parse_restrictions(bytes: &mut &[u8]) -> Result<TagRestrictions> {
 	// We don't care about the length byte
 	let _data_length = bytes.read_u8()?;
@@ -110,7 +125,7 @@ fn parse_restrictions(bytes: &mut &[u8]) -> Result<TagRestrictions> {
 		restriction_flags & 0x80 == 0x80,
 		restriction_flags & 0x40 == 0x40,
 	) {
-		(false, false) => {},
+		(false, false) => {}, // default
 		(false, true) => restrictions.size = TagSizeRestrictions::S_64F_128K,
 		(true, false) => restrictions.size = TagSizeRestrictions::S_32F_40K,
 		(true, true) => restrictions.size = TagSizeRestrictions::S_32F_4K,
@@ -126,7 +141,7 @@ fn parse_restrictions(bytes: &mut &[u8]) -> Result<TagRestrictions> {
 		restriction_flags & 0x10 == 0x10,
 		restriction_flags & 0x08 == 0x08,
 	) {
-		(false, false) => {},
+		(false, false) => {}, // default
 		(false, true) => restrictions.text_fields_size = TextSizeRestrictions::C_1024,
 		(true, false) => restrictions.text_fields_size = TextSizeRestrictions::C_128,
 		(true, true) => restrictions.text_fields_size = TextSizeRestrictions::C_30,
@@ -142,7 +157,7 @@ fn parse_restrictions(bytes: &mut &[u8]) -> Result<TagRestrictions> {
 		restriction_flags & 0x02 == 0x02,
 		restriction_flags & 0x01 == 0x01,
 	) {
-		(false, false) => {},
+		(false, false) => {}, // default
 		(false, true) => restrictions.image_size = ImageSizeRestrictions::P_256,
 		(true, false) => restrictions.image_size = ImageSizeRestrictions::P_64,
 		(true, true) => restrictions.image_size = ImageSizeRestrictions::P_64_64,

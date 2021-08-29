@@ -49,21 +49,21 @@ impl Header {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
-			_ => return Err(LoftyError::Mpeg("Frame header has an invalid version")),
+			_ => return Err(LoftyError::Mp3("Frame header has an invalid version")),
 		};
 
 		let layer = match (header >> 17) & 0b11 {
 			1 => Layer::Layer3,
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
-			_ => return Err(LoftyError::Mpeg("Frame header uses a reserved layer")),
+			_ => return Err(LoftyError::Mp3("Frame header uses a reserved layer")),
 		};
 
 		let bitrate = (header >> 12) & 0b1111;
 		let sample_rate = (header >> 10) & 0b11;
 
 		if sample_rate == 0 {
-			return Err(LoftyError::Mpeg("Frame header has a sample rate of 0"));
+			return Err(LoftyError::Mp3("Frame header has a sample rate of 0"));
 		}
 
 		let mode = match (header >> 6) & 0b11 {
@@ -71,7 +71,7 @@ impl Header {
 			1 => Mode::JointStereo,
 			2 => Mode::DualChannel,
 			3 => Mode::SingleChannel,
-			_ => return Err(LoftyError::Mpeg("Unreachable error")),
+			_ => return Err(LoftyError::Mp3("Unreachable error")),
 		};
 
 		let layer_index = (layer as usize).saturating_sub(1);
@@ -121,14 +121,14 @@ impl XingHeader {
 		match &header {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
-					return Err(LoftyError::Mpeg("Xing header has an invalid size (< 16)"));
+					return Err(LoftyError::Mp3("Xing header has an invalid size (< 16)"));
 				}
 
 				let mut flags = [0; 4];
 				reader.read_exact(&mut flags)?;
 
 				if flags[3] & 0x03 != 0x03 {
-					return Err(LoftyError::Mpeg(
+					return Err(LoftyError::Mp3(
 						"Xing header doesn't have required flags set (0x0001 and 0x0002)",
 					));
 				}
@@ -140,7 +140,7 @@ impl XingHeader {
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
-					return Err(LoftyError::Mpeg("VBRI header has an invalid size (< 32)"));
+					return Err(LoftyError::Mp3("VBRI header has an invalid size (< 32)"));
 				}
 
 				// Skip 6 bytes
@@ -154,7 +154,7 @@ impl XingHeader {
 
 				Ok(Self { frames, size })
 			},
-			_ => Err(LoftyError::Mpeg("No Xing, LAME, or VBRI header located")),
+			_ => Err(LoftyError::Mp3("No Xing, LAME, or VBRI header located")),
 		}
 	}
 }

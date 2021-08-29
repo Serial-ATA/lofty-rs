@@ -16,7 +16,7 @@ pub enum LoftyError {
 	/// Provided an empty file
 	#[error("File contains no data")]
 	EmptyFile,
-	/// Attempting to write an abnormally large amount of data
+	/// Attempting to read/write an abnormally large amount of data
 	#[error("An abnormally large amount of data was provided, and an overflow occurred")]
 	TooMuchData,
 
@@ -64,6 +64,9 @@ pub enum LoftyError {
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	#[error("Reading: Expected a tag, found invalid data")]
 	FakeTag,
+	/// Arises when an atom contains invalid data
+	#[error("MP4 Atom: {0}")]
+	BadAtom(&'static str),
 	/// Errors that arise while reading/writing to WAV files
 	#[error("Riff: {0}")]
 	Wav(&'static str),
@@ -82,9 +85,12 @@ pub enum LoftyError {
 	/// Errors that arise while reading/writing to OGG files
 	#[error("OGG: {0}")]
 	Ogg(&'static str),
-	/// Errors that arise while reading/writing to MPEG files
-	#[error("MPEG: {0}")]
-	Mpeg(&'static str),
+	/// Errors that arise while reading/writing to MP3 files
+	#[error("MP3: {0}")]
+	Mp3(&'static str),
+	/// Errors that arise while reading/writing to MP4 files
+	#[error("MP4: {0}")]
+	Mp4(&'static str),
 	/// Errors that arise while reading/writing to APE files
 	#[error("APE: {0}")]
 	Ape(&'static str),

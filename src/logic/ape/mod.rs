@@ -50,15 +50,18 @@ impl AudioFile for ApeFile {
 }
 
 impl ApeFile {
-	fn id3v2_tag(&self) -> Option<&Tag> {
+	/// Returns a reference to the ID3v2 tag if it exists
+	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
-	fn id3v1_tag(&self) -> Option<&Tag> {
+	/// Returns a reference to the ID3v1 tag if it exists
+	pub fn id3v1_tag(&self) -> Option<&Tag> {
 		self.id3v1.as_ref()
 	}
 
-	fn ape_tag(&self) -> Option<&Tag> {
+	/// Returns a reference to the APEv1/2 tag if it exists
+	pub fn ape_tag(&self) -> Option<&Tag> {
 		self.ape.as_ref()
 	}
 }

@@ -88,8 +88,6 @@
 //!
 //! # Features
 //!
-//! NOTE: All of these are enabled by default
-//!
 //! ## QOL
 //! * `quick_tag_accessors` - Adds easier getters/setters for string values (Ex. [`Tag::artist`]), adds an extra dependency
 //!
@@ -103,6 +101,9 @@
 //! * `mp4_atoms`
 //! * `riff_info_list`
 //! * `vorbis_comments`
+//!
+//! ## Utilities
+//! * `id3v2_restrictions` - Parses ID3v2 extended headers and exposes flags for fine grained control
 //!
 //! # Notes on ID3v2
 //!
@@ -181,6 +182,7 @@ pub mod id3 {
 	//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::Id3v2Frame).
 	//!
 	//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
+	#[cfg(feature = "id3v2_restrictions")]
 	pub use crate::logic::id3::v2::restrictions::*;
 	pub use crate::logic::id3::v2::util::encapsulated_object::{
 		GEOBInformation, GeneralEncapsulatedObject,

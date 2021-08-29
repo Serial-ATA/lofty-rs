@@ -1,16 +1,18 @@
 use crate::logic::id3::v2::Id3v2Version;
 use crate::{FileProperties, LoftyError, Result, Tag, TagType};
-
 use crate::logic::ape::ApeFile;
 use crate::logic::iff::aiff::AiffFile;
 use crate::logic::iff::wav::WavFile;
+use crate::logic::mp4::Mp4File;
 use crate::logic::mpeg::MpegFile;
 use crate::logic::ogg::flac::FlacFile;
 use crate::logic::ogg::opus::OpusFile;
 use crate::logic::ogg::vorbis::VorbisFile;
-use byteorder::ReadBytesExt;
+
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
+
+use byteorder::ReadBytesExt;
 
 /// Provides various methods for interaction with a file
 pub trait AudioFile {
@@ -176,6 +178,20 @@ impl From<MpegFile> for TaggedFile {
 				.into_iter()
 				.flatten()
 				.collect(),
+		}
+	}
+}
+
+impl From<Mp4File> for TaggedFile {
+	fn from(input: Mp4File) -> Self {
+		Self {
+			ty: FileType::MP4,
+			properties: input.properties,
+			tags: if let Some(ilst) = input.ilst {
+				vec![ilst]
+			} else {
+				Vec::new()
+			},
 		}
 	}
 }

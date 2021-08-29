@@ -9,31 +9,6 @@ use byteorder::WriteBytesExt;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2",))]
 use byteorder::{BigEndian, ReadBytesExt};
 
-#[cfg(feature = "ape")]
-pub const APE_PICTYPES: [&str; 21] = [
-	"Other",
-	"Png Icon",
-	"Icon",
-	"Front",
-	"Back",
-	"Leaflet",
-	"Media",
-	"Lead Artist",
-	"Artist",
-	"Conductor",
-	"Band",
-	"Composer",
-	"Lyricist",
-	"Recording Location",
-	"During Recording",
-	"During Performance",
-	"Video Capture",
-	"Fish",
-	"Illustration",
-	"Band Logotype",
-	"Publisher Logotype",
-];
-
 /// Mime types for covers.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MimeType {
