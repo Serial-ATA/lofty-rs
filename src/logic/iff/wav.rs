@@ -1,7 +1,5 @@
 use crate::types::file::AudioFile;
-use crate::{
-	FileProperties, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType
-};
+use crate::{FileProperties, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

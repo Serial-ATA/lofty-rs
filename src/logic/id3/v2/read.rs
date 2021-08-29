@@ -48,12 +48,11 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 			&& flags & 0x20 == 0x20,
 		footer: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x10 == 0x10,
-		crc: false,                                        // Retrieved later if applicable
+		crc: false, // Retrieved later if applicable
 		#[cfg(feature = "id3v2_restrictions")]
 		restrictions: (false, TagRestrictions::default()), // Retrieved later if applicable
 	};
 
-	#[cfg(feature = "id3v2_restrictions")]
 	if flags_parsed.extended_header {
 		let extended_size = decode_u32(bytes.read_u32::<BigEndian>()?);
 
@@ -78,6 +77,7 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 			bytes.read_exact(&mut crc)?;
 		}
 
+		#[cfg(feature = "id3v2_restrictions")]
 		if extended_flags & 0x10 == 0x10 {
 			flags_parsed.restrictions.0 = true;
 			flags_parsed.restrictions.1 = parse_restrictions(bytes)?;

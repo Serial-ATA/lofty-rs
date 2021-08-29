@@ -1,6 +1,9 @@
-use crate::logic::id3::v2::Id3v2Version;
-use crate::{FileProperties, LoftyError, Result, Tag, TagType};
+use super::item::ItemKey;
+use super::properties::FileProperties;
+use super::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::error::{LoftyError, Result};
 use crate::logic::ape::ApeFile;
+use crate::logic::id3::v2::Id3v2Version;
 use crate::logic::iff::aiff::AiffFile;
 use crate::logic::iff::wav::WavFile;
 use crate::logic::mp4::Mp4File;
@@ -124,20 +127,40 @@ impl From<AiffFile> for TaggedFile {
 
 impl From<OpusFile> for TaggedFile {
 	fn from(input: OpusFile) -> Self {
+		// Preserve vendor string
+		let mut tag = input.vorbis_comments;
+
+		if !input.vendor.is_empty() {
+			tag.insert_item_unchecked(TagItem::new(
+				ItemKey::EncoderSoftware,
+				ItemValue::Text(input.vendor),
+			))
+		}
+
 		Self {
 			ty: FileType::Opus,
 			properties: input.properties,
-			tags: vec![input.vorbis_comments],
+			tags: vec![tag],
 		}
 	}
 }
 
 impl From<VorbisFile> for TaggedFile {
 	fn from(input: VorbisFile) -> Self {
+		// Preserve vendor string
+		let mut tag = input.vorbis_comments;
+
+		if !input.vendor.is_empty() {
+			tag.insert_item_unchecked(TagItem::new(
+				ItemKey::EncoderSoftware,
+				ItemValue::Text(input.vendor),
+			))
+		}
+
 		Self {
 			ty: FileType::Vorbis,
 			properties: input.properties,
-			tags: vec![input.vorbis_comments],
+			tags: vec![tag],
 		}
 	}
 }
