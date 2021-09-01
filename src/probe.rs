@@ -8,6 +8,7 @@ use crate::logic::ogg::vorbis::VorbisFile;
 use crate::types::file::AudioFile;
 use crate::{FileType, LoftyError, Result, TaggedFile};
 
+use crate::logic::mp4::Mp4File;
 use std::io::{Cursor, Read, Seek};
 use std::path::Path;
 
@@ -85,14 +86,14 @@ fn _read_from<R>(reader: &mut R, file_type: FileType) -> Result<TaggedFile>
 where
 	R: Read + Seek,
 {
-	match file_type {
-		FileType::AIFF => Ok(AiffFile::read_from(reader)?.into()),
-		FileType::APE => Ok(ApeFile::read_from(reader)?.into()),
-		FileType::FLAC => Ok(FlacFile::read_from(reader)?.into()),
-		FileType::MP3 => Ok(MpegFile::read_from(reader)?.into()),
-		FileType::Opus => Ok(OpusFile::read_from(reader)?.into()),
-		FileType::Vorbis => Ok(VorbisFile::read_from(reader)?.into()),
-		FileType::WAV => Ok(WavFile::read_from(reader)?.into()),
-		_ => Err(LoftyError::UnknownFormat), // FileType::MP4 => {}, TODO,
-	}
+	Ok(match file_type {
+		FileType::AIFF => AiffFile::read_from(reader)?.into(),
+		FileType::APE => ApeFile::read_from(reader)?.into(),
+		FileType::FLAC => FlacFile::read_from(reader)?.into(),
+		FileType::MP3 => MpegFile::read_from(reader)?.into(),
+		FileType::Opus => OpusFile::read_from(reader)?.into(),
+		FileType::Vorbis => VorbisFile::read_from(reader)?.into(),
+		FileType::WAV => WavFile::read_from(reader)?.into(),
+		FileType::MP4 => Mp4File::read_from(reader)?.into(),
+	})
 }

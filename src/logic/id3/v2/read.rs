@@ -1,5 +1,4 @@
 use crate::error::Result;
-#[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::decode_u32;
 use crate::logic::id3::v2::frame::content::FrameContent;
 use crate::logic::id3::v2::frame::Frame;
@@ -13,7 +12,6 @@ use crate::{LoftyError, TagType};
 
 use std::io::Read;
 
-#[cfg(feature = "id3v2_restrictions")]
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
