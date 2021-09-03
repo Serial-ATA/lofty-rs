@@ -23,13 +23,6 @@ Parse, convert, and write metadata to various audio formats.
 
 Available [here](https://docs.rs/lofty)
 
-## Thanks
-
-These great projects helped make this crate possible.
-
-* [**id3**](https://github.com/polyfloyd/rust-id3)
-* [**mp4ameta**](https://github.com/Saecki/rust-mp4ameta)
-
 ## License
 
 Licensed under either of
