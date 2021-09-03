@@ -1,5 +1,4 @@
 use super::read::read_comments;
-use super::write::create_comments;
 use crate::error::{LoftyError, Result};
 use crate::picture::Picture;
 use crate::types::file::AudioFile;
