@@ -101,6 +101,16 @@ impl TaggedFile {
 		self.tags.first_mut()
 	}
 
+	/// Get a reference to a specific [`TagType`]
+	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
+		self.tags.iter().find(|i| i.tag_type() == tag_type)
+	}
+
+	/// Get a mutable reference to a specific [`TagType`]
+	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
+		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
+	}
+
 	/// Returns the file's [`FileType`]
 	pub fn file_type(&self) -> &FileType {
 		&self.ty
