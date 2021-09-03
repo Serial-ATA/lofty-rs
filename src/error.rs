@@ -29,14 +29,9 @@ pub enum LoftyError {
 	NotAPicture,
 
 	// Tag related errors
-	#[cfg(feature = "id3")] // TODO
-	/// Any error from [`id3`]
-	#[error(transparent)]
-	Id3Tag(#[from] id3::Error),
-	#[cfg(feature = "mp4ameta")] // TODO
-	/// Any error from [`mp4ameta`]
-	#[error(transparent)]
-	Mp4Tag(#[from] mp4ameta::Error),
+	/// Arises when writing a tag to a file type that doesn't support it
+	#[error("Attempted to write a tag to a format that does not support it")]
+	UnsupportedTag,
 	/// Errors that arise while parsing OGG pages
 	#[cfg(feature = "vorbis_comments")]
 	#[error(transparent)]

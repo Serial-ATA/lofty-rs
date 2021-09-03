@@ -247,6 +247,38 @@ pub enum FileType {
 }
 
 impl FileType {
+	/// Returns if the target FileType supports a [`TagType`]
+	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
+		match self {
+			FileType::AIFF => {
+				std::mem::discriminant(tag_type)
+					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+					|| tag_type == &TagType::AiffText
+			},
+			FileType::APE => {
+				tag_type == &TagType::Ape
+					|| tag_type == &TagType::Id3v1
+					|| std::mem::discriminant(tag_type)
+						== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+			},
+			FileType::MP3 => {
+				std::mem::discriminant(tag_type)
+					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+					|| tag_type == &TagType::Ape
+					|| tag_type == &TagType::Id3v1
+			},
+			FileType::Opus | FileType::FLAC | FileType::Vorbis => {
+				tag_type == &TagType::VorbisComments
+			},
+			FileType::MP4 => tag_type == &TagType::Mp4Atom,
+			FileType::WAV => {
+				std::mem::discriminant(tag_type)
+					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+					|| tag_type == &TagType::RiffInfo
+			},
+		}
+	}
+
 	pub(crate) fn try_from_ext(ext: &str) -> Result<Self> {
 		match ext {
 			"ape" => Ok(Self::APE),

@@ -1,10 +1,15 @@
 use super::item::ItemKey;
 use super::picture::{Picture, PictureType};
+use crate::error::Result;
 #[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::restrictions::TagRestrictions;
 #[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::Id3v2Version;
+use crate::probe::Probe;
 
+use std::fs::File;
+
+use crate::LoftyError;
 #[cfg(feature = "quick_tag_accessors")]
 use paste::paste;
 
@@ -39,7 +44,7 @@ macro_rules! common_items {
 }
 
 #[cfg(any(feature = "id3v2", feature = "ape"))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
 ///
@@ -106,7 +111,7 @@ impl Default for TagItemFlags {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
@@ -168,7 +173,7 @@ impl TagItem {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Represents a tag item's value
 ///
 /// NOTES:
@@ -404,6 +409,27 @@ impl Tag {
 			None => self.items.push(item),
 			Some(i) => *i = item,
 		};
+	}
+}
+
+impl Tag {
+	/// Save the Tag to a [`File`](std::fs::File)
+	///
+	/// # Errors
+	///
+	/// * A [`FileType`] couldn't be determined from the File
+	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`]
+	pub fn save_to(&self, file: &mut File) -> Result<()> {
+		match Probe::new().file_type(file) {
+			Some(file_type) => {
+				if file_type.supports_tag_type(self.tag_type()) {
+					crate::logic::write_tag(self, file, file_type)
+				} else {
+					Err(LoftyError::UnsupportedTag)
+				}
+			},
+			None => Err(LoftyError::UnknownFormat),
+		}
 	}
 }
 
