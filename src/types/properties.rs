@@ -2,10 +2,10 @@ use std::time::Duration;
 
 /// Various *immutable* audio properties
 pub struct FileProperties {
-	duration: Duration,
-	bitrate: Option<u32>,
-	sample_rate: Option<u32>,
-	channels: Option<u8>,
+	pub(crate) duration: Duration,
+	pub(crate) bitrate: Option<u32>,
+	pub(crate) sample_rate: Option<u32>,
+	pub(crate) channels: Option<u8>,
 }
 
 impl Default for FileProperties {

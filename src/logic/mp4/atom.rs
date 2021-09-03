@@ -5,6 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) struct Atom {
+	pub(crate) start: u64,
 	pub(crate) len: u64,
 	pub(crate) extended: bool,
 	pub(crate) ident: String,
@@ -15,6 +16,8 @@ impl Atom {
 	where
 		R: Read + Seek,
 	{
+		let start = data.seek(SeekFrom::Current(0))?;
+
 		let len = data.read_u32::<BigEndian>()?;
 
 		let mut ident = [0; 4];
@@ -51,6 +54,7 @@ impl Atom {
 		};
 
 		Ok(Self {
+			start,
 			len,
 			extended,
 			ident,

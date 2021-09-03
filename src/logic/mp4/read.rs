@@ -1,8 +1,7 @@
 use super::atom::Atom;
 use super::moov::Moov;
-use super::trak::Trak;
+use super::properties::read_properties;
 use super::Mp4File;
-use crate::types::properties::FileProperties;
 use crate::error::{LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -25,11 +24,6 @@ where
 	String::from_utf8(major_brand)
 		.map_err(|_| LoftyError::BadAtom("Unable to parse \"ftyp\"'s major brand"))
 }
-
-fn read_properties<R>(data: &mut R, traks: &[Trak]) -> Result<FileProperties>
-	where
-		R: Read + Seek,
-{}
 
 #[allow(clippy::similar_names)]
 pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp4File>
@@ -58,7 +52,7 @@ where
 	Ok(Mp4File {
 		ftyp,
 		ilst: moov.meta,
-		properties: Default::default(),
+		properties: read_properties(data, &moov.traks)?,
 	})
 }
 
@@ -79,4 +73,29 @@ where
 	}
 
 	Ok(())
+}
+
+pub(crate) fn nested_atom<R>(data: &mut R, len: u64, expected: &str) -> Result<Option<Atom>>
+where
+	R: Read + Seek,
+{
+	let mut read = 8;
+	let mut ret = None;
+
+	while read < len {
+		let atom = Atom::read(data)?;
+
+		match &*atom.ident {
+			ident if ident == expected => {
+				ret = Some(atom);
+				break;
+			},
+			_ => {
+				skip_unneeded(data, atom.extended, atom.len)?;
+				read += atom.len
+			},
+		}
+	}
+
+	Ok(ret)
 }

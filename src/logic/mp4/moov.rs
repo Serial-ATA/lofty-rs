@@ -5,8 +5,9 @@ use super::trak::Trak;
 use crate::error::Result;
 use crate::types::tag::Tag;
 
+use std::io::{Read, Seek};
+
 use byteorder::{BigEndian, ReadBytesExt};
-use std::io::{Read, Seek, SeekFrom};
 
 pub(crate) struct Moov {
 	pub(crate) traks: Vec<Trak>,
@@ -24,7 +25,7 @@ impl Moov {
 
 		while let Ok(atom) = Atom::read(data) {
 			match &*atom.ident {
-				//"trak" => traks.push(Trak::parse(data, &atom)?),
+				"trak" => traks.push(Trak::parse(data, &atom)?),
 				"udta" => {
 					meta = meta_from_udta(data, atom.len - 8)?;
 				},

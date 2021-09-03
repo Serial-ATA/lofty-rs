@@ -1,6 +1,7 @@
 mod atom;
 mod ilst;
 mod moov;
+mod properties;
 pub(crate) mod read;
 mod trak;
 
