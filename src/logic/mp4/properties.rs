@@ -14,7 +14,6 @@ pub(crate) fn read_properties<R>(data: &mut R, traks: &[Trak]) -> Result<FilePro
 where
 	R: Read + Seek,
 {
-	println!("hi");
 	// We need the mdhd and minf atoms from the audio track
 	let mut audio_track = false;
 	let mut mdhd = None;
