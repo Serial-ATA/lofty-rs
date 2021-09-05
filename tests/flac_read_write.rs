@@ -1,4 +1,4 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, Tag, TagItem};
+use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem};
 
 #[test]
 fn flac_read() {
@@ -37,7 +37,7 @@ fn flac_write() {
 	assert_eq!(tagged_file.file_type(), &FileType::FLAC);
 	assert!(tagged_file.first_tag().is_some());
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	// We're replacing "Foo title"
 	assert_eq!(
@@ -59,7 +59,7 @@ fn flac_write() {
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	assert_eq!(
 		tag.get_item_ref(&ItemKey::TrackTitle),

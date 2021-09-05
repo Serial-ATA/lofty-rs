@@ -1,4 +1,4 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, Tag, TagItem, TagType};
+use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 
 #[test]
 fn aiff_read() {
@@ -58,7 +58,7 @@ fn aiff_write() {
 	assert!(tagged_file.tag(&TagType::AiffText).is_some());
 
 	// ID3v2
-	let mut primary_tag = tagged_file.primary_tag_mut().unwrap();
+	let primary_tag = tagged_file.primary_tag_mut().unwrap();
 
 	// We're replacing the artists
 	assert_eq!(
@@ -76,7 +76,7 @@ fn aiff_write() {
 	)));
 
 	// Text chunks
-	let mut text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
+	let text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
 
 	assert_eq!(
 		text_chunks.get_item_ref(&ItemKey::TrackArtist),
@@ -97,7 +97,7 @@ fn aiff_write() {
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let mut primary_tag = tagged_file.primary_tag_mut().unwrap();
+	let primary_tag = tagged_file.primary_tag_mut().unwrap();
 
 	// TODO
 	// assert_eq!(
@@ -114,7 +114,7 @@ fn aiff_write() {
 		ItemValue::Text(String::from("Bar artist"))
 	)));
 
-	let mut text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
+	let text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
 
 	assert_eq!(
 		text_chunks.get_item_ref(&ItemKey::TrackArtist),

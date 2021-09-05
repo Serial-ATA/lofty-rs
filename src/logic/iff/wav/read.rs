@@ -1,65 +1,20 @@
-use crate::types::file::AudioFile;
-use crate::{FileProperties, ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagType};
+use super::WavFile;
+use crate::error::{LoftyError, Result};
+use crate::logic::id3::v2::read::parse_id3v2;
+use crate::types::item::ItemKey;
+use crate::types::properties::FileProperties;
+use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use crate::logic::id3::v2::read::parse_id3v2;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xfffe;
 
-/// A WAV file
-pub struct WavFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
-	/// A RIFF INFO LIST
-	pub(crate) riff_info: Option<Tag>,
-	/// An ID3v2 tag
-	pub(crate) id3v2: Option<Tag>,
-}
-
-impl AudioFile for WavFile {
-	fn read_from<R>(reader: &mut R) -> Result<Self>
-	where
-		R: Read + Seek,
-		Self: Sized,
-	{
-		self::read_from(reader)
-	}
-
-	fn properties(&self) -> &FileProperties {
-		&self.properties
-	}
-
-	fn contains_tag(&self) -> bool {
-		self.id3v2.is_some() || self.riff_info.is_some()
-	}
-
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		match tag_type {
-			TagType::Id3v2(_) => self.id3v2.is_some(),
-			TagType::RiffInfo => self.riff_info.is_some(),
-			_ => false,
-		}
-	}
-}
-
-impl WavFile {
-	/// Returns a reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag(&self) -> Option<&Tag> {
-		self.id3v2.as_ref()
-	}
-
-	/// Returns a reference to the RIFF INFO tag if it exists
-	pub fn riff_info(&self) -> Option<&Tag> {
-		self.riff_info.as_ref()
-	}
-}
-
-fn verify_riff<T>(data: &mut T) -> Result<()>
+pub(in crate::logic::iff) fn verify_riff<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
 {
@@ -73,11 +28,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_properties(
-	fmt: &mut &[u8],
-	total_samples: u32,
-	stream_len: u32,
-) -> Result<FileProperties> {
+fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Result<FileProperties> {
 	let mut format_tag = fmt.read_u16::<LittleEndian>()?;
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
 
@@ -149,7 +100,7 @@ pub(crate) fn read_properties(
 	))
 }
 
-pub(crate) fn read_from<T>(data: &mut T) -> Result<WavFile>
+pub(in crate::logic) fn read_from<T>(data: &mut T) -> Result<WavFile>
 where
 	T: Read + Seek,
 {
@@ -271,69 +222,4 @@ where
 		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
 		id3v2: id3,
 	})
-}
-
-cfg_if::cfg_if! {
-	if #[cfg(feature = "format-riff")] {
-		pub(crate) fn write_to(data: &mut File, metadata: HashMap<String, String>) -> Result<()> {
-			let mut packet = Vec::new();
-
-			packet.extend(b"LIST".iter());
-			packet.extend(b"INFO".iter());
-
-			for (k, v) in metadata {
-				let mut val = v.as_bytes().to_vec();
-
-				if val.len() % 2 != 0 {
-					val.push(0)
-				}
-
-				let size = val.len() as u32;
-
-				packet.extend(k.as_bytes().iter());
-				packet.extend(size.to_le_bytes().iter());
-				packet.extend(val.iter());
-			}
-
-			let packet_size = packet.len() - 4;
-
-			if packet_size > u32::MAX as usize {
-				return Err(LoftyError::TooMuchData);
-			}
-
-			let size = (packet_size as u32).to_le_bytes();
-
-			#[allow(clippy::needless_range_loop)]
-			for i in 0..4 {
-				packet.insert(i + 4, size[i]);
-			}
-
-			verify_riff(data)?;
-
-			data.seek(SeekFrom::Current(8))?;
-
-			find_info_list(data)?;
-
-			let info_list_size = data.read_u32::<LittleEndian>()? as usize;
-			data.seek(SeekFrom::Current(-8))?;
-
-			let info_list_start = data.seek(SeekFrom::Current(0))? as usize;
-			let info_list_end = info_list_start + 8 + info_list_size;
-
-			data.seek(SeekFrom::Start(0))?;
-			let mut file_bytes = Vec::new();
-			data.read_to_end(&mut file_bytes)?;
-
-			let _ = file_bytes.splice(info_list_start..info_list_end, packet);
-
-			let total_size = (file_bytes.len() - 8) as u32;
-			let _ = file_bytes.splice(4..8, total_size.to_le_bytes().to_vec());
-
-			data.seek(SeekFrom::Start(0))?;
-			data.set_len(0)?;
-			data.write_all(&*file_bytes)?;
-
-			Ok(())
-		}
-	}
 }

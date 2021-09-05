@@ -1,5 +1,5 @@
 use super::{page_from_packet, verify_signature};
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSTAGS;
 use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
 use crate::types::item::ItemKey;
@@ -32,6 +32,10 @@ pub(crate) fn create_comments(packet: &mut Vec<u8>, items: &[TagItem]) {
 }
 
 pub(crate) fn create_pages(file: &mut File, sig: &[u8], tag: &Tag) -> Result<()> {
+	if tag.tag_type() != &TagType::VorbisComments {
+		return Err(LoftyError::UnsupportedTag);
+	}
+
 	let mut packet = Vec::new();
 
 	packet.extend(sig.iter());

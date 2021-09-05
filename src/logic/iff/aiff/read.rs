@@ -1,65 +1,16 @@
+use super::AiffFile;
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::file::AudioFile;
 use crate::types::item::ItemKey;
 use crate::types::properties::FileProperties;
 use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
 
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 
-/// An AIFF file
-pub struct AiffFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
-	/// Any text chunks included in the file
-	pub(crate) text_chunks: Option<Tag>,
-	/// An ID3v2 tag
-	pub(crate) id3v2: Option<Tag>,
-}
-
-impl AudioFile for AiffFile {
-	fn read_from<R>(reader: &mut R) -> Result<Self>
-	where
-		R: Read + Seek,
-		Self: Sized,
-	{
-		self::read_from(reader)
-	}
-
-	fn properties(&self) -> &FileProperties {
-		&self.properties
-	}
-
-	fn contains_tag(&self) -> bool {
-		self.id3v2.is_some() || self.text_chunks.is_some()
-	}
-
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		match tag_type {
-			TagType::Id3v2(_) => self.id3v2.is_some(),
-			TagType::AiffText => self.text_chunks.is_some(),
-			_ => false,
-		}
-	}
-}
-
-impl AiffFile {
-	/// Returns a reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag(&self) -> Option<&Tag> {
-		self.id3v2.as_ref()
-	}
-
-	/// Returns a reference to the text chunks tag if it exists
-	pub fn text_chunks(&self) -> Option<&Tag> {
-		self.text_chunks.as_ref()
-	}
-}
-
-fn verify_aiff<R>(data: &mut R) -> Result<()>
+pub(in crate::logic::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -73,7 +24,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
+fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 
 	if channels == 0 {
@@ -131,7 +82,7 @@ pub(crate) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileP
 	))
 }
 
-pub(crate) fn read_from<R>(data: &mut R) -> Result<AiffFile>
+pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
@@ -212,91 +163,4 @@ where
 		text_chunks: (text_chunks.item_count() > 0).then(|| text_chunks),
 		id3v2: id3,
 	})
-}
-
-// TODO: support ID3v2
-pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
-	verify_aiff(data)?;
-
-	let mut text_chunks = Vec::new();
-
-	let items = tag.items().iter().filter(|i| {
-		(i.key() == &ItemKey::TrackTitle
-			|| i.key() == &ItemKey::TrackArtist
-			|| i.key() == &ItemKey::CopyrightMessage)
-			&& std::mem::discriminant(i.value())
-				== std::mem::discriminant(&ItemValue::Text(String::new()))
-	});
-
-	for i in items {
-		// Already covered
-		let value = match i.value() {
-			ItemValue::Text(value) => value,
-			_ => unreachable!(),
-		};
-
-		let len = (value.len() as u32).to_be_bytes();
-
-		// Safe to unwrap since we retained the only possible values
-		text_chunks.extend(
-			i.key()
-				.map_key(&TagType::AiffText)
-				.unwrap()
-				.as_bytes()
-				.iter(),
-		);
-		text_chunks.extend(len.iter());
-		text_chunks.extend(value.as_bytes().iter());
-	}
-
-	let mut chunks_remove = Vec::new();
-
-	while let (Ok(fourcc), Ok(size)) = (
-		data.read_u32::<LittleEndian>(),
-		data.read_u32::<BigEndian>(),
-	) {
-		let fourcc_b = &fourcc.to_le_bytes();
-		let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
-
-		if fourcc_b == b"NAME" || fourcc_b == b"AUTH" || fourcc_b == b"(c) " {
-			chunks_remove.push((pos, (pos + 8 + size as usize)))
-		}
-
-		data.seek(SeekFrom::Current(i64::from(size)))?;
-	}
-
-	data.seek(SeekFrom::Start(0))?;
-
-	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
-
-	if chunks_remove.is_empty() {
-		data.seek(SeekFrom::Start(16))?;
-
-		let mut size = [0; 4];
-		data.read_exact(&mut size)?;
-
-		let comm_end = (20 + u32::from_le_bytes(size)) as usize;
-		file_bytes.splice(comm_end..comm_end, text_chunks);
-	} else {
-		chunks_remove.sort_unstable();
-		chunks_remove.reverse();
-
-		let first = chunks_remove.pop().unwrap();
-
-		for (s, e) in &chunks_remove {
-			file_bytes.drain(*s as usize..*e as usize);
-		}
-
-		file_bytes.splice(first.0 as usize..first.1 as usize, text_chunks);
-	}
-
-	let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
-	file_bytes.splice(4..8, total_size.to_vec());
-
-	data.seek(SeekFrom::Start(0))?;
-	data.set_len(0)?;
-	data.write_all(&*file_bytes)?;
-
-	Ok(())
 }

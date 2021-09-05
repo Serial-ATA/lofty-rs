@@ -4,7 +4,7 @@ use crate::error::{LoftyError, Result};
 use crate::logic::ogg::write::create_comments;
 use crate::picture::Picture;
 use crate::types::item::ItemKey;
-use crate::types::tag::{ItemValue, Tag, TagItem};
+use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -12,6 +12,10 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
+	if tag.tag_type() != &TagType::VorbisComments {
+		return Err(LoftyError::UnsupportedTag);
+	}
+
 	let stream_info = verify_flac(data)?;
 	let stream_info_end = stream_info.end as usize;
 

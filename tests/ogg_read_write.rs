@@ -1,4 +1,4 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, Tag, TagItem};
+use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem};
 
 // The tests for OGG Opus/Vorbis are nearly identical
 
@@ -39,7 +39,7 @@ fn ogg_opus_write() {
 	assert_eq!(tagged_file.file_type(), &FileType::Opus);
 	assert!(tagged_file.first_tag().is_some());
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	// We're replacing "Foo title"
 	assert_eq!(
@@ -61,7 +61,7 @@ fn ogg_opus_write() {
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	assert_eq!(
 		tag.get_item_ref(&ItemKey::TrackTitle),
@@ -117,7 +117,7 @@ fn ogg_vorbis_write() {
 	assert_eq!(tagged_file.file_type(), &FileType::Vorbis);
 	assert!(tagged_file.first_tag().is_some());
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	// We're replacing "Bar title"
 	assert_eq!(
@@ -139,7 +139,7 @@ fn ogg_vorbis_write() {
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let mut tag = tagged_file.primary_tag_mut().unwrap();
+	let tag = tagged_file.primary_tag_mut().unwrap();
 
 	assert_eq!(
 		tag.get_item_ref(&ItemKey::TrackTitle),
