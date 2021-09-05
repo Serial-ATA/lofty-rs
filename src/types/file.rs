@@ -312,7 +312,7 @@ impl FileType {
 			"oga" => Err(LoftyError::Ogg(
 				"Files with extension \"oga\" must have their type determined by content",
 			)),
-			_ => Err(LoftyError::UnsupportedFormat(ext.to_string())),
+			_ => Err(LoftyError::BadExtension(ext.to_string())),
 		}
 	}
 
