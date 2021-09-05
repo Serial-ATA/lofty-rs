@@ -1,5 +1,7 @@
-use super::constants::INVALID_KEYS;
-use crate::{ItemKey, ItemValue, LoftyError, Result, Tag, TagItem, TagItemFlags, TagType};
+use crate::error::{LoftyError, Result};
+use crate::logic::ape::constants::INVALID_KEYS;
+use crate::types::item::ItemKey;
+use crate::types::tag::{ItemValue, Tag, TagItem, TagItemFlags, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;

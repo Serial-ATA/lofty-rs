@@ -17,7 +17,7 @@ use std::fs::File;
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
 	match file_type {
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
-		FileType::APE => Ok(()), // TODO
+		FileType::APE => ape::write::write_to(file, tag),
 		FileType::FLAC => ogg::flac::write::write_to(file, tag),
 		FileType::MP3 => Ok(()), // TODO
 		FileType::MP4 => Ok(()), // TODO

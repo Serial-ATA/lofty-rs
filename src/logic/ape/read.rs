@@ -1,6 +1,6 @@
 use super::constants::APE_PREAMBLE;
 use super::properties::{properties_gt_3980, properties_lt_3980};
-use super::tag::read_ape_tag;
+use super::tag::read::read_ape_tag;
 use crate::files::ApeFile;
 use crate::logic::id3::find_lyrics3v2;
 use crate::logic::id3::v1::find_id3v1;
@@ -95,8 +95,8 @@ where
 			},
 			_ => {
 				return Err(LoftyError::Ape(
-					"Invalid data found while reading header, expected any of [\"MAC \", \"ID3 \
-					 \", \"APETAGEX\"]",
+					"Invalid data found while reading header, expected any of [\"MAC \", \
+					 \"APETAGEX\", \"ID3\"]",
 				))
 			},
 		}

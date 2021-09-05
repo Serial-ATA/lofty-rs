@@ -123,7 +123,8 @@ where
 				data.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					mpeg_file.ape = Some(crate::logic::ape::tag::read_ape_tag(data, false)?.0);
+					mpeg_file.ape =
+						Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
 					continue;
 				}
 			},
