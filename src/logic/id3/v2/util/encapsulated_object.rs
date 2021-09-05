@@ -4,7 +4,7 @@ use crate::logic::id3::v2::TextEncoding;
 
 use std::io::{Cursor, Read};
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// Information about a [`GeneralEncapsulatedObject`]
 pub struct GEOBInformation {
 	/// The text encoding of `file_name` and `description`

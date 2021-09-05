@@ -25,7 +25,7 @@ pub enum Id3v2Version {
 }
 
 /// The text encoding for use in ID3v2 frames
-#[derive(Debug, Clone, Eq, PartialEq, Copy)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum TextEncoding {
 	/// ISO-8859-1
 	Latin1 = 0,
@@ -50,7 +50,7 @@ impl TextEncoding {
 	}
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// Information about an ID3v2 frame that requires a language
 pub struct LanguageSpecificFrame {
 	/// The encoding of the description and comment text
@@ -61,7 +61,7 @@ pub struct LanguageSpecificFrame {
 	description: Option<String>,
 }
 
-#[derive(PartialEq, Clone, Debug)]
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// Different types of ID3v2 frames that require varying amounts of information
 pub enum Id3v2Frame {
 	/// Represents a "COMM" frame
@@ -118,13 +118,13 @@ where
 	let mut id3_header = [0; 10];
 	data.read_exact(&mut id3_header)?;
 
-	data.seek(SeekFrom::Current(-10))?;
-
-	if &id3_header[..4] == b"ID3 " {
+	if &id3_header[..3] == b"ID3" {
 		let size = decode_u32(BigEndian::read_u32(&id3_header[6..]));
 
 		if read {
-			let mut tag = vec![0; size as usize];
+			data.seek(SeekFrom::Current(-10))?;
+
+			let mut tag = vec![0; (size + 10) as usize];
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)

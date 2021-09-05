@@ -44,7 +44,7 @@ macro_rules! common_items {
 }
 
 #[cfg(any(feature = "id3v2", feature = "ape"))]
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
 ///
@@ -111,7 +111,7 @@ impl Default for TagItemFlags {
 	}
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Represents a tag item (key/value)
 pub struct TagItem {
 	item_key: ItemKey,
@@ -173,7 +173,7 @@ impl TagItem {
 	}
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Represents a tag item's value
 ///
 /// NOTES:
