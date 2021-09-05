@@ -12,8 +12,10 @@ use std::io::{Read, Seek};
 pub struct WavFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+	#[cfg(feature = "riff_info_list")]
 	/// A RIFF INFO LIST
 	pub(crate) riff_info: Option<Tag>,
+	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2: Option<Tag>,
 }
@@ -45,11 +47,13 @@ impl AudioFile for WavFile {
 }
 
 impl WavFile {
+	#[cfg(feature = "id3v2")]
 	/// Returns a reference to the ID3v2 tag if it exists
 	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
+	#[cfg(feature = "riff_info_list")]
 	/// Returns a reference to the RIFF INFO tag if it exists
 	pub fn riff_info(&self) -> Option<&Tag> {
 		self.riff_info.as_ref()

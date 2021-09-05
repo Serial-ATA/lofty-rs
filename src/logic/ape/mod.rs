@@ -12,10 +12,13 @@ use std::io::{Read, Seek};
 /// An APE file
 #[allow(dead_code)]
 pub struct ApeFile {
+	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
 	pub(crate) id3v1: Option<Tag>,
+	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag (Not officially supported)
 	pub(crate) id3v2: Option<Tag>,
+	#[cfg(feature = "ape")]
 	/// An APEv1/v2 tag
 	pub(crate) ape: Option<Tag>,
 	/// The file's audio properties
@@ -50,16 +53,19 @@ impl AudioFile for ApeFile {
 }
 
 impl ApeFile {
+	#[cfg(feature = "id3v2")]
 	/// Returns a reference to the ID3v2 tag if it exists
 	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
+	#[cfg(feature = "id3v1")]
 	/// Returns a reference to the ID3v1 tag if it exists
 	pub fn id3v1_tag(&self) -> Option<&Tag> {
 		self.id3v1.as_ref()
 	}
 
+	#[cfg(feature = "ape")]
 	/// Returns a reference to the APEv1/2 tag if it exists
 	pub fn ape_tag(&self) -> Option<&Tag> {
 		self.ape.as_ref()

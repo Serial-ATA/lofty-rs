@@ -15,6 +15,7 @@ use std::io::{Read, Seek};
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
+	#[cfg(feature = "mp4_atoms")]
 	/// The [`Tag`] parsed from the ilst atom, not guaranteed
 	pub(crate) ilst: Option<Tag>,
 	/// The file's audio properties
@@ -46,6 +47,7 @@ impl AudioFile for Mp4File {
 }
 
 impl Mp4File {
+	#[cfg(feature = "mp4_atoms")]
 	/// Returns a reference to the "ilst" tag if it exists
 	pub fn ilst(&self) -> Option<&Tag> {
 		self.ilst.as_ref()

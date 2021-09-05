@@ -14,8 +14,10 @@ use std::io::{Read, Seek};
 pub struct OpusFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+	#[cfg(feature = "vorbis_comments")]
 	/// The file vendor's name
 	pub(crate) vendor: String,
+	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
@@ -50,5 +52,13 @@ impl AudioFile for OpusFile {
 		}
 
 		true
+	}
+}
+
+impl OpusFile {
+	#[cfg(feature = "vorbis_comments")]
+	/// Returns a reference to the Vorbis comments tag
+	pub fn vorbis_comments(&self) -> &Tag {
+		&self.vorbis_comments
 	}
 }

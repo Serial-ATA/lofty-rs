@@ -13,12 +13,14 @@ use std::io::{Read, Seek};
 pub struct FlacFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+	#[cfg(feature = "vorbis_comments")]
 	/// The file vendor's name found in the vorbis comments (if it exists)
 	pub(crate) vendor: Option<String>,
+	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: This field being `Some` does not mean the file has vorbis comments, as Picture blocks exist.
-	pub(crate) metadata: Option<Tag>,
+	pub(crate) vorbis_comments: Option<Tag>,
 }
 
 impl AudioFile for FlacFile {
@@ -34,7 +36,7 @@ impl AudioFile for FlacFile {
 	}
 
 	fn contains_tag(&self) -> bool {
-		self.metadata.is_some()
+		self.vorbis_comments.is_some()
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
@@ -42,6 +44,14 @@ impl AudioFile for FlacFile {
 			return false;
 		}
 
-		self.metadata.is_some()
+		self.vorbis_comments.is_some()
+	}
+}
+
+impl FlacFile {
+	#[cfg(feature = "vorbis_comments")]
+	/// Returns a reference to the Vorbis comments tag if it exists
+	pub fn vorbis_comments(&self) -> Option<&Tag> {
+		self.vorbis_comments.as_ref()
 	}
 }

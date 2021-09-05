@@ -117,6 +117,6 @@ where
 	Ok(FlacFile {
 		properties,
 		vendor,
-		metadata: (!(tag.picture_count() == 0 && tag.item_count() == 0)).then(|| tag),
+		vorbis_comments: (!(tag.picture_count() == 0 && tag.item_count() == 0)).then(|| tag),
 	})
 }

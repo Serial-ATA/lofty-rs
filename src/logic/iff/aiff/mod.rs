@@ -12,8 +12,10 @@ use std::io::{Read, Seek};
 pub struct AiffFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+	#[cfg(feature = "aiff_text_chunks")]
 	/// Any text chunks included in the file
 	pub(crate) text_chunks: Option<Tag>,
+	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2: Option<Tag>,
 }
@@ -45,11 +47,13 @@ impl AudioFile for AiffFile {
 }
 
 impl AiffFile {
+	#[cfg(feature = "id3v2")]
 	/// Returns a reference to the ID3v2 tag if it exists
 	pub fn id3v2_tag(&self) -> Option<&Tag> {
 		self.id3v2.as_ref()
 	}
 
+	#[cfg(feature = "aiff_text_chunks")]
 	/// Returns a reference to the text chunks tag if it exists
 	pub fn text_chunks(&self) -> Option<&Tag> {
 		self.text_chunks.as_ref()
