@@ -331,7 +331,7 @@ impl FileType {
 
 		data.seek(SeekFrom::Start(0))?;
 
-		let mut sig = vec![0; 10];
+		let mut sig = [0; 10];
 		data.read_exact(&mut sig)?;
 
 		data.seek(SeekFrom::Start(0))?;
@@ -376,7 +376,7 @@ impl FileType {
 			79 if sig.starts_with(b"OggS") => {
 				data.seek(SeekFrom::Start(28))?;
 
-				let mut ident_sig = vec![0; 8];
+				let mut ident_sig = [0; 8];
 				data.read_exact(&mut ident_sig)?;
 
 				data.seek(SeekFrom::Start(0))?;

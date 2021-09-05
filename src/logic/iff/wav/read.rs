@@ -156,34 +156,31 @@ where
 					let end = data.seek(SeekFrom::Current(0))? + u64::from(size - 4);
 
 					while data.seek(SeekFrom::Current(0))? != end {
-						let mut fourcc = vec![0; 4];
-						data.read_exact(&mut fourcc)?;
+						let mut key = [0; 4];
+						data.read_exact(&mut key)?;
 
-						if let Some(item_key) = ItemKey::from_key(
-							&TagType::RiffInfo,
-							std::str::from_utf8(&*fourcc)
-								.map_err(|_| LoftyError::Wav("Non UTF-8 key found"))?,
-						) {
-							let size = data.read_u32::<LittleEndian>()?;
+						let key_str = std::str::from_utf8(&key)
+							.map_err(|_| LoftyError::Wav("Non UTF-8 key found in RIFF INFO"))?;
 
-							let mut buf = vec![0; size as usize];
-							data.read_exact(&mut buf)?;
+						let item_key = ItemKey::from_key(&TagType::RiffInfo, key_str)
+							.unwrap_or_else(|| ItemKey::Unknown(key_str.to_string()));
 
-							let val = String::from_utf8(buf)?;
+						let size = data.read_u32::<LittleEndian>()?;
 
-							let item = TagItem::new(
-								item_key,
-								ItemValue::Text(val.trim_matches('\0').to_string()),
-							);
-							riff_info.insert_item(item);
+						let mut buf = vec![0; size as usize];
+						data.read_exact(&mut buf)?;
 
-							if data.read_u8()? != 0 {
-								data.seek(SeekFrom::Current(-1))?;
-							}
-						} else {
-							return Err(LoftyError::Wav("Found an invalid FOURCC in LIST INFO"));
-						}
+						let val = String::from_utf8(buf)?;
+
+						let item = TagItem::new(
+							item_key,
+							ItemValue::Text(val.trim_matches('\0').to_string()),
+						);
+
+						riff_info.insert_item(item);
 					}
+				} else {
+					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
 			},
 			b"ID3 " | b"id3 " => {

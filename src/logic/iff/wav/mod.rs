@@ -1,5 +1,5 @@
 mod read;
-mod write;
+pub(in crate::logic) mod write;
 
 use crate::error::Result;
 use crate::types::file::AudioFile;
