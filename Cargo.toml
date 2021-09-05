@@ -22,7 +22,6 @@ paste = { version = "1.0.5", optional = true }
 
 base64 = "0.13.0"
 byteorder = "1.4.3"
-cfg-if = "1.0.0"
 
 [features]
 default = ["mp4_atoms", "vorbis_comments", "ape", "id3v1", "id3v2", "aiff_text_chunks", "riff_info_list", "quick_tag_accessors"]
