@@ -27,7 +27,7 @@ base64 = "0.13.0"
 byteorder = "1.4.3"
 cfg-if = "1.0.0"
 
-lofty_attr = "0.1.9"
+lofty_attr = "0.2.0"
 
 [features]
 default = ["all_tags"]
