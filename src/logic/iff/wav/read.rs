@@ -14,15 +14,19 @@ const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xfffe;
 
-pub(in crate::logic::iff) fn verify_riff<T>(data: &mut T) -> Result<()>
+pub(in crate::logic::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
 {
-	let mut id = [0; 4];
+	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if &id != b"RIFF" {
-		return Err(LoftyError::Wav("RIFF file doesn't contain a RIFF chunk"));
+	if &id[..4] != b"RIFF" {
+		return Err(LoftyError::Wav("WAV file doesn't contain a RIFF chunk"));
+	}
+
+	if &id[8..] != b"WAVE" {
+		return Err(LoftyError::Wav("Found RIFF file, format is not WAVE"));
 	}
 
 	Ok(())
@@ -100,13 +104,11 @@ fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Resu
 	))
 }
 
-pub(in crate::logic) fn read_from<T>(data: &mut T) -> Result<WavFile>
+pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<WavFile>
 where
-	T: Read + Seek,
+	R: Read + Seek,
 {
-	verify_riff(data)?;
-
-	data.seek(SeekFrom::Current(8))?;
+	verify_wav(data)?;
 
 	let mut stream_len = 0_u32;
 	let mut total_samples = 0_u32;
@@ -154,31 +156,7 @@ where
 
 				if &list_type == b"INFO" {
 					let end = data.seek(SeekFrom::Current(0))? + u64::from(size - 4);
-
-					while data.seek(SeekFrom::Current(0))? != end {
-						let mut key = [0; 4];
-						data.read_exact(&mut key)?;
-
-						let key_str = std::str::from_utf8(&key)
-							.map_err(|_| LoftyError::Wav("Non UTF-8 key found in RIFF INFO"))?;
-
-						let item_key = ItemKey::from_key(&TagType::RiffInfo, key_str)
-							.unwrap_or_else(|| ItemKey::Unknown(key_str.to_string()));
-
-						let size = data.read_u32::<LittleEndian>()?;
-
-						let mut buf = vec![0; size as usize];
-						data.read_exact(&mut buf)?;
-
-						let val = String::from_utf8(buf)?;
-
-						let item = TagItem::new(
-							item_key,
-							ItemValue::Text(val.trim_matches('\0').to_string()),
-						);
-
-						riff_info.insert_item(item);
-					}
+					parse_riff_info(data, end, &mut riff_info)?;
 				} else {
 					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
@@ -219,4 +197,39 @@ where
 		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
 		id3v2: id3,
 	})
+}
+
+fn parse_riff_info<R>(data: &mut R, end: u64, tag: &mut Tag) -> Result<()>
+where
+	R: Read + Seek,
+{
+	while data.seek(SeekFrom::Current(0))? != end {
+		let mut key = [0; 4];
+		data.read_exact(&mut key)?;
+
+		let key_str = std::str::from_utf8(&key)
+			.map_err(|_| LoftyError::Wav("Non UTF-8 key found in RIFF INFO"))?;
+
+		if !key_str.is_ascii() {
+			return Err(LoftyError::Wav("Non ascii key found in RIFF INFO"));
+		}
+
+		let item_key = ItemKey::from_key(&TagType::RiffInfo, key_str)
+			.unwrap_or_else(|| ItemKey::Unknown(key_str.to_string()));
+
+		let size = data.read_u32::<LittleEndian>()?;
+
+		let mut value = vec![0; size as usize];
+		data.read_exact(&mut value)?;
+
+		let value_str = std::str::from_utf8(&value)
+			.map_err(|_| LoftyError::Wav("Non UTF-8 value found in RIFF INFO"))?;
+
+		tag.insert_item_unchecked(TagItem::new(
+			item_key,
+			ItemValue::Text(value_str.trim_matches('\0').to_string()),
+		));
+	}
+
+	Ok(())
 }
