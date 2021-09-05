@@ -15,8 +15,6 @@ use crate::logic::ogg::vorbis::VorbisFile;
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::ReadBytesExt;
-
 /// Provides various methods for interaction with a file
 pub trait AudioFile {
 	/// Read a file from a reader
@@ -338,24 +336,30 @@ impl FileType {
 
 		match sig.first().unwrap() {
 			77 if sig.starts_with(b"MAC") => Ok(Self::APE),
-			_ if verify_frame_sync(sig[0], sig[1])
-				|| ((sig.starts_with(b"ID3") || sig.starts_with(b"id3")) && {
-					let size = decode_u32(u32::from_be_bytes(
-						sig[6..10]
-							.try_into()
-							.map_err(|_| LoftyError::UnknownFormat)?,
-					));
+			73 if sig.starts_with(b"ID3") => {
+				let size = decode_u32(u32::from_be_bytes(
+					sig[6..10]
+						.try_into()
+						.map_err(|_| LoftyError::UnknownFormat)?,
+				));
 
-					data.seek(SeekFrom::Start(u64::from(10 + size)))?;
+				data.seek(SeekFrom::Start(u64::from(10 + size)))?;
 
-					let b1 = data.read_u8()?;
-					let b2 = data.read_u8()?;
+				let mut ident = [0; 3];
+				data.read_exact(&mut ident)?;
 
-					data.seek(SeekFrom::Start(0))?;
+				data.seek(SeekFrom::Start(0))?;
 
-					verify_frame_sync(b1, b2)
-				}) =>
-			{
+				if &ident == b"MAC" {
+					return Ok(Self::APE);
+				} else if verify_frame_sync(ident[0], ident[1]) {
+					return Ok(Self::MP3);
+				}
+
+				Err(LoftyError::UnknownFormat)
+			},
+			_ if verify_frame_sync(sig[0], sig[1]) => {
+				data.seek(SeekFrom::Start(0))?;
 				Ok(Self::MP3)
 			},
 			70 if sig.starts_with(b"FORM") => {
