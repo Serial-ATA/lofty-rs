@@ -1,4 +1,4 @@
-use super::{opus, page_from_packet, verify_signature, vorbis};
+use super::{page_from_packet, verify_signature};
 use crate::error::Result;
 use crate::logic::ogg::constants::OPUSTAGS;
 use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
@@ -84,10 +84,10 @@ fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
 
 	match sig {
 		VORBIS_COMMENT_HEAD => {
-			vorbis::write_to(data, &mut writer, first_md_page.content, ser, pages)?;
+			super::vorbis::write::write_to(data, &mut writer, first_md_page.content, ser, pages)?;
 		},
 		OPUSTAGS => {
-			opus::write_to(data, &mut writer, ser, pages)?;
+			super::opus::write::write_to(data, &mut writer, ser, pages)?;
 		},
 		_ => unreachable!(),
 	}

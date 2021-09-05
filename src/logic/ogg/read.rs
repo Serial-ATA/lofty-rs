@@ -1,7 +1,6 @@
 use super::verify_signature;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSHEAD;
-use crate::logic::ogg::{opus, vorbis};
 use crate::picture::Picture;
 use crate::types::item::ItemKey;
 use crate::types::properties::FileProperties;
@@ -27,9 +26,9 @@ where
 			end - first_page.start
 		};
 
-		opus::read_properties(data, first_page, stream_len)?
+		super::opus::properties::read_properties(data, first_page, stream_len)?
 	} else {
-		vorbis::read_properties(data, first_page)?
+		super::vorbis::properties::read_properties(data, first_page)?
 	};
 
 	Ok(properties)

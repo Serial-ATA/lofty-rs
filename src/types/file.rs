@@ -177,14 +177,26 @@ impl From<VorbisFile> for TaggedFile {
 
 impl From<FlacFile> for TaggedFile {
 	fn from(input: FlacFile) -> Self {
+		// Preserve vendor string
+		let tags = {
+			if let Some(mut tag) = input.metadata {
+				if let Some(vendor) = input.vendor {
+					tag.insert_item_unchecked(TagItem::new(
+						ItemKey::EncoderSoftware,
+						ItemValue::Text(vendor),
+					))
+				}
+
+				vec![tag]
+			} else {
+				Vec::new()
+			}
+		};
+
 		Self {
 			ty: FileType::FLAC,
 			properties: input.properties,
-			tags: if let Some(metadata) = input.metadata {
-				vec![metadata]
-			} else {
-				Vec::new()
-			},
+			tags,
 		}
 	}
 }

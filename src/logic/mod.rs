@@ -17,10 +17,10 @@ use std::fs::File;
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
 	match file_type {
 		FileType::AIFF => iff::aiff::write_to(file, tag),
-		FileType::APE => Ok(()),  // TODO
-		FileType::FLAC => Ok(()), // TODO
-		FileType::MP3 => Ok(()),  // TODO
-		FileType::MP4 => Ok(()),  // TODO
+		FileType::APE => Ok(()),                                 // TODO
+		FileType::FLAC => ogg::flac::write::write_to(file, tag),
+		FileType::MP3 => Ok(()),                                 // TODO
+		FileType::MP4 => Ok(()),                                 // TODO
 		FileType::Opus => ogg::write::create_pages(file, OPUSTAGS, tag),
 		FileType::Vorbis => ogg::write::create_pages(file, VORBIS_COMMENT_HEAD, tag),
 		FileType::WAV => Ok(()), // TODO
