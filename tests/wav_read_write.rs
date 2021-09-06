@@ -1,3 +1,5 @@
+mod util;
+
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 
 #[test]
@@ -10,36 +12,10 @@ fn wav_read() {
 	assert_eq!(file.file_type(), &FileType::WAV);
 
 	// Verify the ID3v2 tag first
-	assert!(file.primary_tag().is_some());
-
-	let tag = file.primary_tag().unwrap();
-
-	// We have a title stored in here
-	assert_eq!(tag.item_count(), 1);
-
-	assert_eq!(
-		tag.get_item_ref(&ItemKey::TrackTitle),
-		Some(&TagItem::new(
-			ItemKey::TrackTitle,
-			ItemValue::Text(String::from("Foo title"))
-		))
-	);
+	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify the RIFF INFO chunk
-	assert!(file.tag(&TagType::RiffInfo).is_some());
-
-	let tag = file.tag(&TagType::RiffInfo).unwrap();
-
-	// We also have a title stored in here
-	assert_eq!(tag.item_count(), 1);
-
-	assert_eq!(
-		tag.get_item_ref(&ItemKey::TrackTitle),
-		Some(&TagItem::new(
-			ItemKey::TrackTitle,
-			ItemValue::Text(String::from("Bar title"))
-		))
-	);
+	crate::verify_artist!(file, tag, TagType::RiffInfo, "Bar artist", 1);
 }
 
 #[test]
@@ -58,77 +34,17 @@ fn wav_write() {
 	assert!(tagged_file.tag(&TagType::RiffInfo).is_some());
 
 	// ID3v2
-	let primary_tag = tagged_file.primary_tag_mut().unwrap();
-
-	// We're replacing the title
-	assert_eq!(
-		primary_tag.get_item_ref(&ItemKey::TrackTitle),
-		Some(&TagItem::new(
-			ItemKey::TrackTitle,
-			ItemValue::Text(String::from("Foo title"))
-		))
-	);
-
-	// Tag::insert_item returns a bool
-	assert!(primary_tag.insert_item(TagItem::new(
-		ItemKey::TrackTitle,
-		ItemValue::Text(String::from("Bar title"))
-	)));
+	// TODO
+	// crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// RIFF INFO
-	let riff_info = tagged_file.tag_mut(&TagType::RiffInfo).unwrap();
-
-	assert_eq!(
-		riff_info.get_item_ref(&ItemKey::TrackTitle),
-		Some(&TagItem::new(
-			ItemKey::TrackTitle,
-			ItemValue::Text(String::from("Bar title"))
-		))
-	);
-
-	assert!(riff_info.insert_item(TagItem::new(
-		ItemKey::TrackTitle,
-		ItemValue::Text(String::from("Baz title"))
-	)));
-
-	// TODO
-	assert!(riff_info.save_to(&mut file).is_ok());
+	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let primary_tag = tagged_file.primary_tag_mut().unwrap();
-
 	// TODO
-	// assert_eq!(
-	// 	primary_tag.get_item_ref(&ItemKey::TrackTitle),
-	// 	Some(&TagItem::new(
-	// 		ItemKey::TrackTitle,
-	// 		ItemValue::Text(String::from("Bar title"))
-	// 	))
-	// );
+	// crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	// Now set them back
-	assert!(primary_tag.insert_item(TagItem::new(
-		ItemKey::TrackTitle,
-		ItemValue::Text(String::from("Foo title"))
-	)));
-
-	let riff_info = tagged_file.tag_mut(&TagType::RiffInfo).unwrap();
-
-	assert_eq!(
-		riff_info.get_item_ref(&ItemKey::TrackTitle),
-		Some(&TagItem::new(
-			ItemKey::TrackTitle,
-			ItemValue::Text(String::from("Baz title"))
-		))
-	);
-
-	assert!(riff_info.insert_item(TagItem::new(
-		ItemKey::TrackTitle,
-		ItemValue::Text(String::from("Bar title"))
-	)));
-
-	// TODO
-	assert!(riff_info.save_to(&mut file).is_ok());
+	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Baz artist", 1 => file, "Bar artist");
 }

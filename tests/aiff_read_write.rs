@@ -1,3 +1,5 @@
+mod util;
+
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 
 #[test]
@@ -10,36 +12,10 @@ fn aiff_read() {
 	assert_eq!(file.file_type(), &FileType::AIFF);
 
 	// Verify the ID3v2 tag first
-	assert!(file.primary_tag().is_some());
-
-	let tag = file.primary_tag().unwrap();
-
-	// We have an artist stored in here
-	assert_eq!(tag.item_count(), 1);
-
-	assert_eq!(
-		tag.get_item_ref(&ItemKey::TrackArtist),
-		Some(&TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from("Bar artist"))
-		))
-	);
+	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify the text chunks
-	assert!(file.tag(&TagType::AiffText).is_some());
-
-	let tag = file.tag(&TagType::AiffText).unwrap();
-
-	// We also have an artist stored in here
-	assert_eq!(tag.item_count(), 1);
-
-	assert_eq!(
-		tag.get_item_ref(&ItemKey::TrackArtist),
-		Some(&TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from("Foo artist"))
-		))
-	);
+	crate::verify_artist!(file, tag, TagType::AiffText, "Bar artist", 1);
 }
 
 #[test]
@@ -54,81 +30,18 @@ fn aiff_write() {
 
 	assert_eq!(tagged_file.file_type(), &FileType::AIFF);
 
-	assert!(tagged_file.primary_tag().is_some());
-	assert!(tagged_file.tag(&TagType::AiffText).is_some());
-
 	// ID3v2
-	let primary_tag = tagged_file.primary_tag_mut().unwrap();
-
-	// We're replacing the artists
-	assert_eq!(
-		primary_tag.get_item_ref(&ItemKey::TrackArtist),
-		Some(&TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from("Bar artist"))
-		))
-	);
-
-	// Tag::insert_item returns a bool
-	assert!(primary_tag.insert_item(TagItem::new(
-		ItemKey::TrackArtist,
-		ItemValue::Text(String::from("Baz artist"))
-	)));
+	// TODO
+	// crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// Text chunks
-	let text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
-
-	assert_eq!(
-		text_chunks.get_item_ref(&ItemKey::TrackArtist),
-		Some(&TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from("Foo artist"))
-		))
-	);
-
-	assert!(text_chunks.insert_item(TagItem::new(
-		ItemKey::TrackArtist,
-		ItemValue::Text(String::from("Bar artist"))
-	)));
-
-	// TODO
-	assert!(text_chunks.save_to(&mut file).is_ok());
+	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	let primary_tag = tagged_file.primary_tag_mut().unwrap();
-
 	// TODO
-	// assert_eq!(
-	// 	primary_tag.get_item_ref(&ItemKey::TrackArtist),
-	// 	Some(&TagItem::new(
-	// 		ItemKey::TrackArtist,
-	// 		ItemValue::Text(String::from("Baz artist"))
-	// 	))
-	// );
+	// crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	// Now set them back
-	assert!(primary_tag.insert_item(TagItem::new(
-		ItemKey::TrackArtist,
-		ItemValue::Text(String::from("Bar artist"))
-	)));
-
-	let text_chunks = tagged_file.tag_mut(&TagType::AiffText).unwrap();
-
-	assert_eq!(
-		text_chunks.get_item_ref(&ItemKey::TrackArtist),
-		Some(&TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from("Bar artist"))
-		))
-	);
-
-	assert!(text_chunks.insert_item(TagItem::new(
-		ItemKey::TrackArtist,
-		ItemValue::Text(String::from("Foo artist"))
-	)));
-
-	// TODO
-	assert!(text_chunks.save_to(&mut file).is_ok());
+	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
 }

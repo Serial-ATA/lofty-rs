@@ -222,6 +222,11 @@ where
 		let mut value = vec![0; size as usize];
 		data.read_exact(&mut value)?;
 
+		// Values are expected to have an even size, and are padded with a 0 if necessary
+		if size % 2 != 0 {
+			data.read_u8()?;
+		}
+
 		let value_str = std::str::from_utf8(&value)
 			.map_err(|_| LoftyError::Wav("Non UTF-8 value found in RIFF INFO"))?;
 

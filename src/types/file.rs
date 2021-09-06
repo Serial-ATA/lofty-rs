@@ -332,9 +332,7 @@ impl FileType {
 		let mut sig = [0; 10];
 		data.read_exact(&mut sig)?;
 
-		data.seek(SeekFrom::Start(0))?;
-
-		match sig.first().unwrap() {
+		let ret = match sig.first().unwrap() {
 			77 if sig.starts_with(b"MAC") => Ok(Self::APE),
 			73 if sig.starts_with(b"ID3") => {
 				let size = decode_u32(u32::from_be_bytes(
@@ -348,33 +346,26 @@ impl FileType {
 				let mut ident = [0; 3];
 				data.read_exact(&mut ident)?;
 
-				data.seek(SeekFrom::Start(0))?;
-
 				if &ident == b"MAC" {
-					return Ok(Self::APE);
+					Ok(Self::APE)
 				} else if verify_frame_sync(ident[0], ident[1]) {
-					return Ok(Self::MP3);
+					Ok(Self::MP3)
+				} else {
+					Err(LoftyError::UnknownFormat)
 				}
-
-				Err(LoftyError::UnknownFormat)
 			},
-			_ if verify_frame_sync(sig[0], sig[1]) => {
-				data.seek(SeekFrom::Start(0))?;
-				Ok(Self::MP3)
-			},
+			_ if verify_frame_sync(sig[0], sig[1]) => Ok(Self::MP3),
 			70 if sig.starts_with(b"FORM") => {
-				data.seek(SeekFrom::Start(8))?;
+				let mut id_remaining = [0; 2];
+				data.read_exact(&mut id_remaining)?;
 
-				let mut id = [0; 4];
-				data.read_exact(&mut id)?;
+				let id = &[sig[8], sig[9], id_remaining[0], id_remaining[1]];
 
-				data.seek(SeekFrom::Start(0))?;
-
-				if &id == b"AIFF" || &id == b"AIFC" {
-					return Ok(Self::AIFF);
+				if id == b"AIFF" || id == b"AIFC" {
+					Ok(Self::AIFF)
+				} else {
+					Err(LoftyError::UnknownFormat)
 				}
-
-				Err(LoftyError::UnknownFormat)
 			},
 			102 if sig.starts_with(b"fLaC") => Ok(Self::FLAC),
 			79 if sig.starts_with(b"OggS") => {
@@ -383,34 +374,30 @@ impl FileType {
 				let mut ident_sig = [0; 8];
 				data.read_exact(&mut ident_sig)?;
 
-				data.seek(SeekFrom::Start(0))?;
-
 				if &ident_sig[1..7] == b"vorbis" {
-					return Ok(Self::Vorbis);
+					Ok(Self::Vorbis)
+				} else if &ident_sig[..] == b"OpusHead" {
+					Ok(Self::Opus)
+				} else {
+					Err(LoftyError::UnknownFormat)
 				}
-
-				if &ident_sig[..] == b"OpusHead" {
-					return Ok(Self::Opus);
-				}
-
-				Err(LoftyError::UnknownFormat)
 			},
 			82 if sig.starts_with(b"RIFF") => {
-				data.seek(SeekFrom::Start(8))?;
+				let mut id_remaining = [0; 2];
+				data.read_exact(&mut id_remaining)?;
 
-				let mut id = [0; 4];
-				data.read_exact(&mut id)?;
-
-				data.seek(SeekFrom::Start(0))?;
-
-				if &id == b"WAVE" {
-					return Ok(Self::WAV);
+				if &[sig[8], sig[9], id_remaining[0], id_remaining[1]] == b"WAVE" {
+					Ok(Self::WAV)
+				} else {
+					Err(LoftyError::UnknownFormat)
 				}
-
-				Err(LoftyError::UnknownFormat)
 			},
 			_ if &sig[4..8] == b"ftyp" => Ok(Self::MP4),
 			_ => Err(LoftyError::UnknownFormat),
-		}
+		};
+
+		data.seek(SeekFrom::Start(0))?;
+
+		ret
 	}
 }
