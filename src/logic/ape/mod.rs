@@ -10,7 +10,6 @@ use crate::{FileProperties, Result, Tag, TagType};
 use std::io::{Read, Seek};
 
 /// An APE file
-#[allow(dead_code)]
 pub struct ApeFile {
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag

@@ -10,7 +10,6 @@ use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
 
-#[allow(dead_code)]
 /// An MP4 file
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
@@ -47,6 +46,10 @@ impl AudioFile for Mp4File {
 }
 
 impl Mp4File {
+	/// Returns the file format from ftyp's "major brand" (Ex. "M4A ")
+	pub fn ftyp(&self) -> &str {
+		self.ftyp.as_ref()
+	}
 	#[cfg(feature = "mp4_atoms")]
 	/// Returns a reference to the "ilst" tag if it exists
 	pub fn ilst(&self) -> Option<&Tag> {

@@ -7,7 +7,6 @@ use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
 
-#[allow(dead_code)]
 /// An MPEG file
 pub struct MpegFile {
 	#[cfg(feature = "id3v2")]
