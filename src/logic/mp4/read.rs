@@ -6,7 +6,7 @@ use crate::error::{LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
 
-fn verify_mp4<R>(data: &mut R) -> Result<String>
+pub(in crate::logic::mp4) fn verify_mp4<R>(data: &mut R) -> Result<String>
 where
 	R: Read + Seek,
 {
@@ -32,21 +32,7 @@ where
 {
 	let ftyp = verify_mp4(data)?;
 
-	let mut moov = false;
-
-	while let Ok(atom) = Atom::read(data) {
-		if &*atom.ident == "moov" {
-			moov = true;
-			break;
-		}
-
-		skip_unneeded(data, atom.extended, atom.len)?;
-	}
-
-	if !moov {
-		return Err(LoftyError::Mp4("No \"moov\" atom found"));
-	}
-
+	Moov::find(data)?;
 	let moov = Moov::parse(data)?;
 
 	Ok(Mp4File {

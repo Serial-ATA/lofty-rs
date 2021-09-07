@@ -1,6 +1,5 @@
 mod util;
 
-use lofty::id3::Id3v2Version;
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 
 #[test]

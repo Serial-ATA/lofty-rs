@@ -1,8 +1,8 @@
 use super::atom::Atom;
-use super::ilst::parse_ilst;
+use super::ilst::read::parse_ilst;
 use super::read::skip_unneeded;
 use super::trak::Trak;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::types::tag::Tag;
 
 use std::io::{Read, Seek};
@@ -16,6 +16,28 @@ pub(crate) struct Moov {
 }
 
 impl Moov {
+	pub(crate) fn find<R>(data: &mut R) -> Result<Atom>
+	where
+		R: Read + Seek,
+	{
+		let mut moov = (false, None);
+
+		while let Ok(atom) = Atom::read(data) {
+			if &*atom.ident == "moov" {
+				moov = (true, Some(atom));
+				break;
+			}
+
+			skip_unneeded(data, atom.extended, atom.len)?;
+		}
+
+		if !moov.0 {
+			return Err(LoftyError::Mp4("No \"moov\" atom found"));
+		}
+
+		Ok(moov.1.unwrap())
+	}
+
 	pub(crate) fn parse<R>(data: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,

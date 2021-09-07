@@ -22,7 +22,7 @@ impl Trak {
 
 			if &*atom.ident == "mdia" {
 				mdia = Some(atom);
-				data.seek(SeekFrom::Current((trak.len - read) as i64))?;
+				data.seek(SeekFrom::Current((trak.len - read - 8) as i64))?;
 				break;
 			}
 

@@ -39,25 +39,23 @@ impl Atom {
 			_ => (u64::from(len), false),
 		};
 
-		let ident = if ident[0] == 0xA9 {
-			let end = simdutf8::basic::from_utf8(&ident[1..])
-				.map_err(|_| LoftyError::BadAtom("Encountered a non UTF-8 atom identifier"))?;
-
-			let mut ident = String::from('\u{a9}');
-			ident.push_str(end);
-
-			ident
-		} else {
-			simdutf8::basic::from_utf8(&ident)
-				.map_err(|_| LoftyError::BadAtom("Encountered a non UTF-8 atom identifier"))?
-				.to_string()
-		};
-
 		Ok(Self {
 			start,
 			len,
 			extended,
-			ident,
+			ident: if ident[0] == 0xA9 {
+				let end = simdutf8::basic::from_utf8(&ident[1..])
+					.map_err(|_| LoftyError::BadAtom("Encountered a non UTF-8 atom identifier"))?;
+
+				let mut ident = String::from('\u{a9}');
+				ident.push_str(end);
+
+				ident
+			} else {
+				simdutf8::basic::from_utf8(&ident)
+					.map_err(|_| LoftyError::BadAtom("Encountered a non UTF-8 atom identifier"))?
+					.to_string()
+			},
 		})
 	}
 }

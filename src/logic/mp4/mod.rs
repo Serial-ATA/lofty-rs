@@ -1,8 +1,8 @@
 mod atom;
-mod ilst;
+pub(in crate::logic) mod ilst;
 mod moov;
 mod properties;
-pub(crate) mod read;
+mod read;
 mod trak;
 
 use crate::types::file::AudioFile;

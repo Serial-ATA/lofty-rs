@@ -30,9 +30,6 @@ fn wav_write() {
 
 	assert_eq!(tagged_file.file_type(), &FileType::WAV);
 
-	assert!(tagged_file.primary_tag().is_some());
-	assert!(tagged_file.tag(&TagType::RiffInfo).is_some());
-
 	// ID3v2
 	// TODO
 	// crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");

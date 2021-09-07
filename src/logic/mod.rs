@@ -20,7 +20,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::APE => ape::write::write_to(file, tag),
 		FileType::FLAC => ogg::flac::write::write_to(file, tag),
 		FileType::MP3 => Ok(()), // TODO
-		FileType::MP4 => Ok(()), // TODO
+		FileType::MP4 => mp4::ilst::write::write_to(file, tag),
 		FileType::Opus => ogg::write::create_pages(file, OPUSTAGS, tag),
 		FileType::Vorbis => ogg::write::create_pages(file, VORBIS_COMMENT_HEAD, tag),
 		FileType::WAV => iff::wav::write::write_to(file, tag),
