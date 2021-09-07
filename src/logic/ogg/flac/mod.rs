@@ -54,4 +54,10 @@ impl FlacFile {
 	pub fn vorbis_comments(&self) -> Option<&Tag> {
 		self.vorbis_comments.as_ref()
 	}
+
+	#[cfg(feature = "vorbis_comments")]
+	/// Returns a mutable reference to the Vorbis comments tag if it exists
+	pub fn vorbis_comments_mut(&mut self) -> Option<&mut Tag> {
+		self.vorbis_comments.as_mut()
+	}
 }

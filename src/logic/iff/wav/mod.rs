@@ -53,9 +53,21 @@ impl WavFile {
 		self.id3v2.as_ref()
 	}
 
+	#[cfg(feature = "id3v2")]
+	/// Returns a mutable reference to the ID3v2 tag if it exists
+	pub fn id3v2_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.id3v2.as_mut()
+	}
+
 	#[cfg(feature = "riff_info_list")]
 	/// Returns a reference to the RIFF INFO tag if it exists
 	pub fn riff_info(&self) -> Option<&Tag> {
 		self.riff_info.as_ref()
+	}
+
+	#[cfg(feature = "riff_info_list")]
+	/// Returns a mutable reference to the RIFF INFO tag if it exists
+	pub fn riff_info_mut(&mut self) -> Option<&mut Tag> {
+		self.riff_info.as_mut()
 	}
 }

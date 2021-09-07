@@ -50,9 +50,16 @@ impl Mp4File {
 	pub fn ftyp(&self) -> &str {
 		self.ftyp.as_ref()
 	}
+
 	#[cfg(feature = "mp4_atoms")]
 	/// Returns a reference to the "ilst" tag if it exists
 	pub fn ilst(&self) -> Option<&Tag> {
 		self.ilst.as_ref()
+	}
+
+	#[cfg(feature = "mp4_atoms")]
+	/// Returns a mutable reference to the "ilst" tag if it exists
+	pub fn ilst_mut(&mut self) -> Option<&mut Tag> {
+		self.ilst.as_mut()
 	}
 }

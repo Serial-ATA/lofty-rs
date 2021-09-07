@@ -53,9 +53,21 @@ impl AiffFile {
 		self.id3v2.as_ref()
 	}
 
+	#[cfg(feature = "id3v2")]
+	/// Returns a mutable reference to the ID3v2 tag if it exists
+	pub fn id3v2_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.id3v2.as_mut()
+	}
+
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Returns a reference to the text chunks tag if it exists
 	pub fn text_chunks(&self) -> Option<&Tag> {
 		self.text_chunks.as_ref()
+	}
+
+	#[cfg(feature = "aiff_text_chunks")]
+	/// Returns a mutable reference to the text chunks tag if it exists
+	pub fn text_chunks_mut(&mut self) -> Option<&mut Tag> {
+		self.text_chunks.as_mut()
 	}
 }

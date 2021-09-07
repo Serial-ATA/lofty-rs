@@ -62,4 +62,10 @@ impl VorbisFile {
 	pub fn vorbis_comments(&self) -> &Tag {
 		&self.vorbis_comments
 	}
+
+	#[cfg(feature = "vorbis_comments")]
+	/// Returns a mutable reference to the Vorbis comments tag
+	pub fn vorbis_comments_mut(&mut self) -> &mut Tag {
+		&mut self.vorbis_comments
+	}
 }
