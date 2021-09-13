@@ -158,14 +158,13 @@ pub mod id3 {
 	//!
 	//! ## Frame ID mappings
 	//!
-	//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger collection (such as `TIPL` and `TMCL`).
+	//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger
+	//! collection (such as `TIPL` and `TMCL`).
 	//!
 	//! For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
 	//!
-	//! There are two things the caller could do:
-	//!
-	//! 1. Combine `Arranger` and any other "involved people" into a `TIPL` string and change the [`ItemKey`](crate::ItemKey) to `InvolvedPeople`
-	//! 2. Use [`Tag::insert_item_unchecked`](crate::Tag::insert_item_unchecked), as it's perfectly valid in this case and will later be used to build a `TIPL` if written.
+	//! In this case, the caller is expected to build these lists. If these [`ItemKey`](crate::ItemKey)s are inserted
+	//! using [`Tag::insert_item_unchecked`], they will simply be ignored.
 	//!
 	//! ## Special frames
 	//!

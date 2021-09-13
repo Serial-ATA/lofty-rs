@@ -3,7 +3,6 @@ use super::properties::FileProperties;
 use super::tag::{ItemValue, Tag, TagItem, TagType};
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::ApeFile;
-use crate::logic::id3::v2::Id3v2Version;
 use crate::logic::iff::aiff::AiffFile;
 use crate::logic::iff::wav::WavFile;
 use crate::logic::mp4::Mp4File;
@@ -34,7 +33,6 @@ pub trait AudioFile {
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool;
 }
 
-// TODO: store vendor string
 /// A generic representation of a file
 ///
 /// This is used when the [`FileType`] has to be guessed
@@ -59,7 +57,7 @@ impl TaggedFile {
 	pub fn primary_tag(&self) -> Option<&Tag> {
 		let pred = match self.ty {
 			FileType::AIFF | FileType::MP3 | FileType::WAV => {
-				|t: &&Tag| t.tag_type() == &TagType::Id3v2(Id3v2Version::V4)
+				|t: &&Tag| t.tag_type() == &TagType::Id3v2
 			},
 			FileType::APE => |t: &&Tag| t.tag_type() == &TagType::Ape,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
@@ -77,7 +75,7 @@ impl TaggedFile {
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
 		let pred = match self.ty {
 			FileType::AIFF | FileType::MP3 | FileType::WAV => {
-				|t: &&mut Tag| t.tag_type() == &TagType::Id3v2(Id3v2Version::V4)
+				|t: &&mut Tag| t.tag_type() == &TagType::Id3v2
 			},
 			FileType::APE => |t: &&mut Tag| t.tag_type() == &TagType::Ape,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
@@ -271,19 +269,16 @@ impl FileType {
 	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
 		match self {
 			FileType::AIFF => {
-				std::mem::discriminant(tag_type)
-					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
 					|| tag_type == &TagType::AiffText
 			},
 			FileType::APE => {
 				tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
-					|| std::mem::discriminant(tag_type)
-						== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+					|| std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
 			},
 			FileType::MP3 => {
-				std::mem::discriminant(tag_type)
-					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
 					|| tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
 			},
@@ -292,8 +287,7 @@ impl FileType {
 			},
 			FileType::MP4 => tag_type == &TagType::Mp4Atom,
 			FileType::WAV => {
-				std::mem::discriminant(tag_type)
-					== std::mem::discriminant(&TagType::Id3v2(Id3v2Version::V4))
+				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
 					|| tag_type == &TagType::RiffInfo
 			},
 		}

@@ -45,7 +45,7 @@ impl AudioFile for ApeFile {
 		match tag_type {
 			TagType::Ape => self.ape.is_some(),
 			TagType::Id3v1 => self.id3v1.is_some(),
-			TagType::Id3v2(_) => self.id3v2.is_some(),
+			TagType::Id3v2 => self.id3v2.is_some(),
 			_ => false,
 		}
 	}

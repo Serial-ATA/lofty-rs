@@ -39,7 +39,7 @@ impl AudioFile for AiffFile {
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
-			TagType::Id3v2(_) => self.id3v2.is_some(),
+			TagType::Id3v2 => self.id3v2.is_some(),
 			TagType::AiffText => self.text_chunks.is_some(),
 			_ => false,
 		}

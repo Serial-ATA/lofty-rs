@@ -46,7 +46,7 @@ pub(crate) fn parse_content(
 		_ if id.starts_with('T') => FrameContent::Item(parse_text(id, content)?),
 		_ if id.starts_with('W') => FrameContent::Item(parse_link(id, content)?),
 		_ => FrameContent::Item(TagItem::new(
-			ItemKey::from_key(&TagType::Id3v2(Id3v2Version::V4), id)
+			ItemKey::from_key(&TagType::Id3v2, id)
 				.unwrap_or_else(|| ItemKey::Unknown(id.to_string())),
 			ItemValue::Binary(content.to_vec()),
 		)),
@@ -126,7 +126,7 @@ fn parse_text(id: &str, content: &mut &[u8]) -> Result<TagItem> {
 
 	let text = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
 
-	let key = ItemKey::from_key(&TagType::Id3v2(Id3v2Version::V4), id)
+	let key = ItemKey::from_key(&TagType::Id3v2, id)
 		.unwrap_or_else(|| ItemKey::Id3v2Specific(Id3v2Frame::Text(id.to_string(), encoding)));
 
 	Ok(TagItem::new(key, ItemValue::Text(text)))
@@ -135,7 +135,7 @@ fn parse_text(id: &str, content: &mut &[u8]) -> Result<TagItem> {
 fn parse_link(id: &str, content: &mut &[u8]) -> Result<TagItem> {
 	let link = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
 
-	let key = ItemKey::from_key(&TagType::Id3v2(Id3v2Version::V4), id)
+	let key = ItemKey::from_key(&TagType::Id3v2, id)
 		.unwrap_or_else(|| ItemKey::Id3v2Specific(Id3v2Frame::URL(id.to_string())));
 
 	Ok(TagItem::new(key, ItemValue::Locator(link)))

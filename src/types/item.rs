@@ -74,7 +74,7 @@ macro_rules! item_keys {
 					)+
 					// Need a special case here to allow for checked insertion, the result isn't actually used.
 					#[cfg(feature = "id3v2")]
-					(TagType::Id3v2(_), ItemKey::Id3v2Specific(_)) => Some(""),
+					(TagType::Id3v2, ItemKey::Id3v2Specific(_)) => Some(""),
 					_ => None,
 				}
 			}
@@ -86,74 +86,74 @@ item_keys!(
 	ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments, TagType::Mp4Atom];
 	// Titles
 	AlbumTitle => [
-		TagType::Id3v2(_) => "TALB", TagType::Mp4Atom => "\u{a9}alb",
+		TagType::Id3v2 => "TALB", TagType::Mp4Atom => "\u{a9}alb",
 		TagType::VorbisComments => "ALBUM", TagType::Ape => "Album",
 		TagType::RiffInfo => "IPRD"
 	],
 	SetSubtitle => [
-		TagType::Id3v2(_) => "TSST", TagType::Mp4Atom => "----:com.apple.iTunes:DISCSUBTITLE",
+		TagType::Id3v2 => "TSST", TagType::Mp4Atom => "----:com.apple.iTunes:DISCSUBTITLE",
 		TagType::VorbisComments => "DISCSUBTITLE", TagType::Ape => "DiscSubtitle"
 	],
 	ShowName => [
 		TagType::Mp4Atom => "tvsh"
 	],
 	ContentGroup => [
-		TagType::Id3v2(_) => "TIT1" | "GRP1", TagType::Mp4Atom => "\u{a9}grp",
+		TagType::Id3v2 => "TIT1" | "GRP1", TagType::Mp4Atom => "\u{a9}grp",
 		TagType::VorbisComments => "GROUPING", TagType::Ape => "Grouping"
 	],
 	TrackTitle => [
-		TagType::Id3v2(_) => "TIT2", TagType::Mp4Atom => "\u{a9}nam",
+		TagType::Id3v2 => "TIT2", TagType::Mp4Atom => "\u{a9}nam",
 		TagType::VorbisComments => "TITLE", TagType::Ape => "Title",
 		TagType::RiffInfo => "INAM", TagType::AiffText => "NAME"
 	],
 	TrackSubtitle => [
-		TagType::Id3v2(_) => "TIT3", TagType::Mp4Atom => "----:com.apple.iTunes:SUBTITLE",
+		TagType::Id3v2 => "TIT3", TagType::Mp4Atom => "----:com.apple.iTunes:SUBTITLE",
 		TagType::VorbisComments => "SUBTITLE", TagType::Ape => "Subtitle"
 	],
 
 	// Original names
 	OriginalAlbumTitle => [
-		TagType::Id3v2(_) => "TOAL"
+		TagType::Id3v2 => "TOAL"
 	],
 	OriginalArtist => [
-		TagType::Id3v2(_) => "TOPE"
+		TagType::Id3v2 => "TOPE"
 	],
 	OriginalLyricist => [
-		TagType::Id3v2(_) => "TOLY"
+		TagType::Id3v2 => "TOLY"
 	],
 
 	// Sorting
 	AlbumTitleSortOrder => [
-		TagType::Id3v2(_) => "TSOA", TagType::Mp4Atom => "soal",
+		TagType::Id3v2 => "TSOA", TagType::Mp4Atom => "soal",
 		TagType::VorbisComments | TagType::Ape => "ALBUMSORT"
 	],
 	AlbumArtistSortOrder => [
-		TagType::Id3v2(_) => "TSO2", TagType::Mp4Atom => "soaa",
+		TagType::Id3v2 => "TSO2", TagType::Mp4Atom => "soaa",
 		TagType::VorbisComments | TagType::Ape => "ALBUMARTISTSORT"
 	],
 	TrackTitleSortOrder => [
-		TagType::Id3v2(_) => "TSOT", TagType::Mp4Atom => "sonm",
+		TagType::Id3v2 => "TSOT", TagType::Mp4Atom => "sonm",
 		TagType::VorbisComments | TagType::Ape => "TITLESORT"
 	],
 	TrackArtistSortOrder => [
-		TagType::Id3v2(_) => "TSOP", TagType::Mp4Atom => "soar",
+		TagType::Id3v2 => "TSOP", TagType::Mp4Atom => "soar",
 		TagType::VorbisComments | TagType::Ape => "ARTISTSORT"
 	],
 	ShowNameSortOrder => [
 		TagType::Mp4Atom => "sosn"
 	],
 	ComposerSortOrder => [
-		TagType::Id3v2(_) => "TSOC", TagType::Mp4Atom => "soco"
+		TagType::Id3v2 => "TSOC", TagType::Mp4Atom => "soco"
 	],
 
 
 	// People & Organizations
 	AlbumArtist => [
-		TagType::Id3v2(_) => "TPE2", TagType::Mp4Atom => "aART",
+		TagType::Id3v2 => "TPE2", TagType::Mp4Atom => "aART",
 		TagType::VorbisComments | TagType::Ape => "ALBUMARTIST"
 	],
 	TrackArtist => [
-		TagType::Id3v2(_) => "TPE1", TagType::Mp4Atom => "\u{a9}ART",
+		TagType::Id3v2 => "TPE1", TagType::Mp4Atom => "\u{a9}ART",
 		TagType::VorbisComments => "ARTIST", TagType::Ape => "Artist",
 		TagType::RiffInfo => "IART", TagType::AiffText => "AUTH"
 	],
@@ -161,17 +161,17 @@ item_keys!(
 		TagType::VorbisComments => "ARRANGER", TagType::Ape => "Arranger"
 	],
 	Writer => [
-		TagType::Id3v2(_) => "TEXT",
+		TagType::Id3v2 => "TEXT",
 		TagType::VorbisComments => "AUTHOR" | "WRITER", TagType::Ape => "Writer",
 		TagType::RiffInfo => "IWRI"
 	],
 	Composer => [
-		TagType::Id3v2(_) => "TCOM", TagType::Mp4Atom => "\u{a9}wrt",
+		TagType::Id3v2 => "TCOM", TagType::Mp4Atom => "\u{a9}wrt",
 		TagType::VorbisComments => "COMPOSER", TagType::Ape => "Composer",
 		TagType::RiffInfo => "IMUS"
 	],
 	Conductor => [
-		TagType::Id3v2(_) => "TPE3", TagType::Mp4Atom => "----:com.apple.iTunes:CONDUCTOR",
+		TagType::Id3v2 => "TPE3", TagType::Mp4Atom => "----:com.apple.iTunes:CONDUCTOR",
 		TagType::VorbisComments => "CONDUCTOR", TagType::Ape => "Conductor"
 	],
 	Engineer => [
@@ -179,10 +179,10 @@ item_keys!(
 		TagType::Ape => "Engineer"
 	],
 	InvolvedPeople => [
-		TagType::Id3v2(_) => "TIPL"
+		TagType::Id3v2 => "TIPL"
 	],
 	Lyricist => [
-		TagType::Id3v2(_) => "TEXT", TagType::Mp4Atom => "----:com.apple.iTunes:LYRICIST",
+		TagType::Id3v2 => "TEXT", TagType::Mp4Atom => "----:com.apple.iTunes:LYRICIST",
 		TagType::VorbisComments => "LYRICIST", TagType::Ape => "Lyricist"
 	],
 	MixDj => [
@@ -194,7 +194,7 @@ item_keys!(
 		TagType::Ape => "Mixer"
 	],
 	MusicianCredits => [
-		TagType::Id3v2(_) => "TMCL"
+		TagType::Id3v2 => "TMCL"
 	],
 	Performer => [
 		TagType::VorbisComments => "PERFORMER", TagType::Ape => "Performer"
@@ -204,44 +204,44 @@ item_keys!(
 		TagType::Ape => "Producer", TagType::RiffInfo => "IPRO"
 	],
 	Publisher => [
-		TagType::Id3v2(_) => "TPUB", TagType::VorbisComments => "PUBLISHER"
+		TagType::Id3v2 => "TPUB", TagType::VorbisComments => "PUBLISHER"
 	],
 	Label => [
-		TagType::Id3v2(_) => "TPUB", TagType::Mp4Atom => "----:com.apple.iTunes:LABEL",
+		TagType::Id3v2 => "TPUB", TagType::Mp4Atom => "----:com.apple.iTunes:LABEL",
 		TagType::VorbisComments => "LABEL", TagType::Ape => "Label"
 	],
 	InternetRadioStationName => [
-		TagType::Id3v2(_) => "TRSN"
+		TagType::Id3v2 => "TRSN"
 	],
 	InternetRadioStationOwner => [
-		TagType::Id3v2(_) => "TRSO"
+		TagType::Id3v2 => "TRSO"
 	],
 	Remixer => [
-		TagType::Id3v2(_) => "TPE4", TagType::Mp4Atom => "----:com.apple.iTunes:REMIXER",
+		TagType::Id3v2 => "TPE4", TagType::Mp4Atom => "----:com.apple.iTunes:REMIXER",
 		TagType::VorbisComments => "REMIXER", TagType::Ape => "MixArtist"
 	],
 
 	// Counts & Indexes
 	DiscNumber => [
-		TagType::Id3v2(_) => "TPOS", TagType::Mp4Atom => "disk",
+		TagType::Id3v2 => "TPOS", TagType::Mp4Atom => "disk",
 		TagType::VorbisComments => "DISCNUMBER", TagType::Ape => "Disc"
 	],
 	DiscTotal => [
-		TagType::Id3v2(_) => "TPOS", TagType::Mp4Atom => "disk",
+		TagType::Id3v2 => "TPOS", TagType::Mp4Atom => "disk",
 		TagType::VorbisComments => "DISCTOTAL" | "TOTALDISCS", TagType::Ape => "Disc"
 	],
 	TrackNumber => [
-		TagType::Id3v2(_) => "TRCK", TagType::Mp4Atom => "trkn",
+		TagType::Id3v2 => "TRCK", TagType::Mp4Atom => "trkn",
 		TagType::VorbisComments => "TRACKNUMBER", TagType::Ape => "Track",
 		TagType::RiffInfo => "IPRT" | "ITRK"
 	],
 	TrackTotal => [
-		TagType::Id3v2(_) => "TRCK", TagType::Mp4Atom => "trkn",
+		TagType::Id3v2 => "TRCK", TagType::Mp4Atom => "trkn",
 		TagType::VorbisComments => "TRACKTOTAL" | "TOTALTRACKS", TagType::Ape => "Track",
 		TagType::RiffInfo => "IFRM"
 	],
 	Popularimeter => [
-		TagType::Id3v2(_) => "POPM"
+		TagType::Id3v2 => "POPM"
 	],
 	LawRating => [
 		TagType::Mp4Atom => "rate", TagType::RiffInfo => "IRTD"
@@ -249,20 +249,20 @@ item_keys!(
 
 	// Dates
 	RecordingDate => [
-		TagType::Id3v2(_) => "TDRC", TagType::Mp4Atom => "\u{a9}day",
+		TagType::Id3v2 => "TDRC", TagType::Mp4Atom => "\u{a9}day",
 		TagType::VorbisComments => "DATE", TagType::RiffInfo => "ICRD"
 	],
 	Year => [
-		TagType::Id3v2(_) => "TDRC", TagType::VorbisComments => "DATE" | "YEAR",
+		TagType::Id3v2 => "TDRC", TagType::VorbisComments => "DATE" | "YEAR",
 		TagType::Ape => "Year"
 	],
 	OriginalReleaseDate => [
-		TagType::Id3v2(_) => "TDOR", TagType::VorbisComments => "ORIGINALDATE"
+		TagType::Id3v2 => "TDOR", TagType::VorbisComments => "ORIGINALDATE"
 	],
 
 	// Identifiers
 	ISRC => [
-		TagType::Id3v2(_) => "TSRC", TagType::Mp4Atom => "----:com.apple.iTunes:ISRC",
+		TagType::Id3v2 => "TSRC", TagType::Mp4Atom => "----:com.apple.iTunes:ISRC",
 		TagType::VorbisComments => "ISRC", TagType::Ape => "ISRC"
 	],
 	Barcode => [
@@ -273,106 +273,106 @@ item_keys!(
 		TagType::Ape => "CatalogNumber"
 	],
 	Movement => [
-		TagType::Id3v2(_) => "MVNM"
+		TagType::Id3v2 => "MVNM"
 	],
 	MovementIndex => [
-		TagType::Id3v2(_) => "MVIN"
+		TagType::Id3v2 => "MVIN"
 	],
 
 	// Flags
 	FlagCompilation => [
-		TagType::Id3v2(_) => "TCMP", TagType::Mp4Atom => "cpil",
+		TagType::Id3v2 => "TCMP", TagType::Mp4Atom => "cpil",
 		TagType::VorbisComments => "COMPILATION", TagType::Ape => "Compilation"
 	],
 	FlagPodcast => [
-		TagType::Id3v2(_) => "PCST", TagType::Mp4Atom => "pcst"
+		TagType::Id3v2 => "PCST", TagType::Mp4Atom => "pcst"
 	],
 
 	// File information
 	FileType => [
-		TagType::Id3v2(_) => "TFLT"
+		TagType::Id3v2 => "TFLT"
 	],
 	FileOwner => [
-		TagType::Id3v2(_) => "TOWN"
+		TagType::Id3v2 => "TOWN"
 	],
 	TaggingTime => [
-		TagType::Id3v2(_) => "TDTG"
+		TagType::Id3v2 => "TDTG"
 	],
 	Length => [
-		TagType::Id3v2(_) => "TLEN"
+		TagType::Id3v2 => "TLEN"
 	],
 	OriginalFileName => [
-		TagType::Id3v2(_) => "TOFN"
+		TagType::Id3v2 => "TOFN"
 	],
 	OriginalMediaType => [
-		TagType::Id3v2(_) => "TMED", TagType::Mp4Atom => "----:com.apple.iTunes:MEDIA",
+		TagType::Id3v2 => "TMED", TagType::Mp4Atom => "----:com.apple.iTunes:MEDIA",
 		TagType::VorbisComments => "MEDIA", TagType::Ape => "Media",
 		TagType::RiffInfo => "ISRF"
 	],
 
 	// Encoder information
 	EncodedBy => [
-		TagType::Id3v2(_) => "TENC", TagType::VorbisComments => "ENCODED-BY",
+		TagType::Id3v2 => "TENC", TagType::VorbisComments => "ENCODED-BY",
 		TagType::Ape => "EncodedBy", TagType::RiffInfo => "ITCH"
 	],
 	EncoderSoftware => [
-		TagType::Id3v2(_) => "TSSE", TagType::Mp4Atom => "\u{a9}too",
+		TagType::Id3v2 => "TSSE", TagType::Mp4Atom => "\u{a9}too",
 		TagType::VorbisComments => "ENCODER", TagType::RiffInfo => "ISFT"
 	],
 	EncoderSettings => [
-		TagType::Id3v2(_) => "TSSE", TagType::VorbisComments => "ENCODING" | "ENCODERSETTINGS"
+		TagType::Id3v2 => "TSSE", TagType::VorbisComments => "ENCODING" | "ENCODERSETTINGS"
 	],
 	EncodingTime => [
-		TagType::Id3v2(_) => "TDEN"
+		TagType::Id3v2 => "TDEN"
 	],
 
 	// URLs
 	AudioFileURL => [
-		TagType::Id3v2(_) => "WOAF"
+		TagType::Id3v2 => "WOAF"
 	],
 	AudioSourceURL => [
-		TagType::Id3v2(_) => "WOAS"
+		TagType::Id3v2 => "WOAS"
 	],
 	CommercialInformationURL => [
-		TagType::Id3v2(_) => "WCOM"
+		TagType::Id3v2 => "WCOM"
 	],
 	CopyrightURL => [
-		TagType::Id3v2(_) => "WCOP"
+		TagType::Id3v2 => "WCOP"
 	],
 	TrackArtistURL => [
-		TagType::Id3v2(_) => "WOAR"
+		TagType::Id3v2 => "WOAR"
 	],
 	RadioStationURL => [
-		TagType::Id3v2(_) => "WORS"
+		TagType::Id3v2 => "WORS"
 	],
 	PaymentURL => [
-		TagType::Id3v2(_) => "WPAY"
+		TagType::Id3v2 => "WPAY"
 	],
 	PublisherURL => [
-		TagType::Id3v2(_) => "WPUB"
+		TagType::Id3v2 => "WPUB"
 	],
 
 
 	// Style
 	Genre => [
-		TagType::Id3v2(_) => "TCON", TagType::Mp4Atom => "\u{a9}gen",
+		TagType::Id3v2 => "TCON", TagType::Mp4Atom => "\u{a9}gen",
 		TagType::VorbisComments => "GENRE", TagType::RiffInfo => "IGNR"
 	],
 	InitialKey => [
-		TagType::Id3v2(_) => "TKEY"
+		TagType::Id3v2 => "TKEY"
 	],
 	Mood => [
-		TagType::Id3v2(_) => "TMOO", TagType::Mp4Atom => "----:com.apple.iTunes:MOOD",
+		TagType::Id3v2 => "TMOO", TagType::Mp4Atom => "----:com.apple.iTunes:MOOD",
 		TagType::VorbisComments => "MOOD", TagType::Ape => "Mood"
 	],
 	BPM => [
-		TagType::Id3v2(_) => "TBPM", TagType::Mp4Atom => "tmpo",
+		TagType::Id3v2 => "TBPM", TagType::Mp4Atom => "tmpo",
 		TagType::VorbisComments => "BPM"
 	],
 
 	// Legal
 	CopyrightMessage => [
-		TagType::Id3v2(_) => "TCOP", TagType::Mp4Atom => "cprt",
+		TagType::Id3v2 => "TCOP", TagType::Mp4Atom => "cprt",
 		TagType::VorbisComments => "COPYRIGHT", TagType::Ape => "Copyright",
 		TagType::RiffInfo => "ICOP", TagType::AiffText => "(c) "
 	],
@@ -382,27 +382,27 @@ item_keys!(
 
 	// Podcast
 	PodcastDescription => [
-		TagType::Id3v2(_) => "TDES", TagType::Mp4Atom => "ldes"
+		TagType::Id3v2 => "TDES", TagType::Mp4Atom => "ldes"
 	],
 	PodcastSeriesCategory => [
-		TagType::Id3v2(_) => "TCAT", TagType::Mp4Atom => "catg"
+		TagType::Id3v2 => "TCAT", TagType::Mp4Atom => "catg"
 	],
 	PodcastURL => [
-		TagType::Id3v2(_) => "WFED", TagType::Mp4Atom => "purl"
+		TagType::Id3v2 => "WFED", TagType::Mp4Atom => "purl"
 	],
 	PodcastReleaseDate=> [
-		TagType::Id3v2(_) => "TDRL"
+		TagType::Id3v2 => "TDRL"
 	],
 	PodcastGlobalUniqueID => [
-		TagType::Id3v2(_) => "TGID", TagType::Mp4Atom => "egid"
+		TagType::Id3v2 => "TGID", TagType::Mp4Atom => "egid"
 	],
 	PodcastKeywords => [
-		TagType::Id3v2(_) => "TKWD", TagType::Mp4Atom => "keyw"
+		TagType::Id3v2 => "TKWD", TagType::Mp4Atom => "keyw"
 	],
 
 	// Miscellaneous
 	Comment => [
-		TagType::Id3v2(_) => "COMM", TagType::Mp4Atom => "\u{a9}cmt",
+		TagType::Id3v2 => "COMM", TagType::Mp4Atom => "\u{a9}cmt",
 		TagType::VorbisComments => "COMMENT", TagType::Ape => "Comment",
 		TagType::RiffInfo => "ICMT"
 	],
@@ -410,7 +410,7 @@ item_keys!(
 		TagType::Mp4Atom => "desc"
 	],
 	Language => [
-		TagType::Id3v2(_) => "TLAN", TagType::Mp4Atom => "----:com.apple.iTunes:LANGUAGE",
+		TagType::Id3v2 => "TLAN", TagType::Mp4Atom => "----:com.apple.iTunes:LANGUAGE",
 		TagType::VorbisComments => "LANGUAGE", TagType::Ape => "language",
 		TagType::RiffInfo => "ILNG"
 	],
@@ -419,7 +419,7 @@ item_keys!(
 		TagType::Ape => "Script"
 	],
 	Lyrics => [
-		TagType::Id3v2(_) => "USLT", TagType::Mp4Atom => "\u{a9}lyr",
+		TagType::Id3v2 => "USLT", TagType::Mp4Atom => "\u{a9}lyr",
 		TagType::VorbisComments => "LYRICS", TagType::Ape => "Lyrics"
 	]
 );

@@ -3,8 +3,6 @@ use super::picture::{Picture, PictureType};
 use crate::error::Result;
 #[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::restrictions::TagRestrictions;
-#[cfg(feature = "id3v2")]
-use crate::logic::id3::v2::Id3v2Version;
 use crate::probe::Probe;
 
 use std::fs::File;
@@ -44,7 +42,7 @@ macro_rules! common_items {
 }
 
 #[cfg(any(feature = "id3v2", feature = "ape"))]
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
 ///
@@ -94,21 +92,6 @@ pub struct TagItemFlags {
 	///
 	/// In addition to setting this flag, the final size must be added.
 	pub data_length_indicator: (bool, u32),
-}
-
-impl Default for TagItemFlags {
-	fn default() -> Self {
-		Self {
-			tag_alter_preservation: false,
-			file_alter_preservation: false,
-			read_only: false,
-			grouping_identity: (false, 0),
-			compression: false,
-			encryption: (false, 0),
-			unsynchronisation: false,
-			data_length_indicator: (false, 0),
-		}
-	}
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -303,7 +286,7 @@ impl Tag {
 	#[cfg(feature = "id3v2")]
 	/// **(ID3v2 ONLY)** Restrict the tag's flags
 	pub fn set_flags(&mut self, flags: TagFlags) {
-		if let TagType::Id3v2(_) = self.tag_type {
+		if TagType::Id3v2 == self.tag_type {
 			self.flags = flags
 		}
 	}
@@ -446,10 +429,8 @@ pub enum TagType {
 	/// Represents an ID3v1 tag
 	Id3v1,
 	#[cfg(feature = "id3v2")]
-	/// This covers all ID3v2 versions.
-	///
-	/// Due to frame differences between versions, it is necessary it be specified. See [`Id3v2Version`](crate::id3::Id3v2Version) for variants.
-	Id3v2(Id3v2Version),
+	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
+	Id3v2,
 	#[cfg(feature = "mp4_atoms")]
 	/// Represents MP4 atoms
 	Mp4Atom,

@@ -83,11 +83,11 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 	}
 
 	#[cfg(not(feature = "id3v2_restrictions"))]
-	let mut tag = Tag::new(TagType::Id3v2(Id3v2Version::V4));
+	let mut tag = Tag::new(TagType::Id3v2);
 
 	#[cfg(feature = "id3v2_restrictions")]
 	let mut tag = {
-		let mut tag = Tag::new(TagType::Id3v2(Id3v2Version::V4));
+		let mut tag = Tag::new(TagType::Id3v2);
 		tag.set_flags(flags_parsed);
 
 		tag
