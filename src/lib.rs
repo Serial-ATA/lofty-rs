@@ -141,6 +141,9 @@ pub use crate::types::{
 #[cfg(any(feature = "id3v2", feature = "ape"))]
 pub use crate::types::item::TagItemFlags;
 
+#[cfg(feature = "id3v2")]
+pub use crate::types::tag::TagFlags;
+
 mod types;
 
 /// Various concrete file types, used when inference is unnecessary

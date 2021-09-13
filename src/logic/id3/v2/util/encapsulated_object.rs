@@ -13,8 +13,8 @@ pub struct GEOBInformation {
 	pub mime_type: Option<String>,
 	/// The file's name
 	pub file_name: Option<String>,
-	/// A description of the content
-	pub description: String,
+	/// A unique content descriptor
+	pub descriptor: String,
 }
 
 /// Allows for encapsulation of any file type inside an ID3v2 tag
@@ -45,7 +45,7 @@ impl GeneralEncapsulatedObject {
 
 		let mime_type = decode_text(&mut cursor, TextEncoding::Latin1, true)?;
 		let file_name = decode_text(&mut cursor, encoding, true)?;
-		let description = decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
+		let descriptor = decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
@@ -55,7 +55,7 @@ impl GeneralEncapsulatedObject {
 				encoding,
 				mime_type,
 				file_name,
-				description,
+				descriptor,
 			},
 			data,
 		})

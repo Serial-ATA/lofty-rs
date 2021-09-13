@@ -1,6 +1,4 @@
 use crate::logic::id3::decode_u32;
-use crate::logic::id3::v2::util::encapsulated_object::GEOBInformation;
-use crate::logic::id3::v2::util::sync_text::SyncTextInformation;
 use crate::Result;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -97,12 +95,12 @@ pub enum Id3v2Frame {
 	UserURL(TextEncoding, String),
 	/// Represents a "SYLT" frame
 	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`SyncTextInformation`]
-	SyncText(SyncTextInformation),
+	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`SynchronizedText::parse`](crate::id3::SynchronizedText::parse)
+	SyncText,
 	/// Represents a "GEOB" frame
 	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`GEOBInformation`]
-	EncapsulatedObject(GEOBInformation),
+	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`GeneralEncapsulatedObject::parse`](crate::id3::GeneralEncapsulatedObject::parse)
+	EncapsulatedObject,
 	/// When an ID3v2.2 key couldn't be upgraded
 	///
 	/// This **will not** be written. It is up to the user to upgrade and store the key as [`ItemKey::Unknown`](crate::ItemKey::Unknown).

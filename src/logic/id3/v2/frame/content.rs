@@ -1,6 +1,4 @@
 use crate::error::Result;
-use crate::logic::id3::v2::util::encapsulated_object::GeneralEncapsulatedObject;
-use crate::logic::id3::v2::util::sync_text::SynchronizedText;
 use crate::logic::id3::v2::util::text_utils::decode_text;
 use crate::logic::id3::v2::{Id3v2Frame, Id3v2Version, LanguageSpecificFrame, TextEncoding};
 use crate::types::picture::Picture;
@@ -28,19 +26,15 @@ pub(crate) fn parse_content(
 		"WXXX" => FrameContent::Item(parse_user_defined(content, true)?),
 		"COMM" | "USLT" => FrameContent::Item(parse_text_language(id, content)?),
 		"SYLT" => FrameContent::Item({
-			let sync_text = SynchronizedText::parse(content)?;
-
 			TagItem::new(
-				ItemKey::Id3v2Specific(Id3v2Frame::SyncText(sync_text.information)),
-				ItemValue::SynchronizedText(sync_text.content),
+				ItemKey::Id3v2Specific(Id3v2Frame::SyncText),
+				ItemValue::Binary(content.to_vec()),
 			)
 		}),
 		"GEOB" => FrameContent::Item({
-			let geob = GeneralEncapsulatedObject::parse(content)?;
-
 			TagItem::new(
-				ItemKey::Id3v2Specific(Id3v2Frame::EncapsulatedObject(geob.information)),
-				ItemValue::Binary(geob.data),
+				ItemKey::Id3v2Specific(Id3v2Frame::EncapsulatedObject),
+				ItemValue::Binary(content.to_vec()),
 			)
 		}),
 		_ if id.starts_with('T') => FrameContent::Item(parse_text(id, content)?),

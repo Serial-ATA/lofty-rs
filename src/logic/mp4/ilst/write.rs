@@ -194,10 +194,8 @@ fn build_ilst(tag: &Tag) -> Result<Vec<u8>> {
 		.iter()
 		.filter_map(|i| {
 			let key = i.key().map_key(&TagType::Mp4Atom).unwrap();
-			let valid_value = std::mem::discriminant(&ItemValue::SynchronizedText(Vec::new()))
-				!= std::mem::discriminant(i.value())
-				&& std::mem::discriminant(&ItemValue::Binary(Vec::new()))
-					!= std::mem::discriminant(i.value());
+			let valid_value = std::mem::discriminant(&ItemValue::Binary(Vec::new()))
+				!= std::mem::discriminant(i.value());
 
 			((key.chars().count() == 4 || key.starts_with("----")) && valid_value)
 				.then(|| (key, i.value()))

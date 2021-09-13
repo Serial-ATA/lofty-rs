@@ -427,11 +427,8 @@ item_keys!(
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Represents a tag item's value
 ///
-/// NOTES:
-///
-/// * The [Locator][ItemValue::Locator] variant is only applicable to APE and ID3v2 tags.
-/// * The [Binary][ItemValue::Binary] variant is only applicable to APE tags.
-/// * Attempting to write either to another file/tag type will **not** error, they will just be ignored.
+/// NOTE: The [Locator][crate::ItemValue::Locator] and [Binary][crate::ItemValue::Binary] variants are only applicable to ID3v2, APEv2, and MP4 ilst tags.
+/// Attempting to write either to another file/tag type will **not** error, they will just be ignored.
 pub enum ItemValue {
 	/// Any UTF-8 encoded text
 	Text(String),
@@ -439,9 +436,10 @@ pub enum ItemValue {
 	Locator(String),
 	/// **(APE/ID3v2/MP4 ONLY)** Binary information
 	///
-	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject) **and** any unknown frame.
+	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject),
+	/// [`Id3v2Frame::SyncText`](crate::id3::Id3v2Frame::SyncText), and any unknown frame.
 	///
-	/// For APEv2, no uses of this item type are documented, there's no telling what it could be.
+	/// For APEv2 and MP4, the only use is for unknown items.
 	Binary(Vec<u8>),
 	/// Any 32 bit unsigned integer
 	///
@@ -459,9 +457,6 @@ pub enum ItemValue {
 	///
 	/// There are no common [`ItemKey`]s that use this
 	Int64(i64),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** The content of a synchronized text frame, see [`SynchronizedText`](crate::id3::SynchronizedText)
-	SynchronizedText(Vec<(u32, String)>),
 }
 
 #[cfg(any(feature = "id3v2", feature = "ape"))]
@@ -533,7 +528,7 @@ impl TagItem {
 	///
 	/// * This will check for validity based on the [`TagType`].
 	/// * If the [`ItemKey`] does not map to a key in the target format, `None` will be returned.
-	/// * It is pointless to do this if you plan on using [`Tag::insert_item`], as it does validity checks itself.
+	/// * It is pointless to do this if you plan on using [`Tag::insert_item`](crate::Tag::insert_item), as it does validity checks itself.
 	pub fn new_checked(
 		tag_type: &TagType,
 		item_key: ItemKey,

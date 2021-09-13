@@ -45,7 +45,7 @@ macro_rules! common_items {
 #[allow(clippy::struct_excessive_bools)]
 /// **(ID3v2 ONLY)** Flags that apply to the entire tag
 pub struct TagFlags {
-	/// Whether or not all frames are unsynchronised. See [`TagItemFlags::unsynchronization`]
+	/// Whether or not all frames are unsynchronised. See [`TagItemFlags::unsynchronisation`](crate::TagItemFlags::unsynchronisation)
 	pub unsynchronisation: bool,
 	/// Whether or not the header is followed by an extended header
 	pub extended_header: bool,
@@ -160,6 +160,7 @@ impl Tag {
 		self.items.len() as u32
 	}
 
+	#[cfg(feature = "id3v2")]
 	/// Returns the [`TagFlags`]
 	pub fn flags(&self) -> &TagFlags {
 		&self.flags
@@ -206,7 +207,7 @@ impl Tag {
 	///
 	/// NOTES:
 	///
-	/// * This **will** respect [`TagItemFlags::read_only`]
+	/// * This **will** respect [`TagItemFlags::read_only`](crate::TagItemFlags::read_only)
 	/// * This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// # Warning
@@ -226,7 +227,7 @@ impl Tag {
 	///
 	/// Notes:
 	///
-	/// * This **will not** respect [`TagItemFlags::read_only`]
+	/// * This **will not** respect [`TagItemFlags::read_only`](crate::TagItemFlags::read_only)
 	/// * This **will not** verify an [`ItemKey`] mapping exists
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
@@ -244,8 +245,8 @@ impl Tag {
 	///
 	/// # Errors
 	///
-	/// * A [`FileType`] couldn't be determined from the File
-	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`]
+	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
+	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
 	pub fn save_to(&self, file: &mut File) -> Result<()> {
 		match Probe::new().file_type(file) {
 			Some(file_type) => {
