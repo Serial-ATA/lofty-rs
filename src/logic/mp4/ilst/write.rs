@@ -2,14 +2,15 @@ use crate::error::{LoftyError, Result};
 use crate::logic::mp4::moov::Moov;
 use crate::logic::mp4::read::nested_atom;
 use crate::logic::mp4::read::verify_mp4;
-use crate::types::tag::{ItemValue, Tag, TagType};
+use crate::picture::MimeType;
+use crate::types::item::ItemValue;
+use crate::types::picture::Picture;
+use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use crate::picture::MimeType;
-use crate::types::picture::Picture;
 use byteorder::{BigEndian, WriteBytesExt};
 
 pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {

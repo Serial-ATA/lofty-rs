@@ -4,8 +4,9 @@ use crate::logic::ape::constants::APE_PREAMBLE;
 use crate::logic::id3::find_lyrics3v2;
 use crate::logic::id3::v1::find_id3v1;
 use crate::logic::id3::v2::find_id3v2;
+use crate::types::item::{ItemValue, TagItem};
 use crate::types::picture::Picture;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

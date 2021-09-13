@@ -133,10 +133,13 @@ pub use crate::probe::Probe;
 
 pub use crate::types::{
 	file::{FileType, TaggedFile},
-	item::ItemKey,
+	item::{ItemKey, ItemValue, TagItem},
 	properties::FileProperties,
-	tag::{ItemValue, Tag, TagItem, TagItemFlags, TagType},
+	tag::{Tag, TagType},
 };
+
+#[cfg(any(feature = "id3v2", feature = "ape"))]
+pub use crate::types::item::TagItemFlags;
 
 mod types;
 

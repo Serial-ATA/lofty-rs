@@ -1,6 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::types::tag::TagItemFlags;
+use crate::types::item::TagItemFlags;
 
 use std::io::Read;
 

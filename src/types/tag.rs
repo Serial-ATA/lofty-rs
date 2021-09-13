@@ -1,13 +1,12 @@
-use super::item::ItemKey;
+use super::item::{ItemKey, ItemValue, TagItem};
 use super::picture::{Picture, PictureType};
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::restrictions::TagRestrictions;
 use crate::probe::Probe;
 
 use std::fs::File;
 
-use crate::LoftyError;
 #[cfg(feature = "quick_tag_accessors")]
 use paste::paste;
 
@@ -39,161 +38,6 @@ macro_rules! common_items {
 			}
 		}
 	}
-}
-
-#[cfg(any(feature = "id3v2", feature = "ape"))]
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-#[allow(clippy::struct_excessive_bools)]
-/// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
-///
-/// It is not an error to attempt to write flags to a format that doesn't support them.
-/// They will just be ignored.
-pub struct TagItemFlags {
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Preserve frame on tag edit
-	pub tag_alter_preservation: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Preserve frame on file edit
-	pub file_alter_preservation: bool,
-	#[cfg(any(feature = "id3v2", feature = "ape"))]
-	/// **(ID3v2/APEv2 ONLY)** Item cannot be written to
-	pub read_only: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame belongs in a group
-	///
-	/// In addition to setting this flag, a group identifier byte must be added.
-	/// All frames with the same group identifier byte belong to the same group.
-	pub grouping_identity: (bool, u8),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is zlib compressed
-	///
-	/// It is **required** `data_length_indicator` be set if this is set.
-	pub compression: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is encrypted
-	///
-	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
-	///
-	/// In addition to setting this flag, an encryption method symbol must be added.
-	/// The method symbol **must** be > 0x80.
-	pub encryption: (bool, u8),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is unsynchronised
-	///
-	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
-	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
-	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
-	pub unsynchronisation: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame has a data length indicator
-	///
-	/// The data length indicator is the size of the frame if the flags were all zeroed out.
-	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
-	///
-	/// In addition to setting this flag, the final size must be added.
-	pub data_length_indicator: (bool, u32),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-/// Represents a tag item (key/value)
-pub struct TagItem {
-	item_key: ItemKey,
-	item_value: ItemValue,
-	flags: TagItemFlags,
-}
-
-impl TagItem {
-	/// Create a new [`TagItem`]
-	///
-	/// NOTES:
-	///
-	/// * This will check for validity based on the [`TagType`].
-	/// * If the [`ItemKey`] does not map to a key in the target format, `None` will be returned.
-	/// * It is pointless to do this if you plan on using [`Tag::insert_item`], as it does validity checks itself.
-	pub fn new_checked(
-		tag_type: &TagType,
-		item_key: ItemKey,
-		item_value: ItemValue,
-	) -> Option<Self> {
-		item_key.map_key(tag_type).is_some().then(|| Self {
-			item_key,
-			item_value,
-			flags: TagItemFlags::default(),
-		})
-	}
-
-	/// Create a new [`TagItem`]
-	pub fn new(item_key: ItemKey, item_value: ItemValue) -> Self {
-		Self {
-			item_key,
-			item_value,
-			flags: TagItemFlags::default(),
-		}
-	}
-
-	/// Set the item's flags
-	pub fn set_flags(&mut self, flags: TagItemFlags) {
-		self.flags = flags
-	}
-
-	/// Returns a reference to the [`ItemKey`]
-	pub fn key(&self) -> &ItemKey {
-		&self.item_key
-	}
-
-	/// Returns a reference to the [`ItemValue`]
-	pub fn value(&self) -> &ItemValue {
-		&self.item_value
-	}
-
-	/// Returns a reference to the [`TagItemFlags`]
-	pub fn flags(&self) -> &TagItemFlags {
-		&self.flags
-	}
-
-	pub(crate) fn re_map(&self, tag_type: &TagType) -> Option<()> {
-		self.item_key.map_key(tag_type).is_some().then(|| ())
-	}
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-/// Represents a tag item's value
-///
-/// NOTES:
-///
-/// * The [Locator][ItemValue::Locator] variant is only applicable to APE and ID3v2 tags.
-/// * The [Binary][ItemValue::Binary] variant is only applicable to APE tags.
-/// * Attempting to write either to another file/tag type will **not** error, they will just be ignored.
-pub enum ItemValue {
-	/// Any UTF-8 encoded text
-	Text(String),
-	/// **(APE/ID3v2 ONLY)** Any UTF-8 encoded locator of external information
-	Locator(String),
-	/// **(APE/ID3v2/MP4 ONLY)** Binary information
-	///
-	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject) **and** any unknown frame.
-	///
-	/// For APEv2, no uses of this item type are documented, there's no telling what it could be.
-	Binary(Vec<u8>),
-	/// Any 32 bit unsigned integer
-	///
-	/// This is most commonly used for items such as track and disc numbers
-	UInt(u32),
-	/// **(MP4 ONLY)** Any 64 bit unsigned integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	UInt64(u64),
-	/// Any 32 bit signed integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	Int(i32),
-	/// **(MP4 ONLY)** Any 64 bit signed integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	Int64(i64),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** The content of a synchronized text frame, see [`SynchronizedText`](crate::id3::SynchronizedText)
-	SynchronizedText(Vec<(u32, String)>),
 }
 
 #[cfg(feature = "id3v2")]

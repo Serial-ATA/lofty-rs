@@ -4,7 +4,7 @@ mod header;
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::frame::content::{parse_content, FrameContent};
 use crate::logic::id3::v2::Id3v2Version;
-use crate::types::tag::TagItemFlags;
+use crate::types::item::TagItemFlags;
 use header::{parse_header, parse_v2_header};
 
 use std::io::Read;

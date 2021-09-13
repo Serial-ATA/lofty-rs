@@ -2,9 +2,9 @@ use super::verify_signature;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSHEAD;
 use crate::picture::Picture;
-use crate::types::item::ItemKey;
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::properties::FileProperties;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 

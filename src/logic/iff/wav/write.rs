@@ -1,6 +1,7 @@
 use super::read::verify_wav;
 use crate::error::{LoftyError, Result};
-use crate::types::tag::{ItemValue, Tag, TagType};
+use crate::types::item::ItemValue;
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};

@@ -2,8 +2,8 @@ use super::{page_from_packet, verify_signature};
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSTAGS;
 use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
-use crate::types::item::ItemKey;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::item::{ItemKey, ItemValue, TagItem};
+use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryFrom;
 use std::fs::File;

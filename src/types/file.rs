@@ -1,6 +1,6 @@
-use super::item::ItemKey;
+use super::item::{ItemKey, ItemValue, TagItem};
 use super::properties::FileProperties;
-use super::tag::{ItemValue, Tag, TagItem, TagType};
+use super::tag::{Tag, TagType};
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::ApeFile;
 use crate::logic::iff::aiff::AiffFile;

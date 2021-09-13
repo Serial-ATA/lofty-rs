@@ -3,9 +3,9 @@ use crate::logic::id3::v2::util::text_utils::utf16_decode;
 use crate::logic::id3::v2::TextEncoding;
 use crate::logic::mp4::atom::Atom;
 use crate::logic::mp4::read::skip_unneeded;
-use crate::types::item::ItemKey;
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};

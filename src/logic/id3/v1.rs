@@ -1,7 +1,7 @@
 use super::constants::GENRES;
 use crate::error::Result;
-use crate::types::item::ItemKey;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::item::{ItemKey, ItemValue, TagItem};
+use crate::types::tag::{Tag, TagType};
 
 use byteorder::WriteBytesExt;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

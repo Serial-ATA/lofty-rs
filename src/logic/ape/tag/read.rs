@@ -1,7 +1,7 @@
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::constants::INVALID_KEYS;
-use crate::types::item::ItemKey;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagItemFlags, TagType};
+use crate::types::item::{ItemKey, ItemValue, TagItem, TagItemFlags};
+use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;

@@ -1,7 +1,7 @@
 use super::read::verify_aiff;
 use crate::error::{LoftyError, Result};
-use crate::types::item::ItemKey;
-use crate::types::tag::{ItemValue, Tag, TagType};
+use crate::types::item::{ItemKey, ItemValue};
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};

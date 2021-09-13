@@ -1,9 +1,9 @@
 use super::AiffFile;
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::item::ItemKey;
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::properties::FileProperties;
-use crate::types::tag::{ItemValue, Tag, TagItem, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
