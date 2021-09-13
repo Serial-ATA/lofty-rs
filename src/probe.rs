@@ -65,7 +65,16 @@ impl Probe {
 		R: Read + Seek,
 	{
 		match FileType::try_from_sig(reader) {
-			Ok(f_type) => _read_from(reader, f_type),
+			Ok(f_type) => Ok(match f_type {
+				FileType::AIFF => AiffFile::read_from(reader)?.into(),
+				FileType::APE => ApeFile::read_from(reader)?.into(),
+				FileType::FLAC => FlacFile::read_from(reader)?.into(),
+				FileType::MP3 => MpegFile::read_from(reader)?.into(),
+				FileType::Opus => OpusFile::read_from(reader)?.into(),
+				FileType::Vorbis => VorbisFile::read_from(reader)?.into(),
+				FileType::WAV => WavFile::read_from(reader)?.into(),
+				FileType::MP4 => Mp4File::read_from(reader)?.into(),
+			}),
 			Err(_) => Err(LoftyError::UnknownFormat),
 		}
 	}
@@ -80,20 +89,4 @@ impl Probe {
 		let mut cursor = Cursor::new(std::fs::read(&path)?);
 		self.read_from(&mut cursor)
 	}
-}
-
-fn _read_from<R>(reader: &mut R, file_type: FileType) -> Result<TaggedFile>
-where
-	R: Read + Seek,
-{
-	Ok(match file_type {
-		FileType::AIFF => AiffFile::read_from(reader)?.into(),
-		FileType::APE => ApeFile::read_from(reader)?.into(),
-		FileType::FLAC => FlacFile::read_from(reader)?.into(),
-		FileType::MP3 => MpegFile::read_from(reader)?.into(),
-		FileType::Opus => OpusFile::read_from(reader)?.into(),
-		FileType::Vorbis => VorbisFile::read_from(reader)?.into(),
-		FileType::WAV => WavFile::read_from(reader)?.into(),
-		FileType::MP4 => Mp4File::read_from(reader)?.into(),
-	})
 }
