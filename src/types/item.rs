@@ -573,6 +573,13 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: &TagType) -> Option<()> {
-		self.item_key.map_key(tag_type).is_some().then(|| ())
+		#[cfg(any(feature = "id3v2", feature = "ape"))]
+		{
+			(!self.flags().read_only && self.item_key.map_key(tag_type).is_some()).then(|| ())
+		}
+		#[cfg(not(all(feature = "id3v2", feature = "ape")))]
+		{
+			self.item_key.map_key(tag_type).is_some().then(|| ())
+		}
 	}
 }
