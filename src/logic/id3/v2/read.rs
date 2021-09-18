@@ -1,9 +1,9 @@
+use super::frame::read::Frame;
 use crate::error::Result;
 use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v2::frame::content::FrameContent;
-use crate::logic::id3::v2::frame::Frame;
 #[cfg(feature = "id3v2_restrictions")]
-use crate::logic::id3::v2::restrictions::TagRestrictions;
+use crate::logic::id3::v2::items::restrictions::TagRestrictions;
 use crate::logic::id3::v2::Id3v2Version;
 use crate::types::tag::{Tag, TagFlags};
 use crate::{LoftyError, TagType};

@@ -1,12 +1,12 @@
-use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::util::text_utils::{
-	decode_text, encode_text, read_to_terminator, utf16_decode,
-};
-use crate::logic::id3::v2::TextEncoding;
-
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::error::{LoftyError, Result};
+use crate::logic::id3::v2::util::text_utils;
+use crate::logic::id3::v2::util::text_utils::{
+	decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding,
+};
 
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 /// The unit used for [`SynchronizedText`] timestamps
@@ -104,7 +104,7 @@ impl SynchronizedText {
 		let content_type = SyncTextContentType::from_u8(data[5]).ok_or(LoftyError::BadSyncText)?;
 
 		let mut cursor = Cursor::new(&data[6..]);
-		let description = super::text_utils::decode_text(&mut cursor, encoding, true)
+		let description = text_utils::decode_text(&mut cursor, encoding, true)
 			.map_err(|_| LoftyError::BadSyncText)?;
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;

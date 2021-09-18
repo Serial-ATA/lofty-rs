@@ -1,6 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::text_utils::utf16_decode;
-use crate::logic::id3::v2::TextEncoding;
+use crate::logic::id3::v2::util::text_utils::TextEncoding;
 use crate::logic::mp4::atom::Atom;
 use crate::logic::mp4::read::skip_unneeded;
 use crate::types::item::{ItemKey, ItemValue, TagItem};

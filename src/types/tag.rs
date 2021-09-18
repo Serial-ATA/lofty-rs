@@ -2,7 +2,7 @@ use super::item::{ItemKey, ItemValue, TagItem};
 use super::picture::{Picture, PictureType};
 use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v2_restrictions")]
-use crate::logic::id3::v2::restrictions::TagRestrictions;
+use crate::logic::id3::v2::items::restrictions::TagRestrictions;
 use crate::probe::Probe;
 
 use std::fs::File;

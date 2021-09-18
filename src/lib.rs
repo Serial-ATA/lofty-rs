@@ -192,19 +192,18 @@ pub mod id3 {
 	//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::Id3v2Frame).
 	//!
 	//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
-	#[cfg(feature = "id3v2_restrictions")]
-	pub use crate::logic::id3::v2::restrictions::*;
-	pub use crate::logic::id3::v2::util::encapsulated_object::{
+	pub use crate::logic::id3::v2::frame::{Id3v2Frame, LanguageSpecificFrame};
+	pub use crate::logic::id3::v2::items::encapsulated_object::{
 		GEOBInformation, GeneralEncapsulatedObject,
 	};
-	pub use crate::logic::id3::v2::util::sync_text::{
+	#[cfg(feature = "id3v2_restrictions")]
+	pub use crate::logic::id3::v2::items::restrictions::*;
+	pub use crate::logic::id3::v2::items::sync_text::{
 		SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
 	};
+	pub use crate::logic::id3::v2::util::text_utils::TextEncoding;
 	pub use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-	pub use crate::logic::id3::v2::Id3v2Frame;
 	pub use crate::logic::id3::v2::Id3v2Version;
-	pub use crate::logic::id3::v2::LanguageSpecificFrame;
-	pub use crate::logic::id3::v2::TextEncoding;
 }
 
 /// Various items related to [`Picture`](crate::picture::Picture)s

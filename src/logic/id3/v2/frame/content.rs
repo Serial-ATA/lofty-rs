@@ -1,6 +1,7 @@
+use super::{Id3v2Frame, LanguageSpecificFrame};
 use crate::error::Result;
-use crate::logic::id3::v2::util::text_utils::decode_text;
-use crate::logic::id3::v2::{Id3v2Frame, Id3v2Version, LanguageSpecificFrame, TextEncoding};
+use crate::logic::id3::v2::util::text_utils::{decode_text, TextEncoding};
+use crate::logic::id3::v2::Id3v2Version;
 use crate::types::picture::Picture;
 use crate::{ItemKey, ItemValue, LoftyError, TagItem, TagType};
 

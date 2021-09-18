@@ -1,6 +1,5 @@
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::util::text_utils::{decode_text, encode_text};
-use crate::logic::id3::v2::TextEncoding;
+use crate::logic::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
 
 use std::io::{Cursor, Read};
 

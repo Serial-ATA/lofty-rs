@@ -1,7 +1,7 @@
 use crate::TagType;
 
 #[cfg(feature = "id3v2")]
-use crate::logic::id3::v2::Id3v2Frame;
+use crate::logic::id3::v2::frame::Id3v2Frame;
 
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {

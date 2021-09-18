@@ -1,4 +1,5 @@
-use crate::logic::id3::v2::{Id3v2Version, TextEncoding};
+use crate::logic::id3::v2::util::text_utils::TextEncoding;
+use crate::logic::id3::v2::Id3v2Version;
 use crate::{LoftyError, Result};
 
 use std::borrow::Cow;
