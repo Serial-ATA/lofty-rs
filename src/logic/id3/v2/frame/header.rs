@@ -50,7 +50,7 @@ where
 	let id_str = std::str::from_utf8(&frame_header[..4]).map_err(|_| LoftyError::BadFrameID)?;
 
 	let (id, size) = if synchsafe {
-		let size = crate::logic::id3::decode_u32(u32::from_be_bytes([
+		let size = crate::logic::id3::unsynch_u32(u32::from_be_bytes([
 			frame_header[4],
 			frame_header[5],
 			frame_header[6],

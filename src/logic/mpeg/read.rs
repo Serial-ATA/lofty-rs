@@ -1,6 +1,6 @@
 use super::header::{Header, XingHeader};
 use crate::files::MpegFile;
-use crate::logic::id3::decode_u32;
+use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v2::read::parse_id3v2;
 use crate::{FileProperties, LoftyError, Result};
 
@@ -92,7 +92,7 @@ where
 				let mut remaining_header = [0; 6];
 				data.read_exact(&mut remaining_header)?;
 
-				let size = (decode_u32(BigEndian::read_u32(&remaining_header[2..])) + 10) as usize;
+				let size = (unsynch_u32(BigEndian::read_u32(&remaining_header[2..])) + 10) as usize;
 				data.seek(SeekFrom::Current(-10))?;
 
 				let mut id3v2_read = vec![0; size];

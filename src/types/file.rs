@@ -315,7 +315,7 @@ impl FileType {
 	where
 		R: Read + Seek,
 	{
-		use crate::logic::{id3::decode_u32, mpeg::header::verify_frame_sync};
+		use crate::logic::{id3::unsynch_u32, mpeg::header::verify_frame_sync};
 
 		if data.seek(SeekFrom::End(0))? == 0 {
 			return Err(LoftyError::EmptyFile);
@@ -329,7 +329,7 @@ impl FileType {
 		let ret = match sig.first().unwrap() {
 			77 if sig.starts_with(b"MAC") => Ok(Self::APE),
 			73 if sig.starts_with(b"ID3") => {
-				let size = decode_u32(u32::from_be_bytes(
+				let size = unsynch_u32(u32::from_be_bytes(
 					sig[6..10]
 						.try_into()
 						.map_err(|_| LoftyError::UnknownFormat)?,

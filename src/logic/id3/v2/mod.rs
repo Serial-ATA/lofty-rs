@@ -1,4 +1,4 @@
-use crate::logic::id3::decode_u32;
+use crate::logic::id3::unsynch_u32;
 use crate::Result;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -103,7 +103,7 @@ pub enum Id3v2Frame {
 	EncapsulatedObject,
 	/// When an ID3v2.2 key couldn't be upgraded
 	///
-	/// This **will not** be written. It is up to the user to upgrade and store the key as [`ItemKey::Unknown`](crate::ItemKey::Unknown).
+	/// This **will not** be written. It is up to the user to upgrade and store the key as another variant.
 	Outdated(String),
 }
 
@@ -117,7 +117,7 @@ where
 	data.read_exact(&mut id3_header)?;
 
 	if &id3_header[..3] == b"ID3" {
-		let size = decode_u32(BigEndian::read_u32(&id3_header[6..]));
+		let size = unsynch_u32(BigEndian::read_u32(&id3_header[6..]));
 
 		if read {
 			data.seek(SeekFrom::Current(-10))?;

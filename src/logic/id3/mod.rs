@@ -12,8 +12,20 @@ use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
 
 // https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
-pub(crate) fn decode_u32(n: u32) -> u32 {
+pub(crate) fn unsynch_u32(n: u32) -> u32 {
 	n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
+}
+
+// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
+pub(crate) fn synch_u32(n: u32) -> Result<u32> {
+	if n > 0x1000_0000 {
+		return Err(LoftyError::TooMuchData);
+	}
+
+	let mut x: u32 = n & 0x7F | (n & 0xFFFF_FF80) << 1;
+	x = x & 0x7FFF | (x & 0xFFFF_8000) << 1;
+	x = x & 0x7F_FFFF | (x & 0xFF80_0000) << 1;
+	Ok(x)
 }
 
 pub(crate) fn find_lyrics3v2<R>(data: &mut R) -> Result<(bool, u32)>
