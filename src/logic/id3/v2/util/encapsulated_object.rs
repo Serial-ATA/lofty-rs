@@ -1,5 +1,5 @@
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::util::text_utils::decode_text;
+use crate::logic::id3::v2::util::text_utils::{decode_text, encode_text};
 use crate::logic::id3::v2::TextEncoding;
 
 use std::io::{Cursor, Read};
@@ -14,7 +14,7 @@ pub struct GEOBInformation {
 	/// The file's name
 	pub file_name: Option<String>,
 	/// A unique content descriptor
-	pub descriptor: String,
+	pub descriptor: Option<String>,
 }
 
 /// Allows for encapsulation of any file type inside an ID3v2 tag
@@ -45,7 +45,7 @@ impl GeneralEncapsulatedObject {
 
 		let mime_type = decode_text(&mut cursor, TextEncoding::Latin1, true)?;
 		let file_name = decode_text(&mut cursor, encoding, true)?;
-		let descriptor = decode_text(&mut cursor, encoding, true)?.unwrap_or_else(String::new);
+		let descriptor = decode_text(&mut cursor, encoding, true)?;
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
@@ -59,5 +59,38 @@ impl GeneralEncapsulatedObject {
 			},
 			data,
 		})
+	}
+
+	/// Convert a [`GeneralEncapsulatedObject`] into an ID3v2 GEOB frame byte Vec
+	///
+	/// NOTE: This does not include a frame header
+	pub fn as_bytes(&self) -> Vec<u8> {
+		let mut bytes = Vec::new();
+
+		let encoding = self.information.encoding;
+
+		bytes.extend([self.information.encoding as u8].iter());
+
+		if let Some(ref mime_type) = self.information.mime_type {
+			bytes.extend(mime_type.as_bytes())
+		} else {
+			bytes.extend([0].iter());
+		}
+
+		if let Some(ref file_name) = self.information.file_name {
+			bytes.extend(&*encode_text(file_name, encoding, true))
+		} else {
+			bytes.extend([0].iter());
+		}
+
+		if let Some(ref descriptor) = self.information.descriptor {
+			bytes.extend(&*encode_text(descriptor, encoding, true))
+		} else {
+			bytes.extend([0].iter());
+		}
+
+		bytes.extend(&self.data);
+
+		bytes
 	}
 }

@@ -174,7 +174,7 @@ impl SynchronizedText {
 		})
 	}
 
-	/// Convert a [`SynchronizedText`] to a ID3v2 SYLT byte Vec
+	/// Convert a [`SynchronizedText`] to an ID3v2 SYLT frame byte Vec
 	///
 	/// NOTE: This does not include the frame header
 	///
@@ -187,16 +187,16 @@ impl SynchronizedText {
 
 		let mut data = vec![information.encoding as u8];
 
-		if !information.language.len() == 3 {
+		if information.language.len() == 3 {
 			data.write_all(information.language.as_bytes())?;
 			data.write_u8(information.timestamp_format as u8)?;
 			data.write_u8(information.content_type as u8)?;
 
 			if let Some(description) = &information.description {
 				data.write_all(&*encode_text(description, information.encoding, true))?;
+			} else {
+				data.write_u8(0)?;
 			}
-
-			data.write_u8(0)?;
 
 			for (time, ref text) in &self.content {
 				data.write_all(&*encode_text(text, information.encoding, true))?;

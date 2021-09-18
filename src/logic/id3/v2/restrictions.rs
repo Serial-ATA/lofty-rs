@@ -78,3 +78,106 @@ pub struct TagRestrictions {
 	/// Restrictions on all image sizes. See [`ImageSizeRestrictions`]
 	pub image_size: ImageSizeRestrictions,
 }
+
+impl TagRestrictions {
+	/// Read a [`TagRestrictions`] from a byte
+	///
+	/// NOTE: See https://id3.org/id3v2.4.0-structure section 3.2, item d
+	pub fn parse(byte: u8) -> Self {
+		let mut restrictions = TagRestrictions::default();
+
+		let restriction_flags = byte;
+
+		// xx000000
+		match (
+			restriction_flags & 0x80 == 0x80,
+			restriction_flags & 0x40 == 0x40,
+		) {
+			(false, false) => {}, // default
+			(false, true) => restrictions.size = TagSizeRestrictions::S_64F_128K,
+			(true, false) => restrictions.size = TagSizeRestrictions::S_32F_40K,
+			(true, true) => restrictions.size = TagSizeRestrictions::S_32F_4K,
+		}
+
+		// 00x00000
+		if restriction_flags & 0x20 == 0x20 {
+			restrictions.text_encoding = true
+		}
+
+		// 000xx000
+		match (
+			restriction_flags & 0x10 == 0x10,
+			restriction_flags & 0x08 == 0x08,
+		) {
+			(false, false) => {}, // default
+			(false, true) => restrictions.text_fields_size = TextSizeRestrictions::C_1024,
+			(true, false) => restrictions.text_fields_size = TextSizeRestrictions::C_128,
+			(true, true) => restrictions.text_fields_size = TextSizeRestrictions::C_30,
+		}
+
+		// 00000x00
+		if restriction_flags & 0x04 == 0x04 {
+			restrictions.image_encoding = true
+		}
+
+		// 000000xx
+		match (
+			restriction_flags & 0x02 == 0x02,
+			restriction_flags & 0x01 == 0x01,
+		) {
+			(false, false) => {}, // default
+			(false, true) => restrictions.image_size = ImageSizeRestrictions::P_256,
+			(true, false) => restrictions.image_size = ImageSizeRestrictions::P_64,
+			(true, true) => restrictions.image_size = ImageSizeRestrictions::P_64_64,
+		}
+
+		restrictions
+	}
+
+	/// Convert a [`TagRestrictions`] into a byte Vec
+	///
+	/// NOTE: This does not include a frame header
+	pub fn as_bytes(&self) -> u8 {
+		let mut byte = 0;
+
+		match self.size {
+			TagSizeRestrictions::S_128F_1M => {},
+			TagSizeRestrictions::S_64F_128K => byte |= 0x40,
+			TagSizeRestrictions::S_32F_40K => byte |= 0x80,
+			TagSizeRestrictions::S_32F_4K => {
+				byte |= 0x80;
+				byte |= 0x40;
+			},
+		}
+
+		if self.text_encoding {
+			byte |= 0x20
+		}
+
+		match self.text_fields_size {
+			TextSizeRestrictions::None => {},
+			TextSizeRestrictions::C_1024 => byte |= 0x08,
+			TextSizeRestrictions::C_128 => byte |= 0x10,
+			TextSizeRestrictions::C_30 => {
+				byte |= 0x10;
+				byte |= 0x08;
+			},
+		}
+
+		if self.image_encoding {
+			byte |= 0x04
+		}
+
+		match self.image_size {
+			ImageSizeRestrictions::None => {},
+			ImageSizeRestrictions::P_256 => byte |= 0x01,
+			ImageSizeRestrictions::P_64 => byte |= 0x02,
+			ImageSizeRestrictions::P_64_64 => {
+				byte |= 0x02;
+				byte |= 0x01;
+			},
+		}
+
+		byte
+	}
+}
