@@ -6,7 +6,6 @@ use crate::types::item::TagItemFlags;
 
 use std::io::Read;
 
-use crate::TagItem;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) struct Frame {

@@ -115,7 +115,7 @@ where
 				let mut id3v1_read = [0; 128];
 				data.read_exact(&mut id3v1_read)?;
 
-				mpeg_file.id3v1 = Some(crate::logic::id3::v1::parse_id3v1(id3v1_read));
+				mpeg_file.id3v1 = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
 				continue;
 			},
 			[b'A', b'P', b'E', b'T'] => {

@@ -43,7 +43,7 @@ macro_rules! item_keys {
 			/// Map a format specific key to an ItemKey
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
-			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::upgrade_v2) and [`upgrade_v3`](crate::id3::upgrade_v3)
+			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
 			pub fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
 				match tag_type {
 					$(
@@ -60,7 +60,7 @@ macro_rules! item_keys {
 
 			/// Maps the variant to a format-specific key
 			///
-			/// NOTE: Since all ID3v2 tags are upgraded to [`Id3v2Version::V4`](crate::id3::Id3v2Version), the
+			/// NOTE: Since all ID3v2 tags are upgraded to [`Id3v2Version::V4`](crate::id3::v2::Id3v2Version), the
 			/// version provided does not matter. They cannot be downgraded.
 			pub fn map_key(&self, tag_type: &TagType) -> Option<&str> {
 				match (tag_type, self) {
@@ -436,8 +436,8 @@ pub enum ItemValue {
 	Locator(String),
 	/// **(APE/ID3v2/MP4 ONLY)** Binary information
 	///
-	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::Id3v2Frame::EncapsulatedObject),
-	/// [`Id3v2Frame::SyncText`](crate::id3::Id3v2Frame::SyncText), and any unknown frame.
+	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::v2::Id3v2Frame::EncapsulatedObject),
+	/// [`Id3v2Frame::SyncText`](crate::id3::v2::Id3v2Frame::SyncText), and any unknown frame.
 	///
 	/// For APEv2 and MP4, the only use is for unknown items.
 	Binary(Vec<u8>),

@@ -105,7 +105,7 @@
 //! ## Utilities
 //! * `id3v2_restrictions` - Parses ID3v2 extended headers and exposes flags for fine grained control
 //!
-//! # Notes on ID3v2
+//! # Notes on ID3
 //!
 //! See [`id3`](crate::id3) for important warnings and notes on reading tags.
 
@@ -158,52 +158,85 @@ pub mod files {
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
 /// ID3v1/v2 specific items
 pub mod id3 {
-	//! # ID3v2 notes and warnings
-	//!
-	//! ID3v2 does things differently than other formats.
-	//!
-	//! ## Unknown Keys
-	//!
-	//! ID3v2 **does not** support [`ItemKey::Unknown`](crate::ItemKey::Unknown) and they will be ignored.
-	//! Instead, [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) with an [`Id3v2Frame`](crate::id3::Id3v2Frame) variant must be used.
-	//!
-	//! ## Frame ID mappings
-	//!
-	//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger
-	//! collection (such as `TIPL` and `TMCL`).
-	//!
-	//! For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
-	//!
-	//! In this case, the caller is expected to build these lists. If these [`ItemKey`](crate::ItemKey)s are inserted
-	//! using [`Tag::insert_item_unchecked`], they will simply be ignored.
-	//!
-	//! ## Special frames
-	//!
-	//! ID3v2 has multiple frames that have no equivalent in other formats:
-	//!
-	//! * COMM - Comments (Unlike comments in other formats)
-	//! * USLT - Unsynchronized text (Unlike lyrics/text in other formats)
-	//! * TXXX - User defined text
-	//! * WXXX - User defined URL
-	//! * SYLT - Synchronized text
-	//! * GEOB - Encapsulated object (file)
-	//!
-	//! These frames all require different amounts of information, so they cannot be mapped to a traditional [`ItemKey`](crate::ItemKey) variant.
-	//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::Id3v2Frame).
-	//!
-	//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
-	pub use crate::logic::id3::v2::frame::{Id3v2Frame, LanguageSpecificFrame};
-	pub use crate::logic::id3::v2::items::encapsulated_object::{
-		GEOBInformation, GeneralEncapsulatedObject,
-	};
-	#[cfg(feature = "id3v2_restrictions")]
-	pub use crate::logic::id3::v2::items::restrictions::*;
-	pub use crate::logic::id3::v2::items::sync_text::{
-		SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
-	};
-	pub use crate::logic::id3::v2::util::text_utils::TextEncoding;
-	pub use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-	pub use crate::logic::id3::v2::Id3v2Version;
+	//! ID3 does things differently than other tags, making working with them a little more effort than other formats.
+	//! Check the other modules for important notes and/or warnings.
+
+	#[cfg(feature = "id3v2")]
+	pub mod v2 {
+		//! ID3v2 items and utilities
+		//!
+		//! # ID3v2 notes and warnings
+		//!
+		//! ID3v2 does things differently than other formats.
+		//!
+		//! ## Unknown Keys
+		//!
+		//! ID3v2 **does not** support [`ItemKey::Unknown`](crate::ItemKey::Unknown) and they will be ignored.
+		//! Instead, [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) with an [`Id3v2Frame`](crate::id3::v2::Id3v2Frame) variant must be used.
+		//!
+		//! ## Frame ID mappings
+		//!
+		//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger
+		//! collection (such as `TIPL` and `TMCL`).
+		//!
+		//! For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
+		//!
+		//! In this case, the caller is expected to build these lists. If these [`ItemKey`](crate::ItemKey)s are inserted
+		//! using [`Tag::insert_item_unchecked`](crate::Tag::insert_item_unchecked), they will simply be ignored.
+		//!
+		//! ## Special frames
+		//!
+		//! ID3v2 has multiple frames that have no equivalent in other formats:
+		//!
+		//! * COMM - Comments (Unlike comments in other formats)
+		//! * USLT - Unsynchronized text (Unlike lyrics/text in other formats)
+		//! * TXXX - User defined text
+		//! * WXXX - User defined URL
+		//! * SYLT - Synchronized text
+		//! * GEOB - Encapsulated object (file)
+		//!
+		//! These frames all require different amounts of information, so they cannot be mapped to a traditional [`ItemKey`](crate::ItemKey) variant.
+		//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::v2::Id3v2Frame).
+		//!
+		//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
+
+		pub use {
+			crate::logic::id3::v2::frame::{Id3v2Frame, LanguageSpecificFrame},
+			crate::logic::id3::v2::items::encapsulated_object::{
+				GEOBInformation, GeneralEncapsulatedObject,
+			},
+			crate::logic::id3::v2::items::sync_text::{
+				SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
+			},
+			crate::logic::id3::v2::util::text_utils::TextEncoding,
+			crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3},
+			crate::logic::id3::v2::Id3v2Version,
+		};
+
+		#[cfg(feature = "id3v2_restrictions")]
+		pub use crate::logic::id3::v2::items::restrictions::*;
+	}
+
+	#[cfg(feature = "id3v1")]
+	pub mod v1 {
+		//! ID3v1 items
+		//!
+		//! # ID3v1 notes
+		//!
+		//! ## Genres
+		//!
+		//! ID3v1 stores the genre in a single byte ranging from 0 to 192.
+		//! The number can be stored in any of the following [`ItemValue`](crate::ItemValue) variants: `Text, UInt, UInt64, Int, Int64`, and will be discarded if it is unable to parse or is too big.
+		//! All possible genres have been stored in the [`GENRES`](crate::id3::v1::GENRES) constant.
+		//!
+		//! ## Track Numbers
+		//!
+		//! ID3v1 stores the track number in a non-zero byte.
+		//! A track number of 0 will be treated as an empty field.
+		//! Additionally, there is no track total field.
+
+		pub use crate::logic::id3::v1::constants::GENRES;
+	}
 }
 
 /// Various items related to [`Picture`](crate::picture::Picture)s

@@ -51,11 +51,11 @@ pub enum Id3v2Frame {
 	UserURL(TextEncoding, String),
 	/// Represents a "SYLT" frame
 	///
-	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`SynchronizedText::parse`](crate::id3::SynchronizedText::parse)
+	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse)
 	SyncText,
 	/// Represents a "GEOB" frame
 	///
-	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`GeneralEncapsulatedObject::parse`](crate::id3::GeneralEncapsulatedObject::parse)
+	/// Nothing is required here, the entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary). For parsing see [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse)
 	EncapsulatedObject,
 	/// When an ID3v2.2 key couldn't be upgraded
 	///

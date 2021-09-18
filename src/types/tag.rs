@@ -207,7 +207,7 @@ impl Tag {
 	/// # Warning
 	///
 	/// When dealing with ID3v2, it may be necessary to use [`insert_item_unchecked`](Tag::insert_item_unchecked).
-	/// See [`id3`](crate::id3) for an explanation.
+	/// See [`id3`](crate::id3::v2) for an explanation.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
 		if item.re_map(&self.tag_type).is_some() {
 			self.insert_item_unchecked(item);

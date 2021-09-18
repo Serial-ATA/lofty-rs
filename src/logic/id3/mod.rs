@@ -1,5 +1,3 @@
-mod constants;
-
 #[cfg(feature = "id3v1")]
 pub(crate) mod v1;
 
