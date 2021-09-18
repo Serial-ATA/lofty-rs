@@ -508,7 +508,7 @@ pub struct TagItemFlags {
 	/// The data length indicator is the size of the frame if the flags were all zeroed out.
 	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
 	///
-	/// In addition to setting this flag, the final size must be added.
+	/// If using encryption, the final size must be added. It will be ignored if using compression.
 	pub data_length_indicator: (bool, u32),
 }
 
@@ -577,7 +577,7 @@ impl TagItem {
 		{
 			(!self.flags().read_only && self.item_key.map_key(tag_type).is_some()).then(|| ())
 		}
-		#[cfg(not(all(feature = "id3v2", feature = "ape")))]
+		#[cfg(not(any(feature = "id3v2", feature = "ape")))]
 		{
 			self.item_key.map_key(tag_type).is_some().then(|| ())
 		}

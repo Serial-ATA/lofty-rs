@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::logic::id3::decode_u32;
+use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v2::frame::content::FrameContent;
 use crate::logic::id3::v2::frame::Frame;
 #[cfg(feature = "id3v2_restrictions")]
@@ -40,8 +40,6 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 
 	let mut flags_parsed = TagFlags {
 		unsynchronisation: flags & 0x80 == 0x80,
-		extended_header: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
-			&& flags & 0x40 == 0x40,
 		experimental: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x20 == 0x20,
 		footer: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
@@ -51,8 +49,11 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 		restrictions: (false, TagRestrictions::default()), // Retrieved later if applicable
 	};
 
-	if flags_parsed.extended_header {
-		let extended_size = decode_u32(bytes.read_u32::<BigEndian>()?);
+	let extended_header =
+		(version == Id3v2Version::V4 || version == Id3v2Version::V3) && flags & 0x40 == 0x40;
+
+	if extended_header {
+		let extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
 			return Err(LoftyError::Id3v2(

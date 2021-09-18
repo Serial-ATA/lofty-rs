@@ -47,22 +47,16 @@ macro_rules! common_items {
 pub struct TagFlags {
 	/// Whether or not all frames are unsynchronised. See [`TagItemFlags::unsynchronisation`](crate::TagItemFlags::unsynchronisation)
 	pub unsynchronisation: bool,
-	/// Whether or not the header is followed by an extended header
-	pub extended_header: bool,
 	/// Indicates if the tag is in an experimental stage
 	pub experimental: bool,
 	/// Indicates that the tag includes a footer
 	pub footer: bool,
 	/// Whether or not to include a CRC-32 in the extended header
 	///
-	/// NOTE: This **requires** `extended_header` to be set. Otherwise, it will be ignored.
-	///
 	/// This is calculated if the tag is written
 	pub crc: bool,
 	#[cfg(feature = "id3v2_restrictions")]
-	/// Restrictions on the tag
-	///
-	/// NOTE: This **requires** `extended_header` to be set. Otherwise, it will be ignored.
+	/// Restrictions on the tag, written in the extended header
 	///
 	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]
 	pub restrictions: (bool, TagRestrictions),

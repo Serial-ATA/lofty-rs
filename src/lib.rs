@@ -162,6 +162,11 @@ pub mod id3 {
 	//!
 	//! ID3v2 does things differently than other formats.
 	//!
+	//! ## Unknown Keys
+	//!
+	//! ID3v2 **does not** support [`ItemKey::Unknown`](crate::ItemKey::Unknown) and they will be ignored.
+	//! Instead, [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) with an [`Id3v2Frame`](crate::id3::Id3v2Frame) variant must be used.
+	//!
 	//! ## Frame ID mappings
 	//!
 	//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger
