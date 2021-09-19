@@ -35,6 +35,7 @@ gen_upgrades!(
 		"IPL" => "TIPL",
 		"MCI" => "MCDI",
 		"MLL" => "MLLT",
+		"PIC" => "APIC",
 		"POP" => "POPM",
 		"REV" => "RVRB",
 		"SLT" => "SYLT",

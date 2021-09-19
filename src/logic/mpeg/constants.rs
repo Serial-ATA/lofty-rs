@@ -29,13 +29,13 @@ pub const BITRATES: [[[u32; 16]; 3]; 2] = [
 	],
 ];
 
-pub const SAMPLE_RATES: [[u32; 4]; 3] = [
-	[44100, 48000, 32000, 0], // Version 1
-	[22050, 24000, 16000, 0], // Version 2
-	[11025, 12000, 8000, 0],  // Version 2.5
+pub const SAMPLE_RATES: [[u32; 3]; 3] = [
+	[44100, 48000, 32000], // Version 1
+	[22050, 24000, 16000], // Version 2
+	[11025, 12000, 8000],  // Version 2.5
 ];
 
-pub const SAMPLES_PER_FRAME: [[u16; 2]; 3] = [
+pub const SAMPLES: [[u16; 2]; 3] = [
 	// Order:
 	// [Version 1, Version 2/2.5]
 	// Layer 1

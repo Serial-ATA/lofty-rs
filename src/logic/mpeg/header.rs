@@ -1,14 +1,12 @@
-use super::constants::{
-	BITRATES, PADDING_SIZES, SAMPLES_PER_FRAME, SAMPLE_RATES, SIDE_INFORMATION_SIZES,
-};
-use crate::{LoftyError, Result};
+use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
+use crate::error::{LoftyError, Result};
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn verify_frame_sync(byte_1: u8, byte_2: u8) -> bool {
-	byte_1 == 0xFF && byte_2 != 0xFF && (byte_2 & 0xE0) == 0xE0
+pub(crate) fn verify_frame_sync(frame_sync: u16) -> bool {
+	(frame_sync & 0xffe0) == 0xffe0
 }
 
 #[derive(PartialEq, Copy, Clone)]
@@ -39,7 +37,7 @@ pub(crate) struct Header {
 	pub channels: u8,
 	pub len: u32,
 	pub data_start: u32,
-	pub samples_per_frame: u16,
+	pub samples: u16,
 	pub bitrate: u32,
 }
 
@@ -52,21 +50,37 @@ impl Header {
 			_ => return Err(LoftyError::Mp3("Frame header has an invalid version")),
 		};
 
-		let layer = match (header >> 17) & 0b11 {
+		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
+
+		let layer = match (header >> 17) & 3 {
 			1 => Layer::Layer3,
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
 			_ => return Err(LoftyError::Mp3("Frame header uses a reserved layer")),
 		};
 
-		let bitrate = (header >> 12) & 0b1111;
-		let sample_rate = (header >> 10) & 0b11;
+		let layer_index = (layer as usize).saturating_sub(1);
 
-		if sample_rate == 0 {
-			return Err(LoftyError::Mp3("Frame header has a sample rate of 0"));
+		let bitrate_index = (header >> 12) & 0xf;
+		let bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
+
+		// Sample rate index
+		let mut sample_rate = (header >> 10) & 3;
+
+		match sample_rate {
+			// This is invalid, but it doesn't seem worth it to error here
+			3 => sample_rate = 0,
+			_ => sample_rate = SAMPLE_RATES[version as usize][sample_rate as usize],
 		}
 
-		let mode = match (header >> 6) & 0b11 {
+		let has_padding = ((header >> 9) & 1) != 0;
+		let mut padding = 0;
+
+		if has_padding {
+			padding = u32::from(PADDING_SIZES[layer_index]);
+		}
+
+		let mode = match (header >> 6) & 3 {
 			0 => Mode::Stereo,
 			1 => Mode::JointStereo,
 			2 => Mode::DualChannel,
@@ -74,23 +88,13 @@ impl Header {
 			_ => return Err(LoftyError::Mp3("Unreachable error")),
 		};
 
-		let layer_index = (layer as usize).saturating_sub(1);
-		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
-		let has_padding = ((header >> 9) & 1) != 0;
+		let data_start = SIDE_INFORMATION_SIZES[version_index][mode as usize] + 4;
+		let samples = SAMPLES[layer_index][version_index];
 
-		let mut data_start = SIDE_INFORMATION_SIZES[version_index][mode as usize] + 4;
-
-		let bitrate = BITRATES[version_index][layer_index][bitrate as usize];
-		let sample_rate = SAMPLE_RATES[version as usize][sample_rate as usize];
-		let samples_per_frame = SAMPLES_PER_FRAME[layer_index][version_index];
-
-		let mut len = (u32::from(samples_per_frame) * (bitrate * 125)) / sample_rate;
-
-		if has_padding {
-			let padding = u32::from(PADDING_SIZES[layer_index]);
-			len += padding;
-			data_start += padding
-		}
+		let len = match layer {
+			Layer::Layer1 => (bitrate * 12000 / sample_rate + padding) * 4,
+			Layer::Layer2 | Layer::Layer3 => bitrate * 144_000 / sample_rate + padding,
+		};
 
 		let channels = if mode == Mode::SingleChannel { 1 } else { 2 };
 
@@ -99,7 +103,7 @@ impl Header {
 			channels,
 			len,
 			data_start,
-			samples_per_frame,
+			samples,
 			bitrate,
 		})
 	}

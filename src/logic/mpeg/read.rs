@@ -1,8 +1,9 @@
-use super::header::{Header, XingHeader};
-use crate::files::MpegFile;
+use super::header::{verify_frame_sync, Header, XingHeader};
+use super::MpegFile;
+use crate::error::{LoftyError, Result};
 use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::{FileProperties, LoftyError, Result};
+use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -16,9 +17,9 @@ fn read_properties(
 ) -> FileProperties {
 	let (duration, bitrate) = {
 		if let Some(xing_header) = xing_header {
-			if first_frame.0.samples_per_frame > 0 && first_frame.0.sample_rate > 0 {
+			if first_frame.0.samples > 0 && first_frame.0.sample_rate > 0 {
 				let frame_time =
-					u32::from(first_frame.0.samples_per_frame) * 1000 / first_frame.0.sample_rate;
+					u32::from(first_frame.0.samples) * 1000 / first_frame.0.sample_rate;
 				let length = u64::from(frame_time) * u64::from(xing_header.frames);
 
 				(
@@ -77,7 +78,7 @@ where
 
 	while let Ok(()) = data.read_exact(&mut header) {
 		match header {
-			_ if u32::from_be_bytes(header) >> 21 == 0x7FF => {
+			_ if verify_frame_sync(u16::from_be_bytes([header[0], header[1]])) => {
 				let start = data.seek(SeekFrom::Current(0))? - 4;
 				let header = Header::read(u32::from_be_bytes(header))?;
 				data.seek(SeekFrom::Current(i64::from(header.len - 4)))?;
@@ -88,6 +89,7 @@ where
 
 				last_mpeg_frame = (Some(header), start);
 			},
+			// [I, D, 3, ver_major, ver_minor, flags, size (4 bytes)]
 			[b'I', b'D', b'3', ..] => {
 				let mut remaining_header = [0; 6];
 				data.read_exact(&mut remaining_header)?;

@@ -54,6 +54,9 @@
 //! let mpeg_file = MpegFile::read_from(&mut file_content).unwrap();
 //!
 //! assert_eq!(mpeg_file.properties().channels(), Some(2));
+//!
+//! // Here we have a file with multiple tags
+//! assert!(mpeg_file.contains_tag_type(&TagType::Id3v2));
 //! assert!(mpeg_file.contains_tag_type(&TagType::Ape));
 //! ```
 //!
