@@ -11,7 +11,7 @@ categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
 # Id3
-id3 = {version = "0.6.4", optional = true} # De/Encoding
+id3 = {version = "0.6.5", optional = true} # De/Encoding
 filepath = { version = "0.1.1", optional = true } # wav/aiff only supports paths for some reason
 # Ogg
 ogg_pager = { version = "0.1.7", optional = true }
