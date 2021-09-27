@@ -5,7 +5,7 @@ mod properties;
 mod read;
 mod trak;
 
-use crate::types::file::AudioFile;
+use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
@@ -19,6 +19,20 @@ pub struct Mp4File {
 	pub(crate) ilst: Option<Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+}
+
+impl From<Mp4File> for TaggedFile {
+	fn from(input: Mp4File) -> Self {
+		Self {
+			ty: FileType::MP4,
+			properties: input.properties,
+			tags: if let Some(ilst) = input.ilst {
+				vec![ilst]
+			} else {
+				Vec::new()
+			},
+		}
+	}
 }
 
 impl AudioFile for Mp4File {

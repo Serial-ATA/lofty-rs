@@ -4,7 +4,8 @@ pub(in crate::logic::ogg) mod write;
 use super::find_last_page;
 use crate::error::Result;
 use crate::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
-use crate::types::file::AudioFile;
+use crate::types::file::{AudioFile, FileType, TaggedFile};
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
@@ -22,6 +23,26 @@ pub struct VorbisFile {
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
 	pub(crate) vorbis_comments: Tag,
+}
+
+impl From<VorbisFile> for TaggedFile {
+	fn from(input: VorbisFile) -> Self {
+		// Preserve vendor string
+		let mut tag = input.vorbis_comments;
+
+		if !input.vendor.is_empty() {
+			tag.insert_item_unchecked(TagItem::new(
+				ItemKey::EncoderSoftware,
+				ItemValue::Text(input.vendor),
+			))
+		}
+
+		Self {
+			ty: FileType::Vorbis,
+			properties: input.properties,
+			tags: vec![tag],
+		}
+	}
 }
 
 impl AudioFile for VorbisFile {

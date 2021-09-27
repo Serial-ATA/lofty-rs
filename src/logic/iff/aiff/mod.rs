@@ -1,8 +1,9 @@
 mod read;
+mod tag;
 pub(in crate::logic) mod write;
 
 use crate::error::Result;
-use crate::types::file::AudioFile;
+use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
@@ -18,6 +19,19 @@ pub struct AiffFile {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2: Option<Tag>,
+}
+
+impl From<AiffFile> for TaggedFile {
+	fn from(input: AiffFile) -> Self {
+		Self {
+			ty: FileType::AIFF,
+			properties: input.properties,
+			tags: vec![input.text_chunks, input.id3v2]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
 }
 
 impl AudioFile for AiffFile {

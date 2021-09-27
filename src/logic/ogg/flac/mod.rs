@@ -3,7 +3,8 @@ mod read;
 pub(crate) mod write;
 
 use crate::error::Result;
-use crate::types::file::AudioFile;
+use crate::types::file::{AudioFile, FileType, TaggedFile};
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
@@ -21,6 +22,32 @@ pub struct FlacFile {
 	///
 	/// NOTE: This field being `Some` does not mean the file has vorbis comments, as Picture blocks exist.
 	pub(crate) vorbis_comments: Option<Tag>,
+}
+
+impl From<FlacFile> for TaggedFile {
+	fn from(input: FlacFile) -> Self {
+		// Preserve vendor string
+		let tags = {
+			if let Some(mut tag) = input.vorbis_comments {
+				if let Some(vendor) = input.vendor {
+					tag.insert_item_unchecked(TagItem::new(
+						ItemKey::EncoderSoftware,
+						ItemValue::Text(vendor),
+					))
+				}
+
+				vec![tag]
+			} else {
+				Vec::new()
+			}
+		};
+
+		Self {
+			ty: FileType::FLAC,
+			properties: input.properties,
+			tags,
+		}
+	}
 }
 
 impl AudioFile for FlacFile {

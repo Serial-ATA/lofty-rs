@@ -1,15 +1,6 @@
-use super::item::{ItemKey, ItemValue, TagItem};
 use super::properties::FileProperties;
 use super::tag::{Tag, TagType};
 use crate::error::{LoftyError, Result};
-use crate::logic::ape::ApeFile;
-use crate::logic::iff::aiff::AiffFile;
-use crate::logic::iff::wav::WavFile;
-use crate::logic::mp4::Mp4File;
-use crate::logic::mpeg::MpegFile;
-use crate::logic::ogg::flac::FlacFile;
-use crate::logic::ogg::opus::OpusFile;
-use crate::logic::ogg::vorbis::VorbisFile;
 
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
@@ -55,36 +46,28 @@ impl TaggedFile {
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Atom`        |
 	pub fn primary_tag(&self) -> Option<&Tag> {
-		let pred = match self.ty {
-			FileType::AIFF | FileType::MP3 | FileType::WAV => {
-				|t: &&Tag| t.tag_type() == &TagType::Id3v2
-			},
-			FileType::APE => |t: &&Tag| t.tag_type() == &TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
-				|t: &&Tag| t.tag_type() == &TagType::VorbisComments
-			},
-			FileType::MP4 => |t: &&Tag| t.tag_type() == &TagType::Mp4Atom,
+		let tag_type = match self.ty {
+			FileType::AIFF | FileType::MP3 | FileType::WAV => &TagType::Id3v2,
+			FileType::APE => &TagType::Ape,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => &TagType::VorbisComments,
+			FileType::MP4 => &TagType::Mp4Atom,
 		};
 
-		self.tags.iter().find(pred)
+		self.tag(tag_type)
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
 	/// See [`primary_tag`](Self::primary_tag) for an explanation
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		let pred = match self.ty {
-			FileType::AIFF | FileType::MP3 | FileType::WAV => {
-				|t: &&mut Tag| t.tag_type() == &TagType::Id3v2
-			},
-			FileType::APE => |t: &&mut Tag| t.tag_type() == &TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => {
-				|t: &&mut Tag| t.tag_type() == &TagType::VorbisComments
-			},
-			FileType::MP4 => |t: &&mut Tag| t.tag_type() == &TagType::Mp4Atom,
+		let tag_type = match self.ty {
+			FileType::AIFF | FileType::MP3 | FileType::WAV => &TagType::Id3v2,
+			FileType::APE => &TagType::Ape,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => &TagType::VorbisComments,
+			FileType::MP4 => &TagType::Mp4Atom,
 		};
 
-		self.tags.iter_mut().find(pred)
+		self.tag_mut(tag_type)
 	}
 
 	/// Gets the first tag, if there are any
@@ -118,138 +101,6 @@ impl TaggedFile {
 	}
 }
 
-impl From<AiffFile> for TaggedFile {
-	fn from(input: AiffFile) -> Self {
-		Self {
-			ty: FileType::AIFF,
-			properties: input.properties,
-			tags: vec![input.text_chunks, input.id3v2]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
-}
-
-impl From<OpusFile> for TaggedFile {
-	fn from(input: OpusFile) -> Self {
-		// Preserve vendor string
-		let mut tag = input.vorbis_comments;
-
-		if !input.vendor.is_empty() {
-			tag.insert_item_unchecked(TagItem::new(
-				ItemKey::EncoderSoftware,
-				ItemValue::Text(input.vendor),
-			))
-		}
-
-		Self {
-			ty: FileType::Opus,
-			properties: input.properties,
-			tags: vec![tag],
-		}
-	}
-}
-
-impl From<VorbisFile> for TaggedFile {
-	fn from(input: VorbisFile) -> Self {
-		// Preserve vendor string
-		let mut tag = input.vorbis_comments;
-
-		if !input.vendor.is_empty() {
-			tag.insert_item_unchecked(TagItem::new(
-				ItemKey::EncoderSoftware,
-				ItemValue::Text(input.vendor),
-			))
-		}
-
-		Self {
-			ty: FileType::Vorbis,
-			properties: input.properties,
-			tags: vec![tag],
-		}
-	}
-}
-
-impl From<FlacFile> for TaggedFile {
-	fn from(input: FlacFile) -> Self {
-		// Preserve vendor string
-		let tags = {
-			if let Some(mut tag) = input.vorbis_comments {
-				if let Some(vendor) = input.vendor {
-					tag.insert_item_unchecked(TagItem::new(
-						ItemKey::EncoderSoftware,
-						ItemValue::Text(vendor),
-					))
-				}
-
-				vec![tag]
-			} else {
-				Vec::new()
-			}
-		};
-
-		Self {
-			ty: FileType::FLAC,
-			properties: input.properties,
-			tags,
-		}
-	}
-}
-
-impl From<WavFile> for TaggedFile {
-	fn from(input: WavFile) -> Self {
-		Self {
-			ty: FileType::WAV,
-			properties: input.properties,
-			tags: vec![input.riff_info, input.id3v2]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
-}
-
-impl From<MpegFile> for TaggedFile {
-	fn from(input: MpegFile) -> Self {
-		Self {
-			ty: FileType::MP3,
-			properties: input.properties,
-			tags: vec![input.id3v1, input.id3v2, input.ape]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
-}
-
-impl From<Mp4File> for TaggedFile {
-	fn from(input: Mp4File) -> Self {
-		Self {
-			ty: FileType::MP4,
-			properties: input.properties,
-			tags: if let Some(ilst) = input.ilst {
-				vec![ilst]
-			} else {
-				Vec::new()
-			},
-		}
-	}
-}
-
-impl From<ApeFile> for TaggedFile {
-	fn from(input: ApeFile) -> Self {
-		Self {
-			ty: FileType::APE,
-			properties: input.properties,
-			tags: vec![input.id3v1, input.id3v2, input.ape]
-				.into_iter()
-				.flatten()
-				.collect(),
-		}
-	}
-}
-
 #[derive(PartialEq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 /// The type of file read
@@ -268,17 +119,14 @@ impl FileType {
 	/// Returns if the target FileType supports a [`TagType`]
 	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
 		match self {
-			FileType::AIFF => {
-				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
-					|| tag_type == &TagType::AiffText
-			},
+			FileType::AIFF => tag_type == &TagType::Id3v2 || tag_type == &TagType::AiffText,
 			FileType::APE => {
 				tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
-					|| std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
+					|| tag_type == &TagType::Id3v2
 			},
 			FileType::MP3 => {
-				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
+				tag_type == &TagType::Id3v2
 					|| tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
 			},
@@ -286,10 +134,7 @@ impl FileType {
 				tag_type == &TagType::VorbisComments
 			},
 			FileType::MP4 => tag_type == &TagType::Mp4Atom,
-			FileType::WAV => {
-				std::mem::discriminant(tag_type) == std::mem::discriminant(&TagType::Id3v2)
-					|| tag_type == &TagType::RiffInfo
-			},
+			FileType::WAV => tag_type == &TagType::Id3v2 || tag_type == &TagType::RiffInfo,
 		}
 	}
 

@@ -31,8 +31,7 @@ fn aiff_write() {
 	assert_eq!(tagged_file.file_type(), &FileType::AIFF);
 
 	// ID3v2
-	// TODO
-	// crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// Text chunks
 	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Bar artist", 1 => file, "Baz artist");
@@ -40,8 +39,7 @@ fn aiff_write() {
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
-	// TODO
-	// crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
+	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
 }

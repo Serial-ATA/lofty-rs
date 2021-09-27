@@ -4,7 +4,7 @@ pub(crate) mod read;
 pub(crate) mod tag;
 pub(crate) mod write;
 
-use crate::types::file::AudioFile;
+use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
@@ -22,6 +22,19 @@ pub struct ApeFile {
 	pub(crate) ape: Option<Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
+}
+
+impl From<ApeFile> for TaggedFile {
+	fn from(input: ApeFile) -> Self {
+		Self {
+			ty: FileType::APE,
+			properties: input.properties,
+			tags: vec![input.id3v1, input.id3v2, input.ape]
+				.into_iter()
+				.flatten()
+				.collect(),
+		}
+	}
 }
 
 impl AudioFile for ApeFile {

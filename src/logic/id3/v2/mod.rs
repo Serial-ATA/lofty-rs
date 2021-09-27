@@ -9,6 +9,7 @@ pub(crate) mod frame;
 pub(crate) mod items;
 pub(crate) mod read;
 pub(crate) mod util;
+pub(in crate::logic) mod write;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 /// The ID3v2 version
@@ -30,18 +31,18 @@ where
 	let mut id3_header = [0; 10];
 	data.read_exact(&mut id3_header)?;
 
+	data.seek(SeekFrom::Current(-10))?;
+
 	if &id3_header[..3] == b"ID3" {
 		let size = unsynch_u32(BigEndian::read_u32(&id3_header[6..]));
 
 		if read {
-			data.seek(SeekFrom::Current(-10))?;
-
 			let mut tag = vec![0; (size + 10) as usize];
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)
 		} else {
-			data.seek(SeekFrom::Current(i64::from(size)))?;
+			data.seek(SeekFrom::Current(i64::from(size + 10)))?;
 		}
 	}
 
