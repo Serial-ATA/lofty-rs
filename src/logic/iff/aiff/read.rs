@@ -110,7 +110,7 @@ where
 				);
 
 				text_chunks.insert_item(item);
-			},
+			}
 			b"ID3 " | b"id3 " => {
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
@@ -123,7 +123,7 @@ where
 				}
 
 				id3 = Some(id3v2)
-			},
+			}
 			b"COMM" => {
 				if comm.is_none() {
 					if size < 18 {
@@ -137,14 +137,14 @@ where
 
 					comm = Some(comm_data);
 				}
-			},
+			}
 			b"SSND" => {
 				stream_len = size;
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
+			}
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
+			}
 		}
 	}
 

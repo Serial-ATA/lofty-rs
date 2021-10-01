@@ -1,9 +1,10 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
+use std::io::Write;
 
 #[test]
-fn mp4_read() {
+fn read() {
 	// This file contains an ilst atom
 	let file = Probe::new().read_from_path("tests/assets/a.m4a").unwrap();
 
@@ -14,7 +15,7 @@ fn mp4_read() {
 }
 
 #[test]
-fn mp4_write() {
+fn write() {
 	let mut file = std::fs::OpenOptions::new()
 		.read(true)
 		.write(true)
@@ -32,4 +33,9 @@ fn mp4_write() {
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Atom, "Bar artist", 1 => file, "Foo artist");
+}
+
+#[test]
+fn remove() {
+	crate::remove_tag!("tests/assets/a.m4a", TagType::Mp4Atom);
 }

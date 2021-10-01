@@ -2,18 +2,29 @@ use crate::error::Result;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::Tag;
 
+use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::WriteBytesExt;
 
-pub fn write_id3v1<W>(writer: &mut W, tag: &Tag) -> Result<()>
-where
-	W: Write + Read + Seek,
-{
-	let tag = encode(tag)?;
-
+pub fn write_id3v1(writer: &mut File, tag: &Tag) -> Result<()> {
 	// This will seek us to the writing position
-	super::find_id3v1(writer, false)?;
+	let (exists, _) = super::find_id3v1(writer, false)?;
+
+	if tag.item_count() == 0 && exists {
+		writer.seek(SeekFrom::Start(0))?;
+
+		let mut file_bytes = Vec::new();
+		writer.read_to_end(&mut file_bytes)?;
+
+		writer.seek(SeekFrom::Start(0))?;
+		writer.set_len(0)?;
+		writer.write_all(&file_bytes[..file_bytes.len() - 129])?;
+
+		return Ok(());
+	}
+
+	let tag = encode(tag)?;
 
 	writer.write_all(&tag)?;
 
@@ -68,35 +79,35 @@ fn encode(tag: &Tag) -> Result<Vec<u8>> {
 					}
 
 					empty
-				},
+				}
 				ItemValue::UInt(i) => {
 					if *i <= u32::from(max) {
 						*i as u8
 					} else {
 						empty
 					}
-				},
+				}
 				ItemValue::UInt64(i) => {
 					if *i <= u64::from(max) {
 						*i as u8
 					} else {
 						empty
 					}
-				},
+				}
 				ItemValue::Int(i) => {
 					if i.is_positive() && *i <= i32::from(max) {
 						*i as u8
 					} else {
 						empty
 					}
-				},
+				}
 				ItemValue::Int64(i) => {
 					if i.is_positive() && *i <= i64::from(max) {
 						*i as u8
 					} else {
 						empty
 					}
-				},
+				}
 				_ => empty,
 			}
 		} else {

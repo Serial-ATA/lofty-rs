@@ -29,7 +29,7 @@ where
 			"free" | "skip" => {
 				skip_unneeded(&mut cursor, atom.extended, atom.len)?;
 				continue;
-			},
+			}
 			"covr" => {
 				let (mime_type, picture) = match parse_data(&mut cursor)? {
 					(ItemValue::Binary(picture), 13) => (MimeType::Jpeg, picture),
@@ -57,7 +57,7 @@ where
 				});
 
 				continue;
-			},
+			}
 			"----" => ItemKey::from_key(&TagType::Mp4Atom, &*parse_freeform(&mut cursor)?),
 			other => ItemKey::from_key(&TagType::Mp4Atom, other),
 		}
@@ -95,7 +95,7 @@ where
 						"Expected atom data to include integer pair",
 					));
 				}
-			},
+			}
 			_ => tag.insert_item_unchecked(TagItem::new(key, data)),
 		}
 	}
@@ -153,7 +153,7 @@ fn parse_uint(bytes: &[u8]) -> Result<ItemValue> {
 			return Err(LoftyError::BadAtom(
 				"Unexpected atom size for type \"BE unsigned integer\"",
 			))
-		},
+		}
 	})
 }
 
@@ -170,7 +170,7 @@ fn parse_int(bytes: &[u8]) -> Result<ItemValue> {
 			return Err(LoftyError::BadAtom(
 				"Unexpected atom size for type \"BE signed integer\"",
 			))
-		},
+		}
 	})
 }
 

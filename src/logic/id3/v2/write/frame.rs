@@ -25,14 +25,14 @@ where
 		(match i.key() {
 			ItemKey::Id3v2Specific(Id3v2Frame::Text(name, _)) => {
 				name.starts_with('T') && name.is_ascii() && name.len() == 4
-			},
+			}
 			ItemKey::Id3v2Specific(Id3v2Frame::URL(name)) => {
 				name.starts_with('W') && name.is_ascii() && name.len() == 4
-			},
+			}
 			ItemKey::Id3v2Specific(id3v2_frame) => {
 				std::mem::discriminant(&Id3v2Frame::Outdated(String::new()))
 					!= std::mem::discriminant(id3v2_frame)
-			},
+			}
 			ItemKey::Unknown(_) => false,
 			key => key.map_key(&TagType::Id3v2).is_some(),
 		}) && matches!(
@@ -90,7 +90,7 @@ where
 				)?,
 				Id3v2Frame::URL(name) => {
 					write_frame(writer, &FrameType::Other, name, flags, 0, value)?
-				},
+				}
 				Id3v2Frame::UserURL(encoding, descriptor) => write_frame(
 					writer,
 					&FrameType::UserDefined(*encoding, descriptor),
@@ -102,11 +102,11 @@ where
 				)?,
 				Id3v2Frame::SyncText => {
 					write_frame(writer, &FrameType::Other, "SYLT", flags, 0, value)?
-				},
+				}
 				Id3v2Frame::EncapsulatedObject => {
 					write_frame(writer, &FrameType::Other, "GEOB", flags, 0, value)?
-				},
-				_ => {},
+				}
+				_ => {}
 			},
 			key => {
 				let key = key.map_key(&TagType::Id3v2).unwrap();
@@ -124,7 +124,7 @@ where
 				} else {
 					write_frame(writer, &FrameType::Other, key, flags, 0, value)?;
 				}
-			},
+			}
 		}
 	}
 
@@ -219,7 +219,7 @@ where
 		FrameType::EncodedText(encoding) => {
 			writer.write_u8(*encoding as u8)?;
 			writer.write_all(value)?;
-		},
+		}
 		FrameType::LanguageDependent(details) => {
 			writer.write_u8(details.encoding as u8)?;
 
@@ -239,12 +239,12 @@ where
 			}
 
 			writer.write_all(value)?;
-		},
+		}
 		FrameType::UserDefined(encoding, descriptor) => {
 			writer.write_u8(*encoding as u8)?;
 			writer.write_all(&encode_text(descriptor, *encoding, true))?;
 			writer.write_all(value)?;
-		},
+		}
 		FrameType::Other => writer.write_all(value)?,
 	}
 

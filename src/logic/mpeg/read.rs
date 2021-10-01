@@ -88,7 +88,7 @@ where
 				}
 
 				last_mpeg_frame = (Some(header), start);
-			},
+			}
 			// [I, D, 3, ver_major, ver_minor, flags, size (4 bytes)]
 			[b'I', b'D', b'3', ..] => {
 				let mut remaining_header = [0; 6];
@@ -110,7 +110,7 @@ where
 				mpeg_file.id3v2 = Some(id3v2);
 
 				continue;
-			},
+			}
 			[b'T', b'A', b'G', ..] => {
 				data.seek(SeekFrom::Current(-4))?;
 
@@ -119,7 +119,7 @@ where
 
 				mpeg_file.id3v1 = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
 				continue;
-			},
+			}
 			[b'A', b'P', b'E', b'T'] => {
 				let mut header_remaining = [0; 4];
 				data.read_exact(&mut header_remaining)?;
@@ -129,7 +129,7 @@ where
 						Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
 					continue;
 				}
-			},
+			}
 			_ => return Err(LoftyError::Mp3("File contains an invalid frame")),
 		}
 	}

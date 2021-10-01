@@ -95,7 +95,7 @@ impl Display for LoftyError {
 			LoftyError::BadExtension(ext) => write!(f, "Found unknown file extension \"{}\"", ext),
 			LoftyError::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
-			},
+			}
 			LoftyError::EmptyFile => write!(f, "File contains no data"),
 			LoftyError::TooMuchData => write!(
 				f,
@@ -110,7 +110,7 @@ impl Display for LoftyError {
 			#[cfg(feature = "id3v2")]
 			LoftyError::BadPictureFormat(format) => {
 				write!(f, "Picture: Found unexpected format \"{}\"", format)
-			},
+			}
 			#[cfg(feature = "id3v2")]
 			LoftyError::TextDecode(message) => write!(f, "Text decoding: {}", message),
 			#[cfg(feature = "id3v2")]

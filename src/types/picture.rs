@@ -326,7 +326,7 @@ impl Picture {
 				}
 
 				Ok(data)
-			},
+			}
 			_ => {
 				let mut data = vec![self.text_encoding as u8];
 
@@ -351,7 +351,7 @@ impl Picture {
 				}
 
 				Ok(data)
-			},
+			}
 		}
 	}
 
@@ -380,7 +380,7 @@ impl Picture {
 							return Err(LoftyError::BadPictureFormat(
 								String::from_utf8_lossy(&format).to_string(),
 							))
-						},
+						}
 					};
 
 					let picture_type = PictureType::from_u8(cursor.read_u8()?);
@@ -407,7 +407,7 @@ impl Picture {
 						},
 						data: Cow::from(data),
 					})
-				},
+				}
 				_ => {
 					let mime_type = (crate::logic::id3::v2::util::text_utils::decode_text(
 						&mut cursor,
@@ -440,7 +440,7 @@ impl Picture {
 						},
 						data: Cow::from(data),
 					})
-				},
+				}
 			};
 		}
 

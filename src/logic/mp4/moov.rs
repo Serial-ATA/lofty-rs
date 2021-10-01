@@ -50,7 +50,7 @@ impl Moov {
 				"trak" => traks.push(Trak::parse(data, &atom)?),
 				"udta" => {
 					meta = meta_from_udta(data, atom.len - 8)?;
-				},
+				}
 				_ => skip_unneeded(data, atom.extended, atom.len)?,
 			}
 		}
@@ -87,7 +87,7 @@ where
 	// Flags (3)
 	let _version_flags = data.read_u32::<BigEndian>()?;
 
-	read = 8;
+	read = 12;
 	let mut islt = (false, 0_u64);
 
 	while read < meta.1 {
@@ -102,9 +102,9 @@ where
 		skip_unneeded(data, atom.extended, atom.len)?;
 	}
 
-	if !islt.0 {
-		return Ok(None);
+	if islt.0 {
+		return parse_ilst(data, islt.1 - 8);
 	}
 
-	parse_ilst(data, islt.1 - 8)
+	Ok(None)
 }

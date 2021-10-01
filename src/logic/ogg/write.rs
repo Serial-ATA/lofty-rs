@@ -2,12 +2,13 @@ use super::{page_from_packet, verify_signature};
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSTAGS;
 use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
+use crate::types::item::{ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use std::convert::TryFrom;
 use std::fs::File;
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 use ogg_pager::Page;
 
@@ -31,29 +32,11 @@ pub(crate) fn create_comments(packet: &mut Vec<u8>, items: &[TagItem]) {
 	}
 }
 
-pub(crate) fn create_pages(file: &mut File, sig: &[u8], tag: &Tag) -> Result<()> {
-	if tag.tag_type() != &TagType::VorbisComments {
-		return Err(LoftyError::UnsupportedTag);
-	}
-
-	let mut packet = Vec::new();
-
-	packet.extend(sig.iter());
-
-	if let Some(ItemValue::Text(vendor)) = tag
-		.get_item_ref(&ItemKey::EncoderSoftware)
-		.map(TagItem::value)
-	{
-		packet.extend((vendor.len() as u32).to_le_bytes().iter());
-		packet.extend(vendor.as_bytes().iter());
-	} else {
-		packet.extend([0, 0, 0, 0].iter())
-	};
-
+fn create_pages(tag: &Tag, writer: &mut Vec<u8>) -> Result<Vec<Page>> {
 	let item_count = tag.item_count() + tag.picture_count();
 
-	packet.extend(item_count.to_le_bytes().iter());
-	create_comments(&mut packet, tag.items());
+	writer.write_u32::<LittleEndian>(item_count)?;
+	create_comments(writer, tag.items());
 
 	for pic in tag.pictures() {
 		let picture = format!(
@@ -64,35 +47,56 @@ pub(crate) fn create_pages(file: &mut File, sig: &[u8], tag: &Tag) -> Result<()>
 		let bytes_len = picture_b.len();
 
 		if u32::try_from(bytes_len as u64).is_ok() {
-			packet.extend((bytes_len as u32).to_le_bytes().iter());
-			packet.extend(picture_b.iter());
+			writer.write_u32::<LittleEndian>(bytes_len as u32)?;
+			writer.write_all(picture_b)?;
 		}
 	}
 
-	let mut pages = page_from_packet(&mut *packet)?;
-	write_to(file, &mut pages, sig)?;
-
-	Ok(())
+	page_from_packet(writer)
 }
 
-fn write_to(mut data: &mut File, pages: &mut [Page], sig: &[u8]) -> Result<()> {
-	let first_page = Page::read(&mut data, false)?;
+pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag, sig: &[u8]) -> Result<()> {
+	if tag.tag_type() != &TagType::VorbisComments {
+		return Err(LoftyError::UnsupportedTag);
+	}
+
+	let first_page = Page::read(data, false)?;
 
 	let ser = first_page.serial;
 
 	let mut writer = Vec::new();
 	writer.write_all(&*first_page.as_bytes())?;
 
-	let first_md_page = Page::read(&mut data, false)?;
+	let first_md_page = Page::read(data, false)?;
 	verify_signature(&first_md_page, sig)?;
+
+	// Retain the file's vendor string
+	let md_reader = &mut &first_md_page.content[sig.len()..];
+
+	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
+	let mut vendor = vec![0; vendor_len as usize];
+	md_reader.read_exact(&mut vendor)?;
+
+	let mut packet = Vec::new();
+	packet.write_all(sig)?;
+	packet.write_u32::<LittleEndian>(vendor_len)?;
+	packet.write_all(&vendor)?;
+
+	let mut pages = create_pages(tag, &mut packet)?;
 
 	match sig {
 		VORBIS_COMMENT_HEAD => {
-			super::vorbis::write::write_to(data, &mut writer, first_md_page.content, ser, pages)?;
-		},
+			super::vorbis::write::write_to(
+				data,
+				&mut writer,
+				first_md_page.content,
+				ser,
+				&mut pages,
+			)?;
+		}
 		OPUSTAGS => {
-			super::opus::write::write_to(data, &mut writer, ser, pages)?;
-		},
+			super::opus::write::write_to(data, &mut writer, ser, &mut pages)?;
+		}
 		_ => unreachable!(),
 	}
 

@@ -101,7 +101,7 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 				FrameContent::Item(mut item) => {
 					item.set_flags(f.flags);
 					tag.insert_item_unchecked(item)
-				},
+				}
 			},
 		}
 	}

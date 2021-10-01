@@ -1,9 +1,10 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
+use std::io::Write;
 
 #[test]
-fn wav_read() {
+fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
 	let file = Probe::new()
 		.read_from_path("tests/assets/a_mixed.wav")
@@ -19,7 +20,7 @@ fn wav_read() {
 }
 
 #[test]
-fn wav_write() {
+fn write() {
 	let mut file = std::fs::OpenOptions::new()
 		.read(true)
 		.write(true)
@@ -42,4 +43,14 @@ fn wav_write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Baz artist", 1 => file, "Bar artist");
+}
+
+#[test]
+fn remove_id3v2() {
+	crate::remove_tag!("tests/assets/a_mixed.wav", TagType::Id3v2);
+}
+
+#[test]
+fn remove_riff_info() {
+	crate::remove_tag!("tests/assets/a_mixed.wav", TagType::RiffInfo);
 }

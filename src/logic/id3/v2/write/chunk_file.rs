@@ -38,15 +38,17 @@ where
 		data.write_all(&*file_bytes)?;
 	}
 
-	data.seek(SeekFrom::End(0))?;
-	data.write_all(&[b'I', b'D', b'3', b' '])?;
-	data.write_u32::<B>(tag.len() as u32)?;
-	data.write_all(tag)?;
+	if !tag.is_empty() {
+		data.seek(SeekFrom::End(0))?;
+		data.write_all(&[b'I', b'D', b'3', b' '])?;
+		data.write_u32::<B>(tag.len() as u32)?;
+		data.write_all(tag)?;
 
-	let total_size = data.seek(SeekFrom::Current(0))? - 8;
-	data.seek(SeekFrom::Start(4))?;
+		let total_size = data.seek(SeekFrom::Current(0))? - 8;
+		data.seek(SeekFrom::Start(4))?;
 
-	data.write_u32::<B>(total_size as u32)?;
+		data.write_u32::<B>(total_size as u32)?;
+	}
 
 	Ok(())
 }

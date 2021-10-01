@@ -1,9 +1,10 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
+use std::io::Write;
 
 #[test]
-fn mpeg_read() {
+fn read() {
 	// Here we have an MP3 file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
 
@@ -20,7 +21,7 @@ fn mpeg_read() {
 }
 
 #[test]
-fn mpeg_write() {
+fn write() {
 	let mut file = std::fs::OpenOptions::new()
 		.read(true)
 		.write(true)
@@ -48,4 +49,19 @@ fn mpeg_write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Qux artist", 1 => file, "Baz artist");
+}
+
+#[test]
+fn remove_id3v2() {
+	crate::remove_tag!("tests/assets/a.mp3", TagType::Id3v2);
+}
+
+#[test]
+fn remove_id3v1() {
+	crate::remove_tag!("tests/assets/a.mp3", TagType::Id3v1);
+}
+
+#[test]
+fn remove_ape() {
+	crate::remove_tag!("tests/assets/a.mp3", TagType::Ape);
 }

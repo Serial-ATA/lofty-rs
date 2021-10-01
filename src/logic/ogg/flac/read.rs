@@ -102,7 +102,7 @@ where
 		match block.ty {
 			4 => vendor = Some(read_comments(&mut &*block.content, &mut tag)?),
 			6 => tag.push_picture(Picture::from_flac_bytes(&*block.content)?),
-			_ => {},
+			_ => {}
 		}
 	}
 

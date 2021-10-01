@@ -12,6 +12,21 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
 pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &Tag) -> Result<()> {
+	if tag.item_count() == 0 {
+		find_id3v2(data, false)?;
+
+		if data.seek(SeekFrom::Current(0))? != 0 {
+			let mut file_bytes = Vec::new();
+			data.read_to_end(&mut file_bytes)?;
+
+			data.seek(SeekFrom::Start(0))?;
+			data.set_len(0)?;
+			data.write_all(&*file_bytes)?;
+		}
+
+		return Ok(());
+	}
+
 	let id3v2 = create_tag(tag)?;
 
 	// find_id3v2 will seek us to the end of the tag
@@ -34,7 +49,11 @@ pub(in crate::logic) fn write_id3v2_to_chunk_file<B>(data: &mut File, tag: &Tag)
 where
 	B: ByteOrder,
 {
-	let id3v2 = create_tag(tag)?;
+	let id3v2 = if tag.item_count() == 0 {
+		Vec::new()
+	} else {
+		create_tag(tag)?
+	};
 	chunk_file::write_to_chunk_file::<B>(data, &id3v2)?;
 
 	Ok(())

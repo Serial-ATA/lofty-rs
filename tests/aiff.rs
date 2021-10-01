@@ -1,9 +1,10 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
+use std::io::Write;
 
 #[test]
-fn aiff_read() {
+fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
 	let file = Probe::new()
 		.read_from_path("tests/assets/a_mixed.aiff")
@@ -19,7 +20,7 @@ fn aiff_read() {
 }
 
 #[test]
-fn aiff_write() {
+fn write() {
 	let mut file = std::fs::OpenOptions::new()
 		.read(true)
 		.write(true)
@@ -42,4 +43,14 @@ fn aiff_write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
+}
+
+#[test]
+fn remove_text_chunks() {
+	crate::remove_tag!("tests/assets/a_mixed.aiff", TagType::AiffText);
+}
+
+#[test]
+fn remove_id3v2() {
+	crate::remove_tag!("tests/assets/a_mixed.aiff", TagType::Id3v2);
 }

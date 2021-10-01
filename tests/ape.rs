@@ -1,9 +1,10 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
+use std::io::Write;
 
 #[test]
-fn ape_read() {
+fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::new().read_from_path("tests/assets/a.ape").unwrap();
 
@@ -20,7 +21,7 @@ fn ape_read() {
 }
 
 #[test]
-fn ape_write() {
+fn write() {
 	// We don't write an ID3v2 tag here since it's against the spec
 
 	let mut file = std::fs::OpenOptions::new()
@@ -45,4 +46,14 @@ fn ape_write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
+}
+
+#[test]
+fn remove_ape() {
+	crate::remove_tag!("tests/assets/a.ape", TagType::Ape);
+}
+
+#[test]
+fn remove_id3v1() {
+	crate::remove_tag!("tests/assets/a.ape", TagType::Id3v1);
 }

@@ -36,7 +36,7 @@ where
 				"mdhd" => {
 					skip_unneeded(data, atom.extended, atom.len)?;
 					mdhd = Some(atom)
-				},
+				}
 				"hdlr" => {
 					// The hdlr atom is followed by 8 zeros
 					data.seek(SeekFrom::Current(8))?;
@@ -49,12 +49,12 @@ where
 					}
 
 					skip_unneeded(data, atom.extended, atom.len - 12)?;
-				},
+				}
 				"minf" => minf = Some(atom),
 				_ => {
 					skip_unneeded(data, atom.extended, atom.len)?;
 					read += atom.len
-				},
+				}
 			}
 		}
 	}
@@ -90,7 +90,7 @@ where
 			};
 
 			Duration::from_millis(duration * 1000 / u64::from(timescale))
-		},
+		}
 		None => return Err(LoftyError::BadAtom("Expected atom \"trak.mdia.mdhd\"")),
 	};
 
@@ -123,7 +123,7 @@ where
 				match &*atom.ident {
 					"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
 					"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
-					_ => {},
+					_ => {}
 				}
 			}
 		}

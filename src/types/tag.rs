@@ -5,7 +5,8 @@ use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::items::restrictions::TagRestrictions;
 use crate::probe::Probe;
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 
 #[cfg(feature = "quick_tag_accessors")]
 use paste::paste;
@@ -197,6 +198,31 @@ impl Tag {
 		self.items.iter().find(|i| &i.item_key == item_key)
 	}
 
+	/// Get a string value from an [`ItemKey`]
+	pub fn get_string(&self, item_key: &ItemKey) -> Option<&str> {
+		if let Some(ItemValue::Text(ret)) = self.get_item_ref(item_key).map(TagItem::value) {
+			return Some(ret);
+		}
+
+		None
+	}
+
+	/// Gets a byte slice from an [`ItemKey`]
+	///
+	/// Use `convert` to convert [`ItemValue::Text`] and [`ItemValue::Locator`] to byte slices
+	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
+		if let Some(item) = self.get_item_ref(item_key) {
+			match item.value() {
+				ItemValue::Text(text) if convert => return Some(text.as_bytes()),
+				ItemValue::Locator(locator) => return Some(locator.as_bytes()),
+				ItemValue::Binary(binary) => return Some(binary),
+				_ => {}
+			}
+		}
+
+		None
+	}
+
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
 	/// NOTES:
@@ -235,7 +261,18 @@ impl Tag {
 }
 
 impl Tag {
-	/// Save the Tag to a [`File`](std::fs::File)
+	/// Save the `Tag` to a path
+	///
+	/// # Errors
+	///
+	/// * Path doesn't exist
+	/// * Path is not writable
+	/// * See [`Tag::save_to`]
+	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	/// Save the `Tag` to a [`File`](std::fs::File)
 	///
 	/// # Errors
 	///
@@ -249,9 +286,19 @@ impl Tag {
 				} else {
 					Err(LoftyError::UnsupportedTag)
 				}
-			},
+			}
 			None => Err(LoftyError::UnknownFormat),
 		}
+	}
+
+	/// Same as [`TagType::remove_from_path`]
+	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> bool {
+		self.tag_type.remove_from_path(path)
+	}
+
+	/// Same as [`TagType::remove_from`]
+	pub fn remove_from(&self, file: &mut File) -> bool {
+		self.tag_type.remove_from(file)
 	}
 }
 
@@ -282,4 +329,34 @@ pub enum TagType {
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Represents AIFF text chunks
 	AiffText,
+}
+
+impl TagType {
+	/// Remove a tag from a [`Path`]
+	///
+	/// See [`TagType::remove_from`]
+	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> bool {
+		if let Ok(mut file) = OpenOptions::new().read(true).write(true).open(path) {
+			return self.remove_from(&mut file);
+		}
+
+		false
+	}
+
+	/// Remove a tag from a [`File`]
+	///
+	/// This will return `false` if:
+	///
+	/// * It is unable to guess the file format
+	/// * The format doesn't support the `TagType`
+	/// * It is unable to write to the file
+	pub fn remove_from(&self, file: &mut File) -> bool {
+		if let Some(file_type) = Probe::new().file_type(file) {
+			if file_type.supports_tag_type(self) {
+				return crate::logic::write_tag(&Tag::new(self.clone()), file, file_type).is_ok();
+			}
+		}
+
+		false
+	}
 }

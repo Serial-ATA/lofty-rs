@@ -50,7 +50,7 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		match block_type {
 			4 | 6 => blocks_remove.push((start, end)),
 			1 => padding = true,
-			_ => {},
+			_ => {}
 		}
 	}
 

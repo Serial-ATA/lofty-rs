@@ -137,7 +137,7 @@ fn create_ape_tag(items: &[TagItem], pictures: &[Picture]) -> Result<Vec<u8>> {
 					}
 
 					(value.len() as u32, flags, value.as_slice())
-				},
+				}
 				ItemValue::Text(value) => {
 					let value = value.as_bytes();
 
@@ -148,7 +148,7 @@ fn create_ape_tag(items: &[TagItem], pictures: &[Picture]) -> Result<Vec<u8>> {
 					}
 
 					(value.len() as u32, flags, value)
-				},
+				}
 				ItemValue::Locator(value) => {
 					let mut flags = 2_u32 << 1;
 
@@ -157,7 +157,7 @@ fn create_ape_tag(items: &[TagItem], pictures: &[Picture]) -> Result<Vec<u8>> {
 					}
 
 					(value.len() as u32, flags, value.as_bytes())
-				},
+				}
 				_ => continue,
 			};
 

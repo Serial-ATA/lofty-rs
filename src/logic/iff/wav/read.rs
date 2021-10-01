@@ -133,7 +133,7 @@ where
 				}
 
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
+			}
 			b"fact" => {
 				if total_samples == 0 {
 					total_samples = data.read_u32::<LittleEndian>()?;
@@ -141,14 +141,14 @@ where
 				}
 
 				data.seek(SeekFrom::Current(4))?;
-			},
+			}
 			b"data" => {
 				if stream_len == 0 {
 					stream_len += size
 				}
 
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
+			}
 			b"LIST" => {
 				let mut list_type = [0; 4];
 				data.read_exact(&mut list_type)?;
@@ -159,7 +159,7 @@ where
 				} else {
 					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
-			},
+			}
 			b"ID3 " | b"id3 " => {
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
@@ -172,10 +172,10 @@ where
 				}
 
 				id3 = Some(id3v2);
-			},
+			}
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
-			},
+			}
 		}
 	}
 
