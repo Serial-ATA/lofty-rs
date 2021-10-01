@@ -8,6 +8,54 @@ use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
+use std::time::Duration;
+
+/// An APE file's audio properties
+pub struct ApeProperties {
+	version: u16,
+	duration: Duration,
+	bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+}
+
+impl From<ApeProperties> for FileProperties {
+	fn from(input: ApeProperties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl ApeProperties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// APE version
+	pub fn version(&self) -> u16 {
+		self.version
+	}
+}
 
 /// An APE file
 pub struct ApeFile {
@@ -21,14 +69,14 @@ pub struct ApeFile {
 	/// An APEv1/v2 tag
 	pub(crate) ape: Option<Tag>,
 	/// The file's audio properties
-	pub(crate) properties: FileProperties,
+	pub(crate) properties: ApeProperties,
 }
 
 impl From<ApeFile> for TaggedFile {
 	fn from(input: ApeFile) -> Self {
 		Self {
 			ty: FileType::APE,
-			properties: input.properties,
+			properties: FileProperties::from(input.properties),
 			tags: vec![input.id3v1, input.id3v2, input.ape]
 				.into_iter()
 				.flatten()
@@ -38,6 +86,8 @@ impl From<ApeFile> for TaggedFile {
 }
 
 impl AudioFile for ApeFile {
+	type Properties = ApeProperties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -46,7 +96,7 @@ impl AudioFile for ApeFile {
 		self::read::read_from(reader)
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

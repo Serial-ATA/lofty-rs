@@ -1,7 +1,6 @@
-use super::WavFile;
+use super::{WavFile, WavFormat, WavProperties};
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -31,7 +30,7 @@ where
 	Ok(())
 }
 
-fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Result<FileProperties> {
+fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Result<WavProperties> {
 	let mut format_tag = fmt.read_u16::<LittleEndian>()?;
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
 
@@ -95,12 +94,17 @@ fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Resu
 		(Duration::ZERO, 0)
 	};
 
-	Ok(FileProperties::new(
+	Ok(WavProperties {
+		format: match format_tag {
+			PCM => WavFormat::PCM,
+			IEEE_FLOAT => WavFormat::IEEE_FLOAT,
+			other => WavFormat::Other(other),
+		},
 		duration,
-		Some(bitrate),
-		Some(sample_rate),
-		Some(channels),
-	))
+		bitrate,
+		sample_rate,
+		channels,
+	})
 }
 
 pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<WavFile>
@@ -189,10 +193,8 @@ where
 		return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
 	}
 
-	let properties = read_properties(&mut &*fmt, total_samples, stream_len)?;
-
 	Ok(WavFile {
-		properties,
+		properties: read_properties(&mut &*fmt, total_samples, stream_len)?,
 		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
 		id3v2: id3,
 	})

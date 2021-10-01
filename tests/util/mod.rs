@@ -58,3 +58,19 @@ macro_rules! set_artist {
 		assert!($tag.save_to(&mut $file_write).is_ok());
 	};
 }
+
+#[macro_export]
+macro_rules! remove_tag {
+	($path:expr, $tag_type:path) => {
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&std::fs::read($path).unwrap()).unwrap();
+
+		let tagged_file = Probe::new().read_from(&mut file).unwrap();
+		assert!(tagged_file.tag(&$tag_type).is_some());
+
+		assert!($tag_type.remove_from(&mut file));
+
+		let tagged_file = Probe::new().read_from(&mut file).unwrap();
+		assert!(tagged_file.tag(&$tag_type).is_none());
+	};
+}

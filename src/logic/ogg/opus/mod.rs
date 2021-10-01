@@ -10,11 +10,57 @@ use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
+use std::time::Duration;
+
+/// An Opus file's audio properties
+pub struct OpusProperties {
+	duration: Duration,
+	bitrate: u32,
+	channels: u8,
+	version: u8,
+	input_sample_rate: u32,
+}
+
+impl From<OpusProperties> for FileProperties {
+	fn from(input: OpusProperties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.input_sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl OpusProperties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Opus version
+	pub fn version(&self) -> u8 {
+		self.version
+	}
+
+	/// Input sample rate
+	pub fn input_sample_rate(&self) -> u32 {
+		self.input_sample_rate
+	}
+}
 
 /// An OGG Opus file
 pub struct OpusFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
 	#[cfg(feature = "vorbis_comments")]
 	/// The file vendor's name
 	pub(crate) vendor: String,
@@ -23,6 +69,8 @@ pub struct OpusFile {
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
 	pub(crate) vorbis_comments: Tag,
+	/// The file's audio properties
+	pub(crate) properties: OpusProperties,
 }
 
 impl From<OpusFile> for TaggedFile {
@@ -39,13 +87,15 @@ impl From<OpusFile> for TaggedFile {
 
 		Self {
 			ty: FileType::Opus,
-			properties: input.properties,
+			properties: FileProperties::from(input.properties),
 			tags: vec![tag],
 		}
 	}
 }
 
 impl AudioFile for OpusFile {
+	type Properties = OpusProperties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -53,13 +103,13 @@ impl AudioFile for OpusFile {
 		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS)?;
 
 		Ok(Self {
-			properties: file_information.2,
+			properties: properties::read_properties(reader, &file_information.2)?,
 			vendor: file_information.0,
 			vorbis_comments: file_information.1,
 		})
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

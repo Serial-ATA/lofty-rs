@@ -9,6 +9,62 @@ use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, Tag, TagType};
 
 use std::io::{Read, Seek};
+use std::time::Duration;
+
+#[allow(missing_docs)]
+/// An MP4 file's audio codec
+pub enum Mp4Codec {
+	AAC,
+	ALAC,
+	Unknown(String),
+}
+
+/// An MP4 file's audio properties
+pub struct Mp4Properties {
+	codec: Mp4Codec,
+	duration: Duration,
+	bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+}
+
+impl From<Mp4Properties> for FileProperties {
+	fn from(input: Mp4Properties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl Mp4Properties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Audio codec
+	pub fn codec(&self) -> &Mp4Codec {
+		&self.codec
+	}
+}
 
 /// An MP4 file
 pub struct Mp4File {
@@ -18,14 +74,14 @@ pub struct Mp4File {
 	/// The [`Tag`] parsed from the ilst atom, not guaranteed
 	pub(crate) ilst: Option<Tag>,
 	/// The file's audio properties
-	pub(crate) properties: FileProperties,
+	pub(crate) properties: Mp4Properties,
 }
 
 impl From<Mp4File> for TaggedFile {
 	fn from(input: Mp4File) -> Self {
 		Self {
 			ty: FileType::MP4,
-			properties: input.properties,
+			properties: FileProperties::from(input.properties),
 			tags: if let Some(ilst) = input.ilst {
 				vec![ilst]
 			} else {
@@ -36,6 +92,8 @@ impl From<Mp4File> for TaggedFile {
 }
 
 impl AudioFile for Mp4File {
+	type Properties = Mp4Properties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -43,7 +101,7 @@ impl AudioFile for Mp4File {
 		self::read::read_from(reader)
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

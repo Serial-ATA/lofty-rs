@@ -1,7 +1,7 @@
 pub(crate) mod ape;
 pub(crate) mod iff;
+pub(crate) mod mp3;
 pub(crate) mod mp4;
-pub(crate) mod mpeg;
 pub(crate) mod ogg;
 use ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 
@@ -19,7 +19,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
 		FileType::APE => ape::write::write_to(file, tag),
 		FileType::FLAC => ogg::flac::write::write_to(file, tag),
-		FileType::MP3 => mpeg::write::write_to(file, tag),
+		FileType::MP3 => mp3::write::write_to(file, tag),
 		FileType::MP4 => mp4::ilst::write::write_to(file, tag),
 		FileType::Opus => ogg::write::write_to(file, tag, OPUSTAGS),
 		FileType::Vorbis => ogg::write::write_to(file, tag, VORBIS_COMMENT_HEAD),

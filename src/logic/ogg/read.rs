@@ -1,9 +1,7 @@
 use super::verify_signature;
 use crate::error::{LoftyError, Result};
-use crate::logic::ogg::constants::OPUSHEAD;
 use crate::picture::Picture;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -11,28 +9,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-pub type OGGTags = (String, Tag, FileProperties);
-
-fn read_properties<R>(data: &mut R, header_sig: &[u8], first_page: &Page) -> Result<FileProperties>
-where
-	R: Read + Seek,
-{
-	let properties = if header_sig == OPUSHEAD {
-		let stream_len = {
-			let current = data.seek(SeekFrom::Current(0))?;
-			let end = data.seek(SeekFrom::End(0))?;
-			data.seek(SeekFrom::Start(current))?;
-
-			end - first_page.start
-		};
-
-		super::opus::properties::read_properties(data, first_page, stream_len)?
-	} else {
-		super::vorbis::properties::read_properties(data, first_page)?
-	};
-
-	Ok(properties)
-}
+pub type OGGTags = (String, Tag, Page);
 
 pub(crate) fn read_comments<R>(data: &mut R, tag: &mut Tag) -> Result<String>
 where
@@ -106,7 +83,5 @@ where
 	let reader = &mut &md_pages[..];
 	let vendor = read_comments(reader, &mut tag)?;
 
-	let properties = read_properties(data, header_sig, &first_page)?;
-
-	Ok((vendor, tag, properties))
+	Ok((vendor, tag, first_page))
 }

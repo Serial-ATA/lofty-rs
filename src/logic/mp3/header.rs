@@ -10,21 +10,27 @@ pub(crate) fn verify_frame_sync(frame_sync: u16) -> bool {
 }
 
 #[derive(PartialEq, Copy, Clone)]
-enum MpegVersion {
+#[allow(missing_docs)]
+/// MPEG Audio version
+pub enum MpegVersion {
 	V1,
 	V2,
 	V2_5,
 }
 
 #[derive(Copy, Clone)]
-enum Layer {
+#[allow(missing_docs)]
+/// MPEG layer
+pub enum Layer {
 	Layer1 = 1,
 	Layer2 = 2,
 	Layer3 = 3,
 }
 
 #[derive(Copy, Clone, PartialEq)]
-enum Mode {
+#[allow(missing_docs)]
+/// Channel mode
+pub enum ChannelMode {
 	Stereo = 0,
 	JointStereo = 1,
 	DualChannel = 2,
@@ -39,6 +45,9 @@ pub(crate) struct Header {
 	pub data_start: u32,
 	pub samples: u16,
 	pub bitrate: u32,
+	pub version: MpegVersion,
+	pub layer: Layer,
+	pub channel_mode: ChannelMode,
 }
 
 impl Header {
@@ -80,15 +89,15 @@ impl Header {
 			padding = u32::from(PADDING_SIZES[layer_index]);
 		}
 
-		let mode = match (header >> 6) & 3 {
-			0 => Mode::Stereo,
-			1 => Mode::JointStereo,
-			2 => Mode::DualChannel,
-			3 => Mode::SingleChannel,
+		let channel_mode = match (header >> 6) & 3 {
+			0 => ChannelMode::Stereo,
+			1 => ChannelMode::JointStereo,
+			2 => ChannelMode::DualChannel,
+			3 => ChannelMode::SingleChannel,
 			_ => return Err(LoftyError::Mp3("Unreachable error")),
 		};
 
-		let data_start = SIDE_INFORMATION_SIZES[version_index][mode as usize] + 4;
+		let data_start = SIDE_INFORMATION_SIZES[version_index][channel_mode as usize] + 4;
 		let samples = SAMPLES[layer_index][version_index];
 
 		let len = match layer {
@@ -96,7 +105,11 @@ impl Header {
 			Layer::Layer2 | Layer::Layer3 => bitrate * 144_000 / sample_rate + padding,
 		};
 
-		let channels = if mode == Mode::SingleChannel { 1 } else { 2 };
+		let channels = if channel_mode == ChannelMode::SingleChannel {
+			1
+		} else {
+			2
+		};
 
 		Ok(Self {
 			sample_rate,
@@ -105,6 +118,9 @@ impl Header {
 			data_start,
 			samples,
 			bitrate,
+			version,
+			layer,
+			channel_mode,
 		})
 	}
 }

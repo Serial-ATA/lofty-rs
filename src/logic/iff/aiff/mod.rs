@@ -11,14 +11,14 @@ use std::io::{Read, Seek};
 
 /// An AIFF file
 pub struct AiffFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Any text chunks included in the file
 	pub(crate) text_chunks: Option<Tag>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2: Option<Tag>,
+	/// The file's audio properties
+	pub(crate) properties: FileProperties,
 }
 
 impl From<AiffFile> for TaggedFile {
@@ -35,6 +35,8 @@ impl From<AiffFile> for TaggedFile {
 }
 
 impl AudioFile for AiffFile {
+	type Properties = FileProperties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -43,7 +45,7 @@ impl AudioFile for AiffFile {
 		read::read_from(reader)
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

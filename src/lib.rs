@@ -44,16 +44,16 @@
 //!
 //! ## Using concrete file types
 //! ```
-//! use lofty::files::MpegFile;
+//! use lofty::files::Mp3File;
 //! use lofty::files::AudioFile;
 //! use lofty::TagType;
 //! use std::fs::File;
 //!
 //! let mut file_content = File::open("tests/assets/a.mp3").unwrap();
 //!
-//! let mpeg_file = MpegFile::read_from(&mut file_content).unwrap();
+//! let mpeg_file = Mp3File::read_from(&mut file_content).unwrap();
 //!
-//! assert_eq!(mpeg_file.properties().channels(), Some(2));
+//! assert_eq!(mpeg_file.properties().channels(), 2);
 //!
 //! // Here we have a file with multiple tags
 //! assert!(mpeg_file.contains_tag_type(&TagType::Id3v2));
@@ -151,10 +151,21 @@ mod types;
 
 /// Various concrete file types, used when inference is unnecessary
 pub mod files {
-	pub use crate::logic::ape::ApeFile;
-	pub use crate::logic::iff::{aiff::AiffFile, wav::WavFile};
-	pub use crate::logic::mpeg::MpegFile;
-	pub use crate::logic::ogg::{flac::FlacFile, opus::OpusFile, vorbis::VorbisFile};
+	pub use crate::logic::ape::{ApeFile, ApeProperties};
+	pub use crate::logic::iff::{
+		aiff::AiffFile,
+		wav::{WavFile, WavFormat, WavProperties},
+	};
+	pub use crate::logic::mp3::{
+		header::{ChannelMode, Layer, MpegVersion},
+		Mp3File, Mp3Properties,
+	};
+	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
+	pub use crate::logic::ogg::{
+		flac::FlacFile,
+		opus::{OpusFile, OpusProperties},
+		vorbis::{VorbisFile, VorbisProperties},
+	};
 	pub use crate::types::file::AudioFile;
 }
 

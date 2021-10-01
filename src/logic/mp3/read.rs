@@ -1,9 +1,9 @@
 use super::header::{verify_frame_sync, Header, XingHeader};
-use super::MpegFile;
+use super::{Mp3File, Mp3Properties};
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::properties::FileProperties;
+use crate::types::tag::Tag;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -14,7 +14,7 @@ fn read_properties(
 	first_frame: (Header, u64),
 	last_frame: (Header, u64),
 	xing_header: Option<XingHeader>,
-) -> FileProperties {
+) -> Mp3Properties {
 	let (duration, bitrate) = {
 		if let Some(xing_header) = xing_header {
 			if first_frame.0.samples > 0 && first_frame.0.sample_rate > 0 {
@@ -46,25 +46,25 @@ fn read_properties(
 		}
 	};
 
-	FileProperties::new(
+	Mp3Properties {
+		version: first_frame.0.version,
+		layer: first_frame.0.layer,
+		channel_mode: first_frame.0.channel_mode,
 		duration,
-		Some(bitrate),
-		Some(first_frame.0.sample_rate),
-		Some(first_frame.0.channels as u8),
-	)
+		bitrate,
+		sample_rate: first_frame.0.sample_rate,
+		channels: first_frame.0.channels as u8,
+	}
 }
 
 #[allow(clippy::similar_names)]
-pub(crate) fn read_from<R>(data: &mut R) -> Result<MpegFile>
+pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp3File>
 where
 	R: Read + Seek,
 {
-	let mut mpeg_file = MpegFile {
-		id3v2: None,
-		id3v1: None,
-		ape: None,
-		properties: FileProperties::default(),
-	};
+	let mut id3v2: Option<Tag> = None;
+	let mut id3v1: Option<Tag> = None;
+	let mut ape: Option<Tag> = None;
 
 	let mut first_mpeg_frame = (None, 0);
 	let mut last_mpeg_frame = (None, 0);
@@ -100,14 +100,14 @@ where
 				let mut id3v2_read = vec![0; size];
 				data.read_exact(&mut id3v2_read)?;
 
-				let id3v2 = parse_id3v2(&mut &*id3v2_read)?;
+				let id3v2_tag = parse_id3v2(&mut &*id3v2_read)?;
 
 				// Skip over the footer
-				if id3v2.flags().footer {
+				if id3v2_tag.flags().footer {
 					data.seek(SeekFrom::Current(10))?;
 				}
 
-				mpeg_file.id3v2 = Some(id3v2);
+				id3v2 = Some(id3v2_tag);
 
 				continue;
 			}
@@ -117,7 +117,7 @@ where
 				let mut id3v1_read = [0; 128];
 				data.read_exact(&mut id3v1_read)?;
 
-				mpeg_file.id3v1 = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
+				id3v1 = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
 				continue;
 			}
 			[b'A', b'P', b'E', b'T'] => {
@@ -125,8 +125,7 @@ where
 				data.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					mpeg_file.ape =
-						Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
+					ape = Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
 					continue;
 				}
 			}
@@ -150,7 +149,10 @@ where
 
 	let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
 
-	mpeg_file.properties = read_properties(first_mpeg_frame, last_mpeg_frame, xing_header);
-
-	Ok(mpeg_file)
+	Ok(Mp3File {
+		id3v2,
+		id3v1,
+		ape,
+		properties: read_properties(first_mpeg_frame, last_mpeg_frame, xing_header),
+	})
 }

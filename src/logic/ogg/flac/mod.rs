@@ -51,6 +51,8 @@ impl From<FlacFile> for TaggedFile {
 }
 
 impl AudioFile for FlacFile {
+	type Properties = FileProperties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -58,7 +60,7 @@ impl AudioFile for FlacFile {
 		read::read_from(reader)
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

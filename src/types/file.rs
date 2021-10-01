@@ -7,6 +7,11 @@ use std::io::{Read, Seek, SeekFrom};
 
 /// Provides various methods for interaction with a file
 pub trait AudioFile {
+	/// The struct the file uses for audio properties
+	///
+	/// Not all formats can use [`FileProperties`] since they may contain additional information
+	type Properties;
+
 	/// Read a file from a reader
 	///
 	/// # Errors
@@ -17,7 +22,7 @@ pub trait AudioFile {
 		R: Read + Seek,
 		Self: Sized;
 	/// Returns a reference to the file's properties
-	fn properties(&self) -> &FileProperties;
+	fn properties(&self) -> &Self::Properties;
 	/// Checks if the file contains any tags
 	fn contains_tag(&self) -> bool;
 	/// Checks if the file contains the given [`TagType`]
@@ -160,7 +165,7 @@ impl FileType {
 	where
 		R: Read + Seek,
 	{
-		use crate::logic::{id3::unsynch_u32, mpeg::header::verify_frame_sync};
+		use crate::logic::{id3::unsynch_u32, mp3::header::verify_frame_sync};
 
 		if data.seek(SeekFrom::End(0))? == 0 {
 			return Err(LoftyError::EmptyFile);

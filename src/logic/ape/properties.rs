@@ -1,4 +1,5 @@
-use crate::{FileProperties, LoftyError, Result};
+use super::ApeProperties;
+use crate::error::{LoftyError, Result};
 
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
@@ -6,7 +7,7 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub fn properties_gt_3980<R>(data: &mut R, stream_len: u64) -> Result<FileProperties>
+pub fn properties_gt_3980<R>(data: &mut R, version: u16, stream_len: u64) -> Result<ApeProperties>
 where
 	R: Read + Seek,
 {
@@ -67,15 +68,16 @@ where
 		stream_len,
 	);
 
-	Ok(FileProperties::new(
+	Ok(ApeProperties {
+		version,
 		duration,
-		Some(bitrate),
-		Some(sample_rate),
-		Some(channels as u8),
-	))
+		bitrate,
+		sample_rate,
+		channels: channels as u8,
+	})
 }
 
-pub fn properties_lt_3980<R>(data: &mut R, version: u16, stream_len: u64) -> Result<FileProperties>
+pub fn properties_lt_3980<R>(data: &mut R, version: u16, stream_len: u64) -> Result<ApeProperties>
 where
 	R: Read + Seek,
 {
@@ -129,12 +131,14 @@ where
 		sample_rate,
 		stream_len,
 	);
-	Ok(FileProperties::new(
+
+	Ok(ApeProperties {
+		version,
 		duration,
-		Some(bitrate),
-		Some(sample_rate),
-		Some(channels as u8),
-	))
+		bitrate,
+		sample_rate,
+		channels: channels as u8,
+	})
 }
 
 fn get_duration_bitrate(

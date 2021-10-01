@@ -1,8 +1,8 @@
 use crate::logic::ape::ApeFile;
 use crate::logic::iff::aiff::AiffFile;
 use crate::logic::iff::wav::WavFile;
+use crate::logic::mp3::Mp3File;
 use crate::logic::mp4::Mp4File;
-use crate::logic::mpeg::MpegFile;
 use crate::logic::ogg::flac::FlacFile;
 use crate::logic::ogg::opus::OpusFile;
 use crate::logic::ogg::vorbis::VorbisFile;
@@ -69,7 +69,7 @@ impl Probe {
 				FileType::AIFF => AiffFile::read_from(reader)?.into(),
 				FileType::APE => ApeFile::read_from(reader)?.into(),
 				FileType::FLAC => FlacFile::read_from(reader)?.into(),
-				FileType::MP3 => MpegFile::read_from(reader)?.into(),
+				FileType::MP3 => Mp3File::read_from(reader)?.into(),
 				FileType::Opus => OpusFile::read_from(reader)?.into(),
 				FileType::Vorbis => VorbisFile::read_from(reader)?.into(),
 				FileType::WAV => WavFile::read_from(reader)?.into(),

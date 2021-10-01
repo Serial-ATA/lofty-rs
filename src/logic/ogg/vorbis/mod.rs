@@ -10,11 +10,75 @@ use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
+use std::time::Duration;
+
+/// An OGG Vorbis file's audio properties
+pub struct VorbisProperties {
+	duration: Duration,
+	bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+	version: u32,
+	bitrate_maximum: u32,
+	bitrate_nominal: u32,
+	bitrate_minimum: u32,
+}
+
+impl From<VorbisProperties> for FileProperties {
+	fn from(input: VorbisProperties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl VorbisProperties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Vorbis version
+	pub fn version(&self) -> u32 {
+		self.version
+	}
+
+	/// Maximum bitrate
+	pub fn bitrate_max(&self) -> u32 {
+		self.bitrate_maximum
+	}
+
+	/// Nominal bitrate
+	pub fn bitrate_nominal(&self) -> u32 {
+		self.bitrate_nominal
+	}
+
+	/// Minimum bitrate
+	pub fn bitrate_min(&self) -> u32 {
+		self.bitrate_minimum
+	}
+}
 
 /// An OGG Vorbis file
 pub struct VorbisFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
 	#[cfg(feature = "vorbis_comments")]
 	/// The file vendor's name
 	pub(crate) vendor: String,
@@ -23,6 +87,8 @@ pub struct VorbisFile {
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
 	pub(crate) vorbis_comments: Tag,
+	/// The file's audio properties
+	pub(crate) properties: VorbisProperties,
 }
 
 impl From<VorbisFile> for TaggedFile {
@@ -39,13 +105,15 @@ impl From<VorbisFile> for TaggedFile {
 
 		Self {
 			ty: FileType::Vorbis,
-			properties: input.properties,
+			properties: FileProperties::from(input.properties),
 			tags: vec![tag],
 		}
 	}
 }
 
 impl AudioFile for VorbisFile {
+	type Properties = VorbisProperties;
+
 	fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -54,13 +122,13 @@ impl AudioFile for VorbisFile {
 			super::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD)?;
 
 		Ok(Self {
-			properties: file_information.2,
+			properties: properties::read_properties(reader, &file_information.2)?,
 			vendor: file_information.0,
 			vorbis_comments: file_information.1,
 		})
 	}
 
-	fn properties(&self) -> &FileProperties {
+	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
 

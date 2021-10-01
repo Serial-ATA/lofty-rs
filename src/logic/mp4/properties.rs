@@ -2,15 +2,15 @@ use super::atom::Atom;
 use super::read::nested_atom;
 use super::read::skip_unneeded;
 use super::trak::Trak;
+use super::{Mp4Codec, Mp4Properties};
 use crate::error::{LoftyError, Result};
-use crate::types::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn read_properties<R>(data: &mut R, traks: &[Trak]) -> Result<FileProperties>
+pub(crate) fn read_properties<R>(data: &mut R, traks: &[Trak]) -> Result<Mp4Properties>
 where
 	R: Read + Seek,
 {
@@ -95,11 +95,12 @@ where
 	};
 
 	// We create the properties here, since it is possible the other information isn't available
-	let mut properties = FileProperties {
+	let mut properties = Mp4Properties {
+		codec: Mp4Codec::Unknown(String::new()),
 		duration,
-		bitrate: None,
-		sample_rate: None,
-		channels: None,
+		bitrate: 0,
+		sample_rate: 0,
+		channels: 0,
 	};
 
 	if let Some(minf) = minf {
@@ -112,7 +113,7 @@ where
 
 				let mut stsd_reader = Cursor::new(&*stsd);
 
-				// There are 8 bytes we don't care about
+				// Skipping 8 bytes
 				// Version (1)
 				// Flags (3)
 				// Number of entries (4)
@@ -123,7 +124,7 @@ where
 				match &*atom.ident {
 					"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
 					"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
-					_ => {}
+					unknown => properties.codec = Mp4Codec::Unknown(unknown.to_string()),
 				}
 			}
 		}
@@ -132,11 +133,11 @@ where
 	Ok(properties)
 }
 
-fn mp4a_properties<R>(data: &mut R, properties: &mut FileProperties) -> Result<()>
+fn mp4a_properties<R>(data: &mut R, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
-	// There are 16 bytes we don't care about
+	// Skipping 16 bytes
 	// Reserved (6)
 	// Data reference index (2)
 	// Version (2)
@@ -144,14 +145,14 @@ where
 	// Vendor (4)
 	data.seek(SeekFrom::Current(16))?;
 
-	properties.channels = Some(data.read_u16::<BigEndian>()? as u8);
+	properties.channels = data.read_u16::<BigEndian>()? as u8;
 
-	// There are 4 bytes we don't care about
+	// Skipping 4 bytes
 	// Sample size (2)
 	// Compression ID (2)
 	data.seek(SeekFrom::Current(4))?;
 
-	properties.sample_rate = Some(data.read_u32::<BigEndian>()?);
+	properties.sample_rate = data.read_u32::<BigEndian>()?;
 
 	data.seek(SeekFrom::Current(2))?;
 
@@ -167,7 +168,7 @@ where
 			// [0x03, 0x80, 0x80, 0x80] marks the start of the elementary stream descriptor.
 			// 0x03 being the object descriptor
 			if descriptor == [0x03, 0x80, 0x80, 0x80] {
-				// There are 4 bytes here we don't care about
+				// Skipping 4 bytes
 				// Descriptor length (1)
 				// Elementary stream ID (2)
 				// Flags (1)
@@ -179,7 +180,7 @@ where
 
 				// [0x04, 0x80, 0x80, 0x80] marks the start of the descriptor configuration
 				if specific_config == [0x04, 0x80, 0x80, 0x80] {
-					// There are 10 bytes here we don't care about
+					// Skipping 10 bytes
 					// Descriptor length (1)
 					// MPEG4 Audio (1)
 					// Stream type (1)
@@ -191,7 +192,7 @@ where
 					let average_bitrate = data.read_u32::<BigEndian>()?;
 
 					if average_bitrate > 0 {
-						properties.bitrate = Some(average_bitrate / 1000)
+						properties.bitrate = average_bitrate / 1000
 					}
 				}
 			}
@@ -201,11 +202,11 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(data: &mut R, properties: &mut FileProperties) -> Result<()>
+fn alac_properties<R>(data: &mut R, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
-	// With ALAC, we can expect the length to be exactly 88 (64 here since we removed the size and identifier)
+	// With ALAC, we can expect the length to be exactly 88 (80 here since we removed the size and identifier)
 	if data.seek(SeekFrom::End(0))? != 80 {
 		return Ok(());
 	}
@@ -221,7 +222,7 @@ where
 
 	if let Ok(alac) = Atom::read(data) {
 		if &*alac.ident == "alac" {
-			// There are 13 bytes we don't care about
+			// Skipping 13 bytes
 			// Version (4)
 			// Samples per frame (4)
 			// Compatible version (1)
@@ -231,15 +232,15 @@ where
 			// Rice parameter limit (1)
 			data.seek(SeekFrom::Current(13))?;
 
-			properties.channels = Some(data.read_u8()?);
+			properties.channels = data.read_u8()?;
 
-			// There are 6 bytes we don't care about
+			// Skipping 6 bytes
 			// Max run (2)
 			// Max frame size (4)
 			data.seek(SeekFrom::Current(6))?;
 
-			properties.bitrate = Some(data.read_u32::<BigEndian>()?);
-			properties.sample_rate = Some(data.read_u32::<BigEndian>()?);
+			properties.bitrate = data.read_u32::<BigEndian>()?;
+			properties.sample_rate = data.read_u32::<BigEndian>()?;
 		}
 	}
 

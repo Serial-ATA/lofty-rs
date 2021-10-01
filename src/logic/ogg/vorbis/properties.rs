@@ -1,6 +1,5 @@
-use super::find_last_page;
+use super::{find_last_page, VorbisProperties};
 use crate::error::{LoftyError, Result};
-use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek};
 use std::time::Duration;
@@ -11,20 +10,23 @@ use ogg_pager::Page;
 pub(in crate::logic::ogg) fn read_properties<R>(
 	data: &mut R,
 	first_page: &Page,
-) -> Result<FileProperties>
+) -> Result<VorbisProperties>
 where
 	R: Read + Seek,
 {
 	let first_page_abgp = first_page.abgp;
 
-	// Skip identification header and version
-	let first_page_content = &mut &first_page.content[11..];
+	// Skip identification header
+	let first_page_content = &mut &first_page.content[7..];
+
+	let version = first_page_content.read_u32::<LittleEndian>()?;
 
 	let channels = first_page_content.read_u8()?;
 	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
-	let _bitrate_max = first_page_content.read_u32::<LittleEndian>()?;
+	let bitrate_maximum = first_page_content.read_u32::<LittleEndian>()?;
 	let bitrate_nominal = first_page_content.read_u32::<LittleEndian>()?;
+	let bitrate_minimum = first_page_content.read_u32::<LittleEndian>()?;
 
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;
@@ -36,12 +38,16 @@ where
 			let duration = Duration::from_millis(length as u64);
 			let bitrate = bitrate_nominal / 1000;
 
-			Ok(FileProperties::new(
+			Ok(VorbisProperties {
 				duration,
-				Some(bitrate),
-				Some(sample_rate),
-				Some(channels),
-			))
+				bitrate,
+				sample_rate,
+				channels,
+				version,
+				bitrate_maximum,
+				bitrate_nominal,
+				bitrate_minimum,
+			})
 		},
 	)
 }
