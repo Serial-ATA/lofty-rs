@@ -7,7 +7,7 @@ use std::io::{Seek, Write};
 fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
 	let file = Probe::new()
-		.read_from_path("tests/assets/a_mixed.wav")
+		.read_from_path("tests/assets/a.wav")
 		.unwrap();
 
 	assert_eq!(file.file_type(), &FileType::WAV);
@@ -22,7 +22,7 @@ fn read() {
 #[test]
 fn write() {
 	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read("tests/assets/a_mixed.wav").unwrap())
+	file.write_all(&std::fs::read("tests/assets/a.wav").unwrap())
 		.unwrap();
 
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
@@ -47,10 +47,10 @@ fn write() {
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/assets/a_mixed.wav", TagType::Id3v2);
+	crate::remove_tag!("tests/assets/a.wav", TagType::Id3v2);
 }
 
 #[test]
 fn remove_riff_info() {
-	crate::remove_tag!("tests/assets/a_mixed.wav", TagType::RiffInfo);
+	crate::remove_tag!("tests/assets/a.wav", TagType::RiffInfo);
 }
