@@ -15,10 +15,11 @@ pub(crate) fn parse_content(
 ) -> Result<(FrameID, FrameValue)> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
-		"APIC" => (
-			FrameID::Valid(String::from("APIC")),
-			FrameValue::Picture(Picture::from_apic_bytes(content, version)?),
-		),
+		"APIC" => (FrameID::Valid(String::from("APIC")), {
+			let (picture, encoding) = Picture::from_apic_bytes(content, version)?;
+
+			FrameValue::Picture { encoding, picture }
+		}),
 		"TXXX" => parse_user_defined(content, false)?,
 		"WXXX" => parse_user_defined(content, true)?,
 		"COMM" | "USLT" => parse_text_language(id, content)?,

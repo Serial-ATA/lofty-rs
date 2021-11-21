@@ -96,13 +96,13 @@ impl From<Id3v2Tag> for Tag {
 				| FrameValue::UserText(EncodedTextFrame { content, .. }) => ItemValue::Text(content),
 				FrameValue::URL(content)
 				| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
-				FrameValue::Picture(pic) => {
-					ItemValue::Binary(if let Ok(bin) = pic.as_apic_bytes(Id3v2Version::V4) {
+				FrameValue::Picture { encoding, picture } => ItemValue::Binary(
+					if let Ok(bin) = picture.as_apic_bytes(Id3v2Version::V4, encoding) {
 						bin
 					} else {
 						continue;
-					})
-				}
+					},
+				),
 				FrameValue::Binary(binary) => ItemValue::Binary(binary),
 			};
 

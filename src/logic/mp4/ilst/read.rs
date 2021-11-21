@@ -1,6 +1,6 @@
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::util::text_utils::{utf16_decode, TextEncoding};
+use crate::logic::id3::v2::util::text_utils::utf16_decode;
 use crate::logic::mp4::atom_info::AtomInfo;
 use crate::logic::mp4::read::skip_unneeded;
 use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
@@ -53,7 +53,6 @@ where
 						ident: atom.ident,
 						data: AtomData::Picture(Picture {
 							pic_type: PictureType::Other,
-							text_encoding: TextEncoding::UTF8,
 							mime_type,
 							description: None,
 							information: PictureInformation {

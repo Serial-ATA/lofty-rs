@@ -29,7 +29,9 @@ where
 				content.as_bytes()
 			}
 			FrameValueRef::URL(link) => link.as_bytes().to_vec(),
-			FrameValueRef::Picture(pic) => pic.as_apic_bytes(Id3v2Version::V4)?,
+			FrameValueRef::Picture { encoding, picture } => {
+				picture.as_apic_bytes(Id3v2Version::V4, encoding)?
+			}
 			FrameValueRef::Binary(binary) => binary.to_vec(),
 		};
 

@@ -240,9 +240,6 @@ pub struct PictureInformation {
 pub struct Picture {
 	/// The picture type according to ID3v2 APIC
 	pub pic_type: PictureType,
-	#[cfg(feature = "id3v2")]
-	/// **(ONLY APPLICABLE TO ID3v2)** The text encoding
-	pub text_encoding: TextEncoding,
 	/// The picture's mimetype
 	pub mime_type: MimeType,
 	/// The picture's description
@@ -265,7 +262,6 @@ impl Picture {
 		Self {
 			pic_type,
 			mime_type,
-			text_encoding: TextEncoding::UTF8,
 			description: description.map(Cow::from),
 			information,
 			data: Cow::from(data),
@@ -284,8 +280,12 @@ impl Picture {
 	/// ID3v2.2:
 	///
 	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
-	pub fn as_apic_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
-		let mut data = vec![self.text_encoding as u8];
+	pub fn as_apic_bytes(
+		&self,
+		version: Id3v2Version,
+		text_encoding: TextEncoding,
+	) -> Result<Vec<u8>> {
+		let mut data = vec![text_encoding as u8];
 
 		let max_size = if version == Id3v2Version::V2 {
 			// ID3v2.2 PIC is pretty limited with formats
@@ -311,7 +311,7 @@ impl Picture {
 			Some(description) => {
 				data.write_all(&*crate::logic::id3::v2::util::text_utils::encode_text(
 					description,
-					self.text_encoding,
+					text_encoding,
 					true,
 				))?
 			}
@@ -330,7 +330,7 @@ impl Picture {
 	}
 
 	#[cfg(feature = "id3v2")]
-	/// Get a [`Picture`] from ID3v2 A/PIC bytes:
+	/// Get a [`Picture`] and [`TextEncoding`] from ID3v2 A/PIC bytes:
 	///
 	/// NOTE: This expects the frame header to have already been skipped
 	///
@@ -342,7 +342,7 @@ impl Picture {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn from_apic_bytes(bytes: &[u8], version: Id3v2Version) -> Result<Self> {
+	pub fn from_apic_bytes(bytes: &[u8], version: Id3v2Version) -> Result<(Self, TextEncoding)> {
 		let mut cursor = Cursor::new(bytes);
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
@@ -377,19 +377,21 @@ impl Picture {
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
 
-		Ok(Picture {
-			pic_type: picture_type,
-			text_encoding: encoding,
-			mime_type,
-			description,
-			information: PictureInformation {
-				width: 0,
-				height: 0,
-				color_depth: 0,
-				num_colors: 0,
+		Ok((
+			Picture {
+				pic_type: picture_type,
+				mime_type,
+				description,
+				information: PictureInformation {
+					width: 0,
+					height: 0,
+					color_depth: 0,
+					num_colors: 0,
+				},
+				data: Cow::from(data),
 			},
-			data: Cow::from(data),
-		})
+			encoding,
+		))
 	}
 
 	#[cfg(feature = "vorbis_comments")]
@@ -484,7 +486,6 @@ impl Picture {
 							if let Ok(()) = cursor.read_exact(&mut binary) {
 								return Ok(Self {
 									pic_type: picture_type,
-									text_encoding: TextEncoding::UTF8,
 									mime_type,
 									description,
 									information: PictureInformation {
@@ -575,7 +576,6 @@ impl Picture {
 
 			return Ok(Picture {
 				pic_type,
-				text_encoding: TextEncoding::UTF8,
 				mime_type,
 				description,
 				information: PictureInformation {

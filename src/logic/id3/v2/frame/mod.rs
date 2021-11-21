@@ -186,7 +186,10 @@ pub enum FrameValue {
 	/// Due to the amount of information needed, it is contained in a separate struct, [`EncodedTextFrame`]
 	UserURL(EncodedTextFrame),
 	/// Represents an "APIC" or "PIC" frame
-	Picture(Picture),
+	Picture {
+		encoding: TextEncoding,
+		picture: Picture,
+	},
 	/// Binary data
 	///
 	/// NOTES:
@@ -307,7 +310,10 @@ pub(crate) enum FrameValueRef<'a> {
 	UserText(&'a EncodedTextFrame),
 	URL(&'a str),
 	UserURL(&'a EncodedTextFrame),
-	Picture(&'a Picture),
+	Picture {
+		encoding: TextEncoding,
+		picture: &'a Picture,
+	},
 	Binary(&'a [u8]),
 }
 
@@ -323,7 +329,10 @@ impl<'a> Into<FrameValueRef<'a>> for &'a FrameValue {
 			FrameValue::UserText(etf) => FrameValueRef::UserText(etf),
 			FrameValue::URL(url) => FrameValueRef::URL(url.as_str()),
 			FrameValue::UserURL(etf) => FrameValueRef::UserURL(etf),
-			FrameValue::Picture(pic) => FrameValueRef::Picture(pic),
+			FrameValue::Picture { encoding, picture } => FrameValueRef::Picture {
+				encoding: *encoding,
+				picture,
+			},
 			FrameValue::Binary(bin) => FrameValueRef::Binary(bin.as_slice()),
 		}
 	}
