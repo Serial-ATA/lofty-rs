@@ -51,28 +51,27 @@ impl TaggedFile {
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Atom`        |
 	pub fn primary_tag(&self) -> Option<&Tag> {
-		let tag_type = match self.ty {
-			FileType::AIFF | FileType::MP3 | FileType::WAV => &TagType::Id3v2,
-			FileType::APE => &TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => &TagType::VorbisComments,
-			FileType::MP4 => &TagType::Mp4Atom,
-		};
-
-		self.tag(tag_type)
+		self.tag(&Self::primary_tag_type(self.ty))
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
 	/// See [`primary_tag`](Self::primary_tag) for an explanation
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		let tag_type = match self.ty {
-			FileType::AIFF | FileType::MP3 | FileType::WAV => &TagType::Id3v2,
-			FileType::APE => &TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => &TagType::VorbisComments,
-			FileType::MP4 => &TagType::Mp4Atom,
-		};
+		self.tag_mut(&Self::primary_tag_type(self.ty))
+	}
 
-		self.tag_mut(tag_type)
+	fn primary_tag_type(f_ty: FileType) -> TagType {
+		match f_ty {
+			#[cfg(feature = "id3v2")]
+			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
+			#[cfg(feature = "ape")]
+			FileType::APE => TagType::Ape,
+			#[cfg(feature = "vorbis_comments")]
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
+			#[cfg(feature = "mp4_atoms")]
+			FileType::MP4 => TagType::Mp4Atom,
+		}
 	}
 
 	/// Gets the first tag, if there are any

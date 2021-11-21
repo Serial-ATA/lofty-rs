@@ -1,7 +1,7 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::Write;
+use std::io::{Seek, Write};
 
 #[test]
 fn read() {
@@ -21,10 +21,8 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = std::fs::OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open("tests/assets/a_mixed.wav")
+	let mut file = tempfile::tempfile().unwrap();
+	file.write_all(&std::fs::read("tests/assets/a_mixed.wav").unwrap())
 		.unwrap();
 
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
@@ -36,6 +34,8 @@ fn write() {
 
 	// RIFF INFO
 	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Bar artist", 1 => file, "Baz artist");
+
+	drop(tagged_file);
 
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();

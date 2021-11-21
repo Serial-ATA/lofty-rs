@@ -70,6 +70,8 @@ macro_rules! remove_tag {
 
 		assert!($tag_type.remove_from(&mut file));
 
+		file.seek(std::io::SeekFrom::Start(0)).unwrap();
+
 		let tagged_file = Probe::new().read_from(&mut file).unwrap();
 		assert!(tagged_file.tag(&$tag_type).is_none());
 	};

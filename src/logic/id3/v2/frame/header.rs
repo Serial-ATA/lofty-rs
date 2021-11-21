@@ -1,10 +1,10 @@
+use super::FrameFlags;
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::types::item::TagItemFlags;
 
 use std::io::Read;
 
-pub(crate) fn parse_v2_header<R>(reader: &mut R) -> Result<Option<(String, u32, TagItemFlags)>>
+pub(crate) fn parse_v2_header<R>(reader: &mut R) -> Result<Option<(String, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -26,13 +26,13 @@ where
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
 	// V2 doesn't store flags
-	Ok(Some((id.to_string(), size, TagItemFlags::default())))
+	Ok(Some((id.to_string(), size, FrameFlags::default())))
 }
 
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	synchsafe: bool,
-) -> Result<Option<(String, u32, TagItemFlags)>>
+) -> Result<Option<(String, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -77,8 +77,8 @@ where
 	Ok(Some((id.to_string(), size, flags)))
 }
 
-pub(crate) fn parse_flags(flags: u16, v4: bool) -> TagItemFlags {
-	TagItemFlags {
+pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {
+	FrameFlags {
 		tag_alter_preservation: if v4 {
 			flags & 0x4000 == 0x4000
 		} else {

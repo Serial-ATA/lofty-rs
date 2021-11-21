@@ -7,6 +7,7 @@ use byteorder::ReadBytesExt;
 
 /// The text encoding for use in ID3v2 frames
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
+#[repr(u8)]
 pub enum TextEncoding {
 	/// ISO-8859-1
 	Latin1 = 0,

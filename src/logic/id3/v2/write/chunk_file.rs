@@ -9,6 +9,8 @@ pub(in crate::logic::id3::v2) fn write_to_chunk_file<B>(data: &mut File, tag: &[
 where
 	B: ByteOrder,
 {
+	data.seek(SeekFrom::Current(12))?;
+
 	let mut id3v2_chunk = (None, None);
 
 	let mut fourcc = [0; 4];
@@ -22,8 +24,13 @@ where
 		data.seek(SeekFrom::Current(i64::from(size)))?;
 	}
 
-	if let (Some(chunk_start), Some(chunk_size)) = id3v2_chunk {
+	if let (Some(chunk_start), Some(mut chunk_size)) = id3v2_chunk {
 		data.seek(SeekFrom::Start(0))?;
+
+		// We need to remove the padding byte if it exists
+		if chunk_size % 2 != 0 {
+			chunk_size += 1;
+		}
 
 		let mut file_bytes = Vec::new();
 		data.read_to_end(&mut file_bytes)?;
@@ -44,7 +51,14 @@ where
 		data.write_u32::<B>(tag.len() as u32)?;
 		data.write_all(tag)?;
 
+		// It is required an odd length chunk be padded with a 0
+		// The 0 isn't included in the chunk size, however
+		if tag.len() % 2 != 0 {
+			data.write_u8(0)?;
+		}
+
 		let total_size = data.seek(SeekFrom::Current(0))? - 8;
+
 		data.seek(SeekFrom::Start(4))?;
 
 		data.write_u32::<B>(total_size as u32)?;

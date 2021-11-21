@@ -1,17 +1,24 @@
-use crate::error::Result;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::Tag;
+use super::tag::Id3v1TagRef;
+use crate::error::{LoftyError, Result};
+use crate::logic::id3::find_id3v1;
+use crate::probe::Probe;
+use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::WriteBytesExt;
 
-pub fn write_id3v1(writer: &mut File, tag: &Tag) -> Result<()> {
-	// This will seek us to the writing position
-	let (exists, _) = super::find_id3v1(writer, false)?;
+pub(in crate::logic) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
+	match Probe::new().file_type(writer) {
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		_ => return Err(LoftyError::UnsupportedTag),
+	}
 
-	if tag.item_count() == 0 && exists {
+	// This will seek us to the writing position
+	let (exists, _) = find_id3v1(writer, false)?;
+
+	if tag.is_empty() && exists {
 		writer.seek(SeekFrom::Start(0))?;
 
 		let mut file_bytes = Vec::new();
@@ -19,7 +26,7 @@ pub fn write_id3v1(writer: &mut File, tag: &Tag) -> Result<()> {
 
 		writer.seek(SeekFrom::Start(0))?;
 		writer.set_len(0)?;
-		writer.write_all(&file_bytes[..file_bytes.len() - 129])?;
+		writer.write_all(&file_bytes[..file_bytes.len() - 128])?;
 
 		return Ok(());
 	}
@@ -31,16 +38,16 @@ pub fn write_id3v1(writer: &mut File, tag: &Tag) -> Result<()> {
 	Ok(())
 }
 
-fn encode(tag: &Tag) -> Result<Vec<u8>> {
-	fn resize_string(item: Option<&TagItem>, size: usize) -> Result<Vec<u8>> {
+fn encode(tag: &Id3v1TagRef) -> Result<Vec<u8>> {
+	fn resize_string(value: Option<&str>, size: usize) -> Result<Vec<u8>> {
 		let mut cursor = Cursor::new(vec![0; size]);
 		cursor.seek(SeekFrom::Start(0))?;
 
-		if let Some(ItemValue::Text(text)) = item.map(TagItem::value) {
-			if text.len() > size {
-				cursor.write_all(text.split_at(size).0.as_bytes())?;
+		if let Some(val) = value {
+			if val.len() > size {
+				cursor.write_all(val.split_at(size).0.as_bytes())?;
 			} else {
-				cursor.write_all(text.as_bytes())?;
+				cursor.write_all(val.as_bytes())?;
 			}
 		}
 
@@ -51,72 +58,25 @@ fn encode(tag: &Tag) -> Result<Vec<u8>> {
 
 	writer.write_all(&[b'T', b'A', b'G'])?;
 
-	let title = resize_string(tag.get_item_ref(&ItemKey::TrackTitle), 30)?;
+	let title = resize_string(tag.title, 30)?;
 	writer.write_all(&*title)?;
 
-	let artist = resize_string(tag.get_item_ref(&ItemKey::TrackArtist), 30)?;
+	let artist = resize_string(tag.artist, 30)?;
 	writer.write_all(&*artist)?;
 
-	let album = resize_string(tag.get_item_ref(&ItemKey::AlbumTitle), 30)?;
+	let album = resize_string(tag.album, 30)?;
 	writer.write_all(&*album)?;
 
-	let year = resize_string(tag.get_item_ref(&ItemKey::Year), 4)?;
+	let year = resize_string(tag.year, 4)?;
 	writer.write_all(&*year)?;
 
-	let comment = resize_string(tag.get_item_ref(&ItemKey::Comment), 28)?;
+	let comment = resize_string(tag.comment, 28)?;
 	writer.write_all(&*comment)?;
 
 	writer.write_u8(0)?;
 
-	let item_to_byte = |key: &ItemKey, max: u8, empty: u8| {
-		if let Some(track_number) = tag.get_item_ref(key) {
-			match track_number.value() {
-				ItemValue::Text(text) => {
-					if let Ok(parsed) = text.parse::<u8>() {
-						if parsed <= max {
-							return parsed;
-						}
-					}
-
-					empty
-				}
-				ItemValue::UInt(i) => {
-					if *i <= u32::from(max) {
-						*i as u8
-					} else {
-						empty
-					}
-				}
-				ItemValue::UInt64(i) => {
-					if *i <= u64::from(max) {
-						*i as u8
-					} else {
-						empty
-					}
-				}
-				ItemValue::Int(i) => {
-					if i.is_positive() && *i <= i32::from(max) {
-						*i as u8
-					} else {
-						empty
-					}
-				}
-				ItemValue::Int64(i) => {
-					if i.is_positive() && *i <= i64::from(max) {
-						*i as u8
-					} else {
-						empty
-					}
-				}
-				_ => empty,
-			}
-		} else {
-			empty
-		}
-	};
-
-	writer.write_u8(item_to_byte(&ItemKey::TrackNumber, 255, 0))?;
-	writer.write_u8(item_to_byte(&ItemKey::Genre, 191, 255))?;
+	writer.write_u8(tag.track_number.unwrap_or(0))?;
+	writer.write_u8(tag.genre.unwrap_or(255))?;
 
 	Ok(writer)
 }

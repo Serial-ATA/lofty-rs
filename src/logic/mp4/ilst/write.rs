@@ -1,23 +1,18 @@
+use super::{AtomDataRef, IlstRef};
 use crate::error::{LoftyError, Result};
+use crate::logic::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::logic::mp4::moov::Moov;
 use crate::logic::mp4::read::nested_atom;
 use crate::logic::mp4::read::verify_mp4;
 use crate::picture::MimeType;
-use crate::types::item::ItemValue;
 use crate::types::picture::Picture;
-use crate::types::tag::{Tag, TagType};
 
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
-	if tag.tag_type() != &TagType::Mp4Atom {
-		return Err(LoftyError::UnsupportedTag);
-	}
-
+pub(in crate::logic) fn write_to(data: &mut File, tag: &mut IlstRef) -> Result<()> {
 	verify_mp4(data)?;
 
 	let moov = Moov::find(data)?;
@@ -31,10 +26,10 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	let mut cursor = Cursor::new(file_bytes);
 	cursor.seek(SeekFrom::Start(pos))?;
 
-	let ilst = build_ilst(tag)?;
+	let ilst = build_ilst(&mut tag.atoms)?;
 	let remove_tag = ilst.is_empty();
 
-	let udta = nested_atom(&mut cursor, moov.len, "udta")?;
+	let udta = nested_atom(&mut cursor, moov.len, b"udta")?;
 
 	// Nothing to do
 	if remove_tag && udta.is_none() {
@@ -48,11 +43,11 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 
 	// ilst is nested in udta.meta, so we need to check what atoms actually exist
 	if let Some(udta) = udta {
-		if let Some(meta) = nested_atom(&mut cursor, udta.len, "meta")? {
+		if let Some(meta) = nested_atom(&mut cursor, udta.len, b"meta")? {
 			// Skip version and flags
 			cursor.seek(SeekFrom::Current(4))?;
 			let (replacement, range, existing_ilst_size) =
-				if let Some(ilst_existing) = nested_atom(&mut cursor, meta.len - 4, "ilst")? {
+				if let Some(ilst_existing) = nested_atom(&mut cursor, meta.len - 4, b"ilst")? {
 					let ilst_existing_size = ilst_existing.len;
 
 					let replacement = if remove_tag { Vec::new() } else { ilst };
@@ -184,55 +179,28 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	Ok(())
 }
 
-fn build_ilst(tag: &Tag) -> Result<Vec<u8>> {
-	if tag.item_count() == 0 && tag.picture_count() == 0 {
-		return Ok(Vec::new());
-	}
+fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef>) -> Result<Vec<u8>> {
+	let mut peek = atoms.peekable();
 
-	let items = tag
-		.items()
-		.iter()
-		.filter_map(|i| {
-			let key = i.key().map_key(&TagType::Mp4Atom).unwrap();
-			let valid_value = std::mem::discriminant(&ItemValue::Binary(Vec::new()))
-				!= std::mem::discriminant(i.value());
-
-			((key.chars().count() == 4 || key.starts_with("----")) && valid_value)
-				.then(|| (key, i.value()))
-		})
-		.collect::<Vec<(&str, &ItemValue)>>();
-
-	if items.is_empty() {
+	if peek.peek().is_none() {
 		return Ok(Vec::new());
 	}
 
 	let mut writer = Cursor::new(vec![0, 0, 0, 0, b'i', b'l', b's', b't']);
 	writer.seek(SeekFrom::End(0))?;
 
-	for (key, value) in items {
+	for atom in peek {
 		let start = writer.seek(SeekFrom::Current(0))?;
 
 		// Empty size, we get it later
 		writer.write_all(&[0; 4])?;
 
-		if key.starts_with("----") {
-			write_freeform(key, &mut writer)?;
-		} else {
-			// "©" is 2 bytes, we only want to write the second one
-			writer.write_all(&if key.starts_with('©') {
-				let key_bytes = key.as_bytes();
-
-				[key_bytes[1], key_bytes[2], key_bytes[3], key_bytes[4]]
-			} else if key.len() > 4 {
-				return Err(LoftyError::BadAtom(
-					"Attempted to write an atom identifier bigger than 4 bytes",
-				));
-			} else {
-				key.as_bytes().try_into().unwrap()
-			})?;
+		match atom.ident {
+			AtomIdentRef::Fourcc(ref fourcc) => writer.write_all(fourcc)?,
+			AtomIdentRef::Freeform { mean, name } => write_freeform(mean, name, &mut writer)?,
 		}
 
-		write_item(value, &mut writer)?;
+		write_atom_data(&atom.data, &mut writer)?;
 
 		let end = writer.seek(SeekFrom::Current(0))?;
 
@@ -243,10 +211,6 @@ fn build_ilst(tag: &Tag) -> Result<Vec<u8>> {
 		write_size(start, size, false, &mut writer)?;
 
 		writer.seek(SeekFrom::Start(end))?;
-	}
-
-	for pic in tag.pictures() {
-		write_picture(pic, &mut writer)?;
 	}
 
 	let size = writer.get_ref().len();
@@ -261,29 +225,18 @@ fn build_ilst(tag: &Tag) -> Result<Vec<u8>> {
 	Ok(writer.into_inner())
 }
 
-fn write_freeform(freeform: &str, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	// ---- : ???? : ????
-	let freeform_split = freeform.splitn(3, ':').collect::<Vec<&str>>();
-
-	if freeform_split.len() != 3 {
-		return Err(LoftyError::BadAtom(
-			"Attempted to write an incomplete freeform identifier",
-		));
-	}
 
 	// ----
-	writer.write_all(freeform_split[0].as_bytes())?;
+	writer.write_all(b"----")?;
 
 	// .... MEAN 0000 ????
-	let mean = freeform_split[1];
-
 	writer.write_u32::<BigEndian>((12 + mean.len()) as u32)?;
 	writer.write_all(&[b'm', b'e', b'a', b'n', 0, 0, 0, 0])?;
 	writer.write_all(mean.as_bytes())?;
 
 	// .... NAME 0000 ????
-	let name = freeform_split[2];
-
 	writer.write_u32::<BigEndian>((12 + name.len()) as u32)?;
 	writer.write_all(&[b'n', b'a', b'm', b'e', 0, 0, 0, 0])?;
 	writer.write_all(name.as_bytes())?;
@@ -291,15 +244,14 @@ fn write_freeform(freeform: &str, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	Ok(())
 }
 
-fn write_item(value: &ItemValue, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_atom_data(value: &AtomDataRef, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	match value {
-		ItemValue::Text(text) => write_data(1, text.as_bytes(), writer),
-		ItemValue::Locator(locator) => write_data(2, locator.as_bytes(), writer),
-		ItemValue::UInt(uint) => write_data(22, uint.to_be_bytes().as_ref(), writer),
-		ItemValue::UInt64(uint64) => write_data(78, uint64.to_be_bytes().as_ref(), writer),
-		ItemValue::Int(int) => write_data(21, int.to_be_bytes().as_ref(), writer),
-		ItemValue::Int64(int64) => write_data(74, int64.to_be_bytes().as_ref(), writer),
-		_ => unreachable!(),
+		AtomDataRef::UTF8(text) => write_data(1, text.as_bytes(), writer),
+		AtomDataRef::UTF16(text) => write_data(2, text.as_bytes(), writer),
+		AtomDataRef::Picture(pic) => write_picture(pic, writer),
+		AtomDataRef::SignedInteger(int) => write_data(21, int.to_be_bytes().as_ref(), writer),
+		AtomDataRef::UnsignedInteger(uint) => write_data(22, uint.to_be_bytes().as_ref(), writer),
+		AtomDataRef::Unknown { code, data } => write_data(*code, data, writer),
 	}
 }
 
@@ -318,8 +270,14 @@ fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> 
 	}
 }
 
-fn write_data(flags: u8, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()> {
-	// .... DATA (flags) 0000 (data)
+fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+	if flags > 16_777_215 {
+		return Err(LoftyError::BadAtom(
+			"Attempted to write a code that cannot fit in 24 bits",
+		));
+	}
+
+	// .... DATA (version = 0) (flags) (locale = 0000) (data)
 	let size = 16_u64 + data.len() as u64;
 
 	writer.write_all(&[0, 0, 0, 0, b'd', b'a', b't', b'a'])?;
@@ -328,7 +286,9 @@ fn write_data(flags: u8, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()
 	// Version
 	writer.write_u8(0)?;
 
-	writer.write_all(&[0, 0, flags])?;
+	writer.write_uint::<BigEndian>(u64::from(flags), 3)?;
+
+	// Locale
 	writer.write_all(&[0; 4])?;
 	writer.write_all(data)?;
 

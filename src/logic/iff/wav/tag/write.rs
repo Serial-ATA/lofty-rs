@@ -1,22 +1,23 @@
+use super::RiffInfoListRef;
 use crate::error::{LoftyError, Result};
-use crate::types::item::ItemValue;
-use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-pub(in crate::logic::iff::wav) fn write_riff_info(data: &mut File, tag: &Tag) -> Result<()> {
+pub(in crate::logic::iff::wav) fn write_riff_info(
+	data: &mut File,
+	tag: &mut RiffInfoListRef,
+) -> Result<()> {
 	let mut riff_info_bytes = Vec::new();
-	create_riff_info(tag, &mut riff_info_bytes)?;
+	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 
-	if find_info_list(data)? {
-		let info_list_size = data.read_u32::<LittleEndian>()? as usize;
-		data.seek(SeekFrom::Current(-8))?;
+	let (info_list, info_list_size) = find_info_list(data)?;
 
-		let info_list_start = data.seek(SeekFrom::Current(0))? as usize;
-		let info_list_end = info_list_start + 8 + info_list_size;
+	if info_list {
+		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
+		let info_list_end = info_list_start + 8 + info_list_size as usize;
 
 		data.seek(SeekFrom::Start(0))?;
 
@@ -45,15 +46,15 @@ pub(in crate::logic::iff::wav) fn write_riff_info(data: &mut File, tag: &Tag) ->
 	Ok(())
 }
 
-fn find_info_list<T>(data: &mut T) -> Result<bool>
+fn find_info_list<T>(data: &mut T) -> Result<(bool, u32)>
 where
 	T: Read + Seek,
 {
 	let mut fourcc = [0; 4];
 
-	let mut found_info = false;
+	let mut info = (false, 0);
 
-	while let (Ok(()), Ok(size)) = (
+	while let (Ok(()), Ok(mut size)) = (
 		data.read_exact(&mut fourcc),
 		data.read_u32::<LittleEndian>(),
 	) {
@@ -62,54 +63,52 @@ where
 			data.read_exact(&mut list_type)?;
 
 			if &list_type == b"INFO" {
-				data.seek(SeekFrom::Current(-8))?;
-				found_info = true;
+				info = (true, size);
 				break;
 			}
 
 			data.seek(SeekFrom::Current(-8))?;
 		}
 
+		if size % 2 != 0 {
+			size += 1;
+		}
+
 		data.seek(SeekFrom::Current(i64::from(size)))?;
 	}
 
-	Ok(found_info)
+	Ok(info)
 }
 
-fn create_riff_info(tag: &Tag, bytes: &mut Vec<u8>) -> Result<()> {
-	if tag.item_count() == 0 {
+fn create_riff_info(
+	items: &mut dyn Iterator<Item = (&str, &String)>,
+	bytes: &mut Vec<u8>,
+) -> Result<()> {
+	let mut items = items.peekable();
+
+	if items.peek().is_none() {
 		return Ok(());
 	}
 
 	bytes.extend(b"LIST".iter());
 	bytes.extend(b"INFO".iter());
 
-	for item in tag.items() {
-		if let Some(key) = item.key().map_key(&TagType::RiffInfo) {
-			if key.len() == 4 && key.is_ascii() {
-				if let ItemValue::Text(value) = item.value() {
-					if value.is_empty() {
-						continue;
-					}
-
-					let val_b = value.as_bytes();
-					// Account for null terminator
-					let len = val_b.len() + 1;
-
-					// Each value has to be null terminated and have an even length
-					let (size, terminator): (u32, &[u8]) = if len % 2 == 0 {
-						(len as u32, &[0])
-					} else {
-						((len + 1) as u32, &[0, 0])
-					};
-
-					bytes.extend(key.as_bytes().iter());
-					bytes.extend(size.to_le_bytes().iter());
-					bytes.extend(val_b.iter());
-					bytes.extend(terminator.iter());
-				}
-			}
+	for (k, v) in items {
+		if v.is_empty() {
+			continue;
 		}
+
+		let val_b = v.as_bytes();
+		// Account for null terminator
+		let len = val_b.len() + 1;
+
+		// Each value has to be null terminated and have an even length
+		let terminator: &[u8] = if len % 2 == 0 { &[0] } else { &[0, 0] };
+
+		bytes.extend(k.as_bytes().iter());
+		bytes.extend((len as u32).to_le_bytes().iter());
+		bytes.extend(val_b.iter());
+		bytes.extend(terminator.iter());
 	}
 
 	let packet_size = bytes.len() - 4;

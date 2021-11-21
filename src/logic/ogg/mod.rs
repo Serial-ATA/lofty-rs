@@ -6,10 +6,13 @@ use ogg_pager::Page;
 
 pub(crate) mod constants;
 pub(crate) mod read;
+#[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
 
 pub(crate) mod flac;
 pub(crate) mod opus;
+#[cfg(feature = "vorbis_comments")]
+pub(crate) mod tag;
 pub(crate) mod vorbis;
 
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {

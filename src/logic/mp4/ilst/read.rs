@@ -1,18 +1,16 @@
+use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::util::text_utils::utf16_decode;
-use crate::logic::id3::v2::util::text_utils::TextEncoding;
-use crate::logic::mp4::atom::Atom;
+use crate::logic::id3::v2::util::text_utils::{utf16_decode, TextEncoding};
+use crate::logic::mp4::atom_info::AtomInfo;
 use crate::logic::mp4::read::skip_unneeded;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
-use crate::types::tag::{Tag, TagType};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::ReadBytesExt;
 
-pub(crate) fn parse_ilst<R>(data: &mut R, len: u64) -> Result<Option<Tag>>
+pub(crate) fn parse_ilst<R>(data: &mut R, len: u64) -> Result<Option<Ilst>>
 where
 	R: Read + Seek,
 {
@@ -21,96 +19,77 @@ where
 
 	let mut cursor = Cursor::new(contents);
 
-	let mut tag = Tag::new(TagType::Mp4Atom);
+	let mut tag = Ilst::default();
 
-	while let Ok(atom) = Atom::read(&mut cursor) {
-		// Safe to unwrap here since ItemKey::Unknown exists
-		let key = match &*atom.ident {
-			"free" | "skip" => {
-				skip_unneeded(&mut cursor, atom.extended, atom.len)?;
-				continue;
-			}
-			"covr" => {
-				let (mime_type, picture) = match parse_data(&mut cursor)? {
-					(ItemValue::Binary(picture), 13) => (MimeType::Jpeg, picture),
-					(ItemValue::Binary(picture), 14) => (MimeType::Png, picture),
-					(ItemValue::Binary(picture), 27) => (MimeType::Bmp, picture),
-					// GIF is deprecated
-					(ItemValue::Binary(picture), 12) => (MimeType::Gif, picture),
-					// Type 0 is implicit
-					(ItemValue::Binary(picture), 0) => (MimeType::None, picture),
-					_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
-				};
-
-				tag.push_picture(Picture {
-					pic_type: PictureType::Other,
-					text_encoding: TextEncoding::UTF8,
-					mime_type,
-					description: None,
-					information: PictureInformation {
-						width: 0,
-						height: 0,
-						color_depth: 0,
-						num_colors: 0,
-					},
-					data: Cow::from(picture),
-				});
-
-				continue;
-			}
-			"----" => ItemKey::from_key(&TagType::Mp4Atom, &*parse_freeform(&mut cursor)?),
-			other => ItemKey::from_key(&TagType::Mp4Atom, other),
-		}
-		.unwrap();
-
-		let data = parse_data(&mut cursor)?.0;
-
-		match key {
-			ItemKey::TrackNumber | ItemKey::DiscNumber => {
-				if let ItemValue::Binary(pair) = data {
-					let pair = &mut &pair[2..6];
-
-					let number = u32::from(pair.read_u16::<BigEndian>()?);
-					let total = u32::from(pair.read_u16::<BigEndian>()?);
-
-					if total == 0 {
-						match key {
-							ItemKey::TrackNumber => tag.insert_item_unchecked(TagItem::new(
-								ItemKey::TrackTotal,
-								ItemValue::UInt(total),
-							)),
-							ItemKey::DiscNumber => tag.insert_item_unchecked(TagItem::new(
-								ItemKey::DiscTotal,
-								ItemValue::UInt(total),
-							)),
-							_ => unreachable!(),
-						}
-					}
-
-					if number == 0 {
-						tag.insert_item_unchecked(TagItem::new(key, ItemValue::UInt(number)))
-					}
-				} else {
-					return Err(LoftyError::BadAtom(
-						"Expected atom data to include integer pair",
-					));
+	while let Ok(atom) = AtomInfo::read(&mut cursor) {
+		let ident = match &atom.ident {
+			AtomIdent::Fourcc(ref fourcc) => match fourcc {
+				b"free" | b"skip" => {
+					skip_unneeded(&mut cursor, atom.extended, atom.len)?;
+					continue;
 				}
-			}
-			_ => tag.insert_item_unchecked(TagItem::new(key, data)),
-		}
+				b"covr" => {
+					let value = parse_data(&mut cursor)?;
+
+					let (mime_type, data) = match value {
+						AtomData::Unknown { code, data } => match code {
+							// Type 0 is implicit
+							0 => (MimeType::None, data),
+							// GIF is deprecated
+							12 => (MimeType::Gif, data),
+							13 => (MimeType::Jpeg, data),
+							14 => (MimeType::Png, data),
+							27 => (MimeType::Bmp, data),
+							_ => {
+								return Err(LoftyError::BadAtom(
+									"\"covr\" atom has an unknown type",
+								))
+							}
+						},
+						_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
+					};
+
+					tag.atoms.push(Atom {
+						ident: atom.ident,
+						data: AtomData::Picture(Picture {
+							pic_type: PictureType::Other,
+							text_encoding: TextEncoding::UTF8,
+							mime_type,
+							description: None,
+							information: PictureInformation {
+								width: 0,
+								height: 0,
+								color_depth: 0,
+								num_colors: 0,
+							},
+							data: Cow::from(data),
+						}),
+					});
+
+					continue;
+				}
+				_ => atom.ident,
+			},
+			_ => atom.ident,
+		};
+
+		let data = parse_data(&mut cursor)?;
+
+		tag.atoms.push(Atom { ident, data })
 	}
 
 	Ok(Some(tag))
 }
 
-fn parse_data<R>(data: &mut R) -> Result<(ItemValue, u32)>
+fn parse_data<R>(data: &mut R) -> Result<AtomData>
 where
 	R: Read + Seek,
 {
-	let atom = Atom::read(data)?;
+	let atom = AtomInfo::read(data)?;
 
-	if atom.ident != "data" {
-		return Err(LoftyError::BadAtom("Expected atom \"data\" to follow name"));
+	match atom.ident {
+		AtomIdent::Fourcc(ref name) if name == b"data" => {}
+		_ => return Err(LoftyError::BadAtom("Expected atom \"data\" to follow name")),
 	}
 
 	// We don't care about the version
@@ -129,26 +108,25 @@ where
 
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	let value = match flags {
-		1 => ItemValue::Text(String::from_utf8(content)?),
-		2 => ItemValue::Text(utf16_decode(&*content, u16::from_be_bytes)?),
-		15 => ItemValue::Locator(String::from_utf8(content)?),
-		22 | 76 | 77 | 78 => parse_uint(&*content)?,
-		21 | 66 | 67 | 74 => parse_int(&*content)?,
-		_ => ItemValue::Binary(content),
+		1 => AtomData::UTF8(String::from_utf8(content)?),
+		2 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+		21 => AtomData::SignedInteger(parse_int(&content)?),
+		22 => AtomData::UnsignedInteger(parse_uint(&content)?),
+		code => AtomData::Unknown {
+			code,
+			data: content,
+		},
 	};
 
-	Ok((value, flags))
+	Ok(value)
 }
 
-fn parse_uint(bytes: &[u8]) -> Result<ItemValue> {
+fn parse_uint(bytes: &[u8]) -> Result<u32> {
 	Ok(match bytes.len() {
-		1 => ItemValue::UInt(u32::from(bytes[0])),
-		2 => ItemValue::UInt(u32::from(u16::from_be_bytes([bytes[0], bytes[1]]))),
-		3 => ItemValue::UInt(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])),
-		4 => ItemValue::UInt(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])),
-		8 => ItemValue::UInt64(u64::from_be_bytes([
-			bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-		])),
+		1 => u32::from(bytes[0]),
+		2 => u32::from(u16::from_be_bytes([bytes[0], bytes[1]])),
+		3 => u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
+		4 => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
 		_ => {
 			return Err(LoftyError::BadAtom(
 				"Unexpected atom size for type \"BE unsigned integer\"",
@@ -157,61 +135,16 @@ fn parse_uint(bytes: &[u8]) -> Result<ItemValue> {
 	})
 }
 
-fn parse_int(bytes: &[u8]) -> Result<ItemValue> {
+fn parse_int(bytes: &[u8]) -> Result<i32> {
 	Ok(match bytes.len() {
-		1 => ItemValue::Int(i32::from(bytes[0])),
-		2 => ItemValue::Int(i32::from(i16::from_be_bytes([bytes[0], bytes[1]]))),
-		3 => ItemValue::Int(i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]) as i32),
-		4 => ItemValue::Int(i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i32),
-		8 => ItemValue::Int64(i64::from_be_bytes([
-			bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-		])),
+		1 => i32::from(bytes[0]),
+		2 => i32::from(i16::from_be_bytes([bytes[0], bytes[1]])),
+		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]) as i32,
+		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i32,
 		_ => {
 			return Err(LoftyError::BadAtom(
 				"Unexpected atom size for type \"BE signed integer\"",
 			))
 		}
 	})
-}
-
-fn parse_freeform<R>(data: &mut R) -> Result<String>
-where
-	R: Read + Seek,
-{
-	// ----:????:????
-	let mut freeform = String::new();
-	freeform.push_str("----:");
-
-	freeform_chunk(data, "mean", &mut freeform)?;
-	freeform.push(':');
-	freeform_chunk(data, "name", &mut freeform)?;
-
-	Ok(freeform)
-}
-
-fn freeform_chunk<R>(data: &mut R, name: &str, freeform: &mut String) -> Result<()>
-where
-	R: Read + Seek,
-{
-	let atom = Atom::read(data)?;
-
-	if atom.ident != name {
-		return Err(LoftyError::BadAtom(
-			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms",
-		));
-	}
-
-	// Version (1)
-	// Flags (3)
-	data.seek(SeekFrom::Current(4))?;
-
-	// Already read the size, identifier, and version/flags (12 bytes)
-	let mut content = vec![0; (atom.len - 12) as usize];
-	data.read_exact(&mut content)?;
-
-	freeform.push_str(std::str::from_utf8(&*content).map_err(|_| {
-		LoftyError::BadAtom("Found a non UTF-8 string while reading freeform identifier")
-	})?);
-
-	Ok(())
 }

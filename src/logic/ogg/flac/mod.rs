@@ -2,50 +2,34 @@ mod block;
 mod read;
 pub(crate) mod write;
 
+use super::tag::VorbisComments;
 use crate::error::Result;
+use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::properties::FileProperties;
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::TagType;
 
 use std::io::{Read, Seek};
 
 /// A FLAC file
 pub struct FlacFile {
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
-	#[cfg(feature = "vorbis_comments")]
-	/// The file vendor's name found in the vorbis comments (if it exists)
-	pub(crate) vendor: Option<String>,
 	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: This field being `Some` does not mean the file has vorbis comments, as Picture blocks exist.
-	pub(crate) vorbis_comments: Option<Tag>,
+	pub(crate) vorbis_comments: Option<VorbisComments>,
+	/// The file's audio properties
+	pub(crate) properties: FileProperties,
 }
 
 impl From<FlacFile> for TaggedFile {
 	fn from(input: FlacFile) -> Self {
-		// Preserve vendor string
-		let tags = {
-			if let Some(mut tag) = input.vorbis_comments {
-				if let Some(vendor) = input.vendor {
-					tag.insert_item_unchecked(TagItem::new(
-						ItemKey::EncoderSoftware,
-						ItemValue::Text(vendor),
-					))
-				}
-
-				vec![tag]
-			} else {
-				Vec::new()
-			}
-		};
-
 		Self {
 			ty: FileType::FLAC,
 			properties: input.properties,
-			tags,
+			tags: input
+				.vorbis_comments
+				.map_or_else(Vec::new, |t| vec![t.into()]),
 		}
 	}
 }
@@ -77,16 +61,6 @@ impl AudioFile for FlacFile {
 	}
 }
 
-impl FlacFile {
-	#[cfg(feature = "vorbis_comments")]
-	/// Returns a reference to the Vorbis comments tag if it exists
-	pub fn vorbis_comments(&self) -> Option<&Tag> {
-		self.vorbis_comments.as_ref()
-	}
-
-	#[cfg(feature = "vorbis_comments")]
-	/// Returns a mutable reference to the Vorbis comments tag if it exists
-	pub fn vorbis_comments_mut(&mut self) -> Option<&mut Tag> {
-		self.vorbis_comments.as_mut()
-	}
+tag_methods! {
+	FlacFile => Vorbis_Comments, vorbis_comments, VorbisComments
 }

@@ -1,54 +1,122 @@
 use crate::error::Result;
-use crate::types::item::{ItemKey, ItemValue};
+use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 
-pub(in crate::logic) fn write_aiff_text(data: &mut File, tag: &Tag) -> Result<()> {
-	let mut text_chunks = Vec::new();
+#[cfg(feature = "aiff_text_chunks")]
+#[derive(Default)]
+/// AIFF text chunks
+///
+/// AIFF has a few chunks for storing basic metadata, all of
+/// which can only appear once in a file.
+pub struct AiffTextChunks {
+	/// The name of the piece
+	pub name: Option<String>,
+	/// The author of the piece
+	pub author: Option<String>,
+	/// A copyright notice consisting of the date followed
+	/// by the copyright owner
+	pub copyright: Option<String>,
+}
 
-	let items = tag.items().iter().filter(|i| {
-		(i.key() == &ItemKey::TrackTitle
-			|| i.key() == &ItemKey::TrackArtist
-			|| i.key() == &ItemKey::CopyrightMessage)
-			&& std::mem::discriminant(i.value())
-				== std::mem::discriminant(&ItemValue::Text(String::new()))
-	});
+impl AiffTextChunks {
+	pub fn write_to(&self, file: &mut File) -> Result<()> {
+		Into::<AiffTextChunksRef>::into(self).write_to(file)
+	}
+}
 
-	for i in items {
-		// Already covered
-		let value = match i.value() {
-			ItemValue::Text(value) => value,
-			_ => unreachable!(),
+impl From<AiffTextChunks> for Tag {
+	fn from(input: AiffTextChunks) -> Self {
+		let mut tag = Tag::new(TagType::AiffText);
+
+		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
+			if let Some(text) = field {
+				tag.insert_item_unchecked(TagItem::new(item_key, ItemValue::Text(text)))
+			}
 		};
 
-		let len = (value.len() as u32).to_be_bytes();
+		push_item(input.name, ItemKey::TrackTitle, &mut tag);
+		push_item(input.author, ItemKey::TrackArtist, &mut tag);
+		push_item(input.copyright, ItemKey::CopyrightMessage, &mut tag);
 
-		// Safe to unwrap since we retained the only possible values
-		text_chunks.extend(
-			i.key()
-				.map_key(&TagType::AiffText)
-				.unwrap()
-				.as_bytes()
-				.iter(),
-		);
-		text_chunks.extend(len.iter());
-		text_chunks.extend(value.as_bytes().iter());
+		tag
+	}
+}
+
+impl From<Tag> for AiffTextChunks {
+	fn from(input: Tag) -> Self {
+		Self {
+			name: input.get_string(&ItemKey::TrackTitle).map(str::to_owned),
+			author: input.get_string(&ItemKey::TrackArtist).map(str::to_owned),
+			copyright: input
+				.get_string(&ItemKey::CopyrightMessage)
+				.map(str::to_owned),
+		}
+	}
+}
+
+pub(crate) struct AiffTextChunksRef<'a> {
+	pub name: Option<&'a str>,
+	pub author: Option<&'a str>,
+	pub copyright: Option<&'a str>,
+}
+
+impl<'a> Into<AiffTextChunksRef<'a>> for &'a AiffTextChunks {
+	fn into(self) -> AiffTextChunksRef<'a> {
+		AiffTextChunksRef {
+			name: self.name.as_deref(),
+			author: self.author.as_deref(),
+			copyright: self.copyright.as_deref(),
+		}
+	}
+}
+
+impl<'a> Into<AiffTextChunksRef<'a>> for &'a Tag {
+	fn into(self) -> AiffTextChunksRef<'a> {
+		AiffTextChunksRef {
+			name: self.get_string(&ItemKey::TrackTitle),
+			author: self.get_string(&ItemKey::TrackArtist),
+			copyright: self.get_string(&ItemKey::CopyrightMessage),
+		}
+	}
+}
+
+impl<'a> AiffTextChunksRef<'a> {
+	pub(in crate::logic) fn write_to(&self, file: &mut File) -> Result<()> {
+		write_to(file, self)
+	}
+}
+
+pub(in crate::logic) fn write_to(data: &mut File, tag: &AiffTextChunksRef) -> Result<()> {
+	fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
+		if let Some(val) = value {
+			let len = (val.len() as u32).to_be_bytes();
+
+			writer.extend(key.as_bytes().iter());
+			writer.extend(len.iter());
+			writer.extend(val.as_bytes().iter());
+		}
 	}
 
-	let mut chunks_remove = Vec::new();
+	super::read::verify_aiff(data)?;
 
-	while let (Ok(fourcc), Ok(size)) = (
-		data.read_u32::<LittleEndian>(),
-		data.read_u32::<BigEndian>(),
-	) {
-		let fourcc_b = &fourcc.to_le_bytes();
+	let mut text_chunks = Vec::new();
+
+	write_chunk(&mut text_chunks, "NAME", tag.name);
+	write_chunk(&mut text_chunks, "AUTH", tag.author);
+	write_chunk(&mut text_chunks, "(c) ", tag.copyright);
+
+	let mut chunks_remove = Vec::new();
+	let mut fourcc = [0; 4];
+
+	while let (Ok(()), Ok(size)) = (data.read_exact(&mut fourcc), data.read_u32::<BigEndian>()) {
 		let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
 
-		if fourcc_b == b"NAME" || fourcc_b == b"AUTH" || fourcc_b == b"(c) " {
+		if &fourcc == b"NAME" || &fourcc == b"AUTH" || &fourcc == b"(c) " {
 			chunks_remove.push((pos, (pos + 8 + size as usize)))
 		}
 

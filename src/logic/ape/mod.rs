@@ -1,11 +1,18 @@
 mod constants;
 mod properties;
 pub(crate) mod read;
+#[cfg(feature = "ape")]
 pub(crate) mod tag;
 pub(crate) mod write;
 
+#[cfg(feature = "id3v1")]
+use crate::logic::id3::v1::tag::Id3v1Tag;
+use crate::logic::id3::v2::tag::Id3v2Tag;
+use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::{FileProperties, Result, Tag, TagType};
+use crate::{FileProperties, Result, TagType};
+
+use tag::ApeTag;
 
 use std::io::{Read, Seek};
 use std::time::Duration;
@@ -61,13 +68,13 @@ impl ApeProperties {
 pub struct ApeFile {
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
-	pub(crate) id3v1: Option<Tag>,
+	pub(crate) id3v1_tag: Option<Id3v1Tag>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag (Not officially supported)
-	pub(crate) id3v2: Option<Tag>,
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	#[cfg(feature = "ape")]
 	/// An APEv1/v2 tag
-	pub(crate) ape: Option<Tag>,
+	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: ApeProperties,
 }
@@ -77,10 +84,14 @@ impl From<ApeFile> for TaggedFile {
 		Self {
 			ty: FileType::APE,
 			properties: FileProperties::from(input.properties),
-			tags: vec![input.id3v1, input.id3v2, input.ape]
-				.into_iter()
-				.flatten()
-				.collect(),
+			tags: vec![
+				input.ape_tag.map(|at| at.into()),
+				input.id3v1_tag.map(|id3v1| id3v1.into()),
+				input.id3v2_tag.map(|id3v2| id3v2.into()),
+			]
+			.into_iter()
+			.flatten()
+			.collect(),
 		}
 	}
 }
@@ -100,54 +111,38 @@ impl AudioFile for ApeFile {
 		&self.properties
 	}
 
+	#[allow(clippy::match_same_arms)]
 	fn contains_tag(&self) -> bool {
-		self.ape.is_some() || self.id3v1.is_some() || self.id3v2.is_some()
+		match self {
+			#[cfg(feature = "ape")]
+			ApeFile {
+				ape_tag: Some(_), ..
+			} => true,
+			#[cfg(feature = "id3v1")]
+			ApeFile {
+				id3v1_tag: Some(_), ..
+			} => true,
+			#[cfg(feature = "id3v2")]
+			ApeFile {
+				id3v2_tag: Some(_), ..
+			} => true,
+			_ => false,
+		}
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
-			TagType::Ape => self.ape.is_some(),
-			TagType::Id3v1 => self.id3v1.is_some(),
-			TagType::Id3v2 => self.id3v2.is_some(),
+			#[cfg(feature = "ape")]
+			TagType::Ape => self.ape_tag.is_some(),
+			#[cfg(feature = "id3v1")]
+			TagType::Id3v1 => self.id3v1_tag.is_some(),
+			#[cfg(feature = "id3v2")]
+			TagType::Id3v2 => self.id3v2_tag.is_some(),
 			_ => false,
 		}
 	}
 }
 
-impl ApeFile {
-	#[cfg(feature = "id3v2")]
-	/// Returns a reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag(&self) -> Option<&Tag> {
-		self.id3v2.as_ref()
-	}
-
-	#[cfg(feature = "id3v2")]
-	/// Returns a mutable reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.id3v2.as_mut()
-	}
-
-	#[cfg(feature = "id3v1")]
-	/// Returns a reference to the ID3v1 tag if it exists
-	pub fn id3v1_tag(&self) -> Option<&Tag> {
-		self.id3v1.as_ref()
-	}
-
-	#[cfg(feature = "id3v1")]
-	/// Returns a mutable reference to the ID3v1 tag if it exists
-	pub fn id3v1_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.id3v1.as_mut()
-	}
-
-	#[cfg(feature = "ape")]
-	/// Returns a reference to the APEv1/2 tag if it exists
-	pub fn ape_tag(&self) -> Option<&Tag> {
-		self.ape.as_ref()
-	}
-
-	#[cfg(feature = "ape")]
-	/// Returns a mutable reference to the APEv1/2 tag if it exists
-	pub fn ape_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.ape.as_mut()
-	}
+tag_methods! {
+	ApeFile => ID3v2, id3v2_tag, Id3v2Tag; ID3v1, id3v1_tag, Id3v1Tag; APE, ape_tag, ApeTag
 }

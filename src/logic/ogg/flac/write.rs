@@ -1,21 +1,16 @@
 use super::block::Block;
 use super::read::verify_flac;
 use crate::error::{LoftyError, Result};
+use crate::logic::ogg::tag::VorbisCommentsRef;
 use crate::logic::ogg::write::create_comments;
 use crate::picture::Picture;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
-	if tag.tag_type() != &TagType::VorbisComments {
-		return Err(LoftyError::UnsupportedTag);
-	}
-
+pub(in crate::logic) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -> Result<()> {
 	let stream_info = verify_flac(data)?;
 	let stream_info_end = stream_info.end as usize;
 
@@ -78,22 +73,13 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		);
 	}
 
-	let vendor = if let Some(ItemValue::Text(vendor)) = tag
-		.get_item_ref(&ItemKey::EncoderSoftware)
-		.map(TagItem::value)
-	{
-		Some(vendor)
-	} else {
-		None
-	};
+	let mut comment_blocks = Cursor::new(Vec::new());
 
-	let mut comment_blocks = Vec::new();
-	create_comment_block(
-		&mut comment_blocks,
-		vendor.unwrap_or(&String::new()),
-		tag.items(),
-	)?;
-	create_picture_blocks(&mut comment_blocks, tag.pictures())?;
+	create_comment_block(&mut comment_blocks, tag.vendor, &mut tag.items)?;
+
+	let mut comment_blocks = comment_blocks.into_inner();
+
+	create_picture_blocks(&mut comment_blocks, tag.pictures)?;
 
 	if blocks_remove.is_empty() {
 		file_bytes.splice(0..0, comment_blocks);
@@ -117,25 +103,43 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	Ok(())
 }
 
-fn create_comment_block(writer: &mut Vec<u8>, vendor: &str, items: &[TagItem]) -> Result<()> {
-	if !items.is_empty() {
+fn create_comment_block(
+	writer: &mut Cursor<Vec<u8>>,
+	vendor: &str,
+	items: &mut dyn Iterator<Item = (&str, &String)>,
+) -> Result<()> {
+	let mut peek = items.peekable();
+
+	if peek.peek().is_some() {
 		let mut byte = 0_u8;
 		byte |= 4 & 0x7f;
 
 		writer.write_u8(byte)?;
 		writer.write_u32::<LittleEndian>(vendor.len() as u32)?;
 		writer.write_all(vendor.as_bytes())?;
-		writer.write_u32::<LittleEndian>(items.len() as u32)?;
 
-		create_comments(writer, items);
+		let item_count_pos = writer.seek(SeekFrom::Current(0))?;
+		let mut count = 0;
 
-		let len = (writer.len() - 1) as u32;
+		writer.write_u32::<LittleEndian>(count)?;
+
+		create_comments(writer, &mut count, items)?;
+
+		let len = (writer.get_ref().len() - 1) as u32;
 
 		if len > 65535 {
 			return Err(LoftyError::TooMuchData);
 		}
 
-		writer.splice(1..1, len.to_be_bytes()[1..].to_vec());
+		let comment_end = writer.seek(SeekFrom::Current(0))?;
+
+		writer.seek(SeekFrom::Start(item_count_pos))?;
+		writer.write_u32::<LittleEndian>(count)?;
+
+		writer.seek(SeekFrom::Start(comment_end))?;
+		writer
+			.get_mut()
+			.splice(1..1, len.to_be_bytes()[1..].to_vec());
 	}
 
 	Ok(())

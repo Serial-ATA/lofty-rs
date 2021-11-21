@@ -1,17 +1,16 @@
+use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::{LoftyError, Result};
 use crate::picture::Picture;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-pub type OGGTags = (String, Tag, Page);
+pub type OGGTags = (Option<VorbisComments>, Page);
 
-pub(crate) fn read_comments<R>(data: &mut R, tag: &mut Tag) -> Result<String>
+pub(super) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result<()>
 where
 	R: Read,
 {
@@ -25,6 +24,8 @@ where
 		Err(_) => return Err(LoftyError::Ogg("File has an invalid vendor string")),
 	};
 
+	tag.vendor = vendor;
+
 	let comments_total_len = data.read_u32::<LittleEndian>()?;
 
 	for _ in 0..comments_total_len {
@@ -37,18 +38,15 @@ where
 
 		let split: Vec<&str> = comment.splitn(2, '=').collect();
 
-		if split[0] == "METADATA_BLOCK_PICTURE" {
-			tag.push_picture(Picture::from_flac_bytes(split[1].as_bytes())?)
-		} else {
-			// It's safe to unwrap here since any unknown key is wrapped in ItemKey::Unknown
-			tag.insert_item(TagItem::new(
-				ItemKey::from_key(&TagType::VorbisComments, split[0]).unwrap(),
-				ItemValue::Text(split[1].to_string()),
-			));
+		match &*split[0] {
+			"METADATA_BLOCK_PICTURE" => tag
+				.pictures
+				.push(Picture::from_flac_bytes(split[1].as_bytes())?),
+			_ => tag.items.push((split[0].to_string(), split[1].to_string())),
 		}
 	}
 
-	Ok(vendor)
+	Ok(())
 }
 
 pub(crate) fn read_from<T>(data: &mut T, header_sig: &[u8], comment_sig: &[u8]) -> Result<OGGTags>
@@ -78,10 +76,20 @@ where
 		}
 	}
 
-	let mut tag = Tag::new(TagType::VorbisComments);
+	#[cfg(feature = "vorbis_comments")]
+	{
+		let mut tag = VorbisComments {
+			vendor: String::new(),
+			items: vec![],
+			pictures: vec![],
+		};
 
-	let reader = &mut &md_pages[..];
-	let vendor = read_comments(reader, &mut tag)?;
+		let reader = &mut &md_pages[..];
+		read_comments(reader, &mut tag)?;
 
-	Ok((vendor, tag, first_page))
+		Ok((Some(tag), first_page))
+	}
+
+	#[cfg(not(feature = "vorbis_comments"))]
+	Ok((None, first_page))
 }

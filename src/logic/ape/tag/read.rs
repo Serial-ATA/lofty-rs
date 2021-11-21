@@ -1,14 +1,14 @@
+use super::{ApeItem, ApeTag};
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::constants::INVALID_KEYS;
-use crate::types::item::{ItemKey, ItemValue, TagItem, TagItemFlags};
-use crate::types::tag::{Tag, TagType};
+use crate::types::item::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(crate) fn read_ape_tag<R>(data: &mut R, footer: bool) -> Result<(Tag, u32)>
+pub(crate) fn read_ape_tag<R>(data: &mut R, footer: bool) -> Result<(ApeTag, u32)>
 where
 	R: Read + Seek,
 {
@@ -34,7 +34,7 @@ where
 		data.seek(SeekFrom::Current(12))?;
 	}
 
-	let mut tag = Tag::new(TagType::Ape);
+	let mut tag = ApeTag::default();
 
 	for _ in 0..item_count {
 		let value_size = data.read_u32::<LittleEndian>()?;
@@ -64,10 +64,7 @@ where
 			return Err(LoftyError::Ape("Tag item contains a non ASCII key"));
 		}
 
-		let item_flags = TagItemFlags {
-			read_only: (flags & 1) == 1,
-			..TagItemFlags::default()
-		};
+		let read_only = (flags & 1) == 1;
 
 		let item_type = (flags & 6) >> 1;
 
@@ -85,13 +82,13 @@ where
 			_ => return Err(LoftyError::Ape("Tag item contains an invalid item type")),
 		};
 
-		let mut item = TagItem::new(
-			ItemKey::from_key(&TagType::Ape, &*key).unwrap(),
-			parsed_value,
-		);
+		let mut item = ApeItem::new(key, parsed_value)?;
 
-		item.set_flags(item_flags);
-		tag.insert_item(item);
+		if read_only {
+			item.set_read_only()
+		}
+
+		tag.push_item(item);
 	}
 
 	// Version 1 doesn't include a header

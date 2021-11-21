@@ -1,11 +1,77 @@
-use super::{find_last_page, VorbisProperties};
+use super::find_last_page;
 use crate::error::{LoftyError, Result};
+use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
+
+/// An OGG Vorbis file's audio properties
+pub struct VorbisProperties {
+	duration: Duration,
+	bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+	version: u32,
+	bitrate_maximum: u32,
+	bitrate_nominal: u32,
+	bitrate_minimum: u32,
+}
+
+impl From<VorbisProperties> for FileProperties {
+	fn from(input: VorbisProperties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl VorbisProperties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Vorbis version
+	pub fn version(&self) -> u32 {
+		self.version
+	}
+
+	/// Maximum bitrate
+	pub fn bitrate_max(&self) -> u32 {
+		self.bitrate_maximum
+	}
+
+	/// Nominal bitrate
+	pub fn bitrate_nominal(&self) -> u32 {
+		self.bitrate_nominal
+	}
+
+	/// Minimum bitrate
+	pub fn bitrate_min(&self) -> u32 {
+		self.bitrate_minimum
+	}
+}
 
 pub(in crate::logic::ogg) fn read_properties<R>(
 	data: &mut R,

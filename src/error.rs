@@ -1,10 +1,10 @@
 use ogg_pager::PageError;
 use std::fmt::{Display, Formatter};
 
-/// Result of tag operations.
+/// Result of tag operations
 pub type Result<T> = std::result::Result<T, LoftyError>;
 
-/// Errors that could occur within Lofty.
+/// Errors that could occur within Lofty
 #[derive(Debug)]
 pub enum LoftyError {
 	// File extension/format related errors
@@ -75,7 +75,6 @@ pub enum LoftyError {
 
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
-	#[cfg(feature = "vorbis_comments")]
 	OggPage(ogg_pager::PageError),
 	/// Unable to convert bytes to a String
 	FromUtf8(std::string::FromUtf8Error),
@@ -87,7 +86,6 @@ impl Display for LoftyError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			// Conversions
-			#[cfg(feature = "vorbis_comments")]
 			LoftyError::OggPage(ref err) => write!(f, "{}", err),
 			LoftyError::FromUtf8(ref err) => write!(f, "{}", err),
 			LoftyError::Io(ref err) => write!(f, "{}", err),

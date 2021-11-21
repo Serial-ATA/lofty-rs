@@ -10,7 +10,7 @@ Parse, convert, and write metadata to various audio formats.
 
 | File Format | Extensions                                      | Read | Write | Metadata Format(s)                                 |
 |-------------|-------------------------------------------------|------|-------|----------------------------------------------------|
-| Ape         | `ape`                                           |**X** |**X**  |`APEv2`, `APEv1`, `ID3v2` (Not officially), `ID3v1` |
+| Ape         | `ape`                                           |**X** |**X**  |`APEv2`, `APEv1`, `ID3v2` (Read only), `ID3v1`      |
 | AIFF        | `aiff`, `aif`                                   |**X** |**X**  |`ID3v2`, `Text Chunks`                              |
 | FLAC        | `flac`                                          |**X** |**X**  |`Vorbis Comments`                                   |
 | MP3         | `mp3`                                           |**X** |**X**  |`ID3v2`, `ID3v1`, `APEv2`, `APEv1`                  |

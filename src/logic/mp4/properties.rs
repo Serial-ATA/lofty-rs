@@ -1,4 +1,5 @@
-use super::atom::Atom;
+use super::atom_info::AtomInfo;
+use super::ilst::AtomIdent;
 use super::read::nested_atom;
 use super::read::skip_unneeded;
 use super::trak::Trak;
@@ -30,32 +31,39 @@ where
 		let mut read = 8;
 
 		while read < mdia.len {
-			let atom = Atom::read(data)?;
+			let atom = AtomInfo::read(data)?;
 
-			match &*atom.ident {
-				"mdhd" => {
-					skip_unneeded(data, atom.extended, atom.len)?;
-					mdhd = Some(atom)
-				}
-				"hdlr" => {
-					// The hdlr atom is followed by 8 zeros
-					data.seek(SeekFrom::Current(8))?;
-
-					let mut handler_type = [0; 4];
-					data.read_exact(&mut handler_type)?;
-
-					if &handler_type == b"soun" {
-						audio_track = true
+			if let AtomIdent::Fourcc(fourcc) = atom.ident {
+				match &fourcc {
+					b"mdhd" => {
+						skip_unneeded(data, atom.extended, atom.len)?;
+						mdhd = Some(atom)
 					}
+					b"hdlr" => {
+						// The hdlr atom is followed by 8 zeros
+						data.seek(SeekFrom::Current(8))?;
 
-					skip_unneeded(data, atom.extended, atom.len - 12)?;
+						let mut handler_type = [0; 4];
+						data.read_exact(&mut handler_type)?;
+
+						if &handler_type == b"soun" {
+							audio_track = true
+						}
+
+						skip_unneeded(data, atom.extended, atom.len - 12)?;
+					}
+					b"minf" => minf = Some(atom),
+					_ => {
+						skip_unneeded(data, atom.extended, atom.len)?;
+						read += atom.len;
+					}
 				}
-				"minf" => minf = Some(atom),
-				_ => {
-					skip_unneeded(data, atom.extended, atom.len)?;
-					read += atom.len
-				}
+
+				continue;
 			}
+
+			skip_unneeded(data, atom.extended, atom.len)?;
+			read += atom.len;
 		}
 	}
 
@@ -106,8 +114,8 @@ where
 	if let Some(minf) = minf {
 		data.seek(SeekFrom::Start(minf.start + 8))?;
 
-		if let Some(stbl) = nested_atom(data, minf.len, "stbl")? {
-			if let Some(stsd) = nested_atom(data, stbl.len, "stsd")? {
+		if let Some(stbl) = nested_atom(data, minf.len, b"stbl")? {
+			if let Some(stsd) = nested_atom(data, stbl.len, b"stsd")? {
 				let mut stsd = vec![0; (stsd.len - 8) as usize];
 				data.read_exact(&mut stsd)?;
 
@@ -119,12 +127,18 @@ where
 				// Number of entries (4)
 				stsd_reader.seek(SeekFrom::Start(8))?;
 
-				let atom = Atom::read(&mut stsd_reader)?;
+				let atom = AtomInfo::read(&mut stsd_reader)?;
 
-				match &*atom.ident {
-					"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
-					"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
-					unknown => properties.codec = Mp4Codec::Unknown(unknown.to_string()),
+				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+					match fourcc {
+						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
+						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
+						unknown => {
+							if let Ok(codec) = std::str::from_utf8(unknown) {
+								properties.codec = Mp4Codec::Unknown(codec.to_string())
+							}
+						}
+					}
 				}
 			}
 		}
@@ -157,11 +171,11 @@ where
 	data.seek(SeekFrom::Current(2))?;
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
-	if let Ok(esds) = Atom::read(data) {
+	if let Ok(esds) = AtomInfo::read(data) {
 		// There are 4 bytes we expect to be zeroed out
 		// Version (1)
 		// Flags (3)
-		if &*esds.ident == "esds" && data.read_u32::<BigEndian>()? == 0 {
+		if esds.ident == AtomIdent::Fourcc(*b"esds") && data.read_u32::<BigEndian>()? == 0 {
 			let mut descriptor = [0; 4];
 			data.read_exact(&mut descriptor)?;
 
@@ -220,8 +234,8 @@ where
 	// First alac atom's content (28)
 	data.seek(SeekFrom::Start(44))?;
 
-	if let Ok(alac) = Atom::read(data) {
-		if &*alac.ident == "alac" {
+	if let Ok(alac) = AtomInfo::read(data) {
+		if alac.ident == AtomIdent::Fourcc(*b"alac") {
 			// Skipping 13 bytes
 			// Version (4)
 			// Samples per frame (4)

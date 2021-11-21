@@ -1,7 +1,5 @@
+use crate::logic::id3::v1::constants::VALID_ITEMKEYS;
 use crate::TagType;
-
-#[cfg(feature = "id3v2")]
-use crate::logic::id3::v2::frame::Id3v2Frame;
 
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {
@@ -21,7 +19,7 @@ macro_rules! first_key {
 // The standard key(s) **must** come before any popular non-standard keys.
 // Keys should appear in order of popularity.
 macro_rules! item_keys {
-	(ALLOWED_UNKNOWN => [$($unknown_tag_type:pat),+]; $($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
+	($($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
 		#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 		#[allow(missing_docs)]
 		#[non_exhaustive]
@@ -30,9 +28,6 @@ macro_rules! item_keys {
 			$(
 				$variant,
 			)+
-			#[cfg(feature = "id3v2")]
-			/// An item that only exists in ID3v2
-			Id3v2Specific(Id3v2Frame),
 			/// When a key couldn't be mapped to another variant
 			///
 			/// This **will not** allow writing keys that are out of spec (Eg. ID3v2.4 frame IDs **must** be 4 characters)
@@ -44,37 +39,29 @@ macro_rules! item_keys {
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
-			pub fn from_key(tag_type: &TagType, key: &str) -> Option<Self> {
+			pub fn from_key(tag_type: &TagType, key: &str) -> Self {
 				match tag_type {
 					$(
 						$(
-							$($tag_type)|* if $(key.eq_ignore_ascii_case($key))||* => Some(ItemKey::$variant),
+							$($tag_type)|* if $(key.eq_ignore_ascii_case($key))||* => ItemKey::$variant,
 						)+
 					)+
-					$(
-						$unknown_tag_type => Some(ItemKey::Unknown(key.to_string())),
-					)+
-					_ => None,
+					_ => Self::Unknown(key.to_string()),
 				}
 			}
 
 			/// Maps the variant to a format-specific key
 			///
-			/// NOTE: Since all ID3v2 tags are upgraded to [`Id3v2Version::V4`](crate::id3::v2::Id3v2Version), the
-			/// version provided does not matter. They cannot be downgraded.
-			pub fn map_key(&self, tag_type: &TagType) -> Option<&str> {
+			/// Use `allow_unknown` to include [`ItemKey::Unknown`]. It is up to the caller
+			/// to determine if the unknown key actually fits the format's specifications.
+			pub fn map_key(&self, tag_type: &TagType, allow_unknown: bool) -> Option<&str> {
 				match (tag_type, self) {
 					$(
 						$(
 							($($tag_type)|*, ItemKey::$variant) => Some(first_key!($($key)|*)),
 						)+
 					)+
-					$(
-						($unknown_tag_type, ItemKey::Unknown(unknown)) => Some(&*unknown),
-					)+
-					// Need a special case here to allow for checked insertion, the result isn't actually used.
-					#[cfg(feature = "id3v2")]
-					(TagType::Id3v2, ItemKey::Id3v2Specific(_)) => Some(""),
+					(_, ItemKey::Unknown(unknown)) if allow_unknown => Some(&*unknown),
 					_ => None,
 				}
 			}
@@ -83,7 +70,6 @@ macro_rules! item_keys {
 }
 
 item_keys!(
-	ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments, TagType::Mp4Atom];
 	// Titles
 	AlbumTitle => [
 		TagType::Id3v2 => "TALB", TagType::Mp4Atom => "\u{a9}alb",
@@ -432,84 +418,29 @@ item_keys!(
 pub enum ItemValue {
 	/// Any UTF-8 encoded text
 	Text(String),
-	/// **(APE/ID3v2 ONLY)** Any UTF-8 encoded locator of external information
+	/// Any UTF-8 encoded locator of external information
+	///
+	/// This is only gets special treatment in ID3v2 and APE tags, being written
+	/// as a normal string in other tags
 	Locator(String),
-	/// **(APE/ID3v2/MP4 ONLY)** Binary information
-	///
-	/// In the case of ID3v2, this is the type of a [`Id3v2Frame::EncapsulatedObject`](crate::id3::v2::Id3v2Frame::EncapsulatedObject),
-	/// [`Id3v2Frame::SyncText`](crate::id3::v2::Id3v2Frame::SyncText), and any unknown frame.
-	///
-	/// For APEv2 and MP4, the only use is for unknown items.
+	/// Binary information
 	Binary(Vec<u8>),
-	/// Any 32 bit unsigned integer
-	///
-	/// This is most commonly used for items such as track and disc numbers
-	UInt(u32),
-	/// **(MP4 ONLY)** Any 64 bit unsigned integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	UInt64(u64),
-	/// Any 32 bit signed integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	Int(i32),
-	/// **(MP4 ONLY)** Any 64 bit signed integer
-	///
-	/// There are no common [`ItemKey`]s that use this
-	Int64(i64),
 }
 
-#[cfg(any(feature = "id3v2", feature = "ape"))]
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Default)]
-#[allow(clippy::struct_excessive_bools)]
-/// **(ID3v2/APEv2 ONLY)** Various flags to describe the content of an item
-///
-/// It is not an error to attempt to write flags to a format that doesn't support them.
-/// They will just be ignored.
-pub struct TagItemFlags {
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Preserve frame on tag edit
-	pub tag_alter_preservation: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Preserve frame on file edit
-	pub file_alter_preservation: bool,
-	#[cfg(any(feature = "id3v2", feature = "ape"))]
-	/// **(ID3v2/APEv2 ONLY)** Item cannot be written to
-	pub read_only: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame belongs in a group
-	///
-	/// In addition to setting this flag, a group identifier byte must be added.
-	/// All frames with the same group identifier byte belong to the same group.
-	pub grouping_identity: (bool, u8),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is zlib compressed
-	///
-	/// It is **required** `data_length_indicator` be set if this is set.
-	pub compression: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is encrypted
-	///
-	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
-	///
-	/// In addition to setting this flag, an encryption method symbol must be added.
-	/// The method symbol **must** be > 0x80.
-	pub encryption: (bool, u8),
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame is unsynchronised
-	///
-	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
-	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
-	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
-	pub unsynchronisation: bool,
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Frame has a data length indicator
-	///
-	/// The data length indicator is the size of the frame if the flags were all zeroed out.
-	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
-	///
-	/// If using encryption, the final size must be added. It will be ignored if using compression.
-	pub data_length_indicator: (bool, u32),
+pub(crate) enum ItemValueRef<'a> {
+	Text(&'a str),
+	Locator(&'a str),
+	Binary(&'a [u8]),
+}
+
+impl<'a> Into<ItemValueRef<'a>> for &'a ItemValue {
+	fn into(self) -> ItemValueRef<'a> {
+		match self {
+			ItemValue::Text(text) => ItemValueRef::Text(text),
+			ItemValue::Locator(locator) => ItemValueRef::Locator(locator),
+			ItemValue::Binary(binary) => ItemValueRef::Binary(binary),
+		}
+	}
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -517,8 +448,6 @@ pub struct TagItemFlags {
 pub struct TagItem {
 	pub(crate) item_key: ItemKey,
 	pub(crate) item_value: ItemValue,
-	#[cfg(any(feature = "id3v2", feature = "ape"))]
-	pub(crate) flags: TagItemFlags,
 }
 
 impl TagItem {
@@ -534,10 +463,9 @@ impl TagItem {
 		item_key: ItemKey,
 		item_value: ItemValue,
 	) -> Option<Self> {
-		item_key.map_key(tag_type).is_some().then(|| Self {
+		item_key.map_key(tag_type, false).is_some().then(|| Self {
 			item_key,
 			item_value,
-			flags: TagItemFlags::default(),
 		})
 	}
 
@@ -546,20 +474,7 @@ impl TagItem {
 		Self {
 			item_key,
 			item_value,
-			flags: TagItemFlags::default(),
 		}
-	}
-
-	#[cfg(any(feature = "id3v2", feature = "ape"))]
-	/// Returns a reference to the [`TagItemFlags`]
-	pub fn flags(&self) -> &TagItemFlags {
-		&self.flags
-	}
-
-	#[cfg(any(feature = "id3v2", feature = "ape"))]
-	/// Set the item's flags
-	pub fn set_flags(&mut self, flags: TagItemFlags) {
-		self.flags = flags
 	}
 
 	/// Returns a reference to the [`ItemKey`]
@@ -573,13 +488,10 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: &TagType) -> Option<()> {
-		#[cfg(any(feature = "id3v2", feature = "ape"))]
-		{
-			(!self.flags().read_only && self.item_key.map_key(tag_type).is_some()).then(|| ())
+		if tag_type == &TagType::Id3v1 {
+			return VALID_ITEMKEYS.contains(&self.item_key).then(|| ());
 		}
-		#[cfg(not(any(feature = "id3v2", feature = "ape")))]
-		{
-			self.item_key.map_key(tag_type).is_some().then(|| ())
-		}
+
+		self.item_key.map_key(tag_type, false).is_some().then(|| ())
 	}
 }

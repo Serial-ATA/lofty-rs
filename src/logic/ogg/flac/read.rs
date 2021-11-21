@@ -2,9 +2,9 @@ use super::block::Block;
 use super::FlacFile;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::read::read_comments;
+use crate::logic::ogg::tag::VorbisComments;
 use crate::picture::Picture;
 use crate::types::properties::FileProperties;
-use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -92,16 +92,21 @@ where
 
 	let mut last_block = stream_info.last;
 
-	let mut vendor = None;
-	let mut tag = Tag::new(TagType::VorbisComments);
+	let mut tag = VorbisComments {
+		vendor: String::new(),
+		items: vec![],
+		pictures: vec![],
+	};
 
 	while !last_block {
 		let block = Block::read(data)?;
 		last_block = block.last;
 
 		match block.ty {
-			4 => vendor = Some(read_comments(&mut &*block.content, &mut tag)?),
-			6 => tag.push_picture(Picture::from_flac_bytes(&*block.content)?),
+			4 => read_comments(&mut &*block.content, &mut tag)?,
+			6 => tag
+				.pictures
+				.push(Picture::from_flac_bytes(&*block.content)?),
 			_ => {}
 		}
 	}
@@ -116,7 +121,6 @@ where
 
 	Ok(FlacFile {
 		properties,
-		vendor,
-		vorbis_comments: (!(tag.picture_count() == 0 && tag.item_count() == 0)).then(|| tag),
+		vorbis_comments: (!(tag.items.is_empty() && tag.pictures.is_empty())).then(|| tag),
 	})
 }

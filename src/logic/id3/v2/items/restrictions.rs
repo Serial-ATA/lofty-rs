@@ -83,7 +83,7 @@ impl TagRestrictions {
 	/// Read a [`TagRestrictions`] from a byte
 	///
 	/// NOTE: See https://id3.org/id3v2.4.0-structure section 3.2, item d
-	pub fn parse(byte: u8) -> Self {
+	pub fn from_byte(byte: u8) -> Self {
 		let mut restrictions = TagRestrictions::default();
 
 		let restriction_flags = byte;
@@ -134,7 +134,7 @@ impl TagRestrictions {
 		restrictions
 	}
 
-	/// Convert a [`TagRestrictions`] into a byte Vec
+	/// Convert a [`TagRestrictions`] into a `u8`
 	///
 	/// NOTE: This does not include a frame header
 	pub fn as_bytes(&self) -> u8 {

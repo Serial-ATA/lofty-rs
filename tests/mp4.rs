@@ -1,7 +1,7 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::Write;
+use std::io::{Seek, Write};
 
 #[test]
 fn read() {
@@ -16,10 +16,8 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = std::fs::OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open("tests/assets/a.m4a")
+	let mut file = tempfile::tempfile().unwrap();
+	file.write_all(&std::fs::read("tests/assets/a.m4a").unwrap())
 		.unwrap();
 
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();

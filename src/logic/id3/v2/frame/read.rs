@@ -1,17 +1,12 @@
 use super::header::{parse_header, parse_v2_header};
+use super::Frame;
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::frame::content::{parse_content, FrameContent};
+use crate::logic::id3::v2::frame::content::parse_content;
 use crate::logic::id3::v2::Id3v2Version;
-use crate::types::item::TagItemFlags;
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
-
-pub(crate) struct Frame {
-	pub flags: TagItemFlags,
-	pub content: FrameContent,
-}
 
 impl Frame {
 	pub(crate) fn read<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
@@ -59,9 +54,8 @@ impl Frame {
 			flags.data_length_indicator.1 = content_reader.read_u32::<BigEndian>()?;
 		}
 
-		Ok(Some(Self {
-			flags,
-			content: parse_content(&mut content_reader, &*id, version)?,
-		}))
+		let (id, value) = parse_content(&mut content_reader, &*id, version)?;
+
+		Ok(Some(Self { id, value, flags }))
 	}
 }

@@ -2,29 +2,21 @@ mod chunk_file;
 mod frame;
 
 use super::find_id3v2;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::logic::id3::synch_u32;
-use crate::types::tag::{Tag, TagFlags};
+use crate::logic::id3::v2::tag::{Id3v2TagFlags, Id3v2TagRef};
+use crate::probe::Probe;
+use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
-pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &Tag) -> Result<()> {
-	if tag.item_count() == 0 {
-		find_id3v2(data, false)?;
-
-		if data.seek(SeekFrom::Current(0))? != 0 {
-			let mut file_bytes = Vec::new();
-			data.read_to_end(&mut file_bytes)?;
-
-			data.seek(SeekFrom::Start(0))?;
-			data.set_len(0)?;
-			data.write_all(&*file_bytes)?;
-		}
-
-		return Ok(());
+pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
+	match Probe::new().file_type(data) {
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		_ => return Err(LoftyError::UnsupportedTag),
 	}
 
 	let id3v2 = create_tag(tag)?;
@@ -45,26 +37,38 @@ pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &Tag) -> Result<()> {
 }
 
 // Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-pub(in crate::logic) fn write_id3v2_to_chunk_file<B>(data: &mut File, tag: &Tag) -> Result<()>
+pub(in crate::logic) fn write_id3v2_to_chunk_file<B>(
+	data: &mut File,
+	tag: &mut Id3v2TagRef,
+) -> Result<()>
 where
 	B: ByteOrder,
 {
-	let id3v2 = if tag.item_count() == 0 {
-		Vec::new()
-	} else {
-		create_tag(tag)?
-	};
+	match Probe::new().file_type(data) {
+		Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {}
+		_ => return Err(LoftyError::UnsupportedTag),
+	}
+
+	let id3v2 = create_tag(tag)?;
+
 	chunk_file::write_to_chunk_file::<B>(data, &id3v2)?;
 
 	Ok(())
 }
 
-fn create_tag(tag: &Tag) -> Result<Vec<u8>> {
-	let mut id3v2 = create_tag_header(tag.flags())?;
+fn create_tag(tag: &mut Id3v2TagRef) -> Result<Vec<u8>> {
+	let frames = &mut tag.frames;
+	let mut peek = frames.peekable();
+
+	if peek.peek().is_none() {
+		return Ok(Vec::new());
+	}
+
+	let mut id3v2 = create_tag_header(tag.flags)?;
 	let header_len = id3v2.get_ref().len();
 
 	// Write the items
-	frame::create_items(&mut id3v2, tag.items())?;
+	frame::create_items(&mut id3v2, &mut peek)?;
 
 	let len = id3v2.get_ref().len() - header_len;
 
@@ -76,7 +80,7 @@ fn create_tag(tag: &Tag) -> Result<Vec<u8>> {
 }
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
-fn create_tag_header(flags: &TagFlags) -> Result<Cursor<Vec<u8>>> {
+fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 	let mut header = Cursor::new(Vec::new());
 
 	header.write_all(&[b'I', b'D', b'3'])?;

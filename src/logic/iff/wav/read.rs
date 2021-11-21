@@ -1,16 +1,14 @@
-use super::{WavFile, WavFormat, WavProperties};
+#[cfg(feature = "riff_info_list")]
+use super::tag::RiffInfoList;
+use super::WavFile;
 use crate::error::{LoftyError, Result};
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek, SeekFrom};
-use std::time::Duration;
 
+use crate::logic::id3::v2::tag::Id3v2Tag;
 use byteorder::{LittleEndian, ReadBytesExt};
-
-const PCM: u16 = 0x0001;
-const IEEE_FLOAT: u16 = 0x0003;
-const EXTENSIBLE: u16 = 0xfffe;
 
 pub(in crate::logic::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
 where
@@ -30,83 +28,6 @@ where
 	Ok(())
 }
 
-fn read_properties(fmt: &mut &[u8], total_samples: u32, stream_len: u32) -> Result<WavProperties> {
-	let mut format_tag = fmt.read_u16::<LittleEndian>()?;
-	let channels = fmt.read_u16::<LittleEndian>()? as u8;
-
-	if channels == 0 {
-		return Err(LoftyError::Wav("File contains 0 channels"));
-	}
-
-	let sample_rate = fmt.read_u32::<LittleEndian>()?;
-	let bytes_per_second = fmt.read_u32::<LittleEndian>()?;
-
-	// Skip 2 bytes
-	// Block align (2)
-	let _ = fmt.read_u16::<LittleEndian>()?;
-
-	let bits_per_sample = fmt.read_u16::<LittleEndian>()?;
-
-	if format_tag == EXTENSIBLE {
-		if fmt.len() < 40 {
-			return Err(LoftyError::Wav(
-				"Extensible format identified, invalid \"fmt \" chunk size found (< 40)",
-			));
-		}
-
-		// Skip 8 bytes
-		// cbSize (Size of extra format information) (2)
-		// Valid bits per sample (2)
-		// Channel mask (4)
-		let _ = fmt.read_u64::<LittleEndian>()?;
-
-		format_tag = fmt.read_u16::<LittleEndian>()?;
-	}
-
-	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
-
-	if non_pcm && total_samples == 0 {
-		return Err(LoftyError::Wav(
-			"Non-PCM format identified, no \"fact\" chunk found",
-		));
-	}
-
-	let sample_frames = if non_pcm {
-		total_samples
-	} else if bits_per_sample > 0 {
-		stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
-	} else {
-		0
-	};
-
-	let (duration, bitrate) = if sample_rate > 0 && sample_frames > 0 {
-		let length = (u64::from(sample_frames) * 1000) / u64::from(sample_rate);
-
-		(
-			Duration::from_millis(length),
-			(u64::from(stream_len * 8) / length) as u32,
-		)
-	} else if bytes_per_second > 0 {
-		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
-
-		(Duration::from_millis(length), (bytes_per_second * 8) / 1000)
-	} else {
-		(Duration::ZERO, 0)
-	};
-
-	Ok(WavProperties {
-		format: match format_tag {
-			PCM => WavFormat::PCM,
-			IEEE_FLOAT => WavFormat::IEEE_FLOAT,
-			other => WavFormat::Other(other),
-		},
-		duration,
-		bitrate,
-		sample_rate,
-		channels,
-	})
-}
-
 pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<WavFile>
 where
 	R: Read + Seek,
@@ -117,8 +38,9 @@ where
 	let mut total_samples = 0_u32;
 	let mut fmt = Vec::new();
 
-	let mut riff_info = Tag::new(TagType::RiffInfo);
-	let mut id3: Option<Tag> = None;
+	#[cfg(feature = "riff_info_list")]
+	let mut riff_info = RiffInfoList::default();
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
 	let mut fourcc = [0; 4];
 
@@ -133,18 +55,16 @@ where
 					data.read_exact(&mut value)?;
 
 					fmt = value;
-					continue;
+				} else {
+					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
-
-				data.seek(SeekFrom::Current(i64::from(size)))?;
 			}
 			b"fact" => {
 				if total_samples == 0 {
 					total_samples = data.read_u32::<LittleEndian>()?;
-					continue;
+				} else {
+					data.seek(SeekFrom::Current(4))?;
 				}
-
-				data.seek(SeekFrom::Current(4))?;
 			}
 			b"data" => {
 				if stream_len == 0 {
@@ -157,13 +77,18 @@ where
 				let mut list_type = [0; 4];
 				data.read_exact(&mut list_type)?;
 
+				#[cfg(feature = "riff_info_list")]
 				if &list_type == b"INFO" {
 					let end = data.seek(SeekFrom::Current(0))? + u64::from(size - 4);
 					super::tag::read::parse_riff_info(data, end, &mut riff_info)?;
-				} else {
+				}
+
+				#[cfg(not(feature = "riff_info_list"))]
+				{
 					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
 			}
+			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => {
 				let mut value = vec![0; size as usize];
 				data.read_exact(&mut value)?;
@@ -175,11 +100,16 @@ where
 					data.seek(SeekFrom::Current(10))?;
 				}
 
-				id3 = Some(id3v2);
+				id3v2_tag = Some(id3v2);
 			}
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(size)))?;
 			}
+		}
+
+		// Chunks only start on even boundaries
+		if size % 2 != 0 {
+			data.seek(SeekFrom::Current(1))?;
 		}
 	}
 
@@ -194,8 +124,10 @@ where
 	}
 
 	Ok(WavFile {
-		properties: read_properties(&mut &*fmt, total_samples, stream_len)?,
-		riff_info: (riff_info.item_count() > 0).then(|| riff_info),
-		id3v2: id3,
+		properties: super::properties::read_properties(&mut &*fmt, total_samples, stream_len)?,
+		#[cfg(feature = "riff_info_list")]
+		riff_info: (!riff_info.items.is_empty()).then(|| riff_info),
+		#[cfg(feature = "id3v2")]
+		id3v2_tag,
 	})
 }

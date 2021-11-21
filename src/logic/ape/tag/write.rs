@@ -1,19 +1,26 @@
 use super::read::read_ape_tag;
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::constants::APE_PREAMBLE;
-use crate::logic::id3::find_lyrics3v2;
-use crate::logic::id3::v1::find_id3v1;
+use crate::logic::ape::tag::item::ApeItemRef;
+use crate::logic::ape::tag::ApeTagRef;
 use crate::logic::id3::v2::find_id3v2;
-use crate::types::item::{ItemValue, TagItem};
-use crate::types::picture::Picture;
-use crate::types::tag::{Tag, TagType};
+use crate::logic::id3::{find_id3v1, find_lyrics3v2};
+use crate::probe::Probe;
+use crate::types::file::FileType;
+use crate::types::item::ItemValueRef;
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
+pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()> {
+	match Probe::new().file_type(data) {
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		_ => return Err(LoftyError::UnsupportedTag),
+	}
+
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
 	find_id3v2(data, false)?;
 
@@ -34,9 +41,9 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		let (mut existing, size) = read_ape_tag(data, false)?;
 
 		// Only keep metadata around that's marked read only
-		existing.retain(|i| i.flags().read_only);
+		existing.items.retain(|_i, v| v.read_only);
 
-		if existing.item_count() > 0 {
+		if !existing.items.is_empty() {
 			read_only = Some(existing)
 		}
 
@@ -65,9 +72,9 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 
 		let (mut existing, size) = read_ape_tag(data, true)?;
 
-		existing.retain(|i| i.flags().read_only);
+		existing.items.retain(|_, v| v.read_only);
 
-		if existing.item_count() > 0 {
+		if !existing.items.is_empty() {
 			read_only = Some(existing)
 		}
 
@@ -80,18 +87,10 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	}
 
 	// Preserve any metadata marked as read only
-	// If there is any read only metadata, we will have to clone the TagItems
 	let tag = if let Some(read_only) = read_only {
-		use std::collections::HashSet;
-
-		let mut items = [read_only.items(), tag.items()].concat();
-
-		let mut unique_items = HashSet::new();
-		items.retain(|i| unique_items.insert(i.clone()));
-
-		create_ape_tag(&items, tag.pictures())?
+		create_ape_tag(&Into::<ApeTagRef>::into(&read_only).items)?
 	} else {
-		create_ape_tag(tag.items(), tag.pictures())?
+		create_ape_tag(&tag.items)?
 	};
 
 	data.seek(SeekFrom::Start(0))?;
@@ -118,67 +117,42 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	Ok(())
 }
 
-fn create_ape_tag(items: &[TagItem], pictures: &[Picture]) -> Result<Vec<u8>> {
+fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
 	// Unnecessary to write anything if there's no metadata
-	if items.is_empty() && pictures.is_empty() {
+	if items.is_empty() {
 		Ok(Vec::<u8>::new())
 	} else {
 		let mut tag = Cursor::new(Vec::<u8>::new());
 
-		let item_count = (items.len() + pictures.len()) as u32;
+		let item_count = items.len() as u32;
 
-		for item in items {
-			let (size, flags, value) = match item.value() {
-				ItemValue::Binary(value) => {
-					let mut flags = 1_u32 << 1;
+		for (k, v) in items {
+			let (mut flags, value) = match v.value {
+				ItemValueRef::Binary(value) => {
+					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
-					if item.flags().read_only {
-						flags |= 1_u32
-					}
-
-					(value.len() as u32, flags, value.as_slice())
+					(1_u32 << 1, value)
 				}
-				ItemValue::Text(value) => {
-					let value = value.as_bytes();
+				ItemValueRef::Text(value) => {
+					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
-					let mut flags = 0_u32;
-
-					if item.flags().read_only {
-						flags |= 1_u32
-					}
-
-					(value.len() as u32, flags, value)
+					(0_u32, value.as_bytes())
 				}
-				ItemValue::Locator(value) => {
-					let mut flags = 2_u32 << 1;
+				ItemValueRef::Locator(value) => {
+					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
-					if item.flags().read_only {
-						flags |= 1_u32
-					}
-
-					(value.len() as u32, flags, value.as_bytes())
+					(2_u32 << 1, value.as_bytes())
 				}
-				_ => continue,
 			};
 
-			tag.write_u32::<LittleEndian>(size)?;
+			if v.read_only {
+				flags |= 1_u32
+			}
+
 			tag.write_u32::<LittleEndian>(flags)?;
-			tag.write_all(item.key().map_key(&TagType::Ape).unwrap().as_bytes())?;
+			tag.write_all(k.as_bytes())?;
 			tag.write_u8(0)?;
 			tag.write_all(value)?;
-		}
-
-		for pic in pictures {
-			let key = pic.pic_type.as_ape_key();
-			let bytes = pic.as_ape_bytes();
-			// Binary item
-			let flags = 1_u32 << 1;
-
-			tag.write_u32::<LittleEndian>(bytes.len() as u32)?;
-			tag.write_u32::<LittleEndian>(flags)?;
-			tag.write_all(key.as_bytes())?;
-			tag.write_u8(0)?;
-			tag.write_all(&bytes)?;
 		}
 
 		let size = tag.get_ref().len();

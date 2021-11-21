@@ -1,8 +1,9 @@
-use super::atom::Atom;
+use super::atom_info::AtomInfo;
 use super::moov::Moov;
 use super::properties::read_properties;
 use super::Mp4File;
 use crate::error::{LoftyError, Result};
+use crate::mp4::AtomIdent;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -10,9 +11,9 @@ pub(in crate::logic::mp4) fn verify_mp4<R>(data: &mut R) -> Result<String>
 where
 	R: Read + Seek,
 {
-	let atom = Atom::read(data)?;
+	let atom = AtomInfo::read(data)?;
 
-	if atom.ident != "ftyp" {
+	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
 		return Err(LoftyError::UnknownFormat);
 	}
 
@@ -61,7 +62,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn nested_atom<R>(data: &mut R, len: u64, expected: &str) -> Result<Option<Atom>>
+pub(crate) fn nested_atom<R>(data: &mut R, len: u64, expected: &[u8]) -> Result<Option<AtomInfo>>
 where
 	R: Read + Seek,
 {
@@ -69,10 +70,10 @@ where
 	let mut ret = None;
 
 	while read < len {
-		let atom = Atom::read(data)?;
+		let atom = AtomInfo::read(data)?;
 
-		match &*atom.ident {
-			ident if ident == expected => {
+		match atom.ident {
+			AtomIdent::Fourcc(ref fourcc) if fourcc == expected => {
 				ret = Some(atom);
 				break;
 			}

@@ -1,3 +1,5 @@
+use crate::types::item::ItemKey;
+
 /// All possible genres for ID3v1
 pub const GENRES: [&str; 192] = [
 	"Blues",
@@ -192,4 +194,12 @@ pub const GENRES: [&str; 192] = [
 	"Dubstep",
 	"Garage Rock",
 	"Psybient",
+];
+
+pub const VALID_ITEMKEYS: [ItemKey; 5] = [
+	ItemKey::TrackTitle,
+	ItemKey::TrackArtist,
+	ItemKey::AlbumTitle,
+	ItemKey::Year,
+	ItemKey::Comment,
 ];

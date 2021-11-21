@@ -112,7 +112,8 @@
 //!
 //! See [`id3`](crate::id3) for important warnings and notes on reading tags.
 
-#![deny(clippy::pedantic, clippy::all, missing_docs)]
+#![deny(clippy::pedantic, clippy::all)]
+// TODO missing_docs
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
@@ -127,7 +128,9 @@
 	clippy::semicolon_if_nothing_returned,
 	clippy::used_underscore_binding,
 	clippy::new_without_default,
-	clippy::unused_self
+	clippy::unused_self,
+	clippy::from_over_into,
+	clippy::upper_case_acronyms
 )]
 
 pub use crate::error::{LoftyError, Result};
@@ -141,12 +144,6 @@ pub use crate::types::{
 	tag::{Tag, TagType},
 };
 
-#[cfg(any(feature = "id3v2", feature = "ape"))]
-pub use crate::types::item::TagItemFlags;
-
-#[cfg(feature = "id3v2")]
-pub use crate::types::tag::TagFlags;
-
 mod types;
 
 /// Various concrete file types, used when inference is unnecessary
@@ -154,7 +151,10 @@ pub mod files {
 	pub use crate::logic::ape::{ApeFile, ApeProperties};
 	pub use crate::logic::iff::{
 		aiff::AiffFile,
-		wav::{WavFile, WavFormat, WavProperties},
+		wav::{
+			properties::{WavFormat, WavProperties},
+			WavFile,
+		},
 	};
 	pub use crate::logic::mp3::{
 		header::{ChannelMode, Layer, MpegVersion},
@@ -163,10 +163,17 @@ pub mod files {
 	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
 	pub use crate::logic::ogg::{
 		flac::FlacFile,
-		opus::{OpusFile, OpusProperties},
-		vorbis::{VorbisFile, VorbisProperties},
+		opus::{properties::OpusProperties, OpusFile},
+		vorbis::{properties::VorbisProperties, VorbisFile},
 	};
 	pub use crate::types::file::AudioFile;
+}
+
+/// Various concrete tag types, used when format-specific features are necessary
+pub mod tags {
+	pub use crate::logic::id3::v1::tag::Id3v1Tag;
+	pub use crate::logic::iff::{aiff::tag::AiffTextChunks, wav::tag::RiffInfoList};
+	pub use crate::logic::ogg::tag::VorbisComments;
 }
 
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
@@ -180,48 +187,19 @@ pub mod id3 {
 		//! ID3v2 items and utilities
 		//!
 		//! # ID3v2 notes and warnings
-		//!
-		//! ID3v2 does things differently than other formats.
-		//!
-		//! ## Unknown Keys
-		//!
-		//! ID3v2 **does not** support [`ItemKey::Unknown`](crate::ItemKey::Unknown) and they will be ignored.
-		//! Instead, [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) with an [`Id3v2Frame`](crate::id3::v2::Id3v2Frame) variant must be used.
-		//!
-		//! ## Frame ID mappings
-		//!
-		//! Certain [`ItemKey`](crate::ItemKey)s are unable to map to an ID3v2 frame, as they are a part of a larger
-		//! collection (such as `TIPL` and `TMCL`).
-		//!
-		//! For example, if the key is `Arranger` (part of `TIPL`), there is no mapping available.
-		//!
-		//! In this case, the caller is expected to build these lists. If these [`ItemKey`](crate::ItemKey)s are inserted
-		//! using [`Tag::insert_item_unchecked`](crate::Tag::insert_item_unchecked), they will simply be ignored.
-		//!
-		//! ## Special frames
-		//!
-		//! ID3v2 has multiple frames that have no equivalent in other formats:
-		//!
-		//! * COMM - Comments (Unlike comments in other formats)
-		//! * USLT - Unsynchronized text (Unlike lyrics/text in other formats)
-		//! * TXXX - User defined text
-		//! * WXXX - User defined URL
-		//! * SYLT - Synchronized text
-		//! * GEOB - Encapsulated object (file)
-		//!
-		//! These frames all require different amounts of information, so they cannot be mapped to a traditional [`ItemKey`](crate::ItemKey) variant.
-		//! The solution is to use [`ItemKey::Id3v2Specific`](crate::ItemKey::Id3v2Specific) alongside [`Id3v2Frame`](crate::id3::v2::Id3v2Frame).
-		//!
-		//! NOTE: Unlike the above issue, this one does not require unchecked insertion.
+		// TODO
 
 		pub use {
-			crate::logic::id3::v2::frame::{Id3v2Frame, LanguageSpecificFrame},
+			crate::logic::id3::v2::frame::{
+				EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, LanguageFrame,
+			},
 			crate::logic::id3::v2::items::encapsulated_object::{
 				GEOBInformation, GeneralEncapsulatedObject,
 			},
 			crate::logic::id3::v2::items::sync_text::{
 				SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
 			},
+			crate::logic::id3::v2::tag::{Id3v2Tag, Id3v2TagFlags},
 			crate::logic::id3::v2::util::text_utils::TextEncoding,
 			crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3},
 			crate::logic::id3::v2::Id3v2Version,
@@ -251,6 +229,11 @@ pub mod id3 {
 
 		pub use crate::logic::id3::v1::constants::GENRES;
 	}
+}
+
+/// MP4 specific items
+pub mod mp4 {
+	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent};
 }
 
 /// Various items related to [`Picture`](crate::picture::Picture)s

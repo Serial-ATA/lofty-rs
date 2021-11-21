@@ -2,12 +2,14 @@ use super::header::{verify_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::error::{LoftyError, Result};
 use crate::logic::id3::unsynch_u32;
+use crate::logic::id3::v1::tag::Id3v1Tag;
 use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::tag::Tag;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use crate::id3::v2::Id3v2Tag;
+use crate::logic::ape::tag::ApeTag;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 fn read_properties(
@@ -62,9 +64,9 @@ pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp3File>
 where
 	R: Read + Seek,
 {
-	let mut id3v2: Option<Tag> = None;
-	let mut id3v1: Option<Tag> = None;
-	let mut ape: Option<Tag> = None;
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	let mut id3v1_tag: Option<Id3v1Tag> = None;
+	let mut ape_tag: Option<ApeTag> = None;
 
 	let mut first_mpeg_frame = (None, 0);
 	let mut last_mpeg_frame = (None, 0);
@@ -100,14 +102,14 @@ where
 				let mut id3v2_read = vec![0; size];
 				data.read_exact(&mut id3v2_read)?;
 
-				let id3v2_tag = parse_id3v2(&mut &*id3v2_read)?;
+				let id3v2 = parse_id3v2(&mut &*id3v2_read)?;
 
 				// Skip over the footer
-				if id3v2_tag.flags().footer {
+				if id3v2.flags().footer {
 					data.seek(SeekFrom::Current(10))?;
 				}
 
-				id3v2 = Some(id3v2_tag);
+				id3v2_tag = Some(id3v2);
 
 				continue;
 			}
@@ -117,7 +119,7 @@ where
 				let mut id3v1_read = [0; 128];
 				data.read_exact(&mut id3v1_read)?;
 
-				id3v1 = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
+				id3v1_tag = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
 				continue;
 			}
 			[b'A', b'P', b'E', b'T'] => {
@@ -125,7 +127,7 @@ where
 				data.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					ape = Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
+					ape_tag = Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
 					continue;
 				}
 			}
@@ -150,9 +152,12 @@ where
 	let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
 
 	Ok(Mp3File {
-		id3v2,
-		id3v1,
-		ape,
+		#[cfg(feature = "id3v2")]
+		id3v2_tag,
+		#[cfg(feature = "id3v1")]
+		id3v1_tag,
+		#[cfg(feature = "ape")]
+		ape_tag,
 		properties: read_properties(first_mpeg_frame, last_mpeg_frame, xing_header),
 	})
 }

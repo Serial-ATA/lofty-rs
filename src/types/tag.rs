@@ -1,17 +1,13 @@
 use super::item::{ItemKey, ItemValue, TagItem};
 use super::picture::{Picture, PictureType};
 use crate::error::{LoftyError, Result};
-#[cfg(feature = "id3v2_restrictions")]
-use crate::logic::id3::v2::items::restrictions::TagRestrictions;
 use crate::probe::Probe;
 
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 
-#[cfg(feature = "quick_tag_accessors")]
 use paste::paste;
 
-#[cfg(feature = "quick_tag_accessors")]
 macro_rules! common_items {
 	($($item_key:ident => $name:tt),+) => {
 		paste! {
@@ -41,38 +37,14 @@ macro_rules! common_items {
 	}
 }
 
-#[cfg(feature = "id3v2")]
-#[derive(Default, Copy, Clone)]
-#[allow(clippy::struct_excessive_bools)]
-/// **(ID3v2 ONLY)** Flags that apply to the entire tag
-pub struct TagFlags {
-	/// Whether or not all frames are unsynchronised. See [`TagItemFlags::unsynchronisation`](crate::TagItemFlags::unsynchronisation)
-	pub unsynchronisation: bool,
-	/// Indicates if the tag is in an experimental stage
-	pub experimental: bool,
-	/// Indicates that the tag includes a footer
-	pub footer: bool,
-	/// Whether or not to include a CRC-32 in the extended header
-	///
-	/// This is calculated if the tag is written
-	pub crc: bool,
-	#[cfg(feature = "id3v2_restrictions")]
-	/// Restrictions on the tag, written in the extended header
-	///
-	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]
-	pub restrictions: (bool, TagRestrictions),
-}
-
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
 /// NOTE: Items and pictures are separated
 pub struct Tag {
 	tag_type: TagType,
-	pictures: Vec<Picture>,
-	items: Vec<TagItem>,
-	#[cfg(feature = "id3v2")]
-	flags: TagFlags,
+	pub(crate) pictures: Vec<Picture>,
+	pub(crate) items: Vec<TagItem>,
 }
 
 impl IntoIterator for Tag {
@@ -85,48 +57,12 @@ impl IntoIterator for Tag {
 }
 
 impl Tag {
-	/// The tag's items as a slice
-	pub fn as_slice(&self) -> &[TagItem] {
-		&*self.items
-	}
-
-	/// Retain tag items based on the predicate
-	///
-	/// See [`Vec::retain`](std::vec::Vec::retain)
-	pub fn retain<F>(&mut self, f: F)
-	where
-		F: FnMut(&TagItem) -> bool,
-	{
-		self.items.retain(f)
-	}
-
-	/// Find the first TagItem matching the predicate
-	///
-	/// See [`Iterator::find`](std::iter::Iterator::find)
-	pub fn find<P>(&mut self, predicate: P) -> Option<&TagItem>
-	where
-		P: for<'a> FnMut(&'a &TagItem) -> bool,
-	{
-		self.items.iter().find(predicate)
-	}
-}
-
-impl Tag {
 	/// Initialize a new tag with a certain [`TagType`]
 	pub fn new(tag_type: TagType) -> Self {
 		Self {
 			tag_type,
 			pictures: vec![],
 			items: vec![],
-			flags: TagFlags::default(),
-		}
-	}
-
-	#[cfg(feature = "id3v2")]
-	/// **(ID3v2 ONLY)** Restrict the tag's flags
-	pub fn set_flags(&mut self, flags: TagFlags) {
-		if TagType::Id3v2 == self.tag_type {
-			self.flags = flags
 		}
 	}
 }
@@ -153,12 +89,6 @@ impl Tag {
 	/// Returns the number of [`TagItem`]s
 	pub fn item_count(&self) -> u32 {
 		self.items.len() as u32
-	}
-
-	#[cfg(feature = "id3v2")]
-	/// Returns the [`TagFlags`]
-	pub fn flags(&self) -> &TagFlags {
-		&self.flags
 	}
 }
 
@@ -225,10 +155,7 @@ impl Tag {
 
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
-	/// NOTES:
-	///
-	/// * This **will** respect [`TagItemFlags::read_only`](crate::TagItemFlags::read_only)
-	/// * This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
+	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// # Warning
 	///
@@ -247,16 +174,20 @@ impl Tag {
 	///
 	/// Notes:
 	///
-	/// * This **will not** respect [`TagItemFlags::read_only`](crate::TagItemFlags::read_only)
 	/// * This **will not** verify an [`ItemKey`] mapping exists
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
-	/// This is only necessary if using [`ItemKey::Unknown`] or single [`ItemKey`]s that are parts of larger lists.
+	/// This is only necessary if dealing with [`ItemKey::Unknown`].
 	pub fn insert_item_unchecked(&mut self, item: TagItem) {
 		match self.items.iter_mut().find(|i| i.item_key == item.item_key) {
 			None => self.items.push(item),
 			Some(i) => *i = item,
 		};
+	}
+
+	/// An alias for [`Tag::insert_item`] that doesn't require the user to create a [`TagItem`]
+	pub fn insert_text(&mut self, item_key: ItemKey, text: String) -> bool {
+		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)))
 	}
 }
 
@@ -302,7 +233,33 @@ impl Tag {
 	}
 }
 
-#[cfg(feature = "quick_tag_accessors")]
+impl Tag {
+	/// The tag's items as a slice
+	pub fn as_slice(&self) -> &[TagItem] {
+		&*self.items
+	}
+
+	/// Retain tag items based on the predicate
+	///
+	/// See [`Vec::retain`](std::vec::Vec::retain)
+	pub fn retain<F>(&mut self, f: F)
+	where
+		F: FnMut(&TagItem) -> bool,
+	{
+		self.items.retain(f)
+	}
+
+	/// Find the first TagItem matching the predicate
+	///
+	/// See [`Iterator::find`](std::iter::Iterator::find)
+	pub fn find<P>(&mut self, predicate: P) -> Option<&TagItem>
+	where
+		P: for<'a> FnMut(&'a &TagItem) -> bool,
+	{
+		self.items.iter().find(predicate)
+	}
+}
+
 common_items!(TrackArtist => artist, TrackTitle => title, AlbumTitle => album_title, AlbumArtist => album_artist);
 
 /// The tag's format

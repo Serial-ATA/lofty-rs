@@ -1,11 +1,16 @@
+mod properties;
 mod read;
-mod tag;
+#[cfg(feature = "aiff_text_chunks")]
+pub(crate) mod tag;
 pub(in crate::logic) mod write;
 
 use crate::error::Result;
+use crate::logic::id3::v2::tag::Id3v2Tag;
+use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::TagType;
+use tag::AiffTextChunks;
 
 use std::io::{Read, Seek};
 
@@ -13,10 +18,10 @@ use std::io::{Read, Seek};
 pub struct AiffFile {
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Any text chunks included in the file
-	pub(crate) text_chunks: Option<Tag>,
+	pub(crate) text_chunks: Option<AiffTextChunks>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2: Option<Tag>,
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
 }
@@ -26,10 +31,13 @@ impl From<AiffFile> for TaggedFile {
 		Self {
 			ty: FileType::AIFF,
 			properties: input.properties,
-			tags: vec![input.text_chunks, input.id3v2]
-				.into_iter()
-				.flatten()
-				.collect(),
+			tags: vec![
+				input.text_chunks.map(|tc| tc.into()),
+				input.id3v2_tag.map(|id3| id3.into()),
+			]
+			.into_iter()
+			.flatten()
+			.collect(),
 		}
 	}
 }
@@ -50,40 +58,18 @@ impl AudioFile for AiffFile {
 	}
 
 	fn contains_tag(&self) -> bool {
-		self.id3v2.is_some() || self.text_chunks.is_some()
+		self.id3v2_tag.is_some() || self.text_chunks.is_some()
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
-			TagType::Id3v2 => self.id3v2.is_some(),
+			TagType::Id3v2 => self.id3v2_tag.is_some(),
 			TagType::AiffText => self.text_chunks.is_some(),
 			_ => false,
 		}
 	}
 }
 
-impl AiffFile {
-	#[cfg(feature = "id3v2")]
-	/// Returns a reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag(&self) -> Option<&Tag> {
-		self.id3v2.as_ref()
-	}
-
-	#[cfg(feature = "id3v2")]
-	/// Returns a mutable reference to the ID3v2 tag if it exists
-	pub fn id3v2_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.id3v2.as_mut()
-	}
-
-	#[cfg(feature = "aiff_text_chunks")]
-	/// Returns a reference to the text chunks tag if it exists
-	pub fn text_chunks(&self) -> Option<&Tag> {
-		self.text_chunks.as_ref()
-	}
-
-	#[cfg(feature = "aiff_text_chunks")]
-	/// Returns a mutable reference to the text chunks tag if it exists
-	pub fn text_chunks_mut(&mut self) -> Option<&mut Tag> {
-		self.text_chunks.as_mut()
-	}
+tag_methods! {
+	AiffFile => ID3v2, id3v2_tag, Id3v2Tag; Text_Chunks, text_chunks, AiffTextChunks
 }

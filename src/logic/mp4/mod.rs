@@ -1,12 +1,16 @@
-mod atom;
-pub(in crate::logic) mod ilst;
+mod atom_info;
+#[cfg(feature = "mp4_atoms")]
+pub(crate) mod ilst;
 mod moov;
 mod properties;
 mod read;
 mod trak;
 
+use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::{FileProperties, Result, Tag, TagType};
+use crate::{FileProperties, Result, TagType};
+#[cfg(feature = "mp4_atoms")]
+use ilst::Ilst;
 
 use std::io::{Read, Seek};
 use std::time::Duration;
@@ -72,7 +76,7 @@ pub struct Mp4File {
 	pub(crate) ftyp: String,
 	#[cfg(feature = "mp4_atoms")]
 	/// The [`Tag`] parsed from the ilst atom, not guaranteed
-	pub(crate) ilst: Option<Tag>,
+	pub(crate) ilst: Option<Ilst>,
 	/// The file's audio properties
 	pub(crate) properties: Mp4Properties,
 }
@@ -83,7 +87,7 @@ impl From<Mp4File> for TaggedFile {
 			ty: FileType::MP4,
 			properties: FileProperties::from(input.properties),
 			tags: if let Some(ilst) = input.ilst {
-				vec![ilst]
+				vec![ilst.into()]
 			} else {
 				Vec::new()
 			},
@@ -122,16 +126,8 @@ impl Mp4File {
 	pub fn ftyp(&self) -> &str {
 		self.ftyp.as_ref()
 	}
+}
 
-	#[cfg(feature = "mp4_atoms")]
-	/// Returns a reference to the "ilst" tag if it exists
-	pub fn ilst(&self) -> Option<&Tag> {
-		self.ilst.as_ref()
-	}
-
-	#[cfg(feature = "mp4_atoms")]
-	/// Returns a mutable reference to the "ilst" tag if it exists
-	pub fn ilst_mut(&mut self) -> Option<&mut Tag> {
-		self.ilst.as_mut()
-	}
+tag_methods! {
+	Mp4File => ilst, ilst, Ilst
 }

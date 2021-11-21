@@ -3,14 +3,17 @@ use super::properties::{properties_gt_3980, properties_lt_3980};
 use super::tag::read::read_ape_tag;
 use super::{ApeFile, ApeProperties};
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::find_lyrics3v2;
-use crate::logic::id3::v1::find_id3v1;
-use crate::logic::id3::v2::find_id3v2;
-use crate::logic::id3::v2::read::parse_id3v2;
-use crate::types::tag::Tag;
+#[cfg(feature = "id3v1")]
+use crate::logic::id3::v1::tag::Id3v1Tag;
+#[cfg(any(feature = "id3v2", feature = "id3v1"))]
+use crate::logic::id3::{find_id3v1, find_lyrics3v2};
+#[cfg(feature = "id3v2")]
+use {crate::logic::id3::v2::find_id3v2, crate::logic::id3::v2::read::parse_id3v2};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::id3::v2::Id3v2Tag;
+use crate::logic::ape::tag::ApeTag;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 fn read_properties<R>(data: &mut R, stream_len: u64) -> Result<ApeProperties>
@@ -40,22 +43,22 @@ where
 
 	let mut stream_len = end - start;
 
-	let mut id3v2: Option<Tag> = None;
-	let mut id3v1: Option<Tag> = None;
-	let mut ape: Option<Tag> = None;
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	let mut id3v1_tag: Option<Id3v1Tag> = None;
+	let mut ape_tag: Option<ApeTag> = None;
 
 	// ID3v2 tags are unsupported in APE files, but still possible
 	if let Some(id3v2_read) = find_id3v2(data, true)? {
 		stream_len -= id3v2_read.len() as u64;
 
-		let id3v2_tag = parse_id3v2(&mut &*id3v2_read)?;
+		let id3v2 = parse_id3v2(&mut &*id3v2_read)?;
 
 		// Skip over the footer
-		if id3v2_tag.flags().footer {
+		if id3v2.flags().footer {
 			data.seek(SeekFrom::Current(10))?;
 		}
 
-		id3v2 = Some(id3v2_tag)
+		id3v2_tag = Some(id3v2)
 	}
 
 	let mut found_mac = false;
@@ -86,10 +89,10 @@ where
 					return Err(LoftyError::Ape("Found incomplete APE tag"));
 				}
 
-				let (ape_tag, size) = read_ape_tag(data, false)?;
-
+				let (ape, size) = read_ape_tag(data, false)?;
 				stream_len -= u64::from(size);
-				ape = Some(ape_tag)
+
+				ape_tag = Some(ape)
 			}
 			_ => {
 				return Err(LoftyError::Ape(
@@ -104,11 +107,11 @@ where
 	//
 	// Starts with ['T', 'A', 'G']
 	// Exactly 128 bytes long (including the identifier)
-	let (found_id3v1, id3v1_tag) = find_id3v1(data, true)?;
+	let (found_id3v1, id3v1) = find_id3v1(data, true)?;
 
 	if found_id3v1 {
 		stream_len -= 128;
-		id3v1 = id3v1_tag;
+		id3v1_tag = id3v1;
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
@@ -129,19 +132,22 @@ where
 	data.read_exact(&mut ape_preamble)?;
 
 	if &ape_preamble == APE_PREAMBLE {
-		let (ape_tag, size) = read_ape_tag(data, true)?;
+		let (ape, size) = read_ape_tag(data, true)?;
 
 		stream_len -= u64::from(size);
-		ape = Some(ape_tag)
+		ape_tag = Some(ape)
 	}
 
 	// Go back to the MAC header to read properties
 	data.seek(SeekFrom::Start(mac_start))?;
 
 	Ok(ApeFile {
-		id3v1,
-		id3v2,
-		ape,
+		#[cfg(feature = "id3v1")]
+		id3v1_tag,
+		#[cfg(feature = "id3v2")]
+		id3v2_tag,
+		#[cfg(feature = "ape")]
+		ape_tag,
 		properties: read_properties(data, stream_len)?,
 	})
 }

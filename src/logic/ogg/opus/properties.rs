@@ -1,11 +1,59 @@
-use super::{find_last_page, OpusProperties};
+use super::find_last_page;
 use crate::error::{LoftyError, Result};
+use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
+
+/// An Opus file's audio properties
+pub struct OpusProperties {
+	duration: Duration,
+	bitrate: u32,
+	channels: u8,
+	version: u8,
+	input_sample_rate: u32,
+}
+
+impl From<OpusProperties> for FileProperties {
+	fn from(input: OpusProperties) -> Self {
+		Self {
+			duration: input.duration,
+			bitrate: Some(input.bitrate),
+			sample_rate: Some(input.input_sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl OpusProperties {
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.bitrate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Opus version
+	pub fn version(&self) -> u8 {
+		self.version
+	}
+
+	/// Input sample rate
+	pub fn input_sample_rate(&self) -> u32 {
+		self.input_sample_rate
+	}
+}
 
 pub(in crate::logic::ogg) fn read_properties<R>(
 	data: &mut R,

@@ -1,7 +1,7 @@
 mod util;
 
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::Write;
+use std::io::{Seek, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
 // We have the vendor string and a title stored in the tag
@@ -61,17 +61,16 @@ fn read(path: &str, file_type: &FileType) {
 }
 
 fn write(path: &str, file_type: &FileType) {
-	let mut file = std::fs::OpenOptions::new()
-		.read(true)
-		.write(true)
-		.open(path)
-		.unwrap();
+	let mut file = tempfile::tempfile().unwrap();
+	file.write_all(&std::fs::read(path).unwrap()).unwrap();
 
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
 
 	assert_eq!(tagged_file.file_type(), file_type);
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 2 => file, "Bar artist");
+
+	drop(tagged_file);
 
 	// Now reread the file
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();

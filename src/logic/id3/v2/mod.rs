@@ -1,15 +1,16 @@
+pub(crate) mod frame;
+pub(crate) mod items;
+pub(crate) mod read;
+pub(crate) mod tag;
+pub(crate) mod util;
+pub(in crate::logic) mod write;
+
 use crate::error::Result;
 use crate::logic::id3::unsynch_u32;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ByteOrder};
-
-pub(crate) mod frame;
-pub(crate) mod items;
-pub(crate) mod read;
-pub(crate) mod util;
-pub(in crate::logic) mod write;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 /// The ID3v2 version

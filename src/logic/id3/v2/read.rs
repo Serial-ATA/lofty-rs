@@ -1,18 +1,17 @@
-use super::frame::read::Frame;
-use crate::error::Result;
+use super::frame::Frame;
+use super::tag::Id3v2Tag;
+use super::tag::Id3v2TagFlags;
+use crate::error::{LoftyError, Result};
 use crate::logic::id3::unsynch_u32;
-use crate::logic::id3::v2::frame::content::FrameContent;
 #[cfg(feature = "id3v2_restrictions")]
 use crate::logic::id3::v2::items::restrictions::TagRestrictions;
 use crate::logic::id3::v2::Id3v2Version;
-use crate::types::tag::{Tag, TagFlags};
-use crate::{LoftyError, TagType};
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
+pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Id3v2Tag> {
 	let mut header = [0; 10];
 	bytes.read_exact(&mut header)?;
 
@@ -37,7 +36,7 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 		return Err(LoftyError::Id3v2("Encountered a compressed ID3v2.2 tag"));
 	}
 
-	let mut flags_parsed = TagFlags {
+	let mut flags_parsed = Id3v2TagFlags {
 		unsynchronisation: flags & 0x80 == 0x80,
 		experimental: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x20 == 0x20,
@@ -82,27 +81,17 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Tag> {
 			// We don't care about the length byte, it is always 1
 			let _data_length = bytes.read_u8()?;
 
-			flags_parsed.restrictions.1 = TagRestrictions::parse(bytes.read_u8()?);
+			flags_parsed.restrictions.1 = TagRestrictions::from_byte(bytes.read_u8()?);
 		}
 	}
 
-	let mut tag = {
-		let mut tag = Tag::new(TagType::Id3v2);
-		tag.set_flags(flags_parsed);
-
-		tag
-	};
+	let mut tag = Id3v2Tag::default();
+	tag.set_flags(flags_parsed);
 
 	loop {
 		match Frame::read(bytes, version)? {
 			None => break,
-			Some(f) => match f.content {
-				FrameContent::Picture(pic) => tag.push_picture(pic),
-				FrameContent::Item(mut item) => {
-					item.set_flags(f.flags);
-					tag.insert_item_unchecked(item)
-				}
-			},
+			Some(f) => drop(tag.insert(f)),
 		}
 	}
 
