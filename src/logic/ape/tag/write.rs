@@ -1,7 +1,6 @@
 use super::read::read_ape_tag;
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::constants::APE_PREAMBLE;
-use crate::logic::ape::tag::item::ApeItemRef;
 use crate::logic::ape::tag::ApeTagRef;
 use crate::logic::id3::v2::find_id3v2;
 use crate::logic::id3::{find_id3v1, find_lyrics3v2};
@@ -9,7 +8,6 @@ use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::ItemValueRef;
 
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -88,9 +86,9 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 
 	// Preserve any metadata marked as read only
 	let tag = if let Some(read_only) = read_only {
-		create_ape_tag(&Into::<ApeTagRef>::into(&read_only).items)?
+		create_ape_tag(&Into::<ApeTagRef>::into(&read_only))?
 	} else {
-		create_ape_tag(&tag.items)?
+		create_ape_tag(tag)?
 	};
 
 	data.seek(SeekFrom::Start(0))?;
@@ -117,29 +115,29 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 	Ok(())
 }
 
-fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
+fn create_ape_tag(tag: &ApeTagRef) -> Result<Vec<u8>> {
 	// Unnecessary to write anything if there's no metadata
-	if items.is_empty() {
+	if tag.items.is_empty() {
 		Ok(Vec::<u8>::new())
 	} else {
-		let mut tag = Cursor::new(Vec::<u8>::new());
+		let mut tag_write = Cursor::new(Vec::<u8>::new());
 
-		let item_count = items.len() as u32;
+		let item_count = tag.items.len() as u32;
 
-		for (k, v) in items {
+		for (k, v) in &tag.items {
 			let (mut flags, value) = match v.value {
 				ItemValueRef::Binary(value) => {
-					tag.write_u32::<LittleEndian>(value.len() as u32)?;
+					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(1_u32 << 1, value)
 				},
 				ItemValueRef::Text(value) => {
-					tag.write_u32::<LittleEndian>(value.len() as u32)?;
+					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(0_u32, value.as_bytes())
 				},
 				ItemValueRef::Locator(value) => {
-					tag.write_u32::<LittleEndian>(value.len() as u32)?;
+					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(2_u32 << 1, value.as_bytes())
 				},
@@ -149,13 +147,13 @@ fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
 				flags |= 1_u32
 			}
 
-			tag.write_u32::<LittleEndian>(flags)?;
-			tag.write_all(k.as_bytes())?;
-			tag.write_u8(0)?;
-			tag.write_all(value)?;
+			tag_write.write_u32::<LittleEndian>(flags)?;
+			tag_write.write_all(k.as_bytes())?;
+			tag_write.write_u8(0)?;
+			tag_write.write_all(value)?;
 		}
 
-		let size = tag.get_ref().len();
+		let size = tag_write.get_ref().len();
 
 		if size as u64 + 32 > u64::from(u32::MAX) {
 			return Err(LoftyError::TooMuchData);
@@ -174,13 +172,20 @@ fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
 		// Bit 29 unset: this is the footer
 		// Bit 30 set: tag contains a footer
 		// Bit 31 set: tag contains a header
-		footer.write_u32::<LittleEndian>((1_u32 << 30) | (1_u32 << 31))?;
+		let mut footer_flags = (1_u32 << 30) | (1_u32 << 31);
+
+		if tag.read_only {
+			// Bit 0 set: tag is read only
+			footer_flags |= 1
+		}
+
+		footer.write_u32::<LittleEndian>(footer_flags)?;
 		// The header/footer must end in 8 bytes of zeros
 		footer.write_u64::<LittleEndian>(0)?;
 
-		tag.write_all(footer.get_ref())?;
+		tag_write.write_all(footer.get_ref())?;
 
-		let mut tag = tag.into_inner();
+		let mut tag_write = tag_write.into_inner();
 
 		// The header is exactly the same as the footer, except for the flags
 		// Just reuse the footer and overwrite the flags
@@ -188,12 +193,19 @@ fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
 		// Bit 29 set: this is the header
 		// Bit 30 set: tag contains a footer
 		// Bit 31 set: tag contains a header
-		footer.write_u32::<LittleEndian>((1_u32 << 29) | (1_u32 << 30) | (1_u32 << 31))?;
+		let mut header_flags = (1_u32 << 29) | (1_u32 << 30) | (1_u32 << 31);
+
+		if tag.read_only {
+			// Bit 0 set: tag is read only
+			header_flags |= 1
+		}
+
+		footer.write_u32::<LittleEndian>(header_flags)?;
 
 		let header = footer.into_inner();
 
-		tag.splice(0..0, header.to_vec());
+		tag_write.splice(0..0, header.to_vec());
 
-		Ok(tag)
+		Ok(tag_write)
 	}
 }
