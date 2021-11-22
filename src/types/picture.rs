@@ -239,11 +239,11 @@ impl PictureInformation {
 	pub fn from_picture(picture: &Picture) -> Result<Self> {
 		let reader = &mut &*picture.data;
 
-		let mut identifier = [0; 4];
+		if reader.len() < 4 {
+			return Err(LoftyError::NotAPicture);
+		}
 
-		reader.read_exact(&mut identifier)?;
-
-		match identifier {
+		match reader[..4] {
 			[0x89, b'P', b'N', b'G'] => Ok(Self::from_png(reader).unwrap_or_default()),
 			[0xFF, 0xD8, 0xFF, ..] => Ok(Self::from_jpeg(reader).unwrap_or_default()),
 			_ => Err(LoftyError::UnsupportedPicture),
@@ -251,17 +251,18 @@ impl PictureInformation {
 	}
 
 	pub fn from_png(reader: &mut &[u8]) -> Result<Self> {
-		let mut remaining_sig = [0; 4];
-		reader.read_exact(&mut remaining_sig)?;
+		let mut sig = [0; 8];
+		reader.read_exact(&mut sig)?;
 
-		if remaining_sig != [0x0D, 0x0A, 0x1A, 0x0A] {
+		if sig != [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
 			return Err(LoftyError::NotAPicture);
 		}
 
-		reader.read_exact(&mut remaining_sig)?;
+		let mut ihdr = [0; 8];
+		reader.read_exact(&mut ihdr)?;
 
 		// Verify the signature is immediately followed by the IHDR chunk
-		if remaining_sig != [0x49, 0x48, 0x44, 0x52] {
+		if !ihdr.ends_with(&[0x49, 0x48, 0x44, 0x52]) {
 			return Err(LoftyError::NotAPicture);
 		}
 
@@ -284,11 +285,12 @@ impl PictureInformation {
 
 		let mut reader = Cursor::new(reader);
 
-		// Skip 3 bytes
+		// Skip 7 bytes
 		// Compression method (1)
 		// Filter method (1)
 		// Interlace method (1)
-		reader.seek(SeekFrom::Current(3))?;
+		// CRC (4)
+		reader.seek(SeekFrom::Current(7))?;
 
 		let mut num_colors = 0;
 		let mut chunk_type = [0; 4];
@@ -316,15 +318,29 @@ impl PictureInformation {
 	}
 
 	pub fn from_jpeg(reader: &mut &[u8]) -> Result<Self> {
+		let mut marker = [0; 4];
+		reader.read_exact(&mut marker)?;
+
+		if !matches!(marker, [0xFF, 0xD8, 0xFF, ..]) {
+			return Err(LoftyError::NotAPicture);
+		}
+
 		let mut section_len = reader.read_u16::<BigEndian>()?;
 
 		let mut reader = Cursor::new(reader);
 
-		reader.seek(SeekFrom::Current(i64::from(section_len + 2)))?;
+		// The length contains itself
+		reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
 
 		while let Ok(0xFF) = reader.read_u8() {
 			let marker = reader.read_u8()?;
 			section_len = reader.read_u16::<BigEndian>()?;
+
+			// This marks the SOS (Start of Scan), which is
+			// the end of the header
+			if marker == 0xDA {
+				break;
+			}
 
 			// We are looking for a frame with a "SOFn" marker,
 			// with `n` either being 0 or 2. Since there isn't a
@@ -344,7 +360,7 @@ impl PictureInformation {
 				});
 			}
 
-			reader.seek(SeekFrom::Current(i64::from(section_len + 2)))?;
+			reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
 		}
 
 		Err(LoftyError::NotAPicture)
@@ -426,7 +442,7 @@ impl Picture {
 					text_encoding,
 					true,
 				))?
-			},
+			}
 			None => data.write_u8(0)?,
 		}
 
@@ -473,7 +489,7 @@ impl Picture {
 					return Err(LoftyError::BadPictureFormat(
 						String::from_utf8_lossy(&format).to_string(),
 					))
-				},
+				}
 			}
 		} else {
 			(crate::logic::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?)
