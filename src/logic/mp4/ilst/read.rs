@@ -3,7 +3,7 @@ use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::util::text_utils::utf16_decode;
 use crate::logic::mp4::atom_info::AtomInfo;
 use crate::logic::mp4::read::skip_unneeded;
-use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
+use crate::types::picture::{MimeType, Picture, PictureType};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -55,12 +55,6 @@ where
 							pic_type: PictureType::Other,
 							mime_type,
 							description: None,
-							information: PictureInformation {
-								width: 0,
-								height: 0,
-								color_depth: 0,
-								num_colors: 0,
-							},
 							data: Cow::from(data),
 						}),
 					});

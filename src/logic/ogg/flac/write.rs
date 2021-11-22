@@ -3,7 +3,7 @@ use super::read::verify_flac;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::tag::VorbisCommentsRef;
 use crate::logic::ogg::write::create_comments;
-use crate::picture::Picture;
+use crate::types::picture::{Picture, PictureInformation};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -79,7 +79,7 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -
 
 	let mut comment_blocks = comment_blocks.into_inner();
 
-	create_picture_blocks(&mut comment_blocks, tag.pictures)?;
+	create_picture_blocks(&mut comment_blocks, &mut tag.pictures)?;
 
 	if blocks_remove.is_empty() {
 		file_bytes.splice(0..0, comment_blocks);
@@ -145,14 +145,17 @@ fn create_comment_block(
 	Ok(())
 }
 
-fn create_picture_blocks(writer: &mut Vec<u8>, pictures: &[Picture]) -> Result<()> {
+fn create_picture_blocks(
+	writer: &mut Vec<u8>,
+	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
+) -> Result<()> {
 	let mut byte = 0_u8;
 	byte |= 6 & 0x7f;
 
-	for pic in pictures.iter() {
+	for (pic, info) in pictures {
 		writer.write_u8(byte)?;
 
-		let pic_bytes = pic.as_flac_bytes();
+		let pic_bytes = pic.as_flac_bytes(info);
 		let pic_len = pic_bytes.len() as u32;
 
 		if pic_len > 65535 {

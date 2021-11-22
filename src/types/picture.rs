@@ -223,7 +223,7 @@ impl PictureType {
 }
 
 /// Information about a [`Picture`]
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
 	pub width: u32,
@@ -235,6 +235,122 @@ pub struct PictureInformation {
 	pub num_colors: u32,
 }
 
+impl PictureInformation {
+	pub fn from_picture(picture: &Picture) -> Result<Self> {
+		let reader = &mut &*picture.data;
+
+		let mut identifier = [0; 4];
+
+		reader.read_exact(&mut identifier)?;
+
+		match identifier {
+			[0x89, b'P', b'N', b'G'] => Ok(Self::from_png(reader).unwrap_or_default()),
+			[0xFF, 0xD8, 0xFF, ..] => Ok(Self::from_jpeg(reader).unwrap_or_default()),
+			_ => Err(LoftyError::UnsupportedPicture),
+		}
+	}
+
+	pub fn from_png(reader: &mut &[u8]) -> Result<Self> {
+		let mut remaining_sig = [0; 4];
+		reader.read_exact(&mut remaining_sig)?;
+
+		if remaining_sig != [0x0D, 0x0A, 0x1A, 0x0A] {
+			return Err(LoftyError::NotAPicture);
+		}
+
+		reader.read_exact(&mut remaining_sig)?;
+
+		// Verify the signature is immediately followed by the IHDR chunk
+		if remaining_sig != [0x49, 0x48, 0x44, 0x52] {
+			return Err(LoftyError::NotAPicture);
+		}
+
+		let width = reader.read_u32::<BigEndian>()?;
+		let height = reader.read_u32::<BigEndian>()?;
+		let color_depth = u32::from(reader.read_u8()?);
+		let color_type = reader.read_u8()?;
+
+		// The color type 3 (indexed-color) means there should be
+		// a "PLTE" chunk, whose data can be used in the `num_colors`
+		// field. It isn't really applicable to other color types.
+		if color_type != 3 {
+			return Ok(Self {
+				width,
+				height,
+				color_depth,
+				num_colors: 0,
+			});
+		}
+
+		let mut reader = Cursor::new(reader);
+
+		// Skip 3 bytes
+		// Compression method (1)
+		// Filter method (1)
+		// Interlace method (1)
+		reader.seek(SeekFrom::Current(3))?;
+
+		let mut num_colors = 0;
+		let mut chunk_type = [0; 4];
+
+		while let (Ok(size), Ok(())) = (
+			reader.read_u32::<BigEndian>(),
+			reader.read_exact(&mut chunk_type),
+		) {
+			if &chunk_type == b"PLTE" {
+				// The PLTE chunk contains 1-256 3-byte entries
+				num_colors = size / 3;
+				break;
+			}
+
+			// Skip the chunk's data (size) and CRC (4 bytes)
+			reader.seek(SeekFrom::Current(i64::from(size + 4)))?;
+		}
+
+		Ok(Self {
+			width,
+			height,
+			color_depth,
+			num_colors,
+		})
+	}
+
+	pub fn from_jpeg(reader: &mut &[u8]) -> Result<Self> {
+		let mut section_len = reader.read_u16::<BigEndian>()?;
+
+		let mut reader = Cursor::new(reader);
+
+		reader.seek(SeekFrom::Current(i64::from(section_len + 2)))?;
+
+		while let Ok(0xFF) = reader.read_u8() {
+			let marker = reader.read_u8()?;
+			section_len = reader.read_u16::<BigEndian>()?;
+
+			// We are looking for a frame with a "SOFn" marker,
+			// with `n` either being 0 or 2. Since there isn't a
+			// header like PNG, we actually need to search for this
+			// frame
+			if marker == 0xC0 || marker == 0xC2 {
+				let precision = reader.read_u8()?;
+				let height = u32::from(reader.read_u16::<BigEndian>()?);
+				let width = u32::from(reader.read_u16::<BigEndian>()?);
+				let components = reader.read_u8()?;
+
+				return Ok(Self {
+					width,
+					height,
+					color_depth: u32::from(precision * components),
+					num_colors: 0,
+				});
+			}
+
+			reader.seek(SeekFrom::Current(i64::from(section_len + 2)))?;
+		}
+
+		Err(LoftyError::NotAPicture)
+	}
+}
+
 /// Represents a picture.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Picture {
@@ -244,8 +360,6 @@ pub struct Picture {
 	pub mime_type: MimeType,
 	/// The picture's description
 	pub description: Option<Cow<'static, str>>,
-	/// Basic information about the picture
-	pub information: PictureInformation,
 	/// The binary data of the picture
 	pub data: Cow<'static, [u8]>,
 }
@@ -256,14 +370,12 @@ impl Picture {
 		pic_type: PictureType,
 		mime_type: MimeType,
 		description: Option<String>,
-		information: PictureInformation,
 		data: Vec<u8>,
 	) -> Self {
 		Self {
 			pic_type,
 			mime_type,
 			description: description.map(Cow::from),
-			information,
 			data: Cow::from(data),
 		}
 	}
@@ -382,12 +494,6 @@ impl Picture {
 				pic_type: picture_type,
 				mime_type,
 				description,
-				information: PictureInformation {
-					width: 0,
-					height: 0,
-					color_depth: 0,
-					num_colors: 0,
-				},
 				data: Cow::from(data),
 			},
 			encoding,
@@ -401,7 +507,7 @@ impl Picture {
 	///
 	/// * This does not include a key (Vorbis comments) or METADATA_BLOCK_HEADER (FLAC blocks)
 	/// * FLAC blocks have different size requirements than OGG Vorbis/Opus, size is not checked here
-	pub fn as_flac_bytes(&self) -> String {
+	pub fn as_flac_bytes(&self, picture_information: PictureInformation) -> String {
 		let mut data = Vec::<u8>::new();
 
 		let picture_type = u32::from(self.pic_type.as_u8()).to_be_bytes();
@@ -421,10 +527,10 @@ impl Picture {
 			data.extend(desc_str.as_bytes().iter());
 		}
 
-		data.extend(self.information.width.to_be_bytes().iter());
-		data.extend(self.information.height.to_be_bytes().iter());
-		data.extend(self.information.color_depth.to_be_bytes().iter());
-		data.extend(self.information.num_colors.to_be_bytes().iter());
+		data.extend(picture_information.width.to_be_bytes().iter());
+		data.extend(picture_information.height.to_be_bytes().iter());
+		data.extend(picture_information.color_depth.to_be_bytes().iter());
+		data.extend(picture_information.num_colors.to_be_bytes().iter());
 
 		let pic_data = &self.data;
 		let pic_data_len = pic_data.len() as u32;
@@ -443,7 +549,7 @@ impl Picture {
 	/// # Errors
 	///
 	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
-	pub fn from_flac_bytes(bytes: &[u8]) -> Result<Self> {
+	pub fn from_flac_bytes(bytes: &[u8]) -> Result<(Self, PictureInformation)> {
 		let data = base64::decode(bytes).unwrap_or_else(|_| bytes.to_vec());
 
 		let mut cursor = Cursor::new(data);
@@ -484,18 +590,20 @@ impl Picture {
 							let mut binary = vec![0; data_len as usize];
 
 							if let Ok(()) = cursor.read_exact(&mut binary) {
-								return Ok(Self {
-									pic_type: picture_type,
-									mime_type,
-									description,
-									information: PictureInformation {
+								return Ok((
+									Self {
+										pic_type: picture_type,
+										mime_type,
+										description,
+										data: Cow::from(binary.clone()),
+									},
+									PictureInformation {
 										width,
 										height,
 										color_depth,
 										num_colors,
 									},
-									data: Cow::from(binary.clone()),
-								});
+								));
 							}
 						}
 					}
@@ -578,13 +686,6 @@ impl Picture {
 				pic_type,
 				mime_type,
 				description,
-				information: PictureInformation {
-					// TODO
-					width: 0,
-					height: 0,
-					color_depth: 0,
-					num_colors: 0,
-				},
 				data,
 			});
 		}

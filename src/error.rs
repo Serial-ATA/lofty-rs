@@ -25,6 +25,8 @@ pub enum LoftyError {
 	BadPictureFormat(String),
 	/// Provided an invalid picture
 	NotAPicture,
+	/// Attempted to write a picture that the format does not support
+	UnsupportedPicture,
 
 	// Tag related errors
 	/// Arises when writing a tag to a file type that doesn't support it
@@ -100,6 +102,9 @@ impl Display for LoftyError {
 				"An abnormally large amount of data was provided, and an overflow occurred"
 			),
 			LoftyError::NotAPicture => write!(f, "Picture: Encountered invalid data"),
+			LoftyError::UnsupportedPicture => {
+				write!(f, "Picture: attempted to write an unsupported picture")
+			},
 			LoftyError::UnsupportedTag => write!(
 				f,
 				"Attempted to write a tag to a format that does not support it"

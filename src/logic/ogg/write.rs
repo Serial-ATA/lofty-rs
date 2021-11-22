@@ -3,6 +3,7 @@ use crate::error::{LoftyError, Result};
 use crate::logic::ogg::constants::OPUSTAGS;
 use crate::logic::ogg::constants::VORBIS_COMMENT_HEAD;
 use crate::logic::ogg::tag::VorbisCommentsRef;
+use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryFrom;
@@ -51,10 +52,10 @@ fn create_pages(tag: &mut VorbisCommentsRef, writer: &mut Cursor<Vec<u8>>) -> Re
 	let mut count = 0;
 	create_comments(writer, &mut count, &mut tag.items)?;
 
-	for pic in tag.pictures {
+	for (pic, _) in &mut tag.pictures {
 		let picture = format!(
 			"METADATA_BLOCK_PICTURE={}",
-			base64::encode(pic.as_flac_bytes())
+			base64::encode(pic.as_flac_bytes(PictureInformation::from_picture(pic)?))
 		);
 
 		let picture_b = picture.as_bytes();

@@ -4,6 +4,7 @@ use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::Picture;
+use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
@@ -16,7 +17,7 @@ pub struct VorbisComments {
 	/// A collection of key-value pairs
 	pub items: Vec<(String, String)>,
 	/// A collection of all pictures
-	pub pictures: Vec<Picture>,
+	pub pictures: Vec<(Picture, PictureInformation)>,
 }
 
 impl VorbisComments {
@@ -41,7 +42,7 @@ impl From<VorbisComments> for Tag {
 			));
 		}
 
-		for pic in input.pictures {
+		for (pic, _info) in input.pictures {
 			tag.push_picture(pic)
 		}
 
@@ -79,7 +80,7 @@ impl From<Tag> for VorbisComments {
 pub(crate) struct VorbisCommentsRef<'a> {
 	pub vendor: &'a str,
 	pub items: Box<dyn Iterator<Item = (&'a str, &'a String)> + 'a>,
-	pub pictures: &'a [Picture],
+	pub pictures: Box<dyn Iterator<Item = (&'a Picture, PictureInformation)> + 'a>,
 }
 
 impl<'a> VorbisCommentsRef<'a> {
@@ -98,7 +99,7 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a VorbisComments {
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
 			items: Box::new(self.items.as_slice().iter().map(|(k, v)| (k.as_str(), v))),
-			pictures: self.pictures.as_slice(),
+			pictures: Box::new(self.pictures.as_slice().iter().map(|(p, i)| (p, *i))),
 		}
 	}
 }
@@ -118,7 +119,11 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 		VorbisCommentsRef {
 			vendor,
 			items: Box::new(items),
-			pictures: self.pictures(),
+			pictures: Box::new(
+				self.pictures
+					.iter()
+					.map(|p| (p, PictureInformation::default())),
+			),
 		}
 	}
 }
