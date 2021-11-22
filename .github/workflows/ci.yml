@@ -18,10 +18,12 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: cargo test --all-features
+      - run: cargo test --all-features --tests
   docs:
     name: Docs
     runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: -Dwarnings
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -30,6 +32,7 @@ jobs:
           toolchain: stable
           override: true
       - run: cargo doc --all-features
+      - run: cargo test --all-features --doc
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
