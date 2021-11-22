@@ -66,9 +66,9 @@ where
 						return Err(LoftyError::TextDecode(
 							"UTF-16 string has an invalid byte order mark",
 						))
-					}
+					},
 				}
-			}
+			},
 			TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
 			TextEncoding::UTF8 => String::from_utf8(raw_bytes)
 				.map_err(|_| LoftyError::TextDecode("Expected a UTF-8 string"))?,
@@ -107,7 +107,7 @@ where
 
 				text_bytes.push(byte)
 			}
-		}
+		},
 		TextEncoding::UTF16 | TextEncoding::UTF16BE => {
 			while let (Ok(b1), Ok(b2)) = (reader.read_u8(), reader.read_u8()) {
 				if b1 == 0 || b2 == 0 {
@@ -117,7 +117,7 @@ where
 				text_bytes.push(b1);
 				text_bytes.push(b2)
 			}
-		}
+		},
 	}
 
 	(!text_bytes.is_empty()).then(|| text_bytes)
@@ -133,14 +133,14 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 			}
 
 			out
-		}
+		},
 		TextEncoding::UTF16 => {
 			if cfg!(target_endian = "little") {
 				utf16_encode(text, u16::to_le_bytes, terminated)
 			} else {
 				utf16_encode(text, u16::to_be_bytes, terminated)
 			}
-		}
+		},
 		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, terminated),
 		TextEncoding::UTF8 => {
 			let mut out = text.as_bytes().to_vec();
@@ -150,7 +150,7 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 			}
 
 			out
-		}
+		},
 	}
 }
 

@@ -73,7 +73,7 @@ where
 				mac_start = data.seek(SeekFrom::Current(0))?;
 
 				found_mac = true;
-			}
+			},
 			// An APE tag at the beginning of the file goes against the spec, but is still possible.
 			// This only allows for v2 tags though, since it relies on the header.
 			b"APET" => {
@@ -93,13 +93,13 @@ where
 				stream_len -= u64::from(size);
 
 				ape_tag = Some(ape)
-			}
+			},
 			_ => {
 				return Err(LoftyError::Ape(
 					"Invalid data found while reading header, expected any of [\"MAC \", \
 					 \"APETAGEX\", \"ID3\"]",
 				))
-			}
+			},
 		}
 	}
 

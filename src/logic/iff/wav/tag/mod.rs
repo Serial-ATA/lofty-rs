@@ -69,7 +69,7 @@ impl From<Tag> for RiffInfoList {
 						} else {
 							continue;
 						}
-					}
+					},
 					// Safe to unwrap since we already checked ItemKey::Unknown
 					k => k.map_key(&TagType::RiffInfo, false).unwrap().to_string(),
 				};

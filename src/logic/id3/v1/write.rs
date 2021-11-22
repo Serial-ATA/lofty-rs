@@ -11,7 +11,7 @@ use byteorder::WriteBytesExt;
 
 pub(in crate::logic) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
 	match Probe::new().file_type(writer) {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
 

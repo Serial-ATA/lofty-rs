@@ -52,7 +52,7 @@ impl Moov {
 					b"trak" => traks.push(Trak::parse(data, &atom)?),
 					b"udta" => {
 						meta = meta_from_udta(data, atom.len - 8)?;
-					}
+					},
 					_ => skip_unneeded(data, atom.extended, atom.len)?,
 				}
 

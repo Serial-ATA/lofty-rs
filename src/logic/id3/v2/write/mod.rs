@@ -15,7 +15,7 @@ use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
 pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
 	match Probe::new().file_type(data) {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
 
@@ -45,7 +45,7 @@ where
 	B: ByteOrder,
 {
 	match Probe::new().file_type(data) {
-		Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {}
+		Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
 

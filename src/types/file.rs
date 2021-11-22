@@ -128,15 +128,15 @@ impl FileType {
 				tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
 					|| tag_type == &TagType::Id3v2
-			}
+			},
 			FileType::MP3 => {
 				tag_type == &TagType::Id3v2
 					|| tag_type == &TagType::Ape
 					|| tag_type == &TagType::Id3v1
-			}
+			},
 			FileType::Opus | FileType::FLAC | FileType::Vorbis => {
 				tag_type == &TagType::VorbisComments
-			}
+			},
 			FileType::MP4 => tag_type == &TagType::Mp4Atom,
 			FileType::WAV => tag_type == &TagType::Id3v2 || tag_type == &TagType::RiffInfo,
 		}
@@ -196,7 +196,7 @@ impl FileType {
 				} else {
 					Err(LoftyError::UnknownFormat)
 				}
-			}
+			},
 			_ if verify_frame_sync(u16::from_be_bytes([sig[0], sig[1]])) => Ok(Self::MP3),
 			70 if sig.starts_with(b"FORM") => {
 				let mut id_remaining = [0; 2];
@@ -209,7 +209,7 @@ impl FileType {
 				} else {
 					Err(LoftyError::UnknownFormat)
 				}
-			}
+			},
 			102 if sig.starts_with(b"fLaC") => Ok(Self::FLAC),
 			79 if sig.starts_with(b"OggS") => {
 				data.seek(SeekFrom::Start(28))?;
@@ -224,7 +224,7 @@ impl FileType {
 				} else {
 					Err(LoftyError::UnknownFormat)
 				}
-			}
+			},
 			82 if sig.starts_with(b"RIFF") => {
 				let mut id_remaining = [0; 2];
 				data.read_exact(&mut id_remaining)?;
@@ -234,7 +234,7 @@ impl FileType {
 				} else {
 					Err(LoftyError::UnknownFormat)
 				}
-			}
+			},
 			_ if &sig[4..8] == b"ftyp" => Ok(Self::MP4),
 			_ => Err(LoftyError::UnknownFormat),
 		};

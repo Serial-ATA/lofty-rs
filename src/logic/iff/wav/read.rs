@@ -51,21 +51,21 @@ where
 				} else {
 					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 				}
-			}
+			},
 			b"fact" => {
 				if total_samples == 0 {
 					total_samples = data.read_u32::<LittleEndian>()?;
 				} else {
 					data.seek(SeekFrom::Current(4))?;
 				}
-			}
+			},
 			b"data" => {
 				if stream_len == 0 {
 					stream_len += chunks.size
 				}
 
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-			}
+			},
 			b"LIST" => {
 				let mut list_type = [0; 4];
 				data.read_exact(&mut list_type)?;
@@ -80,12 +80,12 @@ where
 				{
 					data.seek(SeekFrom::Current(i64::from(size)))?;
 				}
-			}
+			},
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-			}
+			},
 		}
 
 		chunks.correct_position(data)?;

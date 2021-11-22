@@ -17,7 +17,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()> {
 	match Probe::new().file_type(data) {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {}
+		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
 
@@ -132,17 +132,17 @@ fn create_ape_tag(items: &HashMap<&str, ApeItemRef>) -> Result<Vec<u8>> {
 					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(1_u32 << 1, value)
-				}
+				},
 				ItemValueRef::Text(value) => {
 					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(0_u32, value.as_bytes())
-				}
+				},
 				ItemValueRef::Locator(value) => {
 					tag.write_u32::<LittleEndian>(value.len() as u32)?;
 
 					(2_u32 << 1, value.as_bytes())
-				}
+				},
 			};
 
 			if v.read_only {

@@ -146,7 +146,7 @@ impl Tag {
 				ItemValue::Text(text) if convert => return Some(text.as_bytes()),
 				ItemValue::Locator(locator) => return Some(locator.as_bytes()),
 				ItemValue::Binary(binary) => return Some(binary),
-				_ => {}
+				_ => {},
 			}
 		}
 
@@ -217,7 +217,7 @@ impl Tag {
 				} else {
 					Err(LoftyError::UnsupportedTag)
 				}
-			}
+			},
 			None => Err(LoftyError::UnknownFormat),
 		}
 	}

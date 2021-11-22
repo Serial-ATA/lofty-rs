@@ -34,14 +34,14 @@ impl Frame {
 				return Err(LoftyError::Id3v2(
 					"Frame ID has a bad length (!= 3 || != 4)",
 				))
-			}
+			},
 		};
 
 		match id {
 			FrameID::Valid(id) | FrameID::Outdated(id) if !id.is_ascii() => {
 				return Err(LoftyError::Id3v2("Frame ID contains non-ascii characters"))
-			}
-			_ => {}
+			},
+			_ => {},
 		}
 
 		Ok(Self { id, value, flags })
@@ -139,7 +139,7 @@ impl TryFrom<ItemKey> for FrameID {
 		match value {
 			ItemKey::Unknown(unknown) if unknown.len() == 4 && unknown.is_ascii() => {
 				Ok(Self::Valid(unknown.to_ascii_uppercase()))
-			}
+			},
 			k => k.map_key(&TagType::Id3v2, false).map_or(
 				Err(LoftyError::Id3v2(
 					"ItemKey does not meet the requirements to be a FrameID",
@@ -163,7 +163,6 @@ pub enum FrameValue {
 	/// Represents a "T..." (excluding TXXX) frame
 	///
 	/// NOTE: Text frame names **must** be unique
-	///
 	Text {
 		encoding: TextEncoding,
 		value: String,
@@ -286,7 +285,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					&& unknown.chars().all(|c| c.is_ascii_uppercase()) =>
 			{
 				Ok(unknown.as_str())
-			}
+			},
 			k => k.map_key(&TagType::Id3v2, false).ok_or(LoftyError::Id3v2(
 				"ItemKey does not meet the requirements to be a FrameID",
 			)),
