@@ -1,11 +1,12 @@
 use crate::error::Result;
+use crate::logic::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::BigEndian;
 
 #[cfg(feature = "aiff_text_chunks")]
 #[derive(Default)]
@@ -111,16 +112,18 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &AiffTextChunksRef) -> Re
 	write_chunk(&mut text_chunks, "(c) ", tag.copyright);
 
 	let mut chunks_remove = Vec::new();
-	let mut fourcc = [0; 4];
 
-	while let (Ok(()), Ok(size)) = (data.read_exact(&mut fourcc), data.read_u32::<BigEndian>()) {
+	let mut chunks = Chunks::<BigEndian>::new();
+
+	while chunks.next(data).is_ok() {
 		let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
 
-		if &fourcc == b"NAME" || &fourcc == b"AUTH" || &fourcc == b"(c) " {
-			chunks_remove.push((pos, (pos + 8 + size as usize)))
+		if &chunks.fourcc == b"NAME" || &chunks.fourcc == b"AUTH" || &chunks.fourcc == b"(c) " {
+			chunks_remove.push((pos, (pos + 8 + chunks.size as usize)))
 		}
 
-		data.seek(SeekFrom::Current(i64::from(size)))?;
+		data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+		chunks.correct_position(data)?;
 	}
 
 	data.seek(SeekFrom::Start(0))?;

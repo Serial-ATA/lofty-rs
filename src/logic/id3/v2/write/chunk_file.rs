@@ -1,9 +1,10 @@
 use crate::error::Result;
+use crate::logic::iff::chunk::Chunks;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use byteorder::{ByteOrder, ReadBytesExt, WriteBytesExt};
+use byteorder::{ByteOrder, WriteBytesExt};
 
 pub(in crate::logic::id3::v2) fn write_to_chunk_file<B>(data: &mut File, tag: &[u8]) -> Result<()>
 where
@@ -13,15 +14,20 @@ where
 
 	let mut id3v2_chunk = (None, None);
 
-	let mut fourcc = [0; 4];
+	let mut chunks = Chunks::<B>::new();
 
-	while let (Ok(()), Ok(size)) = (data.read_exact(&mut fourcc), data.read_u32::<B>()) {
-		if &fourcc == b"ID3 " || &fourcc == b"id3 " {
-			id3v2_chunk = (Some(data.seek(SeekFrom::Current(0))? - 8), Some(size));
+	while chunks.next(data).is_ok() {
+		if &chunks.fourcc == b"ID3 " || &chunks.fourcc == b"id3 " {
+			id3v2_chunk = (
+				Some(data.seek(SeekFrom::Current(0))? - 8),
+				Some(chunks.size),
+			);
 			break;
 		}
 
-		data.seek(SeekFrom::Current(i64::from(size)))?;
+		data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+
+		chunks.correct_position(data)?;
 	}
 
 	if let (Some(chunk_start), Some(mut chunk_size)) = id3v2_chunk {

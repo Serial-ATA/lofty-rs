@@ -1,10 +1,11 @@
 use super::RiffInfoListRef;
 use crate::error::{LoftyError, Result};
+use crate::logic::iff::chunk::Chunks;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::logic::iff::wav) fn write_riff_info(
 	data: &mut File,
@@ -46,35 +47,30 @@ pub(in crate::logic::iff::wav) fn write_riff_info(
 	Ok(())
 }
 
-fn find_info_list<T>(data: &mut T) -> Result<(bool, u32)>
+fn find_info_list<R>(data: &mut R) -> Result<(bool, u32)>
 where
-	T: Read + Seek,
+	R: Read + Seek,
 {
-	let mut fourcc = [0; 4];
-
 	let mut info = (false, 0);
 
-	while let (Ok(()), Ok(mut size)) = (
-		data.read_exact(&mut fourcc),
-		data.read_u32::<LittleEndian>(),
-	) {
-		if &fourcc == b"LIST" {
+	let mut chunks = Chunks::<LittleEndian>::new();
+
+	while chunks.next(data).is_ok() {
+		if &chunks.fourcc == b"LIST" {
 			let mut list_type = [0; 4];
 			data.read_exact(&mut list_type)?;
 
 			if &list_type == b"INFO" {
-				info = (true, size);
+				info = (true, chunks.size);
 				break;
 			}
 
 			data.seek(SeekFrom::Current(-8))?;
 		}
 
-		if size % 2 != 0 {
-			size += 1;
-		}
+		data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 
-		data.seek(SeekFrom::Current(i64::from(size)))?;
+		chunks.correct_position(data)?;
 	}
 
 	Ok(info)

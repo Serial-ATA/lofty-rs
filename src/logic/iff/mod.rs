@@ -1,3 +1,3 @@
 pub(crate) mod aiff;
-mod chunk;
+pub(in crate::logic) mod chunk;
 pub(crate) mod wav;

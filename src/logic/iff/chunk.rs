@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 
 use byteorder::{ByteOrder, ReadBytesExt};
 
-pub(super) struct Chunks<B>
+pub(in crate::logic) struct Chunks<B>
 where
 	B: ByteOrder,
 {
