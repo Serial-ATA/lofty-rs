@@ -1,0 +1,78 @@
+use crate::error::Result;
+use crate::logic::id3::v2::read::parse_id3v2;
+use crate::logic::id3::v2::tag::Id3v2Tag;
+
+use std::io::{Read, Seek, SeekFrom};
+use std::marker::PhantomData;
+
+use byteorder::{ByteOrder, ReadBytesExt};
+
+pub(super) struct Chunks<B>
+where
+	B: ByteOrder,
+{
+	pub fourcc: [u8; 4],
+	pub size: u32,
+	_phantom: PhantomData<B>,
+}
+
+impl<B: ByteOrder> Chunks<B> {
+	pub fn new() -> Self {
+		Self {
+			fourcc: [0; 4],
+			size: 0,
+			_phantom: PhantomData,
+		}
+	}
+
+	pub fn next<R>(&mut self, data: &mut R) -> Result<()>
+	where
+		R: Read + Seek,
+	{
+		data.read_exact(&mut self.fourcc)?;
+		self.size = data.read_u32::<B>()?;
+
+		Ok(())
+	}
+
+	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>
+	where
+		R: Read + Seek,
+	{
+		let mut content = vec![0; self.size as usize];
+		data.read_exact(&mut content)?;
+
+		Ok(content)
+	}
+
+	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<Id3v2Tag>
+	where
+		R: Read + Seek,
+	{
+		let mut value = vec![0; self.size as usize];
+		data.read_exact(&mut value)?;
+
+		let id3v2 = parse_id3v2(&mut &*value)?;
+
+		// Skip over the footer
+		if id3v2.flags().footer {
+			data.seek(SeekFrom::Current(10))?;
+		}
+
+		Ok(id3v2)
+	}
+
+	pub fn correct_position<R>(&mut self, data: &mut R) -> Result<()>
+	where
+		R: Read + Seek,
+	{
+		// Chunks are expected to start on even boundaries, and are padded
+		// with a 0 if necessary. This is NOT the null terminator of the value,
+		// and it is NOT included in the chunk's size
+		if self.size % 2 != 0 {
+			data.seek(SeekFrom::Current(1))?;
+		}
+
+		Ok(())
+	}
+}

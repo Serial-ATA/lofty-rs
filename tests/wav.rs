@@ -6,9 +6,7 @@ use std::io::{Seek, Write};
 #[test]
 fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
-	let file = Probe::new()
-		.read_from_path("tests/assets/a.wav")
-		.unwrap();
+	let file = Probe::new().read_from_path("tests/assets/a.wav").unwrap();
 
 	assert_eq!(file.file_type(), &FileType::WAV);
 

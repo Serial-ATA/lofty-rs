@@ -3,13 +3,12 @@ use super::tag::AiffTextChunks;
 use super::AiffFile;
 use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v2")]
-use crate::logic::id3::v2::read::parse_id3v2;
-#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
+use crate::logic::iff::chunk::Chunks;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::BigEndian;
 
 pub(in crate::logic::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
@@ -39,65 +38,48 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut fourcc = [0; 4];
+	let mut chunks = Chunks::<BigEndian>::new();
 
-	while let (Ok(()), Ok(size)) = (data.read_exact(&mut fourcc), data.read_u32::<BigEndian>()) {
-		match &fourcc {
-			#[cfg(feature = "aiff_text_chunks")]
-			b"NAME" | b"AUTH" | b"(c) " => {
-				let mut value = vec![0; size as usize];
-				data.read_exact(&mut value)?;
-
-				let value = String::from_utf8(value)?;
-
-				match &fourcc {
-					b"NAME" => text_chunks.name = Some(value),
-					b"AUTH" => text_chunks.author = Some(value),
-					b"(c) " => text_chunks.copyright = Some(value),
-					_ => unreachable!(),
-				}
-			}
+	while chunks.next(data).is_ok() {
+		match &chunks.fourcc {
 			#[cfg(feature = "id3v2")]
-			b"ID3 " | b"id3 " => {
-				let mut value = vec![0; size as usize];
-				data.read_exact(&mut value)?;
-
-				let id3v2 = parse_id3v2(&mut &*value)?;
-
-				// Skip over the footer
-				if id3v2.flags().footer {
-					data.seek(SeekFrom::Current(10))?;
-				}
-
-				id3v2_tag = Some(id3v2);
-			}
+			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			b"COMM" => {
 				if comm.is_none() {
-					if size < 18 {
+					if chunks.size < 18 {
 						return Err(LoftyError::Aiff(
 							"File has an invalid \"COMM\" chunk size (< 18)",
 						));
 					}
 
-					let mut comm_data = vec![0; size as usize];
-					data.read_exact(&mut comm_data)?;
-
-					comm = Some(comm_data);
+					comm = Some(chunks.content(data)?);
 				}
 			}
 			b"SSND" => {
-				stream_len = size;
-				data.seek(SeekFrom::Current(i64::from(size)))?;
+				stream_len = chunks.size;
+				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+			}
+			#[cfg(feature = "aiff_text_chunks")]
+			b"NAME" => {
+				let value = String::from_utf8(chunks.content(data)?)?;
+				text_chunks.name = Some(value);
+			}
+			#[cfg(feature = "aiff_text_chunks")]
+			b"AUTH" => {
+				let value = String::from_utf8(chunks.content(data)?)?;
+				text_chunks.author = Some(value);
+			}
+			#[cfg(feature = "aiff_text_chunks")]
+			b"(c) " => {
+				let value = String::from_utf8(chunks.content(data)?)?;
+				text_chunks.copyright = Some(value);
 			}
 			_ => {
-				data.seek(SeekFrom::Current(i64::from(size)))?;
+				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			}
 		}
 
-		// Chunks only start on even boundaries
-		if size % 2 != 0 {
-			data.seek(SeekFrom::Current(1))?;
-		}
+		chunks.correct_position(data)?;
 	}
 
 	if comm.is_none() {

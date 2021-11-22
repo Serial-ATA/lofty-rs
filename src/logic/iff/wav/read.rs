@@ -2,12 +2,11 @@
 use super::tag::RiffInfoList;
 use super::WavFile;
 use crate::error::{LoftyError, Result};
-#[cfg(feature = "id3v2")]
-use crate::logic::id3::v2::read::parse_id3v2;
+use crate::logic::id3::v2::tag::Id3v2Tag;
+use crate::logic::iff::chunk::Chunks;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::logic::id3::v2::tag::Id3v2Tag;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 pub(in crate::logic::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
@@ -42,21 +41,15 @@ where
 	let mut riff_info = RiffInfoList::default();
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut fourcc = [0; 4];
+	let mut chunks = Chunks::<LittleEndian>::new();
 
-	while let (Ok(()), Ok(size)) = (
-		data.read_exact(&mut fourcc),
-		data.read_u32::<LittleEndian>(),
-	) {
-		match &fourcc {
+	while chunks.next(data).is_ok() {
+		match &chunks.fourcc {
 			b"fmt " => {
 				if fmt.is_empty() {
-					let mut value = vec![0; size as usize];
-					data.read_exact(&mut value)?;
-
-					fmt = value;
+					fmt = chunks.content(data)?;
 				} else {
-					data.seek(SeekFrom::Current(i64::from(size)))?;
+					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 				}
 			}
 			b"fact" => {
@@ -68,10 +61,10 @@ where
 			}
 			b"data" => {
 				if stream_len == 0 {
-					stream_len += size
+					stream_len += chunks.size
 				}
 
-				data.seek(SeekFrom::Current(i64::from(size)))?;
+				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			}
 			b"LIST" => {
 				let mut list_type = [0; 4];
@@ -79,7 +72,7 @@ where
 
 				#[cfg(feature = "riff_info_list")]
 				if &list_type == b"INFO" {
-					let end = data.seek(SeekFrom::Current(0))? + u64::from(size - 4);
+					let end = data.seek(SeekFrom::Current(0))? + u64::from(chunks.size - 4);
 					super::tag::read::parse_riff_info(data, end, &mut riff_info)?;
 				}
 
@@ -89,28 +82,13 @@ where
 				}
 			}
 			#[cfg(feature = "id3v2")]
-			b"ID3 " | b"id3 " => {
-				let mut value = vec![0; size as usize];
-				data.read_exact(&mut value)?;
-
-				let id3v2 = parse_id3v2(&mut &*value)?;
-
-				// Skip over the footer
-				if id3v2.flags().footer {
-					data.seek(SeekFrom::Current(10))?;
-				}
-
-				id3v2_tag = Some(id3v2);
-			}
+			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			_ => {
-				data.seek(SeekFrom::Current(i64::from(size)))?;
+				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			}
 		}
 
-		// Chunks only start on even boundaries
-		if size % 2 != 0 {
-			data.seek(SeekFrom::Current(1))?;
-		}
+		chunks.correct_position(data)?;
 	}
 
 	if fmt.len() < 16 {
