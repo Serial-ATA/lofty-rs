@@ -223,6 +223,9 @@ impl PictureType {
 }
 
 /// Information about a [`Picture`]
+///
+/// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
+/// See [`Picture::as_flac_bytes`] for more information.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
@@ -236,10 +239,20 @@ pub struct PictureInformation {
 }
 
 impl PictureInformation {
+	/// Attempt to extract [`PictureInformation`] from a [`Picture`]
+	///
+	/// NOTE: Since FLAC only supports PNG and JPEG, this function is
+	/// no different.
+	///
+	/// # Errors
+	///
+	/// * `picture.data` is less than 8 bytes in length
+	/// * `picture.data` contains a format that isn't PNG or JPEG
+	/// * See [`PictureInformation::from_png`] and [`PictureInformation::from_jpeg`]
 	pub fn from_picture(picture: &Picture) -> Result<Self> {
 		let reader = &mut &*picture.data;
 
-		if reader.len() < 4 {
+		if reader.len() < 8 {
 			return Err(LoftyError::NotAPicture);
 		}
 
@@ -250,7 +263,15 @@ impl PictureInformation {
 		}
 	}
 
-	pub fn from_png(reader: &mut &[u8]) -> Result<Self> {
+	/// Attempt to extract [`PictureInformation`] from a PNG
+	///
+	/// # Errors
+	///
+	/// * `reader` does not start with a PNG signature
+	/// * `reader` is not a valid PNG
+	pub fn from_png(mut data: &[u8]) -> Result<Self> {
+		let reader = &mut data;
+
 		let mut sig = [0; 8];
 		reader.read_exact(&mut sig)?;
 
@@ -317,11 +338,19 @@ impl PictureInformation {
 		})
 	}
 
-	pub fn from_jpeg(reader: &mut &[u8]) -> Result<Self> {
-		let mut marker = [0; 4];
-		reader.read_exact(&mut marker)?;
+	/// Attempt to extract [`PictureInformation`] from a JPEG
+	///
+	/// # Errors
+	///
+	/// * `reader` is not a JPEG image
+	/// * `reader` does not contain a `SOFn` frame
+	pub fn from_jpeg(mut data: &[u8]) -> Result<Self> {
+		let reader = &mut data;
 
-		if !matches!(marker, [0xFF, 0xD8, 0xFF, ..]) {
+		let mut frame_marker = [0; 4];
+		reader.read_exact(&mut frame_marker)?;
+
+		if !matches!(frame_marker, [0xFF, 0xD8, 0xFF, ..]) {
 			return Err(LoftyError::NotAPicture);
 		}
 
@@ -460,7 +489,7 @@ impl Picture {
 	#[cfg(feature = "id3v2")]
 	/// Get a [`Picture`] and [`TextEncoding`] from ID3v2 A/PIC bytes:
 	///
-	/// NOTE: This expects the frame header to have already been skipped
+	/// NOTE: This expects *only* the frame content
 	///
 	/// # Errors
 	///
@@ -517,7 +546,7 @@ impl Picture {
 	}
 
 	#[cfg(feature = "vorbis_comments")]
-	/// Convert a [`Picture`] to a base64 encoded FLAC METADATA_BLOCK_PICTURE String
+	/// Convert a [`Picture`] to a base64 encoded FLAC `METADATA_BLOCK_PICTURE` String
 	///
 	/// NOTES:
 	///
@@ -558,13 +587,14 @@ impl Picture {
 	}
 
 	#[cfg(feature = "vorbis_comments")]
-	/// Get a [`Picture`] from FLAC METADATA_BLOCK_PICTURE bytes (can be base64 encoded):
+	/// Get a [`Picture`] from FLAC `METADATA_BLOCK_PICTURE` bytes (can be base64 encoded):
 	///
-	/// NOTE: This expects either the key "METADATA_BLOCK_PICTURE=" (Vorbis comments) or METADATA_BLOCK_HEADER (4 bytes, FLAC blocks) to have already been skipped
+	/// NOTE: This expects *only* the comment's value
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if at any point it's unable to parse the data
+	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if
+	/// at any point it's unable to parse the data
 	pub fn from_flac_bytes(bytes: &[u8]) -> Result<(Self, PictureInformation)> {
 		let data = base64::decode(bytes).unwrap_or_else(|_| bytes.to_vec());
 
@@ -633,7 +663,9 @@ impl Picture {
 	#[cfg(feature = "ape")]
 	/// Convert a [`Picture`] to an APE Cover Art byte vec:
 	///
-	/// NOTE: This is only the picture data, a key and terminating null byte will not be prepended. To map a [`PictureType`] to an APE key see [`PictureType::as_ape_key`]
+	/// NOTE: This is only the picture data and description, a
+	/// key and terminating null byte will not be prepended.
+	/// To map a [`PictureType`] to an APE key see [`PictureType::as_ape_key`]
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
 		let mut data: Vec<u8> = Vec::new();
 
@@ -650,14 +682,12 @@ impl Picture {
 	#[cfg(feature = "ape")]
 	/// Get a [`Picture`] from an APEv2 binary item:
 	///
-	/// NOTES:
-	///
-	/// * This function expects the key and its trailing null byte to have been removed
-	/// * Since APE tags only store the binary data, the width, height, color_depth, and num_colors fields will be zero.
+	/// NOTE: This function expects *only* the APE item data
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`](LoftyError::NotAPicture) if at any point it's unable to parse the data
+	/// This function will return [`NotAPicture`](LoftyError::NotAPicture)
+	/// if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if !bytes.is_empty() {
 			let pic_type = PictureType::from_ape_key(key);
