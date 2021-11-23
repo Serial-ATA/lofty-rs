@@ -400,18 +400,69 @@ impl PictureInformation {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Picture {
 	/// The picture type according to ID3v2 APIC
-	pub pic_type: PictureType,
+	pub(crate) pic_type: PictureType,
 	/// The picture's mimetype
-	pub mime_type: MimeType,
+	pub(crate) mime_type: MimeType,
 	/// The picture's description
-	pub description: Option<Cow<'static, str>>,
+	pub(crate) description: Option<Cow<'static, str>>,
 	/// The binary data of the picture
-	pub data: Cow<'static, [u8]>,
+	pub(crate) data: Cow<'static, [u8]>,
 }
 
 impl Picture {
+	/// Create a [`Picture`] from a reader
+	///
+	/// NOTES:
+	///
+	/// * This is **not** for reading format-specific
+	/// pictures, it is for reading picture data only,
+	/// from a [`File`](std::fs::File) for example.
+	/// * `pic_type` will always be [`PictureType::Other`],
+	/// be sure to change it accordingly if writing.
+	///
+	/// # Errors
+	///
+	/// * `reader` contains less than 8 bytes
+	/// * `reader` does not contain a supported format.
+	/// See [`MimeType`] for valid formats
+	pub fn from_reader<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read,
+	{
+		let mut data = Vec::new();
+		reader.read_to_end(&mut data)?;
+
+		// Bare minimum we need for the PNG signature
+		if data.len() < 8 {
+			return Err(LoftyError::NotAPicture);
+		}
+
+		let pic_type = PictureType::Other;
+		let description = None;
+
+		let mime_type = match data[..8] {
+			[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => MimeType::Png,
+			[0xFF, 0xD8, ..] => MimeType::Jpeg,
+			[b'G', b'I', b'F', ..] => MimeType::Gif,
+			[b'B', b'M', ..] => MimeType::Bmp,
+			[b'I', b'I', ..] => MimeType::Tiff,
+			_ => return Err(LoftyError::NotAPicture),
+		};
+
+		Ok(Self {
+			pic_type,
+			mime_type,
+			description,
+			data: data.into(),
+		})
+	}
+
 	/// Create a new `Picture`
-	pub fn new(
+	///
+	/// NOTE: This will **not** verify `data`'s signature.
+	/// This should only be used if all data has been verified
+	/// beforehand.
+	pub fn new_unchecked(
 		pic_type: PictureType,
 		mime_type: MimeType,
 		description: Option<String>,
@@ -423,6 +474,39 @@ impl Picture {
 			description: description.map(Cow::from),
 			data: Cow::from(data),
 		}
+	}
+
+	/// Returns the [`PictureType`]
+	pub fn pic_type(&self) -> PictureType {
+		self.pic_type
+	}
+
+	/// Sets the [`PictureType`]
+	pub fn set_pic_type(&mut self, pic_type: PictureType) {
+		self.pic_type = pic_type
+	}
+
+	/// Returns the [`MimeType`]
+	///
+	/// The `mime_type` is determined from the `data`, and
+	/// is immutable.
+	pub fn mime_type(&self) -> &MimeType {
+		&self.mime_type
+	}
+
+	/// Returns the description
+	pub fn description(&self) -> Option<&str> {
+		self.description.as_deref()
+	}
+
+	/// Sets the description
+	pub fn set_description(&mut self, description: Option<String>) {
+		self.description = description.map(Cow::from);
+	}
+
+	/// Returns the picture data
+	pub fn data(&self) -> &[u8] {
+		&self.data
 	}
 
 	#[cfg(feature = "id3v2")]
