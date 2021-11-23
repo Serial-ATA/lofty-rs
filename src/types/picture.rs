@@ -442,7 +442,7 @@ impl Picture {
 					text_encoding,
 					true,
 				))?
-			}
+			},
 			None => data.write_u8(0)?,
 		}
 
@@ -489,7 +489,7 @@ impl Picture {
 					return Err(LoftyError::BadPictureFormat(
 						String::from_utf8_lossy(&format).to_string(),
 					))
-				}
+				},
 			}
 		} else {
 			(crate::logic::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?)
