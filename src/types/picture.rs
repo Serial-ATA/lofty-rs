@@ -766,7 +766,7 @@ impl Picture {
 	#[cfg(feature = "ape")]
 	/// Get a [`Picture`] from an APEv2 binary item:
 	///
-	/// NOTE: This function expects *only* the APE item data
+	/// NOTE: This function expects `bytes` to contain *only* the APE item data
 	///
 	/// # Errors
 	///
