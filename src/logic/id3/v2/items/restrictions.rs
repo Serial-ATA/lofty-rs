@@ -66,7 +66,7 @@ pub struct TagRestrictions {
 	/// Text encoding restrictions
 	///
 	/// `false` - No restrictions
-	/// `true` - Strings are only encoded with [`TextEncoding::Latin1`](crate::TextEncoding::Latin1) or [`TextEncoding::UTF8`](crate::TextEncoding::UTF8)
+	/// `true` - Strings are only encoded with [`TextEncoding::Latin1`](crate::id3::v2::TextEncoding::Latin1) or [`TextEncoding::UTF8`](crate::id3::v2::TextEncoding::UTF8)
 	pub text_encoding: bool,
 	/// Restrictions on all text field sizes. See [`TextSizeRestrictions`]
 	pub text_fields_size: TextSizeRestrictions,
@@ -82,7 +82,7 @@ pub struct TagRestrictions {
 impl TagRestrictions {
 	/// Read a [`TagRestrictions`] from a byte
 	///
-	/// NOTE: See https://id3.org/id3v2.4.0-structure section 3.2, item d
+	/// NOTE: See <https://id3.org/id3v2.4.0-structure> section 3.2, item d
 	pub fn from_byte(byte: u8) -> Self {
 		let mut restrictions = TagRestrictions::default();
 

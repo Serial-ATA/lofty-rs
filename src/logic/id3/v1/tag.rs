@@ -108,7 +108,7 @@ impl From<Tag> for Id3v1Tag {
 							let track_number = track_number.parse::<u8>();
 
 							track_number.ok()
-						}
+						},
 						ItemValue::UInt(uint) if *uint < 256 => Some(*uint as u8),
 						_ => None,
 					}
@@ -121,7 +121,7 @@ impl From<Tag> for Id3v1Tag {
 					match item.value() {
 						ItemValue::Text(ref genre) => {
 							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
-						}
+						},
 						ItemValue::UInt(uint) if *uint <= 192 => Some(*uint as u8),
 						_ => None,
 					}
@@ -172,7 +172,7 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 							let track_number = track_number.parse::<u8>();
 
 							track_number.ok()
-						}
+						},
 						ItemValue::UInt(uint) if *uint < 256 => Some(*uint as u8),
 						_ => None,
 					}
@@ -185,7 +185,7 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 					match item.value() {
 						ItemValue::Text(ref genre) => {
 							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
-						}
+						},
 						ItemValue::UInt(uint) if *uint <= 192 => Some(*uint as u8),
 						_ => None,
 					}
