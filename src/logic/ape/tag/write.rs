@@ -131,6 +131,12 @@ fn create_ape_tag(tag: &ApeTagRef) -> Result<Vec<u8>> {
 
 					(1_u32 << 1, value)
 				},
+				ItemValueRef::UInt(ref value) => {
+					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
+
+					// Just treat this as a text item
+					(0_u32, value.as_bytes())
+				},
 				ItemValueRef::Text(value) => {
 					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 

@@ -19,6 +19,7 @@ impl From<Ilst> for Tag {
 		for atom in input.atoms {
 			let value = match atom.data {
 				AtomData::UTF8(text) | AtomData::UTF16(text) => ItemValue::Text(text),
+				AtomData::UnsignedInteger(uint) => ItemValue::UInt(uint),
 				AtomData::Picture(pic) => {
 					tag.pictures.push(pic);
 					continue;
@@ -53,6 +54,7 @@ impl From<Tag> for Ilst {
 			if let Some(ident) = item_key_to_ident(item.key()).map(|k| k.into()) {
 				let data = match item.item_value {
 					ItemValue::Text(text) => AtomData::UTF8(text),
+					ItemValue::UInt(uint) => AtomData::UnsignedInteger(uint),
 					_ => continue,
 				};
 
@@ -201,16 +203,20 @@ impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 
 impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	fn into(self) -> IlstRef<'a> {
-		let iter = self.items.iter().filter_map(|i| {
-			if let (Some(ident), ItemValue::Text(text)) = (item_key_to_ident(i.key()), i.value()) {
-				Some(AtomRef {
-					ident,
-					data: AtomDataRef::UTF8(text),
-				})
-			} else {
-				None
-			}
-		});
+		let iter =
+			self.items
+				.iter()
+				.filter_map(|i| match (item_key_to_ident(i.key()), i.value()) {
+					(Some(ident), ItemValue::Text(text)) => Some(AtomRef {
+						ident,
+						data: AtomDataRef::UTF8(text),
+					}),
+					(Some(ident), ItemValue::UInt(uint)) => Some(AtomRef {
+						ident,
+						data: AtomDataRef::UnsignedInteger(*uint),
+					}),
+					_ => None,
+				});
 
 		IlstRef {
 			atoms: Box::new(iter),

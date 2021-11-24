@@ -101,17 +101,34 @@ impl From<Tag> for Id3v1Tag {
 			album: input.get_string(&ItemKey::AlbumTitle).map(str::to_owned),
 			year: input.get_string(&ItemKey::Year).map(str::to_owned),
 			comment: input.get_string(&ItemKey::Comment).map(str::to_owned),
-			track_number: if let Some(Ok(track_number)) = input
-				.get_string(&ItemKey::TrackNumber)
-				.map(str::parse::<u8>)
-			{
-				Some(track_number)
-			} else {
-				None
+			track_number: {
+				if let Some(item) = input.get_item_ref(&ItemKey::TrackNumber) {
+					match item.value() {
+						ItemValue::Text(ref track_number) => {
+							let track_number = track_number.parse::<u8>();
+
+							track_number.ok()
+						}
+						ItemValue::UInt(uint) if *uint <= 256 => Some(*uint as u8),
+						_ => None,
+					}
+				} else {
+					None
+				}
 			},
-			genre: input
-				.get_string(&ItemKey::Genre)
-				.and_then(|genre| GENRES.iter().position(|v| v == &genre).map(|pos| pos as u8)),
+			genre: {
+				if let Some(item) = input.get_item_ref(&ItemKey::Genre) {
+					match item.value() {
+						ItemValue::Text(ref genre) => {
+							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
+						}
+						ItemValue::UInt(uint) if *uint <= 256 => Some(*uint as u8),
+						_ => None,
+					}
+				} else {
+					None
+				}
+			},
 		}
 	}
 }
@@ -148,16 +165,34 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 			album: self.get_string(&ItemKey::AlbumTitle),
 			year: self.get_string(&ItemKey::Year),
 			comment: self.get_string(&ItemKey::Comment),
-			track_number: if let Some(Ok(track_number)) =
-				self.get_string(&ItemKey::TrackNumber).map(str::parse::<u8>)
-			{
-				Some(track_number)
-			} else {
-				None
+			track_number: {
+				if let Some(item) = self.get_item_ref(&ItemKey::TrackNumber) {
+					match item.value() {
+						ItemValue::Text(ref track_number) => {
+							let track_number = track_number.parse::<u8>();
+
+							track_number.ok()
+						}
+						ItemValue::UInt(uint) if *uint <= 256 => Some(*uint as u8),
+						_ => None,
+					}
+				} else {
+					None
+				}
 			},
-			genre: self
-				.get_string(&ItemKey::Genre)
-				.and_then(|genre| GENRES.iter().position(|v| v == &genre).map(|pos| pos as u8)),
+			genre: {
+				if let Some(item) = self.get_item_ref(&ItemKey::Genre) {
+					match item.value() {
+						ItemValue::Text(ref genre) => {
+							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
+						}
+						ItemValue::UInt(uint) if *uint <= 256 => Some(*uint as u8),
+						_ => None,
+					}
+				} else {
+					None
+				}
+			},
 		}
 	}
 }

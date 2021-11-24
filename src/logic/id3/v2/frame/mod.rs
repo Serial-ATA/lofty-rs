@@ -207,6 +207,10 @@ impl From<ItemValue> for FrameValue {
 				encoding: TextEncoding::UTF8,
 				value: text,
 			},
+			ItemValue::UInt(uint) => FrameValue::Text {
+				encoding: TextEncoding::UTF8,
+				value: uint.to_string(),
+			},
 			ItemValue::Locator(locator) => FrameValue::URL(locator),
 			ItemValue::Binary(binary) => FrameValue::Binary(binary),
 		}
@@ -306,6 +310,10 @@ pub(crate) enum FrameValueRef<'a> {
 		encoding: TextEncoding,
 		value: &'a str,
 	},
+	// Not an actual frame's content, this only exists for an easy
+	// conversion from ItemValue::UInt. This is really just treated as
+	// FrameValueRef::Text when it comes time to write
+	UInt(u32),
 	UserText(&'a EncodedTextFrame),
 	URL(&'a str),
 	UserURL(&'a EncodedTextFrame),
@@ -345,6 +353,7 @@ impl<'a> Into<FrameValueRef<'a>> for &'a ItemValue {
 				value: text.as_str(),
 			},
 			ItemValue::Locator(locator) => FrameValueRef::URL(locator.as_str()),
+			ItemValue::UInt(uint) => FrameValueRef::UInt(*uint),
 			ItemValue::Binary(binary) => FrameValueRef::Binary(binary.as_slice()),
 		}
 	}
