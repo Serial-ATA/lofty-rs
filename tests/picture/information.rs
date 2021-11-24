@@ -15,7 +15,7 @@ fn read_png() {
 
 	assert_eq!(information.width, 640);
 	assert_eq!(information.height, 628);
-	assert_eq!(information.color_depth, 8);
+	assert_eq!(information.color_depth, 32);
 
 	// No PLTE chunk
 	assert_eq!(information.num_colors, 0);

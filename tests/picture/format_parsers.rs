@@ -25,7 +25,7 @@ fn create_original_picture() -> Picture {
 }
 
 #[test]
-fn id3v2_apic() {
+fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
 	let (pic, _) = Picture::from_apic_bytes(&*buf, Id3v2Version::V4).unwrap();
@@ -44,6 +44,28 @@ fn as_apic_bytes() {
 		.unwrap();
 
 	assert_eq!(buf, original_as_apic);
+}
+
+#[test]
+fn id3v22_pic() {
+	let buf = get_buf("tests/picture/assets/png_640x628.pic");
+
+	let (pic, _) = Picture::from_apic_bytes(&*buf, Id3v2Version::V2).unwrap();
+
+	assert_eq!(create_original_picture(), pic);
+}
+
+#[test]
+fn as_apic_bytes_v2() {
+	let buf = get_buf("tests/picture/assets/png_640x628.pic");
+
+	let original_picture = create_original_picture();
+
+	let original_as_pic = original_picture
+		.as_apic_bytes(Id3v2Version::V2, TextEncoding::Latin1)
+		.unwrap();
+
+	assert_eq!(buf, original_as_pic);
 }
 
 #[test]
