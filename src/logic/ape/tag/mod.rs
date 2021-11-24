@@ -1,4 +1,4 @@
-mod item;
+pub(crate) mod item;
 pub(in crate::logic) mod read;
 pub(in crate::logic) mod write;
 

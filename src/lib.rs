@@ -21,7 +21,7 @@
 //!
 //! ## Determining a file's format
 //!
-//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching against [`concrete file types`](crate::files).
+//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching against [`concrete file types`](#using-concrete-file-types).
 //!
 //! ### Guessing from extension
 //! ```
@@ -44,8 +44,8 @@
 //!
 //! ## Using concrete file types
 //! ```
-//! use lofty::files::Mp3File;
-//! use lofty::files::AudioFile;
+//! use lofty::mp3::Mp3File;
+//! use lofty::AudioFile;
 //! use lofty::TagType;
 //! use std::fs::File;
 //!
@@ -91,9 +91,6 @@
 //!
 //! # Features
 //!
-//! ## QOL
-//! * `quick_tag_accessors` - Adds easier getters/setters for string values (Ex. [`Tag::artist`]), adds an extra dependency
-//!
 //! ## Individual metadata formats
 //! These features are available if you have a specific use case, or just don't want certain formats.
 //!
@@ -133,6 +130,11 @@
 	clippy::upper_case_acronyms
 )]
 
+mod error;
+pub(crate) mod logic;
+mod probe;
+mod types;
+
 pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::Probe;
@@ -144,41 +146,12 @@ pub use crate::types::{
 	tag::{Tag, TagType},
 };
 
-mod types;
-
-/// Various concrete file types, used when inference is unnecessary
-pub mod files {
-	pub use crate::logic::ape::{ApeFile, ApeProperties};
-	pub use crate::logic::iff::{
-		aiff::AiffFile,
-		wav::{
-			properties::{WavFormat, WavProperties},
-			WavFile,
-		},
-	};
-	pub use crate::logic::mp3::{
-		header::{ChannelMode, Layer, MpegVersion},
-		Mp3File, Mp3Properties,
-	};
-	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
-	pub use crate::logic::ogg::{
-		flac::FlacFile,
-		opus::{properties::OpusProperties, OpusFile},
-		vorbis::{properties::VorbisProperties, VorbisFile},
-	};
-	pub use crate::types::file::AudioFile;
-}
-
-/// Various concrete tag types, used when format-specific features are necessary
-pub mod tags {
-	pub use crate::logic::id3::v1::tag::Id3v1Tag;
-	pub use crate::logic::iff::{aiff::tag::AiffTextChunks, wav::tag::RiffInfoList};
-	pub use crate::logic::ogg::tag::VorbisComments;
-}
+pub use crate::types::file::AudioFile;
 
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
-/// ID3v1/v2 specific items
 pub mod id3 {
+	//! ID3 specific items
+	//!
 	//! ID3 does things differently than other tags, making working with them a little more effort than other formats.
 	//! Check the other modules for important notes and/or warnings.
 
@@ -187,7 +160,30 @@ pub mod id3 {
 		//! ID3v2 items and utilities
 		//!
 		//! # ID3v2 notes and warnings
-		// TODO
+		//!
+		//! ## Conversions
+		//!
+		//! Converting an [`Id3v2Tag`] to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
+		//! to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
+		//!
+		//! ## Special Frames
+		//!
+		//! ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameValue::Binary`].
+		//! They can easily be parsed with [`GeneralEncapsulatedObject::parse`] and [`SynchronizedText::parse`] respectively, and converted
+		//! back to binary with [`GeneralEncapsulatedObject::as_bytes`] and [`SynchronizedText::as_bytes`] for writing.
+		//!
+		//! ## Outdated Frames
+		//!
+		//! ### ID3v2.2
+		//!
+		//! `ID3v2.2` frame IDs are 3 characters. When reading these tags, [`upgrade_v2`] is used, which has a list of all of the common IDs
+		//! that have a mapping to `ID3v2.4`. Any ID that fails to be converted will be stored as [`FrameID::Outdated`], and it must be manually
+		//! upgraded before it can be written. **Lofty** will not write `ID3v2.2` tags.
+		//!
+		//! ### ID3v2.3
+		//!
+		//! `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
+		//! but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
 
 		pub use {
 			crate::logic::id3::v2::frame::{
@@ -217,30 +213,77 @@ pub mod id3 {
 		//!
 		//! ## Genres
 		//!
-		//! ID3v1 stores the genre in a single byte ranging from 0 to 192.
-		//! The number can be stored in any of the following [`ItemValue`](crate::ItemValue) variants: `Text, UInt, UInt64, Int, Int64`, and will be discarded if it is unable to parse or is too big.
-		//! All possible genres have been stored in the [`GENRES`](crate::id3::v1::GENRES) constant.
+		//! ID3v1 stores the genre in a single byte ranging from 0 to 192 (inclusive).
+		//! All possible genres have been stored in the [`GENRES`] constant.
 		//!
 		//! ## Track Numbers
 		//!
 		//! ID3v1 stores the track number in a non-zero byte.
 		//! A track number of 0 will be treated as an empty field.
 		//! Additionally, there is no track total field.
-
+		//!
+		//! ## Converting from `Tag`
+		//!
+		//! * [`ItemKey::Genre`](crate::ItemKey::Genre)
+		//! 	* [`ItemValue::Text`](crate::ItemValue::Text) - Checks if [`GENRES`] contains the string, and gets its index
+		//! 	* [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is within the range of [`GENRES`]
+		//! * [`ItemKey::TrackNumber`](crate::ItemKey::TrackNumber)
+		//! 	* [`ItemValue::Text`](crate::ItemValue::Text) - Attempts to parse the string into a `u8`
+		//! 	* [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is <= [`u8::MAX`]
 		pub use crate::logic::id3::v1::constants::GENRES;
+		pub use crate::logic::id3::v1::tag::Id3v1Tag;
 	}
 }
 
-/// MP4 specific items
-pub mod mp4 {
-	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent};
+pub mod ape {
+	//! APE specific items
+	// TODO
+	pub use crate::logic::ape::tag::item::ApeItem;
+	pub use crate::logic::ape::tag::ApeTag;
+	pub use crate::logic::ape::{ApeFile, ApeProperties};
 }
 
-/// Various items related to [`Picture`](crate::picture::Picture)s
+pub mod mp3 {
+	//! MP3 specific items
+	// TODO
+	pub use crate::logic::mp3::{
+		header::{ChannelMode, Layer, MpegVersion},
+		Mp3File, Mp3Properties,
+	};
+}
+
+pub mod mp4 {
+	//! MP4 specific items
+	// TODO
+	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent, Ilst};
+	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
+}
+
+pub mod ogg {
+	//! OPUS/FLAC/Vorbis specific items
+	// TODO
+	pub use crate::logic::ogg::tag::VorbisComments;
+	pub use crate::logic::ogg::{
+		flac::FlacFile,
+		opus::{properties::OpusProperties, OpusFile},
+		vorbis::{properties::VorbisProperties, VorbisFile},
+	};
+}
+
+pub mod iff {
+	//! WAV/AIFF specific items
+	// TODO
+	pub use crate::logic::iff::aiff::AiffFile;
+	pub use crate::logic::iff::wav::WavFile;
+
+	pub use crate::logic::iff::aiff::tag::AiffTextChunks;
+	pub use crate::logic::iff::wav::tag::RiffInfoList;
+
+	pub use crate::logic::iff::wav::properties::{WavFormat, WavProperties};
+}
+
 pub mod picture {
+	//! Various items related to [`Picture`](crate::picture::Picture)s
+	// TODO
 	pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
 }
-
-mod error;
-pub(crate) mod logic;
-mod probe;
