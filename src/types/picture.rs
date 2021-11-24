@@ -438,20 +438,15 @@ impl Picture {
 		let mut data = Vec::new();
 		reader.read_to_end(&mut data)?;
 
-		// Bare minimum we need for the PNG signature
-		if data.len() < 8 {
-			return Err(LoftyError::NotAPicture);
-		}
-
 		let pic_type = PictureType::Other;
 		let description = None;
 
-		let mime_type = match data[..8] {
-			[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => MimeType::Png,
-			[0xFF, 0xD8, ..] => MimeType::Jpeg,
-			[b'G', b'I', b'F', ..] => MimeType::Gif,
-			[b'B', b'M', ..] => MimeType::Bmp,
-			[b'I', b'I', ..] => MimeType::Tiff,
+		let mime_type = match data.get(..8) {
+			Some([0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]) => MimeType::Png,
+			Some([0xFF, 0xD8, ..]) => MimeType::Jpeg,
+			Some([b'G', b'I', b'F', ..]) => MimeType::Gif,
+			Some([b'B', b'M', ..]) => MimeType::Bmp,
+			Some([b'I', b'I', ..]) => MimeType::Tiff,
 			_ => return Err(LoftyError::NotAPicture),
 		};
 

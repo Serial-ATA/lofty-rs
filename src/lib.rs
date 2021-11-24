@@ -165,6 +165,21 @@ pub mod id3 {
 		//!
 		//! ## Conversions
 		//!
+		//! ⚠ **Warnings** ⚠
+		//!
+		//! ### `Tag` -> `Id3v2Tag`
+		//!
+		//! When converting from a [`Tag`](crate::Tag) to an [`Id3v2Tag`], some frames may need editing.
+		//!
+		//! * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Rather than be a normal text frame, these require a [`LanguageFrame`].
+		//! An attempt is made to create this information, but it may be incorrect.
+		//!    * `language` - Assumed to be "eng"
+		//!    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
+		//!    by their descriptions, and as such they are expected to be unique for each.
+		//! * [`ItemKey::Unknown("WXXX" | "TXXX")`](crate::ItemKey::Unknown) - These frames are also identified by their descriptions.
+		//!
+		//! ### `Id3v2Tag` -> `Tag`
+		//!
 		//! Converting an [`Id3v2Tag`] to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
 		//! to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
 		//!
@@ -227,11 +242,11 @@ pub mod id3 {
 		//! ## Converting from `Tag`
 		//!
 		//! * [`ItemKey::Genre`](crate::ItemKey::Genre)
-		//! 	* [`ItemValue::Text`](crate::ItemValue::Text) - Checks if [`GENRES`] contains the string, and gets its index
-		//! 	* [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is within the range of [`GENRES`]
+		//!     * [`ItemValue::Text`](crate::ItemValue::Text) - Checks if [`GENRES`] contains the string, and gets its index
+		//!     * [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is within the range of [`GENRES`]
 		//! * [`ItemKey::TrackNumber`](crate::ItemKey::TrackNumber)
-		//! 	* [`ItemValue::Text`](crate::ItemValue::Text) - Attempts to parse the string into a `u8`
-		//! 	* [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is <= [`u8::MAX`]
+		//!     * [`ItemValue::Text`](crate::ItemValue::Text) - Attempts to parse the string into a `u8`
+		//!     * [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is <= [`u8::MAX`]
 		pub use crate::logic::id3::v1::constants::GENRES;
 		pub use crate::logic::id3::v1::tag::Id3v1Tag;
 	}

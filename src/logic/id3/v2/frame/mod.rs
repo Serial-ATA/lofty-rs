@@ -9,7 +9,7 @@ use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::Picture;
 use crate::types::tag::TagType;
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub struct Frame {
@@ -198,6 +198,57 @@ pub enum FrameValue {
 	/// * This is used for **all** frames with an ID of [`FrameID::Outdated`]
 	/// * This is used for unknown frames
 	Binary(Vec<u8>),
+}
+
+impl TryFrom<TagItem> for Frame {
+	type Error = LoftyError;
+
+	fn try_from(value: TagItem) -> std::prelude::rust_2015::Result<Self, Self::Error> {
+		let id: FrameID = value.item_key.try_into()?;
+
+		// We make the VERY bold assumption the language is English
+		let value = match (&id, value.item_value) {
+			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
+				FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: String::from("eng"),
+					description: String::new(),
+					content: text,
+				})
+			},
+			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
+				FrameValue::UnSyncText(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: String::from("eng"),
+					description: String::new(),
+					content: text,
+				})
+			},
+			(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
+				if s == "WXXX" =>
+			{
+				FrameValue::UserURL(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::new(),
+					content: text,
+				})
+			},
+			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
+				FrameValue::UserText(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::new(),
+					content: text,
+				})
+			},
+			(_, value) => value.into(),
+		};
+
+		Ok(Self {
+			id,
+			value,
+			flags: FrameFlags::default(),
+		})
+	}
 }
 
 impl From<ItemValue> for FrameValue {

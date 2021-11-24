@@ -1,5 +1,5 @@
 use super::frame::{EncodedTextFrame, LanguageFrame};
-use super::frame::{Frame, FrameFlags, FrameValue};
+use super::frame::{Frame, FrameValue};
 #[cfg(feature = "id3v2_restrictions")]
 use super::items::restrictions::TagRestrictions;
 use super::Id3v2Version;
@@ -118,18 +118,12 @@ impl From<Tag> for Id3v2Tag {
 		let mut id3v2_tag = Self::default();
 
 		for item in input.items {
-			let id = match item.item_key.try_into() {
-				Ok(id) => id,
+			let frame: Frame = match item.try_into() {
+				Ok(frame) => frame,
 				Err(_) => continue,
 			};
 
-			let frame_value: FrameValue = item.item_value.into();
-
-			id3v2_tag.frames.push(Frame {
-				id,
-				value: frame_value,
-				flags: FrameFlags::default(),
-			});
+			id3v2_tag.frames.push(frame);
 		}
 
 		id3v2_tag
