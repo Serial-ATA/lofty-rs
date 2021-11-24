@@ -148,6 +148,8 @@ pub use crate::types::{
 
 pub use crate::types::file::AudioFile;
 
+pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
+
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
 pub mod id3 {
 	//! ID3 specific items
@@ -246,10 +248,8 @@ pub mod ape {
 pub mod mp3 {
 	//! MP3 specific items
 	// TODO
-	pub use crate::logic::mp3::{
-		header::{ChannelMode, Layer, MpegVersion},
-		Mp3File, Mp3Properties,
-	};
+	pub use crate::logic::mp3::header::{ChannelMode, Layer, MpegVersion};
+	pub use crate::logic::mp3::{Mp3File, Mp3Properties};
 }
 
 pub mod mp4 {
@@ -262,12 +262,10 @@ pub mod mp4 {
 pub mod ogg {
 	//! OPUS/FLAC/Vorbis specific items
 	// TODO
+	pub use crate::logic::ogg::flac::FlacFile;
+	pub use crate::logic::ogg::opus::{properties::OpusProperties, OpusFile};
 	pub use crate::logic::ogg::tag::VorbisComments;
-	pub use crate::logic::ogg::{
-		flac::FlacFile,
-		opus::{properties::OpusProperties, OpusFile},
-		vorbis::{properties::VorbisProperties, VorbisFile},
-	};
+	pub use crate::logic::ogg::vorbis::{properties::VorbisProperties, VorbisFile};
 }
 
 pub mod iff {
@@ -280,10 +278,4 @@ pub mod iff {
 	pub use crate::logic::iff::wav::tag::RiffInfoList;
 
 	pub use crate::logic::iff::wav::properties::{WavFormat, WavProperties};
-}
-
-pub mod picture {
-	//! Various items related to [`Picture`](crate::picture::Picture)s
-	// TODO
-	pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
 }
