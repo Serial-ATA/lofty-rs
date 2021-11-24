@@ -1,5 +1,5 @@
-use lofty::id3::v2::Id3v2Version;
-use lofty::picture::{Picture, PictureType};
+use lofty::id3::v2::{Id3v2Version, TextEncoding};
+use lofty::picture::{Picture, PictureInformation, PictureType};
 
 use std::fs::File;
 use std::io::Read;
@@ -15,14 +15,13 @@ fn get_buf(path: &str) -> Vec<u8> {
 	buf
 }
 
-fn verify_pic(picture: Picture) {
-	assert_eq!(picture.pic_type(), PictureType::CoverFront);
-	assert_eq!(picture.description(), Some("png_640x628.png"));
+fn create_original_picture() -> Picture {
+	let mut original_pic = Picture::from_reader(&mut &ORIGINAL_IMAGE[..]).unwrap();
 
-	let original_picture = Picture::from_reader(&mut &ORIGINAL_IMAGE[..]).unwrap();
+	original_pic.set_description(Some(String::from("png_640x628.png")));
+	original_pic.set_pic_type(PictureType::CoverFront);
 
-	assert_eq!(picture.mime_type(), original_picture.mime_type());
-	assert_eq!(picture.data(), original_picture.data());
+	original_pic
 }
 
 #[test]
@@ -31,7 +30,20 @@ fn id3v2_apic() {
 
 	let (pic, _) = Picture::from_apic_bytes(&*buf, Id3v2Version::V4).unwrap();
 
-	verify_pic(pic);
+	assert_eq!(create_original_picture(), pic);
+}
+
+#[test]
+fn as_apic_bytes() {
+	let buf = get_buf("tests/picture/assets/png_640x628.apic");
+
+	let original_picture = create_original_picture();
+
+	let original_as_apic = original_picture
+		.as_apic_bytes(Id3v2Version::V4, TextEncoding::Latin1)
+		.unwrap();
+
+	assert_eq!(buf, original_as_apic);
 }
 
 #[test]
@@ -40,7 +52,18 @@ fn ape_binary_item() {
 
 	let pic = Picture::from_ape_bytes("Cover Art (Front)", &*buf).unwrap();
 
-	verify_pic(pic);
+	assert_eq!(create_original_picture(), pic);
+}
+
+#[test]
+fn as_ape_bytes() {
+	let buf = get_buf("tests/picture/assets/png_640x628.apev2");
+
+	let original_picture = create_original_picture();
+
+	let original_as_ape = original_picture.as_ape_bytes();
+
+	assert_eq!(buf, original_as_ape);
 }
 
 #[test]
@@ -49,5 +72,22 @@ fn flac_metadata_block_picture() {
 
 	let (pic, _) = Picture::from_flac_bytes(&*buf).unwrap();
 
-	verify_pic(pic);
+	assert_eq!(create_original_picture(), pic);
+}
+
+#[test]
+fn as_flac_bytes() {
+	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
+
+	let original_picture = create_original_picture();
+	let original_picture_information =
+		PictureInformation::from_png(original_picture.data()).unwrap();
+
+	let original_as_flac = original_picture.as_flac_bytes(original_picture_information);
+
+	// `Picture::as_flac_bytes` returns a base64 encoded string
+	// but the asset just has binary data
+	let original_decoded = base64::decode(original_as_flac).unwrap();
+
+	assert_eq!(&*buf, original_decoded);
 }

@@ -289,8 +289,14 @@ impl PictureInformation {
 
 		let width = reader.read_u32::<BigEndian>()?;
 		let height = reader.read_u32::<BigEndian>()?;
-		let color_depth = u32::from(reader.read_u8()?);
+		let mut color_depth = u32::from(reader.read_u8()?);
 		let color_type = reader.read_u8()?;
+
+		match color_type {
+			2 => color_depth *= 3,
+			4 | 6 => color_depth *= 4,
+			_ => {},
+		}
 
 		// The color type 3 (indexed-color) means there should be
 		// a "PLTE" chunk, whose data can be used in the `num_colors`
@@ -542,6 +548,7 @@ impl Picture {
 			0xFFFF_FF16_u64
 		} else {
 			data.write_all(self.mime_type.as_str().as_bytes())?;
+			data.write_u8(0)?;
 
 			u64::from(u32::MAX)
 		};
