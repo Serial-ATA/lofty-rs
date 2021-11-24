@@ -3,7 +3,7 @@ use super::FlacFile;
 use crate::error::{LoftyError, Result};
 use crate::logic::ogg::read::read_comments;
 use crate::logic::ogg::tag::VorbisComments;
-use crate::picture::Picture;
+use crate::types::picture::Picture;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -107,7 +107,7 @@ where
 			6 => tag
 				.pictures
 				.push(Picture::from_flac_bytes(&*block.content)?),
-			_ => {},
+			_ => {}
 		}
 	}
 

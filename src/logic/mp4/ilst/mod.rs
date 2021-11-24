@@ -1,9 +1,10 @@
 pub(in crate::logic::mp4) mod read;
 pub(in crate::logic) mod write;
 
-use crate::picture::Picture;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
+use crate::types::picture::Picture;
 use crate::types::tag::{Tag, TagType};
+
 use std::convert::TryInto;
 
 #[derive(Default)]
@@ -23,7 +24,7 @@ impl From<Ilst> for Tag {
 				AtomData::Picture(pic) => {
 					tag.pictures.push(pic);
 					continue;
-				},
+				}
 				_ => continue,
 			};
 
@@ -32,10 +33,10 @@ impl From<Ilst> for Tag {
 				&match atom.ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
-					},
+					}
 					AtomIdent::Freeform { mean, name } => {
 						format!("----:{}:{}", mean, name)
-					},
+					}
 				},
 			);
 

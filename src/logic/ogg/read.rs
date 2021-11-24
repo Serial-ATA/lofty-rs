@@ -1,7 +1,7 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::{LoftyError, Result};
-use crate::picture::Picture;
+use crate::types::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
 

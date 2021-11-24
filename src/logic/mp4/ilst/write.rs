@@ -4,7 +4,7 @@ use crate::logic::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::logic::mp4::moov::Moov;
 use crate::logic::mp4::read::nested_atom;
 use crate::logic::mp4::read::verify_mp4;
-use crate::picture::MimeType;
+use crate::types::picture::MimeType;
 use crate::types::picture::Picture;
 
 use std::fs::File;
