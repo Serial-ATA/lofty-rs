@@ -101,39 +101,19 @@ impl From<Tag> for Id3v1Tag {
 			album: input.get_string(&ItemKey::AlbumTitle).map(str::to_owned),
 			year: input.get_string(&ItemKey::Year).map(str::to_owned),
 			comment: input.get_string(&ItemKey::Comment).map(str::to_owned),
-			track_number: {
-				if let Some(item) = input.get_item_ref(&ItemKey::TrackNumber) {
-					match item.value() {
-						ItemValue::Text(ref track_number) => {
-							let track_number = track_number.parse::<u8>();
-
-							track_number.ok()
-						},
-						ItemValue::UInt(uint) if *uint < 256 => Some(*uint as u8),
-						_ => None,
-					}
-				} else {
-					None
-				}
-			},
-			genre: {
-				if let Some(item) = input.get_item_ref(&ItemKey::Genre) {
-					match item.value() {
-						ItemValue::Text(ref genre) => {
-							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
-						},
-						ItemValue::UInt(uint) if *uint <= 192 => Some(*uint as u8),
-						_ => None,
-					}
-				} else {
-					None
-				}
-			},
+			track_number: input
+				.get_string(&ItemKey::Genre)
+				.map(|g| g.parse::<u8>().ok())
+				.and_then(|g| g),
+			genre: input
+				.get_string(&ItemKey::Genre)
+				.map(|g| g.parse::<u8>().ok())
+				.and_then(|g| g),
 		}
 	}
 }
 
-pub(crate) struct Id3v1TagRef<'a> {
+pub(in crate::logic) struct Id3v1TagRef<'a> {
 	pub title: Option<&'a str>,
 	pub artist: Option<&'a str>,
 	pub album: Option<&'a str>,
@@ -165,34 +145,14 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 			album: self.get_string(&ItemKey::AlbumTitle),
 			year: self.get_string(&ItemKey::Year),
 			comment: self.get_string(&ItemKey::Comment),
-			track_number: {
-				if let Some(item) = self.get_item_ref(&ItemKey::TrackNumber) {
-					match item.value() {
-						ItemValue::Text(ref track_number) => {
-							let track_number = track_number.parse::<u8>();
-
-							track_number.ok()
-						},
-						ItemValue::UInt(uint) if *uint < 256 => Some(*uint as u8),
-						_ => None,
-					}
-				} else {
-					None
-				}
-			},
-			genre: {
-				if let Some(item) = self.get_item_ref(&ItemKey::Genre) {
-					match item.value() {
-						ItemValue::Text(ref genre) => {
-							GENRES.iter().position(|v| v == genre).map(|pos| pos as u8)
-						},
-						ItemValue::UInt(uint) if *uint <= 192 => Some(*uint as u8),
-						_ => None,
-					}
-				} else {
-					None
-				}
-			},
+			track_number: self
+				.get_string(&ItemKey::Genre)
+				.map(|g| g.parse::<u8>().ok())
+				.and_then(|g| g),
+			genre: self
+				.get_string(&ItemKey::Genre)
+				.map(|g| g.parse::<u8>().ok())
+				.and_then(|g| g),
 		}
 	}
 }

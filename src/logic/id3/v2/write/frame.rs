@@ -1,5 +1,5 @@
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::{Id3v2Version, TextEncoding};
+use crate::id3::v2::Id3v2Version;
 use crate::logic::id3::synch_u32;
 use crate::logic::id3::v2::frame::{FrameFlags, FrameRef, FrameValueRef};
 
@@ -31,12 +31,6 @@ where
 			FrameValueRef::URL(link) => link.as_bytes().to_vec(),
 			FrameValueRef::Picture { encoding, picture } => {
 				picture.as_apic_bytes(Id3v2Version::V4, encoding)?
-			},
-			FrameValueRef::UInt(uint) => {
-				let mut v = vec![TextEncoding::UTF8 as u8];
-
-				v.extend_from_slice(uint.to_string().as_bytes());
-				v
 			},
 			FrameValueRef::Binary(binary) => binary.to_vec(),
 		};

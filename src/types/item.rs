@@ -423,13 +423,6 @@ pub enum ItemValue {
 	/// This is only gets special treatment in `ID3v2` and `APE` tags, being written
 	/// as a normal string in other tags
 	Locator(String),
-	/// A 32-bit unsigned integer
-	///
-	/// This is used for storing information such as track and disc numbers
-	///
-	/// NOTE: This is only really applicable to `ID3v1` and `MP4 ILST`, and will be written **(and re-read as!)** a [`ItemValue::Text`]
-	/// when used with other [`TagType`]s.
-	UInt(u32),
 	/// Binary information
 	Binary(Vec<u8>),
 }
@@ -437,8 +430,6 @@ pub enum ItemValue {
 pub(crate) enum ItemValueRef<'a> {
 	Text(&'a str),
 	Locator(&'a str),
-	// This is only used for writing anyway, for which we need a String
-	UInt(String),
 	Binary(&'a [u8]),
 }
 
@@ -447,7 +438,6 @@ impl<'a> Into<ItemValueRef<'a>> for &'a ItemValue {
 		match self {
 			ItemValue::Text(text) => ItemValueRef::Text(text),
 			ItemValue::Locator(locator) => ItemValueRef::Locator(locator),
-			ItemValue::UInt(uint) => ItemValueRef::UInt(uint.to_string()),
 			ItemValue::Binary(binary) => ItemValueRef::Binary(binary),
 		}
 	}
