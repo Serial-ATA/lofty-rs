@@ -68,7 +68,7 @@ impl Frame {
 	}
 }
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
+#[derive(Clone, Debug, Eq, Hash)]
 /// Information about an ID3v2 frame that requires a language
 pub struct LanguageFrame {
 	/// The encoding of the description and comment text
@@ -79,6 +79,12 @@ pub struct LanguageFrame {
 	pub description: String,
 	/// The actual frame content
 	pub content: String,
+}
+
+impl PartialEq for LanguageFrame {
+	fn eq(&self, other: &Self) -> bool {
+		self.description == other.description
+	}
 }
 
 impl LanguageFrame {
@@ -99,7 +105,7 @@ impl LanguageFrame {
 	}
 }
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
+#[derive(Clone, Debug, Eq, Hash)]
 pub struct EncodedTextFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
@@ -107,6 +113,12 @@ pub struct EncodedTextFrame {
 	pub description: String,
 	/// The actual frame content
 	pub content: String,
+}
+
+impl PartialEq for EncodedTextFrame {
+	fn eq(&self, other: &Self) -> bool {
+		self.description == other.description
+	}
 }
 
 impl EncodedTextFrame {
@@ -162,7 +174,7 @@ pub enum FrameValue {
 	UnSyncText(LanguageFrame),
 	/// Represents a "T..." (excluding TXXX) frame
 	///
-	/// NOTE: Text frame names **must** be unique
+	/// NOTE: Text frame descriptions **must** be unique
 	Text {
 		encoding: TextEncoding,
 		value: String,
@@ -173,10 +185,7 @@ pub enum FrameValue {
 	UserText(EncodedTextFrame),
 	/// Represents a "W..." (excluding WXXX) frame
 	///
-	/// NOTES:
-	///
-	/// * This is a fallback if there was no [`ItemKey`](crate::ItemKey) mapping
-	/// * URL frame names **must** be unique
+	/// NOTE: URL frame descriptions **must** be unique
 	///
 	/// No encoding needs to be provided as all URLs are [`TextEncoding::Latin1`]
 	URL(String),

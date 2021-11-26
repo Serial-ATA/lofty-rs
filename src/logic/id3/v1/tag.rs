@@ -107,7 +107,12 @@ impl From<Tag> for Id3v1Tag {
 				.and_then(|g| g),
 			genre: input
 				.get_string(&ItemKey::Genre)
-				.map(|g| g.parse::<u8>().ok())
+				.map(|g| {
+					GENRES
+						.iter()
+						.position(|v| v == &g)
+						.map_or_else(|| g.parse::<u8>().ok(), |p| Some(p as u8))
+				})
 				.and_then(|g| g),
 		}
 	}
@@ -151,7 +156,12 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 				.and_then(|g| g),
 			genre: self
 				.get_string(&ItemKey::Genre)
-				.map(|g| g.parse::<u8>().ok())
+				.map(|g| {
+					GENRES
+						.iter()
+						.position(|v| v == &g)
+						.map_or_else(|| g.parse::<u8>().ok(), |p| Some(p as u8))
+				})
 				.and_then(|g| g),
 		}
 	}

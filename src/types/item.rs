@@ -376,7 +376,7 @@ item_keys!(
 	PodcastURL => [
 		TagType::Id3v2 => "WFED", TagType::Mp4Atom => "purl"
 	],
-	PodcastReleaseDate=> [
+	PodcastReleaseDate => [
 		TagType::Id3v2 => "TDRL"
 	],
 	PodcastGlobalUniqueID => [

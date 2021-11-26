@@ -21,7 +21,8 @@
 //!
 //! ## Determining a file's format
 //!
-//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching against [`concrete file types`](#using-concrete-file-types).
+//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching
+//! against [`concrete file types`](#using-concrete-file-types).
 //!
 //! ### Guessing from extension
 //! ```
@@ -105,10 +106,10 @@
 //! ## Utilities
 //! * `id3v2_restrictions` - Parses ID3v2 extended headers and exposes flags for fine grained control
 //!
-//! # Notes on ID3
+//! # Important format-specific notes
 //!
-//! See [`id3`](crate::id3) for important warnings and notes on reading tags.
-
+//! All formats have their own quirks that may produce unexpected results between conversions.
+//! Be sure to read the module documentation of each format to see important notes and warnings.
 #![deny(clippy::pedantic, clippy::all)]
 // TODO missing_docs
 #![allow(
@@ -233,20 +234,18 @@ pub mod id3 {
 		//! ID3v1 stores the genre in a single byte ranging from 0 to 192 (inclusive).
 		//! All possible genres have been stored in the [`GENRES`] constant.
 		//!
+		//! ### Converting from `Tag`
+		//!
+		//! Two checks are performed when converting a genre:
+		//!
+		//! * [`GENRE`] contains the string
+		//! * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
+		//!
 		//! ## Track Numbers
 		//!
 		//! ID3v1 stores the track number in a non-zero byte.
 		//! A track number of 0 will be treated as an empty field.
 		//! Additionally, there is no track total field.
-		//!
-		//! ## Converting from `Tag`
-		//!
-		//! * [`ItemKey::Genre`](crate::ItemKey::Genre)
-		//!     * [`ItemValue::Text`](crate::ItemValue::Text) - Checks if [`GENRES`] contains the string, and gets its index
-		//!     * [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is within the range of [`GENRES`]
-		//! * [`ItemKey::TrackNumber`](crate::ItemKey::TrackNumber)
-		//!     * [`ItemValue::Text`](crate::ItemValue::Text) - Attempts to parse the string into a `u8`
-		//!     * [`ItemValue::UInt`](crate::ItemValue::UInt) - Checks if the number is <= [`u8::MAX`]
 		pub use crate::logic::id3::v1::constants::GENRES;
 		pub use crate::logic::id3::v1::tag::Id3v1Tag;
 	}
