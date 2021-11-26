@@ -2,7 +2,7 @@ pub(in crate::logic::mp4) mod read;
 pub(in crate::logic) mod write;
 
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::Picture;
+use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
@@ -59,6 +59,17 @@ impl From<Tag> for Ilst {
 
 				ilst.atoms.push(Atom { ident, data })
 			}
+		}
+
+		for mut picture in input.pictures {
+			// Just for correctness, since we can't actually
+			// assign a picture type in this format
+			picture.pic_type = PictureType::Other;
+
+			ilst.atoms.push(Atom {
+				ident: AtomIdent::Fourcc([b'c', b'o', b'v', b'r']),
+				data: AtomData::Picture(picture),
+			})
 		}
 
 		ilst

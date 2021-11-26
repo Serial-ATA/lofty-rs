@@ -73,6 +73,12 @@ impl From<Tag> for VorbisComments {
 				.push((key.to_string(), val.to_string()));
 		}
 
+		for picture in input.pictures {
+			if let Ok(information) = PictureInformation::from_picture(&picture) {
+				vorbis_comments.pictures.push((picture, information))
+			}
+		}
+
 		vorbis_comments
 	}
 }
