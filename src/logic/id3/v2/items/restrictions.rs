@@ -135,8 +135,6 @@ impl TagRestrictions {
 	}
 
 	/// Convert a [`TagRestrictions`] into a `u8`
-	///
-	/// NOTE: This does not include a frame header
 	pub fn as_bytes(&self) -> u8 {
 		let mut byte = 0;
 

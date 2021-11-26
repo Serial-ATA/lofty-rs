@@ -86,6 +86,7 @@ pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Id3v2Tag> {
 	}
 
 	let mut tag = Id3v2Tag::default();
+	tag.original_version = version;
 	tag.set_flags(flags_parsed);
 
 	loop {

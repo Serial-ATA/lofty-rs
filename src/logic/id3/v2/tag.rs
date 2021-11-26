@@ -13,10 +13,20 @@ use std::fs::File;
 
 use byteorder::ByteOrder;
 
-#[derive(Default)]
 pub struct Id3v2Tag {
 	flags: Id3v2TagFlags,
+	pub(super) original_version: Id3v2Version,
 	frames: Vec<Frame>,
+}
+
+impl Default for Id3v2Tag {
+	fn default() -> Self {
+		Self {
+			flags: Id3v2TagFlags::default(),
+			original_version: Id3v2Version::V4,
+			frames: Vec::new(),
+		}
+	}
 }
 
 impl Id3v2Tag {
@@ -28,6 +38,10 @@ impl Id3v2Tag {
 	/// Restrict the tag's flags
 	pub fn set_flags(&mut self, flags: Id3v2TagFlags) {
 		self.flags = flags
+	}
+
+	pub fn original_version(&self) -> Id3v2Version {
+		self.original_version
 	}
 }
 
