@@ -1,7 +1,8 @@
-use super::frame::{EncodedTextFrame, LanguageFrame};
-use super::frame::{Frame, FrameValue};
+use super::frame::{EncodedTextFrame, FrameFlags, LanguageFrame};
+use super::frame::{Frame, FrameID, FrameValue};
 #[cfg(feature = "id3v2_restrictions")]
 use super::items::restrictions::TagRestrictions;
+use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
 use crate::error::Result;
 use crate::logic::id3::v2::frame::FrameRef;
@@ -138,6 +139,17 @@ impl From<Tag> for Id3v2Tag {
 			};
 
 			id3v2_tag.frames.push(frame);
+		}
+
+		for picture in input.pictures {
+			id3v2_tag.frames.push(Frame {
+				id: FrameID::Valid(String::from("APIC")),
+				value: FrameValue::Picture {
+					encoding: TextEncoding::UTF8,
+					picture,
+				},
+				flags: FrameFlags::default(),
+			})
 		}
 
 		id3v2_tag
