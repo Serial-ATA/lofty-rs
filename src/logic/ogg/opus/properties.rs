@@ -8,10 +8,12 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 /// An Opus file's audio properties
 pub struct OpusProperties {
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	channels: u8,
 	version: u8,
 	input_sample_rate: u32,
@@ -21,7 +23,8 @@ impl From<OpusProperties> for FileProperties {
 	fn from(input: OpusProperties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.input_sample_rate),
 			channels: Some(input.channels),
 		}
@@ -29,14 +32,37 @@ impl From<OpusProperties> for FileProperties {
 }
 
 impl OpusProperties {
+	pub const fn new(
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		channels: u8,
+		version: u8,
+		input_sample_rate: u32,
+	) -> Self {
+		Self {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			channels,
+			version,
+			input_sample_rate,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
-	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
 	}
 
 	/// Channel count
@@ -62,12 +88,12 @@ pub(in crate::logic::ogg) fn read_properties<R>(
 where
 	R: Read + Seek,
 {
-	let stream_len = {
+	let (stream_len, file_length) = {
 		let current = data.seek(SeekFrom::Current(0))?;
 		let end = data.seek(SeekFrom::End(0))?;
 		data.seek(SeekFrom::Start(current))?;
 
-		end - first_page.start
+		(end - first_page.start, end)
 	};
 
 	let first_page_abgp = first_page.abgp;
@@ -93,11 +119,14 @@ where
 			|frame_count| {
 				let length = frame_count * 1000 / 48000;
 				let duration = Duration::from_millis(length as u64);
-				let bitrate = (audio_size * 8 / length) as u32;
+
+				let overall_bitrate = ((file_length * 8) / length) as u32;
+				let audio_bitrate = (audio_size * 8 / length) as u32;
 
 				Ok(OpusProperties {
 					duration,
-					bitrate,
+					overall_bitrate,
+					audio_bitrate,
 					channels,
 					version,
 					input_sample_rate,

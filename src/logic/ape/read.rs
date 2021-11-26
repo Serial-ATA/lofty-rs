@@ -16,7 +16,7 @@ use crate::id3::v2::Id3v2Tag;
 use crate::logic::ape::tag::ApeTag;
 use byteorder::{LittleEndian, ReadBytesExt};
 
-fn read_properties<R>(data: &mut R, stream_len: u64) -> Result<ApeProperties>
+fn read_properties<R>(data: &mut R, stream_len: u64, file_length: u64) -> Result<ApeProperties>
 where
 	R: Read + Seek,
 {
@@ -26,9 +26,9 @@ where
 
 	// Property reading differs between versions
 	if version >= 3980 {
-		properties_gt_3980(data, version, stream_len)
+		properties_gt_3980(data, version, stream_len, file_length)
 	} else {
-		properties_lt_3980(data, version, stream_len)
+		properties_lt_3980(data, version, stream_len, file_length)
 	}
 }
 
@@ -138,6 +138,8 @@ where
 		ape_tag = Some(ape)
 	}
 
+	let file_length = data.seek(SeekFrom::Current(0))?;
+
 	// Go back to the MAC header to read properties
 	data.seek(SeekFrom::Start(mac_start))?;
 
@@ -148,6 +150,6 @@ where
 		id3v2_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: read_properties(data, stream_len)?,
+		properties: read_properties(data, stream_len, file_length)?,
 	})
 }

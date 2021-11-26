@@ -31,7 +31,11 @@ where
 	Ok(block)
 }
 
-fn read_properties<R>(stream_info: &mut R, stream_length: u64) -> Result<FileProperties>
+fn read_properties<R>(
+	stream_info: &mut R,
+	stream_length: u64,
+	file_length: u64,
+) -> Result<FileProperties>
 where
 	R: Read,
 {
@@ -58,23 +62,25 @@ where
 	// Read the remaining 32 bits of the total samples
 	let total_samples = stream_info.read_u32::<BigEndian>()? | (info << 28);
 
-	let (duration, bitrate) = if sample_rate > 0 && total_samples > 0 {
+	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && total_samples > 0 {
 		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
 
 		(
 			Duration::from_millis(length),
-			((stream_length * 8) / length) as u32,
+			Some(((file_length * 8) / length) as u32),
+			Some(((stream_length * 8) / length) as u32),
 		)
 	} else {
-		(Duration::ZERO, 0)
+		(Duration::ZERO, None, None)
 	};
 
-	Ok(FileProperties::new(
+	Ok(FileProperties {
 		duration,
-		Some(bitrate),
-		Some(sample_rate as u32),
-		Some(channels as u8),
-	))
+		overall_bitrate,
+		audio_bitrate,
+		sample_rate: Some(sample_rate as u32),
+		channels: Some(channels as u8),
+	})
 }
 
 pub(in crate::logic::ogg) fn read_from<R>(data: &mut R) -> Result<FlacFile>
@@ -111,13 +117,14 @@ where
 		}
 	}
 
-	let stream_length = {
+	let (stream_length, file_length) = {
 		let current = data.seek(SeekFrom::Current(0))?;
 		let end = data.seek(SeekFrom::End(0))?;
-		end - current
+
+		(end - current, end)
 	};
 
-	let properties = read_properties(&mut &*stream_info.content, stream_length)?;
+	let properties = read_properties(&mut &*stream_info.content, stream_length, file_length)?;
 
 	Ok(FlacFile {
 		properties,

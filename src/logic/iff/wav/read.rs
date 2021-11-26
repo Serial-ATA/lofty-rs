@@ -101,8 +101,15 @@ where
 		return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
 	}
 
+	let file_length = data.seek(SeekFrom::Current(0))?;
+
 	Ok(WavFile {
-		properties: super::properties::read_properties(&mut &*fmt, total_samples, stream_len)?,
+		properties: super::properties::read_properties(
+			&mut &*fmt,
+			total_samples,
+			stream_len,
+			file_length,
+		)?,
 		#[cfg(feature = "riff_info_list")]
 		riff_info: (!riff_info.items.is_empty()).then(|| riff_info),
 		#[cfg(feature = "id3v2")]

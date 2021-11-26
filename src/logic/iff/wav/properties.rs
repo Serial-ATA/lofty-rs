@@ -10,6 +10,7 @@ const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xfffe;
 
 #[allow(missing_docs, non_camel_case_types)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 /// A WAV file's format
 pub enum WavFormat {
 	PCM,
@@ -17,11 +18,13 @@ pub enum WavFormat {
 	Other(u16),
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
 /// A WAV file's audio properties
 pub struct WavProperties {
 	format: WavFormat,
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	sample_rate: u32,
 	channels: u8,
 }
@@ -30,7 +33,8 @@ impl From<WavProperties> for FileProperties {
 	fn from(input: WavProperties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			channels: Some(input.channels),
 		}
@@ -38,14 +42,37 @@ impl From<WavProperties> for FileProperties {
 }
 
 impl WavProperties {
+	pub const fn new(
+		format: WavFormat,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			format,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
 	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
@@ -66,8 +93,9 @@ impl WavProperties {
 
 pub(super) fn read_properties(
 	fmt: &mut &[u8],
-	total_samples: u32,
+	mut total_samples: u32,
 	stream_len: u32,
+	file_length: u64,
 ) -> Result<WavProperties> {
 	let mut format_tag = fmt.read_u16::<LittleEndian>()?;
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
@@ -81,7 +109,7 @@ pub(super) fn read_properties(
 
 	// Skip 2 bytes
 	// Block align (2)
-	let _ = fmt.read_u16::<LittleEndian>()?;
+	fmt.read_u16::<LittleEndian>()?;
 
 	let bits_per_sample = fmt.read_u16::<LittleEndian>()?;
 
@@ -96,7 +124,7 @@ pub(super) fn read_properties(
 		// cbSize (Size of extra format information) (2)
 		// Valid bits per sample (2)
 		// Channel mask (4)
-		let _ = fmt.read_u64::<LittleEndian>()?;
+		fmt.read_u64::<LittleEndian>()?;
 
 		format_tag = fmt.read_u16::<LittleEndian>()?;
 	}
@@ -109,27 +137,36 @@ pub(super) fn read_properties(
 		));
 	}
 
-	let sample_frames = if non_pcm {
-		total_samples
-	} else if bits_per_sample > 0 {
-		stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
-	} else {
-		0
-	};
+	if bits_per_sample > 0 {
+		total_samples = stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
+	} else if !non_pcm {
+		total_samples = 0
+	}
 
-	let (duration, bitrate) = if sample_rate > 0 && sample_frames > 0 {
-		let length = (u64::from(sample_frames) * 1000) / u64::from(sample_rate);
+	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && total_samples > 0 {
+		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
+
+		let overall_bitrate = ((file_length * 8) / length) as u32;
+		let audio_bitrate = (u64::from(stream_len * 8) / length) as u32;
 
 		(
 			Duration::from_millis(length),
-			(u64::from(stream_len * 8) / length) as u32,
+			overall_bitrate,
+			audio_bitrate,
 		)
 	} else if bytes_per_second > 0 {
 		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
 
-		(Duration::from_millis(length), (bytes_per_second * 8) / 1000)
+		let overall_bitrate = ((file_length * 8) / length) as u32;
+		let audio_bitrate = (bytes_per_second * 8) / 1000;
+
+		(
+			Duration::from_millis(length),
+			overall_bitrate,
+			audio_bitrate,
+		)
 	} else {
-		(Duration::ZERO, 0)
+		(Duration::ZERO, 0, 0)
 	};
 
 	Ok(WavProperties {
@@ -139,7 +176,8 @@ pub(super) fn read_properties(
 			other => WavFormat::Other(other),
 		},
 		duration,
-		bitrate,
+		overall_bitrate,
+		audio_bitrate,
 		sample_rate,
 		channels,
 	})

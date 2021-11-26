@@ -14,13 +14,15 @@ use header::{ChannelMode, Layer, MpegVersion};
 use std::io::{Read, Seek};
 use std::time::Duration;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 /// An MP3 file's audio properties
 pub struct Mp3Properties {
 	version: MpegVersion,
 	layer: Layer,
 	channel_mode: ChannelMode,
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	sample_rate: u32,
 	channels: u8,
 }
@@ -29,7 +31,8 @@ impl From<Mp3Properties> for FileProperties {
 	fn from(input: Mp3Properties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			channels: Some(input.channels),
 		}
@@ -37,14 +40,41 @@ impl From<Mp3Properties> for FileProperties {
 }
 
 impl Mp3Properties {
+	pub const fn new(
+		version: MpegVersion,
+		layer: Layer,
+		channel_mode: ChannelMode,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			version,
+			layer,
+			channel_mode,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
-	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)

@@ -6,7 +6,11 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileProperties> {
+pub(super) fn read_properties(
+	comm: &mut &[u8],
+	stream_len: u32,
+	file_length: u64,
+) -> Result<FileProperties> {
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 
 	if channels == 0 {
@@ -45,21 +49,23 @@ pub(super) fn read_properties(comm: &mut &[u8], stream_len: u32) -> Result<FileP
 
 	let sample_rate = float.round() as u32;
 
-	let (duration, bitrate) = if sample_rate > 0 && sample_frames > 0 {
+	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && sample_frames > 0 {
 		let length = (u64::from(sample_frames) * 1000) / u64::from(sample_rate);
 
 		(
 			Duration::from_millis(length),
-			(u64::from(stream_len * 8) / length) as u32,
+			Some(((file_length * 8) / length) as u32),
+			Some((u64::from(stream_len * 8) / length) as u32),
 		)
 	} else {
-		(Duration::ZERO, 0)
+		(Duration::ZERO, None, None)
 	};
 
-	Ok(FileProperties::new(
+	Ok(FileProperties {
 		duration,
-		Some(bitrate),
-		Some(sample_rate),
-		Some(channels),
-	))
+		overall_bitrate,
+		audio_bitrate,
+		sample_rate: Some(sample_rate),
+		channels: Some(channels),
+	})
 }

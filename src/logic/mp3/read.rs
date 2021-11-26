@@ -1,6 +1,8 @@
 use super::header::{verify_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::error::{LoftyError, Result};
+use crate::id3::v2::Id3v2Tag;
+use crate::logic::ape::tag::ApeTag;
 use crate::logic::id3::unsynch_u32;
 use crate::logic::id3::v1::tag::Id3v1Tag;
 use crate::logic::id3::v2::read::parse_id3v2;
@@ -8,43 +10,43 @@ use crate::logic::id3::v2::read::parse_id3v2;
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use crate::id3::v2::Id3v2Tag;
-use crate::logic::ape::tag::ApeTag;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 fn read_properties(
-	first_frame: (Header, u64),
+	mut first_frame: (Header, u64),
 	last_frame: (Header, u64),
 	xing_header: Option<XingHeader>,
+	file_length: u64,
 ) -> Mp3Properties {
-	let (duration, bitrate) = {
-		if let Some(xing_header) = xing_header {
-			if first_frame.0.samples > 0 && first_frame.0.sample_rate > 0 {
+	let (duration, overall_bitrate, audio_bitrate) = {
+		match xing_header {
+			Some(xing_header) if first_frame.0.sample_rate > 0 => {
 				let frame_time =
 					u32::from(first_frame.0.samples) * 1000 / first_frame.0.sample_rate;
 				let length = u64::from(frame_time) * u64::from(xing_header.frames);
 
+				let overall_bitrate = ((file_length * 8) / length) as u32;
+				let audio_bitrate = ((u64::from(xing_header.size) * 8) / length) as u32;
+
 				(
 					Duration::from_millis(length),
-					((u64::from(xing_header.size) * 8) / length) as u32,
+					overall_bitrate,
+					audio_bitrate,
 				)
-			} else {
-				(Duration::ZERO, first_frame.0.bitrate)
-			}
-		} else if first_frame.0.bitrate > 0 {
-			let bitrate = first_frame.0.bitrate;
+			},
+			_ if first_frame.0.bitrate > 0 => {
+				let audio_bitrate = first_frame.0.bitrate;
 
-			let stream_length = last_frame.1 - first_frame.1 + u64::from(first_frame.0.len);
+				let stream_length = last_frame.1 - first_frame.1 + u64::from(first_frame.0.len);
+				let length = (stream_length * 8) / u64::from(audio_bitrate);
 
-			let length = if stream_length > 0 {
-				Duration::from_millis((stream_length * 8) / u64::from(bitrate))
-			} else {
-				Duration::ZERO
-			};
+				let overall_bitrate = ((file_length * 8) / length) as u32;
 
-			(length, bitrate)
-		} else {
-			(Duration::ZERO, 0)
+				let duration = Duration::from_millis(length);
+
+				(duration, overall_bitrate, audio_bitrate)
+			},
+			_ => (Duration::ZERO, 0, 0),
 		}
 	};
 
@@ -53,7 +55,8 @@ fn read_properties(
 		layer: first_frame.0.layer,
 		channel_mode: first_frame.0.channel_mode,
 		duration,
-		bitrate,
+		overall_bitrate,
+		audio_bitrate,
 		sample_rate: first_frame.0.sample_rate,
 		channels: first_frame.0.channels as u8,
 	}
@@ -80,7 +83,7 @@ where
 
 	while let Ok(()) = data.read_exact(&mut header) {
 		match header {
-			_ if verify_frame_sync(u16::from_be_bytes([header[0], header[1]])) => {
+			_ if verify_frame_sync([header[0], header[1]]) => {
 				let start = data.seek(SeekFrom::Current(0))? - 4;
 				let header = Header::read(u32::from_be_bytes(header))?;
 				data.seek(SeekFrom::Current(i64::from(header.len - 4)))?;
@@ -139,6 +142,8 @@ where
 		return Err(LoftyError::Mp3("Unable to find an MPEG frame"));
 	}
 
+	let file_length = data.seek(SeekFrom::Current(0))?;
+
 	let first_mpeg_frame = (first_mpeg_frame.0.unwrap(), first_mpeg_frame.1);
 	let last_mpeg_frame = (last_mpeg_frame.0.unwrap(), last_mpeg_frame.1);
 
@@ -158,6 +163,6 @@ where
 		id3v1_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: read_properties(first_mpeg_frame, last_mpeg_frame, xing_header),
+		properties: read_properties(first_mpeg_frame, last_mpeg_frame, xing_header, file_length),
 	})
 }

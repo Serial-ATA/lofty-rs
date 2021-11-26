@@ -7,7 +7,12 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub fn properties_gt_3980<R>(data: &mut R, version: u16, stream_len: u64) -> Result<ApeProperties>
+pub fn properties_gt_3980<R>(
+	data: &mut R,
+	version: u16,
+	stream_len: u64,
+	file_length: u64,
+) -> Result<ApeProperties>
 where
 	R: Read + Seek,
 {
@@ -60,7 +65,8 @@ where
 
 	let sample_rate = header_read.read_u32::<LittleEndian>()?;
 
-	let (duration, bitrate) = get_duration_bitrate(
+	let (duration, overall_bitrate, audio_bitrate) = get_duration_bitrate(
+		file_length,
 		total_frames,
 		final_frame_blocks,
 		blocks_per_frame,
@@ -71,13 +77,19 @@ where
 	Ok(ApeProperties {
 		version,
 		duration,
-		bitrate,
+		overall_bitrate,
+		audio_bitrate,
 		sample_rate,
 		channels: channels as u8,
 	})
 }
 
-pub fn properties_lt_3980<R>(data: &mut R, version: u16, stream_len: u64) -> Result<ApeProperties>
+pub fn properties_lt_3980<R>(
+	data: &mut R,
+	version: u16,
+	stream_len: u64,
+	file_length: u64,
+) -> Result<ApeProperties>
 where
 	R: Read + Seek,
 {
@@ -124,7 +136,8 @@ where
 
 	let final_frame_blocks = data.read_u32::<LittleEndian>()?;
 
-	let (duration, bitrate) = get_duration_bitrate(
+	let (duration, overall_bitrate, audio_bitrate) = get_duration_bitrate(
+		file_length,
 		total_frames,
 		final_frame_blocks,
 		blocks_per_frame,
@@ -135,19 +148,21 @@ where
 	Ok(ApeProperties {
 		version,
 		duration,
-		bitrate,
+		overall_bitrate,
+		audio_bitrate,
 		sample_rate,
 		channels: channels as u8,
 	})
 }
 
 fn get_duration_bitrate(
+	file_length: u64,
 	total_frames: u32,
 	final_frame_blocks: u32,
 	blocks_per_frame: u32,
 	sample_rate: u32,
 	stream_len: u64,
-) -> (Duration, u32) {
+) -> (Duration, u32, u32) {
 	let mut total_samples = u64::from(final_frame_blocks);
 
 	if total_samples > 1 {
@@ -156,10 +171,16 @@ fn get_duration_bitrate(
 
 	if sample_rate > 0 {
 		let length = (total_samples * 1000) / u64::from(sample_rate);
-		let bitrate = ((stream_len * 8) / length) as u32;
 
-		(Duration::from_millis(length), bitrate)
+		let overall_bitrate = ((file_length * 8) / length) as u32;
+		let audio_bitrate = ((stream_len * 8) / length) as u32;
+
+		(
+			Duration::from_millis(length),
+			overall_bitrate,
+			audio_bitrate,
+		)
 	} else {
-		(Duration::ZERO, 0)
+		(Duration::ZERO, 0, 0)
 	}
 }

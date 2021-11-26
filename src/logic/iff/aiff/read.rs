@@ -90,7 +90,11 @@ where
 		return Err(LoftyError::Aiff("File does not contain a \"SSND\" chunk"));
 	}
 
-	let properties = super::properties::read_properties(&mut &*comm.unwrap(), stream_len)?;
+	let properties = super::properties::read_properties(
+		&mut &*comm.unwrap(),
+		stream_len,
+		data.seek(SeekFrom::Current(0))?,
+	)?;
 
 	Ok(AiffFile {
 		properties,

@@ -11,7 +11,11 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn read_properties<R>(data: &mut R, traks: &[Trak]) -> Result<Mp4Properties>
+pub(crate) fn read_properties<R>(
+	data: &mut R,
+	traks: &[Trak],
+	file_length: u64,
+) -> Result<Mp4Properties>
 where
 	R: Read + Seek,
 {
@@ -106,7 +110,8 @@ where
 	let mut properties = Mp4Properties {
 		codec: Mp4Codec::Unknown(String::new()),
 		duration,
-		bitrate: 0,
+		overall_bitrate: 0,
+		audio_bitrate: 0,
 		sample_rate: 0,
 		channels: 0,
 	};
@@ -125,13 +130,13 @@ where
 				// Version (1)
 				// Flags (3)
 				// Number of entries (4)
-				stsd_reader.seek(SeekFrom::Start(8))?;
+				stsd_reader.seek(SeekFrom::Current(8))?;
 
 				let atom = AtomInfo::read(&mut stsd_reader)?;
 
 				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 					match fourcc {
-						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
+						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties, file_length)?,
 						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
 						unknown => {
 							if let Ok(codec) = std::str::from_utf8(unknown) {
@@ -147,37 +152,39 @@ where
 	Ok(properties)
 }
 
-fn mp4a_properties<R>(data: &mut R, properties: &mut Mp4Properties) -> Result<()>
+fn mp4a_properties<R>(stsd: &mut R, properties: &mut Mp4Properties, file_length: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
+	properties.codec = Mp4Codec::AAC;
+
 	// Skipping 16 bytes
 	// Reserved (6)
 	// Data reference index (2)
 	// Version (2)
 	// Revision level (2)
 	// Vendor (4)
-	data.seek(SeekFrom::Current(16))?;
+	stsd.seek(SeekFrom::Current(16))?;
 
-	properties.channels = data.read_u16::<BigEndian>()? as u8;
+	properties.channels = stsd.read_u16::<BigEndian>()? as u8;
 
 	// Skipping 4 bytes
 	// Sample size (2)
 	// Compression ID (2)
-	data.seek(SeekFrom::Current(4))?;
+	stsd.seek(SeekFrom::Current(4))?;
 
-	properties.sample_rate = data.read_u32::<BigEndian>()?;
+	properties.sample_rate = stsd.read_u32::<BigEndian>()?;
 
-	data.seek(SeekFrom::Current(2))?;
+	stsd.seek(SeekFrom::Current(2))?;
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
-	if let Ok(esds) = AtomInfo::read(data) {
+	if let Ok(esds) = AtomInfo::read(stsd) {
 		// There are 4 bytes we expect to be zeroed out
 		// Version (1)
 		// Flags (3)
-		if esds.ident == AtomIdent::Fourcc(*b"esds") && data.read_u32::<BigEndian>()? == 0 {
+		if esds.ident == AtomIdent::Fourcc(*b"esds") && stsd.read_u32::<BigEndian>()? == 0 {
 			let mut descriptor = [0; 4];
-			data.read_exact(&mut descriptor)?;
+			stsd.read_exact(&mut descriptor)?;
 
 			// [0x03, 0x80, 0x80, 0x80] marks the start of the elementary stream descriptor.
 			// 0x03 being the object descriptor
@@ -186,11 +193,11 @@ where
 				// Descriptor length (1)
 				// Elementary stream ID (2)
 				// Flags (1)
-				let _info = data.read_u32::<BigEndian>()?;
+				let _info = stsd.read_u32::<BigEndian>()?;
 
 				// There is another descriptor embedded in the previous one
 				let mut specific_config = [0; 4];
-				data.read_exact(&mut specific_config)?;
+				stsd.read_exact(&mut specific_config)?;
 
 				// [0x04, 0x80, 0x80, 0x80] marks the start of the descriptor configuration
 				if specific_config == [0x04, 0x80, 0x80, 0x80] {
@@ -201,12 +208,16 @@ where
 					// Buffer size (3)
 					// Max bitrate (4)
 					let mut info = [0; 10];
-					data.read_exact(&mut info)?;
+					stsd.read_exact(&mut info)?;
 
-					let average_bitrate = data.read_u32::<BigEndian>()?;
+					let average_bitrate = stsd.read_u32::<BigEndian>()?;
+
+					let overall_bitrate =
+						u128::from(file_length * 8) / properties.duration.as_millis();
 
 					if average_bitrate > 0 {
-						properties.bitrate = average_bitrate / 1000
+						properties.overall_bitrate = overall_bitrate as u32;
+						properties.audio_bitrate = average_bitrate / 1000
 					}
 				}
 			}
@@ -236,6 +247,8 @@ where
 
 	if let Ok(alac) = AtomInfo::read(data) {
 		if alac.ident == AtomIdent::Fourcc(*b"alac") {
+			properties.codec = Mp4Codec::ALAC;
+
 			// Skipping 13 bytes
 			// Version (4)
 			// Samples per frame (4)
@@ -253,7 +266,7 @@ where
 			// Max frame size (4)
 			data.seek(SeekFrom::Current(6))?;
 
-			properties.bitrate = data.read_u32::<BigEndian>()?;
+			properties.audio_bitrate = data.read_u32::<BigEndian>()?;
 			properties.sample_rate = data.read_u32::<BigEndian>()?;
 		}
 	}

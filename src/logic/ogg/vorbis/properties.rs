@@ -2,29 +2,32 @@ use super::find_last_page;
 use crate::error::{LoftyError, Result};
 use crate::types::properties::FileProperties;
 
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 /// An OGG Vorbis file's audio properties
 pub struct VorbisProperties {
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	sample_rate: u32,
 	channels: u8,
 	version: u32,
-	bitrate_maximum: u32,
-	bitrate_nominal: u32,
-	bitrate_minimum: u32,
+	bitrate_maximum: i32,
+	bitrate_nominal: i32,
+	bitrate_minimum: i32,
 }
 
 impl From<VorbisProperties> for FileProperties {
 	fn from(input: VorbisProperties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			channels: Some(input.channels),
 		}
@@ -32,14 +35,43 @@ impl From<VorbisProperties> for FileProperties {
 }
 
 impl VorbisProperties {
+	pub const fn new(
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+		version: u32,
+		bitrate_maximum: i32,
+		bitrate_nominal: i32,
+		bitrate_minimum: i32,
+	) -> Self {
+		Self {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+			version,
+			bitrate_maximum,
+			bitrate_nominal,
+			bitrate_minimum,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
-	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
@@ -58,17 +90,17 @@ impl VorbisProperties {
 	}
 
 	/// Maximum bitrate
-	pub fn bitrate_max(&self) -> u32 {
+	pub fn bitrate_max(&self) -> i32 {
 		self.bitrate_maximum
 	}
 
 	/// Nominal bitrate
-	pub fn bitrate_nominal(&self) -> u32 {
+	pub fn bitrate_nominal(&self) -> i32 {
 		self.bitrate_nominal
 	}
 
 	/// Minimum bitrate
-	pub fn bitrate_min(&self) -> u32 {
+	pub fn bitrate_min(&self) -> i32 {
 		self.bitrate_minimum
 	}
 }
@@ -90,23 +122,28 @@ where
 	let channels = first_page_content.read_u8()?;
 	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
-	let bitrate_maximum = first_page_content.read_u32::<LittleEndian>()?;
-	let bitrate_nominal = first_page_content.read_u32::<LittleEndian>()?;
-	let bitrate_minimum = first_page_content.read_u32::<LittleEndian>()?;
+	let bitrate_maximum = first_page_content.read_i32::<LittleEndian>()?;
+	let bitrate_nominal = first_page_content.read_i32::<LittleEndian>()?;
+	let bitrate_minimum = first_page_content.read_i32::<LittleEndian>()?;
 
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;
+
+	let file_length = data.seek(SeekFrom::End(0))?;
 
 	last_page_abgp.checked_sub(first_page_abgp).map_or_else(
 		|| Err(LoftyError::Vorbis("File contains incorrect PCM values")),
 		|frame_count| {
 			let length = frame_count * 1000 / u64::from(sample_rate);
 			let duration = Duration::from_millis(length as u64);
-			let bitrate = bitrate_nominal / 1000;
+
+			let overall_bitrate = ((file_length * 8) / length) as u32;
+			let audio_bitrate = bitrate_nominal as u64 / 1000;
 
 			Ok(VorbisProperties {
 				duration,
-				bitrate,
+				overall_bitrate,
+				audio_bitrate: audio_bitrate as u32,
 				sample_rate,
 				channels,
 				version,

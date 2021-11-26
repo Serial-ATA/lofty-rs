@@ -1,5 +1,4 @@
 mod atom_info;
-#[cfg(feature = "mp4_atoms")]
 pub(crate) mod ilst;
 mod moov;
 mod properties;
@@ -16,6 +15,7 @@ use std::io::{Read, Seek};
 use std::time::Duration;
 
 #[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq)]
 /// An MP4 file's audio codec
 pub enum Mp4Codec {
 	AAC,
@@ -23,11 +23,13 @@ pub enum Mp4Codec {
 	Unknown(String),
 }
 
+#[derive(Debug, Clone, PartialEq)]
 /// An MP4 file's audio properties
 pub struct Mp4Properties {
 	codec: Mp4Codec,
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	sample_rate: u32,
 	channels: u8,
 }
@@ -36,7 +38,8 @@ impl From<Mp4Properties> for FileProperties {
 	fn from(input: Mp4Properties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			channels: Some(input.channels),
 		}
@@ -44,14 +47,37 @@ impl From<Mp4Properties> for FileProperties {
 }
 
 impl Mp4Properties {
+	pub const fn new(
+		codec: Mp4Codec,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			codec,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
-	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)

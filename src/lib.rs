@@ -128,7 +128,8 @@
 	clippy::new_without_default,
 	clippy::unused_self,
 	clippy::from_over_into,
-	clippy::upper_case_acronyms
+	clippy::upper_case_acronyms,
+	clippy::too_many_arguments
 )]
 
 mod error;

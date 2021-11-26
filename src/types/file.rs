@@ -191,13 +191,13 @@ impl FileType {
 
 				if &ident == b"MAC" {
 					Ok(Self::APE)
-				} else if verify_frame_sync(u16::from_be_bytes([ident[0], ident[1]])) {
+				} else if verify_frame_sync([ident[0], ident[1]]) {
 					Ok(Self::MP3)
 				} else {
 					Err(LoftyError::UnknownFormat)
 				}
 			},
-			_ if verify_frame_sync(u16::from_be_bytes([sig[0], sig[1]])) => Ok(Self::MP3),
+			_ if verify_frame_sync([sig[0], sig[1]]) => Ok(Self::MP3),
 			70 if sig.starts_with(b"FORM") => {
 				let mut id_remaining = [0; 2];
 				data.read_exact(&mut id_remaining)?;

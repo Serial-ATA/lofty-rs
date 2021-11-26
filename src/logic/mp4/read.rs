@@ -36,10 +36,12 @@ where
 	Moov::find(data)?;
 	let moov = Moov::parse(data)?;
 
+	let file_length = data.seek(SeekFrom::End(0))?;
+
 	Ok(Mp4File {
 		ftyp,
 		ilst: moov.meta,
-		properties: read_properties(data, &moov.traks)?,
+		properties: read_properties(data, &moov.traks, file_length)?,
 	})
 }
 

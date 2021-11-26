@@ -5,11 +5,11 @@ use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn verify_frame_sync(frame_sync: u16) -> bool {
-	(frame_sync & 0xffe0) == 0xffe0
+pub(crate) fn verify_frame_sync(frame_sync: [u8; 2]) -> bool {
+	frame_sync[0] == 0xFF && frame_sync[1] >> 5 == 0b111
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 /// MPEG Audio version
 pub enum MpegVersion {
@@ -18,7 +18,7 @@ pub enum MpegVersion {
 	V2_5,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(missing_docs)]
 /// MPEG layer
 pub enum Layer {
@@ -27,7 +27,7 @@ pub enum Layer {
 	Layer3 = 3,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 #[allow(missing_docs)]
 /// Channel mode
 pub enum ChannelMode {

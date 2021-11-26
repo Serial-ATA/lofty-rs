@@ -17,11 +17,13 @@ use tag::ApeTag;
 use std::io::{Read, Seek};
 use std::time::Duration;
 
+#[derive(Clone, Debug, PartialEq)]
 /// An APE file's audio properties
 pub struct ApeProperties {
 	version: u16,
 	duration: Duration,
-	bitrate: u32,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
 	sample_rate: u32,
 	channels: u8,
 }
@@ -30,7 +32,8 @@ impl From<ApeProperties> for FileProperties {
 	fn from(input: ApeProperties) -> Self {
 		Self {
 			duration: input.duration,
-			bitrate: Some(input.bitrate),
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			channels: Some(input.channels),
 		}
@@ -38,14 +41,37 @@ impl From<ApeProperties> for FileProperties {
 }
 
 impl ApeProperties {
+	pub const fn new(
+		version: u16,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			version,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
-	/// Bitrate (kbps)
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
 	pub fn bitrate(&self) -> u32 {
-		self.bitrate
+		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
