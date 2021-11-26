@@ -239,7 +239,7 @@ pub mod id3 {
 		//!
 		//! Two checks are performed when converting a genre:
 		//!
-		//! * [`GENRE`] contains the string
+		//! * [`GENRES`] contains the string
 		//! * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
 		//!
 		//! ## Track Numbers

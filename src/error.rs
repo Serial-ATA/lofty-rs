@@ -80,7 +80,7 @@ pub enum LoftyError {
 	OggPage(ogg_pager::PageError),
 	/// Unable to convert bytes to a String
 	FromUtf8(std::string::FromUtf8Error),
-	/// Represents all cases of `std::io::Error`.
+	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
 }
 

@@ -31,7 +31,7 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: cargo doc --all-features
+      - run: cargo doc --all-features --no-deps
       - run: cargo test --all-features --doc
   clippy:
     name: Clippy
