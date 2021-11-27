@@ -27,7 +27,7 @@ impl<B: ByteOrder> Chunks<B> {
 
 	pub fn next<R>(&mut self, data: &mut R) -> Result<()>
 	where
-		R: Read + Seek,
+		R: Read,
 	{
 		data.read_exact(&mut self.fourcc)?;
 		self.size = data.read_u32::<B>()?;
@@ -37,7 +37,7 @@ impl<B: ByteOrder> Chunks<B> {
 
 	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>
 	where
-		R: Read + Seek,
+		R: Read,
 	{
 		let mut content = vec![0; self.size as usize];
 		data.read_exact(&mut content)?;

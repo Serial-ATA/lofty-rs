@@ -5,6 +5,7 @@ use crate::types::tag::TagType;
 
 use std::convert::TryFrom;
 
+#[derive(Debug, PartialEq)]
 pub struct ApeItem {
 	pub read_only: bool,
 	pub(crate) key: String,

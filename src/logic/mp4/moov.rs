@@ -111,7 +111,7 @@ where
 
 	#[cfg(feature = "mp4_atoms")]
 	if islt.0 {
-		return parse_ilst(data, islt.1 - 8);
+		return parse_ilst(data, islt.1 - 8).map(Some);
 	}
 
 	Ok(None)

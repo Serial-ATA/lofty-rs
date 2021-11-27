@@ -1,17 +1,46 @@
 pub(in crate::logic::mp4) mod read;
 pub(in crate::logic) mod write;
 
+use crate::error::Result;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
+use std::io::Read;
 
 #[cfg(feature = "mp4_atoms")]
-#[derive(Default)]
+#[derive(Default, PartialEq, Debug)]
 /// An Mp4
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
+}
+
+impl Ilst {
+	pub fn atom(&self, ident: &AtomIdent) -> Option<&Atom> {
+		self.atoms.iter().find(|a| &a.ident == ident)
+	}
+
+	pub fn insert_atom(&mut self, atom: Atom) {
+		self.remove_atom(&atom.ident);
+		self.atoms.push(atom);
+	}
+
+	pub fn remove_atom(&mut self, ident: &AtomIdent) {
+		self.atoms
+			.iter()
+			.position(|a| &a.ident == ident)
+			.map(|p| self.atoms.remove(p));
+	}
+}
+
+impl Ilst {
+	pub fn read_from<R>(reader: &mut R, len: u64) -> Result<Self>
+	where
+		R: Read,
+	{
+		read::parse_ilst(reader, len)
+	}
 }
 
 #[cfg(feature = "mp4_atoms")]
@@ -80,9 +109,16 @@ impl From<Tag> for Ilst {
 }
 
 #[cfg(feature = "mp4_atoms")]
+#[derive(Debug, PartialEq)]
 pub struct Atom {
 	ident: AtomIdent,
 	data: AtomData,
+}
+
+impl Atom {
+	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
+		Self { ident, data }
+	}
 }
 
 #[derive(Eq, PartialEq, Debug)]
@@ -109,6 +145,7 @@ pub enum AtomIdent {
 }
 
 #[cfg(feature = "mp4_atoms")]
+#[derive(Debug, PartialEq)]
 /// The data of an atom
 ///
 /// NOTES:

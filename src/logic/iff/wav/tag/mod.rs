@@ -6,8 +6,9 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
+use std::io::{Read, Seek};
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 /// A RIFF INFO LIST
 pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
@@ -15,8 +16,12 @@ pub struct RiffInfoList {
 }
 
 impl RiffInfoList {
-	pub fn push(&mut self, key: String, value: String) {
+	pub fn insert(&mut self, key: String, value: String) {
 		if valid_key(key.as_str()) {
+			self.items
+				.iter()
+				.position(|(k, _)| k == &key)
+				.map(|p| self.items.remove(p));
 			self.items.push((key, value))
 		}
 	}
@@ -34,6 +39,17 @@ impl RiffInfoList {
 }
 
 impl RiffInfoList {
+	pub fn read_from<R>(reader: &mut R, end: u64) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		let mut tag = Self::default();
+
+		read::parse_riff_info(reader, end, &mut tag)?;
+
+		Ok(tag)
+	}
+
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<RiffInfoListRef>::into(self).write_to(file)
 	}

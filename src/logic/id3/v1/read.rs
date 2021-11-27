@@ -19,10 +19,10 @@ pub fn parse_id3v1(reader: [u8; 128]) -> Id3v1Tag {
 	tag.album = decode_text(&reader[60..90]);
 	tag.year = decode_text(&reader[90..94]);
 
-	let range = if reader[119] == 0 && reader[122] != 0 {
-		tag.track_number = Some(reader[122]);
+	let range = if reader[119] == 0 && reader[123] != 0 {
+		tag.track_number = Some(reader[123]);
 
-		94_usize..123
+		94_usize..122
 	} else {
 		94..124
 	};

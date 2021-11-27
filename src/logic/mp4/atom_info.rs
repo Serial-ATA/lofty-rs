@@ -1,8 +1,8 @@
 use crate::error::{LoftyError, Result};
+use crate::logic::mp4::ilst::AtomIdent;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::mp4::AtomIdent;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) struct AtomInfo {

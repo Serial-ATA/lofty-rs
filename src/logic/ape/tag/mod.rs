@@ -10,8 +10,9 @@ use crate::types::tag::{Tag, TagType};
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::File;
+use std::io::{Read, Seek};
 
-#[derive(Default)]
+#[derive(Default, Debug, PartialEq)]
 /// An APE tag
 pub struct ApeTag {
 	pub read_only: bool,
@@ -33,6 +34,13 @@ impl ApeTag {
 }
 
 impl ApeTag {
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		Ok(read::read_ape_tag(reader, false)?.0)
+	}
+
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<ApeTagRef>::into(self).write_to(file)
 	}

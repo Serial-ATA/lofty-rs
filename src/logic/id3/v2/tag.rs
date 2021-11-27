@@ -11,9 +11,11 @@ use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
+use std::io::Read;
 
 use byteorder::ByteOrder;
 
+#[derive(PartialEq, Debug)]
 pub struct Id3v2Tag {
 	flags: Id3v2TagFlags,
 	pub(super) original_version: Id3v2Version,
@@ -80,6 +82,13 @@ impl Id3v2Tag {
 }
 
 impl Id3v2Tag {
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read,
+	{
+		super::read::parse_id3v2(reader)
+	}
+
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v2TagRef>::into(self).write_to(file)
 	}
@@ -156,7 +165,7 @@ impl From<Tag> for Id3v2Tag {
 	}
 }
 
-#[derive(Default, Copy, Clone)]
+#[derive(Default, Copy, Clone, Debug, PartialEq)]
 #[allow(clippy::struct_excessive_bools)]
 /// Flags that apply to the entire tag
 pub struct Id3v2TagFlags {

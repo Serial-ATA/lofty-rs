@@ -11,7 +11,10 @@ use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(crate) fn parse_id3v2(bytes: &mut &[u8]) -> Result<Id3v2Tag> {
+pub(crate) fn parse_id3v2<R>(bytes: &mut R) -> Result<Id3v2Tag>
+where
+	R: Read,
+{
 	let mut header = [0; 10];
 	bytes.read_exact(&mut header)?;
 

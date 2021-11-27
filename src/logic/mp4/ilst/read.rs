@@ -10,12 +10,12 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::ReadBytesExt;
 
-pub(crate) fn parse_ilst<R>(data: &mut R, len: u64) -> Result<Option<Ilst>>
+pub(crate) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
 where
-	R: Read + Seek,
+	R: Read,
 {
 	let mut contents = vec![0; len as usize];
-	data.read_exact(&mut contents)?;
+	reader.read_exact(&mut contents)?;
 
 	let mut cursor = Cursor::new(contents);
 
@@ -71,7 +71,7 @@ where
 		tag.atoms.push(Atom { ident, data })
 	}
 
-	Ok(Some(tag))
+	Ok(tag)
 }
 
 fn parse_data<R>(data: &mut R) -> Result<AtomData>

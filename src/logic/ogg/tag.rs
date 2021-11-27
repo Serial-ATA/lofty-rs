@@ -8,19 +8,67 @@ use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
+use std::io::Read;
 
-#[derive(Default)]
+#[derive(Default, PartialEq, Debug)]
 /// Vorbis comments
 pub struct VorbisComments {
 	/// An identifier for the encoding software
-	pub vendor: String,
+	pub(crate) vendor: String,
 	/// A collection of key-value pairs
-	pub items: Vec<(String, String)>,
+	pub(crate) items: Vec<(String, String)>,
 	/// A collection of all pictures
-	pub pictures: Vec<(Picture, PictureInformation)>,
+	pub(crate) pictures: Vec<(Picture, PictureInformation)>,
 }
 
 impl VorbisComments {
+	pub fn vendor(&self) -> &str {
+		&self.vendor
+	}
+
+	pub fn set_vendor(&mut self, vendor: String) {
+		self.vendor = vendor
+	}
+
+	pub fn items(&self) -> &[(String, String)] {
+		&self.items
+	}
+
+	pub fn get_item(&self, key: &str) -> Option<&str> {
+		self.items
+			.iter()
+			.find(|(k, _)| k == key)
+			.map(|(_, v)| v.as_str())
+	}
+
+	pub fn insert_item(&mut self, key: String, value: String, replace_all: bool) {
+		if replace_all {
+			self.items
+				.iter()
+				.position(|(k, _)| k == &key)
+				.map(|p| self.items.remove(p));
+		}
+
+		self.items.push((key, value))
+	}
+
+	pub fn remove_key(&mut self, key: &str) {
+		self.items.retain(|(k, _)| k != key);
+	}
+}
+
+impl VorbisComments {
+	pub fn read_from<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read,
+	{
+		let mut tag = Self::default();
+
+		super::read::read_comments(reader, &mut tag)?;
+
+		Ok(tag)
+	}
+
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<VorbisCommentsRef>::into(self).write_to(file)
 	}

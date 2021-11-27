@@ -5,7 +5,7 @@ use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 /// An ID3v1 tag
 ///
 /// ID3v1 is a severely limited format, with each field
@@ -57,6 +57,10 @@ impl Id3v1Tag {
 			&& self.comment.is_none()
 			&& self.track_number.is_none()
 			&& self.genre.is_none()
+	}
+
+	pub fn read_from(tag: [u8; 128]) -> Self {
+		super::read::parse_id3v1(tag)
 	}
 
 	pub fn write_to(&self, file: &mut File) -> Result<()> {

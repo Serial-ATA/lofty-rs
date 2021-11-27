@@ -13,7 +13,7 @@ use std::time::Duration;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 fn read_properties(
-	mut first_frame: (Header, u64),
+	first_frame: (Header, u64),
 	last_frame: (Header, u64),
 	xing_header: Option<XingHeader>,
 	file_length: u64,
