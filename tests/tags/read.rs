@@ -6,12 +6,7 @@ use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
 use lofty::ogg::VorbisComments;
 use lofty::ItemValue;
 
-const APE: [u8; 209] = *include_bytes!("assets/test.apev2");
-const ID3V1: [u8; 128] = *include_bytes!("assets/test.id3v1");
-const ID3V2: [u8; 1168] = *include_bytes!("assets/test.id3v2");
-const ILST: [u8; 1024] = *include_bytes!("assets/test.ilst");
-const RIFF_INFO: [u8; 100] = *include_bytes!("assets/test.riff");
-const VORBIS_COMMENTS: [u8; 152] = *include_bytes!("assets/test.vorbis");
+use crate::{APE, ID3V1, ID3V2, ILST, RIFF_INFO, VORBIS_COMMENTS};
 
 #[test]
 fn read_ape() {
@@ -53,17 +48,21 @@ fn read_ape() {
 	)
 	.unwrap();
 
-	expected_tag.push_item(title_item);
-	expected_tag.push_item(artist_item);
-	expected_tag.push_item(album_item);
-	expected_tag.push_item(comment_item);
-	expected_tag.push_item(year_item);
-	expected_tag.push_item(track_number_item);
-	expected_tag.push_item(genre_item);
+	expected_tag.insert(title_item);
+	expected_tag.insert(artist_item);
+	expected_tag.insert(album_item);
+	expected_tag.insert(comment_item);
+	expected_tag.insert(year_item);
+	expected_tag.insert(track_number_item);
+	expected_tag.insert(genre_item);
 
 	let parsed_tag = ApeTag::read_from(&mut std::io::Cursor::new(APE)).unwrap();
 
-	assert_eq!(expected_tag, parsed_tag);
+	assert_eq!(expected_tag.items().len(), parsed_tag.items().len());
+
+	for item in expected_tag.items() {
+		assert!(parsed_tag.items().contains(item))
+	}
 }
 
 #[test]

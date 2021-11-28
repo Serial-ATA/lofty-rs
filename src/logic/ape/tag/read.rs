@@ -88,7 +88,7 @@ where
 			item.set_read_only()
 		}
 
-		tag.push_item(item);
+		tag.insert(item);
 	}
 
 	// Version 1 doesn't include a header

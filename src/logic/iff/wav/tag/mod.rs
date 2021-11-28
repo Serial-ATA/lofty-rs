@@ -16,6 +16,13 @@ pub struct RiffInfoList {
 }
 
 impl RiffInfoList {
+	pub fn get(&self, key: &str) -> Option<&str> {
+		self.items
+			.iter()
+			.find(|(k, _)| k == key)
+			.map(|(_, v)| v.as_str())
+	}
+
 	pub fn insert(&mut self, key: String, value: String) {
 		if valid_key(key.as_str()) {
 			self.items

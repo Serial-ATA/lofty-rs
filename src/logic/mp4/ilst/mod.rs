@@ -119,6 +119,14 @@ impl Atom {
 	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
 		Self { ident, data }
 	}
+
+	pub fn ident(&self) -> &AtomIdent {
+		&self.ident
+	}
+
+	pub fn data(&self) -> &AtomData {
+		&self.data
+	}
 }
 
 #[derive(Eq, PartialEq, Debug)]

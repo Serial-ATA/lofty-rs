@@ -13,7 +13,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()> {
+pub(in crate::logic) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 	match Probe::new().file_type(data) {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
@@ -39,7 +39,7 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 		let (mut existing, size) = read_ape_tag(data, false)?;
 
 		// Only keep metadata around that's marked read only
-		existing.items.retain(|_i, v| v.read_only);
+		existing.items.retain(|i| i.read_only);
 
 		if !existing.items.is_empty() {
 			read_only = Some(existing)
@@ -70,7 +70,7 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 
 		let (mut existing, size) = read_ape_tag(data, true)?;
 
-		existing.items.retain(|_, v| v.read_only);
+		existing.items.retain(|i| i.read_only);
 
 		if !existing.items.is_empty() {
 			read_only = Some(existing)
@@ -86,7 +86,7 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 
 	// Preserve any metadata marked as read only
 	let tag = if let Some(read_only) = read_only {
-		create_ape_tag(&Into::<ApeTagRef>::into(&read_only))?
+		create_ape_tag(&mut Into::<ApeTagRef>::into(&read_only))?
 	} else {
 		create_ape_tag(tag)?
 	};
@@ -115,17 +115,20 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &ApeTagRef) -> Result<()>
 	Ok(())
 }
 
-fn create_ape_tag(tag: &ApeTagRef) -> Result<Vec<u8>> {
+fn create_ape_tag(tag: &mut ApeTagRef) -> Result<Vec<u8>> {
+	let items = &mut tag.items;
+	let mut peek = items.peekable();
+
 	// Unnecessary to write anything if there's no metadata
-	if tag.items.is_empty() {
+	if peek.peek().is_none() {
 		Ok(Vec::<u8>::new())
 	} else {
 		let mut tag_write = Cursor::new(Vec::<u8>::new());
 
-		let item_count = tag.items.len() as u32;
+		let mut item_count = 0_u32;
 
-		for (k, v) in &tag.items {
-			let (mut flags, value) = match v.value {
+		for item in peek {
+			let (mut flags, value) = match item.value {
 				ItemValueRef::Binary(value) => {
 					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 
@@ -143,14 +146,16 @@ fn create_ape_tag(tag: &ApeTagRef) -> Result<Vec<u8>> {
 				},
 			};
 
-			if v.read_only {
+			if item.read_only {
 				flags |= 1_u32
 			}
 
 			tag_write.write_u32::<LittleEndian>(flags)?;
-			tag_write.write_all(k.as_bytes())?;
+			tag_write.write_all(item.key.as_bytes())?;
 			tag_write.write_u8(0)?;
 			tag_write.write_all(value)?;
+
+			item_count += 1;
 		}
 
 		let size = tag_write.get_ref().len();

@@ -342,7 +342,8 @@ item_keys!(
 	// Style
 	Genre => [
 		TagType::Id3v2 => "TCON", TagType::Mp4Atom => "\u{a9}gen",
-		TagType::VorbisComments => "GENRE", TagType::RiffInfo => "IGNR"
+		TagType::VorbisComments => "GENRE", TagType::RiffInfo => "IGNR",
+		TagType::Ape => "Genre"
 	],
 	InitialKey => [
 		TagType::Id3v2 => "TKEY"

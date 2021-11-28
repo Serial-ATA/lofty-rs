@@ -106,7 +106,7 @@ impl From<Tag> for Id3v1Tag {
 			year: input.get_string(&ItemKey::Year).map(str::to_owned),
 			comment: input.get_string(&ItemKey::Comment).map(str::to_owned),
 			track_number: input
-				.get_string(&ItemKey::Genre)
+				.get_string(&ItemKey::TrackNumber)
 				.map(|g| g.parse::<u8>().ok())
 				.and_then(|g| g),
 			genre: input
@@ -155,7 +155,7 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 			year: self.get_string(&ItemKey::Year),
 			comment: self.get_string(&ItemKey::Comment),
 			track_number: self
-				.get_string(&ItemKey::Genre)
+				.get_string(&ItemKey::TrackNumber)
 				.map(|g| g.parse::<u8>().ok())
 				.and_then(|g| g),
 			genre: self

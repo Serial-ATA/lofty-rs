@@ -32,6 +32,14 @@ impl ApeItem {
 	pub fn set_read_only(&mut self) {
 		self.read_only = true
 	}
+
+	pub fn key(&self) -> &str {
+		&self.key
+	}
+
+	pub fn value(&self) -> &ItemValue {
+		&self.value
+	}
 }
 
 impl TryFrom<TagItem> for ApeItem {
@@ -53,6 +61,7 @@ impl TryFrom<TagItem> for ApeItem {
 
 pub(in crate::logic) struct ApeItemRef<'a> {
 	pub read_only: bool,
+	pub key: &'a str,
 	pub value: ItemValueRef<'a>,
 }
 
@@ -60,6 +69,7 @@ impl<'a> Into<ApeItemRef<'a>> for &'a ApeItem {
 	fn into(self) -> ApeItemRef<'a> {
 		ApeItemRef {
 			read_only: self.read_only,
+			key: self.key(),
 			value: (&self.value).into(),
 		}
 	}
