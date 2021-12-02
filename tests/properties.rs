@@ -86,7 +86,7 @@ where
 #[test]
 fn aiff_properties() {
 	assert_eq!(
-		get_properties::<AiffFile>("tests/assets/a.aiff"),
+		get_properties::<AiffFile>("tests/files/assets/a.aiff"),
 		AIFF_PROPERTIES
 	);
 }
@@ -94,7 +94,7 @@ fn aiff_properties() {
 #[test]
 fn ape_properties() {
 	assert_eq!(
-		get_properties::<ApeFile>("tests/assets/a.ape"),
+		get_properties::<ApeFile>("tests/files/assets/a.ape"),
 		APE_PROPERTIES
 	);
 }
@@ -102,7 +102,7 @@ fn ape_properties() {
 #[test]
 fn flac_properties() {
 	assert_eq!(
-		get_properties::<FlacFile>("tests/assets/a.flac"),
+		get_properties::<FlacFile>("tests/files/assets/a.flac"),
 		FLAC_PROPERTIES
 	)
 }
@@ -110,7 +110,7 @@ fn flac_properties() {
 #[test]
 fn mp3_properties() {
 	assert_eq!(
-		get_properties::<Mp3File>("tests/assets/a.mp3"),
+		get_properties::<Mp3File>("tests/files/assets/a.mp3"),
 		MP3_PROPERTIES
 	)
 }
@@ -118,7 +118,7 @@ fn mp3_properties() {
 #[test]
 fn mp4_properties() {
 	assert_eq!(
-		get_properties::<Mp4File>("tests/assets/a.m4a"),
+		get_properties::<Mp4File>("tests/files/assets/a.m4a"),
 		MP4_PROPERTIES
 	)
 }
@@ -126,7 +126,7 @@ fn mp4_properties() {
 #[test]
 fn opus_properties() {
 	assert_eq!(
-		get_properties::<OpusFile>("tests/assets/a.opus"),
+		get_properties::<OpusFile>("tests/files/assets/a.opus"),
 		OPUS_PROPERTIES
 	)
 }
@@ -134,7 +134,7 @@ fn opus_properties() {
 #[test]
 fn vorbis_properties() {
 	assert_eq!(
-		get_properties::<VorbisFile>("tests/assets/a.ogg"),
+		get_properties::<VorbisFile>("tests/files/assets/a.ogg"),
 		VORBIS_PROPERTIES
 	)
 }
@@ -142,7 +142,7 @@ fn vorbis_properties() {
 #[test]
 fn wav_properties() {
 	assert_eq!(
-		get_properties::<WavFile>("tests/assets/a.wav"),
+		get_properties::<WavFile>("tests/files/assets/a.wav"),
 		WAV_PROPERTIES
 	)
 }

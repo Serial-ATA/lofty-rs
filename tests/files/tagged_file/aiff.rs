@@ -1,12 +1,12 @@
-mod util;
-
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 use std::io::{Seek, Write};
+use crate::set_artist;
+use crate::verify_artist;
 
 #[test]
 fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
-	let file = Probe::new().read_from_path("tests/assets/a.aiff").unwrap();
+	let file = Probe::new().read_from_path("tests/files/assets/a.aiff").unwrap();
 
 	assert_eq!(file.file_type(), &FileType::AIFF);
 
@@ -20,7 +20,7 @@ fn read() {
 #[test]
 fn write() {
 	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read("tests/assets/a.aiff").unwrap())
+	file.write_all(&std::fs::read("tests/files/assets/a.aiff").unwrap())
 		.unwrap();
 
 	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
@@ -45,10 +45,10 @@ fn write() {
 
 #[test]
 fn remove_text_chunks() {
-	crate::remove_tag!("tests/assets/a.aiff", TagType::AiffText);
+	crate::remove_tag!("tests/files/assets/a.aiff", TagType::AiffText);
 }
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/assets/a.aiff", TagType::Id3v2);
+	crate::remove_tag!("tests/files/assets/a.aiff", TagType::Id3v2);
 }

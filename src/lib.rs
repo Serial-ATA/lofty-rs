@@ -12,7 +12,7 @@
 //! | AIFF        | `aiff`, `aif`                                   |**X** |**X**  |`ID3v2`, `Text Chunks`                         |
 //! | FLAC        | `flac`                                          |**X** |**X**  |`Vorbis Comments`                              |
 //! | MP3         | `mp3`                                           |**X** |**X**  |`ID3v2`, `ID3v1`, `APEv2`, `APEv1`             |
-//! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4r`, `m4v`, `3gp` |**X** |**X**  |`Atoms`                                        |
+//! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4r`, `m4v`, `3gp` |**X** |**X**  |`iTunes-style ilst`                            |
 //! | Opus        | `opus`                                          |**X** |**X**  |`Vorbis Comments`                              |
 //! | Ogg Vorbis  | `ogg`                                           |**X** |**X**  |`Vorbis Comments`                              |
 //! | WAV         | `wav`, `wave`                                   |**X** |**X**  |`ID3v2`, `RIFF INFO`                           |
@@ -28,7 +28,7 @@
 //! ```
 //! use lofty::{Probe, FileType};
 //!
-//! let file_type = Probe::new().file_type_from_extension("tests/assets/a.mp3").unwrap();
+//! let file_type = Probe::new().file_type_from_extension("tests/files/assets/a.mp3").unwrap();
 //!
 //! assert_eq!(file_type, FileType::MP3)
 //! ```
@@ -38,7 +38,7 @@
 //! use lofty::{Probe, FileType};
 //!
 //! // Probe::file_type also exists for generic readers
-//! let file_type = Probe::new().file_type_from_path("tests/assets/a.mp3").unwrap();
+//! let file_type = Probe::new().file_type_from_path("tests/files/assets/a.mp3").unwrap();
 //!
 //! assert_eq!(file_type, FileType::MP3)
 //! ```
@@ -50,7 +50,7 @@
 //! use lofty::TagType;
 //! use std::fs::File;
 //!
-//! let mut file_content = File::open("tests/assets/a.mp3").unwrap();
+//! let mut file_content = File::open("tests/files/assets/a.mp3").unwrap();
 //!
 //! let mpeg_file = Mp3File::read_from(&mut file_content).unwrap();
 //!
@@ -70,7 +70,7 @@
 //! use lofty::{Probe, FileType};
 //!
 //! // Probe::read_from also exists for generic readers
-//! let tagged_file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
+//! let tagged_file = Probe::new().read_from_path("tests/files/assets/a.mp3").unwrap();
 //!
 //! assert_eq!(tagged_file.file_type(), &FileType::MP3);
 //! assert_eq!(tagged_file.properties().channels(), Some(2));
@@ -80,7 +80,7 @@
 //! ```
 //! use lofty::Probe;
 //!
-//! let tagged_file = Probe::new().read_from_path("tests/assets/a.mp3").unwrap();
+//! let tagged_file = Probe::new().read_from_path("tests/files/assets/a.mp3").unwrap();
 //!
 //! // Get the primary tag (ID3v2 in this case)
 //! let id3v2 = tagged_file.primary_tag().unwrap();

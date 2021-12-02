@@ -9,14 +9,14 @@ macro_rules! test_read {
 	};
 }
 
-test_read!(read_aiff, "tests/assets/a_text.aiff");
-test_read!(read_ape, "tests/assets/a.ape");
-test_read!(read_flac, "tests/assets/a.flac");
-test_read!(read_m4a, "tests/assets/a.m4a");
-test_read!(read_mp3, "tests/assets/a.mp3");
-test_read!(read_vorbis, "tests/assets/a.ogg");
-test_read!(read_opus, "tests/assets/a.opus");
-test_read!(read_riff, "tests/assets/a.wav");
+test_read!(read_aiff, "tests/files/assets/a_text.aiff");
+test_read!(read_ape, "tests/files/assets/a.ape");
+test_read!(read_flac, "tests/files/assets/a.flac");
+test_read!(read_m4a, "tests/files/assets/a.m4a");
+test_read!(read_mp3, "tests/files/assets/a.mp3");
+test_read!(read_vorbis, "tests/files/assets/a.ogg");
+test_read!(read_opus, "tests/files/assets/a.opus");
+test_read!(read_riff, "tests/files/assets/a.wav");
 
 fn bench_sig(c: &mut Criterion) {
 	let mut g = c.benchmark_group("File reading");

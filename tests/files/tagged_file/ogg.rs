@@ -1,55 +1,54 @@
-mod util;
-
 use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
 use std::io::{Seek, Write};
+use crate::{verify_artist, set_artist};
 
 // The tests for OGG Opus/Vorbis are nearly identical
 // We have the vendor string and a title stored in the tag
 
 #[test]
 fn opus_read() {
-	read("tests/assets/a.opus", &FileType::Opus)
+	read("tests/files/assets/a.opus", &FileType::Opus)
 }
 
 #[test]
 fn opus_write() {
-	write("tests/assets/a.opus", &FileType::Opus)
+	write("tests/files/assets/a.opus", &FileType::Opus)
 }
 
 #[test]
 fn opus_remove() {
-	remove("tests/assets/a.opus", TagType::VorbisComments)
+	remove("tests/files/assets/a.opus", TagType::VorbisComments)
 }
 
 #[test]
 fn flac_read() {
 	// FLAC does **not** require a Vorbis comment block be present, this file has one
-	read("tests/assets/a.flac", &FileType::FLAC)
+	read("tests/files/assets/a.flac", &FileType::FLAC)
 }
 
 #[test]
 fn flac_write() {
-	write("tests/assets/a.flac", &FileType::FLAC)
+	write("tests/files/assets/a.flac", &FileType::FLAC)
 }
 
 #[test]
 fn flac_remove() {
-	crate::remove_tag!("tests/assets/a.flac", TagType::VorbisComments);
+	crate::remove_tag!("tests/files/assets/a.flac", TagType::VorbisComments);
 }
 
 #[test]
 fn vorbis_read() {
-	read("tests/assets/a.ogg", &FileType::Vorbis)
+	read("tests/files/assets/a.ogg", &FileType::Vorbis)
 }
 
 #[test]
 fn vorbis_write() {
-	write("tests/assets/a.ogg", &FileType::Vorbis)
+	write("tests/files/assets/a.ogg", &FileType::Vorbis)
 }
 
 #[test]
 fn vorbis_remove() {
-	remove("tests/assets/a.ogg", TagType::VorbisComments)
+	remove("tests/files/assets/a.ogg", TagType::VorbisComments)
 }
 
 fn read(path: &str, file_type: &FileType) {

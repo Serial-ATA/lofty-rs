@@ -11,5 +11,5 @@
 **/Cargo.lock
 
 # Test assets
-/tests/assets/
+/tests/files/assets/
 /tests/picture/assets/
