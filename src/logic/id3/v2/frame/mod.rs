@@ -12,6 +12,8 @@ use crate::types::tag::TagType;
 use std::convert::{TryFrom, TryInto};
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
+/// Represents an `ID3v2` frame
+// TODO: PartialEq, Hash
 pub struct Frame {
 	pub(super) id: FrameID,
 	pub(super) value: FrameValue,
@@ -79,7 +81,9 @@ impl Frame {
 }
 
 #[derive(Clone, Debug, Eq, Hash)]
-/// Information about an ID3v2 frame that requires a language
+/// Information about an `ID3v2` frame that requires a language
+///
+/// See [`EncodedTextFrame`]
 pub struct LanguageFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
@@ -124,6 +128,11 @@ impl LanguageFrame {
 }
 
 #[derive(Clone, Debug, Eq, Hash)]
+/// An `ID3v2` text frame
+///
+/// This is used in the frames `TXXX` and `WXXX`, where the frames
+/// are told apart by descriptions. This means for each `EncodedTextFrame` in the tag,
+/// the description must be unique.
 pub struct EncodedTextFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
@@ -140,6 +149,7 @@ impl PartialEq for EncodedTextFrame {
 }
 
 impl EncodedTextFrame {
+	/// Convert an [`EncodedTextFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = vec![self.encoding as u8];
 
@@ -151,10 +161,11 @@ impl EncodedTextFrame {
 }
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-/// Different types of ID3v2 frames that require varying amounts of information
+/// An `ID3v2` frame ID
 pub enum FrameID {
+	/// A valid `ID3v2.3/4` frame
 	Valid(String),
-	/// When an ID3v2.2 key couldn't be upgraded
+	/// When an `ID3v2.2` key couldn't be upgraded
 	///
 	/// This **will not** be written. It is up to the user to upgrade and store the key as [`Id3v2Frame::Valid`](Self::Valid).
 	///
@@ -181,6 +192,7 @@ impl TryFrom<ItemKey> for FrameID {
 }
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
+/// The value of an `ID3v2` frame
 pub enum FrameValue {
 	/// Represents a "COMM" frame
 	///
@@ -194,7 +206,9 @@ pub enum FrameValue {
 	///
 	/// NOTE: Text frame descriptions **must** be unique
 	Text {
+		/// The encoding of the text
 		encoding: TextEncoding,
+		/// The text itself
 		value: String,
 	},
 	/// Represents a "TXXX" frame
@@ -213,7 +227,9 @@ pub enum FrameValue {
 	UserURL(EncodedTextFrame),
 	/// Represents an "APIC" or "PIC" frame
 	Picture {
+		/// The encoding of the description
 		encoding: TextEncoding,
+		/// The picture itself
 		picture: Picture,
 	},
 	/// Binary data

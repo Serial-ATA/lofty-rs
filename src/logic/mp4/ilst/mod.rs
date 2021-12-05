@@ -17,15 +17,20 @@ pub struct Ilst {
 }
 
 impl Ilst {
+	/// Get an item by its [`AtomIdent`]
 	pub fn atom(&self, ident: &AtomIdent) -> Option<&Atom> {
 		self.atoms.iter().find(|a| &a.ident == ident)
 	}
 
+	/// Insert an [`Atom`]
+	///
+	/// This will remove any atom with the same [`AtomIdent`]
 	pub fn insert_atom(&mut self, atom: Atom) {
 		self.remove_atom(&atom.ident);
 		self.atoms.push(atom);
 	}
 
+	/// Remove an atom by its [`AtomIdent`]
 	pub fn remove_atom(&mut self, ident: &AtomIdent) {
 		self.atoms
 			.iter()
@@ -35,6 +40,11 @@ impl Ilst {
 }
 
 impl Ilst {
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses an [`Ilst`] from a reader
+	///
+	/// NOTE: This is **NOT** for reading from a file.
+	/// This is used internally, and requires the length be provided.
 	pub fn read_from<R>(reader: &mut R, len: u64) -> Result<Self>
 	where
 		R: Read,
@@ -110,26 +120,31 @@ impl From<Tag> for Ilst {
 
 #[cfg(feature = "mp4_ilst")]
 #[derive(Debug, PartialEq)]
+/// Represents an `MP4` atom
 pub struct Atom {
 	ident: AtomIdent,
 	data: AtomData,
 }
 
 impl Atom {
+	/// Create a new [`Atom`]
 	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
 		Self { ident, data }
 	}
 
+	/// Returns the atom's [`AtomIdent`]
 	pub fn ident(&self) -> &AtomIdent {
 		&self.ident
 	}
 
+	/// Returns the atom's [`AtomData`]
 	pub fn data(&self) -> &AtomData {
 		&self.data
 	}
 }
 
 #[derive(Eq, PartialEq, Debug)]
+/// Represents an `MP4` atom identifier
 pub enum AtomIdent {
 	/// A four byte identifier
 	///
@@ -146,10 +161,12 @@ pub enum AtomIdent {
 	///              |
 	///              ╰mean
 	/// ```
-	///
-	/// * `mean`: A string using a reverse DNS naming convention
-	/// * `name`: A string identifying the atom
-	Freeform { mean: String, name: String },
+	Freeform {
+		/// A string using a reverse DNS naming convention
+		mean: String,
+		/// A string identifying the atom
+		name: String,
+	},
 }
 
 #[cfg(feature = "mp4_ilst")]
@@ -166,7 +183,9 @@ pub enum AtomIdent {
 /// types will be stored as [`AtomData::Unknown`], refer
 /// to the link above for codes.
 pub enum AtomData {
+	/// A UTF-8 encoded string
 	UTF8(String),
+	/// A UTf-16 encoded string
 	UTF16(String),
 	/// A JPEG, PNG, GIF *(Deprecated)*, or BMP image
 	///
@@ -182,7 +201,9 @@ pub enum AtomData {
 	/// **specified** types that are going to fall into this
 	/// variant.
 	Unknown {
+		/// The code, or type of the item
 		code: u32,
+		/// The binary data of the atom
 		data: Vec<u8>,
 	},
 }

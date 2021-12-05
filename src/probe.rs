@@ -95,6 +95,7 @@ impl<R: Read + Seek> Probe<R> {
 		Ok(self)
 	}
 
+	#[allow(clippy::shadow_unrelated)]
 	fn guess_inner(&mut self) -> Result<Option<FileType>> {
 		let mut buf = [0; 36];
 

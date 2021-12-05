@@ -40,6 +40,7 @@ impl From<Mp3Properties> for FileProperties {
 }
 
 impl Mp3Properties {
+	/// Creates a new [`Mp3Properties`]
 	pub const fn new(
 		version: MpegVersion,
 		layer: Layer,

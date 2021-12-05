@@ -13,6 +13,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
+#[allow(clippy::shadow_unrelated)]
 pub(in crate::logic) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 	let probe = Probe::new(data).guess_file_type()?;
 

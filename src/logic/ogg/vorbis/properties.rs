@@ -35,6 +35,7 @@ impl From<VorbisProperties> for FileProperties {
 }
 
 impl VorbisProperties {
+	/// Creates a new [`VorbisProperties`]
 	pub const fn new(
 		duration: Duration,
 		overall_bitrate: u32,

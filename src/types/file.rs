@@ -144,6 +144,7 @@ impl FileType {
 		}
 	}
 
+	/// Attempts to extract a [`FileType`] from an extension
 	pub fn from_ext<E>(ext: E) -> Option<Self>
 	where
 		E: AsRef<OsStr>,
@@ -163,6 +164,11 @@ impl FileType {
 		}
 	}
 
+	/// Attempts to extract a [`FileType`] from a path
+	///
+	/// # Errors
+	///
+	/// This will return [`LoftyError::BadExtension`] if the extension didn't map to a `FileType`
 	pub fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<Path>,
@@ -182,6 +188,10 @@ impl FileType {
 		)
 	}
 
+	/// Attempts to extract a [`FileType`] from a buffer
+	///
+	/// NOTE: This is for use in [`Probe::guess_file_type`](crate::Probe::guess_file_type), it
+	/// is recommended to use it that way
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
 			Ok((Some(f_ty), _)) => Some(f_ty),

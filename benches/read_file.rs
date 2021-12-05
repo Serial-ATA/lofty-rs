@@ -4,7 +4,7 @@ use lofty::Probe;
 macro_rules! test_read {
 	($function:ident, $path:expr) => {
 		fn $function() {
-			Probe::new().read_from_path($path).unwrap();
+			Probe::open($path).unwrap().read().unwrap();
 		}
 	};
 }

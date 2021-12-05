@@ -22,18 +22,24 @@ pub struct VorbisComments {
 }
 
 impl VorbisComments {
+	/// Returns the vendor string
 	pub fn vendor(&self) -> &str {
 		&self.vendor
 	}
 
+	/// Sets the vendor string
 	pub fn set_vendor(&mut self, vendor: String) {
 		self.vendor = vendor
 	}
 
+	/// Returns the tag's items in (key, value) pairs
 	pub fn items(&self) -> &[(String, String)] {
 		&self.items
 	}
 
+	/// Gets an item by key
+	///
+	/// NOTE: This is case-sensitive
 	pub fn get_item(&self, key: &str) -> Option<&str> {
 		self.items
 			.iter()
@@ -41,6 +47,9 @@ impl VorbisComments {
 			.map(|(_, v)| v.as_str())
 	}
 
+	/// Inserts an item
+	///
+	/// If `replace_all` is true, it will remove all items with the key before insertion
 	pub fn insert_item(&mut self, key: String, value: String, replace_all: bool) {
 		if replace_all {
 			self.items
@@ -52,12 +61,20 @@ impl VorbisComments {
 		self.items.push((key, value))
 	}
 
+	/// Removes an item by key
+	///
+	/// NOTE: This is case-sensitive
 	pub fn remove_key(&mut self, key: &str) {
 		self.items.retain(|(k, _)| k != key);
 	}
 }
 
 impl VorbisComments {
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses a [`VorbisComments`] from a reader
+	///
+	/// NOTE: This is **NOT** for reading from a file.
+	/// This is used internally, and requires the reader start at the vendor length.
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read,
@@ -69,6 +86,12 @@ impl VorbisComments {
 		Ok(tag)
 	}
 
+	/// Writes the tag to a file
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
+	/// * The file does not contain valid packets
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<VorbisCommentsRef>::into(self).write_to(file)
 	}
@@ -138,6 +161,7 @@ pub(crate) struct VorbisCommentsRef<'a> {
 }
 
 impl<'a> VorbisCommentsRef<'a> {
+	#[allow(clippy::shadow_unrelated)]
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		let probe = Probe::new(file).guess_file_type()?;
 		let f_ty = probe.file_type();

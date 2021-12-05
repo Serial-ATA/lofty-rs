@@ -32,6 +32,7 @@ impl From<OpusProperties> for FileProperties {
 }
 
 impl OpusProperties {
+	/// Create a new [`OpusProperties`]
 	pub const fn new(
 		duration: Duration,
 		overall_bitrate: u32,

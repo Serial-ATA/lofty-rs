@@ -13,6 +13,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
+#[allow(clippy::shadow_unrelated)]
 pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
 	let probe = Probe::new(data).guess_file_type()?;
 

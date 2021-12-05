@@ -111,8 +111,7 @@
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
 //! Be sure to read the module documentation of each format to see important notes and warnings.
-#![deny(clippy::pedantic, clippy::all)]
-// TODO missing_docs
+#![deny(clippy::pedantic, clippy::all, missing_docs)]
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,

@@ -16,6 +16,7 @@ pub struct RiffInfoList {
 }
 
 impl RiffInfoList {
+	/// Get an item by key
 	pub fn get(&self, key: &str) -> Option<&str> {
 		self.items
 			.iter()
@@ -23,29 +24,43 @@ impl RiffInfoList {
 			.map(|(_, v)| v.as_str())
 	}
 
+	/// Insert an item
+	///
+	/// NOTE: This will do nothing if `key` is not 4 bytes in length and entirely ascii characters
+	///
+	/// This will case-insensitively replace any item with the same key
 	pub fn insert(&mut self, key: String, value: String) {
 		if valid_key(key.as_str()) {
 			self.items
 				.iter()
-				.position(|(k, _)| k == &key)
+				.position(|(k, _)| k.eq_ignore_ascii_case(key.as_str()))
 				.map(|p| self.items.remove(p));
 			self.items.push((key, value))
 		}
 	}
 
+	/// Remove an item by key
+	///
+	/// This will case-insensitively remove an item with the key
 	pub fn remove(&mut self, key: &str) {
 		self.items
 			.iter()
-			.position(|(k, _)| k == key)
+			.position(|(k, _)| k.eq_ignore_ascii_case(key))
 			.map(|p| self.items.remove(p));
 	}
 
+	/// Returns the tag's items in (key, value) pairs
 	pub fn items(&self) -> &[(String, String)] {
 		self.items.as_slice()
 	}
 }
 
 impl RiffInfoList {
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses a [`RiffInfoList`] from a reader
+	///
+	/// NOTE: This is **NOT** for reading from a file.
+	/// This is used internally, and requires the end position be provided.
 	pub fn read_from<R>(reader: &mut R, end: u64) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -57,6 +72,11 @@ impl RiffInfoList {
 		Ok(tag)
 	}
 
+	/// Writes the tag to a file
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<RiffInfoListRef>::into(self).write_to(file)
 	}

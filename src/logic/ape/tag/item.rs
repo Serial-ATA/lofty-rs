@@ -6,13 +6,24 @@ use crate::types::tag::TagType;
 use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq)]
+/// Represents an `APE` tag item
+///
+/// The restrictions for `APE` lie in the key rather than the value,
+/// so these are still able to use [`ItemValue`]s
 pub struct ApeItem {
+	/// Whether or not to mark the item as read only
 	pub read_only: bool,
 	pub(crate) key: String,
 	pub(crate) value: ItemValue,
 }
 
 impl ApeItem {
+	/// Create an [`ApeItem`]
+	///
+	/// # Errors
+	///
+	/// * `key` is illegal ("ID3", "TAG", "OGGS", "MP+")
+	/// * `key` contains non-ascii characters
 	pub fn new(key: String, value: ItemValue) -> Result<Self> {
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
 			return Err(LoftyError::Ape("Tag item contains an illegal key"));
@@ -29,14 +40,17 @@ impl ApeItem {
 		})
 	}
 
+	/// Make the item read only
 	pub fn set_read_only(&mut self) {
 		self.read_only = true
 	}
 
+	/// Returns the item key
 	pub fn key(&self) -> &str {
 		&self.key
 	}
 
+	/// Returns the item value
 	pub fn value(&self) -> &ItemValue {
 		&self.value
 	}

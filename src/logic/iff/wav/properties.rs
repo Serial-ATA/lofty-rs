@@ -42,6 +42,7 @@ impl From<WavProperties> for FileProperties {
 }
 
 impl WavProperties {
+	/// Create a new [`WavProperties`]
 	pub const fn new(
 		format: WavFormat,
 		duration: Duration,

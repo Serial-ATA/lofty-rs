@@ -41,6 +41,7 @@ impl From<ApeProperties> for FileProperties {
 }
 
 impl ApeProperties {
+	/// Creates a new [`ApeProperties`]
 	pub const fn new(
 		version: u16,
 		duration: Duration,

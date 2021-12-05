@@ -49,6 +49,7 @@ pub struct Id3v1Tag {
 }
 
 impl Id3v1Tag {
+	/// Returns `true` if the tag contains no data
 	pub fn is_empty(&self) -> bool {
 		self.title.is_none()
 			&& self.artist.is_none()
@@ -59,10 +60,19 @@ impl Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses an [`Id3v1Tag`] from an array
+	///
+	/// NOTE: This is **NOT** for reading from a file. This is used internally.
 	pub fn read_from(tag: [u8; 128]) -> Self {
 		super::read::parse_id3v1(tag)
 	}
 
+	/// Write the tag to a file
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v1TagRef>::into(self).write_to(file)
 	}

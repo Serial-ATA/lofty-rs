@@ -9,6 +9,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::WriteBytesExt;
 
+#[allow(clippy::shadow_unrelated)]
 pub(in crate::logic) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
 	let probe = Probe::new(writer).guess_file_type()?;
 

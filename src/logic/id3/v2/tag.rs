@@ -18,6 +18,7 @@ use std::io::Read;
 use byteorder::ByteOrder;
 
 #[derive(PartialEq, Debug)]
+/// An `ID3v2` tag
 pub struct Id3v2Tag {
 	flags: Id3v2TagFlags,
 	pub(super) original_version: Id3v2Version,
@@ -45,28 +46,43 @@ impl Id3v2Tag {
 		self.flags = flags
 	}
 
+	/// The original version of the tag
+	///
+	/// This is here, since the tag is upgraded to `ID3v2.4`, but a `v2.2` or `v2.3`
+	/// tag may have been read.
 	pub fn original_version(&self) -> Id3v2Version {
 		self.original_version
 	}
 }
 
 impl Id3v2Tag {
+	/// Returns an iterator over the tag's frames
 	pub fn iter(&self) -> impl Iterator<Item = &Frame> {
 		self.frames.iter()
 	}
 
+	/// Returns the number of frames in the tag
 	pub fn len(&self) -> usize {
 		self.frames.len()
 	}
 
+	/// Returns `true` if the tag contains no frames
 	pub fn is_empty(&self) -> bool {
 		self.frames.is_empty()
 	}
 
+	/// Gets a [`Frame`] from an id
+	///
+	/// NOTE: This is *not* case-sensitive
 	pub fn get(&self, id: &str) -> Option<&Frame> {
-		self.frames.iter().find(|f| f.id_str() == id)
+		self.frames
+			.iter()
+			.find(|f| f.id_str().eq_ignore_ascii_case(id))
 	}
 
+	/// Inserts a [`Frame`]
+	///
+	/// This will replace any frame of the same id (or description! See [`EncodedTextFrame`])
 	pub fn insert(&mut self, frame: Frame) -> Option<Frame> {
 		let replaced = self
 			.frames
@@ -78,12 +94,18 @@ impl Id3v2Tag {
 		replaced
 	}
 
+	/// Removes a [`Frame`] by id
 	pub fn remove(&mut self, id: &str) {
 		self.frames.retain(|f| f.id_str() != id)
 	}
 }
 
 impl Id3v2Tag {
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses an [`Id3v2Tag`] from a reader
+	///
+	/// NOTE: This is **NOT** for reading from a file.
+	/// This is used internally, and expects the reader to *only* contain the tag.
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read,
@@ -91,10 +113,26 @@ impl Id3v2Tag {
 		super::read::parse_id3v2(reader)
 	}
 
+	/// Writes the tag to a file
+	///
+	/// NOTE: This will **not** work for chunk files such as `WAV` and `AIFF`. See [`Id3v2Tag::write_to_chunk_file`].
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
+	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v2TagRef>::into(self).write_to(file)
 	}
 
+	/// Write the tag to a chunk file
+	///
+	/// NOTE: This is only for chunk files (eg. `WAV` and `AIFF`)
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
+	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	pub fn write_to_chunk_file<B: ByteOrder>(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v2TagRef>::into(self).write_to_chunk_file::<B>(file)
 	}

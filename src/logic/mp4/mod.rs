@@ -47,6 +47,7 @@ impl From<Mp4Properties> for FileProperties {
 }
 
 impl Mp4Properties {
+	/// Creates a new [`Mp4Properties`]
 	pub const fn new(
 		codec: Mp4Codec,
 		duration: Duration,

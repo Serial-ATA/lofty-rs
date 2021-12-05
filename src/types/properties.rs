@@ -23,6 +23,7 @@ impl Default for FileProperties {
 }
 
 impl FileProperties {
+	/// Creates a new [`FileProperties`]
 	pub const fn new(
 		duration: Duration,
 		overall_bitrate: Option<u32>,

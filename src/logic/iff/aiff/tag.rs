@@ -25,6 +25,11 @@ pub struct AiffTextChunks {
 }
 
 impl AiffTextChunks {
+	/// Writes the tag to a file
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<AiffTextChunksRef>::into(self).write_to(file)
 	}

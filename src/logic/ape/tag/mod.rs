@@ -12,37 +12,54 @@ use std::fs::File;
 use std::io::{Read, Seek};
 
 #[derive(Default, Debug, PartialEq)]
-/// An APE tag
+/// An `APE` tag
 pub struct ApeTag {
+	/// Whether or not to mark the tag as read only
 	pub read_only: bool,
 	pub(super) items: Vec<ApeItem>,
 }
 
 impl ApeTag {
+	/// Get an [`ApeItem`] by key
+	///
+	/// NOTE: While `APE` items are supposed to be case-sensitive,
+	/// this rule is rarely followed, so this will ignore case when searching.
 	pub fn get_key(&self, key: &str) -> Option<&ApeItem> {
 		self.items
 			.iter()
 			.find(|i| i.key().eq_ignore_ascii_case(key))
 	}
 
+	/// Insert an [`ApeItem`]
+	///
+	/// This will remove any item with the same key prior to insertion
 	pub fn insert(&mut self, value: ApeItem) {
 		self.remove_key(value.key());
 		self.items.push(value);
 	}
 
+	/// Remove an [`ApeItem`] by key
+	///
+	/// NOTE: Like [`ApeTag::get_key`], this is not case-sensitive
 	pub fn remove_key(&mut self, key: &str) {
 		self.items
 			.iter()
-			.position(|i| i.key() == key)
+			.position(|i| i.key().eq_ignore_ascii_case(key))
 			.map(|p| self.items.remove(p));
 	}
 
+	/// Returns all of the tag's items
 	pub fn items(&self) -> &[ApeItem] {
 		&self.items
 	}
 }
 
 impl ApeTag {
+	#[allow(clippy::missing_errors_doc)]
+	/// Parses an [`ApeTag`] from a reader
+	///
+	/// NOTE: This is **NOT** for reading from a file.
+	/// This is used internally, and expects the `APE` preamble to have been skipped.
 	pub fn read_from<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -50,6 +67,12 @@ impl ApeTag {
 		Ok(read::read_ape_tag(reader, false)?.0)
 	}
 
+	/// Write an `APE` tag to a file
+	///
+	/// # Errors
+	///
+	/// * Attempting to write the tag to a format that does not support it
+	/// * An existing tag has an invalid size
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<ApeTagRef>::into(self).write_to(file)
 	}

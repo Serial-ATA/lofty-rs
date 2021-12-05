@@ -297,6 +297,7 @@ impl TagType {
 		false
 	}
 
+	#[allow(clippy::shadow_unrelated)]
 	/// Remove a tag from a [`File`]
 	///
 	/// This will return `false` if:
