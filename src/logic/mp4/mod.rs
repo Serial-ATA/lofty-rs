@@ -8,7 +8,7 @@ mod trak;
 use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, TagType};
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 use ilst::Ilst;
 
 use std::io::{Read, Seek};
@@ -100,7 +100,7 @@ impl Mp4Properties {
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
-	#[cfg(feature = "mp4_atoms")]
+	#[cfg(feature = "mp4_ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst: Option<Ilst>,
 	/// The file's audio properties

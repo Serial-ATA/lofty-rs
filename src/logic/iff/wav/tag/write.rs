@@ -1,6 +1,7 @@
 use super::RiffInfoListRef;
 use crate::error::{LoftyError, Result};
 use crate::logic::iff::chunk::Chunks;
+use crate::logic::iff::wav::read::verify_wav;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -11,6 +12,8 @@ pub(in crate::logic::iff::wav) fn write_riff_info(
 	data: &mut File,
 	tag: &mut RiffInfoListRef,
 ) -> Result<()> {
+	verify_wav(data)?;
+
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 

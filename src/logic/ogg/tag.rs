@@ -139,7 +139,12 @@ pub(crate) struct VorbisCommentsRef<'a> {
 
 impl<'a> VorbisCommentsRef<'a> {
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
-		match Probe::new().file_type(file) {
+		let probe = Probe::new(file).guess_file_type()?;
+		let f_ty = probe.file_type();
+
+		let file = probe.into_inner();
+
+		match f_ty {
 			Some(FileType::FLAC) => super::flac::write::write_to(file, self),
 			Some(FileType::Opus) => super::write::write(file, self, OPUSHEAD),
 			Some(FileType::Vorbis) => super::write::write(file, self, VORBIS_IDENT_HEAD),

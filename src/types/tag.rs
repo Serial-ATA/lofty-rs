@@ -205,10 +205,12 @@ impl Tag {
 	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
 	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
 	pub fn save_to(&self, file: &mut File) -> Result<()> {
-		match Probe::new().file_type(file) {
+		let probe = Probe::new(file).guess_file_type()?;
+
+		match probe.file_type() {
 			Some(file_type) => {
 				if file_type.supports_tag_type(self.tag_type()) {
-					crate::logic::write_tag(self, file, file_type)
+					crate::logic::write_tag(self, probe.into_inner(), file_type)
 				} else {
 					Err(LoftyError::UnsupportedTag)
 				}
@@ -269,7 +271,7 @@ pub enum TagType {
 	#[cfg(feature = "id3v2")]
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
-	#[cfg(feature = "mp4_atoms")]
+	#[cfg(feature = "mp4_ilst")]
 	/// Represents MP4 atoms
 	Mp4Atom,
 	#[cfg(feature = "vorbis_comments")]
@@ -303,9 +305,14 @@ impl TagType {
 	/// * The format doesn't support the `TagType`
 	/// * It is unable to write to the file
 	pub fn remove_from(&self, file: &mut File) -> bool {
-		if let Some(file_type) = Probe::new().file_type(file) {
-			if file_type.supports_tag_type(self) {
-				return crate::logic::write_tag(&Tag::new(self.clone()), file, file_type).is_ok();
+		if let Ok(probe) = Probe::new(file).guess_file_type() {
+			if let Some(file_type) = probe.file_type() {
+				if file_type.supports_tag_type(self) {
+					let file = probe.into_inner();
+
+					return crate::logic::write_tag(&Tag::new(self.clone()), file, file_type)
+						.is_ok();
+				}
 			}
 		}
 

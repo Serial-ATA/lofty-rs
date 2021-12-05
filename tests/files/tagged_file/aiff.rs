@@ -1,12 +1,12 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::{Seek, Write};
-use crate::set_artist;
 use crate::verify_artist;
+use crate::{set_artist, temp_file};
+use lofty::{FileType, ItemKey, ItemValue, TagItem, TagType};
+use std::io::{Seek, SeekFrom, Write};
 
 #[test]
 fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
-	let file = Probe::new().read_from_path("tests/files/assets/a.aiff").unwrap();
+	let file = lofty::read_from_path("tests/files/assets/a.aiff").unwrap();
 
 	assert_eq!(file.file_type(), &FileType::AIFF);
 
@@ -19,11 +19,9 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read("tests/files/assets/a.aiff").unwrap())
-		.unwrap();
+	let mut file = temp_file!("tests/files/assets/a.aiff");
 
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	assert_eq!(tagged_file.file_type(), &FileType::AIFF);
 
@@ -33,10 +31,9 @@ fn write() {
 	// Text chunks
 	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Bar artist", 1 => file, "Baz artist");
 
-	drop(tagged_file);
-
 	// Now reread the file
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	file.seek(SeekFrom::Start(0)).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 

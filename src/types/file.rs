@@ -3,7 +3,9 @@ use super::tag::{Tag, TagType};
 use crate::error::{LoftyError, Result};
 
 use std::convert::TryInto;
-use std::io::{Read, Seek, SeekFrom};
+use std::ffi::OsStr;
+use std::io::{Read, Seek};
+use std::path::Path;
 
 /// Provides various methods for interaction with a file
 pub trait AudioFile {
@@ -69,7 +71,7 @@ impl TaggedFile {
 			FileType::APE => TagType::Ape,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
-			#[cfg(feature = "mp4_atoms")]
+			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => TagType::Mp4Atom,
 		}
 	}
@@ -142,105 +144,112 @@ impl FileType {
 		}
 	}
 
-	pub(crate) fn try_from_ext(ext: &str) -> Result<Self> {
-		match ext {
-			"ape" => Ok(Self::APE),
-			"aiff" | "aif" => Ok(Self::AIFF),
-			"mp3" => Ok(Self::MP3),
-			"wav" | "wave" => Ok(Self::WAV),
-			"opus" => Ok(Self::Opus),
-			"flac" => Ok(Self::FLAC),
-			"ogg" => Ok(Self::Vorbis),
-			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Ok(Self::MP4),
-			"oga" => Err(LoftyError::Ogg(
-				"Files with extension \"oga\" must have their type determined by content",
-			)),
-			_ => Err(LoftyError::BadExtension(ext.to_string())),
+	pub fn from_ext<E>(ext: E) -> Option<Self>
+	where
+		E: AsRef<OsStr>,
+	{
+		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
+
+		match ext.as_str() {
+			"ape" => Some(Self::APE),
+			"aiff" | "aif" => Some(Self::AIFF),
+			"mp3" => Some(Self::MP3),
+			"wav" | "wave" => Some(Self::WAV),
+			"opus" => Some(Self::Opus),
+			"flac" => Some(Self::FLAC),
+			"ogg" => Some(Self::Vorbis),
+			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::MP4),
+			_ => None,
 		}
 	}
 
-	// TODO
-	pub(crate) fn try_from_sig<R>(data: &mut R) -> Result<Self>
+	pub fn from_path<P>(path: P) -> Result<Self>
 	where
-		R: Read + Seek,
+		P: AsRef<Path>,
 	{
-		use crate::logic::{id3::unsynch_u32, mp3::header::verify_frame_sync};
+		let ext = path.as_ref().extension();
 
-		if data.seek(SeekFrom::End(0))? == 0 {
+		ext.and_then(Self::from_ext).map_or_else(
+			|| {
+				let ext_err = match ext {
+					Some(ext) => ext.to_string_lossy().into_owned(),
+					None => String::new(),
+				};
+
+				Err(LoftyError::BadExtension(ext_err))
+			},
+			Ok,
+		)
+	}
+
+	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
+		match Self::from_buffer_inner(buf) {
+			Ok((Some(f_ty), _)) => Some(f_ty),
+			_ => None,
+		}
+	}
+
+	pub(crate) fn from_buffer_inner(buf: &[u8]) -> Result<(Option<Self>, u32)> {
+		use crate::logic::id3::unsynch_u32;
+
+		if buf.is_empty() {
 			return Err(LoftyError::EmptyFile);
 		}
 
-		data.seek(SeekFrom::Start(0))?;
-
-		let mut sig = [0; 10];
-		data.read_exact(&mut sig)?;
-
-		let ret = match sig.first().unwrap() {
-			77 if sig.starts_with(b"MAC") => Ok(Self::APE),
-			73 if sig.starts_with(b"ID3") => {
+		match Self::quick_type_guess(buf) {
+			Some(f_ty) => Ok((Some(f_ty), 0)),
+			// Special case for ID3, gets checked in `Probe::guess_file_type`
+			None if buf.starts_with(b"ID3") && buf.len() >= 11 => {
 				let size = unsynch_u32(u32::from_be_bytes(
-					sig[6..10]
+					buf[6..10]
 						.try_into()
 						.map_err(|_| LoftyError::UnknownFormat)?,
 				));
 
-				data.seek(SeekFrom::Start(u64::from(10 + size)))?;
-
-				let mut ident = [0; 3];
-				data.read_exact(&mut ident)?;
-
-				if &ident == b"MAC" {
-					Ok(Self::APE)
-				} else if verify_frame_sync([ident[0], ident[1]]) {
-					Ok(Self::MP3)
-				} else {
-					Err(LoftyError::UnknownFormat)
-				}
+				Ok((None, size))
 			},
-			_ if verify_frame_sync([sig[0], sig[1]]) => Ok(Self::MP3),
-			70 if sig.starts_with(b"FORM") => {
-				let mut id_remaining = [0; 2];
-				data.read_exact(&mut id_remaining)?;
+			None => Err(LoftyError::UnknownFormat),
+		}
+	}
 
-				let id = &[sig[8], sig[9], id_remaining[0], id_remaining[1]];
+	fn quick_type_guess(buf: &[u8]) -> Option<Self> {
+		use crate::logic::mp3::header::verify_frame_sync;
 
-				if id == b"AIFF" || id == b"AIFC" {
-					Ok(Self::AIFF)
-				} else {
-					Err(LoftyError::UnknownFormat)
+		match buf.first().unwrap() {
+			77 if buf.starts_with(b"MAC") => Some(Self::APE),
+			_ if verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),
+			70 if buf.starts_with(b"FORM") => {
+				if buf.len() >= 12 {
+					let id = &[buf[8], buf[9], buf[10], buf[11]];
+
+					if id == b"AIFF" || id == b"AIFC" {
+						return Some(Self::AIFF);
+					}
 				}
+
+				None
 			},
-			102 if sig.starts_with(b"fLaC") => Ok(Self::FLAC),
-			79 if sig.starts_with(b"OggS") => {
-				data.seek(SeekFrom::Start(28))?;
-
-				let mut ident_sig = [0; 8];
-				data.read_exact(&mut ident_sig)?;
-
-				if &ident_sig[1..7] == b"vorbis" {
-					Ok(Self::Vorbis)
-				} else if &ident_sig[..] == b"OpusHead" {
-					Ok(Self::Opus)
-				} else {
-					Err(LoftyError::UnknownFormat)
+			79 if buf.starts_with(b"OggS") => {
+				if buf.len() >= 36 {
+					if &buf[29..35] == b"vorbis" {
+						return Some(Self::Vorbis);
+					} else if &buf[28..36] == b"OpusHead" {
+						return Some(Self::Opus);
+					}
 				}
-			},
-			82 if sig.starts_with(b"RIFF") => {
-				let mut id_remaining = [0; 2];
-				data.read_exact(&mut id_remaining)?;
 
-				if &[sig[8], sig[9], id_remaining[0], id_remaining[1]] == b"WAVE" {
-					Ok(Self::WAV)
-				} else {
-					Err(LoftyError::UnknownFormat)
+				None
+			},
+			102 if buf.starts_with(b"fLaC") => Some(Self::FLAC),
+			82 if buf.starts_with(b"RIFF") => {
+				if buf.len() >= 12 && &buf[8..12] == b"WAVE" {
+					return Some(Self::WAV);
 				}
+
+				None
 			},
-			_ if &sig[4..8] == b"ftyp" => Ok(Self::MP4),
-			_ => Err(LoftyError::UnknownFormat),
-		};
-
-		data.seek(SeekFrom::Start(0))?;
-
-		ret
+			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::MP4),
+			_ => None,
+		}
 	}
 }

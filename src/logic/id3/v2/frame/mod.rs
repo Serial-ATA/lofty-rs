@@ -19,6 +19,14 @@ pub struct Frame {
 }
 
 impl Frame {
+	/// Create a new frame
+	///
+	/// NOTE: This will accept both `ID3v2.2` and `ID3v2.3/4` frame IDs
+	///
+	/// # Errors
+	///
+	/// * `id` is less than 3 or greater than 4 bytes
+	/// * `id` contains non-ascii characters
 	pub fn new(id: &str, value: FrameValue, flags: FrameFlags) -> Result<Self> {
 		let id = match id.len() {
 			// An ID with a length of 4 could be either V3 or V4.
@@ -47,12 +55,14 @@ impl Frame {
 		Ok(Self { id, value, flags })
 	}
 
+	/// Extract the string from the [`FrameID`]
 	pub fn id_str(&self) -> &str {
 		match &self.id {
 			FrameID::Valid(id) | FrameID::Outdated(id) => id.as_str(),
 		}
 	}
 
+	/// Returns the frame's content
 	pub fn content(&self) -> &FrameValue {
 		&self.value
 	}
@@ -88,6 +98,14 @@ impl PartialEq for LanguageFrame {
 }
 
 impl LanguageFrame {
+	/// Convert a [`LanguageFrame`] to a byte vec
+	///
+	/// NOTE: This does not include a frame header
+	///
+	/// # Errors
+	///
+	/// * `language` is not exactly 3 bytes
+	/// * `language` contains non-ascii characters
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut bytes = vec![self.encoding as u8];
 

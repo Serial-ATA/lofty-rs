@@ -14,10 +14,14 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
 
 pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
-	match Probe::new().file_type(data) {
+	let probe = Probe::new(data).guess_file_type()?;
+
+	match probe.file_type() {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
+
+	let data = probe.into_inner();
 
 	let id3v2 = create_tag(tag)?;
 
@@ -44,11 +48,6 @@ pub(in crate::logic) fn write_id3v2_to_chunk_file<B>(
 where
 	B: ByteOrder,
 {
-	match Probe::new().file_type(data) {
-		Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {},
-		_ => return Err(LoftyError::UnsupportedTag),
-	}
-
 	let id3v2 = create_tag(tag)?;
 
 	chunk_file::write_to_chunk_file::<B>(data, &id3v2)?;

@@ -1,6 +1,6 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::{Seek, Write};
-use crate::{verify_artist, set_artist};
+use crate::{set_artist, temp_file, verify_artist};
+use lofty::{FileType, ItemKey, ItemValue, TagItem, TagType};
+use std::io::{Seek, SeekFrom, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
 // We have the vendor string and a title stored in the tag
@@ -52,7 +52,7 @@ fn vorbis_remove() {
 }
 
 fn read(path: &str, file_type: &FileType) {
-	let file = Probe::new().read_from_path(path).unwrap();
+	let file = lofty::read_from_path(path).unwrap();
 
 	assert_eq!(file.file_type(), file_type);
 
@@ -60,37 +60,37 @@ fn read(path: &str, file_type: &FileType) {
 }
 
 fn write(path: &str, file_type: &FileType) {
-	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read(path).unwrap()).unwrap();
+	let mut file = temp_file!(path);
 
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	assert_eq!(tagged_file.file_type(), file_type);
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 2 => file, "Bar artist");
 
-	drop(tagged_file);
-
 	// Now reread the file
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	file.seek(SeekFrom::Start(0)).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 2 => file, "Foo artist");
 }
 
 fn remove(path: &str, tag_type: TagType) {
-	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read(path).unwrap()).unwrap();
+	let mut file = temp_file!(path);
 
-	let tagged_file = Probe::new().read_from(&mut file).unwrap();
+	let tagged_file = lofty::read_from(&mut file).unwrap();
 	// Verify we have both the vendor and artist
 	assert!(
 		tagged_file.tag(&tag_type).is_some()
 			&& tagged_file.tag(&tag_type).unwrap().item_count() == 2
 	);
 
+	file.seek(SeekFrom::Start(0)).unwrap();
 	assert!(tag_type.remove_from(&mut file));
 
-	let tagged_file = Probe::new().read_from(&mut file).unwrap();
+	file.seek(SeekFrom::Start(0)).unwrap();
+	let tagged_file = lofty::read_from(&mut file).unwrap();
+
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
 	assert_eq!(tagged_file.tag(&tag_type).unwrap().item_count(), 1);
 }

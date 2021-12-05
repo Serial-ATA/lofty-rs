@@ -109,12 +109,10 @@ impl<'a> Into<ApeTagRef<'a>> for &'a Tag {
 		ApeTagRef {
 			read_only: false,
 			items: Box::new(self.items.iter().filter_map(|i| {
-				i.key().map_key(&TagType::Ape, true).map_or(None, |key| {
-					Some(ApeItemRef {
-						read_only: false,
-						key,
-						value: (&i.item_value).into(),
-					})
+				i.key().map_key(&TagType::Ape, true).map(|key| ApeItemRef {
+					read_only: false,
+					key,
+					value: (&i.item_value).into(),
 				})
 			})),
 		}

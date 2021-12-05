@@ -1,4 +1,4 @@
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 /// Restrictions on the tag size
 pub enum TagSizeRestrictions {
@@ -18,7 +18,7 @@ impl Default for TagSizeRestrictions {
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 /// Restrictions on text field sizes
 pub enum TextSizeRestrictions {
@@ -38,7 +38,7 @@ impl Default for TextSizeRestrictions {
 	}
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[allow(non_camel_case_types)]
 /// Restrictions on all image sizes
 pub enum ImageSizeRestrictions {
@@ -58,7 +58,7 @@ impl Default for ImageSizeRestrictions {
 	}
 }
 
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone, Copy, Debug, PartialEq)]
 /// Restrictions on the content of an ID3v2 tag
 pub struct TagRestrictions {
 	/// Restriction on the size of the tag. See [`TagSizeRestrictions`]

@@ -1,11 +1,11 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::{Seek, Write};
-use crate::{verify_artist, set_artist};
+use crate::{set_artist, temp_file, verify_artist};
+use lofty::{FileType, ItemKey, ItemValue, TagItem, TagType};
+use std::io::{Seek, SeekFrom, Write};
 
 #[test]
 fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
-	let file = Probe::new().read_from_path("tests/files/assets/a.ape").unwrap();
+	let file = lofty::read_from_path("tests/files/assets/a.ape").unwrap();
 
 	assert_eq!(file.file_type(), &FileType::APE);
 
@@ -22,11 +22,9 @@ fn read() {
 #[test]
 fn write() {
 	// We don't write an ID3v2 tag here since it's against the spec
-	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read("tests/files/assets/a.ape").unwrap())
-		.unwrap();
+	let mut file = temp_file!("tests/files/assets/a.ape");
 
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	assert_eq!(tagged_file.file_type(), &FileType::APE);
 
@@ -37,7 +35,8 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	file.seek(SeekFrom::Start(0)).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 

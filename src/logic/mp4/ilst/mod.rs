@@ -9,7 +9,7 @@ use crate::types::tag::{Tag, TagType};
 use std::convert::TryInto;
 use std::io::Read;
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 #[derive(Default, PartialEq, Debug)]
 /// An Mp4
 pub struct Ilst {
@@ -43,7 +43,7 @@ impl Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl From<Ilst> for Tag {
 	fn from(input: Ilst) -> Self {
 		let mut tag = Self::new(TagType::Mp4Atom);
@@ -77,7 +77,7 @@ impl From<Ilst> for Tag {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl From<Tag> for Ilst {
 	fn from(input: Tag) -> Self {
 		let mut ilst = Self::default();
@@ -108,7 +108,7 @@ impl From<Tag> for Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 #[derive(Debug, PartialEq)]
 pub struct Atom {
 	ident: AtomIdent,
@@ -152,7 +152,7 @@ pub enum AtomIdent {
 	Freeform { mean: String, name: String },
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 #[derive(Debug, PartialEq)]
 /// The data of an atom
 ///
@@ -187,18 +187,18 @@ pub enum AtomData {
 	},
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 pub(crate) struct IlstRef<'a> {
 	atoms: Box<dyn Iterator<Item = AtomRef<'a>> + 'a>,
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 pub(crate) struct AtomRef<'a> {
 	ident: AtomIdentRef<'a>,
 	data: AtomDataRef<'a>,
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<AtomRef<'a>> for &'a Atom {
 	fn into(self) -> AtomRef<'a> {
 		AtomRef {
@@ -208,13 +208,13 @@ impl<'a> Into<AtomRef<'a>> for &'a Atom {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 pub(crate) enum AtomIdentRef<'a> {
 	Fourcc([u8; 4]),
 	Freeform { mean: &'a str, name: &'a str },
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<AtomIdentRef<'a>> for &'a AtomIdent {
 	fn into(self) -> AtomIdentRef<'a> {
 		match self {
@@ -224,7 +224,7 @@ impl<'a> Into<AtomIdentRef<'a>> for &'a AtomIdent {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> From<AtomIdentRef<'a>> for AtomIdent {
 	fn from(input: AtomIdentRef<'a>) -> Self {
 		match input {
@@ -237,7 +237,7 @@ impl<'a> From<AtomIdentRef<'a>> for AtomIdent {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 pub(crate) enum AtomDataRef<'a> {
 	UTF8(&'a str),
 	UTF16(&'a str),
@@ -247,7 +247,7 @@ pub(crate) enum AtomDataRef<'a> {
 	Unknown { code: u32, data: &'a [u8] },
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<AtomDataRef<'a>> for &'a AtomData {
 	fn into(self) -> AtomDataRef<'a> {
 		match self {
@@ -261,7 +261,7 @@ impl<'a> Into<AtomDataRef<'a>> for &'a AtomData {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 	fn into(self) -> IlstRef<'a> {
 		IlstRef {
@@ -270,7 +270,7 @@ impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	fn into(self) -> IlstRef<'a> {
 		let iter =
@@ -290,7 +290,7 @@ impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	}
 }
 
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
 	key.map_key(&TagType::Mp4Atom, true).and_then(|ident| {
 		if ident.starts_with("----") {

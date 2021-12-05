@@ -1,5 +1,5 @@
 use super::atom_info::AtomInfo;
-#[cfg(feature = "mp4_atoms")]
+#[cfg(feature = "mp4_ilst")]
 use super::ilst::read::parse_ilst;
 use super::ilst::{AtomIdent, Ilst};
 use super::read::skip_unneeded;
@@ -109,7 +109,7 @@ where
 		skip_unneeded(data, atom.extended, atom.len)?;
 	}
 
-	#[cfg(feature = "mp4_atoms")]
+	#[cfg(feature = "mp4_ilst")]
 	if islt.0 {
 		return parse_ilst(data, islt.1 - 8).map(Some);
 	}

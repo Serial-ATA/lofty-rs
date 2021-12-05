@@ -1,4 +1,16 @@
 #[macro_export]
+macro_rules! temp_file {
+	($path:tt) => {{
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&std::fs::read($path).unwrap()).unwrap();
+
+		file.seek(std::io::SeekFrom::Start(0)).unwrap();
+
+		file
+	}};
+}
+
+#[macro_export]
 macro_rules! verify_artist {
 	($file:ident, $method:ident, $expected_value:literal, $item_count:expr) => {{
 		println!("VERIFY: Expecting `{}` to have {} items, with an artist of \"{}\"", stringify!($method), $item_count, $expected_value);
@@ -55,24 +67,27 @@ macro_rules! set_artist {
 			ItemValue::Text(String::from($new_value)),
 		));
 
+		$file_write.seek(std::io::SeekFrom::Start(0)).unwrap();
+
 		assert!($tag.save_to(&mut $file_write).is_ok());
 	};
 }
 
 #[macro_export]
 macro_rules! remove_tag {
-	($path:expr, $tag_type:path) => {
-		let mut file = tempfile::tempfile().unwrap();
-		file.write_all(&std::fs::read($path).unwrap()).unwrap();
+	($path:tt, $tag_type:path) => {
+		let mut file = temp_file!($path);
 
-		let tagged_file = Probe::new().read_from(&mut file).unwrap();
+		let tagged_file = lofty::read_from(&mut file).unwrap();
 		assert!(tagged_file.tag(&$tag_type).is_some());
+
+		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
 		assert!($tag_type.remove_from(&mut file));
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
-		let tagged_file = Probe::new().read_from(&mut file).unwrap();
+		let tagged_file = lofty::read_from(&mut file).unwrap();
 		assert!(tagged_file.tag(&$tag_type).is_none());
 	};
 }

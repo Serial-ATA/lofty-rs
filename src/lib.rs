@@ -19,68 +19,49 @@
 //!
 //! # Examples
 //!
-//! ## Determining a file's format
+//! ## Reading a generic file
 //!
-//! These don't read the file's properties or tags. Instead, they determine the [`FileType`], which is useful for matching
-//! against [`concrete file types`](#using-concrete-file-types).
+//! It isn't always convenient to [use concrete file types](#using-concrete-file-types), which is where [`TaggedFile`]
+//! comes in.
 //!
-//! ### Guessing from extension
-//! ```
-//! use lofty::{Probe, FileType};
+//! ### Using a path
 //!
-//! let file_type = Probe::new().file_type_from_extension("tests/files/assets/a.mp3").unwrap();
+//! ```rust
+//! use lofty::Probe;
 //!
-//! assert_eq!(file_type, FileType::MP3)
-//! ```
+//! // First, create a probe.
+//! // This will guess the format from the extension
+//! // ("mp3" in this case), but we can guess from the content if we want to.
+//! let mut probe = Probe::open("tests/files/assets/a.mp3").unwrap();
 //!
-//! ### Guessing from file content
-//! ```
-//! use lofty::{Probe, FileType};
+//! // Let's guess the format from the content just in case.
+//! // This is not necessary in this case!
+//! let mut probe = probe.guess_file_type().unwrap();
 //!
-//! // Probe::file_type also exists for generic readers
-//! let file_type = Probe::new().file_type_from_path("tests/files/assets/a.mp3").unwrap();
-//!
-//! assert_eq!(file_type, FileType::MP3)
+//! let tagged_file = probe.read().unwrap();
 //! ```
 //!
-//! ## Using concrete file types
-//! ```
-//! use lofty::mp3::Mp3File;
-//! use lofty::AudioFile;
-//! use lofty::TagType;
-//! use std::fs::File;
+//! ### Using an existing reader
 //!
-//! let mut file_content = File::open("tests/files/assets/a.mp3").unwrap();
+//! ```rust
+//! # use std::fs::File;
+//! use lofty::Probe;
 //!
-//! let mpeg_file = Mp3File::read_from(&mut file_content).unwrap();
+//! // Let's read from an open file
+//! let mut file = File::open("tests/files/assets/a.mp3").unwrap();
 //!
-//! assert_eq!(mpeg_file.properties().channels(), 2);
+//! // Here, we have to guess the file type prior to reading
+//! let mut probe = Probe::new(&mut file).guess_file_type().unwrap();
 //!
-//! // Here we have a file with multiple tags
-//! assert!(mpeg_file.contains_tag_type(&TagType::Id3v2));
-//! assert!(mpeg_file.contains_tag_type(&TagType::Ape));
-//! ```
-//!
-//! ## Non-specific tagged files
-//!
-//! These are useful if the file format doesn't matter
-//!
-//! ### Reading
-//! ```
-//! use lofty::{Probe, FileType};
-//!
-//! // Probe::read_from also exists for generic readers
-//! let tagged_file = Probe::new().read_from_path("tests/files/assets/a.mp3").unwrap();
-//!
-//! assert_eq!(tagged_file.file_type(), &FileType::MP3);
-//! assert_eq!(tagged_file.properties().channels(), Some(2));
+//! let tagged_file = probe.read().unwrap();
 //! ```
 //!
 //! ### Accessing tags
-//! ```
+//!
+//! ```rust
 //! use lofty::Probe;
 //!
-//! let tagged_file = Probe::new().read_from_path("tests/files/assets/a.mp3").unwrap();
+//! let tagged_file = Probe::open("tests/files/assets/a.mp3").unwrap().read().unwrap();
 //!
 //! // Get the primary tag (ID3v2 in this case)
 //! let id3v2 = tagged_file.primary_tag().unwrap();
@@ -88,6 +69,26 @@
 //! // If the primary tag doesn't exist, or the tag types
 //! // don't matter, the first tag can be retrieved
 //! let unknown_first_tag = tagged_file.first_tag().unwrap();
+//! ```
+//!
+//! ## Using concrete file types
+//!
+//! ```rust
+//! use lofty::mp3::Mp3File;
+//! use lofty::AudioFile;
+//! use lofty::TagType;
+//! use std::fs::File;
+//!
+//! let mut file_content = File::open("tests/files/assets/a.mp3").unwrap();
+//!
+//! // We are expecting an MP3 file
+//! let mpeg_file = Mp3File::read_from(&mut file_content).unwrap();
+//!
+//! assert_eq!(mpeg_file.properties().channels(), 2);
+//!
+//! // Here we have a file with multiple tags
+//! assert!(mpeg_file.contains_tag_type(&TagType::Id3v2));
+//! assert!(mpeg_file.contains_tag_type(&TagType::Ape));
 //! ```
 //!
 //! # Features
@@ -99,7 +100,7 @@
 //! * `ape`
 //! * `id3v1`
 //! * `id3v2`
-//! * `mp4_atoms`
+//! * `mp4_ilst`
 //! * `riff_info_list`
 //! * `vorbis_comments`
 //!
@@ -129,7 +130,8 @@
 	clippy::unused_self,
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
-	clippy::too_many_arguments
+	clippy::too_many_arguments,
+	clippy::derive_hash_xor_eq
 )]
 
 mod error;
@@ -151,6 +153,8 @@ pub use crate::types::{
 pub use crate::types::file::AudioFile;
 
 pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
+
+pub use probe::{read_from, read_from_path};
 
 #[cfg(any(feature = "id3v1", feature = "id3v2"))]
 pub mod id3 {

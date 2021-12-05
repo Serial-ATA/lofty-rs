@@ -10,10 +10,14 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::WriteBytesExt;
 
 pub(in crate::logic) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
-	match Probe::new().file_type(writer) {
+	let probe = Probe::new(writer).guess_file_type()?;
+
+	match probe.file_type() {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
+
+	let writer = probe.into_inner();
 
 	// This will seek us to the writing position
 	let (exists, _) = find_id3v1(writer, false)?;

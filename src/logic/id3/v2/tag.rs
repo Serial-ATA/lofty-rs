@@ -4,8 +4,10 @@ use super::frame::{Frame, FrameID, FrameValue};
 use super::items::restrictions::TagRestrictions;
 use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::logic::id3::v2::frame::FrameRef;
+use crate::probe::Probe;
+use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
@@ -200,7 +202,14 @@ impl<'a> Id3v2TagRef<'a> {
 		&mut self,
 		file: &mut File,
 	) -> Result<()> {
-		super::write::write_id3v2_to_chunk_file::<B>(file, self)
+		let probe = Probe::new(file).guess_file_type()?;
+
+		match probe.file_type() {
+			Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {},
+			_ => return Err(LoftyError::UnsupportedTag),
+		}
+
+		super::write::write_id3v2_to_chunk_file::<B>(probe.into_inner(), self)
 	}
 }
 

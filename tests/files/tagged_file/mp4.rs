@@ -1,11 +1,11 @@
-use lofty::{FileType, ItemKey, ItemValue, Probe, TagItem, TagType};
-use std::io::{Seek, Write};
-use crate::{verify_artist, set_artist};
+use crate::{set_artist, temp_file, verify_artist};
+use lofty::{FileType, ItemKey, ItemValue, TagItem, TagType};
+use std::io::{Seek, SeekFrom, Write};
 
 #[test]
 fn read() {
 	// This file contains an ilst atom
-	let file = Probe::new().read_from_path("tests/files/assets/a.m4a").unwrap();
+	let file = lofty::read_from_path("tests/files/assets/a.m4a").unwrap();
 
 	assert_eq!(file.file_type(), &FileType::MP4);
 
@@ -15,11 +15,9 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = tempfile::tempfile().unwrap();
-	file.write_all(&std::fs::read("tests/files/assets/a.m4a").unwrap())
-		.unwrap();
+	let mut file = temp_file!("tests/files/assets/a.m4a");
 
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	assert_eq!(tagged_file.file_type(), &FileType::MP4);
 
@@ -27,7 +25,8 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Atom, "Foo artist", 1 => file, "Bar artist");
 
 	// Now reread the file
-	let mut tagged_file = Probe::new().read_from(&mut file).unwrap();
+	file.seek(SeekFrom::Start(0)).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Atom, "Bar artist", 1 => file, "Foo artist");
 }

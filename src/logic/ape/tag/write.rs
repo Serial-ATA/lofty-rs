@@ -14,10 +14,14 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::logic) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
-	match Probe::new().file_type(data) {
+	let probe = Probe::new(data).guess_file_type()?;
+
+	match probe.file_type() {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
+
+	let data = probe.into_inner();
 
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
 	find_id3v2(data, false)?;

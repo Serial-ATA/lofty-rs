@@ -22,8 +22,8 @@ base64 = "0.13.0"
 byteorder = "1.4.3"
 
 [features]
-default = ["mp4_atoms", "vorbis_comments", "ape", "id3v1", "id3v2", "aiff_text_chunks", "riff_info_list"]
-mp4_atoms = ["simdutf8"]
+default = ["mp4_ilst", "vorbis_comments", "ape", "id3v1", "id3v2", "aiff_text_chunks", "riff_info_list"]
+mp4_ilst = ["simdutf8"]
 vorbis_comments = []
 ape = []
 id3v1 = []
