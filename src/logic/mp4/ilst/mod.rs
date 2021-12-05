@@ -93,7 +93,7 @@ impl From<Tag> for Ilst {
 		let mut ilst = Self::default();
 
 		for item in input.items {
-			if let Some(ident) = item_key_to_ident(item.key()).map(|k| k.into()) {
+			if let Some(ident) = item_key_to_ident(item.key()).map(Into::into) {
 				let data = match item.item_value {
 					ItemValue::Text(text) => AtomData::UTF8(text),
 					_ => continue,
@@ -286,7 +286,7 @@ impl<'a> Into<AtomDataRef<'a>> for &'a AtomData {
 impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 	fn into(self) -> IlstRef<'a> {
 		IlstRef {
-			atoms: Box::new(self.atoms.iter().map(|a| a.into())),
+			atoms: Box::new(self.atoms.iter().map(Into::into)),
 		}
 	}
 }

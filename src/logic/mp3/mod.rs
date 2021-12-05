@@ -125,9 +125,9 @@ impl From<Mp3File> for TaggedFile {
 			ty: FileType::MP3,
 			properties: FileProperties::from(input.properties),
 			tags: vec![
-				input.id3v2_tag.map(|id3v2| id3v2.into()),
-				input.id3v1_tag.map(|id3v1| id3v1.into()),
-				input.ape_tag.map(|at| at.into()),
+				input.id3v2_tag.map(Into::into),
+				input.id3v1_tag.map(Into::into),
+				input.ape_tag.map(Into::into),
 			]
 			.into_iter()
 			.flatten()

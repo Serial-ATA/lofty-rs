@@ -32,8 +32,8 @@ impl From<AiffFile> for TaggedFile {
 			ty: FileType::AIFF,
 			properties: input.properties,
 			tags: vec![
-				input.text_chunks.map(|tc| tc.into()),
-				input.id3v2_tag.map(|id3| id3.into()),
+				input.text_chunks.map(Into::into),
+				input.id3v2_tag.map(Into::into),
 			]
 			.into_iter()
 			.flatten()

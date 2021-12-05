@@ -33,8 +33,8 @@ impl From<WavFile> for TaggedFile {
 			ty: FileType::WAV,
 			properties: FileProperties::from(input.properties),
 			tags: vec![
-				input.riff_info.map(|ri| ri.into()),
-				input.id3v2_tag.map(|id3| id3.into()),
+				input.riff_info.map(Into::into),
+				input.id3v2_tag.map(Into::into),
 			]
 			.into_iter()
 			.flatten()

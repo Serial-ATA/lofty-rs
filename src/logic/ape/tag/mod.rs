@@ -146,7 +146,7 @@ impl<'a> Into<ApeTagRef<'a>> for &'a ApeTag {
 	fn into(self) -> ApeTagRef<'a> {
 		ApeTagRef {
 			read_only: self.read_only,
-			items: Box::new(self.items.iter().map(|i| i.into())),
+			items: Box::new(self.items.iter().map(Into::into)),
 		}
 	}
 }
