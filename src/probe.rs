@@ -18,6 +18,58 @@ use std::path::Path;
 ///
 /// This provides a way to determine the [`FileType`] of a reader, for when a concrete
 /// type is not known.
+///
+/// ## Usage
+///
+/// When reading from a path, the [`FileType`] will be inferred from the path, rather than the
+/// open file.
+///
+/// ```rust
+/// # use lofty::{LoftyError, Probe};
+/// # fn main() -> Result<(), LoftyError> {
+/// use lofty::FileType;
+///
+/// let probe = Probe::open("tests/files/assets/a.mp3")?;
+///
+/// // Inferred from the `mp3` extension
+/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// When a path isn't available, or is unreliable, content-based detection is also possible.
+///
+/// ```rust
+/// # use lofty::{LoftyError, Probe};
+/// # fn main() -> Result<(), LoftyError> {
+/// use lofty::FileType;
+///
+/// // Our same path probe with a guessed file type
+/// let probe = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?;
+///
+/// // Inferred from the `mp3` extension
+/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// Or with another reader
+///
+/// ```rust
+/// # use lofty::{LoftyError, Probe};
+/// # fn main() -> Result<(), LoftyError> {
+/// use lofty::FileType;
+/// use std::io::Cursor;
+///
+/// static MAC_HEADER: &[u8; 3] = b"MAC";
+///
+/// let probe = Probe::new(Cursor::new(MAC_HEADER)).guess_file_type()?;
+///
+/// // Inferred from the MAC header
+/// assert_eq!(probe.file_type(), Some(FileType::APE));
+/// # Ok(())
+/// # }
+/// ```
 pub struct Probe<R: Read> {
 	inner: R,
 	f_ty: Option<FileType>,
