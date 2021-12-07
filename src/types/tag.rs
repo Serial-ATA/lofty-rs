@@ -24,7 +24,7 @@ macro_rules! common_items {
 
 					#[doc = "Removes the " $name]
 					pub fn [<remove_ $name>](&mut self) {
-						self.retain(|i| i.item_key != ItemKey::$item_key)
+						self.retain_items(|i| i.item_key != ItemKey::$item_key)
 					}
 
 					#[doc = "Sets the " $name]
@@ -40,8 +40,58 @@ macro_rules! common_items {
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
+/// This is a tag that is loosely bound to a specific [TagType].
+/// It is used for conversions and as the return type for [`read_from`](crate::read_from).
+///
+/// Compared to other formats, this gives a much higher-level view of the
+/// tag items. Rather than storing items according to their format-specific
+/// keys, [`ItemKey`]s are used.
+///
+/// You can easily remap this to another [TagType] with [Tag::re_map].
+///
+/// Any conversion will, of course, be lossy to a varying degree.
+///
 /// ## Usage
-// TODO
+///
+/// Accessing common items
+///
+/// ```rust
+/// # use lofty::{Tag, TagType};
+/// # let tag = Tag::new(TagType::Id3v2);
+/// // There are multiple quick getter methods for common items
+///
+/// let title = tag.title();
+/// let artist = tag.artist();
+/// let album = tag.album_title();
+/// let album_artist = tag.album_artist();
+/// ```
+///
+/// Getting an item of a known type
+///
+/// ```rust
+/// # use lofty::{Tag, TagType};
+/// # let tag = Tag::new(TagType::Id3v2);
+/// use lofty::ItemKey;
+///
+/// // If the type of an item is known, there are getter methods
+/// // to prevent having to match against the value
+///
+/// tag.get_string(&ItemKey::TrackTitle);
+/// tag.get_binary(&ItemKey::TrackTitle, false);
+/// ```
+///
+/// Converting between formats
+///
+/// ```rust
+/// use lofty::{Tag, TagType};
+/// use lofty::id3::v2::Id3v2Tag;
+///
+/// // Converting between formats is as simple as an `into` call.
+/// // However, such conversions can potentially be *very* lossy.
+///
+/// let tag = Tag::new(TagType::Id3v2);
+/// let id3v2_tag: Id3v2Tag = tag.into();
+/// ```
 pub struct Tag {
 	tag_type: TagType,
 	pub(crate) pictures: Vec<Picture>,
@@ -66,20 +116,21 @@ impl Tag {
 			items: vec![],
 		}
 	}
-}
 
-impl Tag {
 	/// Change the [`TagType`], remapping all items
 	pub fn re_map(&mut self, tag_type: TagType) {
-		self.retain(|i| i.re_map(&tag_type).is_some());
+		self.retain_items(|i| i.re_map(&tag_type).is_some());
 		self.tag_type = tag_type
 	}
-}
 
-impl Tag {
 	/// Returns the [`TagType`]
 	pub fn tag_type(&self) -> &TagType {
 		&self.tag_type
+	}
+
+	/// Returns the number of [`TagItem`]s
+	pub fn item_count(&self) -> u32 {
+		self.items.len() as u32
 	}
 
 	/// Returns the number of [`Picture`]s
@@ -87,38 +138,6 @@ impl Tag {
 		self.pictures.len() as u32
 	}
 
-	/// Returns the number of [`TagItem`]s
-	pub fn item_count(&self) -> u32 {
-		self.items.len() as u32
-	}
-}
-
-impl Tag {
-	/// Returns the stored [`Picture`]s as a slice
-	pub fn pictures(&self) -> &[Picture] {
-		&*self.pictures
-	}
-
-	/// Pushes a [`Picture`] to the tag
-	pub fn push_picture(&mut self, picture: Picture) {
-		self.pictures.push(picture)
-	}
-
-	/// Removes all [`Picture`]s of a [`PictureType`]
-	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
-		self.pictures
-			.iter()
-			.position(|p| p.pic_type == picture_type)
-			.map(|pos| self.pictures.remove(pos));
-	}
-
-	/// Removes any matching [`Picture`]
-	pub fn remove_picture(&mut self, picture: &Picture) {
-		self.pictures.retain(|p| p != picture)
-	}
-}
-
-impl Tag {
 	/// Returns the stored [`TagItem`]s as a slice
 	pub fn items(&self) -> &[TagItem] {
 		&*self.items
@@ -157,6 +176,8 @@ impl Tag {
 	/// Insert a [`TagItem`], replacing any existing one of the same type
 	///
 	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
+	///
+	/// This will return `true` if the item was inserted.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
 		if item.re_map(&self.tag_type).is_some() {
 			self.insert_item_unchecked(item);
@@ -185,9 +206,39 @@ impl Tag {
 	pub fn insert_text(&mut self, item_key: ItemKey, text: String) -> bool {
 		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)))
 	}
-}
 
-impl Tag {
+	/// Remove an item by its key
+	///
+	/// This will remove all items with this key.
+	pub fn remove_item(&mut self, key: &ItemKey) {
+		self.items.retain(|i| i.key() != key)
+	}
+
+	/// Retain tag items based on the predicate
+	///
+	/// See [`Vec::retain`](std::vec::Vec::retain)
+	pub fn retain_items<F>(&mut self, f: F)
+	where
+		F: FnMut(&TagItem) -> bool,
+	{
+		self.items.retain(f)
+	}
+
+	/// Returns the stored [`Picture`]s as a slice
+	pub fn pictures(&self) -> &[Picture] {
+		&*self.pictures
+	}
+
+	/// Pushes a [`Picture`] to the tag
+	pub fn push_picture(&mut self, picture: Picture) {
+		self.pictures.push(picture)
+	}
+
+	/// Removes all [`Picture`]s of a [`PictureType`]
+	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
+		self.pictures.retain(|p| p.pic_type != picture_type)
+	}
+
 	/// Save the `Tag` to a path
 	///
 	/// # Errors
@@ -228,33 +279,6 @@ impl Tag {
 	/// Same as [`TagType::remove_from`]
 	pub fn remove_from(&self, file: &mut File) -> bool {
 		self.tag_type.remove_from(file)
-	}
-}
-
-impl Tag {
-	/// The tag's items as a slice
-	pub fn as_slice(&self) -> &[TagItem] {
-		&*self.items
-	}
-
-	/// Retain tag items based on the predicate
-	///
-	/// See [`Vec::retain`](std::vec::Vec::retain)
-	pub fn retain<F>(&mut self, f: F)
-	where
-		F: FnMut(&TagItem) -> bool,
-	{
-		self.items.retain(f)
-	}
-
-	/// Find the first TagItem matching the predicate
-	///
-	/// See [`Iterator::find`](std::iter::Iterator::find)
-	pub fn find<P>(&mut self, predicate: P) -> Option<&TagItem>
-	where
-		P: for<'a> FnMut(&'a &TagItem) -> bool,
-	{
-		self.items.iter().find(predicate)
 	}
 }
 

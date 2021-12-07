@@ -10,6 +10,17 @@ use std::io::{Read, Seek};
 
 #[derive(Default, Debug, PartialEq)]
 /// A RIFF INFO LIST
+///
+/// ## Supported file types
+///
+/// * [`FileType::WAV`](crate::FileType::WAV)
+///
+/// ## Conversions
+///
+/// ## From `Tag`
+///
+/// [`TagItem`]s with a value of [`ItemValue::Binary`](crate::ItemValue::Binary) and/or a
+/// key that isn't 4 bytes in length and within the ASCII range will be discarded.
 pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,

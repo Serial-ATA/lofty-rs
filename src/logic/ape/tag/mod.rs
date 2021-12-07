@@ -14,6 +14,11 @@ use std::io::{Read, Seek};
 #[derive(Default, Debug, PartialEq)]
 /// An `APE` tag
 ///
+/// ## Supported file types
+///
+/// * [`FileType::APE`](crate::FileType::APE)
+/// * [`FileType::MP3`](crate::FileType::MP3)
+///
 /// ## Item storage
 ///
 /// `APE` isn't a very strict format. An [`ApeItem`] only restricted by its name, meaning it can use

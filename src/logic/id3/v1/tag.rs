@@ -15,6 +15,15 @@ use std::fs::File;
 ///
 /// Attempting to write a field greater than the maximum size
 /// will **not** error, it will just be shrunk.
+///
+/// ## Conversions
+///
+/// ### From `Tag`
+///
+/// Two checks are performed when converting a genre:
+///
+/// * [`GENRES`] contains the string
+/// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
 pub struct Id3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,

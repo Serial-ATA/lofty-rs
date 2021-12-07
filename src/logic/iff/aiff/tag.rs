@@ -11,10 +11,26 @@ use byteorder::BigEndian;
 
 #[cfg(feature = "aiff_text_chunks")]
 #[derive(Default)]
-/// AIFF text chunks
+/// `AIFF` text chunks
 ///
-/// AIFF has a few chunks for storing basic metadata, all of
+/// ## Supported file types
+///
+/// * [`FileType::AIFF`](crate::FileType::AIFF)
+///
+/// ## Item storage
+///
+/// `AIFF` has a few chunks for storing basic metadata, all of
 /// which can only appear once in a file.
+///
+/// ## Conversions
+///
+/// ### From `Tag`
+///
+/// When converting from [`Tag`](crate::Tag), the following [`ItemKey`](crate::ItemKey)s will be used:
+///
+/// * [ItemKey::TrackTitle](crate::ItemKey::TrackTitle)
+/// * [ItemKey::TrackArtist](crate::ItemKey::TrackArtist)
+/// * [ItemKey::CopyrightMessage](crate::ItemKey::CopyrightMessage)
 pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,

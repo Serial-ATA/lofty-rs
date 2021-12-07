@@ -15,6 +15,19 @@ use std::hash::{Hash, Hasher};
 
 #[derive(Clone, Debug, Eq)]
 /// Represents an `ID3v2` frame
+///
+/// ## Outdated Frames
+///
+/// ### ID3v2.2
+///
+/// `ID3v2.2` frame IDs are 3 characters. When reading these tags, [`upgrade_v2`] is used, which has a list of all of the common IDs
+/// that have a mapping to `ID3v2.4`. Any ID that fails to be converted will be stored as [`FrameID::Outdated`], and it must be manually
+/// upgraded before it can be written. **Lofty** will not write `ID3v2.2` tags.
+///
+/// ### ID3v2.3
+///
+/// `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
+/// but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
 pub struct Frame {
 	pub(super) id: FrameID,
 	pub(super) value: FrameValue,
@@ -159,8 +172,9 @@ impl LanguageFrame {
 /// An `ID3v2` text frame
 ///
 /// This is used in the frames `TXXX` and `WXXX`, where the frames
-/// are told apart by descriptions. This means for each `EncodedTextFrame` in the tag,
-/// the description must be unique.
+/// are told apart by descriptions, rather than their [`FrameID`]s.
+/// This means for each `EncodedTextFrame` in the tag, the description
+/// must be unique.
 pub struct EncodedTextFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,

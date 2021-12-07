@@ -123,7 +123,12 @@
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
 //! Be sure to read the module documentation of each format to see important notes and warnings.
-#![deny(clippy::pedantic, clippy::all, missing_docs)]
+#![deny(
+	clippy::pedantic,
+	clippy::all,
+	missing_docs,
+	rustdoc::broken_intra_doc_links
+)]
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
@@ -178,46 +183,12 @@ pub mod id3 {
 	pub mod v2 {
 		//! ID3v2 items and utilities
 		//!
-		//! # ID3v2 notes and warnings
+		//! ## Important notes
 		//!
-		//! ## Conversions
+		//! See:
 		//!
-		//! ⚠ **Warnings** ⚠
-		//!
-		//! ### `Tag` -> `Id3v2Tag`
-		//!
-		//! When converting from a [`Tag`](crate::Tag) to an [`Id3v2Tag`], some frames may need editing.
-		//!
-		//! * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Rather than be a normal text frame, these require a [`LanguageFrame`].
-		//! An attempt is made to create this information, but it may be incorrect.
-		//!    * `language` - Assumed to be "eng"
-		//!    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
-		//!    by their descriptions, and as such they are expected to be unique for each.
-		//! * [`ItemKey::Unknown("WXXX" | "TXXX")`](crate::ItemKey::Unknown) - These frames are also identified by their descriptions.
-		//!
-		//! ### `Id3v2Tag` -> `Tag`
-		//!
-		//! Converting an [`Id3v2Tag`] to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
-		//! to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
-		//!
-		//! ## Special Frames
-		//!
-		//! ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameValue::Binary`].
-		//! They can easily be parsed with [`GeneralEncapsulatedObject::parse`] and [`SynchronizedText::parse`] respectively, and converted
-		//! back to binary with [`GeneralEncapsulatedObject::as_bytes`] and [`SynchronizedText::as_bytes`] for writing.
-		//!
-		//! ## Outdated Frames
-		//!
-		//! ### ID3v2.2
-		//!
-		//! `ID3v2.2` frame IDs are 3 characters. When reading these tags, [`upgrade_v2`] is used, which has a list of all of the common IDs
-		//! that have a mapping to `ID3v2.4`. Any ID that fails to be converted will be stored as [`FrameID::Outdated`], and it must be manually
-		//! upgraded before it can be written. **Lofty** will not write `ID3v2.2` tags.
-		//!
-		//! ### ID3v2.3
-		//!
-		//! `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
-		//! but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
+		//! * [Id3v2Tag]
+		//! * [Frame]
 
 		pub use {
 			crate::logic::id3::v2::frame::{
@@ -245,17 +216,12 @@ pub mod id3 {
 		//!
 		//! # ID3v1 notes
 		//!
+		//! See also: [Id3v1Tag]
+		//!
 		//! ## Genres
 		//!
 		//! ID3v1 stores the genre in a single byte ranging from 0 to 192 (inclusive).
 		//! All possible genres have been stored in the [`GENRES`] constant.
-		//!
-		//! ### Converting from `Tag`
-		//!
-		//! Two checks are performed when converting a genre:
-		//!
-		//! * [`GENRES`] contains the string
-		//! * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
 		//!
 		//! ## Track Numbers
 		//!
@@ -275,7 +241,9 @@ pub mod ape {
 	//! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
 	//! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 	//! `ID3v1`.
+	#[cfg(feature = "ape")]
 	pub use crate::logic::ape::tag::item::ApeItem;
+	#[cfg(feature = "ape")]
 	pub use crate::logic::ape::tag::ApeTag;
 	pub use crate::logic::ape::{ApeFile, ApeProperties};
 	pub use crate::types::picture::APE_PICTURE_TYPES;
@@ -293,6 +261,7 @@ pub mod mp4 {
 	//! ## File notes
 	//!
 	//! The only supported tag format is [`Ilst`].
+	#[cfg(feature = "mp4_ilst")]
 	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent, Ilst};
 	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
 }
@@ -305,6 +274,7 @@ pub mod ogg {
 	//! The only supported tag format is [`VorbisComments`]
 	pub use crate::logic::ogg::flac::FlacFile;
 	pub use crate::logic::ogg::opus::{properties::OpusProperties, OpusFile};
+	#[cfg(feature = "vorbis_comments")]
 	pub use crate::logic::ogg::tag::VorbisComments;
 	pub use crate::logic::ogg::vorbis::{properties::VorbisProperties, VorbisFile};
 }
@@ -314,7 +284,9 @@ pub mod iff {
 	pub use crate::logic::iff::aiff::AiffFile;
 	pub use crate::logic::iff::wav::WavFile;
 
+	#[cfg(feature = "aiff_text_chunks")]
 	pub use crate::logic::iff::aiff::tag::AiffTextChunks;
+	#[cfg(feature = "riff_info_list")]
 	pub use crate::logic::iff::wav::tag::RiffInfoList;
 
 	pub use crate::logic::iff::wav::properties::{WavFormat, WavProperties};

@@ -19,6 +19,41 @@ use byteorder::ByteOrder;
 
 #[derive(PartialEq, Debug)]
 /// An `ID3v2` tag
+///
+/// ## Supported file types
+///
+/// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::WAV`](crate::FileType::WAV)
+/// * [`FileType::APE`](crate::FileType::APE)
+/// * [`FileType::AIFF`](crate::FileType::AIFF)
+///
+/// ## Conversions
+///
+/// ⚠ **Warnings** ⚠
+///
+/// ### From `Tag`
+///
+/// When converting from a [`Tag`](crate::Tag) to an `Id3v2Tag`, some frames may need editing.
+///
+/// * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Rather than be a normal text frame, these require a [`LanguageFrame`].
+/// An attempt is made to create this information, but it may be incorrect.
+///    * `language` - Assumed to be "eng"
+///    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
+///    by their descriptions, and as such they are expected to be unique for each.
+/// * [`ItemKey::Unknown("WXXX" | "TXXX")`](crate::ItemKey::Unknown) - These frames are also identified by their descriptions.
+///
+/// ### To `Tag`
+///
+/// Converting an `Id3v2Tag` to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
+/// to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
+///
+/// ## Special Frames
+///
+/// ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameValue::Binary`].
+/// They can easily be parsed with [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse)
+/// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse) respectively, and converted back to binary with
+/// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
+/// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
 pub struct Id3v2Tag {
 	flags: Id3v2TagFlags,
 	pub(super) original_version: Id3v2Version,
@@ -160,13 +195,10 @@ impl From<Id3v2Tag> for Tag {
 				| FrameValue::UserText(EncodedTextFrame { content, .. }) => ItemValue::Text(content),
 				FrameValue::URL(content)
 				| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
-				FrameValue::Picture { encoding, picture } => ItemValue::Binary(
-					if let Ok(bin) = picture.as_apic_bytes(Id3v2Version::V4, encoding) {
-						bin
-					} else {
-						continue;
-					},
-				),
+				FrameValue::Picture { picture, .. } => {
+					tag.push_picture(picture);
+					continue;
+				},
 				FrameValue::Binary(binary) => ItemValue::Binary(binary),
 			};
 
@@ -179,7 +211,10 @@ impl From<Id3v2Tag> for Tag {
 
 impl From<Tag> for Id3v2Tag {
 	fn from(input: Tag) -> Self {
-		let mut id3v2_tag = Self::default();
+		let mut id3v2_tag = Id3v2Tag {
+			frames: Vec::with_capacity(input.item_count() as usize),
+			..Id3v2Tag::default()
+		};
 
 		for item in input.items {
 			let frame: Frame = match item.try_into() {
