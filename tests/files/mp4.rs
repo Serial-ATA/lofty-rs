@@ -22,16 +22,16 @@ fn write() {
 	assert_eq!(tagged_file.file_type(), &FileType::MP4);
 
 	// ilst
-	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Atom, "Foo artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Foo artist", 1 => file, "Bar artist");
 
 	// Now reread the file
 	file.seek(SeekFrom::Start(0)).unwrap();
 	let mut tagged_file = lofty::read_from(&mut file).unwrap();
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Atom, "Bar artist", 1 => file, "Foo artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Bar artist", 1 => file, "Foo artist");
 }
 
 #[test]
 fn remove() {
-	crate::remove_tag!("tests/files/assets/a.m4a", TagType::Mp4Atom);
+	crate::remove_tag!("tests/files/assets/a.m4a", TagType::Mp4Ilst);
 }

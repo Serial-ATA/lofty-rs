@@ -142,7 +142,7 @@
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
 	clippy::too_many_arguments,
-	clippy::derive_hash_xor_eq
+	clippy::single_match_else
 )]
 
 mod error;
@@ -269,29 +269,40 @@ pub mod id3 {
 
 pub mod ape {
 	//! APE specific items
-	// TODO
+	//!
+	//! ## File notes
+	//!
+	//! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
+	//! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
+	//! `ID3v1`.
 	pub use crate::logic::ape::tag::item::ApeItem;
 	pub use crate::logic::ape::tag::ApeTag;
 	pub use crate::logic::ape::{ApeFile, ApeProperties};
+	pub use crate::types::picture::APE_PICTURE_TYPES;
 }
 
 pub mod mp3 {
 	//! MP3 specific items
-	// TODO
 	pub use crate::logic::mp3::header::{ChannelMode, Layer, MpegVersion};
 	pub use crate::logic::mp3::{Mp3File, Mp3Properties};
 }
 
 pub mod mp4 {
 	//! MP4 specific items
-	// TODO
+	//!
+	//! ## File notes
+	//!
+	//! The only supported tag format is [`Ilst`].
 	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent, Ilst};
 	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
 }
 
 pub mod ogg {
 	//! OPUS/FLAC/Vorbis specific items
-	// TODO
+	//!
+	//! ## File notes
+	//!
+	//! The only supported tag format is [`VorbisComments`]
 	pub use crate::logic::ogg::flac::FlacFile;
 	pub use crate::logic::ogg::opus::{properties::OpusProperties, OpusFile};
 	pub use crate::logic::ogg::tag::VorbisComments;
@@ -300,7 +311,6 @@ pub mod ogg {
 
 pub mod iff {
 	//! WAV/AIFF specific items
-	// TODO
 	pub use crate::logic::iff::aiff::AiffFile;
 	pub use crate::logic::iff::wav::WavFile;
 

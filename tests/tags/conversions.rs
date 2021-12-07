@@ -158,7 +158,7 @@ fn tag_to_ilst() {
 		assert_eq!(atom.data(), &data);
 	}
 
-	let tag = create_tag(TagType::Mp4Atom);
+	let tag = create_tag(TagType::Mp4Ilst);
 
 	let ilst: Ilst = tag.into();
 

@@ -51,7 +51,7 @@ impl TaggedFile {
 	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
 	/// | `APE`                    | `Ape`            |
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
-	/// | `MP4`                    | `Mp4Atom`        |
+	/// | `MP4`                    | `Mp4Ilst`        |
 	pub fn primary_tag(&self) -> Option<&Tag> {
 		self.tag(&Self::primary_tag_type(self.ty))
 	}
@@ -72,7 +72,7 @@ impl TaggedFile {
 			#[cfg(feature = "vorbis_comments")]
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
 			#[cfg(feature = "mp4_ilst")]
-			FileType::MP4 => TagType::Mp4Atom,
+			FileType::MP4 => TagType::Mp4Ilst,
 		}
 	}
 
@@ -139,7 +139,7 @@ impl FileType {
 			FileType::Opus | FileType::FLAC | FileType::Vorbis => {
 				tag_type == &TagType::VorbisComments
 			},
-			FileType::MP4 => tag_type == &TagType::Mp4Atom,
+			FileType::MP4 => tag_type == &TagType::Mp4Ilst,
 			FileType::WAV => tag_type == &TagType::Id3v2 || tag_type == &TagType::RiffInfo,
 		}
 	}

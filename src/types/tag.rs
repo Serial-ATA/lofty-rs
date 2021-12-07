@@ -40,7 +40,8 @@ macro_rules! common_items {
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
-/// NOTE: Items and pictures are separated
+/// ## Usage
+// TODO
 pub struct Tag {
 	tag_type: TagType,
 	pub(crate) pictures: Vec<Picture>,
@@ -272,8 +273,8 @@ pub enum TagType {
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
 	#[cfg(feature = "mp4_ilst")]
-	/// Represents MP4 atoms
-	Mp4Atom,
+	/// Represents an MP4 ILST atom
+	Mp4Ilst,
 	#[cfg(feature = "vorbis_comments")]
 	/// Represents vorbis comments
 	VorbisComments,

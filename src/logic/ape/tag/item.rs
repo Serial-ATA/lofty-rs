@@ -23,14 +23,21 @@ impl ApeItem {
 	/// # Errors
 	///
 	/// * `key` is illegal ("ID3", "TAG", "OGGS", "MP+")
-	/// * `key` contains non-ascii characters
+	/// * `key` has a bad length (must be 2 to 255, inclusive)
+	/// * `key` contains invalid characters (must be in the range 0x20 to 0x7E, inclusive)
 	pub fn new(key: String, value: ItemValue) -> Result<Self> {
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
 			return Err(LoftyError::Ape("Tag item contains an illegal key"));
 		}
 
-		if key.chars().any(|c| !c.is_ascii()) {
-			return Err(LoftyError::Ape("Tag item contains a non ASCII key"));
+		if !(2..=255).contains(&key.len()) {
+			return Err(LoftyError::Ape(
+				"Tag item key has an invalid length (< 2 || > 255)",
+			));
+		}
+
+		if key.chars().any(|c| !(0x20..=0x7E).contains(&(c as u32))) {
+			return Err(LoftyError::Ape("Tag item contains invalid characters"));
 		}
 
 		Ok(Self {

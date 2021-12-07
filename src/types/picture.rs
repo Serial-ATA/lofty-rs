@@ -10,6 +10,32 @@ use byteorder::WriteBytesExt;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2",))]
 use byteorder::{BigEndian, ReadBytesExt};
 
+#[cfg(feature = "ape")]
+/// Common picture item keys for APE
+pub const APE_PICTURE_TYPES: [&str; 21] = [
+	"Cover Art (Other)",
+	"Cover Art (Png Icon)",
+	"Cover Art (Icon)",
+	"Cover Art (Front)",
+	"Cover Art (Back)",
+	"Cover Art (Leaflet)",
+	"Cover Art (Media)",
+	"Cover Art (Lead Artist)",
+	"Cover Art (Artist)",
+	"Cover Art (Conductor)",
+	"Cover Art (Band)",
+	"Cover Art (Composer)",
+	"Cover Art (Lyricist)",
+	"Cover Art (Recording Location)",
+	"Cover Art (During Recording)",
+	"Cover Art (During Performance)",
+	"Cover Art (Video Capture)",
+	"Cover Art (Fish)",
+	"Cover Art (Illustration)",
+	"Cover Art (Band Logotype)",
+	"Cover Art (Publisher Logotype)",
+];
+
 /// Mime types for pictures.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum MimeType {
@@ -222,11 +248,12 @@ impl PictureType {
 	}
 }
 
+#[cfg(feature = "vorbis_comments")]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 /// Information about a [`Picture`]
 ///
 /// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
 /// See [`Picture::as_flac_bytes`] for more information.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
 	pub width: u32,
@@ -238,6 +265,7 @@ pub struct PictureInformation {
 	pub num_colors: u32,
 }
 
+#[cfg(feature = "vorbis_comments")]
 impl PictureInformation {
 	/// Attempt to extract [`PictureInformation`] from a [`Picture`]
 	///

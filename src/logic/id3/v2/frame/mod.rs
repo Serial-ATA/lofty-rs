@@ -9,15 +9,37 @@ use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::Picture;
 use crate::types::tag::TagType;
-use std::convert::{TryFrom, TryInto};
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
+use std::convert::{TryFrom, TryInto};
+use std::hash::{Hash, Hasher};
+
+#[derive(Clone, Debug, Eq)]
 /// Represents an `ID3v2` frame
-// TODO: PartialEq, Hash
 pub struct Frame {
 	pub(super) id: FrameID,
 	pub(super) value: FrameValue,
 	pub(super) flags: FrameFlags,
+}
+
+impl PartialEq for Frame {
+	fn eq(&self, other: &Self) -> bool {
+		match self.value {
+			FrameValue::Text { .. } => self.id == other.id,
+			_ => self.id == other.id && self.value == other.value,
+		}
+	}
+}
+
+impl Hash for Frame {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		match self.value {
+			FrameValue::Text { .. } => self.id.hash(state),
+			_ => {
+				self.id.hash(state);
+				self.content().hash(state);
+			},
+		}
+	}
 }
 
 impl Frame {
@@ -80,7 +102,7 @@ impl Frame {
 	}
 }
 
-#[derive(Clone, Debug, Eq, Hash)]
+#[derive(Clone, Debug, Eq)]
 /// Information about an `ID3v2` frame that requires a language
 ///
 /// See [`EncodedTextFrame`]
@@ -98,6 +120,12 @@ pub struct LanguageFrame {
 impl PartialEq for LanguageFrame {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
+	}
+}
+
+impl Hash for LanguageFrame {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.description.hash(state);
 	}
 }
 
@@ -127,7 +155,7 @@ impl LanguageFrame {
 	}
 }
 
-#[derive(Clone, Debug, Eq, Hash)]
+#[derive(Clone, Debug, Eq)]
 /// An `ID3v2` text frame
 ///
 /// This is used in the frames `TXXX` and `WXXX`, where the frames
@@ -145,6 +173,12 @@ pub struct EncodedTextFrame {
 impl PartialEq for EncodedTextFrame {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
+	}
+}
+
+impl Hash for EncodedTextFrame {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.description.hash(state);
 	}
 }
 

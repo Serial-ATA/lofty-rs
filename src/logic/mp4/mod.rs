@@ -142,7 +142,7 @@ impl AudioFile for Mp4File {
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
-			TagType::Mp4Atom => self.ilst.is_some(),
+			TagType::Mp4Ilst => self.ilst.is_some(),
 			_ => false,
 		}
 	}

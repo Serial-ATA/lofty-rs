@@ -3,6 +3,7 @@ use crate::logic::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
+use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
@@ -100,11 +101,11 @@ impl<'a> AiffTextChunksRef<'a> {
 pub(in crate::logic) fn write_to(data: &mut File, tag: &AiffTextChunksRef) -> Result<()> {
 	fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 		if let Some(val) = value {
-			let len = (val.len() as u32).to_be_bytes();
-
-			writer.extend(key.as_bytes().iter());
-			writer.extend(len.iter());
-			writer.extend(val.as_bytes().iter());
+			if let Ok(len) = u32::try_from(val.len()) {
+				writer.extend(key.as_bytes().iter());
+				writer.extend(len.to_be_bytes().iter());
+				writer.extend(val.as_bytes().iter());
+			}
 		}
 	}
 
