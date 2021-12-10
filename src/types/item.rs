@@ -9,10 +9,7 @@ macro_rules! first_key {
 
 // This is used to create the ItemKey enum and its to and from key conversions
 //
-// First, the TagTypes that can have unknown keys are defined.
-// Ex. "ALLOWED_UNKNOWN => [TagType::Ape, TagType::VorbisComments];"
-//
-// This is followed by an ItemKey variant as an ident (ex. Artist), and a collection of the appropriate mappings.
+// First comes the ItemKey variant as an ident (ex. Artist), then a collection of the appropriate mappings.
 // Ex. Artist => [TagType::Ape => "Artist"]
 //
 // Some formats have multiple keys that map to the same ItemKey variant, which can be added with '|'.

@@ -13,7 +13,6 @@ use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::Read;
 
 use byteorder::ByteOrder;
 
@@ -136,18 +135,6 @@ impl Id3v2Tag {
 }
 
 impl Id3v2Tag {
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses an [`Id3v2Tag`] from a reader
-	///
-	/// NOTE: This is **NOT** for reading from a file.
-	/// This is used internally, and expects the reader to *only* contain the tag.
-	pub fn read_from<R>(reader: &mut R) -> Result<Self>
-	where
-		R: Read,
-	{
-		super::read::parse_id3v2(reader)
-	}
-
 	/// Writes the tag to a file
 	///
 	/// NOTE: This will **not** work for chunk files such as `WAV` and `AIFF`. See [`Id3v2Tag::write_to_chunk_file`].
@@ -306,5 +293,177 @@ impl<'a> Into<Id3v2TagRef<'a>> for &'a Id3v2Tag {
 			flags: self.flags,
 			frames: Box::new(self.frames.iter().filter_map(Frame::as_opt_ref)),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding};
+	use crate::{Tag, TagType};
+
+	use std::io::Read;
+
+	#[test]
+	fn parse_id3v2() {
+		let mut expected_tag = Id3v2Tag::default();
+
+		let encoding = TextEncoding::Latin1;
+		let flags = FrameFlags::default();
+
+		expected_tag.insert(
+			Frame::new(
+				"TPE1",
+				FrameValue::Text {
+					encoding,
+					value: String::from("Bar artist"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"TIT2",
+				FrameValue::Text {
+					encoding,
+					value: String::from("Foo title"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"TALB",
+				FrameValue::Text {
+					encoding,
+					value: String::from("Baz album"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"COMM",
+				FrameValue::Comment(LanguageFrame {
+					encoding,
+					language: String::from("eng"),
+					description: String::new(),
+					content: String::from("Qux comment"),
+				}),
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"TDRC",
+				FrameValue::Text {
+					encoding,
+					value: String::from("1984"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"TRCK",
+				FrameValue::Text {
+					encoding,
+					value: String::from("1"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		expected_tag.insert(
+			Frame::new(
+				"TCON",
+				FrameValue::Text {
+					encoding,
+					value: String::from("Classical"),
+				},
+				flags,
+			)
+			.unwrap(),
+		);
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.id3v2")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag[..]);
+
+		let parsed_tag = crate::logic::id3::v2::read::parse_id3v2(&mut reader).unwrap();
+
+		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn id3v2_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.id3v2")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
+
+		let id3v2 = crate::logic::id3::v2::read::parse_id3v2(&mut reader).unwrap();
+
+		let tag: Tag = id3v2.into();
+
+		crate::logic::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn tag_to_id3v2() {
+		fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
+			let frame = tag.get(id);
+
+			assert!(frame.is_some());
+
+			let frame = frame.unwrap();
+
+			assert_eq!(
+				frame.content(),
+				&FrameValue::Text {
+					encoding: TextEncoding::UTF8,
+					value: String::from(value)
+				}
+			);
+		}
+
+		let tag = crate::logic::test_utils::create_tag(TagType::Id3v2);
+
+		let id3v2_tag: Id3v2Tag = tag.into();
+
+		verify_frame(&id3v2_tag, "TIT2", "Foo title");
+		verify_frame(&id3v2_tag, "TPE1", "Bar artist");
+		verify_frame(&id3v2_tag, "TALB", "Baz album");
+
+		let frame = id3v2_tag.get("COMM").unwrap();
+		assert_eq!(
+			frame.content(),
+			&FrameValue::Comment(LanguageFrame {
+				encoding: TextEncoding::Latin1,
+				language: String::from("eng"),
+				description: String::new(),
+				content: String::from("Qux comment")
+			})
+		);
+
+		verify_frame(&id3v2_tag, "TRCK", "1");
+		verify_frame(&id3v2_tag, "TCON", "Classical");
 	}
 }

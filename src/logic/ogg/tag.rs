@@ -8,7 +8,6 @@ use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
-use std::io::Read;
 
 #[derive(Default, PartialEq, Debug)]
 /// Vorbis comments
@@ -70,22 +69,6 @@ impl VorbisComments {
 }
 
 impl VorbisComments {
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses a [`VorbisComments`] from a reader
-	///
-	/// NOTE: This is **NOT** for reading from a file.
-	/// This is used internally, and requires the reader start at the vendor length.
-	pub fn read_from<R>(reader: &mut R) -> Result<Self>
-	where
-		R: Read,
-	{
-		let mut tag = Self::default();
-
-		super::read::read_comments(reader, &mut tag)?;
-
-		Ok(tag)
-	}
-
 	/// Writes the tag to a file
 	///
 	/// # Errors
@@ -208,5 +191,73 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 					.map(|p| (p, PictureInformation::default())),
 			),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::ogg::VorbisComments;
+	use crate::{Tag, TagType};
+
+	use std::io::Read;
+
+	#[test]
+	fn parse_vorbis_comments() {
+		let mut expected_tag = VorbisComments::default();
+
+		expected_tag.set_vendor(String::from("Lavf58.76.100"));
+
+		expected_tag.insert_item(String::from("ALBUM"), String::from("Baz album"), false);
+		expected_tag.insert_item(String::from("ARTIST"), String::from("Bar artist"), false);
+		expected_tag.insert_item(String::from("COMMENT"), String::from("Qux comment"), false);
+		expected_tag.insert_item(String::from("DATE"), String::from("1984"), false);
+		expected_tag.insert_item(String::from("GENRE"), String::from("Classical"), false);
+		expected_tag.insert_item(String::from("TITLE"), String::from("Foo title"), false);
+		expected_tag.insert_item(String::from("TRACKNUMBER"), String::from("1"), false);
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.vorbis")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag[..]);
+		let mut parsed_tag = VorbisComments::default();
+
+		crate::logic::ogg::read::read_comments(&mut reader, &mut parsed_tag).unwrap();
+
+		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn vorbis_comments_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.vorbis")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
+		let mut vorbis_comments = VorbisComments::default();
+
+		crate::logic::ogg::read::read_comments(&mut reader, &mut vorbis_comments).unwrap();
+
+		let tag: Tag = vorbis_comments.into();
+
+		crate::logic::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn tag_to_vorbis_comments() {
+		let tag = crate::logic::test_utils::create_tag(TagType::VorbisComments);
+
+		let vorbis_comments: VorbisComments = tag.into();
+
+		assert_eq!(vorbis_comments.get_item("TITLE"), Some("Foo title"));
+		assert_eq!(vorbis_comments.get_item("ARTIST"), Some("Bar artist"));
+		assert_eq!(vorbis_comments.get_item("ALBUM"), Some("Baz album"));
+		assert_eq!(vorbis_comments.get_item("COMMENT"), Some("Qux comment"));
+		assert_eq!(vorbis_comments.get_item("TRACKNUMBER"), Some("1"));
+		assert_eq!(vorbis_comments.get_item("GENRE"), Some("Classical"));
 	}
 }

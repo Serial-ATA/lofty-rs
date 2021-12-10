@@ -59,11 +59,7 @@ impl AudioFile for OpusFile {
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		if tag_type != &TagType::VorbisComments {
-			return false;
-		}
-
-		true
+		tag_type == &TagType::VorbisComments
 	}
 }
 

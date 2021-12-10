@@ -1,6 +1,6 @@
 use super::atom_info::AtomInfo;
-use super::ilst::AtomIdent;
 use super::read::skip_unneeded;
+use super::AtomIdent;
 use crate::error::Result;
 
 use std::io::{Read, Seek, SeekFrom};

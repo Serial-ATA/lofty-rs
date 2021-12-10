@@ -9,6 +9,8 @@ use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::{FileProperties, Result, TagType};
 #[cfg(feature = "mp4_ilst")]
+pub use atom_info::AtomIdent;
+#[cfg(feature = "mp4_ilst")]
 use ilst::Ilst;
 
 use std::io::{Read, Seek};
@@ -141,10 +143,7 @@ impl AudioFile for Mp4File {
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		match tag_type {
-			TagType::Mp4Ilst => self.ilst.is_some(),
-			_ => false,
-		}
+		tag_type == &TagType::Mp4Ilst && self.ilst.is_some()
 	}
 }
 

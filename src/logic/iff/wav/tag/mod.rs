@@ -6,7 +6,6 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
-use std::io::{Read, Seek};
 
 #[derive(Default, Debug, PartialEq)]
 /// A RIFF INFO LIST
@@ -67,22 +66,6 @@ impl RiffInfoList {
 }
 
 impl RiffInfoList {
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses a [`RiffInfoList`] from a reader
-	///
-	/// NOTE: This is **NOT** for reading from a file.
-	/// This is used internally, and requires the end position be provided.
-	pub fn read_from<R>(reader: &mut R, end: u64) -> Result<Self>
-	where
-		R: Read + Seek,
-	{
-		let mut tag = Self::default();
-
-		read::parse_riff_info(reader, end, &mut tag)?;
-
-		Ok(tag)
-	}
-
 	/// Writes the tag to a file
 	///
 	/// # Errors
@@ -176,4 +159,69 @@ impl<'a> RiffInfoListRef<'a> {
 
 fn valid_key(key: &str) -> bool {
 	key.len() == 4 && key.is_ascii()
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::iff::RiffInfoList;
+	use crate::{Tag, TagType};
+
+	use std::io::Read;
+
+	#[test]
+	fn parse_riff_info() {
+		let mut expected_tag = RiffInfoList::default();
+
+		expected_tag.insert(String::from("IART"), String::from("Bar artist"));
+		expected_tag.insert(String::from("ICMT"), String::from("Qux comment"));
+		expected_tag.insert(String::from("ICRD"), String::from("1984"));
+		expected_tag.insert(String::from("INAM"), String::from("Foo title"));
+		expected_tag.insert(String::from("IPRD"), String::from("Baz album"));
+		expected_tag.insert(String::from("IPRT"), String::from("1"));
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.riff")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag[..]);
+		let mut parsed_tag = RiffInfoList::default();
+
+		super::read::parse_riff_info(&mut reader, (tag.len() - 1) as u64, &mut parsed_tag).unwrap();
+
+		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn riff_info_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.riff")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
+		let mut riff_info = RiffInfoList::default();
+
+		super::read::parse_riff_info(&mut reader, (tag_bytes.len() - 1) as u64, &mut riff_info)
+			.unwrap();
+
+		let tag: Tag = riff_info.into();
+
+		crate::logic::test_utils::verify_tag(&tag, true, false);
+	}
+
+	#[test]
+	fn tag_to_riff_info() {
+		let tag = crate::logic::test_utils::create_tag(TagType::RiffInfo);
+
+		let riff_info: RiffInfoList = tag.into();
+
+		assert_eq!(riff_info.get("INAM"), Some("Foo title"));
+		assert_eq!(riff_info.get("IART"), Some("Bar artist"));
+		assert_eq!(riff_info.get("IPRD"), Some("Baz album"));
+		assert_eq!(riff_info.get("ICMT"), Some("Qux comment"));
+		assert_eq!(riff_info.get("IPRT"), Some("1"));
+	}
 }

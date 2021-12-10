@@ -53,11 +53,7 @@ impl AudioFile for FlacFile {
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		if tag_type != &TagType::VorbisComments {
-			return false;
-		}
-
-		self.vorbis_comments.is_some()
+		tag_type == &TagType::VorbisComments && self.vorbis_comments.is_some()
 	}
 }
 

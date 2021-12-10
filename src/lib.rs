@@ -262,7 +262,13 @@ pub mod mp4 {
 	//!
 	//! The only supported tag format is [`Ilst`].
 	#[cfg(feature = "mp4_ilst")]
-	pub use crate::logic::mp4::ilst::{Atom, AtomData, AtomIdent, Ilst};
+	pub use crate::logic::mp4::{
+		ilst::{
+			atom::{Atom, AtomData},
+			Ilst,
+		},
+		AtomIdent,
+	};
 	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
 }
 

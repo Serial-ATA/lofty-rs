@@ -1,9 +1,34 @@
 use crate::error::{LoftyError, Result};
-use crate::logic::mp4::ilst::AtomIdent;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
+
+#[derive(Eq, PartialEq, Debug)]
+/// Represents an `MP4` atom identifier
+pub enum AtomIdent {
+	/// A four byte identifier
+	///
+	/// Many FOURCCs start with `0xA9` (©), and should be a UTF-8 string.
+	Fourcc([u8; 4]),
+	/// A freeform identifier
+	///
+	/// # Example
+	///
+	/// ```text
+	/// ----:com.apple.iTunes:SUBTITLE
+	/// ─┬── ────────┬─────── ───┬────
+	///  ╰freeform identifier    ╰name
+	///              |
+	///              ╰mean
+	/// ```
+	Freeform {
+		/// A string using a reverse DNS naming convention
+		mean: String,
+		/// A string identifying the atom
+		name: String,
+	},
+}
 
 pub(crate) struct AtomInfo {
 	pub(crate) start: u64,

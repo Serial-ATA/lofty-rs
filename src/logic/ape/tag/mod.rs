@@ -9,7 +9,6 @@ use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::{Read, Seek};
 
 #[derive(Default, Debug, PartialEq)]
 /// An `APE` tag
@@ -76,18 +75,6 @@ impl ApeTag {
 }
 
 impl ApeTag {
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses an [`ApeTag`] from a reader
-	///
-	/// NOTE: This is **NOT** for reading from a file.
-	/// This is used internally, and expects the `APE` preamble to have been skipped.
-	pub fn read_from<R>(reader: &mut R) -> Result<Self>
-	where
-		R: Read + Seek,
-	{
-		Ok(read::read_ape_tag(reader, false)?.0)
-	}
-
 	/// Write an `APE` tag to a file
 	///
 	/// # Errors
@@ -169,5 +156,114 @@ impl<'a> Into<ApeTagRef<'a>> for &'a ApeTag {
 			read_only: self.read_only,
 			items: Box::new(self.items.iter().map(Into::into)),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::ape::{ApeItem, ApeTag};
+	use crate::{ItemValue, Tag, TagType};
+
+	use std::io::{Cursor, Read};
+
+	#[test]
+	fn parse_ape() {
+		let mut expected_tag = ApeTag::default();
+
+		let title_item = ApeItem::new(
+			String::from("TITLE"),
+			ItemValue::Text(String::from("Foo title")),
+		)
+		.unwrap();
+
+		let artist_item = ApeItem::new(
+			String::from("ARTIST"),
+			ItemValue::Text(String::from("Bar artist")),
+		)
+		.unwrap();
+
+		let album_item = ApeItem::new(
+			String::from("ALBUM"),
+			ItemValue::Text(String::from("Baz album")),
+		)
+		.unwrap();
+
+		let comment_item = ApeItem::new(
+			String::from("COMMENT"),
+			ItemValue::Text(String::from("Qux comment")),
+		)
+		.unwrap();
+
+		let year_item =
+			ApeItem::new(String::from("YEAR"), ItemValue::Text(String::from("1984"))).unwrap();
+
+		let track_number_item =
+			ApeItem::new(String::from("TRACK"), ItemValue::Text(String::from("1"))).unwrap();
+
+		let genre_item = ApeItem::new(
+			String::from("GENRE"),
+			ItemValue::Text(String::from("Classical")),
+		)
+		.unwrap();
+
+		expected_tag.insert(title_item);
+		expected_tag.insert(artist_item);
+		expected_tag.insert(album_item);
+		expected_tag.insert(comment_item);
+		expected_tag.insert(year_item);
+		expected_tag.insert(track_number_item);
+		expected_tag.insert(genre_item);
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.apev2")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let mut reader = Cursor::new(tag);
+		let parsed_tag = super::read::read_ape_tag(&mut reader, false).unwrap().0;
+
+		assert_eq!(expected_tag.items().len(), parsed_tag.items().len());
+
+		for item in expected_tag.items() {
+			assert!(parsed_tag.items().contains(item))
+		}
+	}
+
+	#[test]
+	fn ape_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.apev2")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
+
+		let mut reader = Cursor::new(tag_bytes);
+		let ape = super::read::read_ape_tag(&mut reader, false).unwrap().0;
+
+		let tag: Tag = ape.into();
+
+		crate::logic::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn tag_to_ape() {
+		fn verify_key(tag: &ApeTag, key: &str, expected_val: &str) {
+			assert_eq!(
+				tag.get_key(key).map(|i| i.value()),
+				Some(&ItemValue::Text(String::from(expected_val)))
+			);
+		}
+
+		let tag = crate::logic::test_utils::create_tag(TagType::Ape);
+
+		let ape_tag: ApeTag = tag.into();
+
+		verify_key(&ape_tag, "Title", "Foo title");
+		verify_key(&ape_tag, "Artist", "Bar artist");
+		verify_key(&ape_tag, "Album", "Baz album");
+		verify_key(&ape_tag, "Comment", "Qux comment");
+		verify_key(&ape_tag, "Track", "1");
+		verify_key(&ape_tag, "Genre", "Classical");
 	}
 }

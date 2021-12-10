@@ -1,16 +1,17 @@
+pub(crate) mod atom;
 pub(in crate::logic::mp4) mod read;
 pub(in crate::logic) mod write;
 
+use super::AtomIdent;
 use crate::error::Result;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Tag, TagType};
+use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::Read;
 
-#[cfg(feature = "mp4_ilst")]
 #[derive(Default, PartialEq, Debug)]
 /// An MP4 ilst atom
 ///
@@ -67,15 +68,14 @@ impl Ilst {
 
 	/// Returns all pictures
 	pub fn pictures(&self) -> impl Iterator<Item = &Picture> {
-		self.atoms.iter().filter_map(|a| {
-			if a.ident() == &AtomIdent::Fourcc(*b"covr") {
-				match a.data() {
-					AtomData::Picture(pic) => Some(pic),
-					_ => None,
-				}
-			} else {
-				None
-			}
+		const COVR: AtomIdent = AtomIdent::Fourcc(*b"covr");
+
+		self.atoms.iter().filter_map(|a| match a {
+			Atom {
+				ident: COVR,
+				data: AtomData::Picture(pic),
+			} => Some(pic),
+			_ => None,
 		})
 	}
 
@@ -98,18 +98,6 @@ impl Ilst {
 }
 
 impl Ilst {
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses an [`Ilst`] from a reader
-	///
-	/// NOTE: This is **NOT** for reading from a file.
-	/// This is used internally, and requires the length be provided.
-	pub fn read_from<R>(reader: &mut R, len: u64) -> Result<Self>
-	where
-		R: Read,
-	{
-		read::parse_ilst(reader, len)
-	}
-
 	/// Writes the tag to a file
 	///
 	/// # Errors
@@ -120,7 +108,6 @@ impl Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
 impl From<Ilst> for Tag {
 	fn from(input: Ilst) -> Self {
 		let mut tag = Self::new(TagType::Mp4Ilst);
@@ -154,7 +141,6 @@ impl From<Ilst> for Tag {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
 impl From<Tag> for Ilst {
 	fn from(input: Tag) -> Self {
 		let mut ilst = Self::default();
@@ -185,97 +171,6 @@ impl From<Tag> for Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
-#[derive(Debug, PartialEq)]
-/// Represents an `MP4` atom
-pub struct Atom {
-	ident: AtomIdent,
-	data: AtomData,
-}
-
-impl Atom {
-	/// Create a new [`Atom`]
-	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
-		Self { ident, data }
-	}
-
-	/// Returns the atom's [`AtomIdent`]
-	pub fn ident(&self) -> &AtomIdent {
-		&self.ident
-	}
-
-	/// Returns the atom's [`AtomData`]
-	pub fn data(&self) -> &AtomData {
-		&self.data
-	}
-}
-
-#[derive(Eq, PartialEq, Debug)]
-/// Represents an `MP4` atom identifier
-pub enum AtomIdent {
-	/// A four byte identifier
-	///
-	/// Many FOURCCs start with `0xA9` (©), and should be a UTF-8 string.
-	Fourcc([u8; 4]),
-	/// A freeform identifier
-	///
-	/// # Example
-	///
-	/// ```text
-	/// ----:com.apple.iTunes:SUBTITLE
-	/// ─┬── ────────┬─────── ───┬────
-	///  ╰freeform identifier    ╰name
-	///              |
-	///              ╰mean
-	/// ```
-	Freeform {
-		/// A string using a reverse DNS naming convention
-		mean: String,
-		/// A string identifying the atom
-		name: String,
-	},
-}
-
-#[cfg(feature = "mp4_ilst")]
-#[derive(Debug, PartialEq)]
-/// The data of an atom
-///
-/// NOTES:
-///
-/// * This only covers the most common data types.
-/// See the list of [well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
-/// for codes.
-/// * There are only two variants for integers, which
-/// will come from codes `21` and `22`. All other integer
-/// types will be stored as [`AtomData::Unknown`], refer
-/// to the link above for codes.
-pub enum AtomData {
-	/// A UTF-8 encoded string
-	UTF8(String),
-	/// A UTf-16 encoded string
-	UTF16(String),
-	/// A JPEG, PNG, GIF *(Deprecated)*, or BMP image
-	///
-	/// The type is read from the picture itself
-	Picture(Picture),
-	/// A big endian signed integer (1-4 bytes)
-	SignedInteger(i32),
-	/// A big endian unsigned integer (1-4 bytes)
-	UnsignedInteger(u32),
-	/// Unknown data
-	///
-	/// Due to the number of possible types, there are many
-	/// **specified** types that are going to fall into this
-	/// variant.
-	Unknown {
-		/// The code, or type of the item
-		code: u32,
-		/// The binary data of the atom
-		data: Vec<u8>,
-	},
-}
-
-#[cfg(feature = "mp4_ilst")]
 pub(crate) struct IlstRef<'a> {
 	atoms: Box<dyn Iterator<Item = AtomRef<'a>> + 'a>,
 }
@@ -286,76 +181,6 @@ impl<'a> IlstRef<'a> {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
-pub(crate) struct AtomRef<'a> {
-	ident: AtomIdentRef<'a>,
-	data: AtomDataRef<'a>,
-}
-
-#[cfg(feature = "mp4_ilst")]
-impl<'a> Into<AtomRef<'a>> for &'a Atom {
-	fn into(self) -> AtomRef<'a> {
-		AtomRef {
-			ident: (&self.ident).into(),
-			data: (&self.data).into(),
-		}
-	}
-}
-
-#[cfg(feature = "mp4_ilst")]
-pub(crate) enum AtomIdentRef<'a> {
-	Fourcc([u8; 4]),
-	Freeform { mean: &'a str, name: &'a str },
-}
-
-#[cfg(feature = "mp4_ilst")]
-impl<'a> Into<AtomIdentRef<'a>> for &'a AtomIdent {
-	fn into(self) -> AtomIdentRef<'a> {
-		match self {
-			AtomIdent::Fourcc(fourcc) => AtomIdentRef::Fourcc(*fourcc),
-			AtomIdent::Freeform { mean, name } => AtomIdentRef::Freeform { mean, name },
-		}
-	}
-}
-
-#[cfg(feature = "mp4_ilst")]
-impl<'a> From<AtomIdentRef<'a>> for AtomIdent {
-	fn from(input: AtomIdentRef<'a>) -> Self {
-		match input {
-			AtomIdentRef::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),
-			AtomIdentRef::Freeform { mean, name } => AtomIdent::Freeform {
-				mean: mean.to_string(),
-				name: name.to_string(),
-			},
-		}
-	}
-}
-
-#[cfg(feature = "mp4_ilst")]
-pub(crate) enum AtomDataRef<'a> {
-	UTF8(&'a str),
-	UTF16(&'a str),
-	Picture(&'a Picture),
-	SignedInteger(i32),
-	UnsignedInteger(u32),
-	Unknown { code: u32, data: &'a [u8] },
-}
-
-#[cfg(feature = "mp4_ilst")]
-impl<'a> Into<AtomDataRef<'a>> for &'a AtomData {
-	fn into(self) -> AtomDataRef<'a> {
-		match self {
-			AtomData::UTF8(utf8) => AtomDataRef::UTF8(utf8),
-			AtomData::UTF16(utf16) => AtomDataRef::UTF16(utf16),
-			AtomData::Picture(pic) => AtomDataRef::Picture(pic),
-			AtomData::SignedInteger(int) => AtomDataRef::SignedInteger(*int),
-			AtomData::UnsignedInteger(uint) => AtomDataRef::UnsignedInteger(*uint),
-			AtomData::Unknown { code, data } => AtomDataRef::Unknown { code: *code, data },
-		}
-	}
-}
-
-#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 	fn into(self) -> IlstRef<'a> {
 		IlstRef {
@@ -364,7 +189,6 @@ impl<'a> Into<IlstRef<'a>> for &'a Ilst {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
 impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	fn into(self) -> IlstRef<'a> {
 		let iter =
@@ -384,7 +208,6 @@ impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
 fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
 	key.map_key(&TagType::Mp4Ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
@@ -410,4 +233,104 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
 			}
 		}
 	})
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
+	use crate::{Tag, TagType};
+
+	use std::io::Read;
+
+	#[test]
+	fn parse_ilst() {
+		let mut expected_tag = Ilst::default();
+
+		// The track number is stored with a code 0,
+		// meaning the there is no need to indicate the type,
+		// which is `u64` in this case
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"trkn"),
+			AtomData::Unknown {
+				code: 0,
+				data: vec![0, 0, 0, 1, 0, 0, 0, 0],
+			},
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9ART"),
+			AtomData::UTF8(String::from("Bar artist")),
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9alb"),
+			AtomData::UTF8(String::from("Baz album")),
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9cmt"),
+			AtomData::UTF8(String::from("Qux comment")),
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9day"),
+			AtomData::UTF8(String::from("1984")),
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9gen"),
+			AtomData::UTF8(String::from("Classical")),
+		));
+
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"\xa9nam"),
+			AtomData::UTF8(String::from("Foo title")),
+		));
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.ilst")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
+
+		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn ilst_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.ilst")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
+
+		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
+
+		let tag: Tag = ilst.into();
+
+		crate::logic::test_utils::verify_tag(&tag, false, true);
+	}
+
+	#[test]
+	fn tag_to_ilst() {
+		fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &str) {
+			let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
+
+			let data = AtomData::UTF8(String::from(data));
+
+			assert_eq!(atom.data(), &data);
+		}
+
+		let tag = crate::logic::test_utils::create_tag(TagType::Mp4Ilst);
+
+		let ilst: Ilst = tag.into();
+
+		verify_atom(&ilst, *b"\xa9nam", "Foo title");
+		verify_atom(&ilst, *b"\xa9ART", "Bar artist");
+		verify_atom(&ilst, *b"\xa9alb", "Baz album");
+		verify_atom(&ilst, *b"\xa9cmt", "Qux comment");
+		verify_atom(&ilst, *b"\xa9gen", "Classical");
+	}
 }

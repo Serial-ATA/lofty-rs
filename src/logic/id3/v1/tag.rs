@@ -69,14 +69,6 @@ impl Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
-	#[allow(clippy::missing_errors_doc)]
-	/// Parses an [`Id3v1Tag`] from an array
-	///
-	/// NOTE: This is **NOT** for reading from a file. This is used internally.
-	pub fn read_from(tag: [u8; 128]) -> Self {
-		super::read::parse_id3v1(tag)
-	}
-
 	/// Write the tag to a file
 	///
 	/// # Errors
@@ -203,5 +195,65 @@ impl<'a> Id3v1TagRef<'a> {
 			&& self.comment.is_none()
 			&& self.track_number.is_none()
 			&& self.genre.is_none()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v1::Id3v1Tag;
+	use crate::{Tag, TagType};
+
+	use std::io::Read;
+
+	#[test]
+	fn parse_id3v1() {
+		let expected_tag = Id3v1Tag {
+			title: Some(String::from("Foo title")),
+			artist: Some(String::from("Bar artist")),
+			album: Some(String::from("Baz album")),
+			year: Some(String::from("1984")),
+			comment: Some(String::from("Qux comment")),
+			track_number: Some(1),
+			genre: Some(32),
+		};
+
+		let mut tag = [0; 128];
+		std::fs::File::open("tests/tags/assets/test.id3v1")
+			.unwrap()
+			.read_exact(&mut tag)
+			.unwrap();
+
+		let parsed_tag = crate::logic::id3::v1::read::parse_id3v1(tag);
+
+		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn id3v1_to_tag() {
+		let mut tag_bytes = [0; 128];
+		std::fs::File::open("tests/tags/assets/test.id3v1")
+			.unwrap()
+			.read_exact(&mut tag_bytes)
+			.unwrap();
+
+		let id3v1 = crate::logic::id3::v1::read::parse_id3v1(tag_bytes);
+
+		let tag: Tag = id3v1.into();
+
+		crate::logic::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn tag_to_id3v1() {
+		let tag = crate::logic::test_utils::create_tag(TagType::Id3v1);
+
+		let id3v1_tag: Id3v1Tag = tag.into();
+
+		assert_eq!(id3v1_tag.title.as_deref(), Some("Foo title"));
+		assert_eq!(id3v1_tag.artist.as_deref(), Some("Bar artist"));
+		assert_eq!(id3v1_tag.album.as_deref(), Some("Baz album"));
+		assert_eq!(id3v1_tag.comment.as_deref(), Some("Qux comment"));
+		assert_eq!(id3v1_tag.track_number, Some(1));
+		assert_eq!(id3v1_tag.genre, Some(32));
 	}
 }

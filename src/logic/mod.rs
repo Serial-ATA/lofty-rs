@@ -50,3 +50,37 @@ macro_rules! tag_methods {
 }
 
 pub(in crate::logic) use tag_methods;
+
+#[cfg(test)]
+// Used for tag conversion tests
+mod test_utils {
+	use crate::{ItemKey, Tag, TagType};
+
+	pub(crate) fn create_tag(tag_type: TagType) -> Tag {
+		let mut tag = Tag::new(tag_type);
+
+		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
+		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
+		tag.insert_text(ItemKey::AlbumTitle, String::from("Baz album"));
+		tag.insert_text(ItemKey::Comment, String::from("Qux comment"));
+		tag.insert_text(ItemKey::TrackNumber, String::from("1"));
+		tag.insert_text(ItemKey::Genre, String::from("Classical"));
+
+		tag
+	}
+
+	pub(crate) fn verify_tag(tag: &Tag, track_number: bool, genre: bool) {
+		assert_eq!(tag.get_string(&ItemKey::TrackTitle), Some("Foo title"));
+		assert_eq!(tag.get_string(&ItemKey::TrackArtist), Some("Bar artist"));
+		assert_eq!(tag.get_string(&ItemKey::AlbumTitle), Some("Baz album"));
+		assert_eq!(tag.get_string(&ItemKey::Comment), Some("Qux comment"));
+
+		if track_number {
+			assert_eq!(tag.get_string(&ItemKey::TrackNumber), Some("1"));
+		}
+
+		if genre {
+			assert_eq!(tag.get_string(&ItemKey::Genre), Some("Classical"));
+		}
+	}
+}

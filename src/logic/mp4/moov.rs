@@ -1,9 +1,9 @@
 use super::atom_info::AtomInfo;
 #[cfg(feature = "mp4_ilst")]
-use super::ilst::read::parse_ilst;
-use super::ilst::{AtomIdent, Ilst};
+use super::ilst::{read::parse_ilst, Ilst};
 use super::read::skip_unneeded;
 use super::trak::Trak;
+use super::AtomIdent;
 use crate::error::{LoftyError, Result};
 
 use std::io::{Read, Seek};
