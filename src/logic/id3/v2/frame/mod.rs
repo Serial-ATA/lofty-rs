@@ -94,9 +94,7 @@ impl Frame {
 
 	/// Extract the string from the [`FrameID`]
 	pub fn id_str(&self) -> &str {
-		match &self.id {
-			FrameID::Valid(id) | FrameID::Outdated(id) => id.as_str(),
-		}
+		self.id.as_str()
 	}
 
 	/// Returns the frame's content
@@ -219,6 +217,15 @@ pub enum FrameID {
 	///
 	/// The entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary).
 	Outdated(String),
+}
+
+impl FrameID {
+	/// Extracts the string from the ID
+	pub fn as_str(&self) -> &str {
+		match self {
+			FrameID::Valid(v) | FrameID::Outdated(v) => v.as_str(),
+		}
+	}
 }
 
 impl TryFrom<ItemKey> for FrameID {
@@ -386,6 +393,9 @@ pub struct FrameFlags {
 	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
 	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
 	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
+	///
+	/// NOTE: For the sake of simplicity, this will have no effect when writing. There isn't much reason
+	/// to write unsynchronized data. Unsynchronized data **will** always be read, however.
 	pub unsynchronisation: bool,
 	/// Frame has a data length indicator
 	///

@@ -79,7 +79,6 @@ fn create_tag(tag: &mut Id3v2TagRef) -> Result<Vec<u8>> {
 	Ok(id3v2.into_inner())
 }
 
-#[allow(clippy::trivially_copy_pass_by_ref)]
 fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 	let mut header = Cursor::new(Vec::new());
 
@@ -104,13 +103,11 @@ fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 		tag_flags |= 0x40
 	}
 
-	if flags.unsynchronisation {
-		tag_flags |= 0x80
-	}
-
 	header.write_u8(tag_flags)?;
 	header.write_u32::<BigEndian>(0)?;
 
+	// TODO
+	#[allow(unused_mut)]
 	if extended_header {
 		// Size (4)
 		// Number of flag bytes (1)
@@ -121,11 +118,10 @@ fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 		let mut ext_flags = 0_u8;
 
 		if flags.crc {
-			// TODO
-			ext_flags |= 0x20;
-			size += 5;
-
-			header.write_all(&[5, 0, 0, 0, 0, 0])?;
+			// ext_flags |= 0x20;
+			// size += 5;
+			//
+			// header.write_all(&[5, 0, 0, 0, 0, 0])?;
 		}
 
 		#[cfg(feature = "id3v2_restrictions")]

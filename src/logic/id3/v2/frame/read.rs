@@ -1,6 +1,7 @@
 use super::header::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::error::{LoftyError, Result};
+use crate::id3::v2::FrameValue;
 use crate::logic::id3::v2::frame::content::parse_content;
 use crate::logic::id3::v2::Id3v2Version;
 
@@ -25,6 +26,10 @@ impl Frame {
 
 		let mut content = vec![0; size as usize];
 		reader.read_exact(&mut content)?;
+
+		if flags.unsynchronisation {
+			content = crate::logic::id3::v2::util::unsynch_content(content.as_slice())?;
+		}
 
 		if flags.compression {
 			let mut decompressed = Vec::new();
@@ -54,7 +59,17 @@ impl Frame {
 			flags.data_length_indicator.1 = content_reader.read_u32::<BigEndian>()?;
 		}
 
-		let (id, value) = parse_content(&mut content_reader, &*id, version)?;
+		let value = if flags.encryption.0 {
+			if !flags.data_length_indicator.0 {
+				return Err(LoftyError::Id3v2(
+					"Encountered an encrypted frame without a data length indicator",
+				));
+			}
+
+			FrameValue::Binary(content)
+		} else {
+			parse_content(&mut content_reader, id.as_str(), version)?
+		};
 
 		Ok(Some(Self { id, value, flags }))
 	}

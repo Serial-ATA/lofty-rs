@@ -134,13 +134,7 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 
 			out
 		},
-		TextEncoding::UTF16 => {
-			if cfg!(target_endian = "little") {
-				utf16_encode(text, u16::to_le_bytes, terminated)
-			} else {
-				utf16_encode(text, u16::to_be_bytes, terminated)
-			}
-		},
+		TextEncoding::UTF16 => utf16_encode(text, u16::to_ne_bytes, terminated),
 		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, terminated),
 		TextEncoding::UTF8 => {
 			let mut out = text.as_bytes().to_vec();
@@ -157,6 +151,12 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) -> Vec<u8> {
 	let mut encoded = Vec::<u8>::new();
 
+	match endianness(1) {
+		[0, 1] => encoded.extend_from_slice(&[0xFE, 0xFF]),
+		[1, 0] => encoded.extend_from_slice(&[0xFF, 0xFE]),
+		_ => unreachable!(),
+	}
+
 	for ch in text.encode_utf16() {
 		encoded.extend_from_slice(&endianness(ch));
 	}
@@ -166,4 +166,80 @@ fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) ->
 	}
 
 	encoded
+}
+
+#[cfg(test)]
+#[allow(clippy::similar_names)]
+mod tests {
+	use crate::id3::v2::TextEncoding;
+	use std::io::Cursor;
+
+	const TEST_STRING: &str = "løft¥";
+
+	#[test]
+	fn text_decode() {
+		// No BOM
+		let utf16_decode = super::utf16_decode(
+			&[0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5],
+			u16::from_be_bytes,
+		)
+		.unwrap();
+
+		assert_eq!(utf16_decode, TEST_STRING.to_string());
+
+		// BOM test
+		let be_utf16_decode = super::decode_text(
+			&mut Cursor::new(&[
+				0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5,
+			]),
+			TextEncoding::UTF16,
+			false,
+		)
+		.unwrap();
+		let le_utf16_decode = super::decode_text(
+			&mut Cursor::new(&[
+				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00,
+			]),
+			TextEncoding::UTF16,
+			false,
+		)
+		.unwrap();
+
+		assert_eq!(be_utf16_decode.clone(), le_utf16_decode.clone());
+		assert_eq!(be_utf16_decode, Some(TEST_STRING.to_string()));
+
+		let utf8_decode =
+			super::decode_text(&mut TEST_STRING.as_bytes(), TextEncoding::UTF8, false);
+
+		assert_eq!(utf8_decode.unwrap(), Some(TEST_STRING.to_string()));
+	}
+
+	#[test]
+	fn text_encode() {
+		// No BOM
+		let utf16_encode = super::utf16_encode(TEST_STRING, u16::to_be_bytes, false);
+
+		assert_eq!(
+			utf16_encode.as_slice(),
+			&[0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5]
+		);
+
+		// BOM test
+		let be_utf16_encode = super::encode_text(TEST_STRING, TextEncoding::UTF16BE, false);
+		let le_utf16_encode = super::utf16_encode(TEST_STRING, u16::to_le_bytes, false);
+
+		assert_ne!(be_utf16_encode.as_slice(), le_utf16_encode.as_slice());
+		assert_eq!(
+			be_utf16_encode.as_slice(),
+			&[0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5]
+		);
+		assert_eq!(
+			le_utf16_encode.as_slice(),
+			&[0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00]
+		);
+
+		let utf8_encode = super::encode_text(TEST_STRING, TextEncoding::UTF8, false);
+
+		assert_eq!(utf8_encode.as_slice(), TEST_STRING.as_bytes());
+	}
 }

@@ -1,5 +1,5 @@
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::v2::frame::{EncodedTextFrame, FrameID, FrameValue, LanguageFrame};
+use crate::logic::id3::v2::frame::{EncodedTextFrame, FrameValue, LanguageFrame};
 use crate::logic::id3::v2::util::text_utils::{decode_text, TextEncoding};
 use crate::logic::id3::v2::Id3v2Version;
 use crate::types::picture::Picture;
@@ -12,29 +12,27 @@ pub(crate) fn parse_content(
 	content: &mut &[u8],
 	id: &str,
 	version: Id3v2Version,
-) -> Result<(FrameID, FrameValue)> {
+) -> Result<FrameValue> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
-		"APIC" => (FrameID::Valid(String::from("APIC")), {
+		"APIC" => {
 			let (picture, encoding) = Picture::from_apic_bytes(content, version)?;
 
 			FrameValue::Picture { encoding, picture }
-		}),
+		},
 		"TXXX" => parse_user_defined(content, false)?,
 		"WXXX" => parse_user_defined(content, true)?,
-		"COMM" | "USLT" => parse_text_language(id, content)?,
-		_ if id.starts_with('T') => parse_text(id, content)?,
-		_ if id.starts_with('W') => parse_link(id, content)?,
+		"COMM" | "USLT" => parse_text_language(content, id)?,
+		// Apple's WFED (Podcast URL) is a text frame
+		_ if id.starts_with('T') || id == "WFED" => parse_text(content)?,
+		_ if id.starts_with('W') => parse_link(content)?,
 		// SYLT, GEOB, and any unknown frames
-		_ => (
-			FrameID::Valid(String::from(id)),
-			FrameValue::Binary(content.to_vec()),
-		),
+		_ => FrameValue::Binary(content.to_vec()),
 	})
 }
 
 // There are 2 possibilities for the frame's content: text or link.
-fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<(FrameID, FrameValue)> {
+fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 	if content.len() < 2 {
 		return Err(LoftyError::BadFrameLength);
 	}
@@ -50,29 +48,23 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<(FrameID, Frame
 		let content =
 			decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
 
-		(
-			FrameID::Valid(String::from("WXXX")),
-			FrameValue::UserURL(EncodedTextFrame {
-				encoding,
-				description,
-				content,
-			}),
-		)
+		FrameValue::UserURL(EncodedTextFrame {
+			encoding,
+			description,
+			content,
+		})
 	} else {
 		let content = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
 
-		(
-			FrameID::Valid(String::from("TXXX")),
-			FrameValue::UserText(EncodedTextFrame {
-				encoding,
-				description,
-				content,
-			}),
-		)
+		FrameValue::UserText(EncodedTextFrame {
+			encoding,
+			description,
+			content,
+		})
 	})
 }
 
-fn parse_text_language(id: &str, content: &mut &[u8]) -> Result<(FrameID, FrameValue)> {
+fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 	if content.len() < 5 {
 		return Err(LoftyError::BadFrameLength);
 	}
@@ -104,12 +96,10 @@ fn parse_text_language(id: &str, content: &mut &[u8]) -> Result<(FrameID, FrameV
 		_ => unreachable!(),
 	};
 
-	let id = FrameID::Valid(String::from(id));
-
-	Ok((id, value))
+	Ok(value)
 }
 
-fn parse_text(id: &str, content: &mut &[u8]) -> Result<(FrameID, FrameValue)> {
+fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
 		None => return Err(LoftyError::TextDecode("Found invalid encoding")),
 		Some(e) => e,
@@ -117,17 +107,14 @@ fn parse_text(id: &str, content: &mut &[u8]) -> Result<(FrameID, FrameValue)> {
 
 	let text = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
 
-	Ok((
-		FrameID::Valid(String::from(id)),
-		FrameValue::Text {
-			encoding,
-			value: text,
-		},
-	))
+	Ok(FrameValue::Text {
+		encoding,
+		value: text,
+	})
 }
 
-fn parse_link(id: &str, content: &mut &[u8]) -> Result<(FrameID, FrameValue)> {
+fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
 	let link = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
 
-	Ok((FrameID::Valid(String::from(id)), FrameValue::URL(link)))
+	Ok(FrameValue::URL(link))
 }

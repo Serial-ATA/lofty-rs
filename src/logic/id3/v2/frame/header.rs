@@ -1,10 +1,11 @@
 use super::FrameFlags;
 use crate::error::{LoftyError, Result};
+use crate::id3::v2::FrameID;
 use crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 
 use std::io::Read;
 
-pub(crate) fn parse_v2_header<R>(reader: &mut R) -> Result<Option<(String, u32, FrameFlags)>>
+pub(crate) fn parse_v2_header<R>(reader: &mut R) -> Result<Option<(FrameID, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -20,19 +21,20 @@ where
 	}
 
 	let id_str = std::str::from_utf8(&frame_header[..3]).map_err(|_| LoftyError::BadFrameID)?;
-
 	let id = upgrade_v2(id_str).unwrap_or(id_str);
+
+	let frame_id = create_frame_id(id)?;
 
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
 	// V2 doesn't store flags
-	Ok(Some((id.to_string(), size, FrameFlags::default())))
+	Ok(Some((frame_id, size, FrameFlags::default())))
 }
 
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	synchsafe: bool,
-) -> Result<Option<(String, u32, FrameFlags)>>
+) -> Result<Option<(FrameID, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -71,10 +73,26 @@ where
 		(mapped, size)
 	};
 
+	let frame_id = create_frame_id(id)?;
+
 	let flags = u16::from_be_bytes([frame_header[8], frame_header[9]]);
 	let flags = parse_flags(flags, synchsafe);
 
-	Ok(Some((id.to_string(), size, flags)))
+	Ok(Some((frame_id, size, flags)))
+}
+
+fn create_frame_id(id: &str) -> Result<FrameID> {
+	for c in id.chars() {
+		if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
+			return Err(LoftyError::Id3v2("Encountered a bad frame ID"));
+		}
+	}
+
+	Ok(match id.len() {
+		3 => FrameID::Outdated(id.to_string()),
+		4 => FrameID::Valid(id.to_string()),
+		_ => unreachable!(),
+	})
 }
 
 pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {
