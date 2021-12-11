@@ -14,8 +14,6 @@ categories = ["accessibility", "multimedia::audio"]
 flate2 = { version = "1.0.21", optional = true }
 # Ogg
 ogg_pager = "0.1.7"
-# Mp4
-simdutf8 = { version = "0.1.3", optional = true }
 
 paste = "1.0.5"
 base64 = "0.13.0"
@@ -23,7 +21,7 @@ byteorder = "1.4.3"
 
 [features]
 default = ["mp4_ilst", "vorbis_comments", "ape", "id3v1", "id3v2", "aiff_text_chunks", "riff_info_list"]
-mp4_ilst = ["simdutf8"]
+mp4_ilst = []
 vorbis_comments = []
 ape = []
 id3v1 = []
