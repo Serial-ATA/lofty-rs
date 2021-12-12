@@ -5,9 +5,31 @@ use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::Picture;
 use crate::types::picture::PictureInformation;
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::File;
+
+macro_rules! impl_accessor {
+	($($name:ident, $key:literal;)+) => {
+		paste::paste! {
+			impl Accessor for VorbisComments {
+				$(
+					fn $name(&self) -> Option<&str> {
+						self.get_item($key)
+					}
+
+					fn [<set_ $name>](&mut self, value: String) {
+						self.insert_item(String::from($key), value, true)
+					}
+
+					fn [<remove_ $name>](&mut self) {
+						self.remove_key($key)
+					}
+				)+
+			}
+		}
+	}
+}
 
 #[derive(Default, PartialEq, Debug)]
 /// Vorbis comments
@@ -19,6 +41,14 @@ pub struct VorbisComments {
 	/// A collection of all pictures
 	pub(crate) pictures: Vec<(Picture, PictureInformation)>,
 }
+
+impl_accessor!(
+	artist,       "ARTIST";
+	title,        "TITLE";
+	album,        "ALBUM";
+	album_artist, "ALBUMARTST";
+	genre,        "GENRE";
+);
 
 impl VorbisComments {
 	/// Returns the vendor string

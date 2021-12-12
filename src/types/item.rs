@@ -7,6 +7,8 @@ macro_rules! first_key {
 	};
 }
 
+pub(crate) use first_key;
+
 // This is used to create the ItemKey enum and its to and from key conversions
 //
 // First comes the ItemKey variant as an ident (ex. Artist), then a collection of the appropriate mappings.
@@ -133,7 +135,7 @@ item_keys!(
 	// People & Organizations
 	AlbumArtist => [
 		TagType::Id3v2 => "TPE2", TagType::Mp4Ilst => "aART",
-		TagType::VorbisComments | TagType::Ape => "ALBUMARTIST"
+		TagType::VorbisComments => "ALBUMARTIST", TagType::Ape => "Album Artist" | "ALBUMARTIST"
 	],
 	TrackArtist => [
 		TagType::Id3v2 => "TPE1", TagType::Mp4Ilst => "\u{a9}ART",

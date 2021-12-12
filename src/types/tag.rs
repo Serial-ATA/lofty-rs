@@ -6,15 +6,36 @@ use crate::probe::Probe;
 use std::fs::{File, OpenOptions};
 use std::path::Path;
 
-use paste::paste;
-
-macro_rules! common_items {
-	($($item_key:ident => $name:tt),+) => {
-		paste! {
-			impl Tag {
+macro_rules! accessor_trait {
+	($($name:ident),+) => {
+		/// Provides accessors for common items
+		pub trait Accessor {
+			paste::paste! {
 				$(
 					#[doc = "Gets the " $name]
-					pub fn $name(&self) -> Option<&str> {
+					fn $name(&self) -> Option<&str> { None }
+					#[doc = "Sets the " $name]
+					fn [<set_ $name>](&mut self, _value: String) {}
+					#[doc = "Removes the " $name]
+					fn [<remove_ $name>](&mut self) {}
+				)+
+			}
+		}
+	};
+}
+
+accessor_trait! {
+	artist, title,
+	album, album_artist,
+	genre
+}
+
+macro_rules! impl_accessor {
+	($($item_key:ident => $name:tt),+) => {
+		paste::paste! {
+			impl Accessor for Tag {
+				$(
+					fn $name(&self) -> Option<&str> {
 						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
 							return Some(&*txt)
 						}
@@ -22,14 +43,12 @@ macro_rules! common_items {
 						None
 					}
 
-					#[doc = "Removes the " $name]
-					pub fn [<remove_ $name>](&mut self) {
-						self.retain_items(|i| i.item_key != ItemKey::$item_key)
+					fn [<set_ $name>](&mut self, value: String) {
+						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
 					}
 
-					#[doc = "Sets the " $name]
-					pub fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+					fn [<remove_ $name>](&mut self) {
+						self.retain_items(|i| i.item_key != ItemKey::$item_key)
 					}
 				)+
 			}
@@ -56,13 +75,13 @@ macro_rules! common_items {
 /// Accessing common items
 ///
 /// ```rust
-/// # use lofty::{Tag, TagType};
+/// # use lofty::{Tag, TagType, Accessor};
 /// # let tag = Tag::new(TagType::Id3v2);
 /// // There are multiple quick getter methods for common items
 ///
 /// let title = tag.title();
 /// let artist = tag.artist();
-/// let album = tag.album_title();
+/// let album = tag.album();
 /// let album_artist = tag.album_artist();
 /// ```
 ///
@@ -106,6 +125,14 @@ impl IntoIterator for Tag {
 		self.items.into_iter()
 	}
 }
+
+impl_accessor!(
+	TrackArtist => artist,
+	TrackTitle => title,
+	AlbumTitle => album,
+	AlbumArtist => album_artist,
+	Genre => genre
+);
 
 impl Tag {
 	/// Initialize a new tag with a certain [`TagType`]
@@ -281,8 +308,6 @@ impl Tag {
 		self.tag_type.remove_from(file)
 	}
 }
-
-common_items!(TrackArtist => artist, TrackTitle => title, AlbumTitle => album_title, AlbumArtist => album_artist);
 
 /// The tag's format
 #[derive(Clone, Debug, PartialEq)]

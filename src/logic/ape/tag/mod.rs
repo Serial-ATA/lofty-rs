@@ -5,10 +5,46 @@ pub(in crate::logic) mod write;
 use crate::error::Result;
 use crate::logic::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
+
+macro_rules! impl_accessor {
+	($($name:ident, $($key:literal)|+;)+) => {
+		paste::paste! {
+			impl Accessor for ApeTag {
+				$(
+					fn $name(&self) -> Option<&str> {
+						$(
+							if let Some(i) = self.get_key($key) {
+								if let ItemValue::Text(val) = i.value() {
+									return Some(val)
+								}
+							}
+						)+
+
+						None
+					}
+
+					fn [<set_ $name>](&mut self, value: String) {
+						self.insert(ApeItem {
+							read_only: false,
+							key: String::from(crate::types::item::first_key!($($key)|*)),
+							value: ItemValue::Text(value)
+						})
+					}
+
+					fn [<remove_ $name>](&mut self) {
+						$(
+							self.remove_key($key);
+						)+
+					}
+				)+
+			}
+		}
+	}
+}
 
 #[derive(Default, Debug, PartialEq)]
 /// An `APE` tag
@@ -38,6 +74,14 @@ pub struct ApeTag {
 	pub read_only: bool,
 	pub(super) items: Vec<ApeItem>,
 }
+
+impl_accessor!(
+	artist,       "Artist";
+	title,        "Title";
+	album,        "Album";
+	album_artist, "Album Artist" | "ALBUMARTST";
+	genre,        "GENRE";
+);
 
 impl ApeTag {
 	/// Get an [`ApeItem`] by key

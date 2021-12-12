@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::logic::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryFrom;
 use std::fs::File;
@@ -41,7 +41,44 @@ pub struct AiffTextChunks {
 	pub copyright: Option<String>,
 }
 
+impl Accessor for AiffTextChunks {
+	fn artist(&self) -> Option<&str> {
+		self.author.as_deref()
+	}
+	fn set_artist(&mut self, value: String) {
+		self.author = Some(value)
+	}
+	fn remove_artist(&mut self) {
+		self.author = None
+	}
+
+	fn title(&self) -> Option<&str> {
+		self.name.as_deref()
+	}
+	fn set_title(&mut self, value: String) {
+		self.name = Some(value)
+	}
+	fn remove_title(&mut self) {
+		self.name = None
+	}
+}
+
 impl AiffTextChunks {
+	/// Returns the copyright message
+	pub fn copyright(&self) -> Option<&str> {
+		self.copyright.as_deref()
+	}
+
+	/// Sets the copyright message
+	pub fn set_copyright(&mut self, value: String) {
+		self.copyright = Some(value)
+	}
+
+	/// Removes the copyright message
+	pub fn remove_copyright(&mut self) {
+		self.copyright = None
+	}
+
 	/// Writes the tag to a file
 	///
 	/// # Errors

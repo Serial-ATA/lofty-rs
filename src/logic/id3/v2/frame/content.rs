@@ -23,8 +23,9 @@ pub(crate) fn parse_content(
 		"TXXX" => parse_user_defined(content, false)?,
 		"WXXX" => parse_user_defined(content, true)?,
 		"COMM" | "USLT" => parse_text_language(content, id)?,
-		// Apple's WFED (Podcast URL) is a text frame
 		_ if id.starts_with('T') || id == "WFED" => parse_text(content)?,
+		// Apple proprietary frames
+		"WFED" | "GRP1" => parse_text(content)?,
 		_ if id.starts_with('W') => parse_link(content)?,
 		// SYLT, GEOB, and any unknown frames
 		_ => FrameValue::Binary(content.to_vec()),

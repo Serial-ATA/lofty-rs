@@ -19,6 +19,16 @@ Parse, convert, and write metadata to various audio formats.
 | Ogg Vorbis  | `ogg`                                           |**X** |**X**  |`Vorbis Comments`                                   |
 | WAV         | `wav`, `wave`                                   |**X** |**X**  |`ID3v2`, `RIFF INFO`                                |
 
+## Example
+
+See the [tag reader example](examples/tag_reader.rs)
+
+To try it out, run:
+
+```bash
+cargo run --example tag_reader /path/to/file
+```
+
 ## Documentation
 
 Available [here](https://docs.rs/lofty)

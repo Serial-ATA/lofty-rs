@@ -6,11 +6,48 @@ use super::AtomIdent;
 use crate::error::Result;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
 use std::fs::File;
+
+const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
+const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
+const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
+const ALBUM_ARTIST: AtomIdent = AtomIdent::Fourcc(*b"aART");
+const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
+
+macro_rules! impl_accessor {
+	($($name:ident, $const:ident;)+) => {
+		paste::paste! {
+			impl Accessor for Ilst {
+				$(
+					fn $name(&self) -> Option<&str> {
+						if let Some(atom) = self.atom(&$const) {
+							if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
+								return Some(val)
+							}
+						}
+
+						None
+					}
+
+					fn [<set_ $name>](&mut self, value: String) {
+						self.replace_atom(Atom {
+							ident: $const,
+							data: AtomData::UTF8(value),
+						})
+					}
+
+					fn [<remove_ $name>](&mut self) {
+						self.remove_atom(&$const)
+					}
+				)+
+			}
+		}
+	}
+}
 
 #[derive(Default, PartialEq, Debug)]
 /// An MP4 ilst atom
@@ -40,6 +77,14 @@ use std::fs::File;
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
 }
+
+impl_accessor!(
+	artist,       ARTIST;
+	title,        TITLE;
+	album,        ALBUM;
+	album_artist, ALBUM_ARTIST;
+	genre,        GENRE;
+);
 
 impl Ilst {
 	/// Get an item by its [`AtomIdent`]

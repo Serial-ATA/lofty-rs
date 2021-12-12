@@ -3,9 +3,31 @@ pub(in crate::logic::iff::wav) mod write;
 
 use crate::error::Result;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::File;
+
+macro_rules! impl_accessor {
+	($($name:ident, $key:literal;)+) => {
+		paste::paste! {
+			impl Accessor for RiffInfoList {
+				$(
+					fn $name(&self) -> Option<&str> {
+						self.get($key)
+					}
+
+					fn [<set_ $name>](&mut self, value: String) {
+						self.insert(String::from($key), value)
+					}
+
+					fn [<remove_ $name>](&mut self) {
+						self.remove($key)
+					}
+				)+
+			}
+		}
+	}
+}
 
 #[derive(Default, Debug, PartialEq)]
 /// A RIFF INFO LIST
@@ -24,6 +46,13 @@ pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,
 }
+
+impl_accessor!(
+	artist, "IART";
+	title,  "INAM";
+	album,  "IPRD";
+	genre,  "IGNR";
+);
 
 impl RiffInfoList {
 	/// Get an item by key

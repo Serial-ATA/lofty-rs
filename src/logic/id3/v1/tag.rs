@@ -1,9 +1,29 @@
 use crate::error::Result;
 use crate::logic::id3::v1::constants::GENRES;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::File;
+
+macro_rules! impl_accessor {
+	($($name:ident,)+) => {
+		paste::paste! {
+			$(
+				fn $name(&self) -> Option<&str> {
+					self.$name.as_deref()
+				}
+
+				fn [<set_ $name>](&mut self, value: String) {
+					self.$name = Some(value)
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.$name = None
+				}
+			)+
+		}
+	}
+}
 
 #[derive(Default, Debug, PartialEq)]
 /// An ID3v1 tag
@@ -55,6 +75,26 @@ pub struct Id3v1Tag {
 	/// ID3v1 has a predefined set of genres, see [`GENRES`](crate::id3::v1::GENRES).
 	/// This byte should be an index to a genre.
 	pub genre: Option<u8>,
+}
+
+impl Accessor for Id3v1Tag {
+	impl_accessor!(title, artist, album,);
+
+	fn genre(&self) -> Option<&str> {
+		if let Some(g) = self.genre {
+			let g = g as usize;
+
+			if g < GENRES.len() {
+				return Some(GENRES[g]);
+			}
+		}
+
+		None
+	}
+
+	fn remove_genre(&mut self) {
+		self.genre = None
+	}
 }
 
 impl Id3v1Tag {

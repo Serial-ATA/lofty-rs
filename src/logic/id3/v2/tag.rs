@@ -9,12 +9,50 @@ use crate::logic::id3::v2::frame::FrameRef;
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
 
 use byteorder::ByteOrder;
+
+macro_rules! impl_accessor {
+	($($name:ident, $id:literal;)+) => {
+		paste::paste! {
+			impl Accessor for Id3v2Tag {
+				$(
+					fn $name(&self) -> Option<&str> {
+						if let Some(f) = self.get($id) {
+							if let FrameValue::Text {
+								ref value,
+								..
+							} = f.content() {
+								return Some(value)
+							}
+						}
+
+						None
+					}
+
+					fn [<set_ $name>](&mut self, value: String) {
+						self.insert(Frame {
+							id: FrameID::Valid(String::from($id)),
+							value: FrameValue::Text {
+								encoding: TextEncoding::UTF8,
+								value,
+							},
+							flags: FrameFlags::default()
+						});
+					}
+
+					fn [<remove_ $name>](&mut self) {
+						self.remove($id)
+					}
+				)+
+			}
+		}
+	}
+}
 
 #[derive(PartialEq, Debug)]
 /// An `ID3v2` tag
@@ -58,6 +96,14 @@ pub struct Id3v2Tag {
 	pub(super) original_version: Id3v2Version,
 	frames: Vec<Frame>,
 }
+
+// TODO: Genre
+impl_accessor!(
+	title,        "TIT2";
+	artist,       "TPE1";
+	album,        "TALB";
+	album_artist, "TPE2";
+);
 
 impl Default for Id3v2Tag {
 	fn default() -> Self {

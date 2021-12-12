@@ -163,7 +163,7 @@ pub use crate::types::{
 	file::{FileType, TaggedFile},
 	item::{ItemKey, ItemValue, TagItem},
 	properties::FileProperties,
-	tag::{Tag, TagType},
+	tag::{Accessor, Tag, TagType},
 };
 
 pub use crate::types::file::AudioFile;
