@@ -10,7 +10,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use byteorder::BigEndian;
 
 #[cfg(feature = "aiff_text_chunks")]
-#[derive(Default)]
+#[derive(Default, Clone, Debug, PartialEq)]
 /// `AIFF` text chunks
 ///
 /// ## Supported file types

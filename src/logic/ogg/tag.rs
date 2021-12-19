@@ -31,7 +31,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Default, PartialEq, Debug, Clone)]
 /// Vorbis comments
 pub struct VorbisComments {
 	/// An identifier for the encoding software

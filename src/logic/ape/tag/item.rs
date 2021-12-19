@@ -5,7 +5,7 @@ use crate::types::tag::TagType;
 
 use std::convert::TryFrom;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// Represents an `APE` tag item
 ///
 /// The restrictions for `APE` lie in the key rather than the value,

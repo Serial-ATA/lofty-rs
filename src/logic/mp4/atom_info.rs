@@ -4,7 +4,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 /// Represents an `MP4` atom identifier
 pub enum AtomIdent {
 	/// A four byte identifier

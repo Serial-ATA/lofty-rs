@@ -1,7 +1,7 @@
 use crate::logic::mp4::AtomIdent;
 use crate::types::picture::Picture;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// Represents an `MP4` atom
 pub struct Atom {
 	pub(crate) ident: AtomIdent,
@@ -25,7 +25,7 @@ impl Atom {
 	}
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 /// The data of an atom
 ///
 /// NOTES:

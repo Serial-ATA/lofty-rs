@@ -25,7 +25,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq, Clone)]
 /// An ID3v1 tag
 ///
 /// ID3v1 is a severely limited format, with each field

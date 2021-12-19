@@ -49,7 +49,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, PartialEq, Debug)]
+#[derive(Default, PartialEq, Debug, Clone)]
 /// An MP4 ilst atom
 ///
 /// ## Supported file types
