@@ -472,9 +472,9 @@ impl Picture {
 		let mime_type = match data.get(..8) {
 			Some([0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]) => MimeType::Png,
 			Some([0xFF, 0xD8, ..]) => MimeType::Jpeg,
-			Some([b'G', b'I', b'F', ..]) => MimeType::Gif,
+			Some([0x47, 0x49, 0x46, 0x38, 0x37 | 0x39, 0x61, ..]) => MimeType::Gif,
 			Some([b'B', b'M', ..]) => MimeType::Bmp,
-			Some([b'I', b'I', ..]) => MimeType::Tiff,
+			Some([0x49, 0x49, 0x2A, 0x00, ..] | [0x4D, 0x4D, 0x00, 0x2A, ..]) => MimeType::Tiff,
 			_ => return Err(LoftyError::NotAPicture),
 		};
 
