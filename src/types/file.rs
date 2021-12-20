@@ -4,6 +4,7 @@ use crate::error::{LoftyError, Result};
 
 use std::convert::TryInto;
 use std::ffi::OsStr;
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek};
 use std::path::Path;
 
@@ -53,18 +54,21 @@ impl TaggedFile {
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Ilst`        |
 	pub fn primary_tag(&self) -> Option<&Tag> {
-		self.tag(&Self::primary_tag_type(self.ty))
+		self.tag(&self.primary_tag_type())
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
 	/// See [`primary_tag`](Self::primary_tag) for an explanation
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tag_mut(&Self::primary_tag_type(self.ty))
+		self.tag_mut(&self.primary_tag_type())
 	}
 
-	fn primary_tag_type(f_ty: FileType) -> TagType {
-		match f_ty {
+	/// Returns the file type's "primary" [`TagType`]
+	///
+	/// See [`primary_tag`](Self::primary_tag) for an explanation
+	pub fn primary_tag_type(&self) -> TagType {
+		match self.ty {
 			#[cfg(feature = "id3v2")]
 			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
 			#[cfg(feature = "ape")]
@@ -74,6 +78,11 @@ impl TaggedFile {
 			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => TagType::Mp4Ilst,
 		}
+	}
+
+	/// Determines whether the file supports the given [`TagType`]
+	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
+		self.ty.supports_tag_type(&tag_type)
 	}
 
 	/// Returns all tags
@@ -101,6 +110,32 @@ impl TaggedFile {
 		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
 	}
 
+	/// Inserts a [`Tag`]
+	///
+	/// If a tag is replaced, it will be returned
+	pub fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
+		let tag_type = *tag.tag_type();
+
+		if self.supports_tag_type(tag_type) {
+			let ret = self.remove_tag(tag_type);
+			self.tags.push(tag);
+
+			return ret;
+		}
+
+		None
+	}
+
+	/// Removes a specific [`TagType`]
+	///
+	/// This will return the tag if it is removed
+	pub fn remove_tag(&mut self, tag_type: TagType) -> Option<Tag> {
+		self.tags
+			.iter()
+			.position(|t| t.tag_type() == &tag_type)
+			.map(|pos| self.tags.remove(pos))
+	}
+
 	/// Returns the file's [`FileType`]
 	pub fn file_type(&self) -> &FileType {
 		&self.ty
@@ -109,6 +144,28 @@ impl TaggedFile {
 	/// Returns a reference to the file's [`FileProperties`]
 	pub fn properties(&self) -> &FileProperties {
 		&self.properties
+	}
+
+	/// Attempts to write all tags to a path
+	///
+	/// # Errors
+	///
+	/// See [TaggedFile::save_to]
+	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	/// Attempts to write all tags to a file
+	///
+	/// # Errors
+	///
+	/// See [`Tag::save_to`], however this is applicable to every tag in the `TaggedFile`.
+	pub fn save_to(&self, file: &mut File) -> Result<()> {
+		for tag in &self.tags {
+			tag.save_to(file)?;
+		}
+
+		Ok(())
 	}
 }
 

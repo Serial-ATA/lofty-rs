@@ -12,7 +12,7 @@ fn main() {
 	let tags = tagged_file.tags();
 
 	if tags.is_empty() {
-		println!("No tags found, exiting.");
+		eprintln!("No tags found, exiting.");
 		std::process::exit(0);
 	}
 
@@ -45,14 +45,14 @@ fn main() {
 		}
 
 		input.clear();
-		println!("Bad input")
+		eprintln!("ERROR: Unexpected input")
 	}
 
 	let tag_remove = available_tag_types[to_remove.unwrap()];
 
 	if tag_remove.remove_from_path(path) {
-		println!("Removed tag: {:?}", tag_remove);
+		println!("INFO: Removed tag: `{:?}`", tag_remove);
 	} else {
-		println!("Failed to remove the tag")
+		eprintln!("ERROR: Failed to remove the tag")
 	}
 }

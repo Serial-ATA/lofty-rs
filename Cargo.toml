@@ -32,6 +32,7 @@ riff_info_list = []
 
 [dev-dependencies]
 criterion = { version = "0.3.5", features = ["html_reports"] }
+structopt = { version = "0.3.25", default-features = false }
 tempfile = "3.2.0"
 
 [[bench]]
