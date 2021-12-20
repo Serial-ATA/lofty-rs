@@ -97,12 +97,12 @@ pub struct Id3v2Tag {
 	frames: Vec<Frame>,
 }
 
-// TODO: Genre
 impl_accessor!(
 	title,        "TIT2";
 	artist,       "TPE1";
 	album,        "TALB";
 	album_artist, "TPE2";
+	genre,        "TCON";
 );
 
 impl Default for Id3v2Tag {
