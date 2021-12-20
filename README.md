@@ -23,12 +23,14 @@ Parse, convert, and write metadata to various audio formats.
 
 * [Tag reader](examples/tag_reader.rs)
 * [Tag stripper](examples/tag_stripper.rs)
+* [Tag writer](examples/tag_writer.rs)
 
 To try them out, run:
 
 ```bash
 cargo run --example tag_reader /path/to/file
 cargo run --example tag_stripper /path/to/file
+cargo run --example tag_writer <options> --path /path/to/file
 ```
 
 ## Documentation
