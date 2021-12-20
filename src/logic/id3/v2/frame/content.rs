@@ -106,7 +106,7 @@ fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 		Some(e) => e,
 	};
 
-	let text = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
+	let text = decode_text(content, encoding, true)?.unwrap_or_else(String::new);
 
 	Ok(FrameValue::Text {
 		encoding,
@@ -115,7 +115,7 @@ fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 }
 
 fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
-	let link = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
+	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_else(String::new);
 
 	Ok(FrameValue::URL(link))
 }

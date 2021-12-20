@@ -236,7 +236,7 @@ impl TryFrom<ItemKey> for FrameID {
 			ItemKey::Unknown(unknown) if unknown.len() == 4 && unknown.is_ascii() => {
 				Ok(Self::Valid(unknown.to_ascii_uppercase()))
 			},
-			k => k.map_key(&TagType::Id3v2, false).map_or(
+			k => k.map_key(TagType::Id3v2, false).map_or(
 				Err(LoftyError::Id3v2(
 					"ItemKey does not meet the requirements to be a FrameID",
 				)),
@@ -438,7 +438,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			{
 				Ok(unknown.as_str())
 			},
-			k => k.map_key(&TagType::Id3v2, false).ok_or(LoftyError::Id3v2(
+			k => k.map_key(TagType::Id3v2, false).ok_or(LoftyError::Id3v2(
 				"ItemKey does not meet the requirements to be a FrameID",
 			)),
 		}?;

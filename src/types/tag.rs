@@ -146,7 +146,7 @@ impl Tag {
 
 	/// Change the [`TagType`], remapping all items
 	pub fn re_map(&mut self, tag_type: TagType) {
-		self.retain_items(|i| i.re_map(&tag_type).is_some());
+		self.retain_items(|i| i.re_map(tag_type).is_some());
 		self.tag_type = tag_type
 	}
 
@@ -206,7 +206,7 @@ impl Tag {
 	///
 	/// This will return `true` if the item was inserted.
 	pub fn insert_item(&mut self, item: TagItem) -> bool {
-		if item.re_map(&self.tag_type).is_some() {
+		if item.re_map(self.tag_type).is_some() {
 			self.insert_item_unchecked(item);
 			return true;
 		}
@@ -310,7 +310,7 @@ impl Tag {
 }
 
 /// The tag's format
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TagType {
 	#[cfg(feature = "ape")]
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
@@ -361,8 +361,7 @@ impl TagType {
 				if file_type.supports_tag_type(self) {
 					let file = probe.into_inner();
 
-					return crate::logic::write_tag(&Tag::new(self.clone()), file, file_type)
-						.is_ok();
+					return crate::logic::write_tag(&Tag::new(*self), file, file_type).is_ok();
 				}
 			}
 		}

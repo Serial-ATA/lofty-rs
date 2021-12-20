@@ -635,8 +635,12 @@ impl Picture {
 				},
 			}
 		} else {
-			(crate::logic::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?)
-				.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
+			(crate::logic::id3::v2::util::text_utils::decode_text(
+				&mut cursor,
+				TextEncoding::UTF8,
+				true,
+			)?)
+			.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
 		};
 
 		let picture_type = PictureType::from_u8(cursor.read_u8()?);

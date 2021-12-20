@@ -135,7 +135,7 @@ impl From<ApeTag> for Tag {
 		let mut tag = Tag::new(TagType::Ape);
 
 		for item in input.items {
-			let item = TagItem::new(ItemKey::from_key(&TagType::Ape, &*item.key), item.value);
+			let item = TagItem::new(ItemKey::from_key(TagType::Ape, &*item.key), item.value);
 
 			tag.insert_item_unchecked(item)
 		}
@@ -184,7 +184,7 @@ impl<'a> Into<ApeTagRef<'a>> for &'a Tag {
 		ApeTagRef {
 			read_only: false,
 			items: Box::new(self.items.iter().filter_map(|i| {
-				i.key().map_key(&TagType::Ape, true).map(|key| ApeItemRef {
+				i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
 					read_only: false,
 					key,
 					value: (&i.item_value).into(),
@@ -294,7 +294,7 @@ mod tests {
 	fn tag_to_ape() {
 		fn verify_key(tag: &ApeTag, key: &str, expected_val: &str) {
 			assert_eq!(
-				tag.get_key(key).map(|i| i.value()),
+				tag.get_key(key).map(ApeItem::value),
 				Some(&ItemValue::Text(String::from(expected_val)))
 			);
 		}

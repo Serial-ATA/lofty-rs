@@ -110,7 +110,7 @@ impl From<RiffInfoList> for Tag {
 		let mut tag = Tag::new(TagType::RiffInfo);
 
 		for (k, v) in input.items {
-			let item_key = ItemKey::from_key(&TagType::RiffInfo, &k);
+			let item_key = ItemKey::from_key(TagType::RiffInfo, &k);
 
 			tag.insert_item_unchecked(TagItem::new(
 				item_key,
@@ -136,8 +136,13 @@ impl From<Tag> for RiffInfoList {
 							continue;
 						}
 					},
-					// Safe to unwrap since we already checked ItemKey::Unknown
-					k => k.map_key(&TagType::RiffInfo, false).unwrap().to_string(),
+					k => {
+						if let Some(key) = k.map_key(TagType::RiffInfo, false) {
+							key.to_string()
+						} else {
+							continue;
+						}
+					},
 				};
 
 				riff_info.items.push((item_key, val))
@@ -165,7 +170,7 @@ impl<'a> Into<RiffInfoListRef<'a>> for &'a Tag {
 		RiffInfoListRef {
 			items: Box::new(self.items.iter().filter_map(|i| {
 				if let ItemValue::Text(val) | ItemValue::Locator(val) = &i.item_value {
-					let item_key = i.key().map_key(&TagType::RiffInfo, true).unwrap();
+					let item_key = i.key().map_key(TagType::RiffInfo, true).unwrap();
 
 					if item_key.len() == 4 && item_key.is_ascii() {
 						Some((item_key, val))

@@ -168,7 +168,7 @@ impl From<Ilst> for Tag {
 			};
 
 			let key = ItemKey::from_key(
-				&TagType::Mp4Ilst,
+				TagType::Mp4Ilst,
 				&match atom.ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
@@ -254,7 +254,7 @@ impl<'a> Into<IlstRef<'a>> for &'a Tag {
 }
 
 fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
-	key.map_key(&TagType::Mp4Ilst, true).and_then(|ident| {
+	key.map_key(TagType::Mp4Ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
 			let mut split = ident.split(':');
 

@@ -121,7 +121,7 @@ impl From<VorbisComments> for Tag {
 
 		for (k, v) in input.items {
 			tag.insert_item_unchecked(TagItem::new(
-				ItemKey::from_key(&TagType::VorbisComments, &k),
+				ItemKey::from_key(TagType::VorbisComments, &k),
 				ItemValue::Text(v),
 			));
 		}
@@ -150,7 +150,7 @@ impl From<Tag> for VorbisComments {
 			};
 
 			// Safe to unwrap since all ItemKeys map in Vorbis comments
-			let key = item.key().map_key(&TagType::VorbisComments, true).unwrap();
+			let key = item.key().map_key(TagType::VorbisComments, true).unwrap();
 
 			vorbis_comments
 				.items
@@ -205,10 +205,9 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 		let vendor = self.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
 
 		let items = self.items.iter().filter_map(|i| match i.value() {
-			ItemValue::Text(val) | ItemValue::Locator(val) => Some((
-				i.key().map_key(&TagType::VorbisComments, true).unwrap(),
-				val,
-			)),
+			ItemValue::Text(val) | ItemValue::Locator(val) => {
+				Some((i.key().map_key(TagType::VorbisComments, true).unwrap(), val))
+			},
 			_ => None,
 		});
 

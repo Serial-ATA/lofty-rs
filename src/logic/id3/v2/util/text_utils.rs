@@ -50,13 +50,17 @@ where
 	};
 
 	Ok(if let Some(raw_bytes) = raw_bytes {
-		Some(match encoding {
+		let read_string = match encoding {
 			TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
 			TextEncoding::UTF16 => {
 				if raw_bytes.len() < 2 {
 					return Err(LoftyError::TextDecode(
 						"UTF-16 string has an invalid length (< 2)",
 					));
+				}
+
+				if raw_bytes.len() % 2 != 0 {
+					return Err(LoftyError::TextDecode("UTF-16 string has an odd length"));
 				}
 
 				match (raw_bytes[0], raw_bytes[1]) {
@@ -72,24 +76,12 @@ where
 			TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
 			TextEncoding::UTF8 => String::from_utf8(raw_bytes)
 				.map_err(|_| LoftyError::TextDecode("Expected a UTF-8 string"))?,
-		})
+		};
+
+		(!read_string.is_empty()).then(|| read_string)
 	} else {
 		None
 	})
-}
-
-pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
-	if reader.is_empty() || reader.len() % 2 != 0 {
-		return Err(LoftyError::TextDecode("UTF-16 string has an odd length"));
-	}
-
-	let unverified: Vec<u16> = reader
-		.chunks_exact(2)
-		.map(|c| endianness(c.try_into().unwrap()))
-		.collect();
-
-	String::from_utf16(&unverified)
-		.map_err(|_| LoftyError::TextDecode("Given an invalid UTF-16 string"))
 }
 
 pub(crate) fn read_to_terminator<R>(reader: &mut R, encoding: TextEncoding) -> Option<Vec<u8>>
@@ -110,7 +102,7 @@ where
 		},
 		TextEncoding::UTF16 | TextEncoding::UTF16BE => {
 			while let (Ok(b1), Ok(b2)) = (reader.read_u8(), reader.read_u8()) {
-				if b1 == 0 || b2 == 0 {
+				if b1 == 0 && b2 == 0 {
 					break;
 				}
 
@@ -121,6 +113,23 @@ where
 	}
 
 	(!text_bytes.is_empty()).then(|| text_bytes)
+}
+
+pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
+	if reader.is_empty() {
+		return Ok(String::new());
+	}
+
+	let unverified: Vec<u16> = reader
+		.chunks_exact(2)
+		.map_while(|c| match c {
+			[0, 0] => None,
+			_ => Some(endianness(c.try_into().unwrap())),
+		})
+		.collect();
+
+	String::from_utf16(&unverified)
+		.map_err(|_| LoftyError::TextDecode("Given an invalid UTF-16 string"))
 }
 
 pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
@@ -205,7 +214,7 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(be_utf16_decode.clone(), le_utf16_decode.clone());
+		assert_eq!(be_utf16_decode, le_utf16_decode);
 		assert_eq!(be_utf16_decode, Some(TEST_STRING.to_string()));
 
 		let utf8_decode =

@@ -38,7 +38,7 @@ macro_rules! item_keys {
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
-			pub fn from_key(tag_type: &TagType, key: &str) -> Self {
+			pub fn from_key(tag_type: TagType, key: &str) -> Self {
 				match tag_type {
 					$(
 						$(
@@ -53,7 +53,7 @@ macro_rules! item_keys {
 			///
 			/// Use `allow_unknown` to include [`ItemKey::Unknown`]. It is up to the caller
 			/// to determine if the unknown key actually fits the format's specifications.
-			pub fn map_key(&self, tag_type: &TagType, allow_unknown: bool) -> Option<&str> {
+			pub fn map_key(&self, tag_type: TagType, allow_unknown: bool) -> Option<&str> {
 				match (tag_type, self) {
 					$(
 						$(
@@ -456,7 +456,7 @@ impl TagItem {
 	/// * If the [`ItemKey`] does not map to a key in the target format, `None` will be returned.
 	/// * It is pointless to do this if you plan on using [`Tag::insert_item`](crate::Tag::insert_item), as it does validity checks itself.
 	pub fn new_checked(
-		tag_type: &TagType,
+		tag_type: TagType,
 		item_key: ItemKey,
 		item_value: ItemValue,
 	) -> Option<Self> {
@@ -484,8 +484,8 @@ impl TagItem {
 		&self.item_value
 	}
 
-	pub(crate) fn re_map(&self, tag_type: &TagType) -> Option<()> {
-		if tag_type == &TagType::Id3v1 {
+	pub(crate) fn re_map(&self, tag_type: TagType) -> Option<()> {
+		if tag_type == TagType::Id3v1 {
 			return VALID_ITEMKEYS.contains(&self.item_key).then(|| ());
 		}
 

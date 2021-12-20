@@ -76,6 +76,11 @@ impl TaggedFile {
 		}
 	}
 
+	/// Returns all tags
+	pub fn tags(&self) -> &[Tag] {
+		self.tags.as_slice()
+	}
+
 	/// Gets the first tag, if there are any
 	pub fn first_tag(&self) -> Option<&Tag> {
 		self.tags.first()

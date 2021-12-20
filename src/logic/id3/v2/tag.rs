@@ -220,7 +220,7 @@ impl From<Id3v2Tag> for Tag {
 		let mut tag = Self::new(TagType::Id3v2);
 
 		for frame in input.frames {
-			let item_key = ItemKey::from_key(&TagType::Id3v2, frame.id_str());
+			let item_key = ItemKey::from_key(TagType::Id3v2, frame.id_str());
 			let item_value = match frame.value {
 				FrameValue::Comment(LanguageFrame { content, .. })
 				| FrameValue::UnSyncText(LanguageFrame { content, .. })

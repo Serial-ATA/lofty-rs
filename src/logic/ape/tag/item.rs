@@ -70,7 +70,7 @@ impl TryFrom<TagItem> for ApeItem {
 		Self::new(
 			value
 				.item_key
-				.map_key(&TagType::Ape, false)
+				.map_key(TagType::Ape, false)
 				.ok_or(LoftyError::Ape(
 					"Attempted to convert an unsupported item key",
 				))?
