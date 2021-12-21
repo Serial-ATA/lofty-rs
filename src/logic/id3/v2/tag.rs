@@ -1,20 +1,15 @@
+use super::flags::Id3v2TagFlags;
 use super::frame::{EncodedTextFrame, FrameFlags, LanguageFrame};
 use super::frame::{Frame, FrameID, FrameValue};
-#[cfg(feature = "id3v2_restrictions")]
-use super::items::restrictions::TagRestrictions;
 use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
-use crate::error::{LoftyError, Result};
+use crate::error::Result;
 use crate::logic::id3::v2::frame::FrameRef;
-use crate::probe::Probe;
-use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::File;
-
-use byteorder::ByteOrder;
 
 macro_rules! impl_accessor {
 	($($name:ident, $id:literal;)+) => {
@@ -192,18 +187,6 @@ impl Id3v2Tag {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v2TagRef>::into(self).write_to(file)
 	}
-
-	/// Write the tag to a chunk file
-	///
-	/// NOTE: This is only for chunk files (eg. `WAV` and `AIFF`)
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
-	pub fn write_to_chunk_file<B: ByteOrder>(&self, file: &mut File) -> Result<()> {
-		Into::<Id3v2TagRef>::into(self).write_to_chunk_file::<B>(file)
-	}
 }
 
 impl IntoIterator for Id3v2Tag {
@@ -217,10 +200,50 @@ impl IntoIterator for Id3v2Tag {
 
 impl From<Id3v2Tag> for Tag {
 	fn from(input: Id3v2Tag) -> Self {
+		fn split_pair(
+			content: &str,
+			tag: &mut Tag,
+			current_key: ItemKey,
+			total_key: ItemKey,
+		) -> Option<()> {
+			let mut split = content.splitn(2, &['\0', '/'][..]);
+			let current = split.next()?.to_string();
+			tag.insert_item_unchecked(TagItem::new(current_key, ItemValue::Text(current)));
+
+			if let Some(total) = split.next() {
+				tag.insert_item_unchecked(TagItem::new(
+					total_key,
+					ItemValue::Text(total.to_string()),
+				))
+			}
+
+			Some(())
+		}
+
 		let mut tag = Self::new(TagType::Id3v2);
 
 		for frame in input.frames {
-			let item_key = ItemKey::from_key(TagType::Id3v2, frame.id_str());
+			let id = frame.id_str();
+
+			// The text pairs need some special treatment
+			match (id, frame.content()) {
+				("TRCK", FrameValue::Text { value: content, .. })
+					if split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
+						.is_some() =>
+				{
+					continue
+				},
+				("TPOS", FrameValue::Text { value: content, .. })
+					if split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
+						.is_some() =>
+				{
+					continue
+				},
+				_ => {},
+			}
+
+			let item_key = ItemKey::from_key(TagType::Id3v2, id);
+
 			let item_value = match frame.value {
 				FrameValue::Comment(LanguageFrame { content, .. })
 				| FrameValue::UnSyncText(LanguageFrame { content, .. })
@@ -273,27 +296,6 @@ impl From<Tag> for Id3v2Tag {
 	}
 }
 
-#[derive(Default, Copy, Clone, Debug, PartialEq)]
-#[allow(clippy::struct_excessive_bools)]
-/// Flags that apply to the entire tag
-pub struct Id3v2TagFlags {
-	/// Whether or not all frames are unsynchronised. See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation)
-	pub unsynchronisation: bool,
-	/// Indicates if the tag is in an experimental stage
-	pub experimental: bool,
-	/// Indicates that the tag includes a footer
-	pub footer: bool,
-	/// Whether or not to include a CRC-32 in the extended header
-	///
-	/// This is calculated if the tag is written
-	pub crc: bool,
-	#[cfg(feature = "id3v2_restrictions")]
-	/// Restrictions on the tag, written in the extended header
-	///
-	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]
-	pub restrictions: (bool, TagRestrictions),
-}
-
 pub(crate) struct Id3v2TagRef<'a> {
 	pub(crate) flags: Id3v2TagFlags,
 	pub(crate) frames: Box<dyn Iterator<Item = FrameRef<'a>> + 'a>,
@@ -302,20 +304,6 @@ pub(crate) struct Id3v2TagRef<'a> {
 impl<'a> Id3v2TagRef<'a> {
 	pub(in crate::logic) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_id3v2(file, self)
-	}
-
-	pub(in crate::logic) fn write_to_chunk_file<B: ByteOrder>(
-		&mut self,
-		file: &mut File,
-	) -> Result<()> {
-		let probe = Probe::new(file).guess_file_type()?;
-
-		match probe.file_type() {
-			Some(ft) if ft == FileType::WAV || ft == FileType::AIFF => {},
-			_ => return Err(LoftyError::UnsupportedTag),
-		}
-
-		super::write::write_id3v2_to_chunk_file::<B>(probe.into_inner(), self)
 	}
 }
 
@@ -347,9 +335,11 @@ mod tests {
 	use crate::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding};
 	use crate::{Tag, TagType};
 
+	use crate::logic::id3::v2::read_id3v2_header;
 	use std::io::Read;
 
 	#[test]
+	#[allow(clippy::similar_names)]
 	fn parse_id3v2() {
 		let mut expected_tag = Id3v2Tag::default();
 
@@ -450,12 +440,14 @@ mod tests {
 
 		let mut reader = std::io::Cursor::new(&tag[..]);
 
-		let parsed_tag = crate::logic::id3::v2::read::parse_id3v2(&mut reader).unwrap();
+		let header = read_id3v2_header(&mut reader).unwrap();
+		let parsed_tag = crate::logic::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
 	#[test]
+	#[allow(clippy::similar_names)]
 	fn id3v2_to_tag() {
 		let mut tag_bytes = Vec::new();
 		std::fs::File::open("tests/tags/assets/test.id3v2")
@@ -465,7 +457,8 @@ mod tests {
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 
-		let id3v2 = crate::logic::id3::v2::read::parse_id3v2(&mut reader).unwrap();
+		let header = read_id3v2_header(&mut reader).unwrap();
+		let id3v2 = crate::logic::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
 
 		let tag: Tag = id3v2.into();
 

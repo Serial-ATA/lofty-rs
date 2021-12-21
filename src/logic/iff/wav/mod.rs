@@ -5,12 +5,14 @@ pub(crate) mod tag;
 pub(in crate::logic) mod write;
 
 use crate::error::Result;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
 use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
-use crate::types::tag::TagType;
+use crate::types::tag::{Tag, TagType};
 use properties::WavProperties;
+#[cfg(feature = "riff_info_list")]
 use tag::RiffInfoList;
 
 use std::io::{Read, Seek};
@@ -29,16 +31,17 @@ pub struct WavFile {
 
 impl From<WavFile> for TaggedFile {
 	fn from(input: WavFile) -> Self {
+		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
+
+		#[cfg(feature = "riff_info_list")]
+		tags.push(input.riff_info.map(Into::into));
+		#[cfg(feature = "id3v2")]
+		tags.push(input.id3v2_tag.map(Into::into));
+
 		Self {
 			ty: FileType::WAV,
 			properties: FileProperties::from(input.properties),
-			tags: vec![
-				input.riff_info.map(Into::into),
-				input.id3v2_tag.map(Into::into),
-			]
-			.into_iter()
-			.flatten()
-			.collect(),
+			tags: tags.into_iter().flatten().collect(),
 		}
 	}
 }
@@ -58,19 +61,33 @@ impl AudioFile for WavFile {
 		&self.properties
 	}
 
+	#[allow(unreachable_code)]
 	fn contains_tag(&self) -> bool {
-		self.id3v2_tag.is_some() || self.riff_info.is_some()
+		#[cfg(feature = "id3v2")]
+		return self.id3v2_tag.is_some();
+
+		#[cfg(feature = "riff_info_list")]
+		return self.riff_info.is_some();
+
+		false
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
+			#[cfg(feature = "id3v2")]
 			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			#[cfg(feature = "riff_info_list")]
 			TagType::RiffInfo => self.riff_info.is_some(),
 			_ => false,
 		}
 	}
 }
 
-tag_methods! {
-	WavFile => ID3v2, id3v2_tag, Id3v2Tag; RIFF_INFO, riff_info, RiffInfoList
+impl WavFile {
+	tag_methods! {
+		#[cfg(feature = "id3v2")];
+		ID3v2, id3v2_tag, Id3v2Tag;
+		#[cfg(feature = "riff_info_list")];
+		RIFF_INFO, riff_info, RiffInfoList
+	}
 }

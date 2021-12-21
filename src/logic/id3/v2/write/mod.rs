@@ -1,24 +1,30 @@
 mod chunk_file;
 mod frame;
 
-use super::find_id3v2;
+use super::Id3v2TagFlags;
 use crate::error::{LoftyError, Result};
-use crate::logic::id3::synch_u32;
-use crate::logic::id3::v2::tag::{Id3v2TagFlags, Id3v2TagRef};
+use crate::logic::id3::v2::tag::Id3v2TagRef;
+use crate::logic::id3::{find_id3v2, v2::synch_u32};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use byteorder::{BigEndian, ByteOrder, WriteBytesExt};
+use byteorder::{BigEndian, ByteOrder, LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
 pub(in crate::logic) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
 	let probe = Probe::new(data).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
+		Some(FileType::APE | FileType::MP3) => {},
+		Some(FileType::WAV) => {
+			return write_id3v2_to_chunk_file::<LittleEndian>(probe.into_inner(), tag)
+		},
+		Some(FileType::AIFF) => {
+			return write_id3v2_to_chunk_file::<BigEndian>(probe.into_inner(), tag)
+		},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
 

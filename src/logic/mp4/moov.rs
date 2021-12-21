@@ -1,17 +1,18 @@
-use super::atom_info::AtomInfo;
+use super::atom_info::{AtomIdent, AtomInfo};
 #[cfg(feature = "mp4_ilst")]
 use super::ilst::{read::parse_ilst, Ilst};
 use super::read::skip_unneeded;
 use super::trak::Trak;
-use super::AtomIdent;
 use crate::error::{LoftyError, Result};
 
 use std::io::{Read, Seek};
 
+#[cfg(feature = "mp4_ilst")]
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) struct Moov {
 	pub(crate) traks: Vec<Trak>,
+	#[cfg(feature = "mp4_ilst")]
 	// Represents a parsed moov.udta.meta.ilst since we don't need anything else
 	pub(crate) meta: Option<Ilst>,
 }
@@ -44,12 +45,14 @@ impl Moov {
 		R: Read + Seek,
 	{
 		let mut traks = Vec::new();
+		#[cfg(feature = "mp4_ilst")]
 		let mut meta = None;
 
 		while let Ok(atom) = AtomInfo::read(data) {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
 					b"trak" => traks.push(Trak::parse(data, &atom)?),
+					#[cfg(feature = "mp4_ilst")]
 					b"udta" => {
 						meta = meta_from_udta(data, atom.len - 8)?;
 					},
@@ -62,10 +65,15 @@ impl Moov {
 			skip_unneeded(data, atom.extended, atom.len)?
 		}
 
-		Ok(Self { traks, meta })
+		Ok(Self {
+			traks,
+			#[cfg(feature = "mp4_ilst")]
+			meta,
+		})
 	}
 }
 
+#[cfg(feature = "mp4_ilst")]
 fn meta_from_udta<R>(data: &mut R, len: u64) -> Result<Option<Ilst>>
 where
 	R: Read + Seek,
@@ -109,7 +117,6 @@ where
 		skip_unneeded(data, atom.extended, atom.len)?;
 	}
 
-	#[cfg(feature = "mp4_ilst")]
 	if islt.0 {
 		return parse_ilst(data, islt.1 - 8).map(Some);
 	}

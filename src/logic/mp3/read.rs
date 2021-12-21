@@ -1,16 +1,21 @@
 use super::header::{verify_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::error::{LoftyError, Result};
+#[cfg(feature = "id3v2")]
 use crate::id3::v2::Id3v2Tag;
-use crate::logic::ape::tag::ApeTag;
-use crate::logic::id3::unsynch_u32;
+#[cfg(feature = "ape")]
+use crate::logic::ape::tag::ape_tag::ApeTag;
+use crate::logic::ape::tag::read_ape_header;
+#[cfg(feature = "id3v1")]
 use crate::logic::id3::v1::tag::Id3v1Tag;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::read::parse_id3v2;
+use crate::logic::id3::v2::read_id3v2_header;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
+use byteorder::ReadBytesExt;
 
 fn read_properties(
 	first_frame: (Header, u64),
@@ -67,8 +72,11 @@ pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp3File>
 where
 	R: Read + Seek,
 {
+	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	#[cfg(feature = "id3v1")]
 	let mut id3v1_tag: Option<Id3v1Tag> = None;
+	#[cfg(feature = "ape")]
 	let mut ape_tag: Option<ApeTag> = None;
 
 	let mut first_mpeg_frame = (None, 0);
@@ -99,20 +107,21 @@ where
 				let mut remaining_header = [0; 6];
 				data.read_exact(&mut remaining_header)?;
 
-				let size = (unsynch_u32(BigEndian::read_u32(&remaining_header[2..])) + 10) as usize;
-				data.seek(SeekFrom::Current(-10))?;
+				let header = read_id3v2_header(
+					&mut &*[header.as_slice(), remaining_header.as_slice()].concat(),
+				)?;
+				let skip_footer = header.flags.footer;
 
-				let mut id3v2_read = vec![0; size];
-				data.read_exact(&mut id3v2_read)?;
-
-				let id3v2 = parse_id3v2(&mut &*id3v2_read)?;
-
-				// Skip over the footer
-				if id3v2.flags().footer {
-					data.seek(SeekFrom::Current(10))?;
+				#[cfg(feature = "id3v2")]
+				{
+					let id3v2 = parse_id3v2(data, header)?;
+					id3v2_tag = Some(id3v2);
 				}
 
-				id3v2_tag = Some(id3v2);
+				// Skip over the footer
+				if skip_footer {
+					data.seek(SeekFrom::Current(10))?;
+				}
 
 				continue;
 			},
@@ -122,7 +131,11 @@ where
 				let mut id3v1_read = [0; 128];
 				data.read_exact(&mut id3v1_read)?;
 
-				id3v1_tag = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
+				#[cfg(feature = "id3v1")]
+				{
+					id3v1_tag = Some(crate::logic::id3::v1::read::parse_id3v1(id3v1_read));
+				}
+
 				continue;
 			},
 			[b'A', b'P', b'E', b'T'] => {
@@ -130,7 +143,21 @@ where
 				data.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					ape_tag = Some(crate::logic::ape::tag::read::read_ape_tag(data, false)?.0);
+					let ape_header = read_ape_header(data, false)?;
+
+					#[cfg(not(feature = "ape"))]
+					{
+						let size = ape_header.size;
+						data.seek(SeekFrom::Current(size as i64))?;
+					}
+
+					#[cfg(feature = "ape")]
+					{
+						ape_tag = Some(crate::logic::ape::tag::read::read_ape_tag(
+							data, ape_header,
+						)?);
+					}
+
 					continue;
 				}
 			},

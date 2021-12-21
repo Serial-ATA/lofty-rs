@@ -1,9 +1,8 @@
 use super::read::read_ape_tag;
 use crate::error::{LoftyError, Result};
 use crate::logic::ape::constants::APE_PREAMBLE;
-use crate::logic::ape::tag::ApeTagRef;
-use crate::logic::id3::v2::find_id3v2;
-use crate::logic::id3::{find_id3v1, find_lyrics3v2};
+use crate::logic::ape::tag::ape_tag::ApeTagRef;
+use crate::logic::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::ItemValueRef;
@@ -11,6 +10,7 @@ use crate::types::item::ItemValueRef;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use crate::logic::ape::tag::read_ape_header;
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
@@ -41,7 +41,11 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result
 		let start = data.seek(SeekFrom::Current(-8))?;
 
 		data.seek(SeekFrom::Current(8))?;
-		let (mut existing, size) = read_ape_tag(data, false)?;
+
+		let header = read_ape_header(data, false)?;
+		let size = header.size;
+
+		let mut existing = read_ape_tag(data, header)?;
 
 		// Only keep metadata around that's marked read only
 		existing.items.retain(|i| i.read_only);
@@ -73,7 +77,10 @@ pub(in crate::logic) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result
 	if &ape_preamble == APE_PREAMBLE {
 		let start = data.seek(SeekFrom::Current(0))? as usize + 24;
 
-		let (mut existing, size) = read_ape_tag(data, true)?;
+		let header = read_ape_header(data, true)?;
+		let size = header.size;
+
+		let mut existing = read_ape_tag(data, header)?;
 
 		existing.items.retain(|i| i.read_only);
 

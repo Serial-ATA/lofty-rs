@@ -1,9 +1,8 @@
-use super::atom_info::AtomInfo;
+use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::read_properties;
 use super::Mp4File;
 use crate::error::{LoftyError, Result};
-use crate::mp4::AtomIdent;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -40,6 +39,7 @@ where
 
 	Ok(Mp4File {
 		ftyp,
+		#[cfg(feature = "mp4_ilst")]
 		ilst: moov.meta,
 		properties: read_properties(data, &moov.traks, file_length)?,
 	})

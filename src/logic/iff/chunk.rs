@@ -1,10 +1,13 @@
 use crate::error::Result;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::read::parse_id3v2;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
+use crate::logic::id3::v2::read_id3v2_header;
 use byteorder::{ByteOrder, ReadBytesExt};
 
 pub(in crate::logic) struct Chunks<B>
@@ -45,6 +48,8 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(content)
 	}
 
+	#[cfg(feature = "id3v2")]
+	#[allow(clippy::similar_names)]
 	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<Id3v2Tag>
 	where
 		R: Read + Seek,
@@ -52,7 +57,10 @@ impl<B: ByteOrder> Chunks<B> {
 		let mut value = vec![0; self.size as usize];
 		data.read_exact(&mut value)?;
 
-		let id3v2 = parse_id3v2(&mut &*value)?;
+		let reader = &mut &*value;
+
+		let header = read_id3v2_header(reader)?;
+		let id3v2 = parse_id3v2(reader, header)?;
 
 		// Skip over the footer
 		if id3v2.flags().footer {
@@ -60,6 +68,27 @@ impl<B: ByteOrder> Chunks<B> {
 		}
 
 		Ok(id3v2)
+	}
+
+	#[cfg(not(feature = "id3v2"))]
+	#[allow(clippy::similar_names)]
+	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<()>
+	where
+		R: Read + Seek,
+	{
+		let mut value = vec![0; self.size as usize];
+		data.read_exact(&mut value)?;
+
+		let mut reader = &mut &*value;
+
+		let header = read_id3v2_header(reader)?;
+
+		// Skip over the footer
+		if header.flags.footer {
+			data.seek(SeekFrom::Current(10))?;
+		}
+
+		Ok(())
 	}
 
 	pub fn correct_position<R>(&mut self, data: &mut R) -> Result<()>

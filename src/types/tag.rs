@@ -312,25 +312,18 @@ impl Tag {
 /// The tag's format
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TagType {
-	#[cfg(feature = "ape")]
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,
-	#[cfg(feature = "id3v1")]
 	/// Represents an ID3v1 tag
 	Id3v1,
-	#[cfg(feature = "id3v2")]
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
-	#[cfg(feature = "mp4_ilst")]
 	/// Represents an MP4 ILST atom
 	Mp4Ilst,
-	#[cfg(feature = "vorbis_comments")]
 	/// Represents vorbis comments
 	VorbisComments,
-	#[cfg(feature = "riff_info_list")]
 	/// Represents a RIFF INFO LIST
 	RiffInfo,
-	#[cfg(feature = "aiff_text_chunks")]
 	/// Represents AIFF text chunks
 	AiffText,
 }

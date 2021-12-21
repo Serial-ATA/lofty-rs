@@ -15,6 +15,7 @@ flate2 = { version = "1.0.21", optional = true }
 # Ogg
 ogg_pager = "0.1.7"
 
+lazy_static = "1.4.0"
 paste = "1.0.5"
 base64 = "0.13.0"
 byteorder = "1.4.3"

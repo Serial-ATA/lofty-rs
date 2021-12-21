@@ -36,10 +36,8 @@ pub enum LoftyError {
 	#[cfg(feature = "id3v2")]
 	/// Errors that arise while decoding ID3v2 text
 	TextDecode(&'static str),
-	#[cfg(feature = "id3v2")]
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(&'static str),
-	#[cfg(feature = "id3v2")]
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),
 	#[cfg(feature = "id3v2")]
@@ -51,7 +49,6 @@ pub enum LoftyError {
 	#[cfg(feature = "id3v2")]
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,
-	#[cfg(feature = "mp4_ilst")]
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
 
@@ -116,9 +113,7 @@ impl Display for LoftyError {
 			},
 			#[cfg(feature = "id3v2")]
 			LoftyError::TextDecode(message) => write!(f, "Text decoding: {}", message),
-			#[cfg(feature = "id3v2")]
 			LoftyError::Id3v2(message) => write!(f, "ID3v2: {}", message),
-			#[cfg(feature = "id3v2")]
 			LoftyError::BadId3v2Version(major, minor) => write!(
 				f,
 				"ID3v2: Found an invalid version (v{}.{}), expected any major revision in: (2, 3, \
@@ -134,7 +129,6 @@ impl Display for LoftyError {
 			),
 			#[cfg(feature = "id3v2")]
 			LoftyError::BadSyncText => write!(f, "ID3v2: Encountered invalid data in SYLT frame"),
-			#[cfg(feature = "mp4_ilst")]
 			LoftyError::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
 
 			// Files

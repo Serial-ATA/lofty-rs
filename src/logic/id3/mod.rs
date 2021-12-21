@@ -1,30 +1,12 @@
 #[cfg(feature = "id3v1")]
 pub(crate) mod v1;
-
-#[cfg(feature = "id3v2")]
 pub(crate) mod v2;
 
-use crate::{LoftyError, Result};
+use crate::error::{LoftyError, Result};
+use v2::{read_id3v2_header, Id3v2Header};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
-
-// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
-pub(crate) fn unsynch_u32(n: u32) -> u32 {
-	n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
-}
-
-// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
-pub(crate) fn synch_u32(n: u32) -> Result<u32> {
-	if n > 0x1000_0000 {
-		return Err(LoftyError::TooMuchData);
-	}
-
-	let mut x: u32 = n & 0x7F | (n & 0xFFFF_FF80) << 1;
-	x = x & 0x7FFF | (x & 0xFFFF_8000) << 1;
-	x = x & 0x7F_FFFF | (x & 0xFF80_0000) << 1;
-	Ok(x)
-}
 
 pub(crate) fn find_lyrics3v2<R>(data: &mut R) -> Result<(bool, u32)>
 where
@@ -113,4 +95,56 @@ where
 	}
 
 	Ok((exists, None))
+}
+
+#[cfg(feature = "id3v2")]
+pub(crate) fn find_id3v2<R>(
+	data: &mut R,
+	read: bool,
+) -> Result<(Option<Id3v2Header>, Option<Vec<u8>>)>
+where
+	R: Read + Seek,
+{
+	let mut header = None;
+	let mut id3v2 = None;
+
+	if let Ok(id3v2_header) = read_id3v2_header(data) {
+		if read {
+			let mut tag = vec![0; id3v2_header.size as usize];
+			data.read_exact(&mut tag)?;
+
+			id3v2 = Some(tag)
+		} else {
+			data.seek(SeekFrom::Current(i64::from(id3v2_header.size)))?;
+		}
+
+		if id3v2_header.flags.footer {
+			data.seek(SeekFrom::Current(10))?;
+		}
+
+		header = Some(id3v2_header);
+	} else {
+		data.seek(SeekFrom::Current(-10))?;
+	}
+
+	Ok((header, id3v2))
+}
+
+#[cfg(not(feature = "id3v2"))]
+pub(crate) fn find_id3v2<R>(data: &mut R, _read: bool) -> Result<(Option<Id3v2Header>, Option<()>)>
+where
+	R: Read + Seek,
+{
+	if let Ok(id3v2_header) = read_id3v2_header(data) {
+		data.seek(SeekFrom::Current(id3v2_header.size as i64))?;
+
+		if id3v2_header.flags.footer {
+			data.seek(SeekFrom::Current(10))?;
+		}
+
+		Ok((Some(id3v2_header), Some(())))
+	} else {
+		data.seek(SeekFrom::Current(-10))?;
+		Ok((None, None))
+	}
 }

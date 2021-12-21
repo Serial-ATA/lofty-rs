@@ -191,6 +191,7 @@ pub mod id3 {
 		//! * [Frame]
 
 		pub use {
+			crate::logic::id3::v2::flags::Id3v2TagFlags,
 			crate::logic::id3::v2::frame::{
 				EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, LanguageFrame,
 			},
@@ -200,7 +201,7 @@ pub mod id3 {
 			crate::logic::id3::v2::items::sync_text::{
 				SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
 			},
-			crate::logic::id3::v2::tag::{Id3v2Tag, Id3v2TagFlags},
+			crate::logic::id3::v2::tag::Id3v2Tag,
 			crate::logic::id3::v2::util::text_utils::TextEncoding,
 			crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3},
 			crate::logic::id3::v2::Id3v2Version,
@@ -241,12 +242,12 @@ pub mod ape {
 	//! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
 	//! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 	//! `ID3v1`.
-	#[cfg(feature = "ape")]
-	pub use crate::logic::ape::tag::item::ApeItem;
-	#[cfg(feature = "ape")]
-	pub use crate::logic::ape::tag::ApeTag;
 	pub use crate::logic::ape::{ApeFile, ApeProperties};
-	pub use crate::types::picture::APE_PICTURE_TYPES;
+	#[cfg(feature = "ape")]
+	pub use crate::{
+		logic::ape::tag::{ape_tag::ApeTag, item::ApeItem},
+		types::picture::APE_PICTURE_TYPES,
+	};
 }
 
 pub mod mp3 {

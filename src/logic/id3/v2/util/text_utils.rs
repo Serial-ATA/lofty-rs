@@ -183,6 +183,7 @@ mod tests {
 	use crate::id3::v2::TextEncoding;
 	use std::io::Cursor;
 
+	#[allow(clippy::non_ascii_literal)]
 	const TEST_STRING: &str = "løft¥";
 
 	#[test]

@@ -1,4 +1,5 @@
 mod atom_info;
+#[cfg(feature = "mp4_ilst")]
 pub(crate) mod ilst;
 mod moov;
 mod properties;
@@ -115,9 +116,15 @@ impl From<Mp4File> for TaggedFile {
 		Self {
 			ty: FileType::MP4,
 			properties: FileProperties::from(input.properties),
-			tags: if let Some(ilst) = input.ilst {
-				vec![ilst.into()]
-			} else {
+			tags: {
+				#[cfg(feature = "mp4_ilst")]
+				if let Some(ilst) = input.ilst {
+					vec![ilst.into()]
+				} else {
+					Vec::new()
+				}
+
+				#[cfg(not(feature = "mp4_ilst"))]
 				Vec::new()
 			},
 		}
@@ -138,12 +145,20 @@ impl AudioFile for Mp4File {
 		&self.properties
 	}
 
+	#[allow(unreachable_code)]
 	fn contains_tag(&self) -> bool {
-		self.ilst.is_some()
+		#[cfg(feature = "mp4_ilst")]
+		return self.ilst.is_some();
+
+		false
 	}
 
+	#[allow(unreachable_code)]
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		tag_type == &TagType::Mp4Ilst && self.ilst.is_some()
+		#[cfg(feature = "mp4_ilst")]
+		return tag_type == &TagType::Mp4Ilst && self.ilst.is_some();
+
+		false
 	}
 }
 
@@ -154,6 +169,9 @@ impl Mp4File {
 	}
 }
 
-tag_methods! {
-	Mp4File => ilst, ilst, Ilst
+impl Mp4File {
+	tag_methods! {
+		#[cfg(feature = "mp4_ilst")];
+		ilst, ilst, Ilst
+	}
 }

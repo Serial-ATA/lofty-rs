@@ -3,12 +3,17 @@ pub(crate) mod header;
 pub(crate) mod read;
 pub(in crate::logic) mod write;
 
-use crate::logic::ape::tag::ApeTag;
+use crate::error::Result;
+#[cfg(feature = "ape")]
+use crate::logic::ape::tag::ape_tag::ApeTag;
+#[cfg(feature = "id3v1")]
 use crate::logic::id3::v1::tag::Id3v1Tag;
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
 use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::{FileProperties, Result, TagType};
+use crate::types::properties::FileProperties;
+use crate::types::tag::{Tag, TagType};
 use header::{ChannelMode, Layer, MpegVersion};
 
 use std::io::{Read, Seek};
@@ -120,18 +125,21 @@ pub struct Mp3File {
 }
 
 impl From<Mp3File> for TaggedFile {
+	#[allow(clippy::vec_init_then_push)]
 	fn from(input: Mp3File) -> Self {
+		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
+
+		#[cfg(feature = "id3v2")]
+		tags.push(input.id3v2_tag.map(Into::into));
+		#[cfg(feature = "id3v1")]
+		tags.push(input.id3v1_tag.map(Into::into));
+		#[cfg(feature = "ape")]
+		tags.push(input.ape_tag.map(Into::into));
+
 		Self {
 			ty: FileType::MP3,
 			properties: FileProperties::from(input.properties),
-			tags: vec![
-				input.id3v2_tag.map(Into::into),
-				input.id3v1_tag.map(Into::into),
-				input.ape_tag.map(Into::into),
-			]
-			.into_iter()
-			.flatten()
-			.collect(),
+			tags: tags.into_iter().flatten().collect(),
 		}
 	}
 }
@@ -150,20 +158,38 @@ impl AudioFile for Mp3File {
 		&self.properties
 	}
 
+	#[allow(unreachable_code)]
 	fn contains_tag(&self) -> bool {
-		self.id3v2_tag.is_some() || self.id3v1_tag.is_some() || self.ape_tag.is_some()
+		#[cfg(feature = "id3v2")]
+		return self.id3v2_tag.is_some();
+		#[cfg(feature = "id3v1")]
+		return self.id3v1_tag.is_some();
+		#[cfg(feature = "ape")]
+		return self.ape_tag.is_some();
+
+		false
 	}
 
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
 		match tag_type {
+			#[cfg(feature = "ape")]
 			TagType::Ape => self.ape_tag.is_some(),
+			#[cfg(feature = "id3v2")]
 			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			#[cfg(feature = "id3v1")]
 			TagType::Id3v1 => self.id3v1_tag.is_some(),
 			_ => false,
 		}
 	}
 }
 
-tag_methods! {
-	Mp3File => ID3v2, id3v2_tag, Id3v2Tag; ID3v1, id3v1_tag, Id3v1Tag; APE, ape_tag, ApeTag
+impl Mp3File {
+	tag_methods! {
+		#[cfg(feature = "id3v2")];
+		ID3v2, id3v2_tag, Id3v2Tag;
+		#[cfg(feature = "id3v1")];
+		ID3v1, id3v1_tag, Id3v1Tag;
+		#[cfg(feature = "ape")];
+		APE, ape_tag, ApeTag
+	}
 }

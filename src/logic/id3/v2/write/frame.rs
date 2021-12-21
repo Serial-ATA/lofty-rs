@@ -1,7 +1,7 @@
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::Id3v2Version;
-use crate::logic::id3::synch_u32;
 use crate::logic::id3::v2::frame::{FrameFlags, FrameRef, FrameValueRef};
+use crate::logic::id3::v2::synch_u32;
 
 use std::io::Write;
 

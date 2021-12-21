@@ -1,8 +1,7 @@
-use super::atom_info::AtomInfo;
+use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::nested_atom;
 use super::read::skip_unneeded;
 use super::trak::Trak;
-use super::AtomIdent;
 use super::{Mp4Codec, Mp4Properties};
 use crate::error::{LoftyError, Result};
 

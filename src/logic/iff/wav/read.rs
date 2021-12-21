@@ -2,6 +2,7 @@
 use super::tag::RiffInfoList;
 use super::WavFile;
 use crate::error::{LoftyError, Result};
+#[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
 use crate::logic::iff::chunk::Chunks;
 
@@ -39,6 +40,7 @@ where
 
 	#[cfg(feature = "riff_info_list")]
 	let mut riff_info = RiffInfoList::default();
+	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
 	let mut chunks = Chunks::<LittleEndian>::new();
@@ -78,11 +80,13 @@ where
 
 				#[cfg(not(feature = "riff_info_list"))]
 				{
-					data.seek(SeekFrom::Current(i64::from(size)))?;
+					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 				}
 			},
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
+			#[cfg(not(feature = "id3v2"))]
+			b"ID3 " | b"id3 " => chunks.id3_chunk(data)?,
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			},

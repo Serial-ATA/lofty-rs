@@ -44,6 +44,15 @@ pub struct TaggedFile {
 	pub(crate) tags: Vec<Tag>,
 }
 
+#[cfg(any(
+	feature = "id3v1",
+	feature = "riff_info_list",
+	feature = "aiff_text_chunks",
+	feature = "vorbis_comments",
+	feature = "id3v2",
+	feature = "mp4_ilst",
+	feature = "ape"
+))]
 impl TaggedFile {
 	/// Gets the file's "Primary tag", or the one most likely to be used in the target format
 	///
@@ -69,13 +78,20 @@ impl TaggedFile {
 	/// See [`primary_tag`](Self::primary_tag) for an explanation
 	pub fn primary_tag_type(&self) -> TagType {
 		match self.ty {
-			#[cfg(feature = "id3v2")]
+			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
+			FileType::AIFF => TagType::AiffText,
+			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
+			FileType::WAV => TagType::RiffInfo,
+			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
+			FileType::MP3 => TagType::Id3v1,
+			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
+			FileType::MP3 => TagType::Ape,
 			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
-			#[cfg(feature = "ape")]
+			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
+			FileType::MP3 => TagType::Id3v1,
 			FileType::APE => TagType::Ape,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
-			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => TagType::Mp4Ilst,
 		}
 	}
@@ -136,16 +152,6 @@ impl TaggedFile {
 			.map(|pos| self.tags.remove(pos))
 	}
 
-	/// Returns the file's [`FileType`]
-	pub fn file_type(&self) -> &FileType {
-		&self.ty
-	}
-
-	/// Returns a reference to the file's [`FileProperties`]
-	pub fn properties(&self) -> &FileProperties {
-		&self.properties
-	}
-
 	/// Attempts to write all tags to a path
 	///
 	/// # Errors
@@ -169,6 +175,18 @@ impl TaggedFile {
 	}
 }
 
+impl TaggedFile {
+	/// Returns the file's [`FileType`]
+	pub fn file_type(&self) -> &FileType {
+		&self.ty
+	}
+
+	/// Returns a reference to the file's [`FileProperties`]
+	pub fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
+}
+
 #[derive(PartialEq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 /// The type of file read
@@ -187,22 +205,25 @@ impl FileType {
 	/// Returns if the target FileType supports a [`TagType`]
 	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
 		match self {
-			FileType::AIFF => tag_type == &TagType::Id3v2 || tag_type == &TagType::AiffText,
-			FileType::APE => {
-				tag_type == &TagType::Ape
-					|| tag_type == &TagType::Id3v1
-					|| tag_type == &TagType::Id3v2
+			#[cfg(feature = "id3v2")]
+			FileType::AIFF | FileType::APE | FileType::MP3 | FileType::WAV
+				if tag_type == &TagType::Id3v2 =>
+			{
+				true
 			},
-			FileType::MP3 => {
-				tag_type == &TagType::Id3v2
-					|| tag_type == &TagType::Ape
-					|| tag_type == &TagType::Id3v1
-			},
-			FileType::Opus | FileType::FLAC | FileType::Vorbis => {
-				tag_type == &TagType::VorbisComments
-			},
+			#[cfg(feature = "aiff_text_chunks")]
+			FileType::AIFF if tag_type == &TagType::AiffText => true,
+			#[cfg(feature = "id3v1")]
+			FileType::APE | FileType::MP3 if tag_type == &TagType::Id3v1 => true,
+			#[cfg(feature = "ape")]
+			FileType::APE | FileType::MP3 if tag_type == &TagType::Ape => true,
+			#[cfg(feature = "vorbis_comments")]
+			FileType::Opus | FileType::FLAC | FileType::Vorbis => tag_type == &TagType::VorbisComments,
+			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => tag_type == &TagType::Mp4Ilst,
-			FileType::WAV => tag_type == &TagType::Id3v2 || tag_type == &TagType::RiffInfo,
+			#[cfg(feature = "riff_info_list")]
+			FileType::WAV => tag_type == &TagType::RiffInfo,
+			_ => false,
 		}
 	}
 
@@ -262,7 +283,7 @@ impl FileType {
 	}
 
 	pub(crate) fn from_buffer_inner(buf: &[u8]) -> Result<(Option<Self>, u32)> {
-		use crate::logic::id3::unsynch_u32;
+		use crate::logic::id3::v2::unsynch_u32;
 
 		if buf.is_empty() {
 			return Err(LoftyError::EmptyFile);

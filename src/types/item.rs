@@ -1,5 +1,6 @@
-use crate::logic::id3::v1::constants::VALID_ITEMKEYS;
-use crate::TagType;
+use crate::types::tag::TagType;
+
+use std::collections::HashMap;
 
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {
@@ -9,16 +10,332 @@ macro_rules! first_key {
 
 pub(crate) use first_key;
 
-// This is used to create the ItemKey enum and its to and from key conversions
+// This is used to create the key/ItemKey maps
 //
-// First comes the ItemKey variant as an ident (ex. Artist), then a collection of the appropriate mappings.
-// Ex. Artist => [TagType::Ape => "Artist"]
+// First comes the feature attribute, followed by the name of the map.
+// Ex:
+//
+// #[cfg(feature = "ape")]
+// APE_MAP;
+//
+// This is followed by the key value pairs separated by `=>`, with the key being the
+// format-specific key and the value being the appropriate ItemKey variant.
+// Ex. "Artist" => Artist
 //
 // Some formats have multiple keys that map to the same ItemKey variant, which can be added with '|'.
 // The standard key(s) **must** come before any popular non-standard keys.
 // Keys should appear in order of popularity.
-macro_rules! item_keys {
-	($($variant:ident => [$($($tag_type:pat)|* => $($key:tt)|+),+]),+) => {
+macro_rules! gen_map {
+	($(#[$meta:meta])? $NAME:ident; $($($key:literal)|+ => $variant:ident),+) => {
+		$(#[$meta])?
+		lazy_static::lazy_static! {
+			static ref $NAME: HashMap<&'static str, ItemKey> = {
+				let mut map = HashMap::new();
+				$(
+					$(
+						map.insert($key, ItemKey::$variant);
+					)+
+				)+
+				map
+			};
+		}
+
+		$(#[$meta])?
+		impl $NAME {
+			pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
+				self.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
+			}
+
+			pub(crate) fn get_key(&self, item_key: &ItemKey) -> Option<&str> {
+				match item_key {
+					$(
+						ItemKey::$variant => Some(first_key!($($key)|*)),
+					)+
+					_ => None
+				}
+			}
+		}
+	}
+}
+
+gen_map!(
+	#[cfg(feature = "aiff_text_chunks")]
+	AIFF_TEXT_MAP;
+
+	"NAME" => TrackTitle,
+	"AUTH" => TrackArtist,
+	"(c) " => CopyrightMessage
+);
+
+gen_map!(
+	#[cfg(feature = "ape")]
+	APE_MAP;
+
+	"Album" 	   	 			   => AlbumTitle,
+	"DiscSubtitle" 	   			   => SetSubtitle,
+	"Grouping"	  	  			   => ContentGroup,
+	"Title"		   	  			   => TrackTitle,
+	"Subtitle"	   	  			   => TrackSubtitle,
+	"ALBUMSORT"	   	  			   => AlbumTitleSortOrder,
+	"ALBUMARTISTSORT" 			   => AlbumArtistSortOrder,
+	"TITLESORT"					   => TrackTitleSortOrder,
+	"ARTISTSORT"	 			   => TrackArtistSortOrder,
+	"Album Artist" | "ALBUMARTIST" => AlbumArtist,
+	"Artist"					   => TrackArtist,
+	"Arranger"					   => Arranger,
+	"Writer"					   => Writer,
+	"Composer"					   => Composer,
+	"Conductor"					   => Conductor,
+	"Engineer"					   => Engineer,
+	"Lyricist"					   => Lyricist,
+	"DjMixer"					   => MixDj,
+	"Mixer"						   => MixEngineer,
+	"Performer"					   => Performer,
+	"Producer"					   => Producer,
+	"Label"						   => Label,
+	"MixArtist"					   => Remixer,
+	"Disc"						   => DiscNumber,
+	"Disc"						   => DiscTotal,
+	"Track"						   => TrackNumber,
+	"Track"						   => TrackTotal,
+	"Year"						   => Year,
+	"ISRC"						   => ISRC,
+	"Barcode"					   => Barcode,
+	"CatalogNumber"				   => CatalogNumber,
+	"Compilation"				   => FlagCompilation,
+	"Media"						   => OriginalMediaType,
+	"EncodedBy"					   => EncodedBy,
+	"Genre"						   => Genre,
+	"Mood"						   => Mood,
+	"Copyright"					   => CopyrightMessage,
+	"Comment"					   => Comment,
+	"language"					   => Language,
+	"Script"					   => Script,
+	"Lyrics"					   => Lyrics
+);
+
+gen_map! (
+	#[cfg(feature = "id3v2")]
+	ID3V2_MAP;
+
+	"TALB" 			=> AlbumTitle,
+	"TSST" 			=> SetSubtitle,
+	"TIT1" | "GRP1" => ContentGroup,
+	"TIT2"			=> TrackTitle,
+	"TIT3" 			=> TrackSubtitle,
+	"TOAL" 			=> OriginalAlbumTitle,
+	"TOPE" 			=> OriginalArtist,
+	"TOLY" 			=> OriginalLyricist,
+	"TSOA" 			=> AlbumTitleSortOrder,
+	"TSO2" 			=> AlbumArtistSortOrder,
+	"TSOT" 			=> TrackTitleSortOrder,
+	"TSOP" 			=> TrackArtistSortOrder,
+	"TSOC" 			=> ComposerSortOrder,
+	"TPE2" 			=> AlbumArtist,
+	"TPE1" 			=> TrackArtist,
+	"TEXT" 			=> Writer,
+	"TCOM" 			=> Composer,
+	"TPE3" 			=> Conductor,
+	"TIPL" 			=> InvolvedPeople,
+	"TEXT" 			=> Lyricist,
+	"TMCL" 			=> MusicianCredits,
+	"IPRO" 			=> Producer,
+	"TPUB" 			=> Publisher,
+	"TPUB" 			=> Label,
+	"TRSN" 			=> InternetRadioStationName,
+	"TRSO" 			=> InternetRadioStationOwner,
+	"TPE4" 			=> Remixer,
+	"TPOS" 			=> DiscNumber,
+	"TPOS" 			=> DiscTotal,
+	"TRCK" 			=> TrackNumber,
+	"TRCK" 			=> TrackTotal,
+	"POPM" 			=> Popularimeter,
+	"TDRC" 			=> RecordingDate,
+	"TDOR" 			=> OriginalReleaseDate,
+	"TSRC" 			=> ISRC,
+	"MVNM" 			=> Movement,
+	"MVIN" 			=> MovementIndex,
+	"TCMP" 			=> FlagCompilation,
+	"PCST" 			=> FlagPodcast,
+	"TFLT" 			=> FileType,
+	"TOWN" 			=> FileOwner,
+	"TDTG" 			=> TaggingTime,
+	"TLEN" 			=> Length,
+	"TOFN" 			=> OriginalFileName,
+	"TMED" 			=> OriginalMediaType,
+	"TENC" 			=> EncodedBy,
+	"TSSE" 			=> EncoderSoftware,
+	"TSSE" 			=> EncoderSettings,
+	"TDEN" 			=> EncodingTime,
+	"WOAF" 			=> AudioFileURL,
+	"WOAS" 			=> AudioSourceURL,
+	"WCOM" 			=> CommercialInformationURL,
+	"WCOP" 			=> CopyrightURL,
+	"WOAR" 			=> TrackArtistURL,
+	"WORS" 			=> RadioStationURL,
+	"WPAY" 			=> PaymentURL,
+	"WPUB" 			=> PublisherURL,
+	"TCON" 			=> Genre,
+	"TLEY" 			=> InitialKey,
+	"TMOO" 			=> Mood,
+	"TBPM" 			=> BPM,
+	"TCOP" 			=> CopyrightMessage,
+	"TDES" 			=> PodcastDescription,
+	"TCAT" 			=> PodcastSeriesCategory,
+	"WFED" 			=> PodcastURL,
+	"TDRL" 			=> PodcastReleaseDate,
+	"TGID" 			=> PodcastGlobalUniqueID,
+	"TKWD" 			=> PodcastKeywords,
+	"COMM" 			=> Comment,
+	"TLAN" 			=> Language,
+	"USLT" 			=> Lyrics
+);
+
+gen_map! (
+	#[cfg(feature = "mp4_ilst")]
+	ILST_MAP;
+
+	"\u{a9}alb" 						  => AlbumTitle,
+	"----:com.apple.iTunes:DISCSUBTITLE"  => SetSubtitle,
+	"tvsh" 								  => ShowName,
+	"\u{a9}grp"						      => ContentGroup,
+	"\u{a9}nam"							  => TrackTitle,
+	"----:com.apple.iTunes:SUBTITLE"	  => TrackSubtitle,
+	"soal"								  => AlbumTitleSortOrder,
+	"soaa"								  => AlbumArtistSortOrder,
+	"sonm"								  => TrackTitleSortOrder,
+	"soar"								  => TrackArtistSortOrder,
+	"sosn"								  => ShowNameSortOrder,
+	"soco"								  => ComposerSortOrder,
+	"aART"								  => AlbumArtist,
+	"\u{a9}ART"							  => TrackArtist,
+	"\u{a9}wrt"							  => Composer,
+	"----:com.apple.iTunes:CONDUCTOR"	  => Conductor,
+	"----:com.apple.iTunes:ENGINEER"	  => Engineer,
+	"----:com.apple.iTunes:LYRICIST"	  => Lyricist,
+	"----:com.apple.iTunes:DJMIXER"		  => MixDj,
+	"----:com.apple.iTunes:MIXER"		  => MixEngineer,
+	"----:com.apple.iTunes:PRODUCER"	  => Producer,
+	"----:com.apple.iTunes:LABEL"		  => Label,
+	"----:com.apple.iTunes:REMIXER"		  => Remixer,
+	"disk"								  => DiscNumber,
+	"disk"								  => DiscTotal,
+	"trkn"								  => TrackNumber,
+	"trkn"								  => TrackTotal,
+	"rate"								  => LawRating,
+	"\u{a9}day"							  => RecordingDate,
+	"----:com.apple.iTunes:ISRC"		  => ISRC,
+	"----:com.apple.iTunes:BARCODE"		  => Barcode,
+	"----:com.apple.iTunes:CATALOGNUMBER" => CatalogNumber,
+	"cpil"								  => FlagCompilation,
+	"pcst"								  => FlagPodcast,
+	"----:com.apple.iTunes:MEDIA"		  => OriginalMediaType,
+	"\u{a9}too"							  => EncoderSoftware,
+	"\u{a9}gen"							  => Genre,
+	"----:com.apple.iTunes:MOOD"		  => Mood,
+	"tmpo"								  => BPM,
+	"cprt"								  => CopyrightMessage,
+	"----:com.apple.iTunes:LICENSE"		  => License,
+	"ldes"								  => PodcastDescription,
+	"catg"								  => PodcastSeriesCategory,
+	"purl"								  => PodcastURL,
+	"egid"								  => PodcastGlobalUniqueID,
+	"keyw"								  => PodcastKeywords,
+	"\u{a9}cmt"							  => Comment,
+	"desc"								  => Description,
+	"----:com.apple.iTunes:LANGUAGE"	  => Language,
+	"----:com.apple.iTunes:SCRIPT"		  => Script,
+	"\u{a9}lyr"							  => Lyrics
+);
+
+gen_map! (
+	#[cfg(feature = "riff_info_list")]
+	RIFF_INFO_MAP;
+
+	"IPRD" 			=> AlbumTitle,
+	"INAM" 			=> TrackTitle,
+	"IART" 			=> TrackArtist,
+	"IWRI" 			=> Writer,
+	"IMUS" 			=> Composer,
+	"IPRO" 			=> Producer,
+	"IPRT" | "ITRK" => TrackNumber,
+	"IFRM" 			=> TrackTotal,
+	"IRTD" 			=> LawRating,
+	"ICRD" 			=> RecordingDate,
+	"ISRF" 			=> OriginalMediaType,
+	"ITCH" 			=> EncodedBy,
+	"ISFT" 			=> EncoderSoftware,
+	"IGNR" 			=> Genre,
+	"ICOP" 			=> CopyrightMessage,
+	"ICMT" 			=> Comment,
+	"ILNG" 			=> Language
+);
+
+gen_map!(
+	#[cfg(feature = "vorbis_comments")]
+	VORBIS_MAP;
+
+	"ALBUM" 	      		   	   => AlbumTitle,
+	"DISCSUBTITLE"    		   	   => SetSubtitle,
+	"GROUPING"	   	  		   	   => ContentGroup,
+	"TITLE"		   	  		   	   => TrackTitle,
+	"SUBTITLE"	   	  		   	   => TrackSubtitle,
+	"ALBUMSORT"	   	  		   	   => AlbumTitleSortOrder,
+	"ALBUMARTISTSORT" 		   	   => AlbumArtistSortOrder,
+	"TITLESORT" 	  		   	   => TrackTitleSortOrder,
+	"ARTISTSORT"	  		   	   => TrackArtistSortOrder,
+	"ALBUMARTIST"	  		   	   => AlbumArtist,
+	"ARTIST"		  		   	   => TrackArtist,
+	"ARRANGER"		  		   	   => Arranger,
+	"AUTHOR" | "WRITER" 	   	   => Writer,
+	"COMPOSER"				   	   => Composer,
+	"CONDUCTOR"				   	   => Conductor,
+	"ENGINEER"				   	   => Engineer,
+	"LYRICIST"				   	   => Lyricist,
+	"DJMIXER"				   	   => MixDj,
+	"MIXER"					   	   => MixEngineer,
+	"PERFORMER"				   	   => Performer,
+	"PRODUCER"				   	   => Producer,
+	"PUBLISHER"				   	   => Publisher,
+	"LABEL"					   	   => Label,
+	"REMIXER"				   	   => Remixer,
+	"DISCNUMBER"			   	   => DiscNumber,
+	"DISCTOTAL" | "TOTALDISCS" 	   => DiscTotal,
+	"TRACKNUMBER"			   	   => TrackNumber,
+	"TRACKTOTAL" | "TOTALTRACKS"   => TrackTotal,
+	"DATE"						   => RecordingDate,
+	"YEAR" 			   			   => Year,
+	"ORIGINALDATE" 				   => OriginalReleaseDate,
+	"ISRC" 						   => ISRC,
+	"CATALOGNUMBER" 			   => CatalogNumber,
+	"COMPILATION" 				   => FlagCompilation,
+	"MEDIA" 					   => OriginalMediaType,
+	"ENCODED-BY" 				   => EncodedBy,
+	"ENCODER" 					   => EncoderSoftware,
+	"ENCODING" | "ENCODERSETTINGS" => EncoderSettings,
+	"GENRE" 					   => Genre,
+	"MOOD" 					 	   => Mood,
+	"BPM" 					 	   => BPM,
+	"COPYRIGHT" 				   => CopyrightMessage,
+	"LICENSE" 					   => License,
+	"COMMENT" 					   => Comment,
+	"LANGUAGE" 					   => Language,
+	"SCRIPT" 					   => Script,
+	"LYRICS" 					   => Lyrics
+);
+
+macro_rules! gen_item_keys {
+	(
+		MAPS => [
+			$(
+				$(#[$feat:meta])?
+				[$tag_type:pat, $MAP:ident]
+			),+
+		];
+		KEYS => [
+			$($variant:ident),+ $(,)?
+		]
+	) => {
 		#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 		#[allow(missing_docs)]
 		#[non_exhaustive]
@@ -41,372 +358,175 @@ macro_rules! item_keys {
 			pub fn from_key(tag_type: TagType, key: &str) -> Self {
 				match tag_type {
 					$(
-						$(
-							$($tag_type)|* if $(key.eq_ignore_ascii_case($key))||* => ItemKey::$variant,
-						)+
+						$(#[$feat])?
+						$tag_type => $MAP.get_item_key(key).unwrap_or_else(|| Self::Unknown(key.to_string())),
 					)+
-					_ => Self::Unknown(key.to_string()),
+					_ => Self::Unknown(key.to_string())
 				}
 			}
-
 			/// Maps the variant to a format-specific key
 			///
 			/// Use `allow_unknown` to include [`ItemKey::Unknown`]. It is up to the caller
 			/// to determine if the unknown key actually fits the format's specifications.
 			pub fn map_key(&self, tag_type: TagType, allow_unknown: bool) -> Option<&str> {
-				match (tag_type, self) {
+				match tag_type {
 					$(
-						$(
-							($($tag_type)|*, ItemKey::$variant) => Some(first_key!($($key)|*)),
-						)+
+						$(#[$feat])?
+						$tag_type => if let Some(key) = $MAP.get_key(self) {
+							return Some(key)
+						},
 					)+
-					(_, ItemKey::Unknown(unknown)) if allow_unknown => Some(&*unknown),
-					_ => None,
+					_ => {}
 				}
+
+				if let ItemKey::Unknown(ref unknown) = self {
+					if allow_unknown {
+						return Some(unknown)
+					}
+				}
+
+				None
 			}
 		}
-	};
+	}
 }
 
-item_keys!(
-	// Titles
-	AlbumTitle => [
-		TagType::Id3v2 => "TALB", TagType::Mp4Ilst => "\u{a9}alb",
-		TagType::VorbisComments => "ALBUM", TagType::Ape => "Album",
-		TagType::RiffInfo => "IPRD"
-	],
-	SetSubtitle => [
-		TagType::Id3v2 => "TSST", TagType::Mp4Ilst => "----:com.apple.iTunes:DISCSUBTITLE",
-		TagType::VorbisComments => "DISCSUBTITLE", TagType::Ape => "DiscSubtitle"
-	],
-	ShowName => [
-		TagType::Mp4Ilst => "tvsh"
-	],
-	ContentGroup => [
-		TagType::Id3v2 => "TIT1" | "GRP1", TagType::Mp4Ilst => "\u{a9}grp",
-		TagType::VorbisComments => "GROUPING", TagType::Ape => "Grouping"
-	],
-	TrackTitle => [
-		TagType::Id3v2 => "TIT2", TagType::Mp4Ilst => "\u{a9}nam",
-		TagType::VorbisComments => "TITLE", TagType::Ape => "Title",
-		TagType::RiffInfo => "INAM", TagType::AiffText => "NAME"
-	],
-	TrackSubtitle => [
-		TagType::Id3v2 => "TIT3", TagType::Mp4Ilst => "----:com.apple.iTunes:SUBTITLE",
-		TagType::VorbisComments => "SUBTITLE", TagType::Ape => "Subtitle"
-	],
+gen_item_keys!(
+	MAPS => [
+		#[cfg(feature = "aiff_text_chunks")]
+		[TagType::AiffText, AIFF_TEXT_MAP],
 
-	// Original names
-	OriginalAlbumTitle => [
-		TagType::Id3v2 => "TOAL"
-	],
-	OriginalArtist => [
-		TagType::Id3v2 => "TOPE"
-	],
-	OriginalLyricist => [
-		TagType::Id3v2 => "TOLY"
-	],
+		#[cfg(feature = "ape")]
+		[TagType::Ape, APE_MAP],
 
-	// Sorting
-	AlbumTitleSortOrder => [
-		TagType::Id3v2 => "TSOA", TagType::Mp4Ilst => "soal",
-		TagType::VorbisComments | TagType::Ape => "ALBUMSORT"
-	],
-	AlbumArtistSortOrder => [
-		TagType::Id3v2 => "TSO2", TagType::Mp4Ilst => "soaa",
-		TagType::VorbisComments | TagType::Ape => "ALBUMARTISTSORT"
-	],
-	TrackTitleSortOrder => [
-		TagType::Id3v2 => "TSOT", TagType::Mp4Ilst => "sonm",
-		TagType::VorbisComments | TagType::Ape => "TITLESORT"
-	],
-	TrackArtistSortOrder => [
-		TagType::Id3v2 => "TSOP", TagType::Mp4Ilst => "soar",
-		TagType::VorbisComments | TagType::Ape => "ARTISTSORT"
-	],
-	ShowNameSortOrder => [
-		TagType::Mp4Ilst => "sosn"
-	],
-	ComposerSortOrder => [
-		TagType::Id3v2 => "TSOC", TagType::Mp4Ilst => "soco"
-	],
+		#[cfg(feature = "id3v2")]
+		[TagType::Id3v2, ID3V2_MAP],
 
+		#[cfg(feature = "mp4_ilst")]
+		[TagType::Mp4Ilst, ILST_MAP],
 
-	// People & Organizations
-	AlbumArtist => [
-		TagType::Id3v2 => "TPE2", TagType::Mp4Ilst => "aART",
-		TagType::VorbisComments => "ALBUMARTIST", TagType::Ape => "Album Artist" | "ALBUMARTIST"
-	],
-	TrackArtist => [
-		TagType::Id3v2 => "TPE1", TagType::Mp4Ilst => "\u{a9}ART",
-		TagType::VorbisComments => "ARTIST", TagType::Ape => "Artist",
-		TagType::RiffInfo => "IART", TagType::AiffText => "AUTH"
-	],
-	Arranger => [
-		TagType::VorbisComments => "ARRANGER", TagType::Ape => "Arranger"
-	],
-	Writer => [
-		TagType::Id3v2 => "TEXT",
-		TagType::VorbisComments => "AUTHOR" | "WRITER", TagType::Ape => "Writer",
-		TagType::RiffInfo => "IWRI"
-	],
-	Composer => [
-		TagType::Id3v2 => "TCOM", TagType::Mp4Ilst => "\u{a9}wrt",
-		TagType::VorbisComments => "COMPOSER", TagType::Ape => "Composer",
-		TagType::RiffInfo => "IMUS"
-	],
-	Conductor => [
-		TagType::Id3v2 => "TPE3", TagType::Mp4Ilst => "----:com.apple.iTunes:CONDUCTOR",
-		TagType::VorbisComments => "CONDUCTOR", TagType::Ape => "Conductor"
-	],
-	Engineer => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:ENGINEER", TagType::VorbisComments => "ENGINEER",
-		TagType::Ape => "Engineer"
-	],
-	InvolvedPeople => [
-		TagType::Id3v2 => "TIPL"
-	],
-	Lyricist => [
-		TagType::Id3v2 => "TEXT", TagType::Mp4Ilst => "----:com.apple.iTunes:LYRICIST",
-		TagType::VorbisComments => "LYRICIST", TagType::Ape => "Lyricist"
-	],
-	MixDj => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:DJMIXER", TagType::VorbisComments => "DJMIXER",
-		TagType::Ape => "DjMixer"
-	],
-	MixEngineer => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:MIXER", TagType::VorbisComments => "MIXER",
-		TagType::Ape => "Mixer"
-	],
-	MusicianCredits => [
-		TagType::Id3v2 => "TMCL"
-	],
-	Performer => [
-		TagType::VorbisComments => "PERFORMER", TagType::Ape => "Performer"
-	],
-	Producer => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:PRODUCER", TagType::VorbisComments => "PRODUCER",
-		TagType::Ape => "Producer", TagType::RiffInfo => "IPRO"
-	],
-	Publisher => [
-		TagType::Id3v2 => "TPUB", TagType::VorbisComments => "PUBLISHER"
-	],
-	Label => [
-		TagType::Id3v2 => "TPUB", TagType::Mp4Ilst => "----:com.apple.iTunes:LABEL",
-		TagType::VorbisComments => "LABEL", TagType::Ape => "Label"
-	],
-	InternetRadioStationName => [
-		TagType::Id3v2 => "TRSN"
-	],
-	InternetRadioStationOwner => [
-		TagType::Id3v2 => "TRSO"
-	],
-	Remixer => [
-		TagType::Id3v2 => "TPE4", TagType::Mp4Ilst => "----:com.apple.iTunes:REMIXER",
-		TagType::VorbisComments => "REMIXER", TagType::Ape => "MixArtist"
-	],
+		#[cfg(feature = "riff_info_list")]
+		[TagType::RiffInfo, RIFF_INFO_MAP],
 
-	// Counts & Indexes
-	DiscNumber => [
-		TagType::Id3v2 => "TPOS", TagType::Mp4Ilst => "disk",
-		TagType::VorbisComments => "DISCNUMBER", TagType::Ape => "Disc"
-	],
-	DiscTotal => [
-		TagType::Id3v2 => "TPOS", TagType::Mp4Ilst => "disk",
-		TagType::VorbisComments => "DISCTOTAL" | "TOTALDISCS", TagType::Ape => "Disc"
-	],
-	TrackNumber => [
-		TagType::Id3v2 => "TRCK", TagType::Mp4Ilst => "trkn",
-		TagType::VorbisComments => "TRACKNUMBER", TagType::Ape => "Track",
-		TagType::RiffInfo => "IPRT" | "ITRK"
-	],
-	TrackTotal => [
-		TagType::Id3v2 => "TRCK", TagType::Mp4Ilst => "trkn",
-		TagType::VorbisComments => "TRACKTOTAL" | "TOTALTRACKS", TagType::Ape => "Track",
-		TagType::RiffInfo => "IFRM"
-	],
-	Popularimeter => [
-		TagType::Id3v2 => "POPM"
-	],
-	LawRating => [
-		TagType::Mp4Ilst => "rate", TagType::RiffInfo => "IRTD"
-	],
+		#[cfg(feature = "vorbis_comments")]
+		[TagType::VorbisComments, VORBIS_MAP]
+	];
 
-	// Dates
-	RecordingDate => [
-		TagType::Id3v2 => "TDRC", TagType::Mp4Ilst => "\u{a9}day",
-		TagType::VorbisComments => "DATE", TagType::RiffInfo => "ICRD"
-	],
-	Year => [
-		TagType::Id3v2 => "TDRC", TagType::VorbisComments => "DATE" | "YEAR",
-		TagType::Ape => "Year"
-	],
-	OriginalReleaseDate => [
-		TagType::Id3v2 => "TDOR", TagType::VorbisComments => "ORIGINALDATE"
-	],
+	KEYS => [
+		// Titles
+		AlbumTitle,
+		SetSubtitle,
+		ShowName,
+		ContentGroup,
+		TrackTitle,
+		TrackSubtitle,
 
-	// Identifiers
-	ISRC => [
-		TagType::Id3v2 => "TSRC", TagType::Mp4Ilst => "----:com.apple.iTunes:ISRC",
-		TagType::VorbisComments => "ISRC", TagType::Ape => "ISRC"
-	],
-	Barcode => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:BARCODE", TagType::Ape => "Barcode"
-	],
-	CatalogNumber => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:CATALOGNUMBER", TagType::VorbisComments => "CATALOGNUMBER",
-		TagType::Ape => "CatalogNumber"
-	],
-	Movement => [
-		TagType::Id3v2 => "MVNM"
-	],
-	MovementIndex => [
-		TagType::Id3v2 => "MVIN"
-	],
+		// Original names
+		OriginalAlbumTitle,
+		OriginalArtist,
+		OriginalLyricist,
 
-	// Flags
-	FlagCompilation => [
-		TagType::Id3v2 => "TCMP", TagType::Mp4Ilst => "cpil",
-		TagType::VorbisComments => "COMPILATION", TagType::Ape => "Compilation"
-	],
-	FlagPodcast => [
-		TagType::Id3v2 => "PCST", TagType::Mp4Ilst => "pcst"
-	],
+		// Sorting
+		AlbumTitleSortOrder,
+		AlbumArtistSortOrder,
+		TrackTitleSortOrder,
+		TrackArtistSortOrder,
+		ShowNameSortOrder,
+		ComposerSortOrder,
 
-	// File information
-	FileType => [
-		TagType::Id3v2 => "TFLT"
-	],
-	FileOwner => [
-		TagType::Id3v2 => "TOWN"
-	],
-	TaggingTime => [
-		TagType::Id3v2 => "TDTG"
-	],
-	Length => [
-		TagType::Id3v2 => "TLEN"
-	],
-	OriginalFileName => [
-		TagType::Id3v2 => "TOFN"
-	],
-	OriginalMediaType => [
-		TagType::Id3v2 => "TMED", TagType::Mp4Ilst => "----:com.apple.iTunes:MEDIA",
-		TagType::VorbisComments => "MEDIA", TagType::Ape => "Media",
-		TagType::RiffInfo => "ISRF"
-	],
+		// People & Organizations
+		AlbumArtist,
+		TrackArtist,
+		Arranger,
+		Writer,
+		Composer,
+		Conductor,
+		Engineer,
+		InvolvedPeople,
+		Lyricist,
+		MixDj,
+		MixEngineer,
+		MusicianCredits,
+		Performer,
+		Producer,
+		Publisher,
+		Label,
+		InternetRadioStationName,
+		InternetRadioStationOwner,
+		Remixer,
 
-	// Encoder information
-	EncodedBy => [
-		TagType::Id3v2 => "TENC", TagType::VorbisComments => "ENCODED-BY",
-		TagType::Ape => "EncodedBy", TagType::RiffInfo => "ITCH"
-	],
-	EncoderSoftware => [
-		TagType::Id3v2 => "TSSE", TagType::Mp4Ilst => "\u{a9}too",
-		TagType::VorbisComments => "ENCODER", TagType::RiffInfo => "ISFT"
-	],
-	EncoderSettings => [
-		TagType::Id3v2 => "TSSE", TagType::VorbisComments => "ENCODING" | "ENCODERSETTINGS"
-	],
-	EncodingTime => [
-		TagType::Id3v2 => "TDEN"
-	],
+		// Counts & Indexes
+		DiscNumber,
+		DiscTotal,
+		TrackNumber,
+		TrackTotal,
+		Popularimeter,
+		LawRating,
 
-	// URLs
-	AudioFileURL => [
-		TagType::Id3v2 => "WOAF"
-	],
-	AudioSourceURL => [
-		TagType::Id3v2 => "WOAS"
-	],
-	CommercialInformationURL => [
-		TagType::Id3v2 => "WCOM"
-	],
-	CopyrightURL => [
-		TagType::Id3v2 => "WCOP"
-	],
-	TrackArtistURL => [
-		TagType::Id3v2 => "WOAR"
-	],
-	RadioStationURL => [
-		TagType::Id3v2 => "WORS"
-	],
-	PaymentURL => [
-		TagType::Id3v2 => "WPAY"
-	],
-	PublisherURL => [
-		TagType::Id3v2 => "WPUB"
-	],
+		// Dates
+		RecordingDate,
+		Year,
+		OriginalReleaseDate,
 
+		// Identifiers
+		ISRC,
+		Barcode,
+		CatalogNumber,
+		Movement,
+		MovementIndex,
 
-	// Style
-	Genre => [
-		TagType::Id3v2 => "TCON", TagType::Mp4Ilst => "\u{a9}gen",
-		TagType::VorbisComments => "GENRE", TagType::RiffInfo => "IGNR",
-		TagType::Ape => "Genre"
-	],
-	InitialKey => [
-		TagType::Id3v2 => "TKEY"
-	],
-	Mood => [
-		TagType::Id3v2 => "TMOO", TagType::Mp4Ilst => "----:com.apple.iTunes:MOOD",
-		TagType::VorbisComments => "MOOD", TagType::Ape => "Mood"
-	],
-	BPM => [
-		TagType::Id3v2 => "TBPM", TagType::Mp4Ilst => "tmpo",
-		TagType::VorbisComments => "BPM"
-	],
+		// Flags
+		FlagCompilation,
+		FlagPodcast,
 
-	// Legal
-	CopyrightMessage => [
-		TagType::Id3v2 => "TCOP", TagType::Mp4Ilst => "cprt",
-		TagType::VorbisComments => "COPYRIGHT", TagType::Ape => "Copyright",
-		TagType::RiffInfo => "ICOP", TagType::AiffText => "(c) "
-	],
-	License => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:LICENSE", TagType::VorbisComments => "LICENSE"
-	],
+		// File Information
+		FileType,
+		FileOwner,
+		TaggingTime,
+		Length,
+		OriginalFileName,
+		OriginalMediaType,
 
-	// Podcast
-	PodcastDescription => [
-		TagType::Id3v2 => "TDES", TagType::Mp4Ilst => "ldes"
-	],
-	PodcastSeriesCategory => [
-		TagType::Id3v2 => "TCAT", TagType::Mp4Ilst => "catg"
-	],
-	PodcastURL => [
-		TagType::Id3v2 => "WFED", TagType::Mp4Ilst => "purl"
-	],
-	PodcastReleaseDate => [
-		TagType::Id3v2 => "TDRL"
-	],
-	PodcastGlobalUniqueID => [
-		TagType::Id3v2 => "TGID", TagType::Mp4Ilst => "egid"
-	],
-	PodcastKeywords => [
-		TagType::Id3v2 => "TKWD", TagType::Mp4Ilst => "keyw"
-	],
+		// Encoder information
+		EncodedBy,
+		EncoderSoftware,
+		EncoderSettings,
+		EncodingTime,
 
-	// Miscellaneous
-	Comment => [
-		TagType::Id3v2 => "COMM", TagType::Mp4Ilst => "\u{a9}cmt",
-		TagType::VorbisComments => "COMMENT", TagType::Ape => "Comment",
-		TagType::RiffInfo => "ICMT"
-	],
-	Description => [
-		TagType::Mp4Ilst => "desc"
-	],
-	Language => [
-		TagType::Id3v2 => "TLAN", TagType::Mp4Ilst => "----:com.apple.iTunes:LANGUAGE",
-		TagType::VorbisComments => "LANGUAGE", TagType::Ape => "language",
-		TagType::RiffInfo => "ILNG"
-	],
-	Script => [
-		TagType::Mp4Ilst => "----:com.apple.iTunes:SCRIPT", TagType::VorbisComments => "SCRIPT",
-		TagType::Ape => "Script"
-	],
-	Lyrics => [
-		TagType::Id3v2 => "USLT", TagType::Mp4Ilst => "\u{a9}lyr",
-		TagType::VorbisComments => "LYRICS", TagType::Ape => "Lyrics"
+		// URLs
+		AudioFileURL,
+		AudioSourceURL,
+		CommercialInformationURL,
+		CopyrightURL,
+		TrackArtistURL,
+		RadioStationURL,
+		PaymentURL,
+		PublisherURL,
+
+		// Style
+		Genre,
+		InitialKey,
+		Mood,
+		BPM,
+
+		// Legal
+		CopyrightMessage,
+		License,
+
+		// Podcast
+		PodcastDescription,
+		PodcastSeriesCategory,
+		PodcastURL,
+		PodcastReleaseDate,
+		PodcastGlobalUniqueID,
+		PodcastKeywords,
+
+		// Miscellaneous
+		Comment,
+		Description,
+		Language,
+		Script,
+		Lyrics,
 	]
 );
 
@@ -485,7 +605,10 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> Option<()> {
+		#[cfg(feature = "id3v1")]
 		if tag_type == TagType::Id3v1 {
+			use crate::logic::id3::v1::constants::VALID_ITEMKEYS;
+
 			return VALID_ITEMKEYS.contains(&self.item_key).then(|| ());
 		}
 

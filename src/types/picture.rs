@@ -3,9 +3,12 @@ use crate::{LoftyError, Result};
 use {crate::logic::id3::v2::util::text_utils::TextEncoding, crate::logic::id3::v2::Id3v2Version};
 
 use std::borrow::Cow;
+#[cfg(feature = "id3v2")]
+use std::io::Write;
 use std::io::{Cursor, Read};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom};
 
+#[cfg(feature = "id3v2")]
 use byteorder::WriteBytesExt;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2",))]
 use byteorder::{BigEndian, ReadBytesExt};
