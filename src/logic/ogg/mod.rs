@@ -1,9 +1,3 @@
-use crate::{LoftyError, Result};
-
-use std::io::{Read, Seek};
-
-use ogg_pager::Page;
-
 pub(crate) mod constants;
 pub(crate) mod read;
 #[cfg(feature = "vorbis_comments")]
@@ -15,6 +9,13 @@ pub(crate) mod opus;
 pub(crate) mod tag;
 pub(crate) mod vorbis;
 
+use crate::{LoftyError, Result};
+
+use std::io::{Read, Seek};
+
+use ogg_pager::Page;
+
+#[cfg(feature = "vorbis_comments")]
 pub fn page_from_packet(packet: &mut [u8]) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 

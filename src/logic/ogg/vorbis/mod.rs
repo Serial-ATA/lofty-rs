@@ -1,7 +1,9 @@
 pub(crate) mod properties;
+#[cfg(feature = "vorbis_comments")]
 pub(in crate::logic::ogg) mod write;
 
 use super::find_last_page;
+#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::logic::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
@@ -28,7 +30,10 @@ impl From<VorbisFile> for TaggedFile {
 		Self {
 			ty: FileType::Vorbis,
 			properties: FileProperties::from(input.properties),
+			#[cfg(feature = "vorbis_comments")]
 			tags: vec![input.vorbis_comments.into()],
+			#[cfg(not(feature = "vorbis_comments"))]
+			tags: Vec::new(),
 		}
 	}
 }

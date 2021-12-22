@@ -31,6 +31,7 @@ where
 	let mut ape_tag: Option<ApeTag> = None;
 
 	// ID3v2 tags are unsupported in APE files, but still possible
+	#[allow(unused_variables)]
 	if let (Some(header), Some(content)) = find_id3v2(data, true)? {
 		stream_len -= u64::from(header.size);
 
@@ -101,6 +102,7 @@ where
 	//
 	// Starts with ['T', 'A', 'G']
 	// Exactly 128 bytes long (including the identifier)
+	#[allow(unused_variables)]
 	let (found_id3v1, id3v1) = find_id3v1(data, true)?;
 
 	if found_id3v1 {

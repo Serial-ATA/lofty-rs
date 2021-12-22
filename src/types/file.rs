@@ -73,6 +73,7 @@ impl TaggedFile {
 		self.tag_mut(&self.primary_tag_type())
 	}
 
+	#[allow(unreachable_patterns, clippy::match_same_arms)]
 	/// Returns the file type's "primary" [`TagType`]
 	///
 	/// See [`primary_tag`](Self::primary_tag) for an explanation
@@ -90,7 +91,6 @@ impl TaggedFile {
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
 			FileType::MP3 => TagType::Id3v1,
 			FileType::APE => TagType::Ape,
-			#[cfg(feature = "vorbis_comments")]
 			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
 			FileType::MP4 => TagType::Mp4Ilst,
 		}

@@ -29,6 +29,7 @@ pub struct AiffFile {
 }
 
 impl From<AiffFile> for TaggedFile {
+	#[allow(unused_mut)]
 	fn from(input: AiffFile) -> Self {
 		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
 

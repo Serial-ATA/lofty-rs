@@ -79,7 +79,7 @@ impl<B: ByteOrder> Chunks<B> {
 		let mut value = vec![0; self.size as usize];
 		data.read_exact(&mut value)?;
 
-		let mut reader = &mut &*value;
+		let reader = &mut &*value;
 
 		let header = read_id3v2_header(reader)?;
 

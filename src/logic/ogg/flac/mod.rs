@@ -1,8 +1,10 @@
 mod block;
 mod properties;
 mod read;
-pub(crate) mod write;
+#[cfg(feature = "vorbis_comments")]
+pub(in crate::logic) mod write;
 
+#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::logic::tag_methods;
@@ -28,9 +30,12 @@ impl From<FlacFile> for TaggedFile {
 		Self {
 			ty: FileType::FLAC,
 			properties: input.properties,
+			#[cfg(feature = "vorbis_comments")]
 			tags: input
 				.vorbis_comments
 				.map_or_else(Vec::new, |t| vec![t.into()]),
+			#[cfg(not(feature = "vorbis_comments"))]
+			tags: Vec::new(),
 		}
 	}
 }
@@ -50,11 +55,20 @@ impl AudioFile for FlacFile {
 	}
 
 	fn contains_tag(&self) -> bool {
-		self.vorbis_comments.is_some()
+		#[cfg(feature = "vorbis_comments")]
+		return self.vorbis_comments.is_some();
+
+		#[cfg(not(feature = "vorbis_comments"))]
+		return false;
 	}
 
+	#[allow(unused_variables)]
 	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		tag_type == &TagType::VorbisComments && self.vorbis_comments.is_some()
+		#[cfg(feature = "vorbis_comments")]
+		return tag_type == &TagType::VorbisComments && self.vorbis_comments.is_some();
+
+		#[cfg(not(feature = "vorbis_comments"))]
+		return false;
 	}
 }
 

@@ -1,8 +1,11 @@
 pub(crate) mod text_utils;
+#[cfg(feature = "id3v2")]
 pub(crate) mod upgrade;
 
+#[cfg(feature = "id3v2")]
 use crate::error::{LoftyError, Result};
 
+#[cfg(feature = "id3v2")]
 pub(crate) fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
 	let mut unsynch_content = Vec::new();
 

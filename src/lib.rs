@@ -168,7 +168,10 @@ pub use crate::types::{
 
 pub use crate::types::file::AudioFile;
 
-pub use crate::types::picture::{MimeType, Picture, PictureInformation, PictureType};
+pub use crate::types::picture::{MimeType, Picture, PictureType};
+
+#[cfg(feature = "vorbis_comments")]
+pub use crate::types::picture::PictureInformation;
 
 pub use probe::{read_from, read_from_path};
 

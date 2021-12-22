@@ -35,7 +35,7 @@ pub struct ApeFile {
 }
 
 impl From<ApeFile> for TaggedFile {
-	#[allow(clippy::vec_init_then_push)]
+	#[allow(clippy::vec_init_then_push, unused_mut)]
 	fn from(input: ApeFile) -> Self {
 		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
 

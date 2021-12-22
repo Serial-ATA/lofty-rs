@@ -33,8 +33,7 @@ pub enum LoftyError {
 	UnsupportedTag,
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
-	#[cfg(feature = "id3v2")]
-	/// Errors that arise while decoding ID3v2 text
+	/// Errors that arise while decoding text
 	TextDecode(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(&'static str),
@@ -111,7 +110,6 @@ impl Display for LoftyError {
 			LoftyError::BadPictureFormat(format) => {
 				write!(f, "Picture: Found unexpected format \"{}\"", format)
 			},
-			#[cfg(feature = "id3v2")]
 			LoftyError::TextDecode(message) => write!(f, "Text decoding: {}", message),
 			LoftyError::Id3v2(message) => write!(f, "ID3v2: {}", message),
 			LoftyError::BadId3v2Version(major, minor) => write!(

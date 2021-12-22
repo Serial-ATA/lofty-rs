@@ -30,6 +30,7 @@ pub struct WavFile {
 }
 
 impl From<WavFile> for TaggedFile {
+	#[allow(unused_mut)]
 	fn from(input: WavFile) -> Self {
 		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
 

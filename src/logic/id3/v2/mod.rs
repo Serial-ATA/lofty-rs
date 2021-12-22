@@ -7,7 +7,6 @@ pub(crate) mod items;
 pub(crate) mod read;
 #[cfg(feature = "id3v2")]
 pub(crate) mod tag;
-#[cfg(feature = "id3v2")]
 pub(crate) mod util;
 #[cfg(feature = "id3v2")]
 pub(in crate::logic) mod write;
@@ -37,6 +36,7 @@ pub(crate) fn unsynch_u32(n: u32) -> u32 {
 	n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
 }
 
+#[cfg(feature = "id3v2")]
 // https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
 pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 	if n > 0x1000_0000 {
@@ -51,6 +51,7 @@ pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 
 #[derive(Copy, Clone)]
 pub(crate) struct Id3v2Header {
+	#[cfg(feature = "id3v2")]
 	pub version: Id3v2Version,
 	pub flags: Id3v2TagFlags,
 	pub size: u32,
@@ -136,6 +137,7 @@ where
 	let size = unsynch_u32(BigEndian::read_u32(&header[6..]));
 
 	Ok(Id3v2Header {
+		#[cfg(feature = "id3v2")]
 		version,
 		flags: flags_parsed,
 		size,

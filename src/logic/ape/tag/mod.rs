@@ -17,6 +17,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 #[derive(Copy, Clone)]
 pub(crate) struct ApeHeader {
 	pub(crate) size: u32,
+	#[cfg(feature = "ape")]
 	pub(crate) item_count: u32,
 }
 
@@ -34,7 +35,11 @@ where
 		return Err(LoftyError::Ape("Tag has an invalid size (< 32)"));
 	}
 
+	#[cfg(feature = "ape")]
 	let item_count = data.read_u32::<LittleEndian>()?;
+
+	#[cfg(not(feature = "ape"))]
+	data.seek(SeekFrom::Current(4))?;
 
 	if footer {
 		// No point in reading the rest of the footer, just seek back to the end of the header
@@ -51,5 +56,9 @@ where
 		size += 32
 	}
 
-	Ok(ApeHeader { size, item_count })
+	Ok(ApeHeader {
+		size,
+		#[cfg(feature = "ape")]
+		item_count,
+	})
 }

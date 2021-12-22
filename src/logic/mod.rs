@@ -6,13 +6,15 @@ pub(crate) mod mp4;
 pub(crate) mod ogg;
 
 use crate::error::{LoftyError, Result};
-#[cfg(feature = "mp4_ilst")]
-use crate::logic::mp4::ilst::IlstRef;
-#[cfg(feature = "vorbis_comments")]
-use crate::logic::ogg::tag::VorbisCommentsRef;
 use crate::types::file::FileType;
 use crate::types::tag::Tag;
-use ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
+#[cfg(feature = "mp4_ilst")]
+use mp4::ilst::IlstRef;
+#[cfg(feature = "vorbis_comments")]
+use ogg::{
+	constants::{OPUSTAGS, VORBIS_COMMENT_HEAD},
+	tag::VorbisCommentsRef,
+};
 
 use std::fs::File;
 
@@ -26,7 +28,9 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef>::into(tag)),
+		#[cfg(feature = "vorbis_comments")]
 		FileType::Opus => ogg::write::write_to(file, tag, OPUSTAGS),
+		#[cfg(feature = "vorbis_comments")]
 		FileType::Vorbis => ogg::write::write_to(file, tag, VORBIS_COMMENT_HEAD),
 		FileType::WAV => iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::UnsupportedTag),

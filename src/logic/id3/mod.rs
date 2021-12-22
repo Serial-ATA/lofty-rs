@@ -74,7 +74,7 @@ where
 }
 
 #[cfg(not(feature = "id3v1"))]
-pub(in crate::logic) fn find_id3v1<R>(data: &mut R, read: bool) -> Result<(bool, Option<()>)>
+pub(in crate::logic) fn find_id3v1<R>(data: &mut R, _read: bool) -> Result<(bool, Option<()>)>
 where
 	R: Read + Seek,
 {

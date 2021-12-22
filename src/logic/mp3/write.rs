@@ -10,6 +10,7 @@ use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
 
+#[allow(unused_variables)]
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "ape")]

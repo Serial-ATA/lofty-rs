@@ -35,7 +35,7 @@ pub struct Mp3File {
 }
 
 impl From<Mp3File> for TaggedFile {
-	#[allow(clippy::vec_init_then_push)]
+	#[allow(clippy::vec_init_then_push, unused_mut)]
 	fn from(input: Mp3File) -> Self {
 		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
 

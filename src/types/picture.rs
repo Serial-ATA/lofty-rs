@@ -3,15 +3,20 @@ use crate::{LoftyError, Result};
 use {crate::logic::id3::v2::util::text_utils::TextEncoding, crate::logic::id3::v2::Id3v2Version};
 
 use std::borrow::Cow;
+#[cfg(any(feature = "vorbis_comments", feature = "ape", feature = "id3v2"))]
+use std::io::Cursor;
+use std::io::Read;
 #[cfg(feature = "id3v2")]
 use std::io::Write;
-use std::io::{Cursor, Read};
+#[cfg(any(feature = "vorbis_comments", feature = "ape"))]
 use std::io::{Seek, SeekFrom};
 
+#[cfg(any(feature = "vorbis_comments"))]
+use byteorder::BigEndian;
+#[cfg(any(feature = "vorbis_comments", feature = "id3v2", feature = "ape"))]
+use byteorder::ReadBytesExt;
 #[cfg(feature = "id3v2")]
 use byteorder::WriteBytesExt;
-#[cfg(any(feature = "vorbis_comments", feature = "id3v2",))]
-use byteorder::{BigEndian, ReadBytesExt};
 
 #[cfg(feature = "ape")]
 /// Common picture item keys for APE

@@ -1,14 +1,15 @@
 use super::block::Block;
 use super::FlacFile;
 use crate::error::{LoftyError, Result};
-use crate::logic::ogg::read::read_comments;
-use crate::logic::ogg::tag::VorbisComments;
+#[cfg(feature = "vorbis_comments")]
+use crate::logic::ogg::{read::read_comments, tag::VorbisComments};
+#[cfg(feature = "vorbis_comments")]
 use crate::types::picture::Picture;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(in crate::logic::ogg) fn verify_flac<R>(data: &mut R) -> Result<Block>
+pub(super) fn verify_flac<R>(data: &mut R) -> Result<Block>
 where
 	R: Read + Seek,
 {
@@ -28,7 +29,7 @@ where
 	Ok(block)
 }
 
-pub(in crate::logic::ogg) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<FlacFile>
+pub(super) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<FlacFile>
 where
 	R: Read + Seek,
 {
@@ -43,6 +44,7 @@ where
 
 	let mut last_block = stream_info.last;
 
+	#[cfg(feature = "vorbis_comments")]
 	let mut tag = VorbisComments {
 		vendor: String::new(),
 		items: vec![],
@@ -54,7 +56,9 @@ where
 		last_block = block.last;
 
 		match block.ty {
+			#[cfg(feature = "vorbis_comments")]
 			4 => read_comments(&mut &*block.content, &mut tag)?,
+			#[cfg(feature = "vorbis_comments")]
 			6 => tag
 				.pictures
 				.push(Picture::from_flac_bytes(&*block.content)?),
@@ -77,6 +81,7 @@ where
 
 	Ok(FlacFile {
 		properties,
+		#[cfg(feature = "vorbis_comments")]
 		vorbis_comments: (!(tag.items.is_empty() && tag.pictures.is_empty())).then(|| tag),
 	})
 }

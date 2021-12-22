@@ -1,15 +1,23 @@
+#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::{LoftyError, Result};
+#[cfg(feature = "vorbis_comments")]
 use crate::types::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
 
+#[cfg(feature = "vorbis_comments")]
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
+#[cfg(feature = "vorbis_comments")]
 pub type OGGTags = (Option<VorbisComments>, Page);
 
+#[cfg(not(feature = "vorbis_comments"))]
+pub type OGGTags = (Option<()>, Page);
+
+#[cfg(feature = "vorbis_comments")]
 pub(super) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result<()>
 where
 	R: Read,

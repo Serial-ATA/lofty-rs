@@ -4,13 +4,14 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(in crate::logic::ogg) struct Block {
-	pub(in crate::logic::ogg) byte: u8,
-	pub(in crate::logic::ogg) ty: u8,
-	pub(in crate::logic::ogg) last: bool,
-	pub(in crate::logic::ogg) content: Vec<u8>,
-	pub(in crate::logic::ogg) start: u64,
-	pub(in crate::logic::ogg) end: u64,
+pub(super) struct Block {
+	#[allow(unused)]
+	pub(super) byte: u8,
+	pub(super) ty: u8,
+	pub(super) last: bool,
+	pub(super) content: Vec<u8>,
+	pub(super) start: u64,
+	pub(super) end: u64,
 }
 
 impl Block {
