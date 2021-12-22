@@ -289,7 +289,7 @@ impl Tag {
 		match probe.file_type() {
 			Some(file_type) => {
 				if file_type.supports_tag_type(self.tag_type()) {
-					crate::logic::write_tag(self, probe.into_inner(), file_type)
+					crate::tag_utils::write_tag(self, probe.into_inner(), file_type)
 				} else {
 					Err(LoftyError::UnsupportedTag)
 				}
@@ -354,7 +354,7 @@ impl TagType {
 				if file_type.supports_tag_type(self) {
 					let file = probe.into_inner();
 
-					return crate::logic::write_tag(&Tag::new(*self), file, file_type).is_ok();
+					return crate::tag_utils::write_tag(&Tag::new(*self), file, file_type).is_ok();
 				}
 			}
 		}

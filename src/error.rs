@@ -1,7 +1,8 @@
-use ogg_pager::PageError;
 use std::fmt::{Display, Formatter};
 
-/// Result of tag operations
+use ogg_pager::PageError;
+
+/// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
 
 /// Errors that could occur within Lofty
@@ -21,7 +22,7 @@ pub enum LoftyError {
 
 	// Picture related errors
 	#[cfg(feature = "id3v2")]
-	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::logic::id3::v2::Id3v2Version)
+	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version)
 	BadPictureFormat(String),
 	/// Provided an invalid picture
 	NotAPicture,

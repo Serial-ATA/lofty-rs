@@ -1,6 +1,6 @@
 use crate::{LoftyError, Result};
 #[cfg(feature = "id3v2")]
-use {crate::logic::id3::v2::util::text_utils::TextEncoding, crate::logic::id3::v2::Id3v2Version};
+use {crate::id3::v2::util::text_utils::TextEncoding, crate::id3::v2::Id3v2Version};
 
 use std::borrow::Cow;
 #[cfg(any(feature = "vorbis_comments", feature = "ape", feature = "id3v2"))]
@@ -587,13 +587,9 @@ impl Picture {
 		data.write_u8(self.pic_type.as_u8())?;
 
 		match &self.description {
-			Some(description) => {
-				data.write_all(&*crate::logic::id3::v2::util::text_utils::encode_text(
-					description,
-					text_encoding,
-					true,
-				))?
-			},
+			Some(description) => data.write_all(
+				&*crate::id3::v2::util::text_utils::encode_text(description, text_encoding, true),
+			)?,
 			None => data.write_u8(0)?,
 		}
 
@@ -643,18 +639,14 @@ impl Picture {
 				},
 			}
 		} else {
-			(crate::logic::id3::v2::util::text_utils::decode_text(
-				&mut cursor,
-				TextEncoding::UTF8,
-				true,
-			)?)
-			.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
+			(crate::id3::v2::util::text_utils::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
+				.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
 		};
 
 		let picture_type = PictureType::from_u8(cursor.read_u8()?);
 
 		let description =
-			crate::logic::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?
+			crate::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?
 				.map(Cow::from);
 
 		let mut data = Vec::new();

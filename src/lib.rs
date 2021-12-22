@@ -150,9 +150,15 @@
 	clippy::single_match_else
 )]
 
+pub mod ape;
 mod error;
-pub(crate) mod logic;
+pub mod id3;
+pub mod iff;
+pub mod mp3;
+pub mod mp4;
+pub mod ogg;
 mod probe;
+pub(crate) mod tag_utils;
 mod types;
 
 pub use crate::error::{LoftyError, Result};
@@ -174,133 +180,3 @@ pub use crate::types::picture::{MimeType, Picture, PictureType};
 pub use crate::types::picture::PictureInformation;
 
 pub use probe::{read_from, read_from_path};
-
-#[cfg(any(feature = "id3v1", feature = "id3v2"))]
-pub mod id3 {
-	//! ID3 specific items
-	//!
-	//! ID3 does things differently than other tags, making working with them a little more effort than other formats.
-	//! Check the other modules for important notes and/or warnings.
-
-	#[cfg(feature = "id3v2")]
-	pub mod v2 {
-		//! ID3v2 items and utilities
-		//!
-		//! ## Important notes
-		//!
-		//! See:
-		//!
-		//! * [Id3v2Tag]
-		//! * [Frame]
-
-		pub use {
-			crate::logic::id3::v2::flags::Id3v2TagFlags,
-			crate::logic::id3::v2::frame::{
-				EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, LanguageFrame,
-			},
-			crate::logic::id3::v2::items::encapsulated_object::{
-				GEOBInformation, GeneralEncapsulatedObject,
-			},
-			crate::logic::id3::v2::items::sync_text::{
-				SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
-			},
-			crate::logic::id3::v2::tag::Id3v2Tag,
-			crate::logic::id3::v2::util::text_utils::TextEncoding,
-			crate::logic::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3},
-			crate::logic::id3::v2::Id3v2Version,
-		};
-
-		#[cfg(feature = "id3v2_restrictions")]
-		pub use crate::logic::id3::v2::items::restrictions::*;
-	}
-
-	#[cfg(feature = "id3v1")]
-	pub mod v1 {
-		//! ID3v1 items
-		//!
-		//! # ID3v1 notes
-		//!
-		//! See also: [Id3v1Tag]
-		//!
-		//! ## Genres
-		//!
-		//! ID3v1 stores the genre in a single byte ranging from 0 to 192 (inclusive).
-		//! All possible genres have been stored in the [`GENRES`] constant.
-		//!
-		//! ## Track Numbers
-		//!
-		//! ID3v1 stores the track number in a non-zero byte.
-		//! A track number of 0 will be treated as an empty field.
-		//! Additionally, there is no track total field.
-		pub use crate::logic::id3::v1::constants::GENRES;
-		pub use crate::logic::id3::v1::tag::Id3v1Tag;
-	}
-}
-
-pub mod ape {
-	//! APE specific items
-	//!
-	//! ## File notes
-	//!
-	//! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
-	//! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
-	//! `ID3v1`.
-	pub use crate::logic::ape::{properties::ApeProperties, ApeFile};
-	#[cfg(feature = "ape")]
-	pub use crate::{
-		logic::ape::tag::{ape_tag::ApeTag, item::ApeItem},
-		types::picture::APE_PICTURE_TYPES,
-	};
-}
-
-pub mod mp3 {
-	//! MP3 specific items
-	pub use crate::logic::mp3::header::{ChannelMode, Layer, MpegVersion};
-	pub use crate::logic::mp3::{properties::Mp3Properties, Mp3File};
-}
-
-pub mod mp4 {
-	//! MP4 specific items
-	//!
-	//! ## File notes
-	//!
-	//! The only supported tag format is [`Ilst`].
-	#[cfg(feature = "mp4_ilst")]
-	pub use crate::logic::mp4::{
-		ilst::{
-			atom::{Atom, AtomData},
-			Ilst,
-		},
-		AtomIdent,
-	};
-	pub use crate::logic::mp4::{
-		properties::{Mp4Codec, Mp4Properties},
-		Mp4File,
-	};
-}
-
-pub mod ogg {
-	//! OPUS/FLAC/Vorbis specific items
-	//!
-	//! ## File notes
-	//!
-	//! The only supported tag format is [`VorbisComments`]
-	pub use crate::logic::ogg::flac::FlacFile;
-	pub use crate::logic::ogg::opus::{properties::OpusProperties, OpusFile};
-	#[cfg(feature = "vorbis_comments")]
-	pub use crate::logic::ogg::tag::VorbisComments;
-	pub use crate::logic::ogg::vorbis::{properties::VorbisProperties, VorbisFile};
-}
-
-pub mod iff {
-	//! WAV/AIFF specific items
-	pub use crate::logic::iff::aiff::AiffFile;
-	pub use crate::logic::iff::wav::WavFile;
-
-	#[cfg(feature = "aiff_text_chunks")]
-	pub use crate::logic::iff::aiff::tag::AiffTextChunks;
-	#[cfg(feature = "riff_info_list")]
-	pub use crate::logic::iff::wav::tag::RiffInfoList;
-
-	pub use crate::logic::iff::wav::properties::{WavFormat, WavProperties};
-}

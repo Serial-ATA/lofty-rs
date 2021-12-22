@@ -283,7 +283,7 @@ impl FileType {
 	}
 
 	pub(crate) fn from_buffer_inner(buf: &[u8]) -> Result<(Option<Self>, u32)> {
-		use crate::logic::id3::v2::unsynch_u32;
+		use crate::id3::v2::unsynch_u32;
 
 		if buf.is_empty() {
 			return Err(LoftyError::EmptyFile);
@@ -306,7 +306,7 @@ impl FileType {
 	}
 
 	fn quick_type_guess(buf: &[u8]) -> Option<Self> {
-		use crate::logic::mp3::header::verify_frame_sync;
+		use crate::mp3::header::verify_frame_sync;
 
 		match buf.first().unwrap() {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),

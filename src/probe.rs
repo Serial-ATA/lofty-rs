@@ -1,13 +1,13 @@
+use crate::ape::ApeFile;
 use crate::error::{LoftyError, Result};
-use crate::logic::ape::ApeFile;
-use crate::logic::iff::aiff::AiffFile;
-use crate::logic::iff::wav::WavFile;
-use crate::logic::mp3::header::verify_frame_sync;
-use crate::logic::mp3::Mp3File;
-use crate::logic::mp4::Mp4File;
-use crate::logic::ogg::flac::FlacFile;
-use crate::logic::ogg::opus::OpusFile;
-use crate::logic::ogg::vorbis::VorbisFile;
+use crate::iff::aiff::AiffFile;
+use crate::iff::wav::WavFile;
+use crate::mp3::header::verify_frame_sync;
+use crate::mp3::Mp3File;
+use crate::mp4::Mp4File;
+use crate::ogg::flac::FlacFile;
+use crate::ogg::opus::OpusFile;
+use crate::ogg::vorbis::VorbisFile;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 
 use std::fs::File;
