@@ -1,5 +1,5 @@
 #[cfg(feature = "id3v2_restrictions")]
-use super::items::restrictions::TagRestrictions;
+use super::restrictions::TagRestrictions;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq)]
 #[allow(clippy::struct_excessive_bools)]

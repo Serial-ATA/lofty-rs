@@ -134,6 +134,7 @@ impl TagRestrictions {
 		restrictions
 	}
 
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	/// Convert a [`TagRestrictions`] into a `u8`
 	pub fn as_bytes(&self) -> u8 {
 		let mut byte = 0;
