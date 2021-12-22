@@ -5,6 +5,7 @@ use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::logic::id3::v2::tag::Id3v2Tag;
 use crate::logic::iff::chunk::Chunks;
+use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -24,7 +25,7 @@ where
 	Ok(())
 }
 
-pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<AiffFile>
+pub(in crate::logic) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
@@ -44,7 +45,7 @@ where
 		match &chunks.fourcc {
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
-			b"COMM" => {
+			b"COMM" if read_properties => {
 				if comm.is_none() {
 					if chunks.size < 18 {
 						return Err(LoftyError::Aiff(
@@ -55,7 +56,7 @@ where
 					comm = Some(chunks.content(data)?);
 				}
 			},
-			b"SSND" => {
+			b"SSND" if read_properties => {
 				stream_len = chunks.size;
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			},
@@ -82,19 +83,23 @@ where
 		chunks.correct_position(data)?;
 	}
 
-	if comm.is_none() {
-		return Err(LoftyError::Aiff("File does not contain a \"COMM\" chunk"));
-	}
+	let properties = if read_properties {
+		if comm.is_none() {
+			return Err(LoftyError::Aiff("File does not contain a \"COMM\" chunk"));
+		}
 
-	if stream_len == 0 {
-		return Err(LoftyError::Aiff("File does not contain a \"SSND\" chunk"));
-	}
+		if stream_len == 0 {
+			return Err(LoftyError::Aiff("File does not contain a \"SSND\" chunk"));
+		}
 
-	let properties = super::properties::read_properties(
-		&mut &*comm.unwrap(),
-		stream_len,
-		data.seek(SeekFrom::Current(0))?,
-	)?;
+		super::properties::read_properties(
+			&mut &*comm.unwrap(),
+			stream_len,
+			data.seek(SeekFrom::Current(0))?,
+		)?
+	} else {
+		FileProperties::default()
+	};
 
 	Ok(AiffFile {
 		properties,

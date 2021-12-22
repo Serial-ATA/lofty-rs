@@ -1,5 +1,5 @@
-use super::ApeProperties;
 use crate::error::{LoftyError, Result};
+use crate::types::properties::FileProperties;
 
 use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
@@ -7,7 +7,101 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub fn properties_gt_3980<R>(
+#[derive(Clone, Debug, PartialEq, Default)]
+/// An APE file's audio properties
+pub struct ApeProperties {
+	version: u16,
+	duration: Duration,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+}
+
+impl From<ApeProperties> for FileProperties {
+	fn from(input: ApeProperties) -> Self {
+		Self {
+			duration: input.duration,
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl ApeProperties {
+	/// Creates a new [`ApeProperties`]
+	pub const fn new(
+		version: u16,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			version,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn bitrate(&self) -> u32 {
+		self.audio_bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// APE version
+	pub fn version(&self) -> u16 {
+		self.version
+	}
+}
+
+pub(super) fn read_properties<R>(
+	data: &mut R,
+	stream_len: u64,
+	file_length: u64,
+) -> Result<ApeProperties>
+where
+	R: Read + Seek,
+{
+	let version = data
+		.read_u16::<LittleEndian>()
+		.map_err(|_| LoftyError::Ape("Unable to read version"))?;
+
+	// Property reading differs between versions
+	if version >= 3980 {
+		properties_gt_3980(data, version, stream_len, file_length)
+	} else {
+		properties_lt_3980(data, version, stream_len, file_length)
+	}
+}
+
+fn properties_gt_3980<R>(
 	data: &mut R,
 	version: u16,
 	stream_len: u64,
@@ -84,7 +178,7 @@ where
 	})
 }
 
-pub fn properties_lt_3980<R>(
+fn properties_lt_3980<R>(
 	data: &mut R,
 	version: u16,
 	stream_len: u64,

@@ -20,7 +20,7 @@ pub trait AudioFile {
 	/// # Errors
 	///
 	/// Errors depend on the file and tags being read. See [`LoftyError`]
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized;

@@ -36,14 +36,14 @@ impl From<OpusFile> for TaggedFile {
 impl AudioFile for OpusFile {
 	type Properties = OpusProperties;
 
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
 		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS)?;
 
 		Ok(Self {
-			properties: properties::read_properties(reader, &file_information.1)?,
+			properties: if read_properties {properties::read_properties(reader, &file_information.1)? } else { OpusProperties::default() },
 			#[cfg(feature = "vorbis_comments")]
 			// Safe to unwrap, a metadata packet is mandatory in Opus
 			vorbis_comments: file_information.0.unwrap(),

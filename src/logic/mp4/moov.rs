@@ -40,7 +40,7 @@ impl Moov {
 		Ok(moov.1.unwrap())
 	}
 
-	pub(crate) fn parse<R>(data: &mut R) -> Result<Self>
+	pub(crate) fn parse<R>(data: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
@@ -51,7 +51,7 @@ impl Moov {
 		while let Ok(atom) = AtomInfo::read(data) {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
-					b"trak" => traks.push(Trak::parse(data, &atom)?),
+					b"trak" if read_properties => traks.push(Trak::parse(data, &atom)?),
 					#[cfg(feature = "mp4_ilst")]
 					b"udta" => {
 						meta = meta_from_udta(data, atom.len - 8)?;

@@ -52,7 +52,7 @@ fn vorbis_remove() {
 }
 
 fn read(path: &str, file_type: &FileType) {
-	let file = lofty::read_from_path(path).unwrap();
+	let file = lofty::read_from_path(path, false).unwrap();
 
 	assert_eq!(file.file_type(), file_type);
 
@@ -62,7 +62,7 @@ fn read(path: &str, file_type: &FileType) {
 fn write(path: &str, file_type: &FileType) {
 	let mut file = temp_file!(path);
 
-	let mut tagged_file = lofty::read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	assert_eq!(tagged_file.file_type(), file_type);
 
@@ -70,7 +70,7 @@ fn write(path: &str, file_type: &FileType) {
 
 	// Now reread the file
 	file.seek(SeekFrom::Start(0)).unwrap();
-	let mut tagged_file = lofty::read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 2 => file, "Foo artist");
 }
@@ -78,7 +78,7 @@ fn write(path: &str, file_type: &FileType) {
 fn remove(path: &str, tag_type: TagType) {
 	let mut file = temp_file!(path);
 
-	let tagged_file = lofty::read_from(&mut file).unwrap();
+	let tagged_file = lofty::read_from(&mut file, false).unwrap();
 	// Verify we have both the vendor and artist
 	assert!(
 		tagged_file.tag(&tag_type).is_some()
@@ -89,7 +89,7 @@ fn remove(path: &str, tag_type: TagType) {
 	assert!(tag_type.remove_from(&mut file));
 
 	file.seek(SeekFrom::Start(0)).unwrap();
-	let tagged_file = lofty::read_from(&mut file).unwrap();
+	let tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
 	assert_eq!(tagged_file.tag(&tag_type).unwrap().item_count(), 1);

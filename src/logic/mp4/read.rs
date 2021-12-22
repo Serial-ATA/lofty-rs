@@ -1,6 +1,6 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
-use super::properties::read_properties;
+use super::properties::Mp4Properties;
 use super::Mp4File;
 use crate::error::{LoftyError, Result};
 
@@ -26,14 +26,14 @@ where
 }
 
 #[allow(clippy::similar_names)]
-pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp4File>
+pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp4File>
 where
 	R: Read + Seek,
 {
 	let ftyp = verify_mp4(data)?;
 
 	Moov::find(data)?;
-	let moov = Moov::parse(data)?;
+	let moov = Moov::parse(data, read_properties)?;
 
 	let file_length = data.seek(SeekFrom::End(0))?;
 
@@ -41,7 +41,11 @@ where
 		ftyp,
 		#[cfg(feature = "mp4_ilst")]
 		ilst: moov.meta,
-		properties: read_properties(data, &moov.traks, file_length)?,
+		properties: if read_properties {
+			super::properties::read_properties(data, &moov.traks, file_length)?
+		} else {
+			Mp4Properties::default()
+		},
 	})
 }
 

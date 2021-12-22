@@ -49,12 +49,12 @@ impl From<WavFile> for TaggedFile {
 impl AudioFile for WavFile {
 	type Properties = WavProperties;
 
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized,
 	{
-		read::read_from(reader)
+		read::read_from(reader, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

@@ -34,11 +34,11 @@
 //! // First, create a probe.
 //! // This will guess the format from the extension
 //! // ("mp3" in this case), but we can guess from the content if we want to.
-//! let tagged_file = read_from_path("tests/files/assets/a.mp3")?;
+//! let tagged_file = read_from_path("tests/files/assets/a.mp3", false)?;
 //!
 //! // Let's guess the format from the content just in case.
 //! // This is not necessary in this case!
-//! let tagged_file2 = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?.read()?;
+//! let tagged_file2 = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?.read(false)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -55,7 +55,7 @@
 //! let mut file = File::open("tests/files/assets/a.mp3")?;
 //!
 //! // Here, we have to guess the file type prior to reading
-//! let tagged_file = read_from(&mut file)?;
+//! let tagged_file = read_from(&mut file, false)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -67,7 +67,7 @@
 //! # fn main() -> Result<(), LoftyError> {
 //! use lofty::read_from_path;
 //!
-//! let tagged_file = read_from_path("tests/files/assets/a.mp3")?;
+//! let tagged_file = read_from_path("tests/files/assets/a.mp3", false)?;
 //!
 //! // Get the primary tag (ID3v2 in this case)
 //! let id3v2 = tagged_file.primary_tag().unwrap();
@@ -92,7 +92,7 @@
 //! let mut file_content = File::open("tests/files/assets/a.mp3")?;
 //!
 //! // We are expecting an MP3 file
-//! let mpeg_file = Mp3File::read_from(&mut file_content)?;
+//! let mpeg_file = Mp3File::read_from(&mut file_content, true)?;
 //!
 //! assert_eq!(mpeg_file.properties().channels(), 2);
 //!
@@ -242,7 +242,7 @@ pub mod ape {
 	//! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
 	//! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 	//! `ID3v1`.
-	pub use crate::logic::ape::{ApeFile, ApeProperties};
+	pub use crate::logic::ape::{properties::ApeProperties, ApeFile};
 	#[cfg(feature = "ape")]
 	pub use crate::{
 		logic::ape::tag::{ape_tag::ApeTag, item::ApeItem},
@@ -253,7 +253,7 @@ pub mod ape {
 pub mod mp3 {
 	//! MP3 specific items
 	pub use crate::logic::mp3::header::{ChannelMode, Layer, MpegVersion};
-	pub use crate::logic::mp3::{Mp3File, Mp3Properties};
+	pub use crate::logic::mp3::{properties::Mp3Properties, Mp3File};
 }
 
 pub mod mp4 {
@@ -270,7 +270,10 @@ pub mod mp4 {
 		},
 		AtomIdent,
 	};
-	pub use crate::logic::mp4::{Mp4Codec, Mp4File, Mp4Properties};
+	pub use crate::logic::mp4::{
+		properties::{Mp4Codec, Mp4Properties},
+		Mp4File,
+	};
 }
 
 pub mod ogg {

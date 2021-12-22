@@ -1,5 +1,6 @@
 mod constants;
 pub(crate) mod header;
+pub(crate) mod properties;
 pub(crate) mod read;
 pub(in crate::logic) mod write;
 
@@ -14,100 +15,9 @@ use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
-use header::{ChannelMode, Layer, MpegVersion};
+use properties::Mp3Properties;
 
 use std::io::{Read, Seek};
-use std::time::Duration;
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-/// An MP3 file's audio properties
-pub struct Mp3Properties {
-	version: MpegVersion,
-	layer: Layer,
-	channel_mode: ChannelMode,
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	channels: u8,
-}
-
-impl From<Mp3Properties> for FileProperties {
-	fn from(input: Mp3Properties) -> Self {
-		Self {
-			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
-			channels: Some(input.channels),
-		}
-	}
-}
-
-impl Mp3Properties {
-	/// Creates a new [`Mp3Properties`]
-	pub const fn new(
-		version: MpegVersion,
-		layer: Layer,
-		channel_mode: ChannelMode,
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		channels: u8,
-	) -> Self {
-		Self {
-			version,
-			layer,
-			channel_mode,
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			channels,
-		}
-	}
-
-	/// Duration
-	pub fn duration(&self) -> Duration {
-		self.duration
-	}
-
-	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
-		self.overall_bitrate
-	}
-
-	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
-		self.audio_bitrate
-	}
-
-	/// Sample rate (Hz)
-	pub fn sample_rate(&self) -> u32 {
-		self.sample_rate
-	}
-
-	/// Channel count
-	pub fn channels(&self) -> u8 {
-		self.channels
-	}
-
-	/// MPEG version
-	pub fn version(&self) -> &MpegVersion {
-		&self.version
-	}
-
-	/// MPEG layer
-	pub fn layer(&self) -> &Layer {
-		&self.layer
-	}
-
-	/// MPEG channel mode
-	pub fn channel_mode(&self) -> &ChannelMode {
-		&self.channel_mode
-	}
-}
 
 /// An MP3 file
 pub struct Mp3File {
@@ -147,11 +57,11 @@ impl From<Mp3File> for TaggedFile {
 impl AudioFile for Mp3File {
 	type Properties = Mp3Properties;
 
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
-		self::read::read_from(reader)
+		read::read_from(reader, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

@@ -7,7 +7,7 @@ use std::io::Cursor;
 macro_rules! test_read_path {
 	($function:ident, $path:expr) => {
 		fn $function() {
-			Probe::open($path).unwrap().read().unwrap();
+			Probe::open($path).unwrap().read(true).unwrap();
 		}
 	};
 }
@@ -41,7 +41,7 @@ macro_rules! test_read_file {
 			Probe::new(Cursor::new($name))
 				.guess_file_type()
 				.unwrap()
-				.read()
+				.read(true)
 				.unwrap();
 		}
 	};

@@ -2,13 +2,102 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::nested_atom;
 use super::read::skip_unneeded;
 use super::trak::Trak;
-use super::{Mp4Codec, Mp4Properties};
 use crate::error::{LoftyError, Result};
+use crate::types::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
+
+#[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq)]
+/// An MP4 file's audio codec
+pub enum Mp4Codec {
+	AAC,
+	ALAC,
+	Unknown(String),
+}
+
+impl Default for Mp4Codec {
+	fn default() -> Self {
+		Self::Unknown(String::new())
+	}
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+/// An MP4 file's audio properties
+pub struct Mp4Properties {
+	codec: Mp4Codec,
+	duration: Duration,
+	overall_bitrate: u32,
+	audio_bitrate: u32,
+	sample_rate: u32,
+	channels: u8,
+}
+
+impl From<Mp4Properties> for FileProperties {
+	fn from(input: Mp4Properties) -> Self {
+		Self {
+			duration: input.duration,
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
+			sample_rate: Some(input.sample_rate),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl Mp4Properties {
+	/// Creates a new [`Mp4Properties`]
+	pub const fn new(
+		codec: Mp4Codec,
+		duration: Duration,
+		overall_bitrate: u32,
+		audio_bitrate: u32,
+		sample_rate: u32,
+		channels: u8,
+	) -> Self {
+		Self {
+			codec,
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+		}
+	}
+
+	/// Duration
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// Audio codec
+	pub fn codec(&self) -> &Mp4Codec {
+		&self.codec
+	}
+}
 
 pub(crate) fn read_properties<R>(
 	data: &mut R,

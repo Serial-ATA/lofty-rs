@@ -191,6 +191,8 @@ impl<R: Read + Seek> Probe<R> {
 
 	/// Attempts to extract a [`TaggedFile`] from the reader
 	///
+	/// If `read_properties` is false, the properties will be zeroed out.
+	///
 	/// # Errors
 	///
 	/// * No file type
@@ -198,19 +200,19 @@ impl<R: Read + Seek> Probe<R> {
 	///       [`Probe::guess_file_type`] or [`Probe::set_file_type`]. When reading from
 	///       paths, this is not necessary.
 	/// * The reader contains invalid data
-	pub fn read(mut self) -> Result<TaggedFile> {
+	pub fn read(mut self, read_properties: bool) -> Result<TaggedFile> {
 		let reader = &mut self.inner;
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
-				FileType::AIFF => AiffFile::read_from(reader)?.into(),
-				FileType::APE => ApeFile::read_from(reader)?.into(),
-				FileType::FLAC => FlacFile::read_from(reader)?.into(),
-				FileType::MP3 => Mp3File::read_from(reader)?.into(),
-				FileType::Opus => OpusFile::read_from(reader)?.into(),
-				FileType::Vorbis => VorbisFile::read_from(reader)?.into(),
-				FileType::WAV => WavFile::read_from(reader)?.into(),
-				FileType::MP4 => Mp4File::read_from(reader)?.into(),
+				FileType::AIFF => AiffFile::read_from(reader, read_properties)?.into(),
+				FileType::APE => ApeFile::read_from(reader, read_properties)?.into(),
+				FileType::FLAC => FlacFile::read_from(reader, read_properties)?.into(),
+				FileType::MP3 => Mp3File::read_from(reader, read_properties)?.into(),
+				FileType::Opus => OpusFile::read_from(reader, read_properties)?.into(),
+				FileType::Vorbis => VorbisFile::read_from(reader, read_properties)?.into(),
+				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
+				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
 			}),
 			None => Err(LoftyError::UnknownFormat),
 		}
@@ -225,8 +227,8 @@ impl<R: Read + Seek> Probe<R> {
 ///
 /// * [`Probe::guess_file_type`]
 /// * [`Probe::read`]
-pub fn read_from(file: &mut File) -> Result<TaggedFile> {
-	Probe::new(file).guess_file_type()?.read()
+pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
+	Probe::new(file).guess_file_type()?.read(read_properties)
 }
 
 /// Read a [`TaggedFile`] from a path
@@ -239,9 +241,9 @@ pub fn read_from(file: &mut File) -> Result<TaggedFile> {
 ///
 /// * [`Probe::open`]
 /// * [`Probe::read`]
-pub fn read_from_path<P>(path: P) -> Result<TaggedFile>
+pub fn read_from_path<P>(path: P, read_properties: bool) -> Result<TaggedFile>
 where
 	P: AsRef<Path>,
 {
-	Probe::open(path)?.read()
+	Probe::open(path)?.read(read_properties)
 }

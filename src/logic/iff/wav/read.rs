@@ -1,3 +1,4 @@
+use super::properties::WavProperties;
 #[cfg(feature = "riff_info_list")]
 use super::tag::RiffInfoList;
 use super::WavFile;
@@ -28,7 +29,7 @@ where
 	Ok(())
 }
 
-pub(in crate::logic) fn read_from<R>(data: &mut R) -> Result<WavFile>
+pub(in crate::logic) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
@@ -47,21 +48,21 @@ where
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
-			b"fmt " => {
+			b"fmt " if read_properties => {
 				if fmt.is_empty() {
 					fmt = chunks.content(data)?;
 				} else {
 					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 				}
 			},
-			b"fact" => {
+			b"fact" if read_properties => {
 				if total_samples == 0 {
 					total_samples = data.read_u32::<LittleEndian>()?;
 				} else {
 					data.seek(SeekFrom::Current(4))?;
 				}
 			},
-			b"data" => {
+			b"data" if read_properties => {
 				if stream_len == 0 {
 					stream_len += chunks.size
 				}
@@ -95,25 +96,26 @@ where
 		chunks.correct_position(data)?;
 	}
 
-	if fmt.len() < 16 {
-		return Err(LoftyError::Wav(
-			"File does not contain a valid \"fmt \" chunk",
-		));
-	}
+	let properties = if read_properties {
+		if fmt.len() < 16 {
+			return Err(LoftyError::Wav(
+				"File does not contain a valid \"fmt \" chunk",
+			));
+		}
 
-	if stream_len == 0 {
-		return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
-	}
+		if stream_len == 0 {
+			return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
+		}
 
-	let file_length = data.seek(SeekFrom::Current(0))?;
+		let file_length = data.seek(SeekFrom::Current(0))?;
+
+		super::properties::read_properties(&mut &*fmt, total_samples, stream_len, file_length)?
+	} else {
+		WavProperties::default()
+	};
 
 	Ok(WavFile {
-		properties: super::properties::read_properties(
-			&mut &*fmt,
-			total_samples,
-			stream_len,
-			file_length,
-		)?,
+		properties,
 		#[cfg(feature = "riff_info_list")]
 		riff_info: (!riff_info.items.is_empty()).then(|| riff_info),
 		#[cfg(feature = "id3v2")]

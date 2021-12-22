@@ -1,5 +1,5 @@
 mod constants;
-mod properties;
+pub(crate) mod properties;
 pub(crate) mod read;
 pub(crate) mod tag;
 pub(crate) mod write;
@@ -13,85 +13,11 @@ use crate::logic::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
+use properties::ApeProperties;
 #[cfg(feature = "ape")]
 use tag::ape_tag::ApeTag;
 
 use std::io::{Read, Seek};
-use std::time::Duration;
-
-#[derive(Clone, Debug, PartialEq)]
-/// An APE file's audio properties
-pub struct ApeProperties {
-	version: u16,
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	channels: u8,
-}
-
-impl From<ApeProperties> for FileProperties {
-	fn from(input: ApeProperties) -> Self {
-		Self {
-			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
-			channels: Some(input.channels),
-		}
-	}
-}
-
-impl ApeProperties {
-	/// Creates a new [`ApeProperties`]
-	pub const fn new(
-		version: u16,
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		channels: u8,
-	) -> Self {
-		Self {
-			version,
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			channels,
-		}
-	}
-
-	/// Duration
-	pub fn duration(&self) -> Duration {
-		self.duration
-	}
-
-	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
-		self.overall_bitrate
-	}
-
-	/// Audio bitrate (kbps)
-	pub fn bitrate(&self) -> u32 {
-		self.audio_bitrate
-	}
-
-	/// Sample rate (Hz)
-	pub fn sample_rate(&self) -> u32 {
-		self.sample_rate
-	}
-
-	/// Channel count
-	pub fn channels(&self) -> u8 {
-		self.channels
-	}
-
-	/// APE version
-	pub fn version(&self) -> u16 {
-		self.version
-	}
-}
 
 /// An APE file
 pub struct ApeFile {
@@ -131,12 +57,12 @@ impl From<ApeFile> for TaggedFile {
 impl AudioFile for ApeFile {
 	type Properties = ApeProperties;
 
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized,
 	{
-		self::read::read_from(reader)
+		read::read_from(reader, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

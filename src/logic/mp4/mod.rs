@@ -2,7 +2,7 @@ mod atom_info;
 #[cfg(feature = "mp4_ilst")]
 pub(crate) mod ilst;
 mod moov;
-mod properties;
+pub(crate) mod properties;
 mod read;
 mod trak;
 
@@ -13,92 +13,9 @@ use crate::{FileProperties, Result, TagType};
 pub use atom_info::AtomIdent;
 #[cfg(feature = "mp4_ilst")]
 use ilst::Ilst;
+use properties::Mp4Properties;
 
 use std::io::{Read, Seek};
-use std::time::Duration;
-
-#[allow(missing_docs)]
-#[derive(Debug, Clone, PartialEq)]
-/// An MP4 file's audio codec
-pub enum Mp4Codec {
-	AAC,
-	ALAC,
-	Unknown(String),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-/// An MP4 file's audio properties
-pub struct Mp4Properties {
-	codec: Mp4Codec,
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	channels: u8,
-}
-
-impl From<Mp4Properties> for FileProperties {
-	fn from(input: Mp4Properties) -> Self {
-		Self {
-			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
-			channels: Some(input.channels),
-		}
-	}
-}
-
-impl Mp4Properties {
-	/// Creates a new [`Mp4Properties`]
-	pub const fn new(
-		codec: Mp4Codec,
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		channels: u8,
-	) -> Self {
-		Self {
-			codec,
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			channels,
-		}
-	}
-
-	/// Duration
-	pub fn duration(&self) -> Duration {
-		self.duration
-	}
-
-	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
-		self.overall_bitrate
-	}
-
-	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
-		self.audio_bitrate
-	}
-
-	/// Sample rate (Hz)
-	pub fn sample_rate(&self) -> u32 {
-		self.sample_rate
-	}
-
-	/// Channel count
-	pub fn channels(&self) -> u8 {
-		self.channels
-	}
-
-	/// Audio codec
-	pub fn codec(&self) -> &Mp4Codec {
-		&self.codec
-	}
-}
 
 /// An MP4 file
 pub struct Mp4File {
@@ -134,11 +51,11 @@ impl From<Mp4File> for TaggedFile {
 impl AudioFile for Mp4File {
 	type Properties = Mp4Properties;
 
-	fn read_from<R>(reader: &mut R) -> Result<Self>
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
-		self::read::read_from(reader)
+		read::read_from(reader, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

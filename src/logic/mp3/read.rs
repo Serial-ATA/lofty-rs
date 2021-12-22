@@ -13,62 +13,11 @@ use crate::logic::id3::v2::read::parse_id3v2;
 use crate::logic::id3::v2::read_id3v2_header;
 
 use std::io::{Read, Seek, SeekFrom};
-use std::time::Duration;
 
 use byteorder::ReadBytesExt;
 
-fn read_properties(
-	first_frame: (Header, u64),
-	last_frame: (Header, u64),
-	xing_header: Option<XingHeader>,
-	file_length: u64,
-) -> Mp3Properties {
-	let (duration, overall_bitrate, audio_bitrate) = {
-		match xing_header {
-			Some(xing_header) if first_frame.0.sample_rate > 0 => {
-				let frame_time =
-					u32::from(first_frame.0.samples) * 1000 / first_frame.0.sample_rate;
-				let length = u64::from(frame_time) * u64::from(xing_header.frames);
-
-				let overall_bitrate = ((file_length * 8) / length) as u32;
-				let audio_bitrate = ((u64::from(xing_header.size) * 8) / length) as u32;
-
-				(
-					Duration::from_millis(length),
-					overall_bitrate,
-					audio_bitrate,
-				)
-			},
-			_ if first_frame.0.bitrate > 0 => {
-				let audio_bitrate = first_frame.0.bitrate;
-
-				let stream_length = last_frame.1 - first_frame.1 + u64::from(first_frame.0.len);
-				let length = (stream_length * 8) / u64::from(audio_bitrate);
-
-				let overall_bitrate = ((file_length * 8) / length) as u32;
-
-				let duration = Duration::from_millis(length);
-
-				(duration, overall_bitrate, audio_bitrate)
-			},
-			_ => (Duration::ZERO, 0, 0),
-		}
-	};
-
-	Mp3Properties {
-		version: first_frame.0.version,
-		layer: first_frame.0.layer,
-		channel_mode: first_frame.0.channel_mode,
-		duration,
-		overall_bitrate,
-		audio_bitrate,
-		sample_rate: first_frame.0.sample_rate,
-		channels: first_frame.0.channels as u8,
-	}
-}
-
 #[allow(clippy::similar_names)]
-pub(crate) fn read_from<R>(data: &mut R) -> Result<Mp3File>
+pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp3File>
 where
 	R: Read + Seek,
 {
@@ -94,13 +43,16 @@ where
 			_ if verify_frame_sync([header[0], header[1]]) => {
 				let start = data.seek(SeekFrom::Current(0))? - 4;
 				let header = Header::read(u32::from_be_bytes(header))?;
-				data.seek(SeekFrom::Current(i64::from(header.len - 4)))?;
 
-				if first_mpeg_frame.0.is_none() {
-					first_mpeg_frame = (Some(header), start);
+				if read_properties {
+					if first_mpeg_frame.0.is_none() {
+						first_mpeg_frame = (Some(header), start);
+					}
+
+					last_mpeg_frame = (Some(header), start);
 				}
 
-				last_mpeg_frame = (Some(header), start);
+				data.seek(SeekFrom::Current(i64::from(header.len - 4)))?;
 			},
 			// [I, D, 3, ver_major, ver_minor, flags, size (4 bytes)]
 			[b'I', b'D', b'3', ..] => {
@@ -165,23 +117,34 @@ where
 		}
 	}
 
-	if first_mpeg_frame.0.is_none() {
-		return Err(LoftyError::Mp3("Unable to find an MPEG frame"));
-	}
+	let properties = if read_properties {
+		if first_mpeg_frame.0.is_none() {
+			return Err(LoftyError::Mp3("Unable to find an MPEG frame"));
+		}
 
-	let file_length = data.seek(SeekFrom::Current(0))?;
+		let file_length = data.seek(SeekFrom::Current(0))?;
 
-	let first_mpeg_frame = (first_mpeg_frame.0.unwrap(), first_mpeg_frame.1);
-	let last_mpeg_frame = (last_mpeg_frame.0.unwrap(), last_mpeg_frame.1);
+		let first_mpeg_frame = (first_mpeg_frame.0.unwrap(), first_mpeg_frame.1);
+		let last_mpeg_frame = (last_mpeg_frame.0.unwrap(), last_mpeg_frame.1);
 
-	let xing_header_location = first_mpeg_frame.1 + u64::from(first_mpeg_frame.0.data_start);
+		let xing_header_location = first_mpeg_frame.1 + u64::from(first_mpeg_frame.0.data_start);
 
-	data.seek(SeekFrom::Start(xing_header_location))?;
+		data.seek(SeekFrom::Start(xing_header_location))?;
 
-	let mut xing_reader = [0; 32];
-	data.read_exact(&mut xing_reader)?;
+		let mut xing_reader = [0; 32];
+		data.read_exact(&mut xing_reader)?;
 
-	let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
+		let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
+
+		super::properties::read_properties(
+			first_mpeg_frame,
+			last_mpeg_frame,
+			xing_header,
+			file_length,
+		)
+	} else {
+		Mp3Properties::default()
+	};
 
 	Ok(Mp3File {
 		#[cfg(feature = "id3v2")]
@@ -190,6 +153,6 @@ where
 		id3v1_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: read_properties(first_mpeg_frame, last_mpeg_frame, xing_header, file_length),
+		properties,
 	})
 }

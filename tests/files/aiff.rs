@@ -6,7 +6,7 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
-	let file = lofty::read_from_path("tests/files/assets/a.aiff").unwrap();
+	let file = lofty::read_from_path("tests/files/assets/a.aiff", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::AIFF);
 
@@ -21,7 +21,7 @@ fn read() {
 fn write() {
 	let mut file = temp_file!("tests/files/assets/a.aiff");
 
-	let mut tagged_file = lofty::read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	assert_eq!(tagged_file.file_type(), &FileType::AIFF);
 
@@ -33,7 +33,7 @@ fn write() {
 
 	// Now reread the file
 	file.seek(SeekFrom::Start(0)).unwrap();
-	let mut tagged_file = lofty::read_from(&mut file).unwrap();
+	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 

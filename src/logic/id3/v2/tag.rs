@@ -178,8 +178,6 @@ impl Id3v2Tag {
 impl Id3v2Tag {
 	/// Writes the tag to a file
 	///
-	/// NOTE: This will **not** work for chunk files such as `WAV` and `AIFF`. See [`Id3v2Tag::write_to_chunk_file`].
-	///
 	/// # Errors
 	///
 	/// * Attempting to write the tag to a format that does not support it

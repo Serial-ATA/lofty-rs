@@ -18,6 +18,12 @@ pub enum MpegVersion {
 	V2_5,
 }
 
+impl Default for MpegVersion {
+	fn default() -> Self {
+		Self::V1
+	}
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(missing_docs)]
 /// MPEG layer
@@ -25,6 +31,12 @@ pub enum Layer {
 	Layer1 = 1,
 	Layer2 = 2,
 	Layer3 = 3,
+}
+
+impl Default for Layer {
+	fn default() -> Self {
+		Self::Layer3
+	}
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -35,6 +47,12 @@ pub enum ChannelMode {
 	JointStereo = 1,
 	DualChannel = 2,
 	SingleChannel = 3,
+}
+
+impl Default for ChannelMode {
+	fn default() -> Self {
+		Self::Stereo
+	}
 }
 
 #[derive(Copy, Clone)]

@@ -18,7 +18,13 @@ pub enum WavFormat {
 	Other(u16),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+impl Default for WavFormat {
+	fn default() -> Self {
+		Self::Other(0)
+	}
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Default)]
 /// A WAV file's audio properties
 pub struct WavProperties {
 	format: WavFormat,

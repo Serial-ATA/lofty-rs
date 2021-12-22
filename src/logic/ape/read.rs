@@ -1,5 +1,4 @@
 use super::constants::APE_PREAMBLE;
-use super::properties::{properties_gt_3980, properties_lt_3980};
 #[cfg(feature = "ape")]
 use super::tag::{ape_tag::ApeTag, read::read_ape_tag};
 use super::{ApeFile, ApeProperties};
@@ -13,25 +12,7 @@ use crate::logic::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::{LittleEndian, ReadBytesExt};
-
-fn read_properties<R>(data: &mut R, stream_len: u64, file_length: u64) -> Result<ApeProperties>
-where
-	R: Read + Seek,
-{
-	let version = data
-		.read_u16::<LittleEndian>()
-		.map_err(|_| LoftyError::Ape("Unable to read version"))?;
-
-	// Property reading differs between versions
-	if version >= 3980 {
-		properties_gt_3980(data, version, stream_len, file_length)
-	} else {
-		properties_lt_3980(data, version, stream_len, file_length)
-	}
-}
-
-pub(crate) fn read_from<R>(data: &mut R) -> Result<ApeFile>
+pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<ApeFile>
 where
 	R: Read + Seek,
 {
@@ -173,6 +154,10 @@ where
 		id3v2_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: read_properties(data, stream_len, file_length)?,
+		properties: if read_properties {
+			super::properties::read_properties(data, stream_len, file_length)?
+		} else {
+			ApeProperties::default()
+		},
 	})
 }

@@ -26,7 +26,7 @@ fn main() {
 
 	let mut tagged_file = Probe::open(opt.path.as_str())
 		.expect("Error: Bad path provided!")
-		.read()
+		.read(false)
 		.expect("Error: Failed to read file!");
 
 	let tag = match tagged_file.primary_tag_mut() {

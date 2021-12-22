@@ -78,7 +78,7 @@ where
 {
 	let mut f = File::open(path).unwrap();
 
-	let audio_file = T::read_from(&mut f).unwrap();
+	let audio_file = T::read_from(&mut f, true).unwrap();
 
 	audio_file.properties().clone()
 }
