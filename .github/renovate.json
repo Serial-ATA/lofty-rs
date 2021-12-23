@@ -6,5 +6,6 @@
   "labels": ["dependency"],
   "schedule": [
     "every weekend"
-  ]
+  ],
+  "dependencyDashboard": false
 }
