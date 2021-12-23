@@ -66,6 +66,7 @@ const CRC_LOOKUP_ARRAY : &[u32] = &[
     0xbcb4_666d, 0xb875_7bda, 0xb536_5d03, 0xb1f7_40b4
 ];
 
+/// Generates a CRC checksum based on the content
 pub fn crc32(page: &[u8]) -> u32 {
 	let mut crc: u32 = 0;
 
