@@ -58,7 +58,7 @@ where
 		let mut item = ApeItem::new(key, parsed_value)?;
 
 		if read_only {
-			item.set_read_only()
+			item.read_only = true;
 		}
 
 		tag.insert(item);

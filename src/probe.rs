@@ -47,7 +47,7 @@ use std::path::Path;
 /// // Our same path probe with a guessed file type
 /// let probe = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?;
 ///
-/// // Inferred from the `mp3` extension
+/// // Inferred from the file's content
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
 /// # Ok(())
 /// # }

@@ -85,8 +85,8 @@ impl AudioFile for AiffFile {
 impl AiffFile {
 	tag_methods! {
 		#[cfg(feature = "id3v2")];
-		ID3v2, id3v2_tag, Id3v2Tag;
+		id3v2_tag, Id3v2Tag;
 		#[cfg(feature = "aiff_text_chunks")];
-		Text_Chunks, text_chunks, AiffTextChunks
+		text_chunks, AiffTextChunks
 	}
 }

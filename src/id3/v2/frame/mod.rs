@@ -148,11 +148,11 @@ impl LanguageFrame {
 	/// # Errors
 	///
 	/// * `language` is not exactly 3 bytes
-	/// * `language` contains non-ascii characters
+	/// * `language` contains invalid characters `('a'..'z')`
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut bytes = vec![self.encoding as u8];
 
-		if self.language.len() != 3 || !self.language.is_ascii() {
+		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..'z').contains(&c)) {
 			return Err(LoftyError::Id3v2(
 				"Invalid frame language found (expected 3 ascii characters)",
 			));
@@ -390,19 +390,19 @@ pub struct FrameFlags {
 	pub encryption: (bool, u8),
 	/// Frame is unsynchronised
 	///
-	/// In short, this makes all "0xFF 0x00" combinations into "0xFF 0x00 0x00" to avoid confusion
+	/// In short, this makes all "0xFF X (X >= 0xE0)" combinations into "0xFF 0x00 X" to avoid confusion
 	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
 	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
 	///
-	/// NOTE: For the sake of simplicity, this will have no effect when writing. There isn't much reason
-	/// to write unsynchronized data. Unsynchronized data **will** always be read, however.
+	/// NOTE: While unsynchronized data is read, for the sake of simplicity, this flag has no effect when
+	/// writing. There isn't much reason to write unsynchronized data.
 	pub unsynchronisation: bool,
 	/// Frame has a data length indicator
 	///
 	/// The data length indicator is the size of the frame if the flags were all zeroed out.
 	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
 	///
-	/// If using encryption, the final size must be added. It will be ignored if using compression.
+	/// If using `encryption`, the final size must be added.
 	pub data_length_indicator: (bool, u32),
 }
 

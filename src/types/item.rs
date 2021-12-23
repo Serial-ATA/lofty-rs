@@ -577,7 +577,7 @@ impl TagItem {
 	///
 	/// * This will check for validity based on the [`TagType`].
 	/// * If the [`ItemKey`] does not map to a key in the target format, `None` will be returned.
-	/// * It is pointless to do this if you plan on using [`Tag::insert_item`](crate::Tag::insert_item), as it does validity checks itself.
+	/// * This is unnecessary if you plan on using [`Tag::insert_item`](crate::Tag::insert_item), as it does validity checks itself.
 	pub fn new_checked(
 		tag_type: TagType,
 		item_key: ItemKey,

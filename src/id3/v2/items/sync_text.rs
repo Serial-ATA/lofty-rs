@@ -9,6 +9,7 @@ use crate::id3::v2::util::text_utils::{
 };
 
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
+#[repr(u8)]
 /// The unit used for [`SynchronizedText`] timestamps
 pub enum TimestampFormat {
 	/// The unit is MPEG frames
@@ -29,6 +30,7 @@ impl TimestampFormat {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
+#[repr(u8)]
 #[allow(missing_docs)]
 /// The type of text stored in a [`SynchronizedText`]
 pub enum SyncTextContentType {
@@ -180,14 +182,19 @@ impl SynchronizedText {
 	///
 	/// # Errors
 	///
-	/// * `language`'s length != 3
 	/// * `content`'s length > [`u32::MAX`]
+	/// * See [`LanguageFrame`](crate::id3::v2::LanguageFrame)
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let information = &self.information;
 
 		let mut data = vec![information.encoding as u8];
 
-		if information.language.len() == 3 {
+		if information.language.len() == 3
+			&& information
+				.language
+				.chars()
+				.all(|c| ('a'..'z').contains(&c))
+		{
 			data.write_all(information.language.as_bytes())?;
 			data.write_u8(information.timestamp_format as u8)?;
 			data.write_u8(information.content_type as u8)?;

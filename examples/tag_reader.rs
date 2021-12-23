@@ -17,7 +17,6 @@ fn main() {
 	println!("Title: {}", tag.title().unwrap_or("None"));
 	println!("Artist: {}", tag.artist().unwrap_or("None"));
 	println!("Album: {}", tag.album().unwrap_or("None"));
-	println!("Album Artist: {}", tag.album_artist().unwrap_or("None"));
 	println!("Genre: {}", tag.genre().unwrap_or("None"));
 
 	let properties = tagged_file.properties();

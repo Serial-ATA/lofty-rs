@@ -52,7 +52,7 @@ macro_rules! impl_accessor {
 ///
 /// ## Item storage
 ///
-/// `APE` isn't a very strict format. An [`ApeItem`] only restricted by its name, meaning it can use
+/// `APE` isn't a very strict format. An [ApeItem] only restricted by its name, meaning it can use
 /// a normal [`ItemValue`](crate::ItemValue) unlike other formats.
 ///
 /// Pictures are stored as [`ItemValue::Binary`](crate::ItemValue::Binary), and can be converted with
@@ -75,7 +75,6 @@ impl_accessor!(
 	artist,       "Artist";
 	title,        "Title";
 	album,        "Album";
-	album_artist, "Album Artist" | "ALBUMARTST";
 	genre,        "GENRE";
 );
 

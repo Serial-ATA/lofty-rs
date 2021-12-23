@@ -26,8 +26,7 @@ macro_rules! accessor_trait {
 
 accessor_trait! {
 	artist, title,
-	album, album_artist,
-	genre
+	album, genre
 }
 
 macro_rules! impl_accessor {
@@ -82,7 +81,7 @@ macro_rules! impl_accessor {
 /// let title = tag.title();
 /// let artist = tag.artist();
 /// let album = tag.album();
-/// let album_artist = tag.album_artist();
+/// let genre = tag.genre();
 /// ```
 ///
 /// Getting an item of a known type
@@ -130,7 +129,6 @@ impl_accessor!(
 	TrackArtist => artist,
 	TrackTitle => title,
 	AlbumTitle => album,
-	AlbumArtist => album_artist,
 	Genre => genre
 );
 

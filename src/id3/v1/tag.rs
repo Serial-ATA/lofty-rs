@@ -59,14 +59,14 @@ pub struct Id3v1Tag {
 	/// A V1 tag may have been read, which limits this field to 30 bytes.
 	/// A V1.1 tag, however, only has 28 bytes available.
 	///
-	/// Lofty will *always* write a V1.1 tag.
+	/// **Lofty** will *always* write a V1.1 tag.
 	pub comment: Option<String>,
 	/// The track number, 1 byte max
 	///
 	/// Issues:
 	///
 	/// * The track number **cannot** be 0. Many readers, including Lofty,
-	/// look for a zeroed byte at the end of the comment to differentiate
+	/// look for a null byte at the end of the comment to differentiate
 	/// between V1 and V1.1.
 	/// * A V1 tag may have been read, which does *not* have a track number.
 	pub track_number: Option<u8>,
@@ -90,6 +90,17 @@ impl Accessor for Id3v1Tag {
 		}
 
 		None
+	}
+
+	fn set_genre(&mut self, genre: String) {
+		let g_str = genre.as_str();
+
+		for (i, g) in GENRES.iter().enumerate() {
+			if g.eq_ignore_ascii_case(g_str) {
+				self.genre = Some(i as u8);
+				break;
+			}
+		}
 	}
 
 	fn remove_genre(&mut self) {

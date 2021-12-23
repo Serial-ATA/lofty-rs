@@ -15,7 +15,6 @@ use std::fs::File;
 const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
 const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
 const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
-const ALBUM_ARTIST: AtomIdent = AtomIdent::Fourcc(*b"aART");
 const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
 
 macro_rules! impl_accessor {
@@ -82,7 +81,6 @@ impl_accessor!(
 	artist,       ARTIST;
 	title,        TITLE;
 	album,        ALBUM;
-	album_artist, ALBUM_ARTIST;
 	genre,        GENRE;
 );
 

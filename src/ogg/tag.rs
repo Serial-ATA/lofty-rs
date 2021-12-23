@@ -46,7 +46,6 @@ impl_accessor!(
 	artist,       "ARTIST";
 	title,        "TITLE";
 	album,        "ALBUM";
-	album_artist, "ALBUMARTST";
 	genre,        "GENRE";
 );
 

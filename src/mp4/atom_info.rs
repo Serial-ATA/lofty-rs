@@ -9,7 +9,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 pub enum AtomIdent {
 	/// A four byte identifier
 	///
-	/// Many FOURCCs start with `0xA9` (©), and should be a UTF-8 string.
+	/// Many FOURCCs start with `0xA9` (©), and should be human-readable.
 	Fourcc([u8; 4]),
 	/// A freeform identifier
 	///

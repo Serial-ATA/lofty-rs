@@ -75,6 +75,6 @@ impl AudioFile for FlacFile {
 impl FlacFile {
 	tag_methods! {
 		#[cfg(feature = "vorbis_comments")];
-		Vorbis_Comments, vorbis_comments, VorbisComments
+		vorbis_comments, VorbisComments
 	}
 }

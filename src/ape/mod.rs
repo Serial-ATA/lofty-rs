@@ -108,10 +108,10 @@ impl AudioFile for ApeFile {
 impl ApeFile {
 	tag_methods! {
 		#[cfg(feature = "id3v2")];
-		ID3v2, id3v2_tag, Id3v2Tag;
+		id3v2_tag, Id3v2Tag;
 		#[cfg(feature = "id3v1")];
-		ID3v1, id3v1_tag, Id3v1Tag;
+		id3v1_tag, Id3v1Tag;
 		#[cfg(feature = "ape")];
-		APE, ape_tag, ApeTag
+		ape_tag, ApeTag
 	}
 }

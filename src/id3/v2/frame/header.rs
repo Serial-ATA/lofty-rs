@@ -84,7 +84,7 @@ where
 fn create_frame_id(id: &str) -> Result<FrameID> {
 	for c in id.chars() {
 		if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
-			return Err(LoftyError::Id3v2("Encountered a bad frame ID"));
+			return Err(LoftyError::BadFrameID);
 		}
 	}
 

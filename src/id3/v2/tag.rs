@@ -56,8 +56,8 @@ macro_rules! impl_accessor {
 ///
 /// * [`FileType::MP3`](crate::FileType::MP3)
 /// * [`FileType::WAV`](crate::FileType::WAV)
-/// * [`FileType::APE`](crate::FileType::APE)
 /// * [`FileType::AIFF`](crate::FileType::AIFF)
+/// * [`FileType::APE`](crate::FileType::APE) **(READ ONLY)**
 ///
 /// ## Conversions
 ///
@@ -96,7 +96,6 @@ impl_accessor!(
 	title,        "TIT2";
 	artist,       "TPE1";
 	album,        "TALB";
-	album_artist, "TPE2";
 	genre,        "TCON";
 );
 
@@ -157,7 +156,7 @@ impl Id3v2Tag {
 
 	/// Inserts a [`Frame`]
 	///
-	/// This will replace any frame of the same id (or description! See [`EncodedTextFrame`])
+	/// This will replace any frame of the same id (**or description!** See [`EncodedTextFrame`])
 	pub fn insert(&mut self, frame: Frame) -> Option<Frame> {
 		let replaced = self
 			.frames

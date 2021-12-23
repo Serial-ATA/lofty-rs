@@ -10,6 +10,8 @@ pub struct Id3v2TagFlags {
 	/// Indicates if the tag is in an experimental stage
 	pub experimental: bool,
 	/// Indicates that the tag includes a footer
+	///
+	/// NOTE: This will have no effect when writing
 	pub footer: bool,
 	/// Whether or not to include a CRC-32 in the extended header
 	///

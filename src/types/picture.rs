@@ -714,9 +714,10 @@ impl Picture {
 	}
 
 	#[cfg(feature = "vorbis_comments")]
-	/// Get a [`Picture`] from FLAC `METADATA_BLOCK_PICTURE` bytes (can be base64 encoded):
+	/// Get a [`Picture`] from FLAC `METADATA_BLOCK_PICTURE` bytes:
 	///
-	/// NOTE: This expects *only* the comment's value
+	/// NOTE: This takes both the base64 encoded string from Vorbis comments, and
+	/// the raw data from a FLAC block.
 	///
 	/// # Errors
 	///

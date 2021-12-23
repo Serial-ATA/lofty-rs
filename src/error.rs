@@ -41,7 +41,7 @@ pub enum LoftyError {
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),
 	#[cfg(feature = "id3v2")]
-	/// Arises when [`std::str::from_utf8`] fails to parse a frame ID
+	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
 	BadFrameID,
 	#[cfg(feature = "id3v2")]
 	/// Arises when a frame doesn't have enough data

@@ -47,11 +47,6 @@ impl ApeItem {
 		})
 	}
 
-	/// Make the item read only
-	pub fn set_read_only(&mut self) {
-		self.read_only = true
-	}
-
 	/// Returns the item key
 	pub fn key(&self) -> &str {
 		&self.key

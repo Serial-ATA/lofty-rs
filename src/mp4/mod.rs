@@ -99,6 +99,6 @@ impl Mp4File {
 impl Mp4File {
 	tag_methods! {
 		#[cfg(feature = "mp4_ilst")];
-		ilst, ilst, Ilst
+		ilst, Ilst
 	}
 }

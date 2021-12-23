@@ -36,7 +36,6 @@ macro_rules! tag_methods {
 	(
 		$(
 			$(#[$attr:meta])?;
-			$display_name:tt,
 			$name:ident,
 			$ty:ty
 		);*
@@ -44,19 +43,19 @@ macro_rules! tag_methods {
 		paste::paste! {
 			$(
 				$(#[$attr])?
-				#[doc = "Gets the " $display_name "tag if it exists"]
+				#[doc = "Gets the [`" $ty "`] if it exists"]
 				pub fn $name(&self) -> Option<&$ty> {
 					self.$name.as_ref()
 				}
 
 				$(#[$attr])?
-				#[doc = "Sets the " $display_name]
+				#[doc = "Sets the [`" $ty "`]"]
 				pub fn [<set_ $name>](&mut self, tag: $ty) {
 					self.$name = Some(tag)
 				}
 
 				$(#[$attr])?
-				#[doc = "Removes the " $display_name]
+				#[doc = "Removes the [`" $ty "`]"]
 				pub fn [<remove_ $name>](&mut self) {
 					self.$name = None
 				}

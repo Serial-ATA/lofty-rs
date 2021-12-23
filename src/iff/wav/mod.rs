@@ -88,8 +88,8 @@ impl AudioFile for WavFile {
 impl WavFile {
 	tag_methods! {
 		#[cfg(feature = "id3v2")];
-		ID3v2, id3v2_tag, Id3v2Tag;
+		id3v2_tag, Id3v2Tag;
 		#[cfg(feature = "riff_info_list")];
-		RIFF_INFO, riff_info, RiffInfoList
+		riff_info, RiffInfoList
 	}
 }

@@ -1,4 +1,4 @@
-edition = "2018"
+edition = "2021"
 use_field_init_shorthand = true
 format_strings = true
 normalize_comments = true

@@ -40,8 +40,10 @@ macro_rules! impl_accessor {
 ///
 /// ## From `Tag`
 ///
-/// [`TagItem`]s with a value of [`ItemValue::Binary`](crate::ItemValue::Binary) and/or a
-/// key that isn't 4 bytes in length and within the ASCII range will be discarded.
+/// Two conditions must be met:
+///
+/// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
+/// * It has a key that is 4 bytes in length and within the ASCII range
 pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,
@@ -65,7 +67,7 @@ impl RiffInfoList {
 
 	/// Insert an item
 	///
-	/// NOTE: This will do nothing if `key` is not 4 bytes in length and entirely ascii characters
+	/// NOTE: This will do nothing if `key` is invalid
 	///
 	/// This will case-insensitively replace any item with the same key
 	pub fn insert(&mut self, key: String, value: String) {
