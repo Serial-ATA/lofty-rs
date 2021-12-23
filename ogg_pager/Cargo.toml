@@ -1,11 +1,13 @@
 [package]
 name = "ogg_pager"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
-edition = "2018"
-repository = "https://github.com/Serial-ATA/lofty-rs"
-description = "OGG page reader for use in Lofty"
+edition = "2021"
 license = "MIT OR Apache-2.0"
+description = "A simple OGG page reader"
+repository = "https://github.com/Serial-ATA/lofty-rs"
+keywords = ["ogg", "vorbis"]
+categories = ["accessibility", "multimedia::audio"]
 
 [dependencies]
 byteorder = "1.4.3"

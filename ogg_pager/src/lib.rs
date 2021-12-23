@@ -150,6 +150,7 @@ impl Page {
 	}
 }
 
+/// Creates a segment table based on the content
 pub fn segments(cont: &[u8]) -> Vec<u8> {
 	let len = cont.len();
 
