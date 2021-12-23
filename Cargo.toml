@@ -18,7 +18,7 @@ base64 = { version = "0.13.0", optional = true }
 ogg_pager = "0.1.7"
 # Key maps
 lazy_static = "1.4.0"
-paste = "1.0.5"
+paste = "1.0.6"
 byteorder = "1.4.3"
 
 [features]
