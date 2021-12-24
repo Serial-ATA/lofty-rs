@@ -6,8 +6,8 @@ use super::Id3v2Version;
 use crate::error::Result;
 use crate::id3::v2::frame::FrameRef;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagType};
 use crate::types::picture::{Picture, PictureType};
+use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
