@@ -254,6 +254,13 @@ impl Tag {
 		&*self.pictures
 	}
 
+	/// Returns the first occurrence of the [`PictureType`]
+	pub fn get_picture_type(&self, picture_type: PictureType) -> Option<&Picture> {
+		self.pictures
+			.iter()
+			.find(|picture| picture.pic_type() == picture_type)
+	}
+
 	/// Pushes a [`Picture`] to the tag
 	pub fn push_picture(&mut self, picture: Picture) {
 		self.pictures.push(picture)

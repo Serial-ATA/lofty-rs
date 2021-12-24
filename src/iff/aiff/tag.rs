@@ -4,8 +4,9 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryFrom;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
+use std::path::Path;
 
 use byteorder::BigEndian;
 
@@ -77,6 +78,16 @@ impl AiffTextChunks {
 	/// Removes the copyright message
 	pub fn remove_copyright(&mut self) {
 		self.copyright = None
+	}
+
+	/// Writes the tag to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * See [`AiffTextChunks::write_to`]
+	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Writes the tag to a file

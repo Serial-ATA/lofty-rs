@@ -7,9 +7,11 @@ use crate::error::Result;
 use crate::id3::v2::frame::FrameRef;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::picture::{Picture, PictureType};
 
 use std::convert::TryInto;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 
 macro_rules! impl_accessor {
 	($($name:ident, $id:literal;)+) => {
@@ -172,9 +174,82 @@ impl Id3v2Tag {
 	pub fn remove(&mut self, id: &str) {
 		self.frames.retain(|f| f.id_str() != id)
 	}
+
+	/// Inserts a [`Picture`]
+	///
+	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
+	/// When attempting to insert these types, if another is found it will be removed and returned.
+	pub fn insert_picture(&mut self, picture: Picture) -> Option<Frame> {
+		let ret = if picture.pic_type == PictureType::Icon
+			|| picture.pic_type == PictureType::OtherIcon
+		{
+			let mut pos = None;
+
+			for (i, frame) in self.frames.iter().enumerate() {
+				match frame {
+					Frame {
+						id: FrameID::Valid(id),
+						value:
+							FrameValue::Picture {
+								picture: Picture { pic_type, .. },
+								..
+							},
+						..
+					} if id == "APIC" && pic_type == &picture.pic_type => {
+						pos = Some(i);
+						break;
+					},
+					_ => {},
+				}
+			}
+
+			pos.map(|p| self.frames.remove(p))
+		} else {
+			None
+		};
+
+		let picture_frame = Frame {
+			id: FrameID::Valid(String::from("APIC")),
+			value: FrameValue::Picture {
+				encoding: TextEncoding::UTF8,
+				picture,
+			},
+			flags: FrameFlags::default(),
+		};
+
+		self.frames.push(picture_frame);
+
+		ret
+	}
+
+	/// Removes a certain [`PictureType`]
+	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
+		self.frames.retain(|f| {
+			!matches!(f, Frame {
+					id,
+					value: FrameValue::Picture {
+						picture: Picture {
+							pic_type: p_ty,
+							..
+						}, ..
+					},
+					..
+				} if id == &FrameID::Valid(String::from("APIC")) && p_ty == &picture_type)
+		})
+	}
 }
 
 impl Id3v2Tag {
+	/// Writes the tag to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * See [`Id3v2Tag::write_to`]
+	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
 	/// Writes the tag to a file
 	///
 	/// # Errors

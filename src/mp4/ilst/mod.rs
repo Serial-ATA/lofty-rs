@@ -10,7 +10,8 @@ use crate::types::tag::{Accessor, Tag, TagType};
 use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 
 const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
 const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
@@ -141,6 +142,16 @@ impl Ilst {
 }
 
 impl Ilst {
+	/// Writes the tag to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * See [`Ilst::write_to`]
+	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
 	/// Writes the tag to a file
 	///
 	/// # Errors

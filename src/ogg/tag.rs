@@ -3,11 +3,11 @@ use crate::ogg::constants::{OPUSHEAD, VORBIS_IDENT_HEAD};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::Picture;
-use crate::types::picture::PictureInformation;
+use crate::types::picture::{Picture, PictureInformation, PictureType};
 use crate::types::tag::{Accessor, Tag, TagType};
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 
 macro_rules! impl_accessor {
 	($($name:ident, $key:literal;)+) => {
@@ -95,9 +95,54 @@ impl VorbisComments {
 	pub fn remove_key(&mut self, key: &str) {
 		self.items.retain(|(k, _)| k != key);
 	}
+
+	/// Inserts a [`Picture`]
+	///
+	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
+	/// When attempting to insert these types, if another is found it will be removed and returned.
+	///
+	/// # Errors
+	///
+	/// * See [`PictureInformation::from_picture`]
+	pub fn insert_picture(
+		&mut self,
+		picture: Picture,
+	) -> Result<Option<(Picture, PictureInformation)>> {
+		let ret = if picture.pic_type == PictureType::Icon
+			|| picture.pic_type == PictureType::OtherIcon
+		{
+			self.pictures
+				.iter()
+				.position(|(p, _)| p.pic_type == picture.pic_type)
+				.map(|pos| self.pictures.remove(pos))
+		} else {
+			None
+		};
+
+		let info = PictureInformation::from_picture(&picture)?;
+
+		self.pictures.push((picture, info));
+
+		Ok(ret)
+	}
+
+	/// Removes a certain [`PictureType`]
+	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
+		self.pictures.retain(|(p, _)| p.pic_type != picture_type)
+	}
 }
 
 impl VorbisComments {
+	/// Writes the tag to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * See [`VorbisComments::write_to`]
+	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
 	/// Writes the tag to a file
 	///
 	/// # Errors

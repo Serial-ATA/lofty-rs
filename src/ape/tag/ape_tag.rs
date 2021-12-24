@@ -4,7 +4,8 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
+use std::path::Path;
 
 macro_rules! impl_accessor {
 	($($name:ident, $($key:literal)|+;)+) => {
@@ -114,6 +115,16 @@ impl ApeTag {
 }
 
 impl ApeTag {
+	/// Writes the tag to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * See [`ApeTag::write_to`]
+	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
 	/// Write an `APE` tag to a file
 	///
 	/// # Errors
