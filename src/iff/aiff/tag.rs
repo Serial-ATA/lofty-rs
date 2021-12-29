@@ -40,6 +40,10 @@ pub struct AiffTextChunks {
 	/// A copyright notice consisting of the date followed
 	/// by the copyright owner
 	pub copyright: Option<String>,
+	// TODO: ANNO chunks
+	// pub annotations: Option<Vec<String>>,
+	// TODO: COMT chunk
+	// pub comments: Option<Vec<Comment>>
 }
 
 impl Accessor for AiffTextChunks {

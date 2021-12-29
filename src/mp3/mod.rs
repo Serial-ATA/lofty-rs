@@ -40,21 +40,6 @@ pub struct Mp3File {
 	pub(super) last_frame_offset: u64,
 }
 
-// TODO: Add read_properties to `AudioFile`
-impl Mp3File {
-	/// Read the properties from the file
-	///
-	/// # Errors
-	///
-	/// TODO
-	pub fn read_properties<R>(reader: &mut R) -> Result<Mp3Properties>
-	where
-		R: Read + Seek,
-	{
-		Ok(read::read_from(reader, false, true)?.properties)
-	}
-}
-
 impl From<Mp3File> for TaggedFile {
 	#[allow(clippy::vec_init_then_push, unused_mut)]
 	fn from(input: Mp3File) -> Self {
