@@ -5,7 +5,6 @@ use crate::error::Result;
 
 use std::io::Read;
 
-#[allow(clippy::similar_names)]
 pub(crate) fn parse_id3v2<R>(bytes: &mut R, header: Id3v2Header) -> Result<Id3v2Tag>
 where
 	R: Read,

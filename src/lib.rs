@@ -147,7 +147,8 @@
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
 	clippy::too_many_arguments,
-	clippy::single_match_else
+	clippy::single_match_else,
+	clippy::similar_names
 )]
 
 pub mod ape;

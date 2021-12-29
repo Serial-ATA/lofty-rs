@@ -435,7 +435,6 @@ mod tests {
 	use std::io::Read;
 
 	#[test]
-	#[allow(clippy::similar_names)]
 	fn parse_id3v2() {
 		let mut expected_tag = Id3v2Tag::default();
 
@@ -543,7 +542,6 @@ mod tests {
 	}
 
 	#[test]
-	#[allow(clippy::similar_names)]
 	fn id3v2_to_tag() {
 		let mut tag_bytes = Vec::new();
 		std::fs::File::open("tests/tags/assets/test.id3v2")

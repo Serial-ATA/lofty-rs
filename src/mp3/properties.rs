@@ -95,7 +95,7 @@ impl Mp3Properties {
 
 pub(super) fn read_properties(
 	first_frame: (Header, u64),
-	last_frame: (Header, u64),
+	last_frame_offset: u64,
 	xing_header: Option<XingHeader>,
 	file_length: u64,
 ) -> Mp3Properties {
@@ -118,7 +118,8 @@ pub(super) fn read_properties(
 			_ if first_frame.0.bitrate > 0 => {
 				let audio_bitrate = first_frame.0.bitrate;
 
-				let stream_length = last_frame.1 - first_frame.1 + u64::from(first_frame.0.len);
+				let stream_length =
+					last_frame_offset - first_frame.1 + u64::from(first_frame.0.len);
 				let length = (stream_length * 8) / u64::from(audio_bitrate);
 
 				let overall_bitrate = ((file_length * 8) / length) as u32;

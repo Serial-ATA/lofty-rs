@@ -23,6 +23,7 @@ use crate::types::tag::{Tag, TagType};
 use std::io::{Read, Seek};
 
 /// An MP3 file
+#[derive(Default)]
 pub struct Mp3File {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
@@ -35,6 +36,23 @@ pub struct Mp3File {
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: Mp3Properties,
+	pub(super) first_frame_offset: Option<u64>,
+	pub(super) last_frame_offset: u64,
+}
+
+// TODO: Add read_properties to `AudioFile`
+impl Mp3File {
+	/// Read the properties from the file
+	///
+	/// # Errors
+	///
+	/// TODO
+	pub fn read_properties<R>(reader: &mut R) -> Result<Mp3Properties>
+	where
+		R: Read + Seek,
+	{
+		Ok(read::read_from(reader, false, true)?.properties)
+	}
 }
 
 impl From<Mp3File> for TaggedFile {
@@ -64,7 +82,7 @@ impl AudioFile for Mp3File {
 	where
 		R: Read + Seek,
 	{
-		read::read_from(reader, read_properties)
+		read::read_from(reader, true, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

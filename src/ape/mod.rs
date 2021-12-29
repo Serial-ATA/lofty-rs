@@ -5,7 +5,7 @@
 //! It is possible for an `APE` file to contain an `ID3v2` tag. For the sake of data preservation,
 //! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 //! `ID3v1`.
-mod constants;
+pub(crate) mod constants;
 mod properties;
 mod read;
 pub(crate) mod tag;

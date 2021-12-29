@@ -49,7 +49,6 @@ impl<B: ByteOrder> Chunks<B> {
 	}
 
 	#[cfg(feature = "id3v2")]
-	#[allow(clippy::similar_names)]
 	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<Id3v2Tag>
 	where
 		R: Read + Seek,
@@ -71,7 +70,6 @@ impl<B: ByteOrder> Chunks<B> {
 	}
 
 	#[cfg(not(feature = "id3v2"))]
-	#[allow(clippy::similar_names)]
 	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<()>
 	where
 		R: Read + Seek,

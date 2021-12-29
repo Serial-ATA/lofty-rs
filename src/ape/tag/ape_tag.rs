@@ -253,7 +253,6 @@ mod tests {
 	use std::io::{Cursor, Read};
 
 	#[test]
-	#[allow(clippy::similar_names)]
 	fn parse_ape() {
 		let mut expected_tag = ApeTag::default();
 
@@ -320,7 +319,6 @@ mod tests {
 	}
 
 	#[test]
-	#[allow(clippy::similar_names)]
 	fn ape_to_tag() {
 		let mut tag_bytes = Vec::new();
 		std::fs::File::open("tests/tags/assets/test.apev2")

@@ -183,7 +183,6 @@ fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) ->
 }
 
 #[cfg(test)]
-#[allow(clippy::similar_names)]
 mod tests {
 	use crate::id3::v2::TextEncoding;
 	use std::io::Cursor;

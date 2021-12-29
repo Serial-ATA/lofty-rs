@@ -25,7 +25,6 @@ where
 		.map_err(|_| LoftyError::BadAtom("Unable to parse \"ftyp\"'s major brand"))
 }
 
-#[allow(clippy::similar_names)]
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp4File>
 where
 	R: Read + Seek,

@@ -149,7 +149,6 @@ pub(crate) struct XingHeader {
 }
 
 impl XingHeader {
-	#[allow(clippy::similar_names)]
 	pub fn read(reader: &mut &[u8]) -> Result<Self> {
 		let reader_len = reader.len();
 
