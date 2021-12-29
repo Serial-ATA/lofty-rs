@@ -265,6 +265,7 @@ gen_map! (
 	"IFRM" 			=> TrackTotal,
 	"IRTD" 			=> LawRating,
 	"ICRD" 			=> RecordingDate,
+	"TLEN"			=> Length,
 	"ISRF" 			=> OriginalMediaType,
 	"ITCH" 			=> EncodedBy,
 	"ISFT" 			=> EncoderSoftware,

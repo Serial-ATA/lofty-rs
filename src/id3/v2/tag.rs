@@ -226,7 +226,7 @@ impl Id3v2Tag {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.frames.retain(|f| {
 			!matches!(f, Frame {
-					id,
+					id: FrameID::Valid(id),
 					value: FrameValue::Picture {
 						picture: Picture {
 							pic_type: p_ty,
@@ -234,7 +234,31 @@ impl Id3v2Tag {
 						}, ..
 					},
 					..
-				} if id == &FrameID::Valid(String::from("APIC")) && p_ty == &picture_type)
+				} if id == "APIC" && p_ty == &picture_type)
+		})
+	}
+
+	/// Returns all `USLT` frames
+	pub fn unsync_text(&self) -> impl Iterator<Item = &LanguageFrame> {
+		self.frames.iter().filter_map(|f| match f {
+			Frame {
+				id: FrameID::Valid(id),
+				value: FrameValue::UnSyncText(val),
+				..
+			} if id == "USLT" => Some(val),
+			_ => None,
+		})
+	}
+
+	/// Returns all `COMM` frames
+	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> {
+		self.frames.iter().filter_map(|f| match f {
+			Frame {
+				id: FrameID::Valid(id),
+				value: FrameValue::Comment(val),
+				..
+			} if id == "COMM" => Some(val),
+			_ => None,
 		})
 	}
 }
