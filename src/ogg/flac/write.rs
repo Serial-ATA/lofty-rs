@@ -10,6 +10,8 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
+const MAX_BLOCK_SIZE: u32 = 16777215;
+
 pub(in crate) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -> Result<()> {
 	let stream_info = verify_flac(data)?;
 	let stream_info_end = stream_info.end as usize;
@@ -127,7 +129,7 @@ fn create_comment_block(
 
 		let len = (writer.get_ref().len() - 1) as u32;
 
-		if len > 65535 {
+		if len > MAX_BLOCK_SIZE {
 			return Err(LoftyError::TooMuchData);
 		}
 
@@ -158,7 +160,7 @@ fn create_picture_blocks(
 		let pic_bytes = pic.as_flac_bytes(info, false);
 		let pic_len = pic_bytes.len() as u32;
 
-		if pic_len > 65535 {
+		if pic_len > MAX_BLOCK_SIZE {
 			return Err(LoftyError::TooMuchData);
 		}
 
