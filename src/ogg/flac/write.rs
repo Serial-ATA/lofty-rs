@@ -10,7 +10,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-const MAX_BLOCK_SIZE: u32 = 16777215;
+const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
 pub(in crate) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -> Result<()> {
 	let stream_info = verify_flac(data)?;
