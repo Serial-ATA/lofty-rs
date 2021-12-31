@@ -6,6 +6,7 @@
 //!
 //! * [Id3v2Tag]
 //! * [Frame]
+
 mod flags;
 #[cfg(feature = "id3v2")]
 mod frame;
@@ -21,24 +22,27 @@ pub(crate) mod util;
 #[cfg(feature = "id3v2")]
 pub(crate) mod write;
 
-#[cfg(feature = "id3v2")]
-pub use flags::Id3v2TagFlags;
-#[cfg(feature = "id3v2")]
-pub use frame::{EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, LanguageFrame};
-#[cfg(feature = "id3v2")]
-pub use items::{
-	encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject},
-	sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat},
-};
 #[cfg(feature = "id3v2_restrictions")]
 pub use restrictions::{
 	ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
 };
 #[cfg(feature = "id3v2")]
-pub use tag::Id3v2Tag;
-pub use util::text_utils::TextEncoding;
-#[cfg(feature = "id3v2")]
-pub use util::upgrade::{upgrade_v2, upgrade_v3};
+pub use {
+	flags::Id3v2TagFlags,
+	frame::{
+		content::EncodedTextFrame, content::LanguageFrame, id::FrameID, Frame, FrameFlags,
+		FrameValue,
+	},
+	items::{
+		encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject},
+		sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat},
+	},
+	tag::Id3v2Tag,
+	util::{
+		text_utils::TextEncoding,
+		upgrade::{upgrade_v2, upgrade_v3},
+	},
+};
 
 #[cfg(not(feature = "id3v2"))]
 use flags::Id3v2TagFlags;

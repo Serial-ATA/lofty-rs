@@ -49,9 +49,9 @@ macro_rules! tag_methods {
 				}
 
 				$(#[$attr])?
-				#[doc = "Sets the [`" $ty "`]"]
-				pub fn [<set_ $name>](&mut self, tag: $ty) {
-					self.$name = Some(tag)
+				#[doc = "Gets a mutable reference to the [`" $ty "`] if it exists"]
+				pub fn [<$name _mut>](&mut self) -> Option<&mut $ty> {
+					self.$name.as_mut()
 				}
 
 				$(#[$attr])?

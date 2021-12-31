@@ -1,7 +1,6 @@
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValueRef};
+use crate::id3::v2::frame::{FrameFlags, FrameRef};
 use crate::id3::v2::synch_u32;
-use crate::id3::v2::Id3v2Version;
 
 use std::io::Write;
 
@@ -15,25 +14,7 @@ where
 	W: Write,
 {
 	for frame in frames {
-		let value = match frame.value {
-			FrameValueRef::Comment(content) | FrameValueRef::UnSyncText(content) => {
-				content.as_bytes()?
-			},
-			FrameValueRef::Text { value, encoding } => {
-				let mut v = vec![encoding as u8];
-
-				v.extend_from_slice(value.as_bytes());
-				v
-			},
-			FrameValueRef::UserText(content) | FrameValueRef::UserURL(content) => {
-				content.as_bytes()
-			},
-			FrameValueRef::URL(link) => link.as_bytes().to_vec(),
-			FrameValueRef::Picture { encoding, picture } => {
-				picture.as_apic_bytes(Id3v2Version::V4, encoding)?
-			},
-			FrameValueRef::Binary(binary) => binary.to_vec(),
-		};
+		let value = frame.value.as_bytes()?;
 
 		write_frame(writer, frame.id, frame.flags, &value)?;
 	}

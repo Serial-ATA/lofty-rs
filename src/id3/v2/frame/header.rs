@@ -23,7 +23,7 @@ where
 	let id_str = std::str::from_utf8(&frame_header[..3]).map_err(|_| LoftyError::BadFrameID)?;
 	let id = upgrade_v2(id_str).unwrap_or(id_str);
 
-	let frame_id = create_frame_id(id)?;
+	let frame_id = FrameID::new(id)?;
 
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
@@ -73,26 +73,12 @@ where
 		(mapped, size)
 	};
 
-	let frame_id = create_frame_id(id)?;
+	let frame_id = FrameID::new(id)?;
 
 	let flags = u16::from_be_bytes([frame_header[8], frame_header[9]]);
 	let flags = parse_flags(flags, synchsafe);
 
 	Ok(Some((frame_id, size, flags)))
-}
-
-fn create_frame_id(id: &str) -> Result<FrameID> {
-	for c in id.chars() {
-		if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
-			return Err(LoftyError::BadFrameID);
-		}
-	}
-
-	Ok(match id.len() {
-		3 => FrameID::Outdated(id.to_string()),
-		4 => FrameID::Valid(id.to_string()),
-		_ => unreachable!(),
-	})
 }
 
 pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {

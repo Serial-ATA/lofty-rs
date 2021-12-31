@@ -1,17 +1,24 @@
-mod content;
+pub(super) mod content;
 mod header;
+pub(super) mod id;
 pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
+use crate::id3::v2::Id3v2Version;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::Picture;
 use crate::types::tag::TagType;
+use content::{EncodedTextFrame, LanguageFrame};
+use id::FrameID;
+
+use std::borrow::Cow;
 
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
+
+// TODO: Messy module, rough conversions
 
 #[derive(Clone, Debug, Eq)]
 /// Represents an `ID3v2` frame
@@ -77,7 +84,7 @@ impl Frame {
 			},
 			_ => {
 				return Err(LoftyError::Id3v2(
-					"Frame ID has a bad length (!= 3 || != 4)",
+					"Frame ID has a bad length (!= 3 && != 4)",
 				))
 			},
 		};
@@ -110,139 +117,6 @@ impl Frame {
 	/// Set the item's flags
 	pub fn set_flags(&mut self, flags: FrameFlags) {
 		self.flags = flags
-	}
-}
-
-#[derive(Clone, Debug, Eq)]
-/// Information about an `ID3v2` frame that requires a language
-///
-/// See [`EncodedTextFrame`]
-pub struct LanguageFrame {
-	/// The encoding of the description and comment text
-	pub encoding: TextEncoding,
-	/// ISO-639-2 language code (3 bytes)
-	pub language: String,
-	/// Unique content description
-	pub description: String,
-	/// The actual frame content
-	pub content: String,
-}
-
-impl PartialEq for LanguageFrame {
-	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
-	}
-}
-
-impl Hash for LanguageFrame {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.description.hash(state);
-	}
-}
-
-impl LanguageFrame {
-	/// Convert a [`LanguageFrame`] to a byte vec
-	///
-	/// NOTE: This does not include a frame header
-	///
-	/// # Errors
-	///
-	/// * `language` is not exactly 3 bytes
-	/// * `language` contains invalid characters `('a'..'z')`
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
-		let mut bytes = vec![self.encoding as u8];
-
-		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..'z').contains(&c)) {
-			return Err(LoftyError::Id3v2(
-				"Invalid frame language found (expected 3 ascii characters)",
-			));
-		}
-
-		bytes.extend(self.language.as_bytes().iter());
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
-
-		Ok(bytes)
-	}
-}
-
-#[derive(Clone, Debug, Eq)]
-/// An `ID3v2` text frame
-///
-/// This is used in the frames `TXXX` and `WXXX`, where the frames
-/// are told apart by descriptions, rather than their [`FrameID`]s.
-/// This means for each `EncodedTextFrame` in the tag, the description
-/// must be unique.
-pub struct EncodedTextFrame {
-	/// The encoding of the description and comment text
-	pub encoding: TextEncoding,
-	/// Unique content description
-	pub description: String,
-	/// The actual frame content
-	pub content: String,
-}
-
-impl PartialEq for EncodedTextFrame {
-	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
-	}
-}
-
-impl Hash for EncodedTextFrame {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.description.hash(state);
-	}
-}
-
-impl EncodedTextFrame {
-	/// Convert an [`EncodedTextFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut bytes = vec![self.encoding as u8];
-
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
-
-		bytes
-	}
-}
-
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
-/// An `ID3v2` frame ID
-pub enum FrameID {
-	/// A valid `ID3v2.3/4` frame
-	Valid(String),
-	/// When an `ID3v2.2` key couldn't be upgraded
-	///
-	/// This **will not** be written. It is up to the user to upgrade and store the key as [`Id3v2Frame::Valid`](Self::Valid).
-	///
-	/// The entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary).
-	Outdated(String),
-}
-
-impl FrameID {
-	/// Extracts the string from the ID
-	pub fn as_str(&self) -> &str {
-		match self {
-			FrameID::Valid(v) | FrameID::Outdated(v) => v.as_str(),
-		}
-	}
-}
-
-impl TryFrom<ItemKey> for FrameID {
-	type Error = LoftyError;
-
-	fn try_from(value: ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
-		match value {
-			ItemKey::Unknown(unknown) if unknown.len() == 4 && unknown.is_ascii() => {
-				Ok(Self::Valid(unknown.to_ascii_uppercase()))
-			},
-			k => k.map_key(TagType::Id3v2, false).map_or(
-				Err(LoftyError::Id3v2(
-					"ItemKey does not meet the requirements to be a FrameID",
-				)),
-				|id| Ok(Self::Valid(id.to_string())),
-			),
-		}
 	}
 }
 
@@ -298,6 +172,84 @@ pub enum FrameValue {
 	Binary(Vec<u8>),
 }
 
+impl From<ItemValue> for FrameValue {
+	fn from(input: ItemValue) -> Self {
+		match input {
+			ItemValue::Text(text) => FrameValue::Text {
+				encoding: TextEncoding::UTF8,
+				value: text,
+			},
+			ItemValue::Locator(locator) => FrameValue::URL(locator),
+			ItemValue::Binary(binary) => FrameValue::Binary(binary),
+		}
+	}
+}
+
+impl FrameValue {
+	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
+		Ok(match self {
+			FrameValue::Comment(lf) | FrameValue::UnSyncText(lf) => lf.as_bytes()?,
+			FrameValue::Text { encoding, value } => {
+				let mut v = Vec::with_capacity(value.len() + 1);
+
+				v.push(*encoding as u8);
+				v.extend_from_slice(value.as_bytes());
+				v
+			},
+			FrameValue::UserText(content) | FrameValue::UserURL(content) => content.as_bytes(),
+			FrameValue::URL(link) => link.as_bytes().to_vec(),
+			FrameValue::Picture { encoding, picture } => {
+				picture.as_apic_bytes(Id3v2Version::V4, *encoding)?
+			},
+			FrameValue::Binary(binary) => binary.clone(),
+		})
+	}
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
+#[allow(clippy::struct_excessive_bools)]
+/// Various flags to describe the content of an item
+pub struct FrameFlags {
+	/// Preserve frame on tag edit
+	pub tag_alter_preservation: bool,
+	/// Preserve frame on file edit
+	pub file_alter_preservation: bool,
+	/// Item cannot be written to
+	pub read_only: bool,
+	/// Frame belongs in a group
+	///
+	/// In addition to setting this flag, a group identifier byte must be added.
+	/// All frames with the same group identifier byte belong to the same group.
+	pub grouping_identity: (bool, u8),
+	/// Frame is zlib compressed
+	///
+	/// It is **required** `data_length_indicator` be set if this is set.
+	pub compression: bool,
+	/// Frame is encrypted
+	///
+	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
+	///
+	/// In addition to setting this flag, an encryption method symbol must be added.
+	/// The method symbol **must** be > 0x80.
+	pub encryption: (bool, u8),
+	/// Frame is unsynchronised
+	///
+	/// In short, this makes all "0xFF X (X >= 0xE0)" combinations into "0xFF 0x00 X" to avoid confusion
+	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
+	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
+	///
+	/// NOTE: While unsynchronized data is read, for the sake of simplicity, this flag has no effect when
+	/// writing. There isn't much reason to write unsynchronized data.
+	pub unsynchronisation: bool,
+	/// Frame has a data length indicator
+	///
+	/// The data length indicator is the size of the frame if the flags were all zeroed out.
+	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
+	///
+	/// If using `encryption`, the final size must be added.
+	pub data_length_indicator: (bool, u32),
+}
+
 impl TryFrom<TagItem> for Frame {
 	type Error = LoftyError;
 
@@ -349,66 +301,9 @@ impl TryFrom<TagItem> for Frame {
 	}
 }
 
-impl From<ItemValue> for FrameValue {
-	fn from(input: ItemValue) -> Self {
-		match input {
-			ItemValue::Text(text) => FrameValue::Text {
-				encoding: TextEncoding::UTF8,
-				value: text,
-			},
-			ItemValue::Locator(locator) => FrameValue::URL(locator),
-			ItemValue::Binary(binary) => FrameValue::Binary(binary),
-		}
-	}
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
-#[allow(clippy::struct_excessive_bools)]
-/// Various flags to describe the content of an item
-pub struct FrameFlags {
-	/// Preserve frame on tag edit
-	pub tag_alter_preservation: bool,
-	/// Preserve frame on file edit
-	pub file_alter_preservation: bool,
-	/// Item cannot be written to
-	pub read_only: bool,
-	/// Frame belongs in a group
-	///
-	/// In addition to setting this flag, a group identifier byte must be added.
-	/// All frames with the same group identifier byte belong to the same group.
-	pub grouping_identity: (bool, u8),
-	/// Frame is zlib compressed
-	///
-	/// It is **required** `data_length_indicator` be set if this is set.
-	pub compression: bool,
-	/// Frame is encrypted
-	///
-	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
-	///
-	/// In addition to setting this flag, an encryption method symbol must be added.
-	/// The method symbol **must** be > 0x80.
-	pub encryption: (bool, u8),
-	/// Frame is unsynchronised
-	///
-	/// In short, this makes all "0xFF X (X >= 0xE0)" combinations into "0xFF 0x00 X" to avoid confusion
-	/// with the MPEG frame header, which is often identified by its "frame sync" (11 set bits).
-	/// It is preferred an ID3v2 tag is either *completely* unsynchronised or not unsynchronised at all.
-	///
-	/// NOTE: While unsynchronized data is read, for the sake of simplicity, this flag has no effect when
-	/// writing. There isn't much reason to write unsynchronized data.
-	pub unsynchronisation: bool,
-	/// Frame has a data length indicator
-	///
-	/// The data length indicator is the size of the frame if the flags were all zeroed out.
-	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
-	///
-	/// If using `encryption`, the final size must be added.
-	pub data_length_indicator: (bool, u32),
-}
-
 pub(crate) struct FrameRef<'a> {
 	pub id: &'a str,
-	pub value: FrameValueRef<'a>,
+	pub value: Cow<'a, FrameValue>,
 	pub flags: FrameFlags,
 }
 
@@ -417,7 +312,7 @@ impl<'a> Frame {
 		if let FrameID::Valid(id) = &self.id {
 			Some(FrameRef {
 				id,
-				value: (&self.value).into(),
+				value: Cow::Borrowed(self.content()),
 				flags: self.flags,
 			})
 		} else {
@@ -429,8 +324,8 @@ impl<'a> Frame {
 impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 	type Error = LoftyError;
 
-	fn try_from(value: &'a TagItem) -> std::prelude::rust_2015::Result<Self, Self::Error> {
-		let id = match value.key() {
+	fn try_from(tag_item: &'a TagItem) -> std::prelude::rust_2015::Result<Self, Self::Error> {
+		let id = match tag_item.key() {
 			ItemKey::Unknown(unknown)
 				if unknown.len() == 4
 					&& unknown.is_ascii()
@@ -445,59 +340,47 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 
 		Ok(FrameRef {
 			id,
-			value: Into::<FrameValueRef<'a>>::into(value.value()),
+			value: Cow::Owned(match (id, tag_item.value()) {
+				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: String::from("eng"),
+					description: String::new(),
+					content: text.clone(),
+				}),
+				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: String::from("eng"),
+					description: String::new(),
+					content: text.clone(),
+				}),
+				("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
+					FrameValue::UserURL(EncodedTextFrame {
+						encoding: TextEncoding::UTF8,
+						description: String::new(),
+						content: text.clone(),
+					})
+				},
+				("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::new(),
+					content: text.clone(),
+				}),
+				(_, value) => value.into(),
+			}),
 			flags: FrameFlags::default(),
 		})
 	}
 }
 
-pub(crate) enum FrameValueRef<'a> {
-	Comment(&'a LanguageFrame),
-	UnSyncText(&'a LanguageFrame),
-	Text {
-		encoding: TextEncoding,
-		value: &'a str,
-	},
-	UserText(&'a EncodedTextFrame),
-	URL(&'a str),
-	UserURL(&'a EncodedTextFrame),
-	Picture {
-		encoding: TextEncoding,
-		picture: &'a Picture,
-	},
-	Binary(&'a [u8]),
-}
-
-impl<'a> Into<FrameValueRef<'a>> for &'a FrameValue {
-	fn into(self) -> FrameValueRef<'a> {
+impl<'a> Into<FrameValue> for &'a ItemValue {
+	fn into(self) -> FrameValue {
 		match self {
-			FrameValue::Comment(lf) => FrameValueRef::Comment(lf),
-			FrameValue::UnSyncText(lf) => FrameValueRef::UnSyncText(lf),
-			FrameValue::Text { encoding, value } => FrameValueRef::Text {
-				encoding: *encoding,
-				value: value.as_str(),
-			},
-			FrameValue::UserText(etf) => FrameValueRef::UserText(etf),
-			FrameValue::URL(url) => FrameValueRef::URL(url.as_str()),
-			FrameValue::UserURL(etf) => FrameValueRef::UserURL(etf),
-			FrameValue::Picture { encoding, picture } => FrameValueRef::Picture {
-				encoding: *encoding,
-				picture,
-			},
-			FrameValue::Binary(bin) => FrameValueRef::Binary(bin.as_slice()),
-		}
-	}
-}
-
-impl<'a> Into<FrameValueRef<'a>> for &'a ItemValue {
-	fn into(self) -> FrameValueRef<'a> {
-		match self {
-			ItemValue::Text(text) => FrameValueRef::Text {
+			ItemValue::Text(text) => FrameValue::Text {
 				encoding: TextEncoding::UTF8,
-				value: text.as_str(),
+				value: text.clone(),
 			},
-			ItemValue::Locator(locator) => FrameValueRef::URL(locator.as_str()),
-			ItemValue::Binary(binary) => FrameValueRef::Binary(binary.as_slice()),
+			ItemValue::Locator(locator) => FrameValue::URL(locator.clone()),
+			ItemValue::Binary(binary) => FrameValue::Binary(binary.clone()),
 		}
 	}
 }

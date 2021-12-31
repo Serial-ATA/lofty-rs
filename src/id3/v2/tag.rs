@@ -1,6 +1,7 @@
 use super::flags::Id3v2TagFlags;
-use super::frame::{EncodedTextFrame, FrameFlags, LanguageFrame};
-use super::frame::{Frame, FrameID, FrameValue};
+use super::frame::content::{EncodedTextFrame, LanguageFrame};
+use super::frame::id::FrameID;
+use super::frame::{Frame, FrameFlags, FrameValue};
 use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
 use crate::error::Result;
