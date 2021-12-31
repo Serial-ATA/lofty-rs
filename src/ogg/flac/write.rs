@@ -125,7 +125,7 @@ fn create_comment_block(
 
 		writer.write_u32::<LittleEndian>(count)?;
 
-		create_comments(writer, &mut count, items)?;
+		create_comments(writer, &mut count, &mut peek)?;
 
 		let len = (writer.get_ref().len() - 1) as u32;
 

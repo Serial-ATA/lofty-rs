@@ -193,8 +193,10 @@ impl From<Tag> for VorbisComments {
 				_ => continue,
 			};
 
-			// Safe to unwrap since all ItemKeys map in Vorbis comments
-			let key = item.key().map_key(TagType::VorbisComments, true).unwrap();
+			let key = match item.key().map_key(TagType::VorbisComments, true) {
+				None => continue,
+				Some(k) => k,
+			};
 
 			vorbis_comments
 				.items
@@ -249,9 +251,10 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 		let vendor = self.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
 
 		let items = self.items.iter().filter_map(|i| match i.value() {
-			ItemValue::Text(val) | ItemValue::Locator(val) => {
-				Some((i.key().map_key(TagType::VorbisComments, true).unwrap(), val))
-			},
+			ItemValue::Text(val) | ItemValue::Locator(val) => i
+				.key()
+				.map_key(TagType::VorbisComments, true)
+				.map(|key| (key, val)),
 			_ => None,
 		});
 
