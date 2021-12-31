@@ -38,6 +38,9 @@ tempfile = "3.2.0"
 # tag_writer example
 structopt = { version = "0.3.25", default-features = false }
 
+[lib]
+bench = false
+
 [[bench]]
 name = "read_file"
 harness = false
