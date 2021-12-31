@@ -28,16 +28,18 @@ pub(crate) fn create_comments(
 	items: &mut dyn Iterator<Item = (&str, &String)>,
 ) -> Result<()> {
 	for (k, v) in items {
-		let comment = format!("{}={}", k, v);
+		if !v.is_empty() {
+			let comment = format!("{}={}", k, v);
 
-		let comment_b = comment.as_bytes();
-		let bytes_len = comment_b.len();
+			let comment_b = comment.as_bytes();
+			let bytes_len = comment_b.len();
 
-		if u32::try_from(bytes_len as u64).is_ok() {
-			*count += 1;
+			if u32::try_from(bytes_len as u64).is_ok() {
+				*count += 1;
 
-			packet.write_all(&(bytes_len as u32).to_le_bytes())?;
-			packet.write_all(comment_b)?;
+				packet.write_all(&(bytes_len as u32).to_le_bytes())?;
+				packet.write_all(comment_b)?;
+			}
 		}
 	}
 

@@ -66,7 +66,7 @@ impl LanguageFrame {
 /// An `ID3v2` text frame
 ///
 /// This is used in the frames `TXXX` and `WXXX`, where the frames
-/// are told apart by descriptions, rather than their [`FrameID`]s.
+/// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameID)s.
 /// This means for each `EncodedTextFrame` in the tag, the description
 /// must be unique.
 pub struct EncodedTextFrame {
