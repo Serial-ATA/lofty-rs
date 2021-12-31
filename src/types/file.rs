@@ -54,46 +54,26 @@ pub struct TaggedFile {
 	feature = "ape"
 ))]
 impl TaggedFile {
-	/// Gets the file's "Primary tag", or the one most likely to be used in the target format
+	/// Returns the primary tag
 	///
-	/// | [`FileType`]             | [`TagType`]      |
-	/// |--------------------------|------------------|
-	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
-	/// | `APE`                    | `Ape`            |
-	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
-	/// | `MP4`                    | `Mp4Ilst`        |
+	/// See [FileType::primary_tag_type]
 	pub fn primary_tag(&self) -> Option<&Tag> {
 		self.tag(&self.primary_tag_type())
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
-	/// See [`primary_tag`](Self::primary_tag) for an explanation
+	/// See [FileType::primary_tag_type]
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tag_mut(&self.primary_tag_type())
 	}
 
 	#[allow(unreachable_patterns, clippy::match_same_arms)]
-	/// Returns the file type's "primary" [`TagType`]
+	/// Returns the file type's primary [`TagType`]
 	///
-	/// See [`primary_tag`](Self::primary_tag) for an explanation
+	/// See [FileType::primary_tag_type]
 	pub fn primary_tag_type(&self) -> TagType {
-		match self.ty {
-			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
-			FileType::AIFF => TagType::AiffText,
-			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
-			FileType::WAV => TagType::RiffInfo,
-			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
-			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
-			FileType::MP3 => TagType::Ape,
-			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
-			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
-			FileType::APE => TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
-			FileType::MP4 => TagType::Mp4Ilst,
-		}
+		self.ty.primary_tag_type()
 	}
 
 	/// Determines whether the file supports the given [`TagType`]
@@ -152,6 +132,11 @@ impl TaggedFile {
 			.map(|pos| self.tags.remove(pos))
 	}
 
+	/// Removes all tags from the file
+	pub fn clear(&mut self) {
+		self.tags.clear()
+	}
+
 	/// Attempts to write all tags to a path
 	///
 	/// # Errors
@@ -202,6 +187,34 @@ pub enum FileType {
 }
 
 impl FileType {
+	#[allow(unreachable_patterns, clippy::match_same_arms)]
+	/// Returns the file type's "primary" [`TagType`], or the one most likely to be used in the target format
+	///
+	/// | [`FileType`]             | [`TagType`]      |
+	/// |--------------------------|------------------|
+	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
+	/// | `APE`                    | `Ape`            |
+	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
+	/// | `MP4`                    | `Mp4Ilst`        |
+	pub fn primary_tag_type(&self) -> TagType {
+		match self {
+			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
+			FileType::AIFF => TagType::AiffText,
+			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
+			FileType::WAV => TagType::RiffInfo,
+			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
+			FileType::MP3 => TagType::Id3v1,
+			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
+			FileType::MP3 => TagType::Ape,
+			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
+			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
+			FileType::MP3 => TagType::Id3v1,
+			FileType::APE => TagType::Ape,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
+			FileType::MP4 => TagType::Mp4Ilst,
+		}
+	}
+
 	/// Returns if the target FileType supports a [`TagType`]
 	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
 		match self {
