@@ -8,6 +8,7 @@ use crate::types::picture::{MimeType, Picture, PictureType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use crate::id3::v1::GENRES;
 use byteorder::ReadBytesExt;
 
 pub(crate) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
@@ -22,48 +23,39 @@ where
 	let mut tag = Ilst::default();
 
 	while let Ok(atom) = AtomInfo::read(&mut cursor) {
-		let ident = match &atom.ident {
+		let ident = match atom.ident {
 			AtomIdent::Fourcc(ref fourcc) => match fourcc {
 				b"free" | b"skip" => {
 					skip_unneeded(&mut cursor, atom.extended, atom.len)?;
 					continue;
 				},
 				b"covr" => {
-					let value = parse_data(&mut cursor)?;
+					handle_covr(&mut cursor, &mut tag)?;
+					continue;
+				},
+				// Upgrade this to a \xa9gen atom
+				b"gnre" => {
+					let content = parse_data(&mut cursor)?;
 
-					let (mime_type, data) = match value {
-						AtomData::Unknown { code, data } => match code {
-							// Type 0 is implicit
-							0 => (MimeType::None, data),
-							// GIF is deprecated
-							12 => (MimeType::Gif, data),
-							13 => (MimeType::Jpeg, data),
-							14 => (MimeType::Png, data),
-							27 => (MimeType::Bmp, data),
-							_ => {
-								return Err(LoftyError::BadAtom(
-									"\"covr\" atom has an unknown type",
-								))
-							},
-						},
-						_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
-					};
+					// We expect code 76 (BE Unsigned Integer)
+					if let AtomData::Unknown { code: 76 | 0, data } = content {
+						if data.len() >= 2 {
+							let index = data[1] as usize;
 
-					tag.atoms.push(Atom {
-						ident: atom.ident,
-						data: AtomData::Picture(Picture {
-							pic_type: PictureType::Other,
-							mime_type,
-							description: None,
-							data: Cow::from(data),
-						}),
-					});
+							if index > 0 && index <= GENRES.len() {
+								tag.atoms.push(Atom {
+									ident: AtomIdent::Fourcc(*b"\xa9gen"),
+									data: AtomData::UTF8(String::from(GENRES[index - 1])),
+								})
+							}
+						}
+					}
 
 					continue;
 				},
 				_ => atom.ident,
 			},
-			_ => atom.ident,
+			ident => ident,
 		};
 
 		let data = parse_data(&mut cursor)?;
@@ -140,4 +132,34 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 			))
 		},
 	})
+}
+
+fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst) -> Result<()> {
+	let value = parse_data(reader)?;
+
+	let (mime_type, data) = match value {
+		AtomData::Unknown { code, data } => match code {
+			// Type 0 is implicit
+			0 => (MimeType::None, data),
+			// GIF is deprecated
+			12 => (MimeType::Gif, data),
+			13 => (MimeType::Jpeg, data),
+			14 => (MimeType::Png, data),
+			27 => (MimeType::Bmp, data),
+			_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
+		},
+		_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
+	};
+
+	tag.atoms.push(Atom {
+		ident: AtomIdent::Fourcc(*b"covr"),
+		data: AtomData::Picture(Picture {
+			pic_type: PictureType::Other,
+			mime_type,
+			description: None,
+			data: Cow::from(data),
+		}),
+	});
+
+	Ok(())
 }

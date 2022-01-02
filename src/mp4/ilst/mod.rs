@@ -139,6 +139,43 @@ impl Ilst {
 		self.atoms
 			.retain(|a| !matches!(a.data(), AtomData::Picture(_)))
 	}
+
+	/// Returns the track number
+	pub fn track_number(&self) -> Option<u16> {
+		self.extract_number(*b"trkn", 4)
+	}
+
+	/// Returns the total number of tracks
+	pub fn track_total(&self) -> Option<u16> {
+		self.extract_number(*b"trkn", 6)
+	}
+
+	/// Returns the disc number
+	pub fn disc_number(&self) -> Option<u16> {
+		self.extract_number(*b"disk", 4)
+	}
+
+	/// Returns the total number of discs
+	pub fn disc_total(&self) -> Option<u16> {
+		self.extract_number(*b"disk", 6)
+	}
+
+	// Extracts a u16 from an integer pair
+	fn extract_number(&self, fourcc: [u8; 4], expected_size: usize) -> Option<u16> {
+		if let Some(atom) = self.atom(&AtomIdent::Fourcc(fourcc)) {
+			match atom.data() {
+				AtomData::Unknown { code: 0, data } if data.len() >= expected_size => {
+					return Some(u16::from_be_bytes([
+						data[expected_size - 2],
+						data[expected_size - 1],
+					]))
+				},
+				_ => {},
+			}
+		}
+
+		None
+	}
 }
 
 impl Ilst {
