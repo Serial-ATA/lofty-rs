@@ -210,6 +210,31 @@ impl From<Ilst> for Tag {
 					tag.pictures.push(pic);
 					continue;
 				},
+				// We have to special case track/disc numbers since they are stored together
+				AtomData::Unknown { code: 0, data } if data.len() >= 6 => match atom.ident {
+					AtomIdent::Fourcc(ref fourcc) => match fourcc {
+						b"trkn" => {
+							let current = u16::from_be_bytes([data[2], data[3]]);
+							let total = u16::from_be_bytes([data[4], data[5]]);
+
+							tag.insert_text(ItemKey::TrackNumber, current.to_string());
+							tag.insert_text(ItemKey::TrackTotal, total.to_string());
+
+							continue;
+						},
+						b"disk" => {
+							let current = u16::from_be_bytes([data[2], data[3]]);
+							let total = u16::from_be_bytes([data[4], data[5]]);
+
+							tag.insert_text(ItemKey::DiscNumber, current.to_string());
+							tag.insert_text(ItemKey::DiscTotal, total.to_string());
+
+							continue;
+						},
+						_ => continue,
+					},
+					_ => continue,
+				},
 				_ => continue,
 			};
 
@@ -234,16 +259,55 @@ impl From<Ilst> for Tag {
 
 impl From<Tag> for Ilst {
 	fn from(input: Tag) -> Self {
+		fn convert_to_uint(space: &mut Option<u16>, cont: &str) {
+			if let Ok(num) = cont.parse::<u16>() {
+				*space = Some(num);
+			}
+		}
+
+		fn create_int_pair(tag: &mut Ilst, ident: [u8; 4], pair: (Option<u16>, Option<u16>)) {
+			match pair {
+				(None, None) => {},
+				_ => {
+					let current = pair.0.unwrap_or(0).to_be_bytes();
+					let total = pair.1.unwrap_or(0).to_be_bytes();
+
+					tag.atoms.push(Atom {
+						ident: AtomIdent::Fourcc(ident),
+						data: AtomData::Unknown {
+							code: 0,
+							data: vec![0, 0, current[0], current[1], total[0], total[1]],
+						},
+					})
+				},
+			}
+		}
+
 		let mut ilst = Self::default();
 
+		// Storage for integer pairs
+		let mut tracks: (Option<u16>, Option<u16>) = (None, None);
+		let mut discs: (Option<u16>, Option<u16>) = (None, None);
+
 		for item in input.items {
-			if let Some(ident) = item_key_to_ident(item.key()).map(Into::into) {
+			let key = item.item_key;
+
+			if let Some(ident) = item_key_to_ident(&key).map(Into::into) {
 				let data = match item.item_value {
-					ItemValue::Text(text) => AtomData::UTF8(text),
+					ItemValue::Text(text) => text,
 					_ => continue,
 				};
 
-				ilst.atoms.push(Atom { ident, data });
+				match key {
+					ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, data.as_str()),
+					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, data.as_str()),
+					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, data.as_str()),
+					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, data.as_str()),
+					_ => ilst.atoms.push(Atom {
+						ident,
+						data: AtomData::UTF8(data),
+					}),
+				}
 			}
 		}
 
@@ -257,6 +321,9 @@ impl From<Tag> for Ilst {
 				data: AtomData::Picture(picture),
 			})
 		}
+
+		create_int_pair(&mut ilst, *b"trkn", tracks);
+		create_int_pair(&mut ilst, *b"disk", discs);
 
 		ilst
 	}
@@ -329,7 +396,7 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-	use crate::{Tag, TagType};
+	use crate::{ItemKey, Tag, TagType};
 
 	use std::io::Read;
 
@@ -345,6 +412,15 @@ mod tests {
 			AtomData::Unknown {
 				code: 0,
 				data: vec![0, 0, 0, 1, 0, 0, 0, 0],
+			},
+		));
+
+		// Same with disc numbers
+		expected_tag.insert_atom(Atom::new(
+			AtomIdent::Fourcc(*b"disk"),
+			AtomData::Unknown {
+				code: 0,
+				data: vec![0, 0, 0, 1, 0, 2],
 			},
 		));
 
@@ -401,27 +477,66 @@ mod tests {
 
 		let tag: Tag = ilst.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, false, true);
+		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+
+		assert_eq!(tag.get_string(&ItemKey::DiscNumber), Some("1"));
+		assert_eq!(tag.get_string(&ItemKey::DiscTotal), Some("2"));
 	}
 
 	#[test]
 	fn tag_to_ilst() {
-		fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &str) {
+		fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
 			let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
-
-			let data = AtomData::UTF8(String::from(data));
-
-			assert_eq!(atom.data(), &data);
+			assert_eq!(atom.data(), data);
 		}
 
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::Mp4Ilst);
+		let mut tag = crate::tag_utils::test_utils::create_tag(TagType::Mp4Ilst);
+
+		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
+		tag.insert_text(ItemKey::DiscTotal, String::from("2"));
 
 		let ilst: Ilst = tag.into();
 
-		verify_atom(&ilst, *b"\xa9nam", "Foo title");
-		verify_atom(&ilst, *b"\xa9ART", "Bar artist");
-		verify_atom(&ilst, *b"\xa9alb", "Baz album");
-		verify_atom(&ilst, *b"\xa9cmt", "Qux comment");
-		verify_atom(&ilst, *b"\xa9gen", "Classical");
+		verify_atom(
+			&ilst,
+			*b"\xa9nam",
+			&AtomData::UTF8(String::from("Foo title")),
+		);
+		verify_atom(
+			&ilst,
+			*b"\xa9ART",
+			&AtomData::UTF8(String::from("Bar artist")),
+		);
+		verify_atom(
+			&ilst,
+			*b"\xa9alb",
+			&AtomData::UTF8(String::from("Baz album")),
+		);
+		verify_atom(
+			&ilst,
+			*b"\xa9cmt",
+			&AtomData::UTF8(String::from("Qux comment")),
+		);
+		verify_atom(
+			&ilst,
+			*b"\xa9gen",
+			&AtomData::UTF8(String::from("Classical")),
+		);
+		verify_atom(
+			&ilst,
+			*b"trkn",
+			&AtomData::Unknown {
+				code: 0,
+				data: vec![0, 0, 0, 1, 0, 0],
+			},
+		);
+		verify_atom(
+			&ilst,
+			*b"disk",
+			&AtomData::Unknown {
+				code: 0,
+				data: vec![0, 0, 0, 1, 0, 2],
+			},
+		)
 	}
 }
