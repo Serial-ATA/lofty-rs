@@ -1,6 +1,10 @@
 name: Benchmark
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'benches/**'
+      - 'ogg_pager/**'
     branches:
       - main
 
