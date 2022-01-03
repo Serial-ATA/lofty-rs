@@ -49,7 +49,7 @@ where
 		match &*split[0] {
 			"METADATA_BLOCK_PICTURE" => tag
 				.pictures
-				.push(Picture::from_flac_bytes(split[1].as_bytes())?),
+				.push(Picture::from_flac_bytes(split[1].as_bytes(), true)?),
 			_ => tag.items.push((split[0].to_string(), split[1].to_string())),
 		}
 	}

@@ -92,7 +92,7 @@ fn as_ape_bytes() {
 fn flac_metadata_block_picture() {
 	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
 
-	let (pic, _) = Picture::from_flac_bytes(&*buf).unwrap();
+	let (pic, _) = Picture::from_flac_bytes(&*buf, true).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }

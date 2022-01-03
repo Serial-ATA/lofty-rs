@@ -717,63 +717,90 @@ impl Picture {
 	/// Get a [`Picture`] from FLAC `METADATA_BLOCK_PICTURE` bytes:
 	///
 	/// NOTE: This takes both the base64 encoded string from Vorbis comments, and
-	/// the raw data from a FLAC block.
+	/// the raw data from a FLAC block, specified with `encoded`.
 	///
 	/// # Errors
 	///
 	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if
 	/// at any point it's unable to parse the data
-	pub fn from_flac_bytes(bytes: &[u8]) -> Result<(Self, PictureInformation)> {
-		let data = base64::decode(bytes).unwrap_or_else(|_| bytes.to_vec());
+	pub fn from_flac_bytes(bytes: &[u8], encoded: bool) -> Result<(Self, PictureInformation)> {
+		if encoded {
+			let data = base64::decode(bytes).map_err(|_| LoftyError::NotAPicture)?;
+			Self::from_flac_bytes_inner(&*data)
+		} else {
+			Self::from_flac_bytes_inner(bytes)
+		}
+	}
 
-		let mut cursor = Cursor::new(data);
+	fn from_flac_bytes_inner(content: &[u8]) -> Result<(Self, PictureInformation)> {
+		let mut size = content.len();
+		let mut reader = Cursor::new(content);
 
-		if let Ok(pic_ty) = cursor.read_u32::<BigEndian>() {
-			let picture_type = PictureType::from_u8(pic_ty as u8);
+		if let Ok(pic_ty) = reader.read_u32::<BigEndian>() {
+			// ID3v2 APIC uses a single byte for picture type.
+			// Anything greater than that is probably invalid, so
+			// we just stop early
+			if pic_ty < 256 {
+				if let Ok(mime_len) = reader.read_u32::<BigEndian>() {
+					let mime_len = mime_len as usize;
 
-			if let Ok(mime_len) = cursor.read_u32::<BigEndian>() {
-				let mut buf = vec![0; mime_len as usize];
-				cursor.read_exact(&mut buf)?;
+					size -= 8;
+					if mime_len < size {
+						if let Ok(mime_type_str) = std::str::from_utf8(&content[8..8 + mime_len]) {
+							size -= mime_len;
+							reader.seek(SeekFrom::Current(mime_len as i64))?;
 
-				if let Ok(mime_type_str) = String::from_utf8(buf) {
-					let mime_type = MimeType::from_str(&*mime_type_str);
+							if let Ok(desc_len) = reader.read_u32::<BigEndian>() {
+								let desc_len = desc_len as usize;
+								let mut description = None;
 
-					let mut description = None;
+								size -= 4;
+								if desc_len > 0 && desc_len < size {
+									let pos = 12 + mime_len;
 
-					if let Ok(desc_len) = cursor.read_u32::<BigEndian>() {
-						if desc_len > 0 {
-							let mut buf = vec![0; desc_len as usize];
-							cursor.read_exact(&mut buf)?;
+									if let Ok(desc) = std::str::from_utf8(&content[pos..pos + desc_len]) {
+										description = Some(Cow::from(desc.to_string()));
+									}
 
-							if let Ok(desc) = String::from_utf8(buf) {
-								description = Some(Cow::from(desc));
-							}
-						}
+									size -= desc_len;
+									reader.seek(SeekFrom::Current(desc_len as i64))?;
+								}
 
-						if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-							cursor.read_u32::<BigEndian>(),
-						) {
-							if let Ok(data_len) = cursor.read_u32::<BigEndian>() {
-								let mut binary = vec![0; data_len as usize];
+								if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
+									reader.read_u32::<BigEndian>(),
+									reader.read_u32::<BigEndian>(),
+									reader.read_u32::<BigEndian>(),
+									reader.read_u32::<BigEndian>(),
+								) {
+									if let Ok(data_len) = reader.read_u32::<BigEndian>() {
+										let data_len = data_len as usize;
 
-								if let Ok(()) = cursor.read_exact(&mut binary) {
-									return Ok((
-										Self {
-											pic_type: picture_type,
-											mime_type,
-											description,
-											data: Cow::from(binary.clone()),
-										},
-										PictureInformation {
-											width,
-											height,
-											color_depth,
-											num_colors,
-										},
-									));
+										size -= 20;
+										if data_len <= size {
+											let mut binary = vec![0; data_len as usize];
+
+											if let Ok(()) = reader.read_exact(&mut binary) {
+												return Ok((
+													Self {
+														pic_type: PictureType::from_u8(
+															pic_ty as u8,
+														),
+														mime_type: MimeType::from_str(
+															&*mime_type_str,
+														),
+														description,
+														data: Cow::from(binary.clone()),
+													},
+													PictureInformation {
+														width,
+														height,
+														color_depth,
+														num_colors,
+													},
+												));
+											}
+										}
+									}
 								}
 							}
 						}
