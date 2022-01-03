@@ -758,7 +758,9 @@ impl Picture {
 								if desc_len > 0 && desc_len < size {
 									let pos = 12 + mime_len;
 
-									if let Ok(desc) = std::str::from_utf8(&content[pos..pos + desc_len]) {
+									if let Ok(desc) =
+										std::str::from_utf8(&content[pos..pos + desc_len])
+									{
 										description = Some(Cow::from(desc.to_string()));
 									}
 
