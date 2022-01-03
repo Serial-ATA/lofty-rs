@@ -53,3 +53,27 @@ path = "fuzz_targets/vorbisfile_read_from.rs"
 [[bin]]
 name = "wavfile_read_from"
 path = "fuzz_targets/wavfile_read_from.rs"
+
+[[bin]]
+name = "pictureinformation_from_jpeg"
+path = "fuzz_targets/pictureinformation_from_jpeg.rs"
+
+[[bin]]
+name = "pictureinformation_from_png"
+path = "fuzz_targets/pictureinformation_from_png.rs"
+
+[[bin]]
+name = "picture_from_reader"
+path = "fuzz_targets/picture_from_reader.rs"
+
+[[bin]]
+name = "picture_from_apic_bytes"
+path = "fuzz_targets/picture_from_apic_bytes.rs"
+
+[[bin]]
+name = "picture_from_flac_bytes"
+path = "fuzz_targets/picture_from_flac_bytes.rs"
+
+[[bin]]
+name = "picture_from_ape_bytes"
+path = "fuzz_targets/picture_from_ape_bytes.rs"
