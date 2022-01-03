@@ -305,7 +305,7 @@ impl FileType {
 		match Self::quick_type_guess(buf) {
 			Some(f_ty) => Ok((Some(f_ty), 0)),
 			// Special case for ID3, gets checked in `Probe::guess_file_type`
-			None if buf.starts_with(b"ID3") && buf.len() >= 11 => {
+			None if buf.len() >= 11 && &buf[..3] == b"ID3" => {
 				let size = unsynch_u32(u32::from_be_bytes(
 					buf[6..10]
 						.try_into()
@@ -323,32 +323,28 @@ impl FileType {
 
 		match buf.first().unwrap() {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),
-			_ if verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),
-			70 if buf.starts_with(b"FORM") => {
-				if buf.len() >= 12 {
-					let id = &[buf[8], buf[9], buf[10], buf[11]];
+			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),
+			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {
+				let id = &buf[8..12];
 
-					if id == b"AIFF" || id == b"AIFC" {
-						return Some(Self::AIFF);
-					}
+				if id == b"AIFF" || id == b"AIFC" {
+					return Some(Self::AIFF);
 				}
 
 				None
 			},
-			79 if buf.starts_with(b"OggS") => {
-				if buf.len() >= 36 {
-					if &buf[29..35] == b"vorbis" {
-						return Some(Self::Vorbis);
-					} else if &buf[28..36] == b"OpusHead" {
-						return Some(Self::Opus);
-					}
+			79 if buf.len() >= 36 && &buf[..4] == b"OggS" => {
+				if &buf[29..35] == b"vorbis" {
+					return Some(Self::Vorbis);
+				} else if &buf[28..36] == b"OpusHead" {
+					return Some(Self::Opus);
 				}
 
 				None
 			},
 			102 if buf.starts_with(b"fLaC") => Some(Self::FLAC),
-			82 if buf.starts_with(b"RIFF") => {
-				if buf.len() >= 12 && &buf[8..12] == b"WAVE" {
+			82 if buf.len() >= 12 && &buf[..4] == b"RIFF" => {
+				if &buf[8..12] == b"WAVE" {
 					return Some(Self::WAV);
 				}
 
