@@ -96,6 +96,7 @@ impl Header {
 
 		match sample_rate {
 			// This is invalid, but it doesn't seem worth it to error here
+			// We will error if properties are read
 			3 => sample_rate = 0,
 			_ => sample_rate = SAMPLE_RATES[version as usize][sample_rate as usize],
 		}
@@ -118,9 +119,13 @@ impl Header {
 		let data_start = SIDE_INFORMATION_SIZES[version_index][channel_mode as usize] + 4;
 		let samples = SAMPLES[layer_index][version_index];
 
-		let len = match layer {
-			Layer::Layer1 => (bitrate * 12000 / sample_rate + padding) * 4,
-			Layer::Layer2 | Layer::Layer3 => bitrate * 144_000 / sample_rate + padding,
+		let len = if sample_rate == 0 {
+			0
+		} else {
+			match layer {
+				Layer::Layer1 => (bitrate * 12000 / sample_rate + padding) * 4,
+				Layer::Layer2 | Layer::Layer3 => bitrate * 144_000 / sample_rate + padding,
+			}
 		};
 
 		let channels = if channel_mode == ChannelMode::SingleChannel {

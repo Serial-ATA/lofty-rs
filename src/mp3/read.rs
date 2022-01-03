@@ -131,6 +131,11 @@ where
 		}
 
 		let first_frame_header = first_frame_header.unwrap();
+
+		if first_frame_header.sample_rate == 0 {
+			return Err(LoftyError::Mp3("Sample rate is 0"));
+		}
+
 		let first_frame_offset = file.first_frame_offset.unwrap();
 
 		let file_length = reader.seek(SeekFrom::End(0))?;

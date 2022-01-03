@@ -1,0 +1,55 @@
+[package]
+name = "lofty-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.lofty]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "filetype_from_buffer"
+path = "fuzz_targets/filetype_from_buffer.rs"
+
+[[bin]]
+name = "mp3file_read_from"
+path = "fuzz_targets/mp3file_read_from.rs"
+
+[[bin]]
+name = "aifffile_read_from"
+path = "fuzz_targets/aifffile_read_from.rs"
+
+[[bin]]
+name = "apefile_read_from"
+path = "fuzz_targets/apefile_read_from.rs"
+
+[[bin]]
+name = "flacfile_read_from"
+path = "fuzz_targets/flacfile_read_from.rs"
+
+[[bin]]
+name = "mp4file_read_from"
+path = "fuzz_targets/mp4file_read_from.rs"
+
+[[bin]]
+name = "opusfile_read_from"
+path = "fuzz_targets/opusfile_read_from.rs"
+
+[[bin]]
+name = "vorbisfile_read_from"
+path = "fuzz_targets/vorbisfile_read_from.rs"
+
+[[bin]]
+name = "wavfile_read_from"
+path = "fuzz_targets/wavfile_read_from.rs"
