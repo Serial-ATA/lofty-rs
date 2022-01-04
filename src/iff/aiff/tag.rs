@@ -40,8 +40,11 @@ pub struct AiffTextChunks {
 	/// A copyright notice consisting of the date followed
 	/// by the copyright owner
 	pub copyright: Option<String>,
-	// TODO: ANNO chunks
-	// pub annotations: Option<Vec<String>>,
+	/// Basic comments
+	///
+	/// The use of these chunks is discouraged, as the `comments`
+	/// field is more powerful.
+	pub annotations: Option<Vec<String>>,
 	// TODO: COMT chunk
 	// pub comments: Option<Vec<Comment>>
 }
@@ -100,7 +103,7 @@ impl AiffTextChunks {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
-		Into::<AiffTextChunksRef>::into(self).write_to(file)
+		Into::<AiffTextChunksRef<&[String]>>::into(self).write_to(file)
 	}
 }
 
@@ -119,120 +122,270 @@ impl From<AiffTextChunks> for Tag {
 		push_item(input.author, ItemKey::TrackArtist, &mut tag);
 		push_item(input.copyright, ItemKey::CopyrightMessage, &mut tag);
 
+		if let Some(annotations) = input.annotations {
+			for anno in annotations {
+				tag.items
+					.push(TagItem::new(ItemKey::Comment, ItemValue::Text(anno)));
+			}
+		}
+
 		tag
 	}
 }
 
 impl From<Tag> for AiffTextChunks {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
 		Self {
 			name: input.get_string(&ItemKey::TrackTitle).map(str::to_owned),
 			author: input.get_string(&ItemKey::TrackArtist).map(str::to_owned),
 			copyright: input
 				.get_string(&ItemKey::CopyrightMessage)
 				.map(str::to_owned),
+			annotations: {
+				let anno = input
+					.take(&ItemKey::Comment)
+					.filter_map(|i| match i.item_value {
+						ItemValue::Text(text) => Some(text),
+						_ => None,
+					})
+					.collect::<Vec<_>>();
+
+				if anno.is_empty() {
+					None
+				} else {
+					Some(anno)
+				}
+			},
 		}
 	}
 }
 
-pub(crate) struct AiffTextChunksRef<'a> {
+pub(crate) struct AiffTextChunksRef<'a, T: AsRef<[String]>> {
 	pub name: Option<&'a str>,
 	pub author: Option<&'a str>,
 	pub copyright: Option<&'a str>,
+	pub annotations: Option<T>,
 }
 
-impl<'a> Into<AiffTextChunksRef<'a>> for &'a AiffTextChunks {
-	fn into(self) -> AiffTextChunksRef<'a> {
+impl<'a> Into<AiffTextChunksRef<'a, &'a [String]>> for &'a AiffTextChunks {
+	fn into(self) -> AiffTextChunksRef<'a, &'a [String]> {
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
 			author: self.author.as_deref(),
 			copyright: self.copyright.as_deref(),
+			annotations: self.annotations.as_deref(),
 		}
 	}
 }
 
-impl<'a> Into<AiffTextChunksRef<'a>> for &'a Tag {
-	fn into(self) -> AiffTextChunksRef<'a> {
+impl<'a> Into<AiffTextChunksRef<'a, Vec<String>>> for &'a Tag {
+	fn into(self) -> AiffTextChunksRef<'a, Vec<String>> {
 		AiffTextChunksRef {
 			name: self.get_string(&ItemKey::TrackTitle),
 			author: self.get_string(&ItemKey::TrackArtist),
 			copyright: self.get_string(&ItemKey::CopyrightMessage),
+			annotations: {
+				let anno = self
+					.get_items(&ItemKey::Comment)
+					.filter_map(|i| match i.value() {
+						ItemValue::Text(text) => Some(text.clone()),
+						_ => None,
+					})
+					.collect::<Vec<_>>();
+
+				if anno.is_empty() {
+					None
+				} else {
+					Some(anno)
+				}
+			},
 		}
 	}
 }
 
-impl<'a> AiffTextChunksRef<'a> {
+impl<'a, T: AsRef<[String]>> AiffTextChunksRef<'a, T> {
 	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
-		write_to(file, self)
+		AiffTextChunksRef::write_to_inner(file, self)
 	}
-}
 
-pub(crate) fn write_to(data: &mut File, tag: &AiffTextChunksRef) -> Result<()> {
-	fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
-		if let Some(val) = value {
-			if let Ok(len) = u32::try_from(val.len()) {
-				writer.extend(key.as_bytes().iter());
-				writer.extend(len.to_be_bytes().iter());
-				writer.extend(val.as_bytes().iter());
+	fn write_to_inner(data: &mut File, tag: &AiffTextChunksRef<T>) -> Result<()> {
+		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
+			if let Some(val) = value {
+				if let Ok(len) = u32::try_from(val.len()) {
+					writer.extend(key.as_bytes().iter());
+					writer.extend(len.to_be_bytes().iter());
+					writer.extend(val.as_bytes().iter());
+				}
 			}
 		}
-	}
 
-	super::read::verify_aiff(data)?;
+		super::read::verify_aiff(data)?;
 
-	let mut text_chunks = Vec::new();
+		let mut text_chunks = Vec::new();
 
-	write_chunk(&mut text_chunks, "NAME", tag.name);
-	write_chunk(&mut text_chunks, "AUTH", tag.author);
-	write_chunk(&mut text_chunks, "(c) ", tag.copyright);
+		write_chunk(&mut text_chunks, "NAME", tag.name);
+		write_chunk(&mut text_chunks, "AUTH", tag.author);
+		write_chunk(&mut text_chunks, "(c) ", tag.copyright);
 
-	let mut chunks_remove = Vec::new();
-
-	let mut chunks = Chunks::<BigEndian>::new();
-
-	while chunks.next(data).is_ok() {
-		let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
-
-		if &chunks.fourcc == b"NAME" || &chunks.fourcc == b"AUTH" || &chunks.fourcc == b"(c) " {
-			chunks_remove.push((pos, (pos + 8 + chunks.size as usize)))
+		if let Some(annotations) = &tag.annotations {
+			for anno in annotations.as_ref() {
+				write_chunk(&mut text_chunks, "ANNO", Some(anno.as_str()));
+			}
 		}
 
-		data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-		chunks.correct_position(data)?;
-	}
+		let mut chunks_remove = Vec::new();
 
-	data.seek(SeekFrom::Start(0))?;
+		let mut chunks = Chunks::<BigEndian>::new();
 
-	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
+		while chunks.next(data).is_ok() {
+			let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
 
-	if chunks_remove.is_empty() {
-		data.seek(SeekFrom::Start(16))?;
+			match &chunks.fourcc {
+				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" => {
+					chunks_remove.push((pos, (pos + 8 + chunks.size as usize)))
+				},
+				_ => {},
+			}
 
-		let mut size = [0; 4];
-		data.read_exact(&mut size)?;
-
-		let comm_end = (20 + u32::from_le_bytes(size)) as usize;
-		file_bytes.splice(comm_end..comm_end, text_chunks);
-	} else {
-		chunks_remove.sort_unstable();
-		chunks_remove.reverse();
-
-		let first = chunks_remove.pop().unwrap();
-
-		for (s, e) in &chunks_remove {
-			file_bytes.drain(*s as usize..*e as usize);
+			data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+			chunks.correct_position(data)?;
 		}
 
-		file_bytes.splice(first.0 as usize..first.1 as usize, text_chunks);
+		data.seek(SeekFrom::Start(0))?;
+
+		let mut file_bytes = Vec::new();
+		data.read_to_end(&mut file_bytes)?;
+
+		if chunks_remove.is_empty() {
+			data.seek(SeekFrom::Start(16))?;
+
+			let mut size = [0; 4];
+			data.read_exact(&mut size)?;
+
+			let comm_end = (20 + u32::from_le_bytes(size)) as usize;
+			file_bytes.splice(comm_end..comm_end, text_chunks);
+		} else {
+			chunks_remove.sort_unstable();
+			chunks_remove.reverse();
+
+			let first = chunks_remove.pop().unwrap();
+
+			for (s, e) in &chunks_remove {
+				file_bytes.drain(*s as usize..*e as usize);
+			}
+
+			file_bytes.splice(first.0 as usize..first.1 as usize, text_chunks);
+		}
+
+		let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
+		file_bytes.splice(4..8, total_size.to_vec());
+
+		data.seek(SeekFrom::Start(0))?;
+		data.set_len(0)?;
+		data.write_all(&*file_bytes)?;
+
+		Ok(())
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
+
+	use crate::iff::AiffTextChunks;
+	use std::io::{Cursor, Read};
+
+	#[test]
+	fn parse_aiff_text() {
+		let expected_tag = AiffTextChunks {
+			name: Some(String::from("Foo title")),
+			author: Some(String::from("Bar artist")),
+			copyright: Some(String::from("Baz copyright")),
+			annotations: Some(vec![
+				String::from("Qux annotation"),
+				String::from("Quux annotation"),
+			]),
+		};
+
+		let mut tag = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.aiff_text")
+			.unwrap()
+			.read_to_end(&mut tag)
+			.unwrap();
+
+		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
+			.unwrap()
+			.text_chunks
+			.unwrap();
+
+		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
-	file_bytes.splice(4..8, total_size.to_vec());
+	#[test]
+	fn aiff_text_to_tag() {
+		let mut tag_bytes = Vec::new();
+		std::fs::File::open("tests/tags/assets/test.aiff_text")
+			.unwrap()
+			.read_to_end(&mut tag_bytes)
+			.unwrap();
 
-	data.seek(SeekFrom::Start(0))?;
-	data.set_len(0)?;
-	data.write_all(&*file_bytes)?;
+		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
+			.unwrap()
+			.text_chunks
+			.unwrap();
 
-	Ok(())
+		let tag: Tag = aiff_text.into();
+
+		assert_eq!(tag.get_string(&ItemKey::TrackTitle), Some("Foo title"));
+		assert_eq!(tag.get_string(&ItemKey::TrackArtist), Some("Bar artist"));
+		assert_eq!(
+			tag.get_string(&ItemKey::CopyrightMessage),
+			Some("Baz copyright")
+		);
+
+		let mut comments = tag.get_items(&ItemKey::Comment);
+		assert_eq!(
+			comments.next().map(TagItem::value),
+			Some(&ItemValue::Text(String::from("Qux annotation")))
+		);
+		assert_eq!(
+			comments.next().map(TagItem::value),
+			Some(&ItemValue::Text(String::from("Quux annotation")))
+		);
+	}
+
+	#[test]
+	fn tag_to_aiff_text() {
+		let mut tag = Tag::new(TagType::AiffText);
+		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
+		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
+		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));
+		tag.insert_item_unchecked(
+			TagItem::new(
+				ItemKey::Comment,
+				ItemValue::Text(String::from("Qux annotation")),
+			),
+			false,
+		);
+		tag.insert_item_unchecked(
+			TagItem::new(
+				ItemKey::Comment,
+				ItemValue::Text(String::from("Quux annotation")),
+			),
+			false,
+		);
+
+		let aiff_text: AiffTextChunks = tag.into();
+
+		assert_eq!(aiff_text.name, Some(String::from("Foo title")));
+		assert_eq!(aiff_text.author, Some(String::from("Bar artist")));
+		assert_eq!(aiff_text.copyright, Some(String::from("Baz copyright")));
+		assert_eq!(
+			aiff_text.annotations,
+			Some(vec![
+				String::from("Qux annotation"),
+				String::from("Quux annotation")
+			])
+		);
+	}
 }

@@ -36,6 +36,8 @@ where
 
 	#[cfg(feature = "aiff_text_chunks")]
 	let mut text_chunks = AiffTextChunks::default();
+	#[cfg(feature = "aiff_text_chunks")]
+	let mut annotations = Vec::new();
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
@@ -75,12 +77,22 @@ where
 				let value = String::from_utf8(chunks.content(data)?)?;
 				text_chunks.copyright = Some(value);
 			},
+			#[cfg(feature = "aiff_text_chunks")]
+			b"ANNO" => {
+				let value = String::from_utf8(chunks.content(data)?)?;
+				annotations.push(value);
+			},
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			},
 		}
 
 		chunks.correct_position(data)?;
+	}
+
+	#[cfg(feature = "aiff_text_chunks")]
+	if !annotations.is_empty() {
+		text_chunks.annotations = Some(annotations);
 	}
 
 	let properties = if read_properties {
@@ -109,6 +121,7 @@ where
 				name: None,
 				author: None,
 				copyright: None,
+				annotations: None,
 			} => None,
 			_ => Some(text_chunks),
 		},

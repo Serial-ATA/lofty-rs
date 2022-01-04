@@ -12,7 +12,7 @@ use std::fs::File;
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "aiff_text_chunks")]
-		TagType::AiffText => Into::<AiffTextChunksRef>::into(tag).write_to(data),
+		TagType::AiffText => Into::<AiffTextChunksRef<Vec<String>>>::into(tag).write_to(data),
 		#[cfg(feature = "id3v2")]
 		TagType::Id3v2 => Into::<Id3v2TagRef>::into(tag).write_to(data),
 		_ => Err(LoftyError::UnsupportedTag),
