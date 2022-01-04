@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1641218312828,
+  "lastUpdate": 1641262774481,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -959,6 +959,126 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/RIFF",
             "value": 1664,
             "range": "± 3",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "d7872c671e408728c003554b8a3a69f51a51965c",
+          "message": "Allow multi-item insertion for `Tag`, add `Tag::take`",
+          "timestamp": "2022-01-03T21:13:51-05:00",
+          "tree_id": "69b11ce21b349d7c2198fbcf6662b84218a8be96",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/d7872c671e408728c003554b8a3a69f51a51965c"
+        },
+        "date": 1641262773760,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "File reading (Inferred from Path)/AIFF",
+            "value": 8510,
+            "range": "± 61",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/APE",
+            "value": 17999,
+            "range": "± 113",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/FLAC",
+            "value": 12564,
+            "range": "± 67",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP4",
+            "value": 52605,
+            "range": "± 92",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP3",
+            "value": 19689,
+            "range": "± 43",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/VORBIS",
+            "value": 24091,
+            "range": "± 70",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/OPUS",
+            "value": 21508,
+            "range": "± 55",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/RIFF",
+            "value": 13050,
+            "range": "± 54",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1417,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 1783,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 911,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1305,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 1743,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 1888,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 1568,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 1705,
+            "range": "± 8",
             "unit": "ns/iter"
           }
         ]
