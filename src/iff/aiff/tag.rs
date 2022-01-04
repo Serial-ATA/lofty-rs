@@ -277,8 +277,8 @@ impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
 
 #[cfg(test)]
 mod tests {
-	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
 	use crate::iff::AiffTextChunks;
+	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
 	use std::io::{Cursor, Read};
 
