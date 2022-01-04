@@ -48,7 +48,7 @@ const MP4_PROPERTIES: Mp4Properties = Mp4Properties::new(
 );
 
 const OPUS_PROPERTIES: OpusProperties =
-	OpusProperties::new(Duration::from_millis(1428), 121, 120, 2, 1, 48000);
+	OpusProperties::new(Duration::from_millis(1428), 120, 120, 2, 1, 48000);
 
 const VORBIS_PROPERTIES: VorbisProperties = VorbisProperties::new(
 	Duration::from_millis(1450),

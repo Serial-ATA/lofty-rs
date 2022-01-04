@@ -608,14 +608,14 @@ impl TagItem {
 		&self.item_value
 	}
 
-	pub(crate) fn re_map(&self, tag_type: TagType) -> Option<()> {
+	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {
 		#[cfg(feature = "id3v1")]
 		if tag_type == TagType::Id3v1 {
 			use crate::id3::v1::constants::VALID_ITEMKEYS;
 
-			return VALID_ITEMKEYS.contains(&self.item_key).then(|| ());
+			return VALID_ITEMKEYS.contains(&self.item_key);
 		}
 
-		self.item_key.map_key(tag_type, false).is_some().then(|| ())
+		self.item_key.map_key(tag_type, false).is_some()
 	}
 }

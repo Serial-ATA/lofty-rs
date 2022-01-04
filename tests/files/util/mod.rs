@@ -62,10 +62,13 @@ macro_rules! set_artist {
 		set_artist!($file_write, $new_value, tag)
 	};
 	($file_write:ident, $new_value:literal, $tag:ident) => {
-		$tag.insert_item_unchecked(TagItem::new(
-			ItemKey::TrackArtist,
-			ItemValue::Text(String::from($new_value)),
-		));
+		$tag.insert_item_unchecked(
+			TagItem::new(
+				ItemKey::TrackArtist,
+				ItemValue::Text(String::from($new_value)),
+			),
+			true,
+		);
 
 		$file_write.seek(std::io::SeekFrom::Start(0)).unwrap();
 

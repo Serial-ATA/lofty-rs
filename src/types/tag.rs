@@ -43,7 +43,7 @@ macro_rules! impl_accessor {
 					}
 
 					fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)), false);
 					}
 
 					fn [<remove_ $name>](&mut self) {
@@ -144,7 +144,7 @@ impl Tag {
 
 	/// Change the [`TagType`], remapping all items
 	pub fn re_map(&mut self, tag_type: TagType) {
-		self.retain_items(|i| i.re_map(tag_type).is_some());
+		self.retain_items(|i| i.re_map(tag_type));
 		self.tag_type = tag_type
 	}
 
@@ -198,14 +198,18 @@ impl Tag {
 		None
 	}
 
-	/// Insert a [`TagItem`], replacing any existing one of the same type
+	/// Insert a [`TagItem`]
+	///
+	/// Use `replace` to replace any existing items of the same [`ItemKey`].
+	/// Multiple items of the same [`ItemKey`] are not valid in all formats, in which case
+	/// the first available item will be used.
 	///
 	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// This will return `true` if the item was inserted.
-	pub fn insert_item(&mut self, item: TagItem) -> bool {
-		if item.re_map(self.tag_type).is_some() {
-			self.insert_item_unchecked(item);
+	pub fn insert_item(&mut self, item: TagItem, replace: bool) -> bool {
+		if item.re_map(self.tag_type) {
+			self.insert_item_unchecked(item, replace);
 			return true;
 		}
 
@@ -216,26 +220,50 @@ impl Tag {
 	///
 	/// Notes:
 	///
+	/// * `replace`: See [`Tag::insert_item`]
 	/// * This **will not** verify an [`ItemKey`] mapping exists
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
 	/// This is only necessary if dealing with [`ItemKey::Unknown`].
-	pub fn insert_item_unchecked(&mut self, item: TagItem) {
-		match self.items.iter_mut().find(|i| i.item_key == item.item_key) {
-			None => self.items.push(item),
-			Some(i) => *i = item,
-		};
+	pub fn insert_item_unchecked(&mut self, item: TagItem, replace: bool) {
+		if replace {
+			self.retain_items(|i| i.item_key != item.item_key);
+		}
+
+		self.items.push(item);
 	}
 
 	/// An alias for [`Tag::insert_item`] that doesn't require the user to create a [`TagItem`]
+	///
+	/// NOTE: This will call [`Tag::insert_text`] with `replace` = `false`
 	pub fn insert_text(&mut self, item_key: ItemKey, text: String) -> bool {
-		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)))
+		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)), false)
+	}
+
+	/// Removes all items with the specified [`ItemKey`], and returns them
+	pub fn take(&mut self, key: &ItemKey) -> impl Iterator<Item = TagItem> + '_ {
+		// TODO: drain_filter
+		let mut split_idx = 0_usize;
+
+		for read_idx in 0..self.items.len() {
+			if self.items[read_idx].key() == key {
+				self.items.swap(split_idx, read_idx);
+				split_idx += 1;
+			}
+		}
+
+		self.items.drain(..split_idx)
+	}
+
+	/// Returns references to all [`TagItem`]s with the specified key
+	pub fn get_items<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a TagItem> {
+		self.items.iter().filter(move |i| i.key() == key)
 	}
 
 	/// Remove an item by its key
 	///
 	/// This will remove all items with this key.
-	pub fn remove_item(&mut self, key: &ItemKey) {
+	pub fn remove_key(&mut self, key: &ItemKey) {
 		self.items.retain(|i| i.key() != key)
 	}
 

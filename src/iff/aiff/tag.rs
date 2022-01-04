@@ -110,7 +110,8 @@ impl From<AiffTextChunks> for Tag {
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
 			if let Some(text) = field {
-				tag.insert_item_unchecked(TagItem::new(item_key, ItemValue::Text(text)))
+				tag.items
+					.push(TagItem::new(item_key, ItemValue::Text(text)))
 			}
 		};
 

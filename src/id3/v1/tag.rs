@@ -154,7 +154,7 @@ impl From<Id3v1Tag> for Tag {
 		input.comment.map(|c| tag.insert_text(ItemKey::Comment, c));
 
 		if let Some(t) = input.track_number {
-			tag.insert_item_unchecked(TagItem::new(
+			tag.items.push(TagItem::new(
 				ItemKey::TrackNumber,
 				ItemValue::Text(t.to_string()),
 			))

@@ -158,13 +158,13 @@ impl From<VorbisComments> for Tag {
 	fn from(input: VorbisComments) -> Self {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
-		tag.insert_item_unchecked(TagItem::new(
+		tag.items.push(TagItem::new(
 			ItemKey::EncoderSoftware,
 			ItemValue::Text(input.vendor),
 		));
 
 		for (k, v) in input.items {
-			tag.insert_item_unchecked(TagItem::new(
+			tag.items.push(TagItem::new(
 				ItemKey::from_key(TagType::VorbisComments, &k),
 				ItemValue::Text(v),
 			));
@@ -179,11 +179,15 @@ impl From<VorbisComments> for Tag {
 }
 
 impl From<Tag> for VorbisComments {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
 		let mut vorbis_comments = Self::default();
 
-		if let Some(vendor) = input.get_string(&ItemKey::EncoderSoftware) {
-			vorbis_comments.vendor = vendor.to_string()
+		if let Some(TagItem {
+			item_value: ItemValue::Text(val),
+			..
+		}) = input.take(&ItemKey::EncoderSoftware).next()
+		{
+			vorbis_comments.vendor = val;
 		}
 
 		for item in input.items {
@@ -251,10 +255,14 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 		let vendor = self.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
 
 		let items = self.items.iter().filter_map(|i| match i.value() {
-			ItemValue::Text(val) | ItemValue::Locator(val) => i
-				.key()
-				.map_key(TagType::VorbisComments, true)
-				.map(|key| (key, val)),
+			ItemValue::Text(val) | ItemValue::Locator(val)
+				// Already got the vendor above
+				if i.key() != &ItemKey::EncoderSoftware =>
+			{
+				i.key()
+					.map_key(TagType::VorbisComments, true)
+					.map(|key| (key, val))
+			},
 			_ => None,
 		});
 

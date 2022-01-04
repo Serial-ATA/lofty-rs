@@ -125,7 +125,7 @@ impl From<RiffInfoList> for Tag {
 		for (k, v) in input.items {
 			let item_key = ItemKey::from_key(TagType::RiffInfo, &k);
 
-			tag.insert_item_unchecked(TagItem::new(
+			tag.items.push(TagItem::new(
 				item_key,
 				ItemValue::Text(v.trim_matches('\0').to_string()),
 			));

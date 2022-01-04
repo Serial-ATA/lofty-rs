@@ -146,13 +146,12 @@ impl From<ApeTag> for Tag {
 		) -> Option<()> {
 			let mut split = content.splitn(2, '/');
 			let current = split.next()?.to_string();
-			tag.insert_item_unchecked(TagItem::new(current_key, ItemValue::Text(current)));
+			tag.items
+				.push(TagItem::new(current_key, ItemValue::Text(current)));
 
 			if let Some(total) = split.next() {
-				tag.insert_item_unchecked(TagItem::new(
-					total_key,
-					ItemValue::Text(total.to_string()),
-				))
+				tag.items
+					.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
 			}
 
 			Some(())
@@ -177,7 +176,7 @@ impl From<ApeTag> for Tag {
 				{
 					continue
 				},
-				(k, _) => tag.insert_item_unchecked(TagItem::new(k, item.value)),
+				(k, _) => tag.items.push(TagItem::new(k, item.value)),
 			}
 		}
 

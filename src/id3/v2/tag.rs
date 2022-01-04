@@ -305,13 +305,12 @@ impl From<Id3v2Tag> for Tag {
 		) -> Option<()> {
 			let mut split = content.splitn(2, &['\0', '/'][..]);
 			let current = split.next()?.to_string();
-			tag.insert_item_unchecked(TagItem::new(current_key, ItemValue::Text(current)));
+			tag.items
+				.push(TagItem::new(current_key, ItemValue::Text(current)));
 
 			if let Some(total) = split.next() {
-				tag.insert_item_unchecked(TagItem::new(
-					total_key,
-					ItemValue::Text(total.to_string()),
-				))
+				tag.items
+					.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
 			}
 
 			Some(())
@@ -355,7 +354,7 @@ impl From<Id3v2Tag> for Tag {
 				FrameValue::Binary(binary) => ItemValue::Binary(binary),
 			};
 
-			tag.insert_item_unchecked(TagItem::new(item_key, item_value))
+			tag.items.push(TagItem::new(item_key, item_value));
 		}
 
 		tag
