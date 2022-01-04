@@ -18,6 +18,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 			tag.get_string(&ItemKey::TrackArtist),
 			tag.get_string(&ItemKey::CopyrightMessage),
 			Some(tag.get_texts(&ItemKey::Comment)),
+			None,
 		)
 		.write_to(data),
 		#[cfg(feature = "id3v2")]

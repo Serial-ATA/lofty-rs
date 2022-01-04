@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
@@ -10,8 +10,27 @@ use std::path::Path;
 
 use byteorder::BigEndian;
 
-#[cfg(feature = "aiff_text_chunks")]
+/// Represents an AIFF `COMT` chunk
+///
+/// This is preferred over the `ANNO` chunk, for its additional information.
 #[derive(Default, Clone, Debug, PartialEq)]
+pub struct Comment {
+	/// The creation time of the comment
+	///
+	/// The unit is the number of seconds since January 1, 1904.
+	pub timestamp: u32,
+	/// An optional linking to a marker
+	///
+	/// This is for storing descriptions of markers as a comment.
+	/// An id of 0 means the comment is not linked to a marker,
+	/// otherwise it should be the ID of a marker.
+	pub marker_id: u16,
+	/// The comment itself
+	///
+	/// The size of the comment is restricted to [`u16::MAX`].
+	pub text: String,
+}
+
 /// `AIFF` text chunks
 ///
 /// ## Supported file types
@@ -33,6 +52,9 @@ use byteorder::BigEndian;
 /// * [ItemKey::TrackArtist](crate::ItemKey::TrackArtist)
 /// * [ItemKey::CopyrightMessage](crate::ItemKey::CopyrightMessage)
 /// * [ItemKey::Comment](crate::ItemKey::Comment)
+///
+/// When converting [Comment]s, only the `text` field will be preserved.
+#[derive(Default, Clone, Debug, PartialEq)]
 pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
@@ -46,8 +68,10 @@ pub struct AiffTextChunks {
 	/// The use of these chunks is discouraged by spec, as the `comments`
 	/// field is more powerful.
 	pub annotations: Option<Vec<String>>,
-	// TODO: COMT chunk
-	// pub comments: Option<Vec<Comment>>
+	/// A more feature-rich comment
+	///
+	/// These are preferred over `annotations`. See [`Comment`]
+	pub comments: Option<Vec<Comment>>,
 }
 
 impl Accessor for AiffTextChunks {
@@ -109,6 +133,7 @@ impl AiffTextChunks {
 			self.author.as_deref(),
 			self.copyright.as_deref(),
 			self.annotations.as_deref(),
+			self.comments.as_deref(),
 		)
 		.write_to(file)
 	}
@@ -133,6 +158,13 @@ impl From<AiffTextChunks> for Tag {
 			for anno in annotations {
 				tag.items
 					.push(TagItem::new(ItemKey::Comment, ItemValue::Text(anno)));
+			}
+		}
+
+		if let Some(comments) = input.comments {
+			for comt in comments {
+				tag.items
+					.push(TagItem::new(ItemKey::Comment, ItemValue::Text(comt.text)));
 			}
 		}
 
@@ -163,45 +195,54 @@ impl From<Tag> for AiffTextChunks {
 					Some(anno)
 				}
 			},
+			comments: None,
 		}
 	}
 }
 
-pub(crate) struct AiffTextChunksRef<'a, T: AsRef<str>, I: IntoIterator<Item = T>> {
+pub(crate) struct AiffTextChunksRef<'a, T, AI>
+where
+	AI: IntoIterator<Item = T>,
+{
 	pub name: Option<&'a str>,
 	pub author: Option<&'a str>,
 	pub copyright: Option<&'a str>,
-	pub annotations: Option<I>,
+	pub annotations: Option<AI>,
+	pub comments: Option<&'a [Comment]>,
 }
 
-impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
+impl<'a, T, AI> AiffTextChunksRef<'a, T, AI>
+where
+	T: AsRef<str>,
+	AI: IntoIterator<Item = T>,
+{
 	pub(super) fn new(
 		name: Option<&'a str>,
 		author: Option<&'a str>,
 		copyright: Option<&'a str>,
-		annotations: Option<I>,
-	) -> AiffTextChunksRef<'a, T, I> {
+		annotations: Option<AI>,
+		comments: Option<&'a [Comment]>,
+	) -> AiffTextChunksRef<'a, T, AI> {
 		AiffTextChunksRef {
 			name,
 			author,
 			copyright,
 			annotations,
+			comments,
 		}
 	}
-}
 
-impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
 	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
 
-	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, I>) -> Result<()> {
+	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, AI>) -> Result<()> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 			if let Some(val) = value {
 				if let Ok(len) = u32::try_from(val.len()) {
-					writer.extend(key.as_bytes().iter());
-					writer.extend(len.to_be_bytes().iter());
-					writer.extend(val.as_bytes().iter());
+					writer.extend(key.as_bytes());
+					writer.extend(len.to_be_bytes());
+					writer.extend(val.as_bytes());
 				}
 			}
 		}
@@ -217,6 +258,42 @@ impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
 		if let Some(annotations) = tag.annotations.take() {
 			for anno in annotations {
 				write_chunk(&mut text_chunks, "ANNO", Some(anno.as_ref()));
+			}
+		}
+
+		if let Some(comments) = tag.comments.take() {
+			let original_len = comments.len();
+
+			if let Ok(len) = u16::try_from(original_len) {
+				text_chunks.extend(b"COMT");
+				// Start with zeroed size
+				text_chunks.extend([0, 0, 0, 0]);
+				text_chunks.extend((len as u16).to_be_bytes());
+
+				for comt in comments {
+					text_chunks.extend(comt.timestamp.to_be_bytes());
+					text_chunks.extend(comt.marker_id.to_be_bytes());
+
+					if comt.text.len() > u16::MAX as usize {
+						return Err(LoftyError::TooMuchData);
+					}
+
+					text_chunks.extend((comt.text.len() as u16).to_be_bytes());
+					text_chunks.extend(comt.text.as_bytes());
+				}
+
+				// Get the size of the COMT chunk
+				let comt_len = text_chunks.len() - (original_len + 4);
+
+				if let Ok(chunk_len) = u32::try_from(comt_len) {
+					let len_bytes = chunk_len.to_be_bytes();
+					let size_start_idx = original_len + 3;
+
+					text_chunks[size_start_idx..(4 + size_start_idx)]
+						.clone_from_slice(&len_bytes[..4]);
+				} else {
+					return Err(LoftyError::TooMuchData);
+				}
 			}
 		}
 
@@ -277,7 +354,7 @@ impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::AiffTextChunks;
+	use crate::iff::{AiffTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
 	use std::io::{Cursor, Read};
@@ -291,6 +368,18 @@ mod tests {
 			annotations: Some(vec![
 				String::from("Qux annotation"),
 				String::from("Quux annotation"),
+			]),
+			comments: Some(vec![
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Quuz comment"),
+				},
+				Comment {
+					timestamp: 2048,
+					marker_id: 40,
+					text: String::from("Corge comment"),
+				},
 			]),
 		};
 
@@ -330,15 +419,12 @@ mod tests {
 			Some("Baz copyright")
 		);
 
-		let mut comments = tag.get_items(&ItemKey::Comment);
-		assert_eq!(
-			comments.next().map(TagItem::value),
-			Some(&ItemValue::Text(String::from("Qux annotation")))
-		);
-		assert_eq!(
-			comments.next().map(TagItem::value),
-			Some(&ItemValue::Text(String::from("Quux annotation")))
-		);
+		let mut comments = tag.get_texts(&ItemKey::Comment);
+		assert_eq!(comments.next(), Some("Qux annotation"));
+		assert_eq!(comments.next(), Some("Quux annotation"));
+		assert_eq!(comments.next(), Some("Quuz comment"));
+		assert_eq!(comments.next(), Some("Corge comment"));
+		assert!(comments.next().is_none());
 	}
 
 	#[test]
@@ -374,5 +460,6 @@ mod tests {
 				String::from("Quux annotation")
 			])
 		);
+		assert!(aiff_text.comments.is_none());
 	}
 }

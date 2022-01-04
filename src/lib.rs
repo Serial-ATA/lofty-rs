@@ -164,20 +164,15 @@ mod types;
 
 pub use crate::error::{LoftyError, Result};
 
-pub use crate::probe::Probe;
+pub use crate::probe::{read_from, read_from_path, Probe};
 
 pub use crate::types::{
-	file::{FileType, TaggedFile},
+	file::{AudioFile, FileType, TaggedFile},
 	item::{ItemKey, ItemValue, TagItem},
+	picture::{MimeType, Picture, PictureType},
 	properties::FileProperties,
 	tag::{Accessor, Tag, TagType},
 };
 
-pub use crate::types::file::AudioFile;
-
-pub use crate::types::picture::{MimeType, Picture, PictureType};
-
 #[cfg(feature = "vorbis_comments")]
 pub use crate::types::picture::PictureInformation;
-
-pub use probe::{read_from, read_from_path};
