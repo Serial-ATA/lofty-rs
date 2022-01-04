@@ -63,24 +63,26 @@ where
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			b"NAME" => {
+			b"ANNO" => {
+				let value = String::from_utf8(chunks.content(data)?)?;
+				annotations.push(value);
+			},
+			// These three chunks are expected to appear at most once per file,
+			// so there's no need to replace anything we already read
+			#[cfg(feature = "aiff_text_chunks")]
+			b"NAME" if text_chunks.name.is_none() => {
 				let value = String::from_utf8(chunks.content(data)?)?;
 				text_chunks.name = Some(value);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			b"AUTH" => {
+			b"AUTH" if text_chunks.author.is_none() => {
 				let value = String::from_utf8(chunks.content(data)?)?;
 				text_chunks.author = Some(value);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			b"(c) " => {
+			b"(c) " if text_chunks.copyright.is_none() => {
 				let value = String::from_utf8(chunks.content(data)?)?;
 				text_chunks.copyright = Some(value);
-			},
-			#[cfg(feature = "aiff_text_chunks")]
-			b"ANNO" => {
-				let value = String::from_utf8(chunks.content(data)?)?;
-				annotations.push(value);
 			},
 			_ => {
 				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;

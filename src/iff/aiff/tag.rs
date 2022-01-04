@@ -21,7 +21,7 @@ use byteorder::BigEndian;
 /// ## Item storage
 ///
 /// `AIFF` has a few chunks for storing basic metadata, all of
-/// which can only appear once in a file.
+/// which can only appear once in a file, except for annotations.
 ///
 /// ## Conversions
 ///
@@ -32,6 +32,7 @@ use byteorder::BigEndian;
 /// * [ItemKey::TrackTitle](crate::ItemKey::TrackTitle)
 /// * [ItemKey::TrackArtist](crate::ItemKey::TrackArtist)
 /// * [ItemKey::CopyrightMessage](crate::ItemKey::CopyrightMessage)
+/// * [ItemKey::Comment](crate::ItemKey::Comment)
 pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
@@ -42,7 +43,7 @@ pub struct AiffTextChunks {
 	pub copyright: Option<String>,
 	/// Basic comments
 	///
-	/// The use of these chunks is discouraged, as the `comments`
+	/// The use of these chunks is discouraged by spec, as the `comments`
 	/// field is more powerful.
 	pub annotations: Option<Vec<String>>,
 	// TODO: COMT chunk
@@ -103,7 +104,13 @@ impl AiffTextChunks {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
-		Into::<AiffTextChunksRef<&[String]>>::into(self).write_to(file)
+		AiffTextChunksRef::new(
+			self.name.as_deref(),
+			self.author.as_deref(),
+			self.copyright.as_deref(),
+			self.annotations.as_deref(),
+		)
+		.write_to(file)
 	}
 }
 
@@ -160,55 +167,35 @@ impl From<Tag> for AiffTextChunks {
 	}
 }
 
-pub(crate) struct AiffTextChunksRef<'a, T: AsRef<[String]>> {
+pub(crate) struct AiffTextChunksRef<'a, T: AsRef<str>, I: IntoIterator<Item = T>> {
 	pub name: Option<&'a str>,
 	pub author: Option<&'a str>,
 	pub copyright: Option<&'a str>,
-	pub annotations: Option<T>,
+	pub annotations: Option<I>,
 }
 
-impl<'a> Into<AiffTextChunksRef<'a, &'a [String]>> for &'a AiffTextChunks {
-	fn into(self) -> AiffTextChunksRef<'a, &'a [String]> {
+impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
+	pub(super) fn new(
+		name: Option<&'a str>,
+		author: Option<&'a str>,
+		copyright: Option<&'a str>,
+		annotations: Option<I>,
+	) -> AiffTextChunksRef<'a, T, I> {
 		AiffTextChunksRef {
-			name: self.name.as_deref(),
-			author: self.author.as_deref(),
-			copyright: self.copyright.as_deref(),
-			annotations: self.annotations.as_deref(),
+			name,
+			author,
+			copyright,
+			annotations,
 		}
 	}
 }
 
-impl<'a> Into<AiffTextChunksRef<'a, Vec<String>>> for &'a Tag {
-	fn into(self) -> AiffTextChunksRef<'a, Vec<String>> {
-		AiffTextChunksRef {
-			name: self.get_string(&ItemKey::TrackTitle),
-			author: self.get_string(&ItemKey::TrackArtist),
-			copyright: self.get_string(&ItemKey::CopyrightMessage),
-			annotations: {
-				let anno = self
-					.get_items(&ItemKey::Comment)
-					.filter_map(|i| match i.value() {
-						ItemValue::Text(text) => Some(text.clone()),
-						_ => None,
-					})
-					.collect::<Vec<_>>();
-
-				if anno.is_empty() {
-					None
-				} else {
-					Some(anno)
-				}
-			},
-		}
-	}
-}
-
-impl<'a, T: AsRef<[String]>> AiffTextChunksRef<'a, T> {
-	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
+impl<'a, T: AsRef<str>, I: IntoIterator<Item = T>> AiffTextChunksRef<'a, T, I> {
+	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
 
-	fn write_to_inner(data: &mut File, tag: &AiffTextChunksRef<T>) -> Result<()> {
+	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, I>) -> Result<()> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 			if let Some(val) = value {
 				if let Ok(len) = u32::try_from(val.len()) {
@@ -227,9 +214,9 @@ impl<'a, T: AsRef<[String]>> AiffTextChunksRef<'a, T> {
 		write_chunk(&mut text_chunks, "AUTH", tag.author);
 		write_chunk(&mut text_chunks, "(c) ", tag.copyright);
 
-		if let Some(annotations) = &tag.annotations {
-			for anno in annotations.as_ref() {
-				write_chunk(&mut text_chunks, "ANNO", Some(anno.as_str()));
+		if let Some(annotations) = tag.annotations.take() {
+			for anno in annotations {
+				write_chunk(&mut text_chunks, "ANNO", Some(anno.as_ref()));
 			}
 		}
 
@@ -291,8 +278,8 @@ impl<'a, T: AsRef<[String]>> AiffTextChunksRef<'a, T> {
 #[cfg(test)]
 mod tests {
 	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
-
 	use crate::iff::AiffTextChunks;
+
 	use std::io::{Cursor, Read};
 
 	#[test]
