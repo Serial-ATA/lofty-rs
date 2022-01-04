@@ -260,6 +260,39 @@ impl Tag {
 		self.items.iter().filter(move |i| i.key() == key)
 	}
 
+	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
+	pub fn get_texts<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+		self.items.iter().filter_map(move |i| {
+			if i.key() == key {
+				i.value().text()
+			} else {
+				None
+			}
+		})
+	}
+
+	/// Returns references to all locators of [`TagItem`]s with the specified key, and [`ItemValue::Locator`]
+	pub fn get_locators<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+		self.items.iter().filter_map(move |i| {
+			if i.key() == key {
+				i.value().locator()
+			} else {
+				None
+			}
+		})
+	}
+
+	/// Returns references to all bytes of [`TagItem`]s with the specified key, and [`ItemValue::Binary`]
+	pub fn get_bytes<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a [u8]> {
+		self.items.iter().filter_map(move |i| {
+			if i.key() == key {
+				i.value().binary()
+			} else {
+				None
+			}
+		})
+	}
+
 	/// Remove an item by its key
 	///
 	/// This will remove all items with this key.

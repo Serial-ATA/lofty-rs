@@ -548,6 +548,32 @@ pub enum ItemValue {
 	Binary(Vec<u8>),
 }
 
+impl ItemValue {
+	/// Returns the value if the variant is `Text`
+	pub fn text(&self) -> Option<&str> {
+		match self {
+			Self::Text(ref text) => Some(text),
+			_ => None,
+		}
+	}
+
+	/// Returns the value if the variant is `Locator`
+	pub fn locator(&self) -> Option<&str> {
+		match self {
+			Self::Locator(ref locator) => Some(locator),
+			_ => None,
+		}
+	}
+
+	/// Returns the value if the variant is `Binary`
+	pub fn binary(&self) -> Option<&[u8]> {
+		match self {
+			Self::Binary(ref bin) => Some(bin),
+			_ => None,
+		}
+	}
+}
+
 pub(crate) enum ItemValueRef<'a> {
 	Text(&'a str),
 	Locator(&'a str),
