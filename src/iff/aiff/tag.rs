@@ -236,7 +236,7 @@ where
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
 
-	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, AI>) -> Result<()> {
+	fn create_text_chunks(tag: &mut AiffTextChunksRef<T, AI>) -> Result<Vec<u8>> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 			if let Some(val) = value {
 				if let Ok(len) = u32::try_from(val.len()) {
@@ -252,8 +252,6 @@ where
 				}
 			}
 		}
-
-		super::read::verify_aiff(data)?;
 
 		let mut text_chunks = Vec::new();
 
@@ -287,7 +285,7 @@ where
 					let comt_len = text_chunks.len() - 4;
 
 					if let Ok(chunk_len) = u32::try_from(comt_len) {
-						let mut i = 3;
+						let mut i = 4;
 
 						// Write the size back
 						for b in chunk_len.to_be_bytes() {
@@ -315,13 +313,21 @@ where
 			}
 		}
 
+		Ok(text_chunks)
+	}
+
+	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, AI>) -> Result<()> {
+		super::read::verify_aiff(data)?;
+
+		let text_chunks = Self::create_text_chunks(&mut tag)?;
+
 		let mut chunks_remove = Vec::new();
 
 		let mut chunks = Chunks::<BigEndian>::new();
 
 		while chunks.next(data).is_ok() {
 			match &chunks.fourcc {
-				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" => {
+				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
 					let start = (data.seek(SeekFrom::Current(0))? - 8) as usize;
 					let mut end = start + 8 + chunks.size as usize;
 

@@ -27,7 +27,7 @@ where
 		tag.items.push((
 			key_str.to_string(),
 			chunks
-				.read_string(data)
+				.read_cstring(data)
 				.map_err(|_| LoftyError::Wav("Failed to read the chunk value"))?,
 		));
 	}

@@ -38,15 +38,36 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(())
 	}
 
-	pub fn read_string<R>(&mut self, data: &mut R) -> Result<String>
+	pub fn read_cstring<R>(&mut self, data: &mut R) -> Result<String>
 	where
 		R: Read + Seek,
 	{
 		let cont = self.content(data)?;
 		self.correct_position(data)?;
+
 		let value_str = std::str::from_utf8(&cont)?;
 
 		Ok(value_str.trim_matches('\0').to_string())
+	}
+
+	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<usize>) -> Result<String>
+		where
+			R: Read + Seek,
+	{
+		let cont = if let Some(size) = size {
+			let mut v = vec![0; size];
+			data.read_exact(&mut v)?;
+
+			v
+		} else {
+			self.content(data)?
+		};
+
+		if cont.len() % 2 != 0 {
+			data.seek(SeekFrom::Current(1))?;
+		}
+
+		Ok(String::from_utf8(cont)?)
 	}
 
 	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>

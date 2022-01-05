@@ -66,7 +66,7 @@ where
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"ANNO" => {
-				annotations.push(chunks.read_string(data)?);
+				annotations.push(chunks.read_pstring(data, None)?);
 			},
 			// These four chunks are expected to appear at most once per file,
 			// so there's no need to replace anything we already read
@@ -79,13 +79,12 @@ where
 					let marker_id = data.read_u16::<BigEndian>()?;
 					let size = data.read_u16::<BigEndian>()?;
 
-					let mut text = vec![0; size as usize];
-					data.read_exact(&mut text)?;
+					let text = chunks.read_pstring(data, Some(size as usize))?;
 
 					comments.push(Comment {
 						timestamp,
 						marker_id,
-						text: String::from_utf8(text)?,
+						text,
 					})
 				}
 
@@ -93,15 +92,15 @@ where
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"NAME" if text_chunks.name.is_none() => {
-				text_chunks.name = Some(chunks.read_string(data)?);
+				text_chunks.name = Some(chunks.read_pstring(data, None)?);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"AUTH" if text_chunks.author.is_none() => {
-				text_chunks.author = Some(chunks.read_string(data)?);
+				text_chunks.author = Some(chunks.read_pstring(data, None)?);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"(c) " if text_chunks.copyright.is_none() => {
-				text_chunks.copyright = Some(chunks.read_string(data)?);
+				text_chunks.copyright = Some(chunks.read_pstring(data, None)?);
 			},
 			_ => chunks.skip(data)?,
 		}
