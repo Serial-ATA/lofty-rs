@@ -161,7 +161,7 @@ impl VorbisComments {
 	///
 	/// # Errors
 	///
-	/// * [`PictureInformation::from_reader`]
+	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
 	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
 		Into::<VorbisCommentsRef>::into(self).dump_to(writer)
