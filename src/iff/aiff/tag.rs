@@ -243,6 +243,12 @@ where
 					writer.extend(key.as_bytes());
 					writer.extend(len.to_be_bytes());
 					writer.extend(val.as_bytes());
+
+					// AIFF only needs a terminator if the string is on an odd boundary,
+					// unlike RIFF, which makes use of both C-strings and even boundaries
+					if len % 2 != 0 {
+						writer.push(0);
+					}
 				}
 			}
 		}
@@ -250,6 +256,54 @@ where
 		super::read::verify_aiff(data)?;
 
 		let mut text_chunks = Vec::new();
+
+		if let Some(comments) = tag.comments.take() {
+			if !comments.is_empty() {
+				let comment_count = comments.len();
+
+				if let Ok(len) = u16::try_from(comment_count) {
+					text_chunks.extend(b"COMT");
+					text_chunks.extend((len as u16).to_be_bytes());
+
+					for comt in comments {
+						text_chunks.extend(comt.timestamp.to_be_bytes());
+						text_chunks.extend(comt.marker_id.to_be_bytes());
+
+						let comt_len = comt.text.len();
+
+						if comt_len > u16::MAX as usize {
+							return Err(LoftyError::TooMuchData);
+						}
+
+						text_chunks.extend((comt_len as u16).to_be_bytes());
+						text_chunks.extend(comt.text.as_bytes());
+
+						if comt_len % 2 != 0 {
+							text_chunks.push(0);
+						}
+					}
+
+					// Get the size of the COMT chunk
+					let comt_len = text_chunks.len() - 4;
+
+					if let Ok(chunk_len) = u32::try_from(comt_len) {
+						let mut i = 3;
+
+						// Write the size back
+						for b in chunk_len.to_be_bytes() {
+							text_chunks.insert(i, b);
+							i += 1;
+						}
+					} else {
+						return Err(LoftyError::TooMuchData);
+					}
+
+					if (text_chunks.len() - 4) % 2 != 0 {
+						text_chunks.push(0);
+					}
+				}
+			}
+		}
 
 		write_chunk(&mut text_chunks, "NAME", tag.name);
 		write_chunk(&mut text_chunks, "AUTH", tag.author);
@@ -261,58 +315,26 @@ where
 			}
 		}
 
-		if let Some(comments) = tag.comments.take() {
-			let original_len = comments.len();
-
-			if let Ok(len) = u16::try_from(original_len) {
-				text_chunks.extend(b"COMT");
-				// Start with zeroed size
-				text_chunks.extend([0, 0, 0, 0]);
-				text_chunks.extend((len as u16).to_be_bytes());
-
-				for comt in comments {
-					text_chunks.extend(comt.timestamp.to_be_bytes());
-					text_chunks.extend(comt.marker_id.to_be_bytes());
-
-					if comt.text.len() > u16::MAX as usize {
-						return Err(LoftyError::TooMuchData);
-					}
-
-					text_chunks.extend((comt.text.len() as u16).to_be_bytes());
-					text_chunks.extend(comt.text.as_bytes());
-				}
-
-				// Get the size of the COMT chunk
-				let comt_len = text_chunks.len() - (original_len + 4);
-
-				if let Ok(chunk_len) = u32::try_from(comt_len) {
-					let len_bytes = chunk_len.to_be_bytes();
-					let size_start_idx = original_len + 3;
-
-					text_chunks[size_start_idx..(4 + size_start_idx)]
-						.clone_from_slice(&len_bytes[..4]);
-				} else {
-					return Err(LoftyError::TooMuchData);
-				}
-			}
-		}
-
 		let mut chunks_remove = Vec::new();
 
 		let mut chunks = Chunks::<BigEndian>::new();
 
 		while chunks.next(data).is_ok() {
-			let pos = (data.seek(SeekFrom::Current(0))? - 8) as usize;
-
 			match &chunks.fourcc {
 				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" => {
-					chunks_remove.push((pos, (pos + 8 + chunks.size as usize)))
+					let start = (data.seek(SeekFrom::Current(0))? - 8) as usize;
+					let mut end = start + 8 + chunks.size as usize;
+
+					if chunks.size % 2 != 0 {
+						end += 1
+					}
+
+					chunks_remove.push((start, end))
 				},
 				_ => {},
 			}
 
-			data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-			chunks.correct_position(data)?;
+			chunks.skip(data)?;
 		}
 
 		data.seek(SeekFrom::Start(0))?;

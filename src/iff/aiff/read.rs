@@ -103,9 +103,7 @@ where
 			b"(c) " if text_chunks.copyright.is_none() => {
 				text_chunks.copyright = Some(chunks.read_string(data)?);
 			},
-			_ => {
-				chunks.skip(data)?;
-			},
+			_ => chunks.skip(data)?,
 		}
 	}
 

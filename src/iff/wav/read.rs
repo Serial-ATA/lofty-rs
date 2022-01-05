@@ -87,9 +87,7 @@ where
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			#[cfg(not(feature = "id3v2"))]
 			b"ID3 " | b"id3 " => chunks.id3_chunk(data)?,
-			_ => {
-				chunks.skip(data)?;
-			},
+			_ => chunks.skip(data)?,
 		}
 	}
 
