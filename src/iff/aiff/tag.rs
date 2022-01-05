@@ -137,6 +137,25 @@ impl AiffTextChunks {
 		)
 		.write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// This will only write the metadata chunks, it will not create a usable
+	/// file.
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		AiffTextChunksRef::new(
+			self.name.as_deref(),
+			self.author.as_deref(),
+			self.copyright.as_deref(),
+			self.annotations.as_deref(),
+			self.comments.as_deref(),
+		)
+		.dump_to(writer)
+	}
 }
 
 impl From<AiffTextChunks> for Tag {
@@ -234,6 +253,13 @@ where
 
 	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
 		AiffTextChunksRef::write_to_inner(file, self)
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let temp = Self::create_text_chunks(self)?;
+		writer.write_all(&*temp)?;
+
+		Ok(())
 	}
 
 	fn create_text_chunks(tag: &mut AiffTextChunksRef<T, AI>) -> Result<Vec<u8>> {

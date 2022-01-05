@@ -127,7 +127,7 @@ pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 	Ok(())
 }
 
-fn create_ape_tag(tag: &mut ApeTagRef) -> Result<Vec<u8>> {
+pub(super) fn create_ape_tag(tag: &mut ApeTagRef) -> Result<Vec<u8>> {
 	let items = &mut tag.items;
 	let mut peek = items.peekable();
 

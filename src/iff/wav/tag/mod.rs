@@ -6,6 +6,7 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
@@ -116,6 +117,18 @@ impl RiffInfoList {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<RiffInfoListRef>::into(self).write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// This will only write the LIST chunk, it will not create a usable
+	/// file.
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		Into::<RiffInfoListRef>::into(self).dump_to(writer)
+	}
 }
 
 impl From<RiffInfoList> for Tag {
@@ -201,6 +214,15 @@ impl<'a> Into<RiffInfoListRef<'a>> for &'a Tag {
 impl<'a> RiffInfoListRef<'a> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		write::write_riff_info(file, self)
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let mut temp = Vec::new();
+		write::create_riff_info(&mut self.items, &mut temp)?;
+
+		writer.write_all(&*temp)?;
+
+		Ok(())
 	}
 }
 

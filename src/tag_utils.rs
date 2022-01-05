@@ -1,4 +1,14 @@
+#[cfg(feature = "ape")]
+use crate::ape::tag::ape_tag::ApeTagRef;
 use crate::error::{LoftyError, Result};
+#[cfg(feature = "id3v1")]
+use crate::id3::v1::tag::Id3v1TagRef;
+#[cfg(feature = "id3v2")]
+use crate::id3::v2::tag::Id3v2TagRef;
+#[cfg(feature = "aiff_text_chunks")]
+use crate::iff::aiff::tag::AiffTextChunksRef;
+#[cfg(feature = "riff_info_list")]
+use crate::iff::wav::tag::RiffInfoListRef;
 #[cfg(feature = "mp4_ilst")]
 use crate::mp4::ilst::IlstRef;
 #[cfg(feature = "vorbis_comments")]
@@ -7,9 +17,11 @@ use crate::ogg::{
 	tag::VorbisCommentsRef,
 };
 use crate::types::file::FileType;
-use crate::types::tag::Tag;
+use crate::types::item::ItemKey;
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::File;
+use std::io::Write;
 
 #[allow(unreachable_patterns)]
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
@@ -29,6 +41,34 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::Vorbis => crate::ogg::write::write_to(file, tag, VORBIS_COMMENT_HEAD),
 		FileType::WAV => crate::iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::UnsupportedTag),
+	}
+}
+
+#[allow(unreachable_patterns)]
+pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
+	match tag.tag_type() {
+		#[cfg(feature = "ape")]
+		TagType::Ape => Into::<ApeTagRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "id3v1")]
+		TagType::Id3v1 => Into::<Id3v1TagRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "id3v2")]
+		TagType::Id3v2 => Into::<Id3v2TagRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "mp4_ilst")]
+		TagType::Mp4Ilst => Into::<IlstRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "vorbis_comments")]
+		TagType::VorbisComments => Into::<VorbisCommentsRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "riff_info_list")]
+		TagType::RiffInfo => Into::<RiffInfoListRef>::into(tag).dump_to(writer),
+		#[cfg(feature = "aiff_text_chunks")]
+		TagType::AiffText => AiffTextChunksRef::new(
+			tag.get_string(&ItemKey::TrackTitle),
+			tag.get_string(&ItemKey::TrackArtist),
+			tag.get_string(&ItemKey::CopyrightMessage),
+			Some(tag.get_texts(&ItemKey::Comment)),
+			None,
+		)
+		.dump_to(writer),
+		_ => Ok(()),
 	}
 }
 

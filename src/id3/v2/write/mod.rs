@@ -59,7 +59,7 @@ where
 	Ok(())
 }
 
-fn create_tag(tag: &mut Id3v2TagRef) -> Result<Vec<u8>> {
+pub(super) fn create_tag(tag: &mut Id3v2TagRef) -> Result<Vec<u8>> {
 	let frames = &mut tag.frames;
 	let mut peek = frames.peekable();
 

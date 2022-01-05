@@ -51,8 +51,8 @@ impl<B: ByteOrder> Chunks<B> {
 	}
 
 	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<usize>) -> Result<String>
-		where
-			R: Read + Seek,
+	where
+		R: Read + Seek,
 	{
 		let cont = if let Some(size) = size {
 			let mut v = vec![0; size];

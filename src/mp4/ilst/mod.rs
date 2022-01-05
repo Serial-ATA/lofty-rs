@@ -11,6 +11,7 @@ use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 
 const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
@@ -197,6 +198,18 @@ impl Ilst {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<IlstRef>::into(self).write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// This will only write the ilst atom, it will not create a usable
+	/// file.
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		Into::<IlstRef>::into(self).dump_to(writer)
+	}
 }
 
 impl From<Ilst> for Tag {
@@ -336,6 +349,13 @@ pub(crate) struct IlstRef<'a> {
 impl<'a> IlstRef<'a> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		write::write_to(file, self)
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let temp = write::build_ilst(&mut self.atoms)?;
+		writer.write_all(&*temp)?;
+
+		Ok(())
 	}
 }
 

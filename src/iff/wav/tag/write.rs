@@ -79,7 +79,7 @@ where
 	Ok(info)
 }
 
-fn create_riff_info(
+pub(super) fn create_riff_info(
 	items: &mut dyn Iterator<Item = (&str, &String)>,
 	bytes: &mut Vec<u8>,
 ) -> Result<()> {

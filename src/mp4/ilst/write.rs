@@ -179,7 +179,7 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	Ok(())
 }
 
-fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef>) -> Result<Vec<u8>> {
+pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef>) -> Result<Vec<u8>> {
 	let mut peek = atoms.peekable();
 
 	if peek.peek().is_none() {

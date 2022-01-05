@@ -1,5 +1,6 @@
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::{LoftyError, Result};
+use crate::id3::v1::GENRES;
 use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::read::skip_unneeded;
@@ -8,10 +9,9 @@ use crate::types::picture::{MimeType, Picture, PictureType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use crate::id3::v1::GENRES;
 use byteorder::ReadBytesExt;
 
-pub(crate) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
+pub(in crate::mp4) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
 where
 	R: Read,
 {

@@ -4,6 +4,7 @@ use crate::error::{LoftyError, Result};
 use crate::probe::Probe;
 
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 
 macro_rules! accessor_trait {
@@ -362,6 +363,17 @@ impl Tag {
 			},
 			None => Err(LoftyError::UnknownFormat),
 		}
+	}
+
+	/// Dump the tag to a writer
+	///
+	/// This will only write the tag, it will not produce a usable file.
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		crate::tag_utils::dump_tag(self, writer)
 	}
 
 	/// Same as [`TagType::remove_from_path`]

@@ -7,6 +7,7 @@ use crate::types::picture::{Picture, PictureInformation, PictureType};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::{File, OpenOptions};
+use std::io::{Cursor, Write};
 use std::path::Path;
 
 macro_rules! impl_accessor {
@@ -152,6 +153,19 @@ impl VorbisComments {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<VorbisCommentsRef>::into(self).write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// This does not include a vendor string, and will thus
+	/// not create a usable file.
+	///
+	/// # Errors
+	///
+	/// * [`PictureInformation::from_reader`]
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		Into::<VorbisCommentsRef>::into(self).dump_to(writer)
+	}
 }
 
 impl From<VorbisComments> for Tag {
@@ -237,6 +251,14 @@ impl<'a> VorbisCommentsRef<'a> {
 			Some(FileType::Vorbis) => super::write::write(file, self, VORBIS_IDENT_HEAD),
 			_ => Err(LoftyError::UnsupportedTag),
 		}
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let mut temp = Cursor::new(Vec::new());
+		super::write::create_pages(self, &mut temp)?;
+
+		writer.write_all(temp.get_ref())?;
+		Ok(())
 	}
 }
 

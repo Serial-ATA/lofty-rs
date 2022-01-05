@@ -47,7 +47,10 @@ pub(crate) fn create_comments(
 }
 
 #[cfg(feature = "vorbis_comments")]
-fn create_pages(tag: &mut VorbisCommentsRef, writer: &mut Cursor<Vec<u8>>) -> Result<Vec<Page>> {
+pub(super) fn create_pages(
+	tag: &mut VorbisCommentsRef,
+	writer: &mut Cursor<Vec<u8>>,
+) -> Result<Vec<Page>> {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
 	let item_count_pos = writer.seek(SeekFrom::Current(0))?;

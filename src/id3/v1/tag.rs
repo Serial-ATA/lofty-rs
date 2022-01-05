@@ -4,6 +4,7 @@ use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
@@ -139,6 +140,15 @@ impl Id3v1Tag {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v1TagRef>::into(self).write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		Into::<Id3v1TagRef>::into(self).dump_to(writer)
+	}
 }
 
 impl From<Id3v1Tag> for Tag {
@@ -245,10 +255,6 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 }
 
 impl<'a> Id3v1TagRef<'a> {
-	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
-		super::write::write_id3v1(file, self)
-	}
-
 	pub(super) fn is_empty(&self) -> bool {
 		self.title.is_none()
 			&& self.artist.is_none()
@@ -257,6 +263,17 @@ impl<'a> Id3v1TagRef<'a> {
 			&& self.comment.is_none()
 			&& self.track_number.is_none()
 			&& self.genre.is_none()
+	}
+
+	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
+		super::write::write_id3v1(file, self)
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let temp = super::write::encode(self)?;
+		writer.write_all(&*temp)?;
+
+		Ok(())
 	}
 }
 

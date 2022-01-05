@@ -12,6 +12,7 @@ use crate::types::tag::{Accessor, Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
+use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
@@ -284,6 +285,15 @@ impl Id3v2Tag {
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Into::<Id3v2TagRef>::into(self).write_to(file)
 	}
+
+	/// Dumps the tag to a writer
+	///
+	/// # Errors
+	///
+	/// * [`std::io::Error`]
+	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+		Into::<Id3v2TagRef>::into(self).dump_to(writer)
+	}
 }
 
 impl IntoIterator for Id3v2Tag {
@@ -400,6 +410,13 @@ pub(crate) struct Id3v2TagRef<'a> {
 impl<'a> Id3v2TagRef<'a> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_id3v2(file, self)
+	}
+
+	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+		let temp = super::write::create_tag(self)?;
+		writer.write_all(&*temp)?;
+
+		Ok(())
 	}
 }
 
