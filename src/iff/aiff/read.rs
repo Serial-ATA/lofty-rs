@@ -58,15 +58,15 @@ where
 				}
 
 				comm = Some(chunks.content(data)?);
+				chunks.correct_position(data)?;
 			},
 			b"SSND" if read_properties => {
 				stream_len = chunks.size;
-				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+				chunks.skip(data)?;
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"ANNO" => {
-				let value = String::from_utf8(chunks.content(data)?)?;
-				annotations.push(value);
+				annotations.push(chunks.read_string(data)?);
 			},
 			// These four chunks are expected to appear at most once per file,
 			// so there's no need to replace anything we already read
@@ -88,28 +88,25 @@ where
 						text: String::from_utf8(text)?,
 					})
 				}
+
+				chunks.correct_position(data)?;
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"NAME" if text_chunks.name.is_none() => {
-				let value = String::from_utf8(chunks.content(data)?)?;
-				text_chunks.name = Some(value);
+				text_chunks.name = Some(chunks.read_string(data)?);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"AUTH" if text_chunks.author.is_none() => {
-				let value = String::from_utf8(chunks.content(data)?)?;
-				text_chunks.author = Some(value);
+				text_chunks.author = Some(chunks.read_string(data)?);
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			b"(c) " if text_chunks.copyright.is_none() => {
-				let value = String::from_utf8(chunks.content(data)?)?;
-				text_chunks.copyright = Some(value);
+				text_chunks.copyright = Some(chunks.read_string(data)?);
 			},
 			_ => {
-				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+				chunks.skip(data)?;
 			},
 		}
-
-		chunks.correct_position(data)?;
 	}
 
 	#[cfg(feature = "aiff_text_chunks")]

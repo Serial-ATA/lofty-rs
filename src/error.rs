@@ -76,7 +76,9 @@ pub enum LoftyError {
 	/// Errors that arise while parsing OGG pages
 	OggPage(ogg_pager::PageError),
 	/// Unable to convert bytes to a String
-	FromUtf8(std::string::FromUtf8Error),
+	StringFromUtf8(std::string::FromUtf8Error),
+	/// Unable to convert bytes to a str
+	StrFromUtf8(std::str::Utf8Error),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
 }
@@ -86,7 +88,8 @@ impl Display for LoftyError {
 		match self {
 			// Conversions
 			LoftyError::OggPage(ref err) => write!(f, "{}", err),
-			LoftyError::FromUtf8(ref err) => write!(f, "{}", err),
+			LoftyError::StringFromUtf8(ref err) => write!(f, "{}", err),
+			LoftyError::StrFromUtf8(ref err) => write!(f, "{}", err),
 			LoftyError::Io(ref err) => write!(f, "{}", err),
 
 			LoftyError::BadExtension(ext) => write!(f, "Found unknown file extension \"{}\"", ext),
@@ -160,6 +163,12 @@ impl From<std::io::Error> for LoftyError {
 
 impl From<std::string::FromUtf8Error> for LoftyError {
 	fn from(input: std::string::FromUtf8Error) -> Self {
-		LoftyError::FromUtf8(input)
+		LoftyError::StringFromUtf8(input)
+	}
+}
+
+impl From<std::str::Utf8Error> for LoftyError {
+	fn from(input: std::str::Utf8Error) -> Self {
+		LoftyError::StrFromUtf8(input)
 	}
 }

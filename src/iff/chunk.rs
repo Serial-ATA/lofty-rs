@@ -1,13 +1,13 @@
 use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
+use crate::id3::v2::read_id3v2_header;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
-use crate::id3::v2::read_id3v2_header;
 use byteorder::{ByteOrder, ReadBytesExt};
 
 pub(crate) struct Chunks<B>
@@ -38,6 +38,17 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(())
 	}
 
+	pub fn read_string<R>(&mut self, data: &mut R) -> Result<String>
+	where
+		R: Read + Seek,
+	{
+		let cont = self.content(data)?;
+		self.correct_position(data)?;
+		let value_str = std::str::from_utf8(&cont)?;
+
+		Ok(value_str.trim_matches('\0').to_string())
+	}
+
 	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>
 	where
 		R: Read,
@@ -66,6 +77,8 @@ impl<B: ByteOrder> Chunks<B> {
 			data.seek(SeekFrom::Current(10))?;
 		}
 
+		self.correct_position(data)?;
+
 		Ok(id3v2)
 	}
 
@@ -85,6 +98,18 @@ impl<B: ByteOrder> Chunks<B> {
 		if header.flags.footer {
 			data.seek(SeekFrom::Current(10))?;
 		}
+
+		self.correct_position(data)?;
+
+		Ok(())
+	}
+
+	pub fn skip<R>(&mut self, data: &mut R) -> Result<()>
+	where
+		R: Read + Seek,
+	{
+		data.seek(SeekFrom::Current(i64::from(self.size)))?;
+		self.correct_position(data)?;
 
 		Ok(())
 	}

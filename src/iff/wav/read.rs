@@ -52,7 +52,7 @@ where
 				if fmt.is_empty() {
 					fmt = chunks.content(data)?;
 				} else {
-					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+					chunks.skip(data)?;
 				}
 			},
 			b"fact" if read_properties => {
@@ -67,7 +67,7 @@ where
 					stream_len += chunks.size
 				}
 
-				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+				chunks.skip(data)?;
 			},
 			b"LIST" => {
 				let mut list_type = [0; 4];
@@ -77,23 +77,20 @@ where
 				if &list_type == b"INFO" {
 					let end = data.seek(SeekFrom::Current(0))? + u64::from(chunks.size - 4);
 					super::tag::read::parse_riff_info(data, end, &mut riff_info)?;
+					chunks.correct_position(data)?;
 				}
 
 				#[cfg(not(feature = "riff_info_list"))]
-				{
-					data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-				}
+				chunks.skip(data)?;
 			},
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			#[cfg(not(feature = "id3v2"))]
 			b"ID3 " | b"id3 " => chunks.id3_chunk(data)?,
 			_ => {
-				data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
+				chunks.skip(data)?;
 			},
 		}
-
-		chunks.correct_position(data)?;
 	}
 
 	let properties = if read_properties {

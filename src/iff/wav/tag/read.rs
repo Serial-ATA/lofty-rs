@@ -24,16 +24,11 @@ where
 			return Err(LoftyError::Wav("Non-ascii key found in RIFF INFO"));
 		}
 
-		let value = chunks.content(data)?;
-
-		chunks.correct_position(data)?;
-
-		let value_str = std::str::from_utf8(&value)
-			.map_err(|_| LoftyError::Wav("Non UTF-8 value found in RIFF INFO"))?;
-
 		tag.items.push((
 			key_str.to_string(),
-			value_str.trim_matches('\0').to_string(),
+			chunks
+				.read_string(data)
+				.map_err(|_| LoftyError::Wav("Failed to read the chunk value"))?,
 		));
 	}
 
