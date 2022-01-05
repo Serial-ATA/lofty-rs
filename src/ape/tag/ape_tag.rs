@@ -266,7 +266,7 @@ mod tests {
 	use crate::{ItemValue, Tag, TagType};
 
 	use crate::ape::tag::read_ape_header;
-	use std::io::{Cursor, Read};
+	use std::io::Cursor;
 
 	#[test]
 	fn parse_ape() {
@@ -316,12 +316,7 @@ mod tests {
 		expected_tag.insert(track_number_item);
 		expected_tag.insert(genre_item);
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.apev2")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
-
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag);
 
 		let header = read_ape_header(&mut reader, false).unwrap();
@@ -335,13 +330,29 @@ mod tests {
 	}
 
 	#[test]
-	fn ape_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.apev2")
-			.unwrap()
-			.read_to_end(&mut tag_bytes)
-			.unwrap();
+	fn ape_re_read() {
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
+		let mut reader = Cursor::new(tag_bytes);
 
+		let header = read_ape_header(&mut reader, false).unwrap();
+		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
+
+		let mut writer = Vec::new();
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		// Remove the APE preamble
+		let mut temp_reader = Cursor::new(&writer[8..]);
+
+		let temp_header = read_ape_header(&mut temp_reader, false).unwrap();
+		let temp_parsed_tag =
+			crate::ape::tag::read::read_ape_tag(&mut temp_reader, temp_header).unwrap();
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
+	fn ape_to_tag() {
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
 		let header = read_ape_header(&mut reader, false).unwrap();

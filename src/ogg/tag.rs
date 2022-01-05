@@ -307,6 +307,14 @@ mod tests {
 
 	use std::io::Read;
 
+	fn read_tag(tag: &[u8]) -> VorbisComments {
+		let mut reader = std::io::Cursor::new(tag);
+		let mut parsed_tag = VorbisComments::default();
+
+		crate::ogg::read::read_comments(&mut reader, &mut parsed_tag).unwrap();
+		parsed_tag
+	}
+
 	#[test]
 	fn parse_vorbis_comments() {
 		let mut expected_tag = VorbisComments::default();
@@ -321,18 +329,26 @@ mod tests {
 		expected_tag.insert_item(String::from("TITLE"), String::from("Foo title"), false);
 		expected_tag.insert_item(String::from("TRACKNUMBER"), String::from("1"), false);
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.vorbis")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
-
-		let mut reader = std::io::Cursor::new(&tag[..]);
-		let mut parsed_tag = VorbisComments::default();
-
-		crate::ogg::read::read_comments(&mut reader, &mut parsed_tag).unwrap();
+		let file_cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.vorbis");
+		let parsed_tag = read_tag(&*file_cont);
 
 		assert_eq!(expected_tag, parsed_tag);
+	}
+
+	#[test]
+	fn vorbis_comments_re_read() {
+		let file_cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.vorbis");
+		let mut parsed_tag = read_tag(&*file_cont);
+
+		// Create a zero-size vendor for comparison
+		parsed_tag.vendor = String::new();
+
+		let mut writer = vec![0, 0, 0, 0];
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		let temp_parsed_tag = read_tag(&*writer);
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
 	#[test]

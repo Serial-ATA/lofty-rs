@@ -445,11 +445,9 @@ impl<'a> Into<Id3v2TagRef<'a>> for &'a Id3v2Tag {
 
 #[cfg(test)]
 mod tests {
+	use crate::id3::v2::read_id3v2_header;
 	use crate::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding};
 	use crate::{Tag, TagType};
-
-	use crate::id3::v2::read_id3v2_header;
-	use std::io::Read;
 
 	#[test]
 	fn parse_id3v2() {
@@ -544,12 +542,7 @@ mod tests {
 			.unwrap(),
 		);
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.id3v2")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
-
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
 		let mut reader = std::io::Cursor::new(&tag[..]);
 
 		let header = read_id3v2_header(&mut reader).unwrap();
@@ -559,12 +552,27 @@ mod tests {
 	}
 
 	#[test]
+	fn id3v2_re_read() {
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
+		let mut reader = std::io::Cursor::new(&tag[..]);
+
+		let header = read_id3v2_header(&mut reader).unwrap();
+		let parsed_tag = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+
+		let mut writer = Vec::new();
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		let temp_reader = &mut &*writer;
+
+		let temp_header = read_id3v2_header(temp_reader).unwrap();
+		let temp_parsed_tag = crate::id3::v2::read::parse_id3v2(temp_reader, temp_header).unwrap();
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
 	fn id3v2_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.id3v2")
-			.unwrap()
-			.read_to_end(&mut tag_bytes)
-			.unwrap();
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 

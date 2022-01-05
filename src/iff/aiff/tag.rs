@@ -235,7 +235,7 @@ where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(super) fn new(
+	pub(crate) fn new(
 		name: Option<&'a str>,
 		author: Option<&'a str>,
 		copyright: Option<&'a str>,
@@ -411,7 +411,7 @@ mod tests {
 	use crate::iff::{AiffTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
-	use std::io::{Cursor, Read};
+	use std::io::Cursor;
 
 	#[test]
 	fn parse_aiff_text() {
@@ -437,11 +437,7 @@ mod tests {
 			]),
 		};
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.aiff_text")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
 		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
@@ -452,12 +448,28 @@ mod tests {
 	}
 
 	#[test]
-	fn aiff_text_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.aiff_text")
+	fn aiff_text_re_read() {
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
+		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
-			.read_to_end(&mut tag_bytes)
+			.text_chunks
 			.unwrap();
+
+		// Create a fake AIFF signature
+		let mut writer = vec![b'F', b'O', b'R', b'M', 0, 0, 0, 0, b'A', b'I', b'F', b'F'];
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		let temp_parsed_tag = super::super::read::read_from(&mut Cursor::new(writer), false)
+			.unwrap()
+			.text_chunks
+			.unwrap();
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
+	fn aiff_text_to_tag() {
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
 		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
 			.unwrap()

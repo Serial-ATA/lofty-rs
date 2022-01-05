@@ -110,6 +110,8 @@ pub(crate) use tag_methods;
 // Used for tag conversion tests
 pub(crate) mod test_utils {
 	use crate::{ItemKey, Tag, TagType};
+	use std::fs::File;
+	use std::io::Read;
 
 	pub(crate) fn create_tag(tag_type: TagType) -> Tag {
 		let mut tag = Tag::new(tag_type);
@@ -137,5 +139,17 @@ pub(crate) mod test_utils {
 		if genre {
 			assert_eq!(tag.get_string(&ItemKey::Genre), Some("Classical"));
 		}
+	}
+
+	pub(crate) fn read_path(path: &str) -> Vec<u8> {
+		read_file(&mut File::open(path).unwrap())
+	}
+
+	pub(crate) fn read_file(file: &mut File) -> Vec<u8> {
+		let mut tag = Vec::new();
+
+		file.read_to_end(&mut tag).unwrap();
+
+		tag
 	}
 }

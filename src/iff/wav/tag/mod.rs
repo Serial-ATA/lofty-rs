@@ -235,7 +235,7 @@ mod tests {
 	use crate::iff::RiffInfoList;
 	use crate::{Tag, TagType};
 
-	use std::io::Read;
+	use std::io::Cursor;
 
 	#[test]
 	fn parse_riff_info() {
@@ -248,27 +248,50 @@ mod tests {
 		expected_tag.insert(String::from("IPRD"), String::from("Baz album"));
 		expected_tag.insert(String::from("IPRT"), String::from("1"));
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.riff")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
-
-		let mut reader = std::io::Cursor::new(&tag[..]);
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
 		let mut parsed_tag = RiffInfoList::default();
 
-		super::read::parse_riff_info(&mut reader, (tag.len() - 1) as u64, &mut parsed_tag).unwrap();
+		super::read::parse_riff_info(
+			&mut Cursor::new(&tag[..]),
+			(tag.len() - 1) as u64,
+			&mut parsed_tag,
+		)
+		.unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
 	#[test]
+	fn riff_info_re_read() {
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
+		let mut parsed_tag = RiffInfoList::default();
+
+		super::read::parse_riff_info(
+			&mut Cursor::new(&tag[..]),
+			(tag.len() - 1) as u64,
+			&mut parsed_tag,
+		)
+		.unwrap();
+
+		let mut writer = Vec::new();
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		let mut temp_parsed_tag = RiffInfoList::default();
+
+		// Remove the LIST....INFO from the tag
+		super::read::parse_riff_info(
+			&mut Cursor::new(&writer[12..]),
+			(tag.len() - 13) as u64,
+			&mut temp_parsed_tag,
+		)
+		.unwrap();
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
 	fn riff_info_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.riff")
-			.unwrap()
-			.read_to_end(&mut tag_bytes)
-			.unwrap();
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 		let mut riff_info = RiffInfoList::default();

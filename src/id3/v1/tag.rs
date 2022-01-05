@@ -282,8 +282,6 @@ mod tests {
 	use crate::id3::v1::Id3v1Tag;
 	use crate::{Tag, TagType};
 
-	use std::io::Read;
-
 	#[test]
 	fn parse_id3v1() {
 		let expected_tag = Id3v1Tag {
@@ -296,26 +294,29 @@ mod tests {
 			genre: Some(32),
 		};
 
-		let mut tag = [0; 128];
-		std::fs::File::open("tests/tags/assets/test.id3v1")
-			.unwrap()
-			.read_exact(&mut tag)
-			.unwrap();
-
-		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag);
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
 	#[test]
-	fn id3v1_to_tag() {
-		let mut tag_bytes = [0; 128];
-		std::fs::File::open("tests/tags/assets/test.id3v1")
-			.unwrap()
-			.read_exact(&mut tag_bytes)
-			.unwrap();
+	fn id3v2_re_read() {
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
-		let id3v1 = crate::id3::v1::read::parse_id3v1(tag_bytes);
+		let mut writer = Vec::new();
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		let temp_parsed_tag = crate::id3::v1::read::parse_id3v1(writer.try_into().unwrap());
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
+	fn id3v1_to_tag() {
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let id3v1 = crate::id3::v1::read::parse_id3v1(tag_bytes.try_into().unwrap());
 
 		let tag: Tag = id3v1.into();
 

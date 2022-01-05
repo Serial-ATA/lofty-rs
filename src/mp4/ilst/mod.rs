@@ -418,8 +418,6 @@ mod tests {
 	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
 	use crate::{ItemKey, Tag, TagType};
 
-	use std::io::Read;
-
 	#[test]
 	fn parse_ilst() {
 		let mut expected_tag = Ilst::default();
@@ -474,11 +472,7 @@ mod tests {
 			AtomData::UTF8(String::from("Foo title")),
 		));
 
-		let mut tag = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.ilst")
-			.unwrap()
-			.read_to_end(&mut tag)
-			.unwrap();
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
 
 		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
 
@@ -486,12 +480,23 @@ mod tests {
 	}
 
 	#[test]
+	fn ilst_re_read() {
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
+		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
+
+		let mut writer = Vec::new();
+		parsed_tag.dump_to(&mut writer).unwrap();
+
+		// Remove the ilst identifier and size
+		let temp_parsed_tag =
+			super::read::parse_ilst(&mut &writer[8..], (writer.len() - 8) as u64).unwrap();
+
+		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test]
 	fn ilst_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.ilst")
-			.unwrap()
-			.read_to_end(&mut tag_bytes)
-			.unwrap();
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
 
 		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
 
