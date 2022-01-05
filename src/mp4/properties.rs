@@ -1,6 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::nested_atom;
-use super::read::skip_unneeded;
+use super::read::{nested_atom, skip_unneeded};
 use super::trak::Trak;
 use crate::error::{LoftyError, Result};
 use crate::types::properties::FileProperties;

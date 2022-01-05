@@ -23,7 +23,7 @@ impl Block {
 
 		let byte = data.read_u8()?;
 		let last = (byte & 0x80) != 0;
-		let ty = byte & 0x7f;
+		let ty = byte & 0x7F;
 
 		let size = data.read_uint::<BigEndian>(3)? as u32;
 

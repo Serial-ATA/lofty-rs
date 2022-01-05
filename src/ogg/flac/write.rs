@@ -55,14 +55,14 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -> Resul
 
 	if !padding {
 		let mut first_byte = 0_u8;
-		first_byte |= last_block_info.0 & 0x7f;
+		first_byte |= last_block_info.0 & 0x7F;
 
 		file_bytes[last_block_info.1 as usize] = first_byte;
 
 		let mut padding_block = [0; 1028];
 		let mut padding_byte = 0;
 		padding_byte |= 0x80;
-		padding_byte |= 1 & 0x7f;
+		padding_byte |= 1 & 0x7F;
 
 		padding_block[0] = padding_byte;
 
@@ -114,7 +114,7 @@ fn create_comment_block(
 
 	if peek.peek().is_some() {
 		let mut byte = 0_u8;
-		byte |= 4 & 0x7f;
+		byte |= 4 & 0x7F;
 
 		writer.write_u8(byte)?;
 		writer.write_u32::<LittleEndian>(vendor.len() as u32)?;
@@ -152,7 +152,7 @@ fn create_picture_blocks(
 	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
 ) -> Result<()> {
 	let mut byte = 0_u8;
-	byte |= 6 & 0x7f;
+	byte |= 6 & 0x7F;
 
 	for (pic, info) in pictures {
 		writer.write_u8(byte)?;

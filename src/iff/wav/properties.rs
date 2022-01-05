@@ -7,7 +7,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 
 const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;
-const EXTENSIBLE: u16 = 0xfffe;
+const EXTENSIBLE: u16 = 0xFFFE;
 
 #[allow(missing_docs, non_camel_case_types)]
 #[derive(Debug, Copy, Clone, PartialEq)]

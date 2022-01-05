@@ -445,8 +445,9 @@ impl<'a> Into<Id3v2TagRef<'a>> for &'a Id3v2Tag {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::read_id3v2_header;
-	use crate::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding};
+	use crate::id3::v2::{
+		read_id3v2_header, Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding,
+	};
 	use crate::{Tag, TagType};
 
 	#[test]

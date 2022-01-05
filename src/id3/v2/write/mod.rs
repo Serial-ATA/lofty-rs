@@ -3,8 +3,9 @@ mod frame;
 
 use super::Id3v2TagFlags;
 use crate::error::{LoftyError, Result};
+use crate::id3::find_id3v2;
+use crate::id3::v2::synch_u32;
 use crate::id3::v2::tag::Id3v2TagRef;
-use crate::id3::{find_id3v2, v2::synch_u32};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 

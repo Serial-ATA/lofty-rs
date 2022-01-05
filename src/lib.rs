@@ -38,7 +38,9 @@
 //!
 //! // Let's guess the format from the content just in case.
 //! // This is not necessary in this case!
-//! let tagged_file2 = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?.read(false)?;
+//! let tagged_file2 = Probe::open("tests/files/assets/a.mp3")?
+//! 	.guess_file_type()?
+//! 	.read(false)?;
 //! # Ok(())
 //! # }
 //! ```
@@ -48,8 +50,8 @@
 //! ```rust
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use std::fs::File;
 //! use lofty::read_from;
+//! use std::fs::File;
 //!
 //! // Let's read from an open file
 //! let mut file = File::open("tests/files/assets/a.mp3")?;
@@ -85,8 +87,7 @@
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
 //! use lofty::mp3::Mp3File;
-//! use lofty::AudioFile;
-//! use lofty::TagType;
+//! use lofty::{AudioFile, TagType};
 //! use std::fs::File;
 //!
 //! let mut file_content = File::open("tests/files/assets/a.mp3")?;
@@ -141,14 +142,14 @@
 	clippy::let_underscore_drop,
 	clippy::match_wildcard_for_single_variants,
 	clippy::semicolon_if_nothing_returned,
-	clippy::used_underscore_binding,
 	clippy::new_without_default,
 	clippy::unused_self,
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
 	clippy::too_many_arguments,
 	clippy::single_match_else,
-	clippy::similar_names
+	clippy::similar_names,
+	clippy::tabs_in_doc_comments
 )]
 
 pub mod ape;
@@ -166,13 +167,11 @@ pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::{read_from, read_from_path, Probe};
 
-pub use crate::types::{
-	file::{AudioFile, FileType, TaggedFile},
-	item::{ItemKey, ItemValue, TagItem},
-	picture::{MimeType, Picture, PictureType},
-	properties::FileProperties,
-	tag::{Accessor, Tag, TagType},
-};
+pub use crate::types::file::{AudioFile, FileType, TaggedFile};
+pub use crate::types::item::{ItemKey, ItemValue, TagItem};
+pub use crate::types::picture::{MimeType, Picture, PictureType};
+pub use crate::types::properties::FileProperties;
+pub use crate::types::tag::{Accessor, Tag, TagType};
 
 #[cfg(feature = "vorbis_comments")]
 pub use crate::types::picture::PictureInformation;

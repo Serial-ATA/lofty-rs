@@ -102,8 +102,8 @@ macro_rules! impl_accessor {
 /// Converting between formats
 ///
 /// ```rust
-/// use lofty::{Tag, TagType};
 /// use lofty::id3::v2::Id3v2Tag;
+/// use lofty::{Tag, TagType};
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.

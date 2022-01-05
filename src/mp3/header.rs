@@ -88,7 +88,7 @@ impl Header {
 
 		let layer_index = (layer as usize).saturating_sub(1);
 
-		let bitrate_index = (header >> 12) & 0xf;
+		let bitrate_index = (header >> 12) & 0xF;
 		let bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
 
 		// Sample rate index

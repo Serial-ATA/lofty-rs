@@ -2,10 +2,8 @@ use super::{AtomDataRef, IlstRef};
 use crate::error::{LoftyError, Result};
 use crate::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
-use crate::mp4::read::nested_atom;
-use crate::mp4::read::verify_mp4;
-use crate::types::picture::MimeType;
-use crate::types::picture::Picture;
+use crate::mp4::read::{nested_atom, verify_mp4};
+use crate::types::picture::{MimeType, Picture};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

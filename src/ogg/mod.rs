@@ -14,10 +14,12 @@ pub(crate) mod vorbis;
 pub(crate) mod write;
 
 pub use crate::ogg::flac::FlacFile;
-pub use crate::ogg::opus::{properties::OpusProperties, OpusFile};
+pub use crate::ogg::opus::properties::OpusProperties;
+pub use crate::ogg::opus::OpusFile;
 #[cfg(feature = "vorbis_comments")]
 pub use crate::ogg::tag::VorbisComments;
-pub use crate::ogg::vorbis::{properties::VorbisProperties, VorbisFile};
+pub use crate::ogg::vorbis::properties::VorbisProperties;
+pub use crate::ogg::vorbis::VorbisFile;
 
 use crate::{LoftyError, Result};
 

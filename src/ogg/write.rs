@@ -1,7 +1,6 @@
 use super::{page_from_packet, verify_signature};
 use crate::error::{LoftyError, Result};
-use crate::ogg::constants::OPUSTAGS;
-use crate::ogg::constants::VORBIS_COMMENT_HEAD;
+use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};

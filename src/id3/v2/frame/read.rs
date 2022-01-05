@@ -2,8 +2,7 @@ use super::header::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::content::parse_content;
-use crate::id3::v2::FrameValue;
-use crate::id3::v2::Id3v2Version;
+use crate::id3::v2::{FrameValue, Id3v2Version};
 
 use std::io::Read;
 

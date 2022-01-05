@@ -1,4 +1,6 @@
-use super::{ape_tag::ApeTag, item::ApeItem, ApeHeader};
+use super::ape_tag::ApeTag;
+use super::item::ApeItem;
+use super::ApeHeader;
 use crate::ape::constants::INVALID_KEYS;
 use crate::error::{LoftyError, Result};
 use crate::types::item::ItemValue;

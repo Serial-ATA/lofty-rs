@@ -25,13 +25,13 @@ pub(super) fn read_properties(
 
 	let sign = u64::from(sample_rate_bytes[0] & 0x80);
 
-	sample_rate_bytes[0] &= 0x7f;
+	sample_rate_bytes[0] &= 0x7F;
 
 	let mut exponent = u16::from(sample_rate_bytes[0]) << 8 | u16::from(sample_rate_bytes[1]);
 	exponent = exponent - 16383 + 1023;
 
 	let fraction = &mut sample_rate_bytes[2..];
-	fraction[0] &= 0x7f;
+	fraction[0] &= 0x7F;
 
 	let fraction: Vec<u64> = fraction.iter_mut().map(|v| u64::from(*v)).collect();
 
