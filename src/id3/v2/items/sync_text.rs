@@ -79,6 +79,7 @@ pub struct SyncTextInformation {
 }
 
 /// Represents an ID3v2 synchronized text frame
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub struct SynchronizedText {
 	/// Information about the synchronized text
 	pub information: SyncTextInformation,
@@ -122,8 +123,8 @@ impl SynchronizedText {
 			};
 		}
 
-		let mut pos = 0;
-		let total = cursor.seek(SeekFrom::Current(0))? as u32 + (cursor.get_ref().len() - 6) as u32;
+		let mut pos = cursor.seek(SeekFrom::Current(0))? as u32;
+		let total = (data.len() - 6) as u32 - pos;
 
 		let mut content = Vec::new();
 
@@ -137,6 +138,8 @@ impl SynchronizedText {
 
 					// Encountered text that doesn't include a BOM
 					if bom != [0xFF, 0xFE] || bom != [0xFE, 0xFF] {
+						cursor.seek(SeekFrom::Current(-2))?;
+
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
 							return utf16_decode(&*raw_text, endianness)
@@ -154,11 +157,9 @@ impl SynchronizedText {
 
 			pos += text.len() as u32;
 
-			if (pos + 4) > total {
-				return Err(LoftyError::BadSyncText);
-			}
-
-			let time = cursor.read_u32::<BigEndian>()?;
+			let time = cursor
+				.read_u32::<BigEndian>()
+				.map_err(|_| LoftyError::BadSyncText)?;
 			pos += 4;
 
 			content.push((time, text));
@@ -218,5 +219,65 @@ impl SynchronizedText {
 		}
 
 		Err(LoftyError::BadSyncText)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::{
+		SyncTextContentType, SyncTextInformation, SynchronizedText, TextEncoding, TimestampFormat,
+	};
+
+	#[test]
+	fn sylt_decode() {
+		let expected = SynchronizedText {
+			information: SyncTextInformation {
+				encoding: TextEncoding::Latin1,
+				language: String::from("eng"),
+				timestamp_format: TimestampFormat::MS,
+				content_type: SyncTextContentType::Lyrics,
+				description: Some(String::from("Test Sync Text")),
+			},
+			content: vec![
+				(0, String::from("\nLofty")),
+				(10000, String::from("\nIs")),
+				(15000, String::from("\nReading")),
+				(30000, String::from("\nThis")),
+				(1_938_000, String::from("\nCorrectly")),
+			],
+		};
+
+		let cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
+
+		let parsed_sylt = SynchronizedText::parse(&*cont).unwrap();
+
+		assert_eq!(parsed_sylt, expected);
+	}
+
+	#[test]
+	fn sylt_encode() {
+		let to_encode = SynchronizedText {
+			information: SyncTextInformation {
+				encoding: TextEncoding::Latin1,
+				language: String::from("eng"),
+				timestamp_format: TimestampFormat::MS,
+				content_type: SyncTextContentType::Lyrics,
+				description: Some(String::from("Test Sync Text")),
+			},
+			content: vec![
+				(0, String::from("\nLofty")),
+				(10000, String::from("\nIs")),
+				(15000, String::from("\nReading")),
+				(30000, String::from("\nThis")),
+				(1_938_000, String::from("\nCorrectly")),
+			],
+		};
+
+		let encoded = to_encode.as_bytes().unwrap();
+
+		let expected_bytes =
+			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
+
+		assert_eq!(encoded, expected_bytes);
 	}
 }

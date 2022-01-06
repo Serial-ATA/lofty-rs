@@ -543,7 +543,7 @@ mod tests {
 			.unwrap(),
 		);
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
 		let mut reader = std::io::Cursor::new(&tag[..]);
 
 		let header = read_id3v2_header(&mut reader).unwrap();
@@ -554,7 +554,7 @@ mod tests {
 
 	#[test]
 	fn id3v2_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
 		let mut reader = std::io::Cursor::new(&tag[..]);
 
 		let header = read_id3v2_header(&mut reader).unwrap();
@@ -573,7 +573,8 @@ mod tests {
 
 	#[test]
 	fn id3v2_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v2");
+		let tag_bytes =
+			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 
