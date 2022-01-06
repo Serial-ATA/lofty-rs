@@ -17,6 +17,7 @@ pub struct GEOBInformation {
 }
 
 /// Allows for encapsulation of any file type inside an ID3v2 tag
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub struct GeneralEncapsulatedObject {
 	/// Information about the data
 	pub information: GEOBInformation,
@@ -64,32 +65,68 @@ impl GeneralEncapsulatedObject {
 	///
 	/// NOTE: This does not include a frame header
 	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut bytes = Vec::new();
-
 		let encoding = self.information.encoding;
 
-		bytes.extend([self.information.encoding as u8].iter());
+		let mut bytes = vec![encoding as u8];
 
 		if let Some(ref mime_type) = self.information.mime_type {
 			bytes.extend(mime_type.as_bytes())
-		} else {
-			bytes.extend([0].iter());
 		}
 
-		if let Some(ref file_name) = self.information.file_name {
-			bytes.extend(&*encode_text(file_name, encoding, true))
-		} else {
-			bytes.extend([0].iter());
-		}
+		bytes.push(0);
 
-		if let Some(ref descriptor) = self.information.descriptor {
-			bytes.extend(&*encode_text(descriptor, encoding, true))
-		} else {
-			bytes.extend([0].iter());
-		}
+		let file_name = self.information.file_name.as_deref();
+		bytes.extend(&*encode_text(file_name.unwrap_or(""), encoding, true));
+
+		let descriptor = self.information.descriptor.as_deref();
+		bytes.extend(&*encode_text(descriptor.unwrap_or(""), encoding, true));
 
 		bytes.extend(&self.data);
 
 		bytes
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::{GEOBInformation, GeneralEncapsulatedObject, TextEncoding};
+
+	#[test]
+	fn geob_decode() {
+		let expected = GeneralEncapsulatedObject {
+			information: GEOBInformation {
+				encoding: TextEncoding::Latin1,
+				mime_type: Some(String::from("audio/mpeg")),
+				file_name: Some(String::from("a.mp3")),
+				descriptor: Some(String::from("Test Asset")),
+			},
+			data: crate::tag_utils::test_utils::read_path("tests/files/assets/a.mp3"),
+		};
+
+		let cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
+
+		let parsed_geob = GeneralEncapsulatedObject::parse(&*cont).unwrap();
+
+		assert_eq!(parsed_geob, expected);
+	}
+
+	#[test]
+	fn geob_encode() {
+		let to_encode = GeneralEncapsulatedObject {
+			information: GEOBInformation {
+				encoding: TextEncoding::Latin1,
+				mime_type: Some(String::from("audio/mpeg")),
+				file_name: Some(String::from("a.mp3")),
+				descriptor: Some(String::from("Test Asset")),
+			},
+			data: crate::tag_utils::test_utils::read_path("tests/files/assets/a.mp3"),
+		};
+
+		let encoded = to_encode.as_bytes();
+
+		let expected_bytes =
+			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
+
+		assert_eq!(encoded, expected_bytes);
 	}
 }
