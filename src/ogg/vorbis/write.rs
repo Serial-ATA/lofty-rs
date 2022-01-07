@@ -36,7 +36,7 @@ pub(crate) fn write_to(
 	loop {
 		let p = Page::read(data, false)?;
 
-		if p.header_type != 1 {
+		if p.header_type() & 0x01 != 1 {
 			data.seek(SeekFrom::Start(p.start as u64))?;
 			data.read_to_end(&mut remaining)?;
 
@@ -44,7 +44,7 @@ pub(crate) fn write_to(
 			break;
 		}
 
-		c.write_all(&p.content)?;
+		c.write_all(p.content())?;
 	}
 
 	if !reached_md_end {
@@ -82,12 +82,12 @@ pub(crate) fn write_to(
 
 		if i == pages_len {
 			// Add back the framing bit
-			p.content.push(1);
+			p.extend(&[1]);
 
 			// The segment tables of current page and the setup header have to be combined
 			let mut seg_table = Vec::new();
-			seg_table.extend(p.segments().iter());
-			seg_table.extend(ogg_pager::segments(&*setup));
+			seg_table.append(&mut ogg_pager::segment_table(p.content().len())?);
+			seg_table.append(&mut ogg_pager::segment_table(setup.len())?);
 
 			let mut seg_table_len = seg_table.len();
 

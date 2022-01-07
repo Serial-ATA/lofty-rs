@@ -116,7 +116,7 @@ where
 	let first_page_abgp = first_page.abgp;
 
 	// Skip identification header
-	let first_page_content = &mut &first_page.content[7..];
+	let first_page_content = &mut &first_page.content()[7..];
 
 	let version = first_page_content.read_u32::<LittleEndian>()?;
 

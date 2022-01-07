@@ -97,7 +97,7 @@ where
 	let first_page_abgp = first_page.abgp;
 
 	// Skip identification header
-	let first_page_content = &mut &first_page.content[8..];
+	let first_page_content = &mut &first_page.content()[8..];
 
 	let version = first_page_content.read_u8()?;
 	let channels = first_page_content.read_u8()?;

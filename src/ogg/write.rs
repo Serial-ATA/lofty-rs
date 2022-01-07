@@ -1,4 +1,4 @@
-use super::{page_from_packet, verify_signature};
+use super::verify_signature;
 use crate::error::{LoftyError, Result};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
@@ -79,7 +79,9 @@ pub(super) fn create_pages(
 	writer.write_u32::<LittleEndian>(count)?;
 	writer.seek(SeekFrom::Start(packet_end))?;
 
-	page_from_packet(writer.get_mut())
+	// Stream serial is retrieved later
+	// Checksum is calculated later
+	Ok(ogg_pager::paginate(writer.get_ref(), 0, 0, 0))
 }
 
 #[cfg(feature = "vorbis_comments")]
@@ -95,7 +97,7 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 	verify_signature(&first_md_page, sig)?;
 
 	// Retain the file's vendor string
-	let md_reader = &mut &first_md_page.content[sig.len()..];
+	let md_reader = &mut &first_md_page.content()[sig.len()..];
 
 	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
 	let mut vendor = vec![0; vendor_len as usize];
@@ -114,7 +116,7 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 			super::vorbis::write::write_to(
 				data,
 				&mut writer,
-				first_md_page.content,
+				first_md_page.take_content(),
 				ser,
 				&mut pages,
 			)?;

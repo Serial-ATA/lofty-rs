@@ -12,12 +12,11 @@ pub(crate) fn write_to(
 	pages: &mut [Page],
 ) -> Result<()> {
 	let reached_md_end: bool;
-	let mut remaining = Vec::new();
 
 	loop {
 		let p = Page::read(data, true)?;
 
-		if p.header_type != 1 {
+		if p.header_type() & 0x01 != 0x01 {
 			data.seek(SeekFrom::Start(p.start as u64))?;
 			reached_md_end = true;
 			break;
@@ -28,6 +27,7 @@ pub(crate) fn write_to(
 		return Err(LoftyError::Opus("File ends with comment header"));
 	}
 
+	let mut remaining = Vec::new();
 	data.read_to_end(&mut remaining)?;
 
 	for mut p in pages.iter_mut() {

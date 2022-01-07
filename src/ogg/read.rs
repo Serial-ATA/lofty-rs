@@ -69,15 +69,15 @@ where
 
 	let mut md_pages: Vec<u8> = Vec::new();
 
-	md_pages.extend(md_page.content[comment_sig.len()..].iter());
+	md_pages.extend(md_page.content()[comment_sig.len()..].iter());
 
 	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
 			return Err(LoftyError::TooMuchData);
 		}
 
-		if page.header_type == 1 {
-			md_pages.extend(page.content.iter());
+		if page.header_type() & 0x01 == 1 {
+			md_pages.extend(page.content().iter());
 		} else {
 			data.seek(SeekFrom::Start(page.start))?;
 			break;
