@@ -1,8 +1,10 @@
 use std::error::Error;
 use std::fmt;
 
+/// Alias for `Result<T, PageError>`
 pub type Result<T> = std::result::Result<T, PageError>;
 
+/// Errors that can occur while performing `Page` operations
 #[derive(Debug)]
 pub enum PageError {
 	/// The reader contains a page with a nonzero version
@@ -11,6 +13,8 @@ pub enum PageError {
 	BadSegmentCount,
 	/// The reader contains a page without a magic signature (OggS)
 	MissingMagic,
+	/// The reader contains too much data for a single page
+	TooMuchData,
 	/// Any std::io::Error
 	Io(std::io::Error),
 }
@@ -23,7 +27,8 @@ impl fmt::Display for PageError {
 			},
 			PageError::BadSegmentCount => write!(f, "Page has a segment count < 1"),
 			PageError::MissingMagic => write!(f, "Page is missing a magic signature"),
-			PageError::Io(..) => write!(f, "Encountered an std::io::Error"),
+			PageError::TooMuchData => write!(f, "Too much data was provided"),
+			PageError::Io(err) => write!(f, "{}", err),
 		}
 	}
 }
