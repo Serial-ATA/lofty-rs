@@ -3,6 +3,7 @@ use crate::{LoftyError, Result};
 use {crate::id3::v2::util::text_utils::TextEncoding, crate::id3::v2::Id3v2Version};
 
 use std::borrow::Cow;
+use std::fmt::{Debug, Formatter};
 #[cfg(any(feature = "vorbis_comments", feature = "ape", feature = "id3v2"))]
 use std::io::Cursor;
 use std::io::Read;
@@ -439,7 +440,7 @@ impl PictureInformation {
 }
 
 /// Represents a picture.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Picture {
 	/// The picture type according to ID3v2 APIC
 	pub(crate) pic_type: PictureType,
@@ -449,6 +450,17 @@ pub struct Picture {
 	pub(crate) description: Option<Cow<'static, str>>,
 	/// The binary data of the picture
 	pub(crate) data: Cow<'static, [u8]>,
+}
+
+impl Debug for Picture {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Picture")
+			.field("pic_type", &self.pic_type)
+			.field("mime_type", &self.mime_type)
+			.field("description", &self.description)
+			.field("data", &format!("<{} bytes>", self.data.len()))
+			.finish()
+	}
 }
 
 impl Picture {

@@ -446,9 +446,20 @@ impl<'a> Into<Id3v2TagRef<'a>> for &'a Id3v2Tag {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{
-		read_id3v2_header, Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding,
+		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, Id3v2Tag, Id3v2Version,
+		LanguageFrame, TextEncoding,
 	};
-	use crate::{Tag, TagType};
+	use crate::tag_utils::test_utils::read_path;
+	use crate::{MimeType, Picture, PictureType, Tag, TagType};
+
+	fn read_tag(path: &str) -> Id3v2Tag {
+		let tag_bytes = crate::tag_utils::test_utils::read_path(path);
+
+		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
+
+		let header = read_id3v2_header(&mut reader).unwrap();
+		crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap()
+	}
 
 	#[test]
 	fn parse_id3v2() {
@@ -543,22 +554,14 @@ mod tests {
 			.unwrap(),
 		);
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
-		let mut reader = std::io::Cursor::new(&tag[..]);
-
-		let header = read_id3v2_header(&mut reader).unwrap();
-		let parsed_tag = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
 	#[test]
 	fn id3v2_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
-		let mut reader = std::io::Cursor::new(&tag[..]);
-
-		let header = read_id3v2_header(&mut reader).unwrap();
-		let parsed_tag = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
@@ -573,13 +576,7 @@ mod tests {
 
 	#[test]
 	fn id3v2_to_tag() {
-		let tag_bytes =
-			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.id3v24");
-
-		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
-
-		let header = read_id3v2_header(&mut reader).unwrap();
-		let id3v2 = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+		let id3v2 = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
 		let tag: Tag = id3v2.into();
 
@@ -625,5 +622,117 @@ mod tests {
 
 		verify_frame(&id3v2_tag, "TRCK", "1");
 		verify_frame(&id3v2_tag, "TCON", "Classical");
+	}
+
+	#[allow(clippy::field_reassign_with_default)]
+	fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
+		let mut tag = Id3v2Tag::default();
+		tag.original_version = version;
+
+		let encoding = TextEncoding::UTF16;
+		let flags = FrameFlags::default();
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TIT2")),
+			value: FrameValue::Text {
+				encoding,
+				value: String::from("TempleOS Hymn Risen (Remix)"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TPE1")),
+			value: FrameValue::Text {
+				encoding,
+				value: String::from("Dave Eddy"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TRCK")),
+			value: FrameValue::Text {
+				encoding: TextEncoding::Latin1,
+				value: String::from("1"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TALB")),
+			value: FrameValue::Text {
+				encoding,
+				value: String::from("Summer"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TDRC")),
+			value: FrameValue::Text {
+				encoding,
+				value: String::from("2017"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TCON")),
+			value: FrameValue::Text {
+				encoding,
+				value: String::from("Electronic"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("TLEN")),
+			value: FrameValue::Text {
+				encoding: TextEncoding::UTF16,
+				value: String::from("213017"),
+			},
+			flags,
+		});
+
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("APIC")),
+			value: FrameValue::Picture {
+				encoding: TextEncoding::Latin1,
+				picture: Picture {
+					pic_type: PictureType::CoverFront,
+					mime_type: MimeType::Png,
+					description: None,
+					data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
+				},
+			},
+			flags,
+		});
+
+		tag
+	}
+
+	#[test]
+	fn id3v24_full() {
+		let tag = create_full_test_tag(Id3v2Version::V4);
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v24");
+
+		assert_eq!(tag, parsed_tag);
+	}
+
+	#[test]
+	fn id3v23_full() {
+		let tag = create_full_test_tag(Id3v2Version::V3);
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
+
+		assert_eq!(tag, parsed_tag);
+	}
+
+	#[test]
+	fn id3v22_full() {
+		let tag = create_full_test_tag(Id3v2Version::V2);
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v22");
+
+		assert_eq!(tag, parsed_tag);
 	}
 }
