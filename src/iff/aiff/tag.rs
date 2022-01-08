@@ -499,20 +499,14 @@ mod tests {
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
 		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
 		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));
-		tag.insert_item_unchecked(
-			TagItem::new(
-				ItemKey::Comment,
-				ItemValue::Text(String::from("Qux annotation")),
-			),
-			false,
-		);
-		tag.insert_item_unchecked(
-			TagItem::new(
-				ItemKey::Comment,
-				ItemValue::Text(String::from("Quux annotation")),
-			),
-			false,
-		);
+		tag.push_item_unchecked(TagItem::new(
+			ItemKey::Comment,
+			ItemValue::Text(String::from("Qux annotation")),
+		));
+		tag.push_item_unchecked(TagItem::new(
+			ItemKey::Comment,
+			ItemValue::Text(String::from("Quux annotation")),
+		));
 
 		let aiff_text: AiffTextChunks = tag.into();
 

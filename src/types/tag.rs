@@ -44,7 +44,7 @@ macro_rules! impl_accessor {
 					}
 
 					fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)), false);
+						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
 					}
 
 					fn [<remove_ $name>](&mut self) {
@@ -199,46 +199,64 @@ impl Tag {
 		None
 	}
 
-	/// Insert a [`TagItem`]
-	///
-	/// Use `replace` to replace any existing items of the same [`ItemKey`].
-	/// Multiple items of the same [`ItemKey`] are not valid in all formats, in which case
-	/// the first available item will be used.
+	/// Insert a [`TagItem`], replacing any existing one of the same [`ItemKey`]
 	///
 	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// This will return `true` if the item was inserted.
-	pub fn insert_item(&mut self, item: TagItem, replace: bool) -> bool {
+	pub fn insert_item(&mut self, item: TagItem) -> bool {
 		if item.re_map(self.tag_type) {
-			self.insert_item_unchecked(item, replace);
+			self.insert_item_unchecked(item);
 			return true;
 		}
 
 		false
 	}
 
-	/// Insert a [`TagItem`], replacing any existing one of the same type
+	/// Insert a [`TagItem`], replacing any existing one of the same [`ItemKey`]
 	///
 	/// Notes:
 	///
-	/// * `replace`: See [`Tag::insert_item`]
 	/// * This **will not** verify an [`ItemKey`] mapping exists
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
 	/// This is only necessary if dealing with [`ItemKey::Unknown`].
-	pub fn insert_item_unchecked(&mut self, item: TagItem, replace: bool) {
-		if replace {
-			self.retain_items(|i| i.item_key != item.item_key);
+	pub fn insert_item_unchecked(&mut self, item: TagItem) {
+		self.retain_items(|i| i.item_key != item.item_key);
+		self.items.push(item);
+	}
+
+	/// Append a [`TagItem`] to the tag
+	///
+	/// This will not remove any items of the same [`ItemKey`], unlike [`Tag::insert_item`]
+	///
+	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
+	///
+	/// Multiple items of the same [`ItemKey`] are not valid in all formats, in which case
+	/// the first available item will be used.
+	///
+	/// This will return `true` if the item was pushed.
+	pub fn push_item(&mut self, item: TagItem) -> bool {
+		if item.re_map(self.tag_type) {
+			self.items.push(item);
+			return true;
 		}
 
+		false
+	}
+
+	/// Append a [`TagItem`] to the tag
+	///
+	/// Notes: See [`Tag::insert_item_unchecked`]
+	pub fn push_item_unchecked(&mut self, item: TagItem) {
 		self.items.push(item);
 	}
 
 	/// An alias for [`Tag::insert_item`] that doesn't require the user to create a [`TagItem`]
 	///
-	/// NOTE: This will call [`Tag::insert_text`] with `replace` = `false`
+	/// NOTE: This will replace any existing item with `item_key`. See [`Tag::insert_item`]
 	pub fn insert_text(&mut self, item_key: ItemKey, text: String) -> bool {
-		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)), false)
+		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)))
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and returns them

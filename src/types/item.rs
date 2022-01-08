@@ -65,9 +65,10 @@ gen_map!(
 	#[cfg(feature = "aiff_text_chunks")]
 	AIFF_TEXT_MAP;
 
-	"NAME" => TrackTitle,
-	"AUTH" => TrackArtist,
-	"(c) " => CopyrightMessage
+	"NAME" 			=> TrackTitle,
+	"AUTH" 			=> TrackArtist,
+	"(c) " 			=> CopyrightMessage,
+	"COMM" | "AUTH" => Comment
 );
 
 gen_map!(
