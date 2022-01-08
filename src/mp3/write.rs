@@ -4,7 +4,10 @@ use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::{
+	tag::{tag_frames, Id3v2TagRef},
+	Id3v2TagFlags,
+};
 #[allow(unused_imports)]
 use crate::types::tag::{Tag, TagType};
 
@@ -18,7 +21,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		#[cfg(feature = "id3v1")]
 		TagType::Id3v1 => Into::<Id3v1TagRef>::into(tag).write_to(data),
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => Into::<Id3v2TagRef>::into(tag).write_to(data),
+		TagType::Id3v2 => Id3v2TagRef::new(Id3v2TagFlags::default(), tag_frames(tag)).write_to(data),
 		_ => Err(LoftyError::UnsupportedTag),
 	}
 }

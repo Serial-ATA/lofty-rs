@@ -4,6 +4,7 @@ mod frame;
 use super::Id3v2TagFlags;
 use crate::error::{LoftyError, Result};
 use crate::id3::find_id3v2;
+use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::synch_u32;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::probe::Probe;
@@ -12,24 +13,29 @@ use crate::types::file::FileType;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use byteorder::{BigEndian, ByteOrder, LittleEndian, WriteBytesExt};
+use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> {
+pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
+	data: &mut File,
+	tag: &mut Id3v2TagRef<'a, I>,
+) -> Result<()> {
 	let probe = Probe::new(data).guess_file_type()?;
+	let file_type = probe.file_type();
 
-	match probe.file_type() {
+	let data = probe.into_inner();
+
+	match file_type {
 		Some(FileType::APE | FileType::MP3) => {},
+		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		Some(FileType::WAV) => {
-			return write_id3v2_to_chunk_file::<LittleEndian>(probe.into_inner(), tag)
+			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?)
 		},
 		Some(FileType::AIFF) => {
-			return write_id3v2_to_chunk_file::<BigEndian>(probe.into_inner(), tag)
+			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?)
 		},
 		_ => return Err(LoftyError::UnsupportedTag),
 	}
-
-	let data = probe.into_inner();
 
 	let id3v2 = create_tag(tag)?;
 
@@ -48,19 +54,9 @@ pub(crate) fn write_id3v2(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()> 
 	Ok(())
 }
 
-// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-fn write_id3v2_to_chunk_file<B>(data: &mut File, tag: &mut Id3v2TagRef) -> Result<()>
-where
-	B: ByteOrder,
-{
-	let id3v2 = create_tag(tag)?;
-
-	chunk_file::write_to_chunk_file::<B>(data, &id3v2)?;
-
-	Ok(())
-}
-
-pub(super) fn create_tag(tag: &mut Id3v2TagRef) -> Result<Vec<u8>> {
+pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
+	tag: &mut Id3v2TagRef<'a, I>,
+) -> Result<Vec<u8>> {
 	let frames = &mut tag.frames;
 	let mut peek = frames.peekable();
 

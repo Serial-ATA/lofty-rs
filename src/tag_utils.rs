@@ -4,7 +4,10 @@ use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::{
+	tag::{tag_frames, Id3v2TagRef},
+	Id3v2TagFlags,
+};
 #[cfg(feature = "aiff_text_chunks")]
 use crate::iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
@@ -52,7 +55,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		#[cfg(feature = "id3v1")]
 		TagType::Id3v1 => Into::<Id3v1TagRef>::into(tag).dump_to(writer),
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => Into::<Id3v2TagRef>::into(tag).dump_to(writer),
+		TagType::Id3v2 => Id3v2TagRef::new(Id3v2TagFlags::default(), tag_frames(tag)).dump_to(writer),
 		#[cfg(feature = "mp4_ilst")]
 		TagType::Mp4Ilst => Into::<IlstRef>::into(tag).dump_to(writer),
 		#[cfg(feature = "vorbis_comments")]

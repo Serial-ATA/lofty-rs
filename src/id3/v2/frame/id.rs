@@ -49,8 +49,13 @@ impl TryFrom<ItemKey> for FrameID {
 
 	fn try_from(value: ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
 		match value {
-			ItemKey::Unknown(unknown) if unknown.len() == 4 && unknown.is_ascii() => {
-				Ok(Self::Valid(unknown.to_ascii_uppercase()))
+			ItemKey::Unknown(unknown)
+				if unknown.len() == 4
+					&& unknown
+						.chars()
+						.all(|c| ('A'..='Z').contains(&c) || ('0'..='9').contains(&c)) =>
+			{
+				Ok(Self::Valid(unknown))
 			},
 			k => k.map_key(TagType::Id3v2, false).map_or(
 				Err(LoftyError::Id3v2(

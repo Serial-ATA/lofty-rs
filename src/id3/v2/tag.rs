@@ -283,7 +283,8 @@ impl Id3v2Tag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
-		Into::<Id3v2TagRef>::into(self).write_to(file)
+		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
+			.write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -292,7 +293,8 @@ impl Id3v2Tag {
 	///
 	/// * [`std::io::Error`]
 	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
-		Into::<Id3v2TagRef>::into(self).dump_to(writer)
+		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
+			.dump_to(writer)
 	}
 }
 
@@ -384,7 +386,7 @@ impl From<Tag> for Id3v2Tag {
 				Err(_) => continue,
 			};
 
-			id3v2_tag.frames.push(frame);
+			id3v2_tag.insert(frame);
 		}
 
 		for picture in input.pictures {
@@ -402,12 +404,26 @@ impl From<Tag> for Id3v2Tag {
 	}
 }
 
-pub(crate) struct Id3v2TagRef<'a> {
+pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
 	pub(crate) flags: Id3v2TagFlags,
-	pub(crate) frames: Box<dyn Iterator<Item = FrameRef<'a>> + 'a>,
+	pub(crate) frames: I,
 }
 
-impl<'a> Id3v2TagRef<'a> {
+// Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
+pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
+	tag.items()
+		.iter()
+		.map(TryInto::<FrameRef>::try_into)
+		.filter_map(Result::ok)
+}
+
+impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
+	pub(crate) fn new(flags: Id3v2TagFlags, frames: I) -> Self {
+		Self { flags, frames }
+	}
+}
+
+impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_id3v2(file, self)
 	}
@@ -417,29 +433,6 @@ impl<'a> Id3v2TagRef<'a> {
 		writer.write_all(&*temp)?;
 
 		Ok(())
-	}
-}
-
-impl<'a> Into<Id3v2TagRef<'a>> for &'a Tag {
-	fn into(self) -> Id3v2TagRef<'a> {
-		Id3v2TagRef {
-			flags: Id3v2TagFlags::default(),
-			frames: Box::new(
-				self.items()
-					.iter()
-					.map(TryInto::<FrameRef>::try_into)
-					.filter_map(Result::ok),
-			),
-		}
-	}
-}
-
-impl<'a> Into<Id3v2TagRef<'a>> for &'a Id3v2Tag {
-	fn into(self) -> Id3v2TagRef<'a> {
-		Id3v2TagRef {
-			flags: self.flags,
-			frames: Box::new(self.frames.iter().filter_map(Frame::as_opt_ref)),
-		}
 	}
 }
 
