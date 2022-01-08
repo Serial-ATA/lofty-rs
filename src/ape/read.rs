@@ -8,7 +8,7 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{read::parse_id3v2, tag::Id3v2Tag};
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -32,7 +32,7 @@ where
 
 	// ID3v2 tags are unsupported in APE files, but still possible
 	#[allow(unused_variables)]
-	if let (Some(header), Some(content)) = find_id3v2(data, true)? {
+	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
 		stream_len -= u64::from(header.size);
 
 		// Exclude the footer
@@ -103,9 +103,9 @@ where
 	// Starts with ['T', 'A', 'G']
 	// Exactly 128 bytes long (including the identifier)
 	#[allow(unused_variables)]
-	let (found_id3v1, id3v1) = find_id3v1(data, true)?;
+	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(data, true)?;
 
-	if found_id3v1 {
+	if id3v1_header.is_some() {
 		stream_len -= 128;
 		#[cfg(feature = "id3v1")]
 		{
@@ -114,9 +114,9 @@ where
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
-	let (found_lyrics3v1, lyrics3v2_size) = find_lyrics3v2(data)?;
+	let ID3FindResults(lyrics3_header, lyrics3v2_size) = find_lyrics3v2(data)?;
 
-	if found_lyrics3v1 {
+	if lyrics3_header.is_some() {
 		stream_len -= u64::from(lyrics3v2_size)
 	}
 

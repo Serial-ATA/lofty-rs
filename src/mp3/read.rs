@@ -7,7 +7,7 @@ use crate::error::{LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
-use crate::id3::{find_id3v1, find_lyrics3v2};
+use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -94,10 +94,10 @@ where
 	}
 
 	#[allow(unused_variables)]
-	let (found_id3v1, id3v1) = find_id3v1(reader, true)?;
+	let ID3FindResults(header, id3v1) = find_id3v1(reader, true)?;
 
 	#[cfg(feature = "id3v1")]
-	if found_id3v1 {
+	if header.is_some() {
 		file.id3v1_tag = id3v1;
 	}
 
