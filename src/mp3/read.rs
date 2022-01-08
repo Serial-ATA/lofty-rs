@@ -1,6 +1,7 @@
 use super::header::{verify_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::ape::constants::APE_PREAMBLE;
+#[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
 use crate::ape::tag::read_ape_header;
 use crate::error::{LoftyError, Result};
@@ -67,7 +68,7 @@ where
 					#[cfg(not(feature = "ape"))]
 					{
 						let size = ape_header.size;
-						data.seek(SeekFrom::Current(size as i64))?;
+						reader.seek(SeekFrom::Current(size as i64))?;
 					}
 
 					#[cfg(feature = "ape")]

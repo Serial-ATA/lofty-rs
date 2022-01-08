@@ -744,6 +744,7 @@ impl Picture {
 		}
 	}
 
+	#[cfg(feature = "vorbis_comments")]
 	fn from_flac_bytes_inner(content: &[u8]) -> Result<(Self, PictureInformation)> {
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);

@@ -3,7 +3,6 @@
 //! ID3 does things differently than other tags, making working with them a little more effort than other formats.
 //! Check the other modules for important notes and/or warnings.
 
-#[cfg(feature = "id3v1")]
 pub mod v1;
 pub mod v2;
 
@@ -43,10 +42,15 @@ where
 	Ok(ID3FindResults(header, size))
 }
 
+#[cfg(feature = "id3v1")]
+pub(crate) type FindID3v1Content = Option<v1::tag::Id3v1Tag>;
+#[cfg(not(feature = "id3v1"))]
+pub(crate) type FindID3v1Content = Option<()>;
+
 pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
-) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>
+) -> Result<ID3FindResults<(), FindID3v1Content>>
 where
 	R: Read + Seek,
 {
@@ -63,6 +67,7 @@ where
 	if &id3v1_header == b"TAG" {
 		header = Some(());
 
+		#[cfg(feature = "id3v1")]
 		if read {
 			let mut id3v1_tag = [0; 128];
 			data.read_exact(&mut id3v1_tag)?;

@@ -1,6 +1,6 @@
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::{LoftyError, Result};
-use crate::id3::v1::GENRES;
+use crate::id3::v1::constants::GENRES;
 use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::read::skip_unneeded;
