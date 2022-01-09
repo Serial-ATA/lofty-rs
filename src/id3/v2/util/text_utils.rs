@@ -21,7 +21,7 @@ pub enum TextEncoding {
 }
 
 impl TextEncoding {
-	/// Get a TextEncoding from a u8, must be 0-3 inclusive
+	/// Get a `TextEncoding` from a u8, must be 0-3 inclusive
 	#[allow(unused)]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {

@@ -60,16 +60,16 @@ macro_rules! impl_accessor {
 /// ## Pictures
 ///
 /// Unlike other formats, ilst does not store a [`PictureType`]. All pictures will have
-/// [PictureType::Other].
+/// [`PictureType::Other`].
 ///
 /// ## Conversions
 ///
 /// ### To `Tag`
 ///
-/// When converting to [`Tag`], only atoms with a value of [AtomData::UTF8] and [AtomData::UTF16], as
+/// When converting to [`Tag`], only atoms with a value of [`AtomData::UTF8`] and [`AtomData::UTF16`], as
 /// well as pictures, will be preserved.
 ///
-/// Do note, all pictures will be [PictureType::Other](crate::PictureType::Other)
+/// Do note, all pictures will be [`PictureType::Other`](crate::PictureType::Other)
 ///
 /// ### From `Tag`
 ///

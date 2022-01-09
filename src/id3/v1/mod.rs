@@ -2,7 +2,7 @@
 //!
 //! # ID3v1 notes
 //!
-//! See also: [Id3v1Tag]
+//! See also: [`Id3v1Tag`]
 //!
 //! ## Genres
 //!

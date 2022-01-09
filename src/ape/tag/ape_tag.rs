@@ -54,19 +54,19 @@ macro_rules! impl_accessor {
 ///
 /// ## Item storage
 ///
-/// `APE` isn't a very strict format. An [ApeItem] only restricted by its name, meaning it can use
+/// `APE` isn't a very strict format. An [`ApeItem`] only restricted by its name, meaning it can use
 /// a normal [`ItemValue`](crate::ItemValue) unlike other formats.
 ///
 /// Pictures are stored as [`ItemValue::Binary`](crate::ItemValue::Binary), and can be converted with
 /// [`Picture::from_ape_bytes`](crate::Picture::from_ape_bytes). For the appropriate item keys, see
-/// [APE_PICTURE_TYPES](crate::ape::APE_PICTURE_TYPES).
+/// [`APE_PICTURE_TYPES`](crate::ape::APE_PICTURE_TYPES).
 ///
 /// ## Conversions
 ///
 /// ### From `Tag`
 ///
 /// When converting pictures, any of type [`PictureType::Undefined`](crate::PictureType::Undefined) will be discarded.
-/// For items, see [ApeItem::new].
+/// For items, see [`ApeItem::new`].
 pub struct ApeTag {
 	/// Whether or not to mark the tag as read only
 	pub read_only: bool,

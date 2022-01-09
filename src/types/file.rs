@@ -56,14 +56,14 @@ pub struct TaggedFile {
 impl TaggedFile {
 	/// Returns the primary tag
 	///
-	/// See [FileType::primary_tag_type]
+	/// See [`FileType::primary_tag_type`]
 	pub fn primary_tag(&self) -> Option<&Tag> {
 		self.tag(&self.primary_tag_type())
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
-	/// See [FileType::primary_tag_type]
+	/// See [`FileType::primary_tag_type`]
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tag_mut(&self.primary_tag_type())
 	}
@@ -71,7 +71,7 @@ impl TaggedFile {
 	#[allow(unreachable_patterns, clippy::match_same_arms)]
 	/// Returns the file type's primary [`TagType`]
 	///
-	/// See [FileType::primary_tag_type]
+	/// See [`FileType::primary_tag_type`]
 	pub fn primary_tag_type(&self) -> TagType {
 		self.ty.primary_tag_type()
 	}
@@ -141,7 +141,7 @@ impl TaggedFile {
 	///
 	/// # Errors
 	///
-	/// See [TaggedFile::save_to]
+	/// See [`TaggedFile::save_to`]
 	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
 		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
@@ -215,7 +215,7 @@ impl FileType {
 		}
 	}
 
-	/// Returns if the target FileType supports a [`TagType`]
+	/// Returns if the target `FileType` supports a [`TagType`]
 	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
 		match self {
 			#[cfg(feature = "id3v2")]

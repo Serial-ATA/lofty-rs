@@ -59,14 +59,14 @@ macro_rules! impl_accessor {
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
-/// This is a tag that is loosely bound to a specific [TagType].
+/// This is a tag that is loosely bound to a specific [`TagType`].
 /// It is used for conversions and as the return type for [`read_from`](crate::read_from).
 ///
 /// Compared to other formats, this gives a much higher-level view of the
 /// tag items. Rather than storing items according to their format-specific
 /// keys, [`ItemKey`]s are used.
 ///
-/// You can easily remap this to another [TagType] with [Tag::re_map].
+/// You can easily remap this to another [`TagType`] with [`Tag::re_map`].
 ///
 /// Any conversion will, of course, be lossy to a varying degree.
 ///

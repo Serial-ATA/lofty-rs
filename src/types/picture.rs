@@ -80,7 +80,7 @@ impl ToString for MimeType {
 
 impl MimeType {
 	#[allow(clippy::should_implement_trait)]
-	/// Get a MimeType from a string
+	/// Get a `MimeType` from a string
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
 			"image/jpeg" => Self::Jpeg,
@@ -93,7 +93,7 @@ impl MimeType {
 		}
 	}
 
-	/// Get a &str from a MimeType
+	/// Get a &str from a `MimeType`
 	pub fn as_str(&self) -> &str {
 		match self {
 			MimeType::Jpeg => "image/jpeg",
@@ -138,7 +138,7 @@ pub enum PictureType {
 impl PictureType {
 	// ID3/OGG specific methods
 
-	/// Get a u8 from a PictureType according to ID3v2 APIC
+	/// Get a u8 from a `PictureType` according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
 	pub fn as_u8(&self) -> u8 {
 		match self {
@@ -167,7 +167,7 @@ impl PictureType {
 		}
 	}
 
-	/// Get a PictureType from a u8 according to ID3v2 APIC
+	/// Get a `PictureType` from a u8 according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
 	pub fn from_u8(bytes: u8) -> Self {
 		match bytes {
@@ -198,7 +198,7 @@ impl PictureType {
 
 	// APE specific methods
 
-	/// Get an APE item key from a PictureType
+	/// Get an APE item key from a `PictureType`
 	#[cfg(feature = "ape")]
 	pub fn as_ape_key(&self) -> Option<&str> {
 		match self {
@@ -227,7 +227,7 @@ impl PictureType {
 		}
 	}
 
-	/// Get a PictureType from an APE item key
+	/// Get a `PictureType` from an APE item key
 	#[cfg(feature = "ape")]
 	pub fn from_ape_key(key: &str) -> Self {
 		match key {

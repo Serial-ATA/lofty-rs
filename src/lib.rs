@@ -143,7 +143,6 @@
 	clippy::match_wildcard_for_single_variants,
 	clippy::semicolon_if_nothing_returned,
 	clippy::new_without_default,
-	clippy::unused_self,
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
 	clippy::too_many_arguments,

@@ -48,10 +48,10 @@ pub struct Comment {
 ///
 /// When converting from [`Tag`](crate::Tag), the following [`ItemKey`](crate::ItemKey)s will be used:
 ///
-/// * [ItemKey::TrackTitle](crate::ItemKey::TrackTitle)
-/// * [ItemKey::TrackArtist](crate::ItemKey::TrackArtist)
-/// * [ItemKey::CopyrightMessage](crate::ItemKey::CopyrightMessage)
-/// * [ItemKey::Comment](crate::ItemKey::Comment)
+/// * [`ItemKey::TrackTitle`](crate::ItemKey::TrackTitle)
+/// * [`ItemKey::TrackArtist`](crate::ItemKey::TrackArtist)
+/// * [`ItemKey::CopyrightMessage`](crate::ItemKey::CopyrightMessage)
+/// * [`ItemKey::Comment`](crate::ItemKey::Comment)
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
 #[derive(Default, Clone, Debug, PartialEq)]

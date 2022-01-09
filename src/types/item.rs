@@ -356,7 +356,7 @@ macro_rules! gen_item_keys {
 		}
 
 		impl ItemKey {
-			/// Map a format specific key to an ItemKey
+			/// Map a format specific key to an `ItemKey`
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
