@@ -8,6 +8,8 @@ description = "Audio metadata library"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 keywords = ["tags", "audio", "metadata", "id3", "vorbis"]
 categories = ["accessibility", "multimedia::audio"]
+readme = "README.md"
+include = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT"]
 
 [dependencies]
 # ID3 compressed frames
