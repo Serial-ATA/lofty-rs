@@ -1,5 +1,5 @@
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::frame::{FrameFlags, FrameRef};
+use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
 use crate::id3::v2::synch_u32;
 
 use std::io::Write;
@@ -14,12 +14,40 @@ where
 	W: Write,
 {
 	for frame in frames {
+		verify_frame(&frame)?;
 		let value = frame.value.as_bytes()?;
 
 		write_frame(writer, frame.id, frame.flags, &value)?;
 	}
 
 	Ok(())
+}
+
+fn verify_frame(frame: &FrameRef) -> Result<()> {
+	match (frame.id, frame.value.as_ref()) {
+		("APIC", FrameValue::Picture { .. })
+		| ("USLT", FrameValue::UnSyncText(_))
+		| ("COMM", FrameValue::Comment(_))
+		| ("TXXX", FrameValue::UserText(_))
+		| ("WXXX", FrameValue::UserURL(_))
+		| (_, FrameValue::Binary(_))
+		| ("WFED" | "GRP1", FrameValue::Text { .. }) => Ok(()),
+		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
+		(id, FrameValue::URL(_)) if id.starts_with('W') => Ok(()),
+		(id, frame_value) => Err(LoftyError::BadFrame(
+			id.to_string(),
+			match frame_value {
+				FrameValue::Comment(_) => "Comment",
+				FrameValue::UnSyncText(_) => "UnSyncText",
+				FrameValue::Text { .. } => "Text",
+				FrameValue::UserText(_) => "UserText",
+				FrameValue::URL(_) => "URL",
+				FrameValue::UserURL(_) => "UserURL",
+				FrameValue::Picture { .. } => "Picture",
+				FrameValue::Binary(_) => "Binary",
+			},
+		)),
+	}
 }
 
 fn write_frame<W>(writer: &mut W, name: &str, flags: FrameFlags, value: &[u8]) -> Result<()>

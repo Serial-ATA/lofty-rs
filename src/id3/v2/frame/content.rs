@@ -117,7 +117,7 @@ pub(super) fn parse_content(
 		"TXXX" => parse_user_defined(content, false)?,
 		"WXXX" => parse_user_defined(content, true)?,
 		"COMM" | "USLT" => parse_text_language(content, id)?,
-		_ if id.starts_with('T') || id == "WFED" => parse_text(content)?,
+		_ if id.starts_with('T') => parse_text(content)?,
 		// Apple proprietary frames
 		"WFED" | "GRP1" => parse_text(content)?,
 		_ if id.starts_with('W') => parse_link(content)?,

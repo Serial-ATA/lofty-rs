@@ -49,6 +49,9 @@ pub enum LoftyError {
 	#[cfg(feature = "id3v2")]
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,
+	#[cfg(feature = "id3v2")]
+	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
+	BadFrame(String, &'static str),
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
 
@@ -131,6 +134,12 @@ impl Display for LoftyError {
 			),
 			#[cfg(feature = "id3v2")]
 			LoftyError::BadSyncText => write!(f, "ID3v2: Encountered invalid data in SYLT frame"),
+			#[cfg(feature = "id3v2")]
+			LoftyError::BadFrame(frame_id, frame_value) => write!(
+				f,
+				"ID3v2: Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
+				frame_id, frame_value
+			),
 			LoftyError::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
 
 			// Files

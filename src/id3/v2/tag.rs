@@ -282,6 +282,7 @@ impl Id3v2Tag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
+	/// * Attempting to write an invalid [`FrameID`]/[`FrameValue`] pairing
 	pub fn write_to(&self, file: &mut File) -> Result<()> {
 		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
 			.write_to(file)
@@ -574,6 +575,26 @@ mod tests {
 		let tag: Tag = id3v2.into();
 
 		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn fail_write_bad_frame() {
+		let mut tag = Id3v2Tag::default();
+		tag.insert(Frame {
+			id: FrameID::Valid(String::from("ABCD")),
+			value: FrameValue::URL(String::from("FOO URL")),
+			flags: Default::default(),
+		});
+
+		let res = tag.dump_to(&mut Vec::<u8>::new());
+
+		assert!(res.is_err());
+		assert_eq!(
+			res.unwrap_err().to_string(),
+			String::from(
+				"ID3v2: Attempted to write an invalid frame. ID: \"ABCD\", Value: \"URL\""
+			)
+		);
 	}
 
 	#[test]
