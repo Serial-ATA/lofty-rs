@@ -22,7 +22,8 @@ fn read() {
 #[test]
 fn read_with_junk_bytes_between_frames() {
 	// Read a file that includes an ID3v2.3 data block followed by four bytes of junk data (0x20)
-	let file = lofty::read_from_path("tests/files/assets/b.mp3", true).unwrap();
+	let file =
+		lofty::read_from_path("tests/files/assets/junk_between_id3_and_mp3.mp3", true).unwrap();
 
 	// note that the file contains ID3v2 and ID3v1 data
 	assert_eq!(file.file_type(), &FileType::MP3);
