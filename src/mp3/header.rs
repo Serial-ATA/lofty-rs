@@ -18,7 +18,6 @@ pub(crate) fn search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<
 where
 	R: Read,
 {
-	let mut index = 0u64;
 	let mut iterator = input.bytes();
 	let mut buffer = [0u8; 2];
 	// Read the first byte, as each iteration expects that buffer 0 was set from a previous iteration.
@@ -29,15 +28,14 @@ where
 	// create a stream of overlapping 2 byte pairs
 	// example: [0x01, 0x02, 0x03, 0x04] should be analyzed as
 	// [0x01, 0x02], [0x02, 0x03], [0x03, 0x04]
-	while let Some(byte) = iterator.next() {
+	for (index, byte) in iterator.enumerate() {
 		buffer[1] = byte?;
 		// check the two bytes in the buffer
 		if verify_frame_sync(buffer) {
-			return Ok(Some(index));
+			return Ok(Some(index as u64));
 		}
 		// if they do not match, copy the last byte in the buffer to the front for the next iteration
 		buffer[0] = buffer[1];
-		index += 1;
 	}
 	Ok(None)
 }

@@ -189,7 +189,7 @@ impl<R: Read + Seek> Probe<R> {
 						// potentially some junk bytes are between the ID3 block and the following MP3 block
 						// search for any possible sync bits after the ID3 block
 						self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
-						if let Some(_) = search_for_frame_sync(&mut self.inner)? {
+						if search_for_frame_sync(&mut self.inner)?.is_some() {
 							Ok(Some(FileType::MP3))
 						} else {
 							Ok(None)
