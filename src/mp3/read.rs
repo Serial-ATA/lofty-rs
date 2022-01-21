@@ -84,8 +84,8 @@ where
 			_ => {
 				// seek back the length of the temporary header buffer
 				// so that all bytes are included in the search for a frame sync
-				let start_of_search_area =
-					reader.seek(SeekFrom::Current(-(header.len() as i64)))?;
+				#[allow(clippy::neg_multiply)]
+				let start_of_search_area = reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 				if let Some(first_mp3_frame_start_relative) = search_for_frame_sync(reader)? {
 					let first_mp3_frame_start_absolute =
 						start_of_search_area + first_mp3_frame_start_relative;
