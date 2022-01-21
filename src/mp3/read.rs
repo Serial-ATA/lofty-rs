@@ -1,4 +1,4 @@
-use super::header::{verify_frame_sync, Header, XingHeader};
+use super::header::{search_for_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::ape::constants::APE_PREAMBLE;
 #[cfg(feature = "ape")]
@@ -12,7 +12,7 @@ use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::ReadBytesExt;
+use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) fn read_from<R>(
 	reader: &mut R,
@@ -80,17 +80,29 @@ where
 					continue;
 				}
 			},
-			_ if verify_frame_sync([header[0], header[1]]) => {
-				let start = reader.seek(SeekFrom::Current(0))? - 4;
-				let header = Header::read(u32::from_be_bytes(header))?;
+			// metadata blocks might be followed by junk bytes before the first MP3 frame begins
+			_ => {
+				// seek back the length of the temporary header buffer
+				// so that all bytes are included in the search for a frame sync
+				#[allow(clippy::neg_multiply)]
+				let start_of_search_area = reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
+				if let Some(first_mp3_frame_start_relative) = search_for_frame_sync(reader)? {
+					let first_mp3_frame_start_absolute =
+						start_of_search_area + first_mp3_frame_start_relative;
 
-				file.first_frame_offset = Some(start);
-				first_frame_header = Some(header);
+					// read the first four bytes of the found frame
+					reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
+					let header = Header::read(reader.read_u32::<BigEndian>()?)?;
 
-				// We have found the first frame
-				break;
+					file.first_frame_offset = Some(first_mp3_frame_start_absolute);
+					first_frame_header = Some(header);
+
+					// We have found the first frame
+					break;
+				}
+				// the search for sync bits was unsuccessful
+				return Err(LoftyError::Mp3("File contains an invalid frame"));
 			},
-			_ => return Err(LoftyError::Mp3("File contains an invalid frame")),
 		}
 	}
 
