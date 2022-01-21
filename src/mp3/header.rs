@@ -14,7 +14,10 @@ pub(crate) fn verify_frame_sync(frame_sync: [u8; 2]) -> bool {
 /// Only the first match is returned and on no match, [`None`] is returned instead.
 ///
 /// Note that the search searches in 8 bit steps, i.e. the first 8 bits need to be byte aligned.
-pub(crate) fn search_for_frame_sync(input: &mut dyn Read) -> Result<Option<u64>> {
+pub(crate) fn search_for_frame_sync<R>(input: &mut R) -> Result<Option<u64>>
+where
+	R: Read,
+{
 	let mut index = 0u64;
 	let mut iterator = input.bytes();
 	let mut buffer = [0u8; 2];

@@ -163,8 +163,6 @@ impl<R: Read + Seek> Probe<R> {
 
 		// estimate the file type by using these 36 bytes
 		// note that any error from `from_buffer_inner` are suppressed, as it returns an error on unknown format
-		// - TODO: why is the case `Err(LoftyError::UnknownFormat)` suppressed, but only for `from_buffer_inner`?
-		// - What is the special meaning of the return type `Ok(None)` vs `Err(LoftyError::UnknownFormat)`?
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
 			// the file type was guessed based on these bytes
 			Ok((Some(f_ty), _)) => Ok(Some(f_ty)),
@@ -295,8 +293,7 @@ mod tests {
 		];
 		let data: Vec<u8> = data.into_iter().flatten().cloned().collect();
 		let data = std::io::Cursor::new(&data);
-		let probe = Probe::new(data);
-		let probe = probe.guess_file_type().unwrap();
+		let probe = Probe::new(data).guess_file_type().unwrap();
 		matches!(probe.file_type(), Some(crate::FileType::MP3));
 	}
 }
