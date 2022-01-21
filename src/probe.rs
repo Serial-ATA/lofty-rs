@@ -2,7 +2,7 @@ use crate::ape::ApeFile;
 use crate::error::{LoftyError, Result};
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
-use crate::mp3::header::verify_frame_sync;
+use crate::mp3::header::search_for_frame_sync;
 use crate::mp3::Mp3File;
 use crate::mp4::Mp4File;
 use crate::ogg::flac::FlacFile;
@@ -149,41 +149,62 @@ impl<R: Read + Seek> Probe<R> {
 
 	#[allow(clippy::shadow_unrelated)]
 	fn guess_inner(&mut self) -> Result<Option<FileType>> {
+		// temporary buffer for storing 36 bytes
+		// (36 is just a guess as to how long the data for estimating the file type might be)
 		let mut buf = [0; 36];
 
-		let pos = self.inner.seek(SeekFrom::Current(0))?;
+		// read the first 36 bytes and seek back to the starting position
+		let starting_position = self.inner.stream_position()?;
 		let buf_len = std::io::copy(
-			&mut self.inner.by_ref().take(36),
+			&mut self.inner.by_ref().take(buf.len() as u64),
 			&mut Cursor::new(&mut buf[..]),
 		)? as usize;
+		self.inner.seek(SeekFrom::Start(starting_position))?;
 
-		self.inner.seek(SeekFrom::Start(pos))?;
-
+		// estimate the file type by using these 36 bytes
+		// note that any error from `from_buffer_inner` are suppressed, as it returns an error on unknown format
+		// - TODO: why is the case `Err(LoftyError::UnknownFormat)` suppressed, but only for `from_buffer_inner`?
+		// - What is the special meaning of the return type `Ok(None)` vs `Err(LoftyError::UnknownFormat)`?
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
+			// the file type was guessed based on these bytes
 			Ok((Some(f_ty), _)) => Ok(Some(f_ty)),
+			// the first data block is ID3 data; this means other data can follow (e.g. APE or MP3 frames)
 			Ok((None, id3_len)) => {
-				self.inner
+				// the position right after the ID3 block is the internal size value (id3_len)
+				// added to the length of the ID3 header (which is 10 bytes),
+				// as the size does not include the header itself
+				let position_after_id3_block = self
+					.inner
 					.seek(SeekFrom::Current(i64::from(10 + id3_len)))?;
 
-				let mut ident = [0; 3];
-				let buf_len = std::io::copy(
-					&mut self.inner.by_ref().take(3),
-					&mut Cursor::new(&mut ident[..]),
-				)?;
+				let file_type_after_id3_block = {
+					// try to guess the file type after the ID3 block by inspecting the first 3 bytes
+					let mut ident = [0; 3];
+					let buf_len = std::io::copy(
+						&mut self.inner.by_ref().take(ident.len() as u64),
+						&mut Cursor::new(&mut ident[..]),
+					)?;
 
-				self.inner.seek(SeekFrom::Start(pos))?;
+					if buf_len < 3 {
+						Err(LoftyError::UnknownFormat)
+					} else if &ident == b"MAC" {
+						Ok(Some(FileType::APE))
+					} else {
+						// potentially some junk bytes are between the ID3 block and the following MP3 block
+						// search for any possible sync bits after the ID3 block
+						self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
+						if let Some(_) = search_for_frame_sync(&mut self.inner)? {
+							Ok(Some(FileType::MP3))
+						} else {
+							Err(LoftyError::UnknownFormat)
+						}
+					}
+				};
 
-				if buf_len < 3 {
-					return Err(LoftyError::UnknownFormat);
-				}
+				// before returning any result for a file type, seek back to the front
+				self.inner.seek(SeekFrom::Start(starting_position))?;
 
-				if &ident == b"MAC" {
-					Ok(Some(FileType::APE))
-				} else if verify_frame_sync([ident[0], ident[1]]) {
-					Ok(Some(FileType::MP3))
-				} else {
-					Err(LoftyError::UnknownFormat)
-				}
+				file_type_after_id3_block
 			},
 			_ => Ok(None),
 		}
@@ -246,4 +267,36 @@ where
 	P: AsRef<Path>,
 {
 	Probe::open(path)?.read(read_properties)
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::Probe;
+
+	#[test]
+	fn mp3_file_id3v2_3() {
+		// test data that contains 4 bytes of junk (0x20) between the ID3 portion and the first MP3 frame
+		let data: [&[u8]; 4] = [
+			// ID3v2.3 header (10 bytes)
+			&[0x49, 0x44, 0x33, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x23],
+			// TALB frame
+			&[
+				0x54, 0x41, 0x4C, 0x42, 0x00, 0x00, 0x00, 0x19, 0x00, 0x00, 0x01, 0xFF, 0xFE, 0x61,
+				0x00, 0x61, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61, 0x00, 0x61,
+				0x00, 0x61, 0x00, 0x61, 0x00, 0x61, 0x00,
+			],
+			// 4 bytes of junk
+			&[0x20, 0x20, 0x20, 0x20],
+			// start of MP3 frame (not all bytes are shown in this slice)
+			&[
+				0xFF, 0xFB, 0x50, 0xC4, 0x00, 0x03, 0xC0, 0x00, 0x01, 0xA4, 0x00, 0x00, 0x00, 0x20,
+				0x00, 0x00, 0x34, 0x80, 0x00, 0x00, 0x04,
+			],
+		];
+		let data: Vec<u8> = data.into_iter().flatten().cloned().collect();
+		let data = std::io::Cursor::new(&data);
+		let probe = Probe::new(data);
+		let probe = probe.guess_file_type().unwrap();
+		matches!(probe.file_type(), Some(crate::FileType::MP3));
+	}
 }
