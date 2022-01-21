@@ -148,7 +148,7 @@ impl<R: Read + Seek> Probe<R> {
 	}
 
 	#[allow(clippy::shadow_unrelated)]
-	fn guess_inner(&mut self) -> Result<Option<FileType>> {
+	fn guess_inner(&mut self) -> std::io::Result<Option<FileType>> {
 		// temporary buffer for storing 36 bytes
 		// (36 is just a guess as to how long the data for estimating the file type might be)
 		let mut buf = [0; 36];
@@ -178,14 +178,12 @@ impl<R: Read + Seek> Probe<R> {
 				let file_type_after_id3_block = {
 					// try to guess the file type after the ID3 block by inspecting the first 3 bytes
 					let mut ident = [0; 3];
-					let buf_len = std::io::copy(
+					std::io::copy(
 						&mut self.inner.by_ref().take(ident.len() as u64),
 						&mut Cursor::new(&mut ident[..]),
 					)?;
 
-					if buf_len < 3 {
-						Err(LoftyError::UnknownFormat)
-					} else if &ident == b"MAC" {
+					if &ident == b"MAC" {
 						Ok(Some(FileType::APE))
 					} else {
 						// potentially some junk bytes are between the ID3 block and the following MP3 block
@@ -194,7 +192,7 @@ impl<R: Read + Seek> Probe<R> {
 						if let Some(_) = search_for_frame_sync(&mut self.inner)? {
 							Ok(Some(FileType::MP3))
 						} else {
-							Err(LoftyError::UnknownFormat)
+							Ok(None)
 						}
 					}
 				};
