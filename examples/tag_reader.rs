@@ -36,6 +36,7 @@ fn main() {
 		properties.overall_bitrate().unwrap_or(0)
 	);
 	println!("Sample Rate: {}", properties.sample_rate().unwrap_or(0));
+	println!("Bit depth: {}", properties.bit_depth().unwrap_or(0));
 	println!("Channels: {}", properties.channels().unwrap_or(0));
 	println!("Duration: {}", duration_display);
 }
