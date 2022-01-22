@@ -66,6 +66,7 @@ pub(super) fn read_properties(
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate: Some(sample_rate),
+		bit_depth: None,
 		channels: Some(channels),
 	})
 }

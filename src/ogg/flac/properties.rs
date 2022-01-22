@@ -32,6 +32,7 @@ where
 	let info = stream_info.read_u32::<BigEndian>()?;
 
 	let sample_rate = info >> 12;
+	let bits_per_sample = ((info >> 4) & 0b1111) + 1;
 	let channels = ((info >> 9) & 7) + 1;
 
 	// Read the remaining 32 bits of the total samples
@@ -54,6 +55,7 @@ where
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate: Some(sample_rate as u32),
+		bit_depth: Some(bits_per_sample as u8),
 		channels: Some(channels as u8),
 	})
 }

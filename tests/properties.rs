@@ -13,6 +13,7 @@ const AIFF_PROPERTIES: FileProperties = FileProperties::new(
 	Some(1542),
 	Some(1536),
 	Some(48000),
+	None,
 	Some(2),
 );
 
@@ -24,6 +25,7 @@ const FLAC_PROPERTIES: FileProperties = FileProperties::new(
 	Some(321),
 	Some(275),
 	Some(48000),
+	None,
 	Some(2),
 );
 

@@ -42,6 +42,7 @@ impl From<WavProperties> for FileProperties {
 			overall_bitrate: Some(input.overall_bitrate),
 			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
+			bit_depth: None,
 			channels: Some(input.channels),
 		}
 	}
