@@ -13,19 +13,19 @@ const AIFF_PROPERTIES: FileProperties = FileProperties::new(
 	Some(1542),
 	Some(1536),
 	Some(48000),
-	None,
+	Some(16),
 	Some(2),
 );
 
 const APE_PROPERTIES: ApeProperties =
-	ApeProperties::new(3990, Duration::from_millis(1428), 360, 360, 48000, 2);
+	ApeProperties::new(3990, Duration::from_millis(1428), 360, 360, 48000, 16, 2);
 
 const FLAC_PROPERTIES: FileProperties = FileProperties::new(
 	Duration::from_millis(1428),
 	Some(321),
 	Some(275),
 	Some(48000),
-	None,
+	Some(16),
 	Some(2),
 );
 
@@ -70,6 +70,7 @@ const WAV_PROPERTIES: WavProperties = WavProperties::new(
 	1542,
 	1536,
 	48000,
+	16,
 	2,
 );
 
