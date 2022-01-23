@@ -128,25 +128,29 @@ pub(super) fn read_properties(
 	let bits_per_sample = fmt.read_u16::<LittleEndian>()?;
 	let bytes_per_sample = block_align / u16::from(channels);
 
-	// We allow bits_per_sample to be less than bytes_per_sample so that
-	// we can support things such as 24 bit samples in 4 byte containers.
-	if Some(bits_per_sample) > bytes_per_sample.checked_mul(8) {
-		return Err(LoftyError::Wav("sample bits exceeds size of sample"));
-	}
+	let mut bit_depth = if bits_per_sample > 0 {
+		bits_per_sample as u8
+	} else {
+		(bytes_per_sample * 8) as u8
+	};
 
 	if format_tag == EXTENSIBLE {
-		if fmt.len() < 40 {
+		if fmt.len() + 16 < 40 {
 			return Err(LoftyError::Wav(
 				"Extensible format identified, invalid \"fmt \" chunk size found (< 40)",
 			));
 		}
 
-		// Skip 8 bytes
 		// cbSize (Size of extra format information) (2)
+		let _cb_size = fmt.read_u16::<LittleEndian>()?;
 		// Valid bits per sample (2)
+		let valid_bits_per_sample = fmt.read_u16::<LittleEndian>()?;
 		// Channel mask (4)
-		fmt.read_u64::<LittleEndian>()?;
+		let _channel_mask = fmt.read_u32::<LittleEndian>()?;
 
+		if valid_bits_per_sample > 0 {
+			bit_depth = valid_bits_per_sample as u8;
+		}
 		format_tag = fmt.read_u16::<LittleEndian>()?;
 	}
 
@@ -166,15 +170,18 @@ pub(super) fn read_properties(
 
 	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && total_samples > 0 {
 		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
+		if length == 0 {
+			(Duration::from_secs(0), 0, 0)
+		} else {
+			let overall_bitrate = ((file_length * 8) / length) as u32;
+			let audio_bitrate = (u64::from(stream_len * 8) / length) as u32;
 
-		let overall_bitrate = ((file_length * 8) / length) as u32;
-		let audio_bitrate = (u64::from(stream_len * 8) / length) as u32;
-
-		(
-			Duration::from_millis(length),
-			overall_bitrate,
-			audio_bitrate,
-		)
+			(
+				Duration::from_millis(length),
+				overall_bitrate,
+				audio_bitrate,
+			)
+		}
 	} else if bytes_per_second > 0 {
 		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
 
@@ -200,7 +207,7 @@ pub(super) fn read_properties(
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate,
-		bit_depth: (bytes_per_sample * 8) as u8,
+		bit_depth,
 		channels,
 	})
 }
