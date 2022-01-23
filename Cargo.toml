@@ -39,6 +39,7 @@ criterion = { version = "0.3.5", features = ["html_reports"] }
 tempfile = "3.3.0"
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
+hound = {git="https://github.com/ruuda/hound.git", branch="master"}
 
 [lib]
 bench = false

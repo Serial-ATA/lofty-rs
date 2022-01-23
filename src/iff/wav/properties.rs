@@ -91,6 +91,11 @@ impl WavProperties {
 		self.sample_rate
 	}
 
+	/// bits per sample
+	pub fn bit_depth(&self) -> u8 {
+		self.bit_depth
+	}
+
 	/// Channel count
 	pub fn channels(&self) -> u8 {
 		self.channels
@@ -118,11 +123,16 @@ pub(super) fn read_properties(
 	let sample_rate = fmt.read_u32::<LittleEndian>()?;
 	let bytes_per_second = fmt.read_u32::<LittleEndian>()?;
 
-	// Skip 2 bytes
-	// Block align (2)
-	fmt.read_u16::<LittleEndian>()?;
+	let block_align = fmt.read_u16::<LittleEndian>()?;
 
 	let bits_per_sample = fmt.read_u16::<LittleEndian>()?;
+	let bytes_per_sample = block_align / u16::from(channels);
+
+	// We allow bits_per_sample to be less than bytes_per_sample so that
+	// we can support things such as 24 bit samples in 4 byte containers.
+	if Some(bits_per_sample) > bytes_per_sample.checked_mul(8) {
+		return Err(LoftyError::Wav("sample bits exceeds size of sample"));
+	}
 
 	if format_tag == EXTENSIBLE {
 		if fmt.len() < 40 {
@@ -190,7 +200,7 @@ pub(super) fn read_properties(
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate,
-		bit_depth: bits_per_sample as u8,
+		bit_depth: (bytes_per_sample * 8) as u8,
 		channels,
 	})
 }
