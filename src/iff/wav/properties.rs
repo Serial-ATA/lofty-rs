@@ -32,6 +32,7 @@ pub struct WavProperties {
 	overall_bitrate: u32,
 	audio_bitrate: u32,
 	sample_rate: u32,
+	bit_depth: u8,
 	channels: u8,
 }
 
@@ -42,7 +43,7 @@ impl From<WavProperties> for FileProperties {
 			overall_bitrate: Some(input.overall_bitrate),
 			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
-			bit_depth: None,
+			bit_depth: Some(input.bit_depth),
 			channels: Some(input.channels),
 		}
 	}
@@ -56,6 +57,7 @@ impl WavProperties {
 		overall_bitrate: u32,
 		audio_bitrate: u32,
 		sample_rate: u32,
+		bit_depth: u8,
 		channels: u8,
 	) -> Self {
 		Self {
@@ -64,6 +66,7 @@ impl WavProperties {
 			overall_bitrate,
 			audio_bitrate,
 			sample_rate,
+			bit_depth,
 			channels,
 		}
 	}
@@ -187,6 +190,7 @@ pub(super) fn read_properties(
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate,
+		bit_depth: bits_per_sample as u8,
 		channels,
 	})
 }

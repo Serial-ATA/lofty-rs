@@ -15,6 +15,7 @@ pub struct ApeProperties {
 	overall_bitrate: u32,
 	audio_bitrate: u32,
 	sample_rate: u32,
+	bit_depth: u8,
 	channels: u8,
 }
 
@@ -25,7 +26,7 @@ impl From<ApeProperties> for FileProperties {
 			overall_bitrate: Some(input.overall_bitrate),
 			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
-			bit_depth: None,
+			bit_depth: Some(input.bit_depth),
 			channels: Some(input.channels),
 		}
 	}
@@ -39,6 +40,7 @@ impl ApeProperties {
 		overall_bitrate: u32,
 		audio_bitrate: u32,
 		sample_rate: u32,
+		bit_depth: u8,
 		channels: u8,
 	) -> Self {
 		Self {
@@ -47,6 +49,7 @@ impl ApeProperties {
 			overall_bitrate,
 			audio_bitrate,
 			sample_rate,
+			bit_depth,
 			channels,
 		}
 	}
@@ -69,6 +72,11 @@ impl ApeProperties {
 	/// Sample rate (Hz)
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
+	}
+
+	/// bits per sample
+	pub fn bit_depth(&self) -> u8 {
+		self.bit_depth
 	}
 
 	/// Channel count
@@ -148,7 +156,7 @@ where
 	}
 
 	// Unused
-	let _bits_per_sample = header_read.read_u16::<LittleEndian>()?;
+	let bits_per_sample = header_read.read_u16::<LittleEndian>()?;
 
 	let channels = header_read.read_u16::<LittleEndian>()?;
 
@@ -175,6 +183,7 @@ where
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate,
+		bit_depth: bits_per_sample as u8,
 		channels: channels as u8,
 	})
 }
@@ -204,7 +213,15 @@ where
 	let compression_level = header_first.read_u16::<LittleEndian>()?;
 
 	// Unused
-	let _format_flags = header_first.read_u16::<LittleEndian>()?;
+	let format_flags = header_first.read_u16::<LittleEndian>()?;
+	// https://github.com/fernandotcl/monkeys-audio/blob/5fe956c7e67c13daa80518a4cc7001e9fa185297/src/MACLib/MACLib.h#L74
+	let bit_depth = if (format_flags & 0b1) == 1 {
+		8
+	} else if (format_flags & 0b100) == 4 {
+		24
+	} else {
+		16
+	};
 
 	let blocks_per_frame = match version {
 		_ if version >= 3950 => 73728 * 4,
@@ -246,6 +263,7 @@ where
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate,
+		bit_depth,
 		channels: channels as u8,
 	})
 }
