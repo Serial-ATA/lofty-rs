@@ -16,7 +16,7 @@ pub enum LoftyError {
 
 	// File data related errors
 	/// Provided an empty file
-	EmptyFile,
+	EmptyFile, // TODO: Remove this
 	/// Attempting to read/write an abnormally large amount of data
 	TooMuchData,
 

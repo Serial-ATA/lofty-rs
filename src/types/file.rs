@@ -286,41 +286,59 @@ impl FileType {
 
 	/// Attempts to extract a [`FileType`] from a buffer
 	///
-	/// NOTE: This is for use in [`Probe::guess_file_type`](crate::Probe::guess_file_type), it
+	/// NOTES:
+	///
+	/// * This is for use in [`Probe::guess_file_type`], it
 	/// is recommended to use it that way
+	/// * This **will not** search past tags at the start of the buffer.
+	/// For this behavior, use [`Probe::guess_file_type`].
+	///
+	/// [`Probe::guess_file_type`]: crate::Probe::guess_file_type
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
-			Ok((Some(f_ty), _)) => Some(f_ty),
+			(Some(f_ty), _) => Some(f_ty),
+			// We make no attempt to search past an ID3v2 tag here, since
+			// we only provided a fixed-sized buffer to search from.
+			//
+			// That case is handled in `Probe::guess_file_type`
 			_ => None,
 		}
 	}
 
-	pub(crate) fn from_buffer_inner(buf: &[u8]) -> Result<(Option<Self>, u32)> {
+	// TODO: APE tags in the beginning of the file
+	pub(crate) fn from_buffer_inner(buf: &[u8]) -> (Option<Self>, Option<u32>) {
 		use crate::id3::v2::unsynch_u32;
 
+		// Start out with an empty return: (File type, id3 size)
+		// Only one can be set
+		let mut ret = (None, None);
+
 		if buf.is_empty() {
-			return Err(LoftyError::EmptyFile);
+			return ret;
 		}
 
 		match Self::quick_type_guess(buf) {
-			Some(f_ty) => Ok((Some(f_ty), 0)),
+			Some(f_ty) => ret.0 = Some(f_ty),
 			// Special case for ID3, gets checked in `Probe::guess_file_type`
-			None if buf.len() >= 11 && &buf[..3] == b"ID3" => {
-				let size = unsynch_u32(u32::from_be_bytes(
-					buf[6..10]
-						.try_into()
-						.map_err(|_| LoftyError::UnknownFormat)?,
-				));
-
-				Ok((None, size))
+			// The bare minimum size for an ID3v2 header is 10 bytes
+			None if buf.len() >= 10 && &buf[..3] == b"ID3" => {
+				// This is infallible, but preferable to an unwrap
+				if let Ok(arr) = buf[6..10].try_into() {
+					// Set the ID3v2 size
+					ret.1 = Some(unsynch_u32(u32::from_be_bytes(arr)));
+				}
 			},
-			None => Err(LoftyError::UnknownFormat),
+			// We aren't able to determine a format
+			_ => {},
 		}
+
+		ret
 	}
 
 	fn quick_type_guess(buf: &[u8]) -> Option<Self> {
 		use crate::mp3::header::verify_frame_sync;
 
+		// Safe to unwrap, since we return early on an empty buffer
 		match buf.first().unwrap() {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),
 			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),

@@ -9,11 +9,11 @@ pub(crate) fn verify_frame_sync(frame_sync: [u8; 2]) -> bool {
 	frame_sync[0] == 0xFF && frame_sync[1] >> 5 == 0b111
 }
 
-/// Searches for a frame sync (11 bits with the value 1 like `0b1111_1111_111`) in the input reader.
-/// The search starts at the beginning of the reader and returns the index relative to this beginning.
-/// Only the first match is returned and on no match, [`None`] is returned instead.
-///
-/// Note that the search searches in 8 bit steps, i.e. the first 8 bits need to be byte aligned.
+// Searches for a frame sync (11 set bits) in the reader.
+// The search starts at the beginning of the reader and returns the index relative to this beginning.
+// This will return the first match, if one is found.
+//
+// Note that the search searches in 8 bit steps, i.e. the first 8 bits need to be byte aligned.
 pub(crate) fn search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<u64>>
 where
 	R: Read,
@@ -25,16 +25,18 @@ where
 	if let Some(byte) = iterator.next() {
 		buffer[0] = byte?;
 	}
-	// create a stream of overlapping 2 byte pairs
-	// example: [0x01, 0x02, 0x03, 0x04] should be analyzed as
+	// Create a stream of overlapping 2 byte pairs
+	//
+	// Example:
+	// [0x01, 0x02, 0x03, 0x04] should be analyzed as
 	// [0x01, 0x02], [0x02, 0x03], [0x03, 0x04]
 	for (index, byte) in iterator.enumerate() {
 		buffer[1] = byte?;
-		// check the two bytes in the buffer
+		// Check the two bytes in the buffer
 		if verify_frame_sync(buffer) {
 			return Ok(Some(index as u64));
 		}
-		// if they do not match, copy the last byte in the buffer to the front for the next iteration
+		// If they do not match, copy the last byte in the buffer to the front for the next iteration
 		buffer[0] = buffer[1];
 	}
 	Ok(None)

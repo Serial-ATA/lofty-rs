@@ -280,7 +280,7 @@ where
 				// Descriptor length (1)
 				// Elementary stream ID (2)
 				// Flags (1)
-				let _info = stsd.read_u32::<BigEndian>()?;
+				stsd.seek(SeekFrom::Current(4))?;
 
 				// There is another descriptor embedded in the previous one
 				let mut specific_config = [0; 4];
@@ -290,12 +290,11 @@ where
 				if specific_config == [0x04, 0x80, 0x80, 0x80] {
 					// Skipping 10 bytes
 					// Descriptor length (1)
-					// MPEG4 Audio (1)
+					// Codec (1)
 					// Stream type (1)
 					// Buffer size (3)
 					// Max bitrate (4)
-					let mut info = [0; 10];
-					stsd.read_exact(&mut info)?;
+					stsd.seek(SeekFrom::Current(10))?;
 
 					let average_bitrate = stsd.read_u32::<BigEndian>()?;
 
