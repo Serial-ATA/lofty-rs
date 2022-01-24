@@ -171,7 +171,7 @@ pub(super) fn read_properties(
 	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && total_samples > 0 {
 		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
 		if length == 0 {
-			(Duration::from_secs(0), 0, 0)
+			(Duration::ZERO, 0, 0)
 		} else {
 			let overall_bitrate = ((file_length * 8) / length) as u32;
 			let audio_bitrate = (u64::from(stream_len * 8) / length) as u32;
