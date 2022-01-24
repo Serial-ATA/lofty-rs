@@ -171,36 +171,36 @@ where
 		return Err(LoftyError::Mp4("File contains no audio tracks"));
 	}
 
-	let duration = match mdhd {
-		Some(mdhd) => {
-			data.seek(SeekFrom::Start(mdhd.start + 8))?;
-
-			let version = data.read_u8()?;
-			let _flags = data.read_uint::<BigEndian>(3)?;
-
-			let (timescale, duration) = if version == 1 {
-				// We don't care about these two values
-				let _creation_time = data.read_u64::<BigEndian>()?;
-				let _modification_time = data.read_u64::<BigEndian>()?;
-
-				let timescale = data.read_u32::<BigEndian>()?;
-				let duration = data.read_u64::<BigEndian>()?;
-
-				(timescale, duration)
-			} else {
-				let _creation_time = data.read_u32::<BigEndian>()?;
-				let _modification_time = data.read_u32::<BigEndian>()?;
-
-				let timescale = data.read_u32::<BigEndian>()?;
-				let duration = data.read_u32::<BigEndian>()?;
-
-				(timescale, u64::from(duration))
-			};
-
-			Duration::from_millis(duration * 1000 / u64::from(timescale))
-		},
+	let mdhd = match mdhd {
+		Some(mdhd) => mdhd,
 		None => return Err(LoftyError::BadAtom("Expected atom \"trak.mdia.mdhd\"")),
 	};
+
+	data.seek(SeekFrom::Start(mdhd.start + 8))?;
+
+	let version = data.read_u8()?;
+	let _flags = data.read_uint::<BigEndian>(3)?;
+
+	let (timescale, duration) = if version == 1 {
+		// We don't care about these two values
+		let _creation_time = data.read_u64::<BigEndian>()?;
+		let _modification_time = data.read_u64::<BigEndian>()?;
+
+		let timescale = data.read_u32::<BigEndian>()?;
+		let duration = data.read_u64::<BigEndian>()?;
+
+		(timescale, duration)
+	} else {
+		let _creation_time = data.read_u32::<BigEndian>()?;
+		let _modification_time = data.read_u32::<BigEndian>()?;
+
+		let timescale = data.read_u32::<BigEndian>()?;
+		let duration = data.read_u32::<BigEndian>()?;
+
+		(timescale, u64::from(duration))
+	};
+
+	let duration = Duration::from_millis(duration * 1000 / u64::from(timescale));
 
 	// We create the properties here, since it is possible the other information isn't available
 	let mut properties = Mp4Properties {
@@ -234,7 +234,7 @@ where
 				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 					match fourcc {
 						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties, file_length)?,
-						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
+						b"alac" => alac_properties(&mut stsd_reader, &mut properties, file_length)?,
 						unknown => {
 							if let Ok(codec) = std::str::from_utf8(unknown) {
 								properties.codec = Mp4Codec::Unknown(codec.to_string())
@@ -323,7 +323,7 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(data: &mut R, properties: &mut Mp4Properties) -> Result<()>
+fn alac_properties<R>(data: &mut R, properties: &mut Mp4Properties, file_length: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -352,7 +352,8 @@ where
 			data.seek(SeekFrom::Current(9))?;
 
 			// Sample size (1)
-			properties.bit_depth = Some(data.read_u8()?);
+			let sample_size = data.read_u8()?;
+			properties.bit_depth = Some(sample_size);
 
 			// Skipping 3 bytes
 			// Rice history mult (1)
@@ -367,7 +368,11 @@ where
 			// Max frame size (4)
 			data.seek(SeekFrom::Current(6))?;
 
-			properties.audio_bitrate = data.read_u32::<BigEndian>()?;
+			let overall_bitrate = u128::from(file_length * 8) / properties.duration.as_millis();
+			properties.overall_bitrate = overall_bitrate as u32;
+
+			// TODO: Determine bitrate from mdat
+			properties.audio_bitrate = data.read_u32::<BigEndian>()? / 1000;
 			properties.sample_rate = data.read_u32::<BigEndian>()?;
 		}
 	}

@@ -40,7 +40,7 @@ const MP3_PROPERTIES: Mp3Properties = Mp3Properties::new(
 	2,
 );
 
-const MP4_PROPERTIES: Mp4Properties = Mp4Properties::new(
+const MP4_AAC_PROPERTIES: Mp4Properties = Mp4Properties::new(
 	Mp4Codec::AAC,
 	Duration::from_millis(1449),
 	135,
@@ -50,11 +50,11 @@ const MP4_PROPERTIES: Mp4Properties = Mp4Properties::new(
 	2,
 );
 
-const ALAC_PROPERTIES: Mp4Properties = Mp4Properties::new(
+const MP4_ALAC_PROPERTIES: Mp4Properties = Mp4Properties::new(
 	Mp4Codec::ALAC,
 	Duration::from_millis(1428),
 	331,
-	124,
+	1536,
 	48000,
 	Some(16),
 	2,
@@ -130,18 +130,18 @@ fn mp3_properties() {
 }
 
 #[test]
-fn mp4_properties() {
+fn mp4_aac_properties() {
 	assert_eq!(
-		get_properties::<Mp4File>("tests/files/assets/a.m4a"),
-		MP4_PROPERTIES
+		get_properties::<Mp4File>("tests/files/assets/m4a_codec_aac.m4a"),
+		MP4_AAC_PROPERTIES
 	)
 }
 
 #[test]
-fn alac_properties() {
+fn mp4_alac_properties() {
 	assert_eq!(
-		get_properties::<Mp4File>("tests/files/assets/b.m4a").bit_depth(),
-		ALAC_PROPERTIES.bit_depth()
+		get_properties::<Mp4File>("tests/files/assets/m4a_codec_alac.m4a"),
+		MP4_ALAC_PROPERTIES
 	)
 }
 

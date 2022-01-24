@@ -15,7 +15,7 @@ macro_rules! test_read_path {
 test_read_path!(read_aiff_path, "tests/files/assets/a.aiff");
 test_read_path!(read_ape_path, "tests/files/assets/a.ape");
 test_read_path!(read_flac_path, "tests/files/assets/a.flac");
-test_read_path!(read_m4a_path, "tests/files/assets/a.m4a");
+test_read_path!(read_m4a_path, "tests/files/assets/m4a_codec_aac.m4a");
 test_read_path!(read_mp3_path, "tests/files/assets/a.mp3");
 test_read_path!(read_vorbis_path, "tests/files/assets/a.ogg");
 test_read_path!(read_opus_path, "tests/files/assets/a.opus");
@@ -50,7 +50,11 @@ macro_rules! test_read_file {
 test_read_file!(read_aiff_file, AIFF, "../tests/files/assets/a.aiff");
 test_read_file!(read_ape_file, APE, "../tests/files/assets/a.ape");
 test_read_file!(read_flac_file, FLAC, "../tests/files/assets/a.flac");
-test_read_file!(read_m4a_file, MP4, "../tests/files/assets/a.m4a");
+test_read_file!(
+	read_m4a_file,
+	MP4,
+	"../tests/files/assets/m4a_codec_aac.m4a"
+);
 test_read_file!(read_mp3_file, MP3, "../tests/files/assets/a.mp3");
 test_read_file!(read_vorbis_file, VORBIS, "../tests/files/assets/a.ogg");
 test_read_file!(read_opus_file, OPUS, "../tests/files/assets/a.opus");
