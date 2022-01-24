@@ -18,7 +18,7 @@ pub(super) fn read_properties(
 	}
 
 	let sample_frames = comm.read_u32::<BigEndian>()?;
-	let _sample_size = comm.read_u16::<BigEndian>()?;
+	let sample_size = comm.read_u16::<BigEndian>()?;
 
 	let mut sample_rate_bytes = [0; 10];
 	comm.read_exact(&mut sample_rate_bytes)?;
@@ -66,6 +66,7 @@ pub(super) fn read_properties(
 		overall_bitrate,
 		audio_bitrate,
 		sample_rate: Some(sample_rate),
+		bit_depth: Some(sample_size as u8),
 		channels: Some(channels),
 	})
 }

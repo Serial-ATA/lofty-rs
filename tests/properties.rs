@@ -13,17 +13,19 @@ const AIFF_PROPERTIES: FileProperties = FileProperties::new(
 	Some(1542),
 	Some(1536),
 	Some(48000),
+	Some(16),
 	Some(2),
 );
 
 const APE_PROPERTIES: ApeProperties =
-	ApeProperties::new(3990, Duration::from_millis(1428), 360, 360, 48000, 2);
+	ApeProperties::new(3990, Duration::from_millis(1428), 360, 360, 48000, 16, 2);
 
 const FLAC_PROPERTIES: FileProperties = FileProperties::new(
 	Duration::from_millis(1428),
 	Some(321),
 	Some(275),
 	Some(48000),
+	Some(16),
 	Some(2),
 );
 
@@ -44,6 +46,17 @@ const MP4_PROPERTIES: Mp4Properties = Mp4Properties::new(
 	135,
 	124,
 	48000,
+	None,
+	2,
+);
+
+const ALAC_PROPERTIES: Mp4Properties = Mp4Properties::new(
+	Mp4Codec::ALAC,
+	Duration::from_millis(1428),
+	331,
+	124,
+	48000,
+	Some(16),
 	2,
 );
 
@@ -68,6 +81,7 @@ const WAV_PROPERTIES: WavProperties = WavProperties::new(
 	1542,
 	1536,
 	48000,
+	16,
 	2,
 );
 
@@ -120,6 +134,14 @@ fn mp4_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/a.m4a"),
 		MP4_PROPERTIES
+	)
+}
+
+#[test]
+fn alac_properties() {
+	assert_eq!(
+		get_properties::<Mp4File>("tests/files/assets/b.m4a").bit_depth(),
+		ALAC_PROPERTIES.bit_depth()
 	)
 }
 
