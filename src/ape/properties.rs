@@ -74,7 +74,7 @@ impl ApeProperties {
 		self.sample_rate
 	}
 
-	/// bits per sample
+	/// Bits per sample
 	pub fn bit_depth(&self) -> u8 {
 		self.bit_depth
 	}
@@ -155,7 +155,6 @@ where
 		return Err(LoftyError::Ape("File contains no frames"));
 	}
 
-	// Unused
 	let bits_per_sample = header_read.read_u16::<LittleEndian>()?;
 
 	let channels = header_read.read_u16::<LittleEndian>()?;
@@ -212,7 +211,6 @@ where
 
 	let compression_level = header_first.read_u16::<LittleEndian>()?;
 
-	// Unused
 	let format_flags = header_first.read_u16::<LittleEndian>()?;
 	// https://github.com/fernandotcl/monkeys-audio/blob/5fe956c7e67c13daa80518a4cc7001e9fa185297/src/MACLib/MACLib.h#L74
 	let bit_depth = if (format_flags & 0b1) == 1 {
