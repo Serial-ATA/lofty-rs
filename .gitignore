@@ -9,7 +9,3 @@
 **/.idea/
 
 **/Cargo.lock
-
-# Test assets
-/tests/files/assets/
-/tests/picture/assets/
