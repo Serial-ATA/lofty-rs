@@ -4,8 +4,7 @@ use std::path::Path;
 
 use hound::WavReader;
 use lofty::iff::WavFile;
-use lofty::AudioFile;
-use lofty::Result;
+use lofty::{AudioFile, Result};
 
 fn get_properties(path: &Path) -> Result<<lofty::iff::WavFile as AudioFile>::Properties> {
 	let mut f = File::open(path).unwrap();
