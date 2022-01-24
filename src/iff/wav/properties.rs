@@ -91,7 +91,7 @@ impl WavProperties {
 		self.sample_rate
 	}
 
-	/// bits per sample
+	/// Bits per sample
 	pub fn bit_depth(&self) -> u8 {
 		self.bit_depth
 	}

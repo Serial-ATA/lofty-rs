@@ -32,6 +32,7 @@ pub struct Mp4Properties {
 	overall_bitrate: u32,
 	audio_bitrate: u32,
 	sample_rate: u32,
+	bit_depth: Option<u8>,
 	channels: u8,
 }
 
@@ -42,7 +43,7 @@ impl From<Mp4Properties> for FileProperties {
 			overall_bitrate: Some(input.overall_bitrate),
 			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
-			bit_depth: None,
+			bit_depth: input.bit_depth,
 			channels: Some(input.channels),
 		}
 	}
@@ -56,6 +57,7 @@ impl Mp4Properties {
 		overall_bitrate: u32,
 		audio_bitrate: u32,
 		sample_rate: u32,
+		bit_depth: Option<u8>,
 		channels: u8,
 	) -> Self {
 		Self {
@@ -64,6 +66,7 @@ impl Mp4Properties {
 			overall_bitrate,
 			audio_bitrate,
 			sample_rate,
+			bit_depth,
 			channels,
 		}
 	}
@@ -86,6 +89,11 @@ impl Mp4Properties {
 	/// Sample rate (Hz)
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
+	}
+
+	/// Bits per sample
+	pub fn bit_depth(&self) -> Option<u8> {
+		self.bit_depth
 	}
 
 	/// Channel count
@@ -201,6 +209,7 @@ where
 		overall_bitrate: 0,
 		audio_bitrate: 0,
 		sample_rate: 0,
+		bit_depth: None,
 		channels: 0,
 	};
 
@@ -281,7 +290,7 @@ where
 				// Descriptor length (1)
 				// Elementary stream ID (2)
 				// Flags (1)
-				let _info = stsd.read_u32::<BigEndian>()?;
+				stsd.seek(SeekFrom::Current(4))?;
 
 				// There is another descriptor embedded in the previous one
 				let mut specific_config = [0; 4];
@@ -291,12 +300,11 @@ where
 				if specific_config == [0x04, 0x80, 0x80, 0x80] {
 					// Skipping 10 bytes
 					// Descriptor length (1)
-					// MPEG4 Audio (1)
+					// Codec (1)
 					// Stream type (1)
 					// Buffer size (3)
 					// Max bitrate (4)
-					let mut info = [0; 10];
-					stsd.read_exact(&mut info)?;
+					stsd.seek(SeekFrom::Current(10))?;
 
 					let average_bitrate = stsd.read_u32::<BigEndian>()?;
 
@@ -337,15 +345,20 @@ where
 		if alac.ident == AtomIdent::Fourcc(*b"alac") {
 			properties.codec = Mp4Codec::ALAC;
 
-			// Skipping 13 bytes
+			// Skipping 9 bytes
 			// Version (4)
 			// Samples per frame (4)
 			// Compatible version (1)
+			data.seek(SeekFrom::Current(9))?;
+
 			// Sample size (1)
+			properties.bit_depth = Some(data.read_u8()?);
+
+			// Skipping 3 bytes
 			// Rice history mult (1)
 			// Rice initial history (1)
 			// Rice parameter limit (1)
-			data.seek(SeekFrom::Current(13))?;
+			data.seek(SeekFrom::Current(3))?;
 
 			properties.channels = data.read_u8()?;
 

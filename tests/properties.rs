@@ -46,6 +46,17 @@ const MP4_PROPERTIES: Mp4Properties = Mp4Properties::new(
 	135,
 	124,
 	48000,
+	None,
+	2,
+);
+
+const ALAC_PROPERTIES: Mp4Properties = Mp4Properties::new(
+	Mp4Codec::ALAC,
+	Duration::from_millis(1428),
+	331,
+	124,
+	48000,
+	Some(16),
 	2,
 );
 
@@ -123,6 +134,14 @@ fn mp4_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/a.m4a"),
 		MP4_PROPERTIES
+	)
+}
+
+#[test]
+fn alac_properties() {
+	assert_eq!(
+		get_properties::<Mp4File>("tests/files/assets/b.m4a").bit_depth(),
+		ALAC_PROPERTIES.bit_depth()
 	)
 }
 

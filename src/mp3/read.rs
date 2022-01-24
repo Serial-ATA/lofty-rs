@@ -80,17 +80,18 @@ where
 					continue;
 				}
 			},
-			// metadata blocks might be followed by junk bytes before the first MP3 frame begins
+			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {
-				// seek back the length of the temporary header buffer
-				// so that all bytes are included in the search for a frame sync
+				// seek back the length of the temporary header buffer, to include them
+				// in the frame sync search
 				#[allow(clippy::neg_multiply)]
 				let start_of_search_area = reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
+
 				if let Some(first_mp3_frame_start_relative) = search_for_frame_sync(reader)? {
 					let first_mp3_frame_start_absolute =
 						start_of_search_area + first_mp3_frame_start_relative;
 
-					// read the first four bytes of the found frame
+					// Seek back to the start of the frame and read the header
 					reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 					let header = Header::read(reader.read_u32::<BigEndian>()?)?;
 

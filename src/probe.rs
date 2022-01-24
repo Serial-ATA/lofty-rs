@@ -153,48 +153,43 @@ impl<R: Read + Seek> Probe<R> {
 		// (36 is just a guess as to how long the data for estimating the file type might be)
 		let mut buf = [0; 36];
 
-		// read the first 36 bytes and seek back to the starting position
 		let starting_position = self.inner.stream_position()?;
+		// Read (up to) 36 bytes
 		let buf_len = std::io::copy(
 			&mut self.inner.by_ref().take(buf.len() as u64),
 			&mut Cursor::new(&mut buf[..]),
 		)? as usize;
+
 		self.inner.seek(SeekFrom::Start(starting_position))?;
 
-		// estimate the file type by using these 36 bytes
-		// note that any error from `from_buffer_inner` are suppressed, as it returns an error on unknown format
+		// Guess the file type by using these 36 bytes
+		// Note that any error from `from_buffer_inner` are suppressed, as it returns an error on unknown format
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
-			// the file type was guessed based on these bytes
-			Ok((Some(f_ty), _)) => Ok(Some(f_ty)),
-			// the first data block is ID3 data; this means other data can follow (e.g. APE or MP3 frames)
-			Ok((None, id3_len)) => {
-				// the position right after the ID3 block is the internal size value (id3_len)
-				// added to the length of the ID3 header (which is 10 bytes),
-				// as the size does not include the header itself
+			// We were able to determine a file type
+			(Some(f_ty), _) => Ok(Some(f_ty)),
+			// The file starts with an ID3v2 tag; this means other data can follow (e.g. APE or MP3 frames)
+			(None, Some(id3_len)) => {
+				// `id3_len` is the size of the tag, not including the header (10 bytes)
 				let position_after_id3_block = self
 					.inner
 					.seek(SeekFrom::Current(i64::from(10 + id3_len)))?;
 
-				let file_type_after_id3_block = {
-					// try to guess the file type after the ID3 block by inspecting the first 3 bytes
-					let mut ident = [0; 3];
-					std::io::copy(
-						&mut self.inner.by_ref().take(ident.len() as u64),
-						&mut Cursor::new(&mut ident[..]),
-					)?;
+				// try to guess the file type after the ID3 block by inspecting the first 3 bytes
+				let mut ident = [0; 3];
+				std::io::copy(
+					&mut self.inner.by_ref().take(ident.len() as u64),
+					&mut Cursor::new(&mut ident[..]),
+				)?;
 
-					if &ident == b"MAC" {
-						Ok(Some(FileType::APE))
-					} else {
-						// potentially some junk bytes are between the ID3 block and the following MP3 block
-						// search for any possible sync bits after the ID3 block
-						self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
-						if search_for_frame_sync(&mut self.inner)?.is_some() {
-							Ok(Some(FileType::MP3))
-						} else {
-							Ok(None)
-						}
-					}
+				self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
+
+				let file_type_after_id3_block = match &ident {
+					b"MAC" => Ok(Some(FileType::APE)),
+					// Search for a frame sync, which may be preceded by junk
+					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
+						Ok(Some(FileType::MP3))
+					},
+					_ => Ok(None),
 				};
 
 				// before returning any result for a file type, seek back to the front
@@ -270,7 +265,7 @@ mod tests {
 	use crate::Probe;
 
 	#[test]
-	fn mp3_file_id3v2_3() {
+	fn mp3_id3v2_trailing_junk() {
 		// test data that contains 4 bytes of junk (0x20) between the ID3 portion and the first MP3 frame
 		let data: [&[u8]; 4] = [
 			// ID3v2.3 header (10 bytes)
