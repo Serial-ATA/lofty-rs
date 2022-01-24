@@ -91,6 +91,11 @@ impl WavProperties {
 		self.sample_rate
 	}
 
+	/// Bits per sample
+	pub fn bit_depth(&self) -> u8 {
+		self.bit_depth
+	}
+
 	/// Channel count
 	pub fn channels(&self) -> u8 {
 		self.channels
