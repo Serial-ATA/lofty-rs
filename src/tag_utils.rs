@@ -15,10 +15,10 @@ use crate::iff::wav::tag::RiffInfoListRef;
 #[cfg(feature = "mp4_ilst")]
 use crate::mp4::ilst::IlstRef;
 #[cfg(feature = "vorbis_comments")]
-use crate::ogg::{
-	constants::{OPUSTAGS, VORBIS_COMMENT_HEAD},
-	tag::VorbisCommentsRef,
-};
+use crate::ogg::tag::VorbisCommentsRef;
+
+use crate::{ape, iff, mp3, mp4, ogg};
+
 use crate::types::file::FileType;
 use crate::types::item::ItemKey;
 use crate::types::tag::{Tag, TagType};
@@ -29,20 +29,18 @@ use std::io::Write;
 #[allow(unreachable_patterns)]
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
 	match file_type {
-		FileType::AIFF => crate::iff::aiff::write::write_to(file, tag),
-		FileType::APE => crate::ape::write::write_to(file, tag),
+		FileType::AIFF => iff::aiff::write::write_to(file, tag),
+		FileType::APE => ape::write::write_to(file, tag),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::FLAC => {
-			crate::ogg::flac::write::write_to(file, &mut Into::<VorbisCommentsRef>::into(tag))
-		},
-		FileType::MP3 => crate::mp3::write::write_to(file, tag),
+		FileType::FLAC => ogg::flac::write::write_to(file, &mut Into::<VorbisCommentsRef>::into(tag)),
+		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
-		FileType::MP4 => crate::mp4::ilst::write::write_to(file, &mut Into::<IlstRef>::into(tag)),
+		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef>::into(tag)),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::Opus => crate::ogg::write::write_to(file, tag, OPUSTAGS),
+		FileType::Opus => ogg::write::write_to(file, tag, ogg::constants::OPUSTAGS),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::Vorbis => crate::ogg::write::write_to(file, tag, VORBIS_COMMENT_HEAD),
-		FileType::WAV => crate::iff::wav::write::write_to(file, tag),
+		FileType::Vorbis => ogg::write::write_to(file, tag, ogg::constants::VORBIS_COMMENT_HEAD),
+		FileType::WAV => iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::UnsupportedTag),
 	}
 }

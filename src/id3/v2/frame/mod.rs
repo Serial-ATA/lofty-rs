@@ -240,7 +240,7 @@ pub struct FrameFlags {
 	///
 	/// NOTE: While unsynchronized data is read, for the sake of simplicity, this flag has no effect when
 	/// writing. There isn't much reason to write unsynchronized data.
-	pub unsynchronisation: bool,
+	pub unsynchronisation: bool, /* TODO: Maybe? This doesn't seem very useful, and it is wasted effort if one forgets to make this false when writing. */
 	/// Frame has a data length indicator
 	///
 	/// The data length indicator is the size of the frame if the flags were all zeroed out.
