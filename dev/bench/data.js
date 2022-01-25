@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1643051026612,
+  "lastUpdate": 1643071017107,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -4319,6 +4319,126 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/RIFF",
             "value": 1606,
             "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Alex",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "15daf36c0d997bdc88b3c6841a07a94584a6c1ab",
+          "message": "Remove old allow attribute",
+          "timestamp": "2022-01-24T19:30:55-05:00",
+          "tree_id": "8591d8a446072542437cfc5181149c72ccb43a56",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/15daf36c0d997bdc88b3c6841a07a94584a6c1ab"
+        },
+        "date": 1643071016214,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "File reading (Inferred from Path)/AIFF",
+            "value": 7537,
+            "range": "± 56",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/APE",
+            "value": 15789,
+            "range": "± 84",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/FLAC",
+            "value": 12615,
+            "range": "± 760",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP4",
+            "value": 46651,
+            "range": "± 121",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP3",
+            "value": 19394,
+            "range": "± 71",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/VORBIS",
+            "value": 21277,
+            "range": "± 81",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/OPUS",
+            "value": 21789,
+            "range": "± 89",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/RIFF",
+            "value": 13167,
+            "range": "± 60",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1225,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 1389,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 835,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1197,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 1368,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 1618,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 1376,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 1341,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
