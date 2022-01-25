@@ -234,6 +234,7 @@ gen_map! (
 	"cpil"								  => FlagCompilation,
 	"pcst"								  => FlagPodcast,
 	"----:com.apple.iTunes:MEDIA"		  => OriginalMediaType,
+	"\u{a9}enc"							  => EncodedBy,
 	"\u{a9}too"							  => EncoderSoftware,
 	"\u{a9}gen"							  => Genre,
 	"----:com.apple.iTunes:MOOD"		  => Mood,
