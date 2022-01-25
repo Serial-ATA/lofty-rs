@@ -68,7 +68,6 @@ impl TaggedFile {
 		self.tag_mut(&self.primary_tag_type())
 	}
 
-	#[allow(unreachable_patterns, clippy::match_same_arms)]
 	/// Returns the file type's primary [`TagType`]
 	///
 	/// See [`FileType::primary_tag_type`]
