@@ -35,7 +35,6 @@ pub struct Page {
 	pub start: u64,
 	/// The position in the stream the page ended
 	pub end: u64,
-	segment_table: Vec<u8>,
 }
 
 impl Page {
@@ -49,7 +48,7 @@ impl Page {
 	///
 	/// # Errors
 	///
-	/// See [`segment_table`]
+	/// `content.len()` > [`MAX_CONTENT_SIZE`]
 	///
 	/// # Example
 	///
@@ -74,8 +73,11 @@ impl Page {
 		sequence_number: u32,
 		content: Vec<u8>,
 	) -> Result<Self> {
-		let len = content.len();
-		let segment_table = segment_table(len)?;
+		let content_len = content.len();
+
+		if content_len > MAX_CONTENT_SIZE {
+			return Err(PageError::TooMuchData);
+		}
 
 		Ok(Self {
 			content,
@@ -85,16 +87,20 @@ impl Page {
 			seq_num: sequence_number,
 			checksum: 0,
 			start: 0,
-			end: len as u64,
-			segment_table,
+			end: content_len as u64,
 		})
 	}
 
 	/// Convert the Page to Vec<u8> for writing
 	///
-	/// NOTE: This will write the checksum as is. It is likely [Page::gen_crc] will have
+	/// NOTE: This will write the checksum as is. It is likely [`Page::gen_crc`] will have
 	/// to be used prior.
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// See [`segment_table`]
+	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+		let mut segment_table = self.segment_table()?;
 		let mut bytes = Vec::new();
 
 		bytes.extend(b"OggS");
@@ -104,11 +110,11 @@ impl Page {
 		bytes.extend(self.serial.to_le_bytes());
 		bytes.extend(self.seq_num.to_le_bytes());
 		bytes.extend(self.checksum.to_le_bytes());
-		bytes.push(self.segment_table.len() as u8);
-		bytes.extend(self.segment_table.iter());
+		bytes.push(segment_table.len() as u8);
+		bytes.append(&mut segment_table);
 		bytes.extend(self.content.iter());
 
-		bytes
+		Ok(bytes)
 	}
 
 	/// Attempts to get a Page from a reader
@@ -176,20 +182,30 @@ impl Page {
 			checksum,
 			start,
 			end,
-			segment_table,
 		})
 	}
 
 	/// Generates the CRC checksum of the page
-	pub fn gen_crc(&mut self) {
-		self.checksum = crc::crc32(&*self.as_bytes());
+	///
+	/// # Errors
+	///
+	/// See [`Page::as_bytes`]
+	pub fn gen_crc(&mut self) -> Result<()> {
+		self.checksum = crc::crc32(&*self.as_bytes()?);
+		Ok(())
 	}
 
 	/// Extends the Page's content, returning another Page if too much data was provided
 	///
 	/// This will do nothing if `content` is greater than the max page size. In this case,
 	/// [`paginate`] should be used.
-	pub fn extend(&mut self, content: &[u8]) -> Option<Page> {
+	///
+	/// # Errors
+	///
+	/// *Only applicable if a new page is created*:
+	///
+	/// See [`Page::gen_crc`]
+	pub fn extend(&mut self, content: &[u8]) -> Result<Option<Page>> {
 		let self_len = self.content.len();
 		let content_len = content.len();
 
@@ -197,7 +213,7 @@ impl Page {
 			self.content.extend(content.iter());
 			self.end += content_len as u64;
 
-			return None;
+			return Ok(None);
 		}
 
 		if content_len <= MAX_CONTENT_SIZE {
@@ -217,15 +233,14 @@ impl Page {
 				checksum: 0,
 				start: self.end,
 				end: self.start + content.len() as u64,
-				segment_table: vec![],
 			};
 
-			p.gen_crc();
+			p.gen_crc()?;
 
-			return Some(p);
+			return Ok(Some(p));
 		}
 
-		None
+		Ok(None)
 	}
 
 	/// Returns the page's content
@@ -244,13 +259,20 @@ impl Page {
 	}
 
 	/// Returns the page's checksum
+	///
+	/// NOTE: This will not generate a new CRC. It will return
+	/// the CRC as-is. Use [`Page::gen_crc`] to generate a new one.
 	pub fn checksum(&self) -> u32 {
 		self.checksum
 	}
 
 	/// Returns the page's segment table
-	pub fn segment_table(&self) -> &[u8] {
-		self.segment_table.as_slice()
+	///
+	/// # Errors
+	///
+	/// See [`segment_table`]
+	pub fn segment_table(&self) -> Result<Vec<u8>> {
+		segment_table(self.content.len())
 	}
 }
 
@@ -297,8 +319,6 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 				pos += page.len() as u64;
 				pos
 			},
-			// Safe to unwrap, since we are working with chunks no bigger than the max page size
-			segment_table: segment_table(page.len()).unwrap(),
 		};
 
 		first_page = false;
@@ -358,7 +378,7 @@ pub fn segment_table(length: usize) -> Result<Vec<u8>> {
 
 #[cfg(test)]
 mod tests {
-	use crate::{paginate, Page};
+	use crate::{paginate, segment_table, Page};
 	use std::io::Cursor;
 
 	#[test]
@@ -375,7 +395,6 @@ mod tests {
 			checksum: 3579522525,
 			start: 0,
 			end: 47,
-			segment_table: vec![0x13],
 		};
 
 		let content = std::fs::read("test_assets/opus_ident_header.page").unwrap();
@@ -394,9 +413,14 @@ mod tests {
 		let len = pages.len();
 
 		assert_eq!(len, 17);
+		let last_page_content = pages.last().unwrap().content();
+
 		assert_eq!(
-			len % 255,
-			*pages.last().unwrap().segment_table.last().unwrap() as usize
+			last_page_content.len() % 255,
+			*segment_table(last_page_content.len())
+				.unwrap()
+				.last()
+				.unwrap() as usize
 		);
 
 		for (i, page) in pages.into_iter().enumerate() {
