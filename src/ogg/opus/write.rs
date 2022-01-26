@@ -32,9 +32,9 @@ pub(crate) fn write_to(
 
 	for mut p in pages.iter_mut() {
 		p.serial = ser;
-		p.gen_crc();
+		p.gen_crc()?;
 
-		writer.write_all(&*p.as_bytes())?;
+		writer.write_all(&*p.as_bytes()?)?;
 	}
 
 	writer.write_all(&*remaining)?;

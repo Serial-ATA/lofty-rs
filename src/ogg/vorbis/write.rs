@@ -82,7 +82,7 @@ pub(crate) fn write_to(
 
 		if i == pages_len {
 			// Add back the framing bit
-			p.extend(&[1]);
+			p.extend(&[1])?;
 
 			// The segment tables of current page and the setup header have to be combined
 			let mut seg_table = Vec::new();
@@ -98,9 +98,9 @@ pub(crate) fn write_to(
 
 			seg_table.insert(0, seg_table_len as u8);
 
-			let page = p.extend(&*setup);
+			let page = p.extend(&*setup)?;
 
-			let mut p_bytes = p.as_bytes();
+			let mut p_bytes = p.as_bytes()?;
 			let seg_count = p_bytes[26] as usize;
 
 			// Replace segment table and checksum
@@ -111,16 +111,16 @@ pub(crate) fn write_to(
 
 			if let Some(mut page) = page {
 				page.serial = ser;
-				page.gen_crc();
+				page.gen_crc()?;
 
-				writer.write_all(&*page.as_bytes())?;
+				writer.write_all(&*page.as_bytes()?)?;
 			}
 
 			break;
 		}
 
-		p.gen_crc();
-		writer.write_all(&*p.as_bytes())?;
+		p.gen_crc()?;
+		writer.write_all(&*p.as_bytes()?)?;
 	}
 
 	writer.write_all(&*remaining)?;

@@ -91,7 +91,7 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 	let ser = first_page.serial;
 
 	let mut writer = Vec::new();
-	writer.write_all(&*first_page.as_bytes())?;
+	writer.write_all(&*first_page.as_bytes()?)?;
 
 	let first_md_page = Page::read(data, false)?;
 	verify_signature(&first_md_page, sig)?;
