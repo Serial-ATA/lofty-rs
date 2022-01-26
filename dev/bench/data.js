@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1643214604916,
+  "lastUpdate": 1643216354663,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -4799,6 +4799,126 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/RIFF",
             "value": 1344,
             "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "squared@disroot.org",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "squared@disroot.org",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "f697e94fe6170c85207b660cd3eb43e763e9fb29",
+          "message": "Update `ogg_pager`",
+          "timestamp": "2022-01-26T11:53:20-05:00",
+          "tree_id": "b8003799bff6749b4f6b51f9c0cf76b33b66e245",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/f697e94fe6170c85207b660cd3eb43e763e9fb29"
+        },
+        "date": 1643216354089,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "File reading (Inferred from Path)/AIFF",
+            "value": 8550,
+            "range": "± 50",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/APE",
+            "value": 17772,
+            "range": "± 56",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/FLAC",
+            "value": 12488,
+            "range": "± 52",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP4",
+            "value": 53213,
+            "range": "± 91",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/MP3",
+            "value": 22057,
+            "range": "± 125",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/VORBIS",
+            "value": 24014,
+            "range": "± 42",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/OPUS",
+            "value": 21404,
+            "range": "± 71",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Path)/RIFF",
+            "value": 12818,
+            "range": "± 59",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1413,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 1791,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 941,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1206,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 1849,
+            "range": "± 11",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 1877,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 1531,
+            "range": "± 5",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 1612,
+            "range": "± 1",
             "unit": "ns/iter"
           }
         ]
