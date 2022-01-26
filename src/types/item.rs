@@ -30,9 +30,9 @@ pub(crate) use first_key;
 // Keys should appear in order of popularity.
 macro_rules! gen_map {
 	($(#[$meta:meta])? $NAME:ident; $($($key:literal)|+ => $variant:ident),+) => {
-		$(#[$meta])?
-		lazy_static::lazy_static! {
-			static ref $NAME: HashMap<&'static str, ItemKey> = {
+		paste::paste! {
+			$(#[$meta])?
+			static [<$NAME _INNER>]: once_cell::sync::Lazy<HashMap<&'static str, ItemKey>> = once_cell::sync::Lazy::new(|| {
 				let mut map = HashMap::new();
 				$(
 					$(
@@ -40,21 +40,25 @@ macro_rules! gen_map {
 					)+
 				)+
 				map
-			};
-		}
+			});
 
-		$(#[$meta])?
-		impl $NAME {
-			pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
-				self.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
-			}
+			$(#[$meta])?
+			#[allow(non_camel_case_types)]
+			struct $NAME;
 
-			pub(crate) fn get_key(&self, item_key: &ItemKey) -> Option<&str> {
-				match item_key {
-					$(
-						ItemKey::$variant => Some(first_key!($($key)|*)),
-					)+
-					_ => None
+			$(#[$meta])?
+			impl $NAME {
+				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
+					[<$NAME _INNER>].iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
+				}
+
+				pub(crate) fn get_key(&self, item_key: &ItemKey) -> Option<&str> {
+					match item_key {
+						$(
+							ItemKey::$variant => Some(first_key!($($key)|*)),
+						)+
+						_ => None
+					}
 				}
 			}
 		}

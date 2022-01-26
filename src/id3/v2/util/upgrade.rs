@@ -2,29 +2,27 @@ use std::collections::HashMap;
 
 macro_rules! gen_upgrades {
     (V2 => [$($($v2_key:literal)|* => $id3v24_from_v2:literal),+]; V3 => [$($($v3_key:literal)|* => $id3v24_from_v3:literal),+]) => {
-		lazy_static::lazy_static! {
-			static ref V2KEYS: HashMap<&'static str, &'static str> = {
-				let mut map = HashMap::new();
-				$(
-					$(
-						map.insert($v2_key, $id3v24_from_v2);
-					)+
-				)+
-				map
-			};
-		}
+		use once_cell::sync::Lazy;
 
-		lazy_static::lazy_static! {
-			static ref V3KEYS: HashMap<&'static str, &'static str> = {
-				let mut map = HashMap::new();
+		static V2KEYS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+			let mut map = HashMap::new();
+			$(
 				$(
-					$(
-						map.insert($v3_key, $id3v24_from_v3);
-					)+
+					map.insert($v2_key, $id3v24_from_v2);
 				)+
-				map
-			};
-		}
+			)+
+			map
+		});
+
+		static V3KEYS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+			let mut map = HashMap::new();
+			$(
+				$(
+					map.insert($v3_key, $id3v24_from_v3);
+				)+
+			)+
+			map
+		});
 
 		/// Upgrade an ID3v2.2 key to an ID3v2.4 key
         pub fn upgrade_v2(key: &str) -> Option<&'static str> {

@@ -43,14 +43,25 @@ where
 		data.read_exact(&mut comment_bytes)?;
 
 		let comment = String::from_utf8(comment_bytes)?;
+		let mut comment_split = comment.splitn(2, '=');
 
-		let split: Vec<&str> = comment.splitn(2, '=').collect();
+		let key = match comment_split.next() {
+			Some(k) => k,
+			None => continue,
+		};
 
-		match &*split[0] {
-			"METADATA_BLOCK_PICTURE" => tag
-				.pictures
-				.push(Picture::from_flac_bytes(split[1].as_bytes(), true)?),
-			_ => tag.items.push((split[0].to_string(), split[1].to_string())),
+		// Make sure there was a separator present, otherwise just move on
+		if let Some(value) = comment_split.next() {
+			match key {
+				"METADATA_BLOCK_PICTURE" => tag
+					.pictures
+					.push(Picture::from_flac_bytes(value.as_bytes(), true)?),
+				// The valid range is 0x20..=0x7D not including 0x3D
+				k if k.chars().all(|c| (' '..='}').contains(&c) && c != '=') => {
+					tag.items.push((k.to_string(), value.to_string()))
+				},
+				_ => {}, // Discard invalid keys
+			}
 		}
 	}
 
