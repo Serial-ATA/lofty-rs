@@ -1,5 +1,6 @@
 use super::find_last_page;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -134,7 +135,12 @@ where
 	let file_length = data.seek(SeekFrom::End(0))?;
 
 	last_page_abgp.checked_sub(first_page_abgp).map_or_else(
-		|| Err(LoftyError::Vorbis("File contains incorrect PCM values")),
+		|| {
+			Err(
+				FileDecodingError::new(FileType::Vorbis, "File contains incorrect PCM values")
+					.into(),
+			)
+		},
 		|frame_count| {
 			let length = frame_count * 1000 / u64::from(sample_rate);
 			let duration = Duration::from_millis(length as u64);

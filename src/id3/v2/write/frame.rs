@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
 use crate::id3::v2::synch_u32;
 
@@ -34,7 +34,7 @@ fn verify_frame(frame: &FrameRef) -> Result<()> {
 		| ("WFED" | "GRP1", FrameValue::Text { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, FrameValue::URL(_)) if id.starts_with('W') => Ok(()),
-		(id, frame_value) => Err(LoftyError::BadFrame(
+		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
 			id.to_string(),
 			match frame_value {
 				FrameValue::Comment(_) => "Comment",
@@ -46,7 +46,8 @@ fn verify_frame(frame: &FrameRef) -> Result<()> {
 				FrameValue::Picture { .. } => "Picture",
 				FrameValue::Binary(_) => "Binary",
 			},
-		)),
+		))
+		.into()),
 	}
 }
 
@@ -86,9 +87,10 @@ where
 	let data_length_indicator = flags.data_length_indicator;
 
 	if method_symbol > 0x80 {
-		return Err(LoftyError::Id3v2(
+		return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 			"Attempted to write an encrypted frame with an invalid method symbol (> 0x80)",
-		));
+		))
+		.into());
 	}
 
 	if data_length_indicator.0 && data_length_indicator.1 > 0 {
@@ -100,9 +102,10 @@ where
 		return Ok(());
 	}
 
-	Err(LoftyError::Id3v2(
+	Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 		"Attempted to write an encrypted frame without a data length indicator",
 	))
+	.into())
 }
 
 fn write_frame_header<W>(writer: &mut W, name: &str, len: u32, flags: FrameFlags) -> Result<()>

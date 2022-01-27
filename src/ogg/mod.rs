@@ -13,6 +13,7 @@ pub(crate) mod vorbis;
 #[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
 
+use crate::error::{FileDecodingError, Result};
 pub use crate::ogg::flac::FlacFile;
 pub use crate::ogg::opus::properties::OpusProperties;
 pub use crate::ogg::opus::OpusFile;
@@ -20,8 +21,7 @@ pub use crate::ogg::opus::OpusFile;
 pub use crate::ogg::tag::VorbisComments;
 pub use crate::ogg::vorbis::properties::VorbisProperties;
 pub use crate::ogg::vorbis::VorbisFile;
-
-use crate::{LoftyError, Result};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek};
 
@@ -31,7 +31,9 @@ pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();
 
 	if page.content().len() < sig_len || &page.content()[..sig_len] != sig {
-		return Err(LoftyError::Ogg("File missing magic signature"));
+		return Err(
+			FileDecodingError::new(FileType::Vorbis, "File missing magic signature").into(),
+		);
 	}
 
 	Ok(())

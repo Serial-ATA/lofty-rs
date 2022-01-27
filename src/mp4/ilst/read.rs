@@ -1,5 +1,5 @@
 use super::{Atom, AtomData, AtomIdent, Ilst};
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::mp4::atom_info::AtomInfo;
@@ -74,7 +74,11 @@ where
 
 	match atom.ident {
 		AtomIdent::Fourcc(ref name) if name == b"data" => {},
-		_ => return Err(LoftyError::BadAtom("Expected atom \"data\" to follow name")),
+		_ => {
+			return Err(LoftyError::new(ErrorKind::BadAtom(
+				"Expected atom \"data\" to follow name",
+			)))
+		},
 	}
 
 	// We don't care about the version
@@ -113,9 +117,9 @@ fn parse_uint(bytes: &[u8]) -> Result<u32> {
 		3 => u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
 		4 => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
 		_ => {
-			return Err(LoftyError::BadAtom(
+			return Err(LoftyError::new(ErrorKind::BadAtom(
 				"Unexpected atom size for type \"BE unsigned integer\"",
-			))
+			)))
 		},
 	})
 }
@@ -127,9 +131,9 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]) as i32,
 		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as i32,
 		_ => {
-			return Err(LoftyError::BadAtom(
+			return Err(LoftyError::new(ErrorKind::BadAtom(
 				"Unexpected atom size for type \"BE signed integer\"",
-			))
+			)))
 		},
 	})
 }
@@ -146,9 +150,17 @@ fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst) -> Result<()> {
 			13 => (MimeType::Jpeg, data),
 			14 => (MimeType::Png, data),
 			27 => (MimeType::Bmp, data),
-			_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
+			_ => {
+				return Err(LoftyError::new(ErrorKind::BadAtom(
+					"\"covr\" atom has an unknown type",
+				)))
+			},
 		},
-		_ => return Err(LoftyError::BadAtom("\"covr\" atom has an unknown type")),
+		_ => {
+			return Err(LoftyError::new(ErrorKind::BadAtom(
+				"\"covr\" atom has an unknown type",
+			)))
+		},
 	};
 
 	tag.atoms.push(Atom {

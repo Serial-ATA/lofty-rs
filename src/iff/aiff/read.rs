@@ -1,10 +1,11 @@
 #[cfg(feature = "aiff_text_chunks")]
 use super::tag::{AiffTextChunks, Comment};
 use super::AiffFile;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
+use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -19,7 +20,7 @@ where
 	data.read_exact(&mut id)?;
 
 	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[..8] == b"AIFC")) {
-		return Err(LoftyError::UnknownFormat);
+		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
 	Ok(())
@@ -52,9 +53,11 @@ where
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			b"COMM" if read_properties && comm.is_none() => {
 				if chunks.size < 18 {
-					return Err(LoftyError::Aiff(
+					return Err(FileDecodingError::new(
+						FileType::AIFF,
 						"File has an invalid \"COMM\" chunk size (< 18)",
-					));
+					)
+					.into());
 				}
 
 				comm = Some(chunks.content(data)?);
@@ -119,11 +122,19 @@ where
 
 	let properties = if read_properties {
 		if comm.is_none() {
-			return Err(LoftyError::Aiff("File does not contain a \"COMM\" chunk"));
+			return Err(FileDecodingError::new(
+				FileType::AIFF,
+				"File does not contain a \"COMM\" chunk",
+			)
+			.into());
 		}
 
 		if stream_len == 0 {
-			return Err(LoftyError::Aiff("File does not contain a \"SSND\" chunk"));
+			return Err(FileDecodingError::new(
+				FileType::AIFF,
+				"File does not contain a \"SSND\" chunk",
+			)
+			.into());
 		}
 
 		super::properties::read_properties(

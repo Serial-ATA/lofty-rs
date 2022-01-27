@@ -2,7 +2,8 @@ use super::ape_tag::ApeTag;
 use super::item::ApeItem;
 use super::ApeHeader;
 use crate::ape::constants::INVALID_KEYS;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 use crate::types::item::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -19,7 +20,11 @@ where
 		let value_size = data.read_u32::<LittleEndian>()?;
 
 		if value_size == 0 {
-			return Err(LoftyError::Ape("Tag item value has an invalid size (0)"));
+			return Err(FileDecodingError::new(
+				FileType::APE,
+				"APE tag item value has an invalid size (0)",
+			)
+			.into());
 		}
 
 		let flags = data.read_u32::<LittleEndian>()?;
@@ -32,11 +37,16 @@ where
 			key_char = data.read_u8()?;
 		}
 
-		let key = String::from_utf8(key)
-			.map_err(|_| LoftyError::Ape("Tag item contains a non UTF-8 key"))?;
+		let key = String::from_utf8(key).map_err(|_| {
+			FileDecodingError::new(FileType::APE, "APE tag item contains a non UTF-8 key")
+		})?;
 
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			return Err(LoftyError::Ape("Tag item contains an illegal key"));
+			return Err(FileDecodingError::new(
+				FileType::APE,
+				"APE tag item contains an illegal key",
+			)
+			.into());
 		}
 
 		let read_only = (flags & 1) == 1;
@@ -48,13 +58,25 @@ where
 
 		let parsed_value = match item_type {
 			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
-				LoftyError::Ape("Expected a string value based on flags, found binary data")
+				FileDecodingError::new(
+					FileType::APE,
+					"Expected a string value based on flags, found binary data",
+				)
 			})?),
 			1 => ItemValue::Binary(value),
 			2 => ItemValue::Locator(String::from_utf8(value).map_err(|_| {
-				LoftyError::Ape("Failed to convert locator item into a UTF-8 string")
+				FileDecodingError::new(
+					FileType::APE,
+					"Failed to convert locator item into a UTF-8 string",
+				)
 			})?),
-			_ => return Err(LoftyError::Ape("Tag item contains an invalid item type")),
+			_ => {
+				return Err(FileDecodingError::new(
+					FileType::APE,
+					"APE tag item contains an invalid item type",
+				)
+				.into())
+			},
 		};
 
 		let mut item = ApeItem::new(key, parsed_value)?;

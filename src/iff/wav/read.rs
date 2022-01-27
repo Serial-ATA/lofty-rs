@@ -2,10 +2,11 @@ use super::properties::WavProperties;
 #[cfg(feature = "riff_info_list")]
 use super::tag::RiffInfoList;
 use super::WavFile;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -19,11 +20,15 @@ where
 	data.read_exact(&mut id)?;
 
 	if &id[..4] != b"RIFF" {
-		return Err(LoftyError::Wav("WAV file doesn't contain a RIFF chunk"));
+		return Err(
+			FileDecodingError::new(FileType::WAV, "WAV file doesn't contain a RIFF chunk").into(),
+		);
 	}
 
 	if &id[8..] != b"WAVE" {
-		return Err(LoftyError::Wav("Found RIFF file, format is not WAVE"));
+		return Err(
+			FileDecodingError::new(FileType::WAV, "Found RIFF file, format is not WAVE").into(),
+		);
 	}
 
 	Ok(())
@@ -93,13 +98,19 @@ where
 
 	let properties = if read_properties {
 		if fmt.len() < 16 {
-			return Err(LoftyError::Wav(
+			return Err(FileDecodingError::new(
+				FileType::WAV,
 				"File does not contain a valid \"fmt \" chunk",
-			));
+			)
+			.into());
 		}
 
 		if stream_len == 0 {
-			return Err(LoftyError::Wav("File does not contain a \"data\" chunk"));
+			return Err(FileDecodingError::new(
+				FileType::WAV,
+				"File does not contain a \"data\" chunk",
+			)
+			.into());
 		}
 
 		let file_length = data.seek(SeekFrom::Current(0))?;

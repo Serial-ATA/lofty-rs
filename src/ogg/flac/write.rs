@@ -1,6 +1,6 @@
 use super::block::Block;
 use super::read::verify_flac;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::types::picture::{Picture, PictureInformation};
@@ -130,7 +130,7 @@ fn create_comment_block(
 		let len = (writer.get_ref().len() - 1) as u32;
 
 		if len > MAX_BLOCK_SIZE {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		let comment_end = writer.seek(SeekFrom::Current(0))?;
@@ -161,7 +161,7 @@ fn create_picture_blocks(
 		let pic_len = pic_bytes.len() as u32;
 
 		if pic_len > MAX_BLOCK_SIZE {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		writer.write_all(&pic_len.to_be_bytes()[1..])?;

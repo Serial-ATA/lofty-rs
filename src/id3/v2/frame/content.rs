@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
 use crate::id3::v2::Id3v2Version;
@@ -48,10 +48,11 @@ impl LanguageFrame {
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut bytes = vec![self.encoding as u8];
 
-		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..'z').contains(&c)) {
-			return Err(LoftyError::Id3v2(
+		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..='z').contains(&c)) {
+			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 				"Invalid frame language found (expected 3 ascii characters)",
-			));
+			))
+			.into());
 		}
 
 		bytes.extend(self.language.as_bytes().iter());
@@ -129,11 +130,15 @@ pub(super) fn parse_content(
 // There are 2 possibilities for the frame's content: text or link.
 fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 	if content.len() < 2 {
-		return Err(LoftyError::BadFrameLength);
+		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
 	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => return Err(LoftyError::TextDecode("Found invalid encoding")),
+		None => {
+			return Err(LoftyError::new(ErrorKind::TextDecode(
+				"Found invalid encoding",
+			)))
+		},
 		Some(e) => e,
 	};
 
@@ -161,11 +166,15 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 
 fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 	if content.len() < 5 {
-		return Err(LoftyError::BadFrameLength);
+		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
 	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => return Err(LoftyError::TextDecode("Found invalid encoding")),
+		None => {
+			return Err(LoftyError::new(ErrorKind::TextDecode(
+				"Found invalid encoding",
+			)))
+		},
 		Some(e) => e,
 	};
 
@@ -173,7 +182,7 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 	content.read_exact(&mut lang)?;
 
 	let lang = std::str::from_utf8(&lang)
-		.map_err(|_| LoftyError::TextDecode("Unable to decode language string"))?;
+		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Unable to decode language string")))?;
 
 	let description = decode_text(content, encoding, true)?;
 	let content = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
@@ -181,7 +190,7 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 	let information = LanguageFrame {
 		encoding,
 		language: lang.to_string(),
-		description: description.unwrap_or_else(|| String::from("")),
+		description: description.unwrap_or_default(),
 		content,
 	};
 
@@ -196,7 +205,11 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 
 fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => return Err(LoftyError::TextDecode("Found invalid encoding")),
+		None => {
+			return Err(LoftyError::new(ErrorKind::TextDecode(
+				"Found invalid encoding",
+			)))
+		},
 		Some(e) => e,
 	};
 

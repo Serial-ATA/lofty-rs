@@ -1,5 +1,5 @@
 use super::tag::Id3v1TagRef;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::probe::Probe;
 use crate::types::file::FileType;
@@ -15,7 +15,7 @@ pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
 
 	match probe.file_type() {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
-		_ => return Err(LoftyError::UnsupportedTag),
+		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 
 	let writer = probe.into_inner();

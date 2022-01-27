@@ -1,6 +1,6 @@
 use super::item::{ItemKey, ItemValue, TagItem};
 use super::picture::{Picture, PictureType};
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::probe::Probe;
 
 use std::fs::{File, OpenOptions};
@@ -376,10 +376,10 @@ impl Tag {
 				if file_type.supports_tag_type(self.tag_type()) {
 					crate::tag_utils::write_tag(self, probe.into_inner(), file_type)
 				} else {
-					Err(LoftyError::UnsupportedTag)
+					Err(LoftyError::new(ErrorKind::UnsupportedTag))
 				}
 			},
-			None => Err(LoftyError::UnknownFormat),
+			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		}
 	}
 
@@ -407,6 +407,7 @@ impl Tag {
 
 /// The tag's format
 #[derive(Copy, Clone, Debug, PartialEq)]
+#[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,

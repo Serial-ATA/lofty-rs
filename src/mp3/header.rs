@@ -1,5 +1,6 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 
 use std::io::Read;
 
@@ -107,7 +108,13 @@ impl Header {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
-			_ => return Err(LoftyError::Mp3("Frame header has an invalid version")),
+			_ => {
+				return Err(FileDecodingError::new(
+					FileType::MP3,
+					"Frame header has an invalid version",
+				)
+				.into())
+			},
 		};
 
 		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
@@ -116,7 +123,13 @@ impl Header {
 			1 => Layer::Layer3,
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
-			_ => return Err(LoftyError::Mp3("Frame header uses a reserved layer")),
+			_ => {
+				return Err(FileDecodingError::new(
+					FileType::MP3,
+					"Frame header uses a reserved layer",
+				)
+				.into())
+			},
 		};
 
 		let layer_index = (layer as usize).saturating_sub(1);
@@ -146,7 +159,7 @@ impl Header {
 			1 => ChannelMode::JointStereo,
 			2 => ChannelMode::DualChannel,
 			3 => ChannelMode::SingleChannel,
-			_ => return Err(LoftyError::Mp3("Unreachable error")),
+			_ => unreachable!(),
 		};
 
 		let data_start = SIDE_INFORMATION_SIZES[version_index][channel_mode as usize] + 4;
@@ -196,16 +209,22 @@ impl XingHeader {
 		match &header {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
-					return Err(LoftyError::Mp3("Xing header has an invalid size (< 16)"));
+					return Err(FileDecodingError::new(
+						FileType::MP3,
+						"Xing header has an invalid size (< 16)",
+					)
+					.into());
 				}
 
 				let mut flags = [0; 4];
 				reader.read_exact(&mut flags)?;
 
 				if flags[3] & 0x03 != 0x03 {
-					return Err(LoftyError::Mp3(
+					return Err(FileDecodingError::new(
+						FileType::MP3,
 						"Xing header doesn't have required flags set (0x0001 and 0x0002)",
-					));
+					)
+					.into());
 				}
 
 				let frames = reader.read_u32::<BigEndian>()?;
@@ -215,7 +234,11 @@ impl XingHeader {
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
-					return Err(LoftyError::Mp3("VBRI header has an invalid size (< 32)"));
+					return Err(FileDecodingError::new(
+						FileType::MP3,
+						"VBRI header has an invalid size (< 32)",
+					)
+					.into());
 				}
 
 				// Skip 6 bytes
@@ -229,7 +252,11 @@ impl XingHeader {
 
 				Ok(Self { frames, size })
 			},
-			_ => Err(LoftyError::Mp3("No Xing, LAME, or VBRI header located")),
+			_ => Err(FileDecodingError::new(
+				FileType::MP3,
+				"No Xing, LAME, or VBRI header located",
+			)
+			.into()),
 		}
 	}
 }

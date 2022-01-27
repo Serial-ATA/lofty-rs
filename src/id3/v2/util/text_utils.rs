@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 
 use std::convert::TryInto;
 use std::io::Read;
@@ -57,28 +57,30 @@ where
 			TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
 			TextEncoding::UTF16 => {
 				if raw_bytes.len() < 2 {
-					return Err(LoftyError::TextDecode(
+					return Err(LoftyError::new(ErrorKind::TextDecode(
 						"UTF-16 string has an invalid length (< 2)",
-					));
+					)));
 				}
 
 				if raw_bytes.len() % 2 != 0 {
-					return Err(LoftyError::TextDecode("UTF-16 string has an odd length"));
+					return Err(LoftyError::new(ErrorKind::TextDecode(
+						"UTF-16 string has an odd length",
+					)));
 				}
 
 				match (raw_bytes[0], raw_bytes[1]) {
 					(0xFE, 0xFF) => utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?,
 					(0xFF, 0xFE) => utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?,
 					_ => {
-						return Err(LoftyError::TextDecode(
+						return Err(LoftyError::new(ErrorKind::TextDecode(
 							"UTF-16 string has an invalid byte order mark",
-						))
+						)))
 					},
 				}
 			},
 			TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
 			TextEncoding::UTF8 => String::from_utf8(raw_bytes)
-				.map_err(|_| LoftyError::TextDecode("Expected a UTF-8 string"))?,
+				.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
 		};
 
 		(!read_string.is_empty()).then(|| read_string)
@@ -132,7 +134,7 @@ pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Res
 		.collect();
 
 	String::from_utf16(&unverified)
-		.map_err(|_| LoftyError::TextDecode("Given an invalid UTF-16 string"))
+		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
 }
 
 #[allow(unused)]

@@ -47,7 +47,7 @@ pub use {
 #[cfg(not(feature = "id3v2"))]
 use flags::Id3v2TagFlags;
 
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 
 use std::io::Read;
 
@@ -73,7 +73,7 @@ pub(crate) fn unsynch_u32(n: u32) -> u32 {
 // https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
 pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 	if n > 0x1000_0000 {
-		return Err(LoftyError::TooMuchData);
+		return Err(LoftyError::new(ErrorKind::TooMuchData));
 	}
 
 	let mut x: u32 = n & 0x7F | (n & 0xFFFF_FF80) << 1;
@@ -98,7 +98,7 @@ where
 	bytes.read_exact(&mut header)?;
 
 	if &header[..3] != b"ID3" {
-		return Err(LoftyError::FakeTag);
+		return Err(LoftyError::new(ErrorKind::FakeTag));
 	}
 
 	// Version is stored as [major, minor], but here we don't care about minor revisions unless there's an error.
@@ -106,7 +106,9 @@ where
 		2 => Id3v2Version::V2,
 		3 => Id3v2Version::V3,
 		4 => Id3v2Version::V4,
-		major => return Err(LoftyError::BadId3v2Version(major, header[4])),
+		major => {
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into())
+		},
 	};
 
 	let flags = header[5];
@@ -115,7 +117,10 @@ where
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
 	if version == Id3v2Version::V2 && flags & 0x40 == 0x40 {
-		return Err(LoftyError::Id3v2("Encountered a compressed ID3v2.2 tag"));
+		return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+			"Encountered a compressed ID3v2.2 tag",
+		))
+		.into());
 	}
 
 	let mut flags_parsed = Id3v2TagFlags {
@@ -136,9 +141,10 @@ where
 		let extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
-			return Err(LoftyError::Id3v2(
+			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 				"Found an extended header with an invalid size (< 6)",
-			));
+			))
+			.into());
 		}
 
 		// Useless byte since there's only 1 byte for flags

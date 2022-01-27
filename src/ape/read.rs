@@ -3,12 +3,13 @@ use super::constants::APE_PREAMBLE;
 use super::tag::{ape_tag::ApeTag, read::read_ape_tag};
 use super::{ApeFile, ApeProperties};
 use crate::ape::tag::read_ape_header;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{read::parse_id3v2, tag::Id3v2Tag};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -68,13 +69,16 @@ where
 				// Get the remaining part of the ape tag
 				let mut remaining = [0; 4];
 				data.read_exact(&mut remaining).map_err(|_| {
-					LoftyError::Ape(
+					FileDecodingError::new(
+						FileType::APE,
 						"Found partial APE tag, but there isn't enough data left in the reader",
 					)
 				})?;
 
 				if &remaining[..4] != b"AGEX" {
-					return Err(LoftyError::Ape("Found incomplete APE tag"));
+					return Err(
+						FileDecodingError::new(FileType::APE, "Found incomplete APE tag").into(),
+					);
 				}
 
 				let ape_header = read_ape_header(data, false)?;
@@ -90,10 +94,12 @@ where
 				data.seek(SeekFrom::Current(ape_header.size as i64))?;
 			},
 			_ => {
-				return Err(LoftyError::Ape(
+				return Err(FileDecodingError::new(
+					FileType::APE,
 					"Invalid data found while reading header, expected any of [\"MAC \", \
 					 \"APETAGEX\", \"ID3\"]",
-				))
+				)
+				.into())
 			},
 		}
 	}

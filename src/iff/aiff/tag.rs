@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::tag::{Accessor, Tag, TagType};
@@ -296,7 +296,7 @@ where
 						let comt_len = comt.text.len();
 
 						if comt_len > u16::MAX as usize {
-							return Err(LoftyError::TooMuchData);
+							return Err(LoftyError::new(ErrorKind::TooMuchData));
 						}
 
 						text_chunks.extend((comt_len as u16).to_be_bytes());
@@ -319,7 +319,7 @@ where
 							i += 1;
 						}
 					} else {
-						return Err(LoftyError::TooMuchData);
+						return Err(LoftyError::new(ErrorKind::TooMuchData));
 					}
 
 					if (text_chunks.len() - 4) % 2 != 0 {

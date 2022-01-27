@@ -2,7 +2,7 @@ mod chunk_file;
 mod frame;
 
 use super::Id3v2TagFlags;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::synch_u32;
@@ -34,7 +34,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 		Some(FileType::AIFF) => {
 			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?)
 		},
-		_ => return Err(LoftyError::UnsupportedTag),
+		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 
 	let id3v2 = create_tag(tag)?;

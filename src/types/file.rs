@@ -1,6 +1,6 @@
 use super::properties::FileProperties;
 use super::tag::{Tag, TagType};
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 
 use std::convert::TryInto;
 use std::ffi::OsStr;
@@ -173,6 +173,7 @@ impl TaggedFile {
 
 #[derive(PartialEq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
+#[non_exhaustive]
 /// The type of file read
 pub enum FileType {
 	AIFF,
@@ -263,7 +264,7 @@ impl FileType {
 	///
 	/// # Errors
 	///
-	/// This will return [`LoftyError::BadExtension`] if the extension didn't map to a `FileType`
+	/// This will return [`ErrorKind::BadExtension`] if the extension didn't map to a `FileType`
 	pub fn from_path<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<Path>,
@@ -277,7 +278,7 @@ impl FileType {
 					None => String::new(),
 				};
 
-				Err(LoftyError::BadExtension(ext_err))
+				Err(LoftyError::new(ErrorKind::BadExtension(ext_err)))
 			},
 			Ok,
 		)

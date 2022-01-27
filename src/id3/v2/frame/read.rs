@@ -1,6 +1,6 @@
 use super::header::{parse_header, parse_v2_header};
 use super::Frame;
-use crate::error::{LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::{FrameValue, Id3v2Version};
 
@@ -35,7 +35,9 @@ impl Frame {
 			flate2::Decompress::new(true)
 				.decompress_vec(&content, &mut decompressed, flate2::FlushDecompress::None)
 				.map_err(|_| {
-					LoftyError::Id3v2("Encountered a compressed frame, failed to decompress")
+					Id3v2Error::new(Id3v2ErrorKind::Other(
+						"Encountered a compressed frame, failed to decompress",
+					))
 				})?;
 
 			content = decompressed
@@ -60,9 +62,10 @@ impl Frame {
 
 		let value = if flags.encryption.0 {
 			if !flags.data_length_indicator.0 {
-				return Err(LoftyError::Id3v2(
+				return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 					"Encountered an encrypted frame without a data length indicator",
-				));
+				))
+				.into());
 			}
 
 			FrameValue::Binary(content)

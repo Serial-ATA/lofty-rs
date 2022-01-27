@@ -1,5 +1,5 @@
 use crate::ape::ApeFile;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::mp3::header::search_for_frame_sync;
@@ -140,7 +140,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// All errors that occur within this function are [`std::io::Error`].
 	/// If an error does occur, there is likely an issue with the provided
 	/// reader, and the entire `Probe` should be discarded.
-	pub fn guess_file_type(mut self) -> Result<Self> {
+	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
 		let f_ty = self.guess_inner()?;
 		self.f_ty = f_ty.or(self.f_ty);
 
@@ -226,7 +226,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
 				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
 			}),
-			None => Err(LoftyError::UnknownFormat),
+			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		}
 	}
 }

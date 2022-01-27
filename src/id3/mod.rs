@@ -6,7 +6,7 @@
 pub mod v1;
 pub mod v2;
 
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use v2::{read_id3v2_header, Id3v2Header};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -30,9 +30,11 @@ where
 		header = Some(());
 
 		let lyrics_size = std::str::from_utf8(&lyrics3v2[..7])?;
-		let lyrics_size = lyrics_size
-			.parse::<u32>()
-			.map_err(|_| LoftyError::TextDecode("Lyrics3v2 tag has an invalid size string"))?;
+		let lyrics_size = lyrics_size.parse::<u32>().map_err(|_| {
+			LoftyError::new(ErrorKind::TextDecode(
+				"Lyrics3v2 tag has an invalid size string",
+			))
+		})?;
 
 		size += lyrics_size;
 

@@ -1,6 +1,7 @@
 use super::RiffInfoList;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 use crate::iff::chunk::Chunks;
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -17,18 +18,26 @@ where
 	let mut chunks = Chunks::<LittleEndian>::new();
 
 	while data.seek(SeekFrom::Current(0))? != end && chunks.next(data).is_ok() {
-		let key_str = String::from_utf8(chunks.fourcc.to_vec())
-			.map_err(|_| LoftyError::Wav("Non UTF-8 key found in RIFF INFO"))?;
+		let key_str = String::from_utf8(chunks.fourcc.to_vec()).map_err(|_| {
+			FileDecodingError::new(FileType::WAV, "Non UTF-8 item key found in RIFF INFO")
+		})?;
 
-		if !key_str.is_ascii() {
-			return Err(LoftyError::Wav("Non-ascii key found in RIFF INFO"));
+		if key_str
+			.chars()
+			.any(|c| !('A'..='Z').contains(&c) && !('0'..='9').contains(&c))
+		{
+			return Err(FileDecodingError::new(
+				FileType::WAV,
+				"RIFF INFO item key contains invalid characters",
+			)
+			.into());
 		}
 
 		tag.items.push((
 			key_str.to_string(),
-			chunks
-				.read_cstring(data)
-				.map_err(|_| LoftyError::Wav("Failed to read the chunk value"))?,
+			chunks.read_cstring(data).map_err(|_| {
+				FileDecodingError::new(FileType::WAV, "Failed to read RIFF INFO item value")
+			})?,
 		));
 	}
 

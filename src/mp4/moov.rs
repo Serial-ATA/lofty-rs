@@ -3,7 +3,8 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::{read::parse_ilst, Ilst};
 use super::read::skip_unneeded;
 use super::trak::Trak;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek};
 
@@ -34,7 +35,7 @@ impl Moov {
 		}
 
 		if !moov.0 {
-			return Err(LoftyError::Mp4("No \"moov\" atom found"));
+			return Err(FileDecodingError::new(FileType::MP4, "No \"moov\" atom found").into());
 		}
 
 		Ok(moov.1.unwrap())

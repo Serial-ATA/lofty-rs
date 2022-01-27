@@ -1,7 +1,7 @@
 use super::read::read_ape_tag;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::ape_tag::ApeTagRef;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
 use crate::types::file::FileType;
@@ -19,7 +19,7 @@ pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 
 	match probe.file_type() {
 		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
-		_ => return Err(LoftyError::UnsupportedTag),
+		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 
 	let data = probe.into_inner();
@@ -92,7 +92,11 @@ pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 		if let Some(start) = start.checked_sub(size as usize) {
 			ape_tag_location = Some(start..start + size as usize);
 		} else {
-			return Err(LoftyError::Ape("File has a tag with an invalid size"));
+			return Err(FileDecodingError::new(
+				FileType::APE,
+				"File has a tag with an invalid size",
+			)
+			.into());
 		}
 	}
 
@@ -173,7 +177,7 @@ pub(super) fn create_ape_tag(tag: &mut ApeTagRef) -> Result<Vec<u8>> {
 		let size = tag_write.get_ref().len();
 
 		if size as u64 + 32 > u64::from(u32::MAX) {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		let mut footer = [0_u8; 32];

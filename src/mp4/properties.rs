@@ -1,7 +1,8 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded};
 use super::trak::Trak;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -168,12 +169,16 @@ where
 	}
 
 	if !audio_track {
-		return Err(LoftyError::Mp4("File contains no audio tracks"));
+		return Err(FileDecodingError::new(FileType::MP4, "File contains no audio tracks").into());
 	}
 
 	let mdhd = match mdhd {
 		Some(mdhd) => mdhd,
-		None => return Err(LoftyError::BadAtom("Expected atom \"trak.mdia.mdhd\"")),
+		None => {
+			return Err(LoftyError::new(ErrorKind::BadAtom(
+				"Expected atom \"trak.mdia.mdhd\"",
+			)))
+		},
 	};
 
 	data.seek(SeekFrom::Start(mdhd.start + 8))?;

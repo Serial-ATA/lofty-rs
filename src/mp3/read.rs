@@ -4,11 +4,12 @@ use crate::ape::constants::APE_PREAMBLE;
 #[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
 use crate::ape::tag::read_ape_header;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -95,14 +96,18 @@ where
 					reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 					let header = Header::read(reader.read_u32::<BigEndian>()?)?;
 
-					file.first_frame_offset = Some(first_mp3_frame_start_absolute);
+					file.first_frame_offset = first_mp3_frame_start_absolute;
 					first_frame_header = Some(header);
 
 					// We have found the first frame
 					break;
 				}
 				// the search for sync bits was unsuccessful
-				return Err(LoftyError::Mp3("File contains an invalid frame"));
+				return Err(FileDecodingError::new(
+					FileType::MP3,
+					"File contains an invalid frame",
+				)
+				.into());
 			},
 		}
 	}
@@ -140,17 +145,14 @@ where
 	file.last_frame_offset = reader.seek(SeekFrom::Current(0))?;
 
 	file.properties = if read_properties {
-		if file.first_frame_offset.is_none() {
-			return Err(LoftyError::Mp3("Unable to find an MPEG frame"));
-		}
-
+		// Safe to unwrap, since we return early if no frame is found
 		let first_frame_header = first_frame_header.unwrap();
 
 		if first_frame_header.sample_rate == 0 {
-			return Err(LoftyError::Mp3("Sample rate is 0"));
+			return Err(FileDecodingError::new(FileType::MP3, "Sample rate is 0").into());
 		}
 
-		let first_frame_offset = file.first_frame_offset.unwrap();
+		let first_frame_offset = file.first_frame_offset;
 
 		let file_length = reader.seek(SeekFrom::End(0))?;
 

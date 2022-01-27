@@ -1,8 +1,9 @@
 use super::block::Block;
 use super::FlacFile;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::{read::read_comments, tag::VorbisComments};
+use crate::types::file::FileType;
 #[cfg(feature = "vorbis_comments")]
 use crate::types::picture::Picture;
 use crate::types::properties::FileProperties;
@@ -17,13 +18,19 @@ where
 	data.read_exact(&mut marker)?;
 
 	if &marker != b"fLaC" {
-		return Err(LoftyError::Flac("File missing \"fLaC\" stream marker"));
+		return Err(
+			FileDecodingError::new(FileType::FLAC, "File missing \"fLaC\" stream marker").into(),
+		);
 	}
 
 	let block = Block::read(data)?;
 
 	if block.ty != 0 {
-		return Err(LoftyError::Flac("File missing mandatory STREAMINFO block"));
+		return Err(FileDecodingError::new(
+			FileType::FLAC,
+			"File missing mandatory STREAMINFO block",
+		)
+		.into());
 	}
 
 	Ok(block)
@@ -37,9 +44,11 @@ where
 	let stream_info_len = (stream_info.end - stream_info.start) as u32;
 
 	if stream_info_len < 18 {
-		return Err(LoftyError::Flac(
+		return Err(FileDecodingError::new(
+			FileType::FLAC,
 			"File has an invalid STREAMINFO block size (< 18)",
-		));
+		)
+		.into());
 	}
 
 	let mut last_block = stream_info.last;

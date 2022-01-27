@@ -3,7 +3,8 @@ pub(crate) mod text_utils;
 pub(crate) mod upgrade;
 
 #[cfg(feature = "id3v2")]
-use crate::error::{LoftyError, Result};
+use crate::error::Result;
+use crate::error::{Id3v2Error, Id3v2ErrorKind};
 
 #[cfg(feature = "id3v2")]
 pub(in crate::id3::v2) fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
@@ -21,9 +22,10 @@ pub(in crate::id3::v2) fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
 		// Then remove the next byte if it is a zero
 		if discard {
 			if content[next] >= 0xE0 {
-				return Err(LoftyError::Id3v2(
+				return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
 					"Encountered an invalid unsynchronisation",
-				));
+				))
+				.into());
 			}
 
 			if content[next] == 0 {

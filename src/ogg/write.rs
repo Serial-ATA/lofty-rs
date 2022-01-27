@@ -1,5 +1,5 @@
 use super::verify_signature;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::types::picture::PictureInformation;
@@ -16,7 +16,7 @@ pub(in crate) fn write_to(data: &mut File, tag: &Tag, sig: &[u8]) -> Result<()> 
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
 		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef>::into(tag), sig),
-		_ => Err(LoftyError::UnsupportedTag),
+		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
 

@@ -152,7 +152,7 @@
 )]
 
 pub mod ape;
-mod error;
+pub mod error;
 pub mod id3;
 pub mod iff;
 pub mod mp3;

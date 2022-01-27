@@ -1,7 +1,7 @@
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 #[cfg(feature = "vorbis_comments")]
 use crate::types::picture::Picture;
 
@@ -29,7 +29,12 @@ where
 
 	let vendor = match String::from_utf8(vendor) {
 		Ok(v) => v,
-		Err(_) => return Err(LoftyError::Ogg("File has an invalid vendor string")),
+		Err(_) => {
+			return Err(FileDecodingError::from_description(
+				"OGG: File has an invalid vendor string",
+			)
+			.into())
+		},
 	};
 
 	tag.vendor = vendor;
@@ -84,7 +89,7 @@ where
 
 	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		if page.header_type() & 0x01 == 1 {

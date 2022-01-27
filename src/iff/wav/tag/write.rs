@@ -1,5 +1,5 @@
 use super::RiffInfoListRef;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
 
@@ -113,7 +113,7 @@ pub(super) fn create_riff_info(
 	let packet_size = bytes.len() - 4;
 
 	if packet_size > u32::MAX as usize {
-		return Err(LoftyError::TooMuchData);
+		return Err(LoftyError::new(ErrorKind::TooMuchData));
 	}
 
 	let size = (packet_size as u32).to_le_bytes();

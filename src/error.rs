@@ -1,13 +1,21 @@
-use std::fmt::{Display, Formatter};
+//! Contains the errors that can arise within Lofty
+//!
+//! The primary error is [`LoftyError`]. The type of error is determined by [`ErrorKind`],
+//! which can be extended at any time.
+
+use crate::types::file::FileType;
+
+use std::fmt::{Debug, Display, Formatter};
 
 use ogg_pager::PageError;
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
 
-/// Errors that could occur within Lofty
 #[derive(Debug)]
-pub enum LoftyError {
+#[non_exhaustive]
+/// The types of errors that can occur
+pub enum ErrorKind {
 	// File extension/format related errors
 	/// Unsupported file extension
 	BadExtension(String),
@@ -15,15 +23,16 @@ pub enum LoftyError {
 	UnknownFormat,
 
 	// File data related errors
-	/// Provided an empty file
-	EmptyFile, // TODO: Remove this
 	/// Attempting to read/write an abnormally large amount of data
 	TooMuchData,
+	// TODO: Fallible allocation
+	/// Errors that occur while decoding a file
+	FileDecoding(FileDecodingError),
+	/// Errors that occur while encoding a file
+	FileEncoding(FileEncodingError),
 
 	// Picture related errors
 	#[cfg(feature = "id3v2")]
-	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version)
-	BadPictureFormat(String),
 	/// Provided an invalid picture
 	NotAPicture,
 	/// Attempted to write a picture that the format does not support
@@ -37,43 +46,10 @@ pub enum LoftyError {
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
-	Id3v2(&'static str),
-	/// Arises when an invalid ID3v2 version is found
-	BadId3v2Version(u8, u8),
-	#[cfg(feature = "id3v2")]
-	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
-	BadFrameID,
-	#[cfg(feature = "id3v2")]
-	/// Arises when a frame doesn't have enough data
-	BadFrameLength,
-	#[cfg(feature = "id3v2")]
-	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
-	BadSyncText,
-	#[cfg(feature = "id3v2")]
-	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
-	BadFrame(String, &'static str),
+	Id3v2(Id3v2Error),
+
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
-
-	// File specific errors
-	/// Errors that arise while reading/writing to WAV files
-	Wav(&'static str),
-	/// Errors that arise while reading/writing to AIFF files
-	Aiff(&'static str),
-	/// Errors that arise while reading/writing to FLAC files
-	Flac(&'static str),
-	/// Errors that arise while reading/writing to OPUS files
-	Opus(&'static str),
-	/// Errors that arise while reading/writing to OGG Vorbis files
-	Vorbis(&'static str),
-	/// Errors that arise while reading/writing to OGG files
-	Ogg(&'static str),
-	/// Errors that arise while reading/writing to MP3 files
-	Mp3(&'static str),
-	/// Errors that arise while reading/writing to MP4 files
-	Mp4(&'static str),
-	/// Errors that arise while reading/writing to APE files
-	Ape(&'static str),
 
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
@@ -86,98 +62,309 @@ pub enum LoftyError {
 	Io(std::io::Error),
 }
 
-impl Display for LoftyError {
+#[cfg(feature = "id3v2")]
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+/// The types of errors that can occur while interacting with ID3v2 tags
+pub enum Id3v2ErrorKind {
+	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
+	BadPictureFormat(String),
+	/// Arises when an invalid ID3v2 version is found
+	BadId3v2Version(u8, u8),
+	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
+	BadFrameID,
+	/// Arises when a frame doesn't have enough data
+	BadFrameLength,
+	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
+	BadSyncText,
+	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
+	BadFrame(String, &'static str),
+	/// A catch-all for all remaining errors
+	///
+	/// NOTE: This will likely be deprecated in the future
+	Other(&'static str),
+}
+
+impl Display for Id3v2ErrorKind {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
-			// Conversions
-			LoftyError::OggPage(ref err) => write!(f, "{}", err),
-			LoftyError::StringFromUtf8(ref err) => write!(f, "{}", err),
-			LoftyError::StrFromUtf8(ref err) => write!(f, "{}", err),
-			LoftyError::Io(ref err) => write!(f, "{}", err),
-
-			LoftyError::BadExtension(ext) => write!(f, "Found unknown file extension \"{}\"", ext),
-			LoftyError::UnknownFormat => {
-				write!(f, "No format could be determined from the provided file")
-			},
-			LoftyError::EmptyFile => write!(f, "File contains no data"),
-			LoftyError::TooMuchData => write!(
+			Id3v2ErrorKind::BadId3v2Version(major, minor) => write!(
 				f,
-				"An abnormally large amount of data was provided, and an overflow occurred"
-			),
-			LoftyError::NotAPicture => write!(f, "Picture: Encountered invalid data"),
-			LoftyError::UnsupportedPicture => {
-				write!(f, "Picture: attempted to write an unsupported picture")
-			},
-			LoftyError::UnsupportedTag => write!(
-				f,
-				"Attempted to write a tag to a format that does not support it"
-			),
-			LoftyError::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
-			#[cfg(feature = "id3v2")]
-			LoftyError::BadPictureFormat(format) => {
-				write!(f, "Picture: Found unexpected format \"{}\"", format)
-			},
-			LoftyError::TextDecode(message) => write!(f, "Text decoding: {}", message),
-			LoftyError::Id3v2(message) => write!(f, "ID3v2: {}", message),
-			LoftyError::BadId3v2Version(major, minor) => write!(
-				f,
-				"ID3v2: Found an invalid version (v{}.{}), expected any major revision in: (2, 3, \
-				 4)",
+				"Found an invalid version (v{}.{}), expected any major revision in: (2, 3, 4)",
 				major, minor
 			),
-			#[cfg(feature = "id3v2")]
-			LoftyError::BadFrameID => write!(f, "ID3v2: Failed to parse a frame ID"),
-			#[cfg(feature = "id3v2")]
-			LoftyError::BadFrameLength => write!(
+			Id3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
+			Id3v2ErrorKind::BadFrameLength => write!(
 				f,
-				"ID3v2: Frame isn't long enough to extract the necessary information"
+				"Frame isn't long enough to extract the necessary information"
 			),
-			#[cfg(feature = "id3v2")]
-			LoftyError::BadSyncText => write!(f, "ID3v2: Encountered invalid data in SYLT frame"),
-			#[cfg(feature = "id3v2")]
-			LoftyError::BadFrame(frame_id, frame_value) => write!(
+			Id3v2ErrorKind::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
+			Id3v2ErrorKind::BadFrame(ref frame_id, frame_value) => write!(
 				f,
-				"ID3v2: Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
+				"Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
 				frame_id, frame_value
 			),
-			LoftyError::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
-
-			// Files
-			LoftyError::Wav(message) => write!(f, "WAV: {}", message),
-			LoftyError::Aiff(message) => write!(f, "AIFF: {}", message),
-			LoftyError::Flac(message) => write!(f, "FLAC: {}", message),
-			LoftyError::Opus(message) => write!(f, "Opus: {}", message),
-			LoftyError::Vorbis(message) => write!(f, "OGG Vorbis: {}", message),
-			LoftyError::Ogg(message) => write!(f, "OGG: {}", message),
-			LoftyError::Mp3(message) => write!(f, "MP3: {}", message),
-			LoftyError::Mp4(message) => write!(f, "MP4: {}", message),
-			LoftyError::Ape(message) => write!(f, "APE: {}", message),
+			Id3v2ErrorKind::BadPictureFormat(format) => {
+				write!(f, "Picture: Found unexpected format \"{}\"", format)
+			},
+			Id3v2ErrorKind::Other(message) => write!(f, "{}", message),
 		}
+	}
+}
+
+/// An error that arises while interacting with an ID3v2 tag
+pub struct Id3v2Error {
+	kind: Id3v2ErrorKind,
+}
+
+impl Id3v2Error {
+	/// Create a new `Id3v2Error` from an [`Id3v2ErrorKind`]
+	pub fn new(kind: Id3v2ErrorKind) -> Self {
+		Self { kind }
+	}
+
+	/// Returns the [`Id3v2ErrorKind`]
+	pub fn kind(&self) -> Id3v2ErrorKind {
+		self.kind.clone()
+	}
+}
+
+impl Debug for Id3v2Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "ID3v2: {:?}", self.kind)
+	}
+}
+
+impl Display for Id3v2Error {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "ID3v2: {}", self.kind)
+	}
+}
+
+/// An error that arises while decoding a file
+pub struct FileDecodingError {
+	format: Option<FileType>,
+	description: &'static str,
+}
+
+impl FileDecodingError {
+	/// Create a `FileDecodingError` from a [`FileType`] and description
+	pub fn new(format: FileType, description: &'static str) -> Self {
+		Self {
+			format: Some(format),
+			description,
+		}
+	}
+
+	/// Create a `FileDecodingError` without binding it to a [`FileType`]
+	pub fn from_description(description: &'static str) -> Self {
+		Self {
+			format: None,
+			description,
+		}
+	}
+
+	/// Returns the associated [`FileType`], if one exists
+	pub fn format(&self) -> Option<FileType> {
+		self.format
+	}
+
+	/// Returns the error description
+	pub fn description(&self) -> &str {
+		self.description
+	}
+}
+
+impl Debug for FileDecodingError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		if let Some(format) = self.format {
+			write!(f, "{:?}: {:?}", format, self.description)
+		} else {
+			write!(f, "{:?}", self.description)
+		}
+	}
+}
+
+impl Display for FileDecodingError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		if let Some(format) = self.format {
+			write!(f, "{:?}: {}", format, self.description)
+		} else {
+			write!(f, "{}", self.description)
+		}
+	}
+}
+
+/// An error that arises while encoding a file
+pub struct FileEncodingError {
+	format: Option<FileType>,
+	description: &'static str,
+}
+
+impl FileEncodingError {
+	/// Create a `FileEncodingError` from a [`FileType`] and description
+	pub fn new(format: FileType, description: &'static str) -> Self {
+		Self {
+			format: Some(format),
+			description,
+		}
+	}
+
+	/// Create a `FileEncodingError` without binding it to a [`FileType`]
+	pub fn from_description(description: &'static str) -> Self {
+		Self {
+			format: None,
+			description,
+		}
+	}
+
+	/// Returns the associated [`FileType`], if one exists
+	pub fn format(&self) -> Option<FileType> {
+		self.format
+	}
+
+	/// Returns the error description
+	pub fn description(&self) -> &str {
+		self.description
+	}
+}
+
+impl Debug for FileEncodingError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		if let Some(format) = self.format {
+			write!(f, "{:?}: {:?}", format, self.description)
+		} else {
+			write!(f, "{:?}", self.description)
+		}
+	}
+}
+
+impl Display for FileEncodingError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		if let Some(format) = self.format {
+			write!(f, "{:?}: {:?}", format, self.description)
+		} else {
+			write!(f, "{}", self.description)
+		}
+	}
+}
+
+/// Errors that could occur within Lofty
+pub struct LoftyError {
+	kind: ErrorKind,
+}
+
+impl LoftyError {
+	/// Create a `LoftyError` from an [`ErrorKind`]
+	pub fn new(kind: ErrorKind) -> Self {
+		Self { kind }
+	}
+
+	/// Returns the [`ErrorKind`]
+	pub fn kind(&self) -> &ErrorKind {
+		&self.kind
 	}
 }
 
 impl std::error::Error for LoftyError {}
 
+impl Debug for LoftyError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{:?}", self.kind)
+	}
+}
+
+impl From<Id3v2Error> for LoftyError {
+	fn from(input: Id3v2Error) -> Self {
+		Self {
+			kind: ErrorKind::Id3v2(input),
+		}
+	}
+}
+
+impl From<FileDecodingError> for LoftyError {
+	fn from(input: FileDecodingError) -> Self {
+		Self {
+			kind: ErrorKind::FileDecoding(input),
+		}
+	}
+}
+
+impl From<FileEncodingError> for LoftyError {
+	fn from(input: FileEncodingError) -> Self {
+		Self {
+			kind: ErrorKind::FileEncoding(input),
+		}
+	}
+}
+
 impl From<ogg_pager::PageError> for LoftyError {
 	fn from(input: PageError) -> Self {
-		LoftyError::OggPage(input)
+		Self {
+			kind: ErrorKind::OggPage(input),
+		}
 	}
 }
 
 impl From<std::io::Error> for LoftyError {
 	fn from(input: std::io::Error) -> Self {
-		LoftyError::Io(input)
+		Self {
+			kind: ErrorKind::Io(input),
+		}
 	}
 }
 
 impl From<std::string::FromUtf8Error> for LoftyError {
 	fn from(input: std::string::FromUtf8Error) -> Self {
-		LoftyError::StringFromUtf8(input)
+		Self {
+			kind: ErrorKind::StringFromUtf8(input),
+		}
 	}
 }
 
 impl From<std::str::Utf8Error> for LoftyError {
 	fn from(input: std::str::Utf8Error) -> Self {
-		LoftyError::StrFromUtf8(input)
+		Self {
+			kind: ErrorKind::StrFromUtf8(input),
+		}
+	}
+}
+
+impl Display for LoftyError {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match self.kind {
+			// Conversions
+			ErrorKind::OggPage(ref err) => write!(f, "{}", err),
+			ErrorKind::StringFromUtf8(ref err) => write!(f, "{}", err),
+			ErrorKind::StrFromUtf8(ref err) => write!(f, "{}", err),
+			ErrorKind::Io(ref err) => write!(f, "{}", err),
+
+			ErrorKind::BadExtension(ref ext) => {
+				write!(f, "Found unknown file extension \"{}\"", ext)
+			},
+			ErrorKind::UnknownFormat => {
+				write!(f, "No format could be determined from the provided file")
+			},
+			ErrorKind::TooMuchData => write!(
+				f,
+				"An abnormally large amount of data was provided, and an overflow occurred"
+			),
+			ErrorKind::NotAPicture => write!(f, "Picture: Encountered invalid data"),
+			ErrorKind::UnsupportedPicture => {
+				write!(f, "Picture: attempted to write an unsupported picture")
+			},
+			ErrorKind::UnsupportedTag => write!(
+				f,
+				"Attempted to write a tag to a format that does not support it"
+			),
+			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
+			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {}", message),
+			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{}", id3v2_err),
+			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
+
+			// Files
+			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{}", file_decode_err),
+			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{}", file_encode_err),
+		}
 	}
 }

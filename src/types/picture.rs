@@ -12,6 +12,7 @@ use std::io::Write;
 #[cfg(any(feature = "vorbis_comments", feature = "ape"))]
 use std::io::{Seek, SeekFrom};
 
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind};
 #[cfg(any(feature = "vorbis_comments"))]
 use byteorder::BigEndian;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2", feature = "ape"))]
@@ -290,13 +291,13 @@ impl PictureInformation {
 		let reader = &mut &*picture.data;
 
 		if reader.len() < 8 {
-			return Err(LoftyError::NotAPicture);
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
 		}
 
 		match reader[..4] {
 			[0x89, b'P', b'N', b'G'] => Ok(Self::from_png(reader).unwrap_or_default()),
 			[0xFF, 0xD8, 0xFF, ..] => Ok(Self::from_jpeg(reader).unwrap_or_default()),
-			_ => Err(LoftyError::UnsupportedPicture),
+			_ => Err(LoftyError::new(ErrorKind::UnsupportedPicture)),
 		}
 	}
 
@@ -313,7 +314,7 @@ impl PictureInformation {
 		reader.read_exact(&mut sig)?;
 
 		if sig != [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
-			return Err(LoftyError::NotAPicture);
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
 		}
 
 		let mut ihdr = [0; 8];
@@ -321,7 +322,7 @@ impl PictureInformation {
 
 		// Verify the signature is immediately followed by the IHDR chunk
 		if !ihdr.ends_with(&[0x49, 0x48, 0x44, 0x52]) {
-			return Err(LoftyError::NotAPicture);
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
 		}
 
 		let width = reader.read_u32::<BigEndian>()?;
@@ -394,7 +395,7 @@ impl PictureInformation {
 		reader.read_exact(&mut frame_marker)?;
 
 		if !matches!(frame_marker, [0xFF, 0xD8, 0xFF, ..]) {
-			return Err(LoftyError::NotAPicture);
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
 		}
 
 		let mut section_len = reader.read_u16::<BigEndian>()?;
@@ -435,7 +436,7 @@ impl PictureInformation {
 			reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
 		}
 
-		Err(LoftyError::NotAPicture)
+		Err(LoftyError::new(ErrorKind::NotAPicture))
 	}
 }
 
@@ -495,7 +496,7 @@ impl Picture {
 			Some([0x47, 0x49, 0x46, 0x38, 0x37 | 0x39, 0x61, ..]) => MimeType::Gif,
 			Some([b'B', b'M', ..]) => MimeType::Bmp,
 			Some([0x49, 0x49, 0x2A, 0x00, ..] | [0x4D, 0x4D, 0x00, 0x2A, ..]) => MimeType::Tiff,
-			_ => return Err(LoftyError::NotAPicture),
+			_ => return Err(LoftyError::new(ErrorKind::NotAPicture)),
 		};
 
 		Ok(Self {
@@ -582,7 +583,12 @@ impl Picture {
 			let format = match self.mime_type {
 				MimeType::Png => "PNG",
 				MimeType::Jpeg => "JPG",
-				_ => return Err(LoftyError::BadPictureFormat(self.mime_type.to_string())),
+				_ => {
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
+						self.mime_type.to_string(),
+					))
+					.into())
+				},
 			};
 
 			data.write_all(format.as_bytes())?;
@@ -610,7 +616,7 @@ impl Picture {
 		let size = data.len();
 
 		if size as u64 > max_size {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		Ok(data)
@@ -634,7 +640,7 @@ impl Picture {
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
 			Some(encoding) => encoding,
-			None => return Err(LoftyError::NotAPicture),
+			None => return Err(LoftyError::new(ErrorKind::NotAPicture)),
 		};
 
 		let mime_type = if version == Id3v2Version::V2 {
@@ -645,9 +651,10 @@ impl Picture {
 				[b'P', b'N', b'G'] => MimeType::Png,
 				[b'J', b'P', b'G'] => MimeType::Jpeg,
 				_ => {
-					return Err(LoftyError::BadPictureFormat(
-						String::from_utf8_lossy(&format).to_string(),
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
+						String::from_utf8_lossy(&format).into_owned(),
 					))
+					.into())
 				},
 			}
 		} else {
@@ -733,11 +740,12 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`][LoftyError::NotAPicture] if
+	/// This function will return [`NotAPicture`][ErrorKind::NotAPicture] if
 	/// at any point it's unable to parse the data
 	pub fn from_flac_bytes(bytes: &[u8], encoded: bool) -> Result<(Self, PictureInformation)> {
 		if encoded {
-			let data = base64::decode(bytes).map_err(|_| LoftyError::NotAPicture)?;
+			let data =
+				base64::decode(bytes).map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
 			Self::from_flac_bytes_inner(&*data)
 		} else {
 			Self::from_flac_bytes_inner(bytes)
@@ -824,7 +832,7 @@ impl Picture {
 			}
 		}
 
-		Err(LoftyError::NotAPicture)
+		Err(LoftyError::new(ErrorKind::NotAPicture))
 	}
 
 	#[cfg(feature = "ape")]
@@ -853,7 +861,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`](LoftyError::NotAPicture)
+	/// This function will return [`NotAPicture`](ErrorKind::NotAPicture)
 	/// if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if !bytes.is_empty() {
@@ -888,7 +896,7 @@ impl Picture {
 					[b'G', b'I', b'F', ..] => MimeType::Gif,
 					[b'B', b'M', ..] => MimeType::Bmp,
 					[b'I', b'I', ..] => MimeType::Tiff,
-					_ => return Err(LoftyError::NotAPicture),
+					_ => return Err(LoftyError::new(ErrorKind::NotAPicture)),
 				}
 			};
 
@@ -903,6 +911,6 @@ impl Picture {
 			});
 		}
 
-		Err(LoftyError::NotAPicture)
+		Err(LoftyError::new(ErrorKind::NotAPicture))
 	}
 }

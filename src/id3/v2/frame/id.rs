@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::types::item::ItemKey;
 use crate::types::tag::TagType;
 
@@ -25,14 +25,14 @@ impl FrameID {
 	pub fn new(id: &str) -> Result<Self> {
 		for c in id.chars() {
 			if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
-				return Err(LoftyError::BadFrameID);
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
 			}
 		}
 
 		match id.len() {
 			3 => Ok(FrameID::Outdated(id.to_string())),
 			4 => Ok(FrameID::Valid(id.to_string())),
-			_ => Err(LoftyError::BadFrameID),
+			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 		}
 	}
 
@@ -58,9 +58,7 @@ impl TryFrom<ItemKey> for FrameID {
 				Ok(Self::Valid(unknown))
 			},
 			k => k.map_key(TagType::Id3v2, false).map_or(
-				Err(LoftyError::Id3v2(
-					"ItemKey does not meet the requirements to be a FrameID",
-				)),
+				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 				|id| Ok(Self::Valid(id.to_string())),
 			),
 		}

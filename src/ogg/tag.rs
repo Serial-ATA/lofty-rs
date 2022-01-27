@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::ogg::constants::{OPUSHEAD, VORBIS_IDENT_HEAD};
 use crate::probe::Probe;
 use crate::types::file::FileType;
@@ -249,7 +249,7 @@ impl<'a> VorbisCommentsRef<'a> {
 			Some(FileType::FLAC) => super::flac::write::write_to(file, self),
 			Some(FileType::Opus) => super::write::write(file, self, OPUSHEAD),
 			Some(FileType::Vorbis) => super::write::write(file, self, VORBIS_IDENT_HEAD),
-			_ => Err(LoftyError::UnsupportedTag),
+			_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 		}
 	}
 

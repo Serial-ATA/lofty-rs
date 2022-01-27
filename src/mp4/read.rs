@@ -2,7 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use super::Mp4File;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -13,7 +13,7 @@ where
 	let atom = AtomInfo::read(data)?;
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
-		return Err(LoftyError::UnknownFormat);
+		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
 	let mut major_brand = vec![0; 4];
@@ -22,7 +22,7 @@ where
 	data.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
 	String::from_utf8(major_brand)
-		.map_err(|_| LoftyError::BadAtom("Unable to parse \"ftyp\"'s major brand"))
+		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp4File>
@@ -58,7 +58,7 @@ where
 		if let (pos, false) = pos.overflowing_add(len - 8) {
 			data.seek(SeekFrom::Start(pos))?;
 		} else {
-			return Err(LoftyError::TooMuchData);
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 	} else {
 		data.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;

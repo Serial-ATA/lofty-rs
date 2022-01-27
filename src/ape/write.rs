@@ -1,6 +1,6 @@
 #[cfg(feature = "ape")]
 use crate::ape::tag::ape_tag;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1;
 #[allow(unused_imports)]
@@ -15,6 +15,6 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		TagType::Ape => Into::<ape_tag::ApeTagRef>::into(tag).write_to(data),
 		#[cfg(feature = "id3v1")]
 		TagType::Id3v1 => Into::<v1::tag::Id3v1TagRef>::into(tag).write_to(data),
-		_ => Err(LoftyError::UnsupportedTag),
+		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }

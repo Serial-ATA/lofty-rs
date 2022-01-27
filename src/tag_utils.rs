@@ -1,6 +1,6 @@
 #[cfg(feature = "ape")]
 use crate::ape::tag::ape_tag::ApeTagRef;
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
@@ -41,7 +41,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		#[cfg(feature = "vorbis_comments")]
 		FileType::Vorbis => ogg::write::write_to(file, tag, ogg::constants::VORBIS_COMMENT_HEAD),
 		FileType::WAV => iff::wav::write::write_to(file, tag),
-		_ => Err(LoftyError::UnsupportedTag),
+		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
 

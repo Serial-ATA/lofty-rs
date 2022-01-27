@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -68,7 +68,11 @@ impl AtomInfo {
 			},
 			// There's an extended length
 			1 => (data.read_u64::<BigEndian>()?, true),
-			_ if len < 8 => return Err(LoftyError::BadAtom("Found an invalid length (< 8)")),
+			_ if len < 8 => {
+				return Err(LoftyError::new(ErrorKind::BadAtom(
+					"Found an invalid length (< 8)",
+				)))
+			},
 			_ => (u64::from(len), false),
 		};
 
@@ -108,11 +112,13 @@ where
 			data.read_exact(&mut content)?;
 
 			String::from_utf8(content).map_err(|_| {
-				LoftyError::BadAtom("Found a non UTF-8 string while reading freeform identifier")
+				LoftyError::new(ErrorKind::BadAtom(
+					"Found a non UTF-8 string while reading freeform identifier",
+				))
 			})
 		},
-		_ => Err(LoftyError::BadAtom(
+		_ => Err(LoftyError::new(ErrorKind::BadAtom(
 			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms",
-		)),
+		))),
 	}
 }

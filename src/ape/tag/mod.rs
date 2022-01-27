@@ -7,7 +7,8 @@ pub(crate) mod read;
 #[cfg(feature = "ape")]
 mod write;
 
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
@@ -32,7 +33,9 @@ where
 	if size < 32 {
 		// If the size is < 32, something went wrong during encoding
 		// The size includes the footer and all items
-		return Err(LoftyError::Ape("Tag has an invalid size (< 32)"));
+		return Err(
+			FileDecodingError::new(FileType::APE, "APE tag has an invalid size (< 32)").into(),
+		);
 	}
 
 	#[cfg(feature = "ape")]

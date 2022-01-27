@@ -1,4 +1,5 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, Result};
+use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -24,7 +25,7 @@ pub(crate) fn write_to(
 	}
 
 	if !reached_md_end {
-		return Err(LoftyError::Opus("File ends with comment header"));
+		return Err(FileEncodingError::new(FileType::Opus, "File ends with comment header").into());
 	}
 
 	let mut remaining = Vec::new();

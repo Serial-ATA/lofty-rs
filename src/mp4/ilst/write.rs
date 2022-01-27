@@ -1,8 +1,9 @@
 use super::{AtomDataRef, IlstRef};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, Result};
 use crate::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{nested_atom, verify_mp4};
+use crate::types::file::FileType;
 use crate::types::picture::{MimeType, Picture};
 
 use std::fs::File;
@@ -262,17 +263,21 @@ fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> 
 		MimeType::Bmp => write_data(27, &picture.data, writer),
 		// We'll assume implicit (0) was the intended type
 		MimeType::None => write_data(0, &picture.data, writer),
-		_ => Err(LoftyError::BadAtom(
+		_ => Err(FileEncodingError::new(
+			FileType::MP4,
 			"Attempted to write an unsupported picture format",
-		)),
+		)
+		.into()),
 	}
 }
 
 fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	if flags > 16_777_215 {
-		return Err(LoftyError::BadAtom(
+		return Err(FileEncodingError::new(
+			FileType::MP4,
 			"Attempted to write a code that cannot fit in 24 bits",
-		));
+		)
+		.into());
 	}
 
 	// .... DATA (version = 0) (flags) (locale = 0000) (data)

@@ -36,7 +36,7 @@ pub struct Mp3File {
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: Mp3Properties,
-	pub(super) first_frame_offset: Option<u64>,
+	pub(super) first_frame_offset: u64,
 	pub(super) last_frame_offset: u64,
 }
 

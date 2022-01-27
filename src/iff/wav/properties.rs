@@ -1,4 +1,5 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
 use std::time::Duration;
@@ -117,7 +118,7 @@ pub(super) fn read_properties(
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
 
 	if channels == 0 {
-		return Err(LoftyError::Wav("File contains 0 channels"));
+		return Err(FileDecodingError::new(FileType::WAV, "File contains 0 channels").into());
 	}
 
 	let sample_rate = fmt.read_u32::<LittleEndian>()?;
@@ -136,9 +137,11 @@ pub(super) fn read_properties(
 
 	if format_tag == EXTENSIBLE {
 		if fmt.len() + 16 < 40 {
-			return Err(LoftyError::Wav(
+			return Err(FileDecodingError::new(
+				FileType::WAV,
 				"Extensible format identified, invalid \"fmt \" chunk size found (< 40)",
-			));
+			)
+			.into());
 		}
 
 		// cbSize (Size of extra format information) (2)
@@ -157,9 +160,11 @@ pub(super) fn read_properties(
 	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
 
 	if non_pcm && total_samples == 0 {
-		return Err(LoftyError::Wav(
+		return Err(FileDecodingError::new(
+			FileType::WAV,
 			"Non-PCM format identified, no \"fact\" chunk found",
-		));
+		)
+		.into());
 	}
 
 	if bits_per_sample > 0 {

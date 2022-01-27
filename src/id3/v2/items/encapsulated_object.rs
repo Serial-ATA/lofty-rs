@@ -1,4 +1,4 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
 
 use std::io::{Cursor, Read};
@@ -35,11 +35,11 @@ impl GeneralEncapsulatedObject {
 	/// This function will return an error if at any point it's unable to parse the data
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 4 {
-			return Err(LoftyError::Id3v2("GEOB frame has invalid size (< 4)"));
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
 		let encoding = TextEncoding::from_u8(data[0])
-			.ok_or(LoftyError::TextDecode("Found invalid encoding"))?;
+			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
 
 		let mut cursor = Cursor::new(&data[1..]);
 

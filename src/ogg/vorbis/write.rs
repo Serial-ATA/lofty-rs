@@ -1,5 +1,6 @@
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, Result};
 use crate::ogg::constants::VORBIS_SETUP_HEAD;
+use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -48,7 +49,9 @@ pub(crate) fn write_to(
 	}
 
 	if !reached_md_end {
-		return Err(LoftyError::Vorbis("File ends with comment header"));
+		return Err(
+			FileEncodingError::new(FileType::Vorbis, "File ends with comment header").into(),
+		);
 	}
 
 	c.seek(SeekFrom::Start(comments_pos))?;
@@ -59,7 +62,9 @@ pub(crate) fn write_to(
 	}
 
 	if c.read_u8()? != 1 {
-		return Err(LoftyError::Vorbis("File is missing a framing bit"));
+		return Err(
+			FileEncodingError::new(FileType::Vorbis, "File is missing a framing bit").into(),
+		);
 	}
 
 	// Comments should be followed by the setup header
@@ -67,7 +72,9 @@ pub(crate) fn write_to(
 	c.read_exact(&mut header_ident)?;
 
 	if header_ident != VORBIS_SETUP_HEAD {
-		return Err(LoftyError::Vorbis("File is missing setup header"));
+		return Err(
+			FileEncodingError::new(FileType::Vorbis, "File is missing setup header").into(),
+		);
 	}
 
 	c.seek(SeekFrom::Current(-7))?;

@@ -4,7 +4,7 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
-use crate::error::{LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::Id3v2Version;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
@@ -72,29 +72,20 @@ impl Frame {
 	/// * `id` is less than 3 or greater than 4 bytes
 	/// * `id` contains non-ascii characters
 	pub fn new(id: &str, value: FrameValue, flags: FrameFlags) -> Result<Self> {
-		let id = match id.len() {
+		let id_updated = match id.len() {
 			// An ID with a length of 4 could be either V3 or V4.
 			4 => match upgrade_v3(id) {
-				None => FrameID::Valid(id.to_string()),
-				Some(id) => FrameID::Valid(id.to_string()),
+				None => id,
+				Some(upgraded) => upgraded,
 			},
 			3 => match upgrade_v2(id) {
-				None => FrameID::Outdated(id.to_string()),
-				Some(upgraded) => FrameID::Valid(upgraded.to_string()),
+				None => id,
+				Some(upgraded) => upgraded,
 			},
-			_ => {
-				return Err(LoftyError::Id3v2(
-					"Frame ID has a bad length (!= 3 && != 4)",
-				))
-			},
+			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 		};
 
-		match id {
-			FrameID::Valid(id) | FrameID::Outdated(id) if !id.is_ascii() => {
-				return Err(LoftyError::Id3v2("Frame ID contains non-ascii characters"))
-			},
-			_ => {},
-		}
+		let id = FrameID::new(id_updated)?;
 
 		Ok(Self { id, value, flags })
 	}
@@ -324,7 +315,7 @@ impl<'a> Frame {
 impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 	type Error = LoftyError;
 
-	fn try_from(tag_item: &'a TagItem) -> std::prelude::rust_2015::Result<Self, Self::Error> {
+	fn try_from(tag_item: &'a TagItem) -> std::result::Result<Self, Self::Error> {
 		let id = match tag_item.key() {
 			ItemKey::Unknown(unknown)
 				if unknown.len() == 4
@@ -333,9 +324,9 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			{
 				Ok(unknown.as_str())
 			},
-			k => k.map_key(TagType::Id3v2, false).ok_or(LoftyError::Id3v2(
-				"ItemKey does not meet the requirements to be a FrameID",
-			)),
+			k => k
+				.map_key(TagType::Id3v2, false)
+				.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadFrameID)),
 		}?;
 
 		Ok(FrameRef {
