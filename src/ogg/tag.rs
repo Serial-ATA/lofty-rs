@@ -233,7 +233,7 @@ impl From<Tag> for VorbisComments {
 
 pub(crate) struct VorbisCommentsRef<'a> {
 	pub vendor: &'a str,
-	pub items: Box<dyn Iterator<Item = (&'a str, &'a String)> + 'a>,
+	pub items: Box<dyn Iterator<Item = (&'a str, &'a str)> + 'a>,
 	pub pictures: Box<dyn Iterator<Item = (&'a Picture, PictureInformation)> + 'a>,
 }
 
@@ -266,7 +266,12 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a VorbisComments {
 	fn into(self) -> VorbisCommentsRef<'a> {
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
-			items: Box::new(self.items.as_slice().iter().map(|(k, v)| (k.as_str(), v))),
+			items: Box::new(
+				self.items
+					.as_slice()
+					.iter()
+					.map(|(k, v)| (k.as_str(), v.as_str())),
+			),
 			pictures: Box::new(self.pictures.as_slice().iter().map(|(p, i)| (p, *i))),
 		}
 	}
@@ -283,7 +288,7 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 			{
 				i.key()
 					.map_key(TagType::VorbisComments, true)
-					.map(|key| (key, val))
+					.map(|key| (key, val.as_str()))
 			},
 			_ => None,
 		});

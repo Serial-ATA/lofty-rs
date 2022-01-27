@@ -583,7 +583,7 @@ mod tests {
 		tag.insert(Frame {
 			id: FrameID::Valid(String::from("ABCD")),
 			value: FrameValue::URL(String::from("FOO URL")),
-			flags: Default::default(),
+			flags: FrameFlags::default(),
 		});
 
 		let res = tag.dump_to(&mut Vec::<u8>::new());

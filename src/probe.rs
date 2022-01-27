@@ -284,7 +284,7 @@ mod tests {
 				0x00, 0x00, 0x34, 0x80, 0x00, 0x00, 0x04,
 			],
 		];
-		let data: Vec<u8> = data.into_iter().flatten().cloned().collect();
+		let data: Vec<u8> = data.into_iter().flatten().copied().collect();
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
 		assert_eq!(probe.file_type(), Some(crate::FileType::MP3));

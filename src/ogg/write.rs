@@ -24,7 +24,7 @@ pub(in crate) fn write_to(data: &mut File, tag: &Tag, sig: &[u8]) -> Result<()> 
 pub(crate) fn create_comments(
 	packet: &mut impl Write,
 	count: &mut u32,
-	items: &mut dyn Iterator<Item = (&str, &String)>,
+	items: &mut dyn Iterator<Item = (&str, &str)>,
 ) -> Result<()> {
 	for (k, v) in items {
 		if !v.is_empty() {

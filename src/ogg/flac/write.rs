@@ -108,7 +108,7 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef) -> Resul
 fn create_comment_block(
 	writer: &mut Cursor<Vec<u8>>,
 	vendor: &str,
-	items: &mut dyn Iterator<Item = (&str, &String)>,
+	items: &mut dyn Iterator<Item = (&str, &str)>,
 ) -> Result<()> {
 	let mut peek = items.peekable();
 
