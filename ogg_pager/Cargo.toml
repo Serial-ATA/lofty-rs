@@ -8,6 +8,7 @@ description = "A simple OGG page reader"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 keywords = ["ogg", "xiph"]
 categories = ["accessibility", "multimedia::audio"]
+exclude = ["test_assets"]
 
 [dependencies]
 byteorder = "1.4.3"
