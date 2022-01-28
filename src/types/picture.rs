@@ -1,6 +1,9 @@
-use crate::{LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
-use {crate::id3::v2::util::text_utils::TextEncoding, crate::id3::v2::Id3v2Version};
+use crate::{
+	error::{Id3v2Error, Id3v2ErrorKind},
+	id3::v2::{util::text_utils::TextEncoding, Id3v2Version},
+};
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
@@ -12,7 +15,6 @@ use std::io::Write;
 #[cfg(any(feature = "vorbis_comments", feature = "ape"))]
 use std::io::{Seek, SeekFrom};
 
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind};
 #[cfg(any(feature = "vorbis_comments"))]
 use byteorder::BigEndian;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2", feature = "ape"))]
