@@ -32,7 +32,6 @@ pub enum ErrorKind {
 	FileEncoding(FileEncodingError),
 
 	// Picture related errors
-	#[cfg(feature = "id3v2")]
 	/// Provided an invalid picture
 	NotAPicture,
 	/// Attempted to write a picture that the format does not support
@@ -62,21 +61,25 @@ pub enum ErrorKind {
 	Io(std::io::Error),
 }
 
-#[cfg(feature = "id3v2")]
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 /// The types of errors that can occur while interacting with ID3v2 tags
 pub enum Id3v2ErrorKind {
+	#[cfg(feature = "id3v2")]
 	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
 	BadPictureFormat(String),
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),
+	#[cfg(feature = "id3v2")]
 	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
 	BadFrameID,
+	#[cfg(feature = "id3v2")]
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
+	#[cfg(feature = "id3v2")]
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,
+	#[cfg(feature = "id3v2")]
 	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
 	BadFrame(String, &'static str),
 	/// A catch-all for all remaining errors
@@ -93,17 +96,22 @@ impl Display for Id3v2ErrorKind {
 				"Found an invalid version (v{}.{}), expected any major revision in: (2, 3, 4)",
 				major, minor
 			),
+			#[cfg(feature = "id3v2")]
 			Id3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
+			#[cfg(feature = "id3v2")]
 			Id3v2ErrorKind::BadFrameLength => write!(
 				f,
 				"Frame isn't long enough to extract the necessary information"
 			),
+			#[cfg(feature = "id3v2")]
 			Id3v2ErrorKind::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
+			#[cfg(feature = "id3v2")]
 			Id3v2ErrorKind::BadFrame(ref frame_id, frame_value) => write!(
 				f,
 				"Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
 				frame_id, frame_value
 			),
+			#[cfg(feature = "id3v2")]
 			Id3v2ErrorKind::BadPictureFormat(format) => {
 				write!(f, "Picture: Found unexpected format \"{}\"", format)
 			},

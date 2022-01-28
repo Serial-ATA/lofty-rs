@@ -3,8 +3,7 @@ pub(crate) mod text_utils;
 pub(crate) mod upgrade;
 
 #[cfg(feature = "id3v2")]
-use crate::error::Result;
-use crate::error::{Id3v2Error, Id3v2ErrorKind};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 
 #[cfg(feature = "id3v2")]
 pub(in crate::id3::v2) fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {

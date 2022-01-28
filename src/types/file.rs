@@ -44,15 +44,6 @@ pub struct TaggedFile {
 	pub(crate) tags: Vec<Tag>,
 }
 
-#[cfg(any(
-	feature = "id3v1",
-	feature = "riff_info_list",
-	feature = "aiff_text_chunks",
-	feature = "vorbis_comments",
-	feature = "id3v2",
-	feature = "mp4_ilst",
-	feature = "ape"
-))]
 impl TaggedFile {
 	/// Returns the primary tag
 	///
@@ -107,6 +98,9 @@ impl TaggedFile {
 
 	/// Inserts a [`Tag`]
 	///
+	/// NOTE: This will do nothing if the [`FileType`] does not support
+	/// the [`TagType`]. See [`FileType::supports_tag_type`]
+	///
 	/// If a tag is replaced, it will be returned
 	pub fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
 		let tag_type = *tag.tag_type();
@@ -129,6 +123,19 @@ impl TaggedFile {
 			.iter()
 			.position(|t| t.tag_type() == &tag_type)
 			.map(|pos| self.tags.remove(pos))
+	}
+
+	/// Changes the [`FileType`]
+	///
+	/// NOTES:
+	///
+	/// * This will remove any tag the format does not support. See [`FileType::supports_tag_type`]
+	/// * This will reset the [`FileProperties`]
+	pub fn change_file_type(&mut self, file_type: FileType) {
+		self.ty = file_type;
+		self.properties = FileProperties::default();
+		self.tags
+			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
 	}
 
 	/// Removes all tags from the file
