@@ -23,9 +23,10 @@ fn path_infer_read(c: &mut Criterion) {
 			("FLAC", "tests/files/assets/full_test.flac"),
 			("MP4", "tests/files/assets/m4a_codec_aac.m4a"),
 			("MP3", "tests/files/assets/full_test.mp3"),
-			("VORBIS", "tests/files/assets/full_test.ogg"),
 			("OPUS", "tests/files/assets/full_test.opus"),
-			("RIFF", "tests/files/assets/wav_format_pcm.wav")
+			("RIFF", "tests/files/assets/wav_format_pcm.wav"),
+			("SPEEX", "tests/files/assets/full_test.spx"),
+			("VORBIS", "tests/files/assets/full_test.ogg")
 		]
 	);
 }
@@ -60,9 +61,10 @@ fn content_infer_read(c: &mut Criterion) {
 			(FLAC, "../tests/files/assets/full_test.flac"),
 			(MP4, "../tests/files/assets/m4a_codec_aac.m4a"),
 			(MP3, "../tests/files/assets/full_test.mp3"),
-			(VORBIS, "../tests/files/assets/full_test.ogg"),
 			(OPUS, "../tests/files/assets/full_test.opus"),
-			(RIFF, "../tests/files/assets/wav_format_pcm.wav")
+			(RIFF, "../tests/files/assets/wav_format_pcm.wav"),
+			(SPEEX, "../tests/files/assets/full_test.spx"),
+			(VORBIS, "../tests/files/assets/full_test.ogg")
 		]
 	);
 }
