@@ -12,10 +12,28 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::Page;
 
-pub(in crate) fn write_to(data: &mut File, tag: &Tag, sig: &[u8]) -> Result<()> {
+#[derive(PartialEq, Copy, Clone)]
+pub(crate) enum OGGFormat {
+	Opus,
+	Vorbis,
+	Speex,
+}
+
+impl OGGFormat {
+	#[allow(clippy::trivially_copy_pass_by_ref)]
+	pub(crate) fn comment_signature(&self) -> Option<&[u8]> {
+		match self {
+			OGGFormat::Opus => Some(OPUSTAGS),
+			OGGFormat::Vorbis => Some(VORBIS_COMMENT_HEAD),
+			OGGFormat::Speex => None,
+		}
+	}
+}
+
+pub(in crate) fn write_to(data: &mut File, tag: &Tag, format: OGGFormat) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef>::into(tag), sig),
+		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef>::into(tag), format),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
@@ -85,7 +103,7 @@ pub(super) fn create_pages(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) -> Result<()> {
+pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, format: OGGFormat) -> Result<()> {
 	let first_page = Page::read(data, false)?;
 
 	let ser = first_page.serial;
@@ -94,10 +112,18 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 	writer.write_all(&*first_page.as_bytes()?)?;
 
 	let first_md_page = Page::read(data, false)?;
-	verify_signature(&first_md_page, sig)?;
+
+	let comment_signature = format.comment_signature();
+	let verify_sig = comment_signature.is_some();
+
+	let comment_signature = format.comment_signature().unwrap_or(&[]);
+
+	if verify_sig {
+		verify_signature(&first_md_page, comment_signature)?;
+	}
 
 	// Retain the file's vendor string
-	let md_reader = &mut &first_md_page.content()[sig.len()..];
+	let md_reader = &mut &first_md_page.content()[comment_signature.len()..];
 
 	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
 	let mut vendor = vec![0; vendor_len as usize];
@@ -105,14 +131,14 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 
 	let mut packet = Cursor::new(Vec::new());
 
-	packet.write_all(sig)?;
+	packet.write_all(comment_signature)?;
 	packet.write_u32::<LittleEndian>(vendor_len)?;
 	packet.write_all(&vendor)?;
 
 	let mut pages = create_pages(tag, &mut packet)?;
 
-	match sig {
-		VORBIS_COMMENT_HEAD => {
+	match format {
+		OGGFormat::Vorbis => {
 			super::vorbis::write::write_to(
 				data,
 				&mut writer,
@@ -121,10 +147,12 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, sig: &[u8]) ->
 				&mut pages,
 			)?;
 		},
-		OPUSTAGS => {
+		OGGFormat::Opus => {
 			super::opus::write::write_to(data, &mut writer, ser, &mut pages)?;
 		},
-		_ => unreachable!(),
+		OGGFormat::Speex => {
+			super::speex::write::write_to(data, &mut writer, ser, &mut pages)?;
+		},
 	}
 
 	data.seek(SeekFrom::Start(0))?;

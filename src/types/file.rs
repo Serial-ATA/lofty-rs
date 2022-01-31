@@ -190,6 +190,7 @@ pub enum FileType {
 	MP4,
 	Opus,
 	Vorbis,
+	Speex,
 	WAV,
 }
 
@@ -217,7 +218,9 @@ impl FileType {
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
 			FileType::MP3 => TagType::Id3v1,
 			FileType::APE => TagType::Ape,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis => TagType::VorbisComments,
+			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
+				TagType::VorbisComments
+			},
 			FileType::MP4 => TagType::Mp4Ilst,
 		}
 	}
@@ -238,7 +241,9 @@ impl FileType {
 			#[cfg(feature = "ape")]
 			FileType::APE | FileType::MP3 if tag_type == &TagType::Ape => true,
 			#[cfg(feature = "vorbis_comments")]
-			FileType::Opus | FileType::FLAC | FileType::Vorbis => tag_type == &TagType::VorbisComments,
+			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
+				tag_type == &TagType::VorbisComments
+			},
 			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => tag_type == &TagType::Mp4Ilst,
 			#[cfg(feature = "riff_info_list")]
@@ -263,6 +268,7 @@ impl FileType {
 			"flac" => Some(Self::FLAC),
 			"ogg" => Some(Self::Vorbis),
 			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::MP4),
+			"spx" => Some(Self::Speex),
 			_ => None,
 		}
 	}
@@ -363,6 +369,8 @@ impl FileType {
 					return Some(Self::Vorbis);
 				} else if &buf[28..36] == b"OpusHead" {
 					return Some(Self::Opus);
+				} else if &buf[28..] == b"Speex   " {
+					return Some(Self::Speex);
 				}
 
 				None

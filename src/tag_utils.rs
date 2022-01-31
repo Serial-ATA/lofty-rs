@@ -37,9 +37,11 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef>::into(tag)),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::Opus => ogg::write::write_to(file, tag, ogg::constants::OPUSTAGS),
+		FileType::Opus => ogg::write::write_to(file, tag, ogg::write::OGGFormat::Opus),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::Vorbis => ogg::write::write_to(file, tag, ogg::constants::VORBIS_COMMENT_HEAD),
+		FileType::Speex => ogg::write::write_to(file, tag, ogg::write::OGGFormat::Speex),
+		#[cfg(feature = "vorbis_comments")]
+		FileType::Vorbis => ogg::write::write_to(file, tag, ogg::write::OGGFormat::Vorbis),
 		FileType::WAV => iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}

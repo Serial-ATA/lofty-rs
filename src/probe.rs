@@ -7,6 +7,7 @@ use crate::mp3::Mp3File;
 use crate::mp4::Mp4File;
 use crate::ogg::flac::FlacFile;
 use crate::ogg::opus::OpusFile;
+use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 
@@ -29,7 +30,7 @@ use std::path::Path;
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
 ///
-/// let probe = Probe::open("tests/files/assets/a.mp3")?;
+/// let probe = Probe::open("tests/files/assets/full_test.mp3")?;
 ///
 /// // Inferred from the `mp3` extension
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
@@ -45,7 +46,7 @@ use std::path::Path;
 /// use lofty::FileType;
 ///
 /// // Our same path probe with a guessed file type
-/// let probe = Probe::open("tests/files/assets/a.mp3")?.guess_file_type()?;
+/// let probe = Probe::open("tests/files/assets/full_test.mp3")?.guess_file_type()?;
 ///
 /// // Inferred from the file's content
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
@@ -225,6 +226,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Vorbis => VorbisFile::read_from(reader, read_properties)?.into(),
 				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
 				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
+				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
 			}),
 			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		}

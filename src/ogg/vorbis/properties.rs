@@ -1,6 +1,5 @@
 use super::find_last_page;
-use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
+use crate::error::Result;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -117,48 +116,34 @@ where
 {
 	let first_page_abgp = first_page.abgp;
 
+	let mut properties = VorbisProperties::default();
+
 	// Skip identification header
 	let first_page_content = &mut &first_page.content()[7..];
 
-	let version = first_page_content.read_u32::<LittleEndian>()?;
+	properties.version = first_page_content.read_u32::<LittleEndian>()?;
 
-	let channels = first_page_content.read_u8()?;
-	let sample_rate = first_page_content.read_u32::<LittleEndian>()?;
+	properties.channels = first_page_content.read_u8()?;
+	properties.sample_rate = first_page_content.read_u32::<LittleEndian>()?;
 
-	let bitrate_maximum = first_page_content.read_i32::<LittleEndian>()?;
-	let bitrate_nominal = first_page_content.read_i32::<LittleEndian>()?;
-	let bitrate_minimum = first_page_content.read_i32::<LittleEndian>()?;
+	properties.bitrate_maximum = first_page_content.read_i32::<LittleEndian>()?;
+	properties.bitrate_nominal = first_page_content.read_i32::<LittleEndian>()?;
+	properties.bitrate_minimum = first_page_content.read_i32::<LittleEndian>()?;
 
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;
 
 	let file_length = data.seek(SeekFrom::End(0))?;
 
-	last_page_abgp.checked_sub(first_page_abgp).map_or_else(
-		|| {
-			Err(
-				FileDecodingError::new(FileType::Vorbis, "File contains incorrect PCM values")
-					.into(),
-			)
-		},
-		|frame_count| {
-			let length = frame_count * 1000 / u64::from(sample_rate);
-			let duration = Duration::from_millis(length as u64);
+	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp) {
+		if properties.sample_rate > 0 {
+			let length = frame_count * 1000 / u64::from(properties.sample_rate);
+			properties.duration = Duration::from_millis(length as u64);
 
-			let overall_bitrate = ((file_length * 8) / length) as u32;
-			let audio_bitrate = bitrate_nominal as u64 / 1000;
+			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+			properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
+		}
+	}
 
-			Ok(VorbisProperties {
-				duration,
-				overall_bitrate,
-				audio_bitrate: audio_bitrate as u32,
-				sample_rate,
-				channels,
-				version,
-				bitrate_maximum,
-				bitrate_nominal,
-				bitrate_minimum,
-			})
-		},
-	)
+	Ok(properties)
 }

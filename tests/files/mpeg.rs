@@ -5,7 +5,7 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// Here we have an MP3 file with an ID3v2, ID3v1, and an APEv2 tag
-	let file = lofty::read_from_path("tests/files/assets/a.mp3", false).unwrap();
+	let file = lofty::read_from_path("tests/files/assets/full_test.mp3", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::MP3);
 
@@ -45,7 +45,7 @@ fn read_with_junk_bytes_between_frames() {
 
 #[test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/a.mp3");
+	let mut file = temp_file!("tests/files/assets/full_test.mp3");
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
@@ -73,15 +73,15 @@ fn write() {
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/a.mp3", TagType::Id3v2);
+	crate::remove_tag!("tests/files/assets/full_test.mp3", TagType::Id3v2);
 }
 
 #[test]
 fn remove_id3v1() {
-	crate::remove_tag!("tests/files/assets/a.mp3", TagType::Id3v1);
+	crate::remove_tag!("tests/files/assets/full_test.mp3", TagType::Id3v1);
 }
 
 #[test]
 fn remove_ape() {
-	crate::remove_tag!("tests/files/assets/a.mp3", TagType::Ape);
+	crate::remove_tag!("tests/files/assets/full_test.mp3", TagType::Ape);
 }

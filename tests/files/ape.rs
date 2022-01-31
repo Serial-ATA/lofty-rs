@@ -5,7 +5,7 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
-	let file = lofty::read_from_path("tests/files/assets/a.ape", false).unwrap();
+	let file = lofty::read_from_path("tests/files/assets/full_test.ape", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::APE);
 
@@ -22,7 +22,7 @@ fn read() {
 #[test]
 fn write() {
 	// We don't write an ID3v2 tag here since it's against the spec
-	let mut file = temp_file!("tests/files/assets/a.ape");
+	let mut file = temp_file!("tests/files/assets/full_test.ape");
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
@@ -45,10 +45,10 @@ fn write() {
 
 #[test]
 fn remove_ape() {
-	crate::remove_tag!("tests/files/assets/a.ape", TagType::Ape);
+	crate::remove_tag!("tests/files/assets/full_test.ape", TagType::Ape);
 }
 
 #[test]
 fn remove_id3v1() {
-	crate::remove_tag!("tests/files/assets/a.ape", TagType::Id3v1);
+	crate::remove_tag!("tests/files/assets/full_test.ape", TagType::Id3v1);
 }

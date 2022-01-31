@@ -100,7 +100,7 @@ mod tests {
 				file_name: Some(String::from("a.mp3")),
 				descriptor: Some(String::from("Test Asset")),
 			},
-			data: crate::tag_utils::test_utils::read_path("tests/files/assets/a.mp3"),
+			data: crate::tag_utils::test_utils::read_path("tests/files/assets/full_test.mp3"),
 		};
 
 		let cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
@@ -119,7 +119,7 @@ mod tests {
 				file_name: Some(String::from("a.mp3")),
 				descriptor: Some(String::from("Test Asset")),
 			},
-			data: crate::tag_utils::test_utils::read_path("tests/files/assets/a.mp3"),
+			data: crate::tag_utils::test_utils::read_path("tests/files/assets/full_test.mp3"),
 		};
 
 		let encoded = to_encode.as_bytes();

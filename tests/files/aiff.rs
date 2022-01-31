@@ -5,7 +5,7 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
-	let file = lofty::read_from_path("tests/files/assets/a.aiff", false).unwrap();
+	let file = lofty::read_from_path("tests/files/assets/full_test.aiff", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::AIFF);
 
@@ -18,7 +18,7 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/a.aiff");
+	let mut file = temp_file!("tests/files/assets/full_test.aiff");
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
@@ -41,10 +41,10 @@ fn write() {
 
 #[test]
 fn remove_text_chunks() {
-	crate::remove_tag!("tests/files/assets/a.aiff", TagType::AiffText);
+	crate::remove_tag!("tests/files/assets/full_test.aiff", TagType::AiffText);
 }
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/a.aiff", TagType::Id3v2);
+	crate::remove_tag!("tests/files/assets/full_test.aiff", TagType::Id3v2);
 }

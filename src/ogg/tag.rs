@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::ogg::constants::{OPUSHEAD, VORBIS_IDENT_HEAD};
+use crate::ogg::write::OGGFormat;
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
@@ -172,15 +172,22 @@ impl From<VorbisComments> for Tag {
 	fn from(input: VorbisComments) -> Self {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
-		tag.items.push(TagItem::new(
-			ItemKey::EncoderSoftware,
-			ItemValue::Text(input.vendor),
-		));
-
 		for (k, v) in input.items {
 			tag.items.push(TagItem::new(
 				ItemKey::from_key(TagType::VorbisComments, &k),
 				ItemValue::Text(v),
+			));
+		}
+
+		// We need to preserve the vendor string
+		if !tag
+			.items
+			.iter()
+			.any(|i| i.key() == &ItemKey::EncoderSoftware)
+		{
+			tag.items.push(TagItem::new(
+				ItemKey::EncoderSoftware,
+				ItemValue::Text(input.vendor),
 			));
 		}
 
@@ -247,8 +254,9 @@ impl<'a> VorbisCommentsRef<'a> {
 
 		match f_ty {
 			Some(FileType::FLAC) => super::flac::write::write_to(file, self),
-			Some(FileType::Opus) => super::write::write(file, self, OPUSHEAD),
-			Some(FileType::Vorbis) => super::write::write(file, self, VORBIS_IDENT_HEAD),
+			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
+			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
+			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),
 			_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 		}
 	}

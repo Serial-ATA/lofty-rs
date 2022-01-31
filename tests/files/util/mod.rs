@@ -69,7 +69,7 @@ macro_rules! set_artist {
 
 		$file_write.seek(std::io::SeekFrom::Start(0)).unwrap();
 
-		assert!($tag.save_to(&mut $file_write).is_ok());
+		$tag.save_to(&mut $file_write).unwrap();
 	};
 }
 
