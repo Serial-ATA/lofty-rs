@@ -2,6 +2,15 @@ name: CI
 
 on:
   push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'examples/**'
+      - 'benches/**'
+      - 'fuzz/**'
+      - 'Cargo.toml'
+      - 'rustfmt.toml'
+      - 'ogg_pager/**'
     branches:
       - main
   pull_request:
