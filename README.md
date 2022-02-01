@@ -17,6 +17,7 @@ Parse, convert, and write metadata to various audio formats.
 | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4r`, `m4v`, `3gp` | **X** | **X** | `iTunes-style ilst`                            |
 | Opus        | `opus`                                          | **X** | **X** | `Vorbis Comments`                              |
 | Ogg Vorbis  | `ogg`                                           | **X** | **X** | `Vorbis Comments`                              |
+| Speex       | `spx`                                           | **X** | **X** | `Vorbis Comments`                              |
 | WAV         | `wav`, `wave`                                   | **X** | **X** | `ID3v2`, `RIFF INFO`                           |
 
 ## Examples
