@@ -2,15 +2,10 @@ name: CI
 
 on:
   push:
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'examples/**'
-      - 'benches/**'
-      - 'fuzz/**'
-      - 'Cargo.toml'
-      - 'rustfmt.toml'
-      - 'ogg_pager/**'
+    paths-ignore:
+      - 'LICENSE-*'
+      - '**/*.md'
+      - '.gitignore'
     branches:
       - main
   pull_request:
