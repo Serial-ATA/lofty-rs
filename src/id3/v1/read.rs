@@ -19,10 +19,13 @@ pub fn parse_id3v1(reader: [u8; 128]) -> Id3v1Tag {
 	tag.album = decode_text(&reader[60..90]);
 	tag.year = decode_text(&reader[90..94]);
 
-	let range = if reader[119] == 0 && reader[123] != 0 {
+	// Determine the range of the comment (30 bytes for ID3v1 and 28 for ID3v1.1)
+	// We check for the null terminator 28 bytes in, and for a non-zero track number after it.
+	// A track number of 0 is invalid.
+	let range = if reader[122] == 0 && reader[123] != 0 {
 		tag.track_number = Some(reader[123]);
 
-		94_usize..122
+		94_usize..123
 	} else {
 		94..124
 	};

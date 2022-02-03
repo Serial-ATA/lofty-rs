@@ -20,7 +20,7 @@ pub struct SpeexProperties {
 	vbr: bool,
 	overall_bitrate: u32,
 	audio_bitrate: u32,
-	nominal_bitrate: u32,
+	nominal_bitrate: i32,
 }
 
 impl From<SpeexProperties> for FileProperties {
@@ -47,7 +47,7 @@ impl SpeexProperties {
 		vbr: bool,
 		overall_bitrate: u32,
 		audio_bitrate: u32,
-		nominal_bitrate: u32,
+		nominal_bitrate: i32,
 	) -> Self {
 		Self {
 			duration,
@@ -102,8 +102,8 @@ impl SpeexProperties {
 		self.audio_bitrate
 	}
 
-	/// Audio bitrate (kbps)
-	pub fn nominal_bitrate(&self) -> u32 {
+	/// Audio bitrate (bps)
+	pub fn nominal_bitrate(&self) -> i32 {
 		self.nominal_bitrate
 	}
 }
@@ -149,7 +149,7 @@ where
 	}
 
 	properties.channels = channels as u8;
-	properties.nominal_bitrate = first_page_content.read_u32::<LittleEndian>()?;
+	properties.nominal_bitrate = first_page_content.read_i32::<LittleEndian>()?;
 
 	// The size of the frames in samples
 	let _frame_size = first_page_content.read_u32::<LittleEndian>()?;
@@ -167,7 +167,7 @@ where
 			properties.duration = Duration::from_millis(length as u64);
 
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.audio_bitrate = properties.nominal_bitrate / 1000;
+			properties.audio_bitrate = (properties.nominal_bitrate as u64 / 1000) as u32;
 		}
 	}
 

@@ -91,17 +91,17 @@ impl VorbisProperties {
 		self.version
 	}
 
-	/// Maximum bitrate
+	/// Maximum bitrate (bps)
 	pub fn bitrate_max(&self) -> i32 {
 		self.bitrate_maximum
 	}
 
-	/// Nominal bitrate
+	/// Nominal bitrate (bps)
 	pub fn bitrate_nominal(&self) -> i32 {
 		self.bitrate_nominal
 	}
 
-	/// Minimum bitrate
+	/// Minimum bitrate (bps)
 	pub fn bitrate_min(&self) -> i32 {
 		self.bitrate_minimum
 	}
