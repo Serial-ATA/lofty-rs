@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
@@ -111,23 +111,35 @@ impl AiffTextChunks {
 	pub fn remove_copyright(&mut self) {
 		self.copyright = None
 	}
+}
+
+impl TagIO for AiffTextChunks {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		matches!(
+			self,
+			AiffTextChunks {
+				name: None,
+				author: None,
+				copyright: None,
+				annotations: None,
+				comments: None
+			}
+		)
+	}
 
 	/// Writes the tag to a path
 	///
 	/// # Errors
 	///
 	/// * `path` does not exist
-	/// * See [`AiffTextChunks::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	/// * See [`AiffTextChunks::save_to`]
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
-	/// Writes the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		AiffTextChunksRef::new(
 			self.name.as_deref(),
 			self.author.as_deref(),
@@ -138,15 +150,7 @@ impl AiffTextChunks {
 		.write_to(file)
 	}
 
-	/// Dumps the tag to a writer
-	///
-	/// This will only write the metadata chunks, it will not create a usable
-	/// file.
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		AiffTextChunksRef::new(
 			self.name.as_deref(),
 			self.author.as_deref(),
@@ -155,6 +159,14 @@ impl AiffTextChunks {
 			self.comments.as_deref(),
 		)
 		.dump_to(writer)
+	}
+
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::AiffText.remove_from_path(path)
+	}
+
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::AiffText.remove_from(file)
 	}
 }
 
@@ -409,7 +421,7 @@ where
 #[cfg(test)]
 mod tests {
 	use crate::iff::{AiffTextChunks, Comment};
-	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType};
+	use crate::{ItemKey, ItemValue, Tag, TagIO, TagItem, TagType};
 
 	use std::io::Cursor;
 

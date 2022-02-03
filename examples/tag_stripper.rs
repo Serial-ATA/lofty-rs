@@ -50,7 +50,7 @@ fn main() {
 
 	let tag_remove = available_tag_types[to_remove.unwrap()];
 
-	if tag_remove.remove_from_path(path) {
+	if tag_remove.remove_from_path(path).is_ok() {
 		println!("INFO: Removed tag: `{:?}`", tag_remove);
 	} else {
 		eprintln!("ERROR: Failed to remove the tag")

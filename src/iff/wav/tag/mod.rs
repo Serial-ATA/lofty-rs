@@ -1,9 +1,9 @@
 pub(super) mod read;
 mod write;
 
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -98,36 +98,31 @@ impl RiffInfoList {
 	}
 }
 
-impl RiffInfoList {
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`RiffInfoList::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+impl TagIO for RiffInfoList {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		self.items.is_empty()
 	}
 
-	/// Writes the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Into::<RiffInfoListRef>::into(self).write_to(file)
 	}
 
-	/// Dumps the tag to a writer
-	///
-	/// This will only write the LIST chunk, it will not create a usable
-	/// file.
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		Into::<RiffInfoListRef>::into(self).dump_to(writer)
+	}
+
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::RiffInfo.remove_from_path(path)
+	}
+
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::RiffInfo.remove_from(file)
 	}
 }
 
@@ -233,7 +228,7 @@ fn valid_key(key: &str) -> bool {
 #[cfg(test)]
 mod tests {
 	use crate::iff::RiffInfoList;
-	use crate::{Tag, TagType};
+	use crate::{Tag, TagIO, TagType};
 
 	use std::io::Cursor;
 

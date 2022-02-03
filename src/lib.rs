@@ -148,7 +148,8 @@
 	clippy::too_many_arguments,
 	clippy::single_match_else,
 	clippy::similar_names,
-	clippy::tabs_in_doc_comments
+	clippy::tabs_in_doc_comments,
+	clippy::len_without_is_empty
 )]
 
 pub mod ape;
@@ -170,7 +171,7 @@ pub use crate::types::file::{AudioFile, FileType, TaggedFile};
 pub use crate::types::item::{ItemKey, ItemValue, TagItem};
 pub use crate::types::picture::{MimeType, Picture, PictureType};
 pub use crate::types::properties::FileProperties;
-pub use crate::types::tag::{Accessor, Tag, TagType};
+pub use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 #[cfg(feature = "vorbis_comments")]
 pub use crate::types::picture::PictureInformation;

@@ -56,6 +56,60 @@ macro_rules! impl_accessor {
 	}
 }
 
+// TODO
+#[allow(missing_docs)]
+pub trait TagIO: Accessor + Sized {
+	type Err;
+
+	/// Whether the tag has any items
+	fn is_empty(&self) -> bool;
+
+	/// Save the tag to a path
+	///
+	/// # Errors
+	///
+	/// * Path doesn't exist
+	/// * Path is not writable
+	/// * See [`TagIO::save_to`]
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
+
+	/// Save the tag to a [`File`]
+	///
+	/// # Errors
+	///
+	/// * The file format could not be determined
+	/// * Attempting to write a tag to a format that does not support it.
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+
+	#[allow(clippy::missing_errors_doc)]
+	/// Dump the tag to a writer
+	///
+	/// This will only write the tag, it will not produce a usable file.
+	fn dump_to<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err>;
+
+	/// Remove a tag from a [`Path`]
+	///
+	/// # Errors
+	///
+	/// See [`TagIO::remove_from`]
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
+
+	/// Remove a tag from a [`File`]
+	///
+	/// # Errors
+	///
+	/// * It is unable to guess the file format
+	/// * The format doesn't support the tag
+	/// * It is unable to write to the file
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+}
+
+pub(crate) trait ParsableTag: Sized {
+	type Err;
+
+	fn parse() -> std::result::Result<Self, Self::Err>;
+}
+
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
@@ -350,6 +404,14 @@ impl Tag {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|p| p.pic_type != picture_type)
 	}
+}
+
+impl TagIO for Tag {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		self.pictures.is_empty() && self.pictures.is_empty()
+	}
 
 	/// Save the `Tag` to a path
 	///
@@ -358,7 +420,7 @@ impl Tag {
 	/// * Path doesn't exist
 	/// * Path is not writable
 	/// * See [`Tag::save_to`]
-	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
 		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
@@ -368,7 +430,7 @@ impl Tag {
 	///
 	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
 	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
-	pub fn save_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		let probe = Probe::new(file).guess_file_type()?;
 
 		match probe.file_type() {
@@ -383,24 +445,25 @@ impl Tag {
 		}
 	}
 
-	/// Dump the tag to a writer
-	///
-	/// This will only write the tag, it will not produce a usable file.
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
 		crate::tag_utils::dump_tag(self, writer)
 	}
 
-	/// Same as [`TagType::remove_from_path`]
-	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> bool {
+	/// Remove a tag from a [`Path`]
+	///
+	/// # Errors
+	///
+	/// See [`TagType::remove_from`]
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
 		self.tag_type.remove_from_path(path)
 	}
 
-	/// Same as [`TagType::remove_from`]
-	pub fn remove_from(&self, file: &mut File) -> bool {
+	/// Remove a tag from a [`File`]
+	///
+	/// # Errors
+	///
+	/// See [`TagType::remove_from`]
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		self.tag_type.remove_from(file)
 	}
 }
@@ -428,34 +491,34 @@ pub enum TagType {
 impl TagType {
 	/// Remove a tag from a [`Path`]
 	///
+	/// # Errors
+	///
 	/// See [`TagType::remove_from`]
-	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> bool {
-		if let Ok(mut file) = OpenOptions::new().read(true).write(true).open(path) {
-			return self.remove_from(&mut file);
-		}
-
-		false
+	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		let mut file = OpenOptions::new().read(true).write(true).open(path)?;
+		self.remove_from(&mut file)
 	}
 
 	#[allow(clippy::shadow_unrelated)]
 	/// Remove a tag from a [`File`]
 	///
-	/// This will return `false` if:
+	/// # Errors
 	///
 	/// * It is unable to guess the file format
-	/// * The format doesn't support the `TagType`
+	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	pub fn remove_from(&self, file: &mut File) -> bool {
-		if let Ok(probe) = Probe::new(file).guess_file_type() {
-			if let Some(file_type) = probe.file_type() {
-				if file_type.supports_tag_type(self) {
-					let file = probe.into_inner();
+	pub fn remove_from(&self, file: &mut File) -> Result<()> {
+		let probe = Probe::new(file).guess_file_type()?;
+		let file_type = match probe.file_type() {
+			Some(f_ty) => f_ty,
+			None => return Err(LoftyError::new(ErrorKind::UnknownFormat)),
+		};
 
-					return crate::tag_utils::write_tag(&Tag::new(*self), file, file_type).is_ok();
-				}
-			}
+		if !file_type.supports_tag_type(self) {
+			return Err(LoftyError::new(ErrorKind::UnsupportedTag));
 		}
 
-		false
+		let file = probe.into_inner();
+		crate::tag_utils::write_tag(&Tag::new(*self), file, file_type)
 	}
 }

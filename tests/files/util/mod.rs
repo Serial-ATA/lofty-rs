@@ -83,7 +83,7 @@ macro_rules! remove_tag {
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
-		assert!($tag_type.remove_from(&mut file));
+		$tag_type.remove_from(&mut file).unwrap();
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 

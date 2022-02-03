@@ -4,11 +4,11 @@ use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue};
 use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -103,6 +103,15 @@ impl_accessor!(
 	genre,        "TCON";
 );
 
+impl IntoIterator for Id3v2Tag {
+	type Item = Frame;
+	type IntoIter = std::vec::IntoIter<Frame>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.frames.into_iter()
+	}
+}
+
 impl Default for Id3v2Tag {
 	fn default() -> Self {
 		Self {
@@ -142,11 +151,6 @@ impl Id3v2Tag {
 	/// Returns the number of frames in the tag
 	pub fn len(&self) -> usize {
 		self.frames.len()
-	}
-
-	/// Returns `true` if the tag contains no frames
-	pub fn is_empty(&self) -> bool {
-		self.frames.is_empty()
 	}
 
 	/// Gets a [`Frame`] from an id
@@ -265,15 +269,15 @@ impl Id3v2Tag {
 	}
 }
 
-impl Id3v2Tag {
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`Id3v2Tag::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+impl TagIO for Id3v2Tag {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		self.frames.is_empty()
+	}
+
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Writes the tag to a file
@@ -283,7 +287,7 @@ impl Id3v2Tag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	/// * Attempting to write an invalid [`FrameID`]/[`FrameValue`] pairing
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
 			.write_to(file)
 	}
@@ -293,18 +297,18 @@ impl Id3v2Tag {
 	/// # Errors
 	///
 	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	/// * [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData)
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
 			.dump_to(writer)
 	}
-}
 
-impl IntoIterator for Id3v2Tag {
-	type Item = Frame;
-	type IntoIter = std::vec::IntoIter<Frame>;
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::Id3v2.remove_from_path(path)
+	}
 
-	fn into_iter(self) -> Self::IntoIter {
-		self.frames.into_iter()
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::Id3v2.remove_from(file)
 	}
 }
 
@@ -444,7 +448,7 @@ mod tests {
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag_utils::test_utils::read_path;
-	use crate::{MimeType, Picture, PictureType, Tag, TagType};
+	use crate::{MimeType, Picture, PictureType, Tag, TagIO, TagType};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag_utils::test_utils::read_path(path);

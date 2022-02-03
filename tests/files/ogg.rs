@@ -1,5 +1,5 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{FileType, ItemKey, ItemValue, TagItem, TagType};
+use lofty::{FileType, ItemKey, ItemValue, TagIO, TagItem, TagType};
 use std::io::{Seek, SeekFrom, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
@@ -101,7 +101,7 @@ fn remove(path: &str, tag_type: TagType) {
 	);
 
 	file.seek(SeekFrom::Start(0)).unwrap();
-	assert!(tag_type.remove_from(&mut file));
+	tag_type.remove_from(&mut file).unwrap();
 
 	file.seek(SeekFrom::Start(0)).unwrap();
 	let tagged_file = lofty::read_from(&mut file, false).unwrap();

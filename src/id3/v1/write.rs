@@ -43,8 +43,8 @@ pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef) -> Result<()> {
 	Ok(())
 }
 
-pub(super) fn encode(tag: &Id3v1TagRef) -> Result<Vec<u8>> {
-	fn resize_string(value: Option<&str>, size: usize) -> Result<Vec<u8>> {
+pub(super) fn encode(tag: &Id3v1TagRef) -> std::io::Result<Vec<u8>> {
+	fn resize_string(value: Option<&str>, size: usize) -> std::io::Result<Vec<u8>> {
 		let mut cursor = Cursor::new(vec![0; size]);
 		cursor.seek(SeekFrom::Start(0))?;
 

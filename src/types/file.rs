@@ -1,5 +1,5 @@
 use super::properties::FileProperties;
-use super::tag::{Tag, TagType};
+use super::tag::{Tag, TagIO, TagType};
 use crate::error::{ErrorKind, LoftyError, Result};
 
 use std::convert::TryInto;

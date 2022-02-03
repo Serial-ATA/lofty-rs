@@ -3,10 +3,10 @@ pub(super) mod read;
 pub(crate) mod write;
 
 use super::AtomIdent;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
@@ -179,36 +179,31 @@ impl Ilst {
 	}
 }
 
-impl Ilst {
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`Ilst::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+impl TagIO for Ilst {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		self.atoms.is_empty()
 	}
 
-	/// Writes the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Into::<IlstRef>::into(self).write_to(file)
 	}
 
-	/// Dumps the tag to a writer
-	///
-	/// This will only write the ilst atom, it will not create a usable
-	/// file.
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		Into::<IlstRef>::into(self).dump_to(writer)
+	}
+
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::Mp4Ilst.remove_from_path(path)
+	}
+
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::Mp4Ilst.remove_from(file)
 	}
 }
 
@@ -416,7 +411,7 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-	use crate::{ItemKey, Tag, TagType};
+	use crate::{ItemKey, Tag, TagIO, TagType};
 
 	#[test]
 	fn parse_ilst() {

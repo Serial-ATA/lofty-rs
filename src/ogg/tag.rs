@@ -4,7 +4,7 @@ use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureInformation, PictureType};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
@@ -133,15 +133,21 @@ impl VorbisComments {
 	}
 }
 
-impl VorbisComments {
+impl TagIO for VorbisComments {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
+		self.items.is_empty() && self.pictures.is_empty()
+	}
+
 	/// Writes the tag to a path
 	///
 	/// # Errors
 	///
 	/// * `path` does not exist
-	/// * See [`VorbisComments::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	/// * See [`VorbisComments::save_to`]
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Writes the tag to a file
@@ -150,7 +156,9 @@ impl VorbisComments {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * The file does not contain valid packets
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	/// * [`PictureInformation::from_picture`]
+	/// * [`std::io::Error`]
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Into::<VorbisCommentsRef>::into(self).write_to(file)
 	}
 
@@ -163,8 +171,16 @@ impl VorbisComments {
 	///
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		Into::<VorbisCommentsRef>::into(self).dump_to(writer)
+	}
+
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::VorbisComments.remove_from_path(path)
+	}
+
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::VorbisComments.remove_from(file)
 	}
 }
 
@@ -316,7 +332,7 @@ impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
 #[cfg(test)]
 mod tests {
 	use crate::ogg::VorbisComments;
-	use crate::{Tag, TagType};
+	use crate::{Tag, TagIO, TagType};
 
 	use std::io::Read;
 

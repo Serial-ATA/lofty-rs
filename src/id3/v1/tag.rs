@@ -1,7 +1,7 @@
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagType};
+use crate::types::tag::{Accessor, Tag, TagIO, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -110,9 +110,10 @@ impl Accessor for Id3v1Tag {
 	}
 }
 
-impl Id3v1Tag {
-	/// Returns `true` if the tag contains no data
-	pub fn is_empty(&self) -> bool {
+impl TagIO for Id3v1Tag {
+	type Err = LoftyError;
+
+	fn is_empty(&self) -> bool {
 		self.title.is_none()
 			&& self.artist.is_none()
 			&& self.album.is_none()
@@ -122,22 +123,11 @@ impl Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`Id3v1Tag::write_to`]
-	pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.write_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
-	/// Write the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	pub fn write_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Into::<Id3v1TagRef>::into(self).write_to(file)
 	}
 
@@ -146,8 +136,16 @@ impl Id3v1Tag {
 	/// # Errors
 	///
 	/// * [`std::io::Error`]
-	pub fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
+	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		Into::<Id3v1TagRef>::into(self).dump_to(writer)
+	}
+
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		TagType::Id3v1.remove_from_path(path)
+	}
+
+	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+		TagType::Id3v1.remove_from(file)
 	}
 }
 
@@ -280,7 +278,7 @@ impl<'a> Id3v1TagRef<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v1::Id3v1Tag;
-	use crate::{Tag, TagType};
+	use crate::{Tag, TagIO, TagType};
 
 	#[test]
 	fn parse_id3v1() {
