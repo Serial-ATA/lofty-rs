@@ -278,8 +278,8 @@ impl<'a> Into<ApeTagRef<'a>> for &'a ApeTag {
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
 	use crate::{ItemValue, Tag, TagIO, TagType};
+	use crate::ape::header::read_ape_header;
 
-	use crate::ape::tag::read_ape_header;
 	use std::io::Cursor;
 
 	#[test]

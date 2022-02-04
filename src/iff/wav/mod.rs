@@ -1,22 +1,25 @@
 mod properties;
 mod read;
-#[cfg(feature = "riff_info_list")]
-pub(crate) mod tag;
 pub(crate) mod write;
-
-pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 
 use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::tag_utils::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
-#[cfg(feature = "riff_info_list")]
-use tag::RiffInfoList;
 
 use std::io::{Read, Seek};
+
+crate::macros::feature_locked! {
+	#![cfg(feature = "riff_info_list")]
+
+	pub(crate) mod tag;
+	use tag::RiffInfoList;
+}
+
+// Exports
+pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 
 /// A WAV file
 pub struct WavFile {
@@ -86,10 +89,11 @@ impl AudioFile for WavFile {
 }
 
 impl WavFile {
-	tag_methods! {
-		#[cfg(feature = "id3v2")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "id3v2")]
 		id3v2_tag, Id3v2Tag;
-		#[cfg(feature = "riff_info_list")];
+
+		#[cfg(feature = "riff_info_list")]
 		riff_info, RiffInfoList
 	}
 }

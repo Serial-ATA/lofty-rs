@@ -1,9 +1,9 @@
 use super::header::{search_for_frame_sync, Header, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::ape::constants::APE_PREAMBLE;
+use crate::ape::header::read_ape_header;
 #[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
-use crate::ape::tag::read_ape_header;
 use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;

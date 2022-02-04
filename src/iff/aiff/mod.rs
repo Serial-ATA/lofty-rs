@@ -1,20 +1,22 @@
 mod properties;
 mod read;
-#[cfg(feature = "aiff_text_chunks")]
-pub(crate) mod tag;
 pub(crate) mod write;
 
 use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::tag_utils::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
-#[cfg(feature = "aiff_text_chunks")]
-use tag::AiffTextChunks;
 
 use std::io::{Read, Seek};
+
+crate::macros::feature_locked! {
+	#![cfg(feature = "aiff_text_chunks")]
+
+	pub(crate) mod tag;
+	use tag::AiffTextChunks;
+}
 
 /// An AIFF file
 pub struct AiffFile {
@@ -83,10 +85,11 @@ impl AudioFile for AiffFile {
 }
 
 impl AiffFile {
-	tag_methods! {
-		#[cfg(feature = "id3v2")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "id3v2")]
 		id3v2_tag, Id3v2Tag;
-		#[cfg(feature = "aiff_text_chunks")];
+
+		#[cfg(feature = "aiff_text_chunks")]
 		text_chunks, AiffTextChunks
 	}
 }

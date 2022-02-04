@@ -110,7 +110,7 @@ impl MimeType {
 	}
 }
 
-/// The picture type
+/// The picture type, according to ID3v2 APIC
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum PictureType {
@@ -141,8 +141,8 @@ pub enum PictureType {
 impl PictureType {
 	// ID3/OGG specific methods
 
-	/// Get a u8 from a `PictureType` according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
+	/// Get a u8 from a `PictureType` according to ID3v2 APIC
 	pub fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,
@@ -170,8 +170,8 @@ impl PictureType {
 		}
 	}
 
-	/// Get a `PictureType` from a u8 according to ID3v2 APIC
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
+	/// Get a `PictureType` from a u8 according to ID3v2 APIC
 	pub fn from_u8(bytes: u8) -> Self {
 		match bytes {
 			0 => Self::Other,
@@ -201,8 +201,8 @@ impl PictureType {
 
 	// APE specific methods
 
-	/// Get an APE item key from a `PictureType`
 	#[cfg(feature = "ape")]
+	/// Get an APE item key from a `PictureType`
 	pub fn as_ape_key(&self) -> Option<&str> {
 		match self {
 			Self::Other => Some("Cover Art (Other)"),
@@ -230,8 +230,8 @@ impl PictureType {
 		}
 	}
 
-	/// Get a `PictureType` from an APE item key
 	#[cfg(feature = "ape")]
+	/// Get a `PictureType` from an APE item key
 	pub fn from_ape_key(key: &str) -> Self {
 		match key {
 			"Cover Art (Other)" => Self::Other,

@@ -8,31 +8,32 @@ pub(crate) mod flac;
 pub(crate) mod opus;
 pub(crate) mod read;
 pub(crate) mod speex;
-#[cfg(feature = "vorbis_comments")]
-pub(crate) mod tag;
 pub(crate) mod vorbis;
-#[cfg(feature = "vorbis_comments")]
-pub(crate) mod write;
 
 use crate::error::{FileDecodingError, Result};
 use crate::types::file::FileType;
 
-// Exports
-
-#[cfg(feature = "vorbis_comments")]
-pub use crate::ogg::tag::VorbisComments;
-
-pub use crate::ogg::flac::FlacFile;
-pub use crate::ogg::opus::properties::OpusProperties;
-pub use crate::ogg::opus::OpusFile;
-pub use crate::ogg::speex::properties::SpeexProperties;
-pub use crate::ogg::speex::SpeexFile;
-pub use crate::ogg::vorbis::properties::VorbisProperties;
-pub use crate::ogg::vorbis::VorbisFile;
-
 use std::io::{Read, Seek};
 
 use ogg_pager::Page;
+
+// Exports
+
+crate::macros::feature_locked! {
+	#![cfg(feature = "vorbis_comments")]
+	pub(crate) mod write;
+
+	pub(crate) mod tag;
+	pub use tag::VorbisComments;
+}
+
+pub use flac::FlacFile;
+pub use opus::properties::OpusProperties;
+pub use opus::OpusFile;
+pub use speex::properties::SpeexProperties;
+pub use speex::SpeexFile;
+pub use vorbis::properties::VorbisProperties;
+pub use vorbis::VorbisFile;
 
 pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();

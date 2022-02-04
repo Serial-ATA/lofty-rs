@@ -15,12 +15,15 @@
 //! A track number of 0 will be treated as an empty field.
 //! Additionally, there is no track total field.
 pub(crate) mod constants;
-#[cfg(feature = "id3v1")]
-pub(crate) mod read;
-#[cfg(feature = "id3v1")]
-pub(crate) mod tag;
-#[cfg(feature = "id3v1")]
-pub(crate) mod write;
 
-#[cfg(feature = "id3v1")]
-pub use crate::id3::v1::{constants::GENRES, tag::Id3v1Tag};
+crate::macros::feature_locked! {
+	#![cfg(feature = "id3v1")]
+
+	pub use constants::GENRES;
+
+	pub(crate) mod tag;
+	pub use tag::Id3v1Tag;
+
+	pub(crate) mod read;
+	pub(crate) mod write;
+}

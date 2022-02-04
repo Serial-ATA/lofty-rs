@@ -151,11 +151,13 @@
 	clippy::tabs_in_doc_comments,
 	clippy::len_without_is_empty
 )]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 pub mod ape;
 pub mod error;
 pub mod id3;
 pub mod iff;
+pub(crate) mod macros;
 pub mod mp3;
 pub mod mp4;
 pub mod ogg;

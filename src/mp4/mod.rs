@@ -4,28 +4,30 @@
 //!
 //! The only supported tag format is [`Ilst`].
 mod atom_info;
-#[cfg(feature = "mp4_ilst")]
-pub(crate) mod ilst;
 mod moov;
 mod properties;
 mod read;
 mod trak;
 
-pub use crate::mp4::properties::{Mp4Codec, Mp4Properties};
-#[cfg(feature = "mp4_ilst")]
-pub use crate::mp4::{
-	atom_info::AtomIdent,
-	ilst::{
-		atom::{Atom, AtomData},
-		Ilst,
-	},
-};
-
-use crate::tag_utils::tag_methods;
+use crate::error::Result;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::{FileProperties, Result, TagType};
+use crate::types::properties::FileProperties;
+use crate::types::tag::TagType;
 
 use std::io::{Read, Seek};
+
+// Exports
+
+crate::macros::feature_locked! {
+	#![cfg(feature = "mp4_ilst")]
+	pub(crate) mod ilst;
+
+	pub use atom_info::AtomIdent;
+	pub use ilst::atom::{Atom, AtomData};
+	pub use ilst::Ilst;
+}
+
+pub use crate::mp4::properties::{Mp4Codec, Mp4Properties};
 
 /// An MP4 file
 pub struct Mp4File {
@@ -97,8 +99,8 @@ impl Mp4File {
 }
 
 impl Mp4File {
-	tag_methods! {
-		#[cfg(feature = "mp4_ilst")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "mp4_ilst")]
 		ilst, Ilst
 	}
 }

@@ -1,6 +1,6 @@
 use super::ape_tag::ApeTag;
 use super::item::ApeItem;
-use super::ApeHeader;
+use crate::ape::header::ApeHeader;
 use crate::ape::constants::INVALID_KEYS;
 use crate::error::{FileDecodingError, Result};
 use crate::types::file::FileType;

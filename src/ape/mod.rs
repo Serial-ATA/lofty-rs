@@ -6,29 +6,35 @@
 //! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 //! `ID3v1`.
 pub(crate) mod constants;
+pub(crate) mod header;
 mod properties;
 mod read;
-pub(crate) mod tag;
 pub(crate) mod write;
-
-pub use crate::ape::properties::ApeProperties;
-#[cfg(feature = "ape")]
-pub use {
-	crate::types::picture::APE_PICTURE_TYPES,
-	tag::{ape_tag::ApeTag, item::ApeItem},
-};
 
 use crate::error::Result;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::tag_utils::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
+
+// Exports
+
+crate::macros::feature_locked! {
+	#![cfg(feature = "ape")]
+
+	pub(crate) mod tag;
+	pub use tag::ape_tag::ApeTag;
+	pub use tag::item::ApeItem;
+
+	pub use crate::types::picture::APE_PICTURE_TYPES;
+}
+
+pub use properties::ApeProperties;
 
 /// An APE file
 pub struct ApeFile {
@@ -106,12 +112,14 @@ impl AudioFile for ApeFile {
 }
 
 impl ApeFile {
-	tag_methods! {
-		#[cfg(feature = "id3v2")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "id3v2")]
 		id3v2_tag, Id3v2Tag;
-		#[cfg(feature = "id3v1")];
+
+		#[cfg(feature = "id3v1")]
 		id3v1_tag, Id3v1Tag;
-		#[cfg(feature = "ape")];
+
+		#[cfg(feature = "ape")]
 		ape_tag, ApeTag
 	}
 }

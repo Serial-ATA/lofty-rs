@@ -75,40 +75,6 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	}
 }
 
-macro_rules! tag_methods {
-	(
-		$(
-			$(#[$attr:meta])?;
-			$name:ident,
-			$ty:ty
-		);*
-	) => {
-		paste::paste! {
-			$(
-				$(#[$attr])?
-				#[doc = "Gets the [`" $ty "`] if it exists"]
-				pub fn $name(&self) -> Option<&$ty> {
-					self.$name.as_ref()
-				}
-
-				$(#[$attr])?
-				#[doc = "Gets a mutable reference to the [`" $ty "`] if it exists"]
-				pub fn [<$name _mut>](&mut self) -> Option<&mut $ty> {
-					self.$name.as_mut()
-				}
-
-				$(#[$attr])?
-				#[doc = "Removes the [`" $ty "`]"]
-				pub fn [<remove_ $name>](&mut self) {
-					self.$name = None
-				}
-			)*
-		}
-	}
-}
-
-pub(crate) use tag_methods;
-
 #[cfg(test)]
 // Used for tag conversion tests
 pub(crate) mod test_utils {

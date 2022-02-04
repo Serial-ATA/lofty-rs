@@ -15,7 +15,6 @@ use crate::error::Result;
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::tag_utils::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::{Tag, TagType};
@@ -100,12 +99,14 @@ impl AudioFile for Mp3File {
 }
 
 impl Mp3File {
-	tag_methods! {
-		#[cfg(feature = "id3v2")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "id3v2")]
 		id3v2_tag, Id3v2Tag;
-		#[cfg(feature = "id3v1")];
+
+		#[cfg(feature = "id3v1")]
 		id3v1_tag, Id3v1Tag;
-		#[cfg(feature = "ape")];
+
+		#[cfg(feature = "ape")]
 		ape_tag, ApeTag
 	}
 }

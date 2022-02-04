@@ -7,7 +7,6 @@ pub(crate) mod write;
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
-use crate::tag_utils::tag_methods;
 use crate::types::file::{AudioFile, FileType, TaggedFile};
 use crate::types::properties::FileProperties;
 use crate::types::tag::TagType;
@@ -73,8 +72,8 @@ impl AudioFile for FlacFile {
 }
 
 impl FlacFile {
-	tag_methods! {
-		#[cfg(feature = "vorbis_comments")];
+	crate::macros::tag_methods! {
+		#[cfg(feature = "vorbis_comments")]
 		vorbis_comments, VorbisComments
 	}
 }

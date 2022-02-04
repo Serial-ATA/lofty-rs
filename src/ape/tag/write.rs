@@ -6,11 +6,11 @@ use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::ItemValueRef;
+use crate::ape::header::read_ape_header;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use crate::ape::tag::read_ape_header;
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]

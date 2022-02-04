@@ -1,8 +1,8 @@
 use super::constants::APE_PREAMBLE;
+use super::header::read_ape_header;
 #[cfg(feature = "ape")]
 use super::tag::{ape_tag::ApeTag, read::read_ape_tag};
 use super::{ApeFile, ApeProperties};
-use crate::ape::tag::read_ape_header;
 use crate::error::{FileDecodingError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;

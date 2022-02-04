@@ -8,50 +8,51 @@
 //! * [Frame]
 
 mod flags;
-#[cfg(feature = "id3v2")]
-mod frame;
-#[cfg(feature = "id3v2")]
-mod items;
-#[cfg(feature = "id3v2")]
-pub(crate) mod read;
-#[cfg(feature = "id3v2_restrictions")]
-mod restrictions;
-#[cfg(feature = "id3v2")]
-pub(crate) mod tag;
 pub(crate) mod util;
-#[cfg(feature = "id3v2")]
-pub(crate) mod write;
-
-#[cfg(feature = "id3v2_restrictions")]
-pub use restrictions::{
-	ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
-};
-#[cfg(feature = "id3v2")]
-pub use {
-	flags::Id3v2TagFlags,
-	frame::{
-		content::EncodedTextFrame, content::LanguageFrame, id::FrameID, Frame, FrameFlags,
-		FrameValue,
-	},
-	items::{
-		encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject},
-		sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat},
-	},
-	tag::Id3v2Tag,
-	util::{
-		text_utils::TextEncoding,
-		upgrade::{upgrade_v2, upgrade_v3},
-	},
-};
-
-#[cfg(not(feature = "id3v2"))]
-use flags::Id3v2TagFlags;
 
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::macros::feature_locked;
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
+
+feature_locked! {
+	#![cfg(feature = "id3v2")]
+
+	pub use flags::Id3v2TagFlags;
+	pub use util::text_utils::TextEncoding;
+	pub use util::upgrade::{upgrade_v2, upgrade_v3};
+
+	pub(crate) mod tag;
+	pub use tag::Id3v2Tag;
+
+	mod items;
+	pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
+	pub use items::sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
+
+	mod frame;
+	pub use frame::content::{EncodedTextFrame, LanguageFrame};
+	pub use frame::id::FrameID;
+	pub use frame::Frame;
+	pub use frame::FrameFlags;
+	pub use frame::FrameValue;
+
+	pub(crate) mod read;
+	pub(crate) mod write;
+}
+
+feature_locked! {
+	#![cfg(feature = "id3v2_restrictions")]
+
+	mod restrictions;
+	pub use restrictions::{
+		ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
+	};
+}
+
+#[cfg(not(feature = "id3v2"))]
+use flags::Id3v2TagFlags;
 
 #[derive(PartialEq, Debug, Clone, Copy)]
 /// The ID3v2 version
