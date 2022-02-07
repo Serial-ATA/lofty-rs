@@ -2,7 +2,8 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use super::Mp4File;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -14,6 +15,12 @@ where
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
+	}
+
+	// size + identifier + major brand
+	// There *should* be more, but this is all we need from it
+	if atom.len < 12 {
+		return Err(FileDecodingError::new(FileType::MP4, "\"ftyp\" atom too short").into());
 	}
 
 	let mut major_brand = vec![0; 4];
