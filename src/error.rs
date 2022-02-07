@@ -5,6 +5,7 @@
 
 use crate::types::file::FileType;
 
+use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
 
 use ogg_pager::PageError;
@@ -25,7 +26,6 @@ pub enum ErrorKind {
 	// File data related errors
 	/// Attempting to read/write an abnormally large amount of data
 	TooMuchData,
-	// TODO: Fallible allocation
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -59,6 +59,8 @@ pub enum ErrorKind {
 	StrFromUtf8(std::str::Utf8Error),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
+	/// TODO
+	Alloc(TryReserveError),
 }
 
 #[derive(Debug, Clone)]
@@ -338,6 +340,14 @@ impl From<std::str::Utf8Error> for LoftyError {
 	}
 }
 
+impl From<std::collections::TryReserveError> for LoftyError {
+	fn from(input: TryReserveError) -> Self {
+		Self {
+			kind: ErrorKind::Alloc(input),
+		}
+	}
+}
+
 impl Display for LoftyError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self.kind {
@@ -346,6 +356,7 @@ impl Display for LoftyError {
 			ErrorKind::StringFromUtf8(ref err) => write!(f, "{}", err),
 			ErrorKind::StrFromUtf8(ref err) => write!(f, "{}", err),
 			ErrorKind::Io(ref err) => write!(f, "{}", err),
+			ErrorKind::Alloc(ref err) => write!(f, "{}", err),
 
 			ErrorKind::BadExtension(ref ext) => {
 				write!(f, "Found unknown file extension \"{}\"", ext)

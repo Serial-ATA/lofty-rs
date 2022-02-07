@@ -231,6 +231,8 @@ mod tests {
 	use crate::{Tag, TagIO, TagType};
 
 	use std::io::Cursor;
+	use byteorder::LittleEndian;
+	use crate::iff::chunk::Chunks;
 
 	#[test]
 	fn parse_riff_info() {
@@ -248,6 +250,7 @@ mod tests {
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -263,6 +266,7 @@ mod tests {
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -276,6 +280,7 @@ mod tests {
 		// Remove the LIST....INFO from the tag
 		super::read::parse_riff_info(
 			&mut Cursor::new(&writer[12..]),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
 			(tag.len() - 13) as u64,
 			&mut temp_parsed_tag,
 		)
@@ -291,7 +296,7 @@ mod tests {
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 		let mut riff_info = RiffInfoList::default();
 
-		super::read::parse_riff_info(&mut reader, (tag_bytes.len() - 1) as u64, &mut riff_info)
+		super::read::parse_riff_info(&mut reader, &mut Chunks::<LittleEndian>::new(tag_bytes.len() as u32), (tag_bytes.len() - 1) as u64, &mut riff_info)
 			.unwrap();
 
 		let tag: Tag = riff_info.into();

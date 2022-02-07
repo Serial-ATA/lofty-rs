@@ -355,13 +355,13 @@ where
 	}
 
 	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, AI>) -> Result<()> {
-		super::read::verify_aiff(data)?;
+		let file_size = super::read::verify_aiff(data)?;
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
 		let mut chunks_remove = Vec::new();
 
-		let mut chunks = Chunks::<BigEndian>::new();
+		let mut chunks = Chunks::<BigEndian>::new(file_size);
 
 		while chunks.next(data).is_ok() {
 			match &chunks.fourcc {
@@ -468,7 +468,7 @@ mod tests {
 			.unwrap();
 
 		// Create a fake AIFF signature
-		let mut writer = vec![b'F', b'O', b'R', b'M', 0, 0, 0, 0, b'A', b'I', b'F', b'F'];
+		let mut writer = vec![b'F', b'O', b'R', b'M', 0, 0, 0, 0xC6, b'A', b'I', b'F', b'F'];
 		parsed_tag.dump_to(&mut writer).unwrap();
 
 		let temp_parsed_tag = super::super::read::read_from(&mut Cursor::new(writer), false)

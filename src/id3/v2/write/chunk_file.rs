@@ -4,17 +4,19 @@ use crate::iff::chunk::Chunks;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
-use byteorder::{ByteOrder, WriteBytesExt};
+use byteorder::{ByteOrder, WriteBytesExt, ReadBytesExt};
 
 pub(in crate::id3::v2) fn write_to_chunk_file<B>(data: &mut File, tag: &[u8]) -> Result<()>
 where
 	B: ByteOrder,
 {
-	data.seek(SeekFrom::Current(12))?;
+	data.seek(SeekFrom::Current(4))?;
+	let file_size = data.read_u32::<B>()?;
+	data.seek(SeekFrom::Current(4))?;
 
 	let mut id3v2_chunk = (None, None);
 
-	let mut chunks = Chunks::<B>::new();
+	let mut chunks = Chunks::<B>::new(file_size);
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"ID3 " || &chunks.fourcc == b"id3 " {

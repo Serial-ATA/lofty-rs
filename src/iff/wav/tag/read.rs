@@ -9,14 +9,13 @@ use byteorder::LittleEndian;
 
 pub(in crate::iff::wav) fn parse_riff_info<R>(
 	data: &mut R,
+	chunks: &mut Chunks<LittleEndian>,
 	end: u64,
 	tag: &mut RiffInfoList,
 ) -> Result<()>
 where
 	R: Read + Seek,
 {
-	let mut chunks = Chunks::<LittleEndian>::new();
-
 	while data.seek(SeekFrom::Current(0))? != end && chunks.next(data).is_ok() {
 		let key_str = String::from_utf8(chunks.fourcc.to_vec()).map_err(|_| {
 			FileDecodingError::new(FileType::WAV, "Non UTF-8 item key found in RIFF INFO")
@@ -34,7 +33,7 @@ where
 		}
 
 		tag.items.push((
-			key_str.to_string(),
+			key_str,
 			chunks.read_cstring(data).map_err(|_| {
 				FileDecodingError::new(FileType::WAV, "Failed to read RIFF INFO item value")
 			})?,

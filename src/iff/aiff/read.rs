@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
+pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<u32>
 where
 	R: Read + Seek,
 {
@@ -23,14 +23,14 @@ where
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
-	Ok(())
+	Ok(u32::from_be_bytes(id[4..8].try_into().unwrap()))
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
-	verify_aiff(data)?;
+	let file_size = verify_aiff(data)?;
 
 	let mut comm = None;
 	let mut stream_len = 0;
@@ -45,7 +45,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut chunks = Chunks::<BigEndian>::new();
+	let mut chunks = Chunks::<BigEndian>::new(file_size);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
@@ -82,7 +82,7 @@ where
 					let marker_id = data.read_u16::<BigEndian>()?;
 					let size = data.read_u16::<BigEndian>()?;
 
-					let text = chunks.read_pstring(data, Some(size as usize))?;
+					let text = chunks.read_pstring(data, Some(u32::from(size)))?;
 
 					comments.push(Comment {
 						timestamp,

@@ -42,4 +42,14 @@ macro_rules! feature_locked {
 	}
 }
 
-pub(crate) use {feature_locked, tag_methods};
+macro_rules! try_vec {
+	($elem:expr; $size:expr) => {{
+		let mut v = Vec::new();
+		v.try_reserve($size)?;
+		v.resize($size, $elem);
+
+		v
+	}};
+}
+
+pub(crate) use {feature_locked, tag_methods, try_vec};

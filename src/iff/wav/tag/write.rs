@@ -12,14 +12,12 @@ pub(in crate::iff::wav) fn write_riff_info(
 	data: &mut File,
 	tag: &mut RiffInfoListRef,
 ) -> Result<()> {
-	verify_wav(data)?;
+	let file_size = verify_wav(data)?;
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 
-	let (info_list, info_list_size) = find_info_list(data)?;
-
-	if info_list {
+	if let Some(info_list_size) = find_info_list(data, file_size)? {
 		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
 		let info_list_end = info_list_start + 8 + info_list_size as usize;
 
@@ -50,13 +48,13 @@ pub(in crate::iff::wav) fn write_riff_info(
 	Ok(())
 }
 
-fn find_info_list<R>(data: &mut R) -> Result<(bool, u32)>
+fn find_info_list<R>(data: &mut R, file_size: u32) -> Result<Option<u32>>
 where
 	R: Read + Seek,
 {
-	let mut info = (false, 0);
+	let mut info = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new();
+	let mut chunks = Chunks::<LittleEndian>::new(file_size);
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"LIST" {
@@ -64,16 +62,14 @@ where
 			data.read_exact(&mut list_type)?;
 
 			if &list_type == b"INFO" {
-				info = (true, chunks.size);
+				info = Some(chunks.size);
 				break;
 			}
 
 			data.seek(SeekFrom::Current(-8))?;
 		}
 
-		data.seek(SeekFrom::Current(i64::from(chunks.size)))?;
-
-		chunks.correct_position(data)?;
+		chunks.skip(data)?;
 	}
 
 	Ok(info)

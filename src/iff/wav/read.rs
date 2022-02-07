@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
+pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<u32>
 where
 	T: Read + Seek,
 {
@@ -31,14 +31,14 @@ where
 		);
 	}
 
-	Ok(())
+	Ok(u32::from_le_bytes(id[4..8].try_into().unwrap()))
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
-	verify_wav(data)?;
+	let file_size = verify_wav(data)?;
 
 	let mut stream_len = 0_u32;
 	let mut total_samples = 0_u32;
@@ -49,7 +49,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new();
+	let mut chunks = Chunks::<LittleEndian>::new(file_size);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
@@ -78,20 +78,20 @@ where
 				let mut list_type = [0; 4];
 				data.read_exact(&mut list_type)?;
 
-				#[cfg(feature = "riff_info_list")]
-				if &list_type == b"INFO" {
-					let end = data.seek(SeekFrom::Current(0))? + u64::from(chunks.size - 4);
-					super::tag::read::parse_riff_info(data, end, &mut riff_info)?;
-					chunks.correct_position(data)?;
+				match &list_type {
+					#[cfg(feature = "riff_info_list")]
+					b"INFO" => {
+						let end = data.seek(SeekFrom::Current(0))? + u64::from(chunks.size - 4);
+						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
+					},
+					_ => {
+						data.seek(SeekFrom::Current(-4))?;
+						chunks.skip(data)?;
+					},
 				}
-
-				#[cfg(not(feature = "riff_info_list"))]
-				chunks.skip(data)?;
 			},
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
-			#[cfg(not(feature = "id3v2"))]
-			b"ID3 " | b"id3 " => chunks.id3_chunk(data)?,
 			_ => chunks.skip(data)?,
 		}
 	}
