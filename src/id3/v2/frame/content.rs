@@ -142,11 +142,11 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 		Some(e) => e,
 	};
 
-	let description = decode_text(content, encoding, true)?.unwrap_or_else(String::new);
+	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
 	Ok(if link {
 		let content =
-			decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_else(String::new);
+			decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
 
 		FrameValue::UserURL(EncodedTextFrame {
 			encoding,
@@ -154,7 +154,7 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 			content,
 		})
 	} else {
-		let content = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
+		let content = decode_text(content, encoding, false)?.unwrap_or_default();
 
 		FrameValue::UserText(EncodedTextFrame {
 			encoding,
@@ -185,7 +185,7 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Unable to decode language string")))?;
 
 	let description = decode_text(content, encoding, true)?;
-	let content = decode_text(content, encoding, false)?.unwrap_or_else(String::new);
+	let content = decode_text(content, encoding, false)?.unwrap_or_default();
 
 	let information = LanguageFrame {
 		encoding,
@@ -213,7 +213,7 @@ fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 		Some(e) => e,
 	};
 
-	let text = decode_text(content, encoding, true)?.unwrap_or_else(String::new);
+	let text = decode_text(content, encoding, true)?.unwrap_or_default();
 
 	Ok(FrameValue::Text {
 		encoding,
@@ -222,7 +222,7 @@ fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
 }
 
 fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
-	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_else(String::new);
+	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
 
 	Ok(FrameValue::URL(link))
 }

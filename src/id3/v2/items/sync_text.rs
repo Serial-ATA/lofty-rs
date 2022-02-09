@@ -155,7 +155,7 @@ impl SynchronizedText {
 
 				Ok(decode_text(&mut cursor, encoding, true)
 					.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
-					.unwrap_or_else(String::new))
+					.unwrap_or_default())
 			})()?;
 
 			pos += text.len() as u32;

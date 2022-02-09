@@ -1,4 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::try_vec;
 #[cfg(feature = "id3v2")]
 use crate::{
 	error::{Id3v2Error, Id3v2ErrorKind},
@@ -195,7 +196,7 @@ impl PictureType {
 			18 => Self::Illustration,
 			19 => Self::BandLogo,
 			20 => Self::PublisherLogo,
-			i => Self::Undefined(i as u8),
+			i => Self::Undefined(i),
 		}
 	}
 
@@ -307,7 +308,6 @@ impl PictureInformation {
 	///
 	/// # Errors
 	///
-	/// * `reader` does not start with a PNG signature
 	/// * `reader` is not a valid PNG
 	pub fn from_png(mut data: &[u8]) -> Result<Self> {
 		let reader = &mut data;
@@ -471,9 +471,8 @@ impl Picture {
 	///
 	/// NOTES:
 	///
-	/// * This is **not** for reading format-specific
-	/// pictures, it is for reading picture data only,
-	/// from a [`File`](std::fs::File) for example.
+	/// * This is for reading picture data only, from
+	/// a [`File`](std::fs::File) for example.
 	/// * `pic_type` will always be [`PictureType::Other`],
 	/// be sure to change it accordingly if writing.
 	///
@@ -489,22 +488,16 @@ impl Picture {
 		let mut data = Vec::new();
 		reader.read_to_end(&mut data)?;
 
-		let pic_type = PictureType::Other;
-		let description = None;
+		if data.len() < 8 {
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
+		}
 
-		let mime_type = match data.get(..8) {
-			Some([0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A]) => MimeType::Png,
-			Some([0xFF, 0xD8, ..]) => MimeType::Jpeg,
-			Some([0x47, 0x49, 0x46, 0x38, 0x37 | 0x39, 0x61, ..]) => MimeType::Gif,
-			Some([b'B', b'M', ..]) => MimeType::Bmp,
-			Some([0x49, 0x49, 0x2A, 0x00, ..] | [0x4D, 0x4D, 0x00, 0x2A, ..]) => MimeType::Tiff,
-			_ => return Err(LoftyError::new(ErrorKind::NotAPicture)),
-		};
+		let mime_type = Self::mimetype_from_bin(&data[..8])?;
 
 		Ok(Self {
-			pic_type,
+			pic_type: PictureType::Other,
 			mime_type,
-			description,
+			description: None,
 			data: data.into(),
 		})
 	}
@@ -578,9 +571,17 @@ impl Picture {
 		version: Id3v2Version,
 		text_encoding: TextEncoding,
 	) -> Result<Vec<u8>> {
+		use crate::id3::v2::util::text_utils;
+
 		let mut data = vec![text_encoding as u8];
 
-		let max_size = if version == Id3v2Version::V2 {
+		let max_size = match version {
+			// ID3v2.2 uses a 24-bit number for sizes
+			Id3v2Version::V2 => 0xFFFF_FF16_u64,
+			_ => u64::from(u32::MAX),
+		};
+
+		if version == Id3v2Version::V2 {
 			// ID3v2.2 PIC is pretty limited with formats
 			let format = match self.mime_type {
 				MimeType::Png => "PNG",
@@ -594,30 +595,23 @@ impl Picture {
 			};
 
 			data.write_all(format.as_bytes())?;
-
-			// ID3v2.2 uses a 24-bit number for sizes
-			0xFFFF_FF16_u64
 		} else {
 			data.write_all(self.mime_type.as_str().as_bytes())?;
 			data.write_u8(0)?;
-
-			u64::from(u32::MAX)
 		};
 
 		data.write_u8(self.pic_type.as_u8())?;
 
 		match &self.description {
-			Some(description) => data.write_all(
-				&*crate::id3::v2::util::text_utils::encode_text(description, text_encoding, true),
-			)?,
+			Some(description) => {
+				data.write_all(&*text_utils::encode_text(description, text_encoding, true))?
+			},
 			None => data.write_u8(0)?,
 		}
 
 		data.write_all(&*self.data)?;
 
-		let size = data.len();
-
-		if size as u64 > max_size {
+		if data.len() as u64 > max_size {
 			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
@@ -638,6 +632,8 @@ impl Picture {
 	///
 	/// * The format is not "PNG" or "JPG"
 	pub fn from_apic_bytes(bytes: &[u8], version: Id3v2Version) -> Result<(Self, TextEncoding)> {
+		use crate::id3::v2::util::text_utils;
+
 		let mut cursor = Cursor::new(bytes);
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
@@ -660,22 +656,20 @@ impl Picture {
 				},
 			}
 		} else {
-			(crate::id3::v2::util::text_utils::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
+			(text_utils::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
 				.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
 		};
 
-		let picture_type = PictureType::from_u8(cursor.read_u8()?);
+		let pic_type = PictureType::from_u8(cursor.read_u8()?);
 
-		let description =
-			crate::id3::v2::util::text_utils::decode_text(&mut cursor, encoding, true)?
-				.map(Cow::from);
+		let description = text_utils::decode_text(&mut cursor, encoding, true)?.map(Cow::from);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
 
 		Ok((
 			Picture {
-				pic_type: picture_type,
+				pic_type,
 				mime_type,
 				description,
 				data: Cow::from(data),
@@ -702,29 +696,28 @@ impl Picture {
 		let mime_str = self.mime_type.to_string();
 		let mime_len = mime_str.len() as u32;
 
-		data.extend(picture_type.iter());
-		data.extend(mime_len.to_be_bytes().iter());
-		data.extend(mime_str.as_bytes().iter());
+		data.extend(picture_type);
+		data.extend(mime_len.to_be_bytes());
+		data.extend(mime_str.as_bytes());
 
-		if let Some(desc) = self.description.clone() {
-			let desc_str = desc.to_string();
-			let desc_len = desc_str.len() as u32;
+		if let Some(desc) = &self.description {
+			let desc_len = desc.len() as u32;
 
-			data.extend(desc_len.to_be_bytes().iter());
-			data.extend(desc_str.as_bytes().iter());
+			data.extend(desc_len.to_be_bytes());
+			data.extend(desc.as_bytes());
 		} else {
-			data.extend([0; 4].iter());
+			data.extend([0; 4]);
 		}
 
-		data.extend(picture_information.width.to_be_bytes().iter());
-		data.extend(picture_information.height.to_be_bytes().iter());
-		data.extend(picture_information.color_depth.to_be_bytes().iter());
-		data.extend(picture_information.num_colors.to_be_bytes().iter());
+		data.extend(picture_information.width.to_be_bytes());
+		data.extend(picture_information.height.to_be_bytes());
+		data.extend(picture_information.color_depth.to_be_bytes());
+		data.extend(picture_information.num_colors.to_be_bytes());
 
 		let pic_data = &self.data;
 		let pic_data_len = pic_data.len() as u32;
 
-		data.extend(pic_data_len.to_be_bytes().iter());
+		data.extend(pic_data_len.to_be_bytes());
 		data.extend(pic_data.iter());
 
 		if encode {
@@ -759,78 +752,72 @@ impl Picture {
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);
 
-		if let Ok(pic_ty) = reader.read_u32::<BigEndian>() {
-			// ID3v2 APIC uses a single byte for picture type.
-			// Anything greater than that is probably invalid, so
-			// we just stop early
-			if pic_ty < 256 {
-				if let Ok(mime_len) = reader.read_u32::<BigEndian>() {
-					let mime_len = mime_len as usize;
+		if size < 32 {
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
+		}
 
-					size -= 8;
-					if mime_len < size {
-						if let Ok(mime_type_str) = std::str::from_utf8(&content[8..8 + mime_len]) {
-							size -= mime_len;
-							reader.seek(SeekFrom::Current(mime_len as i64))?;
+		let pic_ty = reader.read_u32::<BigEndian>()?;
+		size -= 4;
 
-							if let Ok(desc_len) = reader.read_u32::<BigEndian>() {
-								let desc_len = desc_len as usize;
-								let mut description = None;
+		// ID3v2 APIC uses a single byte for picture type.
+		// Anything greater than that is probably invalid, so
+		// we just stop early
+		if pic_ty > 255 {
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
+		}
 
-								size -= 4;
-								if desc_len > 0 && desc_len < size {
-									let pos = 12 + mime_len;
+		let mime_len = reader.read_u32::<BigEndian>()? as usize;
+		size -= 4;
 
-									if let Ok(desc) =
-										std::str::from_utf8(&content[pos..pos + desc_len])
-									{
-										description = Some(Cow::from(desc.to_string()));
-									}
+		if mime_len > size {
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
+		}
 
-									size -= desc_len;
-									reader.seek(SeekFrom::Current(desc_len as i64))?;
-								}
+		let mime_type_str = std::str::from_utf8(&content[8..8 + mime_len])?;
+		size -= mime_len;
 
-								if let (Ok(width), Ok(height), Ok(color_depth), Ok(num_colors)) = (
-									reader.read_u32::<BigEndian>(),
-									reader.read_u32::<BigEndian>(),
-									reader.read_u32::<BigEndian>(),
-									reader.read_u32::<BigEndian>(),
-								) {
-									if let Ok(data_len) = reader.read_u32::<BigEndian>() {
-										let data_len = data_len as usize;
+		reader.seek(SeekFrom::Current(mime_len as i64))?;
 
-										size -= 20;
-										if data_len <= size {
-											let mut binary = vec![0; data_len as usize];
+		let desc_len = reader.read_u32::<BigEndian>()? as usize;
+		size -= 4;
 
-											if let Ok(()) = reader.read_exact(&mut binary) {
-												return Ok((
-													Self {
-														pic_type: PictureType::from_u8(
-															pic_ty as u8,
-														),
-														mime_type: MimeType::from_str(
-															&*mime_type_str,
-														),
-														description,
-														data: Cow::from(binary.clone()),
-													},
-													PictureInformation {
-														width,
-														height,
-														color_depth,
-														num_colors,
-													},
-												));
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+		let mut description = None;
+		if desc_len > 0 && desc_len < size {
+			let pos = 12 + mime_len;
+
+			if let Ok(desc) = std::str::from_utf8(&content[pos..pos + desc_len]) {
+				description = Some(Cow::from(desc.to_string()));
+			}
+
+			size -= desc_len;
+			reader.seek(SeekFrom::Current(desc_len as i64))?;
+		}
+
+		let width = reader.read_u32::<BigEndian>()?;
+		let height = reader.read_u32::<BigEndian>()?;
+		let color_depth = reader.read_u32::<BigEndian>()?;
+		let num_colors = reader.read_u32::<BigEndian>()?;
+		let data_len = reader.read_u32::<BigEndian>()? as usize;
+		size -= 20;
+
+		if data_len <= size {
+			let mut data = try_vec![0; data_len as usize];
+
+			if let Ok(()) = reader.read_exact(&mut data) {
+				return Ok((
+					Self {
+						pic_type: PictureType::from_u8(pic_ty as u8),
+						mime_type: MimeType::from_str(mime_type_str),
+						description,
+						data: Cow::from(data),
+					},
+					PictureInformation {
+						width,
+						height,
+						color_depth,
+						num_colors,
+					},
+				));
 			}
 		}
 
@@ -847,10 +834,10 @@ impl Picture {
 		let mut data: Vec<u8> = Vec::new();
 
 		if let Some(desc) = &self.description {
-			data.extend(desc.as_bytes().iter());
+			data.extend(desc.as_bytes());
 		}
 
-		data.extend([0].iter());
+		data.push(0);
 		data.extend(self.data.iter());
 
 		data
@@ -869,41 +856,33 @@ impl Picture {
 		if !bytes.is_empty() {
 			let pic_type = PictureType::from_ape_key(key);
 
-			let mut cursor = Cursor::new(bytes);
+			let reader = &mut &*bytes;
+			let mut pos = 0;
 
 			let description = {
 				let mut text = String::new();
 
-				while let Ok(ch) = cursor.read_u8() {
-					if ch != b'\0' {
-						text.push(char::from(ch));
-						continue;
+				while let Ok(ch) = reader.read_u8() {
+					pos += 1;
+
+					if ch == b'\0' {
+						break;
 					}
 
-					break;
+					text.push(char::from(ch));
 				}
 
 				(!text.is_empty()).then(|| Cow::from(text))
 			};
 
 			let mime_type = {
-				let mut identifier = [0; 4];
-				cursor.read_exact(&mut identifier)?;
+				let mut identifier = [0; 8];
+				reader.read_exact(&mut identifier)?;
 
-				cursor.seek(SeekFrom::Current(-4))?;
-
-				match identifier {
-					[0x89, b'P', b'N', b'G'] => MimeType::Png,
-					[0xFF, 0xD8, ..] => MimeType::Jpeg,
-					[b'G', b'I', b'F', ..] => MimeType::Gif,
-					[b'B', b'M', ..] => MimeType::Bmp,
-					[b'I', b'I', ..] => MimeType::Tiff,
-					_ => return Err(LoftyError::new(ErrorKind::NotAPicture)),
-				}
+				Self::mimetype_from_bin(&identifier[..])?
 			};
 
-			let pos = cursor.position() as usize;
-			let data = Cow::from(cursor.into_inner()[pos..].to_vec());
+			let data = Cow::from(bytes[pos..].to_vec());
 
 			return Ok(Picture {
 				pic_type,
@@ -914,5 +893,16 @@ impl Picture {
 		}
 
 		Err(LoftyError::new(ErrorKind::NotAPicture))
+	}
+
+	fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType> {
+		match bytes[..8] {
+			[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => Ok(MimeType::Png),
+			[0xFF, 0xD8, ..] => Ok(MimeType::Jpeg),
+			[b'G', b'I', b'F', 0x38, 0x37 | 0x39, b'a', ..] => Ok(MimeType::Gif),
+			[b'B', b'M', ..] => Ok(MimeType::Bmp),
+			[b'I', b'I', b'*', 0x00, ..] | [b'M', b'M', 0x00, b'*', ..] => Ok(MimeType::Tiff),
+			_ => Err(LoftyError::new(ErrorKind::NotAPicture)),
+		}
 	}
 }
