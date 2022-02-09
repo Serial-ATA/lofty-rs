@@ -2,6 +2,7 @@ use super::frame::Frame;
 use super::tag::Id3v2Tag;
 use super::Id3v2Header;
 use crate::error::Result;
+use crate::macros::try_vec;
 
 use std::io::Read;
 
@@ -9,7 +10,7 @@ pub(crate) fn parse_id3v2<R>(bytes: &mut R, header: Id3v2Header) -> Result<Id3v2
 where
 	R: Read,
 {
-	let mut tag_bytes = vec![0; header.size as usize];
+	let mut tag_bytes = try_vec![0; header.size as usize];
 	bytes.read_exact(&mut tag_bytes)?;
 
 	let mut tag = Id3v2Tag::default();

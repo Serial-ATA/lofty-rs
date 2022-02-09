@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -27,7 +28,7 @@ impl Block {
 
 		let size = data.read_uint::<BigEndian>(3)? as u32;
 
-		let mut content = vec![0; size as usize];
+		let mut content = try_vec![0; size as usize];
 		data.read_exact(&mut content)?;
 
 		let end = data.seek(SeekFrom::Current(0))?;

@@ -7,6 +7,7 @@ pub mod v1;
 pub mod v2;
 
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::try_vec;
 use v2::{read_id3v2_header, Id3v2Header};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -98,7 +99,7 @@ where
 
 	if let Ok(id3v2_header) = read_id3v2_header(data) {
 		if read {
-			let mut tag = vec![0; id3v2_header.size as usize];
+			let mut tag = try_vec![0; id3v2_header.size as usize];
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)

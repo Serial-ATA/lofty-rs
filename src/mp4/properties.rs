@@ -2,6 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded};
 use super::trak::Trak;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::macros::try_vec;
 use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
@@ -223,7 +224,7 @@ where
 
 		if let Some(stbl) = nested_atom(data, minf.len, b"stbl")? {
 			if let Some(stsd) = nested_atom(data, stbl.len, b"stsd")? {
-				let mut stsd = vec![0; (stsd.len - 8) as usize];
+				let mut stsd = try_vec![0; (stsd.len - 8) as usize];
 				data.read_exact(&mut stsd)?;
 
 				let mut stsd_reader = Cursor::new(&*stsd);

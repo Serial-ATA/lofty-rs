@@ -4,6 +4,7 @@ use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
+use crate::macros::try_vec;
 
 use std::convert::TryFrom;
 use std::fs::File;
@@ -126,7 +127,7 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, format: OGGFor
 	let md_reader = &mut &first_md_page.content()[comment_signature.len()..];
 
 	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
-	let mut vendor = vec![0; vendor_len as usize];
+	let mut vendor = try_vec![0; vendor_len as usize];
 	md_reader.read_exact(&mut vendor)?;
 
 	let mut packet = Cursor::new(Vec::new());

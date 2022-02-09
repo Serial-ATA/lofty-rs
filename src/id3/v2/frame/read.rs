@@ -3,6 +3,7 @@ use super::Frame;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::{FrameValue, Id3v2Version};
+use crate::macros::try_vec;
 
 use std::io::Read;
 
@@ -23,7 +24,7 @@ impl Frame {
 			Some(frame_header) => frame_header,
 		};
 
-		let mut content = vec![0; size as usize];
+		let mut content = try_vec![0; size as usize];
 		reader.read_exact(&mut content)?;
 
 		if flags.unsynchronisation {

@@ -2,6 +2,7 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::macros::try_vec;
 #[cfg(feature = "vorbis_comments")]
 use crate::types::picture::Picture;
 
@@ -24,7 +25,7 @@ where
 {
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 
-	let mut vendor = vec![0; vendor_len as usize];
+	let mut vendor = try_vec![0; vendor_len as usize];
 	data.read_exact(&mut vendor)?;
 
 	let vendor = match String::from_utf8(vendor) {
@@ -44,7 +45,7 @@ where
 	for _ in 0..comments_total_len {
 		let comment_len = data.read_u32::<LittleEndian>()?;
 
-		let mut comment_bytes = vec![0; comment_len as usize];
+		let mut comment_bytes = try_vec![0; comment_len as usize];
 		data.read_exact(&mut comment_bytes)?;
 
 		let comment = String::from_utf8(comment_bytes)?;

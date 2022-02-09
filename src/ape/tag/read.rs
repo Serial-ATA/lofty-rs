@@ -5,6 +5,7 @@ use crate::ape::constants::INVALID_KEYS;
 use crate::error::{FileDecodingError, Result};
 use crate::types::file::FileType;
 use crate::types::item::ItemValue;
+use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -53,7 +54,7 @@ where
 
 		let item_type = (flags & 6) >> 1;
 
-		let mut value = vec![0; value_size as usize];
+		let mut value = try_vec![0; value_size as usize];
 		data.read_exact(&mut value)?;
 
 		let parsed_value = match item_type {

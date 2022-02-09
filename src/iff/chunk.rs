@@ -96,7 +96,7 @@ impl<B: ByteOrder> Chunks<B> {
 	where
 		R: Read + Seek,
 	{
-		let mut value = vec![0; self.size as usize];
+		let mut value = try_vec![0; self.size as usize];
 		data.read_exact(&mut value)?;
 
 		let reader = &mut &*value;

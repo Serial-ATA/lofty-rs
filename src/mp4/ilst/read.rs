@@ -5,6 +5,7 @@ use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::read::skip_unneeded;
 use crate::types::picture::{MimeType, Picture, PictureType};
+use crate::macros::try_vec;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -15,7 +16,7 @@ pub(in crate::mp4) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
 where
 	R: Read,
 {
-	let mut contents = vec![0; len as usize];
+	let mut contents = try_vec![0; len as usize];
 	reader.read_exact(&mut contents)?;
 
 	let mut cursor = Cursor::new(contents);
@@ -92,7 +93,7 @@ where
 	// We don't care about the locale
 	data.seek(SeekFrom::Current(4))?;
 
-	let mut content = vec![0; (atom.len - 16) as usize];
+	let mut content = try_vec![0; (atom.len - 16) as usize];
 	data.read_exact(&mut content)?;
 
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35

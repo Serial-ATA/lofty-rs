@@ -1,4 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -108,7 +109,7 @@ where
 			data.seek(SeekFrom::Current(4))?;
 
 			// Already read the size, identifier, and version/flags (12 bytes)
-			let mut content = vec![0; (atom.len - 12) as usize];
+			let mut content = try_vec![0; (atom.len - 12) as usize];
 			data.read_exact(&mut content)?;
 
 			String::from_utf8(content).map_err(|_| {
