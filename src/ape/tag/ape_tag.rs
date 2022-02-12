@@ -139,7 +139,10 @@ impl TagIO for ApeTag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * An existing tag has an invalid size
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<ApeTagRef>::into(self).write_to(file)
+		ApeTagRef {
+			read_only: self.read_only,
+			items: self.items.iter().map(Into::into),
+		}.write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -148,7 +151,10 @@ impl TagIO for ApeTag {
 	///
 	/// * [`std::io::Error`]
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<ApeTagRef>::into(self).dump_to(writer)
+		ApeTagRef {
+			read_only: self.read_only,
+			items: self.items.iter().map(Into::into),
+		}.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -232,12 +238,13 @@ impl From<Tag> for ApeTag {
 	}
 }
 
-pub(crate) struct ApeTagRef<'a> {
+pub(crate) struct ApeTagRef<'a, I> where I: Iterator<Item = ApeItemRef<'a>>{
 	pub(crate) read_only: bool,
-	pub(super) items: Box<dyn Iterator<Item = ApeItemRef<'a>> + 'a>,
+	pub(crate) items: I,
 }
 
-impl<'a> ApeTagRef<'a> {
+impl<'a, I> ApeTagRef<'a, I>
+where I: Iterator<Item = ApeItemRef<'a>> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_to(file, self)
 	}
@@ -250,28 +257,14 @@ impl<'a> ApeTagRef<'a> {
 	}
 }
 
-impl<'a> Into<ApeTagRef<'a>> for &'a Tag {
-	fn into(self) -> ApeTagRef<'a> {
-		ApeTagRef {
+pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef> {
+	items.iter().filter_map(|i| {
+		i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
 			read_only: false,
-			items: Box::new(self.items.iter().filter_map(|i| {
-				i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
-					read_only: false,
-					key,
-					value: (&i.item_value).into(),
-				})
-			})),
-		}
-	}
-}
-
-impl<'a> Into<ApeTagRef<'a>> for &'a ApeTag {
-	fn into(self) -> ApeTagRef<'a> {
-		ApeTagRef {
-			read_only: self.read_only,
-			items: Box::new(self.items.iter().map(Into::into)),
-		}
-	}
+			key,
+			value: (&i.item_value).into(),
+		})
+	})
 }
 
 #[cfg(test)]

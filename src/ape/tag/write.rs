@@ -1,6 +1,7 @@
 use super::read::read_ape_tag;
 use crate::ape::constants::APE_PREAMBLE;
-use crate::ape::tag::ape_tag::ApeTagRef;
+use super::ape_tag::ApeTagRef;
+use super::item::ApeItemRef;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
@@ -14,7 +15,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
+pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Result<()> where I: Iterator<Item = ApeItemRef<'a>>{
 	let probe = Probe::new(data).guess_file_type()?;
 
 	match probe.file_type() {
@@ -102,7 +103,10 @@ pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 
 	// Preserve any metadata marked as read only
 	let tag = if let Some(read_only) = read_only {
-		create_ape_tag(&mut Into::<ApeTagRef>::into(&read_only))?
+		create_ape_tag(&mut ApeTagRef {
+			read_only: read_only.read_only,
+			items: read_only.items.iter().map(Into::into),
+		})?
 	} else {
 		create_ape_tag(tag)?
 	};
@@ -131,7 +135,7 @@ pub(crate) fn write_to(data: &mut File, tag: &mut ApeTagRef) -> Result<()> {
 	Ok(())
 }
 
-pub(super) fn create_ape_tag(tag: &mut ApeTagRef) -> Result<Vec<u8>> {
+pub(super) fn create_ape_tag<'a, I>(tag: &mut ApeTagRef<'a, I>) -> Result<Vec<u8>> where I: Iterator<Item = ApeItemRef<'a>>{
 	let items = &mut tag.items;
 	let mut peek = items.peekable();
 

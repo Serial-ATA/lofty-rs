@@ -86,7 +86,7 @@ where
 
 	let mut md_pages: Vec<u8> = Vec::new();
 
-	md_pages.extend(md_page.content()[comment_sig.len()..].iter());
+	md_pages.extend_from_slice(&md_page.content()[comment_sig.len()..]);
 
 	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
@@ -94,7 +94,7 @@ where
 		}
 
 		if page.header_type() & 0x01 == 1 {
-			md_pages.extend(page.content().iter());
+			md_pages.extend_from_slice(page.content());
 		} else {
 			data.seek(SeekFrom::Start(page.start))?;
 			break;
@@ -103,11 +103,7 @@ where
 
 	#[cfg(feature = "vorbis_comments")]
 	{
-		let mut tag = VorbisComments {
-			vendor: String::new(),
-			items: vec![],
-			pictures: vec![],
-		};
+		let mut tag = VorbisComments::default();
 
 		let reader = &mut &md_pages[..];
 		read_comments(reader, &mut tag)?;

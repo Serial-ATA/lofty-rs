@@ -46,18 +46,20 @@ pub(crate) fn create_comments(
 	items: &mut dyn Iterator<Item = (&str, &str)>,
 ) -> Result<()> {
 	for (k, v) in items {
-		if !v.is_empty() {
-			let comment = format!("{}={}", k, v);
+		if v.is_empty() {
+			continue;
+		}
 
-			let comment_b = comment.as_bytes();
-			let bytes_len = comment_b.len();
+		let comment = format!("{}={}", k, v);
 
-			if u32::try_from(bytes_len as u64).is_ok() {
-				*count += 1;
+		let comment_b = comment.as_bytes();
+		let bytes_len = comment_b.len();
 
-				packet.write_all(&(bytes_len as u32).to_le_bytes())?;
-				packet.write_all(comment_b)?;
-			}
+		if u32::try_from(bytes_len as u64).is_ok() {
+			*count += 1;
+
+			packet.write_all(&(bytes_len as u32).to_le_bytes())?;
+			packet.write_all(comment_b)?;
 		}
 	}
 
@@ -115,13 +117,11 @@ pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, format: OGGFor
 	let first_md_page = Page::read(data, false)?;
 
 	let comment_signature = format.comment_signature();
-	let verify_sig = comment_signature.is_some();
-
-	let comment_signature = format.comment_signature().unwrap_or(&[]);
-
-	if verify_sig {
+	if let Some(comment_signature) = comment_signature {
 		verify_signature(&first_md_page, comment_signature)?;
 	}
+
+	let comment_signature = comment_signature.unwrap_or_default();
 
 	// Retain the file's vendor string
 	let md_reader = &mut &first_md_page.content()[comment_signature.len()..];

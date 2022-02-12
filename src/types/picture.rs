@@ -853,46 +853,47 @@ impl Picture {
 	/// This function will return [`NotAPicture`](ErrorKind::NotAPicture)
 	/// if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
-		if !bytes.is_empty() {
-			let pic_type = PictureType::from_ape_key(key);
-
-			let reader = &mut &*bytes;
-			let mut pos = 0;
-
-			let description = {
-				let mut text = String::new();
-
-				while let Ok(ch) = reader.read_u8() {
-					pos += 1;
-
-					if ch == b'\0' {
-						break;
-					}
-
-					text.push(char::from(ch));
-				}
-
-				(!text.is_empty()).then(|| Cow::from(text))
-			};
-
-			let mime_type = {
-				let mut identifier = [0; 8];
-				reader.read_exact(&mut identifier)?;
-
-				Self::mimetype_from_bin(&identifier[..])?
-			};
-
-			let data = Cow::from(bytes[pos..].to_vec());
-
-			return Ok(Picture {
-				pic_type,
-				mime_type,
-				description,
-				data,
-			});
+		if bytes.is_empty() {
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
 		}
 
-		Err(LoftyError::new(ErrorKind::NotAPicture))
+		let pic_type = PictureType::from_ape_key(key);
+
+		let reader = &mut &*bytes;
+		let mut pos = 0;
+
+		let mut description = None;
+		let mut desc_text = String::new();
+
+		while let Ok(ch) = reader.read_u8() {
+			pos += 1;
+
+			if ch == b'\0' {
+				break;
+			}
+
+			desc_text.push(char::from(ch));
+		}
+
+		if !desc_text.is_empty() {
+			description = Some(Cow::from(desc_text));
+		}
+
+		let mime_type = {
+			let mut identifier = [0; 8];
+			reader.read_exact(&mut identifier)?;
+
+			Self::mimetype_from_bin(&identifier[..])?
+		};
+
+		let data = Cow::from(bytes[pos..].to_vec());
+
+		Ok(Picture {
+			pic_type,
+			mime_type,
+			description,
+			data,
+		})
 	}
 
 	fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType> {

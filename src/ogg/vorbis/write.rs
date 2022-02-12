@@ -112,7 +112,7 @@ pub(crate) fn write_to(
 
 			// Replace segment table and checksum
 			p_bytes.splice(26..27 + seg_count, seg_table);
-			p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes().to_vec());
+			p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes());
 
 			writer.write_all(&*p_bytes)?;
 

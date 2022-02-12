@@ -51,7 +51,11 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "ape")]
-		TagType::Ape => Into::<ApeTagRef>::into(tag).dump_to(writer),
+		TagType::Ape => ApeTagRef {
+			read_only: false,
+			items: ape::tag::ape_tag::tagitems_into_ape(tag.items()),
+		}
+		.dump_to(writer),
 		#[cfg(feature = "id3v1")]
 		TagType::Id3v1 => Into::<Id3v1TagRef>::into(tag).dump_to(writer),
 		#[cfg(feature = "id3v2")]

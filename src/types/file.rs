@@ -367,7 +367,7 @@ impl FileType {
 			79 if buf.len() >= 36 && &buf[..4] == b"OggS" => {
 				if &buf[29..35] == b"vorbis" {
 					return Some(Self::Vorbis);
-				} else if &buf[28..36] == b"OpusHead" {
+				} else if &buf[28..] == b"OpusHead" {
 					return Some(Self::Opus);
 				} else if &buf[28..] == b"Speex   " {
 					return Some(Self::Speex);

@@ -85,8 +85,8 @@ pub(super) fn create_riff_info(
 		return Ok(());
 	}
 
-	bytes.extend(b"LIST".iter());
-	bytes.extend(b"INFO".iter());
+	bytes.extend(b"LIST");
+	bytes.extend(b"INFO");
 
 	for (k, v) in items {
 		if v.is_empty() {
@@ -100,10 +100,10 @@ pub(super) fn create_riff_info(
 		// Each value has to be null terminated and have an even length
 		let terminator: &[u8] = if len % 2 == 0 { &[0] } else { &[0, 0] };
 
-		bytes.extend(k.as_bytes().iter());
-		bytes.extend((len as u32).to_le_bytes().iter());
-		bytes.extend(val_b.iter());
-		bytes.extend(terminator.iter());
+		bytes.extend(k.as_bytes());
+		bytes.extend(&(len as u32).to_le_bytes());
+		bytes.extend(val_b);
+		bytes.extend(terminator);
 	}
 
 	let packet_size = bytes.len() - 4;

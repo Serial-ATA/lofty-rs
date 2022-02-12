@@ -1,4 +1,4 @@
-//! OPUS/FLAC/Vorbis specific items
+//! Items for OGG container formats
 //!
 //! ## File notes
 //!

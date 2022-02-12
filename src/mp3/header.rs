@@ -103,7 +103,7 @@ pub(crate) struct Header {
 }
 
 impl Header {
-	pub fn read(header: u32) -> Result<Self> {
+	pub(crate) fn read(header: u32) -> Result<Self> {
 		let version = match (header >> 19) & 0b11 {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
@@ -200,7 +200,7 @@ pub(crate) struct XingHeader {
 }
 
 impl XingHeader {
-	pub fn read(reader: &mut &[u8]) -> Result<Self> {
+	pub(crate) fn read(reader: &mut &[u8]) -> Result<Self> {
 		let reader_len = reader.len();
 
 		let mut header = [0; 4];
@@ -268,7 +268,7 @@ mod tests {
 		fn test(data: &[u8], expected_result: Option<u64>) {
 			use super::search_for_frame_sync;
 			assert_eq!(
-				search_for_frame_sync(&mut Box::new(data)).unwrap(),
+				search_for_frame_sync(&mut &*data).unwrap(),
 				expected_result
 			);
 		}
