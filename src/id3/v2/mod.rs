@@ -11,44 +11,43 @@ mod flags;
 pub(crate) mod util;
 
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::macros::feature_locked;
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
-feature_locked! {
-	#![cfg(feature = "id3v2")]
+cfg_if::cfg_if! {
+	if #[cfg(feature = "id3v2")] {
+		pub use flags::Id3v2TagFlags;
+		pub use util::text_utils::TextEncoding;
+		pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
-	pub use flags::Id3v2TagFlags;
-	pub use util::text_utils::TextEncoding;
-	pub use util::upgrade::{upgrade_v2, upgrade_v3};
+		pub(crate) mod tag;
+		pub use tag::Id3v2Tag;
 
-	pub(crate) mod tag;
-	pub use tag::Id3v2Tag;
+		mod items;
+		pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
+		pub use items::sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
 
-	mod items;
-	pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
-	pub use items::sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
+		mod frame;
+		pub use frame::content::{EncodedTextFrame, LanguageFrame};
+		pub use frame::id::FrameID;
+		pub use frame::Frame;
+		pub use frame::FrameFlags;
+		pub use frame::FrameValue;
 
-	mod frame;
-	pub use frame::content::{EncodedTextFrame, LanguageFrame};
-	pub use frame::id::FrameID;
-	pub use frame::Frame;
-	pub use frame::FrameFlags;
-	pub use frame::FrameValue;
-
-	pub(crate) mod read;
-	pub(crate) mod write;
+		pub(crate) mod read;
+		pub(crate) mod write;
+	}
 }
 
-feature_locked! {
-	#![cfg(feature = "id3v2_restrictions")]
-
-	mod restrictions;
-	pub use restrictions::{
-		ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
-	};
+cfg_if::cfg_if! {
+	if #[cfg(feature = "id3v2_restrictions")] {
+		mod restrictions;
+		pub use restrictions::{
+			ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
+		};
+	}
 }
 
 #[cfg(not(feature = "id3v2"))]

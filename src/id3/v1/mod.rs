@@ -16,14 +16,14 @@
 //! Additionally, there is no track total field.
 pub(crate) mod constants;
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "id3v1")]
+cfg_if::cfg_if! {
+	if #[cfg(feature = "id3v1")] {
+		pub use constants::GENRES;
 
-	pub use constants::GENRES;
+		pub(crate) mod tag;
+		pub use tag::Id3v1Tag;
 
-	pub(crate) mod tag;
-	pub use tag::Id3v1Tag;
-
-	pub(crate) mod read;
-	pub(crate) mod write;
+		pub(crate) mod read;
+		pub(crate) mod write;
+	}
 }

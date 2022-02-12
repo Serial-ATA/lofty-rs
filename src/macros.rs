@@ -30,17 +30,19 @@ macro_rules! tag_methods {
 	}
 }
 
-macro_rules! feature_locked {
-	(
-		#![cfg($meta:meta)]
-		$($item:item)+
-	) => {
-		$(
-			#[cfg($meta)]
-			$item
-		)+
-	}
-}
+// See cfg-if comment in `Cargo.toml`
+//
+// macro_rules! feature_locked {
+// 	(
+// 		#![cfg($meta:meta)]
+// 		$($item:item)+
+// 	) => {
+// 		$(
+// 			#[cfg($meta)]
+// 			$item
+// 		)+
+// 	}
+// }
 
 macro_rules! try_vec {
 	($elem:expr; $size:expr) => {{
@@ -52,4 +54,4 @@ macro_rules! try_vec {
 	}};
 }
 
-pub(crate) use {feature_locked, tag_methods, try_vec};
+pub(crate) use {tag_methods, try_vec};

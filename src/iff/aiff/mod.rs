@@ -11,11 +11,11 @@ use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "aiff_text_chunks")]
-
-	pub(crate) mod tag;
-	use tag::AiffTextChunks;
+cfg_if::cfg_if! {
+	if #[cfg(feature = "aiff_text_chunks")] {
+		pub(crate) mod tag;
+		use tag::AiffTextChunks;
+	}
 }
 
 /// An AIFF file

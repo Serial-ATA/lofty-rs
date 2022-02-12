@@ -18,13 +18,14 @@ use std::io::{Read, Seek};
 
 // Exports
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "mp4_ilst")]
-	pub(crate) mod ilst;
+cfg_if::cfg_if! {
+	if #[cfg(feature = "mp4_ilst")] {
+		pub(crate) mod ilst;
 
-	pub use atom_info::AtomIdent;
-	pub use ilst::atom::{Atom, AtomData};
-	pub use ilst::Ilst;
+		pub use atom_info::AtomIdent;
+		pub use ilst::atom::{Atom, AtomData};
+		pub use ilst::Ilst;
+	}
 }
 
 pub use crate::mp4::properties::{Mp4Codec, Mp4Properties};

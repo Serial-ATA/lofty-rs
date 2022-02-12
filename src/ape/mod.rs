@@ -24,14 +24,14 @@ use std::io::{Read, Seek};
 
 // Exports
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "ape")]
+cfg_if::cfg_if! {
+	if #[cfg(feature = "ape")] {
+		pub(crate) mod tag;
+		pub use tag::ape_tag::ApeTag;
+		pub use tag::item::ApeItem;
 
-	pub(crate) mod tag;
-	pub use tag::ape_tag::ApeTag;
-	pub use tag::item::ApeItem;
-
-	pub use crate::types::picture::APE_PICTURE_TYPES;
+		pub use crate::types::picture::APE_PICTURE_TYPES;
+	}
 }
 
 pub use properties::ApeProperties;

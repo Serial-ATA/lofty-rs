@@ -11,11 +11,11 @@ use crate::types::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "riff_info_list")]
-
-	pub(crate) mod tag;
-	use tag::RiffInfoList;
+cfg_if::cfg_if! {
+	if #[cfg(feature = "riff_info_list")] {
+		pub(crate) mod tag;
+		use tag::RiffInfoList;
+	}
 }
 
 // Exports

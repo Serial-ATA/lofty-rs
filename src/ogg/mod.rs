@@ -19,12 +19,13 @@ use ogg_pager::Page;
 
 // Exports
 
-crate::macros::feature_locked! {
-	#![cfg(feature = "vorbis_comments")]
-	pub(crate) mod write;
+cfg_if::cfg_if! {
+	if #[cfg(feature = "vorbis_comments")] {
+		pub(crate) mod write;
 
-	pub(crate) mod tag;
-	pub use tag::VorbisComments;
+		pub(crate) mod tag;
+		pub use tag::VorbisComments;
+	}
 }
 
 pub use flac::FlacFile;

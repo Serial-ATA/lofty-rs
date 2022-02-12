@@ -468,7 +468,9 @@ mod tests {
 			.unwrap();
 
 		// Create a fake AIFF signature
-		let mut writer = vec![b'F', b'O', b'R', b'M', 0, 0, 0, 0xC6, b'A', b'I', b'F', b'F'];
+		let mut writer = vec![
+			b'F', b'O', b'R', b'M', 0, 0, 0, 0xC6, b'A', b'I', b'F', b'F',
+		];
 		parsed_tag.dump_to(&mut writer).unwrap();
 
 		let temp_parsed_tag = super::super::read::read_from(&mut Cursor::new(writer), false)

@@ -145,8 +145,7 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
 	Ok(if link {
-		let content =
-			decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
+		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
 
 		FrameValue::UserURL(EncodedTextFrame {
 			encoding,

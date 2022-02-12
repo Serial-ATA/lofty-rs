@@ -1,10 +1,10 @@
 use super::verify_signature;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
-use crate::macros::try_vec;
 
 use std::convert::TryFrom;
 use std::fs::File;
@@ -106,7 +106,11 @@ pub(super) fn create_pages(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef<'_>, format: OGGFormat) -> Result<()> {
+pub(super) fn write(
+	data: &mut File,
+	tag: &mut VorbisCommentsRef<'_>,
+	format: OGGFormat,
+) -> Result<()> {
 	let first_page = Page::read(data, false)?;
 
 	let ser = first_page.serial;
