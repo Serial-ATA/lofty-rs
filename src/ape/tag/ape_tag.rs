@@ -142,7 +142,8 @@ impl TagIO for ApeTag {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
-		}.write_to(file)
+		}
+		.write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -154,7 +155,8 @@ impl TagIO for ApeTag {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
-		}.dump_to(writer)
+		}
+		.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -238,13 +240,18 @@ impl From<Tag> for ApeTag {
 	}
 }
 
-pub(crate) struct ApeTagRef<'a, I> where I: Iterator<Item = ApeItemRef<'a>>{
+pub(crate) struct ApeTagRef<'a, I>
+where
+	I: Iterator<Item = ApeItemRef<'a>>,
+{
 	pub(crate) read_only: bool,
 	pub(crate) items: I,
 }
 
 impl<'a, I> ApeTagRef<'a, I>
-where I: Iterator<Item = ApeItemRef<'a>> {
+where
+	I: Iterator<Item = ApeItemRef<'a>>,
+{
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_to(file, self)
 	}
@@ -257,7 +264,7 @@ where I: Iterator<Item = ApeItemRef<'a>> {
 	}
 }
 
-pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef> {
+pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef<'_>> {
 	items.iter().filter_map(|i| {
 		i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
 			read_only: false,
@@ -269,9 +276,9 @@ pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeIt
 
 #[cfg(test)]
 mod tests {
+	use crate::ape::header::read_ape_header;
 	use crate::ape::{ApeItem, ApeTag};
 	use crate::{ItemValue, Tag, TagIO, TagType};
-	use crate::ape::header::read_ape_header;
 
 	use std::io::Cursor;
 
@@ -332,7 +339,7 @@ mod tests {
 		assert_eq!(expected_tag.items().len(), parsed_tag.items().len());
 
 		for item in expected_tag.items() {
-			assert!(parsed_tag.items().contains(item))
+			assert!(parsed_tag.items().contains(item));
 		}
 	}
 

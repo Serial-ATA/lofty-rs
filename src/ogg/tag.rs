@@ -159,7 +159,7 @@ impl TagIO for VorbisComments {
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<VorbisCommentsRef>::into(self).write_to(file)
+		Into::<VorbisCommentsRef<'_>>::into(self).write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -172,7 +172,7 @@ impl TagIO for VorbisComments {
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<VorbisCommentsRef>::into(self).dump_to(writer)
+		Into::<VorbisCommentsRef<'_>>::into(self).dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {

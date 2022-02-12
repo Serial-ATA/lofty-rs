@@ -267,10 +267,7 @@ mod tests {
 	fn search_for_frame_sync() {
 		fn test(data: &[u8], expected_result: Option<u64>) {
 			use super::search_for_frame_sync;
-			assert_eq!(
-				search_for_frame_sync(&mut &*data).unwrap(),
-				expected_result
-			);
+			assert_eq!(search_for_frame_sync(&mut &*data).unwrap(), expected_result);
 		}
 
 		test(&[0xFF, 0xFB, 0x00], Some(0));

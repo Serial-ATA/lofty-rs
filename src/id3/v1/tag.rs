@@ -128,7 +128,7 @@ impl TagIO for Id3v1Tag {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<Id3v1TagRef>::into(self).write_to(file)
+		Into::<Id3v1TagRef<'_>>::into(self).write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -137,7 +137,7 @@ impl TagIO for Id3v1Tag {
 	///
 	/// * [`std::io::Error`]
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<Id3v1TagRef>::into(self).dump_to(writer)
+		Into::<Id3v1TagRef<'_>>::into(self).dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {

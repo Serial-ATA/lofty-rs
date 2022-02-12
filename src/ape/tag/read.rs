@@ -1,11 +1,11 @@
 use super::ape_tag::ApeTag;
 use super::item::ApeItem;
-use crate::ape::header::ApeHeader;
 use crate::ape::constants::INVALID_KEYS;
+use crate::ape::header::ApeHeader;
 use crate::error::{FileDecodingError, Result};
+use crate::macros::try_vec;
 use crate::types::file::FileType;
 use crate::types::item::ItemValue;
-use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 

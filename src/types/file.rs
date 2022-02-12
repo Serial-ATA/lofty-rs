@@ -351,8 +351,8 @@ impl FileType {
 	fn quick_type_guess(buf: &[u8]) -> Option<Self> {
 		use crate::mp3::header::verify_frame_sync;
 
-		// Safe to unwrap, since we return early on an empty buffer
-		match buf.first().unwrap() {
+		// Safe to index, since we return early on an empty buffer
+		match buf[0] {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),
 			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),
 			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {

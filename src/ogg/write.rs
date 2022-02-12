@@ -34,7 +34,7 @@ impl OGGFormat {
 pub(in crate) fn write_to(data: &mut File, tag: &Tag, format: OGGFormat) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef>::into(tag), format),
+		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef<'_>>::into(tag), format),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
@@ -68,7 +68,7 @@ pub(crate) fn create_comments(
 
 #[cfg(feature = "vorbis_comments")]
 pub(super) fn create_pages(
-	tag: &mut VorbisCommentsRef,
+	tag: &mut VorbisCommentsRef<'_>,
 	writer: &mut Cursor<Vec<u8>>,
 ) -> Result<Vec<Page>> {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
@@ -106,7 +106,7 @@ pub(super) fn create_pages(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef, format: OGGFormat) -> Result<()> {
+pub(super) fn write(data: &mut File, tag: &mut VorbisCommentsRef<'_>, format: OGGFormat) -> Result<()> {
 	let first_page = Page::read(data, false)?;
 
 	let ser = first_page.serial;

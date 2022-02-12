@@ -32,10 +32,10 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
 		FileType::APE => ape::write::write_to(file, tag),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::FLAC => ogg::flac::write::write_to(file, &mut Into::<VorbisCommentsRef>::into(tag)),
+		FileType::FLAC => ogg::flac::write::write_to(file, &mut Into::<VorbisCommentsRef<'_>>::into(tag)),
 		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
-		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef>::into(tag)),
+		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef<'_>>::into(tag)),
 		#[cfg(feature = "vorbis_comments")]
 		FileType::Opus => ogg::write::write_to(file, tag, ogg::write::OGGFormat::Opus),
 		#[cfg(feature = "vorbis_comments")]
@@ -57,15 +57,15 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		}
 		.dump_to(writer),
 		#[cfg(feature = "id3v1")]
-		TagType::Id3v1 => Into::<Id3v1TagRef>::into(tag).dump_to(writer),
+		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "id3v2")]
 		TagType::Id3v2 => Id3v2TagRef::new(Id3v2TagFlags::default(), tag_frames(tag)).dump_to(writer),
 		#[cfg(feature = "mp4_ilst")]
-		TagType::Mp4Ilst => Into::<IlstRef>::into(tag).dump_to(writer),
+		TagType::Mp4Ilst => Into::<IlstRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => Into::<VorbisCommentsRef>::into(tag).dump_to(writer),
+		TagType::VorbisComments => Into::<VorbisCommentsRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "riff_info_list")]
-		TagType::RiffInfo => Into::<RiffInfoListRef>::into(tag).dump_to(writer),
+		TagType::RiffInfo => Into::<RiffInfoListRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "aiff_text_chunks")]
 		TagType::AiffText => AiffTextChunksRef::new(
 			tag.get_string(&ItemKey::TrackTitle),

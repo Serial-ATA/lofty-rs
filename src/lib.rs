@@ -124,12 +124,17 @@
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
 //! Be sure to read the module documentation of each format to see important notes and warnings.
+#![forbid(clippy::dbg_macro, clippy::string_to_string)]
 #![deny(
 	clippy::pedantic,
 	clippy::all,
 	missing_docs,
-	rustdoc::broken_intra_doc_links
+	rustdoc::broken_intra_doc_links,
+	rust_2018_idioms
 )]
+// TODO: This had multiple FPs right now, remove this when it is fixed
+#![allow(clippy::needless_borrow)]
+// TODO: Remove too_many_arguments
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,

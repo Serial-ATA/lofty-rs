@@ -110,11 +110,11 @@ impl TagIO for RiffInfoList {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<RiffInfoListRef>::into(self).write_to(file)
+		Into::<RiffInfoListRef<'_>>::into(self).write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<RiffInfoListRef>::into(self).dump_to(writer)
+		Into::<RiffInfoListRef<'_>>::into(self).dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -151,11 +151,11 @@ impl From<Tag> for RiffInfoList {
 			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value {
 				let item_key = match item.item_key {
 					ItemKey::Unknown(unknown) => {
-						if unknown.len() == 4 && unknown.is_ascii() {
-							unknown.to_string()
-						} else {
-							continue;
+						if !(unknown.len() == 4 && unknown.is_ascii()) {
+							continue
 						}
+
+						unknown
 					},
 					k => {
 						if let Some(key) = k.map_key(TagType::RiffInfo, false) {

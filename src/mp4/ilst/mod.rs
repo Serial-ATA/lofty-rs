@@ -191,11 +191,11 @@ impl TagIO for Ilst {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<IlstRef>::into(self).write_to(file)
+		Into::<IlstRef<'_>>::into(self).write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<IlstRef>::into(self).dump_to(writer)
+		Into::<IlstRef<'_>>::into(self).dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -381,7 +381,7 @@ impl<'a> Into<IlstRef<'a>> for &'a Tag {
 	}
 }
 
-fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef> {
+fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 	key.map_key(TagType::Mp4Ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
 			let mut split = ident.split(':');

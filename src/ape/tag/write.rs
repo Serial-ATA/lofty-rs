@@ -1,13 +1,13 @@
-use super::read::read_ape_tag;
-use crate::ape::constants::APE_PREAMBLE;
 use super::ape_tag::ApeTagRef;
 use super::item::ApeItemRef;
+use super::read::read_ape_tag;
+use crate::ape::constants::APE_PREAMBLE;
+use crate::ape::header::read_ape_header;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
 use crate::types::file::FileType;
 use crate::types::item::ItemValueRef;
-use crate::ape::header::read_ape_header;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -15,7 +15,10 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Result<()> where I: Iterator<Item = ApeItemRef<'a>>{
+pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Result<()>
+where
+	I: Iterator<Item = ApeItemRef<'a>>,
+{
 	let probe = Probe::new(data).guess_file_type()?;
 
 	match probe.file_type() {
@@ -135,7 +138,10 @@ pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Re
 	Ok(())
 }
 
-pub(super) fn create_ape_tag<'a, I>(tag: &mut ApeTagRef<'a, I>) -> Result<Vec<u8>> where I: Iterator<Item = ApeItemRef<'a>>{
+pub(super) fn create_ape_tag<'a, I>(tag: &mut ApeTagRef<'a, I>) -> Result<Vec<u8>>
+where
+	I: Iterator<Item = ApeItemRef<'a>>,
+{
 	let items = &mut tag.items;
 	let mut peek = items.peekable();
 

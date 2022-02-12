@@ -23,7 +23,7 @@ where
 	Ok(())
 }
 
-fn verify_frame(frame: &FrameRef) -> Result<()> {
+fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 	match (frame.id, frame.value.as_ref()) {
 		("APIC", FrameValue::Picture { .. })
 		| ("USLT", FrameValue::UnSyncText(_))

@@ -274,7 +274,7 @@ where
 		Ok(())
 	}
 
-	fn create_text_chunks(tag: &mut AiffTextChunksRef<T, AI>) -> Result<Vec<u8>> {
+	fn create_text_chunks(tag: &mut AiffTextChunksRef<'_, T, AI>) -> Result<Vec<u8>> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 			if let Some(val) = value {
 				if let Ok(len) = u32::try_from(val.len()) {
@@ -354,7 +354,7 @@ where
 		Ok(text_chunks)
 	}
 
-	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<T, AI>) -> Result<()> {
+	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()> {
 		let file_size = super::read::verify_aiff(data)?;
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;

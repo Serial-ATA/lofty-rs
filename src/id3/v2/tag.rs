@@ -418,7 +418,7 @@ pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
 	tag.items()
 		.iter()
-		.map(TryInto::<FrameRef>::try_into)
+		.map(TryInto::<FrameRef<'_>>::try_into)
 		.filter_map(Result::ok)
 }
 

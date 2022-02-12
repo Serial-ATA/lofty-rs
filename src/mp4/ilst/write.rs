@@ -11,7 +11,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef) -> Result<()> {
+pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> {
 	verify_mp4(data)?;
 
 	let moov = Moov::find(data)?;
@@ -178,7 +178,7 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	Ok(())
 }
 
-pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef>) -> Result<Vec<u8>> {
+pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef<'_>>) -> Result<Vec<u8>> {
 	let mut peek = atoms.peekable();
 
 	if peek.peek().is_none() {
@@ -243,7 +243,7 @@ fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Resul
 	Ok(())
 }
 
-fn write_atom_data(value: &AtomDataRef, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_atom_data(value: &AtomDataRef<'_>, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	match value {
 		AtomDataRef::UTF8(text) => write_data(1, text.as_bytes(), writer),
 		AtomDataRef::UTF16(text) => write_data(2, text.as_bytes(), writer),

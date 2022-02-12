@@ -10,7 +10,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::iff::wav) fn write_riff_info(
 	data: &mut File,
-	tag: &mut RiffInfoListRef,
+	tag: &mut RiffInfoListRef<'_>,
 ) -> Result<()> {
 	let file_size = verify_wav(data)?;
 
