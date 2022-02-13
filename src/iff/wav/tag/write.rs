@@ -8,10 +8,13 @@ use std::io::{Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
-pub(in crate::iff::wav) fn write_riff_info(
+pub(in crate::iff::wav) fn write_riff_info<'a, I>(
 	data: &mut File,
-	tag: &mut RiffInfoListRef<'_>,
-) -> Result<()> {
+	tag: &mut RiffInfoListRef<'a, I>,
+) -> Result<()>
+where
+	I: Iterator<Item = (&'a str, &'a str)>,
+{
 	let file_size = verify_wav(data)?;
 
 	let mut riff_info_bytes = Vec::new();
@@ -76,7 +79,7 @@ where
 }
 
 pub(super) fn create_riff_info(
-	items: &mut dyn Iterator<Item = (&str, &String)>,
+	items: &mut dyn Iterator<Item = (&str, &str)>,
 	bytes: &mut Vec<u8>,
 ) -> Result<()> {
 	let mut items = items.peekable();

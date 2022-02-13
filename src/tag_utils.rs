@@ -15,7 +15,7 @@ use crate::iff::wav::tag::RiffInfoListRef;
 #[cfg(feature = "mp4_ilst")]
 use crate::mp4::ilst::IlstRef;
 #[cfg(feature = "vorbis_comments")]
-use crate::ogg::tag::VorbisCommentsRef;
+use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 
 use crate::{ape, iff, mp3, mp4, ogg};
 
@@ -32,7 +32,15 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
 		FileType::APE => ape::write::write_to(file, tag),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::FLAC => ogg::flac::write::write_to(file, &mut Into::<VorbisCommentsRef<'_>>::into(tag)),
+		FileType::FLAC => ogg::flac::write::write_to(file, &mut {
+			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+
+			VorbisCommentsRef {
+				vendor,
+				items,
+				pictures,
+			}
+		}),
 		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef<'_>>::into(tag)),
@@ -63,9 +71,20 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		#[cfg(feature = "mp4_ilst")]
 		TagType::Mp4Ilst => Into::<IlstRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => Into::<VorbisCommentsRef<'_>>::into(tag).dump_to(writer),
+		TagType::VorbisComments => {
+			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+
+			VorbisCommentsRef {
+				vendor,
+				items,
+				pictures,
+			}
+			.dump_to(writer)
+		},
 		#[cfg(feature = "riff_info_list")]
-		TagType::RiffInfo => Into::<RiffInfoListRef<'_>>::into(tag).dump_to(writer),
+		TagType::RiffInfo => {
+			RiffInfoListRef::new(iff::wav::tag::tagitems_into_riff(tag.items())).dump_to(writer)
+		},
 		#[cfg(feature = "aiff_text_chunks")]
 		TagType::AiffText => AiffTextChunksRef::new(
 			tag.get_string(&ItemKey::TrackTitle),

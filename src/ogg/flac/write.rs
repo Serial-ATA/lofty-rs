@@ -12,7 +12,14 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
-pub(in crate) fn write_to(data: &mut File, tag: &mut VorbisCommentsRef<'_>) -> Result<()> {
+pub(in crate) fn write_to<'a, II, IP>(
+	data: &mut File,
+	tag: &mut VorbisCommentsRef<'a, II, IP>,
+) -> Result<()>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
+{
 	let stream_info = verify_flac(data)?;
 	let stream_info_end = stream_info.end as usize;
 

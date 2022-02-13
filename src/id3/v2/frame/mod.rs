@@ -317,11 +317,8 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 
 	fn try_from(tag_item: &'a TagItem) -> std::result::Result<Self, Self::Error> {
 		let id = match tag_item.key() {
-			ItemKey::Unknown(unknown)
-				if unknown.len() == 4
-					&& unknown.is_ascii()
-					&& unknown.chars().all(|c| c.is_ascii_uppercase()) =>
-			{
+			ItemKey::Unknown(unknown) if unknown.len() == 4 => {
+				id::FrameID::verify_id(unknown)?;
 				Ok(unknown.as_str())
 			},
 			k => k

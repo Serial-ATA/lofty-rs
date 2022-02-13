@@ -2,7 +2,7 @@ use super::verify_signature;
 use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
-use crate::ogg::tag::VorbisCommentsRef;
+use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::types::file::FileType;
 use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
@@ -35,7 +35,19 @@ impl OGGFormat {
 pub(in crate) fn write_to(data: &mut File, tag: &Tag, format: OGGFormat) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => write(data, &mut Into::<VorbisCommentsRef<'_>>::into(tag), format),
+		TagType::VorbisComments => write(
+			data,
+			&mut {
+				let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+
+				VorbisCommentsRef {
+					vendor,
+					items,
+					pictures,
+				}
+			},
+			format,
+		),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
@@ -68,12 +80,16 @@ pub(crate) fn create_comments(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn create_pages(
-	tag: &mut VorbisCommentsRef<'_>,
+pub(super) fn create_pages<'a, II, IP>(
+	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	writer: &mut Cursor<Vec<u8>>,
 	stream_serial: u32,
 	add_framing_bit: bool,
-) -> Result<Vec<Page>> {
+) -> Result<Vec<Page>>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a crate::types::picture::Picture, PictureInformation)>,
+{
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
 	let item_count_pos = writer.seek(SeekFrom::Current(0))?;
@@ -116,11 +132,15 @@ pub(super) fn create_pages(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn write(
+pub(super) fn write<'a, II, IP>(
 	data: &mut File,
-	tag: &mut VorbisCommentsRef<'_>,
+	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	format: OGGFormat,
-) -> Result<()> {
+) -> Result<()>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a crate::types::picture::Picture, PictureInformation)>,
+{
 	let first_page = Page::read(data, false)?;
 
 	let ser = first_page.serial;

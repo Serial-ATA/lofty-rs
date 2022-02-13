@@ -21,10 +21,7 @@ where
 			FileDecodingError::new(FileType::WAV, "Non UTF-8 item key found in RIFF INFO")
 		})?;
 
-		if key_str
-			.chars()
-			.any(|c| !('A'..='Z').contains(&c) && !('0'..='9').contains(&c))
-		{
+		if !verify_key(&key_str) {
 			return Err(FileDecodingError::new(
 				FileType::WAV,
 				"RIFF INFO item key contains invalid characters",
@@ -41,4 +38,11 @@ where
 	}
 
 	Ok(())
+}
+
+pub(super) fn verify_key(key: &str) -> bool {
+	key.len() == 4
+		&& key
+			.chars()
+			.all(|c| ('A'..='Z').contains(&c) || ('0'..='9').contains(&c))
 }

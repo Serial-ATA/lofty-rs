@@ -23,11 +23,7 @@ impl FrameID {
 	/// * `id` contains invalid characters (must be 'A'..='Z' and '0'..='9')
 	/// * `id` is an invalid length (must be 3 or 4)
 	pub fn new(id: &str) -> Result<Self> {
-		for c in id.chars() {
-			if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
-			}
-		}
+		Self::verify_id(id)?;
 
 		match id.len() {
 			3 => Ok(FrameID::Outdated(id.to_string())),
@@ -41,6 +37,16 @@ impl FrameID {
 		match self {
 			FrameID::Valid(v) | FrameID::Outdated(v) => v.as_str(),
 		}
+	}
+
+	pub(crate) fn verify_id(id_str: &str) -> Result<()> {
+		for c in id_str.chars() {
+			if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
+			}
+		}
+
+		Ok(())
 	}
 }
 

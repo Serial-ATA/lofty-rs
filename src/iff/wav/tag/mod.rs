@@ -73,7 +73,7 @@ impl RiffInfoList {
 	///
 	/// This will case-insensitively replace any item with the same key
 	pub fn insert(&mut self, key: String, value: String) {
-		if valid_key(key.as_str()) {
+		if read::verify_key(key.as_str()) {
 			self.items
 				.iter()
 				.position(|(k, _)| k.eq_ignore_ascii_case(key.as_str()))
@@ -110,11 +110,13 @@ impl TagIO for RiffInfoList {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<RiffInfoListRef<'_>>::into(self).write_to(file)
+		RiffInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+			.write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<RiffInfoListRef<'_>>::into(self).dump_to(writer)
+		RiffInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+			.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -149,24 +151,18 @@ impl From<Tag> for RiffInfoList {
 
 		for item in input.items {
 			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value {
-				let item_key = match item.item_key {
+				match item.item_key {
 					ItemKey::Unknown(unknown) => {
-						if !(unknown.len() == 4 && unknown.is_ascii()) {
-							continue;
+						if read::verify_key(&unknown) {
+							riff_info.items.push((unknown, val))
 						}
-
-						unknown
 					},
 					k => {
 						if let Some(key) = k.map_key(TagType::RiffInfo, false) {
-							key.to_string()
-						} else {
-							continue;
+							riff_info.items.push((key.to_string(), val))
 						}
 					},
-				};
-
-				riff_info.items.push((item_key, val))
+				}
 			}
 		}
 
@@ -174,39 +170,21 @@ impl From<Tag> for RiffInfoList {
 	}
 }
 
-pub(crate) struct RiffInfoListRef<'a> {
-	items: Box<dyn Iterator<Item = (&'a str, &'a String)> + 'a>,
+pub(crate) struct RiffInfoListRef<'a, I>
+where
+	I: Iterator<Item = (&'a str, &'a str)>,
+{
+	items: I,
 }
 
-impl<'a> Into<RiffInfoListRef<'a>> for &'a RiffInfoList {
-	fn into(self) -> RiffInfoListRef<'a> {
-		RiffInfoListRef {
-			items: Box::new(self.items.iter().map(|(k, v)| (k.as_str(), v))),
-		}
+impl<'a, I> RiffInfoListRef<'a, I>
+where
+	I: Iterator<Item = (&'a str, &'a str)>,
+{
+	pub(crate) fn new(items: I) -> RiffInfoListRef<'a, I> {
+		RiffInfoListRef { items }
 	}
-}
 
-impl<'a> Into<RiffInfoListRef<'a>> for &'a Tag {
-	fn into(self) -> RiffInfoListRef<'a> {
-		RiffInfoListRef {
-			items: Box::new(self.items.iter().filter_map(|i| {
-				if let ItemValue::Text(val) | ItemValue::Locator(val) = &i.item_value {
-					let item_key = i.key().map_key(TagType::RiffInfo, true).unwrap();
-
-					if item_key.len() == 4 && item_key.is_ascii() {
-						Some((item_key, val))
-					} else {
-						None
-					}
-				} else {
-					None
-				}
-			})),
-		}
-	}
-}
-
-impl<'a> RiffInfoListRef<'a> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		write::write_riff_info(file, self)
 	}
@@ -221,8 +199,19 @@ impl<'a> RiffInfoListRef<'a> {
 	}
 }
 
-fn valid_key(key: &str) -> bool {
-	key.len() == 4 && key.is_ascii()
+pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&str, &str)> {
+	items.iter().filter_map(|i| {
+		let item_key = i.key().map_key(TagType::RiffInfo, true);
+
+		match (item_key, i.value()) {
+			(Some(key), ItemValue::Text(val) | ItemValue::Locator(val))
+				if read::verify_key(key) =>
+			{
+				Some((key, val.as_str()))
+			},
+			_ => None,
+		}
+	})
 }
 
 #[cfg(test)]

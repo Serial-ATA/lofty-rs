@@ -159,7 +159,12 @@ impl TagIO for VorbisComments {
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<VorbisCommentsRef<'_>>::into(self).write_to(file)
+		VorbisCommentsRef {
+			vendor: self.vendor.as_str(),
+			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
+			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
+		}
+		.write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -172,7 +177,12 @@ impl TagIO for VorbisComments {
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<VorbisCommentsRef<'_>>::into(self).dump_to(writer)
+		VorbisCommentsRef {
+			vendor: self.vendor.as_str(),
+			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
+			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
+		}
+		.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -254,13 +264,21 @@ impl From<Tag> for VorbisComments {
 	}
 }
 
-pub(crate) struct VorbisCommentsRef<'a> {
+pub(crate) struct VorbisCommentsRef<'a, II, IP>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
+{
 	pub vendor: &'a str,
-	pub items: Box<dyn Iterator<Item = (&'a str, &'a str)> + 'a>,
-	pub pictures: Box<dyn Iterator<Item = (&'a Picture, PictureInformation)> + 'a>,
+	pub items: II,
+	pub pictures: IP,
 }
 
-impl<'a> VorbisCommentsRef<'a> {
+impl<'a, II, IP> VorbisCommentsRef<'a, II, IP>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
+{
 	#[allow(clippy::shadow_unrelated)]
 	fn write_to(&mut self, file: &mut File) -> Result<()> {
 		let probe = Probe::new(file).guess_file_type()?;
@@ -286,47 +304,28 @@ impl<'a> VorbisCommentsRef<'a> {
 	}
 }
 
-impl<'a> Into<VorbisCommentsRef<'a>> for &'a VorbisComments {
-	fn into(self) -> VorbisCommentsRef<'a> {
-		VorbisCommentsRef {
-			vendor: self.vendor.as_str(),
-			items: Box::new(
-				self.items
-					.as_slice()
-					.iter()
-					.map(|(k, v)| (k.as_str(), v.as_str())),
-			),
-			pictures: Box::new(self.pictures.as_slice().iter().map(|(p, i)| (p, *i))),
-		}
-	}
-}
+pub(crate) fn create_vorbis_comments_ref(
+	tag: &Tag,
+) -> (
+	&str,
+	impl Iterator<Item = (&str, &str)>,
+	impl Iterator<Item = (&Picture, PictureInformation)>,
+) {
+	let vendor = tag.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
 
-impl<'a> Into<VorbisCommentsRef<'a>> for &'a Tag {
-	fn into(self) -> VorbisCommentsRef<'a> {
-		let vendor = self.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
+	let items = tag.items.iter().filter_map(|i| match i.value() {
+		ItemValue::Text(val) | ItemValue::Locator(val) => i
+			.key()
+			.map_key(TagType::VorbisComments, true)
+			.map(|key| (key, val.as_str())),
+		_ => None,
+	});
 
-		let items = self.items.iter().filter_map(|i| match i.value() {
-			ItemValue::Text(val) | ItemValue::Locator(val)
-				// Already got the vendor above
-				if i.key() != &ItemKey::EncoderSoftware =>
-			{
-				i.key()
-					.map_key(TagType::VorbisComments, true)
-					.map(|key| (key, val.as_str()))
-			},
-			_ => None,
-		});
-
-		VorbisCommentsRef {
-			vendor,
-			items: Box::new(items),
-			pictures: Box::new(
-				self.pictures
-					.iter()
-					.map(|p| (p, PictureInformation::default())),
-			),
-		}
-	}
+	let pictures = tag
+		.pictures
+		.iter()
+		.map(|p| (p, PictureInformation::default()));
+	(vendor, items, pictures)
 }
 
 #[cfg(test)]
