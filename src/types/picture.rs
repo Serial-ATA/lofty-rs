@@ -49,8 +49,9 @@ pub const APE_PICTURE_TYPES: [&str; 21] = [
 	"Cover Art (Publisher Logotype)",
 ];
 
-/// Mime types for pictures.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[non_exhaustive]
+/// Mime types for pictures.
 pub enum MimeType {
 	/// PNG image
 	Png,
