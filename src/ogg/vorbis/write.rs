@@ -12,8 +12,7 @@ pub(crate) fn write_to(
 	data: &mut File,
 	writer: &mut Vec<u8>,
 	first_md_content: Vec<u8>,
-	ser: u32,
-	pages: &mut [Page],
+	mut pages: &mut [Page],
 ) -> Result<()> {
 	let mut remaining = Vec::new();
 
@@ -62,9 +61,11 @@ pub(crate) fn write_to(
 	}
 
 	if c.read_u8()? != 1 {
-		return Err(
-			FileEncodingError::new(FileType::Vorbis, "File is missing a framing bit").into(),
-		);
+		return Err(FileEncodingError::new(
+			FileType::Vorbis,
+			"Comment header is missing a framing bit",
+		)
+		.into());
 	}
 
 	// Comments should be followed by the setup header
@@ -82,55 +83,73 @@ pub(crate) fn write_to(
 	let mut setup = Vec::new();
 	c.read_to_end(&mut setup)?;
 
-	let pages_len = pages.len() - 1;
+	// Safe to unwrap, since `pages` is guaranteed to not be empty
+	let (last_page, remaining_pages) = pages.split_last_mut().unwrap();
+	pages = remaining_pages;
 
-	for (i, mut p) in pages.iter_mut().enumerate() {
-		p.serial = ser;
-
-		if i == pages_len {
-			// Add back the framing bit
-			p.extend(&[1])?;
-
-			// The segment tables of current page and the setup header have to be combined
-			let mut seg_table = Vec::new();
-			seg_table.append(&mut ogg_pager::segment_table(p.content().len())?);
-			seg_table.append(&mut ogg_pager::segment_table(setup.len())?);
-
-			let mut seg_table_len = seg_table.len();
-
-			if seg_table_len > 255 {
-				seg_table = seg_table.split_at(255).0.to_vec();
-				seg_table_len = 255;
-			}
-
-			seg_table.insert(0, seg_table_len as u8);
-
-			let page = p.extend(&*setup)?;
-
-			let mut p_bytes = p.as_bytes()?;
-			let seg_count = p_bytes[26] as usize;
-
-			// Replace segment table and checksum
-			p_bytes.splice(26..27 + seg_count, seg_table);
-			p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes());
-
-			writer.write_all(&*p_bytes)?;
-
-			if let Some(mut page) = page {
-				page.serial = ser;
-				page.gen_crc()?;
-
-				writer.write_all(&*page.as_bytes()?)?;
-			}
-
-			break;
-		}
-
+	for p in pages.iter_mut() {
 		p.gen_crc()?;
 		writer.write_all(&*p.as_bytes()?)?;
 	}
 
+	build_remaining_header(writer, last_page, &*setup)?;
+
 	writer.write_all(&*remaining)?;
+
+	Ok(())
+}
+
+fn build_remaining_header(
+	writer: &mut Vec<u8>,
+	last_page: &mut Page,
+	setup_header: &[u8],
+) -> Result<()> {
+	let mut segment_table = ogg_pager::segment_table(last_page.content().len())?;
+	let seg_table_len = segment_table.len();
+
+	if seg_table_len == 255 {
+		last_page.gen_crc()?;
+
+		let p_bytes = last_page.as_bytes()?;
+		writer.write_all(&*p_bytes)?;
+		return Ok(());
+	}
+
+	// The segment tables of current page and the setup header have to be combined
+	if seg_table_len < 255 {
+		let remaining_segments = 255 - seg_table_len;
+		let setup_segment_table = ogg_pager::segment_table(setup_header.len())?;
+
+		let mut i = 0;
+		for e in setup_segment_table {
+			segment_table.push(e);
+			i += 1;
+
+			if i == remaining_segments {
+				break;
+			}
+		}
+	}
+
+	// Add the number of segments to the front of the table
+	segment_table.insert(0, segment_table.len() as u8);
+
+	let page = last_page.extend(setup_header)?;
+
+	let mut p_bytes = last_page.as_bytes()?;
+	let seg_count = p_bytes[26] as usize;
+
+	// Replace segment table and checksum
+	p_bytes.splice(26..27 + seg_count, segment_table);
+	p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes());
+
+	writer.write_all(&*p_bytes)?;
+
+	if let Some(mut page) = page {
+		page.gen_crc()?;
+
+		writer.write_all(&*page.as_bytes()?)?;
+	}
 
 	Ok(())
 }

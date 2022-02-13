@@ -279,7 +279,7 @@ impl<'a> VorbisCommentsRef<'a> {
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let mut temp = Cursor::new(Vec::new());
-		super::write::create_pages(self, &mut temp)?;
+		super::write::create_pages(self, &mut temp, 0, false)?;
 
 		writer.write_all(temp.get_ref())?;
 		Ok(())

@@ -1,8 +1,9 @@
 use super::verify_signature;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::VorbisCommentsRef;
+use crate::types::file::FileType;
 use crate::types::picture::PictureInformation;
 use crate::types::tag::{Tag, TagType};
 
@@ -70,6 +71,8 @@ pub(crate) fn create_comments(
 pub(super) fn create_pages(
 	tag: &mut VorbisCommentsRef<'_>,
 	writer: &mut Cursor<Vec<u8>>,
+	stream_serial: u32,
+	add_framing_bit: bool,
 ) -> Result<Vec<Page>> {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
@@ -94,15 +97,22 @@ pub(super) fn create_pages(
 		}
 	}
 
+	if add_framing_bit {
+		// OGG Vorbis makes use of a "framing bit" to
+		// separate the header packets
+		//
+		// https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-590004
+		writer.write_u8(1)?;
+	}
+
 	let packet_end = writer.seek(SeekFrom::Current(0))?;
 
 	writer.seek(SeekFrom::Start(item_count_pos))?;
 	writer.write_u32::<LittleEndian>(count)?;
 	writer.seek(SeekFrom::Start(packet_end))?;
 
-	// Stream serial is retrieved later
 	// Checksum is calculated later
-	Ok(ogg_pager::paginate(writer.get_ref(), 0, 0, 0))
+	Ok(ogg_pager::paginate(writer.get_ref(), stream_serial, 0, 0))
 }
 
 #[cfg(feature = "vorbis_comments")]
@@ -140,7 +150,8 @@ pub(super) fn write(
 	packet.write_u32::<LittleEndian>(vendor_len)?;
 	packet.write_all(&vendor)?;
 
-	let mut pages = create_pages(tag, &mut packet)?;
+	let needs_framing_bit = format == OGGFormat::Vorbis;
+	let mut pages = create_pages(tag, &mut packet, ser, needs_framing_bit)?;
 
 	match format {
 		OGGFormat::Vorbis => {
@@ -148,21 +159,56 @@ pub(super) fn write(
 				data,
 				&mut writer,
 				first_md_page.take_content(),
-				ser,
 				&mut pages,
 			)?;
 		},
 		OGGFormat::Opus => {
-			super::opus::write::write_to(data, &mut writer, ser, &mut pages)?;
+			replace_packet(data, &mut writer, &mut pages, FileType::Opus)?;
 		},
 		OGGFormat::Speex => {
-			super::speex::write::write_to(data, &mut writer, ser, &mut pages)?;
+			replace_packet(data, &mut writer, &mut pages, FileType::Speex)?;
 		},
 	}
 
 	data.seek(SeekFrom::Start(0))?;
 	data.set_len(first_page.end as u64)?;
 	data.write_all(&*writer)?;
+
+	Ok(())
+}
+
+fn replace_packet(
+	data: &mut File,
+	writer: &mut Vec<u8>,
+	pages: &mut [Page],
+	file_type: FileType,
+) -> Result<()> {
+	let reached_md_end: bool;
+
+	loop {
+		let p = Page::read(data, true)?;
+
+		if p.header_type() & 0x01 != 0x01 {
+			data.seek(SeekFrom::Start(p.start as u64))?;
+			reached_md_end = true;
+			break;
+		}
+	}
+
+	if !reached_md_end {
+		return Err(FileEncodingError::new(file_type, "File ends with comment header").into());
+	}
+
+	let mut remaining = Vec::new();
+	data.read_to_end(&mut remaining)?;
+
+	for p in pages.iter_mut() {
+		p.gen_crc()?;
+
+		writer.write_all(&*p.as_bytes()?)?;
+	}
+
+	writer.write_all(&*remaining)?;
 
 	Ok(())
 }

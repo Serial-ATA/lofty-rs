@@ -1,6 +1,4 @@
 pub(super) mod properties;
-#[cfg(feature = "vorbis_comments")]
-pub(in crate::ogg) mod write;
 
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
