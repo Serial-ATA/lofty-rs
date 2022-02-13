@@ -114,7 +114,7 @@ where
 #[test]
 fn aiff_properties() {
 	assert_eq!(
-		get_properties::<AiffFile>("tests/files/assets/full_test.aiff"),
+		get_properties::<AiffFile>("tests/files/assets/minimal/full_test.aiff"),
 		AIFF_PROPERTIES
 	);
 }
@@ -122,7 +122,7 @@ fn aiff_properties() {
 #[test]
 fn ape_properties() {
 	assert_eq!(
-		get_properties::<ApeFile>("tests/files/assets/full_test.ape"),
+		get_properties::<ApeFile>("tests/files/assets/minimal/full_test.ape"),
 		APE_PROPERTIES
 	);
 }
@@ -130,7 +130,7 @@ fn ape_properties() {
 #[test]
 fn flac_properties() {
 	assert_eq!(
-		get_properties::<FlacFile>("tests/files/assets/full_test.flac"),
+		get_properties::<FlacFile>("tests/files/assets/minimal/full_test.flac"),
 		FLAC_PROPERTIES
 	)
 }
@@ -138,7 +138,7 @@ fn flac_properties() {
 #[test]
 fn mp3_properties() {
 	assert_eq!(
-		get_properties::<Mp3File>("tests/files/assets/full_test.mp3"),
+		get_properties::<Mp3File>("tests/files/assets/minimal/full_test.mp3"),
 		MP3_PROPERTIES
 	)
 }
@@ -146,7 +146,7 @@ fn mp3_properties() {
 #[test]
 fn mp4_aac_properties() {
 	assert_eq!(
-		get_properties::<Mp4File>("tests/files/assets/m4a_codec_aac.m4a"),
+		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_aac.m4a"),
 		MP4_AAC_PROPERTIES
 	)
 }
@@ -154,7 +154,7 @@ fn mp4_aac_properties() {
 #[test]
 fn mp4_alac_properties() {
 	assert_eq!(
-		get_properties::<Mp4File>("tests/files/assets/m4a_codec_alac.m4a"),
+		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_alac.m4a"),
 		MP4_ALAC_PROPERTIES
 	)
 }
@@ -162,7 +162,7 @@ fn mp4_alac_properties() {
 #[test]
 fn opus_properties() {
 	assert_eq!(
-		get_properties::<OpusFile>("tests/files/assets/full_test.opus"),
+		get_properties::<OpusFile>("tests/files/assets/minimal/full_test.opus"),
 		OPUS_PROPERTIES
 	)
 }
@@ -170,7 +170,7 @@ fn opus_properties() {
 #[test]
 fn speex_properties() {
 	assert_eq!(
-		get_properties::<SpeexFile>("tests/files/assets/full_test.spx"),
+		get_properties::<SpeexFile>("tests/files/assets/minimal/full_test.spx"),
 		SPEEX_PROPERTIES
 	)
 }
@@ -178,7 +178,7 @@ fn speex_properties() {
 #[test]
 fn vorbis_properties() {
 	assert_eq!(
-		get_properties::<VorbisFile>("tests/files/assets/full_test.ogg"),
+		get_properties::<VorbisFile>("tests/files/assets/minimal/full_test.ogg"),
 		VORBIS_PROPERTIES
 	)
 }
@@ -186,7 +186,7 @@ fn vorbis_properties() {
 #[test]
 fn wav_properties() {
 	assert_eq!(
-		get_properties::<WavFile>("tests/files/assets/wav_format_pcm.wav"),
+		get_properties::<WavFile>("tests/files/assets/minimal/wav_format_pcm.wav"),
 		WAV_PROPERTIES
 	)
 }

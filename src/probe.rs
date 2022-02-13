@@ -30,7 +30,7 @@ use std::path::Path;
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
 ///
-/// let probe = Probe::open("tests/files/assets/full_test.mp3")?;
+/// let probe = Probe::open("tests/files/assets/minimal/full_test.mp3")?;
 ///
 /// // Inferred from the `mp3` extension
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
@@ -46,7 +46,7 @@ use std::path::Path;
 /// use lofty::FileType;
 ///
 /// // Our same path probe with a guessed file type
-/// let probe = Probe::open("tests/files/assets/full_test.mp3")?.guess_file_type()?;
+/// let probe = Probe::open("tests/files/assets/minimal/full_test.mp3")?.guess_file_type()?;
 ///
 /// // Inferred from the file's content
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));

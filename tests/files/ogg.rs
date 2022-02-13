@@ -7,63 +7,81 @@ use std::io::{Seek, SeekFrom, Write};
 
 #[test]
 fn opus_read() {
-	read("tests/files/assets/full_test.opus", &FileType::Opus)
+	read("tests/files/assets/minimal/full_test.opus", &FileType::Opus)
 }
 
 #[test]
 fn opus_write() {
-	write("tests/files/assets/full_test.opus", &FileType::Opus)
+	write("tests/files/assets/minimal/full_test.opus", &FileType::Opus)
 }
 
 #[test]
 fn opus_remove() {
-	remove("tests/files/assets/full_test.opus", TagType::VorbisComments)
+	remove(
+		"tests/files/assets/minimal/full_test.opus",
+		TagType::VorbisComments,
+	)
 }
 
 #[test]
 fn flac_read() {
 	// FLAC does **not** require a Vorbis comment block be present, this file has one
-	read("tests/files/assets/full_test.flac", &FileType::FLAC)
+	read("tests/files/assets/minimal/full_test.flac", &FileType::FLAC)
 }
 
 #[test]
 fn flac_write() {
-	write("tests/files/assets/full_test.flac", &FileType::FLAC)
+	write("tests/files/assets/minimal/full_test.flac", &FileType::FLAC)
 }
 
 #[test]
 fn flac_remove() {
-	crate::remove_tag!("tests/files/assets/full_test.flac", TagType::VorbisComments);
+	crate::remove_tag!(
+		"tests/files/assets/minimal/full_test.flac",
+		TagType::VorbisComments
+	);
 }
 
 #[test]
 fn vorbis_read() {
-	read("tests/files/assets/full_test.ogg", &FileType::Vorbis)
+	read(
+		"tests/files/assets/minimal/full_test.ogg",
+		&FileType::Vorbis,
+	)
 }
 
 #[test]
 fn vorbis_write() {
-	write("tests/files/assets/full_test.ogg", &FileType::Vorbis)
+	write(
+		"tests/files/assets/minimal/full_test.ogg",
+		&FileType::Vorbis,
+	)
 }
 
 #[test]
 fn vorbis_remove() {
-	remove("tests/files/assets/full_test.ogg", TagType::VorbisComments)
+	remove(
+		"tests/files/assets/minimal/full_test.ogg",
+		TagType::VorbisComments,
+	)
 }
 
 #[test]
 fn speex_read() {
-	read("tests/files/assets/full_test.spx", &FileType::Speex)
+	read("tests/files/assets/minimal/full_test.spx", &FileType::Speex)
 }
 
 #[test]
 fn speex_write() {
-	write("tests/files/assets/full_test.spx", &FileType::Speex)
+	write("tests/files/assets/minimal/full_test.spx", &FileType::Speex)
 }
 
 #[test]
 fn speex_remove() {
-	remove("tests/files/assets/full_test.spx", TagType::VorbisComments)
+	remove(
+		"tests/files/assets/minimal/full_test.spx",
+		TagType::VorbisComments,
+	)
 }
 
 fn read(path: &str, file_type: &FileType) {

@@ -1,7 +1,13 @@
 use lofty::{Accessor, Probe};
+use std::path::Path;
 
 fn main() {
-	let path = std::env::args().nth(1).expect("Error: No path specified!");
+	let path_str = std::env::args().nth(1).expect("Error: No path specified!");
+	let path = Path::new(&path_str);
+
+	if !path.is_file() {
+		panic!("Error: Path is not a file!");
+	}
 
 	let tagged_file = Probe::open(path)
 		.expect("Error: Bad path provided!")

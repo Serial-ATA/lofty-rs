@@ -5,7 +5,8 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// This file contains an ilst atom
-	let file = lofty::read_from_path("tests/files/assets/m4a_codec_aac.m4a", false).unwrap();
+	let file =
+		lofty::read_from_path("tests/files/assets/minimal/m4a_codec_aac.m4a", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::MP4);
 
@@ -15,7 +16,7 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/m4a_codec_aac.m4a");
+	let mut file = temp_file!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
@@ -33,5 +34,8 @@ fn write() {
 
 #[test]
 fn remove() {
-	crate::remove_tag!("tests/files/assets/m4a_codec_aac.m4a", TagType::Mp4Ilst);
+	crate::remove_tag!(
+		"tests/files/assets/minimal/m4a_codec_aac.m4a",
+		TagType::Mp4Ilst
+	);
 }

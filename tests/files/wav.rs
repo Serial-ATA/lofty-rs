@@ -5,7 +5,8 @@ use std::io::{Seek, SeekFrom, Write};
 #[test]
 fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
-	let file = lofty::read_from_path("tests/files/assets/wav_format_pcm.wav", false).unwrap();
+	let file =
+		lofty::read_from_path("tests/files/assets/minimal/wav_format_pcm.wav", false).unwrap();
 
 	assert_eq!(file.file_type(), &FileType::WAV);
 
@@ -18,7 +19,7 @@ fn read() {
 
 #[test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/wav_format_pcm.wav");
+	let mut file = temp_file!("tests/files/assets/minimal/wav_format_pcm.wav");
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
@@ -41,10 +42,16 @@ fn write() {
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/wav_format_pcm.wav", TagType::Id3v2);
+	crate::remove_tag!(
+		"tests/files/assets/minimal/wav_format_pcm.wav",
+		TagType::Id3v2
+	);
 }
 
 #[test]
 fn remove_riff_info() {
-	crate::remove_tag!("tests/files/assets/wav_format_pcm.wav", TagType::RiffInfo);
+	crate::remove_tag!(
+		"tests/files/assets/minimal/wav_format_pcm.wav",
+		TagType::RiffInfo
+	);
 }

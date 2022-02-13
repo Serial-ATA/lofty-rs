@@ -34,11 +34,11 @@
 //! // First, create a probe.
 //! // This will guess the format from the extension
 //! // ("mp3" in this case), but we can guess from the content if we want to.
-//! let tagged_file = read_from_path("tests/files/assets/full_test.mp3", false)?;
+//! let tagged_file = read_from_path("tests/files/assets/minimal/full_test.mp3", false)?;
 //!
 //! // Let's guess the format from the content just in case.
 //! // This is not necessary in this case!
-//! let tagged_file2 = Probe::open("tests/files/assets/full_test.mp3")?
+//! let tagged_file2 = Probe::open("tests/files/assets/minimal/full_test.mp3")?
 //! 	.guess_file_type()?
 //! 	.read(false)?;
 //! # Ok(())
@@ -54,7 +54,7 @@
 //! use std::fs::File;
 //!
 //! // Let's read from an open file
-//! let mut file = File::open("tests/files/assets/full_test.mp3")?;
+//! let mut file = File::open("tests/files/assets/minimal/full_test.mp3")?;
 //!
 //! // Here, we have to guess the file type prior to reading
 //! let tagged_file = read_from(&mut file, false)?;
@@ -69,7 +69,7 @@
 //! # fn main() -> Result<(), LoftyError> {
 //! use lofty::read_from_path;
 //!
-//! let tagged_file = read_from_path("tests/files/assets/full_test.mp3", false)?;
+//! let tagged_file = read_from_path("tests/files/assets/minimal/full_test.mp3", false)?;
 //!
 //! // Get the primary tag (ID3v2 in this case)
 //! let id3v2 = tagged_file.primary_tag().unwrap();
@@ -90,7 +90,7 @@
 //! use lofty::{AudioFile, TagType};
 //! use std::fs::File;
 //!
-//! let mut file_content = File::open("tests/files/assets/full_test.mp3")?;
+//! let mut file_content = File::open("tests/files/assets/minimal/full_test.mp3")?;
 //!
 //! // We are expecting an MP3 file
 //! let mpeg_file = Mp3File::read_from(&mut file_content, true)?;
