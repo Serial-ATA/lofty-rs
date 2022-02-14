@@ -45,18 +45,19 @@ pub struct TaggedFile {
 }
 
 impl TaggedFile {
-	/// Returns the primary tag
-	///
-	/// See [`FileType::primary_tag_type`]
-	pub fn primary_tag(&self) -> Option<&Tag> {
-		self.tag(&self.primary_tag_type())
+	/// Returns the file's [`FileType`]
+	pub fn file_type(&self) -> &FileType {
+		&self.ty
 	}
 
-	/// Gets a mutable reference to the file's "Primary tag"
-	///
-	/// See [`FileType::primary_tag_type`]
-	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tag_mut(&self.primary_tag_type())
+	/// Returns the file's [`FileProperties`]
+	pub fn properties(&self) -> &FileProperties {
+		&self.properties
+	}
+
+	/// Returns all tags
+	pub fn tags(&self) -> &[Tag] {
+		self.tags.as_slice()
 	}
 
 	/// Returns the file type's primary [`TagType`]
@@ -71,9 +72,28 @@ impl TaggedFile {
 		self.ty.supports_tag_type(&tag_type)
 	}
 
-	/// Returns all tags
-	pub fn tags(&self) -> &[Tag] {
-		self.tags.as_slice()
+	/// Get a reference to a specific [`TagType`]
+	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
+		self.tags.iter().find(|i| i.tag_type() == tag_type)
+	}
+
+	/// Get a mutable reference to a specific [`TagType`]
+	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
+		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
+	}
+
+	/// Returns the primary tag
+	///
+	/// See [`FileType::primary_tag_type`]
+	pub fn primary_tag(&self) -> Option<&Tag> {
+		self.tag(&self.primary_tag_type())
+	}
+
+	/// Gets a mutable reference to the file's "Primary tag"
+	///
+	/// See [`FileType::primary_tag_type`]
+	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.tag_mut(&self.primary_tag_type())
 	}
 
 	/// Gets the first tag, if there are any
@@ -84,16 +104,6 @@ impl TaggedFile {
 	/// Gets a mutable reference to the first tag, if there are any
 	pub fn first_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tags.first_mut()
-	}
-
-	/// Get a reference to a specific [`TagType`]
-	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
-		self.tags.iter().find(|i| i.tag_type() == tag_type)
-	}
-
-	/// Get a mutable reference to a specific [`TagType`]
-	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
-		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
 	}
 
 	/// Inserts a [`Tag`]
@@ -163,18 +173,6 @@ impl TaggedFile {
 		}
 
 		Ok(())
-	}
-}
-
-impl TaggedFile {
-	/// Returns the file's [`FileType`]
-	pub fn file_type(&self) -> &FileType {
-		&self.ty
-	}
-
-	/// Returns a reference to the file's [`FileProperties`]
-	pub fn properties(&self) -> &FileProperties {
-		&self.properties
 	}
 }
 
