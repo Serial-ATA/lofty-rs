@@ -13,6 +13,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 #[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
 /// An MP4 file's audio codec
 pub enum Mp4Codec {
 	AAC,

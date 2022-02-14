@@ -115,6 +115,7 @@ impl MimeType {
 /// The picture type, according to ID3v2 APIC
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[non_exhaustive]
 pub enum PictureType {
 	Other,
 	Icon,
@@ -174,8 +175,8 @@ impl PictureType {
 
 	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
 	/// Get a `PictureType` from a u8 according to ID3v2 APIC
-	pub fn from_u8(bytes: u8) -> Self {
-		match bytes {
+	pub fn from_u8(byte: u8) -> Self {
+		match byte {
 			0 => Self::Other,
 			1 => Self::Icon,
 			2 => Self::OtherIcon,
