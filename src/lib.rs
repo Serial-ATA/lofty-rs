@@ -6,16 +6,20 @@
 //!
 //! # Supported Formats
 //!
-//! | File Format | Extensions                                      | Read | Write | Metadata Format(s)                            |
-//! |-------------|-------------------------------------------------|------|-------|-----------------------------------------------|
-//! | APE         | `ape`                                           |**X** |**X**  |`APEv2`, `APEv1`, `ID3v2` (Read only), `ID3v1` |
-//! | AIFF        | `aiff`, `aif`                                   |**X** |**X**  |`ID3v2`, `Text Chunks`                         |
-//! | FLAC        | `flac`                                          |**X** |**X**  |`Vorbis Comments`                              |
-//! | MP3         | `mp3`                                           |**X** |**X**  |`ID3v2`, `ID3v1`, `APEv2`, `APEv1`             |
-//! | MP4         | `mp4`, `m4a`, `m4b`, `m4p`, `m4r`, `m4v`, `3gp` |**X** |**X**  |`iTunes-style ilst`                            |
-//! | Opus        | `opus`                                          |**X** |**X**  |`Vorbis Comments`                              |
-//! | Ogg Vorbis  | `ogg`                                           |**X** |**X**  |`Vorbis Comments`                              |
-//! | WAV         | `wav`, `wave`                                   |**X** |**X**  |`ID3v2`, `RIFF INFO`                           |
+//!
+//! | File Format | Metadata Format(s)                  |
+//! |-------------|-------------------------------------|
+//! | Ape         | `APEv2`, `APEv1`, `ID3v2`*, `ID3v1` |
+//! | AIFF        | `ID3v2`, `Text Chunks`              |
+//! | FLAC        | `Vorbis Comments`                   |
+//! | MP3         | `ID3v2`, `ID3v1`, `APEv2`, `APEv1`  |
+//! | MP4         | `iTunes-style ilst`                 |
+//! | Opus        | `Vorbis Comments`                   |
+//! | Ogg Vorbis  | `Vorbis Comments`                   |
+//! | Speex       | `Vorbis Comments`                   |
+//! | WAV         | `ID3v2`, `RIFF INFO`                |
+//!
+//! \* APE does not officially support ID3v2, so the tag will be **read only**
 //!
 //! # Examples
 //!
