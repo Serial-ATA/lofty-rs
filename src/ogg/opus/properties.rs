@@ -9,14 +9,15 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[non_exhaustive]
 /// An Opus file's audio properties
 pub struct OpusProperties {
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	channels: u8,
-	version: u8,
-	input_sample_rate: u32,
+	pub(crate) duration: Duration,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) channels: u8,
+	pub(crate) version: u8,
+	pub(crate) input_sample_rate: u32,
 }
 
 impl From<OpusProperties> for FileProperties {
@@ -33,25 +34,6 @@ impl From<OpusProperties> for FileProperties {
 }
 
 impl OpusProperties {
-	/// Create a new [`OpusProperties`]
-	pub const fn new(
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		channels: u8,
-		version: u8,
-		input_sample_rate: u32,
-	) -> Self {
-		Self {
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			channels,
-			version,
-			input_sample_rate,
-		}
-	}
-
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration

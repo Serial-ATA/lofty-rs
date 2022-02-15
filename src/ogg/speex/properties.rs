@@ -10,17 +10,18 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[non_exhaustive]
 /// A Speex file's audio properties
 pub struct SpeexProperties {
-	duration: Duration,
-	version: u32,
-	sample_rate: u32,
-	mode: u32,
-	channels: u8,
-	vbr: bool,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	nominal_bitrate: i32,
+	pub(crate) duration: Duration,
+	pub(crate) version: u32,
+	pub(crate) sample_rate: u32,
+	pub(crate) mode: u32,
+	pub(crate) channels: u8,
+	pub(crate) vbr: bool,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) nominal_bitrate: i32,
 }
 
 impl From<SpeexProperties> for FileProperties {
@@ -37,31 +38,6 @@ impl From<SpeexProperties> for FileProperties {
 }
 
 impl SpeexProperties {
-	/// Create a new [`SpeexProperties`]
-	pub const fn new(
-		duration: Duration,
-		version: u32,
-		sample_rate: u32,
-		mode: u32,
-		channels: u8,
-		vbr: bool,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		nominal_bitrate: i32,
-	) -> Self {
-		Self {
-			duration,
-			version,
-			sample_rate,
-			mode,
-			channels,
-			vbr,
-			overall_bitrate,
-			audio_bitrate,
-			nominal_bitrate,
-		}
-	}
-
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration

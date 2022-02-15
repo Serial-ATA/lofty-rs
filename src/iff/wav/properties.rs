@@ -26,15 +26,16 @@ impl Default for WavFormat {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[non_exhaustive]
 /// A WAV file's audio properties
 pub struct WavProperties {
-	format: WavFormat,
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	bit_depth: u8,
-	channels: u8,
+	pub(crate) format: WavFormat,
+	pub(crate) duration: Duration,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) sample_rate: u32,
+	pub(crate) bit_depth: u8,
+	pub(crate) channels: u8,
 }
 
 impl From<WavProperties> for FileProperties {
@@ -51,27 +52,6 @@ impl From<WavProperties> for FileProperties {
 }
 
 impl WavProperties {
-	/// Create a new [`WavProperties`]
-	pub const fn new(
-		format: WavFormat,
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		bit_depth: u8,
-		channels: u8,
-	) -> Self {
-		Self {
-			format,
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			bit_depth,
-			channels,
-		}
-	}
-
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration

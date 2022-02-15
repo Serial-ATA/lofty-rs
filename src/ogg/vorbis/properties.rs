@@ -9,17 +9,18 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
 #[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[non_exhaustive]
 /// An OGG Vorbis file's audio properties
 pub struct VorbisProperties {
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	channels: u8,
-	version: u32,
-	bitrate_maximum: i32,
-	bitrate_nominal: i32,
-	bitrate_minimum: i32,
+	pub(crate) duration: Duration,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) sample_rate: u32,
+	pub(crate) channels: u8,
+	pub(crate) version: u32,
+	pub(crate) bitrate_maximum: i32,
+	pub(crate) bitrate_nominal: i32,
+	pub(crate) bitrate_minimum: i32,
 }
 
 impl From<VorbisProperties> for FileProperties {
@@ -36,31 +37,6 @@ impl From<VorbisProperties> for FileProperties {
 }
 
 impl VorbisProperties {
-	/// Creates a new [`VorbisProperties`]
-	pub const fn new(
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		channels: u8,
-		version: u32,
-		bitrate_maximum: i32,
-		bitrate_nominal: i32,
-		bitrate_minimum: i32,
-	) -> Self {
-		Self {
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			channels,
-			version,
-			bitrate_maximum,
-			bitrate_nominal,
-			bitrate_minimum,
-		}
-	}
-
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration

@@ -4,16 +4,17 @@ use crate::types::properties::FileProperties;
 use std::time::Duration;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[non_exhaustive]
 /// An MP3 file's audio properties
 pub struct Mp3Properties {
-	version: MpegVersion,
-	layer: Layer,
-	channel_mode: ChannelMode,
-	duration: Duration,
-	overall_bitrate: u32,
-	audio_bitrate: u32,
-	sample_rate: u32,
-	channels: u8,
+	pub(crate) version: MpegVersion,
+	pub(crate) layer: Layer,
+	pub(crate) channel_mode: ChannelMode,
+	pub(crate) duration: Duration,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) sample_rate: u32,
+	pub(crate) channels: u8,
 }
 
 impl From<Mp3Properties> for FileProperties {
@@ -30,29 +31,6 @@ impl From<Mp3Properties> for FileProperties {
 }
 
 impl Mp3Properties {
-	/// Creates a new [`Mp3Properties`]
-	pub const fn new(
-		version: MpegVersion,
-		layer: Layer,
-		channel_mode: ChannelMode,
-		duration: Duration,
-		overall_bitrate: u32,
-		audio_bitrate: u32,
-		sample_rate: u32,
-		channels: u8,
-	) -> Self {
-		Self {
-			version,
-			layer,
-			channel_mode,
-			duration,
-			overall_bitrate,
-			audio_bitrate,
-			sample_rate,
-			channels,
-		}
-	}
-
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
