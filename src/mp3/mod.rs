@@ -5,7 +5,7 @@ mod properties;
 mod read;
 pub(crate) mod write;
 
-pub use header::{ChannelMode, Layer, MpegVersion};
+pub use header::{ChannelMode, Emphasis, Layer, MpegVersion};
 pub use properties::Mp3Properties;
 
 #[cfg(feature = "ape")]

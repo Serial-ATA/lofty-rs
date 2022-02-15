@@ -79,6 +79,7 @@ impl Default for Layer {
 pub enum ChannelMode {
 	Stereo = 0,
 	JointStereo = 1,
+	/// Two independent mono channels
 	DualChannel = 2,
 	SingleChannel = 3,
 }
@@ -89,17 +90,39 @@ impl Default for ChannelMode {
 	}
 }
 
+#[derive(Copy, Clone, PartialEq, Debug)]
+#[allow(missing_docs, non_camel_case_types)]
+/// A rarely-used decoder hint that the file must be de-emphasized
+pub enum Emphasis {
+	None,
+	/// 50/15 ms
+	MS5015,
+	Reserved,
+	/// CCIT J.17
+	CCIT_J17,
+}
+
+impl Default for Emphasis {
+	fn default() -> Self {
+		Self::None
+	}
+}
+
 #[derive(Copy, Clone)]
 pub(crate) struct Header {
-	pub sample_rate: u32,
-	pub channels: u8,
-	pub len: u32,
-	pub data_start: u32,
-	pub samples: u16,
-	pub bitrate: u32,
-	pub version: MpegVersion,
-	pub layer: Layer,
-	pub channel_mode: ChannelMode,
+	pub(crate) sample_rate: u32,
+	pub(crate) channels: u8,
+	pub(crate) len: u32,
+	pub(crate) data_start: u32,
+	pub(crate) samples: u16,
+	pub(crate) bitrate: u32,
+	pub(crate) version: MpegVersion,
+	pub(crate) layer: Layer,
+	pub(crate) channel_mode: ChannelMode,
+	pub(crate) mode_extension: Option<u8>,
+	pub(crate) copyright: bool,
+	pub(crate) original: bool,
+	pub(crate) emphasis: Emphasis,
 }
 
 impl Header {
@@ -147,7 +170,7 @@ impl Header {
 			_ => sample_rate = SAMPLE_RATES[version as usize][sample_rate as usize],
 		}
 
-		let has_padding = ((header >> 9) & 1) != 0;
+		let has_padding = ((header >> 9) & 1) == 1;
 		let mut padding = 0;
 
 		if has_padding {
@@ -159,6 +182,23 @@ impl Header {
 			1 => ChannelMode::JointStereo,
 			2 => ChannelMode::DualChannel,
 			3 => ChannelMode::SingleChannel,
+			_ => unreachable!(),
+		};
+
+		let mut mode_extension = None;
+
+		if let ChannelMode::JointStereo = channel_mode {
+			mode_extension = Some(((header >> 4) & 3) as u8);
+		}
+
+		let copyright = ((header >> 3) & 1) == 1;
+		let original = ((header >> 2) & 1) == 1;
+
+		let emphasis = match header & 3 {
+			0 => Emphasis::None,
+			1 => Emphasis::MS5015,
+			2 => Emphasis::Reserved,
+			3 => Emphasis::CCIT_J17,
 			_ => unreachable!(),
 		};
 
@@ -190,6 +230,10 @@ impl Header {
 			version,
 			layer,
 			channel_mode,
+			mode_extension,
+			copyright,
+			original,
+			emphasis,
 		})
 	}
 }

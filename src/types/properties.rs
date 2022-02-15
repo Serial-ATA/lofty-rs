@@ -61,7 +61,7 @@ impl FileProperties {
 mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
-	use crate::mp3::{ChannelMode, Layer, Mp3File, Mp3Properties, MpegVersion};
+	use crate::mp3::{ChannelMode, Emphasis, Layer, Mp3File, Mp3Properties, MpegVersion};
 	use crate::mp4::{Mp4Codec, Mp4File, Mp4Properties};
 	use crate::ogg::{
 		FlacFile, OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile,
@@ -104,11 +104,15 @@ mod tests {
 		version: MpegVersion::V1,
 		layer: Layer::Layer3,
 		channel_mode: ChannelMode::Stereo,
+		mode_extension: None,
+		copyright: false,
+		original: false,
 		duration: Duration::from_millis(1464),
 		overall_bitrate: 64,
 		audio_bitrate: 62,
 		sample_rate: 48000,
 		channels: 2,
+		emphasis: Emphasis::None,
 	};
 
 	const MP4_AAC_PROPERTIES: Mp4Properties = Mp4Properties {
