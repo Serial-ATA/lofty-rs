@@ -219,29 +219,28 @@ impl From<Ilst> for Tag {
 					continue;
 				},
 				// We have to special case track/disc numbers since they are stored together
-				AtomData::Unknown { code: 0, data } if data.len() >= 6 => match atom.ident {
-					AtomIdent::Fourcc(ref fourcc) => match fourcc {
-						b"trkn" => {
-							let current = u16::from_be_bytes([data[2], data[3]]);
-							let total = u16::from_be_bytes([data[4], data[5]]);
+				AtomData::Unknown { code: 0, data } if data.len() >= 6 => {
+					if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+						match fourcc {
+							b"trkn" => {
+								let current = u16::from_be_bytes([data[2], data[3]]);
+								let total = u16::from_be_bytes([data[4], data[5]]);
 
-							tag.insert_text(ItemKey::TrackNumber, current.to_string());
-							tag.insert_text(ItemKey::TrackTotal, total.to_string());
+								tag.insert_text(ItemKey::TrackNumber, current.to_string());
+								tag.insert_text(ItemKey::TrackTotal, total.to_string());
+							},
+							b"disk" => {
+								let current = u16::from_be_bytes([data[2], data[3]]);
+								let total = u16::from_be_bytes([data[4], data[5]]);
 
-							continue;
-						},
-						b"disk" => {
-							let current = u16::from_be_bytes([data[2], data[3]]);
-							let total = u16::from_be_bytes([data[4], data[5]]);
+								tag.insert_text(ItemKey::DiscNumber, current.to_string());
+								tag.insert_text(ItemKey::DiscTotal, total.to_string());
+							},
+							_ => {},
+						}
+					}
 
-							tag.insert_text(ItemKey::DiscNumber, current.to_string());
-							tag.insert_text(ItemKey::DiscTotal, total.to_string());
-
-							continue;
-						},
-						_ => continue,
-					},
-					_ => continue,
+					continue;
 				},
 				_ => continue,
 			};

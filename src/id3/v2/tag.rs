@@ -288,8 +288,11 @@ impl TagIO for Id3v2Tag {
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	/// * Attempting to write an invalid [`FrameID`]/[`FrameValue`] pairing
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
-			.write_to(file)
+		Id3v2TagRef {
+			flags: self.flags,
+			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
+		}
+		.write_to(file)
 	}
 
 	/// Dumps the tag to a writer
@@ -299,8 +302,11 @@ impl TagIO for Id3v2Tag {
 	/// * [`std::io::Error`]
 	/// * [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData)
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Id3v2TagRef::new(self.flags, self.frames.iter().filter_map(Frame::as_opt_ref))
-			.dump_to(writer)
+		Id3v2TagRef {
+			flags: self.flags,
+			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
+		}
+		.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -420,12 +426,6 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
 		.iter()
 		.map(TryInto::<FrameRef<'_>>::try_into)
 		.filter_map(Result::ok)
-}
-
-impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn new(flags: Id3v2TagFlags, frames: I) -> Self {
-		Self { flags, frames }
-	}
 }
 
 impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {

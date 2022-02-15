@@ -15,10 +15,11 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 				.write_to(data)
 		},
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => {
-			v2::tag::Id3v2TagRef::new(v2::Id3v2TagFlags::default(), v2::tag::tag_frames(tag))
-				.write_to(data)
-		},
+		TagType::Id3v2 => v2::tag::Id3v2TagRef {
+			flags: v2::Id3v2TagFlags::default(),
+			frames: v2::tag::tag_frames(tag),
+		}
+		.write_to(data),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }

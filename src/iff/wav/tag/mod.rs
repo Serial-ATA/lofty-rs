@@ -174,7 +174,7 @@ pub(crate) struct RiffInfoListRef<'a, I>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
-	items: I,
+	pub(crate) items: I,
 }
 
 impl<'a, I> RiffInfoListRef<'a, I>

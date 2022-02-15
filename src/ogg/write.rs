@@ -32,22 +32,31 @@ impl OGGFormat {
 	}
 }
 
-pub(in crate) fn write_to(data: &mut File, tag: &Tag, format: OGGFormat) -> Result<()> {
+pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => write(
-			data,
-			&mut {
-				let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+		TagType::VorbisComments => {
+			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
-				VorbisCommentsRef {
-					vendor,
-					items,
-					pictures,
-				}
-			},
-			format,
-		),
+			let mut comments_ref = VorbisCommentsRef {
+				vendor,
+				items,
+				pictures,
+			};
+
+			if let FileType::FLAC = file_type {
+				return super::flac::write::write_to(file, &mut comments_ref);
+			}
+
+			let format = match file_type {
+				FileType::Opus => OGGFormat::Opus,
+				FileType::Vorbis => OGGFormat::Vorbis,
+				FileType::Speex => OGGFormat::Speex,
+				_ => unreachable!(),
+			};
+
+			write(file, &mut comments_ref, format)
+		},
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }

@@ -140,24 +140,24 @@ impl TagIO for AiffTextChunks {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		AiffTextChunksRef::new(
-			self.name.as_deref(),
-			self.author.as_deref(),
-			self.copyright.as_deref(),
-			self.annotations.as_deref(),
-			self.comments.as_deref(),
-		)
+		AiffTextChunksRef {
+			name: self.name.as_deref(),
+			author: self.author.as_deref(),
+			copyright: self.copyright.as_deref(),
+			annotations: self.annotations.as_deref(),
+			comments: self.comments.as_deref(),
+		}
 		.write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		AiffTextChunksRef::new(
-			self.name.as_deref(),
-			self.author.as_deref(),
-			self.copyright.as_deref(),
-			self.annotations.as_deref(),
-			self.comments.as_deref(),
-		)
+		AiffTextChunksRef {
+			name: self.name.as_deref(),
+			author: self.author.as_deref(),
+			copyright: self.copyright.as_deref(),
+			annotations: self.annotations.as_deref(),
+			comments: self.comments.as_deref(),
+		}
 		.dump_to(writer)
 	}
 
@@ -247,22 +247,6 @@ where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(crate) fn new(
-		name: Option<&'a str>,
-		author: Option<&'a str>,
-		copyright: Option<&'a str>,
-		annotations: Option<AI>,
-		comments: Option<&'a [Comment]>,
-	) -> AiffTextChunksRef<'a, T, AI> {
-		AiffTextChunksRef {
-			name,
-			author,
-			copyright,
-			annotations,
-			comments,
-		}
-	}
-
 	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
