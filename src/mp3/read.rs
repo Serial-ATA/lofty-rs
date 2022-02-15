@@ -163,7 +163,7 @@ where
 		let mut xing_reader = [0; 32];
 		reader.read_exact(&mut xing_reader)?;
 
-		let xing_header = XingHeader::read(&mut &xing_reader[..]).ok();
+		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
 
 		super::properties::read_properties(
 			(first_frame_header, first_frame_offset),

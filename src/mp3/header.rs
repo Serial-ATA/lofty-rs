@@ -195,12 +195,12 @@ impl Header {
 }
 
 pub(crate) struct XingHeader {
-	pub frames: u32,
-	pub size: u32,
+	pub(crate) frames: u32,
+	pub(crate) size: u32,
 }
 
 impl XingHeader {
-	pub(crate) fn read(reader: &mut &[u8]) -> Result<Self> {
+	pub(crate) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
 		let reader_len = reader.len();
 
 		let mut header = [0; 4];
@@ -230,7 +230,7 @@ impl XingHeader {
 				let frames = reader.read_u32::<BigEndian>()?;
 				let size = reader.read_u32::<BigEndian>()?;
 
-				Ok(Self { frames, size })
+				Ok(Some(Self { frames, size }))
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
@@ -250,13 +250,9 @@ impl XingHeader {
 				let size = reader.read_u32::<BigEndian>()?;
 				let frames = reader.read_u32::<BigEndian>()?;
 
-				Ok(Self { frames, size })
+				Ok(Some(Self { frames, size }))
 			},
-			_ => Err(FileDecodingError::new(
-				FileType::MP3,
-				"No Xing, LAME, or VBRI header located",
-			)
-			.into()),
+			_ => Ok(None),
 		}
 	}
 }
