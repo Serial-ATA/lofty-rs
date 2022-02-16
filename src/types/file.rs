@@ -9,7 +9,7 @@ use std::io::{Read, Seek};
 use std::path::Path;
 
 /// Provides various methods for interaction with a file
-pub trait AudioFile {
+pub trait AudioFile: Into<TaggedFile> {
 	/// The struct the file uses for audio properties
 	///
 	/// Not all formats can use [`FileProperties`] since they may contain additional information
