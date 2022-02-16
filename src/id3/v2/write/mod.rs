@@ -64,6 +64,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 		return Ok(Vec::new());
 	}
 
+	let has_footer = tag.flags.footer;
 	let mut id3v2 = create_tag_header(tag.flags)?;
 	let header_len = id3v2.get_ref().len();
 
@@ -75,6 +76,18 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	// Go back to the start and write the final size
 	id3v2.seek(SeekFrom::Start(6))?;
 	id3v2.write_u32::<BigEndian>(synch_u32(len as u32)?)?;
+
+	if has_footer {
+		id3v2.seek(SeekFrom::Start(3))?;
+
+		let mut header_without_identifier = [0; 7];
+		id3v2.read_exact(&mut header_without_identifier)?;
+		id3v2.seek(SeekFrom::End(0))?;
+
+		// The footer is the same as the header, but with the identifier reversed
+		id3v2.write_all(b"3DI")?;
+		id3v2.write_all(&header_without_identifier)?;
+	}
 
 	Ok(id3v2.into_inner())
 }

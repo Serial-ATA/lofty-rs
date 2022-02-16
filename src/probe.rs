@@ -164,7 +164,6 @@ impl<R: Read + Seek> Probe<R> {
 		self.inner.seek(SeekFrom::Start(starting_position))?;
 
 		// Guess the file type by using these 36 bytes
-		// Note that any error from `from_buffer_inner` are suppressed, as it returns an error on unknown format
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
 			// We were able to determine a file type
 			(Some(f_ty), _) => Ok(Some(f_ty)),

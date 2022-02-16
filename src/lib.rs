@@ -138,7 +138,6 @@
 )]
 // TODO: This had multiple FPs right now, remove this when it is fixed
 #![allow(clippy::needless_borrow)]
-// TODO: Remove too_many_arguments
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
@@ -154,7 +153,6 @@
 	clippy::new_without_default,
 	clippy::from_over_into,
 	clippy::upper_case_acronyms,
-	clippy::too_many_arguments,
 	clippy::single_match_else,
 	clippy::similar_names,
 	clippy::tabs_in_doc_comments,

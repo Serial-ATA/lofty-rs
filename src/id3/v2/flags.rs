@@ -11,8 +11,8 @@ pub struct Id3v2TagFlags {
 	pub experimental: bool,
 	/// Indicates that the tag includes a footer
 	///
-	/// NOTE: This will have no effect when writing
-	pub footer: bool, // TODO: Should this be written? Seems useless, but it isn't much work.
+	/// A footer will be created if the tag is written
+	pub footer: bool,
 	/// Whether or not to include a CRC-32 in the extended header
 	///
 	/// This is calculated if the tag is written

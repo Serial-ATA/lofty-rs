@@ -59,7 +59,7 @@ pub enum ErrorKind {
 	StrFromUtf8(std::str::Utf8Error),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
-	/// TODO
+	/// Failure to allocate enough memory
 	Alloc(TryReserveError),
 }
 
