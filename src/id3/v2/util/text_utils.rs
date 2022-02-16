@@ -7,7 +7,6 @@ use byteorder::ReadBytesExt;
 
 /// The text encoding for use in ID3v2 frames
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
-#[allow(unused)]
 #[repr(u8)]
 pub enum TextEncoding {
 	/// ISO-8859-1
@@ -34,7 +33,6 @@ impl TextEncoding {
 	}
 }
 
-#[allow(unused)]
 pub(crate) fn decode_text<R>(
 	reader: &mut R,
 	encoding: TextEncoding,
@@ -43,50 +41,60 @@ pub(crate) fn decode_text<R>(
 where
 	R: Read,
 {
-	let raw_bytes = if terminated {
-		read_to_terminator(reader, encoding)
+	let raw_bytes;
+
+	if terminated {
+		if let Some(bytes) = read_to_terminator(reader, encoding) {
+			raw_bytes = bytes
+		} else {
+			return Ok(None);
+		}
 	} else {
 		let mut bytes = Vec::new();
 		reader.read_to_end(&mut bytes)?;
 
-		(!bytes.is_empty()).then(|| bytes)
+		if bytes.is_empty() {
+			return Ok(None);
+		}
+
+		raw_bytes = bytes;
+	}
+
+	let read_string = match encoding {
+		TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
+		TextEncoding::UTF16 => {
+			if raw_bytes.len() < 2 {
+				return Err(LoftyError::new(ErrorKind::TextDecode(
+					"UTF-16 string has an invalid length (< 2)",
+				)));
+			}
+
+			if raw_bytes.len() % 2 != 0 {
+				return Err(LoftyError::new(ErrorKind::TextDecode(
+					"UTF-16 string has an odd length",
+				)));
+			}
+
+			match (raw_bytes[0], raw_bytes[1]) {
+				(0xFE, 0xFF) => utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?,
+				(0xFF, 0xFE) => utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?,
+				_ => {
+					return Err(LoftyError::new(ErrorKind::TextDecode(
+						"UTF-16 string has an invalid byte order mark",
+					)))
+				},
+			}
+		},
+		TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
+		TextEncoding::UTF8 => String::from_utf8(raw_bytes)
+			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
 	};
 
-	Ok(if let Some(raw_bytes) = raw_bytes {
-		let read_string = match encoding {
-			TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
-			TextEncoding::UTF16 => {
-				if raw_bytes.len() < 2 {
-					return Err(LoftyError::new(ErrorKind::TextDecode(
-						"UTF-16 string has an invalid length (< 2)",
-					)));
-				}
+	if !read_string.is_empty() {
+		return Ok(Some(read_string));
+	}
 
-				if raw_bytes.len() % 2 != 0 {
-					return Err(LoftyError::new(ErrorKind::TextDecode(
-						"UTF-16 string has an odd length",
-					)));
-				}
-
-				match (raw_bytes[0], raw_bytes[1]) {
-					(0xFE, 0xFF) => utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?,
-					(0xFF, 0xFE) => utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?,
-					_ => {
-						return Err(LoftyError::new(ErrorKind::TextDecode(
-							"UTF-16 string has an invalid byte order mark",
-						)))
-					},
-				}
-			},
-			TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
-			TextEncoding::UTF8 => String::from_utf8(raw_bytes)
-				.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
-		};
-
-		(!read_string.is_empty()).then(|| read_string)
-	} else {
-		None
-	})
+	Ok(None)
 }
 
 pub(crate) fn read_to_terminator<R>(reader: &mut R, encoding: TextEncoding) -> Option<Vec<u8>>

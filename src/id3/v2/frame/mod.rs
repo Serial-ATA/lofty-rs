@@ -5,6 +5,7 @@ pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::Id3v2Version;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
@@ -181,11 +182,10 @@ impl FrameValue {
 		Ok(match self {
 			FrameValue::Comment(lf) | FrameValue::UnSyncText(lf) => lf.as_bytes()?,
 			FrameValue::Text { encoding, value } => {
-				let mut v = Vec::with_capacity(value.len() + 1);
+				let mut content = encode_text(value, *encoding, false);
 
-				v.push(*encoding as u8);
-				v.extend_from_slice(value.as_bytes());
-				v
+				content.insert(0, *encoding as u8);
+				content
 			},
 			FrameValue::UserText(content) | FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
