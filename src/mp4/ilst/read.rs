@@ -54,6 +54,23 @@ where
 
 					continue;
 				},
+				// Special case the "Album ID", as it has the code "BE signed integer" (21), but
+				// must be interpreted as a "BE 64-bit Signed Integer" (74)
+				b"plID" => {
+					let (code, content) = parse_data_inner(&mut cursor)?;
+
+					if (code == 21 || code == 74) && content.len() == 8 {
+						tag.atoms.push(Atom {
+							ident: AtomIdent::Fourcc(*b"plID"),
+							data: AtomData::Unknown {
+								code,
+								data: content,
+							},
+						})
+					}
+
+					continue;
+				},
 				_ => atom.ident,
 			},
 			ident => ident,
@@ -68,6 +85,27 @@ where
 }
 
 fn parse_data<R>(data: &mut R) -> Result<AtomData>
+where
+	R: Read + Seek,
+{
+	let (flags, content) = parse_data_inner(data)?;
+
+	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
+	let value = match flags {
+		1 => AtomData::UTF8(String::from_utf8(content)?),
+		2 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+		21 => AtomData::SignedInteger(parse_int(&content)?),
+		22 => AtomData::UnsignedInteger(parse_uint(&content)?),
+		code => AtomData::Unknown {
+			code,
+			data: content,
+		},
+	};
+
+	Ok(value)
+}
+
+fn parse_data_inner<R>(data: &mut R) -> Result<(u32, Vec<u8>)>
 where
 	R: Read + Seek,
 {
@@ -96,19 +134,7 @@ where
 	let mut content = try_vec![0; (atom.len - 16) as usize];
 	data.read_exact(&mut content)?;
 
-	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
-	let value = match flags {
-		1 => AtomData::UTF8(String::from_utf8(content)?),
-		2 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
-		21 => AtomData::SignedInteger(parse_int(&content)?),
-		22 => AtomData::UnsignedInteger(parse_uint(&content)?),
-		code => AtomData::Unknown {
-			code,
-			data: content,
-		},
-	};
-
-	Ok(value)
+	Ok((flags, content))
 }
 
 fn parse_uint(bytes: &[u8]) -> Result<u32> {

@@ -412,6 +412,11 @@ mod tests {
 	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
 	use crate::{ItemKey, Tag, TagIO, TagType};
 
+	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
+		let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
+		assert_eq!(atom.data(), data);
+	}
+
 	#[test]
 	fn parse_ilst() {
 		let mut expected_tag = Ilst::default();
@@ -504,11 +509,6 @@ mod tests {
 
 	#[test]
 	fn tag_to_ilst() {
-		fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
-			let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
-			assert_eq!(atom.data(), data);
-		}
-
 		let mut tag = crate::tag_utils::test_utils::create_tag(TagType::Mp4Ilst);
 
 		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
@@ -555,6 +555,27 @@ mod tests {
 			&AtomData::Unknown {
 				code: 0,
 				data: vec![0, 0, 0, 1, 0, 2],
+			},
+		)
+	}
+
+	#[test]
+	fn issue_34() {
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/issue_34.ilst");
+
+		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
+
+		verify_atom(
+			&ilst,
+			*b"\xa9ART",
+			&AtomData::UTF8(String::from("Foo artist")),
+		);
+		verify_atom(
+			&ilst,
+			*b"plID",
+			&AtomData::Unknown {
+				code: 21,
+				data: 88888_u64.to_be_bytes().to_vec(),
 			},
 		)
 	}
