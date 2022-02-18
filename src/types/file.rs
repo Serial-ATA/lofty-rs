@@ -19,7 +19,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// # Errors
 	///
-	/// Errors depend on the file and tags being read. See [`LoftyError`]
+	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::LoftyError)
 	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
