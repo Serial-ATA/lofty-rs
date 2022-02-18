@@ -37,25 +37,39 @@ pub const BE_32BIT_SIGNED_INTEGER: u32 = 67;
 /// A block of data representing a two dimensional (2D) point with 32-bit big-endian floating point x and y coordinates. It has the structure:
 ///
 /// ```c
-/// struct { BEFloat32 x; BEFloat32 y; }
+/// struct {
+///     BEFloat32 x;
+///     BEFloat32 y;
+/// }
 /// ```
 pub const BE_POINT_F32: u32 = 70;
 /// A block of data representing 2D dimensions with 32-bit big-endian floating point width and height. It has the structure:
 ///
 /// ```c
-/// struct { BEFloat32 width; BEFloat32 height; }
+/// struct {
+///     BEFloat32 width;
+///     BEFloat32 height;
+/// }
 /// ```
 pub const BE_DIMENSIONS_F32: u32 = 71;
 /// A block of data representing a 2D rectangle with 32-bit big-endian floating point x and y coordinates and a 32-bit big-endian floating point width and height size. It has the structure:
 ///
 /// ```c
-/// struct { BEFloat32 x; BEFloat32 y; BEFloat32 width; BEFloat32 height;}
+/// struct {
+///     BEFloat32 x;
+///     BEFloat32 y;
+///     BEFloat32 width;
+///     BEFloat32 height;
+/// }
 /// ```
 ///
 /// or the equivalent structure:
 ///
 /// ```c
-/// struct { PointF32 origin; DimensionsF32 size; }
+/// struct {
+///     PointF32 origin;
+///     DimensionsF32 size;
+/// }
 /// ```
 pub const BE_RECT_F32: u32 = 72;
 /// A big-endian 64-bit signed integer
@@ -71,6 +85,8 @@ pub const BE_64BIT_UNSIGNED_INTEGER: u32 = 78;
 /// A block of data representing a 3x3 transformation matrix. It has the structure:
 ///
 /// ```c
-/// struct { BEFloat64 matrix[3][3]; }
+/// struct {
+///     BEFloat64 matrix[3][3];
+/// }
 /// ```
 pub const AFFINE_TRANSFORM_F64: u32 = 79;
