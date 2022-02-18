@@ -1,3 +1,7 @@
+use super::constants::{
+	BE_64BIT_SIGNED_INTEGER, BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED,
+	UTF16, UTF8,
+};
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
@@ -38,8 +42,11 @@ where
 				b"gnre" => {
 					let content = parse_data(&mut cursor)?;
 
-					// We expect code 76 (BE Unsigned Integer)
-					if let AtomData::Unknown { code: 76 | 0, data } = content {
+					if let AtomData::Unknown {
+						code: BE_UNSIGNED_INTEGER | 0,
+						data,
+					} = content
+					{
 						if data.len() >= 2 {
 							let index = data[1] as usize;
 
@@ -59,7 +66,9 @@ where
 				b"plID" => {
 					let (code, content) = parse_data_inner(&mut cursor)?;
 
-					if (code == 21 || code == 74) && content.len() == 8 {
+					if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
+						&& content.len() == 8
+					{
 						tag.atoms.push(Atom {
 							ident: AtomIdent::Fourcc(*b"plID"),
 							data: AtomData::Unknown {
@@ -92,10 +101,10 @@ where
 
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	let value = match flags {
-		1 => AtomData::UTF8(String::from_utf8(content)?),
-		2 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
-		21 => AtomData::SignedInteger(parse_int(&content)?),
-		22 => AtomData::UnsignedInteger(parse_uint(&content)?),
+		UTF8 => AtomData::UTF8(String::from_utf8(content)?),
+		UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
+		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
 		code => AtomData::Unknown {
 			code,
 			data: content,
@@ -171,12 +180,12 @@ fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst) -> Result<()> {
 	let (mime_type, data) = match value {
 		AtomData::Unknown { code, data } => match code {
 			// Type 0 is implicit
-			0 => (MimeType::None, data),
+			RESERVED => (MimeType::None, data),
 			// GIF is deprecated
 			12 => (MimeType::Gif, data),
-			13 => (MimeType::Jpeg, data),
-			14 => (MimeType::Png, data),
-			27 => (MimeType::Bmp, data),
+			JPEG => (MimeType::Jpeg, data),
+			PNG => (MimeType::Png, data),
+			BMP => (MimeType::Bmp, data),
 			_ => {
 				return Err(LoftyError::new(ErrorKind::BadAtom(
 					"\"covr\" atom has an unknown type",

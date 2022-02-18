@@ -25,6 +25,11 @@ cfg_if::cfg_if! {
 		pub use atom_info::AtomIdent;
 		pub use ilst::atom::{Atom, AtomData};
 		pub use ilst::Ilst;
+
+		/// This module contains the codes for all of the [Well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
+		pub mod constants {
+			pub use super::ilst::constants::*;
+		}
 	}
 }
 
