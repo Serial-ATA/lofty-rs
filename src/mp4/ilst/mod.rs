@@ -3,12 +3,13 @@ pub(super) mod constants;
 pub(super) mod read;
 pub(crate) mod write;
 
+use super::constants::BE_SIGNED_INTEGER;
 use super::AtomIdent;
 use crate::error::{LoftyError, Result};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Accessor, Tag, TagIO, TagType};
-use atom::{Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
+use atom::{AdvisoryRating, Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -142,6 +143,34 @@ impl Ilst {
 			.retain(|a| !matches!(a.data(), AtomData::Picture(_)))
 	}
 
+	/// Returns the parental advisory rating according to the `rtng` atom
+	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
+		if let Some(Atom { data, .. }) = self.atom(&AtomIdent::Fourcc(*b"rtng")) {
+			let rating = match data {
+				AtomData::SignedInteger(si) => *si as u8,
+				AtomData::Unknown { data: c, .. } if !c.is_empty() => c[0],
+				_ => return None,
+			};
+
+			return Some(AdvisoryRating::from(rating));
+		}
+
+		None
+	}
+
+	/// Sets the advisory rating
+	pub fn set_advisory_rating(&mut self, advisory_rating: AdvisoryRating) {
+		let byte = advisory_rating.as_u8();
+
+		self.replace_atom(Atom {
+			ident: AtomIdent::Fourcc(*b"rtng"),
+			data: AtomData::Unknown {
+				code: BE_SIGNED_INTEGER,
+				data: vec![byte],
+			},
+		})
+	}
+
 	/// Returns the track number
 	pub fn track_number(&self) -> Option<u16> {
 		self.extract_number(*b"trkn", 4)
@@ -188,7 +217,8 @@ impl TagIO for Ilst {
 	}
 
 	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+		let mut f = OpenOptions::new().read(true).write(true).open(path)?;
+		self.save_to(&mut f)
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
@@ -410,8 +440,13 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 
 #[cfg(test)]
 mod tests {
-	use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
+	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst};
 	use crate::{ItemKey, Tag, TagIO, TagType};
+
+	fn read_ilst(path: &str) -> Ilst {
+		let tag = crate::tag_utils::test_utils::read_path(path);
+		super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap()
+	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
 		let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
@@ -481,8 +516,7 @@ mod tests {
 
 	#[test]
 	fn ilst_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
-		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
+		let parsed_tag = read_ilst("tests/tags/assets/test.ilst");
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
@@ -562,9 +596,7 @@ mod tests {
 
 	#[test]
 	fn issue_34() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/issue_34.ilst");
-
-		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
+		let ilst = read_ilst("tests/tags/assets/issue_34.ilst");
 
 		verify_atom(
 			&ilst,
@@ -579,5 +611,18 @@ mod tests {
 				data: 88888_u64.to_be_bytes().to_vec(),
 			},
 		)
+	}
+
+	#[test]
+	fn advisory_rating() {
+		let ilst = read_ilst("tests/tags/assets/advisory_rating.ilst");
+
+		verify_atom(
+			&ilst,
+			*b"\xa9ART",
+			&AtomData::UTF8(String::from("Foo artist")),
+		);
+
+		assert_eq!(ilst.advisory_rating(), Some(AdvisoryRating::Explicit));
 	}
 }
