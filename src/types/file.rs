@@ -1,6 +1,6 @@
 use super::properties::FileProperties;
 use super::tag::{Tag, TagIO, TagType};
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 
 use std::convert::TryInto;
 use std::ffi::OsStr;
@@ -271,28 +271,13 @@ impl FileType {
 		}
 	}
 
-	/// Attempts to extract a [`FileType`] from a path
-	///
-	/// # Errors
-	///
-	/// This will return [`ErrorKind::BadExtension`] if the extension didn't map to a `FileType`
-	pub fn from_path<P>(path: P) -> Result<Self>
+	/// Attempts to determine a [`FileType`] from a path
+	pub fn from_path<P>(path: P) -> Option<Self>
 	where
 		P: AsRef<Path>,
 	{
 		let ext = path.as_ref().extension();
-
-		ext.and_then(Self::from_ext).map_or_else(
-			|| {
-				let ext_err = match ext {
-					Some(ext) => ext.to_string_lossy().into_owned(),
-					None => String::new(),
-				};
-
-				Err(LoftyError::new(ErrorKind::BadExtension(ext_err)))
-			},
-			Ok,
-		)
+		ext.and_then(Self::from_ext)
 	}
 
 	/// Attempts to extract a [`FileType`] from a buffer
@@ -365,9 +350,9 @@ impl FileType {
 			79 if buf.len() >= 36 && &buf[..4] == b"OggS" => {
 				if &buf[29..35] == b"vorbis" {
 					return Some(Self::Vorbis);
-				} else if &buf[28..] == b"OpusHead" {
+				} else if &buf[28..36] == b"OpusHead" {
 					return Some(Self::Opus);
-				} else if &buf[28..] == b"Speex   " {
+				} else if &buf[28..36] == b"Speex   " {
 					return Some(Self::Speex);
 				}
 

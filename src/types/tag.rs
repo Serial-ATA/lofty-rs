@@ -104,12 +104,6 @@ pub trait TagIO: Accessor + Sized {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
 }
 
-pub(crate) trait ParsableTag: Sized {
-	type Err;
-
-	fn parse() -> std::result::Result<Self, Self::Err>;
-}
-
 #[derive(Clone)]
 /// Represents a parsed tag
 ///

@@ -126,7 +126,7 @@ impl Probe<BufReader<File>> {
 
 		Ok(Self {
 			inner: BufReader::new(File::open(path)?),
-			f_ty: FileType::from_path(path).ok(),
+			f_ty: FileType::from_path(path),
 		})
 	}
 }

@@ -17,9 +17,7 @@ pub type Result<T> = std::result::Result<T, LoftyError>;
 #[non_exhaustive]
 /// The types of errors that can occur
 pub enum ErrorKind {
-	// File extension/format related errors
-	/// Unsupported file extension
-	BadExtension(String),
+	// File format related errors
 	/// Unable to guess the format
 	UnknownFormat,
 
@@ -358,9 +356,6 @@ impl Display for LoftyError {
 			ErrorKind::Io(ref err) => write!(f, "{}", err),
 			ErrorKind::Alloc(ref err) => write!(f, "{}", err),
 
-			ErrorKind::BadExtension(ref ext) => {
-				write!(f, "Found unknown file extension \"{}\"", ext)
-			},
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
 			},
