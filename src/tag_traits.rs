@@ -79,7 +79,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// # Example
 	///
 	/// ```rust
-	/// use lofty::{Tag, TagExt, Accessor};
+	/// use lofty::{Accessor, Tag, TagExt};
 	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);

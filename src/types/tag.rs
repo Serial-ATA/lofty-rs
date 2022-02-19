@@ -53,7 +53,7 @@ macro_rules! impl_accessor {
 /// Accessing common items
 ///
 /// ```rust
-/// use lofty::{Tag, TagType, Accessor};
+/// use lofty::{Accessor, Tag, TagType};
 ///
 /// let tag = Tag::new(TagType::Id3v2);
 ///
@@ -68,8 +68,7 @@ macro_rules! impl_accessor {
 /// Getting an item of a known type
 ///
 /// ```rust
-/// use lofty::{Tag, TagType};
-/// use lofty::ItemKey;
+/// use lofty::{ItemKey, Tag, TagType};
 ///
 /// let tag = Tag::new(TagType::Id3v2);
 ///
@@ -83,8 +82,8 @@ macro_rules! impl_accessor {
 /// Converting between formats
 ///
 /// ```rust
-/// use lofty::{Tag, TagType};
 /// use lofty::id3::v2::Id3v2Tag;
+/// use lofty::{Tag, TagType};
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
