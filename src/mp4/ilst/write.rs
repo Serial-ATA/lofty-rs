@@ -43,21 +43,25 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 	// ilst is nested in udta.meta, so we need to check what atoms actually exist
 	if let Some(udta) = udta {
 		if let Some(meta) = nested_atom(&mut cursor, udta.len, b"meta")? {
-			// Skip version and flags
+			// Skip 4 bytes
+			// Version (1)
+			// Flags   (3)
 			cursor.seek(SeekFrom::Current(4))?;
-			let (replacement, range, existing_ilst_size) =
-				if let Some(ilst_existing) = nested_atom(&mut cursor, meta.len - 4, b"ilst")? {
-					let ilst_existing_size = ilst_existing.len;
 
-					let replacement = if remove_tag { Vec::new() } else { ilst };
+			let replacement;
+			let range;
+			let existing_ilst_size;
 
-					(
-						replacement,
-						ilst_existing.start as usize
-							..(ilst_existing.start + ilst_existing.len) as usize,
-						ilst_existing_size as u64,
-					)
-				} else {
+			let existing_ilst = nested_atom(&mut cursor, meta.len - 4, b"ilst")?;
+
+			match existing_ilst {
+				Some(existing) => {
+					replacement = if remove_tag { Vec::new() } else { ilst };
+
+					range = existing.start as usize..(existing.start + existing.len) as usize;
+					existing_ilst_size = existing.len as u64;
+				},
+				None => {
 					// Nothing to do
 					if remove_tag {
 						return Ok(());
@@ -65,8 +69,11 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 
 					let meta_end = (meta.start + meta.len) as usize;
 
-					(ilst, meta_end..meta_end, 0)
-				};
+					replacement = ilst;
+					range = meta_end..meta_end;
+					existing_ilst_size = 0;
+				},
+			}
 
 			existing_udta_size = udta.len;
 
@@ -88,7 +95,12 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 
 			existing_udta_size = udta.len;
 
-			let mut bytes = Cursor::new(vec![0, 0, 0, 0, b'm', b'e', b't', b'a']);
+			// `meta` + `ilst`
+			let capacity = 8 + ilst.len();
+			let buf = Vec::with_capacity(capacity);
+
+			let mut bytes = Cursor::new(buf);
+			bytes.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a'])?;
 
 			write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
 
@@ -105,9 +117,14 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 				.splice(udta.start as usize..udta.start as usize, bytes);
 		}
 	} else {
-		let mut bytes = Cursor::new(vec![
+		// `udta` + `meta` + `ilst`
+		let capacity = 16 + ilst.len();
+		let buf = Vec::with_capacity(capacity);
+
+		let mut bytes = Cursor::new(buf);
+		bytes.write_all(&[
 			0, 0, 0, 0, b'u', b'd', b't', b'a', 0, 0, 0, 0, b'm', b'e', b't', b'a',
-		]);
+		])?;
 
 		// udta size
 		write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
@@ -248,10 +265,32 @@ fn write_atom_data(value: &AtomDataRef<'_>, writer: &mut Cursor<Vec<u8>>) -> Res
 		AtomDataRef::UTF8(text) => write_data(1, text.as_bytes(), writer),
 		AtomDataRef::UTF16(text) => write_data(2, text.as_bytes(), writer),
 		AtomDataRef::Picture(pic) => write_picture(pic, writer),
-		AtomDataRef::SignedInteger(int) => write_data(21, int.to_be_bytes().as_ref(), writer),
-		AtomDataRef::UnsignedInteger(uint) => write_data(22, uint.to_be_bytes().as_ref(), writer),
+		AtomDataRef::SignedInteger(int) => write_signed_int(*int, writer),
+		AtomDataRef::UnsignedInteger(uint) => write_unsigned_int(*uint, writer),
 		AtomDataRef::Unknown { code, data } => write_data(*code, data, writer),
 	}
+}
+
+fn write_signed_int(int: i32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+	let start_pos = int.trailing_zeros() as usize;
+	write_int(21, int.to_be_bytes(), start_pos, writer)
+}
+
+fn write_unsigned_int(uint: u32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+	let start_pos = uint.trailing_zeros() as usize;
+	write_int(22, uint.to_be_bytes(), start_pos, writer)
+}
+
+fn write_int(
+	flags: u32,
+	bytes: [u8; 4],
+	mut start_pos: usize,
+	writer: &mut Cursor<Vec<u8>>,
+) -> Result<()> {
+	if start_pos == 4 {
+		start_pos = 0;
+	}
+	write_data(flags, &bytes[start_pos..], writer)
 }
 
 fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> {

@@ -25,6 +25,7 @@ impl Atom {
 	}
 }
 
+// TODO: Bool variant for the various flag atoms?
 #[derive(Debug, PartialEq, Clone)]
 /// The data of an atom
 ///
@@ -47,8 +48,18 @@ pub enum AtomData {
 	/// The type is read from the picture itself
 	Picture(Picture),
 	/// A big endian signed integer (1-4 bytes)
+	///
+	/// NOTE:
+	///
+	/// This will shrink the integer when writing
+	///
+	/// 255 will be written as `[255]` rather than `[0, 0, 0, 255]`
+	///
+	/// This behavior may be unexpected, use [`AtomData::Unknown`] if unsure
 	SignedInteger(i32),
 	/// A big endian unsigned integer (1-4 bytes)
+	///
+	/// NOTE: See [`AtomData::SignedInteger`]
 	UnsignedInteger(u32),
 	/// Unknown data
 	///

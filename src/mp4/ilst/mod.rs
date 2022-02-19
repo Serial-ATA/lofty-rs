@@ -3,7 +3,6 @@ pub(super) mod constants;
 pub(super) mod read;
 pub(crate) mod write;
 
-use super::constants::BE_SIGNED_INTEGER;
 use super::AtomIdent;
 use crate::error::{LoftyError, Result};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
@@ -164,10 +163,7 @@ impl Ilst {
 
 		self.replace_atom(Atom {
 			ident: AtomIdent::Fourcc(*b"rtng"),
-			data: AtomData::Unknown {
-				code: BE_SIGNED_INTEGER,
-				data: vec![byte],
-			},
+			data: AtomData::SignedInteger(i32::from(byte)),
 		})
 	}
 
