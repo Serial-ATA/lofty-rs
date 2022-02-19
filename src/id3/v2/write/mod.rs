@@ -29,10 +29,12 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 		Some(FileType::APE | FileType::MP3) => {},
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		Some(FileType::WAV) => {
-			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?)
+			tag.flags.footer = false;
+			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?);
 		},
 		Some(FileType::AIFF) => {
-			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?)
+			tag.flags.footer = false;
+			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?);
 		},
 		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
