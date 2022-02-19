@@ -287,7 +287,7 @@ fn write_int(
 	mut start_pos: usize,
 	writer: &mut Cursor<Vec<u8>>,
 ) -> Result<()> {
-	if start_pos == 4 {
+	if start_pos == 1 || start_pos == 4 {
 		start_pos = 0;
 	}
 	write_data(flags, &bytes[start_pos..], writer)
