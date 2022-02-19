@@ -169,6 +169,7 @@ pub mod mp3;
 pub mod mp4;
 pub mod ogg;
 mod probe;
+mod tag_traits;
 pub(crate) mod tag_utils;
 mod types;
 
@@ -180,7 +181,9 @@ pub use crate::types::file::{AudioFile, FileType, TaggedFile};
 pub use crate::types::item::{ItemKey, ItemValue, TagItem};
 pub use crate::types::picture::{MimeType, Picture, PictureType};
 pub use crate::types::properties::FileProperties;
-pub use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+pub use crate::types::tag::{Tag, TagType};
+
+pub use crate::tag_traits::{Accessor, TagExt};
 
 #[cfg(feature = "vorbis_comments")]
 pub use crate::types::picture::PictureInformation;

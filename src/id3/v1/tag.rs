@@ -1,7 +1,8 @@
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -110,7 +111,7 @@ impl Accessor for Id3v1Tag {
 	}
 }
 
-impl TagIO for Id3v1Tag {
+impl TagExt for Id3v1Tag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -278,7 +279,7 @@ impl<'a> Id3v1TagRef<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v1::Id3v1Tag;
-	use crate::{Tag, TagIO, TagType};
+	use crate::{Tag, TagExt, TagType};
 
 	#[test]
 	fn parse_id3v1() {

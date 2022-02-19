@@ -1,4 +1,4 @@
-use lofty::{Accessor, Probe, Tag, TagIO};
+use lofty::{Accessor, Probe, Tag, TagExt};
 
 use structopt::StructOpt;
 

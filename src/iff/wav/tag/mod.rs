@@ -2,8 +2,9 @@ pub(super) mod read;
 mod write;
 
 use crate::error::{LoftyError, Result};
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -98,7 +99,7 @@ impl RiffInfoList {
 	}
 }
 
-impl TagIO for RiffInfoList {
+impl TagExt for RiffInfoList {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -217,7 +218,7 @@ pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&st
 #[cfg(test)]
 mod tests {
 	use crate::iff::RiffInfoList;
-	use crate::{Tag, TagIO, TagType};
+	use crate::{Tag, TagExt, TagType};
 
 	use crate::iff::chunk::Chunks;
 	use byteorder::LittleEndian;

@@ -1,6 +1,7 @@
 use super::properties::FileProperties;
-use super::tag::{Tag, TagIO, TagType};
+use super::tag::{Tag, TagType};
 use crate::error::Result;
+use crate::tag_traits::TagExt;
 
 use std::convert::TryInto;
 use std::ffi::OsStr;

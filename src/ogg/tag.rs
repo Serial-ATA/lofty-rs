@@ -1,10 +1,11 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::ogg::write::OGGFormat;
 use crate::probe::Probe;
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::file::FileType;
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureInformation, PictureType};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
@@ -133,7 +134,7 @@ impl VorbisComments {
 	}
 }
 
-impl TagIO for VorbisComments {
+impl TagExt for VorbisComments {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -331,7 +332,7 @@ pub(crate) fn create_vorbis_comments_ref(
 #[cfg(test)]
 mod tests {
 	use crate::ogg::VorbisComments;
-	use crate::{Tag, TagIO, TagType};
+	use crate::{Tag, TagExt, TagType};
 
 	use std::io::Read;
 

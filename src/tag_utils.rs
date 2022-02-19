@@ -1,24 +1,23 @@
-#[cfg(feature = "ape")]
-use crate::ape::tag::ape_tag::ApeTagRef;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::types::file::FileType;
+use crate::types::item::ItemKey;
+use crate::types::tag::{Tag, TagType};
+use crate::{ape, iff, mp3, mp4, ogg};
+
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
+#[cfg(feature = "ape")]
+use ape::tag::ape_tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
-use crate::iff::aiff::tag::AiffTextChunksRef;
+use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
-use crate::iff::wav::tag::RiffInfoListRef;
+use iff::wav::tag::RiffInfoListRef;
 #[cfg(feature = "mp4_ilst")]
-use crate::mp4::ilst::IlstRef;
+use mp4::ilst::IlstRef;
 #[cfg(feature = "vorbis_comments")]
-use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
-
-use crate::{ape, iff, mp3, mp4, ogg};
-
-use crate::types::file::FileType;
-use crate::types::item::ItemKey;
-use crate::types::tag::{Tag, TagType};
+use ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 
 use std::fs::File;
 use std::io::Write;

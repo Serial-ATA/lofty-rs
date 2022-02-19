@@ -4,7 +4,7 @@ use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::{AiffTextChunks, RiffInfoList};
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
-use lofty::{Accessor, TagIO};
+use lofty::{Accessor, TagExt};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 

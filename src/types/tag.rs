@@ -2,33 +2,11 @@ use super::item::{ItemKey, ItemValue, TagItem};
 use super::picture::{Picture, PictureType};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::probe::Probe;
+use crate::tag_traits::{Accessor, TagExt};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
-
-macro_rules! accessor_trait {
-	($($name:ident),+) => {
-		/// Provides accessors for common items
-		pub trait Accessor {
-			paste::paste! {
-				$(
-					#[doc = "Gets the " $name]
-					fn $name(&self) -> Option<&str> { None }
-					#[doc = "Sets the " $name]
-					fn [<set_ $name>](&mut self, _value: String) {}
-					#[doc = "Removes the " $name]
-					fn [<remove_ $name>](&mut self) {}
-				)+
-			}
-		}
-	};
-}
-
-accessor_trait! {
-	artist, title,
-	album, genre
-}
 
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
@@ -56,54 +34,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-// TODO
-#[allow(missing_docs)]
-pub trait TagIO: Accessor + Sized {
-	type Err;
-
-	/// Whether the tag has any items
-	fn is_empty(&self) -> bool;
-
-	/// Save the tag to a path
-	///
-	/// # Errors
-	///
-	/// * Path doesn't exist
-	/// * Path is not writable
-	/// * See [`TagIO::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
-
-	/// Save the tag to a [`File`]
-	///
-	/// # Errors
-	///
-	/// * The file format could not be determined
-	/// * Attempting to write a tag to a format that does not support it.
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
-
-	#[allow(clippy::missing_errors_doc)]
-	/// Dump the tag to a writer
-	///
-	/// This will only write the tag, it will not produce a usable file.
-	fn dump_to<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err>;
-
-	/// Remove a tag from a [`Path`]
-	///
-	/// # Errors
-	///
-	/// See [`TagIO::remove_from`]
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
-
-	/// Remove a tag from a [`File`]
-	///
-	/// # Errors
-	///
-	/// * It is unable to guess the file format
-	/// * The format doesn't support the tag
-	/// * It is unable to write to the file
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
-}
-
 #[derive(Clone)]
 /// Represents a parsed tag
 ///
@@ -123,8 +53,10 @@ pub trait TagIO: Accessor + Sized {
 /// Accessing common items
 ///
 /// ```rust
-/// # use lofty::{Tag, TagType, Accessor};
-/// # let tag = Tag::new(TagType::Id3v2);
+/// use lofty::{Tag, TagType, Accessor};
+///
+/// let tag = Tag::new(TagType::Id3v2);
+///
 /// // There are multiple quick getter methods for common items
 ///
 /// let title = tag.title();
@@ -136,9 +68,10 @@ pub trait TagIO: Accessor + Sized {
 /// Getting an item of a known type
 ///
 /// ```rust
-/// # use lofty::{Tag, TagType};
-/// # let tag = Tag::new(TagType::Id3v2);
+/// use lofty::{Tag, TagType};
 /// use lofty::ItemKey;
+///
+/// let tag = Tag::new(TagType::Id3v2);
 ///
 /// // If the type of an item is known, there are getter methods
 /// // to prevent having to match against the value
@@ -150,8 +83,8 @@ pub trait TagIO: Accessor + Sized {
 /// Converting between formats
 ///
 /// ```rust
-/// use lofty::id3::v2::Id3v2Tag;
 /// use lofty::{Tag, TagType};
+/// use lofty::id3::v2::Id3v2Tag;
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
@@ -186,8 +119,8 @@ impl Tag {
 	pub fn new(tag_type: TagType) -> Self {
 		Self {
 			tag_type,
-			pictures: vec![],
-			items: vec![],
+			pictures: Vec::new(),
+			items: Vec::new(),
 		}
 	}
 
@@ -400,11 +333,11 @@ impl Tag {
 	}
 }
 
-impl TagIO for Tag {
+impl TagExt for Tag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
-		self.pictures.is_empty() && self.pictures.is_empty()
+		self.items.is_empty() && self.pictures.is_empty()
 	}
 
 	/// Save the `Tag` to a path

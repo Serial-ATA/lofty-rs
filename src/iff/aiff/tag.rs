@@ -1,7 +1,8 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
@@ -113,7 +114,7 @@ impl AiffTextChunks {
 	}
 }
 
-impl TagIO for AiffTextChunks {
+impl TagExt for AiffTextChunks {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -405,7 +406,7 @@ where
 #[cfg(test)]
 mod tests {
 	use crate::iff::{AiffTextChunks, Comment};
-	use crate::{ItemKey, ItemValue, Tag, TagIO, TagItem, TagType};
+	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
 	use std::io::Cursor;
 

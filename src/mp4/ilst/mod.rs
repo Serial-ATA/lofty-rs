@@ -5,9 +5,10 @@ pub(crate) mod write;
 
 use super::AtomIdent;
 use crate::error::{LoftyError, Result};
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 use atom::{AdvisoryRating, Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
@@ -205,7 +206,7 @@ impl Ilst {
 	}
 }
 
-impl TagIO for Ilst {
+impl TagExt for Ilst {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -437,7 +438,7 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst};
-	use crate::{ItemKey, Tag, TagIO, TagType};
+	use crate::{ItemKey, Tag, TagExt, TagType};
 
 	fn read_ilst(path: &str) -> Ilst {
 		let tag = crate::tag_utils::test_utils::read_path(path);

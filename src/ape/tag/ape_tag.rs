@@ -1,7 +1,8 @@
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -115,7 +116,7 @@ impl ApeTag {
 	}
 }
 
-impl TagIO for ApeTag {
+impl TagExt for ApeTag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -278,7 +279,7 @@ pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeIt
 mod tests {
 	use crate::ape::header::read_ape_header;
 	use crate::ape::{ApeItem, ApeTag};
-	use crate::{ItemValue, Tag, TagIO, TagType};
+	use crate::{ItemValue, Tag, TagExt, TagType};
 
 	use std::io::Cursor;
 

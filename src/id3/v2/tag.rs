@@ -6,9 +6,10 @@ use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
+use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Accessor, Tag, TagIO, TagType};
+use crate::types::tag::{Tag, TagType};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -269,7 +270,7 @@ impl Id3v2Tag {
 	}
 }
 
-impl TagIO for Id3v2Tag {
+impl TagExt for Id3v2Tag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -448,7 +449,7 @@ mod tests {
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag_utils::test_utils::read_path;
-	use crate::{MimeType, Picture, PictureType, Tag, TagIO, TagType};
+	use crate::{MimeType, Picture, PictureType, Tag, TagExt, TagType};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag_utils::test_utils::read_path(path);
