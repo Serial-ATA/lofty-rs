@@ -98,7 +98,7 @@ impl AudioFile for ApeFile {
 		false
 	}
 
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "ape")]
 			TagType::Ape => self.ape_tag.is_some(),

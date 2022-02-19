@@ -8,7 +8,7 @@ fn read() {
 	let file =
 		lofty::read_from_path("tests/files/assets/minimal/wav_format_pcm.wav", false).unwrap();
 
-	assert_eq!(file.file_type(), &FileType::WAV);
+	assert_eq!(file.file_type(), FileType::WAV);
 
 	// Verify the ID3v2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -23,7 +23,7 @@ fn write() {
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
-	assert_eq!(tagged_file.file_type(), &FileType::WAV);
+	assert_eq!(tagged_file.file_type(), FileType::WAV);
 
 	// ID3v2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");

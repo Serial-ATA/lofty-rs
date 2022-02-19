@@ -30,7 +30,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// Checks if the file contains any tags
 	fn contains_tag(&self) -> bool;
 	/// Checks if the file contains the given [`TagType`]
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool;
+	fn contains_tag_type(&self, tag_type: TagType) -> bool;
 }
 
 /// A generic representation of a file
@@ -47,8 +47,8 @@ pub struct TaggedFile {
 
 impl TaggedFile {
 	/// Returns the file's [`FileType`]
-	pub fn file_type(&self) -> &FileType {
-		&self.ty
+	pub fn file_type(&self) -> FileType {
+		self.ty
 	}
 
 	/// Returns the file's [`FileProperties`]
@@ -70,17 +70,17 @@ impl TaggedFile {
 
 	/// Determines whether the file supports the given [`TagType`]
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		self.ty.supports_tag_type(&tag_type)
+		self.ty.supports_tag_type(tag_type)
 	}
 
 	/// Get a reference to a specific [`TagType`]
 	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
-		self.tags.iter().find(|i| i.tag_type() == tag_type)
+		self.tags.iter().find(|i| i.tag_type() == *tag_type)
 	}
 
 	/// Get a mutable reference to a specific [`TagType`]
 	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
-		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
+		self.tags.iter_mut().find(|i| i.tag_type() == *tag_type)
 	}
 
 	/// Returns the primary tag
@@ -114,7 +114,7 @@ impl TaggedFile {
 	///
 	/// If a tag is replaced, it will be returned
 	pub fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
-		let tag_type = *tag.tag_type();
+		let tag_type = tag.tag_type();
 
 		if self.supports_tag_type(tag_type) {
 			let ret = self.remove_tag(tag_type);
@@ -132,7 +132,7 @@ impl TaggedFile {
 	pub fn remove_tag(&mut self, tag_type: TagType) -> Option<Tag> {
 		self.tags
 			.iter()
-			.position(|t| t.tag_type() == &tag_type)
+			.position(|t| t.tag_type() == tag_type)
 			.map(|pos| self.tags.remove(pos))
 	}
 
@@ -225,28 +225,28 @@ impl FileType {
 	}
 
 	/// Returns if the target `FileType` supports a [`TagType`]
-	pub fn supports_tag_type(&self, tag_type: &TagType) -> bool {
+	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
 			#[cfg(feature = "id3v2")]
 			FileType::AIFF | FileType::APE | FileType::MP3 | FileType::WAV
-				if tag_type == &TagType::Id3v2 =>
+				if tag_type == TagType::Id3v2 =>
 			{
 				true
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			FileType::AIFF if tag_type == &TagType::AiffText => true,
+			FileType::AIFF if tag_type == TagType::AiffText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MP3 if tag_type == &TagType::Id3v1 => true,
+			FileType::APE | FileType::MP3 if tag_type == TagType::Id3v1 => true,
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MP3 if tag_type == &TagType::Ape => true,
+			FileType::APE | FileType::MP3 if tag_type == TagType::Ape => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
-				tag_type == &TagType::VorbisComments
+				tag_type == TagType::VorbisComments
 			},
 			#[cfg(feature = "mp4_ilst")]
-			FileType::MP4 => tag_type == &TagType::Mp4Ilst,
+			FileType::MP4 => tag_type == TagType::Mp4Ilst,
 			#[cfg(feature = "riff_info_list")]
-			FileType::WAV => tag_type == &TagType::RiffInfo,
+			FileType::WAV => tag_type == TagType::RiffInfo,
 			_ => false,
 		}
 	}

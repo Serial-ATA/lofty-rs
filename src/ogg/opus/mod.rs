@@ -61,8 +61,8 @@ impl AudioFile for OpusFile {
 		true
 	}
 
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
-		tag_type == &TagType::VorbisComments
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
+		tag_type == TagType::VorbisComments
 	}
 }
 

@@ -137,7 +137,7 @@ pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Res
 		.chunks_exact(2)
 		.map_while(|c| match c {
 			[0, 0] => None,
-			_ => Some(endianness(c.try_into().unwrap())),
+			_ => Some(endianness(c.try_into().unwrap())), // Infallible
 		})
 		.collect();
 

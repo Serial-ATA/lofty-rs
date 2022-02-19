@@ -23,22 +23,22 @@ impl Moov {
 	where
 		R: Read + Seek,
 	{
-		let mut moov = (false, None);
+		let mut moov = None;
 
 		while let Ok(atom) = AtomInfo::read(data) {
 			if atom.ident == AtomIdent::Fourcc(*b"moov") {
-				moov = (true, Some(atom));
+				moov = Some(atom);
 				break;
 			}
 
 			skip_unneeded(data, atom.extended, atom.len)?;
 		}
 
-		if !moov.0 {
-			return Err(FileDecodingError::new(FileType::MP4, "No \"moov\" atom found").into());
+		if let Some(moov) = moov {
+			Ok(moov)
+		} else {
+			Err(FileDecodingError::new(FileType::MP4, "No \"moov\" atom found").into())
 		}
-
-		Ok(moov.1.unwrap())
 	}
 
 	pub(crate) fn parse<R>(data: &mut R, read_properties: bool) -> Result<Self>

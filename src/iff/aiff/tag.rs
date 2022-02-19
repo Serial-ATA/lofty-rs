@@ -383,7 +383,7 @@ where
 			chunks_remove.sort_unstable();
 			chunks_remove.reverse();
 
-			let first = chunks_remove.pop().unwrap();
+			let first = chunks_remove.pop().unwrap(); // Infallible
 
 			for (s, e) in &chunks_remove {
 				file_bytes.drain(*s as usize..*e as usize);

@@ -24,7 +24,7 @@ fn main() {
 		let tag_type = tag.tag_type();
 
 		println!("{}: {:?}", num, tag_type);
-		available_tag_types.push(*tag_type);
+		available_tag_types.push(tag_type);
 	}
 
 	let mut to_remove = None;

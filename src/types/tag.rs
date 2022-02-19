@@ -130,8 +130,8 @@ impl Tag {
 	}
 
 	/// Returns the [`TagType`]
-	pub fn tag_type(&self) -> &TagType {
-		&self.tag_type
+	pub fn tag_type(&self) -> TagType {
+		self.tag_type
 	}
 
 	/// Returns the number of [`TagItem`]s
@@ -440,7 +440,7 @@ impl TagType {
 			None => return Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		};
 
-		if !file_type.supports_tag_type(self) {
+		if !file_type.supports_tag_type(*self) {
 			return Err(LoftyError::new(ErrorKind::UnsupportedTag));
 		}
 

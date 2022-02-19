@@ -62,9 +62,9 @@ impl AudioFile for FlacFile {
 	}
 
 	#[allow(unused_variables)]
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		#[cfg(feature = "vorbis_comments")]
-		return tag_type == &TagType::VorbisComments && self.vorbis_comments.is_some();
+		return tag_type == TagType::VorbisComments && self.vorbis_comments.is_some();
 
 		#[cfg(not(feature = "vorbis_comments"))]
 		return false;

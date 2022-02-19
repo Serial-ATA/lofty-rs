@@ -23,7 +23,9 @@ where
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
-	Ok(u32::from_be_bytes(id[4..8].try_into().unwrap()))
+	Ok(u32::from_be_bytes(
+		id[4..8].try_into().unwrap(), // Infallible
+	))
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
@@ -120,30 +122,34 @@ where
 		}
 	}
 
-	let properties = if read_properties {
-		if comm.is_none() {
-			return Err(FileDecodingError::new(
-				FileType::AIFF,
-				"File does not contain a \"COMM\" chunk",
-			)
-			.into());
-		}
+	let properties;
+	if read_properties {
+		match comm {
+			Some(comm) => {
+				if stream_len == 0 {
+					return Err(FileDecodingError::new(
+						FileType::AIFF,
+						"File does not contain a \"SSND\" chunk",
+					)
+					.into());
+				}
 
-		if stream_len == 0 {
-			return Err(FileDecodingError::new(
-				FileType::AIFF,
-				"File does not contain a \"SSND\" chunk",
-			)
-			.into());
+				properties = super::properties::read_properties(
+					&mut &*comm,
+					stream_len,
+					data.seek(SeekFrom::Current(0))?,
+				)?;
+			},
+			None => {
+				return Err(FileDecodingError::new(
+					FileType::AIFF,
+					"File does not contain a \"COMM\" chunk",
+				)
+				.into());
+			},
 		}
-
-		super::properties::read_properties(
-			&mut &*comm.unwrap(),
-			stream_len,
-			data.seek(SeekFrom::Current(0))?,
-		)?
 	} else {
-		FileProperties::default()
+		properties = FileProperties::default();
 	};
 
 	Ok(AiffFile {

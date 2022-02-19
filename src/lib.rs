@@ -76,11 +76,11 @@
 //! let tagged_file = read_from_path("tests/files/assets/minimal/full_test.mp3", false)?;
 //!
 //! // Get the primary tag (ID3v2 in this case)
-//! let id3v2 = tagged_file.primary_tag().unwrap();
+//! let id3v2 = tagged_file.primary_tag();
 //!
 //! // If the primary tag doesn't exist, or the tag types
 //! // don't matter, the first tag can be retrieved
-//! let unknown_first_tag = tagged_file.first_tag().unwrap();
+//! let unknown_first_tag = tagged_file.first_tag();
 //! # Ok(())
 //! # }
 //! ```
@@ -102,8 +102,8 @@
 //! assert_eq!(mpeg_file.properties().channels(), 2);
 //!
 //! // Here we have a file with multiple tags
-//! assert!(mpeg_file.contains_tag_type(&TagType::Id3v2));
-//! assert!(mpeg_file.contains_tag_type(&TagType::Ape));
+//! assert!(mpeg_file.contains_tag_type(TagType::Id3v2));
+//! assert!(mpeg_file.contains_tag_type(TagType::Ape));
 //! # Ok(())
 //! # }
 //! ```

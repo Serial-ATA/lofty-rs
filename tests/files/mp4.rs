@@ -8,7 +8,7 @@ fn read() {
 	let file =
 		lofty::read_from_path("tests/files/assets/minimal/m4a_codec_aac.m4a", false).unwrap();
 
-	assert_eq!(file.file_type(), &FileType::MP4);
+	assert_eq!(file.file_type(), FileType::MP4);
 
 	// Verify the ilst tag
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -20,7 +20,7 @@ fn write() {
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
-	assert_eq!(tagged_file.file_type(), &FileType::MP4);
+	assert_eq!(tagged_file.file_type(), FileType::MP4);
 
 	// ilst
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Foo artist", 1 => file, "Bar artist");

@@ -73,7 +73,7 @@ impl AudioFile for AiffFile {
 		false
 	}
 
-	fn contains_tag_type(&self, tag_type: &TagType) -> bool {
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "id3v2")]
 			TagType::Id3v2 => self.id3v2_tag.is_some(),

@@ -7,7 +7,7 @@ fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = lofty::read_from_path("tests/files/assets/minimal/full_test.ape", false).unwrap();
 
-	assert_eq!(file.file_type(), &FileType::APE);
+	assert_eq!(file.file_type(), FileType::APE);
 
 	// Verify the APEv2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -26,7 +26,7 @@ fn write() {
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
-	assert_eq!(tagged_file.file_type(), &FileType::APE);
+	assert_eq!(tagged_file.file_type(), FileType::APE);
 
 	// APEv2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");

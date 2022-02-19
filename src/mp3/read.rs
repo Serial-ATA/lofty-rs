@@ -83,7 +83,7 @@ where
 			},
 			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {
-				// seek back the length of the temporary header buffer, to include them
+				// Seek back the length of the temporary header buffer, to include them
 				// in the frame sync search
 				#[allow(clippy::neg_multiply)]
 				let start_of_search_area = reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
@@ -102,7 +102,8 @@ where
 					// We have found the first frame
 					break;
 				}
-				// the search for sync bits was unsuccessful
+
+				// The search for sync bits was unsuccessful
 				return Err(FileDecodingError::new(
 					FileType::MP3,
 					"File contains an invalid frame",

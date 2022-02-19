@@ -96,7 +96,7 @@ where
 		blocks_remove.sort_unstable();
 		blocks_remove.reverse();
 
-		let first = blocks_remove.pop().unwrap();
+		let first = blocks_remove.pop().unwrap(); // Infallible
 
 		for (s, e) in &blocks_remove {
 			file_bytes.drain(*s as usize..*e as usize);

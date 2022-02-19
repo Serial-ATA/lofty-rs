@@ -31,7 +31,9 @@ where
 		);
 	}
 
-	Ok(u32::from_le_bytes(id[4..8].try_into().unwrap()))
+	Ok(u32::from_le_bytes(
+		id[4..8].try_into().unwrap(), // Infallible
+	))
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>

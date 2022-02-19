@@ -7,12 +7,12 @@ use std::io::{Seek, SeekFrom, Write};
 
 #[test]
 fn opus_read() {
-	read("tests/files/assets/minimal/full_test.opus", &FileType::Opus)
+	read("tests/files/assets/minimal/full_test.opus", FileType::Opus)
 }
 
 #[test]
 fn opus_write() {
-	write("tests/files/assets/minimal/full_test.opus", &FileType::Opus)
+	write("tests/files/assets/minimal/full_test.opus", FileType::Opus)
 }
 
 #[test]
@@ -26,12 +26,12 @@ fn opus_remove() {
 #[test]
 fn flac_read() {
 	// FLAC does **not** require a Vorbis comment block be present, this file has one
-	read("tests/files/assets/minimal/full_test.flac", &FileType::FLAC)
+	read("tests/files/assets/minimal/full_test.flac", FileType::FLAC)
 }
 
 #[test]
 fn flac_write() {
-	write("tests/files/assets/minimal/full_test.flac", &FileType::FLAC)
+	write("tests/files/assets/minimal/full_test.flac", FileType::FLAC)
 }
 
 #[test]
@@ -44,18 +44,12 @@ fn flac_remove() {
 
 #[test]
 fn vorbis_read() {
-	read(
-		"tests/files/assets/minimal/full_test.ogg",
-		&FileType::Vorbis,
-	)
+	read("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis)
 }
 
 #[test]
 fn vorbis_write() {
-	write(
-		"tests/files/assets/minimal/full_test.ogg",
-		&FileType::Vorbis,
-	)
+	write("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis)
 }
 
 #[test]
@@ -68,12 +62,12 @@ fn vorbis_remove() {
 
 #[test]
 fn speex_read() {
-	read("tests/files/assets/minimal/full_test.spx", &FileType::Speex)
+	read("tests/files/assets/minimal/full_test.spx", FileType::Speex)
 }
 
 #[test]
 fn speex_write() {
-	write("tests/files/assets/minimal/full_test.spx", &FileType::Speex)
+	write("tests/files/assets/minimal/full_test.spx", FileType::Speex)
 }
 
 #[test]
@@ -84,7 +78,7 @@ fn speex_remove() {
 	)
 }
 
-fn read(path: &str, file_type: &FileType) {
+fn read(path: &str, file_type: FileType) {
 	let file = lofty::read_from_path(path, false).unwrap();
 
 	assert_eq!(file.file_type(), file_type);
@@ -92,7 +86,7 @@ fn read(path: &str, file_type: &FileType) {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 2);
 }
 
-fn write(path: &str, file_type: &FileType) {
+fn write(path: &str, file_type: FileType) {
 	let mut file = temp_file!(path);
 
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
