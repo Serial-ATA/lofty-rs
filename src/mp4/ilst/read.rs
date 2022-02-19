@@ -42,10 +42,10 @@ where
 				b"gnre" => {
 					let content = parse_data(&mut cursor)?;
 
-					if let AtomData::Unknown {
+					if let Some(AtomData::Unknown {
 						code: BE_UNSIGNED_INTEGER | 0,
 						data,
-					} = content
+					}) = content
 					{
 						if data.len() >= 2 {
 							let index = data[1] as usize;
@@ -64,18 +64,18 @@ where
 				// Special case the "Album ID", as it has the code "BE signed integer" (21), but
 				// must be interpreted as a "BE 64-bit Signed Integer" (74)
 				b"plID" => {
-					let (code, content) = parse_data_inner(&mut cursor)?;
-
-					if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
-						&& content.len() == 8
-					{
-						tag.atoms.push(Atom {
-							ident: AtomIdent::Fourcc(*b"plID"),
-							data: AtomData::Unknown {
-								code,
-								data: content,
-							},
-						})
+					if let Some((code, content)) = parse_data_inner(&mut cursor)? {
+						if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
+							&& content.len() == 8
+						{
+							tag.atoms.push(Atom {
+								ident: AtomIdent::Fourcc(*b"plID"),
+								data: AtomData::Unknown {
+									code,
+									data: content,
+								},
+							})
+						}
 					}
 
 					continue;
@@ -85,36 +85,38 @@ where
 			ident => ident,
 		};
 
-		let data = parse_data(&mut cursor)?;
-
-		tag.atoms.push(Atom { ident, data })
+		if let Some(data) = parse_data(&mut cursor)? {
+			tag.atoms.push(Atom { ident, data })
+		}
 	}
 
 	Ok(tag)
 }
 
-fn parse_data<R>(data: &mut R) -> Result<AtomData>
+fn parse_data<R>(data: &mut R) -> Result<Option<AtomData>>
 where
 	R: Read + Seek,
 {
-	let (flags, content) = parse_data_inner(data)?;
+	if let Some((flags, content)) = parse_data_inner(data)? {
+		// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
+		let value = match flags {
+			UTF8 => AtomData::UTF8(String::from_utf8(content)?),
+			UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+			BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
+			BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
+			code => AtomData::Unknown {
+				code,
+				data: content,
+			},
+		};
 
-	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
-	let value = match flags {
-		UTF8 => AtomData::UTF8(String::from_utf8(content)?),
-		UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
-		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
-		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
-		code => AtomData::Unknown {
-			code,
-			data: content,
-		},
-	};
+		return Ok(Some(value));
+	}
 
-	Ok(value)
+	Ok(None)
 }
 
-fn parse_data_inner<R>(data: &mut R) -> Result<(u32, Vec<u8>)>
+fn parse_data_inner<R>(data: &mut R) -> Result<Option<(u32, Vec<u8>)>>
 where
 	R: Read + Seek,
 {
@@ -140,10 +142,16 @@ where
 	// We don't care about the locale
 	data.seek(SeekFrom::Current(4))?;
 
-	let mut content = try_vec![0; (atom.len - 16) as usize];
+	let content_len = (atom.len - 16) as usize;
+	if content_len == 0 {
+		// We won't add empty atoms
+		return Ok(None);
+	}
+
+	let mut content = try_vec![0; content_len];
 	data.read_exact(&mut content)?;
 
-	Ok((flags, content))
+	Ok(Some((flags, content)))
 }
 
 fn parse_uint(bytes: &[u8]) -> Result<u32> {
@@ -175,39 +183,39 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 }
 
 fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst) -> Result<()> {
-	let value = parse_data(reader)?;
-
-	let (mime_type, data) = match value {
-		AtomData::Unknown { code, data } => match code {
-			// Type 0 is implicit
-			RESERVED => (MimeType::None, data),
-			// GIF is deprecated
-			12 => (MimeType::Gif, data),
-			JPEG => (MimeType::Jpeg, data),
-			PNG => (MimeType::Png, data),
-			BMP => (MimeType::Bmp, data),
+	if let Some(value) = parse_data(reader)? {
+		let (mime_type, data) = match value {
+			AtomData::Unknown { code, data } => match code {
+				// Type 0 is implicit
+				RESERVED => (MimeType::None, data),
+				// GIF is deprecated
+				12 => (MimeType::Gif, data),
+				JPEG => (MimeType::Jpeg, data),
+				PNG => (MimeType::Png, data),
+				BMP => (MimeType::Bmp, data),
+				_ => {
+					return Err(LoftyError::new(ErrorKind::BadAtom(
+						"\"covr\" atom has an unknown type",
+					)))
+				},
+			},
 			_ => {
 				return Err(LoftyError::new(ErrorKind::BadAtom(
 					"\"covr\" atom has an unknown type",
 				)))
 			},
-		},
-		_ => {
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"\"covr\" atom has an unknown type",
-			)))
-		},
-	};
+		};
 
-	tag.atoms.push(Atom {
-		ident: AtomIdent::Fourcc(*b"covr"),
-		data: AtomData::Picture(Picture {
-			pic_type: PictureType::Other,
-			mime_type,
-			description: None,
-			data: Cow::from(data),
-		}),
-	});
+		tag.atoms.push(Atom {
+			ident: AtomIdent::Fourcc(*b"covr"),
+			data: AtomData::Picture(Picture {
+				pic_type: PictureType::Other,
+				mime_type,
+				description: None,
+				data: Cow::from(data),
+			}),
+		});
+	}
 
 	Ok(())
 }

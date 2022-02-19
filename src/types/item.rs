@@ -230,6 +230,7 @@ gen_map! (
 	"disk"								  => DiscTotal,
 	"trkn"								  => TrackNumber,
 	"trkn"								  => TrackTotal,
+	"rate"								  => Popularimeter,
 	"rtng"								  => ParentalAdvisory,
 	"\u{a9}day"							  => RecordingDate,
 	"----:com.apple.iTunes:ISRC"		  => ISRC,
