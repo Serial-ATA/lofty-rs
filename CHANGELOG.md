@@ -12,15 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `doc_cfg` feature for docs.rs
 - Fallible allocation with `ErrorKind::Alloc` to help prevent OOM
 - New dependency: `cfg-if`
-- Added `#[non_exhaustive]` to `MimeType`
-- Added `#[non_exhaustive]` to `PictureType`
-- Added `#[non_exhaustive]` to `Mp4Codec`
 - **MP3**: Emphasis struct (`mp3::Emphasis`) for use in `Mp3Properties`
 - **ID3v2**: Respect the footer flag (`id3::v2::Id3v2TagFlags::footer`) when writing
 - **MP4**: Constants for all well-known data types (`mp4::constants`)
 - **MP4**: Support `rtng` (Parental advisory) atom, with corresponding `mp4::AdvisoryRating` enum
 
 ### Changed
+- Added `#[non_exhaustive]` to `MimeType`
+- Added `#[non_exhaustive]` to `PictureType`
+- Added `#[non_exhaustive]` to `Mp4Codec`
 - **APE**: Clarify why ID3v2 is read only
 - **MP3**: No longer error on missing Xing/VBRI header when reading properties
 - **MP3**: Read the entire MPEG frame header, which is exposed in `Mp3Properties`
