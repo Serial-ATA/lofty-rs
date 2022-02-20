@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Panic in `Mp4File::read_from` ([commit](https://github.com/Serial-ATA/lofty-rs/commit/9e18616a6882c659ba2d5ca6bdad9bf41171135d))
 - **WAV/AIFF**: Chunk reading now makes use of fallible allocation, preventing OOM
 - **ID3v2**: Text is properly encoded when writing
+- **ID3v2**: `MVNM` and `MVIN` frames are now treated as text frames
 - **MP4**: `plID` atom is properly treated as a 64-bit signed integer ([issue](https://github.com/Serial-ATA/lofty-rs/issues/34))
 - **MP4**: `rate` and `rtng` now map to the correct `ItemKey`
 - **MP4**: Integer pairs are now written correctly
