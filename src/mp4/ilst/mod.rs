@@ -68,15 +68,17 @@ macro_rules! impl_accessor {
 ///
 /// ### To `Tag`
 ///
-/// When converting to [`Tag`], only atoms with a value of [`AtomData::UTF8`] and [`AtomData::UTF16`], as
-/// well as pictures, will be preserved.
+/// When converting to [`Tag`], only atoms with a value of [`AtomData::UTF8`] and [`AtomData::UTF16`],
+/// with the exception of the `trkn` and `disk` atoms, as well as pictures, will be preserved.
 ///
 /// Do note, all pictures will be [`PictureType::Other`](crate::PictureType::Other)
 ///
 /// ### From `Tag`
 ///
 /// When converting from [`Tag`], only items with a value of [`ItemValue::Text`](crate::ItemValue::Text), as
-/// well as pictures, will be preserved
+/// well as pictures, will be preserved.
+///
+/// An attempt will be made to create the `TrackNumber/TrackTotal` (trkn) and `DiscNumber/DiscTotal` (disk) pairs.
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
 }
@@ -311,7 +313,7 @@ impl From<Tag> for Ilst {
 						ident: AtomIdent::Fourcc(ident),
 						data: AtomData::Unknown {
 							code: 0,
-							data: vec![0, 0, current[0], current[1], total[0], total[1]],
+							data: vec![0, 0, current[0], current[1], total[0], total[1], 0, 0],
 						},
 					})
 				},
@@ -578,7 +580,7 @@ mod tests {
 			*b"trkn",
 			&AtomData::Unknown {
 				code: 0,
-				data: vec![0, 0, 0, 1, 0, 0],
+				data: vec![0, 0, 0, 1, 0, 0, 0, 0],
 			},
 		);
 		verify_atom(
@@ -586,7 +588,7 @@ mod tests {
 			*b"disk",
 			&AtomData::Unknown {
 				code: 0,
-				data: vec![0, 0, 0, 1, 0, 2],
+				data: vec![0, 0, 0, 1, 0, 2, 0, 0],
 			},
 		)
 	}

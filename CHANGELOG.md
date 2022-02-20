@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: Text is properly encoded when writing
 - **MP4**: `plID` atom is properly treated as a 64-bit signed integer ([issue](https://github.com/Serial-ATA/lofty-rs/issues/34))
 - **MP4**: `rate` and `rtng` now map to the correct `ItemKey`
+- **MP4**: Integer pairs are now written correctly
 - `TagType` and `FileType` are no longer taken by reference in any method
 
 ### Removed
