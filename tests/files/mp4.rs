@@ -27,6 +27,7 @@ fn write() {
 
 	// Now reread the file
 	file.seek(SeekFrom::Start(0)).unwrap();
+
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Bar artist", 1 => file, "Foo artist");

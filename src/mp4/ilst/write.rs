@@ -1,8 +1,10 @@
 use super::{AtomDataRef, IlstRef};
-use crate::error::{FileEncodingError, Result};
+use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
+use crate::macros::try_vec;
+use crate::mp4::atom_info::{AtomIdent, AtomInfo};
 use crate::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
-use crate::mp4::read::{nested_atom, verify_mp4};
+use crate::mp4::read::{atom_tree, nested_atom, verify_mp4};
 use crate::types::file::FileType;
 use crate::types::picture::{MimeType, Picture};
 
@@ -36,117 +38,79 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 	}
 
 	// Total size of new atoms
-	let new_udta_size;
+	let mut new_udta_size;
 	// Size of the existing udta atom
 	let mut existing_udta_size = 0;
 
 	// ilst is nested in udta.meta, so we need to check what atoms actually exist
 	if let Some(udta) = udta {
-		if let Some(meta) = nested_atom(&mut cursor, udta.len, b"meta")? {
-			// Skip 4 bytes
-			// Version (1)
-			// Flags   (3)
-			cursor.seek(SeekFrom::Current(4))?;
+		existing_udta_size = udta.len;
+		new_udta_size = existing_udta_size;
 
-			let replacement;
-			let range;
-			let existing_ilst_size;
+		let meta = nested_atom(&mut cursor, udta.len, b"meta")?;
+		match meta {
+			Some(meta) => {
+				// Skip 4 bytes
+				// Version (1)
+				// Flags   (3)
+				cursor.seek(SeekFrom::Current(4))?;
 
-			let existing_ilst = nested_atom(&mut cursor, meta.len - 4, b"ilst")?;
-
-			match existing_ilst {
-				Some(existing) => {
-					replacement = if remove_tag { Vec::new() } else { ilst };
-
-					range = existing.start as usize..(existing.start + existing.len) as usize;
-					existing_ilst_size = existing.len as u64;
-				},
-				None => {
-					// Nothing to do
-					if remove_tag {
-						return Ok(());
-					}
-
-					let meta_end = (meta.start + meta.len) as usize;
-
-					replacement = ilst;
-					range = meta_end..meta_end;
-					existing_ilst_size = 0;
-				},
-			}
-
-			existing_udta_size = udta.len;
-
-			let new_meta_size = (meta.len - existing_ilst_size) + replacement.len() as u64;
-			new_udta_size = (udta.len - meta.len) + new_meta_size;
-
-			cursor.get_mut().splice(range, replacement);
-
-			cursor.seek(SeekFrom::Start(meta.start))?;
-			write_size(meta.start, new_meta_size, meta.extended, &mut cursor)?;
-
-			cursor.seek(SeekFrom::Start(udta.start))?;
-			write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
-		} else {
+				// We can use the existing `udta` and `meta` atoms
+				save_to_existing(
+					&mut cursor,
+					(meta, udta),
+					&mut new_udta_size,
+					ilst,
+					remove_tag,
+				)?
+			},
 			// Nothing to do
-			if remove_tag {
-				return Ok(());
-			}
+			None if remove_tag => return Ok(()),
+			// We have to create the `meta` atom
+			None => {
+				existing_udta_size = udta.len;
 
-			existing_udta_size = udta.len;
+				// `meta` (12) + `ilst`
+				let capacity = 12 + ilst.len();
+				let buf = Vec::with_capacity(capacity);
 
-			// `meta` + `ilst`
-			let capacity = 8 + ilst.len();
-			let buf = Vec::with_capacity(capacity);
+				let mut bytes = Cursor::new(buf);
+				create_meta(&mut bytes, &ilst)?;
 
-			let mut bytes = Cursor::new(buf);
-			bytes.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a'])?;
+				let bytes = bytes.into_inner();
 
-			write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
+				new_udta_size = udta.len + bytes.len() as u64;
 
-			bytes.write_all(&ilst)?;
-			let bytes = bytes.into_inner();
+				cursor.seek(SeekFrom::Start(udta.start))?;
+				write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
 
-			new_udta_size = udta.len + bytes.len() as u64;
-
-			cursor.seek(SeekFrom::Start(udta.start))?;
-			write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
-
-			cursor
-				.get_mut()
-				.splice(udta.start as usize..udta.start as usize, bytes);
+				cursor
+					.get_mut()
+					.splice(udta.start as usize..udta.start as usize, bytes);
+			},
 		}
 	} else {
-		// `udta` + `meta` + `ilst`
-		let capacity = 16 + ilst.len();
+		// We have to create the `udta` atom
+
+		// `udta` + `meta` (12) + `hdlr` (33) + `ilst`
+		let capacity = 53 + ilst.len();
 		let buf = Vec::with_capacity(capacity);
 
 		let mut bytes = Cursor::new(buf);
-		bytes.write_all(&[
-			0, 0, 0, 0, b'u', b'd', b't', b'a', 0, 0, 0, 0, b'm', b'e', b't', b'a',
-		])?;
+		bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
+
+		create_meta(&mut bytes, &ilst)?;
 
 		// udta size
+		bytes.seek(SeekFrom::Start(0))?;
 		write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
-
-		// meta size
-		write_size(
-			bytes.seek(SeekFrom::Current(0))?,
-			ilst.len() as u64,
-			false,
-			&mut bytes,
-		)?;
-
-		bytes.seek(SeekFrom::End(0))?;
-		bytes.write_all(&ilst)?;
 
 		let bytes = bytes.into_inner();
 
 		new_udta_size = bytes.len() as u64;
 
-		cursor
-			.get_mut()
-			.splice((moov.start + 8) as usize..(moov.start + 8) as usize, bytes);
+		let udta_pos = (moov.start + 8) as usize;
+		cursor.get_mut().splice(udta_pos..udta_pos, bytes);
 	}
 
 	cursor.seek(SeekFrom::Start(moov.start))?;
@@ -162,6 +126,141 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 	data.seek(SeekFrom::Start(0))?;
 	data.set_len(0)?;
 	data.write_all(&cursor.into_inner())?;
+
+	Ok(())
+}
+
+fn save_to_existing(
+	cursor: &mut Cursor<Vec<u8>>,
+	(meta, udta): (AtomInfo, AtomInfo),
+	new_udta_size: &mut u64,
+	ilst: Vec<u8>,
+	remove_tag: bool,
+) -> Result<()> {
+	let replacement;
+	let range;
+
+	let (ilst_idx, tree) = atom_tree(cursor, meta.len - 4, b"ilst")?;
+
+	if tree.is_empty() {
+		// Nothing to do
+		if remove_tag {
+			return Ok(());
+		}
+
+		let meta_end = (meta.start + meta.len) as usize;
+
+		replacement = ilst;
+		range = meta_end..meta_end;
+	} else {
+		let existing_ilst = &tree[ilst_idx];
+		let existing_ilst_size = existing_ilst.len;
+
+		let mut range_start = existing_ilst.start;
+		let range_end = existing_ilst.start + existing_ilst_size;
+
+		if remove_tag {
+			// We just need to strip out the `ilst` atom
+
+			replacement = Vec::new();
+			range = range_start as usize..range_end as usize;
+		} else {
+			// Check for some padding atoms we can utilize
+			let mut available_space = existing_ilst_size;
+
+			// Check for one directly before the `ilst` atom
+			if ilst_idx > 0 {
+				let previous_atom = &tree[ilst_idx - 1];
+
+				if previous_atom.ident == AtomIdent::Fourcc(*b"free") {
+					range_start = previous_atom.start;
+					available_space += previous_atom.len;
+				}
+			}
+
+			// And after
+			if ilst_idx != tree.len() - 1 {
+				let next_atom = &tree[ilst_idx + 1];
+
+				if next_atom.ident == AtomIdent::Fourcc(*b"free") {
+					available_space += next_atom.len;
+				}
+			}
+
+			let ilst_len = ilst.len() as u64;
+
+			// Check if we have enough padding to fit the `ilst` atom and a new `free` atom
+			if available_space > ilst_len && available_space - ilst_len > 8 {
+				// We have enough space to make use of the padding
+
+				let remaining_space = available_space - ilst_len;
+				if remaining_space > u64::from(u32::MAX) {
+					return Err(LoftyError::new(ErrorKind::TooMuchData));
+				}
+
+				let remaining_space = remaining_space as u32;
+
+				cursor.seek(SeekFrom::Start(range_start))?;
+				cursor.write_all(&ilst)?;
+
+				// Write the remaining padding
+				cursor.write_u32::<BigEndian>(remaining_space)?;
+				cursor.write_all(b"free")?;
+				cursor.write_all(&try_vec![1; (remaining_space - 8) as usize])?;
+
+				return Ok(());
+			}
+
+			replacement = ilst;
+			range = range_start as usize..range_end as usize;
+		}
+	}
+
+	let new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
+
+	// Replace the `ilst` atom
+	cursor.get_mut().splice(range, replacement);
+
+	if new_meta_size != meta.len {
+		// We need to change the `meta` and `udta` atom sizes
+
+		*new_udta_size = (udta.len - meta.len) + new_meta_size;
+
+		cursor.seek(SeekFrom::Start(meta.start))?;
+		write_size(meta.start, new_meta_size, meta.extended, cursor)?;
+
+		cursor.seek(SeekFrom::Start(udta.start))?;
+		write_size(udta.start, *new_udta_size, udta.extended, cursor)?;
+	}
+
+	Ok(())
+}
+
+fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
+	const HDLR_SIZE: u64 = 33;
+
+	let start = cursor.stream_position()?;
+	// meta atom
+	cursor.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
+
+	// hdlr atom
+	cursor.write_u32::<BigEndian>(0)?;
+	cursor.write_all(b"hdlr")?;
+	cursor.write_u64::<BigEndian>(0)?;
+	cursor.write_all(b"mdirappl")?;
+	cursor.write_all(&[0, 0, 0, 0, 0, 0, 0, 0, 0])?;
+
+	cursor.seek(SeekFrom::Start(start))?;
+
+	let meta_size = 4 + HDLR_SIZE + ilst.len() as u64;
+	write_size(start, meta_size, false, cursor)?;
+
+	// Seek to `hdlr` size
+	let hdlr_size_pos = cursor.seek(SeekFrom::Current(4))?;
+	write_size(hdlr_size_pos, HDLR_SIZE, false, cursor)?;
+
+	cursor.seek(SeekFrom::End(0))?;
+	cursor.write_all(ilst)?;
 
 	Ok(())
 }

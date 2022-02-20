@@ -98,3 +98,36 @@ where
 
 	Ok(ret)
 }
+
+// Creates a tree of nested atoms
+pub(crate) fn atom_tree<R>(data: &mut R, len: u64, up_to: &[u8]) -> Result<(usize, Vec<AtomInfo>)>
+where
+	R: Read + Seek,
+{
+	let mut read = 8;
+	let mut found_idx: usize = 0;
+	let mut buf = Vec::new();
+
+	let mut i = 0;
+
+	while read < len {
+		let atom = AtomInfo::read(data)?;
+
+		skip_unneeded(data, atom.extended, atom.len)?;
+		read += atom.len;
+
+		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+			i += 1;
+
+			if fourcc == up_to {
+				found_idx = i;
+			}
+
+			buf.push(atom);
+		}
+	}
+
+	found_idx = found_idx.saturating_sub(1);
+
+	Ok((found_idx, buf))
+}

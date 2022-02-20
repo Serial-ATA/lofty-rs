@@ -439,8 +439,10 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 
 #[cfg(test)]
 mod tests {
-	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst};
-	use crate::{ItemKey, Tag, TagExt, TagType};
+	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
+	use crate::tag_utils::test_utils::read_path;
+	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
+	use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 	fn read_ilst(path: &str) -> Ilst {
 		let tag = crate::tag_utils::test_utils::read_path(path);
@@ -506,7 +508,7 @@ mod tests {
 			AtomData::UTF8(String::from("Foo title")),
 		));
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
+		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
 
 		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
 
@@ -515,7 +517,7 @@ mod tests {
 
 	#[test]
 	fn ilst_re_read() {
-		let parsed_tag = read_ilst("tests/tags/assets/test.ilst");
+		let parsed_tag = read_ilst("tests/tags/assets/ilst/test.ilst");
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
@@ -529,7 +531,7 @@ mod tests {
 
 	#[test]
 	fn ilst_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.ilst");
+		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
 
 		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
 
@@ -595,7 +597,7 @@ mod tests {
 
 	#[test]
 	fn issue_34() {
-		let ilst = read_ilst("tests/tags/assets/issue_34.ilst");
+		let ilst = read_ilst("tests/tags/assets/ilst/issue_34.ilst");
 
 		verify_atom(
 			&ilst,
@@ -614,7 +616,7 @@ mod tests {
 
 	#[test]
 	fn advisory_rating() {
-		let ilst = read_ilst("tests/tags/assets/advisory_rating.ilst");
+		let ilst = read_ilst("tests/tags/assets/ilst/advisory_rating.ilst");
 
 		verify_atom(
 			&ilst,
@@ -623,5 +625,54 @@ mod tests {
 		);
 
 		assert_eq!(ilst.advisory_rating(), Some(AdvisoryRating::Explicit));
+	}
+
+	#[test]
+	fn trailing_padding() {
+		const ILST_START: usize = 97;
+		const ILST_END: usize = 131;
+		const PADDING_SIZE: usize = 990;
+
+		let file_bytes = read_path("tests/files/assets/ilst_trailing_padding.m4a");
+		assert!(Mp4File::read_from(&mut Cursor::new(&file_bytes), false).is_ok());
+
+		let ilst_bytes = &file_bytes[ILST_START..ILST_END];
+
+		let old_free_size =
+			u32::from_be_bytes(file_bytes[ILST_END..ILST_END + 4].try_into().unwrap());
+		assert_eq!(old_free_size, PADDING_SIZE as u32);
+
+		let mut ilst = super::read::parse_ilst(&mut &*ilst_bytes, ilst_bytes.len() as u64).unwrap();
+
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&file_bytes).unwrap();
+		file.seek(SeekFrom::Start(0)).unwrap();
+
+		ilst.set_title(String::from("Exactly 21 Characters"));
+		ilst.save_to(&mut file).unwrap();
+
+		// Now verify the free atom
+		file.seek(SeekFrom::Start(0)).unwrap();
+
+		let mut file_bytes = Vec::new();
+		file.read_to_end(&mut file_bytes).unwrap();
+
+		// 24 (atom + data) + title string (21)
+		let new_data_size = 24_u32 + 21;
+		let new_ilst_end = ILST_END + new_data_size as usize;
+
+		let file_atom = &file_bytes[new_ilst_end..new_ilst_end + 8];
+
+		match file_atom {
+			[size @ .., b'f', b'r', b'e', b'e'] => assert_eq!(
+				old_free_size - new_data_size,
+				u32::from_be_bytes(size.try_into().unwrap())
+			),
+			_ => unreachable!(),
+		}
+
+		// Verify we can re-read the file
+		file.seek(SeekFrom::Start(0)).unwrap();
+		assert!(Mp4File::read_from(&mut file, false).is_ok());
 	}
 }
