@@ -1,16 +1,13 @@
 use crate::types::tag::TagType;
 
-#[allow(unused_imports)]
 use std::collections::HashMap;
 
-#[allow(unused)]
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {
 		$key
 	};
 }
 
-#[allow(unused)]
 pub(crate) use first_key;
 
 // This is used to create the key/ItemKey maps

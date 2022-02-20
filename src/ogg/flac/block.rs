@@ -6,7 +6,6 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) struct Block {
-	#[allow(unused)]
 	pub(super) byte: u8,
 	pub(super) ty: u8,
 	pub(super) last: bool,

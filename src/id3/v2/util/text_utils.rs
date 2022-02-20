@@ -21,7 +21,6 @@ pub enum TextEncoding {
 
 impl TextEncoding {
 	/// Get a `TextEncoding` from a u8, must be 0-3 inclusive
-	#[allow(unused)]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {
 			0 => Some(Self::Latin1),
@@ -145,7 +144,6 @@ pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Res
 		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
 }
 
-#[allow(unused)]
 pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
 	match text_encoding {
 		TextEncoding::Latin1 => {
@@ -171,7 +169,6 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 	}
 }
 
-#[allow(unused)]
 fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) -> Vec<u8> {
 	let mut encoded = Vec::<u8>::new();
 
