@@ -64,7 +64,7 @@ where
 		let mut first_byte = 0_u8;
 		first_byte |= last_block_info.0 & 0x7F;
 
-		file_bytes[last_block_info.1 as usize] = first_byte;
+		file_bytes[last_block_info.1] = first_byte;
 
 		let mut padding_block = [0; 1028];
 		let mut padding_byte = 0;
@@ -76,10 +76,7 @@ where
 		// [0, 4, 0] = 1024
 		padding_block[2] = 4;
 
-		file_bytes.splice(
-			last_block_info.2 as usize..last_block_info.2 as usize,
-			padding_block,
-		);
+		file_bytes.splice(last_block_info.2..last_block_info.2, padding_block);
 	}
 
 	let mut comment_blocks = Cursor::new(Vec::new());

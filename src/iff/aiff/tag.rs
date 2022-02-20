@@ -284,7 +284,7 @@ where
 
 				if let Ok(len) = u16::try_from(comment_count) {
 					text_chunks.extend(b"COMT");
-					text_chunks.extend((len as u16).to_be_bytes());
+					text_chunks.extend(len.to_be_bytes());
 
 					for comt in comments {
 						text_chunks.extend(comt.timestamp.to_be_bytes());
@@ -386,10 +386,10 @@ where
 			let first = chunks_remove.pop().unwrap(); // Infallible
 
 			for (s, e) in &chunks_remove {
-				file_bytes.drain(*s as usize..*e as usize);
+				file_bytes.drain(*s..*e);
 			}
 
-			file_bytes.splice(first.0 as usize..first.1 as usize, text_chunks);
+			file_bytes.splice(first.0..first.1, text_chunks);
 		}
 
 		let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();

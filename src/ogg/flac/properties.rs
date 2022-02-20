@@ -54,7 +54,7 @@ where
 		duration,
 		overall_bitrate,
 		audio_bitrate,
-		sample_rate: Some(sample_rate as u32),
+		sample_rate: Some(sample_rate),
 		bit_depth: Some(bits_per_sample as u8),
 		channels: Some(channels as u8),
 	})

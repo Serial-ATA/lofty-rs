@@ -99,7 +99,7 @@ where
 
 	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp + u64::from(pre_skip)) {
 		let length = frame_count * 1000 / 48000;
-		properties.duration = Duration::from_millis(length as u64);
+		properties.duration = Duration::from_millis(length);
 
 		properties.overall_bitrate = ((file_length * 8) / length) as u32;
 		properties.audio_bitrate = (audio_size * 8 / length) as u32;

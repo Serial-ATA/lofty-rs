@@ -134,7 +134,11 @@
 	clippy::all,
 	missing_docs,
 	rustdoc::broken_intra_doc_links,
-	rust_2018_idioms
+	rust_2018_idioms,
+	trivial_casts,
+	trivial_numeric_casts,
+	unused_import_braces,
+	explicit_outlives_requirements
 )]
 // TODO: This had multiple FPs right now, remove this when it is fixed
 #![allow(clippy::needless_borrow)]

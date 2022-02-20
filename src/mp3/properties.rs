@@ -116,7 +116,7 @@ pub(super) fn read_properties(
 		overall_bitrate: 0,
 		audio_bitrate: 0,
 		sample_rate: first_frame_header.sample_rate,
-		channels: first_frame_header.channels as u8,
+		channels: first_frame_header.channels,
 		emphasis: first_frame_header.emphasis,
 	};
 

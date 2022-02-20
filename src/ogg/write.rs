@@ -200,7 +200,7 @@ where
 	}
 
 	data.seek(SeekFrom::Start(0))?;
-	data.set_len(first_page.end as u64)?;
+	data.set_len(first_page.end)?;
 	data.write_all(&*writer)?;
 
 	Ok(())
@@ -218,7 +218,7 @@ fn replace_packet(
 		let p = Page::read(data, true)?;
 
 		if p.header_type() & 0x01 != 0x01 {
-			data.seek(SeekFrom::Start(p.start as u64))?;
+			data.seek(SeekFrom::Start(p.start))?;
 			reached_md_end = true;
 			break;
 		}
