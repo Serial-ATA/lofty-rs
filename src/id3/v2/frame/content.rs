@@ -121,7 +121,8 @@ pub(super) fn parse_content(
 		"COMM" | "USLT" => parse_text_language(content, id)?,
 		_ if id.starts_with('T') => parse_text(content)?,
 		// Apple proprietary frames
-		"WFED" | "GRP1" => parse_text(content)?,
+		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
+		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content)?,
 		_ if id.starts_with('W') => parse_link(content)?,
 		// SYLT, GEOB, and any unknown frames
 		_ => FrameValue::Binary(content.to_vec()),
@@ -134,14 +135,7 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
-	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => {
-			return Err(LoftyError::new(ErrorKind::TextDecode(
-				"Found invalid encoding",
-			)))
-		},
-		Some(e) => e,
-	};
+	let encoding = verify_encoding(content.read_u8()?)?;
 
 	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
@@ -169,14 +163,7 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
-	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => {
-			return Err(LoftyError::new(ErrorKind::TextDecode(
-				"Found invalid encoding",
-			)))
-		},
-		Some(e) => e,
-	};
+	let encoding = verify_encoding(content.read_u8()?)?;
 
 	let mut lang = [0; 3];
 	content.read_exact(&mut lang)?;
@@ -204,15 +191,7 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 }
 
 fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
-	let encoding = match TextEncoding::from_u8(content.read_u8()?) {
-		None => {
-			return Err(LoftyError::new(ErrorKind::TextDecode(
-				"Found invalid encoding",
-			)))
-		},
-		Some(e) => e,
-	};
-
+	let encoding = verify_encoding(content.read_u8()?)?;
 	let text = decode_text(content, encoding, true)?.unwrap_or_default();
 
 	Ok(FrameValue::Text {
@@ -225,4 +204,13 @@ fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
 	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
 
 	Ok(FrameValue::URL(link))
+}
+
+fn verify_encoding(encoding: u8) -> Result<TextEncoding> {
+	match TextEncoding::from_u8(encoding) {
+		None => Err(LoftyError::new(ErrorKind::TextDecode(
+			"Found invalid encoding",
+		))),
+		Some(e) => Ok(e),
+	}
 }
