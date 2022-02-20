@@ -116,13 +116,13 @@ pub(super) fn parse_content(
 
 			FrameValue::Picture { encoding, picture }
 		},
-		"TXXX" => parse_user_defined(content, false)?,
-		"WXXX" => parse_user_defined(content, true)?,
-		"COMM" | "USLT" => parse_text_language(content, id)?,
-		_ if id.starts_with('T') => parse_text(content)?,
+		"TXXX" => parse_user_defined(content, false, version)?,
+		"WXXX" => parse_user_defined(content, true, version)?,
+		"COMM" | "USLT" => parse_text_language(content, id, version)?,
+		_ if id.starts_with('T') => parse_text(content, version)?,
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
-		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content)?,
+		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
 		_ if id.starts_with('W') => parse_link(content)?,
 		// SYLT, GEOB, and any unknown frames
 		_ => FrameValue::Binary(content.to_vec()),
@@ -130,12 +130,16 @@ pub(super) fn parse_content(
 }
 
 // There are 2 possibilities for the frame's content: text or link.
-fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
+fn parse_user_defined(
+	content: &mut &[u8],
+	link: bool,
+	version: Id3v2Version,
+) -> Result<FrameValue> {
 	if content.len() < 2 {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
-	let encoding = verify_encoding(content.read_u8()?)?;
+	let encoding = verify_encoding(content.read_u8()?, version)?;
 
 	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
@@ -158,12 +162,12 @@ fn parse_user_defined(content: &mut &[u8], link: bool) -> Result<FrameValue> {
 	})
 }
 
-fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
+fn parse_text_language(content: &mut &[u8], id: &str, version: Id3v2Version) -> Result<FrameValue> {
 	if content.len() < 5 {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 	}
 
-	let encoding = verify_encoding(content.read_u8()?)?;
+	let encoding = verify_encoding(content.read_u8()?, version)?;
 
 	let mut lang = [0; 3];
 	content.read_exact(&mut lang)?;
@@ -190,8 +194,8 @@ fn parse_text_language(content: &mut &[u8], id: &str) -> Result<FrameValue> {
 	Ok(value)
 }
 
-fn parse_text(content: &mut &[u8]) -> Result<FrameValue> {
-	let encoding = verify_encoding(content.read_u8()?)?;
+fn parse_text(content: &mut &[u8], version: Id3v2Version) -> Result<FrameValue> {
+	let encoding = verify_encoding(content.read_u8()?, version)?;
 	let text = decode_text(content, encoding, true)?.unwrap_or_default();
 
 	Ok(FrameValue::Text {
@@ -206,7 +210,16 @@ fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
 	Ok(FrameValue::URL(link))
 }
 
-fn verify_encoding(encoding: u8) -> Result<TextEncoding> {
+fn verify_encoding(encoding: u8, version: Id3v2Version) -> Result<TextEncoding> {
+	if let Id3v2Version::V2 = version {
+		if encoding != 0 && encoding != 1 {
+			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+				"Id3v2.2 only supports Latin-1 and UTF-16 encodings",
+			))
+			.into());
+		}
+	}
+
 	match TextEncoding::from_u8(encoding) {
 		None => Err(LoftyError::new(ErrorKind::TextDecode(
 			"Found invalid encoding",

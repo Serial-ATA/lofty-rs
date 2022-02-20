@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WAV/AIFF**: Chunk reading now makes use of fallible allocation, preventing OOM
 - **ID3v2**: Text is properly encoded when writing
 - **ID3v2**: `MVNM` and `MVIN` frames are now treated as text frames
+- **ID3v2**: Text encodings are verified for V2 tags
 - **MP4**: `plID` atom is properly treated as a 64-bit signed integer ([issue](https://github.com/Serial-ATA/lofty-rs/issues/34))
 - **MP4**: `rate` and `rtng` now map to the correct `ItemKey`
 - **MP4**: Integer pairs are now written correctly
