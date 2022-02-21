@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2022-02-21
+
 ### Changed
 - **MP4**: Padding atoms (`free`) are used when writing
 - **Opus**: Channel count is verified in accordance to the channel mapping family
@@ -51,5 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/54ee916...main
+[0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...54ee916
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
