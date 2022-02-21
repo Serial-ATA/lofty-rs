@@ -1,5 +1,6 @@
 use super::find_last_page;
-use crate::error::Result;
+use crate::error::{FileDecodingError, Result};
+use crate::types::file::FileType;
 use crate::types::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -90,6 +91,21 @@ where
 	let pre_skip = first_page_content.read_u16::<LittleEndian>()?;
 
 	properties.input_sample_rate = first_page_content.read_u32::<LittleEndian>()?;
+
+	let _output_gain = first_page_content.read_u16::<LittleEndian>()?;
+
+	let channel_mapping_family = first_page_content.read_u8()?;
+
+	// https://datatracker.ietf.org/doc/html/rfc7845.html#section-5.1.1
+	if (channel_mapping_family == 0 && properties.channels > 2)
+		|| (channel_mapping_family == 1 && properties.channels > 8)
+	{
+		return Err(FileDecodingError::new(
+			FileType::Opus,
+			"Invalid channel count for mapping family",
+		)
+		.into());
+	}
 
 	// Subtract the identification and metadata packet length from the total
 	let audio_size = stream_len - data.seek(SeekFrom::Current(0))?;
