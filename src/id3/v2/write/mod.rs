@@ -110,6 +110,10 @@ fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 	#[cfg(feature = "id3v2_restrictions")]
 	let extended_header = flags.crc || flags.restrictions.0;
 
+	if flags.footer {
+		tag_flags |= 0x10
+	}
+
 	if flags.experimental {
 		tag_flags |= 0x20
 	}
@@ -124,10 +128,15 @@ fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 	// TODO
 	#[allow(unused_mut)]
 	if extended_header {
+		// Structure of extended header:
+		//
 		// Size (4)
-		// Number of flag bytes (1)
+		// Number of flag bytes (1) (As of ID3v2.4, this will *always* be 1)
 		// Flags (1)
-		header.write_all(&[0, 0, 0, 0, 1, 0])?;
+		// Followed by any extra data (crc or restrictions)
+
+		// Start with a zeroed header
+		header.write_all(&[0; 6])?;
 
 		let mut size = 6_u32;
 		let mut ext_flags = 0_u8;
@@ -150,11 +159,10 @@ fn create_tag_header(flags: Id3v2TagFlags) -> Result<Cursor<Vec<u8>>> {
 
 		header.seek(SeekFrom::Start(10))?;
 
+		// Seek back and write the actual values
 		header.write_u32::<BigEndian>(synch_u32(size)?)?;
-		header.seek(SeekFrom::Current(1))?;
+		header.write_u8(1)?;
 		header.write_u8(ext_flags)?;
-
-		header.seek(SeekFrom::End(0))?;
 	}
 
 	Ok(header)
