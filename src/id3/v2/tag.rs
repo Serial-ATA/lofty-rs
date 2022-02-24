@@ -10,8 +10,8 @@ use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Tag, TagType};
-use std::borrow::Cow;
 
+use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
