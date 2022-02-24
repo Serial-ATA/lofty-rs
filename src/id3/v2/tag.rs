@@ -10,6 +10,7 @@ use crate::tag_traits::{Accessor, TagExt};
 use crate::types::item::{ItemKey, ItemValue, TagItem};
 use crate::types::picture::{Picture, PictureType};
 use crate::types::tag::{Tag, TagType};
+use std::borrow::Cow;
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -423,10 +424,22 @@ pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
-	tag.items()
+	let items = tag
+		.items()
 		.iter()
 		.map(TryInto::<FrameRef<'_>>::try_into)
-		.filter_map(Result::ok)
+		.filter_map(Result::ok);
+
+	let pictures = tag.pictures().iter().map(|p| FrameRef {
+		id: "APIC",
+		value: Cow::Owned(FrameValue::Picture {
+			encoding: TextEncoding::UTF8,
+			picture: p.clone(),
+		}),
+		flags: FrameFlags::default(),
+	});
+
+	items.chain(pictures)
 }
 
 impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
@@ -769,5 +782,41 @@ mod tests {
 		assert!(crate::id3::v2::read::parse_id3v2(reader, header).is_ok());
 
 		assert_eq!(writer[3..10], writer[writer.len() - 7..])
+	}
+
+	#[test]
+	fn issue_36() {
+		let picture_data = vec![0; 200];
+
+		let picture = Picture::new_unchecked(
+			PictureType::CoverFront,
+			MimeType::Jpeg,
+			Some(String::from("cover")),
+			picture_data,
+		);
+
+		let mut tag = Tag::new(TagType::Id3v2);
+		tag.push_picture(picture.clone());
+
+		let mut writer = Vec::new();
+		tag.dump_to(&mut writer).unwrap();
+
+		let mut reader = &mut &writer[..];
+
+		let header = read_id3v2_header(&mut reader).unwrap();
+		let tag = crate::id3::v2::read::parse_id3v2(reader, header).unwrap();
+
+		assert_eq!(tag.len(), 1);
+		assert_eq!(
+			tag.frames.first(),
+			Some(&Frame {
+				id: FrameID::Valid(String::from("APIC")),
+				value: FrameValue::Picture {
+					encoding: TextEncoding::UTF8,
+					picture
+				},
+				flags: FrameFlags::default()
+			})
+		);
 	}
 }
