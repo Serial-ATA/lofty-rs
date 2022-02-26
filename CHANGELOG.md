@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **MP4**: `Ilst::{atoms, retain}`
+
 ### Fixed
 - **ID3v2**: The footer flag is written to the tag
 - **ID3v2**: Pictures are written when using `Tag`

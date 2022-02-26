@@ -1,5 +1,5 @@
-use super::ape_tag::ApeTag;
 use super::item::ApeItem;
+use super::ApeTag;
 use crate::ape::constants::INVALID_KEYS;
 use crate::ape::header::ApeHeader;
 use crate::error::{FileDecodingError, Result};

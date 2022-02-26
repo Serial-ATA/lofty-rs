@@ -1,5 +1,5 @@
 #[cfg(feature = "ape")]
-use crate::ape::tag::ape_tag;
+use crate::ape;
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1;
@@ -12,9 +12,9 @@ use std::fs::File;
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "ape")]
-		TagType::Ape => ape_tag::ApeTagRef {
+		TagType::Ape => ape::tag::ApeTagRef {
 			read_only: false,
-			items: ape_tag::tagitems_into_ape(tag.items()),
+			items: ape::tag::tagitems_into_ape(tag.items()),
 		}
 		.write_to(data),
 		#[cfg(feature = "id3v1")]

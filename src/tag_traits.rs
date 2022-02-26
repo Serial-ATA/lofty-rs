@@ -128,4 +128,6 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+
+	// TODO: clear method
 }

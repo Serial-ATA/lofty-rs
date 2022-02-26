@@ -9,7 +9,7 @@ use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
 #[cfg(feature = "ape")]
-use ape::tag::ape_tag::ApeTagRef;
+use ape::tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
@@ -45,7 +45,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		#[cfg(feature = "ape")]
 		TagType::Ape => ApeTagRef {
 			read_only: false,
-			items: ape::tag::ape_tag::tagitems_into_ape(tag.items()),
+			items: ape::tag::tagitems_into_ape(tag.items()),
 		}
 		.dump_to(writer),
 		#[cfg(feature = "id3v1")]

@@ -9,7 +9,7 @@ pub use header::{ChannelMode, Emphasis, Layer, MpegVersion};
 pub use properties::Mp3Properties;
 
 #[cfg(feature = "ape")]
-use crate::ape::tag::ape_tag::ApeTag;
+use crate::ape::tag::ApeTag;
 use crate::error::Result;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;

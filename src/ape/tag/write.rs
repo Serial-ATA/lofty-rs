@@ -1,6 +1,6 @@
-use super::ape_tag::ApeTagRef;
 use super::item::ApeItemRef;
 use super::read::read_ape_tag;
+use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};

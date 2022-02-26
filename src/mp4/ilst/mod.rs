@@ -91,6 +91,11 @@ impl_accessor!(
 );
 
 impl Ilst {
+	/// Returns all of the tag's atoms
+	pub fn atoms(&self) -> &[Atom] {
+		&self.atoms
+	}
+
 	/// Get an item by its [`AtomIdent`]
 	pub fn atom(&self, ident: &AtomIdent) -> Option<&Atom> {
 		self.atoms.iter().find(|a| &a.ident == ident)
@@ -113,6 +118,16 @@ impl Ilst {
 			.iter()
 			.position(|a| &a.ident == ident)
 			.map(|p| self.atoms.remove(p));
+	}
+
+	/// Retain atoms based on the predicate
+	///
+	/// See [`Vec::retain`](std::vec::Vec::retain)
+	pub fn retain<F>(&mut self, f: F)
+	where
+		F: FnMut(&Atom) -> bool,
+	{
+		self.atoms.retain(f)
 	}
 
 	/// Returns all pictures
