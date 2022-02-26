@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2022-02-26
+
 ### Added
 - **MP4**: `Ilst::{atoms, retain}`
 
@@ -60,6 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/6bfe845...main
+[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...6bfe845
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
