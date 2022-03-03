@@ -352,7 +352,10 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 ///
 /// `length` > [`MAX_CONTENT_SIZE`]
 pub fn segment_table(length: usize) -> Result<Vec<u8>> {
-	let last_len = (length % 255) as u8;
+	let mut last_len = (length % 255) as u8;
+	if last_len == 0 {
+		last_len = 255;
+	}
 
 	let mut needed = length / 255;
 	if needed != 255 {
