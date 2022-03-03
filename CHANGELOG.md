@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.3] - 2022-03-03
+
+## Fixed
+- **OGG**: Segment tables are written correctly with data spanning multiple pages
+
 ## [0.5.2] - 2022-02-26
 
 ### Added
@@ -62,7 +67,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/6bfe845...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/41e4b1a...main
+[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/6bfe845...41e4b1a
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...6bfe845
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
