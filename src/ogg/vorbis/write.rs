@@ -12,7 +12,7 @@ pub(crate) fn write_to(
 	data: &mut File,
 	writer: &mut Vec<u8>,
 	first_md_content: Vec<u8>,
-	mut pages: &mut [Page],
+	pages: &mut [Page],
 ) -> Result<()> {
 	let mut remaining = Vec::new();
 
@@ -85,9 +85,8 @@ pub(crate) fn write_to(
 
 	// Safe to unwrap, since `pages` is guaranteed to not be empty
 	let (last_page, remaining_pages) = pages.split_last_mut().unwrap();
-	pages = remaining_pages;
 
-	for p in pages.iter_mut() {
+	for p in remaining_pages.iter_mut() {
 		p.gen_crc()?;
 		writer.write_all(&*p.as_bytes()?)?;
 	}
