@@ -6,7 +6,7 @@ use crate::id3::v1;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2;
 #[allow(unused_imports)]
-use crate::types::tag::{Tag, TagType};
+use crate::tag::{Tag, TagType};
 
 use std::fs::File;
 

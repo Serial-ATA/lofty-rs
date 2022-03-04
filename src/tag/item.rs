@@ -1,4 +1,4 @@
-use crate::types::tag::TagType;
+use crate::tag::TagType;
 
 use std::collections::HashMap;
 

@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::io::Read;
 use std::time::Duration;

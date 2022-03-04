@@ -3,10 +3,10 @@ use super::properties::WavProperties;
 use super::tag::RiffInfoList;
 use super::WavFile;
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 

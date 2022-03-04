@@ -1,7 +1,7 @@
 use super::RiffInfoList;
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 use crate::iff::chunk::Chunks;
-use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 

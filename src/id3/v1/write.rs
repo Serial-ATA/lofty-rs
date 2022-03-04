@@ -1,8 +1,8 @@
 use super::tag::Id3v1TagRef;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::file::FileType;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::probe::Probe;
-use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

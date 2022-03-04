@@ -4,10 +4,10 @@ use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::file::FileType;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::probe::Probe;
-use crate::types::file::FileType;
-use crate::types::item::ItemValueRef;
+use crate::tag::item::ItemValueRef;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

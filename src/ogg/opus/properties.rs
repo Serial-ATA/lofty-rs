@@ -1,7 +1,7 @@
 use super::find_last_page;
 use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
-use crate::types::properties::FileProperties;
+use crate::file::FileType;
+use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

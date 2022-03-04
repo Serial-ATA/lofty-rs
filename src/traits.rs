@@ -59,7 +59,7 @@ accessor_trait! {
 	album, genre
 }
 
-use crate::types::tag::Tag;
+use crate::tag::Tag;
 
 use std::fs::File;
 use std::path::Path;

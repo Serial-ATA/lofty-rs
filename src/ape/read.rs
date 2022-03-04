@@ -4,12 +4,12 @@ use super::header::read_ape_header;
 use super::tag::{read::read_ape_tag, ApeTag};
 use super::{ApeFile, ApeProperties};
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{read::parse_id3v2, tag::Id3v2Tag};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
-use crate::types::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 

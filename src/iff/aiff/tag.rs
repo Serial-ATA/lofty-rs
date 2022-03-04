@@ -1,8 +1,8 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
@@ -434,7 +434,7 @@ mod tests {
 			]),
 		};
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
 		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
@@ -446,7 +446,7 @@ mod tests {
 
 	#[test]
 	fn aiff_text_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
 			.text_chunks
@@ -468,7 +468,8 @@ mod tests {
 
 	#[test]
 	fn aiff_text_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
+		let tag_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
 		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
 			.unwrap()

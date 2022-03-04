@@ -8,9 +8,9 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::Id3v2Version;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::Picture;
-use crate::types::tag::TagType;
+use crate::picture::Picture;
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::TagType;
 use content::{EncodedTextFrame, LanguageFrame};
 use id::FrameID;
 

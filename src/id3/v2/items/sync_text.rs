@@ -250,7 +250,7 @@ mod tests {
 			],
 		};
 
-		let cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
+		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
 		let parsed_sylt = SynchronizedText::parse(&*cont).unwrap();
 
@@ -279,7 +279,7 @@ mod tests {
 		let encoded = to_encode.as_bytes().unwrap();
 
 		let expected_bytes =
-			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
 		assert_eq!(encoded, expected_bytes);
 	}

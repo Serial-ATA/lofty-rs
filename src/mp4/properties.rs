@@ -2,9 +2,9 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded};
 use super::trak::Trak;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::file::FileType;
 use crate::macros::try_vec;
-use crate::types::file::FileType;
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;

@@ -5,10 +5,10 @@ pub(crate) mod write;
 
 use super::AtomIdent;
 use crate::error::{LoftyError, Result};
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Tag, TagType};
+use crate::picture::{Picture, PictureType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
 
 use std::convert::TryInto;
@@ -455,12 +455,12 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
-	use crate::tag_utils::test_utils::read_path;
+	use crate::tag::utils::test_utils::read_path;
 	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
 	use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 	fn read_ilst(path: &str) -> Ilst {
-		let tag = crate::tag_utils::test_utils::read_path(path);
+		let tag = crate::tag::utils::test_utils::read_path(path);
 		super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap()
 	}
 
@@ -523,7 +523,7 @@ mod tests {
 			AtomData::UTF8(String::from("Foo title")),
 		));
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
 
 		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
 
@@ -546,13 +546,14 @@ mod tests {
 
 	#[test]
 	fn ilst_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
+		let tag_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
 
 		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
 
 		let tag: Tag = ilst.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 
 		assert_eq!(tag.get_string(&ItemKey::DiscNumber), Some("1"));
 		assert_eq!(tag.get_string(&ItemKey::DiscTotal), Some("2"));
@@ -560,7 +561,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_ilst() {
-		let mut tag = crate::tag_utils::test_utils::create_tag(TagType::Mp4Ilst);
+		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::Mp4Ilst);
 
 		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
 		tag.insert_text(ItemKey::DiscTotal, String::from("2"));

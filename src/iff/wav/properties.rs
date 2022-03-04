@@ -1,6 +1,6 @@
 use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
-use crate::types::properties::FileProperties;
+use crate::file::FileType;
+use crate::properties::FileProperties;
 
 use std::time::Duration;
 

@@ -3,10 +3,10 @@ pub(super) mod properties;
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
+use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::ogg::constants::SPEEXHEADER;
-use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::types::properties::FileProperties;
-use crate::types::tag::TagType;
+use crate::properties::FileProperties;
+use crate::tag::TagType;
 use properties::SpeexProperties;
 
 use std::io::{Read, Seek};

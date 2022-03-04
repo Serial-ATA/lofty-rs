@@ -1,9 +1,9 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2;
-use crate::types::item::ItemKey;
+use crate::tag::item::ItemKey;
 #[allow(unused_imports)]
-use crate::types::tag::{Tag, TagType};
+use crate::tag::{Tag, TagType};
 
 use std::fs::File;
 

@@ -2,11 +2,11 @@
 use super::tag::{AiffTextChunks, Comment};
 use super::AiffFile;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::file::FileType;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::types::file::FileType;
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 

@@ -1,6 +1,6 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::types::item::ItemKey;
-use crate::types::tag::TagType;
+use crate::tag::item::ItemKey;
+use crate::tag::TagType;
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// An `ID3v2` frame ID

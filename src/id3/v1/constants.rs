@@ -1,4 +1,4 @@
-use crate::types::item::ItemKey;
+use crate::tag::item::ItemKey;
 
 /// All possible genres for ID3v1
 pub const GENRES: [&str; 192] = [

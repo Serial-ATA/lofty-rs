@@ -100,12 +100,12 @@ mod tests {
 				file_name: Some(String::from("a.mp3")),
 				descriptor: Some(String::from("Test Asset")),
 			},
-			data: crate::tag_utils::test_utils::read_path(
+			data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
 		};
 
-		let cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
+		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
 
 		let parsed_geob = GeneralEncapsulatedObject::parse(&*cont).unwrap();
 
@@ -121,7 +121,7 @@ mod tests {
 				file_name: Some(String::from("a.mp3")),
 				descriptor: Some(String::from("Test Asset")),
 			},
-			data: crate::tag_utils::test_utils::read_path(
+			data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
 		};
@@ -129,7 +129,7 @@ mod tests {
 		let encoded = to_encode.as_bytes();
 
 		let expected_bytes =
-			crate::tag_utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
 
 		assert_eq!(encoded, expected_bytes);
 	}

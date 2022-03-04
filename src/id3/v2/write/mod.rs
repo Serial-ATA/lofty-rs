@@ -3,12 +3,12 @@ mod frame;
 
 use super::Id3v2TagFlags;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::file::FileType;
 use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::synch_u32;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::probe::Probe;
-use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

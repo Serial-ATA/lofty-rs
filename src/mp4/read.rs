@@ -3,7 +3,7 @@ use super::moov::Moov;
 use super::properties::Mp4Properties;
 use super::Mp4File;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
-use crate::types::file::FileType;
+use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 

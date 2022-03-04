@@ -166,28 +166,30 @@
 
 pub mod ape;
 pub mod error;
+pub(crate) mod file;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
 pub mod mp3;
 pub mod mp4;
 pub mod ogg;
+pub(crate) mod picture;
 mod probe;
-mod tag_traits;
-pub(crate) mod tag_utils;
-mod types;
+pub(crate) mod properties;
+pub(crate) mod tag;
+mod traits;
 
 pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::{read_from, read_from_path, Probe};
 
-pub use crate::types::file::{AudioFile, FileType, TaggedFile};
-pub use crate::types::item::{ItemKey, ItemValue, TagItem};
-pub use crate::types::picture::{MimeType, Picture, PictureType};
-pub use crate::types::properties::FileProperties;
-pub use crate::types::tag::{Tag, TagType};
+pub use crate::file::{AudioFile, FileType, TaggedFile};
+pub use crate::picture::{MimeType, Picture, PictureType};
+pub use crate::properties::FileProperties;
+pub use crate::tag::{Tag, TagType};
+pub use tag::item::{ItemKey, ItemValue, TagItem};
 
-pub use crate::tag_traits::{Accessor, TagExt};
+pub use crate::traits::{Accessor, TagExt};
 
 #[cfg(feature = "vorbis_comments")]
-pub use crate::types::picture::PictureInformation;
+pub use picture::PictureInformation;

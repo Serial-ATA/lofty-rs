@@ -1,12 +1,12 @@
 use super::block::Block;
 use super::FlacFile;
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::{read::read_comments, tag::VorbisComments};
-use crate::types::file::FileType;
 #[cfg(feature = "vorbis_comments")]
-use crate::types::picture::Picture;
-use crate::types::properties::FileProperties;
+use crate::picture::Picture;
+use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 

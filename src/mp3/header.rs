@@ -1,6 +1,6 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
 use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
+use crate::file::FileType;
 
 use std::io::Read;
 

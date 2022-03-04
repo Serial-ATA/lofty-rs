@@ -10,9 +10,9 @@ mod read;
 mod trak;
 
 use crate::error::Result;
-use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::types::properties::FileProperties;
-use crate::types::tag::TagType;
+use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::properties::FileProperties;
+use crate::tag::TagType;
 
 use std::io::{Read, Seek};
 

@@ -1,5 +1,5 @@
 use crate::mp4::AtomIdent;
-use crate::types::picture::Picture;
+use crate::picture::Picture;
 
 #[derive(Debug, PartialEq, Clone)]
 /// Represents an `MP4` atom

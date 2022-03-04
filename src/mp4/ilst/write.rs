@@ -1,12 +1,12 @@
 use super::{AtomDataRef, IlstRef};
 use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
+use crate::file::FileType;
 use crate::macros::try_vec;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
 use crate::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, nested_atom, verify_mp4};
-use crate::types::file::FileType;
-use crate::types::picture::{MimeType, Picture};
+use crate::picture::{MimeType, Picture};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

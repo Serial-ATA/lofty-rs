@@ -6,10 +6,10 @@ use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::{Picture, PictureType};
-use crate::types::tag::{Tag, TagType};
+use crate::picture::{Picture, PictureType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
@@ -461,11 +461,11 @@ mod tests {
 		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, Id3v2Tag, Id3v2Version,
 		LanguageFrame, TextEncoding,
 	};
-	use crate::tag_utils::test_utils::read_path;
+	use crate::tag::utils::test_utils::read_path;
 	use crate::{MimeType, Picture, PictureType, Tag, TagExt, TagType};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
-		let tag_bytes = crate::tag_utils::test_utils::read_path(path);
+		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 
@@ -592,7 +592,7 @@ mod tests {
 
 		let tag: Tag = id3v2.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
 	#[test]
@@ -633,7 +633,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::Id3v2);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v2);
 
 		let id3v2_tag: Id3v2Tag = tag.into();
 

@@ -3,9 +3,9 @@ use super::ApeTag;
 use crate::ape::constants::INVALID_KEYS;
 use crate::ape::header::ApeHeader;
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 use crate::macros::try_vec;
-use crate::types::file::FileType;
-use crate::types::item::ItemValue;
+use crate::tag::item::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
 

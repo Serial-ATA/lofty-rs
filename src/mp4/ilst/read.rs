@@ -9,7 +9,7 @@ use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::macros::try_vec;
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::read::skip_unneeded;
-use crate::types::picture::{MimeType, Picture, PictureType};
+use crate::picture::{MimeType, Picture, PictureType};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};

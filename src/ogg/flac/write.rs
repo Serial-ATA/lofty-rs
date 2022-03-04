@@ -3,7 +3,7 @@ use super::read::verify_flac;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
-use crate::types::picture::{Picture, PictureInformation};
+use crate::picture::{Picture, PictureInformation};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

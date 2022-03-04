@@ -1,7 +1,7 @@
 use crate::error::{FileDecodingError, Result};
+use crate::file::FileType;
 use crate::ogg::find_last_page;
-use crate::types::file::FileType;
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

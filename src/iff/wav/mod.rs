@@ -3,11 +3,11 @@ mod read;
 pub(crate) mod write;
 
 use crate::error::Result;
+use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::types::properties::FileProperties;
-use crate::types::tag::{Tag, TagType};
+use crate::properties::FileProperties;
+use crate::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
 

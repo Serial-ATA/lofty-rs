@@ -3,7 +3,7 @@
 //! The primary error is [`LoftyError`]. The type of error is determined by [`ErrorKind`],
 //! which can be extended at any time.
 
-use crate::types::file::FileType;
+use crate::file::FileType;
 
 use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};

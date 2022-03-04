@@ -4,9 +4,9 @@ mod write;
 
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
@@ -33,7 +33,7 @@ macro_rules! impl_accessor {
 					fn [<set_ $name>](&mut self, value: String) {
 						self.insert(ApeItem {
 							read_only: false,
-							key: String::from(crate::types::item::first_key!($($key)|*)),
+							key: String::from(crate::tag::item::first_key!($($key)|*)),
 							value: ItemValue::Text(value)
 						})
 					}
@@ -335,7 +335,7 @@ mod tests {
 		expected_tag.insert(track_number_item);
 		expected_tag.insert(genre_item);
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag);
 
 		let header = read_ape_header(&mut reader, false).unwrap();
@@ -350,7 +350,7 @@ mod tests {
 
 	#[test]
 	fn ape_re_read() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
+		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
 		let header = read_ape_header(&mut reader, false).unwrap();
@@ -371,7 +371,7 @@ mod tests {
 
 	#[test]
 	fn ape_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.apev2");
+		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
 		let header = read_ape_header(&mut reader, false).unwrap();
@@ -379,7 +379,7 @@ mod tests {
 
 		let tag: Tag = ape.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
 	#[test]
@@ -391,7 +391,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::Ape);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::Ape);
 
 		let ape_tag: ApeTag = tag.into();
 

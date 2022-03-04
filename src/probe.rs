@@ -1,5 +1,6 @@
 use crate::ape::ApeFile;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::mp3::header::search_for_frame_sync;
@@ -9,7 +10,6 @@ use crate::ogg::flac::FlacFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
-use crate::types::file::{AudioFile, FileType, TaggedFile};
 
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};

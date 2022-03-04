@@ -2,7 +2,7 @@ use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
 use crate::id3::v2::Id3v2Version;
-use crate::types::picture::Picture;
+use crate::picture::Picture;
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;

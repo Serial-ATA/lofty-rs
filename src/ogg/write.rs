@@ -1,11 +1,11 @@
 use super::verify_signature;
 use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
+use crate::file::FileType;
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
-use crate::types::file::FileType;
-use crate::types::picture::PictureInformation;
-use crate::types::tag::{Tag, TagType};
+use crate::picture::PictureInformation;
+use crate::tag::{Tag, TagType};
 
 use std::convert::TryFrom;
 use std::fs::File;
@@ -97,7 +97,7 @@ pub(super) fn create_pages<'a, II, IP>(
 ) -> Result<Vec<Page>>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
-	IP: Iterator<Item = (&'a crate::types::picture::Picture, PictureInformation)>,
+	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
 {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
@@ -148,7 +148,7 @@ pub(super) fn write<'a, II, IP>(
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
-	IP: Iterator<Item = (&'a crate::types::picture::Picture, PictureInformation)>,
+	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
 {
 	let first_page = Page::read(data, false)?;
 

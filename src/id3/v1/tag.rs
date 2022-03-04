@@ -1,8 +1,8 @@
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -293,7 +293,7 @@ mod tests {
 			genre: Some(32),
 		};
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
 		assert_eq!(expected_tag, parsed_tag);
@@ -301,7 +301,7 @@ mod tests {
 
 	#[test]
 	fn id3v2_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
 		let mut writer = Vec::new();
@@ -314,17 +314,17 @@ mod tests {
 
 	#[test]
 	fn id3v1_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.id3v1");
+		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let id3v1 = crate::id3::v1::read::parse_id3v1(tag_bytes.try_into().unwrap());
 
 		let tag: Tag = id3v1.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
 	#[test]
 	fn tag_to_id3v1() {
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::Id3v1);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
 
 		let id3v1_tag: Id3v1Tag = tag.into();
 

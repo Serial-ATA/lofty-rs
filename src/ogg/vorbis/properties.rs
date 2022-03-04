@@ -1,6 +1,6 @@
 use super::find_last_page;
 use crate::error::Result;
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

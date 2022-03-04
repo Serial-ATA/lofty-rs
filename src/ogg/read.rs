@@ -4,7 +4,7 @@ use super::verify_signature;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::macros::try_vec;
 #[cfg(feature = "vorbis_comments")]
-use crate::types::picture::Picture;
+use crate::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
 

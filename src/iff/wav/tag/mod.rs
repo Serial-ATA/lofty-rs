@@ -2,9 +2,9 @@ pub(super) mod read;
 mod write;
 
 use crate::error::{LoftyError, Result};
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::tag::{Tag, TagType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -235,7 +235,7 @@ mod tests {
 		expected_tag.insert(String::from("IPRD"), String::from("Baz album"));
 		expected_tag.insert(String::from("IPRT"), String::from("1"));
 
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 		let mut parsed_tag = RiffInfoList::default();
 
 		super::read::parse_riff_info(
@@ -251,7 +251,7 @@ mod tests {
 
 	#[test]
 	fn riff_info_re_read() {
-		let tag = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 		let mut parsed_tag = RiffInfoList::default();
 
 		super::read::parse_riff_info(
@@ -281,7 +281,7 @@ mod tests {
 
 	#[test]
 	fn riff_info_to_tag() {
-		let tag_bytes = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.riff");
+		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 		let mut riff_info = RiffInfoList::default();
@@ -296,12 +296,12 @@ mod tests {
 
 		let tag: Tag = riff_info.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, false);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, false);
 	}
 
 	#[test]
 	fn tag_to_riff_info() {
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::RiffInfo);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::RiffInfo);
 
 		let riff_info: RiffInfoList = tag.into();
 

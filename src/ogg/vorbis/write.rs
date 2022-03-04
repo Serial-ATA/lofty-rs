@@ -1,6 +1,6 @@
 use crate::error::{FileEncodingError, Result};
+use crate::file::FileType;
 use crate::ogg::constants::VORBIS_SETUP_HEAD;
-use crate::types::file::FileType;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

@@ -1,8 +1,8 @@
 use crate::ape::constants::INVALID_KEYS;
 use crate::error::{FileDecodingError, LoftyError, Result};
-use crate::types::file::FileType;
-use crate::types::item::{ItemValue, ItemValueRef, TagItem};
-use crate::types::tag::TagType;
+use crate::file::FileType;
+use crate::tag::item::{ItemValue, ItemValueRef, TagItem};
+use crate::tag::TagType;
 
 use std::convert::TryFrom;
 

@@ -12,13 +12,13 @@ mod read;
 pub(crate) mod write;
 
 use crate::error::Result;
+use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::types::file::{AudioFile, FileType, TaggedFile};
-use crate::types::properties::FileProperties;
-use crate::types::tag::{Tag, TagType};
+use crate::properties::FileProperties;
+use crate::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
 
@@ -30,7 +30,7 @@ cfg_if::cfg_if! {
 		pub use tag::ApeTag;
 		pub use tag::item::ApeItem;
 
-		pub use crate::types::picture::APE_PICTURE_TYPES;
+		pub use crate::picture::APE_PICTURE_TYPES;
 	}
 }
 

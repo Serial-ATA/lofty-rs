@@ -1,5 +1,5 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
-use crate::types::properties::FileProperties;
+use crate::properties::FileProperties;
 
 use std::time::Duration;
 

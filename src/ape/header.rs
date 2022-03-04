@@ -1,5 +1,5 @@
 use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
+use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;

@@ -4,7 +4,7 @@ use super::ilst::{read::parse_ilst, Ilst};
 use super::read::skip_unneeded;
 use super::trak::Trak;
 use crate::error::{FileDecodingError, Result};
-use crate::types::file::FileType;
+use crate::file::FileType;
 
 use std::io::{Read, Seek};
 

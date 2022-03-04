@@ -1,11 +1,11 @@
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::file::FileType;
 use crate::ogg::write::OGGFormat;
+use crate::picture::{Picture, PictureInformation, PictureType};
 use crate::probe::Probe;
-use crate::tag_traits::{Accessor, TagExt};
-use crate::types::file::FileType;
-use crate::types::item::{ItemKey, ItemValue, TagItem};
-use crate::types::picture::{Picture, PictureInformation, PictureType};
-use crate::types::tag::{Tag, TagType};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::{Tag, TagType};
+use crate::traits::{Accessor, TagExt};
 
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
@@ -358,7 +358,7 @@ mod tests {
 		expected_tag.insert_item(String::from("TITLE"), String::from("Foo title"), false);
 		expected_tag.insert_item(String::from("TRACKNUMBER"), String::from("1"), false);
 
-		let file_cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.vorbis");
+		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
 		let parsed_tag = read_tag(&*file_cont);
 
 		assert_eq!(expected_tag, parsed_tag);
@@ -366,7 +366,7 @@ mod tests {
 
 	#[test]
 	fn vorbis_comments_re_read() {
-		let file_cont = crate::tag_utils::test_utils::read_path("tests/tags/assets/test.vorbis");
+		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
 		let mut parsed_tag = read_tag(&*file_cont);
 
 		// Create a zero-size vendor for comparison
@@ -395,12 +395,12 @@ mod tests {
 
 		let tag: Tag = vorbis_comments.into();
 
-		crate::tag_utils::test_utils::verify_tag(&tag, true, true);
+		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
 	#[test]
 	fn tag_to_vorbis_comments() {
-		let tag = crate::tag_utils::test_utils::create_tag(TagType::VorbisComments);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::VorbisComments);
 
 		let vorbis_comments: VorbisComments = tag.into();
 
