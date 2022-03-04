@@ -1,8 +1,11 @@
-use super::item::{ItemKey, ItemValue, TagItem};
-use super::picture::{Picture, PictureType};
+pub(crate) mod item;
+pub(crate) mod utils;
+
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
-use crate::tag_traits::{Accessor, TagExt};
+use crate::traits::{Accessor, TagExt};
+use item::{ItemKey, ItemValue, TagItem};
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -362,7 +365,7 @@ impl TagExt for Tag {
 		match probe.file_type() {
 			Some(file_type) => {
 				if file_type.supports_tag_type(self.tag_type()) {
-					crate::tag_utils::write_tag(self, probe.into_inner(), file_type)
+					utils::write_tag(self, probe.into_inner(), file_type)
 				} else {
 					Err(LoftyError::new(ErrorKind::UnsupportedTag))
 				}
@@ -372,7 +375,7 @@ impl TagExt for Tag {
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
-		crate::tag_utils::dump_tag(self, writer)
+		utils::dump_tag(self, writer)
 	}
 
 	/// Remove a tag from a [`Path`]
@@ -445,6 +448,6 @@ impl TagType {
 		}
 
 		let file = probe.into_inner();
-		crate::tag_utils::write_tag(&Tag::new(*self), file, file_type)
+		utils::write_tag(&Tag::new(*self), file, file_type)
 	}
 }

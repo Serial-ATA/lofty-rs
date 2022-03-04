@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::types::file::FileType;
-use crate::types::item::ItemKey;
-use crate::types::tag::{Tag, TagType};
+use crate::file::FileType;
+use crate::tag::item::ItemKey;
+use crate::tag::{Tag, TagType};
 use crate::{ape, iff, mp3, mp4, ogg};
 
 #[cfg(feature = "id3v1")]
