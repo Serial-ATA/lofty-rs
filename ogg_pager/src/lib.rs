@@ -101,10 +101,10 @@ impl Page {
 	/// See [`segment_table`]
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut segment_table = self.segment_table()?;
-		let mut bytes = Vec::new();
+		let mut bytes = Vec::with_capacity(27 + segment_table.len() + self.content.len());
 
 		bytes.extend(b"OggS");
-		bytes.push(0);
+		bytes.push(0); // Version
 		bytes.extend(self.header_type.to_le_bytes());
 		bytes.extend(self.abgp.to_le_bytes());
 		bytes.extend(self.serial.to_le_bytes());
@@ -352,19 +352,19 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 ///
 /// `length` > [`MAX_CONTENT_SIZE`]
 pub fn segment_table(length: usize) -> Result<Vec<u8>> {
+	match length {
+		0 => return Ok(vec![1, 0]),
+		l if l > MAX_CONTENT_SIZE => return Err(PageError::TooMuchData),
+		_ => {},
+	};
+
 	let mut last_len = (length % 255) as u8;
 	if last_len == 0 {
 		last_len = 255;
 	}
 
-	let mut needed = length / 255;
-	if needed != 255 {
-		needed += 1
-	}
-
-	if needed > 255 {
-		return Err(PageError::TooMuchData);
-	}
+	let mut needed = (length / 255) + 1;
+	needed = std::cmp::min(needed, 255);
 
 	let mut segments = Vec::with_capacity(needed);
 
