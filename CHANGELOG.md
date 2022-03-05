@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.3] - 2022-03-03
 
 ## Fixed
-- **OGG**: Segment tables are written correctly with data spanning multiple pages
+- **OGG**: Segment tables are written correctly with data spanning multiple pages ([issue](https://github.com/Serial-ATA/lofty-rs/issues/37))
 
 ## [0.5.2] - 2022-02-26
 
