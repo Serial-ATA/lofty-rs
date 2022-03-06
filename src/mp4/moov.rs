@@ -5,11 +5,9 @@ use super::read::skip_unneeded;
 use super::trak::Trak;
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
+use crate::mp4::read::meta_is_full;
 
 use std::io::{Read, Seek};
-
-#[cfg(feature = "mp4_ilst")]
-use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) struct Moov {
 	pub(crate) traks: Vec<Trak>,
@@ -98,12 +96,16 @@ where
 		return Ok(None);
 	}
 
-	// The meta atom has 4 bytes we don't care about
-	// Version (1)
-	// Flags (3)
-	let _version_flags = data.read_u32::<BigEndian>()?;
+	// It's possible for the `meta` atom to be non-full,
+	// so we have to check for that case
+	let full_meta_atom = meta_is_full(data)?;
 
-	read = 12;
+	if full_meta_atom {
+		read = 12;
+	} else {
+		read = 8;
+	}
+
 	let mut islt = (false, 0_u64);
 
 	while read < meta.1 {

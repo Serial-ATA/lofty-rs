@@ -6,9 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **MP4**: Non-full `meta` atoms are now properly handled.
+  - It is possible for these to be a regular atom (no version or flags).
+    This information was assumed to be present and would get skipped,
+    which would affect the reading of subsequent atoms.
+  
+    This behavior has been noticed by:
+    - https://leo-van-stee.github.io/
+    - https://github.com/axiomatic-systems/Bento4/blob/v1.6.0-639/Source/C%2B%2B/Core/Ap4ContainerAtom.cpp#L60
+    - https://github.com/taglib/taglib/issues/1041
+
 ## [0.5.3] - 2022-03-03
 
-## Fixed
+### Fixed
 - **OGG**: Segment tables are written correctly with data spanning multiple pages ([issue](https://github.com/Serial-ATA/lofty-rs/issues/37))
 
 ## [0.5.2] - 2022-02-26

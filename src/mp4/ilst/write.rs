@@ -5,7 +5,7 @@ use crate::macros::try_vec;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
 use crate::mp4::ilst::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
-use crate::mp4::read::{atom_tree, nested_atom, verify_mp4};
+use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4};
 use crate::picture::{MimeType, Picture};
 
 use std::fs::File;
@@ -50,10 +50,8 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 		let meta = nested_atom(&mut cursor, udta.len, b"meta")?;
 		match meta {
 			Some(meta) => {
-				// Skip 4 bytes
-				// Version (1)
-				// Flags   (3)
-				cursor.seek(SeekFrom::Current(4))?;
+				// We may encounter a non-full `meta` atom
+				meta_is_full(&mut cursor)?;
 
 				// We can use the existing `udta` and `meta` atoms
 				save_to_existing(

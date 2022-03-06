@@ -7,6 +7,8 @@ use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use byteorder::{BigEndian, ReadBytesExt};
+
 pub(in crate::mp4) fn verify_mp4<R>(data: &mut R) -> Result<String>
 where
 	R: Read + Seek,
@@ -55,7 +57,7 @@ where
 	})
 }
 
-pub(crate) fn skip_unneeded<R>(data: &mut R, ext: bool, len: u64) -> Result<()>
+pub(super) fn skip_unneeded<R>(data: &mut R, ext: bool, len: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -74,7 +76,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn nested_atom<R>(data: &mut R, len: u64, expected: &[u8]) -> Result<Option<AtomInfo>>
+pub(super) fn nested_atom<R>(data: &mut R, len: u64, expected: &[u8]) -> Result<Option<AtomInfo>>
 where
 	R: Read + Seek,
 {
@@ -100,7 +102,7 @@ where
 }
 
 // Creates a tree of nested atoms
-pub(crate) fn atom_tree<R>(data: &mut R, len: u64, up_to: &[u8]) -> Result<(usize, Vec<AtomInfo>)>
+pub(super) fn atom_tree<R>(data: &mut R, len: u64, up_to: &[u8]) -> Result<(usize, Vec<AtomInfo>)>
 where
 	R: Read + Seek,
 {
@@ -130,4 +132,35 @@ where
 	found_idx = found_idx.saturating_sub(1);
 
 	Ok((found_idx, buf))
+}
+
+pub(super) fn meta_is_full<R>(data: &mut R) -> Result<bool>
+where
+	R: Read + Seek,
+{
+	let meta_pos = data.stream_position()?;
+
+	// A full `meta` atom should have the following:
+	//
+	// Version (1)
+	// Flags (3)
+	//
+	// However, it's possible that it is written as a normal atom,
+	// meaning this would be the size of the next atom.
+	let _version_flags = data.read_u32::<BigEndian>()?;
+
+	// Check if the next four bytes is one of the nested `meta` atoms
+	let mut possible_ident = [0; 4];
+	data.read_exact(&mut possible_ident)?;
+
+	match &possible_ident {
+		b"hdlr" | b"ilst" | b"mhdr" | b"ctry" | b"lang" => {
+			data.seek(SeekFrom::Start(meta_pos))?;
+			Ok(false)
+		},
+		_ => {
+			data.seek(SeekFrom::Start(meta_pos + 4))?;
+			Ok(true)
+		},
+	}
 }

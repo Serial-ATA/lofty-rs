@@ -691,4 +691,41 @@ mod tests {
 		file.seek(SeekFrom::Start(0)).unwrap();
 		assert!(Mp4File::read_from(&mut file, false).is_ok());
 	}
+
+	#[test]
+	fn read_non_full_meta_atom() {
+		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
+		let file = Mp4File::read_from(&mut Cursor::new(file_bytes), false).unwrap();
+
+		assert!(file.ilst.is_some());
+	}
+
+	#[test]
+	fn write_non_full_meta_atom() {
+		// This is testing writing to a file with a non-full meta atom
+		// We will *not* write a non-full meta atom
+
+		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&file_bytes).unwrap();
+		file.seek(SeekFrom::Start(0)).unwrap();
+
+		let mut tag = Ilst::default();
+		tag.insert_atom(Atom {
+			ident: AtomIdent::Fourcc(*b"\xa9ART"),
+			data: AtomData::UTF8(String::from("Foo artist")),
+		});
+
+		assert!(tag.save_to(&mut file).is_ok());
+		file.seek(SeekFrom::Start(0)).unwrap();
+
+		let mp4_file = Mp4File::read_from(&mut file, true).unwrap();
+		assert!(mp4_file.ilst.is_some());
+
+		verify_atom(
+			&mp4_file.ilst.unwrap(),
+			*b"\xa9ART",
+			&AtomData::UTF8(String::from("Foo artist")),
+		);
+	}
 }
