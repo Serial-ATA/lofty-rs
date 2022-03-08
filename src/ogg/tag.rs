@@ -239,20 +239,21 @@ impl From<Tag> for VorbisComments {
 		}
 
 		for item in input.items {
+			let item_key = item.item_key;
+			let item_value = item.item_value;
+
 			// Discard binary items, as they are not allowed in Vorbis comments
-			let val = match item.value() {
+			let val = match item_value {
 				ItemValue::Text(text) | ItemValue::Locator(text) => text,
 				_ => continue,
 			};
 
-			let key = match item.key().map_key(TagType::VorbisComments, true) {
+			let key = match item_key.map_key(TagType::VorbisComments, true) {
 				None => continue,
 				Some(k) => k,
 			};
 
-			vorbis_comments
-				.items
-				.push((key.to_string(), val.to_string()));
+			vorbis_comments.items.push((key.to_string(), val));
 		}
 
 		for picture in input.pictures {
