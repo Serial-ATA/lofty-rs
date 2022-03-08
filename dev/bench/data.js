@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1646591000125,
+  "lastUpdate": 1646698923547,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -2638,6 +2638,126 @@ window.BENCHMARK_DATA = {
           {
             "name": "File reading (Inferred from Content)/VORBIS",
             "value": 1886,
+            "range": "± 2",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "e58355af74dc46b4ebddc5c3e9fbe4393918101c",
+          "message": "Remove unnecessary clone",
+          "timestamp": "2022-03-07T19:16:12-05:00",
+          "tree_id": "47f6eec530ce7b53ff1431c7b8c1ce91ed7184e4",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/e58355af74dc46b4ebddc5c3e9fbe4393918101c"
+        },
+        "date": 1646698922720,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Tag writing/AIFF Text Chunks",
+            "value": 253,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/APEv2",
+            "value": 885,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v2",
+            "value": 1251,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v1",
+            "value": 516,
+            "range": "± 15",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/MP4 Ilst",
+            "value": 985,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/RIFF INFO",
+            "value": 475,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/Vorbis Comments",
+            "value": 983,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1137,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 1553,
+            "range": "± 9",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 698,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1195,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 1558,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 1456,
+            "range": "± 11",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 1328,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/SPEEX",
+            "value": 1519,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 1840,
             "range": "± 2",
             "unit": "ns/iter"
           }
