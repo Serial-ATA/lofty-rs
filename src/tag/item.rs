@@ -634,9 +634,24 @@ impl TagItem {
 		&self.item_key
 	}
 
+	/// Consumes the `TagItem`, returning its [`ItemKey`]
+	pub fn into_key(self) -> ItemKey {
+		self.item_key
+	}
+
 	/// Returns a reference to the [`ItemValue`]
 	pub fn value(&self) -> &ItemValue {
 		&self.item_value
+	}
+
+	/// Consumes the `TagItem`, returning its [`ItemValue`]
+	pub fn into_value(self) -> ItemValue {
+		self.item_value
+	}
+
+	/// Consumes the `TagItem`, returning its [`ItemKey`] and [`ItemValue`]
+	pub fn consume(self) -> (ItemKey, ItemValue) {
+		(self.item_key, self.item_value)
 	}
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {

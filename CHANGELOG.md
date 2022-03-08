@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `TagItem::{into_key, into_value, consume}`
+
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.
   - It is possible for these to be a regular atom (no version or flags).
