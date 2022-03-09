@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `TagItem::{into_key, into_value, consume}`
+- **MP4**: `Mp4Codec::ALS`
+
+### Changed
+- **MP4**: Sample rates are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).
+           If the information is invalid or unavailable, the existing value from the `mp4a` box will be used instead.
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.
@@ -19,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - https://leo-van-stee.github.io/
     - https://github.com/axiomatic-systems/Bento4/blob/v1.6.0-639/Source/C%2B%2B/Core/Ap4ContainerAtom.cpp#L60
     - https://github.com/taglib/taglib/issues/1041
+- **MP4**: Properly search for `soun` atom
+  - The search wasn't adding read bytes correctly, but tests passed due to the atom being immediately available.
+    It would attempt to read until it reached an EOF if it managed to make it through multiple iterations.
 
 ## [0.5.3] - 2022-03-03
 

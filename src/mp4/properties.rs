@@ -18,6 +18,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 pub enum Mp4Codec {
 	AAC,
 	ALAC,
+	ALS,
 	Unknown(String),
 }
 
@@ -112,9 +113,9 @@ where
 		data.seek(SeekFrom::Start(mdia.start + 8))?;
 
 		let mut read = 8;
-
 		while read < mdia.len {
 			let atom = AtomInfo::read(data)?;
+			read += atom.len;
 
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
@@ -138,7 +139,6 @@ where
 					b"minf" => minf = Some(atom),
 					_ => {
 						skip_unneeded(data, atom.extended, atom.len)?;
-						read += atom.len;
 					},
 				}
 
@@ -146,7 +146,6 @@ where
 			}
 
 			skip_unneeded(data, atom.extended, atom.len)?;
-			read += atom.len;
 		}
 	}
 
@@ -240,6 +239,16 @@ fn mp4a_properties<R>(stsd: &mut R, properties: &mut Mp4Properties, file_length:
 where
 	R: Read + Seek,
 {
+	const ELEMENTARY_DESCRIPTOR_TAG: u8 = 0x03;
+	const DECODER_CONFIG_TAG: u8 = 0x04;
+	const DECODER_SPECIFIC_DESCRIPTOR_TAG: u8 = 0x05;
+
+	// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Sampling_Frequencies
+	const SAMPLE_RATES: [u32; 15] = [
+		96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0,
+		0,
+	];
+
 	properties.codec = Mp4Codec::AAC;
 
 	// Skipping 16 bytes
@@ -267,33 +276,88 @@ where
 		// Version (1)
 		// Flags (3)
 		if esds.ident == AtomIdent::Fourcc(*b"esds") && stsd.read_u32::<BigEndian>()? == 0 {
-			let mut descriptor = [0; 4];
-			stsd.read_exact(&mut descriptor)?;
-
-			// [0x03, 0x80, 0x80, 0x80] marks the start of the elementary stream descriptor.
-			// 0x03 being the object descriptor
-			if descriptor == [0x03, 0x80, 0x80, 0x80] {
-				// Skipping 4 bytes
-				// Descriptor length (1)
+			let descriptor = Descriptor::read(stsd)?;
+			if descriptor.tag == ELEMENTARY_DESCRIPTOR_TAG {
+				// Skipping 3 bytes
 				// Elementary stream ID (2)
 				// Flags (1)
-				stsd.seek(SeekFrom::Current(4))?;
+				stsd.seek(SeekFrom::Current(3))?;
 
 				// There is another descriptor embedded in the previous one
-				let mut specific_config = [0; 4];
-				stsd.read_exact(&mut specific_config)?;
-
-				// [0x04, 0x80, 0x80, 0x80] marks the start of the descriptor configuration
-				if specific_config == [0x04, 0x80, 0x80, 0x80] {
-					// Skipping 10 bytes
-					// Descriptor length (1)
+				let descriptor = Descriptor::read(stsd)?;
+				if descriptor.tag == DECODER_CONFIG_TAG {
+					// Skipping 9 bytes
 					// Codec (1)
 					// Stream type (1)
 					// Buffer size (3)
 					// Max bitrate (4)
-					stsd.seek(SeekFrom::Current(10))?;
+					stsd.seek(SeekFrom::Current(9))?;
 
 					let average_bitrate = stsd.read_u32::<BigEndian>()?;
+
+					// Yet another descriptor to check
+					let descriptor = Descriptor::read(stsd)?;
+					if descriptor.tag == DECODER_SPECIFIC_DESCRIPTOR_TAG {
+						// We just check for ALS here, might extend it for more codes eventually
+
+						// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
+						//
+						// 5 bits: object type (profile)
+						// if (object type == 31)
+						//     6 bits + 32: object type
+						// 4 bits: frequency index
+						// if (frequency index == 15)
+						//     24 bits: frequency
+						// 4 bits: channel configuration
+						let mut profile = stsd.read_u8()?;
+						let byte_b = stsd.read_u8()?;
+						let mut frequency_index = (profile << 5) | (byte_b >> 7);
+
+						let mut extended_frequency_byte = None;
+						if (profile >> 3) == 31 {
+							profile = ((profile & 7) | (byte_b >> 5)) + 32;
+
+							let frequency_ext = stsd.read_u8()?;
+							frequency_index = (byte_b & 0x0F) | (frequency_ext & 1);
+							extended_frequency_byte = Some(frequency_ext);
+						}
+
+						// TODO: Channels
+
+						match frequency_index {
+							// 15 means the sample rate is stored in the next 24 bits
+							0x0F => {
+								if let Some(byte) = extended_frequency_byte {
+									let remaining_sample_rate =
+										u32::from(stsd.read_u16::<BigEndian>()?);
+									properties.sample_rate =
+										u32::from(byte >> 1) | remaining_sample_rate;
+								} else {
+									properties.sample_rate = stsd.read_uint::<BigEndian>(3)? as u32
+								}
+							},
+							i if i < SAMPLE_RATES.len() as u8 => {
+								properties.sample_rate = SAMPLE_RATES[i as usize]
+							},
+							// Keep the sample rate we read above
+							_ => {},
+						}
+
+						// https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
+						if profile == 36 {
+							let mut ident = [0; 5];
+							stsd.read_exact(&mut ident)?;
+
+							if &ident == b"\0ALS\0" {
+								properties.codec = Mp4Codec::ALS;
+								properties.sample_rate = stsd.read_u32::<BigEndian>()?;
+
+								// Sample count
+								stsd.seek(SeekFrom::Current(4))?;
+								properties.channels = stsd.read_u16::<BigEndian>()? as u8 + 1;
+							}
+						}
+					}
 
 					let overall_bitrate =
 						u128::from(file_length * 8) / properties.duration.as_millis();
@@ -365,4 +429,27 @@ where
 	}
 
 	Ok(())
+}
+
+struct Descriptor {
+	tag: u8,
+	_size: u32,
+}
+
+impl Descriptor {
+	fn read<R: Read>(reader: &mut R) -> Result<Descriptor> {
+		let tag = reader.read_u8()?;
+
+		// https://github.com/FFmpeg/FFmpeg/blob/84f5583078699e96b040f4f41b39720b683326d0/libavformat/isom.c#L283
+		let mut size: u32 = 0;
+		for _ in 0..4 {
+			let b = reader.read_u8()?;
+			size = (size << 7) | u32::from(b & 0x7F);
+			if b & 0x80 == 0 {
+				break;
+			}
+		}
+
+		Ok(Descriptor { tag, _size: size })
+	}
 }

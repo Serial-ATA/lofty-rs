@@ -72,6 +72,9 @@ mod tests {
 	use std::fs::File;
 	use std::time::Duration;
 
+	// These values are taken from FFmpeg's ffprobe
+	// They may be *slightly* different due to how ffprobe rounds
+
 	const AIFF_PROPERTIES: FileProperties = FileProperties {
 		duration: Duration::from_millis(1428),
 		overall_bitrate: Some(1542),
@@ -132,6 +135,16 @@ mod tests {
 		audio_bitrate: 1536,
 		sample_rate: 48000,
 		bit_depth: Some(16),
+		channels: 2,
+	};
+
+	const MP4_ALS_PROPERTIES: Mp4Properties = Mp4Properties {
+		codec: Mp4Codec::ALS,
+		duration: Duration::from_millis(1429),
+		overall_bitrate: 1083,
+		audio_bitrate: 1078,
+		sample_rate: 48000,
+		bit_depth: None,
 		channels: 2,
 	};
 
@@ -235,6 +248,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_alac.m4a"),
 			MP4_ALAC_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mp4_als_properties() {
+		assert_eq!(
+			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_als.mp4"),
+			MP4_ALS_PROPERTIES
 		)
 	}
 
