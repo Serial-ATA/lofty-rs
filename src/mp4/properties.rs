@@ -302,24 +302,24 @@ where
 
 						// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
 						//
-						// 5 bits: object type (profile)
+						// 5 bits: object type
 						// if (object type == 31)
 						//     6 bits + 32: object type
 						// 4 bits: frequency index
 						// if (frequency index == 15)
 						//     24 bits: frequency
 						// 4 bits: channel configuration
-						let mut profile = stsd.read_u8()?;
+						let byte_a = stsd.read_u8()?;
 						let byte_b = stsd.read_u8()?;
-						let mut frequency_index = (profile << 5) | (byte_b >> 7);
+						let mut object_type = byte_a >> 3;
+						let mut frequency_index = (byte_a << 5) | (byte_b >> 7);
 
-						let mut extended_frequency_byte = None;
-						if (profile >> 3) == 31 {
-							profile = ((profile & 7) | (byte_b >> 5)) + 32;
+						let mut extended_object_type = false;
+						if object_type == 31 {
+							extended_object_type = true;
 
-							let frequency_ext = stsd.read_u8()?;
-							frequency_index = (byte_b & 0x0F) | (frequency_ext & 1);
-							extended_frequency_byte = Some(frequency_ext);
+							object_type = 32 + ((byte_a & 7) | (byte_b >> 5));
+							frequency_index = (byte_b >> 1) & 0x0F;
 						}
 
 						// TODO: Channels
@@ -327,11 +327,10 @@ where
 						match frequency_index {
 							// 15 means the sample rate is stored in the next 24 bits
 							0x0F => {
-								if let Some(byte) = extended_frequency_byte {
-									let remaining_sample_rate =
-										u32::from(stsd.read_u16::<BigEndian>()?);
+								if extended_object_type {
+									let remaining_sample_rate = stsd.read_u24::<BigEndian>()?;
 									properties.sample_rate =
-										u32::from(byte >> 1) | remaining_sample_rate;
+										(remaining_sample_rate >> 1) | u32::from(byte_b & 1);
 								} else {
 									properties.sample_rate = stsd.read_uint::<BigEndian>(3)? as u32
 								}
@@ -344,7 +343,7 @@ where
 						}
 
 						// https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
-						if profile == 36 {
+						if object_type == 36 {
 							let mut ident = [0; 5];
 							stsd.read_exact(&mut ident)?;
 
