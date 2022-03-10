@@ -221,6 +221,10 @@ where
 					match fourcc {
 						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties, file_length)?,
 						b"alac" => alac_properties(&mut stsd_reader, &mut properties, file_length)?,
+						// Maybe do these?
+						// TODO: dfla (https://github.com/xiph/flac/blob/master/doc/isoflac.txt)
+						// TODO: dops
+						// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
 						unknown => {
 							if let Ok(codec) = std::str::from_utf8(unknown) {
 								properties.codec = Mp4Codec::Unknown(codec.to_string())
