@@ -33,7 +33,7 @@ cfg_if::cfg_if! {
 	}
 }
 
-pub use crate::mp4::properties::{Mp4Codec, Mp4Properties};
+pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
 
 /// An MP4 file
 pub struct Mp4File {

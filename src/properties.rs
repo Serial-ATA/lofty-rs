@@ -62,7 +62,7 @@ mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
 	use crate::mp3::{ChannelMode, Emphasis, Layer, Mp3File, Mp3Properties, MpegVersion};
-	use crate::mp4::{Mp4Codec, Mp4File, Mp4Properties};
+	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::ogg::{
 		FlacFile, OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile,
 		VorbisProperties,
@@ -120,6 +120,7 @@ mod tests {
 
 	const MP4_AAC_PROPERTIES: Mp4Properties = Mp4Properties {
 		codec: Mp4Codec::AAC,
+		extended_audio_object_type: Some(AudioObjectType::AacLowComplexity),
 		duration: Duration::from_millis(1449),
 		overall_bitrate: 135,
 		audio_bitrate: 124,
@@ -130,6 +131,7 @@ mod tests {
 
 	const MP4_ALAC_PROPERTIES: Mp4Properties = Mp4Properties {
 		codec: Mp4Codec::ALAC,
+		extended_audio_object_type: None,
 		duration: Duration::from_millis(1428),
 		overall_bitrate: 331,
 		audio_bitrate: 1536,
@@ -139,7 +141,8 @@ mod tests {
 	};
 
 	const MP4_ALS_PROPERTIES: Mp4Properties = Mp4Properties {
-		codec: Mp4Codec::ALS,
+		codec: Mp4Codec::AAC,
+		extended_audio_object_type: Some(AudioObjectType::AudioLosslessCoding),
 		duration: Duration::from_millis(1429),
 		overall_bitrate: 1083,
 		audio_bitrate: 1078,
