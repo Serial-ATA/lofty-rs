@@ -284,13 +284,12 @@ pub struct PictureInformation {
 impl PictureInformation {
 	/// Attempt to extract [`PictureInformation`] from a [`Picture`]
 	///
-	/// NOTE: Since FLAC only supports PNG and JPEG, this function is
-	/// no different.
+	/// NOTE: This only supports PNG and JPEG images. If another image is provided,
+	/// the `PictureInformation` will be zeroed out.
 	///
 	/// # Errors
 	///
 	/// * `picture.data` is less than 8 bytes in length
-	/// * `picture.data` contains a format that isn't PNG or JPEG
 	/// * See [`PictureInformation::from_png`] and [`PictureInformation::from_jpeg`]
 	pub fn from_picture(picture: &Picture) -> Result<Self> {
 		let reader = &mut &*picture.data;
@@ -302,7 +301,7 @@ impl PictureInformation {
 		match reader[..4] {
 			[0x89, b'P', b'N', b'G'] => Ok(Self::from_png(reader).unwrap_or_default()),
 			[0xFF, 0xD8, 0xFF, ..] => Ok(Self::from_jpeg(reader).unwrap_or_default()),
-			_ => Err(LoftyError::new(ErrorKind::UnsupportedPicture)),
+			_ => Ok(Self::default()),
 		}
 	}
 
@@ -340,16 +339,18 @@ impl PictureInformation {
 			_ => {},
 		}
 
+		let mut ret = Self {
+			width,
+			height,
+			color_depth,
+			num_colors: 0,
+		};
+
 		// The color type 3 (indexed-color) means there should be
 		// a "PLTE" chunk, whose data can be used in the `num_colors`
 		// field. It isn't really applicable to other color types.
 		if color_type != 3 {
-			return Ok(Self {
-				width,
-				height,
-				color_depth,
-				num_colors: 0,
-			});
+			return Ok(ret);
 		}
 
 		let mut reader = Cursor::new(reader);
@@ -361,7 +362,6 @@ impl PictureInformation {
 		// CRC (4)
 		reader.seek(SeekFrom::Current(7))?;
 
-		let mut num_colors = 0;
 		let mut chunk_type = [0; 4];
 
 		while let (Ok(size), Ok(())) = (
@@ -370,7 +370,7 @@ impl PictureInformation {
 		) {
 			if &chunk_type == b"PLTE" {
 				// The PLTE chunk contains 1-256 3-byte entries
-				num_colors = size / 3;
+				ret.num_colors = size / 3;
 				break;
 			}
 
@@ -378,12 +378,7 @@ impl PictureInformation {
 			reader.seek(SeekFrom::Current(i64::from(size + 4)))?;
 		}
 
-		Ok(Self {
-			width,
-			height,
-			color_depth,
-			num_colors,
-		})
+		Ok(ret)
 	}
 
 	/// Attempt to extract [`PictureInformation`] from a JPEG
