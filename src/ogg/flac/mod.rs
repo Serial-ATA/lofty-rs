@@ -8,6 +8,8 @@ pub(crate) mod write;
 use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
+#[cfg(feature = "id3v2")]
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::properties::FileProperties;
 use crate::tag::TagType;
 
@@ -15,6 +17,9 @@ use std::io::{Read, Seek};
 
 /// A FLAC file
 pub struct FlacFile {
+	#[cfg(feature = "id3v2")]
+	/// An ID3v2 tag
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
@@ -74,6 +79,9 @@ impl AudioFile for FlacFile {
 impl FlacFile {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "vorbis_comments")]
-		vorbis_comments, VorbisComments
+		vorbis_comments, VorbisComments;
+
+		#[cfg(feature = "id3v2")]
+		id3v2_tag, Id3v2Tag
 	}
 }

@@ -121,3 +121,17 @@ fn remove(path: &str, tag_type: TagType) {
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
 	assert_eq!(tagged_file.tag(&tag_type).unwrap().item_count(), 1);
 }
+
+#[test]
+fn flac_with_id3v2() {
+	use lofty::ogg::FlacFile;
+	use lofty::{Accessor, AudioFile};
+
+	let file = std::fs::read("tests/files/assets/flac_with_id3v2.flac").unwrap();
+	let flac_file = FlacFile::read_from(&mut std::io::Cursor::new(file), true).unwrap();
+
+	assert!(flac_file.id3v2_tag().is_some());
+	assert_eq!(flac_file.id3v2_tag().unwrap().artist(), Some("Foo artist"));
+
+	assert!(flac_file.vorbis_comments().is_some());
+}

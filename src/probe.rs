@@ -174,8 +174,8 @@ impl<R: Read + Seek> Probe<R> {
 					.inner
 					.seek(SeekFrom::Current(i64::from(10 + id3_len)))?;
 
-				// try to guess the file type after the ID3 block by inspecting the first 3 bytes
-				let mut ident = [0; 3];
+				// try to guess the file type after the ID3 block by inspecting the first 4 bytes
+				let mut ident = [0; 4];
 				std::io::copy(
 					&mut self.inner.by_ref().take(ident.len() as u64),
 					&mut Cursor::new(&mut ident[..]),
@@ -184,7 +184,8 @@ impl<R: Read + Seek> Probe<R> {
 				self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
 
 				let file_type_after_id3_block = match &ident {
-					b"MAC" => Ok(Some(FileType::APE)),
+					[b'M', b'A', b'C', ..] => Ok(Some(FileType::APE)),
+					b"fLaC" => Ok(Some(FileType::FLAC)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
 						Ok(Some(FileType::MP3))

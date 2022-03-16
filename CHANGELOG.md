@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Properly search for `soun` atom
   - The search wasn't adding read bytes correctly, but tests passed due to the atom being immediately available.
     It would attempt to read until it reached an EOF if it managed to make it through multiple iterations.
+- **FLAC**: Support files with an ID3v2 tag
+  - This will be read only just like APE, but will allow such files to be read
 
 ## [0.5.3] - 2022-03-03
 
