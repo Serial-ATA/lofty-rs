@@ -2,17 +2,17 @@ use lofty::Probe;
 use std::io::Write;
 
 fn main() {
-	let path = std::env::args().nth(1).expect("Error: No path specified!");
+	let path = std::env::args().nth(1).expect("ERROR: No path specified!");
 
 	let tagged_file = Probe::open(path.as_str())
-		.expect("Error: Bad path provided!")
+		.expect("ERROR: Bad path provided!")
 		.read(false)
-		.expect("Error: Failed to read file!");
+		.expect("ERROR: Failed to read file!");
 
 	let tags = tagged_file.tags();
 
 	if tags.is_empty() {
-		eprintln!("No tags found, exiting.");
+		eprintln!("ERROR: No tags found, exiting.");
 		std::process::exit(0);
 	}
 

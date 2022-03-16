@@ -33,7 +33,7 @@ To try them out, run:
 ```bash
 cargo run --example tag_reader /path/to/file
 cargo run --example tag_stripper /path/to/file
-cargo run --example tag_writer <options> --path /path/to/file
+cargo run --example tag_writer <options> /path/to/file
 ```
 
 ## Documentation

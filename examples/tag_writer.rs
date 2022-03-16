@@ -2,6 +2,8 @@ use lofty::{Accessor, Probe, Tag, TagExt};
 
 use structopt::StructOpt;
 
+use std::path::PathBuf;
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "tag_writer", about = "A simple tag writer example")]
 struct Opt {
@@ -17,17 +19,17 @@ struct Opt {
 	#[structopt(short, long)]
 	genre: Option<String>,
 
-	#[structopt(short, long)]
-	path: String,
+	#[structopt(parse(from_os_str))]
+	path: PathBuf,
 }
 
 fn main() {
 	let opt = Opt::from_args();
 
-	let mut tagged_file = Probe::open(opt.path.as_str())
-		.expect("Error: Bad path provided!")
+	let mut tagged_file = Probe::open(&opt.path)
+		.expect("ERROR: Bad path provided!")
 		.read(false)
-		.expect("Error: Failed to read file!");
+		.expect("ERROR: Failed to read file!");
 
 	let tag = match tagged_file.primary_tag_mut() {
 		Some(primary_tag) => primary_tag,
@@ -76,7 +78,7 @@ fn main() {
 		tag.set_genre(genre)
 	}
 
-	tag.save_to_path(opt.path)
+	tag.save_to_path(&opt.path)
 		.expect("ERROR: Failed to write the tag!");
 
 	println!("INFO: Tag successfully updated!");
