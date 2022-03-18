@@ -264,7 +264,9 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::Probe;
+	use crate::{FileType, Probe};
+
+	use std::fs::File;
 
 	#[test]
 	fn mp3_id3v2_trailing_junk() {
@@ -290,5 +292,79 @@ mod tests {
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
 		assert_eq!(probe.file_type(), Some(crate::FileType::MP3));
+	}
+
+	fn test_probe(path: &str, expected_file_type_guess: FileType) {
+		test_probe_file(path, expected_file_type_guess);
+		test_probe_path(path, expected_file_type_guess);
+	}
+
+	// Test from file contents
+	fn test_probe_file(path: &str, expected_file_type_guess: FileType) {
+		let mut f = File::open(path).unwrap();
+		let probe = Probe::new(&mut f).guess_file_type().unwrap();
+		assert_eq!(probe.file_type(), Some(expected_file_type_guess));
+	}
+
+	// Test from file extension
+	fn test_probe_path(path: &str, expected_file_type_guess: FileType) {
+		let probe = Probe::open(path).unwrap();
+		assert_eq!(probe.file_type(), Some(expected_file_type_guess));
+	}
+
+	#[test]
+	fn probe_aiff() {
+		test_probe("tests/files/assets/minimal/full_test.aiff", FileType::AIFF);
+	}
+
+	#[test]
+	fn probe_ape_with_id3v2() {
+		test_probe("tests/files/assets/minimal/full_test.ape", FileType::APE);
+	}
+
+	#[test]
+	fn probe_flac() {
+		test_probe("tests/files/assets/minimal/full_test.flac", FileType::FLAC);
+	}
+
+	#[test]
+	fn probe_flac_with_id3v2() {
+		test_probe("tests/files/assets/flac_with_id3v2.flac", FileType::FLAC);
+	}
+
+	#[test]
+	fn probe_mp3_with_id3v2() {
+		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::MP3);
+	}
+
+	#[test]
+	fn probe_vorbis() {
+		test_probe("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis);
+	}
+
+	#[test]
+	fn probe_opus() {
+		test_probe("tests/files/assets/minimal/full_test.opus", FileType::Opus);
+	}
+
+	#[test]
+	fn probe_speex() {
+		test_probe("tests/files/assets/minimal/full_test.spx", FileType::Speex);
+	}
+
+	#[test]
+	fn probe_mp4() {
+		test_probe(
+			"tests/files/assets/minimal/m4a_codec_aac.m4a",
+			FileType::MP4,
+		);
+	}
+
+	#[test]
+	fn probe_wav() {
+		test_probe(
+			"tests/files/assets/minimal/wav_format_pcm.wav",
+			FileType::WAV,
+		);
 	}
 }
