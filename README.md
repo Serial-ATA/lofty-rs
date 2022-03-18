@@ -20,7 +20,7 @@ Parse, convert, and write metadata to various audio formats.
 | Speex       | `Vorbis Comments`                    |
 | WAV         | `ID3v2`, `RIFF INFO`                 |
 
-\* The format does not officially support ID3v2, so the tag will be **read only**
+\* The tag will be **read only**, due to lack of official support
 
 ## Examples
 
