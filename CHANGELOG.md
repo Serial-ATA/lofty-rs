@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vorbis Comments**: Support non-PNG/JPEG images in `PictureInformation::from_picture`
   - The method still only supports PNG and JPEG, but rather than error when it encounters an unknown image, it will return
     `PictureInformation::default`
+- `lofty::read_from` will now wrap the `File` in a `BufReader`
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.

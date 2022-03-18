@@ -242,7 +242,9 @@ impl<R: Read + Seek> Probe<R> {
 /// * [`Probe::guess_file_type`]
 /// * [`Probe::read`]
 pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
-	Probe::new(file).guess_file_type()?.read(read_properties)
+	Probe::new(BufReader::new(file))
+		.guess_file_type()?
+		.read(read_properties)
 }
 
 /// Read a [`TaggedFile`] from a path
