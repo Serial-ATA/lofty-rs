@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The method still only supports PNG and JPEG, but rather than error when it encounters an unknown image, it will return
     `PictureInformation::default`
 - `lofty::read_from` will now wrap the `File` in a `BufReader`
+- **FLAC**: FLAC now has its own module at `lofty::flac`
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.

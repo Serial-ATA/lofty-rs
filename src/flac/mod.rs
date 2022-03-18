@@ -1,21 +1,35 @@
+//! Items for FLAC
+//!
+//! ## File notes
+//!
+//! * See [`FlacFile`]
+
 mod block;
 mod properties;
 mod read;
 #[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
 
-#[cfg(feature = "vorbis_comments")]
-use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
+#[cfg(feature = "vorbis_comments")]
+use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
 use crate::tag::TagType;
 
 use std::io::{Read, Seek};
 
 /// A FLAC file
+///
+/// ## Notes
+///
+/// * The ID3v2 tag is **read only**, and it's use is discouraged by spec
+/// * Picture blocks will be stored in the `VorbisComments` tag, meaning a file could have no vorbis
+///   comments block, but `FlacFile::vorbis_comments` will exist.
+///   * When writing, the pictures will be stored in their own picture blocks
+///   * This behavior will likely change in the future
 pub struct FlacFile {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag

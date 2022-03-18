@@ -60,12 +60,12 @@ impl FileProperties {
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
+	use crate::flac::FlacFile;
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
 	use crate::mp3::{ChannelMode, Emphasis, Layer, Mp3File, Mp3Properties, MpegVersion};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::ogg::{
-		FlacFile, OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile,
-		VorbisProperties,
+		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
 	use crate::{AudioFile, FileProperties};
 

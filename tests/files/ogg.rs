@@ -124,7 +124,7 @@ fn remove(path: &str, tag_type: TagType) {
 
 #[test]
 fn flac_with_id3v2() {
-	use lofty::ogg::FlacFile;
+	use lofty::flac::FlacFile;
 	use lofty::{Accessor, AudioFile};
 
 	let file = std::fs::read("tests/files/assets/flac_with_id3v2.flac").unwrap();

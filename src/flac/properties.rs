@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_properties<R>(
+pub(crate) fn read_properties<R>(
 	stream_info: &mut R,
 	stream_length: u64,
 	file_length: u64,

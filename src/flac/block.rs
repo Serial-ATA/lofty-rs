@@ -5,17 +5,17 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) struct Block {
-	pub(super) byte: u8,
-	pub(super) ty: u8,
-	pub(super) last: bool,
-	pub(super) content: Vec<u8>,
-	pub(super) start: u64,
-	pub(super) end: u64,
+pub(crate) struct Block {
+	pub(crate) byte: u8,
+	pub(crate) ty: u8,
+	pub(crate) last: bool,
+	pub(crate) content: Vec<u8>,
+	pub(crate) start: u64,
+	pub(crate) end: u64,
 }
 
 impl Block {
-	pub(in crate::ogg) fn read<R>(data: &mut R) -> Result<Self>
+	pub(crate) fn read<R>(data: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
 	{

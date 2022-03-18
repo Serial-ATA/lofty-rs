@@ -1,12 +1,12 @@
 use crate::ape::ApeFile;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::mp3::header::search_for_frame_sync;
 use crate::mp3::Mp3File;
 use crate::mp4::Mp4File;
-use crate::ogg::flac::FlacFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;

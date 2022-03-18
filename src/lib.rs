@@ -167,6 +167,7 @@
 pub mod ape;
 pub mod error;
 pub(crate) mod file;
+pub mod flac;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;

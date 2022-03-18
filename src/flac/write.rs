@@ -12,7 +12,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
-pub(in crate) fn write_to<'a, II, IP>(
+pub(crate) fn write_to<'a, II, IP>(
 	data: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 ) -> Result<()>

@@ -19,7 +19,7 @@ pub type OGGTags = (Option<VorbisComments>, Page);
 pub type OGGTags = (Option<()>, Page);
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result<()>
+pub(crate) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result<()>
 where
 	R: Read,
 {

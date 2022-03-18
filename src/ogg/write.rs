@@ -11,6 +11,7 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use crate::flac::write;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::Page;
 
@@ -45,7 +46,7 @@ pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Re
 			};
 
 			if let FileType::FLAC = file_type {
-				return super::flac::write::write_to(file, &mut comments_ref);
+				return write::write_to(file, &mut comments_ref);
 			}
 
 			let format = match file_type {

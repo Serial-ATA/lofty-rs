@@ -7,6 +7,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
+use crate::flac::write;
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
 use std::path::Path;
@@ -289,7 +290,7 @@ where
 		let file = probe.into_inner();
 
 		match f_ty {
-			Some(FileType::FLAC) => super::flac::write::write_to(file, self),
+			Some(FileType::FLAC) => write::write_to(file, self),
 			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
 			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
 			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),

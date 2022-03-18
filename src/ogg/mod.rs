@@ -4,7 +4,6 @@
 //!
 //! The only supported tag format is [`VorbisComments`]
 pub(crate) mod constants;
-pub(crate) mod flac;
 pub(crate) mod opus;
 pub(crate) mod read;
 pub(crate) mod speex;
@@ -28,7 +27,6 @@ cfg_if::cfg_if! {
 	}
 }
 
-pub use flac::FlacFile;
 pub use opus::properties::OpusProperties;
 pub use opus::OpusFile;
 pub use speex::properties::SpeexProperties;
