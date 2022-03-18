@@ -318,6 +318,10 @@ impl TagExt for Id3v2Tag {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::Id3v2.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.frames.clear();
+	}
 }
 
 impl From<Id3v2Tag> for Tag {

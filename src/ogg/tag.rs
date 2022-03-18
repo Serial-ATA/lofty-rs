@@ -194,6 +194,11 @@ impl TagExt for VorbisComments {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::VorbisComments.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.items.clear();
+		self.pictures.clear();
+	}
 }
 
 impl From<VorbisComments> for Tag {

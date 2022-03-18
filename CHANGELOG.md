@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: `mp4::AudioObjectType`
   - This new type is used in `mp4::Mp4Properties`, accessible with `Mp4Properties::audio_object_type`.
     This provides additional information for the type of audio being dealt with.
+- `TagExt::clear`
+  - This allows tags to be cleared of any items or pictures, while retaining any flags (if applicable)
 
 ### Changed
 - **MP4**: Sample rates are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).

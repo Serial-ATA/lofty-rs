@@ -169,6 +169,10 @@ impl TagExt for AiffTextChunks {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::AiffText.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		*self = Self::default();
+	}
 }
 
 impl From<AiffTextChunks> for Tag {

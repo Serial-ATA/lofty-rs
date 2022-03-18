@@ -171,6 +171,10 @@ impl TagExt for ApeTag {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::Ape.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.items.clear();
+	}
 }
 
 impl From<ApeTag> for Tag {

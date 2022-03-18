@@ -127,6 +127,10 @@ impl TagExt for RiffInfoList {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::RiffInfo.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.items.clear();
+	}
 }
 
 impl From<RiffInfoList> for Tag {

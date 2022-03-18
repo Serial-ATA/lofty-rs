@@ -250,6 +250,10 @@ impl TagExt for Ilst {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		TagType::Mp4Ilst.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.atoms.clear();
+	}
 }
 
 impl From<Ilst> for Tag {

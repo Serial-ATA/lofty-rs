@@ -395,6 +395,11 @@ impl TagExt for Tag {
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		self.tag_type.remove_from(file)
 	}
+
+	fn clear(&mut self) {
+		self.items.clear();
+		self.pictures.clear();
+	}
 }
 
 /// The tag's format
