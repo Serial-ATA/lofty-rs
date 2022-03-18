@@ -1,6 +1,7 @@
 use super::verify_signature;
 use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
+use crate::flac;
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
@@ -11,7 +12,6 @@ use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use crate::flac::write;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::Page;
 
@@ -46,7 +46,7 @@ pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Re
 			};
 
 			if let FileType::FLAC = file_type {
-				return write::write_to(file, &mut comments_ref);
+				return flac::write::write_to(file, &mut comments_ref);
 			}
 
 			let format = match file_type {

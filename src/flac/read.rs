@@ -14,7 +14,7 @@ use crate::{
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(crate) fn verify_flac<R>(data: &mut R) -> Result<Block>
+pub(super) fn verify_flac<R>(data: &mut R) -> Result<Block>
 where
 	R: Read + Seek,
 {
