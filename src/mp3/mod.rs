@@ -66,7 +66,7 @@ impl AudioFile for Mp3File {
 	where
 		R: Read + Seek,
 	{
-		read::read_from(reader, true, read_properties)
+		read::read_from(reader, read_properties)
 	}
 
 	fn properties(&self) -> &Self::Properties {

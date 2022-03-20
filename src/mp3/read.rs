@@ -15,11 +15,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(
-	reader: &mut R,
-	read_tags: bool,
-	read_properties: bool,
-) -> Result<Mp3File>
+pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Mp3File>
 where
 	R: Read + Seek,
 {
@@ -47,7 +43,7 @@ where
 				let skip_footer = header.flags.footer;
 
 				#[cfg(feature = "id3v2")]
-				if read_tags {
+				{
 					let id3v2 = parse_id3v2(reader, header)?;
 					file.id3v2_tag = Some(id3v2);
 				}
@@ -73,7 +69,7 @@ where
 					}
 
 					#[cfg(feature = "ape")]
-					if read_tags {
+					{
 						file.ape_tag =
 							Some(crate::ape::tag::read::read_ape_tag(reader, ape_header)?);
 					}
@@ -133,7 +129,7 @@ where
 		let size = ape_header.size;
 
 		#[cfg(feature = "ape")]
-		if read_tags {
+		{
 			let ape = read_ape_tag(reader, ape_header)?;
 			file.ape_tag = Some(ape);
 		}
