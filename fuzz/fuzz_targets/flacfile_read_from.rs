@@ -2,9 +2,9 @@
 
 use std::io::Cursor;
 
-use lofty::AudioFile;
 use libfuzzer_sys::fuzz_target;
+use lofty::AudioFile;
 
 fuzz_target!(|data: Vec<u8>| {
-    let _ = lofty::ogg::FlacFile::read_from(&mut Cursor::new(data), false);
+	let _ = lofty::flac::FlacFile::read_from(&mut Cursor::new(data), false);
 });
