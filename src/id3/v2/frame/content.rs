@@ -1,114 +1,21 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
-use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
+use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
+use crate::id3::v2::items::language_frame::LanguageFrame;
+use crate::id3::v2::util::text_utils::{decode_text, TextEncoding};
 use crate::id3::v2::Id3v2Version;
 use crate::picture::Picture;
 
-use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+use crate::id3::v2::items::popularimeter::Popularimeter;
 use byteorder::ReadBytesExt;
-
-#[derive(Clone, Debug, Eq)]
-/// Information about an `ID3v2` frame that requires a language
-///
-/// See [`EncodedTextFrame`]
-pub struct LanguageFrame {
-	/// The encoding of the description and comment text
-	pub encoding: TextEncoding,
-	/// ISO-639-2 language code (3 bytes)
-	pub language: String,
-	/// Unique content description
-	pub description: String,
-	/// The actual frame content
-	pub content: String,
-}
-
-impl PartialEq for LanguageFrame {
-	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
-	}
-}
-
-impl Hash for LanguageFrame {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.description.hash(state);
-	}
-}
-
-impl LanguageFrame {
-	/// Convert a [`LanguageFrame`] to a byte vec
-	///
-	/// NOTE: This does not include a frame header
-	///
-	/// # Errors
-	///
-	/// * `language` is not exactly 3 bytes
-	/// * `language` contains invalid characters `('a'..'z')`
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
-		let mut bytes = vec![self.encoding as u8];
-
-		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..='z').contains(&c)) {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
-				"Invalid frame language found (expected 3 ascii characters)",
-			))
-			.into());
-		}
-
-		bytes.extend(self.language.as_bytes().iter());
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
-
-		Ok(bytes)
-	}
-}
-
-#[derive(Clone, Debug, Eq)]
-/// An `ID3v2` text frame
-///
-/// This is used in the frames `TXXX` and `WXXX`, where the frames
-/// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameID)s.
-/// This means for each `EncodedTextFrame` in the tag, the description
-/// must be unique.
-pub struct EncodedTextFrame {
-	/// The encoding of the description and comment text
-	pub encoding: TextEncoding,
-	/// Unique content description
-	pub description: String,
-	/// The actual frame content
-	pub content: String,
-}
-
-impl PartialEq for EncodedTextFrame {
-	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
-	}
-}
-
-impl Hash for EncodedTextFrame {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.description.hash(state);
-	}
-}
-
-impl EncodedTextFrame {
-	/// Convert an [`EncodedTextFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut bytes = vec![self.encoding as u8];
-
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
-
-		bytes
-	}
-}
 
 pub(super) fn parse_content(
 	content: &mut &[u8],
 	id: &str,
 	version: Id3v2Version,
 ) -> Result<FrameValue> {
-	// TODO: POPM frame
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
@@ -124,6 +31,7 @@ pub(super) fn parse_content(
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
 		_ if id.starts_with('W') => parse_link(content)?,
+		"POPM" => parse_popularimeter(content)?,
 		// SYLT, GEOB, and any unknown frames
 		_ => FrameValue::Binary(content.to_vec()),
 	})
@@ -208,6 +116,33 @@ fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
 	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
 
 	Ok(FrameValue::URL(link))
+}
+
+fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {
+	let email = decode_text(content, TextEncoding::Latin1, true)?;
+	let rating = content.read_u8()?;
+
+	let counter;
+	let remaining_size = content.len();
+	if remaining_size > 8 {
+		counter = u64::MAX;
+	} else {
+		let mut c = Vec::with_capacity(8);
+		content.read_to_end(&mut c)?;
+
+		let needed_zeros = 8 - remaining_size;
+		for _ in 0..needed_zeros {
+			c.insert(0, 0);
+		}
+
+		counter = u64::from_be_bytes(c.try_into().unwrap());
+	}
+
+	Ok(FrameValue::Popularimeter(Popularimeter {
+		email: email.unwrap_or_default(),
+		rating,
+		counter,
+	}))
 }
 
 fn verify_encoding(encoding: u8, version: Id3v2Version) -> Result<TextEncoding> {

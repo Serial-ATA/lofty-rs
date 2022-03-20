@@ -1,11 +1,12 @@
 use super::flags::Id3v2TagFlags;
-use super::frame::content::{EncodedTextFrame, LanguageFrame};
 use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue};
 use super::util::text_utils::TextEncoding;
 use super::Id3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
+use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
+use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::picture::{Picture, PictureType};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
@@ -380,6 +381,7 @@ impl From<Id3v2Tag> for Tag {
 					tag.push_picture(picture);
 					continue;
 				},
+				FrameValue::Popularimeter(_) => continue,
 				FrameValue::Binary(binary) => ItemValue::Binary(binary),
 			};
 
@@ -461,6 +463,7 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 
 #[cfg(test)]
 mod tests {
+	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::{
 		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, Id3v2Tag, Id3v2Version,
 		LanguageFrame, TextEncoding,
@@ -822,5 +825,23 @@ mod tests {
 				flags: FrameFlags::default()
 			})
 		);
+	}
+
+	#[test]
+	fn popm_frame() {
+		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_popm.id3v24");
+
+		assert_eq!(parsed_tag.frames.len(), 1);
+		let popm_frame = parsed_tag.frames.first().unwrap();
+
+		assert_eq!(popm_frame.id, FrameID::Valid(String::from("POPM")));
+		assert_eq!(
+			popm_frame.value,
+			FrameValue::Popularimeter(Popularimeter {
+				email: String::from("foo@bar.com"),
+				rating: 196,
+				counter: 65535
+			})
+		)
 	}
 }

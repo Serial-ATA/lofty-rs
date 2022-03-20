@@ -5,17 +5,19 @@ pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
+use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::Id3v2Version;
 use crate::picture::Picture;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
-use content::{EncodedTextFrame, LanguageFrame};
 use id::FrameID;
 
 use std::borrow::Cow;
 
+use crate::id3::v2::items::popularimeter::Popularimeter;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
@@ -112,6 +114,7 @@ impl Frame {
 	}
 }
 
+#[non_exhaustive]
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// The value of an `ID3v2` frame
 pub enum FrameValue {
@@ -153,6 +156,8 @@ pub enum FrameValue {
 		/// The picture itself
 		picture: Picture,
 	},
+	/// Represents a "POPM" frame
+	Popularimeter(Popularimeter),
 	/// Binary data
 	///
 	/// NOTES:
@@ -192,6 +197,7 @@ impl FrameValue {
 			FrameValue::Picture { encoding, picture } => {
 				picture.as_apic_bytes(Id3v2Version::V4, *encoding)?
 			},
+			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}

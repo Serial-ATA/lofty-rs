@@ -26,11 +26,12 @@ cfg_if::cfg_if! {
 		pub use tag::Id3v2Tag;
 
 		mod items;
+		pub use items::encoded_text_frame::EncodedTextFrame;
+		pub use items::language_frame::LanguageFrame;
 		pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
 		pub use items::sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
 
 		mod frame;
-		pub use frame::content::{EncodedTextFrame, LanguageFrame};
 		pub use frame::id::FrameID;
 		pub use frame::Frame;
 		pub use frame::FrameFlags;

@@ -44,6 +44,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 				FrameValue::URL(_) => "URL",
 				FrameValue::UserURL(_) => "UserURL",
 				FrameValue::Picture { .. } => "Picture",
+				FrameValue::Popularimeter(_) => "Popularimeter",
 				FrameValue::Binary(_) => "Binary",
 			},
 		))

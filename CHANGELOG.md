@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This allows tags to be cleared of any items or pictures, while retaining any flags (if applicable)
 - **ID3v2**: Respect `Id3v2TagFlags::crc` when writing
   - Previously, this flag was ignored, but it will now calculate a CRC for the extended header
+- **ID3v2**: `FrameValue::Popularimeter`
 
 ### Changed
 - **MP4**: Sample rates are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `PictureInformation::default`
 - `lofty::read_from` will now wrap the `File` in a `BufReader`
 - **FLAC**: FLAC now has its own module at `lofty::flac`
+- **ID3v2**: `FrameValue` is now `#[non_exhaustive]`
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.

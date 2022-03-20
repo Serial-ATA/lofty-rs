@@ -159,7 +159,8 @@
 	clippy::single_match_else,
 	clippy::similar_names,
 	clippy::tabs_in_doc_comments,
-	clippy::len_without_is_empty
+	clippy::len_without_is_empty,
+	clippy::needless_late_init
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
