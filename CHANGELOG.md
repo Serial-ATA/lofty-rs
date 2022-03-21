@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     It would attempt to read until it reached an EOF if it managed to make it through multiple iterations.
 - **FLAC**: Support files with an ID3v2 tag
   - This will be read only just like APE, but will allow such files to be read
-- **ID3v2**: Support writing proprietary Apple frames
+- **ID3v2**: Fix writing certain proprietary Apple frames
   - When writing, frame IDs are verified with their content. The Apple specific frames "MVNM" and "MVIN" were missing,
     causing an error if they were written with their proper type (`FrameValue::Text`)
 
@@ -108,8 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/41e4b1a...main
-[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/6bfe845...41e4b1a
-[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...6bfe845
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...main
+[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
+[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
