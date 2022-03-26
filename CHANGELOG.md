@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: `FrameValue::Popularimeter`
 
 ### Changed
-- **MP4**: Sample rates are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).
+- **MP4**: Sample rates and channels are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).
            If the information is invalid or unavailable, the existing value from the `mp4a` box will be used instead.
 - **Vorbis Comments**: Support non-PNG/JPEG images in `PictureInformation::from_picture`
   - The method still only supports PNG and JPEG, but rather than error when it encounters an unknown image, it will return

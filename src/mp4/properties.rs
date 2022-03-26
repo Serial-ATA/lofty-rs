@@ -435,11 +435,12 @@ where
 						// if (frequency index == 15)
 						//     24 bits: frequency
 						// 4 bits: channel configuration
-						// TODO: Channels
 						let byte_a = stsd.read_u8()?;
 						let byte_b = stsd.read_u8()?;
+
 						let mut object_type = byte_a >> 3;
-						let mut frequency_index = (byte_a << 5) | (byte_b >> 7);
+						let mut frequency_index = ((byte_a & 0x07) << 1) | (byte_b >> 7);
+						let mut channel_conf = (byte_b >> 3) & 0x0F;
 
 						let mut extended_object_type = false;
 						if object_type == 31 {
@@ -455,19 +456,42 @@ where
 						match frequency_index {
 							// 15 means the sample rate is stored in the next 24 bits
 							0x0F => {
+								let sample_rate;
+								let explicit_sample_rate = stsd.read_u24::<BigEndian>()?;
 								if extended_object_type {
-									let remaining_sample_rate = stsd.read_u24::<BigEndian>()?;
-									properties.sample_rate =
-										(remaining_sample_rate >> 1) | u32::from(byte_b & 1);
+									sample_rate = explicit_sample_rate >> 1;
+									channel_conf = ((explicit_sample_rate >> 4) & 0x0F) as u8;
 								} else {
-									properties.sample_rate = stsd.read_uint::<BigEndian>(3)? as u32
+									sample_rate = explicit_sample_rate << 1;
+									let byte_c = stsd.read_u8()?;
+
+									channel_conf = ((explicit_sample_rate & 0x80) as u8
+										| (byte_c >> 1)) & 0x0F;
+								}
+
+								// Just use the sample rate we already read above if this is invalid
+								if sample_rate > 0 {
+									properties.sample_rate = sample_rate;
 								}
 							},
 							i if i < SAMPLE_RATES.len() as u8 => {
-								properties.sample_rate = SAMPLE_RATES[i as usize]
+								properties.sample_rate = SAMPLE_RATES[i as usize];
+
+								if extended_object_type {
+									let byte_c = stsd.read_u8()?;
+									channel_conf = (byte_b & 1) | (byte_c & 0xE0);
+								} else {
+									channel_conf = (byte_b >> 3) & 0x0F;
+								}
 							},
 							// Keep the sample rate we read above
 							_ => {},
+						}
+
+						// The channel configuration isn't always set, at least when testing with
+						// the Audio Lossless Coding reference software
+						if channel_conf > 0 {
+							properties.channels = channel_conf;
 						}
 
 						// We just check for ALS here, might extend it for more codes eventually
