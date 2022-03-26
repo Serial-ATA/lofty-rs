@@ -7,6 +7,7 @@ use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
+#[cfg(feature = "mp4_ilst")]
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(in crate::mp4) fn verify_mp4<R>(data: &mut R) -> Result<String>
@@ -101,6 +102,7 @@ where
 	Ok(ret)
 }
 
+#[cfg(feature = "mp4_ilst")]
 // Creates a tree of nested atoms
 pub(super) fn atom_tree<R>(data: &mut R, len: u64, up_to: &[u8]) -> Result<(usize, Vec<AtomInfo>)>
 where
@@ -134,6 +136,7 @@ where
 	Ok((found_idx, buf))
 }
 
+#[cfg(feature = "mp4_ilst")]
 pub(super) fn meta_is_full<R>(data: &mut R) -> Result<bool>
 where
 	R: Read + Seek,

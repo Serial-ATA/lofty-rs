@@ -1,5 +1,4 @@
-use crate::tag::item::ItemKey;
-
+#[cfg(any(feature = "id3v1", feature = "mp4_ilst"))]
 /// All possible genres for ID3v1
 pub const GENRES: [&str; 192] = [
 	"Blues",
@@ -196,12 +195,18 @@ pub const GENRES: [&str; 192] = [
 	"Psybient",
 ];
 
-pub(crate) const VALID_ITEMKEYS: [ItemKey; 7] = [
-	ItemKey::TrackTitle,
-	ItemKey::TrackArtist,
-	ItemKey::AlbumTitle,
-	ItemKey::Year,
-	ItemKey::Comment,
-	ItemKey::TrackNumber,
-	ItemKey::Genre,
-];
+cfg_if::cfg_if! {
+	if #[cfg(feature = "id3v1")] {
+		use crate::tag::item::ItemKey;
+
+		pub(crate) const VALID_ITEMKEYS: [ItemKey; 7] = [
+			ItemKey::TrackTitle,
+			ItemKey::TrackArtist,
+			ItemKey::AlbumTitle,
+			ItemKey::Year,
+			ItemKey::Comment,
+			ItemKey::TrackNumber,
+			ItemKey::Genre,
+		];
+	}
+}

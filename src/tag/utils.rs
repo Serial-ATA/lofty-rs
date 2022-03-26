@@ -1,23 +1,22 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::FileType;
-use crate::tag::item::ItemKey;
 use crate::tag::{Tag, TagType};
-use crate::{ape, iff, mp3, mp4, ogg};
+use crate::{ape, iff, mp3};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
+#[cfg(feature = "mp4_ilst")]
+use crate::mp4::ilst::IlstRef;
+#[cfg(feature = "vorbis_comments")]
+use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 #[cfg(feature = "ape")]
 use ape::tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
 use iff::wav::tag::RiffInfoListRef;
-#[cfg(feature = "mp4_ilst")]
-use mp4::ilst::IlstRef;
-#[cfg(feature = "vorbis_comments")]
-use ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 
 use std::fs::File;
 use std::io::Write;
@@ -29,11 +28,11 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::APE => ape::write::write_to(file, tag),
 		#[cfg(feature = "vorbis_comments")]
 		FileType::FLAC | FileType::Opus | FileType::Speex | FileType::Vorbis => {
-			ogg::write::write_to(file, tag, file_type)
+			crate::ogg::write::write_to(file, tag, file_type)
 		},
 		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
-		FileType::MP4 => mp4::ilst::write::write_to(file, &mut Into::<IlstRef<'_>>::into(tag)),
+		FileType::MP4 => crate::mp4::ilst::write::write_to(file, &mut Into::<IlstRef<'_>>::into(tag)),
 		FileType::WAV => iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
@@ -75,12 +74,16 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		}
 		.dump_to(writer),
 		#[cfg(feature = "aiff_text_chunks")]
-		TagType::AiffText => AiffTextChunksRef {
-			name: tag.get_string(&ItemKey::TrackTitle),
-			author: tag.get_string(&ItemKey::TrackArtist),
-			copyright: tag.get_string(&ItemKey::CopyrightMessage),
-			annotations: Some(tag.get_texts(&ItemKey::Comment)),
-			comments: None,
+		TagType::AiffText => {
+			use crate::tag::item::ItemKey;
+
+			AiffTextChunksRef {
+				name: tag.get_string(&ItemKey::TrackTitle),
+				author: tag.get_string(&ItemKey::TrackArtist),
+				copyright: tag.get_string(&ItemKey::CopyrightMessage),
+				annotations: Some(tag.get_texts(&ItemKey::Comment)),
+				comments: None,
+			}
 		}
 		.dump_to(writer),
 		_ => Ok(()),

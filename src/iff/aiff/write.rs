@@ -1,7 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2;
-use crate::tag::item::ItemKey;
 #[allow(unused_imports)]
 use crate::tag::{Tag, TagType};
 
@@ -11,12 +10,16 @@ use std::fs::File;
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "aiff_text_chunks")]
-		TagType::AiffText => super::tag::AiffTextChunksRef {
-			name: tag.get_string(&ItemKey::TrackTitle),
-			author: tag.get_string(&ItemKey::TrackArtist),
-			copyright: tag.get_string(&ItemKey::CopyrightMessage),
-			annotations: Some(tag.get_texts(&ItemKey::Comment)),
-			comments: None,
+		TagType::AiffText => {
+			use crate::tag::item::ItemKey;
+
+			super::tag::AiffTextChunksRef {
+				name: tag.get_string(&ItemKey::TrackTitle),
+				author: tag.get_string(&ItemKey::TrackArtist),
+				copyright: tag.get_string(&ItemKey::CopyrightMessage),
+				annotations: Some(tag.get_texts(&ItemKey::Comment)),
+				comments: None,
+			}
 		}
 		.write_to(data),
 		#[cfg(feature = "id3v2")]

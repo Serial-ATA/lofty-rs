@@ -1,8 +1,7 @@
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
-use crate::macros::try_vec;
+use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "vorbis_comments")]
 use crate::picture::Picture;
 
@@ -23,6 +22,9 @@ pub(crate) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result
 where
 	R: Read,
 {
+	use crate::error::FileDecodingError;
+	use crate::macros::try_vec;
+
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 
 	let mut vendor = try_vec![0; vendor_len as usize];

@@ -2,9 +2,9 @@ use super::block::Block;
 use super::FlacFile;
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
-use crate::id3::ID3FindResults;
 #[cfg(feature = "id3v2")]
-use crate::id3::{find_id3v2, v2::read::parse_id3v2};
+use crate::id3::v2::read::parse_id3v2;
+use crate::id3::{find_id3v2, ID3FindResults};
 use crate::properties::FileProperties;
 #[cfg(feature = "vorbis_comments")]
 use crate::{

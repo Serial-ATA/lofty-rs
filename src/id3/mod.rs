@@ -50,6 +50,7 @@ pub(crate) type FindID3v1Content = Option<v1::tag::Id3v1Tag>;
 #[cfg(not(feature = "id3v1"))]
 pub(crate) type FindID3v1Content = Option<()>;
 
+#[allow(unused_variables)]
 pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,

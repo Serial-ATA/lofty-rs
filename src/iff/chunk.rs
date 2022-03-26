@@ -1,8 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::read::parse_id3v2;
-use crate::id3::v2::read_id3v2_header;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::macros::try_vec;
 
@@ -53,6 +50,7 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(value_str.trim_end_matches('\0').to_string())
 	}
 
+	#[cfg(feature = "aiff_text_chunks")]
 	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<u32>) -> Result<String>
 	where
 		R: Read + Seek,
@@ -96,6 +94,9 @@ impl<B: ByteOrder> Chunks<B> {
 	where
 		R: Read + Seek,
 	{
+		use crate::id3::v2::read::parse_id3v2;
+		use crate::id3::v2::read_id3v2_header;
+
 		let mut value = try_vec![0; self.size as usize];
 		data.read_exact(&mut value)?;
 

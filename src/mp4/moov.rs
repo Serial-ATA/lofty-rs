@@ -1,11 +1,13 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-#[cfg(feature = "mp4_ilst")]
-use super::ilst::{read::parse_ilst, Ilst};
 use super::read::skip_unneeded;
 use super::trak::Trak;
+#[cfg(feature = "mp4_ilst")]
+use super::{
+	ilst::{read::parse_ilst, Ilst},
+	read::meta_is_full,
+};
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
-use crate::mp4::read::meta_is_full;
 
 use std::io::{Read, Seek};
 

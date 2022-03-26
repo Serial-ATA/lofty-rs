@@ -10,7 +10,9 @@ use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::BigEndian;
+#[cfg(feature = "aiff_text_chunks")]
+use byteorder::ReadBytesExt;
 
 pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<u32>
 where

@@ -1,5 +1,4 @@
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::try_vec;
 #[cfg(feature = "id3v2")]
 use crate::{
 	error::{Id3v2Error, Id3v2ErrorKind},
@@ -746,6 +745,8 @@ impl Picture {
 
 	#[cfg(feature = "vorbis_comments")]
 	fn from_flac_bytes_inner(content: &[u8]) -> Result<(Self, PictureInformation)> {
+		use crate::macros::try_vec;
+
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);
 
