@@ -35,7 +35,7 @@ fn flac_write() {
 }
 
 #[test]
-fn flac_remove() {
+fn flac_remove_vorbis_comments() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/full_test.flac",
 		TagType::VorbisComments
@@ -134,4 +134,9 @@ fn flac_with_id3v2() {
 	assert_eq!(flac_file.id3v2_tag().unwrap().artist(), Some("Foo artist"));
 
 	assert!(flac_file.vorbis_comments().is_some());
+}
+
+#[test]
+fn flac_remove_id3v2() {
+	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
 }

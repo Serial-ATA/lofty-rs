@@ -2,6 +2,7 @@ pub(crate) mod item;
 pub(crate) mod utils;
 
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::file::FileType;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
 use crate::traits::{Accessor, TagExt};
@@ -448,7 +449,10 @@ impl TagType {
 			None => return Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		};
 
-		if !file_type.supports_tag_type(*self) {
+		let special_exceptions =
+			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::Id3v2;
+
+		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			return Err(LoftyError::new(ErrorKind::UnsupportedTag));
 		}
 

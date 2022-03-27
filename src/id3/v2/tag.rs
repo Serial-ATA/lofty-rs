@@ -428,6 +428,15 @@ pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
 	pub(crate) frames: I,
 }
 
+impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
+	pub(crate) fn empty() -> Self {
+		Self {
+			flags: Id3v2TagFlags::default(),
+			frames: std::iter::empty(),
+		}
+	}
+}
+
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
 	let items = tag

@@ -17,7 +17,7 @@ use crate::id3::v2::tag::Id3v2Tag;
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
-use crate::tag::TagType;
+use crate::tag::{Tag, TagType};
 
 use std::io::{Read, Seek};
 
@@ -44,15 +44,21 @@ pub struct FlacFile {
 }
 
 impl From<FlacFile> for TaggedFile {
+	#[allow(clippy::vec_init_then_push)]
 	fn from(input: FlacFile) -> Self {
+		let mut tags = Vec::<Option<Tag>>::with_capacity(2);
+
+		#[cfg(feature = "vorbis_comments")]
+		tags.push(input.vorbis_comments.map(Into::into));
+		#[cfg(feature = "id3v2")]
+		tags.push(input.id3v2_tag.map(Into::into));
+
 		Self {
 			ty: FileType::FLAC,
 			properties: input.properties,
-			#[cfg(feature = "vorbis_comments")]
-			tags: input
-				.vorbis_comments
-				.map_or_else(Vec::new, |t| vec![t.into()]),
-			#[cfg(not(feature = "vorbis_comments"))]
+			#[cfg(any(feature = "vorbis_comments", feature = "id3v2"))]
+			tags: tags.into_iter().flatten().collect(),
+			#[cfg(not(any(feature = "vorbis_comments", feature = "id3v2")))]
 			tags: Vec::new(),
 		}
 	}

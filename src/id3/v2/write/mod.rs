@@ -41,7 +41,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	let data = probe.into_inner();
 
 	match file_type {
-		Some(FileType::APE | FileType::MP3) => {},
+		Some(FileType::APE | FileType::MP3 | FileType::FLAC) => {},
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		Some(FileType::WAV) => {
 			tag.flags.footer = false;
@@ -77,6 +77,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	let frames = &mut tag.frames;
 	let mut peek = frames.peekable();
 
+	// We are stripping the tag
 	if peek.peek().is_none() {
 		return Ok(Vec::new());
 	}

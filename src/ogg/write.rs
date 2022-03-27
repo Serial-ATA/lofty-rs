@@ -45,7 +45,7 @@ pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Re
 				pictures,
 			};
 
-			if let FileType::FLAC = file_type {
+			if file_type == FileType::FLAC {
 				return flac::write::write_to(file, &mut comments_ref);
 			}
 
@@ -57,6 +57,11 @@ pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Re
 			};
 
 			write(file, &mut comments_ref, format)
+		},
+		#[cfg(feature = "id3v2")]
+		TagType::Id3v2 if file_type == FileType::FLAC => {
+			// This tag can *only* be removed in this format
+			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file)
 		},
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}

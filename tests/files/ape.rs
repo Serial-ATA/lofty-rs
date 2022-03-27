@@ -52,3 +52,8 @@ fn remove_ape() {
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.ape", TagType::Id3v1);
 }
+
+#[test]
+fn remove_id3v2() {
+	crate::remove_tag!("tests/files/assets/minimal/full_test.ape", TagType::Id3v2);
+}

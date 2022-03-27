@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `lofty::read_from` will now wrap the `File` in a `BufReader`
 - **FLAC**: FLAC now has its own module at `lofty::flac`
 - **ID3v2**: `FrameValue` is now `#[non_exhaustive]`
+- `TagType::remove_from` now works for ID3v2 tags in APE and FLAC files
+  - This previously verified that the `FileType` supported the tag. It now has special exceptions for these formats to
+    allow stripping out these unsupported tags
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.
