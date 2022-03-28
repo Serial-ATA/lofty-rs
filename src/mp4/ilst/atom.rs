@@ -78,7 +78,7 @@ pub enum AtomData {
 /// The parental advisory rating
 pub enum AdvisoryRating {
 	/// A rating of 0
-	None,
+	Inoffensive,
 	/// A rating of 2
 	Clean,
 	/// A rating of (1 || > 2)
@@ -89,7 +89,7 @@ impl AdvisoryRating {
 	/// Returns the rating as it appears in the `rtng` atom
 	pub fn as_u8(&self) -> u8 {
 		match self {
-			AdvisoryRating::None => 0,
+			AdvisoryRating::Inoffensive => 0,
 			AdvisoryRating::Clean => 2,
 			AdvisoryRating::Explicit => 4,
 		}
@@ -99,7 +99,7 @@ impl AdvisoryRating {
 impl From<u8> for AdvisoryRating {
 	fn from(input: u8) -> Self {
 		match input {
-			0 => Self::None,
+			0 => Self::Inoffensive,
 			2 => Self::Clean,
 			_ => Self::Explicit,
 		}
