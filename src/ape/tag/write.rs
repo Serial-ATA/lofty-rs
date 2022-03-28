@@ -22,7 +22,7 @@ where
 	let probe = Probe::new(data).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
+		Some(FileType::APE | FileType::MP3) => {},
 		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 
@@ -147,96 +147,96 @@ where
 
 	// Unnecessary to write anything if there's no metadata
 	if peek.peek().is_none() {
-		Ok(Vec::<u8>::new())
-	} else {
-		let mut tag_write = Cursor::new(Vec::<u8>::new());
-
-		let mut item_count = 0_u32;
-
-		for item in peek {
-			let (mut flags, value) = match item.value {
-				ItemValueRef::Binary(value) => {
-					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
-
-					(1_u32 << 1, value)
-				},
-				ItemValueRef::Text(value) => {
-					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
-
-					(0_u32, value.as_bytes())
-				},
-				ItemValueRef::Locator(value) => {
-					tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
-
-					(2_u32 << 1, value.as_bytes())
-				},
-			};
-
-			if item.read_only {
-				flags |= 1_u32
-			}
-
-			tag_write.write_u32::<LittleEndian>(flags)?;
-			tag_write.write_all(item.key.as_bytes())?;
-			tag_write.write_u8(0)?;
-			tag_write.write_all(value)?;
-
-			item_count += 1;
-		}
-
-		let size = tag_write.get_ref().len();
-
-		if size as u64 + 32 > u64::from(u32::MAX) {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
-		}
-
-		let mut footer = [0_u8; 32];
-		let mut footer = Cursor::new(&mut footer[..]);
-
-		footer.write_all(APE_PREAMBLE)?;
-		// This is the APE tag version
-		// Even if we read a v1 tag, we end up adding a header anyway
-		footer.write_u32::<LittleEndian>(2000)?;
-		// The total size includes the 32 bytes of the footer
-		footer.write_u32::<LittleEndian>((size + 32) as u32)?;
-		footer.write_u32::<LittleEndian>(item_count)?;
-		// Bit 29 unset: this is the footer
-		// Bit 30 set: tag contains a footer
-		// Bit 31 set: tag contains a header
-		let mut footer_flags = (1_u32 << 30) | (1_u32 << 31);
-
-		if tag.read_only {
-			// Bit 0 set: tag is read only
-			footer_flags |= 1
-		}
-
-		footer.write_u32::<LittleEndian>(footer_flags)?;
-		// The header/footer must end in 8 bytes of zeros
-		footer.write_u64::<LittleEndian>(0)?;
-
-		tag_write.write_all(footer.get_ref())?;
-
-		let mut tag_write = tag_write.into_inner();
-
-		// The header is exactly the same as the footer, except for the flags
-		// Just reuse the footer and overwrite the flags
-		footer.seek(SeekFrom::Current(-12))?;
-		// Bit 29 set: this is the header
-		// Bit 30 set: tag contains a footer
-		// Bit 31 set: tag contains a header
-		let mut header_flags = (1_u32 << 29) | (1_u32 << 30) | (1_u32 << 31);
-
-		if tag.read_only {
-			// Bit 0 set: tag is read only
-			header_flags |= 1
-		}
-
-		footer.write_u32::<LittleEndian>(header_flags)?;
-
-		let header = footer.into_inner();
-
-		tag_write.splice(0..0, header.to_vec());
-
-		Ok(tag_write)
+		return Ok(Vec::<u8>::new());
 	}
+
+	let mut tag_write = Cursor::new(Vec::<u8>::new());
+
+	let mut item_count = 0_u32;
+
+	for item in peek {
+		let (mut flags, value) = match item.value {
+			ItemValueRef::Binary(value) => {
+				tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
+
+				(1_u32 << 1, value)
+			},
+			ItemValueRef::Text(value) => {
+				tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
+
+				(0_u32, value.as_bytes())
+			},
+			ItemValueRef::Locator(value) => {
+				tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
+
+				(2_u32 << 1, value.as_bytes())
+			},
+		};
+
+		if item.read_only {
+			flags |= 1_u32
+		}
+
+		tag_write.write_u32::<LittleEndian>(flags)?;
+		tag_write.write_all(item.key.as_bytes())?;
+		tag_write.write_u8(0)?;
+		tag_write.write_all(value)?;
+
+		item_count += 1;
+	}
+
+	let size = tag_write.get_ref().len();
+
+	if size as u64 + 32 > u64::from(u32::MAX) {
+		return Err(LoftyError::new(ErrorKind::TooMuchData));
+	}
+
+	let mut footer = [0_u8; 32];
+	let mut footer = Cursor::new(&mut footer[..]);
+
+	footer.write_all(APE_PREAMBLE)?;
+	// This is the APE tag version
+	// Even if we read a v1 tag, we end up adding a header anyway
+	footer.write_u32::<LittleEndian>(2000)?;
+	// The total size includes the 32 bytes of the footer
+	footer.write_u32::<LittleEndian>((size + 32) as u32)?;
+	footer.write_u32::<LittleEndian>(item_count)?;
+	// Bit 29 unset: this is the footer
+	// Bit 30 set: tag contains a footer
+	// Bit 31 set: tag contains a header
+	let mut footer_flags = (1_u32 << 30) | (1_u32 << 31);
+
+	if tag.read_only {
+		// Bit 0 set: tag is read only
+		footer_flags |= 1
+	}
+
+	footer.write_u32::<LittleEndian>(footer_flags)?;
+	// The header/footer must end in 8 bytes of zeros
+	footer.write_u64::<LittleEndian>(0)?;
+
+	tag_write.write_all(footer.get_ref())?;
+
+	let mut tag_write = tag_write.into_inner();
+
+	// The header is exactly the same as the footer, except for the flags
+	// Just reuse the footer and overwrite the flags
+	footer.seek(SeekFrom::Current(-12))?;
+	// Bit 29 set: this is the header
+	// Bit 30 set: tag contains a footer
+	// Bit 31 set: tag contains a header
+	let mut header_flags = (1_u32 << 29) | (1_u32 << 30) | (1_u32 << 31);
+
+	if tag.read_only {
+		// Bit 0 set: tag is read only
+		header_flags |= 1
+	}
+
+	footer.write_u32::<LittleEndian>(header_flags)?;
+
+	let header = footer.into_inner();
+
+	tag_write.splice(0..0, header.to_vec());
+
+	Ok(tag_write)
 }
