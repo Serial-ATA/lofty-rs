@@ -258,6 +258,11 @@ impl Tag {
 		self.items.drain(..split_idx)
 	}
 
+	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
+	pub fn take_strings(&mut self, key: &ItemKey) -> impl Iterator<Item = String> + '_ {
+		self.take(key).filter_map(|i| i.item_value.into_string())
+	}
+
 	/// Returns references to all [`TagItem`]s with the specified key
 	pub fn get_items<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a TagItem> {
 		self.items.iter().filter(move |i| i.key() == key)

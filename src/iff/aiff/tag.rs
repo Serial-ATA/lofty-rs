@@ -214,27 +214,16 @@ impl From<AiffTextChunks> for Tag {
 
 impl From<Tag> for AiffTextChunks {
 	fn from(mut input: Tag) -> Self {
-		Self {
-			name: input.get_string(&ItemKey::TrackTitle).map(str::to_owned),
-			author: input.get_string(&ItemKey::TrackArtist).map(str::to_owned),
-			copyright: input
-				.get_string(&ItemKey::CopyrightMessage)
-				.map(str::to_owned),
-			annotations: {
-				let anno = input
-					.take(&ItemKey::Comment)
-					.filter_map(|i| match i.item_value {
-						ItemValue::Text(text) => Some(text),
-						_ => None,
-					})
-					.collect::<Vec<_>>();
+		let name = input.take_strings(&ItemKey::TrackTitle).next();
+		let author = input.take_strings(&ItemKey::TrackArtist).next();
+		let copyright = input.take_strings(&ItemKey::CopyrightMessage).next();
+		let annotations = input.take_strings(&ItemKey::Comment).collect::<Vec<_>>();
 
-				if anno.is_empty() {
-					None
-				} else {
-					Some(anno)
-				}
-			},
+		Self {
+			name,
+			author,
+			copyright,
+			annotations: (!annotations.is_empty()).then(|| annotations),
 			comments: None,
 		}
 	}
