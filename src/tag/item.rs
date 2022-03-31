@@ -577,6 +577,22 @@ impl ItemValue {
 			_ => None,
 		}
 	}
+
+	/// Consumes the `ItemValue`, returning a `String` if the variant is `Text` or `Locator`
+	pub fn into_string(self) -> Option<String> {
+		match self {
+			Self::Text(s) | Self::Locator(s) => Some(s),
+			_ => None,
+		}
+	}
+
+	/// Consumes the `ItemValue`, returning a `Vec<u8>` if the variant is `Binary`
+	pub fn into_binary(self) -> Option<Vec<u8>> {
+		match self {
+			Self::Binary(b) => Some(b),
+			_ => None,
+		}
+	}
 }
 
 pub(crate) enum ItemValueRef<'a> {
