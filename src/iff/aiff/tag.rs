@@ -45,6 +45,10 @@ pub struct Comment {
 ///
 /// ## Conversions
 ///
+/// ### To `Tag`
+///
+/// Items with [`ItemKey::Comment`] will be stored in the `annotations` field
+///
 /// ### From `Tag`
 ///
 /// When converting from [`Tag`](crate::Tag), the following [`ItemKey`](crate::ItemKey)s will be used:
