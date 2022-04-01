@@ -52,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: Fix writing certain proprietary Apple frames
   - When writing, frame IDs are verified with their content. The Apple specific frames "MVNM" and "MVIN" were missing,
     causing an error if they were written with their proper type (`FrameValue::Text`)
+- **ID3v2**: Stop writing a BOM for `TextEncoding::UTF16BE`
 
 ## [0.5.3] - 2022-03-03
 

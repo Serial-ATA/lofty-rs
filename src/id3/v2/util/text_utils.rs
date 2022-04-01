@@ -155,8 +155,8 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 
 			out
 		},
-		TextEncoding::UTF16 => utf16_encode(text, u16::to_ne_bytes, terminated),
-		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, terminated),
+		TextEncoding::UTF16 => utf16_encode(text, u16::to_ne_bytes, true, terminated),
+		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, false, terminated),
 		TextEncoding::UTF8 => {
 			let mut out = text.as_bytes().to_vec();
 
@@ -169,13 +169,16 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 	}
 }
 
-fn utf16_encode(text: &str, endianness: fn(u16) -> [u8; 2], terminated: bool) -> Vec<u8> {
+fn utf16_encode(
+	text: &str,
+	endianness: fn(u16) -> [u8; 2],
+	bom: bool,
+	terminated: bool,
+) -> Vec<u8> {
 	let mut encoded = Vec::<u8>::new();
 
-	match endianness(1) {
-		[0, 1] => encoded.extend_from_slice(&[0xFE, 0xFF]),
-		[1, 0] => encoded.extend_from_slice(&[0xFF, 0xFE]),
-		_ => unreachable!(),
+	if bom {
+		encoded.extend_from_slice(&endianness(0xFEFF_u16));
 	}
 
 	for ch in text.encode_utf16() {
@@ -238,7 +241,7 @@ mod tests {
 	#[test]
 	fn text_encode() {
 		// No BOM
-		let utf16_encode = super::utf16_encode(TEST_STRING, u16::to_be_bytes, false);
+		let utf16_encode = super::utf16_encode(TEST_STRING, u16::to_be_bytes, true, false);
 
 		assert_eq!(
 			utf16_encode.as_slice(),
@@ -247,16 +250,22 @@ mod tests {
 
 		// BOM test
 		let be_utf16_encode = super::encode_text(TEST_STRING, TextEncoding::UTF16BE, false);
-		let le_utf16_encode = super::utf16_encode(TEST_STRING, u16::to_le_bytes, false);
+		let le_utf16_encode = super::utf16_encode(TEST_STRING, u16::to_le_bytes, true, false);
+		let be_utf16_encode_bom = super::utf16_encode(TEST_STRING, u16::to_be_bytes, true, false);
 
 		assert_ne!(be_utf16_encode.as_slice(), le_utf16_encode.as_slice());
+		// TextEncoding::UTF16BE has no BOM
 		assert_eq!(
 			be_utf16_encode.as_slice(),
-			&[0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5]
+			&[0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5]
 		);
 		assert_eq!(
 			le_utf16_encode.as_slice(),
 			&[0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00]
+		);
+		assert_eq!(
+			be_utf16_encode_bom.as_slice(),
+			&[0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5]
 		);
 
 		let utf8_encode = super::encode_text(TEST_STRING, TextEncoding::UTF8, false);
