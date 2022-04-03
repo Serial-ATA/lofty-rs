@@ -1,4 +1,4 @@
-use lofty::{Accessor, Probe};
+use lofty::{Accessor, AudioFile, Probe};
 use std::path::Path;
 
 fn main() {

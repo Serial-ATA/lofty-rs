@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: `FrameValue::Popularimeter`
 - `ItemValue::{into_string, into_binary}`
 - `Tag::take_strings`
+- `TaggedFile` now implements `AudioFile`
 
 ### Changed
 - **MP4**: Sample rates and channels are now retrieved from the [audio specific config](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) (if possible).

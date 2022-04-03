@@ -51,11 +51,6 @@ impl TaggedFile {
 		self.ty
 	}
 
-	/// Returns the file's [`FileProperties`]
-	pub fn properties(&self) -> &FileProperties {
-		&self.properties
-	}
-
 	/// Returns all tags
 	pub fn tags(&self) -> &[Tag] {
 		self.tags.as_slice()
@@ -174,6 +169,32 @@ impl TaggedFile {
 		}
 
 		Ok(())
+	}
+}
+
+impl AudioFile for TaggedFile {
+	type Properties = FileProperties;
+
+	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
+	where
+		R: Read + Seek,
+		Self: Sized,
+	{
+		crate::probe::Probe::new(reader)
+			.guess_file_type()?
+			.read(read_properties)
+	}
+
+	fn properties(&self) -> &Self::Properties {
+		&self.properties
+	}
+
+	fn contains_tag(&self) -> bool {
+		!self.tags.is_empty()
+	}
+
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
+		self.tags.iter().any(|t| t.tag_type() == tag_type)
 	}
 }
 
