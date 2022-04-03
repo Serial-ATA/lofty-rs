@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This previously verified that the `FileType` supported the tag. It now has special exceptions for these formats to
     allow stripping out these unsupported tags
 - **MP4**: Renamed `AdvisoryRating::None` to `AdvisoryRating::Inoffensive`
+- Renamed `TaggedFile::remove_tag` to `TaggedFile::take`
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.

@@ -112,7 +112,7 @@ impl TaggedFile {
 		let tag_type = tag.tag_type();
 
 		if self.supports_tag_type(tag_type) {
-			let ret = self.remove_tag(tag_type);
+			let ret = self.take(tag_type);
 			self.tags.push(tag);
 
 			return ret;
@@ -121,10 +121,8 @@ impl TaggedFile {
 		None
 	}
 
-	/// Removes a specific [`TagType`]
-	///
-	/// This will return the tag if it is removed
-	pub fn remove_tag(&mut self, tag_type: TagType) -> Option<Tag> {
+	/// Removes a specific [`TagType`] and returns it
+	pub fn take(&mut self, tag_type: TagType) -> Option<Tag> {
 		self.tags
 			.iter()
 			.position(|t| t.tag_type() == tag_type)
