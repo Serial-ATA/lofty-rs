@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2022-04-05
+
 ### Added
 - `TagItem::{into_key, into_value, consume}`
 - **MP4**: `Mp4Codec::MP3`
@@ -120,7 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/624b64c...main
+[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...624b64c
 [0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
