@@ -114,8 +114,8 @@ where
 	let mut count = 0;
 	create_comments(writer, &mut count, &mut tag.items)?;
 
-	for (pic, _) in &mut tag.pictures {
-		let picture = pic.as_flac_bytes(PictureInformation::from_picture(pic)?, true);
+	for (pic, info) in &mut tag.pictures {
+		let picture = pic.as_flac_bytes(info, true);
 
 		let bytes_len = picture.len() + PICTURE_KEY.len();
 

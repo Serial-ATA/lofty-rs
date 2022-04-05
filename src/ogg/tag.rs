@@ -101,8 +101,11 @@ impl VorbisComments {
 
 	/// Inserts a [`Picture`]
 	///
-	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
-	/// When attempting to insert these types, if another is found it will be removed and returned.
+	/// NOTES:
+	///
+	/// * If `information` is `None`, the [`PictureInformation`] will be inferred using [`PictureInformation::from_picture`].
+	/// * According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
+	///   When attempting to insert these types, if another is found it will be removed and returned.
 	///
 	/// # Errors
 	///
@@ -110,6 +113,7 @@ impl VorbisComments {
 	pub fn insert_picture(
 		&mut self,
 		picture: Picture,
+		information: Option<PictureInformation>,
 	) -> Result<Option<(Picture, PictureInformation)>> {
 		let ret = if picture.pic_type == PictureType::Icon
 			|| picture.pic_type == PictureType::OtherIcon
@@ -122,7 +126,10 @@ impl VorbisComments {
 			None
 		};
 
-		let info = PictureInformation::from_picture(&picture)?;
+		let info = match information {
+			Some(pic_info) => pic_info,
+			None => PictureInformation::from_picture(&picture)?,
+		};
 
 		self.pictures.push((picture, info));
 
