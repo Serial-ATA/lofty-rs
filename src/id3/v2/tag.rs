@@ -74,7 +74,7 @@ macro_rules! impl_accessor {
 ///
 /// When converting from a [`Tag`](crate::Tag) to an `Id3v2Tag`, some frames may need editing.
 ///
-/// * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Rather than be a normal text frame, these require a [`LanguageFrame`].
+/// * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Unlike a normal text frame, these require a [`LanguageFrame`].
 /// An attempt is made to create this information, but it may be incorrect.
 ///    * `language` - Assumed to be "eng"
 ///    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
