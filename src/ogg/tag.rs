@@ -347,7 +347,7 @@ pub(crate) fn create_vorbis_comments_ref(
 	let pictures = tag
 		.pictures
 		.iter()
-		.map(|p| (p, PictureInformation::default()));
+		.map(|p| (p, PictureInformation::from_picture(p).unwrap_or_default()));
 	(vendor, items, pictures)
 }
 
