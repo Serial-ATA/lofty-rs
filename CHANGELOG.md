@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Renamed `AdvisoryRating::None` to `AdvisoryRating::Inoffensive`
 - Renamed `TaggedFile::remove_tag` to `TaggedFile::take`
 - **Vorbis Comments**: `VorbisComments::insert_picture` now accepts a user provided `PictureInformation`
+- **Vorbis Comments**: Rename `VorbisComments::{get_item, insert_item}` to `VorbisComments::{get, insert}`
 
 ### Fixed
 - **MP4**: Non-full `meta` atoms are now properly handled.

@@ -18,11 +18,11 @@ macro_rules! impl_accessor {
 			impl Accessor for VorbisComments {
 				$(
 					fn $name(&self) -> Option<&str> {
-						self.get_item($key)
+						self.get($key)
 					}
 
 					fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(String::from($key), value, true)
+						self.insert(String::from($key), value, true)
 					}
 
 					fn [<remove_ $name>](&mut self) {
@@ -71,7 +71,7 @@ impl VorbisComments {
 	/// Gets an item by key
 	///
 	/// NOTE: This is case-sensitive
-	pub fn get_item(&self, key: &str) -> Option<&str> {
+	pub fn get(&self, key: &str) -> Option<&str> {
 		self.items
 			.iter()
 			.find(|(k, _)| k == key)
@@ -81,7 +81,7 @@ impl VorbisComments {
 	/// Inserts an item
 	///
 	/// If `replace_all` is true, it will remove all items with the key before insertion
-	pub fn insert_item(&mut self, key: String, value: String, replace_all: bool) {
+	pub fn insert(&mut self, key: String, value: String, replace_all: bool) {
 		if replace_all {
 			self.items
 				.iter()
@@ -115,15 +115,13 @@ impl VorbisComments {
 		picture: Picture,
 		information: Option<PictureInformation>,
 	) -> Result<Option<(Picture, PictureInformation)>> {
-		let ret = if picture.pic_type == PictureType::Icon
-			|| picture.pic_type == PictureType::OtherIcon
-		{
-			self.pictures
+		let ret = match picture.pic_type {
+			PictureType::Icon | PictureType::OtherIcon => self
+				.pictures
 				.iter()
 				.position(|(p, _)| p.pic_type == picture.pic_type)
-				.map(|pos| self.pictures.remove(pos))
-		} else {
-			None
+				.map(|pos| self.pictures.remove(pos)),
+			_ => None,
 		};
 
 		let info = match information {
@@ -364,13 +362,13 @@ mod tests {
 
 		expected_tag.set_vendor(String::from("Lavf58.76.100"));
 
-		expected_tag.insert_item(String::from("ALBUM"), String::from("Baz album"), false);
-		expected_tag.insert_item(String::from("ARTIST"), String::from("Bar artist"), false);
-		expected_tag.insert_item(String::from("COMMENT"), String::from("Qux comment"), false);
-		expected_tag.insert_item(String::from("DATE"), String::from("1984"), false);
-		expected_tag.insert_item(String::from("GENRE"), String::from("Classical"), false);
-		expected_tag.insert_item(String::from("TITLE"), String::from("Foo title"), false);
-		expected_tag.insert_item(String::from("TRACKNUMBER"), String::from("1"), false);
+		expected_tag.insert(String::from("ALBUM"), String::from("Baz album"), false);
+		expected_tag.insert(String::from("ARTIST"), String::from("Bar artist"), false);
+		expected_tag.insert(String::from("COMMENT"), String::from("Qux comment"), false);
+		expected_tag.insert(String::from("DATE"), String::from("1984"), false);
+		expected_tag.insert(String::from("GENRE"), String::from("Classical"), false);
+		expected_tag.insert(String::from("TITLE"), String::from("Foo title"), false);
+		expected_tag.insert(String::from("TRACKNUMBER"), String::from("1"), false);
 
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
 		let parsed_tag = read_tag(&*file_cont);
@@ -418,11 +416,11 @@ mod tests {
 
 		let vorbis_comments: VorbisComments = tag.into();
 
-		assert_eq!(vorbis_comments.get_item("TITLE"), Some("Foo title"));
-		assert_eq!(vorbis_comments.get_item("ARTIST"), Some("Bar artist"));
-		assert_eq!(vorbis_comments.get_item("ALBUM"), Some("Baz album"));
-		assert_eq!(vorbis_comments.get_item("COMMENT"), Some("Qux comment"));
-		assert_eq!(vorbis_comments.get_item("TRACKNUMBER"), Some("1"));
-		assert_eq!(vorbis_comments.get_item("GENRE"), Some("Classical"));
+		assert_eq!(vorbis_comments.get("TITLE"), Some("Foo title"));
+		assert_eq!(vorbis_comments.get("ARTIST"), Some("Bar artist"));
+		assert_eq!(vorbis_comments.get("ALBUM"), Some("Baz album"));
+		assert_eq!(vorbis_comments.get("COMMENT"), Some("Qux comment"));
+		assert_eq!(vorbis_comments.get("TRACKNUMBER"), Some("1"));
+		assert_eq!(vorbis_comments.get("GENRE"), Some("Classical"));
 	}
 }
