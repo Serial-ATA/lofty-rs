@@ -26,7 +26,7 @@ macro_rules! impl_accessor {
 					}
 
 					fn [<remove_ $name>](&mut self) {
-						self.remove_key($key)
+						let _ = self.remove($key);
 					}
 				)+
 			}
@@ -92,11 +92,21 @@ impl VorbisComments {
 		self.items.push((key, value))
 	}
 
-	/// Removes an item by key
+	/// Removes all items with a key, returning an iterator
 	///
 	/// NOTE: This is case-sensitive
-	pub fn remove_key(&mut self, key: &str) {
-		self.items.retain(|(k, _)| k != key);
+	pub fn remove(&mut self, key: &str) -> impl Iterator<Item = String> + '_ {
+		// TODO: drain_filter
+		let mut split_idx = 0_usize;
+
+		for read_idx in 0..self.items.len() {
+			if self.items[read_idx].0 == key {
+				self.items.swap(split_idx, read_idx);
+				split_idx += 1;
+			}
+		}
+
+		self.items.drain(..split_idx).map(|(_, v)| v)
 	}
 
 	/// Inserts a [`Picture`]
