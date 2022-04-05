@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1649119126517,
+  "lastUpdate": 1649119749333,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -6359,6 +6359,126 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/VORBIS",
             "value": 2258,
             "range": "± 390",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "afd1a6d8ef3224edab2bbb44554063bc4b5c7831",
+          "message": "Rename `VorbisComments::{get_item, insert_item}` to `VorbisComments::{get, insert}`",
+          "timestamp": "2022-04-04T20:43:19-04:00",
+          "tree_id": "82ea9c627d9ce441f39bbb4102acf76dc749b7db",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/afd1a6d8ef3224edab2bbb44554063bc4b5c7831"
+        },
+        "date": 1649119748796,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Tag writing/AIFF Text Chunks",
+            "value": 271,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/APEv2",
+            "value": 766,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v2",
+            "value": 1122,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v1",
+            "value": 511,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/MP4 Ilst",
+            "value": 768,
+            "range": "± 4",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/RIFF INFO",
+            "value": 496,
+            "range": "± 0",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/Vorbis Comments",
+            "value": 933,
+            "range": "± 3",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1247,
+            "range": "± 10",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 1592,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 867,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1207,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 1629,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 1439,
+            "range": "± 9",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 1517,
+            "range": "± 1",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/SPEEX",
+            "value": 1657,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 1906,
+            "range": "± 3",
             "unit": "ns/iter"
           }
         ]
