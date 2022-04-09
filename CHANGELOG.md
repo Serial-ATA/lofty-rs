@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [0.6.1] - 2022-04-09
+
 ### Fixed
 - **MP3**: Fix reading of ID3v2 tags with an extended header
   - Restrictions were unnecessarily put on the reader, keeping it from continuing to read into the extended header
@@ -129,8 +132,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/624b64c...main
-[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...624b64c
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/d04ee2b...main
+[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...d04ee2b
+[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
 [0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
