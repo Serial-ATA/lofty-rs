@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Fixed
+- **MP3**: Fix reading of ID3v2 tags with an extended header
+  - Restrictions were unnecessarily put on the reader, keeping it from continuing to read into the extended header
+    if it was present
+- **ID3v2**: Fix reading of tags with an extended header
+  - The size of the extended header was not being subtracted from the total tag size, causing the reading to continue
+    outside the tag boundaries
 
 ## [0.6.0] - 2022-04-05
 

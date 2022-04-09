@@ -34,12 +34,10 @@ where
 		match header {
 			// [I, D, 3, ver_major, ver_minor, flags, size (4 bytes)]
 			[b'I', b'D', b'3', ..] => {
-				let mut remaining_header = [0; 6];
-				reader.read_exact(&mut remaining_header)?;
+				// Seek back to read the tag in full
+				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = read_id3v2_header(
-					&mut &*[header.as_slice(), remaining_header.as_slice()].concat(),
-				)?;
+				let header = read_id3v2_header(reader)?;
 				let skip_footer = header.flags.footer;
 
 				#[cfg(feature = "id3v2")]

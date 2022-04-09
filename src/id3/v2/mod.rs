@@ -89,6 +89,7 @@ pub(crate) struct Id3v2Header {
 	pub version: Id3v2Version,
 	pub flags: Id3v2TagFlags,
 	pub size: u32,
+	pub extended_size: u32,
 }
 
 pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<Id3v2Header>
@@ -135,11 +136,14 @@ where
 		restrictions: (false, TagRestrictions::default()), // Retrieved later if applicable
 	};
 
+	let size = unsynch_u32(BigEndian::read_u32(&header[6..]));
+	let mut extended_size = 0;
+
 	let extended_header =
 		(version == Id3v2Version::V4 || version == Id3v2Version::V3) && flags & 0x40 == 0x40;
 
 	if extended_header {
-		let extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
+		extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
@@ -174,12 +178,15 @@ where
 		}
 	}
 
-	let size = unsynch_u32(BigEndian::read_u32(&header[6..]));
+	if extended_size >= size || size == 0 {
+		return Err(Id3v2Error::new(Id3v2ErrorKind::Other("Tag has an invalid size")).into());
+	}
 
 	Ok(Id3v2Header {
 		#[cfg(feature = "id3v2")]
 		version,
 		flags: flags_parsed,
 		size,
+		extended_size,
 	})
 }
