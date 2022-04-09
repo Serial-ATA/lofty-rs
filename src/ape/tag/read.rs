@@ -51,8 +51,7 @@ where
 		}
 
 		let read_only = (flags & 1) == 1;
-
-		let item_type = (flags & 6) >> 1;
+		let item_type = (flags >> 1) & 3;
 
 		let mut value = try_vec![0; value_size as usize];
 		data.read_exact(&mut value)?;
@@ -61,7 +60,7 @@ where
 			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
 				FileDecodingError::new(
 					FileType::APE,
-					"Expected a string value based on flags, found binary data",
+					"Failed to convert text item into a UTF-8 string",
 				)
 			})?),
 			1 => ItemValue::Binary(value),
