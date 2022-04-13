@@ -105,7 +105,7 @@ where
 	}
 
 	let (stream_length, file_length) = {
-		let current = data.seek(SeekFrom::Current(0))?;
+		let current = data.stream_position()?;
 		let end = data.seek(SeekFrom::End(0))?;
 
 		(end - current, end)

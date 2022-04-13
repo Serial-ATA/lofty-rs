@@ -83,7 +83,7 @@ where
 				match &list_type {
 					#[cfg(feature = "riff_info_list")]
 					b"INFO" => {
-						let end = data.seek(SeekFrom::Current(0))? + u64::from(chunks.size - 4);
+						let end = data.stream_position()? + u64::from(chunks.size - 4);
 						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
 					},
 					_ => {
@@ -115,7 +115,7 @@ where
 			.into());
 		}
 
-		let file_length = data.seek(SeekFrom::Current(0))?;
+		let file_length = data.stream_position()?;
 
 		super::properties::read_properties(&mut &*fmt, total_samples, stream_len, file_length)?
 	} else {

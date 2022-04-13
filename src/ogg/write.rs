@@ -107,7 +107,7 @@ where
 {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
-	let item_count_pos = writer.seek(SeekFrom::Current(0))?;
+	let item_count_pos = writer.stream_position()?;
 
 	writer.write_u32::<LittleEndian>(0)?;
 
@@ -136,7 +136,7 @@ where
 		writer.write_u8(1)?;
 	}
 
-	let packet_end = writer.seek(SeekFrom::Current(0))?;
+	let packet_end = writer.stream_position()?;
 
 	writer.seek(SeekFrom::Start(item_count_pos))?;
 	writer.write_u32::<LittleEndian>(count)?;
@@ -205,7 +205,7 @@ where
 		},
 	}
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 	data.set_len(first_page.end)?;
 	data.write_all(&*writer)?;
 

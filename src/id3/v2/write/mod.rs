@@ -64,7 +64,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 
 	file_bytes.splice(0..0, id3v2);
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 	data.set_len(0)?;
 	data.write_all(&*file_bytes)?;
 

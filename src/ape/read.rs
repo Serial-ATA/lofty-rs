@@ -17,7 +17,7 @@ pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<ApeFil
 where
 	R: Read + Seek,
 {
-	let start = data.seek(SeekFrom::Current(0))?;
+	let start = data.stream_position()?;
 	let end = data.seek(SeekFrom::End(0))?;
 
 	data.seek(SeekFrom::Start(start))?;
@@ -59,7 +59,7 @@ where
 	while !found_mac {
 		match &header {
 			b"MAC " => {
-				mac_start = data.seek(SeekFrom::Current(0))?;
+				mac_start = data.stream_position()?;
 
 				found_mac = true;
 			},
@@ -150,7 +150,7 @@ where
 		data.seek(SeekFrom::Current(ape_header.size as i64))?;
 	}
 
-	let file_length = data.seek(SeekFrom::Current(0))?;
+	let file_length = data.stream_position()?;
 
 	// Go back to the MAC header to read properties
 	data.seek(SeekFrom::Start(mac_start))?;

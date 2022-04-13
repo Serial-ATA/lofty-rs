@@ -63,7 +63,7 @@ where
 	R: Read + Seek,
 {
 	if ext {
-		let pos = data.seek(SeekFrom::Current(0))?;
+		let pos = data.stream_position()?;
 
 		if let (pos, false) = pos.overflowing_add(len - 8) {
 			data.seek(SeekFrom::Start(pos))?;

@@ -1,6 +1,6 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::{FileType, ItemKey, ItemValue, TagExt, TagItem, TagType};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Seek, Write};
 
 #[test]
 fn read() {
@@ -32,7 +32,7 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
-	file.seek(SeekFrom::Start(0)).unwrap();
+	file.rewind().unwrap();
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");

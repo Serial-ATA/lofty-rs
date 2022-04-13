@@ -20,10 +20,7 @@ where
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"ID3 " || &chunks.fourcc == b"id3 " {
-			id3v2_chunk = (
-				Some(data.seek(SeekFrom::Current(0))? - 8),
-				Some(chunks.size),
-			);
+			id3v2_chunk = (Some(data.stream_position()? - 8), Some(chunks.size));
 			break;
 		}
 
@@ -33,7 +30,7 @@ where
 	}
 
 	if let (Some(chunk_start), Some(mut chunk_size)) = id3v2_chunk {
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 
 		// We need to remove the padding byte if it exists
 		if chunk_size % 2 != 0 {
@@ -48,14 +45,14 @@ where
 			[],
 		);
 
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 		data.set_len(0)?;
 		data.write_all(&*file_bytes)?;
 	}
 
 	if !tag.is_empty() {
 		data.seek(SeekFrom::End(0))?;
-		data.write_all(&[b'I', b'D', b'3', b' '])?;
+		data.write_all(b"ID3 ")?;
 		data.write_u32::<B>(tag.len() as u32)?;
 		data.write_all(tag)?;
 
@@ -65,7 +62,7 @@ where
 			data.write_u8(0)?;
 		}
 
-		let total_size = data.seek(SeekFrom::Current(0))? - 8;
+		let total_size = data.stream_position()? - 8;
 
 		data.seek(SeekFrom::Start(4))?;
 

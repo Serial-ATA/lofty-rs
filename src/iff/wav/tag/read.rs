@@ -3,7 +3,7 @@ use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 use crate::iff::chunk::Chunks;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 use byteorder::LittleEndian;
 
@@ -16,7 +16,7 @@ pub(in crate::iff::wav) fn parse_riff_info<R>(
 where
 	R: Read + Seek,
 {
-	while data.seek(SeekFrom::Current(0))? != end && chunks.next(data).is_ok() {
+	while data.stream_position()? != end && chunks.next(data).is_ok() {
 		let key_str = String::from_utf8(chunks.fourcc.to_vec()).map_err(|_| {
 			FileDecodingError::new(FileType::WAV, "Non UTF-8 item key found in RIFF INFO")
 		})?;

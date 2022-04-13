@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::macros::try_vec;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -19,7 +19,7 @@ impl Block {
 	where
 		R: Read + Seek,
 	{
-		let start = data.seek(SeekFrom::Current(0))?;
+		let start = data.stream_position()?;
 
 		let byte = data.read_u8()?;
 		let last = (byte & 0x80) != 0;
@@ -30,7 +30,7 @@ impl Block {
 		let mut content = try_vec![0; size as usize];
 		data.read_exact(&mut content)?;
 
-		let end = data.seek(SeekFrom::Current(0))?;
+		let end = data.stream_position()?;
 
 		Ok(Self {
 			byte,

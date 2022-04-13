@@ -348,7 +348,7 @@ where
 		while chunks.next(data).is_ok() {
 			match &chunks.fourcc {
 				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
-					let start = (data.seek(SeekFrom::Current(0))? - 8) as usize;
+					let start = (data.stream_position()? - 8) as usize;
 					let mut end = start + 8 + chunks.size as usize;
 
 					if chunks.size % 2 != 0 {
@@ -363,7 +363,7 @@ where
 			chunks.skip(data)?;
 		}
 
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 
 		let mut file_bytes = Vec::new();
 		data.read_to_end(&mut file_bytes)?;
@@ -392,7 +392,7 @@ where
 		let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
 		file_bytes.splice(4..8, total_size.to_vec());
 
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 		data.set_len(0)?;
 		data.write_all(&*file_bytes)?;
 

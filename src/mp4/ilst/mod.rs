@@ -461,7 +461,7 @@ mod tests {
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
-	use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+	use std::io::{Cursor, Read, Seek, Write};
 
 	fn read_ilst(path: &str) -> Ilst {
 		let tag = crate::tag::utils::test_utils::read_path(path);
@@ -666,13 +666,13 @@ mod tests {
 
 		let mut file = tempfile::tempfile().unwrap();
 		file.write_all(&file_bytes).unwrap();
-		file.seek(SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		ilst.set_title(String::from("Exactly 21 Characters"));
 		ilst.save_to(&mut file).unwrap();
 
 		// Now verify the free atom
-		file.seek(SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		let mut file_bytes = Vec::new();
 		file.read_to_end(&mut file_bytes).unwrap();
@@ -692,7 +692,7 @@ mod tests {
 		}
 
 		// Verify we can re-read the file
-		file.seek(SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 		assert!(Mp4File::read_from(&mut file, false).is_ok());
 	}
 
@@ -712,7 +712,7 @@ mod tests {
 		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
 		let mut file = tempfile::tempfile().unwrap();
 		file.write_all(&file_bytes).unwrap();
-		file.seek(SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		let mut tag = Ilst::default();
 		tag.insert_atom(Atom {
@@ -721,7 +721,7 @@ mod tests {
 		});
 
 		assert!(tag.save_to(&mut file).is_ok());
-		file.seek(SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		let mp4_file = Mp4File::read_from(&mut file, true).unwrap();
 		assert!(mp4_file.ilst.is_some());

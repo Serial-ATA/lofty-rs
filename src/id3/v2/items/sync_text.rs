@@ -126,7 +126,7 @@ impl SynchronizedText {
 			};
 		}
 
-		let mut pos = cursor.seek(SeekFrom::Current(0))? as u32;
+		let mut pos = cursor.stream_position()? as u32;
 		let total = (data.len() - 6) as u32 - pos;
 
 		let mut content = Vec::new();

@@ -68,7 +68,7 @@ where
 	find_lyrics3v2(data)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
-	let ape_position = data.seek(SeekFrom::Current(0))?;
+	let ape_position = data.stream_position()?;
 
 	// Now search for an APE tag at the end
 	data.seek(SeekFrom::Current(-32))?;
@@ -79,7 +79,7 @@ where
 
 	// Also check this tag for any read only items
 	if &ape_preamble == APE_PREAMBLE {
-		let start = data.seek(SeekFrom::Current(0))? as usize + 24;
+		let start = data.stream_position()? as usize + 24;
 
 		let header = read_ape_header(data, true)?;
 		let size = header.size;
@@ -114,7 +114,7 @@ where
 		create_ape_tag(tag)?
 	};
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 
 	let mut file_bytes = Vec::new();
 	data.read_to_end(&mut file_bytes)?;
@@ -131,7 +131,7 @@ where
 		file_bytes.drain(header_ape_tag.1 .0 as usize..header_ape_tag.1 .1 as usize);
 	}
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 	data.set_len(0)?;
 	data.write_all(&*file_bytes)?;
 

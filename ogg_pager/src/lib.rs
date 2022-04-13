@@ -105,7 +105,7 @@ impl Page {
 
 		bytes.extend(b"OggS");
 		bytes.push(0); // Version
-		bytes.extend(self.header_type.to_le_bytes());
+		bytes.push(self.header_type);
 		bytes.extend(self.abgp.to_le_bytes());
 		bytes.extend(self.serial.to_le_bytes());
 		bytes.extend(self.seq_num.to_le_bytes());
@@ -129,7 +129,7 @@ impl Page {
 	where
 		V: Read + Seek,
 	{
-		let start = data.seek(SeekFrom::Current(0))?;
+		let start = data.stream_position()?;
 
 		let mut sig = [0; 4];
 		data.read_exact(&mut sig)?;
@@ -171,7 +171,7 @@ impl Page {
 			data.read_exact(&mut content)?;
 		}
 
-		let end = data.seek(SeekFrom::Current(0))?;
+		let end = data.stream_position()?;
 
 		Ok(Page {
 			content,

@@ -71,7 +71,7 @@ where
 	R: Read + Seek,
 {
 	let (stream_len, file_length) = {
-		let current = data.seek(SeekFrom::Current(0))?;
+		let current = data.stream_position()?;
 		let end = data.seek(SeekFrom::End(0))?;
 		data.seek(SeekFrom::Start(current))?;
 
@@ -108,7 +108,7 @@ where
 	}
 
 	// Subtract the identification and metadata packet length from the total
-	let audio_size = stream_len - data.seek(SeekFrom::Current(0))?;
+	let audio_size = stream_len - data.stream_position()?;
 
 	let last_page = find_last_page(data)?;
 	let last_page_abgp = last_page.abgp;

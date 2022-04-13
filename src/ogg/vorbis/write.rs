@@ -29,7 +29,7 @@ pub(crate) fn write_to(
 	c.seek(SeekFrom::Current(i64::from(vendor_len)))?;
 
 	let total_comments = c.read_u32::<LittleEndian>()?;
-	let comments_pos = c.seek(SeekFrom::Current(0))?;
+	let comments_pos = c.stream_position()?;
 
 	c.seek(SeekFrom::End(0))?;
 

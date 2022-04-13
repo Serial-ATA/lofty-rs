@@ -8,7 +8,7 @@ use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::properties::FileProperties;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 use byteorder::BigEndian;
 #[cfg(feature = "aiff_text_chunks")]
@@ -139,7 +139,7 @@ where
 				properties = super::properties::read_properties(
 					&mut &*comm,
 					stream_len,
-					data.seek(SeekFrom::Current(0))?,
+					data.stream_position()?,
 				)?;
 			},
 			None => {

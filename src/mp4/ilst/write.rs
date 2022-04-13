@@ -17,9 +17,9 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 	verify_mp4(data)?;
 
 	let moov = Moov::find(data)?;
-	let pos = data.seek(SeekFrom::Current(0))?;
+	let pos = data.stream_position()?;
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 
 	let mut file_bytes = Vec::new();
 	data.read_to_end(&mut file_bytes)?;
@@ -100,7 +100,7 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 		create_meta(&mut bytes, &ilst)?;
 
 		// udta size
-		bytes.seek(SeekFrom::Start(0))?;
+		bytes.rewind()?;
 		write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
 
 		let bytes = bytes.into_inner();
@@ -121,7 +121,7 @@ pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> 
 		&mut cursor,
 	)?;
 
-	data.seek(SeekFrom::Start(0))?;
+	data.rewind()?;
 	data.set_len(0)?;
 	data.write_all(&cursor.into_inner())?;
 
@@ -303,7 +303,7 @@ pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef<'_>>) -> Result
 	writer.seek(SeekFrom::End(0))?;
 
 	for atom in peek {
-		let start = writer.seek(SeekFrom::Current(0))?;
+		let start = writer.stream_position()?;
 
 		// Empty size, we get it later
 		writer.write_all(&[0; 4])?;
@@ -315,7 +315,7 @@ pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef<'_>>) -> Result
 
 		write_atom_data(&atom.data, &mut writer)?;
 
-		let end = writer.seek(SeekFrom::Current(0))?;
+		let end = writer.stream_position()?;
 
 		let size = end - start;
 

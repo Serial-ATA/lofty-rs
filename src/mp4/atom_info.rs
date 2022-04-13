@@ -43,7 +43,7 @@ impl AtomInfo {
 	where
 		R: Read + Seek,
 	{
-		let start = data.seek(SeekFrom::Current(0))?;
+		let start = data.stream_position()?;
 
 		let len = data.read_u32::<BigEndian>()?;
 
@@ -60,7 +60,7 @@ impl AtomInfo {
 		let (len, extended) = match len {
 			// The atom extends to the end of the file
 			0 => {
-				let pos = data.seek(SeekFrom::Current(0))?;
+				let pos = data.stream_position()?;
 				let end = data.seek(SeekFrom::End(0))?;
 
 				data.seek(SeekFrom::Start(pos))?;

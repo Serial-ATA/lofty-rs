@@ -1,6 +1,6 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::{FileType, ItemKey, ItemValue, TagExt, TagItem, TagType};
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Seek, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
 // We have the vendor string and a title stored in the tag
@@ -96,7 +96,7 @@ fn write(path: &str, file_type: FileType) {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 2 => file, "Bar artist");
 
 	// Now reread the file
-	file.seek(SeekFrom::Start(0)).unwrap();
+	file.rewind().unwrap();
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 2 => file, "Foo artist");
@@ -112,10 +112,10 @@ fn remove(path: &str, tag_type: TagType) {
 			&& tagged_file.tag(&tag_type).unwrap().item_count() == 2
 	);
 
-	file.seek(SeekFrom::Start(0)).unwrap();
+	file.rewind().unwrap();
 	tag_type.remove_from(&mut file).unwrap();
 
-	file.seek(SeekFrom::Start(0)).unwrap();
+	file.rewind().unwrap();
 	let tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now

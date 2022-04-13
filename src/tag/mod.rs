@@ -470,7 +470,7 @@ impl TagType {
 mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{Picture, PictureType, Tag, TagExt, TagType};
-	use std::io::{Seek, SeekFrom, Write};
+	use std::io::{Seek, Write};
 	use std::process::Command;
 
 	#[test]
@@ -478,7 +478,7 @@ mod tests {
 		let file_contents = read_path("tests/files/assets/issue_37.ogg");
 		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 		temp_file.write_all(&file_contents).unwrap();
-		temp_file.seek(SeekFrom::Start(0)).unwrap();
+		temp_file.rewind().unwrap();
 
 		let mut tag = Tag::new(TagType::VorbisComments);
 

@@ -24,7 +24,7 @@ where
 		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
 		let info_list_end = info_list_start + 8 + info_list_size as usize;
 
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 
 		let mut file_bytes = Vec::new();
 		data.read_to_end(&mut file_bytes)?;
@@ -34,7 +34,7 @@ where
 		let total_size = (file_bytes.len() - 8) as u32;
 		let _ = file_bytes.splice(4..8, total_size.to_le_bytes());
 
-		data.seek(SeekFrom::Start(0))?;
+		data.rewind()?;
 		data.set_len(0)?;
 		data.write_all(&*file_bytes)?;
 	} else {
@@ -42,7 +42,7 @@ where
 
 		data.write_all(&riff_info_bytes)?;
 
-		let len = (data.seek(SeekFrom::Current(0))? - 8) as u32;
+		let len = (data.stream_position()? - 8) as u32;
 
 		data.seek(SeekFrom::Start(4))?;
 		data.write_u32::<LittleEndian>(len)?;

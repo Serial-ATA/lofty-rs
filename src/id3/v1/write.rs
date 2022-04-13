@@ -5,7 +5,7 @@ use crate::id3::{find_id3v1, ID3FindResults};
 use crate::probe::Probe;
 
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, Write};
 
 use byteorder::WriteBytesExt;
 
@@ -24,12 +24,12 @@ pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()
 	let ID3FindResults(header, _) = find_id3v1(writer, false)?;
 
 	if tag.is_empty() && header.is_some() {
-		writer.seek(SeekFrom::Start(0))?;
+		writer.rewind()?;
 
 		let mut file_bytes = Vec::new();
 		writer.read_to_end(&mut file_bytes)?;
 
-		writer.seek(SeekFrom::Start(0))?;
+		writer.rewind()?;
 		writer.set_len(0)?;
 		writer.write_all(&file_bytes[..file_bytes.len() - 128])?;
 
@@ -46,7 +46,7 @@ pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()
 pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 	fn resize_string(value: Option<&str>, size: usize) -> std::io::Result<Vec<u8>> {
 		let mut cursor = Cursor::new(vec![0; size]);
-		cursor.seek(SeekFrom::Start(0))?;
+		cursor.rewind()?;
 
 		if let Some(val) = value {
 			if val.len() > size {

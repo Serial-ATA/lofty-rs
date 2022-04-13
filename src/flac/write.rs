@@ -124,7 +124,7 @@ fn create_comment_block(
 		writer.write_u32::<LittleEndian>(vendor.len() as u32)?;
 		writer.write_all(vendor.as_bytes())?;
 
-		let item_count_pos = writer.seek(SeekFrom::Current(0))?;
+		let item_count_pos = writer.stream_position()?;
 		let mut count = 0;
 
 		writer.write_u32::<LittleEndian>(count)?;
@@ -137,7 +137,7 @@ fn create_comment_block(
 			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
-		let comment_end = writer.seek(SeekFrom::Current(0))?;
+		let comment_end = writer.stream_position()?;
 
 		writer.seek(SeekFrom::Start(item_count_pos))?;
 		writer.write_u32::<LittleEndian>(count)?;

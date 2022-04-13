@@ -133,11 +133,11 @@ where
 		}
 
 		// Seek back to the start of the tag
-		let pos = reader.seek(SeekFrom::Current(0))?;
+		let pos = reader.stream_position()?;
 		reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
 	}
 
-	file.last_frame_offset = reader.seek(SeekFrom::Current(0))?;
+	file.last_frame_offset = reader.stream_position()?;
 
 	file.properties = if read_properties {
 		// Safe to unwrap, since we return early if no frame is found
