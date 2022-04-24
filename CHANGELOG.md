@@ -140,8 +140,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ErrorKind::BadExtension`
 
 [Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...main
-[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87aae7...868d6b4
-[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87aae7
+[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
+[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
 [0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
 [0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
