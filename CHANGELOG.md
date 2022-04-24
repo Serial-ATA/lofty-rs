@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.2] - 2022-04-24
+
+### Fixed
+- **MP3**: Fix panic when reading files with no MPEG frames
+  - Attempting to read an MP3 file with `read_properties = true` would result in a panic if the file contained no
+    MPEG frames
+
 ## [0.6.1] - 2022-04-09
 
 ### Fixed
@@ -132,8 +139,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/d04ee2b...main
-[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...d04ee2b
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/9b641c4a...main
+[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87aae7...9b641c4a
+[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87aae7
 [0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
 [0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
