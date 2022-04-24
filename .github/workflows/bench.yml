@@ -5,6 +5,7 @@ on:
       - 'src/**'
       - 'benches/**'
       - 'ogg_pager/**'
+      - 'CHANGELOG.md'
     branches:
       - main
 
