@@ -87,7 +87,7 @@ impl MimeType {
 	/// Get a `MimeType` from a string
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
-			"image/jpeg" => Self::Jpeg,
+			"image/jpeg" | "image/jpg" => Self::Jpeg,
 			"image/png" => Self::Png,
 			"image/tiff" => Self::Tiff,
 			"image/bmp" => Self::Bmp,
