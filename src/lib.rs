@@ -187,6 +187,7 @@ pub mod ogg;
 pub(crate) mod picture;
 mod probe;
 pub(crate) mod properties;
+pub mod resolve;
 pub(crate) mod tag;
 mod traits;
 pub mod wavpack;
