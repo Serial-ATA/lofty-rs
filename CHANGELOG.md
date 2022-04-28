@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Pictures**: Treat "image/jpg" as `MimeType::Jpeg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/41))
+- **MP3**: Properly validate the contents of Xing/LAME/VBRI headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/42))
+  - A header with any field zeroed out would result in a division by zero panic
+
 ## [0.6.2] - 2022-04-24
 
 ### Fixed

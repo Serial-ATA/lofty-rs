@@ -121,7 +121,7 @@ pub(super) fn read_properties(
 	};
 
 	match xing_header {
-		Some(xing_header) if first_frame_header.sample_rate > 0 => {
+		Some(xing_header) if first_frame_header.sample_rate > 0 && xing_header.is_valid() => {
 			let frame_time =
 				u32::from(first_frame_header.samples) * 1000 / first_frame_header.sample_rate;
 			let length = u64::from(frame_time) * u64::from(xing_header.frames);

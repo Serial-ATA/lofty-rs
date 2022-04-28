@@ -238,13 +238,13 @@ impl Header {
 	}
 }
 
-pub(crate) struct XingHeader {
-	pub(crate) frames: u32,
-	pub(crate) size: u32,
+pub(super) struct XingHeader {
+	pub frames: u32,
+	pub size: u32,
 }
 
 impl XingHeader {
-	pub(crate) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
+	pub(super) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
 		let reader_len = reader.len();
 
 		let mut header = [0; 4];
@@ -298,6 +298,10 @@ impl XingHeader {
 			},
 			_ => Ok(None),
 		}
+	}
+
+	pub(super) fn is_valid(&self) -> bool {
+		self.frames > 0 && self.size > 0
 	}
 }
 
