@@ -339,13 +339,25 @@ where
 
 				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 					match fourcc {
-						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties, file_length)?,
-						b"alac" => alac_properties(&mut stsd_reader, &mut properties, file_length)?,
+						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
+						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
 						// Maybe do these?
 						// TODO: dfla (https://github.com/xiph/flac/blob/master/doc/isoflac.txt)
 						// TODO: dops
 						// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
 						_ => {},
+					}
+
+					// We do the mdat check up here, so we have access to the entire file
+					let duration_millis = properties.duration.as_millis();
+					if duration_millis > 0 {
+						let overall_bitrate = u128::from(file_length * 8) / duration_millis;
+						properties.overall_bitrate = overall_bitrate as u32;
+
+						if properties.audio_bitrate == 0 {
+							properties.audio_bitrate =
+								(u128::from(mdat_length(data)? * 8) / duration_millis) as u32;
+						}
 					}
 				}
 			}
@@ -355,7 +367,7 @@ where
 	Ok(properties)
 }
 
-fn mp4a_properties<R>(stsd: &mut R, properties: &mut Mp4Properties, file_length: u64) -> Result<()>
+fn mp4a_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -509,12 +521,8 @@ where
 						}
 					}
 
-					let overall_bitrate =
-						u128::from(file_length * 8) / properties.duration.as_millis();
-
-					if average_bitrate > 0 {
-						properties.overall_bitrate = overall_bitrate as u32;
-						properties.audio_bitrate = average_bitrate / 1000
+					if average_bitrate > 0 || properties.duration.is_zero() {
+						properties.audio_bitrate = average_bitrate / 1000;
 					}
 				}
 			}
@@ -524,12 +532,12 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(data: &mut R, properties: &mut Mp4Properties, file_length: u64) -> Result<()>
+fn alac_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
 	// With ALAC, we can expect the length to be exactly 88 (80 here since we removed the size and identifier)
-	if data.seek(SeekFrom::End(0))? != 80 {
+	if stsd.seek(SeekFrom::End(0))? != 80 {
 		return Ok(());
 	}
 
@@ -540,9 +548,9 @@ where
 	// We are skipping over 44 bytes total
 	// stsd information/alac atom header (16, see `read_properties`)
 	// First alac atom's content (28)
-	data.seek(SeekFrom::Start(44))?;
+	stsd.seek(SeekFrom::Start(44))?;
 
-	if let Ok(alac) = AtomInfo::read(data) {
+	if let Ok(alac) = AtomInfo::read(stsd) {
 		if alac.ident == AtomIdent::Fourcc(*b"alac") {
 			properties.codec = Mp4Codec::ALAC;
 
@@ -550,35 +558,47 @@ where
 			// Version (4)
 			// Samples per frame (4)
 			// Compatible version (1)
-			data.seek(SeekFrom::Current(9))?;
+			stsd.seek(SeekFrom::Current(9))?;
 
 			// Sample size (1)
-			let sample_size = data.read_u8()?;
+			let sample_size = stsd.read_u8()?;
 			properties.bit_depth = Some(sample_size);
 
 			// Skipping 3 bytes
 			// Rice history mult (1)
 			// Rice initial history (1)
 			// Rice parameter limit (1)
-			data.seek(SeekFrom::Current(3))?;
+			stsd.seek(SeekFrom::Current(3))?;
 
-			properties.channels = data.read_u8()?;
+			properties.channels = stsd.read_u8()?;
 
 			// Skipping 6 bytes
 			// Max run (2)
 			// Max frame size (4)
-			data.seek(SeekFrom::Current(6))?;
+			stsd.seek(SeekFrom::Current(6))?;
 
-			let overall_bitrate = u128::from(file_length * 8) / properties.duration.as_millis();
-			properties.overall_bitrate = overall_bitrate as u32;
-
-			// TODO: Determine bitrate from mdat
-			properties.audio_bitrate = data.read_u32::<BigEndian>()? / 1000;
-			properties.sample_rate = data.read_u32::<BigEndian>()?;
+			properties.audio_bitrate = stsd.read_u32::<BigEndian>()? / 1000;
+			properties.sample_rate = stsd.read_u32::<BigEndian>()?;
 		}
 	}
 
 	Ok(())
+}
+
+// Used to calculate the bitrate, when it isn't readily available to us
+fn mdat_length<R>(data: &mut R) -> Result<u64>
+where
+	R: Read + Seek,
+{
+	data.seek(SeekFrom::Start(0))?;
+
+	while let Ok(atom) = AtomInfo::read(data) {
+		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
+			return Ok(atom.len);
+		}
+	}
+
+	Err(FileDecodingError::new(FileType::MP4, "Failed to find \"mdat\" atom").into())
 }
 
 struct Descriptor {

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Fix hang when reading invalid padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/44))
   - If invalid padding was encountered at the end of the file, the reader would get stuck in an infinite loop
     attempting to read zero size atoms
+- **MP4**: Fallback to bitrate calculation from `mdat` when necessary ([issue](https://github.com/Serial-ATA/lofty-rs/issues/43))
+  - When reading a file that doesn't provide a valid bitrate or duration, a division by zero panic would occur.
+    Now, it attempts to calculate the bitrate from the `mdat` atom.
 
 ## [0.6.2] - 2022-04-24
 
