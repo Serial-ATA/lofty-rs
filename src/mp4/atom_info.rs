@@ -69,13 +69,17 @@ impl AtomInfo {
 			},
 			// There's an extended length
 			1 => (data.read_u64::<BigEndian>()?, true),
-			_ if len < 8 => {
-				return Err(LoftyError::new(ErrorKind::BadAtom(
-					"Found an invalid length (< 8)",
-				)))
-			},
 			_ => (u64::from(len), false),
 		};
+
+		if len < 8 {
+			// Seek to the end, since we can't recover from this
+			data.seek(SeekFrom::End(0))?;
+
+			return Err(LoftyError::new(ErrorKind::BadAtom(
+				"Found an invalid length (< 8)",
+			)));
+		}
 
 		Ok(Self {
 			start,

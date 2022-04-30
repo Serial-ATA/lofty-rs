@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pictures**: Treat "image/jpg" as `MimeType::Jpeg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/41))
 - **MP3**: Properly validate the contents of Xing/LAME/VBRI headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/42))
   - A header with any field zeroed out would result in a division by zero panic
+- **MP4**: Fix hang when reading invalid padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/44))
+  - If invalid padding was encountered at the end of the file, the reader would get stuck in an infinite loop
+    attempting to read zero size atoms
 
 ## [0.6.2] - 2022-04-24
 
