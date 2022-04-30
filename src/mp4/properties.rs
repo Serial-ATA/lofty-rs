@@ -596,6 +596,8 @@ where
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
 			return Ok(atom.len);
 		}
+
+		skip_unneeded(data, atom.extended, atom.len)?;
 	}
 
 	Err(FileDecodingError::new(FileType::MP4, "Failed to find \"mdat\" atom").into())
