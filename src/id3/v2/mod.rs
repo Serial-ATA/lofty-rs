@@ -178,7 +178,7 @@ where
 		}
 	}
 
-	if extended_size >= size || size == 0 {
+	if extended_size > 0 && extended_size >= size {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::Other("Tag has an invalid size")).into());
 	}
 

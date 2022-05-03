@@ -16,11 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Fallback to bitrate calculation from `mdat` when necessary ([issue](https://github.com/Serial-ATA/lofty-rs/issues/43))
   - When reading a file that doesn't provide a valid bitrate or duration, a division by zero panic would occur.
     Now, it attempts to calculate the bitrate from the `mdat` atom.
+- **ID3v2**: Fix reading of zero-size tags
 
 ## [0.6.2] - 2022-04-24
 
 ### Fixed
-- **MP3**: Fix panic when reading files with no MPEG frames
+- **MP3**: Fix panic when reading files with no MPEG frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/39))
   - Attempting to read an MP3 file with `read_properties = true` would result in a panic if the file contained no
     MPEG frames
 
