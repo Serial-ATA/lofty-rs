@@ -32,11 +32,25 @@ where
 
 	let vendor = match String::from_utf8(vendor) {
 		Ok(v) => v,
-		Err(_) => {
-			return Err(FileDecodingError::from_description(
-				"OGG: File has an invalid vendor string",
-			)
-			.into())
+		Err(e) => {
+			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
+			// This seems to work, while preserving the string opposed to using
+			// the replacement character
+			let s = e
+				.as_bytes()
+				.iter()
+				.map(|c| u16::from(*c))
+				.collect::<Vec<_>>();
+
+			match String::from_utf16(&s) {
+				Ok(vendor) => vendor,
+				Err(_) => {
+					return Err(FileDecodingError::from_description(
+						"OGG: File has an invalid vendor string",
+					)
+					.into())
+				},
+			}
 		},
 	};
 

@@ -17,7 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When reading a file that doesn't provide a valid bitrate or duration, a division by zero panic would occur.
     Now, it attempts to calculate the bitrate from the `mdat` atom.
 - **ID3v2**: Fix reading of zero-size tags
-- **FLAC**: Fix property reading of zero-length files
+- **FLAC**: Fix property reading of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/46))
+- **Vorbis Comments**: Fix reading of vendor strings with invalid mixed UTF-8 and UTF-16 encodings
 
 ## [0.6.2] - 2022-04-24
 
