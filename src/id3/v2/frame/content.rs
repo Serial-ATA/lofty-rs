@@ -15,13 +15,13 @@ pub(super) fn parse_content(
 	content: &mut &[u8],
 	id: &str,
 	version: Id3v2Version,
-) -> Result<FrameValue> {
+) -> Result<Option<FrameValue>> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
 			let (picture, encoding) = Picture::from_apic_bytes(content, version)?;
 
-			FrameValue::Picture { encoding, picture }
+			Some(FrameValue::Picture { encoding, picture })
 		},
 		"TXXX" => parse_user_defined(content, false, version)?,
 		"WXXX" => parse_user_defined(content, true, version)?,
@@ -31,9 +31,9 @@ pub(super) fn parse_content(
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
 		_ if id.starts_with('W') => parse_link(content)?,
-		"POPM" => parse_popularimeter(content)?,
+		"POPM" => Some(parse_popularimeter(content)?),
 		// SYLT, GEOB, and any unknown frames
-		_ => FrameValue::Binary(content.to_vec()),
+		_ => Some(FrameValue::Binary(content.to_vec())),
 	})
 }
 
@@ -42,16 +42,16 @@ fn parse_user_defined(
 	content: &mut &[u8],
 	link: bool,
 	version: Id3v2Version,
-) -> Result<FrameValue> {
+) -> Result<Option<FrameValue>> {
 	if content.len() < 2 {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+		return Ok(None);
 	}
 
 	let encoding = verify_encoding(content.read_u8()?, version)?;
 
 	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
-	Ok(if link {
+	Ok(Some(if link {
 		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
 
 		FrameValue::UserURL(EncodedTextFrame {
@@ -67,12 +67,16 @@ fn parse_user_defined(
 			description,
 			content,
 		})
-	})
+	}))
 }
 
-fn parse_text_language(content: &mut &[u8], id: &str, version: Id3v2Version) -> Result<FrameValue> {
+fn parse_text_language(
+	content: &mut &[u8],
+	id: &str,
+	version: Id3v2Version,
+) -> Result<Option<FrameValue>> {
 	if content.len() < 5 {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+		return Ok(None);
 	}
 
 	let encoding = verify_encoding(content.read_u8()?, version)?;
@@ -99,23 +103,31 @@ fn parse_text_language(content: &mut &[u8], id: &str, version: Id3v2Version) -> 
 		_ => unreachable!(),
 	};
 
-	Ok(value)
+	Ok(Some(value))
 }
 
-fn parse_text(content: &mut &[u8], version: Id3v2Version) -> Result<FrameValue> {
+fn parse_text(content: &mut &[u8], version: Id3v2Version) -> Result<Option<FrameValue>> {
+	if content.len() < 2 {
+		return Ok(None);
+	}
+
 	let encoding = verify_encoding(content.read_u8()?, version)?;
 	let text = decode_text(content, encoding, true)?.unwrap_or_default();
 
-	Ok(FrameValue::Text {
+	Ok(Some(FrameValue::Text {
 		encoding,
 		value: text,
-	})
+	}))
 }
 
-fn parse_link(content: &mut &[u8]) -> Result<FrameValue> {
+fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {
+	if content.is_empty() {
+		return Ok(None);
+	}
+
 	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
 
-	Ok(FrameValue::URL(link))
+	Ok(Some(FrameValue::URL(link)))
 }
 
 fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {

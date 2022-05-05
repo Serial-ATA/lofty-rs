@@ -21,8 +21,11 @@ where
 
 	loop {
 		match Frame::read(reader, header.version)? {
-			None => break,
-			Some(f) => drop(tag.insert(f)),
+			// No frame content found, and we can expect there are no more frames
+			(None, true) => break,
+			(Some(f), false) => drop(tag.insert(f)),
+			// No frame content found, but we can expect more frames
+			_ => {},
 		}
 	}
 

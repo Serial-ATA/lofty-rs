@@ -10,7 +10,7 @@ use std::io::Read;
 use byteorder::{BigEndian, ReadBytesExt};
 
 impl Frame {
-	pub(crate) fn read<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub(crate) fn read<R>(reader: &mut R, version: Id3v2Version) -> Result<(Option<Self>, bool)>
 	where
 		R: Read,
 	{
@@ -20,7 +20,7 @@ impl Frame {
 			Id3v2Version::V3 => parse_header(reader, false)?,
 			Id3v2Version::V4 => parse_header(reader, true)?,
 		} {
-			None => return Ok(None),
+			None => return Ok((None, true)),
 			Some(frame_header) => frame_header,
 		};
 
@@ -69,11 +69,14 @@ impl Frame {
 				.into());
 			}
 
-			FrameValue::Binary(content)
+			Some(FrameValue::Binary(content))
 		} else {
 			parse_content(&mut content_reader, id.as_str(), version)?
 		};
 
-		Ok(Some(Self { id, value, flags }))
+		match value {
+			Some(value) => Ok((Some(Self { id, value, flags }), false)),
+			None => Ok((None, false)),
+		}
 	}
 }
