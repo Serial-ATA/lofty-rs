@@ -5,6 +5,12 @@ use lofty::mp3::Mp3File;
 use lofty::mp4::Mp4File;
 use lofty::AudioFile;
 
+// TODO: zero-size mdat mp4
+// TODO: zero-size vorbis comments
+// TODO: zero-size APE tag
+// TODO: zero-size ilst
+// TODO: zero-size AIFF text chunks
+
 fn read_file<A: AudioFile + std::fmt::Debug>(path: &str) -> bool {
 	let res = <A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), true);
 	res.is_ok()
