@@ -172,20 +172,3 @@ where
 
 	Ok(file)
 }
-
-#[cfg(test)]
-mod tests {
-	use crate::file::AudioFile;
-	use crate::mp3::Mp3File;
-	use std::fs::File;
-
-	#[test]
-	fn issue_39() {
-		// MP3 file that only consists of an ID3v2 tag
-		assert!(Mp3File::read_from(
-			&mut File::open("tests/files/assets/issue_39.mp3").unwrap(),
-			true,
-		)
-		.is_err());
-	}
-}

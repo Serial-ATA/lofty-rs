@@ -31,3 +31,13 @@ where
 
 	Ok(tag)
 }
+
+#[test]
+fn zero_size_id3v2() {
+	use crate::id3::v2::read_id3v2_header;
+	use std::io::Cursor;
+
+	let mut f = Cursor::new(std::fs::read("tests/tags/assets/id3v2/zero.id3v2").unwrap());
+	let header = read_id3v2_header(&mut f).unwrap();
+	assert!(parse_id3v2(&mut f, header).is_ok());
+}
