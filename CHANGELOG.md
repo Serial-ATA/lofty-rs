@@ -13,18 +13,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pictures**: Treat "image/jpg" as `MimeType::Jpeg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/41))
 - **MP3**: Properly validate the contents of Xing/LAME/VBRI headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/42))
   - A header with any field zeroed out would result in a division by zero panic
-- **MP4**: Fix hang when reading invalid padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/44))
-  - If invalid padding was encountered at the end of the file, the reader would get stuck in an infinite loop
-    attempting to read zero size atoms
-- **MP4**: Fallback to bitrate calculation from `mdat` when necessary ([issue](https://github.com/Serial-ATA/lofty-rs/issues/43))
-  - When reading a file that doesn't provide a valid bitrate or duration, a division by zero panic would occur.
-    Now, it attempts to calculate the bitrate from the `mdat` atom.
-- **ID3v2**: Fix reading of zero-size tags
 - **FLAC**: Fix property reading of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/46))
 - **Vorbis Comments**: Fix reading of vendor strings with invalid mixed UTF-8 and UTF-16 encodings
-- **ID3v2**: Attempt to read invalid v2 frame IDs in v3 tags
-  - For some reason, some apps write v2 frame IDs in otherwise valid v3 frames
-- **ID3v2**: Attempt to decode invalid `COMM` languages
+- **ID3v2**:
+  - Fix reading of zero-size tags
+  - Attempt to read invalid v2 frame IDs in v3 tags
+    - For some reason, some apps write v2 frame IDs in otherwise valid v3 frames
+  - Attempt to decode invalid `COMM` languages
+- **MP4**:
+  - Fix hang when reading invalid padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/44))
+    - If invalid padding was encountered at the end of the file, the reader would get stuck in an infinite loop
+      attempting to read zero size atoms
+  - Fallback to bitrate calculation from `mdat` when necessary ([issue](https://github.com/Serial-ATA/lofty-rs/issues/43))
+    - When reading a file that doesn't provide a valid bitrate or duration, a division by zero panic would occur.
+      Now, it attempts to calculate the bitrate from the `mdat` atom.
 
 ## [0.6.2] - 2022-04-24
 
