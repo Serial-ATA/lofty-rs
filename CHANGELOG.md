@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: Fix reading of zero-size tags
 - **FLAC**: Fix property reading of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/46))
 - **Vorbis Comments**: Fix reading of vendor strings with invalid mixed UTF-8 and UTF-16 encodings
+- **ID3v2**: Attempt to read invalid v2 frame IDs in v3 tags
+  - For some reason, some apps write v2 frame IDs in otherwise valid v3 frames
 
 ## [0.6.2] - 2022-04-24
 

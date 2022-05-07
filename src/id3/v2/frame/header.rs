@@ -50,32 +50,40 @@ where
 		return Ok(None);
 	}
 
-	let id_str = std::str::from_utf8(&frame_header[..4])
+	// For some reason, some apps make v3 tags with v2 frame IDs.
+	// The actual frame header is v3 though
+	let mut frame_id_end = 4;
+	let mut invalid_v2_frame = false;
+	if frame_header[3] == 0 && !synchsafe {
+		invalid_v2_frame = true;
+		frame_id_end = 3;
+	}
+
+	let mut id_str = std::str::from_utf8(&frame_header[..frame_id_end])
 		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameID))?;
 
-	let (id, size) = if synchsafe {
-		let size = crate::id3::v2::unsynch_u32(u32::from_be_bytes([
-			frame_header[4],
-			frame_header[5],
-			frame_header[6],
-			frame_header[7],
-		]));
+	let mut size = u32::from_be_bytes([
+		frame_header[4],
+		frame_header[5],
+		frame_header[6],
+		frame_header[7],
+	]);
 
-		(id_str, size)
-	} else {
-		let mapped = upgrade_v3(id_str).unwrap_or(id_str);
+	// Now upgrade the FrameID
+	if invalid_v2_frame {
+		if let Some(id) = upgrade_v2(id_str) {
+			id_str = id;
+		}
+	} else if !synchsafe {
+		id_str = upgrade_v3(id_str).unwrap_or(id_str);
+	}
 
-		let size = u32::from_be_bytes([
-			frame_header[4],
-			frame_header[5],
-			frame_header[6],
-			frame_header[7],
-		]);
+	// unsynch the frame size if necessary
+	if synchsafe {
+		size = crate::id3::v2::unsynch_u32(size);
+	}
 
-		(mapped, size)
-	};
-
-	let frame_id = FrameID::new(id)?;
+	let frame_id = FrameID::new(id_str)?;
 
 	let flags = u16::from_be_bytes([frame_header[8], frame_header[9]]);
 	let flags = parse_flags(flags, synchsafe);
