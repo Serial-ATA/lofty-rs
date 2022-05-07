@@ -10,6 +10,7 @@ use std::hash::{Hash, Hasher};
 pub struct LanguageFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
+	// TODO: Make this [u8; 3] in the next major release, since it isn't always a valid UTF-8 string
 	/// ISO-639-2 language code (3 bytes)
 	pub language: String,
 	/// Unique content description

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vorbis Comments**: Fix reading of vendor strings with invalid mixed UTF-8 and UTF-16 encodings
 - **ID3v2**: Attempt to read invalid v2 frame IDs in v3 tags
   - For some reason, some apps write v2 frame IDs in otherwise valid v3 frames
+- **ID3v2**: Attempt to decode invalid `COMM` languages
 
 ## [0.6.2] - 2022-04-24
 

@@ -84,7 +84,7 @@ fn parse_text_language(
 	let mut lang = [0; 3];
 	content.read_exact(&mut lang)?;
 
-	let lang = std::str::from_utf8(&lang)
+	let lang = decode_text(&mut &lang[..], TextEncoding::Latin1, true)
 		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Unable to decode language string")))?;
 
 	let description = decode_text(content, encoding, true)?;
@@ -92,7 +92,7 @@ fn parse_text_language(
 
 	let information = LanguageFrame {
 		encoding,
-		language: lang.to_string(),
+		language: lang.unwrap_or_default(),
 		description: description.unwrap_or_default(),
 		content,
 	};
