@@ -11,7 +11,7 @@ use lofty::AudioFile;
 // TODO: zero-size ilst
 // TODO: zero-size AIFF text chunks
 
-fn read_file<A: AudioFile + std::fmt::Debug>(path: &str) -> bool {
+fn read_file<A: AudioFile>(path: &str) -> bool {
 	let res = <A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), true);
 	res.is_ok()
 }
