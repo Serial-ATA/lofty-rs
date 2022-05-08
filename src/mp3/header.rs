@@ -2,7 +2,8 @@ use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFO
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
+use std::ops::Neg;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -41,6 +42,30 @@ where
 		buffer[0] = buffer[1];
 	}
 	Ok(None)
+}
+
+// If we need to find the last frame offset (the file has no Xing/LAME/VBRI header)
+//
+// This will search up to 1024 bytes preceding the APE tag/ID3v1/EOF.
+// Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
+// back to the start of the header.
+const REV_FRAME_SEARCH_BOUNDS: i64 = 1024;
+pub(super) fn rev_search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<u64>>
+where
+	R: Read + Seek,
+{
+	let res = input.seek(SeekFrom::Current(REV_FRAME_SEARCH_BOUNDS.neg()));
+	if res.is_err() {
+		return Ok(None);
+	}
+
+	let ret = search_for_frame_sync(&mut input.take(REV_FRAME_SEARCH_BOUNDS as u64));
+	if let Ok(Some(_)) = ret {
+		// Seek to the start of the frame sync
+		input.seek(SeekFrom::Current(-2))?;
+	}
+
+	ret
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -111,7 +136,6 @@ impl Default for Emphasis {
 #[derive(Copy, Clone)]
 pub(crate) struct Header {
 	pub(crate) sample_rate: u32,
-	pub(crate) channels: u8,
 	pub(crate) len: u32,
 	pub(crate) data_start: u32,
 	pub(crate) samples: u16,
@@ -126,8 +150,8 @@ pub(crate) struct Header {
 }
 
 impl Header {
-	pub(crate) fn read(header: u32) -> Result<Self> {
-		let version = match (header >> 19) & 0b11 {
+	pub(super) fn read(data: u32) -> Result<Self> {
+		let version = match (data >> 19) & 0b11 {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
@@ -142,7 +166,7 @@ impl Header {
 
 		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
 
-		let layer = match (header >> 17) & 3 {
+		let layer = match (data >> 17) & 0b11 {
 			1 => Layer::Layer3,
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
@@ -155,29 +179,46 @@ impl Header {
 			},
 		};
 
+		let mut header = Header {
+			sample_rate: 0,
+			len: 0,
+			data_start: 0,
+			samples: 0,
+			bitrate: 0,
+			version,
+			layer,
+			channel_mode: ChannelMode::default(),
+			mode_extension: None,
+			copyright: false,
+			original: false,
+			emphasis: Emphasis::default(),
+		};
+
 		let layer_index = (layer as usize).saturating_sub(1);
 
-		let bitrate_index = (header >> 12) & 0xF;
-		let bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
-
-		// Sample rate index
-		let mut sample_rate = (header >> 10) & 3;
-
-		match sample_rate {
-			// This is invalid, but it doesn't seem worth it to error here
-			// We will error if properties are read
-			3 => sample_rate = 0,
-			_ => sample_rate = SAMPLE_RATES[version as usize][sample_rate as usize],
+		let bitrate_index = (data >> 12) & 0xF;
+		header.bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
+		if header.bitrate == 0 {
+			return Ok(header);
 		}
 
-		let has_padding = ((header >> 9) & 1) == 1;
+		// Sample rate index
+		let sample_rate_index = (data >> 10) & 0b11;
+		header.sample_rate = match sample_rate_index {
+			// This is invalid, but it doesn't seem worth it to error here
+			// We will error if properties are read
+			3 => return Ok(header),
+			_ => SAMPLE_RATES[version as usize][sample_rate_index as usize],
+		};
+
+		let has_padding = ((data >> 9) & 1) == 1;
 		let mut padding = 0;
 
 		if has_padding {
 			padding = u32::from(PADDING_SIZES[layer_index]);
 		}
 
-		let channel_mode = match (header >> 6) & 3 {
+		header.channel_mode = match (data >> 6) & 3 {
 			0 => ChannelMode::Stereo,
 			1 => ChannelMode::JointStereo,
 			2 => ChannelMode::DualChannel,
@@ -185,16 +226,16 @@ impl Header {
 			_ => unreachable!(),
 		};
 
-		let mut mode_extension = None;
-
-		if let ChannelMode::JointStereo = channel_mode {
-			mode_extension = Some(((header >> 4) & 3) as u8);
+		if let ChannelMode::JointStereo = header.channel_mode {
+			header.mode_extension = Some(((data >> 4) & 3) as u8);
+		} else {
+			header.mode_extension = None;
 		}
 
-		let copyright = ((header >> 3) & 1) == 1;
-		let original = ((header >> 2) & 1) == 1;
+		header.copyright = ((data >> 3) & 1) == 1;
+		header.original = ((data >> 2) & 1) == 1;
 
-		let emphasis = match header & 3 {
+		header.emphasis = match data & 3 {
 			0 => Emphasis::None,
 			1 => Emphasis::MS5015,
 			2 => Emphasis::Reserved,
@@ -202,39 +243,12 @@ impl Header {
 			_ => unreachable!(),
 		};
 
-		let data_start = SIDE_INFORMATION_SIZES[version_index][channel_mode as usize] + 4;
-		let samples = SAMPLES[layer_index][version_index];
+		header.data_start = SIDE_INFORMATION_SIZES[version_index][header.channel_mode as usize] + 4;
+		header.samples = SAMPLES[layer_index][version_index];
+		header.len =
+			(u32::from(header.samples) * header.bitrate * 125 / header.sample_rate) + padding;
 
-		let len = if sample_rate == 0 {
-			0
-		} else {
-			match layer {
-				Layer::Layer1 => (bitrate * 12000 / sample_rate + padding) * 4,
-				Layer::Layer2 | Layer::Layer3 => bitrate * 144_000 / sample_rate + padding,
-			}
-		};
-
-		let channels = if channel_mode == ChannelMode::SingleChannel {
-			1
-		} else {
-			2
-		};
-
-		Ok(Self {
-			sample_rate,
-			channels,
-			len,
-			data_start,
-			samples,
-			bitrate,
-			version,
-			layer,
-			channel_mode,
-			mode_extension,
-			copyright,
-			original,
-			emphasis,
-		})
+		Ok(header)
 	}
 }
 
@@ -264,11 +278,13 @@ impl XingHeader {
 				reader.read_exact(&mut flags)?;
 
 				if flags[3] & 0x03 != 0x03 {
-					return Err(FileDecodingError::new(
-						FileType::MP3,
-						"Xing header doesn't have required flags set (0x0001 and 0x0002)",
-					)
-					.into());
+					return Ok(None);
+					// TODO: Debug message?
+					// 	return Err(FileDecodingError::new(
+					// 		FileType::MP3,
+					// 		"Xing header doesn't have required flags set (0x0001 and 0x0002)",
+					// 	)
+					// 	.into());
 				}
 
 				let frames = reader.read_u32::<BigEndian>()?;

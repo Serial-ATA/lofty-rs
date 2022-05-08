@@ -1,7 +1,12 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
+use crate::error::Result;
+use crate::mp3::header::rev_search_for_frame_sync;
 use crate::properties::FileProperties;
 
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
+
+use byteorder::{BigEndian, ReadBytesExt};
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[non_exhaustive]
@@ -96,12 +101,16 @@ impl Mp3Properties {
 	}
 }
 
-pub(super) fn read_properties(
+pub(super) fn read_properties<R>(
+	reader: &mut R,
 	first_frame: (Header, u64),
-	last_frame_offset: u64,
+	mut last_frame_offset: u64,
 	xing_header: Option<XingHeader>,
 	file_length: u64,
-) -> Mp3Properties {
+) -> Result<Mp3Properties>
+where
+	R: Read + Seek,
+{
 	let first_frame_header = first_frame.0;
 	let first_frame_offset = first_frame.1;
 
@@ -116,7 +125,11 @@ pub(super) fn read_properties(
 		overall_bitrate: 0,
 		audio_bitrate: 0,
 		sample_rate: first_frame_header.sample_rate,
-		channels: first_frame_header.channels,
+		channels: if first_frame_header.channel_mode == ChannelMode::SingleChannel {
+			1
+		} else {
+			2
+		},
 		emphasis: first_frame_header.emphasis,
 	};
 
@@ -131,18 +144,42 @@ pub(super) fn read_properties(
 			properties.audio_bitrate = ((u64::from(xing_header.size) * 8) / length) as u32;
 		},
 		_ if first_frame_header.bitrate > 0 => {
-			let audio_bitrate = first_frame_header.bitrate;
+			properties.audio_bitrate = first_frame_header.bitrate;
 
-			let stream_length =
-				last_frame_offset - first_frame_offset + u64::from(first_frame_header.len);
-			let length = (stream_length * 8) / u64::from(audio_bitrate);
+			// Search for the last frame, starting at the end of the frames
+			reader.seek(SeekFrom::Start(last_frame_offset))?;
 
-			properties.audio_bitrate = audio_bitrate;
-			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.duration = Duration::from_millis(length);
+			let mut last_frame = None;
+			while last_frame_offset > 0 {
+				match rev_search_for_frame_sync(reader) {
+					// Found a frame sync, attempt to read a header
+					Ok(Some(_)) => {
+						// Move `last_frame_offset` back to the actual position
+						last_frame_offset = reader.stream_position()?;
+						last_frame = Some(Header::read(reader.read_u32::<BigEndian>()?)?);
+
+						break;
+					},
+					// Encountered some IO error, just break
+					Err(_) => break,
+					// No frame sync found, continue further back in the file
+					_ => {},
+				}
+			}
+
+			if let Some(last_frame_header) = last_frame {
+				let stream_len =
+					last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
+				let length = (stream_len * 8) / u64::from(properties.audio_bitrate);
+
+				if length > 0 {
+					properties.overall_bitrate = ((file_length * 8) / length) as u32;
+					properties.duration = Duration::from_millis(length);
+				}
+			}
 		},
 		_ => {},
 	}
 
-	properties
+	Ok(properties)
 }

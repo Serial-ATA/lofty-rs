@@ -80,20 +80,12 @@ where
 				// Seek back the length of the temporary header buffer, to include them
 				// in the frame sync search
 				#[allow(clippy::neg_multiply)]
-				let start_of_search_area = reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
+				reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 
-				if let Some(first_mp3_frame_start_relative) = search_for_frame_sync(reader)? {
-					let first_mp3_frame_start_absolute =
-						start_of_search_area + first_mp3_frame_start_relative;
-
-					// Seek back to the start of the frame and read the header
-					reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
-					let header = Header::read(reader.read_u32::<BigEndian>()?)?;
-
-					file.first_frame_offset = first_mp3_frame_start_absolute;
-					first_frame_header = Some(header);
-
-					// We have found the first frame
+				#[allow(clippy::used_underscore_binding)]
+				if let Some((_first_first_header, first_frame_offset)) = find_next_frame(reader)? {
+					file.first_frame_offset = first_frame_offset;
+					first_frame_header = Some(_first_first_header);
 					break;
 				}
 			},
@@ -161,14 +153,53 @@ where
 		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
 
 		super::properties::read_properties(
+			reader,
 			(first_frame_header, first_frame_offset),
 			file.last_frame_offset,
 			xing_header,
 			file_length,
-		)
+		)?
 	} else {
 		Mp3Properties::default()
 	};
 
 	Ok(file)
+}
+
+// Searches for the next frame, comparing it to the following one
+fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
+where
+	R: Read + Seek,
+{
+	// Used to compare the versions, layers, and sample rates of two frame headers.
+	// If they aren't equal, something is broken.
+	const HEADER_MASK: u32 = 0xFFFE_0C00;
+
+	let mut pos = reader.stream_position()?;
+
+	while let Ok(Some(first_mp3_frame_start_relative)) = search_for_frame_sync(reader) {
+		let first_mp3_frame_start_absolute = pos + first_mp3_frame_start_relative;
+
+		// Seek back to the start of the frame and read the header
+		reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
+		let first_header_data = reader.read_u32::<BigEndian>()?;
+		let first_header = Header::read(first_header_data)?;
+
+		// Read the next header and see if they are the same
+		reader.seek(SeekFrom::Current(i64::from(
+			first_header.len.saturating_sub(4),
+		)))?;
+
+		match reader.read_u32::<BigEndian>() {
+			Ok(second_header_data)
+				if first_header_data & HEADER_MASK == second_header_data & HEADER_MASK =>
+			{
+				return Ok(Some((first_header, first_mp3_frame_start_absolute)));
+			},
+			Err(_) => return Ok(None),
+			_ => pos = reader.stream_position()?,
+		}
+	}
+
+	Ok(None)
 }
