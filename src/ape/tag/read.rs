@@ -19,15 +19,6 @@ where
 
 	for _ in 0..header.item_count {
 		let value_size = data.read_u32::<LittleEndian>()?;
-
-		if value_size == 0 {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"APE tag item value has an invalid size (0)",
-			)
-			.into());
-		}
-
 		let flags = data.read_u32::<LittleEndian>()?;
 
 		let mut key = Vec::new();
@@ -52,6 +43,10 @@ where
 
 		let read_only = (flags & 1) == 1;
 		let item_type = (flags >> 1) & 3;
+
+		if value_size == 0 {
+			continue;
+		}
 
 		let mut value = try_vec![0; value_size as usize];
 		data.read_exact(&mut value)?;

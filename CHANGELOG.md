@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **ID3v2**: Discard empty frames, rather than error
+- **APE**: Allow empty tag items
+  - Rather than error on empty items, they will just be discarded
 
 ### Fixed
 - **Pictures**: Treat "image/jpg" as `MimeType::Jpeg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/41))
