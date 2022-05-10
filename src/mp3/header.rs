@@ -54,10 +54,7 @@ pub(super) fn rev_search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Opt
 where
 	R: Read + Seek,
 {
-	let res = input.seek(SeekFrom::Current(REV_FRAME_SEARCH_BOUNDS.neg()));
-	if res.is_err() {
-		return Ok(None);
-	}
+	input.seek(SeekFrom::Current(REV_FRAME_SEARCH_BOUNDS.neg()))?;
 
 	let ret = search_for_frame_sync(&mut input.take(REV_FRAME_SEARCH_BOUNDS as u64));
 	if let Ok(Some(_)) = ret {
