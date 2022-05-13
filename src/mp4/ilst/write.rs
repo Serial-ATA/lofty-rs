@@ -1,11 +1,12 @@
-use super::{AtomDataRef, IlstRef};
+use super::r#ref::IlstRef;
 use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::try_vec;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
-use crate::mp4::ilst::{AtomIdentRef, AtomRef};
+use crate::mp4::ilst::r#ref::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4};
+use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 
 use std::fs::File;
@@ -13,7 +14,10 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-pub(in crate) fn write_to(data: &mut File, tag: &mut IlstRef<'_>) -> Result<()> {
+pub(in crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
+where
+	I: IntoIterator<Item = &'a AtomData>,
+{
 	verify_mp4(data)?;
 
 	let moov = Moov::find(data)?;
@@ -292,7 +296,12 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	Ok(())
 }
 
-pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef<'_>>) -> Result<Vec<u8>> {
+pub(super) fn build_ilst<'a, I: 'a>(
+	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
+) -> Result<Vec<u8>>
+where
+	I: IntoIterator<Item = &'a AtomData>,
+{
 	let mut peek = atoms.peekable();
 
 	if peek.peek().is_none() {
@@ -313,7 +322,7 @@ pub(super) fn build_ilst(atoms: &mut dyn Iterator<Item = AtomRef<'_>>) -> Result
 			AtomIdentRef::Freeform { mean, name } => write_freeform(mean, name, &mut writer)?,
 		}
 
-		write_atom_data(&atom.data, &mut writer)?;
+		write_atom_data(atom.data, &mut writer)?;
 
 		let end = writer.stream_position()?;
 
@@ -357,15 +366,22 @@ fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Resul
 	Ok(())
 }
 
-fn write_atom_data(value: &AtomDataRef<'_>, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
-	match value {
-		AtomDataRef::UTF8(text) => write_data(1, text.as_bytes(), writer),
-		AtomDataRef::UTF16(text) => write_data(2, text.as_bytes(), writer),
-		AtomDataRef::Picture(pic) => write_picture(pic, writer),
-		AtomDataRef::SignedInteger(int) => write_signed_int(*int, writer),
-		AtomDataRef::UnsignedInteger(uint) => write_unsigned_int(*uint, writer),
-		AtomDataRef::Unknown { code, data } => write_data(*code, data, writer),
+fn write_atom_data<'a, I: 'a>(data: I, writer: &mut Cursor<Vec<u8>>) -> Result<()>
+where
+	I: IntoIterator<Item = &'a AtomData>,
+{
+	for value in data {
+		match value {
+			AtomData::UTF8(text) => write_data(1, text.as_bytes(), writer)?,
+			AtomData::UTF16(text) => write_data(2, text.as_bytes(), writer)?,
+			AtomData::Picture(ref pic) => write_picture(pic, writer)?,
+			AtomData::SignedInteger(int) => write_signed_int(*int, writer)?,
+			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
+			AtomData::Unknown { code, ref data } => write_data(*code, data, writer)?,
+		};
 	}
+
+	Ok(())
 }
 
 fn write_signed_int(int: i32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {

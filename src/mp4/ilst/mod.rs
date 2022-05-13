@@ -1,17 +1,19 @@
 pub(super) mod atom;
 pub(super) mod constants;
 pub(super) mod read;
+mod r#ref;
 pub(crate) mod write;
 
 use super::AtomIdent;
-use crate::error::{LoftyError, Result};
+use crate::error::LoftyError;
+use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
-use atom::{AdvisoryRating, Atom, AtomData, AtomDataRef, AtomIdentRef, AtomRef};
+use atom::{AdvisoryRating, Atom, AtomData};
+use r#ref::AtomIdentRef;
 
-use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -39,7 +41,7 @@ macro_rules! impl_accessor {
 					fn [<set_ $name>](&mut self, value: String) {
 						self.replace_atom(Atom {
 							ident: $const,
-							data: AtomData::UTF8(value),
+							data: AtomDataStorage::Single(AtomData::UTF8(value)),
 						})
 					}
 
@@ -134,11 +136,14 @@ impl Ilst {
 	pub fn pictures(&self) -> impl Iterator<Item = &Picture> {
 		const COVR: AtomIdent = AtomIdent::Fourcc(*b"covr");
 
-		self.atoms.iter().filter_map(|a| match a {
-			Atom {
-				ident: COVR,
-				data: AtomData::Picture(pic),
-			} => Some(pic),
+		self.atoms.iter().filter_map(|a| match a.ident {
+			COVR => {
+				if let AtomData::Picture(pic) = a.data() {
+					Some(pic)
+				} else {
+					None
+				}
+			},
 			_ => None,
 		})
 	}
@@ -150,7 +155,7 @@ impl Ilst {
 
 		self.atoms.push(Atom {
 			ident: AtomIdent::Fourcc(*b"covr"),
-			data: AtomData::Picture(picture),
+			data: AtomDataStorage::Single(AtomData::Picture(picture)),
 		})
 	}
 
@@ -162,8 +167,8 @@ impl Ilst {
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
-		if let Some(Atom { data, .. }) = self.atom(&AtomIdent::Fourcc(*b"rtng")) {
-			let rating = match data {
+		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"rtng")) {
+			let rating = match atom.data() {
 				AtomData::SignedInteger(si) => *si as u8,
 				AtomData::Unknown { data: c, .. } if !c.is_empty() => c[0],
 				_ => return None,
@@ -181,7 +186,7 @@ impl Ilst {
 
 		self.replace_atom(Atom {
 			ident: AtomIdent::Fourcc(*b"rtng"),
-			data: AtomData::SignedInteger(i32::from(byte)),
+			data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(byte))),
 		})
 	}
 
@@ -236,11 +241,11 @@ impl TagExt for Ilst {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<IlstRef<'_>>::into(self).write_to(file)
+		self.as_ref().write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<IlstRef<'_>>::into(self).dump_to(writer)
+		self.as_ref().dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -261,7 +266,8 @@ impl From<Ilst> for Tag {
 		let mut tag = Self::new(TagType::Mp4Ilst);
 
 		for atom in input.atoms {
-			let value = match atom.data {
+			let Atom { ident, data } = atom;
+			let value = match data.take_first() {
 				AtomData::UTF8(text) | AtomData::UTF16(text) => ItemValue::Text(text),
 				AtomData::Picture(pic) => {
 					tag.pictures.push(pic);
@@ -269,7 +275,7 @@ impl From<Ilst> for Tag {
 				},
 				// We have to special case track/disc numbers since they are stored together
 				AtomData::Unknown { code: 0, data } if data.len() >= 6 => {
-					if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+					if let AtomIdent::Fourcc(ref fourcc) = ident {
 						match fourcc {
 							b"trkn" => {
 								let current = u16::from_be_bytes([data[2], data[3]]);
@@ -296,7 +302,7 @@ impl From<Ilst> for Tag {
 
 			let key = ItemKey::from_key(
 				TagType::Mp4Ilst,
-				&match atom.ident {
+				&match ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
 					},
@@ -330,10 +336,10 @@ impl From<Tag> for Ilst {
 
 					tag.atoms.push(Atom {
 						ident: AtomIdent::Fourcc(ident),
-						data: AtomData::Unknown {
+						data: AtomDataStorage::Single(AtomData::Unknown {
 							code: 0,
 							data: vec![0, 0, current[0], current[1], total[0], total[1], 0, 0],
-						},
+						}),
 					})
 				},
 			}
@@ -361,7 +367,7 @@ impl From<Tag> for Ilst {
 					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, data.as_str()),
 					_ => ilst.atoms.push(Atom {
 						ident,
-						data: AtomData::UTF8(data),
+						data: AtomDataStorage::Single(AtomData::UTF8(data)),
 					}),
 				}
 			}
@@ -374,7 +380,7 @@ impl From<Tag> for Ilst {
 
 			ilst.atoms.push(Atom {
 				ident: AtomIdent::Fourcc([b'c', b'o', b'v', b'r']),
-				data: AtomData::Picture(picture),
+				data: AtomDataStorage::Single(AtomData::Picture(picture)),
 			})
 		}
 
@@ -382,50 +388,6 @@ impl From<Tag> for Ilst {
 		create_int_pair(&mut ilst, *b"disk", discs);
 
 		ilst
-	}
-}
-
-pub(crate) struct IlstRef<'a> {
-	atoms: Box<dyn Iterator<Item = AtomRef<'a>> + 'a>,
-}
-
-impl<'a> IlstRef<'a> {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
-		write::write_to(file, self)
-	}
-
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
-		let temp = write::build_ilst(&mut self.atoms)?;
-		writer.write_all(&*temp)?;
-
-		Ok(())
-	}
-}
-
-impl<'a> Into<IlstRef<'a>> for &'a Ilst {
-	fn into(self) -> IlstRef<'a> {
-		IlstRef {
-			atoms: Box::new(self.atoms.iter().map(Into::into)),
-		}
-	}
-}
-
-impl<'a> Into<IlstRef<'a>> for &'a Tag {
-	fn into(self) -> IlstRef<'a> {
-		let iter =
-			self.items
-				.iter()
-				.filter_map(|i| match (item_key_to_ident(i.key()), i.value()) {
-					(Some(ident), ItemValue::Text(text)) => Some(AtomRef {
-						ident,
-						data: AtomDataRef::UTF8(text),
-					}),
-					_ => None,
-				});
-
-		IlstRef {
-			atoms: Box::new(iter),
-		}
 	}
 }
 
@@ -458,6 +420,7 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 
 #[cfg(test)]
 mod tests {
+	use crate::mp4::ilst::atom::AtomDataStorage;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
@@ -717,7 +680,7 @@ mod tests {
 		let mut tag = Ilst::default();
 		tag.insert_atom(Atom {
 			ident: AtomIdent::Fourcc(*b"\xa9ART"),
-			data: AtomData::UTF8(String::from("Foo artist")),
+			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
 		});
 
 		assert!(tag.save_to(&mut file).is_ok());
@@ -730,6 +693,27 @@ mod tests {
 			&mp4_file.ilst.unwrap(),
 			*b"\xa9ART",
 			&AtomData::UTF8(String::from("Foo artist")),
+		);
+	}
+
+	#[test]
+	fn multi_value_atom() {
+		let ilst = read_ilst("tests/tags/assets/ilst/multi_value_atom.ilst");
+		let artist_atom = ilst.atom(&AtomIdent::Fourcc(*b"\xa9ART")).unwrap();
+
+		assert_eq!(
+			artist_atom.data,
+			AtomDataStorage::Multiple(vec![
+				AtomData::UTF8(String::from("Foo artist")),
+				AtomData::UTF8(String::from("Bar artist")),
+			])
+		);
+
+		// Sanity single value atom
+		verify_atom(
+			&ilst,
+			*b"\xa9gen",
+			&AtomData::UTF8(String::from("Classical")),
 		);
 	}
 }

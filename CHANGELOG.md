@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **MP4**:
+  - Support atoms with multiple values ([issue](https://github.com/Serial-ATA/lofty-rs/issues/48))
+  - `Atom::from_collection`
+
 ### Changed
 - **ID3v2**: Discard empty frames, rather than error
 - **APE**: Allow empty tag items

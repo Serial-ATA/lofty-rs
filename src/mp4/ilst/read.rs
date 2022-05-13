@@ -14,6 +14,7 @@ use crate::picture::{MimeType, Picture, PictureType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use crate::mp4::ilst::atom::AtomDataStorage;
 use byteorder::ReadBytesExt;
 
 pub(in crate::mp4) fn parse_ilst<R>(reader: &mut R, len: u64) -> Result<Ilst>
@@ -28,35 +29,34 @@ where
 	let mut tag = Ilst::default();
 
 	while let Ok(atom) = AtomInfo::read(&mut cursor) {
-		let ident = match atom.ident {
-			AtomIdent::Fourcc(ref fourcc) => match fourcc {
+		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+			match fourcc {
 				b"free" | b"skip" => {
 					skip_unneeded(&mut cursor, atom.extended, atom.len)?;
 					continue;
 				},
 				b"covr" => {
-					handle_covr(&mut cursor, &mut tag)?;
+					handle_covr(&mut cursor, &mut tag, &atom)?;
 					continue;
 				},
 				// Upgrade this to a \xa9gen atom
 				b"gnre" => {
-					let content = parse_data(&mut cursor)?;
+					if let Some(atom_data) = parse_data_inner(&mut cursor, &atom)? {
+						let mut data = Vec::new();
 
-					if let Some(AtomData::Unknown {
-						code: BE_UNSIGNED_INTEGER | 0,
-						data,
-					}) = content
-					{
-						if data.len() >= 2 {
-							let index = data[1] as usize;
-
-							if index > 0 && index <= GENRES.len() {
-								tag.atoms.push(Atom {
-									ident: AtomIdent::Fourcc(*b"\xa9gen"),
-									data: AtomData::UTF8(String::from(GENRES[index - 1])),
-								})
+						for (flags, content) in atom_data {
+							if (flags == BE_SIGNED_INTEGER || flags == 0) && content.len() >= 2 {
+								let index = content[1] as usize;
+								if index > 0 && index <= GENRES.len() {
+									data.push(AtomData::UTF8(String::from(GENRES[index - 1])));
+								}
 							}
 						}
+
+						tag.atoms.push(Atom {
+							ident: AtomIdent::Fourcc(*b"\xa9gen"),
+							data: AtomDataStorage::Multiple(data),
+						})
 					}
 
 					continue;
@@ -64,94 +64,117 @@ where
 				// Special case the "Album ID", as it has the code "BE signed integer" (21), but
 				// must be interpreted as a "BE 64-bit Signed Integer" (74)
 				b"plID" => {
-					if let Some((code, content)) = parse_data_inner(&mut cursor)? {
-						if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
-							&& content.len() == 8
-						{
-							tag.atoms.push(Atom {
-								ident: AtomIdent::Fourcc(*b"plID"),
-								data: AtomData::Unknown {
+					if let Some(atom_data) = parse_data_inner(&mut cursor, &atom)? {
+						let mut data = Vec::new();
+
+						for (code, content) in atom_data {
+							if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
+								&& content.len() == 8
+							{
+								data.push(AtomData::Unknown {
 									code,
 									data: content,
-								},
-							})
+								})
+							}
 						}
+
+						tag.atoms.push(Atom {
+							ident: AtomIdent::Fourcc(*b"plID"),
+							data: AtomDataStorage::Multiple(data),
+						})
 					}
 
 					continue;
 				},
-				_ => atom.ident,
-			},
-			ident => ident,
-		};
-
-		if let Some(data) = parse_data(&mut cursor)? {
-			tag.atoms.push(Atom { ident, data })
+				_ => {},
+			}
 		}
+
+		parse_data(&mut cursor, &mut tag, atom)?;
 	}
 
 	Ok(tag)
 }
 
-fn parse_data<R>(data: &mut R) -> Result<Option<AtomData>>
+fn parse_data<R>(data: &mut R, tag: &mut Ilst, atom_info: AtomInfo) -> Result<()>
 where
 	R: Read + Seek,
 {
-	if let Some((flags, content)) = parse_data_inner(data)? {
-		// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
-		let value = match flags {
-			UTF8 => AtomData::UTF8(String::from_utf8(content)?),
-			UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
-			BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
-			BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
-			code => AtomData::Unknown {
-				code,
-				data: content,
-			},
-		};
+	if let Some(mut atom_data) = parse_data_inner(data, &atom_info)? {
+		// Most atoms we encounter are only going to have 1 value, so store them as such
+		if atom_data.len() == 1 {
+			let (flags, content) = atom_data.remove(0);
+			let data = interpret_atom_content(flags, content)?;
 
-		return Ok(Some(value));
+			tag.atoms.push(Atom {
+				ident: atom_info.ident,
+				data: AtomDataStorage::Single(data),
+			});
+
+			return Ok(());
+		}
+
+		let mut data = Vec::new();
+		for (flags, content) in atom_data {
+			let value = interpret_atom_content(flags, content)?;
+			data.push(value);
+		}
+
+		tag.atoms.push(Atom {
+			ident: atom_info.ident,
+			data: AtomDataStorage::Multiple(data),
+		});
 	}
 
-	Ok(None)
+	Ok(())
 }
 
-fn parse_data_inner<R>(data: &mut R) -> Result<Option<(u32, Vec<u8>)>>
+fn parse_data_inner<R>(data: &mut R, atom_info: &AtomInfo) -> Result<Option<Vec<(u32, Vec<u8>)>>>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data)?;
+	// An atom can contain multiple data atoms
+	let mut ret = Vec::new();
 
-	match atom.ident {
-		AtomIdent::Fourcc(ref name) if name == b"data" => {},
-		_ => {
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"Expected atom \"data\" to follow name",
-			)))
-		},
+	let to_read = (atom_info.start + atom_info.len) - data.stream_position()?;
+	let mut pos = 0;
+	while pos < to_read {
+		let data_atom = AtomInfo::read(data)?;
+		match data_atom.ident {
+			AtomIdent::Fourcc(ref name) if name == b"data" => {},
+			_ => {
+				return Err(LoftyError::new(ErrorKind::BadAtom(
+					"Expected atom \"data\" to follow name",
+				)))
+			},
+		}
+
+		// We don't care about the version
+		let _version = data.read_u8()?;
+
+		let mut flags = [0; 3];
+		data.read_exact(&mut flags)?;
+
+		let flags = u32::from_be_bytes([0, flags[0], flags[1], flags[2]]);
+
+		// We don't care about the locale
+		data.seek(SeekFrom::Current(4))?;
+
+		let content_len = (data_atom.len - 16) as usize;
+		if content_len == 0 {
+			// We won't add empty atoms
+			return Ok(None);
+		}
+
+		let mut content = try_vec![0; content_len];
+		data.read_exact(&mut content)?;
+
+		pos += data_atom.len;
+		ret.push((flags, content));
 	}
 
-	// We don't care about the version
-	let _version = data.read_u8()?;
-
-	let mut flags = [0; 3];
-	data.read_exact(&mut flags)?;
-
-	let flags = u32::from_be_bytes([0, flags[0], flags[1], flags[2]]);
-
-	// We don't care about the locale
-	data.seek(SeekFrom::Current(4))?;
-
-	let content_len = (atom.len - 16) as usize;
-	if content_len == 0 {
-		// We won't add empty atoms
-		return Ok(None);
-	}
-
-	let mut content = try_vec![0; content_len];
-	data.read_exact(&mut content)?;
-
-	Ok(Some((flags, content)))
+	let ret = if ret.is_empty() { None } else { Some(ret) };
+	Ok(ret)
 }
 
 fn parse_uint(bytes: &[u8]) -> Result<u32> {
@@ -182,40 +205,65 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 	})
 }
 
-fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst) -> Result<()> {
-	if let Some(value) = parse_data(reader)? {
-		let (mime_type, data) = match value {
-			AtomData::Unknown { code, data } => match code {
+fn handle_covr(reader: &mut Cursor<Vec<u8>>, tag: &mut Ilst, atom_info: &AtomInfo) -> Result<()> {
+	if let Some(atom_data) = parse_data_inner(reader, atom_info)? {
+		let mut data = Vec::new();
+
+		let len = atom_data.len();
+		for (flags, value) in atom_data {
+			let mime_type = match flags {
 				// Type 0 is implicit
-				RESERVED => (MimeType::None, data),
+				RESERVED => MimeType::None,
 				// GIF is deprecated
-				12 => (MimeType::Gif, data),
-				JPEG => (MimeType::Jpeg, data),
-				PNG => (MimeType::Png, data),
-				BMP => (MimeType::Bmp, data),
+				12 => MimeType::Gif,
+				JPEG => MimeType::Jpeg,
+				PNG => MimeType::Png,
+				BMP => MimeType::Bmp,
 				_ => {
 					return Err(LoftyError::new(ErrorKind::BadAtom(
 						"\"covr\" atom has an unknown type",
 					)))
 				},
-			},
-			_ => {
-				return Err(LoftyError::new(ErrorKind::BadAtom(
-					"\"covr\" atom has an unknown type",
-				)))
-			},
-		};
+			};
 
-		tag.atoms.push(Atom {
-			ident: AtomIdent::Fourcc(*b"covr"),
-			data: AtomData::Picture(Picture {
+			let picture_data = AtomData::Picture(Picture {
 				pic_type: PictureType::Other,
 				mime_type,
 				description: None,
-				data: Cow::from(data),
-			}),
+				data: Cow::from(value),
+			});
+
+			if len == 1 {
+				tag.atoms.push(Atom {
+					ident: AtomIdent::Fourcc(*b"covr"),
+					data: AtomDataStorage::Single(picture_data),
+				});
+
+				return Ok(());
+			}
+
+			data.push(picture_data);
+		}
+
+		tag.atoms.push(Atom {
+			ident: AtomIdent::Fourcc(*b"covr"),
+			data: AtomDataStorage::Multiple(data),
 		});
 	}
 
 	Ok(())
+}
+
+fn interpret_atom_content(flags: u32, content: Vec<u8>) -> Result<AtomData> {
+	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
+	Ok(match flags {
+		UTF8 => AtomData::UTF8(String::from_utf8(content)?),
+		UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
+		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
+		code => AtomData::Unknown {
+			code,
+			data: content,
+		},
+	})
 }

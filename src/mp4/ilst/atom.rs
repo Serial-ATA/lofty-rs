@@ -1,17 +1,107 @@
 use crate::mp4::AtomIdent;
 use crate::picture::Picture;
 
-#[derive(Debug, PartialEq, Clone)]
+use std::fmt::{Debug, Formatter};
+
+// Atoms with multiple values aren't all that common,
+// so there's no need to create a bunch of single-element Vecs
+#[derive(PartialEq, Clone)]
+pub(super) enum AtomDataStorage {
+	Single(AtomData),
+	Multiple(Vec<AtomData>),
+}
+
+impl AtomDataStorage {
+	pub(super) fn take_first(self) -> AtomData {
+		match self {
+			AtomDataStorage::Single(val) => val,
+			AtomDataStorage::Multiple(mut data) => data.swap_remove(0),
+		}
+	}
+}
+
+impl Debug for AtomDataStorage {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		match &self {
+			AtomDataStorage::Single(v) => write!(f, "{:?}", v),
+			AtomDataStorage::Multiple(v) => f.debug_list().entries(v.iter()).finish(),
+		}
+	}
+}
+
+impl<'a> IntoIterator for &'a AtomDataStorage {
+	type Item = &'a AtomData;
+	type IntoIter = AtomDataStorageIter<'a>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		let cap = match self {
+			AtomDataStorage::Single(_) => 0,
+			AtomDataStorage::Multiple(v) => v.len(),
+		};
+
+		Self::IntoIter {
+			storage: Some(self),
+			idx: 0,
+			cap,
+		}
+	}
+}
+
+pub(super) struct AtomDataStorageIter<'a> {
+	storage: Option<&'a AtomDataStorage>,
+	idx: usize,
+	cap: usize,
+}
+
+impl<'a> Iterator for AtomDataStorageIter<'a> {
+	type Item = &'a AtomData;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		match self.storage {
+			Some(AtomDataStorage::Single(data)) => {
+				self.storage = None;
+				Some(data)
+			},
+			Some(AtomDataStorage::Multiple(data)) => {
+				if self.idx == self.cap {
+					self.storage = None;
+				}
+
+				self.idx += 1;
+				Some(&data[self.idx])
+			},
+			_ => None,
+		}
+	}
+}
+
+#[derive(PartialEq, Clone)]
 /// Represents an `MP4` atom
 pub struct Atom {
 	pub(crate) ident: AtomIdent,
-	pub(crate) data: AtomData,
+	pub(super) data: AtomDataStorage,
 }
 
 impl Atom {
 	/// Create a new [`Atom`]
 	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
-		Self { ident, data }
+		Self {
+			ident,
+			data: AtomDataStorage::Single(data),
+		}
+	}
+
+	/// Create a new [`Atom`] from a collection of [`AtomData`]s
+	///
+	/// This will return `None` if `data` is empty, as empty atoms are useless.
+	pub fn from_collection(ident: AtomIdent, mut data: Vec<AtomData>) -> Option<Self> {
+		let data = match data.len() {
+			0 => return None,
+			1 => AtomDataStorage::Single(data.swap_remove(0)),
+			_ => AtomDataStorage::Multiple(data),
+		};
+
+		Some(Self { ident, data })
 	}
 
 	/// Returns the atom's [`AtomIdent`]
@@ -20,8 +110,24 @@ impl Atom {
 	}
 
 	/// Returns the atom's [`AtomData`]
+	// TODO: Do this properly to return all values
 	pub fn data(&self) -> &AtomData {
-		&self.data
+		match &self.data {
+			AtomDataStorage::Single(val) => val,
+			// There must be at least 1 element in here
+			AtomDataStorage::Multiple(data) => &data[0],
+		}
+	}
+
+	// TODO: push_data
+}
+
+impl Debug for Atom {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Atom")
+			.field("ident", &self.ident)
+			.field("data", &self.data)
+			.finish()
 	}
 }
 
@@ -102,68 +208,6 @@ impl From<u8> for AdvisoryRating {
 			0 => Self::Inoffensive,
 			2 => Self::Clean,
 			_ => Self::Explicit,
-		}
-	}
-}
-
-pub(crate) struct AtomRef<'a> {
-	pub(crate) ident: AtomIdentRef<'a>,
-	pub(crate) data: AtomDataRef<'a>,
-}
-
-impl<'a> Into<AtomRef<'a>> for &'a Atom {
-	fn into(self) -> AtomRef<'a> {
-		AtomRef {
-			ident: (&self.ident).into(),
-			data: (&self.data).into(),
-		}
-	}
-}
-
-pub(crate) enum AtomIdentRef<'a> {
-	Fourcc([u8; 4]),
-	Freeform { mean: &'a str, name: &'a str },
-}
-
-impl<'a> Into<AtomIdentRef<'a>> for &'a AtomIdent {
-	fn into(self) -> AtomIdentRef<'a> {
-		match self {
-			AtomIdent::Fourcc(fourcc) => AtomIdentRef::Fourcc(*fourcc),
-			AtomIdent::Freeform { mean, name } => AtomIdentRef::Freeform { mean, name },
-		}
-	}
-}
-
-impl<'a> From<AtomIdentRef<'a>> for AtomIdent {
-	fn from(input: AtomIdentRef<'a>) -> Self {
-		match input {
-			AtomIdentRef::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),
-			AtomIdentRef::Freeform { mean, name } => AtomIdent::Freeform {
-				mean: mean.to_string(),
-				name: name.to_string(),
-			},
-		}
-	}
-}
-
-pub(crate) enum AtomDataRef<'a> {
-	UTF8(&'a str),
-	UTF16(&'a str),
-	Picture(&'a Picture),
-	SignedInteger(i32),
-	UnsignedInteger(u32),
-	Unknown { code: u32, data: &'a [u8] },
-}
-
-impl<'a> Into<AtomDataRef<'a>> for &'a AtomData {
-	fn into(self) -> AtomDataRef<'a> {
-		match self {
-			AtomData::UTF8(utf8) => AtomDataRef::UTF8(utf8),
-			AtomData::UTF16(utf16) => AtomDataRef::UTF16(utf16),
-			AtomData::Picture(pic) => AtomDataRef::Picture(pic),
-			AtomData::SignedInteger(int) => AtomDataRef::SignedInteger(*int),
-			AtomData::UnsignedInteger(uint) => AtomDataRef::UnsignedInteger(*uint),
-			AtomData::Unknown { code, data } => AtomDataRef::Unknown { code: *code, data },
 		}
 	}
 }

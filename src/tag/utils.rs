@@ -8,7 +8,7 @@ use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
 #[cfg(feature = "mp4_ilst")]
-use crate::mp4::ilst::IlstRef;
+use crate::mp4::Ilst;
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 #[cfg(feature = "ape")]
@@ -32,7 +32,9 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		},
 		FileType::MP3 => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
-		FileType::MP4 => crate::mp4::ilst::write::write_to(file, &mut Into::<IlstRef<'_>>::into(tag)),
+		FileType::MP4 => {
+			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
+		},
 		FileType::WAV => iff::wav::write::write_to(file, tag),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
@@ -56,7 +58,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		}
 		.dump_to(writer),
 		#[cfg(feature = "mp4_ilst")]
-		TagType::Mp4Ilst => Into::<IlstRef<'_>>::into(tag).dump_to(writer),
+		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
 		#[cfg(feature = "vorbis_comments")]
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
