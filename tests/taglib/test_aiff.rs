@@ -33,10 +33,10 @@ fn test_aifc_properties() {
 	assert_eq!(properties.sample_rate(), Some(44100));
 	assert_eq!(properties.channels(), Some(1));
 	assert_eq!(properties.bit_depth(), Some(16));
-	//CPPUNIT_ASSERT_EQUAL(1622U, f.audioProperties()->sampleFrames());
-	//CPPUNIT_ASSERT_EQUAL(true, f.audioProperties()->isAiffC());
-	//CPPUNIT_ASSERT_EQUAL(ByteVector("ALAW"), f.audioProperties()->compressionType());
-	//CPPUNIT_ASSERT_EQUAL(String("SGI CCITT G.711 A-law"), f.audioProperties()->compressionName());
+	// CPPUNIT_ASSERT_EQUAL(1622U, f.audioProperties()->sampleFrames());
+	// CPPUNIT_ASSERT_EQUAL(true, f.audioProperties()->isAiffC());
+	// CPPUNIT_ASSERT_EQUAL(ByteVector("ALAW"), f.audioProperties()->compressionType());
+	// CPPUNIT_ASSERT_EQUAL(String("SGI CCITT G.711 A-law"), f.audioProperties()->compressionName());
 }
 
 #[test]
