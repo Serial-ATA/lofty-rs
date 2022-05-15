@@ -21,7 +21,7 @@ where
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[..8] == b"AIFC")) {
+	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[8..] == b"AIFC")) {
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
