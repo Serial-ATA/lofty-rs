@@ -1,4 +1,4 @@
-use super::header::{search_for_frame_sync, Header, XingHeader};
+use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
@@ -107,19 +107,25 @@ where
 	let mut ape_preamble = [0; 8];
 	reader.read_exact(&mut ape_preamble)?;
 
-	if &ape_preamble == APE_PREAMBLE {
-		let ape_header = read_ape_header(reader, true)?;
-		let size = ape_header.size;
+	match &ape_preamble {
+		APE_PREAMBLE => {
+			let ape_header = read_ape_header(reader, true)?;
+			let size = ape_header.size;
 
-		#[cfg(feature = "ape")]
-		{
-			let ape = read_ape_tag(reader, ape_header)?;
-			file.ape_tag = Some(ape);
-		}
+			#[cfg(feature = "ape")]
+			{
+				let ape = read_ape_tag(reader, ape_header)?;
+				file.ape_tag = Some(ape);
+			}
 
-		// Seek back to the start of the tag
-		let pos = reader.stream_position()?;
-		reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
+			// Seek back to the start of the tag
+			let pos = reader.stream_position()?;
+			reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
+		},
+		// Correct the position (APE header - Preamble)
+		_ => {
+			reader.seek(SeekFrom::Current(24))?;
+		},
 	}
 
 	file.last_frame_offset = reader.stream_position()?;
@@ -171,10 +177,6 @@ fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
 where
 	R: Read + Seek,
 {
-	// Used to compare the versions, layers, and sample rates of two frame headers.
-	// If they aren't equal, something is broken.
-	const HEADER_MASK: u32 = 0xFFFE_0C00;
-
 	let mut pos = reader.stream_position()?;
 
 	while let Ok(Some(first_mp3_frame_start_relative)) = search_for_frame_sync(reader) {
@@ -185,19 +187,12 @@ where
 		let first_header_data = reader.read_u32::<BigEndian>()?;
 		let first_header = Header::read(first_header_data)?;
 
-		// Read the next header and see if they are the same
-		reader.seek(SeekFrom::Current(i64::from(
-			first_header.len.saturating_sub(4),
-		)))?;
-
-		match reader.read_u32::<BigEndian>() {
-			Ok(second_header_data)
-				if first_header_data & HEADER_MASK == second_header_data & HEADER_MASK =>
-			{
-				return Ok(Some((first_header, first_mp3_frame_start_absolute)));
+		match cmp_header(reader, first_header.len, first_header_data) {
+			HeaderCmpResult::Equal => {
+				return Ok(Some((first_header, first_mp3_frame_start_absolute)))
 			},
-			Err(_) => return Ok(None),
-			_ => pos = reader.stream_position()?,
+			HeaderCmpResult::Undetermined => return Ok(None),
+			HeaderCmpResult::NotEqual => pos = reader.stream_position()?,
 		}
 	}
 

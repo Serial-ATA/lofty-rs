@@ -3,7 +3,6 @@ use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
-use std::ops::Neg;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -49,20 +48,61 @@ where
 // This will search up to 1024 bytes preceding the APE tag/ID3v1/EOF.
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
-const REV_FRAME_SEARCH_BOUNDS: i64 = 1024;
+const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
 pub(super) fn rev_search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<u64>>
 where
 	R: Read + Seek,
 {
-	input.seek(SeekFrom::Current(REV_FRAME_SEARCH_BOUNDS.neg()))?;
+	let mut pos = input.stream_position()?;
+	let search_bounds = std::cmp::min(pos, REV_FRAME_SEARCH_BOUNDS);
 
-	let ret = search_for_frame_sync(&mut input.take(REV_FRAME_SEARCH_BOUNDS as u64));
+	pos -= search_bounds;
+	input.seek(SeekFrom::Start(pos))?;
+
+	let ret = search_for_frame_sync(&mut input.take(search_bounds));
 	if let Ok(Some(_)) = ret {
 		// Seek to the start of the frame sync
 		input.seek(SeekFrom::Current(-2))?;
 	}
 
 	ret
+}
+
+pub(super) enum HeaderCmpResult {
+	Equal,
+	Undetermined,
+	NotEqual,
+}
+
+pub(super) fn cmp_header<R>(
+	reader: &mut R,
+	first_header_len: u32,
+	first_header_bytes: u32,
+) -> HeaderCmpResult
+where
+	R: Read + Seek,
+{
+	// Used to compare the versions, layers, and sample rates of two frame headers.
+	// If they aren't equal, something is broken.
+	const HEADER_MASK: u32 = 0xFFFE_0C00;
+
+	// Read the next header and see if they are the same
+	let res = reader.seek(SeekFrom::Current(i64::from(
+		first_header_len.saturating_sub(4),
+	)));
+	if res.is_err() {
+		return HeaderCmpResult::Undetermined;
+	}
+
+	match reader.read_u32::<BigEndian>() {
+		Ok(second_header_data)
+			if first_header_bytes & HEADER_MASK == second_header_data & HEADER_MASK =>
+		{
+			HeaderCmpResult::Equal
+		},
+		Err(_) => HeaderCmpResult::Undetermined,
+		_ => HeaderCmpResult::NotEqual,
+	}
 }
 
 #[derive(PartialEq, Copy, Clone, Debug)]
@@ -320,6 +360,9 @@ impl XingHeader {
 
 #[cfg(test)]
 mod tests {
+	use crate::tag::utils::test_utils::read_path;
+	use std::io::{Cursor, Read, Seek, SeekFrom};
+
 	#[test]
 	fn search_for_frame_sync() {
 		fn test(data: &[u8], expected_result: Option<u64>) {
@@ -330,5 +373,24 @@ mod tests {
 		test(&[0xFF, 0xFB, 0x00], Some(0));
 		test(&[0x00, 0x00, 0x01, 0xFF, 0xFB], Some(3));
 		test(&[0x01, 0xFF], None);
+	}
+
+	#[test]
+	fn rev_search_for_frame_sync() {
+		fn test<R: Read + Seek>(reader: &mut R, expected_result: Option<u64>) {
+			// We have to start these at the end to do a reverse search, of course :)
+			reader.seek(SeekFrom::End(0)).unwrap();
+
+			let ret = super::rev_search_for_frame_sync(reader).unwrap();
+			assert_eq!(ret, expected_result);
+		}
+
+		test(&mut Cursor::new([0xFF, 0xFB, 0x00]), Some(0));
+		test(&mut Cursor::new([0x00, 0x00, 0x01, 0xFF, 0xFB]), Some(3));
+		test(&mut Cursor::new([0x01, 0xFF]), None);
+
+		let bytes = read_path("tests/files/assets/rev_frame_sync_search.mp3");
+		let mut reader = Cursor::new(bytes);
+		test(&mut reader, Some(283));
 	}
 }

@@ -1,6 +1,6 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
 use crate::error::Result;
-use crate::mp3::header::rev_search_for_frame_sync;
+use crate::mp3::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -156,9 +156,16 @@ where
 					Ok(Some(_)) => {
 						// Move `last_frame_offset` back to the actual position
 						last_frame_offset = reader.stream_position()?;
-						last_frame = Some(Header::read(reader.read_u32::<BigEndian>()?)?);
+						let last_frame_data = reader.read_u32::<BigEndian>()?;
+						let last_frame_header = Header::read(last_frame_data)?;
 
-						break;
+						match cmp_header(reader, last_frame_header.len, last_frame_data) {
+							HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
+								last_frame = Some(last_frame_header);
+								break;
+							},
+							HeaderCmpResult::NotEqual => {},
+						}
 					},
 					// Encountered some IO error, just break
 					Err(_) => break,
