@@ -189,17 +189,18 @@ pub(crate) struct Header {
 }
 
 impl Header {
-	pub(super) fn read(data: u32) -> Result<Self> {
+	pub(super) fn read(data: u32) -> Option<Self> {
 		let version = match (data >> 19) & 0b11 {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
 			_ => {
-				return Err(FileDecodingError::new(
-					FileType::MP3,
-					"Frame header has an invalid version",
-				)
-				.into())
+				return None;
+				// return Err(FileDecodingError::new(
+				// 	FileType::MP3,
+				// 	"Frame header has an invalid version",
+				// )
+				// .into())
 			},
 		};
 
@@ -210,11 +211,12 @@ impl Header {
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
 			_ => {
-				return Err(FileDecodingError::new(
-					FileType::MP3,
-					"Frame header uses a reserved layer",
-				)
-				.into())
+				return None;
+				// return Err(FileDecodingError::new(
+				// 	FileType::MP3,
+				// 	"Frame header uses a reserved layer",
+				// )
+				// .into())
 			},
 		};
 
@@ -233,12 +235,12 @@ impl Header {
 			emphasis: Emphasis::default(),
 		};
 
-		let layer_index = (layer as usize).saturating_sub(1);
+		let layer_index = (header.layer as usize).saturating_sub(1);
 
 		let bitrate_index = (data >> 12) & 0xF;
 		header.bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
 		if header.bitrate == 0 {
-			return Ok(header);
+			return Some(header);
 		}
 
 		// Sample rate index
@@ -246,8 +248,8 @@ impl Header {
 		header.sample_rate = match sample_rate_index {
 			// This is invalid, but it doesn't seem worth it to error here
 			// We will error if properties are read
-			3 => return Ok(header),
-			_ => SAMPLE_RATES[version as usize][sample_rate_index as usize],
+			3 => return Some(header),
+			_ => SAMPLE_RATES[header.version as usize][sample_rate_index as usize],
 		};
 
 		let has_padding = ((data >> 9) & 1) == 1;
@@ -287,7 +289,7 @@ impl Header {
 		header.len =
 			(u32::from(header.samples) * header.bitrate * 125 / header.sample_rate) + padding;
 
-		Ok(header)
+		Some(header)
 	}
 }
 

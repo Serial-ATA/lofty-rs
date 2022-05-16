@@ -185,15 +185,18 @@ where
 		// Seek back to the start of the frame and read the header
 		reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 		let first_header_data = reader.read_u32::<BigEndian>()?;
-		let first_header = Header::read(first_header_data)?;
 
-		match cmp_header(reader, first_header.len, first_header_data) {
-			HeaderCmpResult::Equal => {
-				return Ok(Some((first_header, first_mp3_frame_start_absolute)))
-			},
-			HeaderCmpResult::Undetermined => return Ok(None),
-			HeaderCmpResult::NotEqual => pos = reader.stream_position()?,
+		if let Some(first_header) = Header::read(first_header_data) {
+			match cmp_header(reader, first_header.len, first_header_data) {
+				HeaderCmpResult::Equal => {
+					return Ok(Some((first_header, first_mp3_frame_start_absolute)))
+				},
+				HeaderCmpResult::Undetermined => return Ok(None),
+				HeaderCmpResult::NotEqual => {},
+			}
 		}
+
+		pos = reader.stream_position()?;
 	}
 
 	Ok(None)

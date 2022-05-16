@@ -158,14 +158,15 @@ where
 						// Move `last_frame_offset` back to the actual position
 						last_frame_offset = reader.stream_position()?;
 						let last_frame_data = reader.read_u32::<BigEndian>()?;
-						let last_frame_header = Header::read(last_frame_data)?;
 
-						match cmp_header(reader, last_frame_header.len, last_frame_data) {
-							HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
-								last_frame = Some(last_frame_header);
-								break;
-							},
-							HeaderCmpResult::NotEqual => {},
+						if let Some(last_frame_header) = Header::read(last_frame_data) {
+							match cmp_header(reader, last_frame_header.len, last_frame_data) {
+								HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
+									last_frame = Some(last_frame_header);
+									break;
+								},
+								HeaderCmpResult::NotEqual => {},
+							}
 						}
 					},
 					// Encountered some IO error, just break
