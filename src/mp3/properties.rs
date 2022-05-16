@@ -150,8 +150,9 @@ where
 			reader.seek(SeekFrom::Start(last_frame_offset))?;
 
 			let mut last_frame = None;
-			while last_frame_offset > 0 {
-				match rev_search_for_frame_sync(reader) {
+			let mut pos = reader.stream_position()?;
+			while pos > 0 {
+				match rev_search_for_frame_sync(reader, &mut pos) {
 					// Found a frame sync, attempt to read a header
 					Ok(Some(_)) => {
 						// Move `last_frame_offset` back to the actual position

@@ -49,15 +49,17 @@ where
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
 const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
-pub(super) fn rev_search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<u64>>
+pub(super) fn rev_search_for_frame_sync<R>(
+	input: &mut R,
+	pos: &mut u64,
+) -> std::io::Result<Option<u64>>
 where
 	R: Read + Seek,
 {
-	let mut pos = input.stream_position()?;
-	let search_bounds = std::cmp::min(pos, REV_FRAME_SEARCH_BOUNDS);
+	let search_bounds = std::cmp::min(*pos, REV_FRAME_SEARCH_BOUNDS);
 
-	pos -= search_bounds;
-	input.seek(SeekFrom::Start(pos))?;
+	*pos -= search_bounds;
+	input.seek(SeekFrom::Start(*pos))?;
 
 	let ret = search_for_frame_sync(&mut input.take(search_bounds));
 	if let Ok(Some(_)) = ret {
@@ -379,9 +381,9 @@ mod tests {
 	fn rev_search_for_frame_sync() {
 		fn test<R: Read + Seek>(reader: &mut R, expected_result: Option<u64>) {
 			// We have to start these at the end to do a reverse search, of course :)
-			reader.seek(SeekFrom::End(0)).unwrap();
+			let mut pos = reader.seek(SeekFrom::End(0)).unwrap();
 
-			let ret = super::rev_search_for_frame_sync(reader).unwrap();
+			let ret = super::rev_search_for_frame_sync(reader, &mut pos).unwrap();
 			assert_eq!(ret, expected_result);
 		}
 
