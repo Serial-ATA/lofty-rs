@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.3] - 2022-05-18
+
 ### Added
 - **MP4**:
   - Support atoms with multiple values ([issue](https://github.com/Serial-ATA/lofty-rs/issues/48))
@@ -170,7 +172,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...main
+[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
 [0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
 [0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
 [0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
