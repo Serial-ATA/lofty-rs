@@ -21,6 +21,7 @@ where
 {
 	let mut file = Mp3File::default();
 
+	let mut first_frame_offset = 0;
 	let mut first_frame_header = None;
 
 	// Skip any invalid padding
@@ -83,8 +84,8 @@ where
 				reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 
 				#[allow(clippy::used_underscore_binding)]
-				if let Some((_first_first_header, first_frame_offset)) = find_next_frame(reader)? {
-					file.first_frame_offset = first_frame_offset;
+				if let Some((_first_first_header, _first_frame_offset)) = find_next_frame(reader)? {
+					first_frame_offset = _first_frame_offset;
 					first_frame_header = Some(_first_first_header);
 					break;
 				}
@@ -128,29 +129,30 @@ where
 		},
 	}
 
-	file.last_frame_offset = reader.stream_position()?;
+	let last_frame_offset = reader.stream_position()?;
+	file.properties = Mp3Properties::default();
 
-	file.properties = if read_properties {
-		if first_frame_header.is_none() {
-			// The search for sync bits was unsuccessful
-			return Err(
-				FileDecodingError::new(FileType::MP3, "File contains an invalid frame").into(),
-			);
-		}
-
-		// Safe to unwrap, since we return early if no frame is found
-		let first_frame_header = first_frame_header.unwrap();
+	if read_properties {
+		let first_frame_header = match first_frame_header {
+			Some(header) => header,
+			None => {
+				// The search for sync bits was unsuccessful
+				return Err(FileDecodingError::new(
+					FileType::MP3,
+					"File contains an invalid frame",
+				)
+				.into());
+			},
+		};
 
 		if first_frame_header.sample_rate == 0 {
 			return Err(FileDecodingError::new(FileType::MP3, "Sample rate is 0").into());
 		}
 
-		let first_frame_offset = file.first_frame_offset;
+		let first_frame_offset = first_frame_offset;
 
-		let file_length = reader.seek(SeekFrom::End(0))?;
-
+		// Try to read a Xing header
 		let xing_header_location = first_frame_offset + u64::from(first_frame_header.data_start);
-
 		reader.seek(SeekFrom::Start(xing_header_location))?;
 
 		let mut xing_reader = [0; 32];
@@ -158,16 +160,17 @@ where
 
 		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
 
+		let file_length = reader.seek(SeekFrom::End(0))?;
+
 		super::properties::read_properties(
+			&mut file.properties,
 			reader,
 			(first_frame_header, first_frame_offset),
-			file.last_frame_offset,
+			last_frame_offset,
 			xing_header,
 			file_length,
-		)?
-	} else {
-		Mp3Properties::default()
-	};
+		)?;
+	}
 
 	Ok(file)
 }

@@ -102,35 +102,31 @@ impl Mp3Properties {
 }
 
 pub(super) fn read_properties<R>(
+	properties: &mut Mp3Properties,
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,
 	xing_header: Option<XingHeader>,
 	file_length: u64,
-) -> Result<Mp3Properties>
+) -> Result<()>
 where
 	R: Read + Seek,
 {
 	let first_frame_header = first_frame.0;
 	let first_frame_offset = first_frame.1;
 
-	let mut properties = Mp3Properties {
-		version: first_frame_header.version,
-		layer: first_frame_header.layer,
-		channel_mode: first_frame_header.channel_mode,
-		mode_extension: first_frame_header.mode_extension,
-		copyright: first_frame_header.copyright,
-		original: first_frame_header.original,
-		duration: Duration::ZERO,
-		overall_bitrate: 0,
-		audio_bitrate: 0,
-		sample_rate: first_frame_header.sample_rate,
-		channels: if first_frame_header.channel_mode == ChannelMode::SingleChannel {
-			1
-		} else {
-			2
-		},
-		emphasis: first_frame_header.emphasis,
+	properties.version = first_frame_header.version;
+	properties.layer = first_frame_header.layer;
+	properties.channel_mode = first_frame_header.channel_mode;
+	properties.mode_extension = first_frame_header.mode_extension;
+	properties.copyright = first_frame_header.copyright;
+	properties.original = first_frame_header.original;
+	properties.emphasis = first_frame_header.emphasis;
+	properties.sample_rate = first_frame_header.sample_rate;
+	properties.channels = if first_frame_header.channel_mode == ChannelMode::SingleChannel {
+		1
+	} else {
+		2
 	};
 
 	match xing_header {
@@ -190,5 +186,5 @@ where
 		_ => {},
 	}
 
-	Ok(properties)
+	Ok(())
 }
