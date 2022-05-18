@@ -1,6 +1,6 @@
 [package]
 name = "lofty"
-version = "0.6.2"
+version = "0.6.3"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
@@ -18,7 +18,7 @@ byteorder = "1.4.3"
 # TODO: rustfmt only works with cfg_if for now (https://github.com/rust-lang/rustfmt/issues/3253)
 cfg-if = "1.0.0"
 # ID3 compressed frames
-flate2 = { version = "1.0.22", optional = true }
+flate2 = { version = "1.0.23", optional = true }
 # OGG Vorbis/Opus
 ogg_pager = "0.3.2"
 # Key maps
