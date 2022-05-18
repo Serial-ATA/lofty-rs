@@ -786,7 +786,7 @@ mod tests {
 		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
 		let file = Mp4File::read_from(&mut Cursor::new(file_bytes), false).unwrap();
 
-		assert!(file.ilst.is_some());
+		assert!(file.ilst_tag.is_some());
 	}
 
 	#[test]
@@ -809,10 +809,10 @@ mod tests {
 		file.rewind().unwrap();
 
 		let mp4_file = Mp4File::read_from(&mut file, true).unwrap();
-		assert!(mp4_file.ilst.is_some());
+		assert!(mp4_file.ilst_tag.is_some());
 
 		verify_atom(
-			&mp4_file.ilst.unwrap(),
+			&mp4_file.ilst_tag.unwrap(),
 			*b"\xa9ART",
 			&AtomData::UTF8(String::from("Foo artist")),
 		);

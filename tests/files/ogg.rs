@@ -133,7 +133,7 @@ fn flac_with_id3v2() {
 	assert!(flac_file.id3v2_tag().is_some());
 	assert_eq!(flac_file.id3v2_tag().unwrap().artist(), Some("Foo artist"));
 
-	assert!(flac_file.vorbis_comments().is_some());
+	assert!(flac_file.vorbis_comments_tag().is_some());
 }
 
 #[test]

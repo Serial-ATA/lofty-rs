@@ -7,33 +7,26 @@ use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
 use crate::properties::FileProperties;
-use crate::tag::TagType;
+use crate::tag::{Tag, TagType};
 use properties::OpusProperties;
 
 use std::io::{Read, Seek};
 
+use lofty_attr::LoftyFile;
+
 /// An OGG Opus file
+#[derive(LoftyFile)]
+#[tag(no_audiofile_impl)]
 pub struct OpusFile {
-	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
-	pub(crate) vorbis_comments: VorbisComments,
+	#[cfg(feature = "vorbis_comments")]
+	#[tag(tag_type = "VorbisComments")]
+	#[tag(always_present)]
+	pub(crate) vorbis_comments_tag: VorbisComments,
 	/// The file's audio properties
 	pub(crate) properties: OpusProperties,
-}
-
-impl From<OpusFile> for TaggedFile {
-	fn from(input: OpusFile) -> Self {
-		Self {
-			ty: FileType::Opus,
-			properties: FileProperties::from(input.properties),
-			#[cfg(feature = "vorbis_comments")]
-			tags: vec![input.vorbis_comments.into()],
-			#[cfg(not(feature = "vorbis_comments"))]
-			tags: Vec::new(),
-		}
-	}
 }
 
 impl AudioFile for OpusFile {
@@ -49,7 +42,7 @@ impl AudioFile for OpusFile {
 			properties: if read_properties {properties::read_properties(reader, &file_information.1)? } else { OpusProperties::default() },
 			#[cfg(feature = "vorbis_comments")]
 			// Safe to unwrap, a metadata packet is mandatory in Opus
-			vorbis_comments: file_information.0.unwrap(),
+			vorbis_comments_tag: file_information.0.unwrap(),
 		})
 	}
 
@@ -70,12 +63,12 @@ impl OpusFile {
 	#[cfg(feature = "vorbis_comments")]
 	/// Returns a reference to the Vorbis comments tag
 	pub fn vorbis_comments(&self) -> &VorbisComments {
-		&self.vorbis_comments
+		&self.vorbis_comments_tag
 	}
 
 	#[cfg(feature = "vorbis_comments")]
 	/// Returns a mutable reference to the Vorbis comments tag
 	pub fn vorbis_comments_mut(&mut self) -> &mut VorbisComments {
-		&mut self.vorbis_comments
+		&mut self.vorbis_comments_tag
 	}
 }
