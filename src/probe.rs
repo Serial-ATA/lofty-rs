@@ -10,6 +10,7 @@ use crate::mp4::Mp4File;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
+use crate::wavpack::WavPackFile;
 
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
@@ -227,6 +228,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
 				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
+				FileType::WavPack => WavPackFile::read_from(reader, read_properties)?.into(),
 			}),
 			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
 		}
@@ -293,7 +295,7 @@ mod tests {
 		let data: Vec<u8> = data.into_iter().flatten().copied().collect();
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
-		assert_eq!(probe.file_type(), Some(crate::FileType::MP3));
+		assert_eq!(probe.file_type(), Some(FileType::MP3));
 	}
 
 	fn test_probe(path: &str, expected_file_type_guess: FileType) {

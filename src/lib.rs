@@ -182,6 +182,7 @@ mod probe;
 pub(crate) mod properties;
 pub(crate) mod tag;
 mod traits;
+pub mod wavpack;
 
 pub use crate::error::{LoftyError, Result};
 

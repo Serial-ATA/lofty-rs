@@ -210,6 +210,7 @@ pub enum FileType {
 	Vorbis,
 	Speex,
 	WAV,
+	WavPack,
 }
 
 impl FileType {
@@ -219,7 +220,7 @@ impl FileType {
 	/// | [`FileType`]             | [`TagType`]      |
 	/// |--------------------------|------------------|
 	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
-	/// | `APE`                    | `Ape`            |
+	/// | `APE` , `WavPack`        | `Ape`            |
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Ilst`        |
 	pub fn primary_tag_type(&self) -> TagType {
@@ -234,8 +235,8 @@ impl FileType {
 			FileType::MP3 => TagType::Ape,
 			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
-			FileType::APE => TagType::Ape,
+			FileType::MP3 | FileType::WavPack => TagType::Id3v1,
+			FileType::APE | FileType::WavPack => TagType::Ape,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
@@ -255,9 +256,9 @@ impl FileType {
 			#[cfg(feature = "aiff_text_chunks")]
 			FileType::AIFF if tag_type == TagType::AiffText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MP3 if tag_type == TagType::Id3v1 => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::Id3v1 => true,
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MP3 if tag_type == TagType::Ape => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::Ape => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
@@ -282,6 +283,7 @@ impl FileType {
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
 			"mp3" => Some(Self::MP3),
 			"wav" | "wave" => Some(Self::WAV),
+			"wv" => Some(Self::WavPack),
 			"opus" => Some(Self::Opus),
 			"flac" => Some(Self::FLAC),
 			"ogg" => Some(Self::Vorbis),
@@ -386,6 +388,7 @@ impl FileType {
 
 				None
 			},
+			82 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::MP4),
 			_ => None,
 		}

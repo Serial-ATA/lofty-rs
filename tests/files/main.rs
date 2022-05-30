@@ -5,4 +5,5 @@ mod mpeg;
 mod ogg;
 pub(crate) mod util;
 mod wav;
+mod wavpack;
 mod zero_sized;

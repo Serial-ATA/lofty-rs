@@ -408,6 +408,7 @@ impl TagExt for Tag {
 	}
 }
 
+// TODO: Properly capitalize these
 /// The tag's format
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[non_exhaustive]
