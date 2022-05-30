@@ -67,6 +67,7 @@ mod tests {
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
+	use crate::wavpack::{WavPackFile, WavPackProperties};
 	use crate::{AudioFile, FileProperties};
 
 	use std::fs::File;
@@ -194,6 +195,17 @@ mod tests {
 		channels: 2,
 	};
 
+	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
+		version: 0,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 598,
+		audio_bitrate: 598,
+		sample_rate: 48000,
+		channels: 2,
+		bit_depth: 16,
+		lossless: false,
+	};
+
 	fn get_properties<T>(path: &str) -> T::Properties
 	where
 		T: AudioFile,
@@ -291,6 +303,15 @@ mod tests {
 		assert_eq!(
 			get_properties::<WavFile>("tests/files/assets/minimal/wav_format_pcm.wav"),
 			WAV_PROPERTIES
+		)
+	}
+
+	#[test]
+	#[ignore] // TODO
+	fn wavpack_properties() {
+		assert_eq!(
+			get_properties::<WavPackFile>("tests/files/assets/minimal/full_test.wv"),
+			WAVPACK_PROPERTIES
 		)
 	}
 }

@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::FileType;
 use crate::tag::{Tag, TagType};
-use crate::{ape, iff, mp3};
+use crate::{ape, iff, mp3, wavpack};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -36,6 +36,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
 		},
 		FileType::WAV => iff::wav::write::write_to(file, tag),
+		FileType::WavPack => wavpack::write::write_to(file, tag),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }

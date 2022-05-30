@@ -388,7 +388,7 @@ impl FileType {
 
 				None
 			},
-			82 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
+			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::MP4),
 			_ => None,
 		}

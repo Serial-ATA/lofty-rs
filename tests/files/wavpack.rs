@@ -16,10 +16,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
 }
 
-// TODO
-
 #[test]
-#[ignore]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.wv");
 
@@ -28,28 +25,26 @@ fn write() {
 	assert_eq!(tagged_file.file_type(), FileType::WavPack);
 
 	// APE
-	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
+	set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// ID3v1
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
+	set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
 	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
 
-	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
+	set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
+	set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
 }
 
 #[test]
-#[ignore]
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::Id3v1);
 }
 
 #[test]
-#[ignore]
 fn remove_ape() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::Ape);
 }

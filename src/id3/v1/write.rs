@@ -14,7 +14,7 @@ pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()
 	let probe = Probe::new(writer).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(ft) if ft == FileType::APE || ft == FileType::MP3 => {},
+		Some(FileType::APE | FileType::MP3 | FileType::WavPack) => {},
 		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 

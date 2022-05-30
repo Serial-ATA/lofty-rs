@@ -1,6 +1,7 @@
 //! WavPack specific items
 mod properties;
 mod read;
+pub(crate) mod write;
 
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
