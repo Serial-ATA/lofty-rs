@@ -196,14 +196,14 @@ mod tests {
 	};
 
 	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
-		version: 0,
+		version: 1040,
 		duration: Duration::from_millis(1428),
 		overall_bitrate: 598,
-		audio_bitrate: 598,
+		audio_bitrate: 597,
 		sample_rate: 48000,
 		channels: 2,
 		bit_depth: 16,
-		lossless: false,
+		lossless: true,
 	};
 
 	fn get_properties<T>(path: &str) -> T::Properties
@@ -307,7 +307,6 @@ mod tests {
 	}
 
 	#[test]
-	#[ignore] // TODO
 	fn wavpack_properties() {
 		assert_eq!(
 			get_properties::<WavPackFile>("tests/files/assets/minimal/full_test.wv"),

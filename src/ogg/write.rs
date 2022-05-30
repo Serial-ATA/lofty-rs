@@ -33,7 +33,7 @@ impl OGGFormat {
 	}
 }
 
-pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
+pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
 		TagType::VorbisComments => {
