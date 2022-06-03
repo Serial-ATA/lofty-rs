@@ -88,8 +88,8 @@ mod tests {
 	const APE_PROPERTIES: ApeProperties = ApeProperties {
 		version: 3990,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 360,
-		audio_bitrate: 360,
+		overall_bitrate: 361,
+		audio_bitrate: 361,
 		sample_rate: 48000,
 		bit_depth: 16,
 		channels: 2,
@@ -154,7 +154,7 @@ mod tests {
 
 	const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 120,
+		overall_bitrate: 121,
 		audio_bitrate: 120,
 		channels: 2,
 		version: 1,
@@ -168,7 +168,7 @@ mod tests {
 		mode: 2,
 		channels: 2,
 		vbr: false,
-		overall_bitrate: 32,
+		overall_bitrate: 33,
 		audio_bitrate: 29,
 		nominal_bitrate: 29600,
 	};
@@ -198,8 +198,8 @@ mod tests {
 	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
 		version: 1040,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 598,
-		audio_bitrate: 597,
+		overall_bitrate: 599,
+		audio_bitrate: 598,
 		sample_rate: 48000,
 		channels: 2,
 		bit_depth: 16,

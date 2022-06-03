@@ -117,6 +117,8 @@ where
 			properties.duration = Duration::from_millis(length);
 
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+
+			// TODO: Calculate with the stream length, and make this the fallback
 			properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
 		}
 	}

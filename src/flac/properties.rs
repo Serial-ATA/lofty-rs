@@ -38,25 +38,21 @@ where
 	// Read the remaining 32 bits of the total samples
 	let total_samples = stream_info.read_u32::<BigEndian>()? | (info << 28);
 
-	let (mut duration, mut overall_bitrate, mut audio_bitrate) = (Duration::ZERO, None, None);
+	let mut properties = FileProperties {
+		sample_rate: Some(sample_rate),
+		bit_depth: Some(bits_per_sample as u8),
+		channels: Some(channels as u8),
+		..FileProperties::default()
+	};
 
 	if sample_rate > 0 && total_samples > 0 {
 		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
 		if length > 0 {
-			(duration, overall_bitrate, audio_bitrate) = (
-				Duration::from_millis(length),
-				Some(((file_length * 8) / length) as u32),
-				Some(((stream_length * 8) / length) as u32),
-			);
+			properties.duration = Duration::from_millis(length);
+			properties.overall_bitrate = Some(((file_length * 8) / length) as u32);
+			properties.audio_bitrate = Some(((stream_length * 8) / length) as u32);
 		}
 	}
 
-	Ok(FileProperties {
-		duration,
-		overall_bitrate,
-		audio_bitrate,
-		sample_rate: Some(sample_rate),
-		bit_depth: Some(bits_per_sample as u8),
-		channels: Some(channels as u8),
-	})
+	Ok(properties)
 }

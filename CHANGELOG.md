@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **WavPack** support
+
+### Changed
+- Bitrates in properties will be rounded up, similar to FFmpeg and TagLib
+
 ## [0.6.3] - 2022-05-18
 
 ### Added

@@ -278,8 +278,8 @@ fn get_duration_bitrate(
 	if sample_rate > 0 {
 		let length = (total_samples * 1000) / u64::from(sample_rate);
 
-		let overall_bitrate = ((file_length * 8) / length) as u32;
-		let audio_bitrate = ((stream_len * 8) / length) as u32;
+		let overall_bitrate = crate::div_ceil(file_length * 8, length) as u32;
+		let audio_bitrate = crate::div_ceil(stream_len * 8, length) as u32;
 
 		(
 			Duration::from_millis(length),
