@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1653937364807,
+  "lastUpdate": 1654220412940,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -10559,6 +10559,126 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/VORBIS",
             "value": 1891,
             "range": "± 6",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "117ca51fc0e9b05190d5f7bf5670b3a5566774dc",
+          "message": "Properties: Start using ceiling division for bitrate calculation",
+          "timestamp": "2022-06-02T21:32:11-04:00",
+          "tree_id": "3ae8e96d231991d47f25af2c15fbe3069ea46cbb",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/117ca51fc0e9b05190d5f7bf5670b3a5566774dc"
+        },
+        "date": 1654220411662,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Tag writing/AIFF Text Chunks",
+            "value": 344,
+            "range": "± 30",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/APEv2",
+            "value": 996,
+            "range": "± 62",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v2",
+            "value": 1526,
+            "range": "± 79",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v1",
+            "value": 688,
+            "range": "± 53",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/MP4 Ilst",
+            "value": 1068,
+            "range": "± 79",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/RIFF INFO",
+            "value": 678,
+            "range": "± 67",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/Vorbis Comments",
+            "value": 1256,
+            "range": "± 123",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 1777,
+            "range": "± 109",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 2267,
+            "range": "± 159",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 1279,
+            "range": "± 102",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 1789,
+            "range": "± 488",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 2401,
+            "range": "± 164",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 2595,
+            "range": "± 466",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 2179,
+            "range": "± 163",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/SPEEX",
+            "value": 2389,
+            "range": "± 284",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 2645,
+            "range": "± 146",
             "unit": "ns/iter"
           }
         ]
