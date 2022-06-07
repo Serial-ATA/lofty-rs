@@ -348,7 +348,7 @@ impl From<Id3v2Tag> for Tag {
 
 		let mut tag = Self::new(TagType::Id3v2);
 
-		for frame in input.frames {
+		'outer: for frame in input.frames {
 			let id = frame.id_str();
 
 			// The text pairs need some special treatment
@@ -374,7 +374,16 @@ impl From<Id3v2Tag> for Tag {
 				FrameValue::Comment(LanguageFrame { content, .. })
 				| FrameValue::UnSyncText(LanguageFrame { content, .. })
 				| FrameValue::Text { value: content, .. }
-				| FrameValue::UserText(EncodedTextFrame { content, .. }) => ItemValue::Text(content),
+				| FrameValue::UserText(EncodedTextFrame { content, .. }) => {
+					for c in content.split(&['\0', '/'][..]) {
+						tag.items.push(TagItem::new(
+							item_key.clone(),
+							ItemValue::Text(c.to_string()),
+						));
+					}
+
+					continue 'outer;
+				},
 				FrameValue::URL(content)
 				| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
 				FrameValue::Picture { picture, .. } => {
@@ -478,7 +487,7 @@ mod tests {
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{MimeType, Picture, PictureType, Tag, TagExt, TagType};
+	use crate::{ItemKey, MimeType, Picture, PictureType, Tag, TagExt, TagType};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
@@ -852,5 +861,17 @@ mod tests {
 				counter: 65535
 			})
 		)
+	}
+
+	#[test]
+	fn multi_value_frame_to_tag() {
+		use crate::traits::Accessor;
+		let mut tag = Id3v2Tag::default();
+
+		tag.set_artist(String::from("foo/bar\0baz"));
+
+		let tag: Tag = tag.into();
+		let collected_artists = tag.get_texts(&ItemKey::TrackArtist).collect::<Vec<_>>();
+		assert_eq!(&collected_artists, &["foo", "bar", "baz"])
 	}
 }
