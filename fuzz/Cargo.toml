@@ -51,8 +51,16 @@ name = "vorbisfile_read_from"
 path = "fuzz_targets/vorbisfile_read_from.rs"
 
 [[bin]]
+name = "speexfile_read_from"
+path = "fuzz_targets/speexfile_read_from.rs"
+
+[[bin]]
 name = "wavfile_read_from"
 path = "fuzz_targets/wavfile_read_from.rs"
+
+[[bin]]
+name = "wavpackfile_read_from"
+path = "fuzz_targets/wavpackfile_read_from.rs"
 
 [[bin]]
 name = "pictureinformation_from_jpeg"
