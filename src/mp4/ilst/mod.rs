@@ -249,11 +249,11 @@ impl TagExt for Ilst {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from_path(path)
+		TagType::MP4ilst.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from(file)
+		TagType::MP4ilst.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -263,7 +263,7 @@ impl TagExt for Ilst {
 
 impl From<Ilst> for Tag {
 	fn from(input: Ilst) -> Self {
-		let mut tag = Self::new(TagType::Mp4Ilst);
+		let mut tag = Self::new(TagType::MP4ilst);
 
 		for atom in input.atoms {
 			let Atom { ident, data } = atom;
@@ -301,7 +301,7 @@ impl From<Ilst> for Tag {
 			};
 
 			let key = ItemKey::from_key(
-				TagType::Mp4Ilst,
+				TagType::MP4ilst,
 				&match ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
@@ -392,7 +392,7 @@ impl From<Tag> for Ilst {
 }
 
 fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
-	key.map_key(TagType::Mp4Ilst, true).and_then(|ident| {
+	key.map_key(TagType::MP4ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
 			let mut split = ident.split(':');
 
@@ -528,7 +528,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_ilst() {
-		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::Mp4Ilst);
+		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::MP4ilst);
 
 		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
 		tag.insert_text(ItemKey::DiscTotal, String::from("2"));

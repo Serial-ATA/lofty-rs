@@ -80,9 +80,9 @@ impl AudioFile for WavFile {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "id3v2")]
-			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			TagType::ID3v2 => self.id3v2_tag.is_some(),
 			#[cfg(feature = "riff_info_list")]
-			TagType::RiffInfo => self.riff_info.is_some(),
+			TagType::RIFFInfo => self.riff_info.is_some(),
 			_ => false,
 		}
 	}

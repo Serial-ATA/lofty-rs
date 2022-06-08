@@ -328,7 +328,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				Ok(unknown.as_str())
 			},
 			k => k
-				.map_key(TagType::Id3v2, false)
+				.map_key(TagType::ID3v2, false)
 				.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadFrameID)),
 		}?;
 

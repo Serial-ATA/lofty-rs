@@ -121,11 +121,11 @@ impl TagExt for RiffInfoList {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from_path(path)
+		TagType::RIFFInfo.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from(file)
+		TagType::RIFFInfo.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -135,10 +135,10 @@ impl TagExt for RiffInfoList {
 
 impl From<RiffInfoList> for Tag {
 	fn from(input: RiffInfoList) -> Self {
-		let mut tag = Tag::new(TagType::RiffInfo);
+		let mut tag = Tag::new(TagType::RIFFInfo);
 
 		for (k, v) in input.items {
-			let item_key = ItemKey::from_key(TagType::RiffInfo, &k);
+			let item_key = ItemKey::from_key(TagType::RIFFInfo, &k);
 
 			tag.items.push(TagItem::new(
 				item_key,
@@ -163,7 +163,7 @@ impl From<Tag> for RiffInfoList {
 						}
 					},
 					k => {
-						if let Some(key) = k.map_key(TagType::RiffInfo, false) {
+						if let Some(key) = k.map_key(TagType::RIFFInfo, false) {
 							riff_info.items.push((key.to_string(), val))
 						}
 					},
@@ -206,7 +206,7 @@ where
 
 pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&str, &str)> {
 	items.iter().filter_map(|i| {
-		let item_key = i.key().map_key(TagType::RiffInfo, true);
+		let item_key = i.key().map_key(TagType::RIFFInfo, true);
 
 		match (item_key, i.value()) {
 			(Some(key), ItemValue::Text(val) | ItemValue::Locator(val))
@@ -305,7 +305,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_riff_info() {
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::RiffInfo);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::RIFFInfo);
 
 		let riff_info: RiffInfoList = tag.into();
 

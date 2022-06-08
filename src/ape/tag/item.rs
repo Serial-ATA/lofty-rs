@@ -76,7 +76,7 @@ impl TryFrom<TagItem> for ApeItem {
 		Self::new(
 			value
 				.item_key
-				.map_key(TagType::Ape, false)
+				.map_key(TagType::APE, false)
 				.ok_or_else(|| {
 					FileDecodingError::new(
 						FileType::APE,

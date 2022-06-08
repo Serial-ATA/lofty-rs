@@ -142,11 +142,11 @@ impl TagExt for Id3v1Tag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v1.remove_from_path(path)
+		TagType::ID3v1.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v1.remove_from(file)
+		TagType::ID3v1.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -156,7 +156,7 @@ impl TagExt for Id3v1Tag {
 
 impl From<Id3v1Tag> for Tag {
 	fn from(input: Id3v1Tag) -> Self {
-		let mut tag = Self::new(TagType::Id3v1);
+		let mut tag = Self::new(TagType::ID3v1);
 
 		input.title.map(|t| tag.insert_text(ItemKey::TrackTitle, t));
 		input
@@ -328,7 +328,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v1() {
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v1);
 
 		let id3v1_tag: Id3v1Tag = tag.into();
 

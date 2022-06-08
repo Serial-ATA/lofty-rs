@@ -313,11 +313,11 @@ impl TagExt for Id3v2Tag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from_path(path)
+		TagType::ID3v2.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from(file)
+		TagType::ID3v2.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -346,7 +346,7 @@ impl From<Id3v2Tag> for Tag {
 			Some(())
 		}
 
-		let mut tag = Self::new(TagType::Id3v2);
+		let mut tag = Self::new(TagType::ID3v2);
 
 		'outer: for frame in input.frames {
 			let id = frame.id_str();
@@ -368,7 +368,7 @@ impl From<Id3v2Tag> for Tag {
 				_ => {},
 			}
 
-			let item_key = ItemKey::from_key(TagType::Id3v2, id);
+			let item_key = ItemKey::from_key(TagType::ID3v2, id);
 
 			let item_value = match frame.value {
 				FrameValue::Comment(LanguageFrame { content, .. })
@@ -658,7 +658,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v2);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v2);
 
 		let id3v2_tag: Id3v2Tag = tag.into();
 
@@ -820,7 +820,7 @@ mod tests {
 			picture_data,
 		);
 
-		let mut tag = Tag::new(TagType::Id3v2);
+		let mut tag = Tag::new(TagType::ID3v2);
 		tag.push_picture(picture.clone());
 
 		let mut writer = Vec::new();

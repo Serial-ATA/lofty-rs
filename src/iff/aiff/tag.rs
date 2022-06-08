@@ -167,11 +167,11 @@ impl TagExt for AiffTextChunks {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from_path(path)
+		TagType::AIFFText.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from(file)
+		TagType::AIFFText.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -181,7 +181,7 @@ impl TagExt for AiffTextChunks {
 
 impl From<AiffTextChunks> for Tag {
 	fn from(input: AiffTextChunks) -> Self {
-		let mut tag = Tag::new(TagType::AiffText);
+		let mut tag = Tag::new(TagType::AIFFText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
 			if let Some(text) = field {
@@ -492,7 +492,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_aiff_text() {
-		let mut tag = Tag::new(TagType::AiffText);
+		let mut tag = Tag::new(TagType::AIFFText);
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
 		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
 		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));

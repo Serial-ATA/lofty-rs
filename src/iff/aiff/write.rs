@@ -10,7 +10,7 @@ use std::fs::File;
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "aiff_text_chunks")]
-		TagType::AiffText => {
+		TagType::AIFFText => {
 			use crate::tag::item::ItemKey;
 
 			super::tag::AiffTextChunksRef {
@@ -23,7 +23,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		}
 		.write_to(data),
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => v2::tag::Id3v2TagRef {
+		TagType::ID3v2 => v2::tag::Id3v2TagRef {
 			flags: v2::Id3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}

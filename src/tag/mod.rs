@@ -59,7 +59,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{Accessor, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::Id3v2);
+/// let tag = Tag::new(TagType::ID3v2);
 ///
 /// // There are multiple quick getter methods for common items
 ///
@@ -74,7 +74,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{ItemKey, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::Id3v2);
+/// let tag = Tag::new(TagType::ID3v2);
 ///
 /// // If the type of an item is known, there are getter methods
 /// // to prevent having to match against the value
@@ -92,7 +92,7 @@ macro_rules! impl_accessor {
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
 ///
-/// let tag = Tag::new(TagType::Id3v2);
+/// let tag = Tag::new(TagType::ID3v2);
 /// let id3v2_tag: Id3v2Tag = tag.into();
 /// ```
 pub struct Tag {
@@ -408,25 +408,24 @@ impl TagExt for Tag {
 	}
 }
 
-// TODO: Properly capitalize these
 /// The tag's format
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
-	Ape,
+	APE,
 	/// Represents an ID3v1 tag
-	Id3v1,
+	ID3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
-	Id3v2,
-	/// Represents an MP4 ILST atom
-	Mp4Ilst,
+	ID3v2,
+	/// Represents an MP4 ilst atom
+	MP4ilst,
 	/// Represents vorbis comments
 	VorbisComments,
 	/// Represents a RIFF INFO LIST
-	RiffInfo,
+	RIFFInfo,
 	/// Represents AIFF text chunks
-	AiffText,
+	AIFFText,
 }
 
 impl TagType {
@@ -456,7 +455,7 @@ impl TagType {
 		};
 
 		let special_exceptions =
-			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::Id3v2;
+			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::ID3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			return Err(LoftyError::new(ErrorKind::UnsupportedTag));

@@ -63,7 +63,7 @@ impl TryFrom<ItemKey> for FrameID {
 			{
 				Ok(Self::Valid(unknown))
 			},
-			k => k.map_key(TagType::Id3v2, false).map_or(
+			k => k.map_key(TagType::ID3v2, false).map_or(
 				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 				|id| Ok(Self::Valid(id.to_string())),
 			),

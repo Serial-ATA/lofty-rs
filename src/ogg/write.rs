@@ -59,7 +59,7 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 			write(file, &mut comments_ref, format)
 		},
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 if file_type == FileType::FLAC => {
+		TagType::ID3v2 if file_type == FileType::FLAC => {
 			// This tag can *only* be removed in this format
 			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file)
 		},

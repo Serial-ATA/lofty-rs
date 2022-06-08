@@ -91,7 +91,7 @@ impl AudioFile for Mp4File {
 	#[allow(unreachable_code, unused_variables)]
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		#[cfg(feature = "mp4_ilst")]
-		return tag_type == TagType::Mp4Ilst && self.ilst.is_some();
+		return tag_type == TagType::MP4ilst && self.ilst.is_some();
 
 		false
 	}

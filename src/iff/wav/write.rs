@@ -10,12 +10,12 @@ use std::fs::File;
 pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "riff_info_list")]
-		TagType::RiffInfo => {
+		TagType::RIFFInfo => {
 			super::tag::RiffInfoListRef::new(super::tag::tagitems_into_riff(tag.items()))
 				.write_to(data)
 		},
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => v2::tag::Id3v2TagRef {
+		TagType::ID3v2 => v2::tag::Id3v2TagRef {
 			flags: v2::Id3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}

@@ -103,8 +103,8 @@
 //! assert_eq!(mp3_file.properties().channels(), 2);
 //!
 //! // Here we have a file with multiple tags
-//! assert!(mp3_file.contains_tag_type(TagType::Id3v2));
-//! assert!(mp3_file.contains_tag_type(TagType::Ape));
+//! assert!(mp3_file.contains_tag_type(TagType::ID3v2));
+//! assert!(mp3_file.contains_tag_type(TagType::APE));
 //! # Ok(())
 //! # }
 //! ```

@@ -226,21 +226,21 @@ impl FileType {
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
 			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
-			FileType::AIFF => TagType::AiffText,
+			FileType::AIFF => TagType::AIFFText,
 			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
-			FileType::WAV => TagType::RiffInfo,
+			FileType::WAV => TagType::RIFFInfo,
 			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
+			FileType::MP3 => TagType::ID3v1,
 			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
-			FileType::MP3 => TagType::Ape,
-			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
+			FileType::MP3 => TagType::APE,
+			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::ID3v2,
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MP3 | FileType::WavPack => TagType::Id3v1,
-			FileType::APE | FileType::WavPack => TagType::Ape,
+			FileType::MP3 | FileType::WavPack => TagType::ID3v1,
+			FileType::APE | FileType::WavPack => TagType::APE,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
-			FileType::MP4 => TagType::Mp4Ilst,
+			FileType::MP4 => TagType::MP4ilst,
 		}
 	}
 
@@ -249,24 +249,24 @@ impl FileType {
 		match self {
 			#[cfg(feature = "id3v2")]
 			FileType::AIFF | FileType::APE | FileType::MP3 | FileType::WAV
-				if tag_type == TagType::Id3v2 =>
+				if tag_type == TagType::ID3v2 =>
 			{
 				true
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			FileType::AIFF if tag_type == TagType::AiffText => true,
+			FileType::AIFF if tag_type == TagType::AIFFText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::Id3v1 => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::ID3v1 => true,
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::Ape => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::APE => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
 			},
 			#[cfg(feature = "mp4_ilst")]
-			FileType::MP4 => tag_type == TagType::Mp4Ilst,
+			FileType::MP4 => tag_type == TagType::MP4ilst,
 			#[cfg(feature = "riff_info_list")]
-			FileType::WAV => tag_type == TagType::RiffInfo,
+			FileType::WAV => tag_type == TagType::RIFFInfo,
 			_ => false,
 		}
 	}

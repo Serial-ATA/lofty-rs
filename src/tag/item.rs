@@ -403,19 +403,19 @@ macro_rules! gen_item_keys {
 gen_item_keys!(
 	MAPS => [
 		#[cfg(feature = "aiff_text_chunks")]
-		[TagType::AiffText, AIFF_TEXT_MAP],
+		[TagType::AIFFText, AIFF_TEXT_MAP],
 
 		#[cfg(feature = "ape")]
-		[TagType::Ape, APE_MAP],
+		[TagType::APE, APE_MAP],
 
 		#[cfg(feature = "id3v2")]
-		[TagType::Id3v2, ID3V2_MAP],
+		[TagType::ID3v2, ID3V2_MAP],
 
 		#[cfg(feature = "mp4_ilst")]
-		[TagType::Mp4Ilst, ILST_MAP],
+		[TagType::MP4ilst, ILST_MAP],
 
 		#[cfg(feature = "riff_info_list")]
-		[TagType::RiffInfo, RIFF_INFO_MAP],
+		[TagType::RIFFInfo, RIFF_INFO_MAP],
 
 		#[cfg(feature = "vorbis_comments")]
 		[TagType::VorbisComments, VORBIS_MAP]
@@ -672,7 +672,7 @@ impl TagItem {
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {
 		#[cfg(feature = "id3v1")]
-		if tag_type == TagType::Id3v1 {
+		if tag_type == TagType::ID3v1 {
 			use crate::id3::v1::constants::VALID_ITEMKEYS;
 
 			return VALID_ITEMKEYS.contains(&self.item_key);

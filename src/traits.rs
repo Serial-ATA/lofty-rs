@@ -12,7 +12,7 @@ macro_rules! accessor_trait {
 					///
 					/// ```rust
 					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::Id3v2;
+					/// # let tag_type = lofty::TagType::ID3v2;
 					///
 					/// let mut tag = Tag::new(tag_type);
 					///
@@ -24,7 +24,7 @@ macro_rules! accessor_trait {
 					///
 					/// ```rust
 					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::Id3v2;
+					/// # let tag_type = lofty::TagType::ID3v2;
 					///
 					#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(String::from(\"Foo " $name "\"));"]
 					///
@@ -37,7 +37,7 @@ macro_rules! accessor_trait {
 					///
 					/// ```rust
 					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::Id3v2;
+					/// # let tag_type = lofty::TagType::ID3v2;
 					///
 					#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(String::from(\"Foo " $name "\"));"]
 					///
@@ -80,7 +80,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// ```rust
 	/// use lofty::{Accessor, Tag, TagExt};
-	/// # let tag_type = lofty::TagType::Id3v2;
+	/// # let tag_type = lofty::TagType::ID3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
 	/// assert!(tag.is_empty());

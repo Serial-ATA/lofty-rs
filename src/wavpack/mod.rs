@@ -75,9 +75,9 @@ impl AudioFile for WavPackFile {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "ape")]
-			TagType::Ape => self.ape_tag.is_some(),
+			TagType::APE => self.ape_tag.is_some(),
 			#[cfg(feature = "id3v1")]
-			TagType::Id3v1 => self.id3v1_tag.is_some(),
+			TagType::ID3v1 => self.id3v1_tag.is_some(),
 			_ => false,
 		}
 	}

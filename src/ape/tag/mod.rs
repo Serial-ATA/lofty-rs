@@ -165,11 +165,11 @@ impl TagExt for ApeTag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from_path(path)
+		TagType::APE.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from(file)
+		TagType::APE.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -198,10 +198,10 @@ impl From<ApeTag> for Tag {
 			Some(())
 		}
 
-		let mut tag = Tag::new(TagType::Ape);
+		let mut tag = Tag::new(TagType::APE);
 
 		for item in input.items {
-			let item_key = ItemKey::from_key(TagType::Ape, item.key());
+			let item_key = ItemKey::from_key(TagType::APE, item.key());
 
 			// The text pairs need some special treatment
 			match (item_key, item.value()) {
@@ -275,7 +275,7 @@ where
 
 pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef<'_>> {
 	items.iter().filter_map(|i| {
-		i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
+		i.key().map_key(TagType::APE, true).map(|key| ApeItemRef {
 			read_only: false,
 			key,
 			value: (&i.item_value).into(),
@@ -395,7 +395,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::Ape);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::APE);
 
 		let ape_tag: ApeTag = tag.into();
 
