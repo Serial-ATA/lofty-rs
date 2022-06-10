@@ -107,7 +107,7 @@ where
 	}
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 /// MPEG Audio version
 pub enum MpegVersion {
@@ -122,7 +122,7 @@ impl Default for MpegVersion {
 	}
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 /// MPEG layer
 pub enum Layer {
@@ -137,7 +137,7 @@ impl Default for Layer {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs)]
 /// Channel mode
 pub enum ChannelMode {
@@ -154,7 +154,7 @@ impl Default for ChannelMode {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs, non_camel_case_types)]
 /// A rarely-used decoder hint that the file must be de-emphasized
 pub enum Emphasis {

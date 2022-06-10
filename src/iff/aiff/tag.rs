@@ -14,7 +14,7 @@ use byteorder::BigEndian;
 /// Represents an AIFF `COMT` chunk
 ///
 /// This is preferred over the `ANNO` chunk, for its additional information.
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Comment {
 	/// The creation time of the comment
 	///

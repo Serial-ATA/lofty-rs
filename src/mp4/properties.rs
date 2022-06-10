@@ -12,7 +12,7 @@ use std::time::Duration;
 use byteorder::{BigEndian, ReadBytesExt};
 
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 /// An MP4 file's audio codec
 pub enum Mp4Codec {
@@ -29,7 +29,7 @@ impl Default for Mp4Codec {
 }
 
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[rustfmt::skip]
 #[non_exhaustive]
 pub enum AudioObjectType {

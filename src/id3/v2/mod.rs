@@ -54,7 +54,7 @@ cfg_if::cfg_if! {
 #[cfg(not(feature = "id3v2"))]
 use flags::Id3v2TagFlags;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 /// The ID3v2 version
 pub enum Id3v2Version {
 	/// ID3v2.2

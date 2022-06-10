@@ -32,7 +32,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 /// A RIFF INFO LIST
 ///
 /// ## Supported file types

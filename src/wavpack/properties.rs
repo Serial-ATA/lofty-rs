@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// A WavPack file's audio properties
 pub struct WavPackProperties {

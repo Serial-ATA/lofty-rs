@@ -20,7 +20,7 @@ pub const CONTAINS_FIRST_PAGE_OF_BITSTREAM: u8 = 0x02;
 pub const CONTAINS_LAST_PAGE_OF_BITSTREAM: u8 = 0x04;
 
 /// An OGG page
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Page {
 	content: Vec<u8>,
 	header_type: u8,

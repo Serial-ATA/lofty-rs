@@ -8,7 +8,7 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An OGG Vorbis file's audio properties
 pub struct VorbisProperties {

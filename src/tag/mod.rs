@@ -409,7 +409,7 @@ impl TagExt for Tag {
 }
 
 /// The tag's format
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much

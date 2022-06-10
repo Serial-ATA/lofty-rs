@@ -11,7 +11,7 @@ const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xFFFE;
 
 #[allow(missing_docs, non_camel_case_types)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 /// A WAV file's format
 pub enum WavFormat {
 	PCM,

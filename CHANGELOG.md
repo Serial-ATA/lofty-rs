@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Mp4Ilst` -> `MP4ilst`
   - `RiffInfo` -> `RIFFInfo`
   - `AiffText` -> `AIFFText`
+- All types implementing `PartialEq` now implement `Eq`
 
 ## [0.6.3] - 2022-05-18
 

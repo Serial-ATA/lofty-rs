@@ -196,7 +196,7 @@ impl AudioFile for TaggedFile {
 	}
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 #[non_exhaustive]
 /// The type of file read
