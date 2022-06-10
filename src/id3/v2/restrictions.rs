@@ -58,7 +58,7 @@ impl Default for ImageSizeRestrictions {
 	}
 }
 
-#[derive(Default, Clone, Copy, Debug, PartialEq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 /// Restrictions on the content of an ID3v2 tag
 pub struct TagRestrictions {
 	/// Restriction on the size of the tag. See [`TagSizeRestrictions`]

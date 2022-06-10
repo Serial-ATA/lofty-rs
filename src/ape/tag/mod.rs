@@ -49,7 +49,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 /// An `APE` tag
 ///
 /// ## Supported file types

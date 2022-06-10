@@ -197,7 +197,7 @@ impl SynchronizedText {
 			&& information
 				.language
 				.chars()
-				.all(|c| ('a'..'z').contains(&c))
+				.all(|c| ('a'..='z').contains(&c))
 		{
 			data.write_all(information.language.as_bytes())?;
 			data.write_u8(information.timestamp_format as u8)?;

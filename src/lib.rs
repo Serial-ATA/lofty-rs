@@ -163,7 +163,8 @@
 	clippy::tabs_in_doc_comments,
 	clippy::len_without_is_empty,
 	clippy::needless_late_init,
-	clippy::type_complexity
+	clippy::type_complexity,
+	clippy::type_repetition_in_bounds
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 

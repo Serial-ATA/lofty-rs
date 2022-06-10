@@ -25,7 +25,7 @@ impl Default for WavFormat {
 	}
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// A WAV file's audio properties
 pub struct WavProperties {

@@ -105,7 +105,7 @@ impl MimeType {
 			MimeType::Tiff => "image/tiff",
 			MimeType::Bmp => "image/bmp",
 			MimeType::Gif => "image/gif",
-			MimeType::Unknown(unknown) => &*unknown,
+			MimeType::Unknown(unknown) => unknown,
 			MimeType::None => "",
 		}
 	}

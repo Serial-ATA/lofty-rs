@@ -34,7 +34,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, PartialEq, Eq, Debug, Clone)]
 /// Vorbis comments
 ///
 /// ## Supported file types
@@ -43,6 +42,7 @@ macro_rules! impl_accessor {
 /// * [`FileType::Opus`](crate::FileType::Opus)
 /// * [`FileType::Speex`](crate::FileType::Speex)
 /// * [`FileType::Vorbis`](crate::FileType::Vorbis)
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct VorbisComments {
 	/// An identifier for the encoding software
 	pub(crate) vendor: String,

@@ -2,8 +2,8 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::ItemKey;
 use crate::tag::TagType;
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// An `ID3v2` frame ID
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub enum FrameID {
 	/// A valid `ID3v2.3/4` frame
 	Valid(String),

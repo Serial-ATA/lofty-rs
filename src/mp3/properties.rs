@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An MP3 file's audio properties
 pub struct Mp3Properties {

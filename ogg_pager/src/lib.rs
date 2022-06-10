@@ -276,7 +276,7 @@ impl Page {
 	}
 }
 
-#[allow(clippy::eval_order_dependence)]
+#[allow(clippy::mixed_read_write_in_expression)]
 /// Create pages from a packet
 ///
 /// # Example

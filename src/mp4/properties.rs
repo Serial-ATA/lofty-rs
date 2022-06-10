@@ -143,7 +143,7 @@ impl TryFrom<u8> for AudioObjectType {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An MP4 file's audio properties
 pub struct Mp4Properties {

@@ -23,7 +23,6 @@ use std::hash::{Hash, Hasher};
 
 // TODO: Messy module, rough conversions
 
-#[derive(Clone, Debug, Eq)]
 /// Represents an `ID3v2` frame
 ///
 /// ## Outdated Frames
@@ -38,6 +37,7 @@ use std::hash::{Hash, Hasher};
 ///
 /// `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
 /// but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
+#[derive(Clone, Debug, Eq)]
 pub struct Frame {
 	pub(super) id: FrameID,
 	pub(super) value: FrameValue,
@@ -114,9 +114,9 @@ impl Frame {
 	}
 }
 
+/// The value of an `ID3v2` frame
 #[non_exhaustive]
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-/// The value of an `ID3v2` frame
 pub enum FrameValue {
 	/// Represents a "COMM" frame
 	///
@@ -203,9 +203,9 @@ impl FrameValue {
 	}
 }
 
+/// Various flags to describe the content of an item
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[allow(clippy::struct_excessive_bools)]
-/// Various flags to describe the content of an item
 pub struct FrameFlags {
 	/// Preserve frame on tag edit
 	pub tag_alter_preservation: bool,

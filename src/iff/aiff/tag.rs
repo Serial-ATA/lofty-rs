@@ -59,7 +59,7 @@ pub struct Comment {
 /// * [`ItemKey::Comment`](crate::ItemKey::Comment)
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
