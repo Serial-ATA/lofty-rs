@@ -1,5 +1,22 @@
+// This defines the `Accessor` trait, used to define unified getters/setters for commonly
+// accessed tag values.
+//
+// Usage:
+//
+// accessor_trait! {
+//     field_name<type>
+// }
+//
+// Where `type` is the return type for `Accessor::field_name`. By default, this type will also be used
+// in the setter.
+//
+// An owned type can also be specified for the setter:
+//
+// accessor_trait! {
+//     field_name<type, owned_type>
+// }
 macro_rules! accessor_trait {
-	($($name:ident),+) => {
+	($($name:ident < $($ty:ty),+ >),+ $(,)?) => {
 		/// Provides accessors for common items
 		///
 		/// This attempts to only provide methods for items that all tags have in common,
@@ -7,56 +24,74 @@ macro_rules! accessor_trait {
 		pub trait Accessor {
 			paste::paste! {
 				$(
-					#[doc = "Returns the " $name]
-					/// # Example
-					///
-					/// ```rust
-					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::ID3v2;
-					///
-					/// let mut tag = Tag::new(tag_type);
-					///
-					#[doc = "assert_eq!(tag." $name "(), None);"]
-					/// ```
-					fn $name(&self) -> Option<&str> { None }
-					#[doc = "Sets the " $name]
-					/// # Example
-					///
-					/// ```rust
-					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::ID3v2;
-					///
-					#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(String::from(\"Foo " $name "\"));"]
-					///
-					#[doc = "assert_eq!(tag." $name "(), Some(\"Foo " $name "\"));"]
-					/// ```
-					fn [<set_ $name>](&mut self, _value: String) {}
-					#[doc = "Removes the " $name]
-					///
-					/// # Example
-					///
-					/// ```rust
-					/// use lofty::{Tag, Accessor};
-					/// # let tag_type = lofty::TagType::ID3v2;
-					///
-					#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(String::from(\"Foo " $name "\"));"]
-					///
-					#[doc = "assert_eq!(tag." $name "(), Some(\"Foo " $name "\"));"]
-					///
-					#[doc = "tag.remove_" $name "();"]
-					///
-					#[doc = "assert_eq!(tag." $name "(), None);"]
-					/// ```
-					fn [<remove_ $name>](&mut self) {}
+					accessor_trait! { @GETTER $name $($ty),+ }
+
+					accessor_trait! { @SETTER $name $($ty),+ }
+
+					accessor_trait! { @REMOVE $name $($ty),+ }
 				)+
 			}
+		}
+	};
+	(@GETTER $name:ident $ty:ty $(, $_ty:tt)?) => {
+		paste::paste! {
+			#[doc = "Returns the " $name]
+			/// # Example
+			///
+			/// ```rust,ignore
+			/// use lofty::{Tag, Accessor};
+			///
+			/// let mut tag = Tag::new(tag_type);
+			///
+			#[doc = "assert_eq!(tag." $name "(), None);"]
+			/// ```
+			fn $name(&self) -> Option<$ty> { None }
+		}
+	};
+	(@SETTER $name:ident $_ty:ty, $owned_ty:tt) => {
+		accessor_trait! { @SETTER $name $owned_ty }
+	};
+	(@SETTER $name:ident $ty:ty $(, $_ty:tt)?) => {
+		paste::paste! {
+			#[doc = "Sets the " $name]
+			/// # Example
+			///
+			/// ```rust,ignore
+			/// use lofty::{Tag, Accessor};
+			///
+			#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(value);"]
+			///
+			#[doc = "assert_eq!(tag." $name "(), Some(value));"]
+			/// ```
+			fn [<set_ $name>](&mut self, _value: $ty) {}
+		}
+	};
+	(@REMOVE $name:ident $ty:ty $(, $_ty:tt)?) => {
+		paste::paste! {
+			#[doc = "Removes the " $name]
+			///
+			/// # Example
+			///
+			/// ```rust,ignore
+			/// use lofty::{Tag, Accessor};
+			///
+			#[doc = "let mut tag = Tag::new(tag_type);\ntag.set_" $name "(value);"]
+			///
+			#[doc = "assert_eq!(tag." $name "(), Some(value));"]
+			///
+			#[doc = "tag.remove_" $name "();"]
+			///
+			#[doc = "assert_eq!(tag." $name "(), None);"]
+			/// ```
+			fn [<remove_ $name>](&mut self) {}
 		}
 	};
 }
 
 accessor_trait! {
-	artist, title,
-	album, genre
+	artist<&str, String>, title<&str, String>,
+	album<&str, String>, genre<&str, String>,
+	track<u32>
 }
 
 use crate::tag::Tag;

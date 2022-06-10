@@ -115,6 +115,18 @@ impl Accessor for Id3v1Tag {
 	fn remove_genre(&mut self) {
 		self.genre = None
 	}
+
+	fn track(&self) -> Option<u32> {
+		self.track_number.map(u32::from)
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.track_number = Some(value as u8);
+	}
+
+	fn remove_track(&mut self) {
+		self.track_number = None;
+	}
 }
 
 impl TagExt for Id3v1Tag {

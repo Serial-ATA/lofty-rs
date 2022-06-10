@@ -16,35 +16,33 @@ use std::path::Path;
 macro_rules! impl_accessor {
 	($($name:ident => $($key:literal)|+;)+) => {
 		paste::paste! {
-			impl Accessor for ApeTag {
-				$(
-					fn $name(&self) -> Option<&str> {
-						$(
-							if let Some(i) = self.get_key($key) {
-								if let ItemValue::Text(val) = i.value() {
-									return Some(val)
-								}
+			$(
+				fn $name(&self) -> Option<&str> {
+					$(
+						if let Some(i) = self.get_key($key) {
+							if let ItemValue::Text(val) = i.value() {
+								return Some(val)
 							}
-						)+
+						}
+					)+
 
-						None
-					}
+					None
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(ApeItem {
-							read_only: false,
-							key: String::from(crate::tag::item::first_key!($($key)|*)),
-							value: ItemValue::Text(value)
-						})
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(ApeItem {
+						read_only: false,
+						key: String::from(crate::tag::item::first_key!($($key)|*)),
+						value: ItemValue::Text(value)
+					})
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						$(
-							self.remove_key($key);
-						)+
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					$(
+						self.remove_key($key);
+					)+
+				}
+			)+
 		}
 	}
 }
@@ -79,13 +77,6 @@ pub struct ApeTag {
 	pub(super) items: Vec<ApeItem>,
 }
 
-impl_accessor!(
-	artist => "Artist";
-	title  => "Title";
-	album  => "Album";
-	genre  => "GENRE";
-);
-
 impl ApeTag {
 	/// Get an [`ApeItem`] by key
 	///
@@ -118,6 +109,41 @@ impl ApeTag {
 	/// Returns all of the tag's items
 	pub fn items(&self) -> &[ApeItem] {
 		&self.items
+	}
+}
+
+impl Accessor for ApeTag {
+	impl_accessor!(
+		artist => "Artist";
+		title  => "Title";
+		album  => "Album";
+		genre  => "GENRE";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(ApeItem {
+			value: ItemValue::Text(ref text),
+			..
+		}) = self.get_key("Track")
+		{
+			if let Ok(ret) = text.parse::<u32>() {
+				return Some(ret);
+			}
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(ApeItem {
+			read_only: false,
+			key: String::from("Track"),
+			value: ItemValue::Text(value.to_string()),
+		})
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_key("Track");
 	}
 }
 

@@ -1,7 +1,7 @@
 #[cfg(feature = "id3v2_restrictions")]
 use super::restrictions::TagRestrictions;
 
-#[derive(Default, Copy, Clone, Debug, PartialEq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
 /// Flags that apply to the entire tag
 pub struct Id3v2TagFlags {

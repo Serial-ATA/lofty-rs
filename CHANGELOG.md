@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **WavPack** support
+- `Accessor::{set_, remove_}track`
 
 ### Changed
 - Bitrates in properties will be rounded up, similar to FFmpeg and TagLib
@@ -21,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `RiffInfo` -> `RIFFInfo`
   - `AiffText` -> `AIFFText`
 - All types implementing `PartialEq` now implement `Eq`
+- `Ilst::track_number` has been moved to the `Accessor::track` implementation
 
 ## [0.6.3] - 2022-05-18
 

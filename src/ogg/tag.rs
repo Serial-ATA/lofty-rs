@@ -13,23 +13,21 @@ use std::io::{Cursor, Write};
 use std::path::Path;
 
 macro_rules! impl_accessor {
-	($($name:ident, $key:literal;)+) => {
+	($($name:ident => $key:literal;)+) => {
 		paste::paste! {
-			impl Accessor for VorbisComments {
-				$(
-					fn $name(&self) -> Option<&str> {
-						self.get($key)
-					}
+			$(
+				fn $name(&self) -> Option<&str> {
+					self.get($key)
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(String::from($key), value, true)
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(String::from($key), value, true)
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						let _ = self.remove($key);
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					let _ = self.remove($key);
+				}
+			)+
 		}
 	}
 }
@@ -51,13 +49,6 @@ pub struct VorbisComments {
 	/// A collection of all pictures
 	pub(crate) pictures: Vec<(Picture, PictureInformation)>,
 }
-
-impl_accessor!(
-	artist,       "ARTIST";
-	title,        "TITLE";
-	album,        "ALBUM";
-	genre,        "GENRE";
-);
 
 impl VorbisComments {
 	/// Returns the vendor string
@@ -154,6 +145,31 @@ impl VorbisComments {
 	/// Removes a certain [`PictureType`]
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|(p, _)| p.pic_type != picture_type)
+	}
+}
+
+impl Accessor for VorbisComments {
+	impl_accessor!(
+		artist => "ARTIST";
+		title  => "TITLE";
+		album  => "ALBUM";
+		genre  => "GENRE";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(item) = self.get("TRACKNUMBER") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(String::from("TRACKNUMBER"), value.to_string(), true);
+	}
+
+	fn remove_track(&mut self) {
+		let _ = self.remove("TRACKNUMBER");
 	}
 }
 

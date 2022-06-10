@@ -11,23 +11,21 @@ use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
-	($($name:ident, $key:literal;)+) => {
+	($($name:ident => $key:literal;)+) => {
 		paste::paste! {
-			impl Accessor for RiffInfoList {
-				$(
-					fn $name(&self) -> Option<&str> {
-						self.get($key)
-					}
+			$(
+				fn $name(&self) -> Option<&str> {
+					self.get($key)
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(String::from($key), value)
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(String::from($key), value)
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.remove($key)
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					self.remove($key)
+				}
+			)+
 		}
 	}
 }
@@ -51,13 +49,6 @@ pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,
 }
-
-impl_accessor!(
-	artist, "IART";
-	title,  "INAM";
-	album,  "IPRD";
-	genre,  "IGNR";
-);
 
 impl RiffInfoList {
 	/// Get an item by key
@@ -96,6 +87,31 @@ impl RiffInfoList {
 	/// Returns the tag's items in (key, value) pairs
 	pub fn items(&self) -> &[(String, String)] {
 		self.items.as_slice()
+	}
+}
+
+impl Accessor for RiffInfoList {
+	impl_accessor!(
+		artist => "IART";
+		title  => "INAM";
+		album  => "IPRD";
+		genre  => "IGNR";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(item) = self.get("IPRT") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(String::from("IPRT"), value.to_string());
+	}
+
+	fn remove_track(&mut self) {
+		self.remove("IPRT");
 	}
 }
 

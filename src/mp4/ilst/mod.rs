@@ -24,32 +24,30 @@ const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
 const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
 
 macro_rules! impl_accessor {
-	($($name:ident, $const:ident;)+) => {
+	($($name:ident => $const:ident;)+) => {
 		paste::paste! {
-			impl Accessor for Ilst {
-				$(
-					fn $name(&self) -> Option<&str> {
-						if let Some(atom) = self.atom(&$const) {
-							if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
-								return Some(val)
-							}
+			$(
+				fn $name(&self) -> Option<&str> {
+					if let Some(atom) = self.atom(&$const) {
+						if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
+							return Some(val)
 						}
-
-						None
 					}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.replace_atom(Atom {
-							ident: $const,
-							data: AtomDataStorage::Single(AtomData::UTF8(value)),
-						})
-					}
+					None
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.remove_atom(&$const)
-					}
-				)+
-			}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.replace_atom(Atom {
+						ident: $const,
+						data: AtomDataStorage::Single(AtomData::UTF8(value)),
+					})
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.remove_atom(&$const)
+				}
+			)+
 		}
 	}
 }
@@ -84,13 +82,6 @@ macro_rules! impl_accessor {
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
 }
-
-impl_accessor!(
-	artist,       ARTIST;
-	title,        TITLE;
-	album,        ALBUM;
-	genre,        GENRE;
-);
 
 impl Ilst {
 	/// Returns all of the tag's atoms
@@ -190,11 +181,6 @@ impl Ilst {
 		})
 	}
 
-	/// Returns the track number
-	pub fn track_number(&self) -> Option<u16> {
-		self.extract_number(*b"trkn", 4)
-	}
-
 	/// Returns the total number of tracks
 	pub fn track_total(&self) -> Option<u16> {
 		self.extract_number(*b"trkn", 6)
@@ -225,6 +211,36 @@ impl Ilst {
 		}
 
 		None
+	}
+}
+
+impl Accessor for Ilst {
+	impl_accessor!(
+		artist => ARTIST;
+		title  => TITLE;
+		album  => ALBUM;
+		genre  => GENRE;
+	);
+
+	fn track(&self) -> Option<u32> {
+		self.extract_number(*b"trkn", 4).map(u32::from)
+	}
+
+	fn set_track(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let track_total = self.track_total().unwrap_or(0).to_be_bytes();
+
+		self.replace_atom(Atom {
+			ident: AtomIdent::Fourcc(*b"trkn"),
+			data: AtomDataStorage::Single(AtomData::Unknown {
+				code: 0,
+				data: vec![0, 0, value[0], value[1], track_total[0], track_total[1]],
+			}),
+		});
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
 	}
 }
 

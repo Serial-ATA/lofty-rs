@@ -19,39 +19,37 @@ use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
-	($($name:ident, $id:literal;)+) => {
+	($($name:ident => $id:literal;)+) => {
 		paste::paste! {
-			impl Accessor for Id3v2Tag {
-				$(
-					fn $name(&self) -> Option<&str> {
-						if let Some(f) = self.get($id) {
-							if let FrameValue::Text {
-								ref value,
-								..
-							} = f.content() {
-								return Some(value)
-							}
+			$(
+				fn $name(&self) -> Option<&str> {
+					if let Some(f) = self.get($id) {
+						if let FrameValue::Text {
+							ref value,
+							..
+						} = f.content() {
+							return Some(value)
 						}
-
-						None
 					}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(Frame {
-							id: FrameID::Valid(String::from($id)),
-							value: FrameValue::Text {
-								encoding: TextEncoding::UTF8,
-								value,
-							},
-							flags: FrameFlags::default()
-						});
-					}
+					None
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.remove($id)
-					}
-				)+
-			}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(Frame {
+						id: FrameID::Valid(String::from($id)),
+						value: FrameValue::Text {
+							encoding: TextEncoding::UTF8,
+							value,
+						},
+						flags: FrameFlags::default()
+					});
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.remove($id)
+				}
+			)+
 		}
 	}
 }
@@ -98,13 +96,6 @@ pub struct Id3v2Tag {
 	pub(super) original_version: Id3v2Version,
 	frames: Vec<Frame>,
 }
-
-impl_accessor!(
-	title,        "TIT2";
-	artist,       "TPE1";
-	album,        "TALB";
-	genre,        "TCON";
-);
 
 impl IntoIterator for Id3v2Tag {
 	type Item = Frame;
@@ -269,6 +260,46 @@ impl Id3v2Tag {
 			} if id == "COMM" => Some(val),
 			_ => None,
 		})
+	}
+}
+
+impl Accessor for Id3v2Tag {
+	impl_accessor!(
+		title  => "TIT2";
+		artist => "TPE1";
+		album  => "TALB";
+		genre  => "TCON";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(Frame {
+			value: FrameValue::Text { ref value, .. },
+			..
+		}) = self.get("TRCK")
+		{
+			if let Some(track_num) = value.split(&['\0', '/'][..]).next() {
+				if let Ok(ret) = track_num.parse::<u32>() {
+					return Some(ret);
+				}
+			}
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(Frame {
+			id: FrameID::Valid(String::from("TRCK")),
+			value: FrameValue::Text {
+				value: value.to_string(),
+				encoding: TextEncoding::UTF8,
+			},
+			flags: FrameFlags::default(),
+		});
+	}
+
+	fn remove_track(&mut self) {
+		self.remove("TRCK");
 	}
 }
 
