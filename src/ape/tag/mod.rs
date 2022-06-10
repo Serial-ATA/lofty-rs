@@ -56,6 +56,7 @@ macro_rules! impl_accessor {
 ///
 /// * [`FileType::APE`](crate::FileType::APE)
 /// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::WavPack`](crate::FileType::WavPack)
 ///
 /// ## Item storage
 ///

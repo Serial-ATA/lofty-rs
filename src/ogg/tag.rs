@@ -1,5 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::FileType;
+use crate::flac::write;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation, PictureType};
 use crate::probe::Probe;
@@ -7,7 +8,6 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
-use crate::flac::write;
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
 use std::path::Path;
@@ -34,8 +34,15 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, PartialEq, Debug, Clone)]
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 /// Vorbis comments
+///
+/// ## Supported file types
+///
+/// * [`FileType::FLAC`](crate::FileType::FLAC)
+/// * [`FileType::Opus`](crate::FileType::Opus)
+/// * [`FileType::Speex`](crate::FileType::Speex)
+/// * [`FileType::Vorbis`](crate::FileType::Vorbis)
 pub struct VorbisComments {
 	/// An identifier for the encoding software
 	pub(crate) vendor: String,

@@ -28,7 +28,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 /// An ID3v1 tag
 ///
 /// ID3v1 is a severely limited format, with each field
@@ -38,6 +38,12 @@ macro_rules! impl_accessor {
 ///
 /// Attempting to write a field greater than the maximum size
 /// will **not** error, it will just be shrunk.
+///
+/// ## Supported file types
+///
+/// * [`FileType::APE`](crate::FileType::APE)
+/// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::WavPack`](crate::FileType::WavPack)
 ///
 /// ## Conversions
 ///
