@@ -143,6 +143,8 @@
 )]
 // TODO: This had multiple FPs right now, remove this when it is fixed
 #![allow(clippy::needless_borrow)]
+// TODO: Remove this on the next nightly sync (https://github.com/rust-lang/rust-clippy/pull/8950)
+#![allow(clippy::derive_partial_eq_without_eq)]
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
