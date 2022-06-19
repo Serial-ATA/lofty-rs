@@ -173,8 +173,9 @@ impl Tag {
 	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
 		if let Some(item) = self.get_item_ref(item_key) {
 			match item.value() {
-				ItemValue::Text(text) if convert => return Some(text.as_bytes()),
-				ItemValue::Locator(locator) => return Some(locator.as_bytes()),
+				ItemValue::Text(text) | ItemValue::Locator(text) if convert => {
+					return Some(text.as_bytes())
+				},
 				ItemValue::Binary(binary) => return Some(binary),
 				_ => {},
 			}
