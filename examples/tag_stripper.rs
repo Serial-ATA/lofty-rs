@@ -35,7 +35,7 @@ fn main() {
 		std::io::stdout().flush().unwrap();
 
 		if std::io::stdin().read_line(&mut input).is_ok() {
-			if let Ok(num) = str::parse::<usize>(&*input.trim()) {
+			if let Ok(num) = str::parse::<usize>(input.trim()) {
 				if num < available_tag_types.len() {
 					to_remove = Some(num);
 					println!();
