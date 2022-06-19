@@ -269,7 +269,7 @@ impl Tag {
 	}
 
 	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
-	pub fn get_texts<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+	pub fn get_strings<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().text()

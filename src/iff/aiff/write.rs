@@ -17,7 +17,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 				name: tag.get_string(&ItemKey::TrackTitle),
 				author: tag.get_string(&ItemKey::TrackArtist),
 				copyright: tag.get_string(&ItemKey::CopyrightMessage),
-				annotations: Some(tag.get_texts(&ItemKey::Comment)),
+				annotations: Some(tag.get_strings(&ItemKey::Comment)),
 				comments: None,
 			}
 		}

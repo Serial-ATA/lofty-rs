@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AiffText` -> `AIFFText`
 - All types implementing `PartialEq` now implement `Eq`
 - `Ilst::track_number` has been moved to the `Accessor::track` implementation
+- Renamed `Tag::get_texts` to `Tag::get_strings`
 
 ## [0.6.3] - 2022-05-18
 

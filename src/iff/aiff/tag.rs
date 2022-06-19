@@ -482,7 +482,7 @@ mod tests {
 			Some("Baz copyright")
 		);
 
-		let mut comments = tag.get_texts(&ItemKey::Comment);
+		let mut comments = tag.get_strings(&ItemKey::Comment);
 		assert_eq!(comments.next(), Some("Qux annotation"));
 		assert_eq!(comments.next(), Some("Quux annotation"));
 		assert_eq!(comments.next(), Some("Quuz comment"));

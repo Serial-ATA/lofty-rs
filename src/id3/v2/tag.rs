@@ -902,7 +902,7 @@ mod tests {
 		tag.set_artist(String::from("foo/bar\0baz"));
 
 		let tag: Tag = tag.into();
-		let collected_artists = tag.get_texts(&ItemKey::TrackArtist).collect::<Vec<_>>();
+		let collected_artists = tag.get_strings(&ItemKey::TrackArtist).collect::<Vec<_>>();
 		assert_eq!(&collected_artists, &["foo", "bar", "baz"])
 	}
 }

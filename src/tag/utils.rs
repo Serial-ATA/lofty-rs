@@ -84,7 +84,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 				name: tag.get_string(&ItemKey::TrackTitle),
 				author: tag.get_string(&ItemKey::TrackArtist),
 				copyright: tag.get_string(&ItemKey::CopyrightMessage),
-				annotations: Some(tag.get_texts(&ItemKey::Comment)),
+				annotations: Some(tag.get_strings(&ItemKey::Comment)),
 				comments: None,
 			}
 		}
