@@ -99,6 +99,26 @@ impl Accessor for AiffTextChunks {
 	fn remove_title(&mut self) {
 		self.name = None
 	}
+
+	fn comment(&self) -> Option<&str> {
+		if let Some(ref anno) = self.annotations {
+			if !anno.is_empty() {
+				return anno.first().map(String::as_str);
+			}
+		}
+
+		if let Some(ref comm) = self.comments {
+			return comm.first().map(|c| c.text.as_str());
+		}
+
+		None
+	}
+	fn set_comment(&mut self, value: String) {
+		self.annotations = Some(vec![value]);
+	}
+	fn remove_comment(&mut self) {
+		self.annotations = None;
+	}
 }
 
 impl AiffTextChunks {

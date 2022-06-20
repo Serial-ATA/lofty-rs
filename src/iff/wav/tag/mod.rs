@@ -92,10 +92,11 @@ impl RiffInfoList {
 
 impl Accessor for RiffInfoList {
 	impl_accessor!(
-		artist => "IART";
-		title  => "INAM";
-		album  => "IPRD";
-		genre  => "IGNR";
+		artist  => "IART";
+		title   => "INAM";
+		album   => "IPRD";
+		genre   => "IGNR";
+		comment => "ICMT";
 	);
 
 	fn track(&self) -> Option<u32> {
@@ -112,6 +113,22 @@ impl Accessor for RiffInfoList {
 
 	fn remove_track(&mut self) {
 		self.remove("IPRT");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(item) = self.get("IFRM") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert(String::from("IFRM"), value.to_string());
+	}
+
+	fn remove_track_total(&mut self) {
+		self.remove("IFRM");
 	}
 }
 

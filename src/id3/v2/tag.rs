@@ -261,6 +261,19 @@ impl Id3v2Tag {
 			_ => None,
 		})
 	}
+
+	fn split_num_pair(&self, id: &str) -> (Option<u32>, Option<u32>) {
+		if let Some(Frame {
+			value: FrameValue::Text { ref value, .. },
+			..
+		}) = self.get(id)
+		{
+			let mut split = value.split(&['\0', '/'][..]).flat_map(str::parse::<u32>);
+			return (split.next(), split.next());
+		}
+
+		(None, None)
+	}
 }
 
 impl Accessor for Id3v2Tag {
@@ -272,34 +285,130 @@ impl Accessor for Id3v2Tag {
 	);
 
 	fn track(&self) -> Option<u32> {
+		self.split_num_pair("TRCK").0
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(Frame::text("TRCK", value.to_string()));
+	}
+
+	fn remove_track(&mut self) {
+		self.remove("TRCK");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		self.split_num_pair("TRCK").1
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		let current_track = self.split_num_pair("TRCK").0.unwrap_or(1);
+
+		self.insert(Frame::text("TRCK", format!("{}/{}", current_track, value)));
+	}
+
+	fn remove_track_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove("TRCK");
+
+		if let Some(track) = existing_track_number {
+			self.insert(Frame::text("TRCK", track.to_string()));
+		}
+	}
+
+	fn disk(&self) -> Option<u32> {
+		self.split_num_pair("TPOS").0
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert(Frame::text("TPOS", value.to_string()));
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove("TPOS");
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.split_num_pair("TPOS").1
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let current_disk = self.split_num_pair("TPOS").0.unwrap_or(1);
+
+		self.insert(Frame::text("TPOS", format!("{}/{}", current_disk, value)));
+	}
+
+	fn remove_disk_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove("TPOS");
+
+		if let Some(track) = existing_track_number {
+			self.insert(Frame::text("TPOS", track.to_string()));
+		}
+	}
+
+	fn year(&self) -> Option<u32> {
 		if let Some(Frame {
-			value: FrameValue::Text { ref value, .. },
+			value: FrameValue::Text { value, .. },
 			..
-		}) = self.get("TRCK")
+		}) = self.get("TDRC")
 		{
-			if let Some(track_num) = value.split(&['\0', '/'][..]).next() {
-				if let Ok(ret) = track_num.parse::<u32>() {
-					return Some(ret);
-				}
-			}
+			return value
+				.chars()
+				.take(4)
+				.collect::<String>()
+				.parse::<u32>()
+				.ok();
 		}
 
 		None
 	}
 
-	fn set_track(&mut self, value: u32) {
+	fn set_year(&mut self, value: u32) {
+		self.insert(Frame::text("TDRC", value.to_string()));
+	}
+
+	fn remove_year(&mut self) {
+		self.remove("TDRC");
+	}
+
+	fn comment(&self) -> Option<&str> {
+		if let Some(Frame {
+			value: FrameValue::Comment(LanguageFrame { content, .. }),
+			..
+		}) = self.get("COMM")
+		{
+			return Some(content);
+		}
+
+		None
+	}
+
+	fn set_comment(&mut self, value: String) {
+		// We'll just replace the first comment's content if it exists, otherwise create a new one
+		let first_comment = self.frames.iter_mut().find(|f| f.id_str() == "COMM");
+		if let Some(Frame {
+			value: FrameValue::Comment(LanguageFrame { content, .. }),
+			..
+		}) = first_comment
+		{
+			*content = value;
+			return;
+		}
+
 		self.insert(Frame {
-			id: FrameID::Valid(String::from("TRCK")),
-			value: FrameValue::Text {
-				value: value.to_string(),
+			id: FrameID::Valid(String::from("COMM")),
+			value: FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::UTF8,
-			},
+				language: String::from("eng"),
+				description: String::new(),
+				content: value,
+			}),
 			flags: FrameFlags::default(),
 		});
 	}
 
-	fn remove_track(&mut self) {
-		self.remove("TRCK");
+	fn remove_comment(&mut self) {
+		self.remove("COMM");
 	}
 }
 

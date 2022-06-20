@@ -119,6 +119,21 @@ impl Atom {
 		}
 	}
 
+	// Used internally, has no correctness checks
+	pub(crate) fn unknown_implicit(ident: AtomIdent, data: Vec<u8>) -> Self {
+		Self {
+			ident,
+			data: AtomDataStorage::Single(AtomData::Unknown { code: 0, data }),
+		}
+	}
+
+	pub(crate) fn text(ident: AtomIdent, data: String) -> Self {
+		Self {
+			ident,
+			data: AtomDataStorage::Single(AtomData::UTF8(data)),
+		}
+	}
+
 	// TODO: push_data
 }
 

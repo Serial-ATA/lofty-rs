@@ -112,6 +112,18 @@ impl Frame {
 	pub fn set_flags(&mut self, flags: FrameFlags) {
 		self.flags = flags
 	}
+
+	// Used internally, has no correctness checks
+	pub(crate) fn text(id: &str, content: String) -> Self {
+		Self {
+			id: FrameID::Valid(String::from(id)),
+			value: FrameValue::Text {
+				encoding: TextEncoding::UTF8,
+				value: content,
+			},
+			flags: FrameFlags::default(),
+		}
+	}
 }
 
 /// The value of an `ID3v2` frame

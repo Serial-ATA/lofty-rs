@@ -15,25 +15,23 @@ use std::path::Path;
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
 		paste::paste! {
-			impl Accessor for Tag {
-				$(
-					fn $name(&self) -> Option<&str> {
-						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
-							return Some(&*txt)
-						}
-
-						None
+			$(
+				fn $name(&self) -> Option<&str> {
+					if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
+						return Some(&*txt)
 					}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
-					}
+					None
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.retain_items(|i| i.item_key != ItemKey::$item_key)
-					}
-				)+
-			}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.retain_items(|i| i.item_key != ItemKey::$item_key)
+				}
+			)+
 		}
 	}
 }
@@ -110,12 +108,104 @@ impl IntoIterator for Tag {
 	}
 }
 
-impl_accessor!(
-	TrackArtist => artist,
-	TrackTitle => title,
-	AlbumTitle => album,
-	Genre => genre
-);
+impl Accessor for Tag {
+	impl_accessor!(
+		TrackArtist => artist,
+		TrackTitle  => title,
+		AlbumTitle  => album,
+		Genre       => genre,
+		Comment     => comment
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::TrackNumber) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert_text(ItemKey::TrackNumber, value.to_string());
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_key(&ItemKey::TrackNumber);
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::TrackTotal) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert_text(ItemKey::TrackTotal, value.to_string());
+	}
+
+	fn remove_track_total(&mut self) {
+		self.remove_key(&ItemKey::TrackTotal);
+	}
+
+	fn disk(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::DiscNumber) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert_text(ItemKey::DiscNumber, value.to_string());
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_key(&ItemKey::DiscNumber);
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::DiscTotal) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		self.insert_text(ItemKey::DiscTotal, value.to_string());
+	}
+
+	fn remove_disk_total(&mut self) {
+		self.remove_key(&ItemKey::DiscTotal);
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get_string(&ItemKey::Year)
+			.map_or_else(|| self.get_string(&ItemKey::RecordingDate), Some)
+		{
+			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		if let Some(item) = self.get_string(&ItemKey::RecordingDate) {
+			if item.len() >= 4 {
+				let (_, remaining) = item.split_at(4);
+				self.insert_text(ItemKey::RecordingDate, format!("{}{}", value, remaining));
+			}
+		}
+	}
+
+	fn remove_year(&mut self) {
+		self.remove_key(&ItemKey::Year);
+		self.remove_key(&ItemKey::RecordingDate);
+	}
+}
 
 impl Tag {
 	/// Initialize a new tag with a certain [`TagType`]

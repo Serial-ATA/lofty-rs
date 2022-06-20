@@ -81,10 +81,7 @@ impl VorbisComments {
 	/// If `replace_all` is true, it will remove all items with the key before insertion
 	pub fn insert(&mut self, key: String, value: String, replace_all: bool) {
 		if replace_all {
-			self.items
-				.iter()
-				.position(|(k, _)| k == &key)
-				.map(|p| self.items.remove(p));
+			self.items.retain(|(k, _)| k != &key);
 		}
 
 		self.items.push((key, value))
@@ -150,10 +147,11 @@ impl VorbisComments {
 
 impl Accessor for VorbisComments {
 	impl_accessor!(
-		artist => "ARTIST";
-		title  => "TITLE";
-		album  => "ALBUM";
-		genre  => "GENRE";
+		artist  => "ARTIST";
+		title   => "TITLE";
+		album   => "ALBUM";
+		genre   => "GENRE";
+		comment => "COMMENT";
 	);
 
 	fn track(&self) -> Option<u32> {
@@ -170,6 +168,85 @@ impl Accessor for VorbisComments {
 
 	fn remove_track(&mut self) {
 		let _ = self.remove("TRACKNUMBER");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get("TRACKTOTAL")
+			.map_or_else(|| self.get("TOTALTRACKS"), Some)
+		{
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert(String::from("TRACKTOTAL"), value.to_string(), true);
+		let _ = self.remove("TOTALTRACKS");
+	}
+
+	fn remove_track_total(&mut self) {
+		let _ = self.remove("TRACKTOTAL");
+		let _ = self.remove("TOTALTRACKS");
+	}
+
+	fn disk(&self) -> Option<u32> {
+		if let Some(item) = self.get("DISCNUMBER") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert(String::from("DISCNUMBER"), value.to_string(), true);
+	}
+
+	fn remove_disk(&mut self) {
+		let _ = self.remove("DISCNUMBER");
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get("DISCTOTAL")
+			.map_or_else(|| self.get("TOTALDISCS"), Some)
+		{
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		self.insert(String::from("DISCTOTAL"), value.to_string(), true);
+		let _ = self.remove("TOTALDISCS");
+	}
+
+	fn remove_disk_total(&mut self) {
+		let _ = self.remove("DISCTOTAL");
+		let _ = self.remove("TOTALDISCS");
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(item) = self.get("YEAR").map_or_else(|| self.get("DATE"), Some) {
+			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		// DATE is the preferred way of storing the year, but it is still possible we will
+		// encounter YEAR
+		self.insert(String::from("DATE"), value.to_string(), true);
+		let _ = self.remove("YEAR");
+	}
+
+	fn remove_year(&mut self) {
+		// DATE is not valid without a year, so we can remove them as well
+		let _ = self.remove("DATE");
+		let _ = self.remove("YEAR");
 	}
 }
 

@@ -67,6 +67,15 @@ impl ApeItem {
 	pub fn value(&self) -> &ItemValue {
 		&self.value
 	}
+
+	// Used internally, has no correctness checks
+	pub(crate) fn text(key: &str, value: String) -> Self {
+		Self {
+			read_only: false,
+			key: String::from(key),
+			value: ItemValue::Text(value),
+		}
+	}
 }
 
 impl TryFrom<TagItem> for ApeItem {

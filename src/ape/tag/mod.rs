@@ -100,50 +100,120 @@ impl ApeTag {
 	///
 	/// NOTE: Like [`ApeTag::get_key`], this is not case-sensitive
 	pub fn remove_key(&mut self, key: &str) {
-		self.items
-			.iter()
-			.position(|i| i.key().eq_ignore_ascii_case(key))
-			.map(|p| self.items.remove(p));
+		self.items.retain(|i| !i.key().eq_ignore_ascii_case(key));
 	}
 
 	/// Returns all of the tag's items
 	pub fn items(&self) -> &[ApeItem] {
 		&self.items
 	}
+
+	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
+		if let Some(ApeItem {
+			value: ItemValue::Text(ref text),
+			..
+		}) = self.get_key(key)
+		{
+			let mut split = text.split('/').flat_map(str::parse::<u32>);
+			return (split.next(), split.next());
+		}
+
+		(None, None)
+	}
 }
 
 impl Accessor for ApeTag {
 	impl_accessor!(
-		artist => "Artist";
-		title  => "Title";
-		album  => "Album";
-		genre  => "GENRE";
+		artist  => "Artist";
+		title   => "Title";
+		album   => "Album";
+		genre   => "GENRE";
+		comment => "Comment";
 	);
 
 	fn track(&self) -> Option<u32> {
+		self.split_num_pair("Track").0
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(ApeItem::text("Track", value.to_string()))
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_key("Track");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		self.split_num_pair("Track").1
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		let current_track = self.split_num_pair("Track").0.unwrap_or(1);
+
+		self.insert(ApeItem::text(
+			"Track",
+			format!("{}/{}", current_track, value),
+		));
+	}
+
+	fn remove_track_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove_key("Track");
+
+		if let Some(track) = existing_track_number {
+			self.insert(ApeItem::text("Track", track.to_string()));
+		}
+	}
+
+	fn disk(&self) -> Option<u32> {
+		self.split_num_pair("Disc").0
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert(ApeItem::text("Disc", value.to_string()));
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_key("Disc");
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.split_num_pair("Disc").1
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let current_disk = self.split_num_pair("Disc").0.unwrap_or(1);
+
+		self.insert(ApeItem::text("Disc", format!("{}/{}", current_disk, value)));
+	}
+
+	fn remove_disk_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove_key("Disc");
+
+		if let Some(track) = existing_track_number {
+			self.insert(ApeItem::text("Disc", track.to_string()));
+		}
+	}
+
+	fn year(&self) -> Option<u32> {
 		if let Some(ApeItem {
 			value: ItemValue::Text(ref text),
 			..
-		}) = self.get_key("Track")
+		}) = self.get_key("Year")
 		{
-			if let Ok(ret) = text.parse::<u32>() {
-				return Some(ret);
-			}
+			return text.chars().take(4).collect::<String>().parse::<u32>().ok();
 		}
 
 		None
 	}
 
-	fn set_track(&mut self, value: u32) {
-		self.insert(ApeItem {
-			read_only: false,
-			key: String::from("Track"),
-			value: ItemValue::Text(value.to_string()),
-		})
+	fn set_year(&mut self, value: u32) {
+		self.insert(ApeItem::text("Year", value.to_string()));
 	}
 
-	fn remove_track(&mut self) {
-		self.remove_key("Track");
+	fn remove_year(&mut self) {
+		self.remove_key("Year");
 	}
 }
 

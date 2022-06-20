@@ -127,6 +127,45 @@ impl Accessor for Id3v1Tag {
 	fn remove_track(&mut self) {
 		self.track_number = None;
 	}
+
+	fn comment(&self) -> Option<&str> {
+		self.comment.as_deref()
+	}
+
+	fn set_comment(&mut self, value: String) {
+		let mut resized = String::with_capacity(28);
+		for c in value.chars() {
+			if resized.len() + c.len_utf8() > 28 {
+				break;
+			}
+
+			resized.push(c);
+		}
+
+		self.comment = Some(resized);
+	}
+
+	fn remove_comment(&mut self) {
+		self.comment = None;
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(ref year) = self.year {
+			if let Ok(y) = year.parse() {
+				return Some(y);
+			}
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.year = Some(value.to_string());
+	}
+
+	fn remove_year(&mut self) {
+		self.year = None;
+	}
 }
 
 impl TagExt for Id3v1Tag {

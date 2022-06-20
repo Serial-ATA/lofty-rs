@@ -8,7 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **WavPack** support
-- `Accessor::{set_, remove_}track`
+- **Accessor**:
+  - The following new accessor methods have been added:
+    - `track`
+    - `track_total`
+    - `disk`
+    - `disk_total`
+    - `year`
+    - `comment`
 
 ### Changed
 - Bitrates in properties will be rounded up, similar to FFmpeg and TagLib

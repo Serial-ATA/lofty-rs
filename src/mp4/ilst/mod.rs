@@ -22,6 +22,7 @@ const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
 const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
 const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
 const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
+const COMMENT: AtomIdent = AtomIdent::Fourcc(*b"\xa9cmt");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
@@ -216,10 +217,11 @@ impl Ilst {
 
 impl Accessor for Ilst {
 	impl_accessor!(
-		artist => ARTIST;
-		title  => TITLE;
-		album  => ALBUM;
-		genre  => GENRE;
+		artist  => ARTIST;
+		title   => TITLE;
+		album   => ALBUM;
+		genre   => GENRE;
+		comment => COMMENT;
 	);
 
 	fn track(&self) -> Option<u32> {
@@ -230,17 +232,97 @@ impl Accessor for Ilst {
 		let value = (value as u16).to_be_bytes();
 		let track_total = self.track_total().unwrap_or(0).to_be_bytes();
 
-		self.replace_atom(Atom {
-			ident: AtomIdent::Fourcc(*b"trkn"),
-			data: AtomDataStorage::Single(AtomData::Unknown {
-				code: 0,
-				data: vec![0, 0, value[0], value[1], track_total[0], track_total[1]],
-			}),
-		});
+		let data = vec![0, 0, value[0], value[1], track_total[0], track_total[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
 	}
 
 	fn remove_track(&mut self) {
 		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		self.extract_number(*b"trkn", 6).map(u32::from)
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let track = self.track().unwrap_or(1).to_be_bytes();
+
+		let data = vec![0, 0, track[0], track[1], value[0], value[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+	}
+
+	fn remove_track_total(&mut self) {
+		let track_num = self.track();
+		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+
+		if let Some(track_num) = track_num {
+			let track_bytes = (track_num as u16).to_be_bytes();
+			let data = vec![0, 0, track_bytes[0], track_bytes[1], 0, 0];
+
+			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+		}
+	}
+
+	fn disk(&self) -> Option<u32> {
+		self.extract_number(*b"disk", 4).map(u32::from)
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let disk_total = self.disk_total().unwrap_or(0).to_be_bytes();
+
+		let data = vec![0, 0, value[0], value[1], disk_total[0], disk_total[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.extract_number(*b"disk", 6).map(u32::from)
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let disk = self.disk().unwrap_or(1).to_be_bytes();
+
+		let data = vec![0, 0, disk[0], disk[1], value[0], value[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+	}
+
+	fn remove_disk_total(&mut self) {
+		let disk_num = self.disk();
+		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+
+		if let Some(disk_num) = disk_num {
+			let disk_bytes = (disk_num as u16).to_be_bytes();
+			let data = vec![0, 0, disk_bytes[0], disk_bytes[1], 0, 0];
+
+			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+		}
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"\xa9day")) {
+			if let AtomData::UTF8(text) = atom.data() {
+				return text.chars().take(4).collect::<String>().parse::<u32>().ok();
+			}
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.replace_atom(Atom::text(
+			AtomIdent::Fourcc(*b"\xa9day"),
+			value.to_string(),
+		));
+	}
+
+	fn remove_year(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"Year"));
 	}
 }
 
