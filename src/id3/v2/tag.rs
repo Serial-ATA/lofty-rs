@@ -433,11 +433,32 @@ impl From<Id3v2Tag> for Tag {
 }
 
 impl From<Tag> for Id3v2Tag {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		fn join_items(input: &mut Tag, key: &ItemKey) -> String {
+			let mut iter = input.take_strings(key);
+
+			match iter.next() {
+				None => String::new(),
+				Some(first) => {
+					let mut s = String::with_capacity(iter.size_hint().0);
+					s.push_str(&first);
+					iter.for_each(|i| {
+						s.push('/');
+						s.push_str(&i);
+					});
+
+					s
+				},
+			}
+		}
+
 		let mut id3v2_tag = Id3v2Tag {
 			frames: Vec::with_capacity(input.item_count() as usize),
 			..Id3v2Tag::default()
 		};
+
+		let artists = join_items(&mut input, &ItemKey::TrackArtist);
+		id3v2_tag.set_artist(artists);
 
 		for item in input.items {
 			let frame: Frame = match item.try_into() {
@@ -518,7 +539,9 @@ mod tests {
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{ItemKey, MimeType, Picture, PictureType, Tag, TagExt, TagType};
+	use crate::{
+		ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
+	};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
@@ -904,5 +927,27 @@ mod tests {
 		let tag: Tag = tag.into();
 		let collected_artists = tag.get_strings(&ItemKey::TrackArtist).collect::<Vec<_>>();
 		assert_eq!(&collected_artists, &["foo", "bar", "baz"])
+	}
+
+	#[test]
+	fn multi_item_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item_unchecked(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text(String::from("foo")),
+		));
+		tag.push_item_unchecked(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text(String::from("bar")),
+		));
+		tag.push_item_unchecked(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text(String::from("baz")),
+		));
+
+		let tag: Id3v2Tag = tag.into();
+		assert_eq!(tag.artist(), Some("foo/bar/baz"))
 	}
 }

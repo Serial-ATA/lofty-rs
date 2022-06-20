@@ -12,8 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Bitrates in properties will be rounded up, similar to FFmpeg and TagLib
-- **ID3v2**: Insert multi-value frames separately when converting to `Tag`
-  - E.g. An artist of "foo/bar/baz" will become 3 different `TagItem`s with `ItemKey::TrackArtist`
+- **ID3v2**: 
+  - Insert multi-value frames separately when converting to `Tag`
+    - E.g. An artist of "foo/bar/baz" will become 3 different `TagItem`s with `ItemKey::TrackArtist`
+  - Join multiple artists with "/" during `Tag` -> `Id3v2Tag` conversion
+    - Inverse of the previous entry
 - Properly capitalized the variants of `TagType`
   - `Ape` -> `APE`
   - `Id3v1` -> `ID3v1`
