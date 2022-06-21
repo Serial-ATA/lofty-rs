@@ -51,12 +51,12 @@ pub(super) fn read_properties(
 	let sample_rate = float.round() as u32;
 
 	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && sample_frames > 0 {
-		let length = (u64::from(sample_frames) * 1000) / u64::from(sample_rate);
+		let length = (u64::from(sample_frames) * 1000) as f64 / f64::from(sample_rate);
 
 		(
-			Duration::from_millis(length),
-			Some(((file_length * 8) / length) as u32),
-			Some((u64::from(stream_len * 8) / length) as u32),
+			Duration::from_millis(length as u64),
+			Some(((file_length as f64) * 8.0 / length + 0.5) as u32),
+			Some((f64::from(stream_len) * 8.0 / length + 0.5) as u32),
 		)
 	} else {
 		(Duration::ZERO, None, None)
