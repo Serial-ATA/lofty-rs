@@ -175,11 +175,12 @@ where
 			if let Some(last_frame_header) = last_frame {
 				let stream_len =
 					last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
-				let length = (stream_len * 8) / u64::from(properties.audio_bitrate);
+				let length =
+					((stream_len as f64) * 8.0) / f64::from(properties.audio_bitrate) + 0.5;
 
-				if length > 0 {
-					properties.overall_bitrate = ((file_length * 8) / length) as u32;
-					properties.duration = Duration::from_millis(length);
+				if length > 0.0 {
+					properties.overall_bitrate = (((file_length as f64) * 8.0) / length) as u32;
+					properties.duration = Duration::from_millis(length as u64);
 				}
 			}
 		},

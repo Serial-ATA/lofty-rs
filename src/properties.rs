@@ -74,7 +74,8 @@ mod tests {
 	use std::time::Duration;
 
 	// These values are taken from FFmpeg's ffprobe
-	// They may be *slightly* different due to how ffprobe rounds
+	// There is a chance they will be +/- 1, anything greater (for real world files)
+	// is an issue.
 
 	const AIFF_PROPERTIES: FileProperties = FileProperties {
 		duration: Duration::from_millis(1428),
@@ -154,7 +155,7 @@ mod tests {
 
 	const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 121,
+		overall_bitrate: 120,
 		audio_bitrate: 120,
 		channels: 2,
 		version: 1,
@@ -168,7 +169,7 @@ mod tests {
 		mode: 2,
 		channels: 2,
 		vbr: false,
-		overall_bitrate: 33,
+		overall_bitrate: 32,
 		audio_bitrate: 29,
 		nominal_bitrate: 29600,
 	};
