@@ -6,10 +6,8 @@ pub(crate) mod write;
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
-use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
 use lofty_attr::LoftyFile;

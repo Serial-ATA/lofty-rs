@@ -4,9 +4,8 @@ use super::find_last_page;
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::file::AudioFile;
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
-use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 use properties::OpusProperties;
 

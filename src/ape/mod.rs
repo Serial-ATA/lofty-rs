@@ -12,12 +12,10 @@ mod read;
 pub(crate) mod write;
 
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
-use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
 use lofty_attr::LoftyFile;

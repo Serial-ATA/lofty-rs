@@ -174,6 +174,9 @@
 
 // TODO: Give 1.62.0 some time, and start using #[default] on enums
 
+// proc macro hacks
+extern crate self as lofty;
+
 pub mod ape;
 pub mod error;
 pub(crate) mod file;

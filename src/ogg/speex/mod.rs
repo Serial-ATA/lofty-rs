@@ -3,9 +3,8 @@ pub(super) mod properties;
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::file::AudioFile;
 use crate::ogg::constants::SPEEXHEADER;
-use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 use properties::SpeexProperties;
 

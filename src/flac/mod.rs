@@ -11,7 +11,6 @@ mod read;
 pub(crate) mod write;
 
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 #[cfg(feature = "vorbis_comments")]

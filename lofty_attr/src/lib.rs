@@ -121,7 +121,7 @@ pub fn tag(input: TokenStream) -> TokenStream {
 	let properties_field_ty = properties_field.ty.clone();
 
 	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
-		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<FileProperties>;
+		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<lofty::FileProperties>;
 	};
 
 	// TODO
@@ -148,7 +148,7 @@ pub fn tag(input: TokenStream) -> TokenStream {
 
 	let audiofile_impl = if impl_audiofile {
 		quote! {
-			impl AudioFile for #struct_name {
+			impl lofty::AudioFile for #struct_name {
 				type Properties = #properties_field_ty;
 
 				fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
@@ -194,11 +194,11 @@ pub fn tag(input: TokenStream) -> TokenStream {
 
 		#audiofile_impl
 
-		impl std::convert::From<#struct_name> for TaggedFile {
+		impl std::convert::From<#struct_name> for lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {
 				Self {
-					ty: FileType::#file_type,
-					properties: FileProperties::from(input.properties),
+					ty: lofty::FileType::#file_type,
+					properties: lofty::FileProperties::from(input.properties),
 					tags: {
 						let mut tags: Vec<Tag> = Vec::new();
 						#( #conditions )*

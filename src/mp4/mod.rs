@@ -10,8 +10,6 @@ mod read;
 mod trak;
 
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
-use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
 use lofty_attr::LoftyFile;
