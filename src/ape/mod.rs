@@ -38,19 +38,19 @@ pub use properties::ApeProperties;
 
 /// An APE file
 #[derive(LoftyFile)]
-#[tag(read_fn = "read::read_from")]
+#[lofty(read_fn = "read::read_from")]
 pub struct ApeFile {
 	/// An ID3v1 tag
 	#[cfg(feature = "id3v1")]
-	#[tag(tag_type = "ID3v1")]
+	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	/// An ID3v2 tag (Not officially supported)
 	#[cfg(feature = "id3v2")]
-	#[tag(tag_type = "ID3v2")]
+	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// An APEv1/v2 tag
 	#[cfg(feature = "ape")]
-	#[tag(tag_type = "APE")]
+	#[lofty(tag_type = "APE")]
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: ApeProperties,

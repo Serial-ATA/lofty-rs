@@ -8,7 +8,7 @@ use syn::{
 	MetaList, NestedMeta,
 };
 
-#[proc_macro_derive(LoftyFile, attributes(tag))]
+#[proc_macro_derive(LoftyFile, attributes(lofty))]
 pub fn tag(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
 
@@ -296,7 +296,7 @@ fn has_path_attr(attr: &Attribute, name: &str) -> bool {
 }
 
 fn get_attr_list(attr: &Attribute) -> Option<MetaList> {
-	if attr.path.is_ident("tag") {
+	if attr.path.is_ident("lofty") {
 		if let Ok(Meta::List(list)) = attr.parse_meta() {
 			return Some(list);
 		}

@@ -20,15 +20,15 @@ cfg_if::cfg_if! {
 
 /// An AIFF file
 #[derive(LoftyFile)]
-#[tag(read_fn = "read::read_from")]
+#[lofty(read_fn = "read::read_from")]
 pub struct AiffFile {
 	/// Any text chunks included in the file
 	#[cfg(feature = "aiff_text_chunks")]
-	#[tag(tag_type = "AIFFText")]
+	#[lofty(tag_type = "AIFFText")]
 	pub(crate) text_chunks_tag: Option<AIFFTextChunks>,
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
-	#[tag(tag_type = "ID3v2")]
+	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,

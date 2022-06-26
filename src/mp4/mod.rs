@@ -39,12 +39,12 @@ pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
 
 /// An MP4 file
 #[derive(LoftyFile)]
-#[tag(read_fn = "read::read_from")]
+#[lofty(read_fn = "read::read_from")]
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
 	#[cfg(feature = "mp4_ilst")]
-	#[tag(tag_type = "MP4ilst")]
+	#[lofty(tag_type = "MP4ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst_tag: Option<Ilst>,
 	/// The file's audio properties
