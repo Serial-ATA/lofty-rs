@@ -10,7 +10,7 @@
 mod flags;
 pub(crate) mod util;
 
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 
 use std::io::Read;
 
@@ -109,7 +109,7 @@ where
 		3 => Id3v2Version::V3,
 		4 => Id3v2Version::V4,
 		major => {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into())
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadId3v2Version(major, header[4])).into())
 		},
 	};
 
@@ -119,7 +119,7 @@ where
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
 	if version == Id3v2Version::V2 && flags & 0x40 == 0x40 {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 			"Encountered a compressed ID3v2.2 tag",
 		))
 		.into());
@@ -146,7 +146,7 @@ where
 		extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 				"Found an extended header with an invalid size (< 6)",
 			))
 			.into());
@@ -179,7 +179,7 @@ where
 	}
 
 	if extended_size > 0 && extended_size >= size {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::Other("Tag has an invalid size")).into());
+		return Err(ID3v2Error::new(ID3v2ErrorKind::Other("Tag has an invalid size")).into());
 	}
 
 	Ok(Id3v2Header {

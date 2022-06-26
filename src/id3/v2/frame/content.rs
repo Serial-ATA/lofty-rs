@@ -1,4 +1,4 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
@@ -87,7 +87,7 @@ fn parse_user_defined(
 			} else {
 				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
 					Some(raw_text) => utf16_decode(&*raw_text, endianness).map_err(|_| {
-						Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
+						Into::<LoftyError>::into(ID3v2Error::new(ID3v2ErrorKind::BadSyncText))
 					})?,
 					None => String::new(),
 				}
@@ -194,8 +194,8 @@ fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {
 fn verify_encoding(encoding: u8, version: Id3v2Version) -> Result<TextEncoding> {
 	if let Id3v2Version::V2 = version {
 		if encoding != 0 && encoding != 1 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
-				"Id3v2.2 only supports Latin-1 and UTF-16 encodings",
+			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
+				"ID3v2.2 only supports Latin-1 and UTF-16 encodings",
 			))
 			.into());
 		}

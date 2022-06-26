@@ -4,7 +4,7 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::text_utils::encode_text;
@@ -85,7 +85,7 @@ impl Frame {
 				None => id,
 				Some(upgraded) => upgraded,
 			},
-			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 		};
 
 		let id = FrameID::new(id_updated)?;
@@ -341,7 +341,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			},
 			k => k
 				.map_key(TagType::ID3v2, false)
-				.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadFrameID)),
+				.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadFrameID)),
 		}?;
 
 		Ok(FrameRef {

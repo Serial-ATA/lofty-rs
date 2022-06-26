@@ -1,5 +1,5 @@
 use super::FrameFlags;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameID;
 
@@ -21,7 +21,7 @@ where
 	}
 
 	let id_str = std::str::from_utf8(&frame_header[..3])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameID))?;
+		.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadFrameID))?;
 	let id = upgrade_v2(id_str).unwrap_or(id_str);
 
 	let frame_id = FrameID::new(id)?;
@@ -60,7 +60,7 @@ where
 	}
 
 	let mut id_str = std::str::from_utf8(&frame_header[..frame_id_end])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameID))?;
+		.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadFrameID))?;
 
 	let mut size = u32::from_be_bytes([
 		frame_header[4],

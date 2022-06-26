@@ -43,7 +43,7 @@ pub enum ErrorKind {
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
-	Id3v2(Id3v2Error),
+	ID3v2(ID3v2Error),
 
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
@@ -64,7 +64,7 @@ pub enum ErrorKind {
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 /// The types of errors that can occur while interacting with ID3v2 tags
-pub enum Id3v2ErrorKind {
+pub enum ID3v2ErrorKind {
 	#[cfg(feature = "id3v2")]
 	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
 	BadPictureFormat(String),
@@ -88,62 +88,62 @@ pub enum Id3v2ErrorKind {
 	Other(&'static str),
 }
 
-impl Display for Id3v2ErrorKind {
+impl Display for ID3v2ErrorKind {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Id3v2ErrorKind::BadId3v2Version(major, minor) => write!(
+			ID3v2ErrorKind::BadId3v2Version(major, minor) => write!(
 				f,
 				"Found an invalid version (v{}.{}), expected any major revision in: (2, 3, 4)",
 				major, minor
 			),
 			#[cfg(feature = "id3v2")]
-			Id3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
+			ID3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
 			#[cfg(feature = "id3v2")]
-			Id3v2ErrorKind::BadFrameLength => write!(
+			ID3v2ErrorKind::BadFrameLength => write!(
 				f,
 				"Frame isn't long enough to extract the necessary information"
 			),
 			#[cfg(feature = "id3v2")]
-			Id3v2ErrorKind::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
+			ID3v2ErrorKind::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
 			#[cfg(feature = "id3v2")]
-			Id3v2ErrorKind::BadFrame(ref frame_id, frame_value) => write!(
+			ID3v2ErrorKind::BadFrame(ref frame_id, frame_value) => write!(
 				f,
 				"Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
 				frame_id, frame_value
 			),
 			#[cfg(feature = "id3v2")]
-			Id3v2ErrorKind::BadPictureFormat(format) => {
+			ID3v2ErrorKind::BadPictureFormat(format) => {
 				write!(f, "Picture: Found unexpected format \"{}\"", format)
 			},
-			Id3v2ErrorKind::Other(message) => write!(f, "{}", message),
+			ID3v2ErrorKind::Other(message) => write!(f, "{}", message),
 		}
 	}
 }
 
 /// An error that arises while interacting with an ID3v2 tag
-pub struct Id3v2Error {
-	kind: Id3v2ErrorKind,
+pub struct ID3v2Error {
+	kind: ID3v2ErrorKind,
 }
 
-impl Id3v2Error {
-	/// Create a new `Id3v2Error` from an [`Id3v2ErrorKind`]
-	pub fn new(kind: Id3v2ErrorKind) -> Self {
+impl ID3v2Error {
+	/// Create a new `ID3v2Error` from an [`ID3v2ErrorKind`]
+	pub fn new(kind: ID3v2ErrorKind) -> Self {
 		Self { kind }
 	}
 
-	/// Returns the [`Id3v2ErrorKind`]
-	pub fn kind(&self) -> Id3v2ErrorKind {
+	/// Returns the [`ID3v2ErrorKind`]
+	pub fn kind(&self) -> ID3v2ErrorKind {
 		self.kind.clone()
 	}
 }
 
-impl Debug for Id3v2Error {
+impl Debug for ID3v2Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "ID3v2: {:?}", self.kind)
 	}
 }
 
-impl Display for Id3v2Error {
+impl Display for ID3v2Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "ID3v2: {}", self.kind)
 	}
@@ -282,10 +282,10 @@ impl Debug for LoftyError {
 	}
 }
 
-impl From<Id3v2Error> for LoftyError {
-	fn from(input: Id3v2Error) -> Self {
+impl From<ID3v2Error> for LoftyError {
+	fn from(input: ID3v2Error) -> Self {
 		Self {
-			kind: ErrorKind::Id3v2(input),
+			kind: ErrorKind::ID3v2(input),
 		}
 	}
 }
@@ -373,7 +373,7 @@ impl Display for LoftyError {
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {}", message),
-			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{}", id3v2_err),
+			ErrorKind::ID3v2(ref id3v2_err) => write!(f, "{}", id3v2_err),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
 
 			// Files

@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::{
-	error::{Id3v2Error, Id3v2ErrorKind},
+	error::{ID3v2Error, ID3v2ErrorKind},
 	id3::v2::{util::text_utils::TextEncoding, Id3v2Version},
 };
 
@@ -583,7 +583,7 @@ impl Picture {
 				MimeType::Png => "PNG",
 				MimeType::Jpeg => "JPG",
 				_ => {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
+					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
 						self.mime_type.to_string(),
 					))
 					.into())
@@ -645,7 +645,7 @@ impl Picture {
 				[b'P', b'N', b'G'] => MimeType::Png,
 				[b'J', b'P', b'G'] => MimeType::Jpeg,
 				_ => {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
+					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
 						String::from_utf8_lossy(&format).into_owned(),
 					))
 					.into())

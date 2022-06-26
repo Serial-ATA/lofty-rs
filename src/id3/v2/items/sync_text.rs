@@ -2,7 +2,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::text_utils;
 use crate::id3::v2::util::text_utils::{
 	decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding,
@@ -94,24 +94,24 @@ impl SynchronizedText {
 	///
 	/// # Errors
 	///
-	/// This function will return [`BadSyncText`][Id3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
+	/// This function will return [`BadSyncText`][ID3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 7 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameLength).into());
 		}
 
 		let encoding = TextEncoding::from_u8(data[0])
 			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
 		let lang = std::str::from_utf8(&data[1..4])
-			.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 		let timestamp_format = TimestampFormat::from_u8(data[4])
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 		let content_type = SyncTextContentType::from_u8(data[5])
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 
 		let mut cursor = Cursor::new(&data[6..]);
 		let description = text_utils::decode_text(&mut cursor, encoding, true)
-			.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
 
@@ -137,7 +137,7 @@ impl SynchronizedText {
 					let mut bom = [0; 2];
 					cursor
 						.read_exact(&mut bom)
-						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+						.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 
 					// Encountered text that doesn't include a BOM
 					if bom != [0xFF, 0xFE] && bom != [0xFE, 0xFF] {
@@ -146,7 +146,7 @@ impl SynchronizedText {
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
 							return utf16_decode(&*raw_text, endianness)
-								.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
+								.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText).into());
 						}
 
 						return Ok(String::new());
@@ -154,7 +154,7 @@ impl SynchronizedText {
 				}
 
 				Ok(decode_text(&mut cursor, encoding, true)
-					.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
+					.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?
 					.unwrap_or_default())
 			})()?;
 
@@ -162,7 +162,7 @@ impl SynchronizedText {
 
 			let time = cursor
 				.read_u32::<BigEndian>()
-				.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+				.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 			pos += 4;
 
 			content.push((time, text));
@@ -221,7 +221,7 @@ impl SynchronizedText {
 			return Ok(data);
 		}
 
-		Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into())
+		Err(ID3v2Error::new(ID3v2ErrorKind::BadSyncText).into())
 	}
 }
 
