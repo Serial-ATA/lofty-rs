@@ -220,8 +220,8 @@ struct FieldContents {
 	tag_type: proc_macro2::TokenStream,
 }
 
-const LOFTY_FILE_TYPES: [&str; 9] = [
-	"AIFF", "APE", "FLAC", "MP3", "MP4", "Opus", "Vorbis", "Speex", "WAV",
+const LOFTY_FILE_TYPES: [&str; 10] = [
+	"AIFF", "APE", "FLAC", "MP3", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
 ];
 fn opt_file_type(struct_name: String) -> Option<proc_macro2::TokenStream> {
 	let stripped = struct_name.strip_suffix("File");
