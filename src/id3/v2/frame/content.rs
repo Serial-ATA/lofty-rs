@@ -6,7 +6,7 @@ use crate::id3::v2::items::popularimeter::Popularimeter;
 use crate::id3::v2::util::text_utils::{
 	decode_text, read_to_terminator, utf16_decode, TextEncoding,
 };
-use crate::id3::v2::Id3v2Version;
+use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
 
 use std::io::{Cursor, Read};
@@ -16,7 +16,7 @@ use byteorder::ReadBytesExt;
 pub(super) fn parse_content(
 	content: &mut &[u8],
 	id: &str,
-	version: Id3v2Version,
+	version: ID3v2Version,
 ) -> Result<Option<FrameValue>> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
@@ -43,7 +43,7 @@ pub(super) fn parse_content(
 fn parse_user_defined(
 	mut content: &mut &[u8],
 	link: bool,
-	version: Id3v2Version,
+	version: ID3v2Version,
 ) -> Result<Option<FrameValue>> {
 	if content.len() < 2 {
 		return Ok(None);
@@ -107,7 +107,7 @@ fn parse_user_defined(
 fn parse_text_language(
 	content: &mut &[u8],
 	id: &str,
-	version: Id3v2Version,
+	version: ID3v2Version,
 ) -> Result<Option<FrameValue>> {
 	if content.len() < 5 {
 		return Ok(None);
@@ -140,7 +140,7 @@ fn parse_text_language(
 	Ok(Some(value))
 }
 
-fn parse_text(content: &mut &[u8], version: Id3v2Version) -> Result<Option<FrameValue>> {
+fn parse_text(content: &mut &[u8], version: ID3v2Version) -> Result<Option<FrameValue>> {
 	if content.len() < 2 {
 		return Ok(None);
 	}
@@ -191,8 +191,8 @@ fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {
 	}))
 }
 
-fn verify_encoding(encoding: u8, version: Id3v2Version) -> Result<TextEncoding> {
-	if let Id3v2Version::V2 = version {
+fn verify_encoding(encoding: u8, version: ID3v2Version) -> Result<TextEncoding> {
+	if let ID3v2Version::V2 = version {
 		if encoding != 0 && encoding != 1 {
 			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 				"ID3v2.2 only supports Latin-1 and UTF-16 encodings",

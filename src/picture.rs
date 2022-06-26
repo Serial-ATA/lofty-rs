@@ -2,7 +2,7 @@ use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
 use crate::{
 	error::{ID3v2Error, ID3v2ErrorKind},
-	id3::v2::{util::text_utils::TextEncoding, Id3v2Version},
+	id3::v2::{util::text_utils::TextEncoding, ID3v2Version},
 };
 
 use std::borrow::Cow;
@@ -564,7 +564,7 @@ impl Picture {
 	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
 	pub fn as_apic_bytes(
 		&self,
-		version: Id3v2Version,
+		version: ID3v2Version,
 		text_encoding: TextEncoding,
 	) -> Result<Vec<u8>> {
 		use crate::id3::v2::util::text_utils;
@@ -573,11 +573,11 @@ impl Picture {
 
 		let max_size = match version {
 			// ID3v2.2 uses a 24-bit number for sizes
-			Id3v2Version::V2 => 0xFFFF_FF16_u64,
+			ID3v2Version::V2 => 0xFFFF_FF16_u64,
 			_ => u64::from(u32::MAX),
 		};
 
-		if version == Id3v2Version::V2 {
+		if version == ID3v2Version::V2 {
 			// ID3v2.2 PIC is pretty limited with formats
 			let format = match self.mime_type {
 				MimeType::Png => "PNG",
@@ -627,7 +627,7 @@ impl Picture {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn from_apic_bytes(bytes: &[u8], version: Id3v2Version) -> Result<(Self, TextEncoding)> {
+	pub fn from_apic_bytes(bytes: &[u8], version: ID3v2Version) -> Result<(Self, TextEncoding)> {
 		use crate::id3::v2::util::text_utils;
 
 		let mut cursor = Cursor::new(bytes);
@@ -637,7 +637,7 @@ impl Picture {
 			None => return Err(LoftyError::new(ErrorKind::NotAPicture)),
 		};
 
-		let mime_type = if version == Id3v2Version::V2 {
+		let mime_type = if version == ID3v2Version::V2 {
 			let mut format = [0; 3];
 			cursor.read_exact(&mut format)?;
 

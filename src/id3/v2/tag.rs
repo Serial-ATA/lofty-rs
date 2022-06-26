@@ -2,7 +2,7 @@ use super::flags::ID3v2TagFlags;
 use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue};
 use super::util::text_utils::TextEncoding;
-use super::Id3v2Version;
+use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
@@ -93,7 +93,7 @@ macro_rules! impl_accessor {
 /// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
 pub struct Id3v2Tag {
 	flags: ID3v2TagFlags,
-	pub(super) original_version: Id3v2Version,
+	pub(super) original_version: ID3v2Version,
 	frames: Vec<Frame>,
 }
 
@@ -110,7 +110,7 @@ impl Default for Id3v2Tag {
 	fn default() -> Self {
 		Self {
 			flags: ID3v2TagFlags::default(),
-			original_version: Id3v2Version::V4,
+			original_version: ID3v2Version::V4,
 			frames: Vec::new(),
 		}
 	}
@@ -131,7 +131,7 @@ impl Id3v2Tag {
 	///
 	/// This is here, since the tag is upgraded to `ID3v2.4`, but a `v2.2` or `v2.3`
 	/// tag may have been read.
-	pub fn original_version(&self) -> Id3v2Version {
+	pub fn original_version(&self) -> ID3v2Version {
 		self.original_version
 	}
 }
@@ -644,7 +644,7 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 mod tests {
 	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::{
-		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, Id3v2Tag, Id3v2Version,
+		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, ID3v2Version, Id3v2Tag,
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -845,7 +845,7 @@ mod tests {
 	}
 
 	#[allow(clippy::field_reassign_with_default)]
-	fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
+	fn create_full_test_tag(version: ID3v2Version) -> Id3v2Tag {
 		let mut tag = Id3v2Tag::default();
 		tag.original_version = version;
 
@@ -934,7 +934,7 @@ mod tests {
 
 	#[test]
 	fn id3v24_full() {
-		let tag = create_full_test_tag(Id3v2Version::V4);
+		let tag = create_full_test_tag(ID3v2Version::V4);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v24");
 
 		assert_eq!(tag, parsed_tag);
@@ -942,7 +942,7 @@ mod tests {
 
 	#[test]
 	fn id3v23_full() {
-		let tag = create_full_test_tag(Id3v2Version::V3);
+		let tag = create_full_test_tag(ID3v2Version::V3);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
 
 		assert_eq!(tag, parsed_tag);
@@ -950,7 +950,7 @@ mod tests {
 
 	#[test]
 	fn id3v22_full() {
-		let tag = create_full_test_tag(Id3v2Version::V2);
+		let tag = create_full_test_tag(ID3v2Version::V2);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v22");
 
 		assert_eq!(tag, parsed_tag);
@@ -958,7 +958,7 @@ mod tests {
 
 	#[test]
 	fn id3v24_footer() {
-		let mut tag = create_full_test_tag(Id3v2Version::V4);
+		let mut tag = create_full_test_tag(ID3v2Version::V4);
 		tag.flags.footer = true;
 
 		let mut writer = Vec::new();

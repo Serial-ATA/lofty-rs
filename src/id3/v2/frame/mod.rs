@@ -9,7 +9,7 @@ use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::id3::v2::Id3v2Version;
+use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
@@ -207,7 +207,7 @@ impl FrameValue {
 			FrameValue::UserText(content) | FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
 			FrameValue::Picture { encoding, picture } => {
-				picture.as_apic_bytes(Id3v2Version::V4, *encoding)?
+				picture.as_apic_bytes(ID3v2Version::V4, *encoding)?
 			},
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
