@@ -14,7 +14,7 @@ pub(crate) mod write;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
-use crate::id3::v1::tag::Id3v1Tag;
+use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
@@ -40,7 +40,7 @@ pub use properties::ApeProperties;
 pub struct ApeFile {
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
-	pub(crate) id3v1_tag: Option<Id3v1Tag>,
+	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag (Not officially supported)
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
@@ -117,7 +117,7 @@ impl ApeFile {
 		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "id3v1")]
-		id3v1_tag, Id3v1Tag;
+		id3v1_tag, ID3v1Tag;
 
 		#[cfg(feature = "ape")]
 		ape_tag, ApeTag

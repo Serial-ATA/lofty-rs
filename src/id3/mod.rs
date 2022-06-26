@@ -46,7 +46,7 @@ where
 }
 
 #[cfg(feature = "id3v1")]
-pub(crate) type FindID3v1Content = Option<v1::tag::Id3v1Tag>;
+pub(crate) type FindID3v1Content = Option<v1::tag::ID3v1Tag>;
 #[cfg(not(feature = "id3v1"))]
 pub(crate) type FindID3v1Content = Option<()>;
 

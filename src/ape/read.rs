@@ -6,7 +6,7 @@ use super::{ApeFile, ApeProperties};
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v1")]
-use crate::id3::v1::tag::Id3v1Tag;
+use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{read::parse_id3v2, tag::ID3v2Tag};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
@@ -27,7 +27,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 	#[cfg(feature = "id3v1")]
-	let mut id3v1_tag: Option<Id3v1Tag> = None;
+	let mut id3v1_tag: Option<ID3v1Tag> = None;
 	#[cfg(feature = "ape")]
 	let mut ape_tag: Option<ApeTag> = None;
 

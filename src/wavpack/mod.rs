@@ -8,7 +8,7 @@ use crate::ape::tag::ApeTag;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
-use crate::id3::v1::tag::Id3v1Tag;
+use crate::id3::v1::tag::ID3v1Tag;
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
@@ -22,7 +22,7 @@ pub use properties::WavPackProperties;
 pub struct WavPackFile {
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
-	pub(crate) id3v1_tag: Option<Id3v1Tag>,
+	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	#[cfg(feature = "ape")]
 	/// An APEv1/v2 tag
 	pub(crate) ape_tag: Option<ApeTag>,
@@ -86,7 +86,7 @@ impl AudioFile for WavPackFile {
 impl WavPackFile {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "id3v1")]
-		id3v1_tag, Id3v1Tag;
+		id3v1_tag, ID3v1Tag;
 
 		#[cfg(feature = "ape")]
 		ape_tag, ApeTag
