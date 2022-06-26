@@ -66,7 +66,7 @@ pub enum ErrorKind {
 /// The types of errors that can occur while interacting with ID3v2 tags
 pub enum ID3v2ErrorKind {
 	#[cfg(feature = "id3v2")]
-	/// Arises when an invalid picture format is parsed. Only applicable to [`Id3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
+	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::ID3v2Version::V2)
 	BadPictureFormat(String),
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),

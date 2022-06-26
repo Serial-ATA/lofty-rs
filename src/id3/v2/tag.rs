@@ -117,7 +117,7 @@ impl Default for Id3v2Tag {
 }
 
 impl Id3v2Tag {
-	/// Returns the [`Id3v2TagFlags`]
+	/// Returns the [`ID3v2TagFlags`]
 	pub fn flags(&self) -> &ID3v2TagFlags {
 		&self.flags
 	}
