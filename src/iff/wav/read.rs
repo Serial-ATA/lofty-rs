@@ -1,6 +1,6 @@
 use super::properties::WavProperties;
 #[cfg(feature = "riff_info_list")]
-use super::tag::RiffInfoList;
+use super::tag::RIFFInfoList;
 use super::WavFile;
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
@@ -47,7 +47,7 @@ where
 	let mut fmt = Vec::new();
 
 	#[cfg(feature = "riff_info_list")]
-	let mut riff_info = RiffInfoList::default();
+	let mut riff_info = RIFFInfoList::default();
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 

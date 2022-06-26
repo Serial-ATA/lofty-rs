@@ -11,7 +11,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "riff_info_list")]
 		TagType::RIFFInfo => {
-			super::tag::RiffInfoListRef::new(super::tag::tagitems_into_riff(tag.items()))
+			super::tag::RIFFInfoListRef::new(super::tag::tagitems_into_riff(tag.items()))
 				.write_to(data)
 		},
 		#[cfg(feature = "id3v2")]

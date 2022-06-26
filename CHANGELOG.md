@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: `Ilst::track_number` has been moved to the `Accessor::track` implementation
 - **Tag**: Renamed `Tag::get_texts` to `Tag::get_strings`
 - **AIFF**: Renamed `AiffTextChunks` -> `AIFFTextChunks`
+- **WAV**: Renamed `RiffInfoList` -> `RIFFInfoList`
 
 ### Fixed
 - **AIFF**: Fixed division by zero panic during property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/56))

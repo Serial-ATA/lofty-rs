@@ -1,7 +1,7 @@
 use lofty::ape::ApeTag;
 use lofty::id3::v1::ID3v1Tag;
 use lofty::id3::v2::ID3v2Tag;
-use lofty::iff::{AIFFTextChunks, RiffInfoList};
+use lofty::iff::{AIFFTextChunks, RIFFInfoList};
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
 use lofty::{Accessor, TagExt};
@@ -27,7 +27,7 @@ bench_tag_write!(ape, ApeTag);
 bench_tag_write!(id3v2, ID3v2Tag);
 bench_tag_write!(id3v1, ID3v1Tag);
 bench_tag_write!(ilst, Ilst);
-bench_tag_write!(riff_info, RiffInfoList);
+bench_tag_write!(riff_info, RIFFInfoList);
 bench_tag_write!(vorbis_comments, VorbisComments);
 
 fn bench_write(c: &mut Criterion) {

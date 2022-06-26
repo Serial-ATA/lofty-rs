@@ -14,7 +14,7 @@ use std::io::{Read, Seek};
 cfg_if::cfg_if! {
 	if #[cfg(feature = "riff_info_list")] {
 		pub(crate) mod tag;
-		use tag::RiffInfoList;
+		use tag::RIFFInfoList;
 	}
 }
 
@@ -25,7 +25,7 @@ pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 pub struct WavFile {
 	#[cfg(feature = "riff_info_list")]
 	/// A RIFF INFO LIST
-	pub(crate) riff_info: Option<RiffInfoList>,
+	pub(crate) riff_info: Option<RIFFInfoList>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
@@ -94,6 +94,6 @@ impl WavFile {
 		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "riff_info_list")]
-		riff_info, RiffInfoList
+		riff_info, RIFFInfoList
 	}
 }

@@ -16,7 +16,7 @@ use ape::tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
-use iff::wav::tag::RiffInfoListRef;
+use iff::wav::tag::RIFFInfoListRef;
 
 use std::fs::File;
 use std::io::Write;
@@ -72,7 +72,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			.dump_to(writer)
 		},
 		#[cfg(feature = "riff_info_list")]
-		TagType::RIFFInfo => RiffInfoListRef {
+		TagType::RIFFInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
 		.dump_to(writer),

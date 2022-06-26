@@ -17,6 +17,6 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "riff_info_list")] {
-		pub use wav::tag::RiffInfoList;
+		pub use wav::tag::RIFFInfoList;
 	}
 }

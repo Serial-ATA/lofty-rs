@@ -1,4 +1,4 @@
-use super::RiffInfoListRef;
+use super::RIFFInfoListRef;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
@@ -10,7 +10,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::iff::wav) fn write_riff_info<'a, I>(
 	data: &mut File,
-	tag: &mut RiffInfoListRef<'a, I>,
+	tag: &mut RIFFInfoListRef<'a, I>,
 ) -> Result<()>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
