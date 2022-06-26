@@ -14,7 +14,7 @@ use std::io::{Read, Seek};
 cfg_if::cfg_if! {
 	if #[cfg(feature = "aiff_text_chunks")] {
 		pub(crate) mod tag;
-		use tag::AiffTextChunks;
+		use tag::AIFFTextChunks;
 	}
 }
 
@@ -22,7 +22,7 @@ cfg_if::cfg_if! {
 pub struct AiffFile {
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Any text chunks included in the file
-	pub(crate) text_chunks: Option<AiffTextChunks>,
+	pub(crate) text_chunks: Option<AIFFTextChunks>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
@@ -90,6 +90,6 @@ impl AiffFile {
 		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "aiff_text_chunks")]
-		text_chunks, AiffTextChunks
+		text_chunks, AIFFTextChunks
 	}
 }

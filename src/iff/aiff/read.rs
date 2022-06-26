@@ -1,5 +1,5 @@
 #[cfg(feature = "aiff_text_chunks")]
-use super::tag::{AiffTextChunks, Comment};
+use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
@@ -40,7 +40,7 @@ where
 	let mut stream_len = 0;
 
 	#[cfg(feature = "aiff_text_chunks")]
-	let mut text_chunks = AiffTextChunks::default();
+	let mut text_chunks = AIFFTextChunks::default();
 	#[cfg(feature = "aiff_text_chunks")]
 	let mut annotations = Vec::new();
 	#[cfg(feature = "aiff_text_chunks")]
@@ -158,7 +158,7 @@ where
 		properties,
 		#[cfg(feature = "aiff_text_chunks")]
 		text_chunks: match text_chunks {
-			AiffTextChunks {
+			AIFFTextChunks {
 				name: None,
 				author: None,
 				copyright: None,

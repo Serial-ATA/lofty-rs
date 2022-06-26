@@ -60,7 +60,7 @@ pub struct Comment {
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct AiffTextChunks {
+pub struct AIFFTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
 	/// The author of the piece
@@ -79,7 +79,7 @@ pub struct AiffTextChunks {
 	pub comments: Option<Vec<Comment>>,
 }
 
-impl Accessor for AiffTextChunks {
+impl Accessor for AIFFTextChunks {
 	fn artist(&self) -> Option<&str> {
 		self.author.as_deref()
 	}
@@ -121,7 +121,7 @@ impl Accessor for AiffTextChunks {
 	}
 }
 
-impl AiffTextChunks {
+impl AIFFTextChunks {
 	/// Returns the copyright message
 	pub fn copyright(&self) -> Option<&str> {
 		self.copyright.as_deref()
@@ -138,13 +138,13 @@ impl AiffTextChunks {
 	}
 }
 
-impl TagExt for AiffTextChunks {
+impl TagExt for AIFFTextChunks {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
 		matches!(
 			self,
-			AiffTextChunks {
+			AIFFTextChunks {
 				name: None,
 				author: None,
 				copyright: None,
@@ -159,7 +159,7 @@ impl TagExt for AiffTextChunks {
 	/// # Errors
 	///
 	/// * `path` does not exist
-	/// * See [`AiffTextChunks::save_to`]
+	/// * See [`AIFFTextChunks::save_to`]
 	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
 		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
@@ -199,8 +199,8 @@ impl TagExt for AiffTextChunks {
 	}
 }
 
-impl From<AiffTextChunks> for Tag {
-	fn from(input: AiffTextChunks) -> Self {
+impl From<AIFFTextChunks> for Tag {
+	fn from(input: AIFFTextChunks) -> Self {
 		let mut tag = Tag::new(TagType::AIFFText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
@@ -232,7 +232,7 @@ impl From<AiffTextChunks> for Tag {
 	}
 }
 
-impl From<Tag> for AiffTextChunks {
+impl From<Tag> for AIFFTextChunks {
 	fn from(mut input: Tag) -> Self {
 		let name = input.take_strings(&ItemKey::TrackTitle).next();
 		let author = input.take_strings(&ItemKey::TrackArtist).next();
@@ -422,14 +422,14 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::{AiffTextChunks, Comment};
+	use crate::iff::{AIFFTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
 	use std::io::Cursor;
 
 	#[test]
 	fn parse_aiff_text() {
-		let expected_tag = AiffTextChunks {
+		let expected_tag = AIFFTextChunks {
 			name: Some(String::from("Foo title")),
 			author: Some(String::from("Bar artist")),
 			copyright: Some(String::from("Baz copyright")),
@@ -525,7 +525,7 @@ mod tests {
 			ItemValue::Text(String::from("Quux annotation")),
 		));
 
-		let aiff_text: AiffTextChunks = tag.into();
+		let aiff_text: AIFFTextChunks = tag.into();
 
 		assert_eq!(aiff_text.name, Some(String::from("Foo title")));
 		assert_eq!(aiff_text.author, Some(String::from("Bar artist")));

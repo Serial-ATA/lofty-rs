@@ -40,8 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `RiffInfo` -> `RIFFInfo`
   - `AiffText` -> `AIFFText`
 - All types implementing `PartialEq` now implement `Eq`
-- `Ilst::track_number` has been moved to the `Accessor::track` implementation
-- Renamed `Tag::get_texts` to `Tag::get_strings`
+- **MP4**: `Ilst::track_number` has been moved to the `Accessor::track` implementation
+- **Tag**: Renamed `Tag::get_texts` to `Tag::get_strings`
+- **AIFF**: Renamed `AiffTextChunks` -> `AIFFTextChunks`
 
 ### Fixed
 - **AIFF**: Fixed division by zero panic during property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/56))
