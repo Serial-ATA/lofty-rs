@@ -44,7 +44,7 @@ pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
 	#[cfg(feature = "mp4_ilst")]
-	#[tag(tag_type = "Mp4Ilst")]
+	#[tag(tag_type = "MP4ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst_tag: Option<Ilst>,
 	/// The file's audio properties

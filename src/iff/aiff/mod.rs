@@ -24,11 +24,11 @@ cfg_if::cfg_if! {
 pub struct AiffFile {
 	/// Any text chunks included in the file
 	#[cfg(feature = "aiff_text_chunks")]
-	#[tag(tag_type = "AiffText")]
+	#[tag(tag_type = "AIFFText")]
 	pub(crate) text_chunks_tag: Option<AIFFTextChunks>,
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
-	#[tag(tag_type = "Id3v2")]
+	#[tag(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,

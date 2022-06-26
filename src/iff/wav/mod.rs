@@ -27,11 +27,11 @@ pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 pub struct WavFile {
 	/// A RIFF INFO LIST
 	#[cfg(feature = "riff_info_list")]
-	#[tag(tag_type = "RiffInfo")]
+	#[tag(tag_type = "RIFFInfo")]
 	pub(crate) riff_info_tag: Option<RIFFInfoList>,
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
-	#[tag(tag_type = "Id3v2")]
+	#[tag(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: WavProperties,

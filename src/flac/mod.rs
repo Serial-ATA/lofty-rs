@@ -35,7 +35,7 @@ use lofty_attr::LoftyFile;
 pub struct FlacFile {
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
-	#[tag(tag_type = "Id3v2")]
+	#[tag(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The vorbis comments contained in the file
 	///
