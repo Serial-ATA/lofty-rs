@@ -91,13 +91,13 @@ macro_rules! impl_accessor {
 /// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse) respectively, and converted back to binary with
 /// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
 /// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
-pub struct Id3v2Tag {
+pub struct ID3v2Tag {
 	flags: ID3v2TagFlags,
 	pub(super) original_version: ID3v2Version,
 	frames: Vec<Frame>,
 }
 
-impl IntoIterator for Id3v2Tag {
+impl IntoIterator for ID3v2Tag {
 	type Item = Frame;
 	type IntoIter = std::vec::IntoIter<Frame>;
 
@@ -106,7 +106,7 @@ impl IntoIterator for Id3v2Tag {
 	}
 }
 
-impl Default for Id3v2Tag {
+impl Default for ID3v2Tag {
 	fn default() -> Self {
 		Self {
 			flags: ID3v2TagFlags::default(),
@@ -116,7 +116,7 @@ impl Default for Id3v2Tag {
 	}
 }
 
-impl Id3v2Tag {
+impl ID3v2Tag {
 	/// Returns the [`ID3v2TagFlags`]
 	pub fn flags(&self) -> &ID3v2TagFlags {
 		&self.flags
@@ -136,7 +136,7 @@ impl Id3v2Tag {
 	}
 }
 
-impl Id3v2Tag {
+impl ID3v2Tag {
 	/// Returns an iterator over the tag's frames
 	pub fn iter(&self) -> impl Iterator<Item = &Frame> {
 		self.frames.iter()
@@ -276,7 +276,7 @@ impl Id3v2Tag {
 	}
 }
 
-impl Accessor for Id3v2Tag {
+impl Accessor for ID3v2Tag {
 	impl_accessor!(
 		title  => "TIT2";
 		artist => "TPE1";
@@ -412,7 +412,7 @@ impl Accessor for Id3v2Tag {
 	}
 }
 
-impl TagExt for Id3v2Tag {
+impl TagExt for ID3v2Tag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -465,8 +465,8 @@ impl TagExt for Id3v2Tag {
 	}
 }
 
-impl From<Id3v2Tag> for Tag {
-	fn from(input: Id3v2Tag) -> Self {
+impl From<ID3v2Tag> for Tag {
+	fn from(input: ID3v2Tag) -> Self {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
@@ -541,7 +541,7 @@ impl From<Id3v2Tag> for Tag {
 	}
 }
 
-impl From<Tag> for Id3v2Tag {
+impl From<Tag> for ID3v2Tag {
 	fn from(mut input: Tag) -> Self {
 		fn join_items(input: &mut Tag, key: &ItemKey) -> String {
 			let mut iter = input.take_strings(key);
@@ -561,9 +561,9 @@ impl From<Tag> for Id3v2Tag {
 			}
 		}
 
-		let mut id3v2_tag = Id3v2Tag {
+		let mut id3v2_tag = ID3v2Tag {
 			frames: Vec::with_capacity(input.item_count() as usize),
-			..Id3v2Tag::default()
+			..ID3v2Tag::default()
 		};
 
 		let artists = join_items(&mut input, &ItemKey::TrackArtist);
@@ -644,7 +644,7 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 mod tests {
 	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::{
-		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, ID3v2Version, Id3v2Tag,
+		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag, ID3v2Version,
 		LanguageFrame, TextEncoding,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -652,7 +652,7 @@ mod tests {
 		ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
 	};
 
-	fn read_tag(path: &str) -> Id3v2Tag {
+	fn read_tag(path: &str) -> ID3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
@@ -663,7 +663,7 @@ mod tests {
 
 	#[test]
 	fn parse_id3v2() {
-		let mut expected_tag = Id3v2Tag::default();
+		let mut expected_tag = ID3v2Tag::default();
 
 		let encoding = TextEncoding::Latin1;
 		let flags = FrameFlags::default();
@@ -785,7 +785,7 @@ mod tests {
 
 	#[test]
 	fn fail_write_bad_frame() {
-		let mut tag = Id3v2Tag::default();
+		let mut tag = ID3v2Tag::default();
 		tag.insert(Frame {
 			id: FrameID::Valid(String::from("ABCD")),
 			value: FrameValue::URL(String::from("FOO URL")),
@@ -805,7 +805,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v2() {
-		fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
+		fn verify_frame(tag: &ID3v2Tag, id: &str, value: &str) {
 			let frame = tag.get(id);
 
 			assert!(frame.is_some());
@@ -823,7 +823,7 @@ mod tests {
 
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v2);
 
-		let id3v2_tag: Id3v2Tag = tag.into();
+		let id3v2_tag: ID3v2Tag = tag.into();
 
 		verify_frame(&id3v2_tag, "TIT2", "Foo title");
 		verify_frame(&id3v2_tag, "TPE1", "Bar artist");
@@ -845,8 +845,8 @@ mod tests {
 	}
 
 	#[allow(clippy::field_reassign_with_default)]
-	fn create_full_test_tag(version: ID3v2Version) -> Id3v2Tag {
-		let mut tag = Id3v2Tag::default();
+	fn create_full_test_tag(version: ID3v2Version) -> ID3v2Tag {
+		let mut tag = ID3v2Tag::default();
 		tag.original_version = version;
 
 		let encoding = TextEncoding::UTF16;
@@ -1029,7 +1029,7 @@ mod tests {
 	#[test]
 	fn multi_value_frame_to_tag() {
 		use crate::traits::Accessor;
-		let mut tag = Id3v2Tag::default();
+		let mut tag = ID3v2Tag::default();
 
 		tag.set_artist(String::from("foo/bar\0baz"));
 
@@ -1056,7 +1056,7 @@ mod tests {
 			ItemValue::Text(String::from("baz")),
 		));
 
-		let tag: Id3v2Tag = tag.into();
+		let tag: ID3v2Tag = tag.into();
 		assert_eq!(tag.artist(), Some("foo/bar/baz"))
 	}
 

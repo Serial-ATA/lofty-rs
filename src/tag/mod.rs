@@ -84,14 +84,14 @@ macro_rules! impl_accessor {
 /// Converting between formats
 ///
 /// ```rust
-/// use lofty::id3::v2::Id3v2Tag;
+/// use lofty::id3::v2::ID3v2Tag;
 /// use lofty::{Tag, TagType};
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
 ///
 /// let tag = Tag::new(TagType::ID3v2);
-/// let id3v2_tag: Id3v2Tag = tag.into();
+/// let id3v2_tag: ID3v2Tag = tag.into();
 /// ```
 pub struct Tag {
 	tag_type: TagType,

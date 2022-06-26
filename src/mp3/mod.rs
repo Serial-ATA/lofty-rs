@@ -15,7 +15,7 @@ use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1Tag;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
@@ -26,7 +26,7 @@ use std::io::{Read, Seek};
 pub struct Mp3File {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2_tag: Option<Id3v2Tag>,
+	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
 	pub(crate) id3v1_tag: Option<Id3v1Tag>,
@@ -99,7 +99,7 @@ impl AudioFile for Mp3File {
 impl Mp3File {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "id3v2")]
-		id3v2_tag, Id3v2Tag;
+		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "id3v1")]
 		id3v1_tag, Id3v1Tag;

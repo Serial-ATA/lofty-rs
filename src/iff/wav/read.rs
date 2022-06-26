@@ -5,7 +5,7 @@ use super::WavFile;
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -49,7 +49,7 @@ where
 	#[cfg(feature = "riff_info_list")]
 	let mut riff_info = RiffInfoList::default();
 	#[cfg(feature = "id3v2")]
-	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
 	let mut chunks = Chunks::<LittleEndian>::new(file_size);
 

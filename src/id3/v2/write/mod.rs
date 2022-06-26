@@ -239,12 +239,12 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{ID3v2TagFlags, Id3v2Tag};
+	use crate::id3::v2::{ID3v2Tag, ID3v2TagFlags};
 	use crate::{Accessor, TagExt};
 
 	#[test]
 	fn id3v2_write_crc32() {
-		let mut tag = Id3v2Tag::default();
+		let mut tag = ID3v2Tag::default();
 		tag.set_artist(String::from("Foo artist"));
 
 		let flags = ID3v2TagFlags {

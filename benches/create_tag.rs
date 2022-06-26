@@ -1,6 +1,6 @@
 use lofty::ape::ApeTag;
 use lofty::id3::v1::Id3v1Tag;
-use lofty::id3::v2::Id3v2Tag;
+use lofty::id3::v2::ID3v2Tag;
 use lofty::iff::{AiffTextChunks, RiffInfoList};
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
@@ -24,7 +24,7 @@ macro_rules! bench_tag_write {
 
 bench_tag_write!(aiff_text, AiffTextChunks);
 bench_tag_write!(ape, ApeTag);
-bench_tag_write!(id3v2, Id3v2Tag);
+bench_tag_write!(id3v2, ID3v2Tag);
 bench_tag_write!(id3v1, Id3v1Tag);
 bench_tag_write!(ilst, Ilst);
 bench_tag_write!(riff_info, RiffInfoList);

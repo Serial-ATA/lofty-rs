@@ -1,6 +1,6 @@
 // Tests for special case conversions
 
-use lofty::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, LanguageFrame, TextEncoding};
+use lofty::id3::v2::{Frame, FrameFlags, FrameValue, ID3v2Tag, LanguageFrame, TextEncoding};
 use lofty::{ItemKey, Tag, TagType};
 
 #[test]
@@ -9,7 +9,7 @@ fn tag_to_id3v2_lang_frame() {
 	tag.insert_text(ItemKey::Lyrics, String::from("Test lyrics"));
 	tag.insert_text(ItemKey::Comment, String::from("Test comment"));
 
-	let id3: Id3v2Tag = tag.into();
+	let id3: ID3v2Tag = tag.into();
 
 	assert_eq!(
 		id3.get("USLT"),

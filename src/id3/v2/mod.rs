@@ -4,7 +4,7 @@
 //!
 //! See:
 //!
-//! * [`Id3v2Tag`]
+//! * [`ID3v2Tag`]
 //! * [Frame]
 
 mod flags;
@@ -23,7 +23,7 @@ cfg_if::cfg_if! {
 		pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
 		pub(crate) mod tag;
-		pub use tag::Id3v2Tag;
+		pub use tag::ID3v2Tag;
 
 		mod items;
 		pub use items::encoded_text_frame::EncodedTextFrame;
@@ -84,7 +84,7 @@ pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct Id3v2Header {
+pub(crate) struct ID3v2Header {
 	#[cfg(feature = "id3v2")]
 	pub version: ID3v2Version,
 	pub flags: ID3v2TagFlags,
@@ -92,7 +92,7 @@ pub(crate) struct Id3v2Header {
 	pub extended_size: u32,
 }
 
-pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<Id3v2Header>
+pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<ID3v2Header>
 where
 	R: Read,
 {
@@ -182,7 +182,7 @@ where
 		return Err(ID3v2Error::new(ID3v2ErrorKind::Other("Tag has an invalid size")).into());
 	}
 
-	Ok(Id3v2Header {
+	Ok(ID3v2Header {
 		#[cfg(feature = "id3v2")]
 		version,
 		flags: flags_parsed,

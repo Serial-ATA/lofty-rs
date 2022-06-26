@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `ErrorKind::Id3v2` -> `ErrorKind::ID3v2`
     - `Id3v2TagFlags` -> `ID3v2TagFlags`
     - `Id3v2Version` -> `ID3v2Version`
+    - `Id3v2Tag` -> `ID3v2Tag`
 - Properly capitalized the variants of `TagType`
   - `Ape` -> `APE`
   - `Id3v1` -> `ID3v1`
