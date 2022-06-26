@@ -18,7 +18,7 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "id3v2")] {
-		pub use flags::Id3v2TagFlags;
+		pub use flags::ID3v2TagFlags;
 		pub use util::text_utils::TextEncoding;
 		pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
@@ -52,7 +52,7 @@ cfg_if::cfg_if! {
 }
 
 #[cfg(not(feature = "id3v2"))]
-use flags::Id3v2TagFlags;
+use flags::ID3v2TagFlags;
 
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 /// The ID3v2 version
@@ -87,7 +87,7 @@ pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 pub(crate) struct Id3v2Header {
 	#[cfg(feature = "id3v2")]
 	pub version: Id3v2Version,
-	pub flags: Id3v2TagFlags,
+	pub flags: ID3v2TagFlags,
 	pub size: u32,
 	pub extended_size: u32,
 }
@@ -125,7 +125,7 @@ where
 		.into());
 	}
 
-	let mut flags_parsed = Id3v2TagFlags {
+	let mut flags_parsed = ID3v2TagFlags {
 		unsynchronisation: flags & 0x80 == 0x80,
 		experimental: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x20 == 0x20,

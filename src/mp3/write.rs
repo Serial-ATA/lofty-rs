@@ -23,7 +23,7 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 		TagType::ID3v1 => Into::<v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data),
 		#[cfg(feature = "id3v2")]
 		TagType::ID3v2 => v2::tag::Id3v2TagRef {
-			flags: v2::Id3v2TagFlags::default(),
+			flags: v2::ID3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}
 		.write_to(data),

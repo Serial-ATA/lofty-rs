@@ -6,7 +6,7 @@ use crate::{ape, iff, mp3, wavpack};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
+use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
 #[cfg(feature = "mp4_ilst")]
 use crate::mp4::Ilst;
 #[cfg(feature = "vorbis_comments")]
@@ -54,7 +54,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		TagType::ID3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "id3v2")]
 		TagType::ID3v2 => Id3v2TagRef {
-			flags: Id3v2TagFlags::default(),
+			flags: ID3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}
 		.dump_to(writer),

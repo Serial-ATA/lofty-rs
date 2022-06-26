@@ -1,4 +1,4 @@
-use super::flags::Id3v2TagFlags;
+use super::flags::ID3v2TagFlags;
 use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue};
 use super::util::text_utils::TextEncoding;
@@ -92,7 +92,7 @@ macro_rules! impl_accessor {
 /// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
 /// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
 pub struct Id3v2Tag {
-	flags: Id3v2TagFlags,
+	flags: ID3v2TagFlags,
 	pub(super) original_version: Id3v2Version,
 	frames: Vec<Frame>,
 }
@@ -109,7 +109,7 @@ impl IntoIterator for Id3v2Tag {
 impl Default for Id3v2Tag {
 	fn default() -> Self {
 		Self {
-			flags: Id3v2TagFlags::default(),
+			flags: ID3v2TagFlags::default(),
 			original_version: Id3v2Version::V4,
 			frames: Vec::new(),
 		}
@@ -118,12 +118,12 @@ impl Default for Id3v2Tag {
 
 impl Id3v2Tag {
 	/// Returns the [`Id3v2TagFlags`]
-	pub fn flags(&self) -> &Id3v2TagFlags {
+	pub fn flags(&self) -> &ID3v2TagFlags {
 		&self.flags
 	}
 
 	/// Restrict the tag's flags
-	pub fn set_flags(&mut self, flags: Id3v2TagFlags) {
+	pub fn set_flags(&mut self, flags: ID3v2TagFlags) {
 		self.flags = flags
 	}
 
@@ -594,14 +594,14 @@ impl From<Tag> for Id3v2Tag {
 }
 
 pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
-	pub(crate) flags: Id3v2TagFlags,
+	pub(crate) flags: ID3v2TagFlags,
 	pub(crate) frames: I,
 }
 
 impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 	pub(crate) fn empty() -> Self {
 		Self {
-			flags: Id3v2TagFlags::default(),
+			flags: ID3v2TagFlags::default(),
 			frames: std::iter::empty(),
 		}
 	}
