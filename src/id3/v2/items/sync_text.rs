@@ -140,7 +140,7 @@ impl SynchronizedText {
 						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
 					// Encountered text that doesn't include a BOM
-					if bom != [0xFF, 0xFE] || bom != [0xFE, 0xFF] {
+					if bom != [0xFF, 0xFE] && bom != [0xFE, 0xFF] {
 						cursor.seek(SeekFrom::Current(-2))?;
 
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)

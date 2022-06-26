@@ -1059,4 +1059,9 @@ mod tests {
 		let tag: Id3v2Tag = tag.into();
 		assert_eq!(tag.artist(), Some("foo/bar/baz"))
 	}
+
+	#[test]
+	fn utf16_txxx_with_single_bom() {
+		let _ = read_tag("tests/tags/assets/id3v2/issue_53.id3v24");
+	}
 }

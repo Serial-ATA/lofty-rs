@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **AIFF**: Fixed division by zero panic during property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/56))
+- **ID3v2**: Support decoding UTF-16 T/WXXX frames with missing content BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/53))
 
 ## [0.6.3] - 2022-05-18
 

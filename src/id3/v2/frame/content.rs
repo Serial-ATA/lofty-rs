@@ -2,13 +2,15 @@ use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
-use crate::id3::v2::util::text_utils::{decode_text, TextEncoding};
+use crate::id3::v2::items::popularimeter::Popularimeter;
+use crate::id3::v2::util::text_utils::{
+	decode_text, read_to_terminator, utf16_decode, TextEncoding,
+};
 use crate::id3::v2::Id3v2Version;
 use crate::picture::Picture;
 
-use std::io::Read;
+use std::io::{Cursor, Read};
 
-use crate::id3::v2::items::popularimeter::Popularimeter;
 use byteorder::ReadBytesExt;
 
 pub(super) fn parse_content(
@@ -39,7 +41,7 @@ pub(super) fn parse_content(
 
 // There are 2 possibilities for the frame's content: text or link.
 fn parse_user_defined(
-	content: &mut &[u8],
+	mut content: &mut &[u8],
 	link: bool,
 	version: Id3v2Version,
 ) -> Result<Option<FrameValue>> {
@@ -48,6 +50,22 @@ fn parse_user_defined(
 	}
 
 	let encoding = verify_encoding(content.read_u8()?, version)?;
+
+	let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
+	if encoding == TextEncoding::UTF16 {
+		let mut cursor = Cursor::new(content);
+		let mut bom = [0; 2];
+		cursor.read_exact(&mut bom)?;
+
+		match [bom[0], bom[1]] {
+			[0xFF, 0xFE] => endianness = u16::from_le_bytes,
+			[0xFE, 0xFF] => endianness = u16::from_be_bytes,
+			// We'll catch an invalid BOM below
+			_ => {},
+		};
+
+		content = cursor.into_inner();
+	}
 
 	let description = decode_text(content, encoding, true)?.unwrap_or_default();
 
@@ -60,12 +78,28 @@ fn parse_user_defined(
 			content,
 		})
 	} else {
-		let content = decode_text(content, encoding, false)?.unwrap_or_default();
+		let frame_content;
+		// It's possible for the description to be the only string with a BOM
+		if encoding == TextEncoding::UTF16 {
+			if content.len() >= 2 && (content[..2] == [0xFF, 0xFE] || content[..2] == [0xFE, 0xFF])
+			{
+				frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
+			} else {
+				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
+					Some(raw_text) => utf16_decode(&*raw_text, endianness).map_err(|_| {
+						Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
+					})?,
+					None => String::new(),
+				}
+			}
+		} else {
+			frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
+		}
 
 		FrameValue::UserText(EncodedTextFrame {
 			encoding,
 			description,
-			content,
+			content: frame_content,
 		})
 	}))
 }
