@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2022-06-27
+
 ### Added
 - **WavPack** support
 - **Accessor**:
@@ -215,7 +217,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...main
+[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...8b64e615
 [0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
 [0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
 [0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
