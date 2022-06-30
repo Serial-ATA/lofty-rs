@@ -539,4 +539,21 @@ mod tests {
 		);
 		assert!(aiff_text.comments.is_none());
 	}
+
+	#[test]
+	fn zero_sized_text_chunks() {
+		let tag_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");
+
+		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
+			.unwrap()
+			.text_chunks
+			.unwrap();
+
+		assert_eq!(aiff_text.name, Some(String::new()));
+		assert_eq!(aiff_text.author, Some(String::new()));
+		assert_eq!(aiff_text.annotations, Some(vec![String::new()]));
+		assert_eq!(aiff_text.comments, None); // Comments have additional information we need, so we ignore on empty
+		assert_eq!(aiff_text.copyright, Some(String::new()));
+	}
 }

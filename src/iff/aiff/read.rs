@@ -79,6 +79,10 @@ where
 			// so there's no need to replace anything we already read
 			#[cfg(feature = "aiff_text_chunks")]
 			b"COMT" if comments.is_empty() => {
+				if chunks.size < 2 {
+					continue;
+				}
+
 				let num_comments = data.read_u16::<BigEndian>()?;
 
 				for _ in 0..num_comments {
