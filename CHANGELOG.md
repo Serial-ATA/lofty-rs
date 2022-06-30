@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **ID3v2**: `ID3v2Tag` now derives `Eq`
+
 ## [0.7.0] - 2022-06-27
 
 ### Added

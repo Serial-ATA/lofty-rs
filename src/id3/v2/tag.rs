@@ -54,7 +54,7 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 /// An `ID3v2` tag
 ///
 /// ## Supported file types
