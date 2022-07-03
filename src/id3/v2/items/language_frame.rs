@@ -51,8 +51,8 @@ impl LanguageFrame {
 		}
 
 		bytes.extend(self.language.as_bytes().iter());
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
+		bytes.extend(encode_text(&self.description, self.encoding, true).iter());
+		bytes.extend(encode_text(&self.content, self.encoding, false));
 
 		Ok(bytes)
 	}

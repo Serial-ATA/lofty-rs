@@ -145,7 +145,7 @@ impl SynchronizedText {
 
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
-							return utf16_decode(&*raw_text, endianness)
+							return utf16_decode(&raw_text, endianness)
 								.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText).into());
 						}
 
@@ -204,13 +204,13 @@ impl SynchronizedText {
 			data.write_u8(information.content_type as u8)?;
 
 			if let Some(description) = &information.description {
-				data.write_all(&*encode_text(description, information.encoding, true))?;
+				data.write_all(&encode_text(description, information.encoding, true))?;
 			} else {
 				data.write_u8(0)?;
 			}
 
 			for (time, ref text) in &self.content {
-				data.write_all(&*encode_text(text, information.encoding, true))?;
+				data.write_all(&encode_text(text, information.encoding, true))?;
 				data.write_u32::<BigEndian>(*time)?;
 			}
 
@@ -252,7 +252,7 @@ mod tests {
 
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
-		let parsed_sylt = SynchronizedText::parse(&*cont).unwrap();
+		let parsed_sylt = SynchronizedText::parse(&cont).unwrap();
 
 		assert_eq!(parsed_sylt, expected);
 	}

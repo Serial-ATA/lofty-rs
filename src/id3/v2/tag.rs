@@ -634,7 +634,7 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = super::write::create_tag(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}

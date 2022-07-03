@@ -107,7 +107,7 @@ mod tests {
 
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
 
-		let parsed_geob = GeneralEncapsulatedObject::parse(&*cont).unwrap();
+		let parsed_geob = GeneralEncapsulatedObject::parse(&cont).unwrap();
 
 		assert_eq!(parsed_geob, expected);
 	}

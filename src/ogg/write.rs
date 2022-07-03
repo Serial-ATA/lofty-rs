@@ -124,7 +124,7 @@ where
 
 			writer.write_u32::<LittleEndian>(bytes_len as u32)?;
 			writer.write_all(PICTURE_KEY.as_bytes())?;
-			writer.write_all(&*picture)?;
+			writer.write_all(&picture)?;
 		}
 	}
 
@@ -161,7 +161,7 @@ where
 	let ser = first_page.serial;
 
 	let mut writer = Vec::new();
-	writer.write_all(&*first_page.as_bytes()?)?;
+	writer.write_all(&first_page.as_bytes()?)?;
 
 	let first_md_page = Page::read(data, false)?;
 
@@ -207,7 +207,7 @@ where
 
 	data.rewind()?;
 	data.set_len(first_page.end)?;
-	data.write_all(&*writer)?;
+	data.write_all(&writer)?;
 
 	Ok(())
 }
@@ -240,10 +240,10 @@ fn replace_packet(
 	for p in pages.iter_mut() {
 		p.gen_crc()?;
 
-		writer.write_all(&*p.as_bytes()?)?;
+		writer.write_all(&p.as_bytes()?)?;
 	}
 
-	writer.write_all(&*remaining)?;
+	writer.write_all(&remaining)?;
 
 	Ok(())
 }

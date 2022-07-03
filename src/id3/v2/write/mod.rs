@@ -66,7 +66,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 
 	data.rewind()?;
 	data.set_len(0)?;
-	data.write_all(&*file_bytes)?;
+	data.write_all(&file_bytes)?;
 
 	Ok(())
 }

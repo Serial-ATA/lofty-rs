@@ -231,7 +231,7 @@ where
 		let mut temp = Vec::new();
 		write::create_riff_info(&mut self.items, &mut temp)?;
 
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}

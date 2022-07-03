@@ -271,7 +271,7 @@ where
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = Self::create_text_chunks(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}
@@ -414,7 +414,7 @@ where
 
 		data.rewind()?;
 		data.set_len(0)?;
-		data.write_all(&*file_bytes)?;
+		data.write_all(&file_bytes)?;
 
 		Ok(())
 	}

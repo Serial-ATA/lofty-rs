@@ -240,7 +240,7 @@ impl Tag {
 
 	/// Returns the stored [`TagItem`]s as a slice
 	pub fn items(&self) -> &[TagItem] {
-		&*self.items
+		&self.items
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
@@ -411,7 +411,7 @@ impl Tag {
 
 	/// Returns the stored [`Picture`]s as a slice
 	pub fn pictures(&self) -> &[Picture] {
-		&*self.pictures
+		&self.pictures
 	}
 
 	/// Returns the first occurrence of the [`PictureType`]

@@ -600,12 +600,12 @@ impl Picture {
 
 		match &self.description {
 			Some(description) => {
-				data.write_all(&*text_utils::encode_text(description, text_encoding, true))?
+				data.write_all(&text_utils::encode_text(description, text_encoding, true))?
 			},
 			None => data.write_u8(0)?,
 		}
 
-		data.write_all(&*self.data)?;
+		data.write_all(&self.data)?;
 
 		if data.len() as u64 > max_size {
 			return Err(LoftyError::new(ErrorKind::TooMuchData));
@@ -653,7 +653,7 @@ impl Picture {
 			}
 		} else {
 			(text_utils::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
-				.map_or(MimeType::None, |mime_type| MimeType::from_str(&*mime_type))
+				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
 		};
 
 		let pic_type = PictureType::from_u8(cursor.read_u8()?);
@@ -737,7 +737,7 @@ impl Picture {
 		if encoded {
 			let data =
 				base64::decode(bytes).map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
-			Self::from_flac_bytes_inner(&*data)
+			Self::from_flac_bytes_inner(&data)
 		} else {
 			Self::from_flac_bytes_inner(bytes)
 		}

@@ -88,12 +88,12 @@ pub(crate) fn write_to(
 
 	for p in remaining_pages.iter_mut() {
 		p.gen_crc()?;
-		writer.write_all(&*p.as_bytes()?)?;
+		writer.write_all(&p.as_bytes()?)?;
 	}
 
-	build_remaining_header(writer, last_page, &*setup)?;
+	build_remaining_header(writer, last_page, &setup)?;
 
-	writer.write_all(&*remaining)?;
+	writer.write_all(&remaining)?;
 
 	Ok(())
 }
@@ -110,7 +110,7 @@ fn build_remaining_header(
 		last_page.gen_crc()?;
 
 		let p_bytes = last_page.as_bytes()?;
-		writer.write_all(&*p_bytes)?;
+		writer.write_all(&p_bytes)?;
 		return Ok(());
 	}
 
@@ -140,14 +140,14 @@ fn build_remaining_header(
 
 	// Replace segment table and checksum
 	p_bytes.splice(26..27 + seg_count, segment_table);
-	p_bytes.splice(22..26, ogg_pager::crc32(&*p_bytes).to_le_bytes());
+	p_bytes.splice(22..26, ogg_pager::crc32(&p_bytes).to_le_bytes());
 
-	writer.write_all(&*p_bytes)?;
+	writer.write_all(&p_bytes)?;
 
 	if let Some(mut page) = page {
 		page.gen_crc()?;
 
-		writer.write_all(&*page.as_bytes()?)?;
+		writer.write_all(&page.as_bytes()?)?;
 	}
 
 	Ok(())

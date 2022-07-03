@@ -86,7 +86,7 @@ fn parse_user_defined(
 				frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
 			} else {
 				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
-					Some(raw_text) => utf16_decode(&*raw_text, endianness).map_err(|_| {
+					Some(raw_text) => utf16_decode(&raw_text, endianness).map_err(|_| {
 						Into::<LoftyError>::into(ID3v2Error::new(ID3v2ErrorKind::BadSyncText))
 					})?,
 					None => String::new(),

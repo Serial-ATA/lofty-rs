@@ -64,19 +64,19 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 	writer.write_all(&[b'T', b'A', b'G'])?;
 
 	let title = resize_string(tag.title, 30)?;
-	writer.write_all(&*title)?;
+	writer.write_all(&title)?;
 
 	let artist = resize_string(tag.artist, 30)?;
-	writer.write_all(&*artist)?;
+	writer.write_all(&artist)?;
 
 	let album = resize_string(tag.album, 30)?;
-	writer.write_all(&*album)?;
+	writer.write_all(&album)?;
 
 	let year = resize_string(tag.year, 4)?;
-	writer.write_all(&*year)?;
+	writer.write_all(&year)?;
 
 	let comment = resize_string(tag.comment, 28)?;
-	writer.write_all(&*comment)?;
+	writer.write_all(&comment)?;
 
 	writer.write_u8(0)?;
 

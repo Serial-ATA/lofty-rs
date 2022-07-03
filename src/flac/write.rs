@@ -104,7 +104,7 @@ where
 
 	data.seek(SeekFrom::Start(stream_info_end as u64))?;
 	data.set_len(stream_info_end as u64)?;
-	data.write_all(&*file_bytes)?;
+	data.write_all(&file_bytes)?;
 
 	Ok(())
 }

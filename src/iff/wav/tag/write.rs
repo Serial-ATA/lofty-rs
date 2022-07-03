@@ -36,7 +36,7 @@ where
 
 		data.rewind()?;
 		data.set_len(0)?;
-		data.write_all(&*file_bytes)?;
+		data.write_all(&file_bytes)?;
 	} else {
 		data.seek(SeekFrom::End(0))?;
 

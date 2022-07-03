@@ -481,7 +481,7 @@ mod tests {
 		expected_tag.insert(String::from("TRACKNUMBER"), String::from("1"), false);
 
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
-		let parsed_tag = read_tag(&*file_cont);
+		let parsed_tag = read_tag(&file_cont);
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -489,7 +489,7 @@ mod tests {
 	#[test]
 	fn vorbis_comments_re_read() {
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
-		let mut parsed_tag = read_tag(&*file_cont);
+		let mut parsed_tag = read_tag(&file_cont);
 
 		// Create a zero-size vendor for comparison
 		parsed_tag.vendor = String::new();
@@ -497,7 +497,7 @@ mod tests {
 		let mut writer = vec![0, 0, 0, 0];
 		parsed_tag.dump_to(&mut writer).unwrap();
 
-		let temp_parsed_tag = read_tag(&*writer);
+		let temp_parsed_tag = read_tag(&writer);
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}

@@ -331,7 +331,7 @@ impl<'a> Id3v1TagRef<'a> {
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = super::write::encode(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}

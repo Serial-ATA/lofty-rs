@@ -364,7 +364,7 @@ where
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = write::create_ape_tag(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}

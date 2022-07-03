@@ -35,8 +35,8 @@ impl EncodedTextFrame {
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = vec![self.encoding as u8];
 
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
+		bytes.extend(encode_text(&self.description, self.encoding, true).iter());
+		bytes.extend(encode_text(&self.content, self.encoding, false));
 
 		bytes
 	}
