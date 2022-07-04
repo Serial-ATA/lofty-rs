@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Vorbis Comments**: `VorbisComments::{pictures, set_picture, remove_picture}`
+- **Tag**: `Tag::{set_picture, remove_picture}`
+
 ### Changed
 - **ID3v2**: `ID3v2Tag` now derives `Eq`
 

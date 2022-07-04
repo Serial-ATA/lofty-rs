@@ -430,6 +430,73 @@ impl Tag {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|p| p.pic_type != picture_type)
 	}
+
+	/// Replaces the picture at the given `index`
+	///
+	/// NOTE: If `index` is out of bounds, the `picture` will be appended
+	/// to the list.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{Picture, Tag, TagType};
+	/// # use lofty::{PictureType, MimeType};
+	///
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// let mut tag = Tag::new(TagType::ID3v2);
+	///
+	/// // Add a front cover
+	/// tag.push_picture(front_cover);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverFront);
+	///
+	/// // Replace the front cover with a back cover
+	/// tag.set_picture(0, back_cover);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverBack);
+	///
+	/// // Use an out of bounds index
+	/// tag.set_picture(100, another_picture);
+	///
+	/// assert_eq!(tag.pictures().len(), 2);
+	/// ```
+	pub fn set_picture(&mut self, index: usize, picture: Picture) {
+		if index >= self.pictures.len() {
+			self.push_picture(picture);
+		} else {
+			self.pictures[index] = picture;
+		}
+	}
+
+	/// Removes and returns the picture at the given `index`
+	///
+	/// # Panics
+	///
+	/// Panics if `index` is out of bounds.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{Picture, Tag, TagType};
+	/// # use lofty::{PictureType, MimeType};
+	///
+	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// let mut tag = Tag::new(TagType::ID3v2);
+	/// tag.push_picture(picture);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	///
+	/// tag.remove_picture(0);
+	///
+	/// assert_eq!(tag.pictures().len(), 0);
+	/// ```
+	pub fn remove_picture(&mut self, index: usize) -> Picture {
+		self.pictures.remove(index)
+	}
 }
 
 impl TagExt for Tag {

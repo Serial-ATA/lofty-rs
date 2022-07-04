@@ -143,6 +143,99 @@ impl VorbisComments {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|(p, _)| p.pic_type != picture_type)
 	}
+
+	/// Returns the stored [`Picture`]s as a slice
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut tag = VorbisComments::default();
+	///
+	/// assert!(tag.pictures().is_empty());
+	/// ```
+	pub fn pictures(&self) -> &[(Picture, PictureInformation)] {
+		&self.pictures
+	}
+
+	/// Replaces the picture at the given `index`
+	///
+	/// NOTE: If `index` is out of bounds, the `picture` will be appended
+	/// to the list.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// # use lofty::{Picture, PictureInformation, PictureType, MimeType};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover_info = PictureInformation::default();
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let back_cover_info = PictureInformation::default();
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// let mut tag = VorbisComments::default();
+	///
+	/// // Add a front cover
+	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverFront);
+	///
+	/// // Replace the front cover with a back cover
+	/// tag.set_picture(0, back_cover, back_cover_info);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverBack);
+	///
+	/// // Use an out of bounds index
+	/// tag.set_picture(100, another_picture, PictureInformation::default());
+	///
+	/// assert_eq!(tag.pictures().len(), 2);
+	/// # Ok(()) }
+	/// ```
+	#[allow(clippy::missing_panics_doc)]
+	pub fn set_picture(&mut self, index: usize, picture: Picture, info: PictureInformation) {
+		if index >= self.pictures.len() {
+			// Safe to unwrap, since `info` is guaranteed to exist
+			self.insert_picture(picture, Some(info)).unwrap();
+		} else {
+			self.pictures[index] = (picture, info);
+		}
+	}
+
+	/// Removes and returns the picture at the given `index`
+	///
+	/// # Panics
+	///
+	/// Panics if `index` is out of bounds.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover_info = PictureInformation::default();
+	/// let mut tag = VorbisComments::default();
+	///
+	/// // Add a front cover
+	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	///
+	/// tag.remove_picture(0);
+	///
+	/// assert_eq!(tag.pictures().len(), 0);
+	/// # Ok(()) }
+	/// ```
+	pub fn remove_picture(&mut self, index: usize) -> (Picture, PictureInformation) {
+		self.pictures.remove(index)
+	}
 }
 
 impl Accessor for VorbisComments {
