@@ -132,6 +132,10 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// The associated error which can be returned from IO operations
 	type Err;
 
+	// TODO:
+	// type Key;
+	// fn contains(key: Key) -> bool;
+
 	/// Whether the tag has any items
 	///
 	/// # Example
