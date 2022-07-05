@@ -4,8 +4,8 @@
 //!
 //! * See [`FlacFile`]
 
-mod block;
-mod properties;
+pub(crate) mod block;
+pub(crate) mod properties;
 mod read;
 #[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;

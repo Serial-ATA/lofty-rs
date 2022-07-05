@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Vorbis Comments**: `VorbisComments::{pictures, set_picture, remove_picture}`
 - **Tag**: `Tag::{set_picture, remove_picture}`
+- **MP4**: Support property reading for files with FLAC audio
 
 ### Changed
 - **ID3v2**: `ID3v2Tag` now derives `Eq`

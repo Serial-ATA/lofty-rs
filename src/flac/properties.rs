@@ -47,8 +47,9 @@ where
 
 	if sample_rate > 0 && total_samples > 0 {
 		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
-		if length > 0 {
-			properties.duration = Duration::from_millis(length);
+		properties.duration = Duration::from_millis(length);
+
+		if length > 0 && file_length > 0 && stream_length > 0 {
 			properties.overall_bitrate = Some(((file_length * 8) / length) as u32);
 			properties.audio_bitrate = Some(((stream_length * 8) / length) as u32);
 		}

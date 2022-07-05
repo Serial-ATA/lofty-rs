@@ -153,6 +153,17 @@ mod tests {
 		channels: 2,
 	};
 
+	const MP4_FLAC_PROPERTIES: Mp4Properties = Mp4Properties {
+		codec: Mp4Codec::FLAC,
+		extended_audio_object_type: None,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 280, // TODO: FFmpeg reports 279
+		audio_bitrate: 275,
+		sample_rate: 48000,
+		bit_depth: Some(16),
+		channels: 2,
+	};
+
 	const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 		duration: Duration::from_millis(1428),
 		overall_bitrate: 120,
@@ -272,6 +283,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_als.mp4"),
 			MP4_ALS_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mp4_flac_properties() {
+		assert_eq!(
+			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
+			MP4_FLAC_PROPERTIES
 		)
 	}
 
