@@ -167,3 +167,22 @@ where
 		},
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use crate::mp4::{Ilst, Mp4File};
+	use crate::tag::utils::test_utils;
+	use crate::AudioFile;
+	use std::io::Cursor;
+
+	#[test]
+	fn zero_sized_ilst() {
+		let file = Mp4File::read_from(
+			&mut Cursor::new(test_utils::read_path("tests/files/assets/zero/zero.ilst")),
+			false,
+		)
+		.unwrap();
+
+		assert_eq!(file.ilst, Some(Ilst::default()));
+	}
+}

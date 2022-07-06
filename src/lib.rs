@@ -169,6 +169,8 @@
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
+// TODO: Give 1.62.0 some time, and start using #[default] on enums
+
 pub mod ape;
 pub mod error;
 pub(crate) mod file;
