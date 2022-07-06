@@ -26,12 +26,12 @@ use std::path::Path;
 /// When reading from a path, the [`FileType`] will be inferred from the path, rather than the
 /// open file.
 ///
-/// ```rust
+/// ```rust,ignore
 /// # use lofty::{LoftyError, Probe};
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
 ///
-/// let probe = Probe::open("tests/files/assets/minimal/full_test.mp3")?;
+/// let probe = Probe::open("path/to/my.mp3")?;
 ///
 /// // Inferred from the `mp3` extension
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
@@ -41,13 +41,13 @@ use std::path::Path;
 ///
 /// When a path isn't available, or is unreliable, content-based detection is also possible.
 ///
-/// ```rust
+/// ```rust,ignore
 /// # use lofty::{LoftyError, Probe};
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
 ///
 /// // Our same path probe with a guessed file type
-/// let probe = Probe::open("tests/files/assets/minimal/full_test.mp3")?.guess_file_type()?;
+/// let probe = Probe::open("path/to/my.mp3")?.guess_file_type()?;
 ///
 /// // Inferred from the file's content
 /// assert_eq!(probe.file_type(), Some(FileType::MP3));
