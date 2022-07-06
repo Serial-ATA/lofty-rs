@@ -26,7 +26,7 @@ use std::path::Path;
 /// When reading from a path, the [`FileType`] will be inferred from the path, rather than the
 /// open file.
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// # use lofty::{LoftyError, Probe};
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
@@ -41,7 +41,7 @@ use std::path::Path;
 ///
 /// When a path isn't available, or is unreliable, content-based detection is also possible.
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// # use lofty::{LoftyError, Probe};
 /// # fn main() -> Result<(), LoftyError> {
 /// use lofty::FileType;
@@ -79,6 +79,25 @@ pub struct Probe<R: Read> {
 
 impl<R: Read> Probe<R> {
 	/// Create a new `Probe`
+	///
+	/// Before creating a `Probe`, consider wrapping it in a [`BufReader`](std::io::BufReader) for better
+	/// performance.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::Probe;
+	/// use std::fs::File;
+	/// use std::io::BufReader;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let file = File::open(path)?;
+	/// let reader = BufReader::new(file);
+	///
+	/// let probe = Probe::new(reader);
+	/// # Ok(()) }
+	/// ```
 	pub fn new(reader: R) -> Self {
 		Self {
 			inner: reader,
@@ -87,6 +106,27 @@ impl<R: Read> Probe<R> {
 	}
 
 	/// Create a new `Probe` with a specified [`FileType`]
+	///
+	/// Before creating a `Probe`, consider wrapping it in a [`BufReader`](std::io::BufReader) for better
+	/// performance.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	/// use std::fs::File;
+	/// use std::io::BufReader;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let my_mp3_path = "tests/files/assets/minimal/full_test.mp3";
+	/// // We know the file is going to be an MP3,
+	/// // so we can skip the format detection
+	/// let file = File::open(my_mp3_path)?;
+	/// let reader = BufReader::new(file);
+	///
+	/// let probe = Probe::with_file_type(reader, FileType::MP3);
+	/// # Ok(()) }
+	/// ```
 	pub fn with_file_type(reader: R, file_type: FileType) -> Self {
 		Self {
 			inner: reader,
@@ -95,16 +135,58 @@ impl<R: Read> Probe<R> {
 	}
 
 	/// Returns the current [`FileType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let reader = std::io::Cursor::new(&[]);
+	/// let probe = Probe::new(reader);
+	///
+	/// let file_type = probe.file_type();
+	/// # Ok(()) }
+	/// ```
 	pub fn file_type(&self) -> Option<FileType> {
 		self.f_ty
 	}
 
 	/// Set the [`FileType`] with which to read the file
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let reader = std::io::Cursor::new(&[]);
+	/// let mut probe = Probe::new(reader);
+	/// assert_eq!(probe.file_type(), None);
+	///
+	/// probe.set_file_type(FileType::MP3);
+	///
+	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// # Ok(()) }
+	/// ```
 	pub fn set_file_type(&mut self, file_type: FileType) {
 		self.f_ty = Some(file_type)
 	}
 
 	/// Extract the reader
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let reader = std::io::Cursor::new(&[]);
+	/// let probe = Probe::new(reader);
+	///
+	/// let reader = probe.into_inner();
+	/// # Ok(()) }
+	/// ```
 	pub fn into_inner(self) -> R {
 		self.inner
 	}
@@ -119,6 +201,19 @@ impl Probe<BufReader<File>> {
 	/// # Errors
 	///
 	/// * `path` does not exist
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// let probe = Probe::open("path/to/my.mp3")?;
+	///
+	/// // Guessed from the "mp3" extension, see `FileType::from_ext`
+	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// # Ok(()) }
+	/// ```
 	pub fn open<P>(path: P) -> Result<Self>
 	where
 		P: AsRef<Path>,
@@ -142,6 +237,22 @@ impl<R: Read + Seek> Probe<R> {
 	/// All errors that occur within this function are [`std::io::Error`].
 	/// If an error does occur, there is likely an issue with the provided
 	/// reader, and the entire `Probe` should be discarded.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// # let file = std::fs::File::open(path)?;
+	/// # let reader = std::io::BufReader::new(file);
+	/// let probe = Probe::new(reader).guess_file_type()?;
+	///
+	/// // Determined the file is MP3 from the content
+	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// # Ok(()) }
+	/// ```
 	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
 		let f_ty = self.guess_inner()?;
 		self.f_ty = f_ty.or(self.f_ty);
@@ -214,6 +325,21 @@ impl<R: Read + Seek> Probe<R> {
 	///       [`Probe::guess_file_type`] or [`Probe::set_file_type`]. When reading from
 	///       paths, this is not necessary.
 	/// * The reader contains invalid data
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// # let file = std::fs::File::open(path)?;
+	/// # let reader = std::io::BufReader::new(file);
+	/// let probe = Probe::new(reader).guess_file_type()?;
+	///
+	/// let parsed_file = probe.read(true)?;
+	/// # Ok(()) }
+	/// ```
 	pub fn read(mut self, read_properties: bool) -> Result<TaggedFile> {
 		let reader = &mut self.inner;
 
@@ -243,6 +369,20 @@ impl<R: Read + Seek> Probe<R> {
 ///
 /// * [`Probe::guess_file_type`]
 /// * [`Probe::read`]
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::read_from;
+/// use std::fs::File;
+///
+/// # fn main() -> lofty::Result<()> {
+/// # let path = "tests/files/assets/minimal/full_test.mp3";
+/// let mut file = File::open(path)?;
+///
+/// let parsed_file = read_from(&mut file, true)?;
+/// # Ok(()) }
+/// ```
 pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
 	Probe::new(BufReader::new(file))
 		.guess_file_type()?
@@ -259,6 +399,17 @@ pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
 ///
 /// * [`Probe::open`]
 /// * [`Probe::read`]
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::read_from_path;
+///
+/// # fn main() -> lofty::Result<()> {
+/// # let path = "tests/files/assets/minimal/full_test.mp3";
+/// let parsed_file = read_from_path(path, true)?;
+/// # Ok(()) }
+/// ```
 pub fn read_from_path<P>(path: P, read_properties: bool) -> Result<TaggedFile>
 where
 	P: AsRef<Path>,
