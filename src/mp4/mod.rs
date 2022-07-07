@@ -26,7 +26,9 @@ cfg_if::cfg_if! {
 		pub use ilst::atom::{Atom, AtomData, AdvisoryRating};
 		pub use ilst::Ilst;
 
-		/// This module contains the codes for all of the [Well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
+		/// This module contains the codes for all of the [Well-known data types]
+		///
+		/// [Well-known data types]: https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34
 		pub mod constants {
 			pub use super::ilst::constants::*;
 		}
@@ -99,6 +101,20 @@ impl AudioFile for Mp4File {
 
 impl Mp4File {
 	/// Returns the file format from ftyp's "major brand" (Ex. "M4A ")
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::mp4::Mp4File;
+	/// use lofty::AudioFile;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
+	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, false)?;
+	///
+	/// assert_eq!(m4a_file.ftyp(), "M4A ");
+	/// # Ok(()) }
+	/// ```
 	pub fn ftyp(&self) -> &str {
 		self.ftyp.as_ref()
 	}
