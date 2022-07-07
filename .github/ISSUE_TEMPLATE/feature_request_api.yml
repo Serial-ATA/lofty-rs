@@ -1,0 +1,22 @@
+name: "[API] Feature request"
+description: Suggest how Lofty could better suit your use case
+labels: ["enhancement"]
+
+body:
+  - type: textarea
+    attributes:
+      label: Summary
+      description: A clear and concise description of what the feature is
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: API design
+      description: An example of the API that would best suit your use case
+      placeholder: |
+        ```rust
+        impl Tag {
+          pub fn my_new_method(&self) -> ty;
+          pub fn my_other_new_method(&mut self) -> ty;
+        }
+        ```
