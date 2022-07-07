@@ -57,17 +57,3 @@ impl AudioFile for OpusFile {
 		tag_type == TagType::VorbisComments
 	}
 }
-
-impl OpusFile {
-	#[cfg(feature = "vorbis_comments")]
-	/// Returns a reference to the Vorbis comments tag
-	pub fn vorbis_comments(&self) -> &VorbisComments {
-		&self.vorbis_comments_tag
-	}
-
-	#[cfg(feature = "vorbis_comments")]
-	/// Returns a mutable reference to the Vorbis comments tag
-	pub fn vorbis_comments_mut(&mut self) -> &mut VorbisComments {
-		&mut self.vorbis_comments_tag
-	}
-}

@@ -45,13 +45,3 @@ pub struct FlacFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
 }
-
-impl FlacFile {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "vorbis_comments")]
-		vorbis_comments_tag, VorbisComments;
-
-		#[cfg(feature = "id3v2")]
-		id3v2_tag, ID3v2Tag
-	}
-}

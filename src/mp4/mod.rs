@@ -69,10 +69,3 @@ impl Mp4File {
 		self.ftyp.as_ref()
 	}
 }
-
-impl Mp4File {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "mp4_ilst")]
-		ilst_tag, Ilst
-	}
-}

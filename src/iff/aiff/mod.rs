@@ -32,13 +32,3 @@ pub struct AiffFile {
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
 }
-
-impl AiffFile {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "id3v2")]
-		id3v2_tag, ID3v2Tag;
-
-		#[cfg(feature = "aiff_text_chunks")]
-		text_chunks_tag, AIFFTextChunks
-	}
-}

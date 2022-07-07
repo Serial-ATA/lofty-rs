@@ -38,16 +38,3 @@ pub struct Mp3File {
 	/// The file's audio properties
 	pub(crate) properties: Mp3Properties,
 }
-
-impl Mp3File {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "id3v2")]
-		id3v2_tag, ID3v2Tag;
-
-		#[cfg(feature = "id3v1")]
-		id3v1_tag, ID3v1Tag;
-
-		#[cfg(feature = "ape")]
-		ape_tag, ApeTag
-	}
-}

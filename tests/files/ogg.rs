@@ -130,10 +130,10 @@ fn flac_with_id3v2() {
 	let file = std::fs::read("tests/files/assets/flac_with_id3v2.flac").unwrap();
 	let flac_file = FlacFile::read_from(&mut std::io::Cursor::new(file), true).unwrap();
 
-	assert!(flac_file.id3v2_tag().is_some());
-	assert_eq!(flac_file.id3v2_tag().unwrap().artist(), Some("Foo artist"));
+	assert!(flac_file.id3v2().is_some());
+	assert_eq!(flac_file.id3v2().unwrap().artist(), Some("Foo artist"));
 
-	assert!(flac_file.vorbis_comments_tag().is_some());
+	assert!(flac_file.vorbis_comments().is_some());
 }
 
 #[test]

@@ -34,13 +34,3 @@ pub struct WavFile {
 	/// The file's audio properties
 	pub(crate) properties: WavProperties,
 }
-
-impl WavFile {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "id3v2")]
-		id3v2_tag, ID3v2Tag;
-
-		#[cfg(feature = "riff_info_list")]
-		riff_info_tag, RIFFInfoList
-	}
-}

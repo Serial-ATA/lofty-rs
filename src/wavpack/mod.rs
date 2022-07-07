@@ -30,13 +30,3 @@ pub struct WavPackFile {
 	/// The file's audio properties
 	pub(crate) properties: WavPackProperties,
 }
-
-impl WavPackFile {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "id3v1")]
-		id3v1_tag, ID3v1Tag;
-
-		#[cfg(feature = "ape")]
-		ape_tag, ApeTag
-	}
-}
