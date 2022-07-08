@@ -71,10 +71,10 @@ fn parse(input: DeriveInput) -> TokenStream {
 	};
 
 	let assert_tag_impl_into = tag_fields.iter().enumerate().map(|(i, f)| {
-		let name = format_ident!("_AssertIntoTag{}", i);
+		let name = format_ident!("_AssertTagExt{}", i);
 		let field_ty = &f.ty;
 		quote_spanned! {field_ty.span()=>
-			struct #name where #field_ty: std::convert::Into<lofty::Tag>;
+			struct #name where #field_ty: lofty::TagExt;
 		}
 	});
 
