@@ -2,7 +2,7 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::__private::TokenStream2;
 use syn::spanned::Spanned;
 use syn::{
@@ -64,14 +64,19 @@ fn parse(input: DeriveInput) -> TokenStream {
 	} else {
 		return err(&input, "Struct has no properties field");
 	};
-	let properties_field_ty = properties_field.ty.clone();
 
+	let properties_field_ty = &properties_field.ty;
 	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
 		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<lofty::FileProperties>;
 	};
 
-	let getters = get_getters(&tag_fields, &struct_name);
-	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
+	let assert_tag_impl_into = tag_fields.iter().enumerate().map(|(i, f)| {
+		let name = format_ident!("_AssertIntoTag{}", i);
+		let field_ty = &f.ty;
+		quote_spanned! {field_ty.span()=>
+			struct #name where #field_ty: std::convert::Into<lofty::Tag>;
+		}
+	});
 
 	let tag_exists = tag_fields.iter().map(|f| {
 		let name = &f.name;
@@ -82,6 +87,8 @@ fn parse(input: DeriveInput) -> TokenStream {
 		}
 	});
 	let tag_exists_2 = tag_exists.clone();
+
+	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
 
 	let audiofile_impl = if impl_audiofile {
 		quote! {
@@ -126,8 +133,12 @@ fn parse(input: DeriveInput) -> TokenStream {
 		}
 	});
 
+	let getters = get_getters(&tag_fields, &struct_name);
+
 	let ret = quote! {
 		#assert_properties_impl
+
+		#( #assert_tag_impl_into )*
 
 		#audiofile_impl
 
