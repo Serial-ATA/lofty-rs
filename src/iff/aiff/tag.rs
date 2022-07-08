@@ -547,10 +547,9 @@ mod tests {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");
 
-		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
-			.unwrap()
-			.text_chunks
-			.unwrap();
+		let aiff_file = super::super::read::read_from(&mut Cursor::new(tag_bytes), false).unwrap();
+
+		let aiff_text = aiff_file.text_chunks().unwrap();
 
 		assert_eq!(aiff_text.name, Some(String::new()));
 		assert_eq!(aiff_text.author, Some(String::new()));
