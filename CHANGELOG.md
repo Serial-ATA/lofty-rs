@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2022-07-08
+
 ### Added
 - **Vorbis Comments**: `VorbisComments::{pictures, set_picture, remove_picture}`
 - **Tag**: `Tag::{set_picture, remove_picture}`
@@ -225,7 +227,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/fba1de83...main
+[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...fba1de83
 [0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...8b64e615
 [0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
 [0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
