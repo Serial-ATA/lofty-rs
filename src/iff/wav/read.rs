@@ -51,7 +51,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(file_size);
+	let mut chunks = Chunks::<LittleEndian>::new(u64::from(file_size));
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {

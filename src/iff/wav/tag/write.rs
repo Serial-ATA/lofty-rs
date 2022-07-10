@@ -57,7 +57,7 @@ where
 {
 	let mut info = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(file_size);
+	let mut chunks = Chunks::<LittleEndian>::new(u64::from(file_size));
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"LIST" {

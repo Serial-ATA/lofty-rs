@@ -357,13 +357,14 @@ where
 	}
 
 	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()> {
-		let file_size = super::read::verify_aiff(data)?;
+		super::read::verify_aiff(data)?;
+		let file_len = data.metadata()?.len();
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
 		let mut chunks_remove = Vec::new();
 
-		let mut chunks = Chunks::<BigEndian>::new(file_size);
+		let mut chunks = Chunks::<BigEndian>::new(file_len);
 
 		while chunks.next(data).is_ok() {
 			match &chunks.fourcc {

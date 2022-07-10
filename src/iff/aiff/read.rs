@@ -8,13 +8,13 @@ use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::properties::FileProperties;
 
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::BigEndian;
 #[cfg(feature = "aiff_text_chunks")]
 use byteorder::ReadBytesExt;
 
-pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<u32>
+pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -25,16 +25,21 @@ where
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
-	Ok(u32::from_be_bytes(
-		id[4..8].try_into().unwrap(), // Infallible
-	))
+	Ok(())
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
-	let file_size = verify_aiff(data)?;
+	// TODO: Maybe one day the `Seek` bound can be removed?
+	// let file_size = verify_aiff(data)?;
+	verify_aiff(data)?;
+
+	let current_pos = data.stream_position()?;
+	let file_len = data.seek(SeekFrom::End(0))?;
+
+	data.seek(SeekFrom::Start(current_pos))?;
 
 	let mut comm = None;
 	let mut stream_len = 0;
@@ -49,7 +54,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
-	let mut chunks = Chunks::<BigEndian>::new(file_size);
+	let mut chunks = Chunks::<BigEndian>::new(file_len);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {

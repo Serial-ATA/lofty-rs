@@ -277,7 +277,7 @@ mod tests {
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -293,7 +293,7 @@ mod tests {
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -307,7 +307,7 @@ mod tests {
 		// Remove the LIST....INFO from the tag
 		super::read::parse_riff_info(
 			&mut Cursor::new(&writer[12..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 13) as u64,
 			&mut temp_parsed_tag,
 		)
@@ -325,7 +325,7 @@ mod tests {
 
 		super::read::parse_riff_info(
 			&mut reader,
-			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u64),
 			(tag_bytes.len() - 1) as u64,
 			&mut riff_info,
 		)

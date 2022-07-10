@@ -16,7 +16,7 @@ where
 
 	let mut id3v2_chunk = (None, None);
 
-	let mut chunks = Chunks::<B>::new(file_size);
+	let mut chunks = Chunks::<B>::new(u64::from(file_size)); // TODO
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"ID3 " || &chunks.fourcc == b"id3 " {
