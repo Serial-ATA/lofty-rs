@@ -16,7 +16,7 @@ where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
 	verify_wav(data)?;
-	let file_len = data.metadata()?.len();
+	let file_len = data.metadata()?.len().saturating_sub(12);
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;

@@ -358,7 +358,7 @@ where
 
 	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()> {
 		super::read::verify_aiff(data)?;
-		let file_len = data.metadata()?.len();
+		let file_len = data.metadata()?.len().saturating_sub(12);
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
