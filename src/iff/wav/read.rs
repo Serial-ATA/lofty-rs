@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<u32>
+pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
 {
@@ -31,16 +31,19 @@ where
 		);
 	}
 
-	Ok(u32::from_le_bytes(
-		id[4..8].try_into().unwrap(), // Infallible
-	))
+	Ok(())
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
-	let file_size = verify_wav(data)?;
+	verify_wav(data)?;
+
+	let current_pos = data.stream_position()?;
+	let file_len = data.seek(SeekFrom::End(0))?;
+
+	data.seek(SeekFrom::Start(current_pos))?;
 
 	let mut stream_len = 0_u32;
 	let mut total_samples = 0_u32;
@@ -51,7 +54,7 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(u64::from(file_size));
+	let mut chunks = Chunks::<LittleEndian>::new(file_len);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {

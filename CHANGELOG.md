@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 **AIFF**: Stop relying on the file-provided size when reading (Fixes OOM)
+**WAV**: Same as above
 
 ## [0.7.1] - 2022-07-08
 

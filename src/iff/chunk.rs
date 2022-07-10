@@ -100,10 +100,9 @@ impl<B: ByteOrder> Chunks<B> {
 		use crate::id3::v2::read::parse_id3v2;
 		use crate::id3::v2::read_id3v2_header;
 
-		let mut value = try_vec![0; self.size as usize];
-		data.read_exact(&mut value)?;
+		let content = self.content(data)?;
 
-		let reader = &mut &*value;
+		let reader = &mut &*content;
 
 		let header = read_id3v2_header(reader)?;
 		let id3v2 = parse_id3v2(reader, header)?;

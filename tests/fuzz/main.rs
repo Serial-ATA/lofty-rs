@@ -29,9 +29,11 @@ pub fn oom_test<A: AudioFile>(path: &'static str) {
 		<A as AudioFile>::read_from(&mut get_reader(path), true).unwrap();
 	});
 
-	while instant.elapsed().as_secs() < 2 {}
-
-	if !thread.is_finished() {
-		panic!("Failed to run test");
+	while instant.elapsed().as_secs() < 3 {
+		if thread.is_finished() {
+			return;
+		}
 	}
+
+	panic!("Failed to run test");
 }

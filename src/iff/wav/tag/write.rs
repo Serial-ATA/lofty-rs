@@ -15,12 +15,13 @@ pub(in crate::iff::wav) fn write_riff_info<'a, I>(
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
-	let file_size = verify_wav(data)?;
+	verify_wav(data)?;
+	let file_len = data.metadata()?.len();
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 
-	if let Some(info_list_size) = find_info_list(data, file_size)? {
+	if let Some(info_list_size) = find_info_list(data, file_len)? {
 		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
 		let info_list_end = info_list_start + 8 + info_list_size as usize;
 
@@ -51,13 +52,13 @@ where
 	Ok(())
 }
 
-fn find_info_list<R>(data: &mut R, file_size: u32) -> Result<Option<u32>>
+fn find_info_list<R>(data: &mut R, file_size: u64) -> Result<Option<u32>>
 where
 	R: Read + Seek,
 {
 	let mut info = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(u64::from(file_size));
+	let mut chunks = Chunks::<LittleEndian>::new(file_size);
 
 	while chunks.next(data).is_ok() {
 		if &chunks.fourcc == b"LIST" {
