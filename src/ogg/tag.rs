@@ -549,8 +549,6 @@ mod tests {
 	use crate::ogg::VorbisComments;
 	use crate::{Tag, TagExt, TagType};
 
-	use std::io::Read;
-
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
 		let mut parsed_tag = VorbisComments::default();
@@ -597,11 +595,7 @@ mod tests {
 
 	#[test]
 	fn vorbis_comments_to_tag() {
-		let mut tag_bytes = Vec::new();
-		std::fs::File::open("tests/tags/assets/test.vorbis")
-			.unwrap()
-			.read_to_end(&mut tag_bytes)
-			.unwrap();
+		let tag_bytes = std::fs::read("tests/tags/assets/test.vorbis").unwrap();
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 		let mut vorbis_comments = VorbisComments::default();
@@ -625,5 +619,15 @@ mod tests {
 		assert_eq!(vorbis_comments.get("COMMENT"), Some("Qux comment"));
 		assert_eq!(vorbis_comments.get("TRACKNUMBER"), Some("1"));
 		assert_eq!(vorbis_comments.get("GENRE"), Some("Classical"));
+	}
+
+	#[test]
+	fn zero_sized_vorbis_comments() {
+		let tag_bytes = std::fs::read("tests/tags/assets/zero.vorbis").unwrap();
+
+		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
+		let mut vorbis_comments = VorbisComments::default();
+
+		crate::ogg::read::read_comments(&mut reader, &mut vorbis_comments).unwrap();
 	}
 }
