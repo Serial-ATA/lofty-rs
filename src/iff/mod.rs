@@ -10,13 +10,13 @@ pub use wav::{WavFile, WavFormat, WavProperties};
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "aiff_text_chunks")] {
-		pub use aiff::tag::AiffTextChunks;
+		pub use aiff::tag::AIFFTextChunks;
 		pub use aiff::tag::Comment;
 	}
 }
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "riff_info_list")] {
-		pub use wav::tag::RiffInfoList;
+		pub use wav::tag::RIFFInfoList;
 	}
 }

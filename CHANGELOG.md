@@ -6,6 +6,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+**AIFF**: Stop relying on the file-provided size when reading (Fixes OOM)
+**WAV**: Same as above
+
+## [0.7.1] - 2022-07-08
+
+### Added
+- **Vorbis Comments**: `VorbisComments::{pictures, set_picture, remove_picture}`
+- **Tag**: `Tag::{set_picture, remove_picture}`
+- **MP4**: Support property reading for files with FLAC audio
+
+### Changed
+- **ID3v2**: `ID3v2Tag` now derives `Eq`
+
+## [0.7.0] - 2022-06-27
+
+### Added
+- **WavPack** support
+- **Accessor**:
+  - The following new accessor methods have been added:
+    - `track`
+    - `track_total`
+    - `disk`
+    - `disk_total`
+    - `year`
+    - `comment`
+
+### Changed
+- Bitrates in properties will be rounded up, similar to FFmpeg and TagLib
+- **ID3v1**: Renamed `Id3v1Tag` -> `ID3v1Tag`
+- **ID3v2**:
+  - Insert multi-value frames separately when converting to `Tag`
+    - E.g. An artist of "foo/bar/baz" will become 3 different `TagItem`s with `ItemKey::TrackArtist`
+  - Join multiple artists with "/" during `Tag` -> `Id3v2Tag` conversion
+    - Inverse of the previous entry
+  - Properly capitalized the following:
+    - `Id3v2Error` -> `ID3v2Error`
+    - `Id3v2ErrorKind` -> `ID3v2ErrorKind`
+    - `ErrorKind::Id3v2` -> `ErrorKind::ID3v2`
+    - `Id3v2TagFlags` -> `ID3v2TagFlags`
+    - `Id3v2Version` -> `ID3v2Version`
+    - `Id3v2Tag` -> `ID3v2Tag`
+- Properly capitalized the variants of `TagType`
+  - `Ape` -> `APE`
+  - `Id3v1` -> `ID3v1`
+  - `Id3v2` -> `ID3v2`
+  - `Mp4Ilst` -> `MP4ilst`
+  - `RiffInfo` -> `RIFFInfo`
+  - `AiffText` -> `AIFFText`
+- All types implementing `PartialEq` now implement `Eq`
+- **MP4**: `Ilst::track_number` has been moved to the `Accessor::track` implementation
+- **Tag**: Renamed `Tag::get_texts` to `Tag::get_strings`
+- **AIFF**: Renamed `AiffTextChunks` -> `AIFFTextChunks`
+- **WAV**: Renamed `RiffInfoList` -> `RIFFInfoList`
+
+### Fixed
+- **AIFF**: Fixed division by zero panic during property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/56))
+- **ID3v2**: Support decoding UTF-16 T/WXXX frames with missing content BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/53))
+
+## [0.6.3] - 2022-05-18
+
 ### Added
 - **MP4**:
   - Support atoms with multiple values ([issue](https://github.com/Serial-ATA/lofty-rs/issues/48))
@@ -170,7 +231,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...main
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/fba1de83...main
+[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...fba1de83
+[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...8b64e615
+[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
 [0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
 [0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
 [0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c

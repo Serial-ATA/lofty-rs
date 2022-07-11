@@ -119,6 +119,21 @@ impl Atom {
 		}
 	}
 
+	// Used internally, has no correctness checks
+	pub(crate) fn unknown_implicit(ident: AtomIdent, data: Vec<u8>) -> Self {
+		Self {
+			ident,
+			data: AtomDataStorage::Single(AtomData::Unknown { code: 0, data }),
+		}
+	}
+
+	pub(crate) fn text(ident: AtomIdent, data: String) -> Self {
+		Self {
+			ident,
+			data: AtomDataStorage::Single(AtomData::UTF8(data)),
+		}
+	}
+
 	// TODO: push_data
 }
 
@@ -132,7 +147,7 @@ impl Debug for Atom {
 }
 
 // TODO: Bool variant for the various flag atoms?
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// The data of an atom
 ///
 /// NOTES:
@@ -180,7 +195,7 @@ pub enum AtomData {
 	},
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// The parental advisory rating
 pub enum AdvisoryRating {
 	/// A rating of 0

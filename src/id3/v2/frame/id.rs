@@ -1,9 +1,9 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::ItemKey;
 use crate::tag::TagType;
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// An `ID3v2` frame ID
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub enum FrameID {
 	/// A valid `ID3v2.3/4` frame
 	Valid(String),
@@ -28,7 +28,7 @@ impl FrameID {
 		match id.len() {
 			3 => Ok(FrameID::Outdated(id.to_string())),
 			4 => Ok(FrameID::Valid(id.to_string())),
-			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			_ => Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 		}
 	}
 
@@ -42,7 +42,7 @@ impl FrameID {
 	pub(crate) fn verify_id(id_str: &str) -> Result<()> {
 		for c in id_str.chars() {
 			if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
+				return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into());
 			}
 		}
 
@@ -63,8 +63,8 @@ impl TryFrom<ItemKey> for FrameID {
 			{
 				Ok(Self::Valid(unknown))
 			},
-			k => k.map_key(TagType::Id3v2, false).map_or(
-				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			k => k.map_key(TagType::ID3v2, false).map_or(
+				Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 				|id| Ok(Self::Valid(id.to_string())),
 			),
 		}

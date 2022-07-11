@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
 /// Various *immutable* audio properties
 pub struct FileProperties {
@@ -67,13 +67,15 @@ mod tests {
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
+	use crate::wavpack::{WavPackFile, WavPackProperties};
 	use crate::{AudioFile, FileProperties};
 
 	use std::fs::File;
 	use std::time::Duration;
 
 	// These values are taken from FFmpeg's ffprobe
-	// They may be *slightly* different due to how ffprobe rounds
+	// There is a chance they will be +/- 1, anything greater (for real world files)
+	// is an issue.
 
 	const AIFF_PROPERTIES: FileProperties = FileProperties {
 		duration: Duration::from_millis(1428),
@@ -87,8 +89,8 @@ mod tests {
 	const APE_PROPERTIES: ApeProperties = ApeProperties {
 		version: 3990,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 360,
-		audio_bitrate: 360,
+		overall_bitrate: 361,
+		audio_bitrate: 361,
 		sample_rate: 48000,
 		bit_depth: 16,
 		channels: 2,
@@ -151,6 +153,17 @@ mod tests {
 		channels: 2,
 	};
 
+	const MP4_FLAC_PROPERTIES: Mp4Properties = Mp4Properties {
+		codec: Mp4Codec::FLAC,
+		extended_audio_object_type: None,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 280, // TODO: FFmpeg reports 279
+		audio_bitrate: 275,
+		sample_rate: 48000,
+		bit_depth: Some(16),
+		channels: 2,
+	};
+
 	const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 		duration: Duration::from_millis(1428),
 		overall_bitrate: 120,
@@ -192,6 +205,17 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: 16,
 		channels: 2,
+	};
+
+	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
+		version: 1040,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 599,
+		audio_bitrate: 598,
+		sample_rate: 48000,
+		channels: 2,
+		bit_depth: 16,
+		lossless: true,
 	};
 
 	fn get_properties<T>(path: &str) -> T::Properties
@@ -263,6 +287,14 @@ mod tests {
 	}
 
 	#[test]
+	fn mp4_flac_properties() {
+		assert_eq!(
+			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
+			MP4_FLAC_PROPERTIES
+		)
+	}
+
+	#[test]
 	fn opus_properties() {
 		assert_eq!(
 			get_properties::<OpusFile>("tests/files/assets/minimal/full_test.opus"),
@@ -291,6 +323,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<WavFile>("tests/files/assets/minimal/wav_format_pcm.wav"),
 			WAV_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn wavpack_properties() {
+		assert_eq!(
+			get_properties::<WavPackFile>("tests/files/assets/minimal/full_test.wv"),
+			WAVPACK_PROPERTIES
 		)
 	}
 }

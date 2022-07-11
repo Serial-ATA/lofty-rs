@@ -15,25 +15,23 @@ use std::path::Path;
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
 		paste::paste! {
-			impl Accessor for Tag {
-				$(
-					fn $name(&self) -> Option<&str> {
-						if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
-							return Some(&*txt)
-						}
-
-						None
+			$(
+				fn $name(&self) -> Option<&str> {
+					if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
+						return Some(&*txt)
 					}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
-					}
+					None
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.retain_items(|i| i.item_key != ItemKey::$item_key)
-					}
-				)+
-			}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.retain_items(|i| i.item_key != ItemKey::$item_key)
+				}
+			)+
 		}
 	}
 }
@@ -59,7 +57,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{Accessor, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::Id3v2);
+/// let tag = Tag::new(TagType::ID3v2);
 ///
 /// // There are multiple quick getter methods for common items
 ///
@@ -74,7 +72,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{ItemKey, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::Id3v2);
+/// let tag = Tag::new(TagType::ID3v2);
 ///
 /// // If the type of an item is known, there are getter methods
 /// // to prevent having to match against the value
@@ -86,14 +84,14 @@ macro_rules! impl_accessor {
 /// Converting between formats
 ///
 /// ```rust
-/// use lofty::id3::v2::Id3v2Tag;
+/// use lofty::id3::v2::ID3v2Tag;
 /// use lofty::{Tag, TagType};
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
 ///
-/// let tag = Tag::new(TagType::Id3v2);
-/// let id3v2_tag: Id3v2Tag = tag.into();
+/// let tag = Tag::new(TagType::ID3v2);
+/// let id3v2_tag: ID3v2Tag = tag.into();
 /// ```
 pub struct Tag {
 	tag_type: TagType,
@@ -110,12 +108,104 @@ impl IntoIterator for Tag {
 	}
 }
 
-impl_accessor!(
-	TrackArtist => artist,
-	TrackTitle => title,
-	AlbumTitle => album,
-	Genre => genre
-);
+impl Accessor for Tag {
+	impl_accessor!(
+		TrackArtist => artist,
+		TrackTitle  => title,
+		AlbumTitle  => album,
+		Genre       => genre,
+		Comment     => comment
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::TrackNumber) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert_text(ItemKey::TrackNumber, value.to_string());
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_key(&ItemKey::TrackNumber);
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::TrackTotal) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert_text(ItemKey::TrackTotal, value.to_string());
+	}
+
+	fn remove_track_total(&mut self) {
+		self.remove_key(&ItemKey::TrackTotal);
+	}
+
+	fn disk(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::DiscNumber) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert_text(ItemKey::DiscNumber, value.to_string());
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_key(&ItemKey::DiscNumber);
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		if let Some(i) = self.get_string(&ItemKey::DiscTotal) {
+			return i.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		self.insert_text(ItemKey::DiscTotal, value.to_string());
+	}
+
+	fn remove_disk_total(&mut self) {
+		self.remove_key(&ItemKey::DiscTotal);
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get_string(&ItemKey::Year)
+			.map_or_else(|| self.get_string(&ItemKey::RecordingDate), Some)
+		{
+			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		if let Some(item) = self.get_string(&ItemKey::RecordingDate) {
+			if item.len() >= 4 {
+				let (_, remaining) = item.split_at(4);
+				self.insert_text(ItemKey::RecordingDate, format!("{}{}", value, remaining));
+			}
+		}
+	}
+
+	fn remove_year(&mut self) {
+		self.remove_key(&ItemKey::Year);
+		self.remove_key(&ItemKey::RecordingDate);
+	}
+}
 
 impl Tag {
 	/// Initialize a new tag with a certain [`TagType`]
@@ -150,7 +240,7 @@ impl Tag {
 
 	/// Returns the stored [`TagItem`]s as a slice
 	pub fn items(&self) -> &[TagItem] {
-		&*self.items
+		&self.items
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
@@ -173,8 +263,9 @@ impl Tag {
 	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
 		if let Some(item) = self.get_item_ref(item_key) {
 			match item.value() {
-				ItemValue::Text(text) if convert => return Some(text.as_bytes()),
-				ItemValue::Locator(locator) => return Some(locator.as_bytes()),
+				ItemValue::Text(text) | ItemValue::Locator(text) if convert => {
+					return Some(text.as_bytes())
+				},
 				ItemValue::Binary(binary) => return Some(binary),
 				_ => {},
 			}
@@ -269,7 +360,7 @@ impl Tag {
 	}
 
 	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
-	pub fn get_texts<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+	pub fn get_strings<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().text()
@@ -320,7 +411,7 @@ impl Tag {
 
 	/// Returns the stored [`Picture`]s as a slice
 	pub fn pictures(&self) -> &[Picture] {
-		&*self.pictures
+		&self.pictures
 	}
 
 	/// Returns the first occurrence of the [`PictureType`]
@@ -338,6 +429,73 @@ impl Tag {
 	/// Removes all [`Picture`]s of a [`PictureType`]
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|p| p.pic_type != picture_type)
+	}
+
+	/// Replaces the picture at the given `index`
+	///
+	/// NOTE: If `index` is out of bounds, the `picture` will be appended
+	/// to the list.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{Picture, Tag, TagType};
+	/// # use lofty::{PictureType, MimeType};
+	///
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// let mut tag = Tag::new(TagType::ID3v2);
+	///
+	/// // Add a front cover
+	/// tag.push_picture(front_cover);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverFront);
+	///
+	/// // Replace the front cover with a back cover
+	/// tag.set_picture(0, back_cover);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverBack);
+	///
+	/// // Use an out of bounds index
+	/// tag.set_picture(100, another_picture);
+	///
+	/// assert_eq!(tag.pictures().len(), 2);
+	/// ```
+	pub fn set_picture(&mut self, index: usize, picture: Picture) {
+		if index >= self.pictures.len() {
+			self.push_picture(picture);
+		} else {
+			self.pictures[index] = picture;
+		}
+	}
+
+	/// Removes and returns the picture at the given `index`
+	///
+	/// # Panics
+	///
+	/// Panics if `index` is out of bounds.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{Picture, Tag, TagType};
+	/// # use lofty::{PictureType, MimeType};
+	///
+	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// let mut tag = Tag::new(TagType::ID3v2);
+	/// tag.push_picture(picture);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	///
+	/// tag.remove_picture(0);
+	///
+	/// assert_eq!(tag.pictures().len(), 0);
+	/// ```
+	pub fn remove_picture(&mut self, index: usize) -> Picture {
+		self.pictures.remove(index)
 	}
 }
 
@@ -409,23 +567,23 @@ impl TagExt for Tag {
 }
 
 /// The tag's format
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
-	Ape,
+	APE,
 	/// Represents an ID3v1 tag
-	Id3v1,
+	ID3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
-	Id3v2,
-	/// Represents an MP4 ILST atom
-	Mp4Ilst,
+	ID3v2,
+	/// Represents an MP4 ilst atom
+	MP4ilst,
 	/// Represents vorbis comments
 	VorbisComments,
 	/// Represents a RIFF INFO LIST
-	RiffInfo,
+	RIFFInfo,
 	/// Represents AIFF text chunks
-	AiffText,
+	AIFFText,
 }
 
 impl TagType {
@@ -455,7 +613,7 @@ impl TagType {
 		};
 
 		let special_exceptions =
-			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::Id3v2;
+			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::ID3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			return Err(LoftyError::new(ErrorKind::UnsupportedTag));

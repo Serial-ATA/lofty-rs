@@ -4,13 +4,13 @@
 //!
 //! See:
 //!
-//! * [`Id3v2Tag`]
+//! * [`ID3v2Tag`]
 //! * [Frame]
 
 mod flags;
 pub(crate) mod util;
 
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 
 use std::io::Read;
 
@@ -18,12 +18,12 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 cfg_if::cfg_if! {
 	if #[cfg(feature = "id3v2")] {
-		pub use flags::Id3v2TagFlags;
+		pub use flags::ID3v2TagFlags;
 		pub use util::text_utils::TextEncoding;
 		pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
 		pub(crate) mod tag;
-		pub use tag::Id3v2Tag;
+		pub use tag::ID3v2Tag;
 
 		mod items;
 		pub use items::encoded_text_frame::EncodedTextFrame;
@@ -52,11 +52,11 @@ cfg_if::cfg_if! {
 }
 
 #[cfg(not(feature = "id3v2"))]
-use flags::Id3v2TagFlags;
+use flags::ID3v2TagFlags;
 
-#[derive(PartialEq, Debug, Clone, Copy)]
+#[derive(PartialEq, Eq, Debug, Clone, Copy)]
 /// The ID3v2 version
-pub enum Id3v2Version {
+pub enum ID3v2Version {
 	/// ID3v2.2
 	V2,
 	/// ID3v2.3
@@ -84,15 +84,15 @@ pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct Id3v2Header {
+pub(crate) struct ID3v2Header {
 	#[cfg(feature = "id3v2")]
-	pub version: Id3v2Version,
-	pub flags: Id3v2TagFlags,
+	pub version: ID3v2Version,
+	pub flags: ID3v2TagFlags,
 	pub size: u32,
 	pub extended_size: u32,
 }
 
-pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<Id3v2Header>
+pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<ID3v2Header>
 where
 	R: Read,
 {
@@ -105,11 +105,11 @@ where
 
 	// Version is stored as [major, minor], but here we don't care about minor revisions unless there's an error.
 	let version = match header[3] {
-		2 => Id3v2Version::V2,
-		3 => Id3v2Version::V3,
-		4 => Id3v2Version::V4,
+		2 => ID3v2Version::V2,
+		3 => ID3v2Version::V3,
+		4 => ID3v2Version::V4,
 		major => {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into())
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadId3v2Version(major, header[4])).into())
 		},
 	};
 
@@ -118,18 +118,18 @@ where
 	// Compression was a flag only used in ID3v2.2 (bit 2).
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
-	if version == Id3v2Version::V2 && flags & 0x40 == 0x40 {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+	if version == ID3v2Version::V2 && flags & 0x40 == 0x40 {
+		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 			"Encountered a compressed ID3v2.2 tag",
 		))
 		.into());
 	}
 
-	let mut flags_parsed = Id3v2TagFlags {
+	let mut flags_parsed = ID3v2TagFlags {
 		unsynchronisation: flags & 0x80 == 0x80,
-		experimental: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
+		experimental: (version == ID3v2Version::V4 || version == ID3v2Version::V3)
 			&& flags & 0x20 == 0x20,
-		footer: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
+		footer: (version == ID3v2Version::V4 || version == ID3v2Version::V3)
 			&& flags & 0x10 == 0x10,
 		crc: false, // Retrieved later if applicable
 		#[cfg(feature = "id3v2_restrictions")]
@@ -140,13 +140,13 @@ where
 	let mut extended_size = 0;
 
 	let extended_header =
-		(version == Id3v2Version::V4 || version == Id3v2Version::V3) && flags & 0x40 == 0x40;
+		(version == ID3v2Version::V4 || version == ID3v2Version::V3) && flags & 0x40 == 0x40;
 
 	if extended_header {
 		extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 				"Found an extended header with an invalid size (< 6)",
 			))
 			.into());
@@ -179,10 +179,10 @@ where
 	}
 
 	if extended_size > 0 && extended_size >= size {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::Other("Tag has an invalid size")).into());
+		return Err(ID3v2Error::new(ID3v2ErrorKind::Other("Tag has an invalid size")).into());
 	}
 
-	Ok(Id3v2Header {
+	Ok(ID3v2Header {
 		#[cfg(feature = "id3v2")]
 		version,
 		flags: flags_parsed,

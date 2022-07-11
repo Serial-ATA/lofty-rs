@@ -9,7 +9,7 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-#[derive(Debug, Copy, Clone, PartialEq, Default)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An Opus file's audio properties
 pub struct OpusProperties {
@@ -114,11 +114,11 @@ where
 	let last_page_abgp = last_page.abgp;
 
 	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp + u64::from(pre_skip)) {
-		let length = frame_count * 1000 / 48000;
-		properties.duration = Duration::from_millis(length);
+		let length = (frame_count as f64) * 1000.0 / 48000.0_f64 + 0.5;
+		properties.duration = Duration::from_millis(length as u64);
 
-		properties.overall_bitrate = ((file_length * 8) / length) as u32;
-		properties.audio_bitrate = (audio_size * 8 / length) as u32;
+		properties.overall_bitrate = ((file_length as f64) * 8.0 / length) as u32;
+		properties.audio_bitrate = ((audio_size as f64) * 8.0 / length) as u32;
 	}
 
 	Ok(properties)

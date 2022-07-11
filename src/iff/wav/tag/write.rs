@@ -1,4 +1,4 @@
-use super::RiffInfoListRef;
+use super::RIFFInfoListRef;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
@@ -10,17 +10,18 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::iff::wav) fn write_riff_info<'a, I>(
 	data: &mut File,
-	tag: &mut RiffInfoListRef<'a, I>,
+	tag: &mut RIFFInfoListRef<'a, I>,
 ) -> Result<()>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
-	let file_size = verify_wav(data)?;
+	verify_wav(data)?;
+	let file_len = data.metadata()?.len().saturating_sub(12);
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 
-	if let Some(info_list_size) = find_info_list(data, file_size)? {
+	if let Some(info_list_size) = find_info_list(data, file_len)? {
 		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
 		let info_list_end = info_list_start + 8 + info_list_size as usize;
 
@@ -36,7 +37,7 @@ where
 
 		data.rewind()?;
 		data.set_len(0)?;
-		data.write_all(&*file_bytes)?;
+		data.write_all(&file_bytes)?;
 	} else {
 		data.seek(SeekFrom::End(0))?;
 
@@ -51,7 +52,7 @@ where
 	Ok(())
 }
 
-fn find_info_list<R>(data: &mut R, file_size: u32) -> Result<Option<u32>>
+fn find_info_list<R>(data: &mut R, file_size: u64) -> Result<Option<u32>>
 where
 	R: Read + Seek,
 {

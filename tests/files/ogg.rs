@@ -138,5 +138,5 @@ fn flac_with_id3v2() {
 
 #[test]
 fn flac_remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
+	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::ID3v2);
 }

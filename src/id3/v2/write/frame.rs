@@ -1,4 +1,4 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
 use crate::id3::v2::synch_u32;
 
@@ -34,7 +34,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, FrameValue::URL(_)) if id.starts_with('W') => Ok(()),
-		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
+		(id, frame_value) => Err(ID3v2Error::new(ID3v2ErrorKind::BadFrame(
 			id.to_string(),
 			match frame_value {
 				FrameValue::Comment(_) => "Comment",
@@ -88,7 +88,7 @@ where
 	let data_length_indicator = flags.data_length_indicator;
 
 	if method_symbol > 0x80 {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 			"Attempted to write an encrypted frame with an invalid method symbol (> 0x80)",
 		))
 		.into());
@@ -103,7 +103,7 @@ where
 		return Ok(());
 	}
 
-	Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+	Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 		"Attempted to write an encrypted frame without a data length indicator",
 	))
 	.into())

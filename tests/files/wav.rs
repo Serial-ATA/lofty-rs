@@ -14,7 +14,7 @@ fn read() {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify the RIFF INFO chunk
-	crate::verify_artist!(file, tag, TagType::RiffInfo, "Bar artist", 1);
+	crate::verify_artist!(file, tag, TagType::RIFFInfo, "Bar artist", 1);
 }
 
 #[test]
@@ -29,7 +29,7 @@ fn write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// RIFF INFO
-	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Bar artist", 1 => file, "Baz artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::RIFFInfo, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -37,14 +37,14 @@ fn write() {
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Baz artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::RIFFInfo, "Baz artist", 1 => file, "Bar artist");
 }
 
 #[test]
 fn remove_id3v2() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/wav_format_pcm.wav",
-		TagType::Id3v2
+		TagType::ID3v2
 	);
 }
 
@@ -52,6 +52,6 @@ fn remove_id3v2() {
 fn remove_riff_info() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/wav_format_pcm.wav",
-		TagType::RiffInfo
+		TagType::RIFFInfo
 	);
 }

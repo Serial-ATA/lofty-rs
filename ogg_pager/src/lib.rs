@@ -20,7 +20,7 @@ pub const CONTAINS_FIRST_PAGE_OF_BITSTREAM: u8 = 0x02;
 pub const CONTAINS_LAST_PAGE_OF_BITSTREAM: u8 = 0x04;
 
 /// An OGG page
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Page {
 	content: Vec<u8>,
 	header_type: u8,
@@ -191,7 +191,7 @@ impl Page {
 	///
 	/// See [`Page::as_bytes`]
 	pub fn gen_crc(&mut self) -> Result<()> {
-		self.checksum = crc::crc32(&*self.as_bytes()?);
+		self.checksum = crc::crc32(&self.as_bytes()?);
 		Ok(())
 	}
 
@@ -276,7 +276,7 @@ impl Page {
 	}
 }
 
-#[allow(clippy::eval_order_dependence)]
+#[allow(clippy::mixed_read_write_in_expression)]
 /// Create pages from a packet
 ///
 /// # Example
@@ -288,7 +288,7 @@ impl Page {
 /// let comment_header_packet = vec![...];
 /// let stream_serial_number = 2784419176;
 ///
-/// let pages = paginate(&*comment_header_packet, stream_serial_number, 0, 0);
+/// let pages = paginate(&comment_header_packet, stream_serial_number, 0, 0);
 /// ```
 pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<Page> {
 	let mut pages = Vec::new();
@@ -411,7 +411,7 @@ mod tests {
 	fn paginate_large() {
 		let packet = std::fs::read("test_assets/large_comment_packet.page").unwrap();
 
-		let pages = paginate(&*packet, 1234, 0, 0);
+		let pages = paginate(&packet, 1234, 0, 0);
 
 		let len = pages.len();
 

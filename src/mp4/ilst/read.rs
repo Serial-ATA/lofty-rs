@@ -258,7 +258,7 @@ fn interpret_atom_content(flags: u32, content: Vec<u8>) -> Result<AtomData> {
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	Ok(match flags {
 		UTF8 => AtomData::UTF8(String::from_utf8(content)?),
-		UTF16 => AtomData::UTF16(utf16_decode(&*content, u16::from_be_bytes)?),
+		UTF16 => AtomData::UTF16(utf16_decode(&content, u16::from_be_bytes)?),
 		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
 		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
 		code => AtomData::Unknown {

@@ -1,4 +1,4 @@
-use super::header::{search_for_frame_sync, Header, XingHeader};
+use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
 use super::{Mp3File, Mp3Properties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
@@ -21,6 +21,7 @@ where
 {
 	let mut file = Mp3File::default();
 
+	let mut first_frame_offset = 0;
 	let mut first_frame_header = None;
 
 	// Skip any invalid padding
@@ -83,8 +84,8 @@ where
 				reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 
 				#[allow(clippy::used_underscore_binding)]
-				if let Some((_first_first_header, first_frame_offset)) = find_next_frame(reader)? {
-					file.first_frame_offset = first_frame_offset;
+				if let Some((_first_first_header, _first_frame_offset)) = find_next_frame(reader)? {
+					first_frame_offset = _first_frame_offset;
 					first_frame_header = Some(_first_first_header);
 					break;
 				}
@@ -107,44 +108,51 @@ where
 	let mut ape_preamble = [0; 8];
 	reader.read_exact(&mut ape_preamble)?;
 
-	if &ape_preamble == APE_PREAMBLE {
-		let ape_header = read_ape_header(reader, true)?;
-		let size = ape_header.size;
+	match &ape_preamble {
+		APE_PREAMBLE => {
+			let ape_header = read_ape_header(reader, true)?;
+			let size = ape_header.size;
 
-		#[cfg(feature = "ape")]
-		{
-			let ape = read_ape_tag(reader, ape_header)?;
-			file.ape_tag = Some(ape);
-		}
+			#[cfg(feature = "ape")]
+			{
+				let ape = read_ape_tag(reader, ape_header)?;
+				file.ape_tag = Some(ape);
+			}
 
-		// Seek back to the start of the tag
-		let pos = reader.stream_position()?;
-		reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
+			// Seek back to the start of the tag
+			let pos = reader.stream_position()?;
+			reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
+		},
+		// Correct the position (APE header - Preamble)
+		_ => {
+			reader.seek(SeekFrom::Current(24))?;
+		},
 	}
 
-	file.last_frame_offset = reader.stream_position()?;
+	let last_frame_offset = reader.stream_position()?;
+	file.properties = Mp3Properties::default();
 
-	file.properties = if read_properties {
-		if first_frame_header.is_none() {
-			// The search for sync bits was unsuccessful
-			return Err(
-				FileDecodingError::new(FileType::MP3, "File contains an invalid frame").into(),
-			);
-		}
-
-		// Safe to unwrap, since we return early if no frame is found
-		let first_frame_header = first_frame_header.unwrap();
+	if read_properties {
+		let first_frame_header = match first_frame_header {
+			Some(header) => header,
+			None => {
+				// The search for sync bits was unsuccessful
+				return Err(FileDecodingError::new(
+					FileType::MP3,
+					"File contains an invalid frame",
+				)
+				.into());
+			},
+		};
 
 		if first_frame_header.sample_rate == 0 {
 			return Err(FileDecodingError::new(FileType::MP3, "Sample rate is 0").into());
 		}
 
-		let first_frame_offset = file.first_frame_offset;
+		let first_frame_offset = first_frame_offset;
 
-		let file_length = reader.seek(SeekFrom::End(0))?;
-
+		// Try to read a Xing header
 		let xing_header_location = first_frame_offset + u64::from(first_frame_header.data_start);
-
 		reader.seek(SeekFrom::Start(xing_header_location))?;
 
 		let mut xing_reader = [0; 32];
@@ -152,16 +160,17 @@ where
 
 		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
 
+		let file_length = reader.seek(SeekFrom::End(0))?;
+
 		super::properties::read_properties(
+			&mut file.properties,
 			reader,
 			(first_frame_header, first_frame_offset),
-			file.last_frame_offset,
+			last_frame_offset,
 			xing_header,
 			file_length,
-		)?
-	} else {
-		Mp3Properties::default()
-	};
+		)?;
+	}
 
 	Ok(file)
 }
@@ -171,10 +180,6 @@ fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
 where
 	R: Read + Seek,
 {
-	// Used to compare the versions, layers, and sample rates of two frame headers.
-	// If they aren't equal, something is broken.
-	const HEADER_MASK: u32 = 0xFFFE_0C00;
-
 	let mut pos = reader.stream_position()?;
 
 	while let Ok(Some(first_mp3_frame_start_relative)) = search_for_frame_sync(reader) {
@@ -183,22 +188,18 @@ where
 		// Seek back to the start of the frame and read the header
 		reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 		let first_header_data = reader.read_u32::<BigEndian>()?;
-		let first_header = Header::read(first_header_data)?;
 
-		// Read the next header and see if they are the same
-		reader.seek(SeekFrom::Current(i64::from(
-			first_header.len.saturating_sub(4),
-		)))?;
-
-		match reader.read_u32::<BigEndian>() {
-			Ok(second_header_data)
-				if first_header_data & HEADER_MASK == second_header_data & HEADER_MASK =>
-			{
-				return Ok(Some((first_header, first_mp3_frame_start_absolute)));
-			},
-			Err(_) => return Ok(None),
-			_ => pos = reader.stream_position()?,
+		if let Some(first_header) = Header::read(first_header_data) {
+			match cmp_header(reader, first_header.len, first_header_data) {
+				HeaderCmpResult::Equal => {
+					return Ok(Some((first_header, first_mp3_frame_start_absolute)))
+				},
+				HeaderCmpResult::Undetermined => return Ok(None),
+				HeaderCmpResult::NotEqual => {},
+			}
 		}
+
+		pos = reader.stream_position()?;
 	}
 
 	Ok(None)

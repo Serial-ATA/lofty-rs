@@ -6,7 +6,7 @@ use crate::tag::TagType;
 
 use std::convert::TryFrom;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 /// Represents an `APE` tag item
 ///
 /// The restrictions for `APE` lie in the key rather than the value,
@@ -67,6 +67,15 @@ impl ApeItem {
 	pub fn value(&self) -> &ItemValue {
 		&self.value
 	}
+
+	// Used internally, has no correctness checks
+	pub(crate) fn text(key: &str, value: String) -> Self {
+		Self {
+			read_only: false,
+			key: String::from(key),
+			value: ItemValue::Text(value),
+		}
+	}
 }
 
 impl TryFrom<TagItem> for ApeItem {
@@ -76,7 +85,7 @@ impl TryFrom<TagItem> for ApeItem {
 		Self::new(
 			value
 				.item_key
-				.map_key(TagType::Ape, false)
+				.map_key(TagType::APE, false)
 				.ok_or_else(|| {
 					FileDecodingError::new(
 						FileType::APE,

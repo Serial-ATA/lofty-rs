@@ -82,7 +82,7 @@ mod tests {
 			counter_bytes.len() - i
 		};
 
-		assert_eq!((&popm_bytes[email.len() + 2..]).len(), counter_len);
+		assert_eq!(popm_bytes[email.len() + 2..].len(), counter_len);
 	}
 
 	#[test]

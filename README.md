@@ -19,6 +19,7 @@ Parse, convert, and write metadata to various audio formats.
 | Ogg Vorbis  | `Vorbis Comments`                    |
 | Speex       | `Vorbis Comments`                    |
 | WAV         | `ID3v2`, `RIFF INFO`                 |
+| WavPack     | `APEv2`, `APEv1`, `ID3v1`            |
 
 \* The tag will be **read only**, due to lack of official support
 

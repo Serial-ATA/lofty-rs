@@ -5,7 +5,7 @@ pub(crate) mod write;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
@@ -14,7 +14,7 @@ use std::io::{Read, Seek};
 cfg_if::cfg_if! {
 	if #[cfg(feature = "aiff_text_chunks")] {
 		pub(crate) mod tag;
-		use tag::AiffTextChunks;
+		use tag::AIFFTextChunks;
 	}
 }
 
@@ -22,10 +22,10 @@ cfg_if::cfg_if! {
 pub struct AiffFile {
 	#[cfg(feature = "aiff_text_chunks")]
 	/// Any text chunks included in the file
-	pub(crate) text_chunks: Option<AiffTextChunks>,
+	pub(crate) text_chunks: Option<AIFFTextChunks>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2_tag: Option<Id3v2Tag>,
+	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
 }
@@ -76,9 +76,9 @@ impl AudioFile for AiffFile {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "id3v2")]
-			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			TagType::ID3v2 => self.id3v2_tag.is_some(),
 			#[cfg(feature = "aiff_text_chunks")]
-			TagType::AiffText => self.text_chunks.is_some(),
+			TagType::AIFFText => self.text_chunks.is_some(),
 			_ => false,
 		}
 	}
@@ -87,9 +87,9 @@ impl AudioFile for AiffFile {
 impl AiffFile {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "id3v2")]
-		id3v2_tag, Id3v2Tag;
+		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "aiff_text_chunks")]
-		text_chunks, AiffTextChunks
+		text_chunks, AIFFTextChunks
 	}
 }

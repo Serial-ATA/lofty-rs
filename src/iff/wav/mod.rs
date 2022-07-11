@@ -5,7 +5,7 @@ pub(crate) mod write;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
@@ -14,7 +14,7 @@ use std::io::{Read, Seek};
 cfg_if::cfg_if! {
 	if #[cfg(feature = "riff_info_list")] {
 		pub(crate) mod tag;
-		use tag::RiffInfoList;
+		use tag::RIFFInfoList;
 	}
 }
 
@@ -25,10 +25,10 @@ pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 pub struct WavFile {
 	#[cfg(feature = "riff_info_list")]
 	/// A RIFF INFO LIST
-	pub(crate) riff_info: Option<RiffInfoList>,
+	pub(crate) riff_info: Option<RIFFInfoList>,
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2_tag: Option<Id3v2Tag>,
+	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: WavProperties,
 }
@@ -80,9 +80,9 @@ impl AudioFile for WavFile {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "id3v2")]
-			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			TagType::ID3v2 => self.id3v2_tag.is_some(),
 			#[cfg(feature = "riff_info_list")]
-			TagType::RiffInfo => self.riff_info.is_some(),
+			TagType::RIFFInfo => self.riff_info.is_some(),
 			_ => false,
 		}
 	}
@@ -91,9 +91,9 @@ impl AudioFile for WavFile {
 impl WavFile {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "id3v2")]
-		id3v2_tag, Id3v2Tag;
+		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "riff_info_list")]
-		riff_info, RiffInfoList
+		riff_info, RIFFInfoList
 	}
 }

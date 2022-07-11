@@ -12,7 +12,7 @@ use std::time::Duration;
 use byteorder::{BigEndian, ReadBytesExt};
 
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 /// An MP4 file's audio codec
 pub enum Mp4Codec {
@@ -20,6 +20,7 @@ pub enum Mp4Codec {
 	AAC,
 	ALAC,
 	MP3,
+	FLAC,
 }
 
 impl Default for Mp4Codec {
@@ -29,7 +30,7 @@ impl Default for Mp4Codec {
 }
 
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[rustfmt::skip]
 #[non_exhaustive]
 pub enum AudioObjectType {
@@ -143,7 +144,7 @@ impl TryFrom<u8> for AudioObjectType {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An MP4 file's audio properties
 pub struct Mp4Properties {
@@ -341,9 +342,9 @@ where
 					match fourcc {
 						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
 						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
+						b"fLaC" => flac_properties(&mut stsd_reader, &mut properties)?,
 						// Maybe do these?
-						// TODO: dfla (https://github.com/xiph/flac/blob/master/doc/isoflac.txt)
-						// TODO: dops
+						// TODO: dops (opus)
 						// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
 						_ => {},
 					}
@@ -581,6 +582,64 @@ where
 			properties.sample_rate = stsd.read_u32::<BigEndian>()?;
 		}
 	}
+
+	Ok(())
+}
+
+fn flac_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
+where
+	R: Read + Seek,
+{
+	properties.codec = Mp4Codec::FLAC;
+
+	// Skipping 16 bytes
+	//
+	// Reserved (6)
+	// Data reference index (2)
+	// Version (2)
+	// Revision level (2)
+	// Vendor (4)
+	stsd.seek(SeekFrom::Current(16))?;
+
+	properties.channels = stsd.read_u16::<BigEndian>()? as u8;
+	properties.bit_depth = Some(stsd.read_u16::<BigEndian>()? as u8);
+
+	// Skipping 4 bytes
+	//
+	// Compression ID (2)
+	// Packet size (2)
+	stsd.seek(SeekFrom::Current(4))?;
+
+	properties.sample_rate = u32::from(stsd.read_u16::<BigEndian>()?);
+
+	let _reserved = stsd.read_u16::<BigEndian>()?;
+
+	let dfla_atom = AtomInfo::read(stsd)?;
+	match dfla_atom.ident {
+		// There should be a dfla atom, but it's not worth erroring if absent.
+		AtomIdent::Fourcc(ref fourcc) if fourcc == b"dfla" => {},
+		_ => return Ok(()),
+	}
+
+	// Skipping 4 bytes
+	//
+	// Version (1)
+	// Flags (3)
+	stsd.seek(SeekFrom::Current(4))?;
+
+	if dfla_atom.len - 12 < 18 {
+		// The atom isn't long enough to hold a STREAMINFO block, also not worth an error.
+		return Ok(());
+	}
+
+	let stream_info_block = crate::flac::block::Block::read(stsd)?;
+	let flac_properties =
+		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
+
+	// Safe to unwrap, since these fields are guaranteed to be present
+	properties.sample_rate = flac_properties.sample_rate.unwrap();
+	properties.bit_depth = flac_properties.bit_depth;
+	properties.channels = flac_properties.channels.unwrap();
 
 	Ok(())
 }

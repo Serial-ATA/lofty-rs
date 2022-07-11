@@ -11,7 +11,7 @@ fn read_png() {
 	let mut buf = Vec::new();
 	f.read_to_end(&mut buf).unwrap();
 
-	let information = PictureInformation::from_png(&*buf).unwrap();
+	let information = PictureInformation::from_png(&buf).unwrap();
 
 	assert_eq!(information.width, 640);
 	assert_eq!(information.height, 628);
@@ -29,7 +29,7 @@ fn read_png_plte() {
 	let mut buf = Vec::new();
 	f.read_to_end(&mut buf).unwrap();
 
-	let information = PictureInformation::from_png(&*buf).unwrap();
+	let information = PictureInformation::from_png(&buf).unwrap();
 
 	assert_eq!(information.width, 640);
 	assert_eq!(information.height, 628);
@@ -47,7 +47,7 @@ fn read_jpeg() {
 	let mut buf = Vec::new();
 	f.read_to_end(&mut buf).unwrap();
 
-	let information = PictureInformation::from_jpeg(&*buf).unwrap();
+	let information = PictureInformation::from_jpeg(&buf).unwrap();
 
 	assert_eq!(information.width, 640);
 	assert_eq!(information.height, 628);

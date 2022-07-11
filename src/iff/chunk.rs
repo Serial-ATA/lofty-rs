@@ -1,6 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -14,16 +14,16 @@ where
 {
 	pub fourcc: [u8; 4],
 	pub size: u32,
-	file_size: u32,
+	remaining_size: u64,
 	_phantom: PhantomData<B>,
 }
 
 impl<B: ByteOrder> Chunks<B> {
-	pub fn new(file_size: u32) -> Self {
+	pub fn new(file_size: u64) -> Self {
 		Self {
 			fourcc: [0; 4],
 			size: 0,
-			file_size,
+			remaining_size: file_size,
 			_phantom: PhantomData,
 		}
 	}
@@ -34,6 +34,8 @@ impl<B: ByteOrder> Chunks<B> {
 	{
 		data.read_exact(&mut self.fourcc)?;
 		self.size = data.read_u32::<B>()?;
+
+		self.remaining_size = self.remaining_size.saturating_sub(8);
 
 		Ok(())
 	}
@@ -56,7 +58,7 @@ impl<B: ByteOrder> Chunks<B> {
 		R: Read + Seek,
 	{
 		let cont = if let Some(size) = size {
-			self.read(data, size)?
+			self.read(data, u64::from(size))?
 		} else {
 			self.content(data)?
 		};
@@ -72,35 +74,35 @@ impl<B: ByteOrder> Chunks<B> {
 	where
 		R: Read,
 	{
-		self.read(data, self.size)
+		self.read(data, u64::from(self.size))
 	}
 
-	fn read<R>(&self, data: &mut R, size: u32) -> Result<Vec<u8>>
+	fn read<R>(&mut self, data: &mut R, size: u64) -> Result<Vec<u8>>
 	where
 		R: Read,
 	{
-		if size + 4 > self.file_size {
+		if size > self.remaining_size {
 			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 
 		let mut content = try_vec![0; size as usize];
 		data.read_exact(&mut content)?;
 
+		self.remaining_size = self.remaining_size.saturating_sub(size);
 		Ok(content)
 	}
 
 	#[cfg(feature = "id3v2")]
-	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<Id3v2Tag>
+	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<ID3v2Tag>
 	where
 		R: Read + Seek,
 	{
 		use crate::id3::v2::read::parse_id3v2;
 		use crate::id3::v2::read_id3v2_header;
 
-		let mut value = try_vec![0; self.size as usize];
-		data.read_exact(&mut value)?;
+		let content = self.content(data)?;
 
-		let reader = &mut &*value;
+		let reader = &mut &*content;
 
 		let header = read_id3v2_header(reader)?;
 		let id3v2 = parse_id3v2(reader, header)?;
@@ -122,6 +124,8 @@ impl<B: ByteOrder> Chunks<B> {
 		data.seek(SeekFrom::Current(i64::from(self.size)))?;
 		self.correct_position(data)?;
 
+		self.remaining_size = self.remaining_size.saturating_sub(u64::from(self.size));
+
 		Ok(())
 	}
 
@@ -134,6 +138,7 @@ impl<B: ByteOrder> Chunks<B> {
 		// and it is NOT included in the chunk's size
 		if self.size % 2 != 0 {
 			data.seek(SeekFrom::Current(1))?;
+			self.remaining_size = self.remaining_size.saturating_sub(1);
 		}
 
 		Ok(())

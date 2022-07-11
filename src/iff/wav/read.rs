@@ -1,18 +1,18 @@
 use super::properties::WavProperties;
 #[cfg(feature = "riff_info_list")]
-use super::tag::RiffInfoList;
+use super::tag::RIFFInfoList;
 use super::WavFile;
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<u32>
+pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
 {
@@ -31,27 +31,30 @@ where
 		);
 	}
 
-	Ok(u32::from_le_bytes(
-		id[4..8].try_into().unwrap(), // Infallible
-	))
+	Ok(())
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
-	let file_size = verify_wav(data)?;
+	verify_wav(data)?;
+
+	let current_pos = data.stream_position()?;
+	let file_len = data.seek(SeekFrom::End(0))?;
+
+	data.seek(SeekFrom::Start(current_pos))?;
 
 	let mut stream_len = 0_u32;
 	let mut total_samples = 0_u32;
 	let mut fmt = Vec::new();
 
 	#[cfg(feature = "riff_info_list")]
-	let mut riff_info = RiffInfoList::default();
+	let mut riff_info = RIFFInfoList::default();
 	#[cfg(feature = "id3v2")]
-	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(file_size);
+	let mut chunks = Chunks::<LittleEndian>::new(file_len);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {

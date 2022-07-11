@@ -1,0 +1,29 @@
+name: Bug report
+description: Create a bug report
+labels: ["bug"]
+
+body:
+  - type: textarea
+    attributes:
+      label: Reproducer
+      description: Please provide the code and steps to reproduce the bug
+      value: |
+        I tried this code:
+
+        ```rust
+        <code>
+        ```
+  - type: textarea
+    attributes:
+      label: Summary
+      description: A clear and concise description of what the bug is
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected behavior
+      description: A clear and concise description of what you expected to happen
+  - type: textarea
+    attributes:
+      label: Assets
+      description: Provide sample files and/or screenshots if applicable

@@ -8,7 +8,7 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An OGG Vorbis file's audio properties
 pub struct VorbisProperties {
@@ -117,6 +117,8 @@ where
 			properties.duration = Duration::from_millis(length);
 
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+
+			// TODO: Calculate with the stream length, and make this the fallback
 			properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
 		}
 	}

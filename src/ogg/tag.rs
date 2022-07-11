@@ -1,5 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::FileType;
+use crate::flac::write;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation, PictureType};
 use crate::probe::Probe;
@@ -7,35 +8,39 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
-use crate::flac::write;
 use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
 use std::path::Path;
 
 macro_rules! impl_accessor {
-	($($name:ident, $key:literal;)+) => {
+	($($name:ident => $key:literal;)+) => {
 		paste::paste! {
-			impl Accessor for VorbisComments {
-				$(
-					fn $name(&self) -> Option<&str> {
-						self.get($key)
-					}
+			$(
+				fn $name(&self) -> Option<&str> {
+					self.get($key)
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(String::from($key), value, true)
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(String::from($key), value, true)
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						let _ = self.remove($key);
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					let _ = self.remove($key);
+				}
+			)+
 		}
 	}
 }
 
-#[derive(Default, PartialEq, Debug, Clone)]
 /// Vorbis comments
+///
+/// ## Supported file types
+///
+/// * [`FileType::FLAC`](crate::FileType::FLAC)
+/// * [`FileType::Opus`](crate::FileType::Opus)
+/// * [`FileType::Speex`](crate::FileType::Speex)
+/// * [`FileType::Vorbis`](crate::FileType::Vorbis)
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub struct VorbisComments {
 	/// An identifier for the encoding software
 	pub(crate) vendor: String,
@@ -44,13 +49,6 @@ pub struct VorbisComments {
 	/// A collection of all pictures
 	pub(crate) pictures: Vec<(Picture, PictureInformation)>,
 }
-
-impl_accessor!(
-	artist,       "ARTIST";
-	title,        "TITLE";
-	album,        "ALBUM";
-	genre,        "GENRE";
-);
 
 impl VorbisComments {
 	/// Returns the vendor string
@@ -83,10 +81,7 @@ impl VorbisComments {
 	/// If `replace_all` is true, it will remove all items with the key before insertion
 	pub fn insert(&mut self, key: String, value: String, replace_all: bool) {
 		if replace_all {
-			self.items
-				.iter()
-				.position(|(k, _)| k == &key)
-				.map(|p| self.items.remove(p));
+			self.items.retain(|(k, _)| k != &key);
 		}
 
 		self.items.push((key, value))
@@ -147,6 +142,204 @@ impl VorbisComments {
 	/// Removes a certain [`PictureType`]
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.pictures.retain(|(p, _)| p.pic_type != picture_type)
+	}
+
+	/// Returns the stored [`Picture`]s as a slice
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut tag = VorbisComments::default();
+	///
+	/// assert!(tag.pictures().is_empty());
+	/// ```
+	pub fn pictures(&self) -> &[(Picture, PictureInformation)] {
+		&self.pictures
+	}
+
+	/// Replaces the picture at the given `index`
+	///
+	/// NOTE: If `index` is out of bounds, the `picture` will be appended
+	/// to the list.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// # use lofty::{Picture, PictureInformation, PictureType, MimeType};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover_info = PictureInformation::default();
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let back_cover_info = PictureInformation::default();
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// let mut tag = VorbisComments::default();
+	///
+	/// // Add a front cover
+	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverFront);
+	///
+	/// // Replace the front cover with a back cover
+	/// tag.set_picture(0, back_cover, back_cover_info);
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverBack);
+	///
+	/// // Use an out of bounds index
+	/// tag.set_picture(100, another_picture, PictureInformation::default());
+	///
+	/// assert_eq!(tag.pictures().len(), 2);
+	/// # Ok(()) }
+	/// ```
+	#[allow(clippy::missing_panics_doc)]
+	pub fn set_picture(&mut self, index: usize, picture: Picture, info: PictureInformation) {
+		if index >= self.pictures.len() {
+			// Safe to unwrap, since `info` is guaranteed to exist
+			self.insert_picture(picture, Some(info)).unwrap();
+		} else {
+			self.pictures[index] = (picture, info);
+		}
+	}
+
+	/// Removes and returns the picture at the given `index`
+	///
+	/// # Panics
+	///
+	/// Panics if `index` is out of bounds.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover_info = PictureInformation::default();
+	/// let mut tag = VorbisComments::default();
+	///
+	/// // Add a front cover
+	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
+	///
+	/// assert_eq!(tag.pictures().len(), 1);
+	///
+	/// tag.remove_picture(0);
+	///
+	/// assert_eq!(tag.pictures().len(), 0);
+	/// # Ok(()) }
+	/// ```
+	pub fn remove_picture(&mut self, index: usize) -> (Picture, PictureInformation) {
+		self.pictures.remove(index)
+	}
+}
+
+impl Accessor for VorbisComments {
+	impl_accessor!(
+		artist  => "ARTIST";
+		title   => "TITLE";
+		album   => "ALBUM";
+		genre   => "GENRE";
+		comment => "COMMENT";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(item) = self.get("TRACKNUMBER") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(String::from("TRACKNUMBER"), value.to_string(), true);
+	}
+
+	fn remove_track(&mut self) {
+		let _ = self.remove("TRACKNUMBER");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get("TRACKTOTAL")
+			.map_or_else(|| self.get("TOTALTRACKS"), Some)
+		{
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert(String::from("TRACKTOTAL"), value.to_string(), true);
+		let _ = self.remove("TOTALTRACKS");
+	}
+
+	fn remove_track_total(&mut self) {
+		let _ = self.remove("TRACKTOTAL");
+		let _ = self.remove("TOTALTRACKS");
+	}
+
+	fn disk(&self) -> Option<u32> {
+		if let Some(item) = self.get("DISCNUMBER") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert(String::from("DISCNUMBER"), value.to_string(), true);
+	}
+
+	fn remove_disk(&mut self) {
+		let _ = self.remove("DISCNUMBER");
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		if let Some(item) = self
+			.get("DISCTOTAL")
+			.map_or_else(|| self.get("TOTALDISCS"), Some)
+		{
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		self.insert(String::from("DISCTOTAL"), value.to_string(), true);
+		let _ = self.remove("TOTALDISCS");
+	}
+
+	fn remove_disk_total(&mut self) {
+		let _ = self.remove("DISCTOTAL");
+		let _ = self.remove("TOTALDISCS");
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(item) = self.get("YEAR").map_or_else(|| self.get("DATE"), Some) {
+			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		// DATE is the preferred way of storing the year, but it is still possible we will
+		// encounter YEAR
+		self.insert(String::from("DATE"), value.to_string(), true);
+		let _ = self.remove("YEAR");
+	}
+
+	fn remove_year(&mut self) {
+		// DATE is not valid without a year, so we can remove them as well
+		let _ = self.remove("DATE");
+		let _ = self.remove("YEAR");
 	}
 }
 
@@ -381,7 +574,7 @@ mod tests {
 		expected_tag.insert(String::from("TRACKNUMBER"), String::from("1"), false);
 
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
-		let parsed_tag = read_tag(&*file_cont);
+		let parsed_tag = read_tag(&file_cont);
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -389,7 +582,7 @@ mod tests {
 	#[test]
 	fn vorbis_comments_re_read() {
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
-		let mut parsed_tag = read_tag(&*file_cont);
+		let mut parsed_tag = read_tag(&file_cont);
 
 		// Create a zero-size vendor for comparison
 		parsed_tag.vendor = String::new();
@@ -397,7 +590,7 @@ mod tests {
 		let mut writer = vec![0, 0, 0, 0];
 		parsed_tag.dump_to(&mut writer).unwrap();
 
-		let temp_parsed_tag = read_tag(&*writer);
+		let temp_parsed_tag = read_tag(&writer);
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}

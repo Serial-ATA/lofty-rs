@@ -16,46 +16,45 @@ use std::path::Path;
 macro_rules! impl_accessor {
 	($($name:ident => $($key:literal)|+;)+) => {
 		paste::paste! {
-			impl Accessor for ApeTag {
-				$(
-					fn $name(&self) -> Option<&str> {
-						$(
-							if let Some(i) = self.get_key($key) {
-								if let ItemValue::Text(val) = i.value() {
-									return Some(val)
-								}
+			$(
+				fn $name(&self) -> Option<&str> {
+					$(
+						if let Some(i) = self.get_key($key) {
+							if let ItemValue::Text(val) = i.value() {
+								return Some(val)
 							}
-						)+
+						}
+					)+
 
-						None
-					}
+					None
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(ApeItem {
-							read_only: false,
-							key: String::from(crate::tag::item::first_key!($($key)|*)),
-							value: ItemValue::Text(value)
-						})
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(ApeItem {
+						read_only: false,
+						key: String::from(crate::tag::item::first_key!($($key)|*)),
+						value: ItemValue::Text(value)
+					})
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						$(
-							self.remove_key($key);
-						)+
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					$(
+						self.remove_key($key);
+					)+
+				}
+			)+
 		}
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 /// An `APE` tag
 ///
 /// ## Supported file types
 ///
 /// * [`FileType::APE`](crate::FileType::APE)
 /// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::WavPack`](crate::FileType::WavPack)
 ///
 /// ## Item storage
 ///
@@ -77,13 +76,6 @@ pub struct ApeTag {
 	pub read_only: bool,
 	pub(super) items: Vec<ApeItem>,
 }
-
-impl_accessor!(
-	artist => "Artist";
-	title  => "Title";
-	album  => "Album";
-	genre  => "GENRE";
-);
 
 impl ApeTag {
 	/// Get an [`ApeItem`] by key
@@ -108,15 +100,120 @@ impl ApeTag {
 	///
 	/// NOTE: Like [`ApeTag::get_key`], this is not case-sensitive
 	pub fn remove_key(&mut self, key: &str) {
-		self.items
-			.iter()
-			.position(|i| i.key().eq_ignore_ascii_case(key))
-			.map(|p| self.items.remove(p));
+		self.items.retain(|i| !i.key().eq_ignore_ascii_case(key));
 	}
 
 	/// Returns all of the tag's items
 	pub fn items(&self) -> &[ApeItem] {
 		&self.items
+	}
+
+	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
+		if let Some(ApeItem {
+			value: ItemValue::Text(ref text),
+			..
+		}) = self.get_key(key)
+		{
+			let mut split = text.split('/').flat_map(str::parse::<u32>);
+			return (split.next(), split.next());
+		}
+
+		(None, None)
+	}
+}
+
+impl Accessor for ApeTag {
+	impl_accessor!(
+		artist  => "Artist";
+		title   => "Title";
+		album   => "Album";
+		genre   => "GENRE";
+		comment => "Comment";
+	);
+
+	fn track(&self) -> Option<u32> {
+		self.split_num_pair("Track").0
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(ApeItem::text("Track", value.to_string()))
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_key("Track");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		self.split_num_pair("Track").1
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		let current_track = self.split_num_pair("Track").0.unwrap_or(1);
+
+		self.insert(ApeItem::text(
+			"Track",
+			format!("{}/{}", current_track, value),
+		));
+	}
+
+	fn remove_track_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove_key("Track");
+
+		if let Some(track) = existing_track_number {
+			self.insert(ApeItem::text("Track", track.to_string()));
+		}
+	}
+
+	fn disk(&self) -> Option<u32> {
+		self.split_num_pair("Disc").0
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		self.insert(ApeItem::text("Disc", value.to_string()));
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_key("Disc");
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.split_num_pair("Disc").1
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let current_disk = self.split_num_pair("Disc").0.unwrap_or(1);
+
+		self.insert(ApeItem::text("Disc", format!("{}/{}", current_disk, value)));
+	}
+
+	fn remove_disk_total(&mut self) {
+		let existing_track_number = self.track();
+		self.remove_key("Disc");
+
+		if let Some(track) = existing_track_number {
+			self.insert(ApeItem::text("Disc", track.to_string()));
+		}
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(ApeItem {
+			value: ItemValue::Text(ref text),
+			..
+		}) = self.get_key("Year")
+		{
+			return text.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.insert(ApeItem::text("Year", value.to_string()));
+	}
+
+	fn remove_year(&mut self) {
+		self.remove_key("Year");
 	}
 }
 
@@ -165,11 +262,11 @@ impl TagExt for ApeTag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from_path(path)
+		TagType::APE.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from(file)
+		TagType::APE.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -198,10 +295,10 @@ impl From<ApeTag> for Tag {
 			Some(())
 		}
 
-		let mut tag = Tag::new(TagType::Ape);
+		let mut tag = Tag::new(TagType::APE);
 
 		for item in input.items {
-			let item_key = ItemKey::from_key(TagType::Ape, item.key());
+			let item_key = ItemKey::from_key(TagType::APE, item.key());
 
 			// The text pairs need some special treatment
 			match (item_key, item.value()) {
@@ -267,7 +364,7 @@ where
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = write::create_ape_tag(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}
@@ -275,7 +372,7 @@ where
 
 pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef<'_>> {
 	items.iter().filter_map(|i| {
-		i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
+		i.key().map_key(TagType::APE, true).map(|key| ApeItemRef {
 			read_only: false,
 			key,
 			value: (&i.item_value).into(),
@@ -395,7 +492,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::Ape);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::APE);
 
 		let ape_tag: ApeTag = tag.into();
 

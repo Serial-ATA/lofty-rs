@@ -2,7 +2,7 @@
 //!
 //! # ID3v1 notes
 //!
-//! See also: [`Id3v1Tag`]
+//! See also: [`ID3v1Tag`]
 //!
 //! ## Genres
 //!
@@ -21,7 +21,7 @@ cfg_if::cfg_if! {
 		pub use constants::GENRES;
 
 		pub(crate) mod tag;
-		pub use tag::Id3v1Tag;
+		pub use tag::ID3v1Tag;
 
 		pub(crate) mod read;
 		pub(crate) mod write;

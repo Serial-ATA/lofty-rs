@@ -4,8 +4,8 @@
 //!
 //! * See [`FlacFile`]
 
-mod block;
-mod properties;
+pub(crate) mod block;
+pub(crate) mod properties;
 mod read;
 #[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
@@ -13,7 +13,7 @@ pub(crate) mod write;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
@@ -33,7 +33,7 @@ use std::io::{Read, Seek};
 pub struct FlacFile {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2_tag: Option<Id3v2Tag>,
+	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	#[cfg(feature = "vorbis_comments")]
 	/// The vorbis comments contained in the file
 	///
@@ -102,6 +102,6 @@ impl FlacFile {
 		vorbis_comments, VorbisComments;
 
 		#[cfg(feature = "id3v2")]
-		id3v2_tag, Id3v2Tag
+		id3v2_tag, ID3v2Tag
 	}
 }

@@ -1,4 +1,4 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
 
 use std::io::{Cursor, Read};
@@ -35,7 +35,7 @@ impl GeneralEncapsulatedObject {
 	/// This function will return an error if at any point it's unable to parse the data
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 4 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameLength).into());
 		}
 
 		let encoding = TextEncoding::from_u8(data[0])
@@ -107,7 +107,7 @@ mod tests {
 
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
 
-		let parsed_geob = GeneralEncapsulatedObject::parse(&*cont).unwrap();
+		let parsed_geob = GeneralEncapsulatedObject::parse(&cont).unwrap();
 
 		assert_eq!(parsed_geob, expected);
 	}

@@ -1,4 +1,4 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::util::text_utils::{encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
@@ -44,15 +44,15 @@ impl LanguageFrame {
 		let mut bytes = vec![self.encoding as u8];
 
 		if self.language.len() != 3 || self.language.chars().any(|c| !('a'..='z').contains(&c)) {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::Other(
+			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 				"Invalid frame language found (expected 3 ascii characters)",
 			))
 			.into());
 		}
 
 		bytes.extend(self.language.as_bytes().iter());
-		bytes.extend(encode_text(&*self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&*self.content, self.encoding, false));
+		bytes.extend(encode_text(&self.description, self.encoding, true).iter());
+		bytes.extend(encode_text(&self.content, self.encoding, false));
 
 		Ok(bytes)
 	}

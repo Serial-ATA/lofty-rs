@@ -93,7 +93,7 @@ where
 			#[cfg(feature = "vorbis_comments")]
 			6 => tag
 				.pictures
-				.push(Picture::from_flac_bytes(&*block.content, false)?),
+				.push(Picture::from_flac_bytes(&block.content, false)?),
 			_ => {},
 		}
 	}

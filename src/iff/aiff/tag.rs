@@ -14,7 +14,7 @@ use byteorder::BigEndian;
 /// Represents an AIFF `COMT` chunk
 ///
 /// This is preferred over the `ANNO` chunk, for its additional information.
-#[derive(Default, Clone, Debug, PartialEq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Comment {
 	/// The creation time of the comment
 	///
@@ -59,8 +59,8 @@ pub struct Comment {
 /// * [`ItemKey::Comment`](crate::ItemKey::Comment)
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
-#[derive(Default, Clone, Debug, PartialEq)]
-pub struct AiffTextChunks {
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
+pub struct AIFFTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
 	/// The author of the piece
@@ -79,7 +79,7 @@ pub struct AiffTextChunks {
 	pub comments: Option<Vec<Comment>>,
 }
 
-impl Accessor for AiffTextChunks {
+impl Accessor for AIFFTextChunks {
 	fn artist(&self) -> Option<&str> {
 		self.author.as_deref()
 	}
@@ -99,9 +99,29 @@ impl Accessor for AiffTextChunks {
 	fn remove_title(&mut self) {
 		self.name = None
 	}
+
+	fn comment(&self) -> Option<&str> {
+		if let Some(ref anno) = self.annotations {
+			if !anno.is_empty() {
+				return anno.first().map(String::as_str);
+			}
+		}
+
+		if let Some(ref comm) = self.comments {
+			return comm.first().map(|c| c.text.as_str());
+		}
+
+		None
+	}
+	fn set_comment(&mut self, value: String) {
+		self.annotations = Some(vec![value]);
+	}
+	fn remove_comment(&mut self) {
+		self.annotations = None;
+	}
 }
 
-impl AiffTextChunks {
+impl AIFFTextChunks {
 	/// Returns the copyright message
 	pub fn copyright(&self) -> Option<&str> {
 		self.copyright.as_deref()
@@ -118,13 +138,13 @@ impl AiffTextChunks {
 	}
 }
 
-impl TagExt for AiffTextChunks {
+impl TagExt for AIFFTextChunks {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
 		matches!(
 			self,
-			AiffTextChunks {
+			AIFFTextChunks {
 				name: None,
 				author: None,
 				copyright: None,
@@ -139,7 +159,7 @@ impl TagExt for AiffTextChunks {
 	/// # Errors
 	///
 	/// * `path` does not exist
-	/// * See [`AiffTextChunks::save_to`]
+	/// * See [`AIFFTextChunks::save_to`]
 	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
 		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
@@ -167,11 +187,11 @@ impl TagExt for AiffTextChunks {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from_path(path)
+		TagType::AIFFText.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from(file)
+		TagType::AIFFText.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -179,9 +199,9 @@ impl TagExt for AiffTextChunks {
 	}
 }
 
-impl From<AiffTextChunks> for Tag {
-	fn from(input: AiffTextChunks) -> Self {
-		let mut tag = Tag::new(TagType::AiffText);
+impl From<AIFFTextChunks> for Tag {
+	fn from(input: AIFFTextChunks) -> Self {
+		let mut tag = Tag::new(TagType::AIFFText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
 			if let Some(text) = field {
@@ -212,7 +232,7 @@ impl From<AiffTextChunks> for Tag {
 	}
 }
 
-impl From<Tag> for AiffTextChunks {
+impl From<Tag> for AIFFTextChunks {
 	fn from(mut input: Tag) -> Self {
 		let name = input.take_strings(&ItemKey::TrackTitle).next();
 		let author = input.take_strings(&ItemKey::TrackArtist).next();
@@ -251,7 +271,7 @@ where
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = Self::create_text_chunks(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}
@@ -337,13 +357,14 @@ where
 	}
 
 	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()> {
-		let file_size = super::read::verify_aiff(data)?;
+		super::read::verify_aiff(data)?;
+		let file_len = data.metadata()?.len().saturating_sub(12);
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
 		let mut chunks_remove = Vec::new();
 
-		let mut chunks = Chunks::<BigEndian>::new(file_size);
+		let mut chunks = Chunks::<BigEndian>::new(file_len);
 
 		while chunks.next(data).is_ok() {
 			match &chunks.fourcc {
@@ -394,7 +415,7 @@ where
 
 		data.rewind()?;
 		data.set_len(0)?;
-		data.write_all(&*file_bytes)?;
+		data.write_all(&file_bytes)?;
 
 		Ok(())
 	}
@@ -402,14 +423,14 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::{AiffTextChunks, Comment};
+	use crate::iff::{AIFFTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
 	use std::io::Cursor;
 
 	#[test]
 	fn parse_aiff_text() {
-		let expected_tag = AiffTextChunks {
+		let expected_tag = AIFFTextChunks {
 			name: Some(String::from("Foo title")),
 			author: Some(String::from("Bar artist")),
 			copyright: Some(String::from("Baz copyright")),
@@ -482,7 +503,7 @@ mod tests {
 			Some("Baz copyright")
 		);
 
-		let mut comments = tag.get_texts(&ItemKey::Comment);
+		let mut comments = tag.get_strings(&ItemKey::Comment);
 		assert_eq!(comments.next(), Some("Qux annotation"));
 		assert_eq!(comments.next(), Some("Quux annotation"));
 		assert_eq!(comments.next(), Some("Quuz comment"));
@@ -492,7 +513,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_aiff_text() {
-		let mut tag = Tag::new(TagType::AiffText);
+		let mut tag = Tag::new(TagType::AIFFText);
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
 		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
 		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));
@@ -505,7 +526,7 @@ mod tests {
 			ItemValue::Text(String::from("Quux annotation")),
 		));
 
-		let aiff_text: AiffTextChunks = tag.into();
+		let aiff_text: AIFFTextChunks = tag.into();
 
 		assert_eq!(aiff_text.name, Some(String::from("Foo title")));
 		assert_eq!(aiff_text.author, Some(String::from("Bar artist")));
@@ -518,5 +539,22 @@ mod tests {
 			])
 		);
 		assert!(aiff_text.comments.is_none());
+	}
+
+	#[test]
+	fn zero_sized_text_chunks() {
+		let tag_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");
+
+		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
+			.unwrap()
+			.text_chunks
+			.unwrap();
+
+		assert_eq!(aiff_text.name, Some(String::new()));
+		assert_eq!(aiff_text.author, Some(String::new()));
+		assert_eq!(aiff_text.annotations, Some(vec![String::new()]));
+		assert_eq!(aiff_text.comments, None); // Comments have additional information we need, so we ignore on empty
+		assert_eq!(aiff_text.copyright, Some(String::new()));
 	}
 }

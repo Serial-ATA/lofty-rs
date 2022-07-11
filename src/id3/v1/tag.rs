@@ -28,7 +28,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
 /// An ID3v1 tag
 ///
 /// ID3v1 is a severely limited format, with each field
@@ -39,6 +38,12 @@ macro_rules! impl_accessor {
 /// Attempting to write a field greater than the maximum size
 /// will **not** error, it will just be shrunk.
 ///
+/// ## Supported file types
+///
+/// * [`FileType::APE`](crate::FileType::APE)
+/// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::WavPack`](crate::FileType::WavPack)
+///
 /// ## Conversions
 ///
 /// ### From `Tag`
@@ -47,7 +52,8 @@ macro_rules! impl_accessor {
 ///
 /// * [`GENRES`] contains the string
 /// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
-pub struct Id3v1Tag {
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+pub struct ID3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,
 	/// Track artist, 30 bytes max
@@ -80,7 +86,7 @@ pub struct Id3v1Tag {
 	pub genre: Option<u8>,
 }
 
-impl Accessor for Id3v1Tag {
+impl Accessor for ID3v1Tag {
 	impl_accessor!(title, artist, album,);
 
 	fn genre(&self) -> Option<&str> {
@@ -109,9 +115,60 @@ impl Accessor for Id3v1Tag {
 	fn remove_genre(&mut self) {
 		self.genre = None
 	}
+
+	fn track(&self) -> Option<u32> {
+		self.track_number.map(u32::from)
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.track_number = Some(value as u8);
+	}
+
+	fn remove_track(&mut self) {
+		self.track_number = None;
+	}
+
+	fn comment(&self) -> Option<&str> {
+		self.comment.as_deref()
+	}
+
+	fn set_comment(&mut self, value: String) {
+		let mut resized = String::with_capacity(28);
+		for c in value.chars() {
+			if resized.len() + c.len_utf8() > 28 {
+				break;
+			}
+
+			resized.push(c);
+		}
+
+		self.comment = Some(resized);
+	}
+
+	fn remove_comment(&mut self) {
+		self.comment = None;
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(ref year) = self.year {
+			if let Ok(y) = year.parse() {
+				return Some(y);
+			}
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.year = Some(value.to_string());
+	}
+
+	fn remove_year(&mut self) {
+		self.year = None;
+	}
 }
 
-impl TagExt for Id3v1Tag {
+impl TagExt for ID3v1Tag {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -142,11 +199,11 @@ impl TagExt for Id3v1Tag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v1.remove_from_path(path)
+		TagType::ID3v1.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v1.remove_from(file)
+		TagType::ID3v1.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -154,9 +211,9 @@ impl TagExt for Id3v1Tag {
 	}
 }
 
-impl From<Id3v1Tag> for Tag {
-	fn from(input: Id3v1Tag) -> Self {
-		let mut tag = Self::new(TagType::Id3v1);
+impl From<ID3v1Tag> for Tag {
+	fn from(input: ID3v1Tag) -> Self {
+		let mut tag = Self::new(TagType::ID3v1);
 
 		input.title.map(|t| tag.insert_text(ItemKey::TrackTitle, t));
 		input
@@ -183,7 +240,7 @@ impl From<Id3v1Tag> for Tag {
 	}
 }
 
-impl From<Tag> for Id3v1Tag {
+impl From<Tag> for ID3v1Tag {
 	fn from(input: Tag) -> Self {
 		Self {
 			title: input.get_string(&ItemKey::TrackTitle).map(str::to_owned),
@@ -218,7 +275,7 @@ pub(crate) struct Id3v1TagRef<'a> {
 	pub genre: Option<u8>,
 }
 
-impl<'a> Into<Id3v1TagRef<'a>> for &'a Id3v1Tag {
+impl<'a> Into<Id3v1TagRef<'a>> for &'a ID3v1Tag {
 	fn into(self) -> Id3v1TagRef<'a> {
 		Id3v1TagRef {
 			title: self.title.as_deref(),
@@ -274,7 +331,7 @@ impl<'a> Id3v1TagRef<'a> {
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
 		let temp = super::write::encode(self)?;
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}
@@ -282,12 +339,12 @@ impl<'a> Id3v1TagRef<'a> {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v1::Id3v1Tag;
+	use crate::id3::v1::ID3v1Tag;
 	use crate::{Tag, TagExt, TagType};
 
 	#[test]
 	fn parse_id3v1() {
-		let expected_tag = Id3v1Tag {
+		let expected_tag = ID3v1Tag {
 			title: Some(String::from("Foo title")),
 			artist: Some(String::from("Bar artist")),
 			album: Some(String::from("Baz album")),
@@ -328,9 +385,9 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v1() {
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v1);
 
-		let id3v1_tag: Id3v1Tag = tag.into();
+		let id3v1_tag: ID3v1Tag = tag.into();
 
 		assert_eq!(id3v1_tag.title.as_deref(), Some("Foo title"));
 		assert_eq!(id3v1_tag.artist.as_deref(), Some("Bar artist"));

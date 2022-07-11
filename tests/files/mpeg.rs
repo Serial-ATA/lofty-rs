@@ -13,10 +13,10 @@ fn read() {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify ID3v1
-	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
+	crate::verify_artist!(file, tag, TagType::ID3v1, "Bar artist", 1);
 
 	// Finally, verify APEv2
-	crate::verify_artist!(file, tag, TagType::Ape, "Baz artist", 1);
+	crate::verify_artist!(file, tag, TagType::APE, "Baz artist", 1);
 }
 
 #[test]
@@ -55,10 +55,10 @@ fn write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// ID3v1
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::ID3v1, "Bar artist", 1 => file, "Baz artist");
 
 	// APEv2
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Baz artist", 1 => file, "Qux artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::APE, "Baz artist", 1 => file, "Qux artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -66,22 +66,22 @@ fn write() {
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::ID3v1, "Baz artist", 1 => file, "Bar artist");
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Qux artist", 1 => file, "Baz artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::APE, "Qux artist", 1 => file, "Baz artist");
 }
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::ID3v2);
 }
 
 #[test]
 fn remove_id3v1() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v1);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::ID3v1);
 }
 
 #[test]
 fn remove_ape() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::APE);
 }

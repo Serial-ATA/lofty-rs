@@ -13,9 +13,9 @@ use crate::ape::tag::ApeTag;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
-use crate::id3::v1::tag::Id3v1Tag;
+use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 
@@ -26,17 +26,15 @@ use std::io::{Read, Seek};
 pub struct Mp3File {
 	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag
-	pub(crate) id3v2_tag: Option<Id3v2Tag>,
+	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
-	pub(crate) id3v1_tag: Option<Id3v1Tag>,
+	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	#[cfg(feature = "ape")]
 	/// An APEv1/v2 tag
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: Mp3Properties,
-	pub(super) first_frame_offset: u64,
-	pub(super) last_frame_offset: u64,
 }
 
 impl From<Mp3File> for TaggedFile {
@@ -88,11 +86,11 @@ impl AudioFile for Mp3File {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		match tag_type {
 			#[cfg(feature = "ape")]
-			TagType::Ape => self.ape_tag.is_some(),
+			TagType::APE => self.ape_tag.is_some(),
 			#[cfg(feature = "id3v2")]
-			TagType::Id3v2 => self.id3v2_tag.is_some(),
+			TagType::ID3v2 => self.id3v2_tag.is_some(),
 			#[cfg(feature = "id3v1")]
-			TagType::Id3v1 => self.id3v1_tag.is_some(),
+			TagType::ID3v1 => self.id3v1_tag.is_some(),
 			_ => false,
 		}
 	}
@@ -101,10 +99,10 @@ impl AudioFile for Mp3File {
 impl Mp3File {
 	crate::macros::tag_methods! {
 		#[cfg(feature = "id3v2")]
-		id3v2_tag, Id3v2Tag;
+		id3v2_tag, ID3v2Tag;
 
 		#[cfg(feature = "id3v1")]
-		id3v1_tag, Id3v1Tag;
+		id3v1_tag, ID3v1Tag;
 
 		#[cfg(feature = "ape")]
 		ape_tag, ApeTag

@@ -47,11 +47,40 @@ pub struct TaggedFile {
 
 impl TaggedFile {
 	/// Returns the file's [`FileType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::FileType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// assert_eq!(tagged_file.file_type(), FileType::MP3);
+	/// # Ok(()) }
+	/// ```
 	pub fn file_type(&self) -> FileType {
 		self.ty
 	}
 
 	/// Returns all tags
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::FileType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // An MP3 file with 3 tags
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// let tags = tagged_file.tags();
+	///
+	/// assert_eq!(tags.len(), 3);
+	/// # Ok(()) }
+	/// ```
 	pub fn tags(&self) -> &[Tag] {
 		self.tags.as_slice()
 	}
@@ -59,21 +88,86 @@ impl TaggedFile {
 	/// Returns the file type's primary [`TagType`]
 	///
 	/// See [`FileType::primary_tag_type`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// assert_eq!(tagged_file.primary_tag_type(), TagType::ID3v2);
+	/// # Ok(()) }
+	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		self.ty.primary_tag_type()
 	}
 
 	/// Determines whether the file supports the given [`TagType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// assert!(tagged_file.supports_tag_type(TagType::ID3v2));
+	/// # Ok(()) }
+	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		self.ty.supports_tag_type(tag_type)
 	}
 
+	// TODO: stop making these two take references to TagType
 	/// Get a reference to a specific [`TagType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file with an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// // An ID3v2 tag
+	/// let tag = tagged_file.tag(&TagType::ID3v2);
+	///
+	/// assert!(tag.is_some());
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// # Ok(()) }
+	/// ```
 	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
 		self.tags.iter().find(|i| i.tag_type() == *tag_type)
 	}
 
 	/// Get a mutable reference to a specific [`TagType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file with an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// // An ID3v2 tag
+	/// let tag = tagged_file.tag(&TagType::ID3v2);
+	///
+	/// assert!(tag.is_some());
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	///
+	/// // Alter the tag...
+	/// # Ok(()) }
+	/// ```
 	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
 		self.tags.iter_mut().find(|i| i.tag_type() == *tag_type)
 	}
@@ -81,6 +175,24 @@ impl TaggedFile {
 	/// Returns the primary tag
 	///
 	/// See [`FileType::primary_tag_type`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file with an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// // An ID3v2 tag
+	/// let tag = tagged_file.primary_tag();
+	///
+	/// assert!(tag.is_some());
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// # Ok(()) }
+	/// ```
 	pub fn primary_tag(&self) -> Option<&Tag> {
 		self.tag(&self.primary_tag_type())
 	}
@@ -88,16 +200,72 @@ impl TaggedFile {
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
 	/// See [`FileType::primary_tag_type`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::TagType;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file with an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// // An ID3v2 tag
+	/// let tag = tagged_file.primary_tag_mut();
+	///
+	/// assert!(tag.is_some());
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	///
+	/// // Alter the tag...
+	/// # Ok(()) }
+	/// ```
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tag_mut(&self.primary_tag_type())
 	}
 
 	/// Gets the first tag, if there are any
+	///
+	/// NOTE: This will grab the first available tag, you cannot rely on the result being
+	/// a specific type
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// // A file we know has tags
+	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	///
+	/// // A tag of a (currently) unknown type
+	/// let tag = tagged_file.first_tag();
+	/// assert!(tag.is_some());
+	/// # Ok(()) }
+	/// ```
 	pub fn first_tag(&self) -> Option<&Tag> {
 		self.tags.first()
 	}
 
 	/// Gets a mutable reference to the first tag, if there are any
+	///
+	/// NOTE: This will grab the first available tag, you cannot rely on the result being
+	/// a specific type
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// // A file we know has tags
+	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	///
+	/// // A tag of a (currently) unknown type
+	/// let tag = tagged_file.first_tag_mut();
+	/// assert!(tag.is_some());
+	///
+	/// // Alter the tag...
+	/// # Ok(()) }
+	/// ```
 	pub fn first_tag_mut(&mut self) -> Option<&mut Tag> {
 		self.tags.first_mut()
 	}
@@ -108,6 +276,27 @@ impl TaggedFile {
 	/// the [`TagType`]. See [`FileType::supports_tag_type`]
 	///
 	/// If a tag is replaced, it will be returned
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{AudioFile, Tag, TagType};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file without an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// # let _ = tagged_file.take(TagType::ID3v2); // sneaky
+	///
+	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	///
+	/// // Insert the ID3v2 tag
+	/// let new_id3v2_tag = Tag::new(TagType::ID3v2);
+	/// tagged_file.insert_tag(new_id3v2_tag);
+	///
+	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	/// # Ok(()) }
+	/// ```
 	pub fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
 		let tag_type = tag.tag_type();
 
@@ -122,6 +311,25 @@ impl TaggedFile {
 	}
 
 	/// Removes a specific [`TagType`] and returns it
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{AudioFile, TagType};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file containing an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	///
+	/// // Take the ID3v2 tag
+	/// let id3v2 = tagged_file.take(TagType::ID3v2);
+	///
+	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// # Ok(()) }
+	/// ```
 	pub fn take(&mut self, tag_type: TagType) -> Option<Tag> {
 		self.tags
 			.iter()
@@ -135,6 +343,25 @@ impl TaggedFile {
 	///
 	/// * This will remove any tag the format does not support. See [`FileType::supports_tag_type`]
 	/// * This will reset the [`FileProperties`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{AudioFile, FileType, TagType};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file containing an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	///
+	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	///
+	/// // Remap our MP3 file to WavPack, which doesn't support ID3v2
+	/// tagged_file.change_file_type(FileType::WavPack);
+	///
+	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// # Ok(()) }
+	/// ```
 	pub fn change_file_type(&mut self, file_type: FileType) {
 		self.ty = file_type;
 		self.properties = FileProperties::default();
@@ -143,6 +370,19 @@ impl TaggedFile {
 	}
 
 	/// Removes all tags from the file
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	///
+	/// tagged_file.clear();
+	///
+	/// assert!(tagged_file.tags().is_empty());
+	/// # Ok(()) }
+	/// ```
 	pub fn clear(&mut self) {
 		self.tags.clear()
 	}
@@ -152,6 +392,19 @@ impl TaggedFile {
 	/// # Errors
 	///
 	/// See [`TaggedFile::save_to`]
+	///
+	/// # Examples
+	///
+	/// ```rust,ignore
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	///
+	/// // Edit the tags
+	///
+	/// tagged_file.save_to_path(path)?;
+	/// # Ok(()) }
+	/// ```
 	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
 		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
@@ -161,6 +414,22 @@ impl TaggedFile {
 	/// # Errors
 	///
 	/// See [`Tag::save_to`], however this is applicable to every tag in the `TaggedFile`.
+	///
+	/// # Examples
+	///
+	/// ```rust,ignore
+	/// use std::fs::OpenOptions;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	///
+	/// // Edit the tags
+	///
+	/// let mut file = OpenOptions::new().read(true).write(true).open(path)?;
+	/// tagged_file.save_to(&mut file)?;
+	/// # Ok(()) }
+	/// ```
 	pub fn save_to(&self, file: &mut File) -> Result<()> {
 		for tag in &self.tags {
 			tag.save_to(file)?;
@@ -196,7 +465,7 @@ impl AudioFile for TaggedFile {
 	}
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 #[non_exhaustive]
 /// The type of file read
@@ -210,6 +479,7 @@ pub enum FileType {
 	Vorbis,
 	Speex,
 	WAV,
+	WavPack,
 }
 
 impl FileType {
@@ -219,58 +489,85 @@ impl FileType {
 	/// | [`FileType`]             | [`TagType`]      |
 	/// |--------------------------|------------------|
 	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
-	/// | `APE`                    | `Ape`            |
+	/// | `APE` , `WavPack`        | `Ape`            |
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Ilst`        |
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, TagType};
+	///
+	/// let file_type = FileType::MP3;
+	/// assert_eq!(file_type.primary_tag_type(), TagType::ID3v2);
+	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
 			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
-			FileType::AIFF => TagType::AiffText,
+			FileType::AIFF => TagType::AIFFText,
 			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
-			FileType::WAV => TagType::RiffInfo,
+			FileType::WAV => TagType::RIFFInfo,
 			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
+			FileType::MP3 => TagType::ID3v1,
 			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
-			FileType::MP3 => TagType::Ape,
-			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::Id3v2,
+			FileType::MP3 => TagType::APE,
+			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::ID3v2,
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MP3 => TagType::Id3v1,
-			FileType::APE => TagType::Ape,
+			FileType::MP3 | FileType::WavPack => TagType::ID3v1,
+			FileType::APE | FileType::WavPack => TagType::APE,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
-			FileType::MP4 => TagType::Mp4Ilst,
+			FileType::MP4 => TagType::MP4ilst,
 		}
 	}
 
 	/// Returns if the target `FileType` supports a [`TagType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{FileType, TagType};
+	///
+	/// let file_type = FileType::MP3;
+	/// assert!(file_type.supports_tag_type(TagType::ID3v2));
+	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
 			#[cfg(feature = "id3v2")]
 			FileType::AIFF | FileType::APE | FileType::MP3 | FileType::WAV
-				if tag_type == TagType::Id3v2 =>
+				if tag_type == TagType::ID3v2 =>
 			{
 				true
 			},
 			#[cfg(feature = "aiff_text_chunks")]
-			FileType::AIFF if tag_type == TagType::AiffText => true,
+			FileType::AIFF if tag_type == TagType::AIFFText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MP3 if tag_type == TagType::Id3v1 => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::ID3v1 => true,
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MP3 if tag_type == TagType::Ape => true,
+			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::APE => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
 			},
 			#[cfg(feature = "mp4_ilst")]
-			FileType::MP4 => tag_type == TagType::Mp4Ilst,
+			FileType::MP4 => tag_type == TagType::MP4ilst,
 			#[cfg(feature = "riff_info_list")]
-			FileType::WAV => tag_type == TagType::RiffInfo,
+			FileType::WAV => tag_type == TagType::RIFFInfo,
 			_ => false,
 		}
 	}
 
 	/// Attempts to extract a [`FileType`] from an extension
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::FileType;
+	///
+	/// let extension = "mp3";
+	/// assert_eq!(FileType::from_ext(extension), Some(FileType::MP3));
+	/// ```
 	pub fn from_ext<E>(ext: E) -> Option<Self>
 	where
 		E: AsRef<OsStr>,
@@ -282,6 +579,7 @@ impl FileType {
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
 			"mp3" => Some(Self::MP3),
 			"wav" | "wave" => Some(Self::WAV),
+			"wv" => Some(Self::WavPack),
 			"opus" => Some(Self::Opus),
 			"flac" => Some(Self::FLAC),
 			"ogg" => Some(Self::Vorbis),
@@ -292,6 +590,16 @@ impl FileType {
 	}
 
 	/// Attempts to determine a [`FileType`] from a path
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::FileType;
+	/// use std::path::Path;
+	///
+	/// let path = Path::new("path/to/my.mp3");
+	/// assert_eq!(FileType::from_path(path), Some(FileType::MP3));
+	/// ```
 	pub fn from_path<P>(path: P) -> Option<Self>
 	where
 		P: AsRef<Path>,
@@ -310,6 +618,24 @@ impl FileType {
 	/// For this behavior, use [`Probe::guess_file_type`].
 	///
 	/// [`Probe::guess_file_type`]: crate::Probe::guess_file_type
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::FileType;
+	/// use std::fs::File;
+	/// use std::io::Read;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_opus = "tests/files/assets/minimal/full_test.opus";
+	/// let mut file = File::open(path_to_opus)?;
+	///
+	/// let mut buf = [0; 50]; // Search the first 50 bytes of the file
+	/// file.read_exact(&mut buf)?;
+	///
+	/// assert_eq!(FileType::from_buffer(&buf), Some(FileType::Opus));
+	/// # Ok(()) }
+	/// ```
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
 			(Some(f_ty), _) => Some(f_ty),
@@ -386,6 +712,7 @@ impl FileType {
 
 				None
 			},
+			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::MP4),
 			_ => None,
 		}

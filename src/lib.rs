@@ -17,6 +17,7 @@
 //! | Ogg Vorbis  | `Vorbis Comments`                    |
 //! | Speex       | `Vorbis Comments`                    |
 //! | WAV         | `ID3v2`, `RIFF INFO`                 |
+//! | WavPack     | `APEv2`, `APEv1`, `ID3v1`            |
 //!
 //! \* The tag will be **read only**, due to lack of official support
 //!
@@ -103,8 +104,8 @@
 //! assert_eq!(mp3_file.properties().channels(), 2);
 //!
 //! // Here we have a file with multiple tags
-//! assert!(mp3_file.contains_tag_type(TagType::Id3v2));
-//! assert!(mp3_file.contains_tag_type(TagType::Ape));
+//! assert!(mp3_file.contains_tag_type(TagType::ID3v2));
+//! assert!(mp3_file.contains_tag_type(TagType::APE));
 //! # Ok(())
 //! # }
 //! ```
@@ -163,9 +164,13 @@
 	clippy::tabs_in_doc_comments,
 	clippy::len_without_is_empty,
 	clippy::needless_late_init,
-	clippy::type_complexity
+	clippy::type_complexity,
+	clippy::type_repetition_in_bounds,
+	unused_qualifications
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+
+// TODO: Give 1.62.0 some time, and start using #[default] on enums
 
 pub mod ape;
 pub mod error;
@@ -182,6 +187,7 @@ mod probe;
 pub(crate) mod properties;
 pub(crate) mod tag;
 mod traits;
+pub mod wavpack;
 
 pub use crate::error::{LoftyError, Result};
 
@@ -197,3 +203,15 @@ pub use crate::traits::{Accessor, TagExt};
 
 #[cfg(feature = "vorbis_comments")]
 pub use picture::PictureInformation;
+
+// TODO: https://github.com/rust-lang/rust/issues/88581
+#[inline]
+pub(crate) const fn div_ceil(dividend: u64, divisor: u64) -> u64 {
+	let d = dividend / divisor;
+	let r = dividend % divisor;
+	if r > 0 && divisor > 0 {
+		d + 1
+	} else {
+		d
+	}
+}

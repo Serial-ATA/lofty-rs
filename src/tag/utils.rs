@@ -1,12 +1,12 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::file::FileType;
 use crate::tag::{Tag, TagType};
-use crate::{ape, iff, mp3};
+use crate::{ape, iff, mp3, wavpack};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::{self, tag::Id3v2TagRef, Id3v2TagFlags};
+use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
 #[cfg(feature = "mp4_ilst")]
 use crate::mp4::Ilst;
 #[cfg(feature = "vorbis_comments")]
@@ -16,7 +16,7 @@ use ape::tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
-use iff::wav::tag::RiffInfoListRef;
+use iff::wav::tag::RIFFInfoListRef;
 
 use std::fs::File;
 use std::io::Write;
@@ -36,6 +36,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
 		},
 		FileType::WAV => iff::wav::write::write_to(file, tag),
+		FileType::WavPack => wavpack::write::write_to(file, tag),
 		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
 	}
 }
@@ -44,21 +45,21 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "ape")]
-		TagType::Ape => ApeTagRef {
+		TagType::APE => ApeTagRef {
 			read_only: false,
 			items: ape::tag::tagitems_into_ape(tag.items()),
 		}
 		.dump_to(writer),
 		#[cfg(feature = "id3v1")]
-		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
+		TagType::ID3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 => Id3v2TagRef {
-			flags: Id3v2TagFlags::default(),
+		TagType::ID3v2 => Id3v2TagRef {
+			flags: ID3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}
 		.dump_to(writer),
 		#[cfg(feature = "mp4_ilst")]
-		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
+		TagType::MP4ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
 		#[cfg(feature = "vorbis_comments")]
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
@@ -71,19 +72,19 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			.dump_to(writer)
 		},
 		#[cfg(feature = "riff_info_list")]
-		TagType::RiffInfo => RiffInfoListRef {
+		TagType::RIFFInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
 		.dump_to(writer),
 		#[cfg(feature = "aiff_text_chunks")]
-		TagType::AiffText => {
+		TagType::AIFFText => {
 			use crate::tag::item::ItemKey;
 
 			AiffTextChunksRef {
 				name: tag.get_string(&ItemKey::TrackTitle),
 				author: tag.get_string(&ItemKey::TrackArtist),
 				copyright: tag.get_string(&ItemKey::CopyrightMessage),
-				annotations: Some(tag.get_texts(&ItemKey::Comment)),
+				annotations: Some(tag.get_strings(&ItemKey::Comment)),
 				comments: None,
 			}
 		}

@@ -1,4 +1,4 @@
-use lofty::id3::v2::{Id3v2Version, TextEncoding};
+use lofty::id3::v2::{ID3v2Version, TextEncoding};
 use lofty::{Picture, PictureInformation, PictureType};
 
 use std::fs::File;
@@ -28,7 +28,7 @@ fn create_original_picture() -> Picture {
 fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
-	let (pic, _) = Picture::from_apic_bytes(&*buf, Id3v2Version::V4).unwrap();
+	let (pic, _) = Picture::from_apic_bytes(&buf, ID3v2Version::V4).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }
@@ -40,7 +40,7 @@ fn as_apic_bytes() {
 	let original_picture = create_original_picture();
 
 	let original_as_apic = original_picture
-		.as_apic_bytes(Id3v2Version::V4, TextEncoding::Latin1)
+		.as_apic_bytes(ID3v2Version::V4, TextEncoding::Latin1)
 		.unwrap();
 
 	assert_eq!(buf, original_as_apic);
@@ -50,7 +50,7 @@ fn as_apic_bytes() {
 fn id3v22_pic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
-	let (pic, _) = Picture::from_apic_bytes(&*buf, Id3v2Version::V2).unwrap();
+	let (pic, _) = Picture::from_apic_bytes(&buf, ID3v2Version::V2).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }
@@ -62,7 +62,7 @@ fn as_apic_bytes_v2() {
 	let original_picture = create_original_picture();
 
 	let original_as_pic = original_picture
-		.as_apic_bytes(Id3v2Version::V2, TextEncoding::Latin1)
+		.as_apic_bytes(ID3v2Version::V2, TextEncoding::Latin1)
 		.unwrap();
 
 	assert_eq!(buf, original_as_pic);
@@ -72,7 +72,7 @@ fn as_apic_bytes_v2() {
 fn ape_binary_item() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apev2");
 
-	let pic = Picture::from_ape_bytes("Cover Art (Front)", &*buf).unwrap();
+	let pic = Picture::from_ape_bytes("Cover Art (Front)", &buf).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }
@@ -92,7 +92,7 @@ fn as_ape_bytes() {
 fn flac_metadata_block_picture() {
 	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
 
-	let (pic, _) = Picture::from_flac_bytes(&*buf, true).unwrap();
+	let (pic, _) = Picture::from_flac_bytes(&buf, true).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }

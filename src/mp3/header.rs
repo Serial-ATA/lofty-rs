@@ -3,7 +3,6 @@ use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
-use std::ops::Neg;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -49,14 +48,20 @@ where
 // This will search up to 1024 bytes preceding the APE tag/ID3v1/EOF.
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
-const REV_FRAME_SEARCH_BOUNDS: i64 = 1024;
-pub(super) fn rev_search_for_frame_sync<R>(input: &mut R) -> std::io::Result<Option<u64>>
+const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
+pub(super) fn rev_search_for_frame_sync<R>(
+	input: &mut R,
+	pos: &mut u64,
+) -> std::io::Result<Option<u64>>
 where
 	R: Read + Seek,
 {
-	input.seek(SeekFrom::Current(REV_FRAME_SEARCH_BOUNDS.neg()))?;
+	let search_bounds = std::cmp::min(*pos, REV_FRAME_SEARCH_BOUNDS);
 
-	let ret = search_for_frame_sync(&mut input.take(REV_FRAME_SEARCH_BOUNDS as u64));
+	*pos -= search_bounds;
+	input.seek(SeekFrom::Start(*pos))?;
+
+	let ret = search_for_frame_sync(&mut input.take(search_bounds));
 	if let Ok(Some(_)) = ret {
 		// Seek to the start of the frame sync
 		input.seek(SeekFrom::Current(-2))?;
@@ -65,7 +70,44 @@ where
 	ret
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+pub(super) enum HeaderCmpResult {
+	Equal,
+	Undetermined,
+	NotEqual,
+}
+
+pub(super) fn cmp_header<R>(
+	reader: &mut R,
+	first_header_len: u32,
+	first_header_bytes: u32,
+) -> HeaderCmpResult
+where
+	R: Read + Seek,
+{
+	// Used to compare the versions, layers, and sample rates of two frame headers.
+	// If they aren't equal, something is broken.
+	const HEADER_MASK: u32 = 0xFFFE_0C00;
+
+	// Read the next header and see if they are the same
+	let res = reader.seek(SeekFrom::Current(i64::from(
+		first_header_len.saturating_sub(4),
+	)));
+	if res.is_err() {
+		return HeaderCmpResult::Undetermined;
+	}
+
+	match reader.read_u32::<BigEndian>() {
+		Ok(second_header_data)
+			if first_header_bytes & HEADER_MASK == second_header_data & HEADER_MASK =>
+		{
+			HeaderCmpResult::Equal
+		},
+		Err(_) => HeaderCmpResult::Undetermined,
+		_ => HeaderCmpResult::NotEqual,
+	}
+}
+
+#[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 /// MPEG Audio version
 pub enum MpegVersion {
@@ -80,7 +122,7 @@ impl Default for MpegVersion {
 	}
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 /// MPEG layer
 pub enum Layer {
@@ -95,7 +137,7 @@ impl Default for Layer {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs)]
 /// Channel mode
 pub enum ChannelMode {
@@ -112,7 +154,7 @@ impl Default for ChannelMode {
 	}
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs, non_camel_case_types)]
 /// A rarely-used decoder hint that the file must be de-emphasized
 pub enum Emphasis {
@@ -147,17 +189,18 @@ pub(crate) struct Header {
 }
 
 impl Header {
-	pub(super) fn read(data: u32) -> Result<Self> {
+	pub(super) fn read(data: u32) -> Option<Self> {
 		let version = match (data >> 19) & 0b11 {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
 			_ => {
-				return Err(FileDecodingError::new(
-					FileType::MP3,
-					"Frame header has an invalid version",
-				)
-				.into())
+				return None;
+				// return Err(FileDecodingError::new(
+				// 	FileType::MP3,
+				// 	"Frame header has an invalid version",
+				// )
+				// .into())
 			},
 		};
 
@@ -168,11 +211,12 @@ impl Header {
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
 			_ => {
-				return Err(FileDecodingError::new(
-					FileType::MP3,
-					"Frame header uses a reserved layer",
-				)
-				.into())
+				return None;
+				// return Err(FileDecodingError::new(
+				// 	FileType::MP3,
+				// 	"Frame header uses a reserved layer",
+				// )
+				// .into())
 			},
 		};
 
@@ -191,12 +235,12 @@ impl Header {
 			emphasis: Emphasis::default(),
 		};
 
-		let layer_index = (layer as usize).saturating_sub(1);
+		let layer_index = (header.layer as usize).saturating_sub(1);
 
 		let bitrate_index = (data >> 12) & 0xF;
 		header.bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
 		if header.bitrate == 0 {
-			return Ok(header);
+			return Some(header);
 		}
 
 		// Sample rate index
@@ -204,8 +248,8 @@ impl Header {
 		header.sample_rate = match sample_rate_index {
 			// This is invalid, but it doesn't seem worth it to error here
 			// We will error if properties are read
-			3 => return Ok(header),
-			_ => SAMPLE_RATES[version as usize][sample_rate_index as usize],
+			3 => return Some(header),
+			_ => SAMPLE_RATES[header.version as usize][sample_rate_index as usize],
 		};
 
 		let has_padding = ((data >> 9) & 1) == 1;
@@ -245,7 +289,7 @@ impl Header {
 		header.len =
 			(u32::from(header.samples) * header.bitrate * 125 / header.sample_rate) + padding;
 
-		Ok(header)
+		Some(header)
 	}
 }
 
@@ -320,6 +364,9 @@ impl XingHeader {
 
 #[cfg(test)]
 mod tests {
+	use crate::tag::utils::test_utils::read_path;
+	use std::io::{Cursor, Read, Seek, SeekFrom};
+
 	#[test]
 	fn search_for_frame_sync() {
 		fn test(data: &[u8], expected_result: Option<u64>) {
@@ -330,5 +377,24 @@ mod tests {
 		test(&[0xFF, 0xFB, 0x00], Some(0));
 		test(&[0x00, 0x00, 0x01, 0xFF, 0xFB], Some(3));
 		test(&[0x01, 0xFF], None);
+	}
+
+	#[test]
+	fn rev_search_for_frame_sync() {
+		fn test<R: Read + Seek>(reader: &mut R, expected_result: Option<u64>) {
+			// We have to start these at the end to do a reverse search, of course :)
+			let mut pos = reader.seek(SeekFrom::End(0)).unwrap();
+
+			let ret = super::rev_search_for_frame_sync(reader, &mut pos).unwrap();
+			assert_eq!(ret, expected_result);
+		}
+
+		test(&mut Cursor::new([0xFF, 0xFB, 0x00]), Some(0));
+		test(&mut Cursor::new([0x00, 0x00, 0x01, 0xFF, 0xFB]), Some(3));
+		test(&mut Cursor::new([0x01, 0xFF]), None);
+
+		let bytes = read_path("tests/files/assets/rev_frame_sync_search.mp3");
+		let mut reader = Cursor::new(bytes);
+		test(&mut reader, Some(283));
 	}
 }

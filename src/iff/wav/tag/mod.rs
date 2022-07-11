@@ -11,28 +11,26 @@ use std::io::Write;
 use std::path::Path;
 
 macro_rules! impl_accessor {
-	($($name:ident, $key:literal;)+) => {
+	($($name:ident => $key:literal;)+) => {
 		paste::paste! {
-			impl Accessor for RiffInfoList {
-				$(
-					fn $name(&self) -> Option<&str> {
-						self.get($key)
-					}
+			$(
+				fn $name(&self) -> Option<&str> {
+					self.get($key)
+				}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.insert(String::from($key), value)
-					}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.insert(String::from($key), value)
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.remove($key)
-					}
-				)+
-			}
+				fn [<remove_ $name>](&mut self) {
+					self.remove($key)
+				}
+			)+
 		}
 	}
 }
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
 /// A RIFF INFO LIST
 ///
 /// ## Supported file types
@@ -47,19 +45,12 @@ macro_rules! impl_accessor {
 ///
 /// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
 /// * It has a key that is 4 bytes in length and within the ASCII range
-pub struct RiffInfoList {
+pub struct RIFFInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,
 }
 
-impl_accessor!(
-	artist, "IART";
-	title,  "INAM";
-	album,  "IPRD";
-	genre,  "IGNR";
-);
-
-impl RiffInfoList {
+impl RIFFInfoList {
 	/// Get an item by key
 	pub fn get(&self, key: &str) -> Option<&str> {
 		self.items
@@ -99,7 +90,49 @@ impl RiffInfoList {
 	}
 }
 
-impl TagExt for RiffInfoList {
+impl Accessor for RIFFInfoList {
+	impl_accessor!(
+		artist  => "IART";
+		title   => "INAM";
+		album   => "IPRD";
+		genre   => "IGNR";
+		comment => "ICMT";
+	);
+
+	fn track(&self) -> Option<u32> {
+		if let Some(item) = self.get("IPRT") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track(&mut self, value: u32) {
+		self.insert(String::from("IPRT"), value.to_string());
+	}
+
+	fn remove_track(&mut self) {
+		self.remove("IPRT");
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		if let Some(item) = self.get("IFRM") {
+			return item.parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		self.insert(String::from("IFRM"), value.to_string());
+	}
+
+	fn remove_track_total(&mut self) {
+		self.remove("IFRM");
+	}
+}
+
+impl TagExt for RIFFInfoList {
 	type Err = LoftyError;
 
 	fn is_empty(&self) -> bool {
@@ -111,21 +144,21 @@ impl TagExt for RiffInfoList {
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		RiffInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.write_to(file)
 	}
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		RiffInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
+		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.dump_to(writer)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from_path(path)
+		TagType::RIFFInfo.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from(file)
+		TagType::RIFFInfo.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -133,12 +166,12 @@ impl TagExt for RiffInfoList {
 	}
 }
 
-impl From<RiffInfoList> for Tag {
-	fn from(input: RiffInfoList) -> Self {
-		let mut tag = Tag::new(TagType::RiffInfo);
+impl From<RIFFInfoList> for Tag {
+	fn from(input: RIFFInfoList) -> Self {
+		let mut tag = Tag::new(TagType::RIFFInfo);
 
 		for (k, v) in input.items {
-			let item_key = ItemKey::from_key(TagType::RiffInfo, &k);
+			let item_key = ItemKey::from_key(TagType::RIFFInfo, &k);
 
 			tag.items.push(TagItem::new(
 				item_key,
@@ -150,9 +183,9 @@ impl From<RiffInfoList> for Tag {
 	}
 }
 
-impl From<Tag> for RiffInfoList {
+impl From<Tag> for RIFFInfoList {
 	fn from(input: Tag) -> Self {
-		let mut riff_info = RiffInfoList::default();
+		let mut riff_info = RIFFInfoList::default();
 
 		for item in input.items {
 			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value {
@@ -163,7 +196,7 @@ impl From<Tag> for RiffInfoList {
 						}
 					},
 					k => {
-						if let Some(key) = k.map_key(TagType::RiffInfo, false) {
+						if let Some(key) = k.map_key(TagType::RIFFInfo, false) {
 							riff_info.items.push((key.to_string(), val))
 						}
 					},
@@ -175,19 +208,19 @@ impl From<Tag> for RiffInfoList {
 	}
 }
 
-pub(crate) struct RiffInfoListRef<'a, I>
+pub(crate) struct RIFFInfoListRef<'a, I>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
 	pub(crate) items: I,
 }
 
-impl<'a, I> RiffInfoListRef<'a, I>
+impl<'a, I> RIFFInfoListRef<'a, I>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
-	pub(crate) fn new(items: I) -> RiffInfoListRef<'a, I> {
-		RiffInfoListRef { items }
+	pub(crate) fn new(items: I) -> RIFFInfoListRef<'a, I> {
+		RIFFInfoListRef { items }
 	}
 
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
@@ -198,7 +231,7 @@ where
 		let mut temp = Vec::new();
 		write::create_riff_info(&mut self.items, &mut temp)?;
 
-		writer.write_all(&*temp)?;
+		writer.write_all(&temp)?;
 
 		Ok(())
 	}
@@ -206,7 +239,7 @@ where
 
 pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&str, &str)> {
 	items.iter().filter_map(|i| {
-		let item_key = i.key().map_key(TagType::RiffInfo, true);
+		let item_key = i.key().map_key(TagType::RIFFInfo, true);
 
 		match (item_key, i.value()) {
 			(Some(key), ItemValue::Text(val) | ItemValue::Locator(val))
@@ -221,7 +254,7 @@ pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&st
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::RiffInfoList;
+	use crate::iff::RIFFInfoList;
 	use crate::{Tag, TagExt, TagType};
 
 	use crate::iff::chunk::Chunks;
@@ -230,7 +263,7 @@ mod tests {
 
 	#[test]
 	fn parse_riff_info() {
-		let mut expected_tag = RiffInfoList::default();
+		let mut expected_tag = RIFFInfoList::default();
 
 		expected_tag.insert(String::from("IART"), String::from("Bar artist"));
 		expected_tag.insert(String::from("ICMT"), String::from("Qux comment"));
@@ -240,11 +273,11 @@ mod tests {
 		expected_tag.insert(String::from("IPRT"), String::from("1"));
 
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
-		let mut parsed_tag = RiffInfoList::default();
+		let mut parsed_tag = RIFFInfoList::default();
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -256,11 +289,11 @@ mod tests {
 	#[test]
 	fn riff_info_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
-		let mut parsed_tag = RiffInfoList::default();
+		let mut parsed_tag = RIFFInfoList::default();
 
 		super::read::parse_riff_info(
 			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
 		)
@@ -269,12 +302,12 @@ mod tests {
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
 
-		let mut temp_parsed_tag = RiffInfoList::default();
+		let mut temp_parsed_tag = RIFFInfoList::default();
 
 		// Remove the LIST....INFO from the tag
 		super::read::parse_riff_info(
 			&mut Cursor::new(&writer[12..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 13) as u64,
 			&mut temp_parsed_tag,
 		)
@@ -288,11 +321,11 @@ mod tests {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
-		let mut riff_info = RiffInfoList::default();
+		let mut riff_info = RIFFInfoList::default();
 
 		super::read::parse_riff_info(
 			&mut reader,
-			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u32),
+			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u64),
 			(tag_bytes.len() - 1) as u64,
 			&mut riff_info,
 		)
@@ -305,9 +338,9 @@ mod tests {
 
 	#[test]
 	fn tag_to_riff_info() {
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::RiffInfo);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::RIFFInfo);
 
-		let riff_info: RiffInfoList = tag.into();
+		let riff_info: RIFFInfoList = tag.into();
 
 		assert_eq!(riff_info.get("INAM"), Some("Foo title"));
 		assert_eq!(riff_info.get("IART"), Some("Bar artist"));

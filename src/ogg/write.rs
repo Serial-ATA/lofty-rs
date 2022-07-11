@@ -33,7 +33,7 @@ impl OGGFormat {
 	}
 }
 
-pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
+pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
 	match tag.tag_type() {
 		#[cfg(feature = "vorbis_comments")]
 		TagType::VorbisComments => {
@@ -59,7 +59,7 @@ pub(in crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Re
 			write(file, &mut comments_ref, format)
 		},
 		#[cfg(feature = "id3v2")]
-		TagType::Id3v2 if file_type == FileType::FLAC => {
+		TagType::ID3v2 if file_type == FileType::FLAC => {
 			// This tag can *only* be removed in this format
 			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file)
 		},
@@ -124,7 +124,7 @@ where
 
 			writer.write_u32::<LittleEndian>(bytes_len as u32)?;
 			writer.write_all(PICTURE_KEY.as_bytes())?;
-			writer.write_all(&*picture)?;
+			writer.write_all(&picture)?;
 		}
 	}
 
@@ -161,7 +161,7 @@ where
 	let ser = first_page.serial;
 
 	let mut writer = Vec::new();
-	writer.write_all(&*first_page.as_bytes()?)?;
+	writer.write_all(&first_page.as_bytes()?)?;
 
 	let first_md_page = Page::read(data, false)?;
 
@@ -207,7 +207,7 @@ where
 
 	data.rewind()?;
 	data.set_len(first_page.end)?;
-	data.write_all(&*writer)?;
+	data.write_all(&writer)?;
 
 	Ok(())
 }
@@ -240,10 +240,10 @@ fn replace_packet(
 	for p in pages.iter_mut() {
 		p.gen_crc()?;
 
-		writer.write_all(&*p.as_bytes()?)?;
+		writer.write_all(&p.as_bytes()?)?;
 	}
 
-	writer.write_all(&*remaining)?;
+	writer.write_all(&remaining)?;
 
 	Ok(())
 }

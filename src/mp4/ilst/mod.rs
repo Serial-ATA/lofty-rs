@@ -22,34 +22,33 @@ const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
 const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
 const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
 const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
+const COMMENT: AtomIdent = AtomIdent::Fourcc(*b"\xa9cmt");
 
 macro_rules! impl_accessor {
-	($($name:ident, $const:ident;)+) => {
+	($($name:ident => $const:ident;)+) => {
 		paste::paste! {
-			impl Accessor for Ilst {
-				$(
-					fn $name(&self) -> Option<&str> {
-						if let Some(atom) = self.atom(&$const) {
-							if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
-								return Some(val)
-							}
+			$(
+				fn $name(&self) -> Option<&str> {
+					if let Some(atom) = self.atom(&$const) {
+						if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
+							return Some(val)
 						}
-
-						None
 					}
 
-					fn [<set_ $name>](&mut self, value: String) {
-						self.replace_atom(Atom {
-							ident: $const,
-							data: AtomDataStorage::Single(AtomData::UTF8(value)),
-						})
-					}
+					None
+				}
 
-					fn [<remove_ $name>](&mut self) {
-						self.remove_atom(&$const)
-					}
-				)+
-			}
+				fn [<set_ $name>](&mut self, value: String) {
+					self.replace_atom(Atom {
+						ident: $const,
+						data: AtomDataStorage::Single(AtomData::UTF8(value)),
+					})
+				}
+
+				fn [<remove_ $name>](&mut self) {
+					self.remove_atom(&$const)
+				}
+			)+
 		}
 	}
 }
@@ -84,13 +83,6 @@ macro_rules! impl_accessor {
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
 }
-
-impl_accessor!(
-	artist,       ARTIST;
-	title,        TITLE;
-	album,        ALBUM;
-	genre,        GENRE;
-);
 
 impl Ilst {
 	/// Returns all of the tag's atoms
@@ -190,11 +182,6 @@ impl Ilst {
 		})
 	}
 
-	/// Returns the track number
-	pub fn track_number(&self) -> Option<u16> {
-		self.extract_number(*b"trkn", 4)
-	}
-
 	/// Returns the total number of tracks
 	pub fn track_total(&self) -> Option<u16> {
 		self.extract_number(*b"trkn", 6)
@@ -228,6 +215,117 @@ impl Ilst {
 	}
 }
 
+impl Accessor for Ilst {
+	impl_accessor!(
+		artist  => ARTIST;
+		title   => TITLE;
+		album   => ALBUM;
+		genre   => GENRE;
+		comment => COMMENT;
+	);
+
+	fn track(&self) -> Option<u32> {
+		self.extract_number(*b"trkn", 4).map(u32::from)
+	}
+
+	fn set_track(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let track_total = self.track_total().unwrap_or(0).to_be_bytes();
+
+		let data = vec![0, 0, value[0], value[1], track_total[0], track_total[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+	}
+
+	fn remove_track(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+	}
+
+	fn track_total(&self) -> Option<u32> {
+		self.extract_number(*b"trkn", 6).map(u32::from)
+	}
+
+	fn set_track_total(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let track = self.track().unwrap_or(1).to_be_bytes();
+
+		let data = vec![0, 0, track[0], track[1], value[0], value[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+	}
+
+	fn remove_track_total(&mut self) {
+		let track_num = self.track();
+		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+
+		if let Some(track_num) = track_num {
+			let track_bytes = (track_num as u16).to_be_bytes();
+			let data = vec![0, 0, track_bytes[0], track_bytes[1], 0, 0];
+
+			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+		}
+	}
+
+	fn disk(&self) -> Option<u32> {
+		self.extract_number(*b"disk", 4).map(u32::from)
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let disk_total = self.disk_total().unwrap_or(0).to_be_bytes();
+
+		let data = vec![0, 0, value[0], value[1], disk_total[0], disk_total[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+	}
+
+	fn remove_disk(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+	}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.extract_number(*b"disk", 6).map(u32::from)
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let value = (value as u16).to_be_bytes();
+		let disk = self.disk().unwrap_or(1).to_be_bytes();
+
+		let data = vec![0, 0, disk[0], disk[1], value[0], value[1]];
+		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+	}
+
+	fn remove_disk_total(&mut self) {
+		let disk_num = self.disk();
+		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+
+		if let Some(disk_num) = disk_num {
+			let disk_bytes = (disk_num as u16).to_be_bytes();
+			let data = vec![0, 0, disk_bytes[0], disk_bytes[1], 0, 0];
+
+			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+		}
+	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"\xa9day")) {
+			if let AtomData::UTF8(text) = atom.data() {
+				return text.chars().take(4).collect::<String>().parse::<u32>().ok();
+			}
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.replace_atom(Atom::text(
+			AtomIdent::Fourcc(*b"\xa9day"),
+			value.to_string(),
+		));
+	}
+
+	fn remove_year(&mut self) {
+		self.remove_atom(&AtomIdent::Fourcc(*b"Year"));
+	}
+}
+
 impl TagExt for Ilst {
 	type Err = LoftyError;
 
@@ -249,11 +347,11 @@ impl TagExt for Ilst {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from_path(path)
+		TagType::MP4ilst.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from(file)
+		TagType::MP4ilst.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -263,7 +361,7 @@ impl TagExt for Ilst {
 
 impl From<Ilst> for Tag {
 	fn from(input: Ilst) -> Self {
-		let mut tag = Self::new(TagType::Mp4Ilst);
+		let mut tag = Self::new(TagType::MP4ilst);
 
 		for atom in input.atoms {
 			let Atom { ident, data } = atom;
@@ -301,7 +399,7 @@ impl From<Ilst> for Tag {
 			};
 
 			let key = ItemKey::from_key(
-				TagType::Mp4Ilst,
+				TagType::MP4ilst,
 				&match ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
@@ -392,7 +490,7 @@ impl From<Tag> for Ilst {
 }
 
 fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
-	key.map_key(TagType::Mp4Ilst, true).and_then(|ident| {
+	key.map_key(TagType::MP4ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
 			let mut split = ident.split(':');
 
@@ -528,7 +626,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_ilst() {
-		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::Mp4Ilst);
+		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::MP4ilst);
 
 		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
 		tag.insert_text(ItemKey::DiscTotal, String::from("2"));

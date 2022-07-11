@@ -1,8 +1,8 @@
 use super::constants::GENRES;
-use super::tag::Id3v1Tag;
+use super::tag::ID3v1Tag;
 
-pub fn parse_id3v1(reader: [u8; 128]) -> Id3v1Tag {
-	let mut tag = Id3v1Tag {
+pub fn parse_id3v1(reader: [u8; 128]) -> ID3v1Tag {
+	let mut tag = ID3v1Tag {
 		title: None,
 		artist: None,
 		album: None,

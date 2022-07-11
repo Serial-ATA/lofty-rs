@@ -4,12 +4,12 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::util::text_utils::TextEncoding;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::text_utils::encode_text;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::id3::v2::Id3v2Version;
+use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
@@ -23,7 +23,6 @@ use std::hash::{Hash, Hasher};
 
 // TODO: Messy module, rough conversions
 
-#[derive(Clone, Debug, Eq)]
 /// Represents an `ID3v2` frame
 ///
 /// ## Outdated Frames
@@ -38,6 +37,7 @@ use std::hash::{Hash, Hasher};
 ///
 /// `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
 /// but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
+#[derive(Clone, Debug, Eq)]
 pub struct Frame {
 	pub(super) id: FrameID,
 	pub(super) value: FrameValue,
@@ -85,7 +85,7 @@ impl Frame {
 				None => id,
 				Some(upgraded) => upgraded,
 			},
-			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 		};
 
 		let id = FrameID::new(id_updated)?;
@@ -112,11 +112,23 @@ impl Frame {
 	pub fn set_flags(&mut self, flags: FrameFlags) {
 		self.flags = flags
 	}
+
+	// Used internally, has no correctness checks
+	pub(crate) fn text(id: &str, content: String) -> Self {
+		Self {
+			id: FrameID::Valid(String::from(id)),
+			value: FrameValue::Text {
+				encoding: TextEncoding::UTF8,
+				value: content,
+			},
+			flags: FrameFlags::default(),
+		}
+	}
 }
 
+/// The value of an `ID3v2` frame
 #[non_exhaustive]
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-/// The value of an `ID3v2` frame
 pub enum FrameValue {
 	/// Represents a "COMM" frame
 	///
@@ -195,7 +207,7 @@ impl FrameValue {
 			FrameValue::UserText(content) | FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
 			FrameValue::Picture { encoding, picture } => {
-				picture.as_apic_bytes(Id3v2Version::V4, *encoding)?
+				picture.as_apic_bytes(ID3v2Version::V4, *encoding)?
 			},
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
@@ -203,9 +215,9 @@ impl FrameValue {
 	}
 }
 
+/// Various flags to describe the content of an item
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Default)]
 #[allow(clippy::struct_excessive_bools)]
-/// Various flags to describe the content of an item
 pub struct FrameFlags {
 	/// Preserve frame on tag edit
 	pub tag_alter_preservation: bool,
@@ -328,8 +340,8 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				Ok(unknown.as_str())
 			},
 			k => k
-				.map_key(TagType::Id3v2, false)
-				.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadFrameID)),
+				.map_key(TagType::ID3v2, false)
+				.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadFrameID)),
 		}?;
 
 		Ok(FrameRef {

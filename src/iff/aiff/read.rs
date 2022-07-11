@@ -1,55 +1,60 @@
 #[cfg(feature = "aiff_text_chunks")]
-use super::tag::{AiffTextChunks, Comment};
+use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v2")]
-use crate::id3::v2::tag::Id3v2Tag;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::properties::FileProperties;
 
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::BigEndian;
 #[cfg(feature = "aiff_text_chunks")]
 use byteorder::ReadBytesExt;
 
-pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<u32>
+pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
 	R: Read + Seek,
 {
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[..8] == b"AIFC")) {
+	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[8..] == b"AIFC")) {
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
 	}
 
-	Ok(u32::from_be_bytes(
-		id[4..8].try_into().unwrap(), // Infallible
-	))
+	Ok(())
 }
 
 pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
-	let file_size = verify_aiff(data)?;
+	// TODO: Maybe one day the `Seek` bound can be removed?
+	// let file_size = verify_aiff(data)?;
+	verify_aiff(data)?;
+
+	let current_pos = data.stream_position()?;
+	let file_len = data.seek(SeekFrom::End(0))?;
+
+	data.seek(SeekFrom::Start(current_pos))?;
 
 	let mut comm = None;
 	let mut stream_len = 0;
 
 	#[cfg(feature = "aiff_text_chunks")]
-	let mut text_chunks = AiffTextChunks::default();
+	let mut text_chunks = AIFFTextChunks::default();
 	#[cfg(feature = "aiff_text_chunks")]
 	let mut annotations = Vec::new();
 	#[cfg(feature = "aiff_text_chunks")]
 	let mut comments = Vec::new();
 
 	#[cfg(feature = "id3v2")]
-	let mut id3v2_tag: Option<Id3v2Tag> = None;
+	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
-	let mut chunks = Chunks::<BigEndian>::new(file_size);
+	let mut chunks = Chunks::<BigEndian>::new(file_len);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
@@ -79,6 +84,10 @@ where
 			// so there's no need to replace anything we already read
 			#[cfg(feature = "aiff_text_chunks")]
 			b"COMT" if comments.is_empty() => {
+				if chunks.size < 2 {
+					continue;
+				}
+
 				let num_comments = data.read_u16::<BigEndian>()?;
 
 				for _ in 0..num_comments {
@@ -158,7 +167,7 @@ where
 		properties,
 		#[cfg(feature = "aiff_text_chunks")]
 		text_chunks: match text_chunks {
-			AiffTextChunks {
+			AIFFTextChunks {
 				name: None,
 				author: None,
 				copyright: None,

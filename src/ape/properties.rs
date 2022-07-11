@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-#[derive(Clone, Debug, PartialEq, Default)]
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An APE file's audio properties
 pub struct ApeProperties {
@@ -275,11 +275,16 @@ fn get_duration_bitrate(
 		total_samples += u64::from(blocks_per_frame) * u64::from(total_frames - 1)
 	}
 
+	let mut overall_bitrate = 0;
+	let mut audio_bitrate = 0;
+
 	if sample_rate > 0 {
 		let length = (total_samples * 1000) / u64::from(sample_rate);
 
-		let overall_bitrate = ((file_length * 8) / length) as u32;
-		let audio_bitrate = ((stream_len * 8) / length) as u32;
+		if length > 0 {
+			overall_bitrate = crate::div_ceil(file_length * 8, length) as u32;
+			audio_bitrate = crate::div_ceil(stream_len * 8, length) as u32;
+		}
 
 		(
 			Duration::from_millis(length),
@@ -287,6 +292,6 @@ fn get_duration_bitrate(
 			audio_bitrate,
 		)
 	} else {
-		(Duration::ZERO, 0, 0)
+		(Duration::ZERO, overall_bitrate, audio_bitrate)
 	}
 }

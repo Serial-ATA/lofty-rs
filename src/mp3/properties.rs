@@ -1,6 +1,6 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
 use crate::error::Result;
-use crate::mp3::header::rev_search_for_frame_sync;
+use crate::mp3::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -8,7 +8,7 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 /// An MP3 file's audio properties
 pub struct Mp3Properties {
@@ -102,35 +102,31 @@ impl Mp3Properties {
 }
 
 pub(super) fn read_properties<R>(
+	properties: &mut Mp3Properties,
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,
 	xing_header: Option<XingHeader>,
 	file_length: u64,
-) -> Result<Mp3Properties>
+) -> Result<()>
 where
 	R: Read + Seek,
 {
 	let first_frame_header = first_frame.0;
 	let first_frame_offset = first_frame.1;
 
-	let mut properties = Mp3Properties {
-		version: first_frame_header.version,
-		layer: first_frame_header.layer,
-		channel_mode: first_frame_header.channel_mode,
-		mode_extension: first_frame_header.mode_extension,
-		copyright: first_frame_header.copyright,
-		original: first_frame_header.original,
-		duration: Duration::ZERO,
-		overall_bitrate: 0,
-		audio_bitrate: 0,
-		sample_rate: first_frame_header.sample_rate,
-		channels: if first_frame_header.channel_mode == ChannelMode::SingleChannel {
-			1
-		} else {
-			2
-		},
-		emphasis: first_frame_header.emphasis,
+	properties.version = first_frame_header.version;
+	properties.layer = first_frame_header.layer;
+	properties.channel_mode = first_frame_header.channel_mode;
+	properties.mode_extension = first_frame_header.mode_extension;
+	properties.copyright = first_frame_header.copyright;
+	properties.original = first_frame_header.original;
+	properties.emphasis = first_frame_header.emphasis;
+	properties.sample_rate = first_frame_header.sample_rate;
+	properties.channels = if first_frame_header.channel_mode == ChannelMode::SingleChannel {
+		1
+	} else {
+		2
 	};
 
 	match xing_header {
@@ -150,15 +146,24 @@ where
 			reader.seek(SeekFrom::Start(last_frame_offset))?;
 
 			let mut last_frame = None;
-			while last_frame_offset > 0 {
-				match rev_search_for_frame_sync(reader) {
+			let mut pos = reader.stream_position()?;
+			while pos > 0 {
+				match rev_search_for_frame_sync(reader, &mut pos) {
 					// Found a frame sync, attempt to read a header
 					Ok(Some(_)) => {
 						// Move `last_frame_offset` back to the actual position
 						last_frame_offset = reader.stream_position()?;
-						last_frame = Some(Header::read(reader.read_u32::<BigEndian>()?)?);
+						let last_frame_data = reader.read_u32::<BigEndian>()?;
 
-						break;
+						if let Some(last_frame_header) = Header::read(last_frame_data) {
+							match cmp_header(reader, last_frame_header.len, last_frame_data) {
+								HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
+									last_frame = Some(last_frame_header);
+									break;
+								},
+								HeaderCmpResult::NotEqual => {},
+							}
+						}
 					},
 					// Encountered some IO error, just break
 					Err(_) => break,
@@ -170,16 +175,17 @@ where
 			if let Some(last_frame_header) = last_frame {
 				let stream_len =
 					last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
-				let length = (stream_len * 8) / u64::from(properties.audio_bitrate);
+				let length =
+					((stream_len as f64) * 8.0) / f64::from(properties.audio_bitrate) + 0.5;
 
-				if length > 0 {
-					properties.overall_bitrate = ((file_length * 8) / length) as u32;
-					properties.duration = Duration::from_millis(length);
+				if length > 0.0 {
+					properties.overall_bitrate = (((file_length as f64) * 8.0) / length) as u32;
+					properties.duration = Duration::from_millis(length as u64);
 				}
 			}
 		},
 		_ => {},
 	}
 
-	Ok(properties)
+	Ok(())
 }
