@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AIFF/WAV**: Stop relying on the file-provided size when reading (Fixes OOM)
 - **Tag**: The `Accessor::set_*` methods will now remove the item when given an empty string
 
+### Fixed
+- **PictureInformation**: Fix potential overflow on an invalid picture
+
 ## [0.7.1] - 2022-07-08
 
 ### Added

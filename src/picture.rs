@@ -400,8 +400,12 @@ impl PictureInformation {
 
 		let mut reader = Cursor::new(reader);
 
-		// The length contains itself
-		reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
+		// The length contains itself, so anything < 2 is invalid
+		let (content_len, overflowed) = section_len.overflowing_sub(2);
+		if overflowed {
+			return Err(LoftyError::new(ErrorKind::NotAPicture));
+		}
+		reader.seek(SeekFrom::Current(i64::from(content_len)))?;
 
 		while let Ok(0xFF) = reader.read_u8() {
 			let marker = reader.read_u8()?;
