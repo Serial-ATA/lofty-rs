@@ -374,7 +374,12 @@ impl PictureInformation {
 			}
 
 			// Skip the chunk's data (size) and CRC (4 bytes)
-			reader.seek(SeekFrom::Current(i64::from(size + 4)))?;
+			let (content_size, overflowed) = size.overflowing_add(4);
+			if overflowed {
+				break;
+			}
+
+			reader.seek(SeekFrom::Current(i64::from(content_size)))?;
 		}
 
 		Ok(ret)
