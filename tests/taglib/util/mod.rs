@@ -1,4 +1,15 @@
 #[macro_export]
+macro_rules! assert_delta {
+	($x:expr, $y:expr, $d:expr) => {
+		if $x > $y {
+			assert!($x - $y <= $d)
+		} else if $y > $x {
+			assert!($y - $x <= $d)
+		}
+	};
+}
+
+#[macro_export]
 macro_rules! temp_file {
 	($path:tt) => {{
 		use std::io::{Seek, Write};

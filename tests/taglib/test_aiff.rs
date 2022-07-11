@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 
-use crate::temp_file;
+use crate::{assert_delta, temp_file};
 use lofty::{Accessor, AudioFile, FileType};
 
 #[test]
@@ -13,10 +13,8 @@ fn test_aiff_properties() {
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
-	// Originaly here is 67ms ± 1ms due to rounding
-	assert_eq!(properties.duration().as_millis(), 66);
-	// originaly 706
-	assert_eq!(properties.audio_bitrate(), Some(705));
+	assert_delta!(properties.duration().as_millis(), 67, 1);
+	assert_delta!(properties.audio_bitrate().unwrap(), 706, 1);
 	assert_eq!(properties.sample_rate(), Some(44100));
 	assert_eq!(properties.channels(), Some(1));
 	assert_eq!(properties.bit_depth(), Some(16));
@@ -33,8 +31,7 @@ fn test_aifc_properties() {
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
-	// originaly 37
-	assert_eq!(properties.duration().as_millis(), 36);
+	assert_delta!(properties.duration().as_millis(), 37, 1);
 	assert_eq!(properties.audio_bitrate(), Some(355));
 	assert_eq!(properties.sample_rate(), Some(44100));
 	assert_eq!(properties.channels(), Some(1));

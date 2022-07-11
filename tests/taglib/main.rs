@@ -1,3 +1,3 @@
-pub(crate) mod utils;
+pub(crate) mod util;
 
 mod test_aiff;
