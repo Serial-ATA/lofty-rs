@@ -92,16 +92,14 @@ fn test_fuzzed_file1() {
 	assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
 }
 
-/*
 // the file doesn't even have a valid signature
-#[test]
-#[ignore]
-fn test_fuzzed_file2() {
-	let mut file = File::open("tests/taglib/data/excessive_alloc.aif").unwrap();
-
-	let mut buf = [0; 12];
-	file.read_exact(&mut buf).unwrap();
-
-	assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
-}
-*/
+// #[test]
+// #[ignore]
+// fn test_fuzzed_file2() {
+// let mut file = File::open("tests/taglib/data/excessive_alloc.aif").unwrap();
+//
+// let mut buf = [0; 12];
+// file.read_exact(&mut buf).unwrap();
+//
+// assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
+// }
