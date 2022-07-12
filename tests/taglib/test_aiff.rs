@@ -92,6 +92,8 @@ fn test_fuzzed_file1() {
 	assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
 }
 
+/*
+// the file doesn't even have a valid signature
 #[test]
 #[ignore]
 fn test_fuzzed_file2() {
@@ -102,3 +104,4 @@ fn test_fuzzed_file2() {
 
 	assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
 }
+*/
