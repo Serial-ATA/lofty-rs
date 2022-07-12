@@ -107,8 +107,8 @@ fn parse_freeform<R>(data: &mut R, reader_size: u64) -> Result<AtomIdent>
 where
 	R: Read + Seek,
 {
-	let mean = freeform_chunk(data, b"mean", reader_size - 4)?;
-	let name = freeform_chunk(data, b"name", reader_size - 8)?;
+	let mean = freeform_chunk(data, b"mean", reader_size)?;
+	let name = freeform_chunk(data, b"name", reader_size - 4)?;
 
 	Ok(AtomIdent::Freeform { mean, name })
 }
