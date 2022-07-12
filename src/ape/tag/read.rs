@@ -2,7 +2,7 @@ use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::INVALID_KEYS;
 use crate::ape::header::ApeHeader;
-use crate::error::{FileDecodingError, Result};
+use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::try_vec;
 use crate::tag::item::ItemValue;
@@ -16,9 +16,19 @@ where
 	R: Read + Seek,
 {
 	let mut tag = ApeTag::default();
+	let mut remaining_size = header.size;
 
 	for _ in 0..header.item_count {
+		if remaining_size < 11 {
+			break;
+		}
+
 		let value_size = data.read_u32::<LittleEndian>()?;
+		if value_size > remaining_size {
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
+		}
+
+		remaining_size -= 4;
 		let flags = data.read_u32::<LittleEndian>()?;
 
 		let mut key = Vec::new();
@@ -44,7 +54,8 @@ where
 		let read_only = (flags & 1) == 1;
 		let item_type = (flags >> 1) & 3;
 
-		if value_size == 0 {
+		// TODO: This could use a warning
+		if value_size == 0 || key.len() < 2 || key.len() > 255 {
 			continue;
 		}
 

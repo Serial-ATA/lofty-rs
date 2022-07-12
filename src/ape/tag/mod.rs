@@ -386,7 +386,7 @@ mod tests {
 	use crate::ape::{ApeItem, ApeTag};
 	use crate::{ItemValue, Tag, TagExt, TagType};
 
-	use std::io::Cursor;
+	use std::io::{Cursor, Seek, SeekFrom};
 
 	#[test]
 	fn parse_ape() {
@@ -439,6 +439,9 @@ mod tests {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag);
 
+		// Remove the APE preamble
+		reader.seek(SeekFrom::Current(8)).unwrap();
+
 		let header = read_ape_header(&mut reader, false).unwrap();
 		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
 
@@ -454,14 +457,19 @@ mod tests {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
+		// Remove the APE preamble
+		reader.seek(SeekFrom::Current(8)).unwrap();
+
 		let header = read_ape_header(&mut reader, false).unwrap();
 		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
 
+		let mut temp_reader = Cursor::new(writer);
+
 		// Remove the APE preamble
-		let mut temp_reader = Cursor::new(&writer[8..]);
+		temp_reader.seek(SeekFrom::Current(8)).unwrap();
 
 		let temp_header = read_ape_header(&mut temp_reader, false).unwrap();
 		let temp_parsed_tag =
@@ -474,6 +482,9 @@ mod tests {
 	fn ape_to_tag() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
+
+		// Remove the APE preamble
+		reader.seek(SeekFrom::Current(8)).unwrap();
 
 		let header = read_ape_header(&mut reader, false).unwrap();
 		let ape = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();

@@ -4,7 +4,7 @@ use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 #[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
-use crate::error::{FileDecodingError, Result};
+use crate::error::{ErrorKind, FileDecodingError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
@@ -13,6 +13,7 @@ use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::LoftyError;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Mp3File>
@@ -75,6 +76,8 @@ where
 
 					continue;
 				}
+
+				return Err(LoftyError::new(ErrorKind::FakeTag));
 			},
 			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {

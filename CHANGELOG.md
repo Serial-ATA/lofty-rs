@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tag**: The `Accessor::set_*` methods will now remove the item when given an empty string
 
 ### Fixed
+- **MP3/APE**: Stop trusting the lengths of APE tag items (Fixes OOM)
 - **PictureInformation**: Fix potential overflow on an invalid picture
 - **MP4**: The parser has received a major facelift, and shouldn't be so eager to allocate or trust user data (Fixes OOM)
 
