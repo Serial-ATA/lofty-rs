@@ -519,14 +519,21 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::ilst::atom::AtomDataStorage;
+	use crate::mp4::read::AtomReader;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
+	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
 	use std::io::{Cursor, Read, Seek, Write};
 
 	fn read_ilst(path: &str) -> Ilst {
 		let tag = crate::tag::utils::test_utils::read_path(path);
-		super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap()
+		let len = tag.len();
+
+		let cursor = Cursor::new(tag);
+		let mut reader = AtomReader::new(cursor).unwrap();
+
+		super::read::parse_ilst(&mut reader, len as u64).unwrap()
 	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
@@ -589,8 +596,12 @@ mod tests {
 		));
 
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
+		let len = tag.len();
 
-		let parsed_tag = super::read::parse_ilst(&mut &tag[..], tag.len() as u64).unwrap();
+		let cursor = Cursor::new(tag);
+		let mut reader = AtomReader::new(cursor).unwrap();
+
+		let parsed_tag = super::read::parse_ilst(&mut reader, len as u64).unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -602,19 +613,25 @@ mod tests {
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
 
+		let cursor = Cursor::new(&writer[8..]);
+		let mut reader = AtomReader::new(cursor).unwrap();
+
 		// Remove the ilst identifier and size
 		let temp_parsed_tag =
-			super::read::parse_ilst(&mut &writer[8..], (writer.len() - 8) as u64).unwrap();
+			super::read::parse_ilst(&mut reader, (writer.len() - 8) as u64).unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
 	#[test]
 	fn ilst_to_tag() {
-		let tag_bytes =
-			crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
+		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
+		let len = tag.len();
 
-		let ilst = super::read::parse_ilst(&mut &tag_bytes[..], tag_bytes.len() as u64).unwrap();
+		let cursor = Cursor::new(tag);
+		let mut reader = AtomReader::new(cursor).unwrap();
+
+		let ilst = super::read::parse_ilst(&mut reader, len as u64).unwrap();
 
 		let tag: Tag = ilst.into();
 
@@ -717,13 +734,20 @@ mod tests {
 		let file_bytes = read_path("tests/files/assets/ilst_trailing_padding.m4a");
 		assert!(Mp4File::read_from(&mut Cursor::new(&file_bytes), false).is_ok());
 
-		let ilst_bytes = &file_bytes[ILST_START..ILST_END];
+		let mut ilst;
+		let old_free_size;
+		{
+			let ilst_bytes = &file_bytes[ILST_START..ILST_END];
 
-		let old_free_size =
-			u32::from_be_bytes(file_bytes[ILST_END..ILST_END + 4].try_into().unwrap());
-		assert_eq!(old_free_size, PADDING_SIZE as u32);
+			old_free_size =
+				u32::from_be_bytes(file_bytes[ILST_END..ILST_END + 4].try_into().unwrap());
+			assert_eq!(old_free_size, PADDING_SIZE as u32);
 
-		let mut ilst = super::read::parse_ilst(&mut &*ilst_bytes, ilst_bytes.len() as u64).unwrap();
+			let cursor = Cursor::new(ilst_bytes);
+			let mut reader = AtomReader::new(cursor).unwrap();
+
+			ilst = super::read::parse_ilst(&mut reader, ilst_bytes.len() as u64).unwrap();
+		}
 
 		let mut file = tempfile::tempfile().unwrap();
 		file.write_all(&file_bytes).unwrap();
@@ -781,7 +805,7 @@ mod tests {
 			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
 		});
 
-		assert!(tag.save_to(&mut file).is_ok());
+		tag.save_to(&mut file).unwrap();
 		file.rewind().unwrap();
 
 		let mp4_file = Mp4File::read_from(&mut file, true).unwrap();
@@ -813,5 +837,16 @@ mod tests {
 			*b"\xa9gen",
 			&AtomData::UTF8(String::from("Classical")),
 		);
+	}
+
+	#[test]
+	fn zero_sized_ilst() {
+		let file = Mp4File::read_from(
+			&mut Cursor::new(test_utils::read_path("tests/files/assets/zero/zero.ilst")),
+			false,
+		)
+		.unwrap();
+
+		assert_eq!(file.ilst, Some(Ilst::default()));
 	}
 }

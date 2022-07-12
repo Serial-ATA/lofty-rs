@@ -39,25 +39,18 @@ pub(crate) struct AtomInfo {
 }
 
 impl AtomInfo {
-	pub(crate) fn read<R>(data: &mut R) -> Result<Self>
+	pub(crate) fn read<R>(data: &mut R, mut reader_size: u64) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
 		let start = data.stream_position()?;
 
-		let len = data.read_u32::<BigEndian>()?;
+		let len_raw = u64::from(data.read_u32::<BigEndian>()?);
 
 		let mut ident = [0; 4];
 		data.read_exact(&mut ident)?;
 
-		let mut atom_ident = AtomIdent::Fourcc(ident);
-
-		// Encountered a freeform identifier
-		if &ident == b"----" {
-			atom_ident = parse_freeform(data)?;
-		}
-
-		let (len, extended) = match len {
+		let (len, extended) = match len_raw {
 			// The atom extends to the end of the file
 			0 => {
 				let pos = data.stream_position()?;
@@ -69,7 +62,7 @@ impl AtomInfo {
 			},
 			// There's an extended length
 			1 => (data.read_u64::<BigEndian>()?, true),
-			_ => (u64::from(len), false),
+			_ => (len_raw, false),
 		};
 
 		if len < 8 {
@@ -81,6 +74,26 @@ impl AtomInfo {
 			)));
 		}
 
+		// `len` includes itself
+		if (len - 4) > reader_size {
+			data.seek(SeekFrom::Current(-4))?;
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
+		}
+
+		let mut atom_ident = AtomIdent::Fourcc(ident);
+
+		// Encountered a freeform identifier
+		if &ident == b"----" {
+			reader_size -= 8;
+			if reader_size < 8 {
+				return Err(LoftyError::new(ErrorKind::BadAtom(
+					"Found an incomplete freeform identifier",
+				)));
+			}
+
+			atom_ident = parse_freeform(data, reader_size)?;
+		}
+
 		Ok(Self {
 			start,
 			len,
@@ -90,21 +103,21 @@ impl AtomInfo {
 	}
 }
 
-fn parse_freeform<R>(data: &mut R) -> Result<AtomIdent>
+fn parse_freeform<R>(data: &mut R, reader_size: u64) -> Result<AtomIdent>
 where
 	R: Read + Seek,
 {
-	let mean = freeform_chunk(data, b"mean")?;
-	let name = freeform_chunk(data, b"name")?;
+	let mean = freeform_chunk(data, b"mean", reader_size - 4)?;
+	let name = freeform_chunk(data, b"name", reader_size - 8)?;
 
 	Ok(AtomIdent::Freeform { mean, name })
 }
 
-fn freeform_chunk<R>(data: &mut R, name: &[u8]) -> Result<String>
+fn freeform_chunk<R>(data: &mut R, name: &[u8], reader_size: u64) -> Result<String>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data)?;
+	let atom = AtomInfo::read(data, reader_size)?;
 
 	match atom.ident {
 		AtomIdent::Fourcc(ref fourcc) if fourcc == name => {

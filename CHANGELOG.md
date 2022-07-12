@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **PictureInformation**: Fix potential overflow on an invalid picture
+- **MP4**: The parser has received a major facelift, and shouldn't be so eager to allocate or trust user data (Fixes OOM)
 
 ## [0.7.1] - 2022-07-08
 

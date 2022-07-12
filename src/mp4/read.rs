@@ -7,14 +7,126 @@ use crate::file::FileType;
 
 use std::io::{Read, Seek, SeekFrom};
 
-#[cfg(feature = "mp4_ilst")]
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(in crate::mp4) fn verify_mp4<R>(data: &mut R) -> Result<String>
+pub(super) struct AtomReader<R>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data)?;
+	reader: R,
+	remaining_size: u64,
+	len: u64,
+}
+
+impl<R> AtomReader<R>
+where
+	R: Read + Seek,
+{
+	pub(super) fn new(mut reader: R) -> Result<Self> {
+		use crate::traits::SeekStreamLen;
+
+		#[allow(unstable_name_collisions)]
+		let len = reader.stream_len()?;
+		Ok(Self {
+			reader,
+			remaining_size: len,
+			len,
+		})
+	}
+
+	pub(super) fn read_u8(&mut self) -> std::io::Result<u8> {
+		self.remaining_size = self.remaining_size.saturating_sub(1);
+		self.reader.read_u8()
+	}
+
+	pub(super) fn read_u16(&mut self) -> std::io::Result<u16> {
+		self.remaining_size = self.remaining_size.saturating_sub(2);
+		self.reader.read_u16::<BigEndian>()
+	}
+
+	pub(super) fn read_u32(&mut self) -> std::io::Result<u32> {
+		self.remaining_size = self.remaining_size.saturating_sub(4);
+		self.reader.read_u32::<BigEndian>()
+	}
+
+	pub(super) fn read_u64(&mut self) -> std::io::Result<u64> {
+		self.remaining_size = self.remaining_size.saturating_sub(8);
+		self.reader.read_u64::<BigEndian>()
+	}
+
+	pub(super) fn read_uint(&mut self, size: usize) -> std::io::Result<u64> {
+		self.remaining_size = self.remaining_size.saturating_sub(size as u64);
+		self.reader.read_uint::<BigEndian>(size)
+	}
+
+	pub(super) fn next(&mut self) -> Result<AtomInfo> {
+		if self.remaining_size < 8 {
+			return Err(LoftyError::new(ErrorKind::TooMuchData));
+		}
+
+		AtomInfo::read(self, self.remaining_size)
+	}
+
+	pub(super) fn position(&mut self) -> std::io::Result<u64> {
+		self.reader.stream_position()
+	}
+
+	pub(super) fn into_inner(self) -> R {
+		self.reader
+	}
+}
+
+impl<R> Seek for AtomReader<R>
+where
+	R: Read + Seek,
+{
+	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+		match pos {
+			SeekFrom::Start(_) | SeekFrom::End(_) => {
+				let ret = self.reader.seek(pos)?;
+				let new_rem = self.len.saturating_sub(ret);
+
+				self.remaining_size = new_rem;
+				Ok(ret)
+			},
+			SeekFrom::Current(s) => {
+				if s.is_negative() {
+					self.remaining_size = self.remaining_size.saturating_add(s.unsigned_abs());
+				} else {
+					self.remaining_size = self.remaining_size.saturating_sub(s as u64);
+				}
+
+				self.reader.seek(pos)
+			},
+		}
+	}
+
+	fn stream_position(&mut self) -> std::io::Result<u64> {
+		self.position()
+	}
+}
+
+impl<R> Read for AtomReader<R>
+where
+	R: Read + Seek,
+{
+	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+		if self.remaining_size == 0 {
+			return Ok(0);
+		}
+
+		let r = self.reader.read(buf)?;
+		self.remaining_size = self.remaining_size.saturating_sub(r as u64);
+
+		Ok(r)
+	}
+}
+
+pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String>
+where
+	R: Read + Seek,
+{
+	let atom = reader.next()?;
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
 		return Err(LoftyError::new(ErrorKind::UnknownFormat));
@@ -27,9 +139,9 @@ where
 	}
 
 	let mut major_brand = vec![0; 4];
-	data.read_exact(&mut major_brand)?;
+	reader.read_exact(&mut major_brand)?;
 
-	data.seek(SeekFrom::Current((atom.len - 12) as i64))?;
+	reader.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
 	String::from_utf8(major_brand)
 		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
@@ -39,53 +151,58 @@ pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp4Fil
 where
 	R: Read + Seek,
 {
-	let ftyp = verify_mp4(data)?;
+	let mut reader = AtomReader::new(data)?;
 
-	Moov::find(data)?;
-	let moov = Moov::parse(data, read_properties)?;
+	let ftyp = verify_mp4(&mut reader)?;
 
-	let file_length = data.seek(SeekFrom::End(0))?;
+	Moov::find(&mut reader)?;
+	let moov = Moov::parse(&mut reader, read_properties)?;
+
+	let file_length = reader.seek(SeekFrom::End(0))?;
 
 	Ok(Mp4File {
 		ftyp,
 		#[cfg(feature = "mp4_ilst")]
 		ilst: moov.meta,
 		properties: if read_properties {
-			super::properties::read_properties(data, &moov.traks, file_length)?
+			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
 		} else {
 			Mp4Properties::default()
 		},
 	})
 }
 
-pub(super) fn skip_unneeded<R>(data: &mut R, ext: bool, len: u64) -> Result<()>
+pub(super) fn skip_unneeded<R>(reader: &mut R, ext: bool, len: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
 	if ext {
-		let pos = data.stream_position()?;
+		let pos = reader.stream_position()?;
 
 		if let (pos, false) = pos.overflowing_add(len - 8) {
-			data.seek(SeekFrom::Start(pos))?;
+			reader.seek(SeekFrom::Start(pos))?;
 		} else {
 			return Err(LoftyError::new(ErrorKind::TooMuchData));
 		}
 	} else {
-		data.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;
+		reader.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;
 	}
 
 	Ok(())
 }
 
-pub(super) fn nested_atom<R>(data: &mut R, len: u64, expected: &[u8]) -> Result<Option<AtomInfo>>
+pub(super) fn nested_atom<R>(
+	reader: &mut R,
+	mut len: u64,
+	expected: &[u8],
+) -> Result<Option<AtomInfo>>
 where
 	R: Read + Seek,
 {
-	let mut read = 8;
 	let mut ret = None;
 
-	while read < len {
-		let atom = AtomInfo::read(data)?;
+	while len > 8 {
+		let atom = AtomInfo::read(reader, len)?;
 
 		match atom.ident {
 			AtomIdent::Fourcc(ref fourcc) if fourcc == expected => {
@@ -93,8 +210,8 @@ where
 				break;
 			},
 			_ => {
-				skip_unneeded(data, atom.extended, atom.len)?;
-				read += atom.len
+				skip_unneeded(reader, atom.extended, atom.len)?;
+				len = len.saturating_sub(atom.len);
 			},
 		}
 	}
@@ -104,21 +221,24 @@ where
 
 #[cfg(feature = "mp4_ilst")]
 // Creates a tree of nested atoms
-pub(super) fn atom_tree<R>(data: &mut R, len: u64, up_to: &[u8]) -> Result<(usize, Vec<AtomInfo>)>
+pub(super) fn atom_tree<R>(
+	reader: &mut R,
+	mut len: u64,
+	up_to: &[u8],
+) -> Result<(usize, Vec<AtomInfo>)>
 where
 	R: Read + Seek,
 {
-	let mut read = 8;
 	let mut found_idx: usize = 0;
 	let mut buf = Vec::new();
 
 	let mut i = 0;
 
-	while read < len {
-		let atom = AtomInfo::read(data)?;
+	while len > 8 {
+		let atom = AtomInfo::read(reader, len)?;
 
-		skip_unneeded(data, atom.extended, atom.len)?;
-		read += atom.len;
+		skip_unneeded(reader, atom.extended, atom.len)?;
+		len = len.saturating_sub(atom.len);
 
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 			i += 1;
@@ -137,11 +257,11 @@ where
 }
 
 #[cfg(feature = "mp4_ilst")]
-pub(super) fn meta_is_full<R>(data: &mut R) -> Result<bool>
+pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool>
 where
 	R: Read + Seek,
 {
-	let meta_pos = data.stream_position()?;
+	let meta_pos = reader.stream_position()?;
 
 	// A full `meta` atom should have the following:
 	//
@@ -150,39 +270,20 @@ where
 	//
 	// However, it's possible that it is written as a normal atom,
 	// meaning this would be the size of the next atom.
-	let _version_flags = data.read_u32::<BigEndian>()?;
+	let _version_flags = reader.read_u32::<BigEndian>()?;
 
 	// Check if the next four bytes is one of the nested `meta` atoms
 	let mut possible_ident = [0; 4];
-	data.read_exact(&mut possible_ident)?;
+	reader.read_exact(&mut possible_ident)?;
 
 	match &possible_ident {
 		b"hdlr" | b"ilst" | b"mhdr" | b"ctry" | b"lang" => {
-			data.seek(SeekFrom::Start(meta_pos))?;
+			reader.seek(SeekFrom::Start(meta_pos))?;
 			Ok(false)
 		},
 		_ => {
-			data.seek(SeekFrom::Start(meta_pos + 4))?;
+			reader.seek(SeekFrom::Start(meta_pos + 4))?;
 			Ok(true)
 		},
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use crate::mp4::{Ilst, Mp4File};
-	use crate::tag::utils::test_utils;
-	use crate::AudioFile;
-	use std::io::Cursor;
-
-	#[test]
-	fn zero_sized_ilst() {
-		let file = Mp4File::read_from(
-			&mut Cursor::new(test_utils::read_path("tests/files/assets/zero/zero.ilst")),
-			false,
-		)
-		.unwrap();
-
-		assert_eq!(file.ilst, Some(Ilst::default()));
 	}
 }

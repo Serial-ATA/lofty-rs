@@ -1,5 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::{nested_atom, skip_unneeded};
+use super::read::{nested_atom, skip_unneeded, AtomReader};
 use super::trak::Trak;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
@@ -217,8 +217,8 @@ impl Mp4Properties {
 	}
 }
 
-pub(crate) fn read_properties<R>(
-	data: &mut R,
+pub(super) fn read_properties<R>(
+	reader: &mut AtomReader<R>,
 	traks: &[Trak],
 	file_length: u64,
 ) -> Result<Mp4Properties>
@@ -236,42 +236,42 @@ where
 			break;
 		}
 
-		data.seek(SeekFrom::Start(mdia.start + 8))?;
+		reader.seek(SeekFrom::Start(mdia.start + 8))?;
 
 		let mut read = 8;
 		while read < mdia.len {
-			let atom = AtomInfo::read(data)?;
+			let atom = reader.next()?;
 			read += atom.len;
 
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
 					b"mdhd" => {
-						skip_unneeded(data, atom.extended, atom.len)?;
+						skip_unneeded(reader, atom.extended, atom.len)?;
 						mdhd = Some(atom)
 					},
 					b"hdlr" => {
 						// The hdlr atom is followed by 8 zeros
-						data.seek(SeekFrom::Current(8))?;
+						reader.seek(SeekFrom::Current(8))?;
 
 						let mut handler_type = [0; 4];
-						data.read_exact(&mut handler_type)?;
+						reader.read_exact(&mut handler_type)?;
 
 						if &handler_type == b"soun" {
 							audio_track = true
 						}
 
-						skip_unneeded(data, atom.extended, atom.len - 12)?;
+						skip_unneeded(reader, atom.extended, atom.len - 12)?;
 					},
 					b"minf" => minf = Some(atom),
 					_ => {
-						skip_unneeded(data, atom.extended, atom.len)?;
+						skip_unneeded(reader, atom.extended, atom.len)?;
 					},
 				}
 
 				continue;
 			}
 
-			skip_unneeded(data, atom.extended, atom.len)?;
+			skip_unneeded(reader, atom.extended, atom.len)?;
 		}
 	}
 
@@ -288,26 +288,26 @@ where
 		},
 	};
 
-	data.seek(SeekFrom::Start(mdhd.start + 8))?;
+	reader.seek(SeekFrom::Start(mdhd.start + 8))?;
 
-	let version = data.read_u8()?;
-	let _flags = data.read_uint::<BigEndian>(3)?;
+	let version = reader.read_u8()?;
+	let _flags = reader.read_uint(3)?;
 
 	let (timescale, duration) = if version == 1 {
 		// We don't care about these two values
-		let _creation_time = data.read_u64::<BigEndian>()?;
-		let _modification_time = data.read_u64::<BigEndian>()?;
+		let _creation_time = reader.read_u64()?;
+		let _modification_time = reader.read_u64()?;
 
-		let timescale = data.read_u32::<BigEndian>()?;
-		let duration = data.read_u64::<BigEndian>()?;
+		let timescale = reader.read_u32()?;
+		let duration = reader.read_u64()?;
 
 		(timescale, duration)
 	} else {
-		let _creation_time = data.read_u32::<BigEndian>()?;
-		let _modification_time = data.read_u32::<BigEndian>()?;
+		let _creation_time = reader.read_u32()?;
+		let _modification_time = reader.read_u32()?;
 
-		let timescale = data.read_u32::<BigEndian>()?;
-		let duration = data.read_u32::<BigEndian>()?;
+		let timescale = reader.read_u32()?;
+		let duration = reader.read_u32()?;
 
 		(timescale, u64::from(duration))
 	};
@@ -321,14 +321,16 @@ where
 	};
 
 	if let Some(minf) = minf {
-		data.seek(SeekFrom::Start(minf.start + 8))?;
+		reader.seek(SeekFrom::Start(minf.start + 8))?;
 
-		if let Some(stbl) = nested_atom(data, minf.len, b"stbl")? {
-			if let Some(stsd) = nested_atom(data, stbl.len, b"stsd")? {
+		if let Some(stbl) = nested_atom(reader, minf.len, b"stbl")? {
+			if let Some(stsd) = nested_atom(reader, stbl.len, b"stsd")? {
 				let mut stsd = try_vec![0; (stsd.len - 8) as usize];
-				data.read_exact(&mut stsd)?;
+				reader.read_exact(&mut stsd)?;
 
-				let mut stsd_reader = Cursor::new(&*stsd);
+				let mut cursor = Cursor::new(&*stsd);
+
+				let mut stsd_reader = AtomReader::new(&mut cursor)?;
 
 				// Skipping 8 bytes
 				// Version (1)
@@ -336,7 +338,7 @@ where
 				// Number of entries (4)
 				stsd_reader.seek(SeekFrom::Current(8))?;
 
-				let atom = AtomInfo::read(&mut stsd_reader)?;
+				let atom = AtomInfo::read(&mut stsd_reader, stsd.len() as u64)?;
 
 				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 					match fourcc {
@@ -357,7 +359,7 @@ where
 
 						if properties.audio_bitrate == 0 {
 							properties.audio_bitrate =
-								(u128::from(mdat_length(data)? * 8) / duration_millis) as u32;
+								(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
 						}
 					}
 				}
@@ -368,7 +370,7 @@ where
 	Ok(properties)
 }
 
-fn mp4a_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
+fn mp4a_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -393,23 +395,23 @@ where
 	// Vendor (4)
 	stsd.seek(SeekFrom::Current(16))?;
 
-	properties.channels = stsd.read_u16::<BigEndian>()? as u8;
+	properties.channels = stsd.read_u16()? as u8;
 
 	// Skipping 4 bytes
 	// Sample size (2)
 	// Compression ID (2)
 	stsd.seek(SeekFrom::Current(4))?;
 
-	properties.sample_rate = stsd.read_u32::<BigEndian>()?;
+	properties.sample_rate = stsd.read_u32()?;
 
 	stsd.seek(SeekFrom::Current(2))?;
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
-	if let Ok(esds) = AtomInfo::read(stsd) {
+	if let Ok(esds) = stsd.next() {
 		// There are 4 bytes we expect to be zeroed out
 		// Version (1)
 		// Flags (3)
-		if esds.ident == AtomIdent::Fourcc(*b"esds") && stsd.read_u32::<BigEndian>()? == 0 {
+		if esds.ident == AtomIdent::Fourcc(*b"esds") && stsd.read_u32()? == 0 {
 			let descriptor = Descriptor::read(stsd)?;
 			if descriptor.tag == ELEMENTARY_DESCRIPTOR_TAG {
 				// Skipping 3 bytes
@@ -434,7 +436,7 @@ where
 					// Max bitrate (4)
 					stsd.seek(SeekFrom::Current(8))?;
 
-					let average_bitrate = stsd.read_u32::<BigEndian>()?;
+					let average_bitrate = stsd.read_u32()?;
 
 					// Yet another descriptor to check
 					let descriptor = Descriptor::read(stsd)?;
@@ -513,11 +515,11 @@ where
 							stsd.read_exact(&mut ident)?;
 
 							if &ident == b"\0ALS\0" {
-								properties.sample_rate = stsd.read_u32::<BigEndian>()?;
+								properties.sample_rate = stsd.read_u32()?;
 
 								// Sample count
 								stsd.seek(SeekFrom::Current(4))?;
-								properties.channels = stsd.read_u16::<BigEndian>()? as u8 + 1;
+								properties.channels = stsd.read_u16()? as u8 + 1;
 							}
 						}
 					}
@@ -533,7 +535,7 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
+fn alac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -551,7 +553,7 @@ where
 	// First alac atom's content (28)
 	stsd.seek(SeekFrom::Start(44))?;
 
-	if let Ok(alac) = AtomInfo::read(stsd) {
+	if let Ok(alac) = stsd.next() {
 		if alac.ident == AtomIdent::Fourcc(*b"alac") {
 			properties.codec = Mp4Codec::ALAC;
 
@@ -578,15 +580,15 @@ where
 			// Max frame size (4)
 			stsd.seek(SeekFrom::Current(6))?;
 
-			properties.audio_bitrate = stsd.read_u32::<BigEndian>()? / 1000;
-			properties.sample_rate = stsd.read_u32::<BigEndian>()?;
+			properties.audio_bitrate = stsd.read_u32()? / 1000;
+			properties.sample_rate = stsd.read_u32()?;
 		}
 	}
 
 	Ok(())
 }
 
-fn flac_properties<R>(stsd: &mut R, properties: &mut Mp4Properties) -> Result<()>
+fn flac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -601,8 +603,8 @@ where
 	// Vendor (4)
 	stsd.seek(SeekFrom::Current(16))?;
 
-	properties.channels = stsd.read_u16::<BigEndian>()? as u8;
-	properties.bit_depth = Some(stsd.read_u16::<BigEndian>()? as u8);
+	properties.channels = stsd.read_u16()? as u8;
+	properties.bit_depth = Some(stsd.read_u16()? as u8);
 
 	// Skipping 4 bytes
 	//
@@ -610,11 +612,11 @@ where
 	// Packet size (2)
 	stsd.seek(SeekFrom::Current(4))?;
 
-	properties.sample_rate = u32::from(stsd.read_u16::<BigEndian>()?);
+	properties.sample_rate = u32::from(stsd.read_u16()?);
 
-	let _reserved = stsd.read_u16::<BigEndian>()?;
+	let _reserved = stsd.read_u16()?;
 
-	let dfla_atom = AtomInfo::read(stsd)?;
+	let dfla_atom = stsd.next()?;
 	match dfla_atom.ident {
 		// There should be a dfla atom, but it's not worth erroring if absent.
 		AtomIdent::Fourcc(ref fourcc) if fourcc == b"dfla" => {},
@@ -645,18 +647,18 @@ where
 }
 
 // Used to calculate the bitrate, when it isn't readily available to us
-fn mdat_length<R>(data: &mut R) -> Result<u64>
+fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64>
 where
 	R: Read + Seek,
 {
-	data.seek(SeekFrom::Start(0))?;
+	reader.seek(SeekFrom::Start(0))?;
 
-	while let Ok(atom) = AtomInfo::read(data) {
+	while let Ok(atom) = reader.next() {
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
 			return Ok(atom.len);
 		}
 
-		skip_unneeded(data, atom.extended, atom.len)?;
+		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
 	Err(FileDecodingError::new(FileType::MP4, "Failed to find \"mdat\" atom").into())
