@@ -25,6 +25,10 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
+					if value.is_empty() {
+						self.[<remove_ $name>]();
+					}
+
 					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
 				}
 

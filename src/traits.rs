@@ -196,3 +196,19 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// NOTE: This will **not** remove any format-specific extras, such as flags
 	fn clear(&mut self);
 }
+
+// TODO: https://github.com/rust-lang/rust/issues/59359
+pub(crate) trait SeekStreamLen: std::io::Seek {
+	fn stream_len(&mut self) -> crate::error::Result<u64> {
+		use std::io::SeekFrom;
+
+		let current_pos = self.stream_position()?;
+		let len = self.seek(SeekFrom::End(0))?;
+
+		self.seek(SeekFrom::Start(current_pos))?;
+
+		Ok(len)
+	}
+}
+
+impl<T> SeekStreamLen for T where T: std::io::Seek {}

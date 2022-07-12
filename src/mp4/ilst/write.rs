@@ -5,7 +5,7 @@ use crate::macros::try_vec;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
 use crate::mp4::ilst::r#ref::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
-use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4};
+use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 
@@ -18,15 +18,17 @@ pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> 
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	verify_mp4(data)?;
+	let mut reader = AtomReader::new(data)?;
 
-	let moov = Moov::find(data)?;
-	let pos = data.stream_position()?;
+	verify_mp4(&mut reader)?;
 
-	data.rewind()?;
+	let moov = Moov::find(&mut reader)?;
+	let pos = reader.position()?;
+
+	reader.rewind()?;
 
 	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
+	reader.read_to_end(&mut file_bytes)?;
 
 	let mut cursor = Cursor::new(file_bytes);
 	cursor.seek(SeekFrom::Start(pos))?;
@@ -125,6 +127,8 @@ where
 		&mut cursor,
 	)?;
 
+	let data = reader.into_inner();
+
 	data.rewind()?;
 	data.set_len(0)?;
 	data.write_all(&cursor.into_inner())?;
@@ -142,7 +146,7 @@ fn save_to_existing(
 	let replacement;
 	let range;
 
-	let (ilst_idx, tree) = atom_tree(cursor, meta.len - 4, b"ilst")?;
+	let (ilst_idx, tree) = atom_tree(cursor, meta.len - 8, b"ilst")?;
 
 	if tree.is_empty() {
 		// Nothing to do

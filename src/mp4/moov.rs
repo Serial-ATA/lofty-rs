@@ -4,7 +4,7 @@ use super::trak::Trak;
 #[cfg(feature = "mp4_ilst")]
 use super::{
 	ilst::{read::parse_ilst, Ilst},
-	read::meta_is_full,
+	read::{meta_is_full, AtomReader},
 };
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
@@ -19,19 +19,19 @@ pub(crate) struct Moov {
 }
 
 impl Moov {
-	pub(crate) fn find<R>(data: &mut R) -> Result<AtomInfo>
+	pub(super) fn find<R>(reader: &mut AtomReader<R>) -> Result<AtomInfo>
 	where
 		R: Read + Seek,
 	{
 		let mut moov = None;
 
-		while let Ok(atom) = AtomInfo::read(data) {
+		while let Ok(atom) = reader.next() {
 			if atom.ident == AtomIdent::Fourcc(*b"moov") {
 				moov = Some(atom);
 				break;
 			}
 
-			skip_unneeded(data, atom.extended, atom.len)?;
+			skip_unneeded(reader, atom.extended, atom.len)?;
 		}
 
 		if let Some(moov) = moov {
@@ -41,7 +41,7 @@ impl Moov {
 		}
 	}
 
-	pub(crate) fn parse<R>(data: &mut R, read_properties: bool) -> Result<Self>
+	pub(super) fn parse<R>(reader: &mut AtomReader<R>, read_properties: bool) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
@@ -49,21 +49,21 @@ impl Moov {
 		#[cfg(feature = "mp4_ilst")]
 		let mut meta = None;
 
-		while let Ok(atom) = AtomInfo::read(data) {
+		while let Ok(atom) = reader.next() {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
-					b"trak" if read_properties => traks.push(Trak::parse(data, &atom)?),
+					b"trak" if read_properties => traks.push(Trak::parse(reader, &atom)?),
 					#[cfg(feature = "mp4_ilst")]
 					b"udta" => {
-						meta = meta_from_udta(data, atom.len - 8)?;
+						meta = meta_from_udta(reader, atom.len - 8)?;
 					},
-					_ => skip_unneeded(data, atom.extended, atom.len)?,
+					_ => skip_unneeded(reader, atom.extended, atom.len)?,
 				}
 
 				continue;
 			}
 
-			skip_unneeded(data, atom.extended, atom.len)?
+			skip_unneeded(reader, atom.extended, atom.len)?
 		}
 
 		Ok(Self {
@@ -75,7 +75,7 @@ impl Moov {
 }
 
 #[cfg(feature = "mp4_ilst")]
-fn meta_from_udta<R>(data: &mut R, len: u64) -> Result<Option<Ilst>>
+fn meta_from_udta<R>(reader: &mut AtomReader<R>, len: u64) -> Result<Option<Ilst>>
 where
 	R: Read + Seek,
 {
@@ -83,7 +83,7 @@ where
 	let mut meta = (false, 0_u64);
 
 	while read < len {
-		let atom = AtomInfo::read(data)?;
+		let atom = reader.next()?;
 
 		if atom.ident == AtomIdent::Fourcc(*b"meta") {
 			meta = (true, atom.len);
@@ -91,7 +91,7 @@ where
 		}
 
 		read += atom.len;
-		skip_unneeded(data, atom.extended, atom.len)?;
+		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
 	if !meta.0 {
@@ -100,7 +100,7 @@ where
 
 	// It's possible for the `meta` atom to be non-full,
 	// so we have to check for that case
-	let full_meta_atom = meta_is_full(data)?;
+	let full_meta_atom = meta_is_full(reader)?;
 
 	if full_meta_atom {
 		read = 12;
@@ -111,7 +111,7 @@ where
 	let mut islt = (false, 0_u64);
 
 	while read < meta.1 {
-		let atom = AtomInfo::read(data)?;
+		let atom = reader.next()?;
 
 		if atom.ident == AtomIdent::Fourcc(*b"ilst") {
 			islt = (true, atom.len);
@@ -119,11 +119,11 @@ where
 		}
 
 		read += atom.len;
-		skip_unneeded(data, atom.extended, atom.len)?;
+		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
 	if islt.0 {
-		return parse_ilst(data, islt.1 - 8).map(Some);
+		return parse_ilst(reader, islt.1 - 8).map(Some);
 	}
 
 	Ok(None)

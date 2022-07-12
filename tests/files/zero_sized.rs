@@ -5,8 +5,6 @@ use lofty::mp3::Mp3File;
 use lofty::mp4::Mp4File;
 use lofty::AudioFile;
 
-// TODO: zero-size vorbis comments
-
 fn read_file_with_properties<A: AudioFile>(path: &str) -> bool {
 	let res = <A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), true);
 	res.is_ok()

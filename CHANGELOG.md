@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-**AIFF**: Stop relying on the file-provided size when reading (Fixes OOM)
-**WAV**: Same as above
+- **AIFF/WAV**: Stop relying on the file-provided size when reading (Fixes OOM)
+- **Tag**: The `Accessor::set_*` methods will now remove the item when given an empty string
+
+### Fixed
+- **PictureInformation**: Fix potential overflow on an invalid picture
+- **MP4**: The parser has received a major facelift, and shouldn't be so eager to allocate or trust user data (Fixes OOM)
 
 ## [0.7.1] - 2022-07-08
 
