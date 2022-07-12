@@ -1,6 +1,7 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::flac::write;
+use crate::macros::err;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation, PictureType};
 use crate::probe::Probe;
@@ -507,7 +508,7 @@ where
 			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
 			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
 			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),
-			_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+			_ => err!(UnsupportedTag),
 		}
 	}
 

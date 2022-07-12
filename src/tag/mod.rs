@@ -1,8 +1,9 @@
 pub(crate) mod item;
 pub(crate) mod utils;
 
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
 use crate::traits::{Accessor, TagExt};
@@ -535,10 +536,10 @@ impl TagExt for Tag {
 				if file_type.supports_tag_type(self.tag_type()) {
 					utils::write_tag(self, probe.into_inner(), file_type)
 				} else {
-					Err(LoftyError::new(ErrorKind::UnsupportedTag))
+					err!(UnsupportedTag);
 				}
 			},
-			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
+			None => err!(UnknownFormat),
 		}
 	}
 
@@ -613,14 +614,14 @@ impl TagType {
 		let probe = Probe::new(file).guess_file_type()?;
 		let file_type = match probe.file_type() {
 			Some(f_ty) => f_ty,
-			None => return Err(LoftyError::new(ErrorKind::UnknownFormat)),
+			None => err!(UnknownFormat),
 		};
 
 		let special_exceptions =
 			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::ID3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
-			return Err(LoftyError::new(ErrorKind::UnsupportedTag));
+			err!(UnsupportedTag);
 		}
 
 		let file = probe.into_inner();

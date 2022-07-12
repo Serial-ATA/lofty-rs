@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -69,15 +69,13 @@ impl AtomInfo {
 			// Seek to the end, since we can't recover from this
 			data.seek(SeekFrom::End(0))?;
 
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"Found an invalid length (< 8)",
-			)));
+			err!(BadAtom("Found an invalid length (< 8)"));
 		}
 
 		// `len` includes itself
 		if (len - 4) > reader_size {
 			data.seek(SeekFrom::Current(-4))?;
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		let mut atom_ident = AtomIdent::Fourcc(ident);
@@ -86,9 +84,7 @@ impl AtomInfo {
 		if &ident == b"----" {
 			reader_size -= 8;
 			if reader_size < 8 {
-				return Err(LoftyError::new(ErrorKind::BadAtom(
-					"Found an incomplete freeform identifier",
-				)));
+				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
 
 			atom_ident = parse_freeform(data, reader_size)?;
@@ -135,8 +131,8 @@ where
 				))
 			})
 		},
-		_ => Err(LoftyError::new(ErrorKind::BadAtom(
-			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms",
-		))),
+		_ => err!(BadAtom(
+			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms"
+		)),
 	}
 }

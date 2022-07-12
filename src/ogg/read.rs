@@ -1,7 +1,8 @@
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
+use crate::macros::err;
 #[cfg(feature = "vorbis_comments")]
 use crate::picture::Picture;
 
@@ -106,7 +107,7 @@ where
 
 	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		if page.header_type() & 0x01 == 1 {

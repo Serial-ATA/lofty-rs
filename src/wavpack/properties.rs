@@ -1,6 +1,6 @@
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -205,7 +205,7 @@ where
 	reader.read_exact(&mut wv_ident)?;
 
 	if &wv_ident != b"wvpk" {
-		return Err(LoftyError::new(ErrorKind::UnknownFormat));
+		err!(UnknownFormat);
 	}
 
 	let block_size = reader.read_u32::<LittleEndian>()?;

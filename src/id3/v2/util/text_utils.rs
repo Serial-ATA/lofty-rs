@@ -1,4 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::err;
 
 use std::convert::TryInto;
 use std::io::Read;
@@ -63,25 +64,17 @@ where
 		TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
 		TextEncoding::UTF16 => {
 			if raw_bytes.len() < 2 {
-				return Err(LoftyError::new(ErrorKind::TextDecode(
-					"UTF-16 string has an invalid length (< 2)",
-				)));
+				err!(TextDecode("UTF-16 string has an invalid length (< 2)"));
 			}
 
 			if raw_bytes.len() % 2 != 0 {
-				return Err(LoftyError::new(ErrorKind::TextDecode(
-					"UTF-16 string has an odd length",
-				)));
+				err!(TextDecode("UTF-16 string has an odd length"));
 			}
 
 			match (raw_bytes[0], raw_bytes[1]) {
 				(0xFE, 0xFF) => utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?,
 				(0xFF, 0xFE) => utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?,
-				_ => {
-					return Err(LoftyError::new(ErrorKind::TextDecode(
-						"UTF-16 string has an invalid byte order mark",
-					)))
-				},
+				_ => err!(TextDecode("UTF-16 string has an invalid byte order mark")),
 			}
 		},
 		TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,

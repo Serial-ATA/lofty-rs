@@ -1,5 +1,6 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::file::FileType;
+use crate::macros::err;
 use crate::tag::{Tag, TagType};
 use crate::{ape, iff, mp3, wavpack};
 
@@ -37,7 +38,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		},
 		FileType::WAV => iff::wav::write::write_to(file, tag),
 		FileType::WavPack => wavpack::write::write_to(file, tag),
-		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+		_ => err!(UnsupportedTag),
 	}
 }
 

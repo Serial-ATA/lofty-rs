@@ -1,8 +1,8 @@
 use super::verify_signature;
-use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
+use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
 use crate::flac;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::PictureInformation;
@@ -63,7 +63,7 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 			// This tag can *only* be removed in this format
 			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file)
 		},
-		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+		_ => err!(UnsupportedTag),
 	}
 }
 

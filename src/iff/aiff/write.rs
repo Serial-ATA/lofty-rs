@@ -1,6 +1,7 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2;
+use crate::macros::err;
 #[allow(unused_imports)]
 use crate::tag::{Tag, TagType};
 
@@ -28,6 +29,6 @@ pub(crate) fn write_to(data: &mut File, tag: &Tag) -> Result<()> {
 			frames: v2::tag::tag_frames(tag),
 		}
 		.write_to(data),
-		_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+		_ => err!(UnsupportedTag),
 	}
 }

@@ -1,9 +1,9 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
 use super::trak::Trak;
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::error::{FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -281,11 +281,7 @@ where
 
 	let mdhd = match mdhd {
 		Some(mdhd) => mdhd,
-		None => {
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"Expected atom \"trak.mdia.mdhd\"",
-			)))
-		},
+		None => err!(BadAtom("Expected atom \"trak.mdia.mdhd\"")),
 	};
 
 	reader.seek(SeekFrom::Start(mdhd.start + 8))?;

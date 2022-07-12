@@ -3,10 +3,10 @@ use super::constants::{
 	UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::id3::v1::constants::GENRES;
 use crate::id3::v2::util::text_utils::utf16_decode;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
@@ -145,11 +145,7 @@ where
 		let data_atom = reader.next()?;
 		match data_atom.ident {
 			AtomIdent::Fourcc(ref name) if name == b"data" => {},
-			_ => {
-				return Err(LoftyError::new(ErrorKind::BadAtom(
-					"Expected atom \"data\" to follow name",
-				)))
-			},
+			_ => err!(BadAtom("Expected atom \"data\" to follow name")),
 		}
 
 		// We don't care about the version
@@ -186,11 +182,9 @@ fn parse_uint(bytes: &[u8]) -> Result<u32> {
 		2 => u32::from(u16::from_be_bytes([bytes[0], bytes[1]])),
 		3 => u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
 		4 => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => {
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"Unexpected atom size for type \"BE unsigned integer\"",
-			)))
-		},
+		_ => err!(BadAtom(
+			"Unexpected atom size for type \"BE unsigned integer\""
+		)),
 	})
 }
 
@@ -200,11 +194,9 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 		2 => i32::from(i16::from_be_bytes([bytes[0], bytes[1]])),
 		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
 		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => {
-			return Err(LoftyError::new(ErrorKind::BadAtom(
-				"Unexpected atom size for type \"BE signed integer\"",
-			)))
-		},
+		_ => err!(BadAtom(
+			"Unexpected atom size for type \"BE signed integer\""
+		)),
 	})
 }
 
@@ -225,11 +217,7 @@ where
 				JPEG => MimeType::Jpeg,
 				PNG => MimeType::Png,
 				BMP => MimeType::Bmp,
-				_ => {
-					return Err(LoftyError::new(ErrorKind::BadAtom(
-						"\"covr\" atom has an unknown type",
-					)))
-				},
+				_ => err!(BadAtom("\"covr\" atom has an unknown type")),
 			};
 
 			let picture_data = AtomData::Picture(Picture {

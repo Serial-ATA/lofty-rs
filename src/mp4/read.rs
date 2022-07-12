@@ -4,6 +4,7 @@ use super::properties::Mp4Properties;
 use super::Mp4File;
 use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
 use crate::file::FileType;
+use crate::macros::err;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -61,7 +62,7 @@ where
 
 	pub(super) fn next(&mut self) -> Result<AtomInfo> {
 		if self.remaining_size < 8 {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		AtomInfo::read(self, self.remaining_size)
@@ -129,7 +130,7 @@ where
 	let atom = reader.next()?;
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
-		return Err(LoftyError::new(ErrorKind::UnknownFormat));
+		err!(UnknownFormat);
 	}
 
 	// size + identifier + major brand
@@ -182,7 +183,7 @@ where
 		if let (pos, false) = pos.overflowing_add(len - 8) {
 			reader.seek(SeekFrom::Start(pos))?;
 		} else {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 	} else {
 		reader.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;

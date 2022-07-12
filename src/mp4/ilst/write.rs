@@ -1,7 +1,7 @@
 use super::r#ref::IlstRef;
-use crate::error::{ErrorKind, FileEncodingError, LoftyError, Result};
+use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
 use crate::mp4::ilst::r#ref::{AtomIdentRef, AtomRef};
 use crate::mp4::moov::Moov;
@@ -201,7 +201,7 @@ fn save_to_existing(
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
-					return Err(LoftyError::new(ErrorKind::TooMuchData));
+					err!(TooMuchData);
 				}
 
 				let remaining_space = remaining_space as u32;

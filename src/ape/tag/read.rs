@@ -2,9 +2,9 @@ use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::INVALID_KEYS;
 use crate::ape::header::ApeHeader;
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 use crate::tag::item::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -25,7 +25,7 @@ where
 
 		let value_size = data.read_u32::<LittleEndian>()?;
 		if value_size > remaining_size {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		remaining_size -= 4;

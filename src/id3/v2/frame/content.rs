@@ -7,6 +7,7 @@ use crate::id3::v2::util::text_utils::{
 	decode_text, read_to_terminator, utf16_decode, TextEncoding,
 };
 use crate::id3::v2::ID3v2Version;
+use crate::macros::err;
 use crate::picture::Picture;
 
 use std::io::{Cursor, Read};
@@ -202,9 +203,7 @@ fn verify_encoding(encoding: u8, version: ID3v2Version) -> Result<TextEncoding> 
 	}
 
 	match TextEncoding::from_u8(encoding) {
-		None => Err(LoftyError::new(ErrorKind::TextDecode(
-			"Found invalid encoding",
-		))),
+		None => err!(TextDecode("Found invalid encoding")),
 		Some(e) => Ok(e),
 	}
 }

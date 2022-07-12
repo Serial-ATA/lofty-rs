@@ -1,7 +1,7 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
-use crate::macros::try_vec;
+use crate::macros::{err, try_vec};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
@@ -82,7 +82,7 @@ impl<B: ByteOrder> Chunks<B> {
 		R: Read,
 	{
 		if size > self.remaining_size {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		let mut content = try_vec![0; size as usize];

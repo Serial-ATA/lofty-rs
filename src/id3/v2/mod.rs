@@ -10,7 +10,8 @@
 mod flags;
 pub(crate) mod util;
 
-use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::macros::err;
 
 use std::io::Read;
 
@@ -74,7 +75,7 @@ pub(crate) fn unsynch_u32(n: u32) -> u32 {
 // https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
 pub(crate) fn synch_u32(n: u32) -> Result<u32> {
 	if n > 0x1000_0000 {
-		return Err(LoftyError::new(ErrorKind::TooMuchData));
+		err!(TooMuchData);
 	}
 
 	let mut x: u32 = n & 0x7F | (n & 0xFFFF_FF80) << 1;
@@ -100,7 +101,7 @@ where
 	bytes.read_exact(&mut header)?;
 
 	if &header[..3] != b"ID3" {
-		return Err(LoftyError::new(ErrorKind::FakeTag));
+		err!(FakeTag);
 	}
 
 	// Version is stored as [major, minor], but here we don't care about minor revisions unless there's an error.

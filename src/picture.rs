@@ -1,4 +1,5 @@
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::err;
 #[cfg(feature = "id3v2")]
 use crate::{
 	error::{ID3v2Error, ID3v2ErrorKind},
@@ -294,7 +295,7 @@ impl PictureInformation {
 		let reader = &mut &*picture.data;
 
 		if reader.len() < 8 {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		match reader[..4] {
@@ -316,7 +317,7 @@ impl PictureInformation {
 		reader.read_exact(&mut sig)?;
 
 		if sig != [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let mut ihdr = [0; 8];
@@ -324,7 +325,7 @@ impl PictureInformation {
 
 		// Verify the signature is immediately followed by the IHDR chunk
 		if !ihdr.ends_with(&[0x49, 0x48, 0x44, 0x52]) {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let width = reader.read_u32::<BigEndian>()?;
@@ -398,7 +399,7 @@ impl PictureInformation {
 		reader.read_exact(&mut frame_marker)?;
 
 		if !matches!(frame_marker, [0xFF, 0xD8, 0xFF, ..]) {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let mut section_len = reader.read_u16::<BigEndian>()?;
@@ -408,7 +409,7 @@ impl PictureInformation {
 		// The length contains itself, so anything < 2 is invalid
 		let (content_len, overflowed) = section_len.overflowing_sub(2);
 		if overflowed {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 		reader.seek(SeekFrom::Current(i64::from(content_len)))?;
 
@@ -443,7 +444,7 @@ impl PictureInformation {
 			reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
 		}
 
-		Err(LoftyError::new(ErrorKind::NotAPicture))
+		err!(NotAPicture)
 	}
 }
 
@@ -494,7 +495,7 @@ impl Picture {
 		reader.read_to_end(&mut data)?;
 
 		if data.len() < 8 {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let mime_type = Self::mimetype_from_bin(&data[..8])?;
@@ -617,7 +618,7 @@ impl Picture {
 		data.write_all(&self.data)?;
 
 		if data.len() as u64 > max_size {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		Ok(data)
@@ -643,7 +644,7 @@ impl Picture {
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
 			Some(encoding) => encoding,
-			None => return Err(LoftyError::new(ErrorKind::NotAPicture)),
+			None => err!(NotAPicture),
 		};
 
 		let mime_type = if version == ID3v2Version::V2 {
@@ -760,7 +761,7 @@ impl Picture {
 		let mut reader = Cursor::new(content);
 
 		if size < 32 {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let pic_ty = reader.read_u32::<BigEndian>()?;
@@ -770,14 +771,14 @@ impl Picture {
 		// Anything greater than that is probably invalid, so
 		// we just stop early
 		if pic_ty > 255 {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let mime_len = reader.read_u32::<BigEndian>()? as usize;
 		size -= 4;
 
 		if mime_len > size {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		let mime_type_str = std::str::from_utf8(&content[8..8 + mime_len])?;
@@ -828,7 +829,7 @@ impl Picture {
 			}
 		}
 
-		Err(LoftyError::new(ErrorKind::NotAPicture))
+		err!(NotAPicture)
 	}
 
 	#[cfg(feature = "ape")]
@@ -861,7 +862,7 @@ impl Picture {
 	/// if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
 		if bytes.is_empty() {
-			return Err(LoftyError::new(ErrorKind::NotAPicture));
+			err!(NotAPicture);
 		}
 
 		let pic_type = PictureType::from_ape_key(key);
@@ -910,7 +911,7 @@ impl Picture {
 			[b'G', b'I', b'F', 0x38, 0x37 | 0x39, b'a', ..] => Ok(MimeType::Gif),
 			[b'B', b'M', ..] => Ok(MimeType::Bmp),
 			[b'I', b'I', b'*', 0x00, ..] | [b'M', b'M', 0x00, b'*', ..] => Ok(MimeType::Tiff),
-			_ => Err(LoftyError::new(ErrorKind::NotAPicture)),
+			_ => err!(NotAPicture),
 		}
 	}
 }

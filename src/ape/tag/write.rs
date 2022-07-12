@@ -3,9 +3,10 @@ use super::read::read_ape_tag;
 use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::macros::err;
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
 
@@ -23,7 +24,7 @@ where
 
 	match probe.file_type() {
 		Some(FileType::APE | FileType::MP3 | FileType::WavPack) => {},
-		_ => return Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+		_ => err!(UnsupportedTag),
 	}
 
 	let data = probe.into_inner();
@@ -188,7 +189,7 @@ where
 	let size = tag_write.get_ref().len();
 
 	if size as u64 + 32 > u64::from(u32::MAX) {
-		return Err(LoftyError::new(ErrorKind::TooMuchData));
+		err!(TooMuchData);
 	}
 
 	let mut footer = [0_u8; 32];
