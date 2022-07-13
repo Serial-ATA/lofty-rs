@@ -97,7 +97,7 @@ where
 
 		match block.ty {
 			#[cfg(feature = "vorbis_comments")]
-			4 => read_comments(&mut &*block.content, &mut tag)?,
+			4 => read_comments(&mut &*block.content, block.content.len() as u64, &mut tag)?,
 			#[cfg(feature = "vorbis_comments")]
 			6 => tag
 				.pictures
