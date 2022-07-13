@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP3/APE**: Stop trusting the lengths of APE tag items (Fixes OOM)
 - **PictureInformation**: Fix potential overflow on an invalid picture
 - **MP4**: The parser has received a major facelift, and shouldn't be so eager to allocate or trust user data (Fixes OOM)
+- **FLAC**: Return early when encountering invalid zero-sized blocks
 
 ## [0.7.1] - 2022-07-08
 

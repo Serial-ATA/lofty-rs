@@ -87,6 +87,14 @@ where
 		let block = Block::read(data)?;
 		last_block = block.last;
 
+		if block.content.is_empty() && (block.ty != 1 && block.ty != 3) {
+			return Err(FileDecodingError::new(
+				FileType::FLAC,
+				"Encountered a zero-sized metadata block",
+			)
+			.into());
+		}
+
 		match block.ty {
 			#[cfg(feature = "vorbis_comments")]
 			4 => read_comments(&mut &*block.content, &mut tag)?,
