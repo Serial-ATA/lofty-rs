@@ -238,14 +238,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/fba1de83...main
-[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...fba1de83
-[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...8b64e615
-[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
-[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
-[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
-[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
-[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
-[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
-[0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
-[0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.1...HEAD
+[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.0...0.7.1
+[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.3...0.7.0
+[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.2...0.6.3
+[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.1...0.6.2
+[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.0...0.6.1
+[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.3...0.6.0
+[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.2...0.5.3
+[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.1...0.5.2
+[0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.0...0.5.1
+[0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...0.5.0
