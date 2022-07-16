@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Seek};
 
 use crate::{assert_delta, temp_file};
 use lofty::{Accessor, AudioFile, FileType};
@@ -57,8 +57,11 @@ fn test_save_id3v2() {
 		let mut tag = lofty::Tag::new(lofty::TagType::ID3v2);
 		tag.set_title("TitleXXX".to_string());
 		tfile.insert_tag(tag);
+		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
 	}
+
+	file.rewind().unwrap();
 
 	{
 		let mut tfile = lofty::read_from(&mut file, true).unwrap();
@@ -69,8 +72,11 @@ fn test_save_id3v2() {
 		assert_eq!(tag.title(), Some("TitleXXX"));
 		tag.set_title("".to_string());
 		tfile.insert_tag(tag);
+		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
 	}
+
+	file.rewind().unwrap();
 
 	{
 		let tfile = lofty::read_from(&mut file, true).unwrap();
