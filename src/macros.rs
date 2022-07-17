@@ -54,4 +54,22 @@ macro_rules! try_vec {
 	}};
 }
 
-pub(crate) use {tag_methods, try_vec};
+// Shorthand for return Err(LoftyError::new(ErrorKind::Foo))
+//
+// Usage:
+// - err!(Variant)          -> return Err(LoftyError::new(ErrorKind::Variant))
+// - err!(Variant(Message)) -> return Err(LoftyError::new(ErrorKind::Variant(Message)))
+macro_rules! err {
+	($variant:ident) => {
+		return Err(crate::error::LoftyError::new(
+			crate::error::ErrorKind::$variant,
+		))
+	};
+	($variant:ident($reason:literal)) => {
+		return Err(crate::error::LoftyError::new(
+			crate::error::ErrorKind::$variant($reason),
+		))
+	};
+}
+
+pub(crate) use {err, tag_methods, try_vec};

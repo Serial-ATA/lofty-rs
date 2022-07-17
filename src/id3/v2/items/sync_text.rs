@@ -1,12 +1,13 @@
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
-
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-
 use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::text_utils;
 use crate::id3::v2::util::text_utils::{
 	decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding,
 };
+use crate::macros::err;
+
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 #[repr(u8)]
@@ -215,7 +216,7 @@ impl SynchronizedText {
 			}
 
 			if data.len() as u64 > u64::from(u32::MAX) {
-				return Err(LoftyError::new(ErrorKind::TooMuchData));
+				err!(TooMuchData);
 			}
 
 			return Ok(data);

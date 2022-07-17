@@ -1,11 +1,12 @@
 #[cfg(feature = "aiff_text_chunks")]
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
-use crate::error::{ErrorKind, FileDecodingError, LoftyError, Result};
+use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
+use crate::macros::err;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -22,7 +23,7 @@ where
 	data.read_exact(&mut id)?;
 
 	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[8..] == b"AIFC")) {
-		return Err(LoftyError::new(ErrorKind::UnknownFormat));
+		err!(UnknownFormat);
 	}
 
 	Ok(())

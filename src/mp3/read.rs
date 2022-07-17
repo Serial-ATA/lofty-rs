@@ -10,6 +10,7 @@ use crate::file::FileType;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
+use crate::macros::err;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -75,6 +76,8 @@ where
 
 					continue;
 				}
+
+				err!(FakeTag);
 			},
 			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {

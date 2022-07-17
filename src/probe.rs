@@ -1,9 +1,10 @@
 use crate::ape::ApeFile;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
+use crate::macros::err;
 use crate::mp3::header::search_for_frame_sync;
 use crate::mp3::Mp3File;
 use crate::mp4::Mp4File;
@@ -356,7 +357,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, read_properties)?.into(),
 			}),
-			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
+			None => err!(UnknownFormat),
 		}
 	}
 }

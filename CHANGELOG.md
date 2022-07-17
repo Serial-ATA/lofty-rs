@@ -6,13 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Tag**: The `Accessor::set_*` methods will stop falling through, and adding empty strings
+
+## [0.7.2] - 2022-07-13
+
+This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](https://github.com/5225225)!
+
 ### Changed
-- **AIFF/WAV**: Stop relying on the file-provided size when reading (Fixes OOM)
 - **Tag**: The `Accessor::set_*` methods will now remove the item when given an empty string
 
 ### Fixed
-- **PictureInformation**: Fix potential overflow on an invalid picture
+- **AIFF/WAV**: Stop relying on the file-provided size when reading (Fixes OOM)
+- **MP3/APE**: Stop trusting the lengths of APE tag items (Fixes OOM)
+- **PictureInformation**: Fix potential integer overflow in `{from_jpeg, from_png}`
 - **MP4**: The parser has received a major facelift, and shouldn't be so eager to allocate or trust user data (Fixes OOM)
+- **FLAC**: Return early when encountering invalid zero-sized blocks
+- **FLAC/Opus/Vorbis/Speex**: Add better length validity checks while reading Vorbis Comments (Fixes OOM)
 
 ## [0.7.1] - 2022-07-08
 
@@ -235,14 +245,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/fba1de83...main
-[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/8b64e615...fba1de83
-[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/3065bdb...8b64e615
-[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/868d6b4...3065bdb
-[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/87faae7...868d6b4
-[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/f1f2a5c...87faae7
-[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/74d9f35...f1f2a5c
-[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/5bf1f34...74d9f35
-[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/d00be2c...5bf1f34
-[0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/a1463f3...d00be2c
-[0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...a1463f3
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.2...HEAD
+[0.7.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.1...0.7.2
+[0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.0...0.7.1
+[0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.3...0.7.0
+[0.6.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.2...0.6.3
+[0.6.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.1...0.6.2
+[0.6.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.0...0.6.1
+[0.6.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.3...0.6.0
+[0.5.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.2...0.5.3
+[0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.1...0.5.2
+[0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.0...0.5.1
+[0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...0.5.0

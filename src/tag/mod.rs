@@ -1,8 +1,9 @@
 pub(crate) mod item;
 pub(crate) mod utils;
 
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
 use crate::traits::{Accessor, TagExt};
@@ -27,6 +28,7 @@ macro_rules! impl_accessor {
 				fn [<set_ $name>](&mut self, value: String) {
 					if value.is_empty() {
 						self.[<remove_ $name>]();
+						return;
 					}
 
 					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
@@ -535,10 +537,10 @@ impl TagExt for Tag {
 				if file_type.supports_tag_type(self.tag_type()) {
 					utils::write_tag(self, probe.into_inner(), file_type)
 				} else {
-					Err(LoftyError::new(ErrorKind::UnsupportedTag))
+					err!(UnsupportedTag);
 				}
 			},
-			None => Err(LoftyError::new(ErrorKind::UnknownFormat)),
+			None => err!(UnknownFormat),
 		}
 	}
 
@@ -613,14 +615,14 @@ impl TagType {
 		let probe = Probe::new(file).guess_file_type()?;
 		let file_type = match probe.file_type() {
 			Some(f_ty) => f_ty,
-			None => return Err(LoftyError::new(ErrorKind::UnknownFormat)),
+			None => err!(UnknownFormat),
 		};
 
 		let special_exceptions =
 			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::ID3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
-			return Err(LoftyError::new(ErrorKind::UnsupportedTag));
+			err!(UnsupportedTag);
 		}
 
 		let file = probe.into_inner();
@@ -631,7 +633,7 @@ impl TagType {
 #[cfg(test)]
 mod tests {
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Picture, PictureType, Tag, TagExt, TagType};
+	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType};
 	use std::io::{Seek, Write};
 	use std::process::Command;
 
@@ -664,5 +666,16 @@ mod tests {
 		assert!(
 			!stderr.contains("Header processing failed: Invalid data found when processing input")
 		);
+	}
+
+	#[test]
+	fn insert_empty() {
+		let mut tag = Tag::new(TagType::ID3v2);
+		tag.set_title(String::from("Foo title"));
+
+		assert_eq!(tag.title(), Some("Foo title"));
+
+		tag.set_title(String::new());
+		assert_eq!(tag.title(), None);
 	}
 }

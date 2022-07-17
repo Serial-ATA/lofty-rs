@@ -1,6 +1,7 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::flac::write;
+use crate::macros::err;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation, PictureType};
 use crate::probe::Probe;
@@ -507,7 +508,7 @@ where
 			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
 			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
 			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),
-			_ => Err(LoftyError::new(ErrorKind::UnsupportedTag)),
+			_ => err!(UnsupportedTag),
 		}
 	}
 
@@ -553,7 +554,7 @@ mod tests {
 		let mut reader = std::io::Cursor::new(tag);
 		let mut parsed_tag = VorbisComments::default();
 
-		crate::ogg::read::read_comments(&mut reader, &mut parsed_tag).unwrap();
+		crate::ogg::read::read_comments(&mut reader, tag.len() as u64, &mut parsed_tag).unwrap();
 		parsed_tag
 	}
 
@@ -596,11 +597,7 @@ mod tests {
 	#[test]
 	fn vorbis_comments_to_tag() {
 		let tag_bytes = std::fs::read("tests/tags/assets/test.vorbis").unwrap();
-
-		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
-		let mut vorbis_comments = VorbisComments::default();
-
-		crate::ogg::read::read_comments(&mut reader, &mut vorbis_comments).unwrap();
+		let vorbis_comments = read_tag(&tag_bytes);
 
 		let tag: Tag = vorbis_comments.into();
 
@@ -624,10 +621,6 @@ mod tests {
 	#[test]
 	fn zero_sized_vorbis_comments() {
 		let tag_bytes = std::fs::read("tests/tags/assets/zero.vorbis").unwrap();
-
-		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
-		let mut vorbis_comments = VorbisComments::default();
-
-		crate::ogg::read::read_comments(&mut reader, &mut vorbis_comments).unwrap();
+		let _ = read_tag(&tag_bytes);
 	}
 }

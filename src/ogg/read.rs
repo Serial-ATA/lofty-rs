@@ -1,7 +1,8 @@
 #[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
+use crate::macros::err;
 #[cfg(feature = "vorbis_comments")]
 use crate::picture::Picture;
 
@@ -18,7 +19,7 @@ pub type OGGTags = (Option<VorbisComments>, Page);
 pub type OGGTags = (Option<()>, Page);
 
 #[cfg(feature = "vorbis_comments")]
-pub(crate) fn read_comments<R>(data: &mut R, tag: &mut VorbisComments) -> Result<()>
+pub(crate) fn read_comments<R>(data: &mut R, mut len: u64, tag: &mut VorbisComments) -> Result<()>
 where
 	R: Read,
 {
@@ -26,9 +27,14 @@ where
 	use crate::macros::try_vec;
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
+	if u64::from(vendor_len) > len {
+		err!(TooMuchData);
+	}
 
 	let mut vendor = try_vec![0; vendor_len as usize];
 	data.read_exact(&mut vendor)?;
+
+	len -= u64::from(vendor_len);
 
 	let vendor = match String::from_utf8(vendor) {
 		Ok(v) => v,
@@ -60,9 +66,15 @@ where
 
 	for _ in 0..comments_total_len {
 		let comment_len = data.read_u32::<LittleEndian>()?;
+		if u64::from(comment_len) > len {
+			// TODO: Maybe add ErrorKind::SizeMismatch?
+			err!(TooMuchData);
+		}
 
 		let mut comment_bytes = try_vec![0; comment_len as usize];
 		data.read_exact(&mut comment_bytes)?;
+
+		len -= u64::from(comment_len);
 
 		let comment = String::from_utf8(comment_bytes)?;
 		let mut comment_split = comment.splitn(2, '=');
@@ -106,7 +118,7 @@ where
 
 	while let Ok(page) = Page::read(data, false) {
 		if md_pages.len() > 125_829_120 {
-			return Err(LoftyError::new(ErrorKind::TooMuchData));
+			err!(TooMuchData);
 		}
 
 		if page.header_type() & 0x01 == 1 {
@@ -122,7 +134,7 @@ where
 		let mut tag = VorbisComments::default();
 
 		let reader = &mut &md_pages[..];
-		read_comments(reader, &mut tag)?;
+		read_comments(reader, reader.len() as u64, &mut tag)?;
 
 		Ok((Some(tag), first_page))
 	}

@@ -1,5 +1,6 @@
 use crate::error::{FileDecodingError, Result};
 use crate::file::FileType;
+use crate::traits::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
@@ -47,7 +48,16 @@ where
 
 	// Version 1 doesn't include a header
 	if version == 2000 {
-		size += 32
+		size = size.saturating_add(32);
+	}
+
+	#[allow(unstable_name_collisions)]
+	if u64::from(size) > data.stream_len()? {
+		return Err(FileDecodingError::new(
+			FileType::APE,
+			"APE tag has an invalid size (> file size)",
+		)
+		.into());
 	}
 
 	Ok(ApeHeader {
