@@ -28,6 +28,7 @@ macro_rules! impl_accessor {
 				fn [<set_ $name>](&mut self, value: String) {
 					if value.is_empty() {
 						self.[<remove_ $name>]();
+						return;
 					}
 
 					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
@@ -632,7 +633,7 @@ impl TagType {
 #[cfg(test)]
 mod tests {
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Picture, PictureType, Tag, TagExt, TagType};
+	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType};
 	use std::io::{Seek, Write};
 	use std::process::Command;
 
@@ -665,5 +666,16 @@ mod tests {
 		assert!(
 			!stderr.contains("Header processing failed: Invalid data found when processing input")
 		);
+	}
+
+	#[test]
+	fn insert_empty() {
+		let mut tag = Tag::new(TagType::ID3v2);
+		tag.set_title(String::from("Foo title"));
+
+		assert_eq!(tag.title(), Some("Foo title"));
+
+		tag.set_title(String::new());
+		assert_eq!(tag.title(), None);
 	}
 }

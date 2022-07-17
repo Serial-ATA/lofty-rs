@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Tag**: The `Accessor::set_*` methods will stop falling through, and adding empty strings
+
 ## [0.7.2] - 2022-07-13
 
 This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](https://github.com/5225225)!
