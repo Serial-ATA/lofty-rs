@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **FileType**: `FileType::from_ext` detects MP1/MP2 as `FileType::MP3`, allowing these files to be read with
+                `read_from_path`/`Probe::open`.
+
 ### Fixed
 - **Tag**: The `Accessor::set_*` methods will stop falling through, and adding empty strings
 

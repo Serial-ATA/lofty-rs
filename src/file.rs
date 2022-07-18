@@ -577,7 +577,7 @@ impl FileType {
 		match ext.as_str() {
 			"ape" => Some(Self::APE),
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
-			"mp3" => Some(Self::MP3),
+			"mp3" | "mp2" | "mp1" => Some(Self::MP3),
 			"wav" | "wave" => Some(Self::WAV),
 			"wv" => Some(Self::WavPack),
 			"opus" => Some(Self::Opus),
