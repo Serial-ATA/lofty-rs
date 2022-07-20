@@ -847,6 +847,6 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(file.ilst, Some(Ilst::default()));
+		assert_eq!(file.ilst(), Some(&Ilst::default()));
 	}
 }
