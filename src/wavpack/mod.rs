@@ -5,7 +5,6 @@ pub(crate) mod write;
 
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
-use crate::error::Result;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 use crate::tag::{Tag, TagType};

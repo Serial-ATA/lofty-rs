@@ -10,7 +10,6 @@ mod read;
 #[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
 
-use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 #[cfg(feature = "vorbis_comments")]

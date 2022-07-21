@@ -9,7 +9,6 @@ mod properties;
 mod read;
 mod trak;
 
-use crate::error::Result;
 use crate::tag::{Tag, TagType};
 
 use lofty_attr::LoftyFile;

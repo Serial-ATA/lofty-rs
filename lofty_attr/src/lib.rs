@@ -95,7 +95,7 @@ fn parse(input: DeriveInput) -> TokenStream {
 			impl lofty::AudioFile for #struct_name {
 				type Properties = #properties_field_ty;
 
-				fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
+				fn read_from<R>(reader: &mut R, read_properties: bool) -> lofty::error::Result<Self>
 				where
 					R: std::io::Read + std::io::Seek,
 				{
@@ -398,7 +398,7 @@ fn extract_type_from_option(ty: &Type) -> Option<&Type> {
 			});
 		vec!["Option|", "std|option|Option|", "core|option|Option|"]
 			.into_iter()
-			.find(|s| &idents_of_path == *s)
+			.find(|s| idents_of_path == *s)
 			.and_then(|_| path.segments.last())
 	}
 

@@ -11,7 +11,6 @@ mod properties;
 mod read;
 pub(crate) mod write;
 
-use crate::error::Result;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]

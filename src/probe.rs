@@ -13,6 +13,7 @@ use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
 use crate::wavpack::WavPackFile;
 
+use crate::resolve::CUSTOM_RESOLVERS;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -311,7 +312,18 @@ impl<R: Read + Seek> Probe<R> {
 
 				file_type_after_id3_block
 			},
-			_ => Ok(None),
+			_ => {
+				if let Ok(lock) = CUSTOM_RESOLVERS.lock() {
+					#[allow(clippy::significant_drop_in_scrutinee)]
+					for (_, resolve) in lock.iter() {
+						if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
+							return Ok(ret);
+						}
+					}
+				}
+
+				Ok(None)
+			},
 		}
 	}
 
@@ -326,6 +338,10 @@ impl<R: Read + Seek> Probe<R> {
 	///       [`Probe::guess_file_type`] or [`Probe::set_file_type`]. When reading from
 	///       paths, this is not necessary.
 	/// * The reader contains invalid data
+	///
+	/// # Panics
+	///
+	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`crate::resolve::register_custom_resolver`].
 	///
 	/// # Examples
 	///
@@ -356,6 +372,16 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, read_properties)?.into(),
+				FileType::Custom(c) => {
+					if let Some(r) = crate::resolve::lookup_resolver(c) {
+						r.read_from(reader, read_properties)?
+					} else {
+						panic!(
+							"Encountered an unregistered custom `FileType` named `{}`",
+							c
+						);
+					}
+				},
 			}),
 			None => err!(UnknownFormat),
 		}

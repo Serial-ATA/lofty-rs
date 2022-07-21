@@ -1,66 +1,111 @@
 //! Tools to create custom file resolvers
 
 use crate::error::Result;
-use crate::file::TaggedFile;
+use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::tag::TagType;
 
-use std::ffi::OsStr;
+use std::collections::HashMap;
 use std::io::{Read, Seek};
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicPtr, Ordering};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use once_cell::sync::Lazy;
 
-// Adapted from: https://github.com/rust-lang/rust/blob/master/compiler/rustc_data_structures/src/atomic_ref.rs
-// This is essentially an `AtomicPtr` but is guaranteed to always be valid
-struct AtomicRef<T: 'static>(AtomicPtr<T>, PhantomData<&'static T>);
+/// A custom file resolver
+///
+/// This trait allows for the creation of custom [`FileType`]s, that can make use of
+/// lofty's API. Registering a `FileResolver` ([`register_custom_resolver`]) makes it possible
+/// to detect and read files using [`crate::probe::Probe`].
+pub trait FileResolver: Send + Sync + AudioFile {
+	/// The extension associated with the [`FileType`] without the '.'
+	fn extension() -> Option<&'static str>;
+	/// The primary [`TagType`] for the [`FileType`]
+	fn primary_tag_type() -> TagType;
+	/// The [`FileType`]'s supported [`TagType`]s
+	fn supported_tag_types() -> &'static [TagType];
 
-#[allow(trivial_casts)]
-impl<T: 'static> AtomicRef<T> {
-	const fn new(initial: &'static T) -> AtomicRef<T> {
-		AtomicRef(AtomicPtr::new(initial as *const _ as *mut T), PhantomData)
-	}
+	/// Attempts to guess the [`FileType`] from a portion of the file content
+	///
+	/// NOTE: This will only provide (up to) the first 50 bytes of the file
+	fn guess(buf: &[u8]) -> Option<FileType>;
 }
 
-impl<T: 'static> std::ops::Deref for AtomicRef<T> {
-	type Target = T;
-	fn deref(&self) -> &Self::Target {
-		// SAFETY: We never allow storing anything but a `'static` reference so
-		// it's safe to lend it out for any amount of time.
-		unsafe { &*self.0.load(Ordering::SeqCst) }
-	}
+// Just broken out to its own type to make `CUSTOM_RESOLVER`'s type shorter :)
+type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
+
+pub(crate) static CUSTOM_RESOLVERS: Lazy<Arc<Mutex<ResolverMap>>> =
+	Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
+
+pub(crate) fn lookup_resolver(name: &'static str) -> Option<&'static dyn ObjectSafeFileResolver> {
+	let res = CUSTOM_RESOLVERS.lock().ok()?;
+
+	res.get(name).copied()
 }
 
-/// A `Read + Seek` supertrait for use in [`ResolverFn`]s
-pub trait SeekRead: Read + Seek {}
+// A `Read + Seek` supertrait for use in [`ObjectSafeFileResolver::read_from`]
+pub(crate) trait SeekRead: Read + Seek {}
 impl<T: Seek + Read> SeekRead for T {}
 
-/// A resolver function
-///
-/// This function, provided a path and reader, attempts to return a `TaggedFile`
-///
-/// NOTE: The path will **only** be `Some` if used with `read_from_path`
-pub type ResolverFn = fn(Option<&OsStr>, &mut dyn SeekRead) -> Result<TaggedFile>;
-type ResolverCollection = Vec<(&'static str, AtomicRef<ResolverFn>)>;
+// `FileResolver` isn't object safe itself, so we need this wrapper trait
+pub(crate) trait ObjectSafeFileResolver: Send + Sync {
+	fn extension(&self) -> Option<&'static str>;
+	fn primary_tag_type(&self) -> TagType;
+	fn supported_tag_types(&self) -> &'static [TagType];
+	fn guess(&self, buf: &[u8]) -> Option<FileType>;
 
-static CUSTOM_RESOLVERS: Lazy<Mutex<ResolverCollection>> = Lazy::new(|| Mutex::new(Vec::new()));
+	// A mask for the `AudioFile::read_from` impl
+	fn read_from(&self, reader: &mut dyn SeekRead, read_properties: bool) -> Result<TaggedFile>;
+}
+
+// A fake `FileResolver` implementer, so we don't need to construct the type in `register_custom_resolver`
+pub(crate) struct GhostlyResolver<T: 'static>(PhantomData<T>);
+impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
+	fn extension(&self) -> Option<&'static str> {
+		T::extension()
+	}
+
+	fn primary_tag_type(&self) -> TagType {
+		T::primary_tag_type()
+	}
+
+	fn supported_tag_types(&self) -> &'static [TagType] {
+		T::supported_tag_types()
+	}
+
+	fn guess(&self, buf: &[u8]) -> Option<FileType> {
+		T::guess(buf)
+	}
+
+	fn read_from(&self, reader: &mut dyn SeekRead, read_properties: bool) -> Result<TaggedFile> {
+		Ok(<T as AudioFile>::read_from(&mut Box::new(reader), read_properties)?.into())
+	}
+}
 
 /// Register a custom file resolver
 ///
-/// Provided a resolver function, and a name to associate it with, this will attempt
+/// Provided a type and a name to associate it with, this will attempt
 /// to load them into the resolver collection.
 ///
-/// Both the resolver and name *must* be static.
+/// Conditions:
+/// * Both the resolver and name *must* be static.
+/// * `name` **must** match the name of your custom [`FileType`] variant (case sensitive!)
 ///
 /// # Panics
 ///
-/// * Attempting to register an existing name (See [`remove_custom_resolver`])
+/// * Attempting to register an existing name or type (See [`remove_custom_resolver`])
 /// * See [`Mutex::lock`]
-pub fn register_custom_resolver(name: &'static str, func: &'static ResolverFn) {
+pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 	let mut res = CUSTOM_RESOLVERS.lock().unwrap();
+	assert!(
+		res.iter().all(|(n, _)| *n != name),
+		"Resolver `{}` already exists!",
+		name
+	);
 
-	assert!(res.iter().all(|(n, _)| *n != name));
-	res.push((name, AtomicRef::new(func)));
+	let ghost = GhostlyResolver::<T>(PhantomData::default());
+	let b: Box<dyn ObjectSafeFileResolver> = Box::new(ghost);
+
+	res.insert(name, Box::leak::<'static>(b));
 }
 
 /// Remove a registered file resolver
@@ -69,9 +114,92 @@ pub fn register_custom_resolver(name: &'static str, func: &'static ResolverFn) {
 ///
 /// See [`Mutex::lock`]
 pub fn remove_custom_resolver(name: &'static str) {
-	let mut res = CUSTOM_RESOLVERS.lock().unwrap();
+	let mut resolvers = CUSTOM_RESOLVERS.lock().unwrap();
 
-	res.iter()
-		.position(|(n, _)| *n == name)
-		.map(|pos| res.remove(pos));
+	if let Some(res) = resolvers.remove(name) {
+		unsafe {
+			#[allow(trivial_casts)]
+			let b = Box::from_raw(res as *const _ as *mut dyn ObjectSafeFileResolver);
+			drop(b);
+		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::ID3v2Tag;
+	use crate::resolve::{register_custom_resolver, FileResolver};
+	use crate::{Accessor, FileProperties, FileType, Tag, TagType};
+	use lofty_attr::LoftyFile;
+
+	use std::fs::File;
+	use std::io::{Read, Seek};
+	use std::panic;
+
+	#[derive(LoftyFile, Default)]
+	#[lofty(read_fn = "Self::read")]
+	#[lofty(file_type = "Custom(\"MyFile\")")]
+	struct MyFile {
+		#[lofty(tag_type = "ID3v2")]
+		id3v2_tag: Option<ID3v2Tag>,
+		properties: FileProperties,
+	}
+
+	impl FileResolver for MyFile {
+		fn extension() -> Option<&'static str> {
+			Some("myfile")
+		}
+
+		fn primary_tag_type() -> TagType {
+			TagType::ID3v2
+		}
+
+		fn supported_tag_types() -> &'static [TagType] {
+			&[TagType::ID3v2]
+		}
+
+		fn guess(buf: &[u8]) -> Option<FileType> {
+			if buf.starts_with(b"myfile") {
+				return Some(FileType::Custom("MyFile"));
+			}
+
+			None
+		}
+	}
+
+	impl MyFile {
+		#[allow(clippy::unnecessary_wraps)]
+		fn read<R: Read + Seek + ?Sized>(
+			_reader: &mut R,
+			_read_properties: bool,
+		) -> crate::error::Result<Self> {
+			let mut tag = ID3v2Tag::default();
+			tag.set_artist(String::from("All is well!"));
+
+			Ok(Self {
+				id3v2_tag: Some(tag),
+				properties: FileProperties::default(),
+			})
+		}
+	}
+
+	#[test]
+	fn custom_resolver() {
+		register_custom_resolver::<MyFile>("MyFile");
+
+		let path = "tests/files/assets/custom_resolver_test.myfile";
+		let read = crate::read_from_path(path, false).unwrap();
+		assert_eq!(read.file_type(), FileType::Custom("MyFile"));
+
+		let read_content = crate::read_from(&mut File::open(path).unwrap(), false).unwrap();
+		assert_eq!(read_content.file_type(), FileType::Custom("MyFile"));
+
+		assert!(
+			panic::catch_unwind(|| {
+				register_custom_resolver::<MyFile>("MyFile");
+			})
+			.is_err(),
+			"We didn't panic on double register!"
+		);
+	}
 }
