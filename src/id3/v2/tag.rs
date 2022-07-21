@@ -529,7 +529,7 @@ impl From<ID3v2Tag> for Tag {
 				},
 				(
 					"WXXX",
-					FrameValue::UserText(EncodedTextFrame {
+					FrameValue::UserURL(EncodedTextFrame {
 						ref description,
 						ref content,
 						..
@@ -608,9 +608,9 @@ impl From<Tag> for ID3v2Tag {
 		id3v2_tag.set_artist(artists);
 
 		for item in input.items {
-			let frame: Frame = match item.try_into() {
-				Ok(frame) => frame,
-				Err(_) => continue,
+			let frame: Frame = match item.into() {
+				Some(frame) => frame,
+				None => continue,
 			};
 
 			id3v2_tag.insert(frame);
@@ -1129,5 +1129,57 @@ mod tests {
 				item_value: ItemValue::Text(String::from("-10.43 dB"))
 			}
 		);
+	}
+
+	#[test]
+	fn txxx_wxxx_tag_conversion() {
+		let txxx_frame = Frame::new(
+			"TXXX",
+			FrameValue::UserText(EncodedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: String::from("FOO_TEXT_FRAME"),
+				content: String::from("foo content"),
+			}),
+			FrameFlags::default(),
+		)
+		.unwrap();
+
+		let wxxx_frame = Frame::new(
+			"WXXX",
+			FrameValue::UserURL(EncodedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: String::from("BAR_URL_FRAME"),
+				content: String::from("bar url"),
+			}),
+			FrameFlags::default(),
+		)
+		.unwrap();
+
+		let mut tag = ID3v2Tag::default();
+
+		tag.insert(txxx_frame.clone());
+		tag.insert(wxxx_frame.clone());
+
+		let tag: Tag = tag.into();
+
+		assert_eq!(tag.item_count(), 2);
+		assert_eq!(
+			tag.items(),
+			&[
+				TagItem::new(
+					ItemKey::Unknown(String::from("FOO_TEXT_FRAME")),
+					ItemValue::Text(String::from("foo content"))
+				),
+				TagItem::new(
+					ItemKey::Unknown(String::from("BAR_URL_FRAME")),
+					ItemValue::Locator(String::from("bar url"))
+				),
+			]
+		);
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.frames.len(), 2);
+		assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
 	}
 }
