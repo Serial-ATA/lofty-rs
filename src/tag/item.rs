@@ -647,7 +647,7 @@ impl TagItem {
 		item_key: ItemKey,
 		item_value: ItemValue,
 	) -> Option<Self> {
-		item_key.map_key(tag_type, false).is_some().then_some(Self {
+		item_key.map_key(tag_type, false).is_some().then(|| Self {
 			item_key,
 			item_value,
 		})
