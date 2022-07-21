@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **FileType**: `FileType::from_ext` detects MP1/MP2 as `FileType::MP3`, allowing these files to be read with
                 `read_from_path`/`Probe::open`.
+- **ItemKey**: `ItemKey::{REPLAYGAIN_ALBUM_GAIN, REPLAYGAIN_ALBUM_PEAK, REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK}`
+
+### Changed
+- **ID3v2**: `TXXX`/`WXXX` frames will be stored by their descriptions in `ID3v2Tag` -> `Tag` conversions
 
 ### Fixed
 - **Tag**: The `Accessor::set_*` methods will stop falling through, and adding empty strings
