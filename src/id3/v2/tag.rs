@@ -36,6 +36,11 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
+					if value.is_empty() {
+						self.remove($id);
+						return;
+					}
+
 					self.insert(Frame {
 						id: FrameID::Valid(String::from($id)),
 						value: FrameValue::Text {
@@ -395,16 +400,18 @@ impl Accessor for ID3v2Tag {
 			return;
 		}
 
-		self.insert(Frame {
-			id: FrameID::Valid(String::from("COMM")),
-			value: FrameValue::Comment(LanguageFrame {
-				encoding: TextEncoding::UTF8,
-				language: String::from("eng"),
-				description: String::new(),
-				content: value,
-			}),
-			flags: FrameFlags::default(),
-		});
+		if !value.is_empty() {
+			self.insert(Frame {
+				id: FrameID::Valid(String::from("COMM")),
+				value: FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: String::from("eng"),
+					description: String::new(),
+					content: value,
+				}),
+				flags: FrameFlags::default(),
+			});
+		}
 	}
 
 	fn remove_comment(&mut self) {
