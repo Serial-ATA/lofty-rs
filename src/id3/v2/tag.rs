@@ -86,8 +86,9 @@ macro_rules! impl_accessor {
 ///
 /// ### To `Tag`
 ///
-/// Converting an `Id3v2Tag` to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
-/// to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
+/// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist for these descriptions, such as the one for `ReplayGain`,
+/// otherwise [`ItemKey::Unknown`] will be used.
+/// * Any [`LanguageFrame`] - With ID3v2 being the only format that allows for language-specific items, this information is not retained. These frames **will** be discarded.
 ///
 /// ## Special Frames
 ///
