@@ -7,7 +7,7 @@ pub(crate) mod write;
 use crate::ape::tag::ApeTag;
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 
 use lofty_attr::LoftyFile;
 

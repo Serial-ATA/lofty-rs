@@ -129,7 +129,7 @@ pub fn remove_custom_resolver(name: &'static str) {
 mod tests {
 	use crate::id3::v2::ID3v2Tag;
 	use crate::resolve::{register_custom_resolver, FileResolver};
-	use crate::{Accessor, FileProperties, FileType, Tag, TagType};
+	use crate::{Accessor, FileProperties, FileType, TagType};
 	use lofty_attr::LoftyFile;
 
 	use std::fs::File;
@@ -187,7 +187,7 @@ mod tests {
 	fn custom_resolver() {
 		register_custom_resolver::<MyFile>("MyFile");
 
-		let path = "tests/files/assets/custom_resolver_test.myfile";
+		let path = "examples/custom_resolver/test_asset.myfile";
 		let read = crate::read_from_path(path, false).unwrap();
 		assert_eq!(read.file_type(), FileType::Custom("MyFile"));
 

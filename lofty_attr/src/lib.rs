@@ -177,16 +177,16 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 
 		impl std::convert::From<#struct_name> for lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {
-				Self {
-					ty: lofty::FileType::#file_type,
-					properties: lofty::FileProperties::from(input.properties),
-					tags: {
-						let mut tags: Vec<Tag> = Vec::new();
+				lofty::TaggedFile::new(
+					lofty::FileType::#file_type,
+					lofty::FileProperties::from(input.properties),
+					{
+						let mut tags: Vec<lofty::Tag> = Vec::new();
 						#( #conditions )*
 
 						tags
-					},
-				}
+					}
+				)
 			}
 		}
 

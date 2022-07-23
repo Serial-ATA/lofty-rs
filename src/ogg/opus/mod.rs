@@ -6,7 +6,7 @@ use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 use properties::OpusProperties;
 
 use std::io::{Read, Seek};

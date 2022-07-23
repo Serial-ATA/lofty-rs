@@ -5,7 +5,7 @@ pub(crate) mod write;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::properties::FileProperties;
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 
 use lofty_attr::LoftyFile;
 

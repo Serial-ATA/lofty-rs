@@ -15,7 +15,7 @@ use crate::id3::v2::tag::ID3v2Tag;
 #[cfg(feature = "vorbis_comments")]
 use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 
 use lofty_attr::LoftyFile;
 

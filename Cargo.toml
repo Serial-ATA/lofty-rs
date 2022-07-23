@@ -56,6 +56,10 @@ harness = false
 name = "create_tag"
 harness = false
 
+[[example]]
+name = "custom_resolver"
+path = "examples/custom_resolver/src/main.rs"
+
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]

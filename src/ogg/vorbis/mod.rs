@@ -8,7 +8,7 @@ use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
 use crate::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 use properties::VorbisProperties;
 
 use std::io::{Read, Seek};

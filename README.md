@@ -28,6 +28,7 @@ Parse, convert, and write metadata to various audio formats.
 * [Tag reader](examples/tag_reader.rs)
 * [Tag stripper](examples/tag_stripper.rs)
 * [Tag writer](examples/tag_writer.rs)
+* [Custom resolver](examples/custom_resolver)
 
 To try them out, run:
 
@@ -35,6 +36,7 @@ To try them out, run:
 cargo run --example tag_reader /path/to/file
 cargo run --example tag_stripper /path/to/file
 cargo run --example tag_writer <options> /path/to/file
+cargo run --example custom_resolver
 ```
 
 ## Documentation

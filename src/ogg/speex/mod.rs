@@ -5,7 +5,7 @@ use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
 use crate::ogg::constants::SPEEXHEADER;
-use crate::tag::{Tag, TagType};
+use crate::tag::TagType;
 use properties::SpeexProperties;
 
 use std::io::{Read, Seek};
