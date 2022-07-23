@@ -3,20 +3,40 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
-use syn::__private::TokenStream2;
+use std::fmt::Display;
 use syn::spanned::Spanned;
 use syn::{
 	parse_macro_input, Attribute, Data, DataStruct, DeriveInput, Fields, Ident, Lit, Meta,
 	MetaList, NestedMeta, Type,
 };
 
+const LOFTY_FILE_TYPES: [&str; 10] = [
+	"AIFF", "APE", "FLAC", "MP3", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
+];
+
 #[proc_macro_derive(LoftyFile, attributes(lofty))]
 pub fn tag(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	parse(input)
+
+	let mut errors = Vec::new();
+	let ret = parse(input, &mut errors);
+
+	let compile_errors = errors.iter().map(syn::Error::to_compile_error);
+
+	TokenStream::from(quote! {
+		#(#compile_errors)*
+		#ret
+	})
 }
 
-fn parse(input: DeriveInput) -> TokenStream {
+fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::TokenStream {
+	macro_rules! bail {
+		($errors:ident, $span:expr, $msg:literal) => {
+			$errors.push(err($span, $msg));
+			return proc_macro2::TokenStream::new();
+		};
+	}
+
 	let data = match input.data {
 		Data::Struct(
 			ref data_struct @ DataStruct {
@@ -25,10 +45,11 @@ fn parse(input: DeriveInput) -> TokenStream {
 			},
 		) => data_struct,
 		_ => {
-			return err(
-				&input,
-				"This macro can only be used on structs with named fields",
-			)
+			bail!(
+				errors,
+				input.ident.span(),
+				"This macro can only be used on structs with named fields"
+			);
 		},
 	};
 
@@ -36,8 +57,14 @@ fn parse(input: DeriveInput) -> TokenStream {
 
 	let read_fn = match get_attr("read_fn", &input.attrs) {
 		Some(rfn) => rfn,
-		_ if impl_audiofile => return err(&input, "Expected a #[read_fn] attribute"),
-		_ => quote! {},
+		_ if impl_audiofile => {
+			bail!(
+				errors,
+				input.ident.span(),
+				"Expected a #[read_fn] attribute"
+			);
+		},
+		_ => proc_macro2::TokenStream::new(),
 	};
 
 	let struct_name = input.ident.clone();
@@ -46,23 +73,29 @@ fn parse(input: DeriveInput) -> TokenStream {
 		Some(ft) => ft,
 		_ => match get_attr("file_type", &input.attrs) {
 			Some(rfn) => rfn,
-			_ => return err(&input, "Expected a #[file_type] attribute"),
+			_ => {
+				bail!(
+					errors,
+					input.ident.span(),
+					"Expected a #[file_type] attribute"
+				);
+			},
 		},
 	};
 
-	let (tag_fields, properties_field) = match get_fields(&input, data) {
+	let (tag_fields, properties_field) = match get_fields(errors, data) {
 		Some(fields) => fields,
-		None => return TokenStream::new(),
+		None => return proc_macro2::TokenStream::new(),
 	};
 
 	if tag_fields.is_empty() {
-		return err(&input, "Struct has no tag fields");
+		errors.push(err(input.ident.span(), "Struct has no tag fields"));
 	}
 
 	let properties_field = if let Some(field) = properties_field {
 		field
 	} else {
-		return err(&input, "Struct has no properties field");
+		bail!(errors, input.ident.span(), "Struct has no properties field");
 	};
 
 	let properties_field_ty = &properties_field.ty;
@@ -121,7 +154,7 @@ fn parse(input: DeriveInput) -> TokenStream {
 			}
 		}
 	} else {
-		quote! {}
+		proc_macro2::TokenStream::new()
 	};
 
 	let conditions = tag_fields.iter().map(|f| {
@@ -135,7 +168,7 @@ fn parse(input: DeriveInput) -> TokenStream {
 
 	let getters = get_getters(&tag_fields, &struct_name);
 
-	let ret = quote! {
+	quote! {
 		#assert_properties_impl
 
 		#( #assert_tag_impl_into )*
@@ -158,9 +191,7 @@ fn parse(input: DeriveInput) -> TokenStream {
 		}
 
 		#( #getters )*
-	};
-
-	TokenStream::from(ret)
+	}
 }
 
 struct FieldContents {
@@ -173,7 +204,7 @@ struct FieldContents {
 }
 
 fn get_fields<'a>(
-	input: &'a DeriveInput,
+	errors: &mut Vec<syn::Error>,
 	data: &'a DataStruct,
 ) -> Option<(Vec<FieldContents>, Option<&'a syn::Field>)> {
 	let mut tag_fields = Vec::new();
@@ -185,7 +216,7 @@ fn get_fields<'a>(
 			let tag_type = match get_attr("tag_type", &field.attrs) {
 				Some(tt) => tt,
 				_ => {
-					err(input, "Struct field has no `tag_type` attribute");
+					errors.push(err(field.span(), "Field has no `tag_type` attribute"));
 					return None;
 				},
 			};
@@ -218,9 +249,6 @@ fn get_fields<'a>(
 	Some((tag_fields, properties_field))
 }
 
-const LOFTY_FILE_TYPES: [&str; 10] = [
-	"AIFF", "APE", "FLAC", "MP3", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
-];
 fn opt_file_type(struct_name: String) -> Option<proc_macro2::TokenStream> {
 	let stripped = struct_name.strip_suffix("File");
 	if let Some(prefix) = stripped {
@@ -306,7 +334,7 @@ fn get_attr_list(path: &str, attr: &Attribute) -> Option<MetaList> {
 fn get_getters<'a>(
 	tag_fields: &'a [FieldContents],
 	struct_name: &'a Ident,
-) -> impl Iterator<Item = TokenStream2> + 'a {
+) -> impl Iterator<Item = proc_macro2::TokenStream> + 'a {
 	tag_fields.iter().map(move |f| {
 		let name = f.getter_name.clone().unwrap_or_else(|| {
 			let name = f.name.to_string().strip_suffix("_tag").unwrap().to_string();
@@ -418,8 +446,6 @@ fn extract_type_from_option(ty: &Type) -> Option<&Type> {
 		})
 }
 
-fn err(input: &DeriveInput, error: &str) -> TokenStream {
-	input.span().unwrap().error(error).emit();
-
-	TokenStream::new()
+fn err<T: Display>(span: Span, error: T) -> syn::Error {
+	syn::Error::new(span, error)
 }
