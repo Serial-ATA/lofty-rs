@@ -167,7 +167,7 @@ where
 	Ok(AiffFile {
 		properties,
 		#[cfg(feature = "aiff_text_chunks")]
-		text_chunks: match text_chunks {
+		text_chunks_tag: match text_chunks {
 			AIFFTextChunks {
 				name: None,
 				author: None,

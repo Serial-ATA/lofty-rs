@@ -48,7 +48,7 @@ where
 		#[cfg(feature = "id3v2")]
 		id3v2_tag: None,
 		#[cfg(feature = "vorbis_comments")]
-		vorbis_comments: None,
+		vorbis_comments_tag: None,
 		properties: FileProperties::default(),
 	};
 
@@ -108,7 +108,7 @@ where
 
 	#[cfg(feature = "vorbis_comments")]
 	{
-		flac_file.vorbis_comments =
+		flac_file.vorbis_comments_tag =
 			(!(tag.items.is_empty() && tag.pictures.is_empty())).then(|| tag);
 	}
 

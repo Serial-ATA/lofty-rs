@@ -3,6 +3,7 @@ use crate::properties::FileProperties;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
 
+use crate::resolve::CUSTOM_RESOLVERS;
 use std::convert::TryInto;
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
@@ -46,6 +47,16 @@ pub struct TaggedFile {
 }
 
 impl TaggedFile {
+	#[doc(hidden)]
+	/// This exists for use in `lofty_attr`, there's no real use for this externally
+	pub fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
+		Self {
+			ty,
+			properties,
+			tags,
+		}
+	}
+
 	/// Returns the file's [`FileType`]
 	///
 	/// # Examples
@@ -480,6 +491,7 @@ pub enum FileType {
 	Speex,
 	WAV,
 	WavPack,
+	Custom(&'static str),
 }
 
 impl FileType {
@@ -492,6 +504,10 @@ impl FileType {
 	/// | `APE` , `WavPack`        | `Ape`            |
 	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
 	/// | `MP4`                    | `Mp4Ilst`        |
+	///
+	/// # Panics
+	///
+	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`crate::resolve::register_custom_resolver`].
 	///
 	/// # Examples
 	///
@@ -519,10 +535,24 @@ impl FileType {
 				TagType::VorbisComments
 			},
 			FileType::MP4 => TagType::MP4ilst,
+			FileType::Custom(c) => {
+				if let Some(r) = crate::resolve::lookup_resolver(c) {
+					r.primary_tag_type()
+				} else {
+					panic!(
+						"Encountered an unregistered custom `FileType` named `{}`",
+						c
+					);
+				}
+			},
 		}
 	}
 
 	/// Returns if the target `FileType` supports a [`TagType`]
+	///
+	/// # Panics
+	///
+	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`crate::resolve::register_custom_resolver`].
 	///
 	/// # Examples
 	///
@@ -554,6 +584,16 @@ impl FileType {
 			FileType::MP4 => tag_type == TagType::MP4ilst,
 			#[cfg(feature = "riff_info_list")]
 			FileType::WAV => tag_type == TagType::RIFFInfo,
+			FileType::Custom(c) => {
+				if let Some(r) = crate::resolve::lookup_resolver(c) {
+					r.supported_tag_types().contains(&tag_type)
+				} else {
+					panic!(
+						"Encountered an unregistered custom `FileType` named `{}`",
+						c
+					);
+				}
+			},
 			_ => false,
 		}
 	}
@@ -585,7 +625,18 @@ impl FileType {
 			"ogg" => Some(Self::Vorbis),
 			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::MP4),
 			"spx" => Some(Self::Speex),
-			_ => None,
+			e => {
+				if let Some((ty, _)) = CUSTOM_RESOLVERS
+					.lock()
+					.ok()?
+					.iter()
+					.find(|(_, f)| f.extension() == Some(e))
+				{
+					Some(Self::Custom(ty))
+				} else {
+					None
+				}
+			},
 		}
 	}
 

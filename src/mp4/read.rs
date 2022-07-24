@@ -164,7 +164,7 @@ where
 	Ok(Mp4File {
 		ftyp,
 		#[cfg(feature = "mp4_ilst")]
-		ilst: moov.meta,
+		ilst_tag: moov.meta,
 		properties: if read_properties {
 			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
 		} else {

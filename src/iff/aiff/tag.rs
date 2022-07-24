@@ -457,7 +457,7 @@ mod tests {
 
 		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
-			.text_chunks
+			.text_chunks_tag
 			.unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
@@ -468,7 +468,7 @@ mod tests {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
 			.unwrap()
-			.text_chunks
+			.text_chunks_tag
 			.unwrap();
 
 		// Create a fake AIFF signature
@@ -479,7 +479,7 @@ mod tests {
 
 		let temp_parsed_tag = super::super::read::read_from(&mut Cursor::new(writer), false)
 			.unwrap()
-			.text_chunks
+			.text_chunks_tag
 			.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
@@ -492,7 +492,7 @@ mod tests {
 
 		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
 			.unwrap()
-			.text_chunks
+			.text_chunks_tag
 			.unwrap();
 
 		let tag: Tag = aiff_text.into();
@@ -547,10 +547,9 @@ mod tests {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");
 
-		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
-			.unwrap()
-			.text_chunks
-			.unwrap();
+		let aiff_file = super::super::read::read_from(&mut Cursor::new(tag_bytes), false).unwrap();
+
+		let aiff_text = aiff_file.text_chunks().unwrap();
 
 		assert_eq!(aiff_text.name, Some(String::new()));
 		assert_eq!(aiff_text.author, Some(String::new()));
