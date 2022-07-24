@@ -37,7 +37,8 @@ fn content_infer_read(c: &mut Criterion) {
 			(OPUS, "../tests/files/assets/minimal/full_test.opus"),
 			(RIFF, "../tests/files/assets/minimal/wav_format_pcm.wav"),
 			(SPEEX, "../tests/files/assets/minimal/full_test.spx"),
-			(VORBIS, "../tests/files/assets/minimal/full_test.ogg")
+			(VORBIS, "../tests/files/assets/minimal/full_test.ogg"),
+			(WAVPACK, "../tests/files/assets/minimal/full_test.wv")
 		]
 	);
 }
