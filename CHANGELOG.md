@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - With the new `lofty_attr` crate, file creation has been simplified significantly.
     It is available for both internal and external usage.
 
+### Changed
+- **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
+
 ## [0.7.3] - 2022-07-22
 
 ### Added

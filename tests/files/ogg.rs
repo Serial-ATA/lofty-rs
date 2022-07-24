@@ -108,8 +108,7 @@ fn remove(path: &str, tag_type: TagType) {
 	let tagged_file = lofty::read_from(&mut file, false).unwrap();
 	// Verify we have both the vendor and artist
 	assert!(
-		tagged_file.tag(&tag_type).is_some()
-			&& tagged_file.tag(&tag_type).unwrap().item_count() == 2
+		tagged_file.tag(tag_type).is_some() && tagged_file.tag(tag_type).unwrap().item_count() == 2
 	);
 
 	file.rewind().unwrap();
@@ -119,7 +118,7 @@ fn remove(path: &str, tag_type: TagType) {
 	let tagged_file = lofty::read_from(&mut file, false).unwrap();
 
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
-	assert_eq!(tagged_file.tag(&tag_type).unwrap().item_count(), 1);
+	assert_eq!(tagged_file.tag(tag_type).unwrap().item_count(), 1);
 }
 
 #[test]

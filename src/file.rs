@@ -134,7 +134,6 @@ impl TaggedFile {
 		self.ty.supports_tag_type(tag_type)
 	}
 
-	// TODO: stop making these two take references to TagType
 	/// Get a reference to a specific [`TagType`]
 	///
 	/// # Examples
@@ -148,14 +147,14 @@ impl TaggedFile {
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
 	///
 	/// // An ID3v2 tag
-	/// let tag = tagged_file.tag(&TagType::ID3v2);
+	/// let tag = tagged_file.tag(TagType::ID3v2);
 	///
 	/// assert!(tag.is_some());
 	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	pub fn tag(&self, tag_type: &TagType) -> Option<&Tag> {
-		self.tags.iter().find(|i| i.tag_type() == *tag_type)
+	pub fn tag(&self, tag_type: TagType) -> Option<&Tag> {
+		self.tags.iter().find(|i| i.tag_type() == tag_type)
 	}
 
 	/// Get a mutable reference to a specific [`TagType`]
@@ -171,7 +170,7 @@ impl TaggedFile {
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
 	///
 	/// // An ID3v2 tag
-	/// let tag = tagged_file.tag(&TagType::ID3v2);
+	/// let tag = tagged_file.tag(TagType::ID3v2);
 	///
 	/// assert!(tag.is_some());
 	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
@@ -179,8 +178,8 @@ impl TaggedFile {
 	/// // Alter the tag...
 	/// # Ok(()) }
 	/// ```
-	pub fn tag_mut(&mut self, tag_type: &TagType) -> Option<&mut Tag> {
-		self.tags.iter_mut().find(|i| i.tag_type() == *tag_type)
+	pub fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
+		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
 	}
 
 	/// Returns the primary tag
@@ -205,7 +204,7 @@ impl TaggedFile {
 	/// # Ok(()) }
 	/// ```
 	pub fn primary_tag(&self) -> Option<&Tag> {
-		self.tag(&self.primary_tag_type())
+		self.tag(self.primary_tag_type())
 	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
@@ -232,7 +231,7 @@ impl TaggedFile {
 	/// # Ok(()) }
 	/// ```
 	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tag_mut(&self.primary_tag_type())
+		self.tag_mut(self.primary_tag_type())
 	}
 
 	/// Gets the first tag, if there are any

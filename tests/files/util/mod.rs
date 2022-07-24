@@ -23,9 +23,9 @@ macro_rules! verify_artist {
 		verify_artist!($file, $method($arg), $expected_value, $item_count)
 	}};
 	($file:ident, $method:ident($($arg:path)?), $expected_value:literal, $item_count:expr) => {{
-		assert!($file.$method($(&$arg)?).is_some());
+		assert!($file.$method($($arg)?).is_some());
 
-		let tag = $file.$method($(&$arg)?).unwrap();
+		let tag = $file.$method($($arg)?).unwrap();
 
 		assert_eq!(tag.item_count(), $item_count);
 
@@ -79,7 +79,7 @@ macro_rules! remove_tag {
 		let mut file = temp_file!($path);
 
 		let tagged_file = lofty::read_from(&mut file, false).unwrap();
-		assert!(tagged_file.tag(&$tag_type).is_some());
+		assert!(tagged_file.tag($tag_type).is_some());
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
@@ -88,6 +88,6 @@ macro_rules! remove_tag {
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
 		let tagged_file = lofty::read_from(&mut file, false).unwrap();
-		assert!(tagged_file.tag(&$tag_type).is_none());
+		assert!(tagged_file.tag($tag_type).is_none());
 	};
 }

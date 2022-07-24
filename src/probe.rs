@@ -11,9 +11,9 @@ use crate::mp4::Mp4File;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
+use crate::resolve::CUSTOM_RESOLVERS;
 use crate::wavpack::WavPackFile;
 
-use crate::resolve::CUSTOM_RESOLVERS;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
