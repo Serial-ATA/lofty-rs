@@ -143,9 +143,9 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 				}
 
 				#[allow(unreachable_code, unused_variables)]
-				fn contains_tag_type(&self, tag_type: TagType) -> bool {
+				fn contains_tag_type(&self, tag_type: lofty::TagType) -> bool {
 					match tag_type {
-						#( TagType::#tag_type => { #tag_exists_2 } ),*
+						#( lofty::TagType::#tag_type => { #tag_exists_2 } ),*
 						_ => false
 					}
 				}
