@@ -9,7 +9,7 @@ use syn::{
 };
 
 const LOFTY_FILE_TYPES: [&str; 10] = [
-	"AIFF", "APE", "FLAC", "MP3", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
+	"AIFF", "APE", "FLAC", "MPEG", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
 ];
 
 #[proc_macro_derive(LoftyFile, attributes(lofty))]

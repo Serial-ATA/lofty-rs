@@ -309,7 +309,7 @@ impl XingHeader {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
 					return Err(FileDecodingError::new(
-						FileType::MP3,
+						FileType::MPEG,
 						"Xing header has an invalid size (< 16)",
 					)
 					.into());
@@ -336,7 +336,7 @@ impl XingHeader {
 			b"VBRI" => {
 				if reader_len < 32 {
 					return Err(FileDecodingError::new(
-						FileType::MP3,
+						FileType::MPEG,
 						"VBRI header has an invalid size (< 32)",
 					)
 					.into());

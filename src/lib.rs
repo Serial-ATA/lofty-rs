@@ -91,7 +91,7 @@
 //! ```rust
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::mp3::Mp3File;
+//! use lofty::mp3::MPEGFile;
 //! use lofty::{AudioFile, TagType};
 //! use std::fs::File;
 //!
@@ -99,7 +99,7 @@
 //! let mut file_content = File::open(path)?;
 //!
 //! // We are expecting an MP3 file
-//! let mp3_file = Mp3File::read_from(&mut file_content, true)?;
+//! let mp3_file = MPEGFile::read_from(&mut file_content, true)?;
 //!
 //! assert_eq!(mp3_file.properties().channels(), 2);
 //!

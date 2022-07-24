@@ -18,10 +18,10 @@ use crate::tag::TagType;
 
 use lofty_attr::LoftyFile;
 
-/// An MP3 file
-#[derive(Default, LoftyFile)]
+/// An MPEG file
+#[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-pub struct Mp3File {
+pub struct MPEGFile {
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
 	#[lofty(tag_type = "ID3v2")]

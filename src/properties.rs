@@ -62,7 +62,7 @@ mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::FlacFile;
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
-	use crate::mp3::{ChannelMode, Emphasis, Layer, Mp3File, Mp3Properties, MpegVersion};
+	use crate::mp3::{ChannelMode, Emphasis, Layer, MPEGFile, Mp3Properties, MpegVersion};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
@@ -287,7 +287,7 @@ mod tests {
 	#[test]
 	fn mp1_properties() {
 		assert_eq!(
-			get_properties::<Mp3File>("tests/files/assets/minimal/full_test.mp1"),
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp1"),
 			MP1_PROPERTIES
 		)
 	}
@@ -295,7 +295,7 @@ mod tests {
 	#[test]
 	fn mp2_properties() {
 		assert_eq!(
-			get_properties::<Mp3File>("tests/files/assets/minimal/full_test.mp2"),
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp2"),
 			MP2_PROPERTIES
 		)
 	}
@@ -303,7 +303,7 @@ mod tests {
 	#[test]
 	fn mp3_properties() {
 		assert_eq!(
-			get_properties::<Mp3File>("tests/files/assets/minimal/full_test.mp3"),
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp3"),
 			MP3_PROPERTIES
 		)
 	}

@@ -6,8 +6,8 @@ use std::time::Instant;
 
 mod aifffile_read_from;
 mod flacfile_read_from;
-mod mp3file_read_from;
 mod mp4file_read_from;
+mod mpegfile_read_from;
 mod opusfile_read_from;
 mod pictureinformation_from_jpeg;
 mod pictureinformation_from_png;

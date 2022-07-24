@@ -68,7 +68,7 @@ impl TaggedFile {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
 	///
-	/// assert_eq!(tagged_file.file_type(), FileType::MP3);
+	/// assert_eq!(tagged_file.file_type(), FileType::MPEG);
 	/// # Ok(()) }
 	/// ```
 	pub fn file_type(&self) -> FileType {
@@ -483,7 +483,7 @@ pub enum FileType {
 	AIFF,
 	APE,
 	FLAC,
-	MP3,
+	MPEG,
 	MP4,
 	Opus,
 	Vorbis,
@@ -513,7 +513,7 @@ impl FileType {
 	/// ```rust
 	/// use lofty::{FileType, TagType};
 	///
-	/// let file_type = FileType::MP3;
+	/// let file_type = FileType::MPEG;
 	/// assert_eq!(file_type.primary_tag_type(), TagType::ID3v2);
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
@@ -523,12 +523,12 @@ impl FileType {
 			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
 			FileType::WAV => TagType::RIFFInfo,
 			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
-			FileType::MP3 => TagType::ID3v1,
+			FileType::MPEG => TagType::ID3v1,
 			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
-			FileType::MP3 => TagType::APE,
-			FileType::AIFF | FileType::MP3 | FileType::WAV => TagType::ID3v2,
+			FileType::MPEG => TagType::APE,
+			FileType::AIFF | FileType::MPEG | FileType::WAV => TagType::ID3v2,
 			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MP3 | FileType::WavPack => TagType::ID3v1,
+			FileType::MPEG | FileType::WavPack => TagType::ID3v1,
 			FileType::APE | FileType::WavPack => TagType::APE,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
@@ -558,13 +558,13 @@ impl FileType {
 	/// ```rust
 	/// use lofty::{FileType, TagType};
 	///
-	/// let file_type = FileType::MP3;
+	/// let file_type = FileType::MPEG;
 	/// assert!(file_type.supports_tag_type(TagType::ID3v2));
 	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
 			#[cfg(feature = "id3v2")]
-			FileType::AIFF | FileType::APE | FileType::MP3 | FileType::WAV
+			FileType::AIFF | FileType::APE | FileType::MPEG | FileType::WAV
 				if tag_type == TagType::ID3v2 =>
 			{
 				true
@@ -572,9 +572,9 @@ impl FileType {
 			#[cfg(feature = "aiff_text_chunks")]
 			FileType::AIFF if tag_type == TagType::AIFFText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::ID3v1 => true,
+			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::ID3v1 => true,
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MP3 | FileType::WavPack if tag_type == TagType::APE => true,
+			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::APE => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
@@ -605,7 +605,7 @@ impl FileType {
 	/// use lofty::FileType;
 	///
 	/// let extension = "mp3";
-	/// assert_eq!(FileType::from_ext(extension), Some(FileType::MP3));
+	/// assert_eq!(FileType::from_ext(extension), Some(FileType::MPEG));
 	/// ```
 	pub fn from_ext<E>(ext: E) -> Option<Self>
 	where
@@ -616,7 +616,7 @@ impl FileType {
 		match ext.as_str() {
 			"ape" => Some(Self::APE),
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
-			"mp3" | "mp2" | "mp1" => Some(Self::MP3),
+			"mp3" | "mp2" | "mp1" => Some(Self::MPEG),
 			"wav" | "wave" => Some(Self::WAV),
 			"wv" => Some(Self::WavPack),
 			"opus" => Some(Self::Opus),
@@ -648,7 +648,7 @@ impl FileType {
 	/// use std::path::Path;
 	///
 	/// let path = Path::new("path/to/my.mp3");
-	/// assert_eq!(FileType::from_path(path), Some(FileType::MP3));
+	/// assert_eq!(FileType::from_path(path), Some(FileType::MPEG));
 	/// ```
 	pub fn from_path<P>(path: P) -> Option<Self>
 	where
@@ -733,7 +733,7 @@ impl FileType {
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),
-			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MP3),
+			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MPEG),
 			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {
 				let id = &buf[8..12];
 

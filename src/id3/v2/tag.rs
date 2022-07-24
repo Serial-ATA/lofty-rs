@@ -64,7 +64,7 @@ macro_rules! impl_accessor {
 ///
 /// ## Supported file types
 ///
-/// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::MP3`](crate::FileType::MPEG)
 /// * [`FileType::WAV`](crate::FileType::WAV)
 /// * [`FileType::AIFF`](crate::FileType::AIFF)
 /// * [`FileType::APE`](crate::FileType::APE) **(READ ONLY)**

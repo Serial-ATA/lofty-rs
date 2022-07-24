@@ -31,7 +31,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::FLAC | FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type)
 		},
-		FileType::MP3 => mp3::write::write_to(file, tag),
+		FileType::MPEG => mp3::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => {
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
