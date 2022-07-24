@@ -1,5 +1,6 @@
 //! Tools to create custom file resolvers
-
+//!
+//! For a full example of a custom resolver, see [this](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver).
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::tag::TagType;

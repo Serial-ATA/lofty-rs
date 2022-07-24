@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **A new file resolver system**:
+  - New module: `lofty::resolve`
+  - With this, you will be able to create your own `FileType`s, while continuing
+    to use lofty's traditional API. Read the module docs for more info.
+- **A proc macro for file creation**:
+  - With the new `lofty_attr` crate, file creation has been simplified significantly.
+    It is available for both internal and external usage.
+
 ## [0.7.3] - 2022-07-22
 
 ### Added
