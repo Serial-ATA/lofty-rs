@@ -5,7 +5,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use std::io::Cursor;
 
 macro_rules! test_read_file {
-	($c:ident, [$(($NAME:ident, $path:expr)),+]) => {
+	($c:ident, [$(($NAME:ident, $path:expr)),+ $(,)?]) => {
 		let mut g = $c.benchmark_group("File reading (Inferred from Content)");
 
 		$(
@@ -38,7 +38,7 @@ fn content_infer_read(c: &mut Criterion) {
 			(RIFF, "../tests/files/assets/minimal/wav_format_pcm.wav"),
 			(SPEEX, "../tests/files/assets/minimal/full_test.spx"),
 			(VORBIS, "../tests/files/assets/minimal/full_test.ogg"),
-			(WAVPACK, "../tests/files/assets/minimal/full_test.wv")
+			(WAVPACK, "../tests/files/assets/minimal/full_test.wv"),
 		]
 	);
 }
