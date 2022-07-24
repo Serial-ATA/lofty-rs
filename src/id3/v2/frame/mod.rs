@@ -270,7 +270,7 @@ impl From<TagItem> for Option<Frame> {
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
 						FrameValue::Comment(LanguageFrame {
 							encoding: TextEncoding::UTF8,
-							language: String::from("eng"),
+							language: *b"eng",
 							description: String::new(),
 							content: text,
 						})
@@ -278,7 +278,7 @@ impl From<TagItem> for Option<Frame> {
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
 						FrameValue::UnSyncText(LanguageFrame {
 							encoding: TextEncoding::UTF8,
-							language: String::from("eng"),
+							language: *b"eng",
 							description: String::new(),
 							content: text,
 						})
@@ -375,13 +375,13 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			value: Cow::Owned(match (id, tag_item.value()) {
 				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: text.clone(),
 				}),
 				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: text.clone(),
 				}),

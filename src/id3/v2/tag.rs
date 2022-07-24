@@ -406,7 +406,7 @@ impl Accessor for ID3v2Tag {
 				id: FrameID::Valid(String::from("COMM")),
 				value: FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: value,
 				}),
@@ -755,7 +755,7 @@ mod tests {
 				"COMM",
 				FrameValue::Comment(LanguageFrame {
 					encoding,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: String::from("Qux comment"),
 				}),
@@ -880,7 +880,7 @@ mod tests {
 			frame.content(),
 			&FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::Latin1,
-				language: String::from("eng"),
+				language: *b"eng",
 				description: String::new(),
 				content: String::from("Qux comment")
 			})

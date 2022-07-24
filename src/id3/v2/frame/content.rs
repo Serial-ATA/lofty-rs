@@ -1,4 +1,4 @@
-use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
@@ -116,18 +116,15 @@ fn parse_text_language(
 
 	let encoding = verify_encoding(content.read_u8()?, version)?;
 
-	let mut lang = [0; 3];
-	content.read_exact(&mut lang)?;
-
-	let lang = decode_text(&mut &lang[..], TextEncoding::Latin1, true)
-		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Unable to decode language string")))?;
+	let mut language = [0; 3];
+	content.read_exact(&mut language)?;
 
 	let description = decode_text(content, encoding, true)?;
 	let content = decode_text(content, encoding, false)?.unwrap_or_default();
 
 	let information = LanguageFrame {
 		encoding,
-		language: lang.unwrap_or_default(),
+		language,
 		description: description.unwrap_or_default(),
 		content,
 	};

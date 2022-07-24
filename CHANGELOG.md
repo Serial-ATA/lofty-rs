@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
+- **ID3v2**: `LanguageFrame`'s `lang` field has changed type - `String` -> `[u8; 3]`
 
 ## [0.7.3] - 2022-07-22
 
