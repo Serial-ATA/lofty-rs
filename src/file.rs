@@ -699,7 +699,7 @@ impl FileType {
 
 	// TODO: APE tags in the beginning of the file
 	pub(crate) fn from_buffer_inner(buf: &[u8]) -> (Option<Self>, Option<u32>) {
-		use crate::id3::v2::unsynch_u32;
+		use crate::id3::v2::util::unsynch_u32;
 
 		// Start out with an empty return: (File type, id3 size)
 		// Only one can be set

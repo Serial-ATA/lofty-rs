@@ -6,8 +6,8 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
-use crate::id3::v2::synch_u32;
 use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::util::synch_u32;
 use crate::macros::err;
 use crate::probe::Probe;
 

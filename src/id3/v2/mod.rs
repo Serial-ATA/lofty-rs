@@ -8,10 +8,11 @@
 //! * [Frame]
 
 mod flags;
-pub(crate) mod util;
+pub mod util;
 
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::macros::err;
+use util::unsynch_u32;
 
 use std::io::Read;
 
@@ -64,24 +65,6 @@ pub enum ID3v2Version {
 	V3,
 	/// ID3v2.4
 	V4,
-}
-
-// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L18-L20
-pub(crate) fn unsynch_u32(n: u32) -> u32 {
-	n & 0xFF | (n & 0xFF00) >> 1 | (n & 0xFF_0000) >> 2 | (n & 0xFF00_0000) >> 3
-}
-
-#[cfg(feature = "id3v2")]
-// https://github.com/polyfloyd/rust-id3/blob/e142ec656bf70a8153f6e5b34a37f26df144c3c1/src/stream/unsynch.rs#L9-L15
-pub(crate) fn synch_u32(n: u32) -> Result<u32> {
-	if n > 0x1000_0000 {
-		err!(TooMuchData);
-	}
-
-	let mut x: u32 = n & 0x7F | (n & 0xFFFF_FF80) << 1;
-	x = x & 0x7FFF | (x & 0xFFFF_8000) << 1;
-	x = x & 0x7F_FFFF | (x & 0xFF80_0000) << 1;
-	Ok(x)
 }
 
 #[derive(Copy, Clone)]

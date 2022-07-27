@@ -80,7 +80,7 @@ where
 
 	// unsynch the frame size if necessary
 	if synchsafe {
-		size = crate::id3::v2::unsynch_u32(size);
+		size = crate::id3::v2::util::unsynch_u32(size);
 	}
 
 	let frame_id = FrameID::new(id_str)?;
