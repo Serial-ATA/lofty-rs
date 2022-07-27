@@ -74,7 +74,7 @@ impl FileResolver for MyFile {
 	}
 
 	// This is used to guess the `FileType` when reading the file contents.
-	// We are given the first (up to) 50 bytes to work with.
+	// We are given the first (up to) 36 bytes to work with.
 	fn guess(buf: &[u8]) -> Option<FileType> {
 		if buf.starts_with(b"myfiledata") {
 			Some(FileType::Custom("MyFile"))

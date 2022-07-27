@@ -27,7 +27,9 @@ pub trait FileResolver: Send + Sync + AudioFile {
 
 	/// Attempts to guess the [`FileType`] from a portion of the file content
 	///
-	/// NOTE: This will only provide (up to) the first 50 bytes of the file
+	/// NOTE: This will only provide (up to) the first 36 bytes of the file.
+	///       This number is subject to change in the future, but it will never decrease.
+	///       Such a change will **not** be considered breaking.
 	fn guess(buf: &[u8]) -> Option<FileType>;
 }
 
