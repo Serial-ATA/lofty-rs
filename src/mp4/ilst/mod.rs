@@ -30,7 +30,7 @@ macro_rules! impl_accessor {
 			$(
 				fn $name(&self) -> Option<&str> {
 					if let Some(atom) = self.atom(&$const) {
-						if let AtomData::UTF8(val) | AtomData::UTF16(val) = atom.data() {
+						if let Some(AtomData::UTF8(val) | AtomData::UTF16(val)) = atom.data().next() {
 							return Some(val)
 						}
 					}
@@ -130,7 +130,7 @@ impl Ilst {
 
 		self.atoms.iter().filter_map(|a| match a.ident {
 			COVR => {
-				if let AtomData::Picture(pic) = a.data() {
+				if let Some(AtomData::Picture(pic)) = a.data().next() {
 					Some(pic)
 				} else {
 					None
@@ -154,15 +154,15 @@ impl Ilst {
 	/// Removes all pictures
 	pub fn remove_pictures(&mut self) {
 		self.atoms
-			.retain(|a| !matches!(a.data(), AtomData::Picture(_)))
+			.retain(|a| !matches!(a.data().next(), Some(AtomData::Picture(_))))
 	}
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
 		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"rtng")) {
-			let rating = match atom.data() {
-				AtomData::SignedInteger(si) => *si as u8,
-				AtomData::Unknown { data: c, .. } if !c.is_empty() => c[0],
+			let rating = match atom.data().next() {
+				Some(AtomData::SignedInteger(si)) => *si as u8,
+				Some(AtomData::Unknown { data: c, .. }) if !c.is_empty() => c[0],
 				_ => return None,
 			};
 
@@ -200,8 +200,8 @@ impl Ilst {
 	// Extracts a u16 from an integer pair
 	fn extract_number(&self, fourcc: [u8; 4], expected_size: usize) -> Option<u16> {
 		if let Some(atom) = self.atom(&AtomIdent::Fourcc(fourcc)) {
-			match atom.data() {
-				AtomData::Unknown { code: 0, data } if data.len() >= expected_size => {
+			match atom.data().next() {
+				Some(AtomData::Unknown { code: 0, data }) if data.len() >= expected_size => {
 					return Some(u16::from_be_bytes([
 						data[expected_size - 2],
 						data[expected_size - 1],
@@ -306,7 +306,7 @@ impl Accessor for Ilst {
 
 	fn year(&self) -> Option<u32> {
 		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"\xa9day")) {
-			if let AtomData::UTF8(text) = atom.data() {
+			if let Some(AtomData::UTF8(text)) = atom.data().next() {
 				return text.chars().take(4).collect::<String>().parse::<u32>().ok();
 			}
 		}
@@ -538,7 +538,7 @@ mod tests {
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
 		let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
-		assert_eq!(atom.data(), data);
+		assert_eq!(atom.data().next().unwrap(), data);
 	}
 
 	#[test]

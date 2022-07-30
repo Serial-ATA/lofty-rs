@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
 - **ID3v2**: `LanguageFrame`'s `lang` field has changed type - `String` -> `[u8; 3]`
 - **MP3**: Renamed `MP3File` -> `MPEGFile`
+- **MP4**: `Atom::data` will now return all values
 
 ## [0.7.3] - 2022-07-22
 

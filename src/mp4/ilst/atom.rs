@@ -65,10 +65,13 @@ impl<'a> Iterator for AtomDataStorageIter<'a> {
 			Some(AtomDataStorage::Multiple(data)) => {
 				if self.idx == self.cap {
 					self.storage = None;
+					return None;
 				}
 
+				let ret = &data[self.idx];
 				self.idx += 1;
-				Some(&data[self.idx])
+
+				Some(ret)
 			},
 			_ => None,
 		}
@@ -110,13 +113,8 @@ impl Atom {
 	}
 
 	/// Returns the atom's [`AtomData`]
-	// TODO: Do this properly to return all values
-	pub fn data(&self) -> &AtomData {
-		match &self.data {
-			AtomDataStorage::Single(val) => val,
-			// There must be at least 1 element in here
-			AtomDataStorage::Multiple(data) => &data[0],
-		}
+	pub fn data(&self) -> impl Iterator<Item = &AtomData> {
+		(&self.data).into_iter()
 	}
 
 	// Used internally, has no correctness checks
