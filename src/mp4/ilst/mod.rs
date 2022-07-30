@@ -732,7 +732,7 @@ mod tests {
 		const PADDING_SIZE: usize = 990;
 
 		let file_bytes = read_path("tests/files/assets/ilst_trailing_padding.m4a");
-		assert!(Mp4File::read_from(&mut Cursor::new(&file_bytes), false).is_ok());
+		Mp4File::read_from(&mut Cursor::new(&file_bytes), false).unwrap();
 
 		let mut ilst;
 		let old_free_size;
@@ -778,7 +778,7 @@ mod tests {
 
 		// Verify we can re-read the file
 		file.rewind().unwrap();
-		assert!(Mp4File::read_from(&mut file, false).is_ok());
+		Mp4File::read_from(&mut file, false).unwrap();
 	}
 
 	#[test]

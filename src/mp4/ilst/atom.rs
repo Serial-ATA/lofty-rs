@@ -117,6 +117,16 @@ impl Atom {
 		(&self.data).into_iter()
 	}
 
+	/// Append a value to the atom
+	pub fn push_data(&mut self, data: AtomData) {
+		match self.data {
+			AtomDataStorage::Single(ref s) => {
+				self.data = AtomDataStorage::Multiple(vec![s.clone(), data])
+			},
+			AtomDataStorage::Multiple(ref mut m) => m.push(data),
+		}
+	}
+
 	// Used internally, has no correctness checks
 	pub(crate) fn unknown_implicit(ident: AtomIdent, data: Vec<u8>) -> Self {
 		Self {
@@ -131,8 +141,6 @@ impl Atom {
 			data: AtomDataStorage::Single(AtomData::UTF8(data)),
 		}
 	}
-
-	// TODO: push_data
 }
 
 impl Debug for Atom {

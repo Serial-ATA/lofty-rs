@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - With the new `lofty_attr` crate, file creation has been simplified significantly.
     It is available for both internal and external usage.
 - **ID3v2**: Exposed internal functions `id3::v2::util::{synch_u32, unsynch_u32}`
+- **MP4**: `Atom::push_data`
 
 ### Changed
 - **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
