@@ -95,7 +95,7 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 ///
 /// # Panics
 ///
-/// * Attempting to register an existing name or type (See [`remove_custom_resolver`])
+/// * Attempting to register an existing name or type
 /// * See [`Mutex::lock`]
 pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 	let mut res = CUSTOM_RESOLVERS.lock().unwrap();
@@ -109,23 +109,6 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 	let b: Box<dyn ObjectSafeFileResolver> = Box::new(ghost);
 
 	res.insert(name, Box::leak::<'static>(b));
-}
-
-/// Remove a registered file resolver
-///
-/// # Panics
-///
-/// See [`Mutex::lock`]
-pub fn remove_custom_resolver(name: &'static str) {
-	let mut resolvers = CUSTOM_RESOLVERS.lock().unwrap();
-
-	if let Some(res) = resolvers.remove(name) {
-		unsafe {
-			#[allow(trivial_casts)]
-			let b = Box::from_raw(res as *const _ as *mut dyn ObjectSafeFileResolver);
-			drop(b);
-		}
-	}
 }
 
 #[cfg(test)]
