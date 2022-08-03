@@ -189,7 +189,7 @@ gen_map! (
 	"WPAY"			        => PaymentURL,
 	"WPUB"			        => PublisherURL,
 	"TCON"			        => Genre,
-	"TLEY"			        => InitialKey,
+	"TKEY"			        => InitialKey,
 	"TMOO"			        => Mood,
 	"TBPM"			        => BPM,
 	"TCOP"			        => CopyrightMessage,
