@@ -87,7 +87,7 @@ where
 		// Make sure there was a separator present, otherwise just move on
 		if let Some(value) = comment_split.next() {
 			match key {
-				"METADATA_BLOCK_PICTURE" => tag
+				k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => tag
 					.pictures
 					.push(Picture::from_flac_bytes(value.as_bytes(), true)?),
 				// The valid range is 0x20..=0x7D not including 0x3D

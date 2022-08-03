@@ -623,4 +623,13 @@ mod tests {
 		let tag_bytes = std::fs::read("tests/tags/assets/zero.vorbis").unwrap();
 		let _ = read_tag(&tag_bytes);
 	}
+
+	#[test]
+	fn issue_60() {
+		let tag_bytes = std::fs::read("tests/tags/assets/issue_60.vorbis").unwrap();
+		let tag = read_tag(&tag_bytes);
+
+		assert_eq!(tag.pictures().len(), 1);
+		assert!(tag.items.is_empty());
+	}
 }
