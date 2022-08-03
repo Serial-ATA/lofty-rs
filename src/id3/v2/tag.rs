@@ -1013,7 +1013,7 @@ mod tests {
 		let mut reader = &mut &writer[..];
 
 		let header = read_id3v2_header(&mut reader).unwrap();
-		crate::id3::v2::read::parse_id3v2(reader, header).unwrap();
+		assert!(crate::id3::v2::read::parse_id3v2(reader, header).is_ok());
 
 		assert_eq!(writer[3..10], writer[writer.len() - 7..])
 	}

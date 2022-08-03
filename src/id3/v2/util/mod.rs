@@ -96,6 +96,6 @@ mod tests {
 			0xFF, 0xE0, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00, 0x50, 0x01,
 		];
 
-		super::unsynch_content(invalid_unsynch.as_slice()).unwrap_err();
+		assert!(super::unsynch_content(invalid_unsynch.as_slice()).is_err());
 	}
 }
