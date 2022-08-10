@@ -20,7 +20,7 @@ struct MyFile {
 	
 	// Tag field requirements:
 	// * Fields *must* end with "_tag" to set them apart from the others.
-	// * The type of the field *must* implement `Into<Tag>`
+	// * The type of the field *must* implement `TagExt`
 	
 	
 	// Specify a tag type

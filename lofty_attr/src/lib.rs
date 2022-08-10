@@ -12,8 +12,11 @@ const LOFTY_FILE_TYPES: [&str; 10] = [
 	"AIFF", "APE", "FLAC", "MPEG", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
 ];
 
+/// Creates a file usable by Lofty
+///
+/// See [here](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver) for an example of how to use it.
 #[proc_macro_derive(LoftyFile, attributes(lofty))]
-pub fn tag(input: TokenStream) -> TokenStream {
+pub fn lofty_file(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
 
 	let mut errors = Vec::new();

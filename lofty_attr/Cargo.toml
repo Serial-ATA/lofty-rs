@@ -1,7 +1,13 @@
 [package]
 name = "lofty_attr"
-version = "0.1.0"
+version = "0.3.0"
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Macros for Lofty"
+repository = "https://github.com/Serial-ATA/lofty-rs"
+readme = "README.md"
+include = ["src", "Cargo.toml", "../LICENSE-*"]
 
 [dependencies]
 syn = { version = "1.0.95", features = ["full"] }
