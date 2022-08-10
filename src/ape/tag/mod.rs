@@ -53,7 +53,7 @@ macro_rules! impl_accessor {
 /// ## Supported file types
 ///
 /// * [`FileType::APE`](crate::FileType::APE)
-/// * [`FileType::MP3`](crate::FileType::MPEG)
+/// * [`FileType::MPEG`](crate::FileType::MPEG)
 /// * [`FileType::WavPack`](crate::FileType::WavPack)
 ///
 /// ## Item storage

@@ -20,7 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
 - **ID3v2**: `LanguageFrame`'s `lang` field has changed type - `String` -> `[u8; 3]`
-- **MP3**: Renamed `MP3File` -> `MPEGFile`
+- **MP3**:
+  - Renamed `lofty::mp3` -> `lofty::mpeg`
+  - Renamed `MP3File` -> `MPEGFile`
+  - Renamed `MP3Properties` -> `MPEGProperties`
 - **MP4**: `Atom::data` will now return all values
 - **Vorbis Comments**: Recognize lowercase `METADATA_BLOCK_PICTURE` as a picture ([issue](https://github.com/Serial-ATA/lofty-rs/issues/60))
 

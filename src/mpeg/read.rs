@@ -1,5 +1,5 @@
 use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
-use super::{MPEGFile, Mp3Properties};
+use super::{MPEGFile, MPEGProperties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 #[cfg(feature = "ape")]
@@ -133,7 +133,7 @@ where
 	}
 
 	let last_frame_offset = reader.stream_position()?;
-	file.properties = Mp3Properties::default();
+	file.properties = MPEGProperties::default();
 
 	if read_properties {
 		let first_frame_header = match first_frame_header {

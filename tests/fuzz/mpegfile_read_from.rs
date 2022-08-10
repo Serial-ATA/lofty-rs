@@ -1,5 +1,5 @@
 use crate::oom_test;
-use lofty::mp3::MPEGFile;
+use lofty::mpeg::MPEGFile;
 
 #[test]
 fn oom1() {

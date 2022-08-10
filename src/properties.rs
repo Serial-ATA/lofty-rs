@@ -62,8 +62,8 @@ mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::FlacFile;
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
-	use crate::mp3::{ChannelMode, Emphasis, Layer, MPEGFile, Mp3Properties, MpegVersion};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
+	use crate::mpeg::{ChannelMode, Emphasis, Layer, MPEGFile, MPEGProperties, MpegVersion};
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
@@ -105,7 +105,7 @@ mod tests {
 		channels: Some(2),
 	};
 
-	const MP1_PROPERTIES: Mp3Properties = Mp3Properties {
+	const MP1_PROPERTIES: MPEGProperties = MPEGProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer1,
 		channel_mode: ChannelMode::Stereo,
@@ -120,7 +120,7 @@ mod tests {
 		emphasis: Emphasis::None,
 	};
 
-	const MP2_PROPERTIES: Mp3Properties = Mp3Properties {
+	const MP2_PROPERTIES: MPEGProperties = MPEGProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer2,
 		channel_mode: ChannelMode::Stereo,
@@ -135,7 +135,7 @@ mod tests {
 		emphasis: Emphasis::None,
 	};
 
-	const MP3_PROPERTIES: Mp3Properties = Mp3Properties {
+	const MP3_PROPERTIES: MPEGProperties = MPEGProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer3,
 		channel_mode: ChannelMode::Stereo,

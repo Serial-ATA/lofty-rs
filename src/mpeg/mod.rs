@@ -6,7 +6,7 @@ mod read;
 pub(crate) mod write;
 
 pub use header::{ChannelMode, Emphasis, Layer, MpegVersion};
-pub use properties::Mp3Properties;
+pub use properties::MPEGProperties;
 
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
@@ -34,5 +34,5 @@ pub struct MPEGFile {
 	#[lofty(tag_type = "APE")]
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
-	pub(crate) properties: Mp3Properties,
+	pub(crate) properties: MPEGProperties,
 }

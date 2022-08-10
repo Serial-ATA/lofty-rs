@@ -91,7 +91,7 @@
 //! ```rust
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::mp3::MPEGFile;
+//! use lofty::mpeg::MPEGFile;
 //! use lofty::{AudioFile, TagType};
 //! use std::fs::File;
 //!
@@ -184,8 +184,8 @@ pub mod flac;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
-pub mod mp3;
 pub mod mp4;
+pub mod mpeg;
 pub mod ogg;
 pub(crate) mod picture;
 mod probe;

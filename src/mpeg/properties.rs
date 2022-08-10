@@ -1,6 +1,6 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
 use crate::error::Result;
-use crate::mp3::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult};
+use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -10,8 +10,8 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// An MP3 file's audio properties
-pub struct Mp3Properties {
+/// An MPEG file's audio properties
+pub struct MPEGProperties {
 	pub(crate) version: MpegVersion,
 	pub(crate) layer: Layer,
 	pub(crate) duration: Duration,
@@ -26,8 +26,8 @@ pub struct Mp3Properties {
 	pub(crate) emphasis: Emphasis,
 }
 
-impl From<Mp3Properties> for FileProperties {
-	fn from(input: Mp3Properties) -> Self {
+impl From<MPEGProperties> for FileProperties {
+	fn from(input: MPEGProperties) -> Self {
 		Self {
 			duration: input.duration,
 			overall_bitrate: Some(input.overall_bitrate),
@@ -39,7 +39,7 @@ impl From<Mp3Properties> for FileProperties {
 	}
 }
 
-impl Mp3Properties {
+impl MPEGProperties {
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
@@ -102,7 +102,7 @@ impl Mp3Properties {
 }
 
 pub(super) fn read_properties<R>(
-	properties: &mut Mp3Properties,
+	properties: &mut MPEGProperties,
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,

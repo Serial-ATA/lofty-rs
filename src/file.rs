@@ -728,7 +728,7 @@ impl FileType {
 	}
 
 	fn quick_type_guess(buf: &[u8]) -> Option<Self> {
-		use crate::mp3::header::verify_frame_sync;
+		use crate::mpeg::header::verify_frame_sync;
 
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
