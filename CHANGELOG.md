@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2022-08-10
+
 ### Added
 - **A new file resolver system**:
   - New module: `lofty::resolve`
@@ -281,7 +283,8 @@ This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.3...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.3...0.8.0
 [0.7.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.0...0.7.1
