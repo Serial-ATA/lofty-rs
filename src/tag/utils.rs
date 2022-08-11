@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
-use crate::{ape, iff, mp3, wavpack};
+use crate::{ape, iff, mpeg, wavpack};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -31,7 +31,7 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 		FileType::FLAC | FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type)
 		},
-		FileType::MP3 => mp3::write::write_to(file, tag),
+		FileType::MPEG => mpeg::write::write_to(file, tag),
 		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => {
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())

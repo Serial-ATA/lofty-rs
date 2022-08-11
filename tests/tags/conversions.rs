@@ -17,7 +17,7 @@ fn tag_to_id3v2_lang_frame() {
 			"USLT",
 			FrameValue::UnSyncText(LanguageFrame {
 				encoding: TextEncoding::UTF8,
-				language: String::from("eng"),
+				language: *b"eng",
 				description: String::new(),
 				content: String::from("Test lyrics")
 			}),
@@ -33,7 +33,7 @@ fn tag_to_id3v2_lang_frame() {
 			"COMM",
 			FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::UTF8,
-				language: String::from("eng"),
+				language: *b"eng",
 				description: String::new(),
 				content: String::from("Test comment")
 			}),

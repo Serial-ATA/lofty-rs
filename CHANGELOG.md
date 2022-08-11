@@ -6,6 +6,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2022-08-10
+
+### Added
+- **A new file resolver system**:
+  - New module: `lofty::resolve`
+  - With this, you will be able to create your own `FileType`s, while continuing
+    to use lofty's traditional API. Read the module docs for more info.
+- **A proc macro for file creation**:
+  - With the new `lofty_attr` crate, file creation has been simplified significantly.
+    It is available for both internal and external usage.
+- **ID3v2**: Exposed internal functions `id3::v2::util::{synch_u32, unsynch_u32}`
+- **MP4**: `Atom::push_data`
+
+### Changed
+- **TaggedFile**: `tag{_mut}` no longer takes a reference to `TagType`
+- **ID3v2**: `LanguageFrame`'s `lang` field has changed type - `String` -> `[u8; 3]`
+- **MP3**:
+  - Renamed `lofty::mp3` -> `lofty::mpeg`
+  - Renamed `MP3File` -> `MPEGFile`
+  - Renamed `MP3Properties` -> `MPEGProperties`
+- **MP4**: `Atom::data` will now return all values
+- **Vorbis Comments**: Recognize lowercase `METADATA_BLOCK_PICTURE` as a picture ([issue](https://github.com/Serial-ATA/lofty-rs/issues/60))
+
+### Fixed
+- **ID3v2**: `ItemKey::InitialKey` now maps to `TKEY` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/61))
+
+## [0.7.3] - 2022-07-22
+
+### Added
+- **FileType**: `FileType::from_ext` detects MP1/MP2 as `FileType::MP3`, allowing these files to be read with
+                `read_from_path`/`Probe::open`.
+- **ItemKey**: `ItemKey::{REPLAYGAIN_ALBUM_GAIN, REPLAYGAIN_ALBUM_PEAK, REPLAYGAIN_TRACK_GAIN, REPLAYGAIN_TRACK_PEAK}`
+
+### Changed
+- **ID3v2**:
+  - `TXXX`/`WXXX` frames will be stored by their descriptions in `ID3v2Tag` -> `Tag` conversions
+  - Stopped allowing empty strings in `Accessor::set_*`
+
 ### Fixed
 - **Tag**: The `Accessor::set_*` methods will stop falling through, and adding empty strings
 
@@ -245,7 +283,9 @@ This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.2...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.0...HEAD
+[0.8.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.3...0.8.0
+[0.7.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.2...0.7.3
 [0.7.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.0...0.7.1
 [0.7.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.6.3...0.7.0

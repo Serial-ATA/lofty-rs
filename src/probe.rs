@@ -5,12 +5,13 @@ use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::macros::err;
-use crate::mp3::header::search_for_frame_sync;
-use crate::mp3::Mp3File;
 use crate::mp4::Mp4File;
+use crate::mpeg::header::search_for_frame_sync;
+use crate::mpeg::MPEGFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
+use crate::resolve::CUSTOM_RESOLVERS;
 use crate::wavpack::WavPackFile;
 
 use std::fs::File;
@@ -35,7 +36,7 @@ use std::path::Path;
 /// let probe = Probe::open("path/to/my.mp3")?;
 ///
 /// // Inferred from the `mp3` extension
-/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
 /// # Ok(())
 /// # }
 /// ```
@@ -51,7 +52,7 @@ use std::path::Path;
 /// let probe = Probe::open("path/to/my.mp3")?.guess_file_type()?;
 ///
 /// // Inferred from the file's content
-/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
 /// # Ok(())
 /// # }
 /// ```
@@ -125,7 +126,7 @@ impl<R: Read> Probe<R> {
 	/// let file = File::open(my_mp3_path)?;
 	/// let reader = BufReader::new(file);
 	///
-	/// let probe = Probe::with_file_type(reader, FileType::MP3);
+	/// let probe = Probe::with_file_type(reader, FileType::MPEG);
 	/// # Ok(()) }
 	/// ```
 	pub fn with_file_type(reader: R, file_type: FileType) -> Self {
@@ -165,9 +166,9 @@ impl<R: Read> Probe<R> {
 	/// let mut probe = Probe::new(reader);
 	/// assert_eq!(probe.file_type(), None);
 	///
-	/// probe.set_file_type(FileType::MP3);
+	/// probe.set_file_type(FileType::MPEG);
 	///
-	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
 	/// # Ok(()) }
 	/// ```
 	pub fn set_file_type(&mut self, file_type: FileType) {
@@ -212,7 +213,7 @@ impl Probe<BufReader<File>> {
 	/// let probe = Probe::open("path/to/my.mp3")?;
 	///
 	/// // Guessed from the "mp3" extension, see `FileType::from_ext`
-	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
 	/// # Ok(()) }
 	/// ```
 	pub fn open<P>(path: P) -> Result<Self>
@@ -251,7 +252,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// let probe = Probe::new(reader).guess_file_type()?;
 	///
 	/// // Determined the file is MP3 from the content
-	/// assert_eq!(probe.file_type(), Some(FileType::MP3));
+	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
 	/// # Ok(()) }
 	/// ```
 	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
@@ -301,7 +302,7 @@ impl<R: Read + Seek> Probe<R> {
 					b"fLaC" => Ok(Some(FileType::FLAC)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
-						Ok(Some(FileType::MP3))
+						Ok(Some(FileType::MPEG))
 					},
 					_ => Ok(None),
 				};
@@ -311,7 +312,18 @@ impl<R: Read + Seek> Probe<R> {
 
 				file_type_after_id3_block
 			},
-			_ => Ok(None),
+			_ => {
+				if let Ok(lock) = CUSTOM_RESOLVERS.lock() {
+					#[allow(clippy::significant_drop_in_scrutinee)]
+					for (_, resolve) in lock.iter() {
+						if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
+							return Ok(ret);
+						}
+					}
+				}
+
+				Ok(None)
+			},
 		}
 	}
 
@@ -326,6 +338,10 @@ impl<R: Read + Seek> Probe<R> {
 	///       [`Probe::guess_file_type`] or [`Probe::set_file_type`]. When reading from
 	///       paths, this is not necessary.
 	/// * The reader contains invalid data
+	///
+	/// # Panics
+	///
+	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`crate::resolve::register_custom_resolver`].
 	///
 	/// # Examples
 	///
@@ -349,13 +365,23 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::AIFF => AiffFile::read_from(reader, read_properties)?.into(),
 				FileType::APE => ApeFile::read_from(reader, read_properties)?.into(),
 				FileType::FLAC => FlacFile::read_from(reader, read_properties)?.into(),
-				FileType::MP3 => Mp3File::read_from(reader, read_properties)?.into(),
+				FileType::MPEG => MPEGFile::read_from(reader, read_properties)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, read_properties)?.into(),
 				FileType::Vorbis => VorbisFile::read_from(reader, read_properties)?.into(),
 				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
 				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, read_properties)?.into(),
+				FileType::Custom(c) => {
+					if let Some(r) = crate::resolve::lookup_resolver(c) {
+						r.read_from(reader, read_properties)?
+					} else {
+						panic!(
+							"Encountered an unregistered custom `FileType` named `{}`",
+							c
+						);
+					}
+				},
 			}),
 			None => err!(UnknownFormat),
 		}
@@ -447,7 +473,7 @@ mod tests {
 		let data: Vec<u8> = data.into_iter().flatten().copied().collect();
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
-		assert_eq!(probe.file_type(), Some(FileType::MP3));
+		assert_eq!(probe.file_type(), Some(FileType::MPEG));
 	}
 
 	fn test_probe(path: &str, expected_file_type_guess: FileType) {
@@ -490,7 +516,7 @@ mod tests {
 
 	#[test]
 	fn probe_mp3_with_id3v2() {
-		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::MP3);
+		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::MPEG);
 	}
 
 	#[test]

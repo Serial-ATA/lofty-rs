@@ -1,6 +1,6 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
-use crate::id3::v2::synch_u32;
+use crate::id3::v2::util::synch_u32;
 
 use std::io::Write;
 

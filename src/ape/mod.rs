@@ -11,16 +11,12 @@ mod properties;
 mod read;
 pub(crate) mod write;
 
-use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
-use crate::properties::FileProperties;
-use crate::tag::{Tag, TagType};
 
-use std::io::{Read, Seek};
+use lofty_attr::LoftyFile;
 
 // Exports
 
@@ -37,89 +33,21 @@ cfg_if::cfg_if! {
 pub use properties::ApeProperties;
 
 /// An APE file
+#[derive(LoftyFile)]
+#[lofty(read_fn = "read::read_from")]
 pub struct ApeFile {
-	#[cfg(feature = "id3v1")]
 	/// An ID3v1 tag
+	#[cfg(feature = "id3v1")]
+	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
-	#[cfg(feature = "id3v2")]
 	/// An ID3v2 tag (Not officially supported)
+	#[cfg(feature = "id3v2")]
+	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
-	#[cfg(feature = "ape")]
 	/// An APEv1/v2 tag
+	#[cfg(feature = "ape")]
+	#[lofty(tag_type = "APE")]
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: ApeProperties,
-}
-
-impl From<ApeFile> for TaggedFile {
-	#[allow(clippy::vec_init_then_push, unused_mut)]
-	fn from(input: ApeFile) -> Self {
-		let mut tags = Vec::<Option<Tag>>::with_capacity(3);
-
-		#[cfg(feature = "ape")]
-		tags.push(input.ape_tag.map(Into::into));
-		#[cfg(feature = "id3v1")]
-		tags.push(input.id3v1_tag.map(Into::into));
-		#[cfg(feature = "id3v2")]
-		tags.push(input.id3v2_tag.map(Into::into));
-
-		Self {
-			ty: FileType::APE,
-			properties: FileProperties::from(input.properties),
-			tags: tags.into_iter().flatten().collect(),
-		}
-	}
-}
-
-impl AudioFile for ApeFile {
-	type Properties = ApeProperties;
-
-	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
-	where
-		R: Read + Seek,
-		Self: Sized,
-	{
-		read::read_from(reader, read_properties)
-	}
-
-	fn properties(&self) -> &Self::Properties {
-		&self.properties
-	}
-
-	#[allow(unreachable_code)]
-	fn contains_tag(&self) -> bool {
-		#[cfg(feature = "ape")]
-		return self.ape_tag.is_some();
-		#[cfg(feature = "id3v1")]
-		return self.id3v1_tag.is_some();
-		#[cfg(feature = "id3v2")]
-		return self.id3v2_tag.is_some();
-
-		false
-	}
-
-	fn contains_tag_type(&self, tag_type: TagType) -> bool {
-		match tag_type {
-			#[cfg(feature = "ape")]
-			TagType::APE => self.ape_tag.is_some(),
-			#[cfg(feature = "id3v1")]
-			TagType::ID3v1 => self.id3v1_tag.is_some(),
-			#[cfg(feature = "id3v2")]
-			TagType::ID3v2 => self.id3v2_tag.is_some(),
-			_ => false,
-		}
-	}
-}
-
-impl ApeFile {
-	crate::macros::tag_methods! {
-		#[cfg(feature = "id3v2")]
-		id3v2_tag, ID3v2Tag;
-
-		#[cfg(feature = "id3v1")]
-		id3v1_tag, ID3v1Tag;
-
-		#[cfg(feature = "ape")]
-		ape_tag, ApeTag
-	}
 }

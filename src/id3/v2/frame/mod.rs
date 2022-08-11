@@ -259,51 +259,77 @@ pub struct FrameFlags {
 	pub data_length_indicator: (bool, u32),
 }
 
-impl TryFrom<TagItem> for Frame {
-	type Error = LoftyError;
+impl From<TagItem> for Option<Frame> {
+	fn from(input: TagItem) -> Self {
+		let frame_id;
+		let value;
+		match input.key().try_into() {
+			Ok(id) => {
+				// We make the VERY bold assumption the language is English
+				value = match (&id, input.item_value) {
+					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
+						FrameValue::Comment(LanguageFrame {
+							encoding: TextEncoding::UTF8,
+							language: *b"eng",
+							description: String::new(),
+							content: text,
+						})
+					},
+					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
+						FrameValue::UnSyncText(LanguageFrame {
+							encoding: TextEncoding::UTF8,
+							language: *b"eng",
+							description: String::new(),
+							content: text,
+						})
+					},
+					(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
+						if s == "WXXX" =>
+					{
+						FrameValue::UserURL(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::new(),
+							content: text,
+						})
+					},
+					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
+						FrameValue::UserText(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::new(),
+							content: text,
+						})
+					},
+					(_, value) => value.into(),
+				};
 
-	fn try_from(value: TagItem) -> std::prelude::rust_2015::Result<Self, Self::Error> {
-		let id: FrameID = value.item_key.try_into()?;
+				frame_id = id;
+			},
+			Err(_) => match input.item_key.map_key(TagType::ID3v2, true) {
+				Some(desc) => match input.item_value {
+					ItemValue::Text(text) => {
+						frame_id = FrameID::Valid(String::from("TXXX"));
+						value = FrameValue::UserText(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::from(desc),
+							content: text,
+						})
+					},
+					ItemValue::Locator(locator) => {
+						frame_id = FrameID::Valid(String::from("WXXX"));
+						value = FrameValue::UserURL(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::from(desc),
+							content: locator,
+						})
+					},
+					ItemValue::Binary(_) => return None,
+				},
+				None => return None,
+			},
+		}
 
-		// We make the VERY bold assumption the language is English
-		let value = match (&id, value.item_value) {
-			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
-				FrameValue::Comment(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
-					description: String::new(),
-					content: text,
-				})
-			},
-			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
-				FrameValue::UnSyncText(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
-					description: String::new(),
-					content: text,
-				})
-			},
-			(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
-				if s == "WXXX" =>
-			{
-				FrameValue::UserURL(EncodedTextFrame {
-					encoding: TextEncoding::UTF8,
-					description: String::new(),
-					content: text,
-				})
-			},
-			(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
-				FrameValue::UserText(EncodedTextFrame {
-					encoding: TextEncoding::UTF8,
-					description: String::new(),
-					content: text,
-				})
-			},
-			(_, value) => value.into(),
-		};
-
-		Ok(Self {
-			id,
+		Some(Frame {
+			id: frame_id,
 			value,
 			flags: FrameFlags::default(),
 		})
@@ -349,13 +375,13 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			value: Cow::Owned(match (id, tag_item.value()) {
 				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: text.clone(),
 				}),
 				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: text.clone(),
 				}),

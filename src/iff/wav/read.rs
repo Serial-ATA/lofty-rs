@@ -128,7 +128,7 @@ where
 	Ok(WavFile {
 		properties,
 		#[cfg(feature = "riff_info_list")]
-		riff_info: (!riff_info.items.is_empty()).then(|| riff_info),
+		riff_info_tag: (!riff_info.items.is_empty()).then(|| riff_info),
 		#[cfg(feature = "id3v2")]
 		id3v2_tag,
 	})

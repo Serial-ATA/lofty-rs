@@ -36,6 +36,11 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
+					if value.is_empty() {
+						self.remove($id);
+						return;
+					}
+
 					self.insert(Frame {
 						id: FrameID::Valid(String::from($id)),
 						value: FrameValue::Text {
@@ -59,7 +64,7 @@ macro_rules! impl_accessor {
 ///
 /// ## Supported file types
 ///
-/// * [`FileType::MP3`](crate::FileType::MP3)
+/// * [`FileType::MPEG`](crate::FileType::MPEG)
 /// * [`FileType::WAV`](crate::FileType::WAV)
 /// * [`FileType::AIFF`](crate::FileType::AIFF)
 /// * [`FileType::APE`](crate::FileType::APE) **(READ ONLY)**
@@ -81,8 +86,9 @@ macro_rules! impl_accessor {
 ///
 /// ### To `Tag`
 ///
-/// Converting an `Id3v2Tag` to a [`Tag`](crate::Tag) will not retain any frame-specific information, due
-/// to ID3v2 being the only format that requires such information. This includes things like [`TextEncoding`] and [`LanguageFrame`].
+/// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist for these descriptions, such as the one for `ReplayGain`,
+/// otherwise [`ItemKey::Unknown`] will be used.
+/// * Any [`LanguageFrame`] - With ID3v2 being the only format that allows for language-specific items, this information is not retained. These frames **will** be discarded.
 ///
 /// ## Special Frames
 ///
@@ -395,16 +401,18 @@ impl Accessor for ID3v2Tag {
 			return;
 		}
 
-		self.insert(Frame {
-			id: FrameID::Valid(String::from("COMM")),
-			value: FrameValue::Comment(LanguageFrame {
-				encoding: TextEncoding::UTF8,
-				language: String::from("eng"),
-				description: String::new(),
-				content: value,
-			}),
-			flags: FrameFlags::default(),
-		});
+		if !value.is_empty() {
+			self.insert(Frame {
+				id: FrameID::Valid(String::from("COMM")),
+				value: FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: *b"eng",
+					description: String::new(),
+					content: value,
+				}),
+				flags: FrameFlags::default(),
+			});
+		}
 	}
 
 	fn remove_comment(&mut self) {
@@ -488,53 +496,91 @@ impl From<ID3v2Tag> for Tag {
 
 		let mut tag = Self::new(TagType::ID3v2);
 
-		'outer: for frame in input.frames {
-			let id = frame.id_str();
+		for frame in input.frames {
+			let id = frame.id;
 
 			// The text pairs need some special treatment
-			match (id, frame.content()) {
+			match (id.as_str(), frame.value) {
 				("TRCK", FrameValue::Text { value: content, .. })
-					if split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
-						.is_some() =>
+					if split_pair(
+						&content,
+						&mut tag,
+						ItemKey::TrackNumber,
+						ItemKey::TrackTotal,
+					)
+					.is_some() =>
 				{
 					continue
 				},
 				("TPOS", FrameValue::Text { value: content, .. })
-					if split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
+					if split_pair(&content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
 					continue
 				},
-				_ => {},
-			}
-
-			let item_key = ItemKey::from_key(TagType::ID3v2, id);
-
-			let item_value = match frame.value {
-				FrameValue::Comment(LanguageFrame { content, .. })
-				| FrameValue::UnSyncText(LanguageFrame { content, .. })
-				| FrameValue::Text { value: content, .. }
-				| FrameValue::UserText(EncodedTextFrame { content, .. }) => {
+				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
+				(
+					"TXXX",
+					FrameValue::UserText(EncodedTextFrame {
+						ref description,
+						ref content,
+						..
+					}),
+				) => {
+					let item_key = ItemKey::from_key(TagType::ID3v2, description);
 					for c in content.split(&['\0', '/'][..]) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Text(c.to_string()),
 						));
 					}
-
-					continue 'outer;
 				},
-				FrameValue::URL(content)
-				| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
-				FrameValue::Picture { picture, .. } => {
-					tag.push_picture(picture);
-					continue;
+				(
+					"WXXX",
+					FrameValue::UserURL(EncodedTextFrame {
+						ref description,
+						ref content,
+						..
+					}),
+				) => {
+					let item_key = ItemKey::from_key(TagType::ID3v2, description);
+					for c in content.split(&['\0', '/'][..]) {
+						tag.items.push(TagItem::new(
+							item_key.clone(),
+							ItemValue::Locator(c.to_string()),
+						));
+					}
 				},
-				FrameValue::Popularimeter(_) => continue,
-				FrameValue::Binary(binary) => ItemValue::Binary(binary),
-			};
+				(id, value) => {
+					let item_key = ItemKey::from_key(TagType::ID3v2, id);
 
-			tag.items.push(TagItem::new(item_key, item_value));
+					let item_value = match value {
+						FrameValue::Comment(LanguageFrame { content, .. })
+						| FrameValue::UnSyncText(LanguageFrame { content, .. })
+						| FrameValue::Text { value: content, .. }
+						| FrameValue::UserText(EncodedTextFrame { content, .. }) => {
+							for c in content.split(&['\0', '/'][..]) {
+								tag.items.push(TagItem::new(
+									item_key.clone(),
+									ItemValue::Text(c.to_string()),
+								));
+							}
+
+							continue;
+						},
+						FrameValue::URL(content)
+						| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
+						FrameValue::Picture { picture, .. } => {
+							tag.push_picture(picture);
+							continue;
+						},
+						FrameValue::Popularimeter(_) => continue,
+						FrameValue::Binary(binary) => ItemValue::Binary(binary),
+					};
+
+					tag.items.push(TagItem::new(item_key, item_value));
+				},
+			}
 		}
 
 		tag
@@ -570,9 +616,9 @@ impl From<Tag> for ID3v2Tag {
 		id3v2_tag.set_artist(artists);
 
 		for item in input.items {
-			let frame: Frame = match item.try_into() {
-				Ok(frame) => frame,
-				Err(_) => continue,
+			let frame: Frame = match item.into() {
+				Some(frame) => frame,
+				None => continue,
 			};
 
 			id3v2_tag.insert(frame);
@@ -644,8 +690,8 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 mod tests {
 	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::{
-		read_id3v2_header, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag, ID3v2Version,
-		LanguageFrame, TextEncoding,
+		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
+		ID3v2Version, LanguageFrame, TextEncoding,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{
@@ -709,7 +755,7 @@ mod tests {
 				"COMM",
 				FrameValue::Comment(LanguageFrame {
 					encoding,
-					language: String::from("eng"),
+					language: *b"eng",
 					description: String::new(),
 					content: String::from("Qux comment"),
 				}),
@@ -834,7 +880,7 @@ mod tests {
 			frame.content(),
 			&FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::Latin1,
-				language: String::from("eng"),
+				language: *b"eng",
 				description: String::new(),
 				content: String::from("Qux comment")
 			})
@@ -1063,5 +1109,85 @@ mod tests {
 	#[test]
 	fn utf16_txxx_with_single_bom() {
 		let _ = read_tag("tests/tags/assets/id3v2/issue_53.id3v24");
+	}
+
+	#[test]
+	fn replaygain_tag_conversion() {
+		let mut tag = ID3v2Tag::default();
+		tag.insert(
+			Frame::new(
+				"TXXX",
+				FrameValue::UserText(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::from("REPLAYGAIN_ALBUM_GAIN"),
+					content: String::from("-10.43 dB"),
+				}),
+				FrameFlags::default(),
+			)
+			.unwrap(),
+		);
+
+		let tag: Tag = tag.into();
+
+		assert_eq!(tag.item_count(), 1);
+		assert_eq!(
+			tag.items[0],
+			TagItem {
+				item_key: ItemKey::ReplayGainAlbumGain,
+				item_value: ItemValue::Text(String::from("-10.43 dB"))
+			}
+		);
+	}
+
+	#[test]
+	fn txxx_wxxx_tag_conversion() {
+		let txxx_frame = Frame::new(
+			"TXXX",
+			FrameValue::UserText(EncodedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: String::from("FOO_TEXT_FRAME"),
+				content: String::from("foo content"),
+			}),
+			FrameFlags::default(),
+		)
+		.unwrap();
+
+		let wxxx_frame = Frame::new(
+			"WXXX",
+			FrameValue::UserURL(EncodedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: String::from("BAR_URL_FRAME"),
+				content: String::from("bar url"),
+			}),
+			FrameFlags::default(),
+		)
+		.unwrap();
+
+		let mut tag = ID3v2Tag::default();
+
+		tag.insert(txxx_frame.clone());
+		tag.insert(wxxx_frame.clone());
+
+		let tag: Tag = tag.into();
+
+		assert_eq!(tag.item_count(), 2);
+		assert_eq!(
+			tag.items(),
+			&[
+				TagItem::new(
+					ItemKey::Unknown(String::from("FOO_TEXT_FRAME")),
+					ItemValue::Text(String::from("foo content"))
+				),
+				TagItem::new(
+					ItemKey::Unknown(String::from("BAR_URL_FRAME")),
+					ItemValue::Locator(String::from("bar url"))
+				),
+			]
+		);
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.frames.len(), 2);
+		assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
 	}
 }

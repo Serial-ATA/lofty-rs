@@ -1,5 +1,5 @@
 use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
-use super::{Mp3File, Mp3Properties};
+use super::{MPEGFile, MPEGProperties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 #[cfg(feature = "ape")]
@@ -16,11 +16,11 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Mp3File>
+pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<MPEGFile>
 where
 	R: Read + Seek,
 {
-	let mut file = Mp3File::default();
+	let mut file = MPEGFile::default();
 
 	let mut first_frame_offset = 0;
 	let mut first_frame_header = None;
@@ -133,7 +133,7 @@ where
 	}
 
 	let last_frame_offset = reader.stream_position()?;
-	file.properties = Mp3Properties::default();
+	file.properties = MPEGProperties::default();
 
 	if read_properties {
 		let first_frame_header = match first_frame_header {
@@ -141,7 +141,7 @@ where
 			None => {
 				// The search for sync bits was unsuccessful
 				return Err(FileDecodingError::new(
-					FileType::MP3,
+					FileType::MPEG,
 					"File contains an invalid frame",
 				)
 				.into());
@@ -149,7 +149,7 @@ where
 		};
 
 		if first_frame_header.sample_rate == 0 {
-			return Err(FileDecodingError::new(FileType::MP3, "Sample rate is 0").into());
+			return Err(FileDecodingError::new(FileType::MPEG, "Sample rate is 0").into());
 		}
 
 		let first_frame_offset = first_frame_offset;

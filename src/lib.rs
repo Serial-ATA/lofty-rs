@@ -91,7 +91,7 @@
 //! ```rust
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::mp3::Mp3File;
+//! use lofty::mpeg::MPEGFile;
 //! use lofty::{AudioFile, TagType};
 //! use std::fs::File;
 //!
@@ -99,7 +99,7 @@
 //! let mut file_content = File::open(path)?;
 //!
 //! // We are expecting an MP3 file
-//! let mp3_file = Mp3File::read_from(&mut file_content, true)?;
+//! let mp3_file = MPEGFile::read_from(&mut file_content, true)?;
 //!
 //! assert_eq!(mp3_file.properties().channels(), 2);
 //!
@@ -144,6 +144,8 @@
 )]
 // TODO: This had multiple FPs right now, remove this when it is fixed
 #![allow(clippy::needless_borrow)]
+// TODO: Remove this when Ubuntu has 1.62.0 in its stable repos
+#![allow(clippy::unnecessary_lazy_evaluations)]
 #![allow(
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
@@ -172,6 +174,9 @@
 
 // TODO: Give 1.62.0 some time, and start using #[default] on enums
 
+// proc macro hacks
+extern crate self as lofty;
+
 pub mod ape;
 pub mod error;
 pub(crate) mod file;
@@ -179,12 +184,13 @@ pub mod flac;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
-pub mod mp3;
 pub mod mp4;
+pub mod mpeg;
 pub mod ogg;
 pub(crate) mod picture;
 mod probe;
 pub(crate) mod properties;
+pub mod resolve;
 pub(crate) mod tag;
 mod traits;
 pub mod wavpack;

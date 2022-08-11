@@ -50,10 +50,10 @@ impl FrameID {
 	}
 }
 
-impl TryFrom<ItemKey> for FrameID {
+impl TryFrom<&ItemKey> for FrameID {
 	type Error = LoftyError;
 
-	fn try_from(value: ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
+	fn try_from(value: &ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
 		match value {
 			ItemKey::Unknown(unknown)
 				if unknown.len() == 4
@@ -61,7 +61,7 @@ impl TryFrom<ItemKey> for FrameID {
 						.chars()
 						.all(|c| ('A'..='Z').contains(&c) || ('0'..='9').contains(&c)) =>
 			{
-				Ok(Self::Valid(unknown))
+				Ok(Self::Valid(unknown.clone()))
 			},
 			k => k.map_key(TagType::ID3v2, false).map_or(
 				Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),

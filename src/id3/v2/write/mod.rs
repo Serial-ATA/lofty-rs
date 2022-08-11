@@ -6,8 +6,8 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
-use crate::id3::v2::synch_u32;
 use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::util::synch_u32;
 use crate::macros::err;
 use crate::probe::Probe;
 
@@ -42,7 +42,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	let data = probe.into_inner();
 
 	match file_type {
-		Some(FileType::APE | FileType::MP3 | FileType::FLAC) => {},
+		Some(FileType::APE | FileType::MPEG | FileType::FLAC) => {},
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		Some(FileType::WAV) => {
 			tag.flags.footer = false;

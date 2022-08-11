@@ -62,8 +62,8 @@ mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::FlacFile;
 	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
-	use crate::mp3::{ChannelMode, Emphasis, Layer, Mp3File, Mp3Properties, MpegVersion};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
+	use crate::mpeg::{ChannelMode, Emphasis, Layer, MPEGFile, MPEGProperties, MpegVersion};
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
@@ -105,7 +105,37 @@ mod tests {
 		channels: Some(2),
 	};
 
-	const MP3_PROPERTIES: Mp3Properties = Mp3Properties {
+	const MP1_PROPERTIES: MPEGProperties = MPEGProperties {
+		version: MpegVersion::V1,
+		layer: Layer::Layer1,
+		channel_mode: ChannelMode::Stereo,
+		mode_extension: None,
+		copyright: false,
+		original: true,
+		duration: Duration::from_millis(588), // FFmpeg reports 576, possibly an issue
+		overall_bitrate: 383,                 // TODO: FFmpeg reports 392
+		audio_bitrate: 384,
+		sample_rate: 32000,
+		channels: 2,
+		emphasis: Emphasis::None,
+	};
+
+	const MP2_PROPERTIES: MPEGProperties = MPEGProperties {
+		version: MpegVersion::V1,
+		layer: Layer::Layer2,
+		channel_mode: ChannelMode::Stereo,
+		mode_extension: None,
+		copyright: false,
+		original: true,
+		duration: Duration::from_millis(1344), // TODO: FFmpeg reports 1440 here
+		overall_bitrate: 411,                  // FFmpeg reports 384, related to above issue
+		audio_bitrate: 384,
+		sample_rate: 48000,
+		channels: 2,
+		emphasis: Emphasis::None,
+	};
+
+	const MP3_PROPERTIES: MPEGProperties = MPEGProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer3,
 		channel_mode: ChannelMode::Stereo,
@@ -255,9 +285,25 @@ mod tests {
 	}
 
 	#[test]
+	fn mp1_properties() {
+		assert_eq!(
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp1"),
+			MP1_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mp2_properties() {
+		assert_eq!(
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp2"),
+			MP2_PROPERTIES
+		)
+	}
+
+	#[test]
 	fn mp3_properties() {
 		assert_eq!(
-			get_properties::<Mp3File>("tests/files/assets/minimal/full_test.mp3"),
+			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp3"),
 			MP3_PROPERTIES
 		)
 	}
