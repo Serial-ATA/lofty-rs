@@ -1,3 +1,12 @@
+/// This function tries to simulate TagLibs isValid function
+// https://github.com/Serial-ATA/lofty-rs/pull/51#discussion_r873171570
+pub fn get_filetype<P: AsRef<std::path::Path>>(path: P) -> lofty::FileType {
+	let mut file = std::fs::File::open(path).unwrap();
+	let mut buf = [0; 12];
+	std::io::Read::read_exact(&mut file, &mut buf).unwrap();
+	lofty::FileType::from_buffer(&buf).unwrap()
+}
+
 #[macro_export]
 macro_rules! assert_delta {
 	($x:expr, $y:expr, $d:expr) => {

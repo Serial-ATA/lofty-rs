@@ -1,6 +1,6 @@
-use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::Seek;
 
+use crate::util::get_filetype;
 use crate::{assert_delta, temp_file};
 use lofty::{Accessor, AudioFile, FileType};
 
@@ -52,7 +52,7 @@ fn test_save_id3v2() {
 
 		assert_eq!(tfile.file_type(), FileType::AIFF);
 
-		assert!(tfile.tag(&lofty::TagType::ID3v2).is_none());
+		assert!(tfile.tag(lofty::TagType::ID3v2).is_none());
 
 		let mut tag = lofty::Tag::new(lofty::TagType::ID3v2);
 		tag.set_title("TitleXXX".to_string());
@@ -68,7 +68,7 @@ fn test_save_id3v2() {
 
 		assert_eq!(tfile.file_type(), FileType::AIFF);
 
-		let mut tag = tfile.tag(&lofty::TagType::ID3v2).unwrap().to_owned();
+		let mut tag = tfile.tag(lofty::TagType::ID3v2).unwrap().to_owned();
 		assert_eq!(tag.title(), Some("TitleXXX"));
 		tag.set_title("".to_string());
 		tfile.insert_tag(tag);
@@ -83,19 +83,17 @@ fn test_save_id3v2() {
 
 		assert_eq!(tfile.file_type(), FileType::AIFF);
 
-		assert!(tfile.tag(&lofty::TagType::ID3v2).is_none());
+		assert!(tfile.tag(lofty::TagType::ID3v2).is_none());
 	}
 }
 
 #[test]
 #[ignore]
 fn test_fuzzed_file1() {
-	let mut file = File::open("tests/taglib/data/segfault.aif").unwrap();
-
-	let mut buf = [0; 12];
-	file.read_exact(&mut buf).unwrap();
-
-	assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
+	assert_eq!(
+		get_filetype("tests/taglib/data/segfault.aif"),
+		FileType::AIFF
+	);
 }
 
 // the file doesn't even have a valid signature
