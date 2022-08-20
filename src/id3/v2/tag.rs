@@ -571,7 +571,9 @@ impl From<ID3v2Tag> for Tag {
 							tag.push_picture(picture);
 							continue;
 						},
-						FrameValue::Popularimeter(_) => continue,
+						FrameValue::Popularimeter(popularimeter) => {
+							ItemValue::Text(popularimeter.rating.to_string())
+						},
 						FrameValue::Binary(binary) => ItemValue::Binary(binary),
 					};
 
@@ -825,6 +827,15 @@ mod tests {
 		let tag: Tag = id3v2.into();
 
 		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
+	}
+
+	#[test]
+	fn id3v2_to_tag_popm() {
+		let id3v2 = read_tag("tests/tags/assets/id3v2/test_popm.id3v24");
+
+		let tag: Tag = id3v2.into();
+
+		assert_eq!(tag.get_string(&ItemKey::Popularimeter), Some("196"))
 	}
 
 	#[test]
