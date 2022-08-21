@@ -61,7 +61,7 @@ impl Popularimeter {
 				1 => pop.rating = *chunk.first().unwrap_or(&0),
 				2 => chunk.iter().for_each(|&b| {
 					pop.counter <<= 8;
-					pop.counter |= u64::from(b);
+					pop.counter += u64::from(b);
 				}),
 				_ => unreachable!(),
 			}
