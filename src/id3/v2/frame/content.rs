@@ -171,15 +171,11 @@ fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {
 	if remaining_size > 8 {
 		counter = u64::MAX;
 	} else {
-		let mut c = Vec::with_capacity(8);
-		content.read_to_end(&mut c)?;
+		let mut counter_bytes = [0; 8];
+		let counter_start_pos = 8 - remaining_size;
 
-		let needed_zeros = 8 - remaining_size;
-		for _ in 0..needed_zeros {
-			c.insert(0, 0);
-		}
-
-		counter = u64::from_be_bytes(c.try_into().unwrap());
+		counter_bytes[counter_start_pos..].copy_from_slice(content);
+		counter = u64::from_be_bytes(counter_bytes);
 	}
 
 	Ok(FrameValue::Popularimeter(Popularimeter {
