@@ -1,3 +1,4 @@
+use crate::error::LoftyError;
 use crate::util::text::{encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
@@ -44,6 +45,29 @@ impl Popularimeter {
 		}
 
 		content
+	}
+
+	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
+	pub fn from_bytes(bytes: &[u8]) -> Result<Self, LoftyError> {
+		let mut pop = Self {
+			email: String::new(),
+			rating: 0,
+			counter: 0,
+		};
+
+		for (idx, chunk) in bytes.splitn(3, |b| b.eq(&0)).enumerate() {
+			match idx {
+				0 => pop.email = String::from_utf8(chunk.to_vec())?,
+				1 => pop.rating = *chunk.first().unwrap_or(&0),
+				2 => chunk.iter().for_each(|&b| {
+					pop.counter <<= 8;
+					pop.counter |= u64::from(b);
+				}),
+				_ => unreachable!(),
+			}
+		}
+
+		Ok(pop)
 	}
 }
 

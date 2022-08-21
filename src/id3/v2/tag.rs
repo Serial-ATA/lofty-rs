@@ -81,6 +81,7 @@ macro_rules! impl_accessor {
 /// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist for these descriptions, such as the one for `ReplayGain`,
 /// otherwise [`ItemKey::Unknown`] will be used.
 /// * Any [`LanguageFrame`] - With ID3v2 being the only format that allows for language-specific items, this information is not retained. These frames **will** be discarded.
+/// * POPM - These frames will be stored as a raw [`ItemValue::Binary`] value under the [`ItemKey::Popularimeter`] key.
 ///
 /// ## Special Frames
 ///
@@ -572,7 +573,7 @@ impl From<ID3v2Tag> for Tag {
 							continue;
 						},
 						FrameValue::Popularimeter(popularimeter) => {
-							ItemValue::Text(popularimeter.rating.to_string())
+							ItemValue::Binary(popularimeter.as_bytes())
 						},
 						FrameValue::Binary(binary) => ItemValue::Binary(binary),
 					};
@@ -835,7 +836,50 @@ mod tests {
 
 		let tag: Tag = id3v2.into();
 
-		assert_eq!(tag.get_string(&ItemKey::Popularimeter), Some("196"))
+		assert_eq!(
+			tag.get_binary(&ItemKey::Popularimeter, false),
+			Some(
+				&[
+					b'f', b'o', b'o', b'@', b'b', b'a', b'r', b'.', b'c', b'o', b'm', 0, 196, 0, 0,
+					255, 255,
+				][..]
+			),
+		);
+	}
+
+	#[test]
+	fn tag_to_id3v2_popm() {
+		let mut tag = Tag::new(TagType::ID3v2);
+		tag.insert_item(TagItem::new(
+			ItemKey::Popularimeter,
+			ItemValue::Binary(vec![
+				b'f', b'o', b'o', b'@', b'b', b'a', b'r', b'.', b'c', b'o', b'm', 0, 196, 0, 0,
+				255, 255,
+			]),
+		));
+
+		let expected = Popularimeter {
+			email: String::from("foo@bar.com"),
+			rating: 196,
+			counter: 65535,
+		};
+
+		let converted_tag: ID3v2Tag = tag.into();
+
+		assert_eq!(converted_tag.frames.len(), 1);
+		let actual_frame = converted_tag.frames.first().unwrap();
+
+		assert_eq!(actual_frame.id, FrameID::Valid("POPM".to_string()));
+		// Note: as POPM frames are considered equal by email alone, each field must
+		// be separately validated
+		match actual_frame.content() {
+			FrameValue::Popularimeter(pop) => {
+				assert_eq!(pop.email, expected.email);
+				assert_eq!(pop.rating, expected.rating);
+				assert_eq!(pop.counter, expected.counter);
+			},
+			_ => unreachable!(),
+		}
 	}
 
 	#[test]
