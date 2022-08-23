@@ -3,6 +3,8 @@ pub(crate) mod aiff;
 pub(crate) mod chunk;
 pub(crate) mod wav;
 
+// TODO: Expose `iff::{aiff, wav}` instead of combining both here
+
 // Exports
 
 pub use aiff::AiffFile;

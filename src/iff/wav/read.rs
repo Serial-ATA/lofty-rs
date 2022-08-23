@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_wav<T>(data: &mut T) -> Result<()>
+pub(super) fn verify_wav<T>(data: &mut T) -> Result<()>
 where
 	T: Read + Seek,
 {
@@ -34,7 +34,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
+pub(super) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
