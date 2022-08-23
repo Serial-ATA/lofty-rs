@@ -5,12 +5,12 @@ use super::constants::{
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::Result;
 use crate::id3::v1::constants::GENRES;
-use crate::id3::v2::util::text_utils::utf16_decode;
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
+use crate::util::text::utf16_decode;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};

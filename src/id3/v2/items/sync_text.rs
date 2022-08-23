@@ -1,9 +1,6 @@
 use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::util::text_utils;
-use crate::id3::v2::util::text_utils::{
-	decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding,
-};
 use crate::macros::err;
+use crate::util::text::{decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -111,7 +108,7 @@ impl SynchronizedText {
 			.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 
 		let mut cursor = Cursor::new(&data[6..]);
-		let description = text_utils::decode_text(&mut cursor, encoding, true)
+		let description = crate::util::text::decode_text(&mut cursor, encoding, true)
 			.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
@@ -229,8 +226,9 @@ impl SynchronizedText {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{
-		SyncTextContentType, SyncTextInformation, SynchronizedText, TextEncoding, TimestampFormat,
+		SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
 	};
+	use crate::util::text::TextEncoding;
 
 	#[test]
 	fn sylt_decode() {

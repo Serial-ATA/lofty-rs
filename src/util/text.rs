@@ -187,7 +187,7 @@ fn utf16_encode(
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::TextEncoding;
+	use crate::util::text::TextEncoding;
 	use std::io::Cursor;
 
 	#[allow(clippy::non_ascii_literal)]

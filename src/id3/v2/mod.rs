@@ -21,7 +21,8 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 cfg_if::cfg_if! {
 	if #[cfg(feature = "id3v2")] {
 		pub use flags::ID3v2TagFlags;
-		pub use util::text_utils::TextEncoding;
+		// TODO: remove
+		pub use crate::util::text::TextEncoding;
 		pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
 		pub(crate) mod tag;

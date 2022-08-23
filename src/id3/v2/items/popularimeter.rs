@@ -1,5 +1,4 @@
-use crate::id3::v2::util::text_utils::encode_text;
-use crate::id3::v2::TextEncoding;
+use crate::util::text::{encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 

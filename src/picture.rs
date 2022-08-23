@@ -3,7 +3,7 @@ use crate::macros::err;
 #[cfg(feature = "id3v2")]
 use crate::{
 	error::{ID3v2Error, ID3v2ErrorKind},
-	id3::v2::{util::text_utils::TextEncoding, ID3v2Version},
+	id3::v2::ID3v2Version,
 };
 
 use std::borrow::Cow;
@@ -16,6 +16,8 @@ use std::io::Write;
 #[cfg(any(feature = "vorbis_comments", feature = "ape"))]
 use std::io::{Seek, SeekFrom};
 
+#[cfg(feature = "id3v2")]
+use crate::util::text::TextEncoding;
 #[cfg(any(feature = "vorbis_comments"))]
 use byteorder::BigEndian;
 #[cfg(any(feature = "vorbis_comments", feature = "id3v2", feature = "ape"))]
@@ -577,8 +579,6 @@ impl Picture {
 		version: ID3v2Version,
 		text_encoding: TextEncoding,
 	) -> Result<Vec<u8>> {
-		use crate::id3::v2::util::text_utils;
-
 		let mut data = vec![text_encoding as u8];
 
 		let max_size = match version {
@@ -609,9 +609,11 @@ impl Picture {
 		data.write_u8(self.pic_type.as_u8())?;
 
 		match &self.description {
-			Some(description) => {
-				data.write_all(&text_utils::encode_text(description, text_encoding, true))?
-			},
+			Some(description) => data.write_all(&crate::util::text::encode_text(
+				description,
+				text_encoding,
+				true,
+			))?,
 			None => data.write_u8(0)?,
 		}
 
@@ -638,8 +640,6 @@ impl Picture {
 	///
 	/// * The format is not "PNG" or "JPG"
 	pub fn from_apic_bytes(bytes: &[u8], version: ID3v2Version) -> Result<(Self, TextEncoding)> {
-		use crate::id3::v2::util::text_utils;
-
 		let mut cursor = Cursor::new(bytes);
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
@@ -662,13 +662,14 @@ impl Picture {
 				},
 			}
 		} else {
-			(text_utils::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
+			(crate::util::text::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
 				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
 		};
 
 		let pic_type = PictureType::from_u8(cursor.read_u8()?);
 
-		let description = text_utils::decode_text(&mut cursor, encoding, true)?.map(Cow::from);
+		let description =
+			crate::util::text::decode_text(&mut cursor, encoding, true)?.map(Cow::from);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;

@@ -1,6 +1,5 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
-use crate::id3::v2::util::text_utils::{encode_text, TextEncoding};
-
+use crate::util::text::{encode_text, TextEncoding};
 use std::hash::{Hash, Hasher};
 
 /// Information about an `ID3v2` frame that requires a language

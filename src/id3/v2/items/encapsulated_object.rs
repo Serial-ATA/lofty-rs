@@ -1,6 +1,5 @@
 use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::util::text_utils::{decode_text, encode_text, TextEncoding};
-
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 use std::io::{Cursor, Read};
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
@@ -89,7 +88,8 @@ impl GeneralEncapsulatedObject {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{GEOBInformation, GeneralEncapsulatedObject, TextEncoding};
+	use crate::id3::v2::{GEOBInformation, GeneralEncapsulatedObject};
+	use crate::util::text::TextEncoding;
 
 	#[test]
 	fn geob_decode() {

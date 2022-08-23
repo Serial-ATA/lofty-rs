@@ -3,15 +3,13 @@ use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::items::popularimeter::Popularimeter;
-use crate::id3::v2::util::text_utils::{
-	decode_text, read_to_terminator, utf16_decode, TextEncoding,
-};
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
 use crate::picture::Picture;
 
 use std::io::{Cursor, Read};
 
+use crate::util::text::{decode_text, read_to_terminator, utf16_decode, TextEncoding};
 use byteorder::ReadBytesExt;
 
 pub(super) fn parse_content(

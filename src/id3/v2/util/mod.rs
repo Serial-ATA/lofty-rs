@@ -1,7 +1,5 @@
 //! Utilities for working with ID3v2 tags
 
-pub(crate) mod text_utils;
-
 cfg_if::cfg_if! {
 	if #[cfg(feature = "id3v2")] {
 		pub(crate) mod upgrade;

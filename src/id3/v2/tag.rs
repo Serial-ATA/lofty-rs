@@ -1,7 +1,6 @@
 use super::flags::ID3v2TagFlags;
 use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue};
-use super::util::text_utils::TextEncoding;
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
@@ -11,6 +10,7 @@ use crate::picture::{Picture, PictureType};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
+use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
 use std::convert::TryInto;
@@ -691,9 +691,10 @@ mod tests {
 	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::{
 		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
-		ID3v2Version, LanguageFrame, TextEncoding,
+		ID3v2Version, LanguageFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
+	use crate::util::text::TextEncoding;
 	use crate::{
 		ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
 	};
