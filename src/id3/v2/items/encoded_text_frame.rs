@@ -1,4 +1,5 @@
 use crate::util::text::{encode_text, TextEncoding};
+
 use std::hash::{Hash, Hasher};
 
 /// An `ID3v2` text frame

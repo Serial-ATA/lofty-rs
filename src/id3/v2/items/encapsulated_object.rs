@@ -1,5 +1,6 @@
 use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::util::text::{decode_text, encode_text, TextEncoding};
+
 use std::io::{Cursor, Read};
 
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]

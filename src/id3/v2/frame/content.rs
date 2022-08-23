@@ -6,10 +6,10 @@ use crate::id3::v2::items::popularimeter::Popularimeter;
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
 use crate::picture::Picture;
+use crate::util::text::{decode_text, read_to_terminator, utf16_decode, TextEncoding};
 
 use std::io::{Cursor, Read};
 
-use crate::util::text::{decode_text, read_to_terminator, utf16_decode, TextEncoding};
 use byteorder::ReadBytesExt;
 
 pub(super) fn parse_content(
