@@ -1,3 +1,4 @@
+use lofty::ItemKey::AlbumArtist;
 use lofty::{Accessor, AudioFile, Probe};
 use std::path::Path;
 
@@ -27,6 +28,12 @@ fn main() {
 	println!("Artist: {}", tag.artist().unwrap_or("None"));
 	println!("Album: {}", tag.album().unwrap_or("None"));
 	println!("Genre: {}", tag.genre().unwrap_or("None"));
+
+	// import keys from https://docs.rs/lofty/latest/lofty/enum.ItemKey.html
+	println!(
+		"Album Artist: {}",
+		tag.get_string(&AlbumArtist).unwrap_or("None")
+	);
 
 	let properties = tagged_file.properties();
 
