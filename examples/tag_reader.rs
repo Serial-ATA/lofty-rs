@@ -28,6 +28,13 @@ fn main() {
 	println!("Album: {}", tag.album().unwrap_or("None"));
 	println!("Genre: {}", tag.genre().unwrap_or("None"));
 
+	// import keys from https://docs.rs/lofty/latest/lofty/enum.ItemKey.html
+	println!(
+		"Album Artist: {}",
+		tag.get_string(&lofty::ItemKey::AlbumArtist)
+			.unwrap_or("None")
+	);
+
 	let properties = tagged_file.properties();
 
 	let duration = properties.duration();
