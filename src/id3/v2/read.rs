@@ -13,6 +13,11 @@ where
 	let mut tag_bytes = try_vec![0; (header.size - header.extended_size) as usize];
 	bytes.read_exact(&mut tag_bytes)?;
 
+	// Unsynchronize the entire tag
+	if header.flags.unsynchronisation {
+		tag_bytes = super::util::unsynch_content(&tag_bytes)?;
+	}
+
 	let mut tag = ID3v2Tag::default();
 	tag.original_version = header.version;
 	tag.set_flags(header.flags);
