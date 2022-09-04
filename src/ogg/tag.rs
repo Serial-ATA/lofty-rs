@@ -77,6 +77,31 @@ impl VorbisComments {
 			.map(|(_, v)| v.as_str())
 	}
 
+	/// Gets all items with the key
+	///
+	/// NOTE: This is case-sensitive
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	///
+	/// // Vorbis comments allows multiple fields with the same key, such as artist
+	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Foo artist"), false);
+	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Bar artist"), false);
+	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Baz artist"), false);
+	///
+	/// let all_artists = vorbis_comments.get_all("ARTIST").collect::<Vec<&str>>();
+	/// assert_eq!(all_artists, vec!["Foo artist", "Bar artist", "Baz artist"]);
+	/// ```
+	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + '_ {
+		self.items
+			.iter()
+			.filter_map(move |(k, v)| (k == key).then(|| v.as_str()))
+	}
+
 	/// Inserts an item
 	///
 	/// If `replace_all` is true, it will remove all items with the key before insertion
