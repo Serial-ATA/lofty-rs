@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **ID3v2**: Handle tag-wide unsynchronisation flag ([amberol#235](https://gitlab.gnome.org/World/amberol/-/issues/235))
+- **MP3**: Stop using partial frame headers ([PR](https://github.com/Serial-ATA/lofty-rs/pull/67))
 
 ## [0.8.0] - 2022-08-10
 
