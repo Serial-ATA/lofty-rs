@@ -240,15 +240,14 @@ impl Header {
 		let bitrate_index = (data >> 12) & 0xF;
 		header.bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
 		if header.bitrate == 0 {
-			return Some(header);
+			return None;
 		}
 
 		// Sample rate index
 		let sample_rate_index = (data >> 10) & 0b11;
 		header.sample_rate = match sample_rate_index {
-			// This is invalid, but it doesn't seem worth it to error here
-			// We will error if properties are read
-			3 => return Some(header),
+			// This is invalid
+			3 => return None,
 			_ => SAMPLE_RATES[header.version as usize][sample_rate_index as usize],
 		};
 
