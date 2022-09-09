@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2022-09-09
+
 ### Added
 - **VorbisComments**: `VorbisComments::get_all`, same as `Tag::get_strings` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/66))
 
