@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **FileProperties**: `FileProperties::new`
+
 ## [0.8.1] - 2022-09-09
 
 ### Added

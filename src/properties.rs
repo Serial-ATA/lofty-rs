@@ -26,6 +26,25 @@ impl Default for FileProperties {
 }
 
 impl FileProperties {
+	/// Create a new `FileProperties`
+	pub fn new(
+		duration: Duration,
+		overall_bitrate: Option<u32>,
+		audio_bitrate: Option<u32>,
+		sample_rate: Option<u32>,
+		bit_depth: Option<u8>,
+		channels: Option<u8>,
+	) -> Self {
+		Self {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			bit_depth,
+			channels,
+		}
+	}
+
 	/// Duration
 	pub fn duration(&self) -> Duration {
 		self.duration
