@@ -341,7 +341,7 @@ impl<R: Read + Seek> Probe<R> {
 	///
 	/// # Panics
 	///
-	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`crate::resolve::register_custom_resolver`].
+	/// If an unregistered `FileType` ([`FileType::Custom`]) is encountered. See [`register_custom_resolver`](crate::resolve::register_custom_resolver).
 	///
 	/// # Examples
 	///
