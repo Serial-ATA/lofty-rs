@@ -1,10 +1,10 @@
 use super::block::Block;
 use super::FlacFile;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
+use crate::macros::decode_err;
 use crate::properties::FileProperties;
 #[cfg(feature = "vorbis_comments")]
 use crate::{
@@ -22,19 +22,13 @@ where
 	data.read_exact(&mut marker)?;
 
 	if &marker != b"fLaC" {
-		return Err(
-			FileDecodingError::new(FileType::FLAC, "File missing \"fLaC\" stream marker").into(),
-		);
+		decode_err!(@BAIL FLAC, "File missing \"fLaC\" stream marker");
 	}
 
 	let block = Block::read(data)?;
 
 	if block.ty != 0 {
-		return Err(FileDecodingError::new(
-			FileType::FLAC,
-			"File missing mandatory STREAMINFO block",
-		)
-		.into());
+		decode_err!(@BAIL FLAC, "File missing mandatory STREAMINFO block");
 	}
 
 	Ok(block)
@@ -67,11 +61,7 @@ where
 	let stream_info_len = (stream_info.end - stream_info.start) as u32;
 
 	if stream_info_len < 18 {
-		return Err(FileDecodingError::new(
-			FileType::FLAC,
-			"File has an invalid STREAMINFO block size (< 18)",
-		)
-		.into());
+		decode_err!(@BAIL FLAC, "File has an invalid STREAMINFO block size (< 18)");
 	}
 
 	let mut last_block = stream_info.last;
@@ -88,11 +78,7 @@ where
 		last_block = block.last;
 
 		if block.content.is_empty() && (block.ty != 1 && block.ty != 3) {
-			return Err(FileDecodingError::new(
-				FileType::FLAC,
-				"Encountered a zero-sized metadata block",
-			)
-			.into());
+			decode_err!(@BAIL FLAC, "Encountered a zero-sized metadata block");
 		}
 
 		match block.ty {

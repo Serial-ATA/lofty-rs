@@ -2,7 +2,7 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::Result;
-use crate::macros::err;
+use crate::macros::{decode_err, err};
 #[cfg(feature = "vorbis_comments")]
 use crate::picture::Picture;
 
@@ -23,7 +23,6 @@ pub(crate) fn read_comments<R>(data: &mut R, mut len: u64, tag: &mut VorbisComme
 where
 	R: Read,
 {
-	use crate::error::FileDecodingError;
 	use crate::macros::try_vec;
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
@@ -50,12 +49,7 @@ where
 
 			match String::from_utf16(&s) {
 				Ok(vendor) => vendor,
-				Err(_) => {
-					return Err(FileDecodingError::from_description(
-						"OGG: File has an invalid vendor string",
-					)
-					.into())
-				},
+				Err(_) => decode_err!(@BAIL "OGG: File has an invalid vendor string"),
 			}
 		},
 	};

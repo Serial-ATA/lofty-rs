@@ -1,5 +1,5 @@
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 use crate::traits::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -25,9 +25,7 @@ where
 	if size < 32 {
 		// If the size is < 32, something went wrong during encoding
 		// The size includes the footer and all items
-		return Err(
-			FileDecodingError::new(FileType::APE, "APE tag has an invalid size (< 32)").into(),
-		);
+		decode_err!(@BAIL APE, "APE tag has an invalid size (< 32)");
 	}
 
 	#[cfg(feature = "ape")]
@@ -53,11 +51,7 @@ where
 
 	#[allow(unstable_name_collisions)]
 	if u64::from(size) > data.stream_len()? {
-		return Err(FileDecodingError::new(
-			FileType::APE,
-			"APE tag has an invalid size (> file size)",
-		)
-		.into());
+		decode_err!(@BAIL APE, "APE tag has an invalid size (> file size)");
 	}
 
 	Ok(ApeHeader {

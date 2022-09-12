@@ -6,8 +6,8 @@ use super::{
 	ilst::{read::parse_ilst, Ilst},
 	read::{meta_is_full, AtomReader},
 };
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
@@ -37,7 +37,7 @@ impl Moov {
 		if let Some(moov) = moov {
 			Ok(moov)
 		} else {
-			Err(FileDecodingError::new(FileType::MP4, "No \"moov\" atom found").into())
+			decode_err!(@BAIL MP4, "No \"moov\" atom found");
 		}
 	}
 

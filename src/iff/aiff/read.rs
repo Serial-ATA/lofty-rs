@@ -1,12 +1,11 @@
 #[cfg(feature = "aiff_text_chunks")]
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::macros::err;
+use crate::macros::{decode_err, err};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -63,11 +62,7 @@ where
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
 			b"COMM" if read_properties && comm.is_none() => {
 				if chunks.size < 18 {
-					return Err(FileDecodingError::new(
-						FileType::AIFF,
-						"File has an invalid \"COMM\" chunk size (< 18)",
-					)
-					.into());
+					decode_err!(@BAIL AIFF, "File has an invalid \"COMM\" chunk size (< 18)");
 				}
 
 				comm = Some(chunks.content(data)?);
@@ -139,11 +134,7 @@ where
 		match comm {
 			Some(comm) => {
 				if stream_len == 0 {
-					return Err(FileDecodingError::new(
-						FileType::AIFF,
-						"File does not contain a \"SSND\" chunk",
-					)
-					.into());
+					decode_err!(@BAIL AIFF, "File does not contain a \"SSND\" chunk");
 				}
 
 				properties = super::properties::read_properties(
@@ -152,13 +143,7 @@ where
 					data.stream_position()?,
 				)?;
 			},
-			None => {
-				return Err(FileDecodingError::new(
-					FileType::AIFF,
-					"File does not contain a \"COMM\" chunk",
-				)
-				.into());
-			},
+			None => decode_err!(@BAIL AIFF, "File does not contain a \"COMM\" chunk"),
 		}
 	} else {
 		properties = FileProperties::default();

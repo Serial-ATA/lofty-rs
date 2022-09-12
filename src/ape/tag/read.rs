@@ -2,9 +2,8 @@ use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::INVALID_KEYS;
 use crate::ape::header::ApeHeader;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
-use crate::macros::{err, try_vec};
+use crate::error::Result;
+use crate::macros::{decode_err, err, try_vec};
 use crate::tag::item::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -39,16 +38,11 @@ where
 			key_char = data.read_u8()?;
 		}
 
-		let key = String::from_utf8(key).map_err(|_| {
-			FileDecodingError::new(FileType::APE, "APE tag item contains a non UTF-8 key")
-		})?;
+		let key = String::from_utf8(key)
+			.map_err(|_| decode_err!(APE, "APE tag item contains a non UTF-8 key"))?;
 
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"APE tag item contains an illegal key",
-			)
-			.into());
+			decode_err!(@BAIL APE, "APE tag item contains an illegal key");
 		}
 
 		let read_only = (flags & 1) == 1;
@@ -64,25 +58,13 @@ where
 
 		let parsed_value = match item_type {
 			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
-				FileDecodingError::new(
-					FileType::APE,
-					"Failed to convert text item into a UTF-8 string",
-				)
+				decode_err!(APE, "Failed to convert text item into a UTF-8 string")
 			})?),
 			1 => ItemValue::Binary(value),
 			2 => ItemValue::Locator(String::from_utf8(value).map_err(|_| {
-				FileDecodingError::new(
-					FileType::APE,
-					"Failed to convert locator item into a UTF-8 string",
-				)
+				decode_err!(APE, "Failed to convert locator item into a UTF-8 string")
 			})?),
-			_ => {
-				return Err(FileDecodingError::new(
-					FileType::APE,
-					"APE tag item contains an invalid item type",
-				)
-				.into())
-			},
+			_ => decode_err!(@BAIL APE, "APE tag item contains an invalid item type"),
 		};
 
 		let mut item = ApeItem::new(key, parsed_value)?;

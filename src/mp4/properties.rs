@@ -1,9 +1,8 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
 use super::trak::Trak;
-use crate::error::{FileDecodingError, LoftyError, Result};
-use crate::file::FileType;
-use crate::macros::{err, try_vec};
+use crate::error::{LoftyError, Result};
+use crate::macros::{decode_err, err, try_vec};
 use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -135,11 +134,7 @@ impl TryFrom<u8> for AudioObjectType {
 			44 => Ok(Self::LowDelayMpegSurround),
 			45 => Ok(Self::SpatialAudioObjectCodingDialogueEnhancement),
 			46 => Ok(Self::AudioSync),
-			_ => Err(FileDecodingError::new(
-				FileType::MP4,
-				"Encountered an invalid audio object type",
-			)
-			.into()),
+			_ => decode_err!(@BAIL MP4, "Encountered an invalid audio object type"),
 		}
 	}
 }
@@ -276,7 +271,7 @@ where
 	}
 
 	if !audio_track {
-		return Err(FileDecodingError::new(FileType::MP4, "File contains no audio tracks").into());
+		decode_err!(@BAIL MP4, "File contains no audio tracks");
 	}
 
 	let mdhd = match mdhd {
@@ -657,7 +652,7 @@ where
 		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
-	Err(FileDecodingError::new(FileType::MP4, "Failed to find \"mdat\" atom").into())
+	decode_err!(@BAIL MP4, "Failed to find \"mdat\" atom");
 }
 
 struct Descriptor {

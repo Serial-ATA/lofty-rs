@@ -3,10 +3,10 @@ use super::read::read_ape_tag;
 use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
-use crate::error::{FileDecodingError, Result};
+use crate::error::Result;
 use crate::file::FileType;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::macros::err;
+use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
 
@@ -97,11 +97,7 @@ where
 		if let Some(start) = start.checked_sub(size as usize) {
 			ape_tag_location = Some(start..start + size as usize);
 		} else {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"File has a tag with an invalid size",
-			)
-			.into());
+			decode_err!(@BAIL APE, "File has a tag with an invalid size");
 		}
 	}
 

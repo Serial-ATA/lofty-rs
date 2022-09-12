@@ -1,6 +1,6 @@
 use super::find_last_page;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -100,11 +100,7 @@ where
 	if (channel_mapping_family == 0 && properties.channels > 2)
 		|| (channel_mapping_family == 1 && properties.channels > 8)
 	{
-		return Err(FileDecodingError::new(
-			FileType::Opus,
-			"Invalid channel count for mapping family",
-		)
-		.into());
+		decode_err!(@BAIL Opus, "Invalid channel count for mapping family");
 	}
 
 	// Subtract the identification and metadata packet length from the total

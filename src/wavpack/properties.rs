@@ -1,6 +1,5 @@
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
-use crate::macros::{err, try_vec};
+use crate::error::Result;
+use crate::macros::{decode_err, err, try_vec};
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -210,9 +209,7 @@ where
 
 	let block_size = reader.read_u32::<LittleEndian>()?;
 	if !(24..=WV_BLOCK_MAX_SIZE).contains(&block_size) {
-		return Err(
-			FileDecodingError::new(FileType::WavPack, "WavPack block has an invalid size").into(),
-		);
+		decode_err!(@BAIL WavPack, "WavPack block has an invalid size");
 	}
 
 	let version = reader.read_u16::<LittleEndian>()?;
@@ -267,11 +264,7 @@ where
 			},
 			ID_DSD => {
 				if size <= 1 {
-					return Err(FileDecodingError::new(
-						FileType::WavPack,
-						"Encountered an invalid DSD block size",
-					)
-					.into());
+					decode_err!(@BAIL WavPack, "Encountered an invalid DSD block size");
 				}
 
 				let rate_multiplier = u32::from(reader.read_u8()?);
@@ -285,11 +278,7 @@ where
 			},
 			ID_MULTICHANNEL => {
 				if size <= 1 {
-					return Err(FileDecodingError::new(
-						FileType::WavPack,
-						"Unable to extract channel information",
-					)
-					.into());
+					decode_err!(@BAIL WavPack, "Unable to extract channel information");
 				}
 
 				properties.channels = reader.read_u8()?;
@@ -300,13 +289,7 @@ where
 						continue;
 					},
 					4 | 5 => {},
-					_ => {
-						return Err(FileDecodingError::new(
-							FileType::WavPack,
-							"Encountered invalid channel info size",
-						)
-						.into())
-					},
+					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
 				}
 
 				reader.seek(SeekFrom::Current(1))?;

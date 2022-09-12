@@ -1,6 +1,6 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -307,11 +307,7 @@ impl XingHeader {
 		match &header {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
-					return Err(FileDecodingError::new(
-						FileType::MPEG,
-						"Xing header has an invalid size (< 16)",
-					)
-					.into());
+					decode_err!(@BAIL MPEG, "Xing header has an invalid size (< 16)");
 				}
 
 				let mut flags = [0; 4];
@@ -334,11 +330,7 @@ impl XingHeader {
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
-					return Err(FileDecodingError::new(
-						FileType::MPEG,
-						"VBRI header has an invalid size (< 32)",
-					)
-					.into());
+					decode_err!(@BAIL MPEG, "VBRI header has an invalid size (< 32)");
 				}
 
 				// Skip 6 bytes

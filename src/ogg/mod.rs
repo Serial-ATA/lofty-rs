@@ -9,8 +9,8 @@ pub(crate) mod read;
 pub(crate) mod speex;
 pub(crate) mod vorbis;
 
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
@@ -38,9 +38,7 @@ pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();
 
 	if page.content().len() < sig_len || &page.content()[..sig_len] != sig {
-		return Err(
-			FileDecodingError::new(FileType::Vorbis, "File missing magic signature").into(),
-		);
+		decode_err!(@BAIL Vorbis, "File missing magic signature");
 	}
 
 	Ok(())

@@ -1,5 +1,5 @@
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 use crate::properties::FileProperties;
 
 use std::convert::TryInto;
@@ -81,7 +81,7 @@ where
 {
 	let version = data
 		.read_u16::<LittleEndian>()
-		.map_err(|_| FileDecodingError::new(FileType::APE, "Unable to read APE tag version"))?;
+		.map_err(|_| decode_err!(APE, "Unable to read APE tag version"))?;
 
 	// Property reading differs between versions
 	if version >= 3980 {
@@ -103,9 +103,9 @@ where
 	// First read the file descriptor
 	let mut descriptor = [0; 46];
 	data.read_exact(&mut descriptor).map_err(|_| {
-		FileDecodingError::new(
-			FileType::APE,
-			"Not enough data left in reader to finish file descriptor",
+		decode_err!(
+			APE,
+			"Not enough data left in reader to finish file descriptor"
 		)
 	})?;
 
@@ -122,12 +122,8 @@ where
 
 	// Move on to the header
 	let mut header = [0; 24];
-	data.read_exact(&mut header).map_err(|_| {
-		FileDecodingError::new(
-			FileType::APE,
-			"Not enough data left in reader to finish MAC header",
-		)
-	})?;
+	data.read_exact(&mut header)
+		.map_err(|_| decode_err!(APE, "Not enough data left in reader to finish MAC header"))?;
 
 	// Skip the first 4 bytes of the header
 	// Compression type (2)
@@ -139,7 +135,7 @@ where
 	let total_frames = header_read.read_u32::<LittleEndian>()?;
 
 	if total_frames == 0 {
-		return Err(FileDecodingError::new(FileType::APE, "File contains no frames").into());
+		decode_err!(@BAIL APE, "File contains no frames");
 	}
 
 	let bits_per_sample = header_read.read_u16::<LittleEndian>()?;
@@ -147,11 +143,7 @@ where
 	let channels = header_read.read_u16::<LittleEndian>()?;
 
 	if !(1..=32).contains(&channels) {
-		return Err(FileDecodingError::new(
-			FileType::APE,
-			"File has an invalid channel count (must be between 1 and 32 inclusive)",
-		)
-		.into());
+		decode_err!(@BAIL APE, "File has an invalid channel count (must be between 1 and 32 inclusive)");
 	}
 
 	let sample_rate = header_read.read_u32::<LittleEndian>()?;
@@ -187,12 +179,8 @@ where
 {
 	// Versions < 3980 don't have a descriptor
 	let mut header = [0; 26];
-	data.read_exact(&mut header).map_err(|_| {
-		FileDecodingError::new(
-			FileType::APE,
-			"Not enough data left in reader to finish MAC header",
-		)
-	})?;
+	data.read_exact(&mut header)
+		.map_err(|_| decode_err!(APE, "Not enough data left in reader to finish MAC header"))?;
 
 	// We don't need all the header data, so just make 2 slices
 	let header_first = &mut &header[..8];
@@ -223,11 +211,7 @@ where
 	let channels = header_first.read_u16::<LittleEndian>()?;
 
 	if !(1..=32).contains(&channels) {
-		return Err(FileDecodingError::new(
-			FileType::APE,
-			"File has an invalid channel count (must be between 1 and 32 inclusive)",
-		)
-		.into());
+		decode_err!(@BAIL APE, "File has an invalid channel count (must be between 1 and 32 inclusive)");
 	}
 
 	let sample_rate = header_first.read_u32::<LittleEndian>()?;
@@ -236,7 +220,7 @@ where
 	let total_frames = header_second.read_u32::<LittleEndian>()?;
 
 	if total_frames == 0 {
-		return Err(FileDecodingError::new(FileType::APE, "File contains no frames").into());
+		decode_err!(@BAIL APE, "File contains no frames");
 	}
 
 	let final_frame_blocks = data.read_u32::<LittleEndian>()?;

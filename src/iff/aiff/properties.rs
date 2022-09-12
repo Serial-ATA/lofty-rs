@@ -1,5 +1,5 @@
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 use crate::properties::FileProperties;
 
 use std::io::Read;
@@ -15,7 +15,7 @@ pub(super) fn read_properties(
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 
 	if channels == 0 {
-		return Err(FileDecodingError::new(FileType::AIFF, "File contains 0 channels").into());
+		decode_err!(@BAIL AIFF, "File contains 0 channels");
 	}
 
 	let sample_frames = comm.read_u32::<BigEndian>()?;

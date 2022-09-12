@@ -1,6 +1,6 @@
 use crate::ape::constants::INVALID_KEYS;
-use crate::error::{FileDecodingError, LoftyError, Result};
-use crate::file::FileType;
+use crate::error::{LoftyError, Result};
+use crate::macros::decode_err;
 use crate::tag::item::{ItemValue, ItemValueRef, TagItem};
 use crate::tag::TagType;
 
@@ -28,27 +28,15 @@ impl ApeItem {
 	/// * `key` contains invalid characters (must be in the range 0x20 to 0x7E, inclusive)
 	pub fn new(key: String, value: ItemValue) -> Result<Self> {
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"APE tag item contains an illegal key",
-			)
-			.into());
+			decode_err!(@BAIL APE, "APE tag item contains an illegal key");
 		}
 
 		if !(2..=255).contains(&key.len()) {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"APE tag item key has an invalid length (< 2 || > 255)",
-			)
-			.into());
+			decode_err!(@BAIL APE, "APE tag item key has an invalid length (< 2 || > 255)");
 		}
 
 		if key.chars().any(|c| !(0x20..=0x7E).contains(&(c as u32))) {
-			return Err(FileDecodingError::new(
-				FileType::APE,
-				"APE tag item key contains invalid characters",
-			)
-			.into());
+			decode_err!(@BAIL APE, "APE tag item key contains invalid characters");
 		}
 
 		Ok(Self {
@@ -86,12 +74,7 @@ impl TryFrom<TagItem> for ApeItem {
 			value
 				.item_key
 				.map_key(TagType::APE, false)
-				.ok_or_else(|| {
-					FileDecodingError::new(
-						FileType::APE,
-						"Attempted to convert an unsupported item key",
-					)
-				})?
+				.ok_or_else(|| decode_err!(APE, "Attempted to convert an unsupported item key"))?
 				.to_string(),
 			value.item_value,
 		)

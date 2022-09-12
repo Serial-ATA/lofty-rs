@@ -4,13 +4,12 @@ use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 #[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
-use crate::macros::err;
+use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -138,18 +137,12 @@ where
 	if read_properties {
 		let first_frame_header = match first_frame_header {
 			Some(header) => header,
-			None => {
-				// The search for sync bits was unsuccessful
-				return Err(FileDecodingError::new(
-					FileType::MPEG,
-					"File contains an invalid frame",
-				)
-				.into());
-			},
+			// The search for sync bits was unsuccessful
+			None => decode_err!(@BAIL MPEG, "File contains an invalid frame"),
 		};
 
 		if first_frame_header.sample_rate == 0 {
-			return Err(FileDecodingError::new(FileType::MPEG, "Sample rate is 0").into());
+			decode_err!(@BAIL MPEG, "Sample rate is 0");
 		}
 
 		let first_frame_offset = first_frame_offset;

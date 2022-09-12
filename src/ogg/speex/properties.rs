@@ -1,5 +1,5 @@
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
+use crate::macros::decode_err;
 use crate::ogg::find_last_page;
 use crate::properties::FileProperties;
 
@@ -91,7 +91,7 @@ where
 	let first_page_abgp = first_page.abgp;
 
 	if first_page.content().len() < 80 {
-		return Err(FileDecodingError::new(FileType::Speex, "Header packet too small").into());
+		decode_err!(@BAIL Speex, "Header packet too small");
 	}
 
 	let mut properties = SpeexProperties::default();
@@ -117,11 +117,7 @@ where
 	let channels = first_page_content.read_u32::<LittleEndian>()?;
 
 	if channels != 1 && channels != 2 {
-		return Err(FileDecodingError::new(
-			FileType::Speex,
-			"Found invalid channel count, must be mono or stereo",
-		)
-		.into());
+		decode_err!(@BAIL Speex, "Found invalid channel count, must be mono or stereo");
 	}
 
 	properties.channels = channels as u8;

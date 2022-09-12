@@ -2,11 +2,11 @@ use super::properties::WavProperties;
 #[cfg(feature = "riff_info_list")]
 use super::tag::RIFFInfoList;
 use super::WavFile;
-use crate::error::{FileDecodingError, Result};
-use crate::file::FileType;
+use crate::error::Result;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -20,15 +20,11 @@ where
 	data.read_exact(&mut id)?;
 
 	if &id[..4] != b"RIFF" {
-		return Err(
-			FileDecodingError::new(FileType::WAV, "WAV file doesn't contain a RIFF chunk").into(),
-		);
+		decode_err!(@BAIL WAV, "WAV file doesn't contain a RIFF chunk");
 	}
 
 	if &id[8..] != b"WAVE" {
-		return Err(
-			FileDecodingError::new(FileType::WAV, "Found RIFF file, format is not WAVE").into(),
-		);
+		decode_err!(@BAIL WAV, "Found RIFF file, format is not WAVE");
 	}
 
 	Ok(())
@@ -103,19 +99,11 @@ where
 
 	let properties = if read_properties {
 		if fmt.len() < 16 {
-			return Err(FileDecodingError::new(
-				FileType::WAV,
-				"File does not contain a valid \"fmt \" chunk",
-			)
-			.into());
+			decode_err!(@BAIL WAV, "File does not contain a valid \"fmt \" chunk");
 		}
 
 		if stream_len == 0 {
-			return Err(FileDecodingError::new(
-				FileType::WAV,
-				"File does not contain a \"data\" chunk",
-			)
-			.into());
+			decode_err!(@BAIL WAV, "File does not contain a \"data\" chunk");
 		}
 
 		let file_length = data.stream_position()?;
