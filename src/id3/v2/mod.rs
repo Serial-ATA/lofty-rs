@@ -118,7 +118,7 @@ where
 			&& flags & 0x10 == 0x10,
 		crc: false, // Retrieved later if applicable
 		#[cfg(feature = "id3v2_restrictions")]
-		restrictions: (false, TagRestrictions::default()), // Retrieved later if applicable
+		restrictions: None, // Retrieved later if applicable
 	};
 
 	let size = unsynch_u32(BigEndian::read_u32(&header[6..]));
@@ -154,12 +154,10 @@ where
 
 		#[cfg(feature = "id3v2_restrictions")]
 		if extended_flags & 0x10 == 0x10 {
-			flags_parsed.restrictions.0 = true;
-
 			// We don't care about the length byte, it is always 1
 			let _data_length = bytes.read_u8()?;
 
-			flags_parsed.restrictions.1 = TagRestrictions::from_byte(bytes.read_u8()?);
+			flags_parsed.restrictions = Some(TagRestrictions::from_byte(bytes.read_u8()?));
 		}
 	}
 

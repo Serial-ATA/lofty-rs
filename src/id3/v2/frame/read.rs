@@ -47,22 +47,22 @@ impl Frame {
 		let mut content_reader = &*content;
 
 		// Get the encryption method symbol
-		if flags.encryption.0 {
-			flags.encryption.1 = content_reader.read_u8()?;
+		if let Some(enc) = flags.encryption.as_mut() {
+			*enc = content_reader.read_u8()?;
 		}
 
 		// Get the group identifier
-		if flags.grouping_identity.0 {
-			flags.grouping_identity.1 = content_reader.read_u8()?;
+		if let Some(group) = flags.grouping_identity.as_mut() {
+			*group = content_reader.read_u8()?;
 		}
 
 		// Get the real data length
-		if flags.data_length_indicator.0 {
-			flags.data_length_indicator.1 = content_reader.read_u32::<BigEndian>()?;
+		if let Some(len) = flags.data_length_indicator.as_mut() {
+			*len = content_reader.read_u32::<BigEndian>()?;
 		}
 
-		let value = if flags.encryption.0 {
-			if !flags.data_length_indicator.0 {
+		let value = if flags.encryption.is_some() {
+			if flags.data_length_indicator.is_none() {
 				return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 					"Encountered an encrypted frame without a data length indicator",
 				))

@@ -21,5 +21,5 @@ pub struct ID3v2TagFlags {
 	/// Restrictions on the tag, written in the extended header
 	///
 	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]
-	pub restrictions: (bool, TagRestrictions),
+	pub restrictions: Option<TagRestrictions>,
 }

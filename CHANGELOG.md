@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **FileProperties**: `FileProperties::new`
 
+### Changed
+- **ID3v2**: Frame/tag flags with optional additional data are now `Option<T>` instead of `(bool, T)`
+
 ## [0.8.1] - 2022-09-09
 
 ### Added

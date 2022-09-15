@@ -224,22 +224,20 @@ pub struct FrameFlags {
 	pub file_alter_preservation: bool,
 	/// Item cannot be written to
 	pub read_only: bool,
-	/// Frame belongs in a group
+	/// The group identifier the frame belongs to
 	///
-	/// In addition to setting this flag, a group identifier byte must be added.
 	/// All frames with the same group identifier byte belong to the same group.
-	pub grouping_identity: (bool, u8),
+	pub grouping_identity: Option<u8>,
 	/// Frame is zlib compressed
 	///
 	/// It is **required** `data_length_indicator` be set if this is set.
 	pub compression: bool,
-	/// Frame is encrypted
+	/// Frame encryption method symbol
 	///
 	/// NOTE: Since the encryption method is unknown, lofty cannot do anything with these frames
 	///
-	/// In addition to setting this flag, an encryption method symbol must be added.
-	/// The method symbol **must** be > 0x80.
-	pub encryption: (bool, u8),
+	/// The encryption method symbol **must** be > 0x80.
+	pub encryption: Option<u8>,
 	/// Frame is unsynchronised
 	///
 	/// In short, this makes all "0xFF X (X >= 0xE0)" combinations into "0xFF 0x00 X" to avoid confusion
@@ -255,7 +253,7 @@ pub struct FrameFlags {
 	/// This is usually used in combination with `compression` and `encryption` (depending on encryption method).
 	///
 	/// If using `encryption`, the final size must be added.
-	pub data_length_indicator: (bool, u32),
+	pub data_length_indicator: Option<u32>,
 }
 
 impl From<TagItem> for Option<Frame> {

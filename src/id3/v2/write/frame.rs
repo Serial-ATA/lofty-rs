@@ -56,13 +56,13 @@ fn write_frame<W>(writer: &mut W, name: &str, flags: FrameFlags, value: &[u8]) -
 where
 	W: Write,
 {
-	if flags.encryption.0 {
+	if flags.encryption.is_some() {
 		write_encrypted(writer, name, value, flags)?;
 		return Ok(());
 	}
 
 	let len = value.len() as u32;
-	let is_grouping_identity = flags.grouping_identity.0;
+	let is_grouping_identity = flags.grouping_identity.is_some();
 
 	write_frame_header(
 		writer,
@@ -72,7 +72,8 @@ where
 	)?;
 
 	if is_grouping_identity {
-		writer.write_u8(flags.grouping_identity.1)?;
+		// Guaranteed to be `Some` at this point.
+		writer.write_u8(flags.grouping_identity.unwrap())?;
 	}
 
 	writer.write_all(value)?;
@@ -84,8 +85,8 @@ fn write_encrypted<W>(writer: &mut W, name: &str, value: &[u8], flags: FrameFlag
 where
 	W: Write,
 {
-	let method_symbol = flags.encryption.1;
-	let data_length_indicator = flags.data_length_indicator;
+	// Guaranteed to be `Some` at this point.
+	let method_symbol = flags.encryption.unwrap();
 
 	if method_symbol > 0x80 {
 		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
@@ -94,13 +95,15 @@ where
 		.into());
 	}
 
-	if data_length_indicator.0 && data_length_indicator.1 > 0 {
-		write_frame_header(writer, name, (value.len() + 1) as u32, flags)?;
-		writer.write_u32::<BigEndian>(synch_u32(data_length_indicator.1)?)?;
-		writer.write_u8(method_symbol)?;
-		writer.write_all(value)?;
+	if let Some(len) = flags.data_length_indicator {
+		if len > 0 {
+			write_frame_header(writer, name, (value.len() + 1) as u32, flags)?;
+			writer.write_u32::<BigEndian>(synch_u32(len)?)?;
+			writer.write_u8(method_symbol)?;
+			writer.write_all(value)?;
 
-		return Ok(());
+			return Ok(());
+		}
 	}
 
 	Err(ID3v2Error::new(ID3v2ErrorKind::Other(
@@ -139,7 +142,7 @@ fn get_flags(tag_flags: FrameFlags) -> u16 {
 		flags |= 0x1000
 	}
 
-	if tag_flags.grouping_identity.0 {
+	if tag_flags.grouping_identity.is_some() {
 		flags |= 0x0040
 	}
 
@@ -147,7 +150,7 @@ fn get_flags(tag_flags: FrameFlags) -> u16 {
 		flags |= 0x0008
 	}
 
-	if tag_flags.encryption.0 {
+	if tag_flags.encryption.is_some() {
 		flags |= 0x0004
 	}
 
@@ -155,7 +158,7 @@ fn get_flags(tag_flags: FrameFlags) -> u16 {
 		flags |= 0x0002
 	}
 
-	if tag_flags.data_length_indicator.0 {
+	if tag_flags.data_length_indicator.is_some() {
 		flags |= 0x0001
 	}
 

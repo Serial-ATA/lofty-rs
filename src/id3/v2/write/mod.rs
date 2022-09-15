@@ -86,7 +86,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	let has_footer = tag.flags.footer;
 	let needs_crc = tag.flags.crc;
 	#[cfg(feature = "id3v2_restrictions")]
-	let has_restrictions = tag.flags.restrictions.0;
+	let has_restrictions = tag.flags.restrictions.is_some();
 
 	let (mut id3v2, extended_header_len) = create_tag_header(tag.flags)?;
 	let header_len = id3v2.get_ref().len();
@@ -153,7 +153,7 @@ fn create_tag_header(flags: ID3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
 	let extended_header = flags.crc;
 
 	#[cfg(feature = "id3v2_restrictions")]
-	let extended_header = flags.crc || flags.restrictions.0;
+	let extended_header = flags.crc || flags.restrictions.is_some();
 
 	if flags.footer {
 		tag_flags |= 0x10
@@ -193,12 +193,12 @@ fn create_tag_header(flags: ID3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
 		}
 
 		#[cfg(feature = "id3v2_restrictions")]
-		if flags.restrictions.0 {
+		if let Some(restrictions) = flags.restrictions {
 			ext_flags |= 0x10;
 			extended_header_size += 2;
 
 			header.write_u8(1)?;
-			header.write_u8(flags.restrictions.1.as_bytes())?;
+			header.write_u8(restrictions.as_bytes())?;
 		}
 
 		header.seek(SeekFrom::Start(10))?;
