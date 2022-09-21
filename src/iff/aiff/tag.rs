@@ -427,6 +427,7 @@ mod tests {
 	use crate::iff::{AIFFTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
+	use crate::probe::ParseOptions;
 	use std::io::Cursor;
 
 	#[test]
@@ -455,10 +456,13 @@ mod tests {
 
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
-		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
-			.unwrap()
-			.text_chunks_tag
-			.unwrap();
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(tag),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -466,10 +470,13 @@ mod tests {
 	#[test]
 	fn aiff_text_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
-		let parsed_tag = super::super::read::read_from(&mut Cursor::new(tag), false)
-			.unwrap()
-			.text_chunks_tag
-			.unwrap();
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(tag),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
 
 		// Create a fake AIFF signature
 		let mut writer = vec![
@@ -477,10 +484,13 @@ mod tests {
 		];
 		parsed_tag.dump_to(&mut writer).unwrap();
 
-		let temp_parsed_tag = super::super::read::read_from(&mut Cursor::new(writer), false)
-			.unwrap()
-			.text_chunks_tag
-			.unwrap();
+		let temp_parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(writer),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -490,10 +500,13 @@ mod tests {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 
-		let aiff_text = super::super::read::read_from(&mut Cursor::new(tag_bytes), false)
-			.unwrap()
-			.text_chunks_tag
-			.unwrap();
+		let aiff_text = super::super::read::read_from(
+			&mut Cursor::new(tag_bytes),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
 
 		let tag: Tag = aiff_text.into();
 
@@ -547,7 +560,11 @@ mod tests {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");
 
-		let aiff_file = super::super::read::read_from(&mut Cursor::new(tag_bytes), false).unwrap();
+		let aiff_file = super::super::read::read_from(
+			&mut Cursor::new(tag_bytes),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap();
 
 		let aiff_text = aiff_file.text_chunks().unwrap();
 

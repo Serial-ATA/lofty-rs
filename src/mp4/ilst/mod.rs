@@ -523,7 +523,7 @@ mod tests {
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Accessor, AudioFile, ItemKey, Tag, TagExt, TagType};
+	use crate::{Accessor, AudioFile, ItemKey, ParseOptions, Tag, TagExt, TagType};
 	use std::io::{Cursor, Read, Seek, Write};
 
 	fn read_ilst(path: &str) -> Ilst {
@@ -732,7 +732,11 @@ mod tests {
 		const PADDING_SIZE: usize = 990;
 
 		let file_bytes = read_path("tests/files/assets/ilst_trailing_padding.m4a");
-		assert!(Mp4File::read_from(&mut Cursor::new(&file_bytes), false).is_ok());
+		assert!(Mp4File::read_from(
+			&mut Cursor::new(&file_bytes),
+			ParseOptions::new().read_properties(false)
+		)
+		.is_ok());
 
 		let mut ilst;
 		let old_free_size;
@@ -778,13 +782,17 @@ mod tests {
 
 		// Verify we can re-read the file
 		file.rewind().unwrap();
-		assert!(Mp4File::read_from(&mut file, false).is_ok());
+		assert!(Mp4File::read_from(&mut file, ParseOptions::new().read_properties(false)).is_ok());
 	}
 
 	#[test]
 	fn read_non_full_meta_atom() {
 		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
-		let file = Mp4File::read_from(&mut Cursor::new(file_bytes), false).unwrap();
+		let file = Mp4File::read_from(
+			&mut Cursor::new(file_bytes),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap();
 
 		assert!(file.ilst_tag.is_some());
 	}
@@ -808,7 +816,7 @@ mod tests {
 		tag.save_to(&mut file).unwrap();
 		file.rewind().unwrap();
 
-		let mp4_file = Mp4File::read_from(&mut file, true).unwrap();
+		let mp4_file = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
 		assert!(mp4_file.ilst_tag.is_some());
 
 		verify_atom(
@@ -843,7 +851,7 @@ mod tests {
 	fn zero_sized_ilst() {
 		let file = Mp4File::read_from(
 			&mut Cursor::new(test_utils::read_path("tests/files/assets/zero/zero.ilst")),
-			false,
+			ParseOptions::new().read_properties(false),
 		)
 		.unwrap();
 

@@ -11,7 +11,7 @@ fn main() {
 
 	let tagged_file = Probe::open(path)
 		.expect("ERROR: Bad path provided!")
-		.read(true)
+		.read()
 		.expect("ERROR: Failed to read file!");
 
 	let tag = match tagged_file.primary_tag() {

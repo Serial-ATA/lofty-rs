@@ -17,7 +17,7 @@
 //!
 //! ### Using a path
 //!
-//! ```rust
+//! ```rust,no_run
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
 //! use lofty::{read_from_path, Probe};
@@ -25,43 +25,42 @@
 //! // This will guess the format from the extension
 //! // ("mp3" in this case), but we can guess from the content if we want to.
 //! let path = "test.mp3";
-//! # let path = "tests/files/assets/minimal/full_test.mp3";
-//! let tagged_file = read_from_path(path, false)?;
+//! let tagged_file = read_from_path(path)?;
 //!
 //! // Let's guess the format from the content just in case.
 //! // This is not necessary in this case!
-//! let tagged_file2 = Probe::open(path)?.guess_file_type()?.read(false)?;
+//! let tagged_file2 = Probe::open(path)?.guess_file_type()?.read()?;
 //! # Ok(())
 //! # }
 //! ```
 //!
 //! ### Using an existing reader
 //!
-//! ```rust
+//! ```rust,no_run
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::read_from;
+//! use lofty::{read_from, ParseOptions};
 //! use std::fs::File;
 //!
 //! // Let's read from an open file
-//! # let path = "tests/files/assets/minimal/full_test.mp3";
+//! let path = "test.mp3";
 //! let mut file = File::open(path)?;
 //!
 //! // Here, we have to guess the file type prior to reading
-//! let tagged_file = read_from(&mut file, false)?;
+//! let tagged_file = read_from(&mut file)?;
 //! # Ok(())
 //! # }
 //! ```
 //!
 //! ### Accessing tags
 //!
-//! ```rust
+//! ```rust,no_run
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::read_from_path;
+//! use lofty::{read_from_path, ParseOptions};
 //!
-//! # let path = "tests/files/assets/minimal/full_test.mp3";
-//! let tagged_file = read_from_path(path, false)?;
+//! let path = "test.mp3";
+//! let tagged_file = read_from_path(path)?;
 //!
 //! // Get the primary tag (ID3v2 in this case)
 //! let id3v2 = tagged_file.primary_tag();
@@ -79,14 +78,14 @@
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
 //! use lofty::mpeg::MPEGFile;
-//! use lofty::{AudioFile, TagType};
+//! use lofty::{AudioFile, ParseOptions, TagType};
 //! use std::fs::File;
 //!
 //! # let path = "tests/files/assets/minimal/full_test.mp3";
 //! let mut file_content = File::open(path)?;
 //!
 //! // We are expecting an MP3 file
-//! let mp3_file = MPEGFile::read_from(&mut file_content, true)?;
+//! let mp3_file = MPEGFile::read_from(&mut file_content, ParseOptions::new())?;
 //!
 //! assert_eq!(mp3_file.properties().channels(), 2);
 //!
@@ -155,7 +154,8 @@
 	clippy::needless_late_init,
 	clippy::type_complexity,
 	clippy::type_repetition_in_bounds,
-	unused_qualifications
+	unused_qualifications,
+	clippy::return_self_not_must_use
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
@@ -185,7 +185,7 @@ pub mod wavpack;
 
 pub use crate::error::{LoftyError, Result};
 
-pub use crate::probe::{read_from, read_from_path, Probe};
+pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
 
 pub use crate::file::{AudioFile, FileType, TaggedFile};
 pub use crate::picture::{MimeType, Picture, PictureType};

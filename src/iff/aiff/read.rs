@@ -6,6 +6,7 @@ use crate::error::Result;
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::{decode_err, err};
+use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -28,7 +29,7 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<AiffFile>
+pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<AiffFile>
 where
 	R: Read + Seek,
 {
@@ -60,7 +61,7 @@ where
 		match &chunks.fourcc {
 			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
-			b"COMM" if read_properties && comm.is_none() => {
+			b"COMM" if parse_options.read_properties && comm.is_none() => {
 				if chunks.size < 18 {
 					decode_err!(@BAIL AIFF, "File has an invalid \"COMM\" chunk size (< 18)");
 				}
@@ -68,7 +69,7 @@ where
 				comm = Some(chunks.content(data)?);
 				chunks.correct_position(data)?;
 			},
-			b"SSND" if read_properties => {
+			b"SSND" if parse_options.read_properties => {
 				stream_len = chunks.size;
 				chunks.skip(data)?;
 			},
@@ -130,7 +131,7 @@ where
 	}
 
 	let properties;
-	if read_properties {
+	if parse_options.read_properties {
 		match comm {
 			Some(comm) => {
 				if stream_len == 0 {

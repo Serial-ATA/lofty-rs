@@ -19,7 +19,7 @@ byteorder = "1.4.3"
 cfg-if = "1.0.0"
 # ID3 compressed frames
 flate2 = { version = "1.0.24", optional = true }
-lofty_attr = "0.3.0"
+lofty_attr = { path = "lofty_attr" }
 # OGG Vorbis/Opus
 ogg_pager = "0.3.2"
 # Key maps

@@ -4,6 +4,7 @@ use super::properties::Mp4Properties;
 use super::Mp4File;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -147,7 +148,7 @@ where
 		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
 }
 
-pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<Mp4File>
+pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<Mp4File>
 where
 	R: Read + Seek,
 {
@@ -156,7 +157,8 @@ where
 	let ftyp = verify_mp4(&mut reader)?;
 
 	Moov::find(&mut reader)?;
-	let moov = Moov::parse(&mut reader, read_properties)?;
+	// TODO
+	let moov = Moov::parse(&mut reader, parse_options.read_properties)?;
 
 	let file_length = reader.seek(SeekFrom::End(0))?;
 
@@ -164,7 +166,7 @@ where
 		ftyp,
 		#[cfg(feature = "mp4_ilst")]
 		ilst_tag: moov.meta,
-		properties: if read_properties {
+		properties: if parse_options.read_properties {
 			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
 		} else {
 			Mp4Properties::default()

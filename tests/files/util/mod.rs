@@ -78,7 +78,12 @@ macro_rules! remove_tag {
 	($path:tt, $tag_type:path) => {
 		let mut file = temp_file!($path);
 
-		let tagged_file = lofty::read_from(&mut file, false).unwrap();
+		let tagged_file = lofty::Probe::new(&mut file)
+			.options(lofty::ParseOptions::new().read_properties(false))
+			.guess_file_type()
+			.unwrap()
+			.read()
+			.unwrap();
 		assert!(tagged_file.tag($tag_type).is_some());
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
@@ -87,7 +92,12 @@ macro_rules! remove_tag {
 
 		file.seek(std::io::SeekFrom::Start(0)).unwrap();
 
-		let tagged_file = lofty::read_from(&mut file, false).unwrap();
+		let tagged_file = lofty::Probe::new(&mut file)
+			.options(lofty::ParseOptions::new().read_properties(false))
+			.guess_file_type()
+			.unwrap()
+			.read()
+			.unwrap();
 		assert!(tagged_file.tag($tag_type).is_none());
 	};
 }

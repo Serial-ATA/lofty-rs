@@ -3,15 +3,19 @@ use lofty::flac::FlacFile;
 use lofty::iff::{AiffFile, WavFile};
 use lofty::mp4::Mp4File;
 use lofty::mpeg::MPEGFile;
-use lofty::AudioFile;
+use lofty::{AudioFile, ParseOptions};
 
 fn read_file_with_properties<A: AudioFile>(path: &str) -> bool {
-	let res = <A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), true);
+	let res =
+		<A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), ParseOptions::new());
 	res.is_ok()
 }
 
 fn read_file_no_properties<A: AudioFile>(path: &str) -> bool {
-	let res = <A as AudioFile>::read_from(&mut std::fs::File::open(path).unwrap(), false);
+	let res = <A as AudioFile>::read_from(
+		&mut std::fs::File::open(path).unwrap(),
+		ParseOptions::new().read_properties(false),
+	);
 	res.is_ok()
 }
 

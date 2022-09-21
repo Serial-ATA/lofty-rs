@@ -1,5 +1,5 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{FileType, ItemKey, ItemValue, TagExt, TagItem, TagType};
+use lofty::{FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType};
 use std::io::{Seek, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
@@ -79,7 +79,11 @@ fn speex_remove() {
 }
 
 fn read(path: &str, file_type: FileType) {
-	let file = lofty::read_from_path(path, false).unwrap();
+	let file = Probe::open(path)
+		.unwrap()
+		.options(ParseOptions::new().read_properties(false))
+		.read()
+		.unwrap();
 
 	assert_eq!(file.file_type(), file_type);
 
@@ -89,7 +93,12 @@ fn read(path: &str, file_type: FileType) {
 fn write(path: &str, file_type: FileType) {
 	let mut file = temp_file!(path);
 
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	assert_eq!(tagged_file.file_type(), file_type);
 
@@ -97,7 +106,12 @@ fn write(path: &str, file_type: FileType) {
 
 	// Now reread the file
 	file.rewind().unwrap();
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 2 => file, "Foo artist");
 }
@@ -105,7 +119,12 @@ fn write(path: &str, file_type: FileType) {
 fn remove(path: &str, tag_type: TagType) {
 	let mut file = temp_file!(path);
 
-	let tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 	// Verify we have both the vendor and artist
 	assert!(
 		tagged_file.tag(tag_type).is_some() && tagged_file.tag(tag_type).unwrap().item_count() == 2
@@ -115,7 +134,12 @@ fn remove(path: &str, tag_type: TagType) {
 	tag_type.remove_from(&mut file).unwrap();
 
 	file.rewind().unwrap();
-	let tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
 	assert_eq!(tagged_file.tag(tag_type).unwrap().item_count(), 1);
@@ -127,7 +151,8 @@ fn flac_with_id3v2() {
 	use lofty::{Accessor, AudioFile};
 
 	let file = std::fs::read("tests/files/assets/flac_with_id3v2.flac").unwrap();
-	let flac_file = FlacFile::read_from(&mut std::io::Cursor::new(file), true).unwrap();
+	let flac_file =
+		FlacFile::read_from(&mut std::io::Cursor::new(file), ParseOptions::new()).unwrap();
 
 	assert!(flac_file.id3v2().is_some());
 	assert_eq!(flac_file.id3v2().unwrap().artist(), Some("Foo artist"));

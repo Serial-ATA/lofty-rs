@@ -5,10 +5,11 @@ use crate::ape::header::read_ape_header;
 use crate::ape::tag::read::read_ape_tag;
 use crate::error::Result;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<WavPackFile>
+pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<WavPackFile>
 where
 	R: Read + Seek,
 {
@@ -67,7 +68,7 @@ where
 		id3v1_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: if read_properties {
+		properties: if parse_options.read_properties {
 			super::properties::read_properties(reader, stream_length)?
 		} else {
 			WavPackProperties::default()

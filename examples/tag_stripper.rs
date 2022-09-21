@@ -6,7 +6,7 @@ fn main() {
 
 	let tagged_file = Probe::open(path.as_str())
 		.expect("ERROR: Bad path provided!")
-		.read(false)
+		.read()
 		.expect("ERROR: Failed to read file!");
 
 	let tags = tagged_file.tags();

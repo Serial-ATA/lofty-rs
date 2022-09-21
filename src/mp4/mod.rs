@@ -53,11 +53,11 @@ impl Mp4File {
 	///
 	/// ```rust,no_run
 	/// use lofty::mp4::Mp4File;
-	/// use lofty::AudioFile;
+	/// use lofty::{AudioFile, ParseOptions};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
-	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, false)?;
+	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, ParseOptions::new())?;
 	///
 	/// assert_eq!(m4a_file.ftyp(), "M4A ");
 	/// # Ok(()) }

@@ -10,10 +10,11 @@ use crate::id3::v1::tag::ID3v1Tag;
 use crate::id3::v2::{read::parse_id3v2, tag::ID3v2Tag};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
 use crate::macros::decode_err;
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<ApeFile>
+pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<ApeFile>
 where
 	R: Read + Seek,
 {
@@ -155,7 +156,7 @@ where
 		id3v2_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,
-		properties: if read_properties {
+		properties: if parse_options.read_properties {
 			super::properties::read_properties(data, stream_len, file_length)?
 		} else {
 			ApeProperties::default()

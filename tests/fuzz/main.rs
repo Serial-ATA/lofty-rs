@@ -1,4 +1,4 @@
-use lofty::AudioFile;
+use lofty::{AudioFile, ParseOptions};
 use std::io::Cursor;
 use std::path::Path;
 use std::thread;
@@ -26,7 +26,7 @@ pub fn get_reader(path: &str) -> Cursor<Vec<u8>> {
 pub fn oom_test<A: AudioFile>(path: &'static str) {
 	let instant = Instant::now();
 	let thread = thread::spawn(|| {
-		let _ = <A as AudioFile>::read_from(&mut get_reader(path), true);
+		let _ = <A as AudioFile>::read_from(&mut get_reader(path), ParseOptions::new());
 	});
 
 	while instant.elapsed().as_secs() < 3 {

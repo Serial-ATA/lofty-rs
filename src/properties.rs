@@ -89,6 +89,7 @@ mod tests {
 	use crate::wavpack::{WavPackFile, WavPackProperties};
 	use crate::{AudioFile, FileProperties};
 
+	use crate::probe::ParseOptions;
 	use std::fs::File;
 	use std::time::Duration;
 
@@ -274,7 +275,7 @@ mod tests {
 	{
 		let mut f = File::open(path).unwrap();
 
-		let audio_file = T::read_from(&mut f, true).unwrap();
+		let audio_file = T::read_from(&mut f, ParseOptions::default()).unwrap();
 
 		audio_file.properties().clone()
 	}

@@ -6,6 +6,7 @@ use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
+use crate::probe::ParseOptions;
 use crate::tag::TagType;
 use properties::OpusProperties;
 
@@ -31,14 +32,14 @@ pub struct OpusFile {
 impl AudioFile for OpusFile {
 	type Properties = OpusProperties;
 
-	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
+	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
 		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS)?;
 
 		Ok(Self {
-			properties: if read_properties {properties::read_properties(reader, &file_information.1)? } else { OpusProperties::default() },
+			properties: if parse_options.read_properties { properties::read_properties(reader, &file_information.1)? } else { OpusProperties::default() },
 			#[cfg(feature = "vorbis_comments")]
 			// Safe to unwrap, a metadata packet is mandatory in Opus
 			vorbis_comments_tag: file_information.0.unwrap(),

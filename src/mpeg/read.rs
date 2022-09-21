@@ -10,12 +10,13 @@ use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 use crate::macros::{decode_err, err};
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<MPEGFile>
+pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MPEGFile>
 where
 	R: Read + Seek,
 {
@@ -134,7 +135,7 @@ where
 	let last_frame_offset = reader.stream_position()?;
 	file.properties = MPEGProperties::default();
 
-	if read_properties {
+	if parse_options.read_properties {
 		let first_frame_header = match first_frame_header {
 			Some(header) => header,
 			// The search for sync bits was unsuccessful
