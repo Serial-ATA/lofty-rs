@@ -68,4 +68,32 @@ macro_rules! decode_err {
 	};
 }
 
-pub(crate) use {decode_err, err, try_vec};
+// TODO: document
+macro_rules! parse_mode_choice {
+	(
+		$parse_mode:ident,
+		$(STRICT: $strict_handler:expr,)?
+		$(RELAXED: $relaxed_handler:expr,)?
+		$(DEFAULT: $default:expr)?
+	) => {
+		match $parse_mode {
+			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?
+			$(crate::probe::ParsingMode::Relaxed => { $relaxed_handler },)?
+			_ => { $default }
+		}
+	};
+	(
+		$parse_mode:ident,
+		$(STRICT: $strict_handler:expr,)?
+		$(RELAXED: $relaxed_handler:expr $(,)?)?
+	) => {
+		match $parse_mode {
+			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?
+			$(crate::probe::ParsingMode::Relaxed => { $relaxed_handler },)?
+			#[allow(unreachable_patterns)]
+			_ => { unreachable!() }
+		}
+	};
+}
+
+pub(crate) use {decode_err, err, parse_mode_choice, try_vec};

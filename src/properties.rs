@@ -86,10 +86,10 @@ mod tests {
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
+	use crate::probe::ParseOptions;
 	use crate::wavpack::{WavPackFile, WavPackProperties};
 	use crate::{AudioFile, FileProperties};
 
-	use crate::probe::ParseOptions;
 	use std::fs::File;
 	use std::time::Duration;
 
