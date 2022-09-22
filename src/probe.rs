@@ -454,7 +454,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::MP4 => Mp4File::read_from(reader, options)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
-				FileType::Custom(c) => {
+				FileType::Custom(c) if options.use_custom_resolvers => {
 					if let Some(r) = crate::resolve::lookup_resolver(c) {
 						r.read_from(reader, options)?
 					} else {
@@ -464,6 +464,7 @@ impl<R: Read + Seek> Probe<R> {
 						);
 					}
 				},
+				_ => err!(UnknownFormat),
 			}),
 			None => err!(UnknownFormat),
 		}
