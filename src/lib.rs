@@ -133,6 +133,7 @@
 // TODO: Remove this when Ubuntu has 1.62.0 in its stable repos
 #![allow(clippy::unnecessary_lazy_evaluations)]
 #![allow(
+	unknown_lints,
 	clippy::too_many_lines,
 	clippy::cast_precision_loss,
 	clippy::cast_sign_loss,
@@ -155,7 +156,8 @@
 	clippy::type_complexity,
 	clippy::type_repetition_in_bounds,
 	unused_qualifications,
-	clippy::return_self_not_must_use
+	clippy::return_self_not_must_use,
+	clippy::bool_to_int_with_if
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
