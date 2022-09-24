@@ -29,6 +29,17 @@ pub struct ParseOptions {
 }
 
 impl Default for ParseOptions {
+	/// The default implementation for `ParseOptions`
+	///
+	/// The defaults are as follows:
+	///
+	/// ```rust,ignore
+	/// ParseOptions {
+	/// 	read_properties: true,
+	/// 	use_custom_resolvers: true,
+	/// 	parsing_mode: ParsingMode::Strict,
+	/// }
+	/// ```
 	fn default() -> Self {
 		Self {
 			read_properties: true,
@@ -40,23 +51,62 @@ impl Default for ParseOptions {
 
 impl ParseOptions {
 	/// Creates a new `ParseOptions`, alias for `Default` implementation
+	///
+	/// See also: [`ParseOptions::default`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// let parsing_options = ParseOptions::new();
+	/// ```
 	pub fn new() -> Self {
 		Self::default()
 	}
 
 	/// Whether or not to read the audio properties
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // By default, `read_properties` is enabled. Here, we don't want to read them.
+	/// let parsing_options = ParseOptions::new().read_properties(false);
+	/// ```
 	pub fn read_properties(&mut self, read_properties: bool) -> Self {
 		self.read_properties = read_properties;
 		*self
 	}
 
 	/// Whether or not to check registered custom resolvers
+	///
+	/// See also: [`crate::resolve`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // By default, `use_custom_resolvers` is enabled. Here, we don't want to use them.
+	/// let parsing_options = ParseOptions::new().use_custom_resolvers(false);
+	/// ```
 	pub fn use_custom_resolvers(&mut self, use_custom_resolvers: bool) -> Self {
 		self.use_custom_resolvers = use_custom_resolvers;
 		*self
 	}
 
 	/// The parsing mode to use, see [`ParsingMode`] for details
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{ParseOptions, ParsingMode};
+	///
+	/// // By default, `parsing_mode` is ParsingMode::Strict. Here, we don't need absolute correctness.
+	/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Relaxed);
+	/// ```
 	pub fn parsing_mode(&mut self, parsing_mode: ParsingMode) -> Self {
 		self.parsing_mode = parsing_mode;
 		*self
