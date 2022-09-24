@@ -157,7 +157,6 @@ where
 	let ftyp = verify_mp4(&mut reader)?;
 
 	Moov::find(&mut reader)?;
-	// TODO
 	let moov = Moov::parse(&mut reader, parse_options.read_properties)?;
 
 	let file_length = reader.seek(SeekFrom::End(0))?;
