@@ -25,9 +25,7 @@ struct MyFile {
 
 	// Specify a tag type
 	#[lofty(tag_type = "ID3v2")]
-	// Let's say our file *always* has an ID3v2Tag present,
-	// we can indicate that with this.
-	#[lofty(always_present)]
+	// Let's say our file *always* has an ID3v2Tag present.
 	pub id3v2_tag: ID3v2Tag,
 
 	// Our APE tag is optional in this format, so we wrap it in an `Option`

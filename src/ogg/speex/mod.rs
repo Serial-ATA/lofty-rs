@@ -22,7 +22,6 @@ pub struct SpeexFile {
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
 	#[cfg(feature = "vorbis_comments")]
 	#[lofty(tag_type = "VorbisComments")]
-	#[lofty(always_present)]
 	pub(crate) vorbis_comments_tag: VorbisComments,
 	/// The file's audio properties
 	pub(crate) properties: SpeexProperties,

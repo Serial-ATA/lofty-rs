@@ -230,13 +230,16 @@ fn get_fields<'a>(
 				.filter_map(|a| get_attr_list("cfg", &a).map(|_| a))
 				.collect::<Vec<_>>();
 
+			let option_unwrapped = extract_type_from_option(&field.ty);
+			// `option_unwrapped` will be `Some` if the type was wrapped in an `Option`
+			let needs_option = option_unwrapped.is_some();
+
 			let contents = FieldContents {
 				name,
 				getter_name: get_attr("getter", &field.attrs),
-				ty: extract_type_from_option(&field.ty)
-					.map_or_else(|| field.ty.clone(), |t| t.clone()),
+				ty: option_unwrapped.unwrap_or_else(|| field.ty.clone()),
 				tag_type,
-				needs_option: needs_option(&field.attrs),
+				needs_option,
 				cfg_features: cfg,
 			};
 			tag_fields.push(contents);
@@ -289,16 +292,6 @@ fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::TokenStream>
 	}
 
 	None
-}
-
-fn needs_option(attrs: &[Attribute]) -> bool {
-	for attr in attrs {
-		if has_path_attr(attr, "always_present") {
-			return false;
-		}
-	}
-
-	true
 }
 
 fn should_impl_audiofile(attrs: &[Attribute]) -> bool {
@@ -406,7 +399,7 @@ fn get_getters<'a>(
 }
 
 // https://stackoverflow.com/questions/55271857/how-can-i-get-the-t-from-an-optiont-when-using-syn
-fn extract_type_from_option(ty: &Type) -> Option<&Type> {
+fn extract_type_from_option(ty: &Type) -> Option<Type> {
 	use syn::{GenericArgument, Path, PathArguments, PathSegment};
 
 	fn extract_type_path(ty: &Type) -> Option<&Path> {
@@ -443,7 +436,7 @@ fn extract_type_from_option(ty: &Type) -> Option<&Type> {
 			}
 		})
 		.and_then(|generic_arg| match *generic_arg {
-			GenericArgument::Type(ref ty) => Some(ty),
+			GenericArgument::Type(ref ty) => Some(ty.clone()),
 			_ => None,
 		})
 }
