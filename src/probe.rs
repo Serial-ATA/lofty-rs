@@ -18,7 +18,6 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
-// TODO: docs
 /// Options to control how Lofty parses a file
 #[derive(Copy, Clone, Debug)]
 #[non_exhaustive]
