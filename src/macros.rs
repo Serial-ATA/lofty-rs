@@ -74,7 +74,7 @@ macro_rules! parse_mode_choice {
 		$parse_mode:ident,
 		$(STRICT: $strict_handler:expr,)?
 		$(RELAXED: $relaxed_handler:expr,)?
-		$(DEFAULT: $default:expr)?
+		DEFAULT: $default:expr
 	) => {
 		match $parse_mode {
 			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?

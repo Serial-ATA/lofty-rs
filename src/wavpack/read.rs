@@ -69,7 +69,7 @@ where
 		#[cfg(feature = "ape")]
 		ape_tag,
 		properties: if parse_options.read_properties {
-			super::properties::read_properties(reader, stream_length)?
+			super::properties::read_properties(reader, stream_length, parse_options.parsing_mode)?
 		} else {
 			WavPackProperties::default()
 		},
