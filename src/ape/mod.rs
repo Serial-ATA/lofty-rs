@@ -9,7 +9,6 @@ pub(crate) mod constants;
 pub(crate) mod header;
 mod properties;
 mod read;
-pub(crate) mod write;
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
@@ -35,6 +34,7 @@ pub use properties::ApeProperties;
 /// An APE file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct ApeFile {
 	/// An ID3v1 tag
 	#[cfg(feature = "id3v1")]

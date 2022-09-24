@@ -1,3 +1,4 @@
+mod internal;
 mod util;
 
 use proc_macro::TokenStream;
@@ -5,10 +6,6 @@ use proc_macro2::Span;
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
 use syn::{parse_macro_input, Attribute, Data, DataStruct, DeriveInput, Fields, Ident, Type};
-
-const LOFTY_FILE_TYPES: [&str; 10] = [
-	"AIFF", "APE", "FLAC", "MPEG", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
-];
 
 /// Creates a file usable by Lofty
 ///
@@ -68,9 +65,30 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 	};
 
 	let struct_name = input.ident.clone();
+	let is_internal = input
+		.attrs
+		.iter()
+		.any(|attr| util::has_path_attr(attr, "internal_write_module_do_not_use_anywhere_else"));
 
-	let file_type = match opt_file_type(struct_name.to_string()) {
-		Some(ft) => ft,
+	// TODO: This is not readable in the slightest
+
+	let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
+	if opt_file_type.is_none() && is_internal {
+		// TODO: This is the best check we can do for now I think?
+		//       Definitely needs some work when a better solution comes out.
+		bail!(
+			errors,
+			input.ident.span(),
+			"Attempted to use an internal attribute externally"
+		);
+	}
+
+	let mut id3v2_strippable = false;
+	let file_type = match opt_file_type {
+		Some((ft, id3v2_strip)) => {
+			id3v2_strippable = id3v2_strip;
+			ft
+		},
 		_ => match util::get_attr("file_type", &input.attrs) {
 			Some(rfn) => rfn,
 			_ => {
@@ -168,7 +186,7 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 
 	let getters = get_getters(&tag_fields, &struct_name);
 
-	quote! {
+	let mut ret = quote! {
 		#assert_properties_impl
 
 		#( #assert_tag_impl_into )*
@@ -191,7 +209,21 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 		}
 
 		#( #getters )*
+	};
+
+	// Create `write` module if internal
+	if is_internal {
+		let lookup = internal::init_write_lookup(id3v2_strippable);
+		let write_mod = internal::write_module(&tag_fields, lookup);
+
+		ret = quote! {
+			#ret
+
+			#write_mod
+		}
 	}
+
+	ret
 }
 
 struct FieldContents {
@@ -250,24 +282,6 @@ fn get_fields<'a>(
 	}
 
 	Some((tag_fields, properties_field))
-}
-
-fn opt_file_type(struct_name: String) -> Option<proc_macro2::TokenStream> {
-	let stripped = struct_name.strip_suffix("File");
-	if let Some(prefix) = stripped {
-		if let Some(pos) = LOFTY_FILE_TYPES
-			.iter()
-			.position(|p| p.eq_ignore_ascii_case(prefix))
-		{
-			return Some(
-				LOFTY_FILE_TYPES[pos]
-					.parse::<proc_macro2::TokenStream>()
-					.unwrap(),
-			);
-		}
-	}
-
-	None
 }
 
 fn should_impl_audiofile(attrs: &[Attribute]) -> bool {

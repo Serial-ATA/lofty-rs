@@ -1,7 +1,6 @@
 //! WavPack specific items
 mod properties;
 mod read;
-pub(crate) mod write;
 
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
@@ -14,8 +13,9 @@ use lofty_attr::LoftyFile;
 pub use properties::WavPackProperties;
 
 /// A WavPack file
-#[derive(Default, LoftyFile)]
+#[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct WavPackFile {
 	/// An ID3v1 tag
 	#[cfg(feature = "id3v1")]

@@ -1,6 +1,5 @@
 mod properties;
 mod read;
-pub(crate) mod write;
 
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
@@ -20,6 +19,7 @@ pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 /// A WAV file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct WavFile {
 	/// A RIFF INFO LIST
 	#[cfg(feature = "riff_info_list")]

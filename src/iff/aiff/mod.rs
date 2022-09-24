@@ -1,6 +1,5 @@
 mod properties;
 mod read;
-pub(crate) mod write;
 
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
@@ -18,6 +17,7 @@ cfg_if::cfg_if! {
 /// An AIFF file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct AiffFile {
 	/// Any text chunks included in the file
 	#[cfg(feature = "aiff_text_chunks")]
