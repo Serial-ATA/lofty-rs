@@ -3,6 +3,7 @@
 //! For a full example of a custom resolver, see [this](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver).
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::probe::ParseOptions;
 use crate::tag::TagType;
 
 use std::collections::HashMap;
@@ -39,6 +40,7 @@ type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
 pub(crate) static CUSTOM_RESOLVERS: Lazy<Arc<Mutex<ResolverMap>>> =
 	Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
+// TODO: Just panic in here, rather than return an Option
 pub(crate) fn lookup_resolver(name: &'static str) -> Option<&'static dyn ObjectSafeFileResolver> {
 	let res = CUSTOM_RESOLVERS.lock().ok()?;
 
@@ -57,7 +59,11 @@ pub(crate) trait ObjectSafeFileResolver: Send + Sync {
 	fn guess(&self, buf: &[u8]) -> Option<FileType>;
 
 	// A mask for the `AudioFile::read_from` impl
-	fn read_from(&self, reader: &mut dyn SeekRead, read_properties: bool) -> Result<TaggedFile>;
+	fn read_from(
+		&self,
+		reader: &mut dyn SeekRead,
+		parse_options: ParseOptions,
+	) -> Result<TaggedFile>;
 }
 
 // A fake `FileResolver` implementer, so we don't need to construct the type in `register_custom_resolver`
@@ -79,8 +85,12 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 		T::guess(buf)
 	}
 
-	fn read_from(&self, reader: &mut dyn SeekRead, read_properties: bool) -> Result<TaggedFile> {
-		Ok(<T as AudioFile>::read_from(&mut Box::new(reader), read_properties)?.into())
+	fn read_from(
+		&self,
+		reader: &mut dyn SeekRead,
+		parse_options: ParseOptions,
+	) -> Result<TaggedFile> {
+		Ok(<T as AudioFile>::read_from(&mut Box::new(reader), parse_options)?.into())
 	}
 }
 
@@ -114,6 +124,7 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::ID3v2Tag;
+	use crate::probe::ParseOptions;
 	use crate::resolve::{register_custom_resolver, FileResolver};
 	use crate::{Accessor, FileProperties, FileType, TagType};
 	use lofty_attr::LoftyFile;
@@ -157,7 +168,7 @@ mod tests {
 		#[allow(clippy::unnecessary_wraps)]
 		fn read<R: Read + Seek + ?Sized>(
 			_reader: &mut R,
-			_read_properties: bool,
+			_parse_options: ParseOptions,
 		) -> crate::error::Result<Self> {
 			let mut tag = ID3v2Tag::default();
 			tag.set_artist(String::from("All is well!"));
@@ -174,10 +185,10 @@ mod tests {
 		register_custom_resolver::<MyFile>("MyFile");
 
 		let path = "examples/custom_resolver/test_asset.myfile";
-		let read = crate::read_from_path(path, false).unwrap();
+		let read = crate::read_from_path(path).unwrap();
 		assert_eq!(read.file_type(), FileType::Custom("MyFile"));
 
-		let read_content = crate::read_from(&mut File::open(path).unwrap(), false).unwrap();
+		let read_content = crate::read_from(&mut File::open(path).unwrap()).unwrap();
 		assert_eq!(read_content.file_type(), FileType::Custom("MyFile"));
 
 		assert!(

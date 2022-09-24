@@ -2,7 +2,7 @@ use lofty::ape::ApeTag;
 use lofty::error::Result as LoftyResult;
 use lofty::id3::v2::ID3v2Tag;
 use lofty::resolve::FileResolver;
-use lofty::{FileProperties, FileType, TagType};
+use lofty::{FileProperties, FileType, ParseOptions, TagType};
 use lofty_attr::LoftyFile;
 use std::fs::File;
 
@@ -17,30 +17,30 @@ use std::fs::File;
 #[lofty(file_type = "Custom(\"MyFile\")")]
 struct MyFile {
 	// A file has two requirements, at least one tag field, and a properties field.
-	
+
 	// Tag field requirements:
 	// * Fields *must* end with "_tag" to set them apart from the others.
 	// * The type of the field *must* implement `TagExt`
-	
-	
+
+
 	// Specify a tag type
 	#[lofty(tag_type = "ID3v2")]
 	// Let's say our file *always* has an ID3v2Tag present,
 	// we can indicate that with this.
 	#[lofty(always_present)]
 	pub id3v2_tag: ID3v2Tag,
-	
+
 	// Our APE tag is optional in this format, so we wrap it in an `Option`
 	#[lofty(tag_type = "APE")]
 	pub ape_tag: Option<ApeTag>,
-	
+
 	// The properties field *must* be present and named as such.
 	// The only requirement for this field is that the type *must* implement `Into<FileProperties>`.
 	pub properties: FileProperties,
 }
 
 impl MyFile {
-	pub fn parse_my_file<R>(_reader: &mut R, _read_properties: bool) -> LoftyResult<Self>
+	pub fn parse_my_file<R>(_reader: &mut R, _parse_options: ParseOptions) -> LoftyResult<Self>
 	where
 		R: std::io::Read + std::io::Seek,
 	{
@@ -97,10 +97,10 @@ fn main() {
 	let path = "examples/custom_resolver/test_asset.myfile";
 
 	// Detected from the "myfile" extension
-	let _ = lofty::read_from_path(path, true).unwrap();
+	let _ = lofty::read_from_path(path).unwrap();
 
 	let mut file = File::open(path).unwrap();
 
 	// The file's content starts with "myfiledata"
-	let _ = lofty::read_from(&mut file, true).unwrap();
+	let _ = lofty::read_from(&mut file).unwrap();
 }

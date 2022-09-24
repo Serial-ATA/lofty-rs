@@ -1,9 +1,10 @@
 use crate::error::Result;
+use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
+use crate::resolve::CUSTOM_RESOLVERS;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
 
-use crate::resolve::CUSTOM_RESOLVERS;
 use std::convert::TryInto;
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
@@ -22,7 +23,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// # Errors
 	///
 	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::LoftyError)
-	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
+	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized;
@@ -66,7 +67,7 @@ impl TaggedFile {
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// assert_eq!(tagged_file.file_type(), FileType::MPEG);
 	/// # Ok(()) }
@@ -85,7 +86,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // An MP3 file with 3 tags
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// let tags = tagged_file.tags();
 	///
@@ -107,7 +108,7 @@ impl TaggedFile {
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// assert_eq!(tagged_file.primary_tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
@@ -125,7 +126,7 @@ impl TaggedFile {
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// assert!(tagged_file.supports_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
@@ -144,7 +145,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
 	/// let tag = tagged_file.tag(TagType::ID3v2);
@@ -167,7 +168,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
 	/// let tag = tagged_file.tag(TagType::ID3v2);
@@ -194,7 +195,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
 	/// let tag = tagged_file.primary_tag();
@@ -219,7 +220,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
 	/// let tag = tagged_file.primary_tag_mut();
@@ -245,7 +246,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
-	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
 	/// // A tag of a (currently) unknown type
 	/// let tag = tagged_file.first_tag();
@@ -267,7 +268,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
-	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
 	/// // A tag of a (currently) unknown type
 	/// let tag = tagged_file.first_tag_mut();
@@ -295,7 +296,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file without an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	/// # let _ = tagged_file.take(TagType::ID3v2); // sneaky
 	///
 	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
@@ -330,7 +331,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file containing an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
 	///
@@ -362,7 +363,7 @@ impl TaggedFile {
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file containing an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
 	///
@@ -386,7 +387,7 @@ impl TaggedFile {
 	/// ```rust
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
 	/// tagged_file.clear();
 	///
@@ -452,14 +453,15 @@ impl TaggedFile {
 impl AudioFile for TaggedFile {
 	type Properties = FileProperties;
 
-	fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<Self>
+	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
 		Self: Sized,
 	{
 		crate::probe::Probe::new(reader)
 			.guess_file_type()?
-			.read(read_properties)
+			.options(parse_options)
+			.read()
 	}
 
 	fn properties(&self) -> &Self::Properties {

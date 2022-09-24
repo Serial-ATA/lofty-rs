@@ -1,5 +1,6 @@
 use crate::error::Result;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
+use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -102,7 +103,7 @@ const SAMPLE_RATES: [u32; 16] = [
 ];
 
 #[rustfmt::skip]
-pub(super) fn read_properties<R>(reader: &mut R, stream_length: u64) -> Result<WavPackProperties>
+pub(super) fn read_properties<R>(reader: &mut R, stream_length: u64, parse_mode: ParsingMode) -> Result<WavPackProperties>
 where
 	R: Read + Seek,
 {
@@ -135,8 +136,11 @@ where
 		if sample_rate == 0 || flags & FLAG_DSD == FLAG_DSD {
 			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
 			if reader.read_exact(&mut block_contents).is_err() {
-				// need some warning...
-				break;
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
+					DEFAULT: break
+				);
 			}
 
 			if get_extended_meta_info(reader, &mut properties, block_contents.len() as u64).is_err()
@@ -151,8 +155,11 @@ where
 			if block_header.version < MIN_STREAM_VERSION
 				|| block_header.version > MAX_STREAM_VERSION
 			{
-				// TODO: some warning
-				break;
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: decode_err!(@BAIL WavPack, "Unsupported stream version encountered"),
+					DEFAULT: break
+				);
 			}
 
 			total_samples = block_header.total_samples;
@@ -178,6 +185,11 @@ where
 
 		let file_length = reader.seek(SeekFrom::End(0))?;
 		properties.overall_bitrate = crate::div_ceil(file_length * 8, length) as u32;
+	} else {
+		parse_mode_choice!(
+			parse_mode,
+			STRICT: decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)"),
+		);
 	}
 
 	Ok(properties)

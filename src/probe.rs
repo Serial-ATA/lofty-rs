@@ -18,6 +18,110 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
+/// Options to control how Lofty parses a file
+#[derive(Copy, Clone, Debug)]
+#[non_exhaustive]
+pub struct ParseOptions {
+	pub(crate) read_properties: bool,
+	pub(crate) use_custom_resolvers: bool,
+	pub(crate) parsing_mode: ParsingMode,
+}
+
+impl Default for ParseOptions {
+	/// The default implementation for `ParseOptions`
+	///
+	/// The defaults are as follows:
+	///
+	/// ```rust,ignore
+	/// ParseOptions {
+	/// 	read_properties: true,
+	/// 	use_custom_resolvers: true,
+	/// 	parsing_mode: ParsingMode::Strict,
+	/// }
+	/// ```
+	fn default() -> Self {
+		Self {
+			read_properties: true,
+			use_custom_resolvers: true,
+			parsing_mode: ParsingMode::Strict,
+		}
+	}
+}
+
+impl ParseOptions {
+	/// Creates a new `ParseOptions`, alias for `Default` implementation
+	///
+	/// See also: [`ParseOptions::default`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// let parsing_options = ParseOptions::new();
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
+	/// Whether or not to read the audio properties
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // By default, `read_properties` is enabled. Here, we don't want to read them.
+	/// let parsing_options = ParseOptions::new().read_properties(false);
+	/// ```
+	pub fn read_properties(&mut self, read_properties: bool) -> Self {
+		self.read_properties = read_properties;
+		*self
+	}
+
+	/// Whether or not to check registered custom resolvers
+	///
+	/// See also: [`crate::resolve`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // By default, `use_custom_resolvers` is enabled. Here, we don't want to use them.
+	/// let parsing_options = ParseOptions::new().use_custom_resolvers(false);
+	/// ```
+	pub fn use_custom_resolvers(&mut self, use_custom_resolvers: bool) -> Self {
+		self.use_custom_resolvers = use_custom_resolvers;
+		*self
+	}
+
+	/// The parsing mode to use, see [`ParsingMode`] for details
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{ParseOptions, ParsingMode};
+	///
+	/// // By default, `parsing_mode` is ParsingMode::Strict. Here, we don't need absolute correctness.
+	/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Relaxed);
+	/// ```
+	pub fn parsing_mode(&mut self, parsing_mode: ParsingMode) -> Self {
+		self.parsing_mode = parsing_mode;
+		*self
+	}
+}
+
+/// The parsing strictness mode
+#[derive(Copy, Clone, Debug)]
+#[non_exhaustive]
+pub enum ParsingMode {
+	/// The default mode, will eagerly error on invalid input
+	Strict,
+	/// Less eager to error, may produce invalid output
+	Relaxed,
+}
+
 /// A format agnostic reader
 ///
 /// This provides a way to determine the [`FileType`] of a reader, for when a concrete
@@ -76,6 +180,7 @@ use std::path::Path;
 /// ```
 pub struct Probe<R: Read> {
 	inner: R,
+	options: Option<ParseOptions>,
 	f_ty: Option<FileType>,
 }
 
@@ -103,6 +208,7 @@ impl<R: Read> Probe<R> {
 	pub fn new(reader: R) -> Self {
 		Self {
 			inner: reader,
+			options: None,
 			f_ty: None,
 		}
 	}
@@ -132,6 +238,7 @@ impl<R: Read> Probe<R> {
 	pub fn with_file_type(reader: R, file_type: FileType) -> Self {
 		Self {
 			inner: reader,
+			options: None,
 			f_ty: Some(file_type),
 		}
 	}
@@ -173,6 +280,28 @@ impl<R: Read> Probe<R> {
 	/// ```
 	pub fn set_file_type(&mut self, file_type: FileType) {
 		self.f_ty = Some(file_type)
+	}
+
+	/// Set the [`ParseOptions`] for the Probe
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{ParseOptions, Probe};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let reader = std::io::Cursor::new(&[]);
+	/// // By default, properties will be read.
+	/// // In this example, we want to turn this off.
+	/// let options = ParseOptions::new().read_properties(false);
+	///
+	/// let probe = Probe::new(reader).options(options);
+	/// # Ok(()) }
+	/// ```
+	#[must_use]
+	pub fn options(mut self, options: ParseOptions) -> Self {
+		self.options = Some(options);
+		self
 	}
 
 	/// Extract the reader
@@ -224,6 +353,7 @@ impl Probe<BufReader<File>> {
 
 		Ok(Self {
 			inner: BufReader::new(File::open(path)?),
+			options: None,
 			f_ty: FileType::from_path(path),
 		})
 	}
@@ -354,27 +484,28 @@ impl<R: Read + Seek> Probe<R> {
 	/// # let reader = std::io::BufReader::new(file);
 	/// let probe = Probe::new(reader).guess_file_type()?;
 	///
-	/// let parsed_file = probe.read(true)?;
+	/// let parsed_file = probe.read()?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read(mut self, read_properties: bool) -> Result<TaggedFile> {
+	pub fn read(mut self) -> Result<TaggedFile> {
 		let reader = &mut self.inner;
+		let options = self.options.unwrap_or_default();
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
-				FileType::AIFF => AiffFile::read_from(reader, read_properties)?.into(),
-				FileType::APE => ApeFile::read_from(reader, read_properties)?.into(),
-				FileType::FLAC => FlacFile::read_from(reader, read_properties)?.into(),
-				FileType::MPEG => MPEGFile::read_from(reader, read_properties)?.into(),
-				FileType::Opus => OpusFile::read_from(reader, read_properties)?.into(),
-				FileType::Vorbis => VorbisFile::read_from(reader, read_properties)?.into(),
-				FileType::WAV => WavFile::read_from(reader, read_properties)?.into(),
-				FileType::MP4 => Mp4File::read_from(reader, read_properties)?.into(),
-				FileType::Speex => SpeexFile::read_from(reader, read_properties)?.into(),
-				FileType::WavPack => WavPackFile::read_from(reader, read_properties)?.into(),
-				FileType::Custom(c) => {
+				FileType::AIFF => AiffFile::read_from(reader, options)?.into(),
+				FileType::APE => ApeFile::read_from(reader, options)?.into(),
+				FileType::FLAC => FlacFile::read_from(reader, options)?.into(),
+				FileType::MPEG => MPEGFile::read_from(reader, options)?.into(),
+				FileType::Opus => OpusFile::read_from(reader, options)?.into(),
+				FileType::Vorbis => VorbisFile::read_from(reader, options)?.into(),
+				FileType::WAV => WavFile::read_from(reader, options)?.into(),
+				FileType::MP4 => Mp4File::read_from(reader, options)?.into(),
+				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
+				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
+				FileType::Custom(c) if options.use_custom_resolvers => {
 					if let Some(r) = crate::resolve::lookup_resolver(c) {
-						r.read_from(reader, read_properties)?
+						r.read_from(reader, options)?
 					} else {
 						panic!(
 							"Encountered an unregistered custom `FileType` named `{}`",
@@ -382,6 +513,7 @@ impl<R: Read + Seek> Probe<R> {
 						);
 					}
 				},
+				_ => err!(UnknownFormat),
 			}),
 			None => err!(UnknownFormat),
 		}
@@ -407,13 +539,11 @@ impl<R: Read + Seek> Probe<R> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 /// let mut file = File::open(path)?;
 ///
-/// let parsed_file = read_from(&mut file, true)?;
+/// let parsed_file = read_from(&mut file)?;
 /// # Ok(()) }
 /// ```
-pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
-	Probe::new(BufReader::new(file))
-		.guess_file_type()?
-		.read(read_properties)
+pub fn read_from(file: &mut File) -> Result<TaggedFile> {
+	Probe::new(BufReader::new(file)).guess_file_type()?.read()
 }
 
 /// Read a [`TaggedFile`] from a path
@@ -434,14 +564,14 @@ pub fn read_from(file: &mut File, read_properties: bool) -> Result<TaggedFile> {
 ///
 /// # fn main() -> lofty::Result<()> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
-/// let parsed_file = read_from_path(path, true)?;
+/// let parsed_file = read_from_path(path)?;
 /// # Ok(()) }
 /// ```
-pub fn read_from_path<P>(path: P, read_properties: bool) -> Result<TaggedFile>
+pub fn read_from_path<P>(path: P) -> Result<TaggedFile>
 where
 	P: AsRef<Path>,
 {
-	Probe::open(path)?.read(read_properties)
+	Probe::open(path)?.read()
 }
 
 #[cfg(test)]

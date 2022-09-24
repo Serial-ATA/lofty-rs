@@ -1,12 +1,15 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{FileType, ItemKey, ItemValue, TagExt, TagItem, TagType};
+use lofty::{FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType};
 use std::io::{Seek, Write};
 
 #[test]
 fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
-	let file =
-		lofty::read_from_path("tests/files/assets/minimal/wav_format_pcm.wav", false).unwrap();
+	let file = Probe::open("tests/files/assets/minimal/wav_format_pcm.wav")
+		.unwrap()
+		.options(ParseOptions::new().read_properties(false))
+		.read()
+		.unwrap();
 
 	assert_eq!(file.file_type(), FileType::WAV);
 
@@ -21,7 +24,12 @@ fn read() {
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/wav_format_pcm.wav");
 
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	assert_eq!(tagged_file.file_type(), FileType::WAV);
 
@@ -33,7 +41,12 @@ fn write() {
 
 	// Now reread the file
 	file.rewind().unwrap();
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 

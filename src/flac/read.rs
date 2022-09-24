@@ -5,6 +5,7 @@ use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
+use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 #[cfg(feature = "vorbis_comments")]
 use crate::{
@@ -34,7 +35,7 @@ where
 	Ok(block)
 }
 
-pub(crate) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<FlacFile>
+pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<FlacFile>
 where
 	R: Read + Seek,
 {
@@ -105,7 +106,7 @@ where
 		(end - current, end)
 	};
 
-	flac_file.properties = if read_properties {
+	flac_file.properties = if parse_options.read_properties {
 		super::properties::read_properties(&mut &*stream_info.content, stream_length, file_length)?
 	} else {
 		FileProperties::default()

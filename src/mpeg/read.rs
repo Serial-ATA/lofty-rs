@@ -10,12 +10,13 @@ use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 use crate::macros::{decode_err, err};
+use crate::probe::{ParseOptions, ParsingMode};
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, read_properties: bool) -> Result<MPEGFile>
+pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MPEGFile>
 where
 	R: Read + Seek,
 {
@@ -86,7 +87,9 @@ where
 				reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 
 				#[allow(clippy::used_underscore_binding)]
-				if let Some((_first_first_header, _first_frame_offset)) = find_next_frame(reader)? {
+				if let Some((_first_first_header, _first_frame_offset)) =
+					find_next_frame(reader, parse_options.parsing_mode)?
+				{
 					first_frame_offset = _first_frame_offset;
 					first_frame_header = Some(_first_first_header);
 					break;
@@ -134,7 +137,7 @@ where
 	let last_frame_offset = reader.stream_position()?;
 	file.properties = MPEGProperties::default();
 
-	if read_properties {
+	if parse_options.read_properties {
 		let first_frame_header = match first_frame_header {
 			Some(header) => header,
 			// The search for sync bits was unsuccessful
@@ -154,13 +157,14 @@ where
 		let mut xing_reader = [0; 32];
 		reader.read_exact(&mut xing_reader)?;
 
-		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
+		let xing_header = XingHeader::read(&mut &xing_reader[..], parse_options.parsing_mode)?;
 
 		let file_length = reader.seek(SeekFrom::End(0))?;
 
 		super::properties::read_properties(
 			&mut file.properties,
 			reader,
+			parse_options,
 			(first_frame_header, first_frame_offset),
 			last_frame_offset,
 			xing_header,
@@ -172,7 +176,7 @@ where
 }
 
 // Searches for the next frame, comparing it to the following one
-fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
+fn find_next_frame<R>(reader: &mut R, parsing_mode: ParsingMode) -> Result<Option<(Header, u64)>>
 where
 	R: Read + Seek,
 {
@@ -185,7 +189,7 @@ where
 		reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 		let first_header_data = reader.read_u32::<BigEndian>()?;
 
-		if let Some(first_header) = Header::read(first_header_data) {
+		if let Some(first_header) = Header::read(first_header_data, parsing_mode)? {
 			match cmp_header(reader, first_header.len, first_header_data) {
 				HeaderCmpResult::Equal => {
 					return Ok(Some((first_header, first_mp3_frame_start_absolute)))

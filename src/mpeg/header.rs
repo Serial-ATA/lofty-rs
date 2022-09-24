@@ -1,6 +1,7 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
 use crate::error::Result;
-use crate::macros::decode_err;
+use crate::macros::{decode_err, parse_mode_choice};
+use crate::probe::ParsingMode;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -189,19 +190,12 @@ pub(crate) struct Header {
 }
 
 impl Header {
-	pub(super) fn read(data: u32) -> Option<Self> {
+	pub(super) fn read(data: u32, parse_mode: ParsingMode) -> Result<Option<Self>> {
 		let version = match (data >> 19) & 0b11 {
 			0 => MpegVersion::V2_5,
 			2 => MpegVersion::V2,
 			3 => MpegVersion::V1,
-			_ => {
-				return None;
-				// return Err(FileDecodingError::new(
-				// 	FileType::MP3,
-				// 	"Frame header has an invalid version",
-				// )
-				// .into())
-			},
+			_ => return Ok(None),
 		};
 
 		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
@@ -211,12 +205,11 @@ impl Header {
 			2 => Layer::Layer2,
 			3 => Layer::Layer1,
 			_ => {
-				return None;
-				// return Err(FileDecodingError::new(
-				// 	FileType::MP3,
-				// 	"Frame header uses a reserved layer",
-				// )
-				// .into())
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: decode_err!(@BAIL MPEG, "Frame header uses a reserved layer"),
+					RELAXED: return Ok(None)
+				);
 			},
 		};
 
@@ -240,14 +233,14 @@ impl Header {
 		let bitrate_index = (data >> 12) & 0xF;
 		header.bitrate = BITRATES[version_index][layer_index][bitrate_index as usize];
 		if header.bitrate == 0 {
-			return None;
+			return Ok(None);
 		}
 
 		// Sample rate index
 		let sample_rate_index = (data >> 10) & 0b11;
 		header.sample_rate = match sample_rate_index {
 			// This is invalid
-			3 => return None,
+			3 => return Ok(None),
 			_ => SAMPLE_RATES[header.version as usize][sample_rate_index as usize],
 		};
 
@@ -288,7 +281,7 @@ impl Header {
 		header.len =
 			(u32::from(header.samples) * header.bitrate * 125 / header.sample_rate) + padding;
 
-		Some(header)
+		Ok(Some(header))
 	}
 }
 
@@ -298,7 +291,7 @@ pub(super) struct XingHeader {
 }
 
 impl XingHeader {
-	pub(super) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
+	pub(super) fn read(reader: &mut &[u8], parse_mode: ParsingMode) -> Result<Option<Self>> {
 		let reader_len = reader.len();
 
 		let mut header = [0; 4];
@@ -314,13 +307,11 @@ impl XingHeader {
 				reader.read_exact(&mut flags)?;
 
 				if flags[3] & 0x03 != 0x03 {
-					return Ok(None);
-					// TODO: Debug message?
-					// 	return Err(FileDecodingError::new(
-					// 		FileType::MP3,
-					// 		"Xing header doesn't have required flags set (0x0001 and 0x0002)",
-					// 	)
-					// 	.into());
+					parse_mode_choice!(
+						parse_mode,
+						STRICT: decode_err!(@BAIL MPEG, "Xing header doesn't have required flags set (0x0001 and 0x0002)"),
+						RELAXED: return Ok(None)
+					);
 				}
 
 				let frames = reader.read_u32::<BigEndian>()?;

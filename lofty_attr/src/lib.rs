@@ -130,11 +130,11 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 			impl lofty::AudioFile for #struct_name {
 				type Properties = #properties_field_ty;
 
-				fn read_from<R>(reader: &mut R, read_properties: bool) -> lofty::error::Result<Self>
+				fn read_from<R>(reader: &mut R, parse_options: lofty::ParseOptions) -> lofty::error::Result<Self>
 				where
 					R: std::io::Read + std::io::Seek,
 				{
-					#read_fn(reader, read_properties)
+					#read_fn(reader, parse_options)
 				}
 
 				fn properties(&self) -> &Self::Properties {

@@ -7,6 +7,7 @@ use crate::error::Result;
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -30,7 +31,7 @@ where
 	Ok(())
 }
 
-pub(super) fn read_from<R>(data: &mut R, read_properties: bool) -> Result<WavFile>
+pub(super) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<WavFile>
 where
 	R: Read + Seek,
 {
@@ -54,21 +55,21 @@ where
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
-			b"fmt " if read_properties => {
+			b"fmt " if parse_options.read_properties => {
 				if fmt.is_empty() {
 					fmt = chunks.content(data)?;
 				} else {
 					chunks.skip(data)?;
 				}
 			},
-			b"fact" if read_properties => {
+			b"fact" if parse_options.read_properties => {
 				if total_samples == 0 {
 					total_samples = data.read_u32::<LittleEndian>()?;
 				} else {
 					data.seek(SeekFrom::Current(4))?;
 				}
 			},
-			b"data" if read_properties => {
+			b"data" if parse_options.read_properties => {
 				if stream_len == 0 {
 					stream_len += chunks.size
 				}
@@ -97,7 +98,7 @@ where
 		}
 	}
 
-	let properties = if read_properties {
+	let properties = if parse_options.read_properties {
 		if fmt.len() < 16 {
 			decode_err!(@BAIL WAV, "File does not contain a valid \"fmt \" chunk");
 		}

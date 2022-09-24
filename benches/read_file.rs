@@ -1,4 +1,4 @@
-use lofty::Probe;
+use lofty::{ParseOptions, Probe};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -15,9 +15,10 @@ macro_rules! test_read_file {
 				stringify!($NAME),
 				|b| b.iter(|| {
 					Probe::new(Cursor::new($NAME))
+					.options(ParseOptions::new())
 					.guess_file_type()
 					.unwrap()
-					.read(true)
+					.read()
 					.unwrap()
 				})
 			);

@@ -1,12 +1,15 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{FileType, ItemKey, ItemValue, TagExt, TagItem, TagType};
+use lofty::{FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType};
 use std::io::{Seek, Write};
 
 #[test]
 fn read() {
 	// This file contains an ilst atom
-	let file =
-		lofty::read_from_path("tests/files/assets/minimal/m4a_codec_aac.m4a", false).unwrap();
+	let file = Probe::open("tests/files/assets/minimal/m4a_codec_aac.m4a")
+		.unwrap()
+		.options(ParseOptions::new().read_properties(false))
+		.read()
+		.unwrap();
 
 	assert_eq!(file.file_type(), FileType::MP4);
 
@@ -18,7 +21,12 @@ fn read() {
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	assert_eq!(tagged_file.file_type(), FileType::MP4);
 
@@ -28,7 +36,12 @@ fn write() {
 	// Now reread the file
 	file.rewind().unwrap();
 
-	let mut tagged_file = lofty::read_from(&mut file, false).unwrap();
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::MP4ilst, "Bar artist", 1 => file, "Foo artist");
 }
