@@ -114,6 +114,8 @@ pub enum MpegVersion {
 	V1,
 	V2,
 	V2_5,
+	/// Exclusive to AAC
+	V4,
 }
 
 impl Default for MpegVersion {

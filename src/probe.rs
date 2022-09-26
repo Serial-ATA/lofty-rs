@@ -432,6 +432,17 @@ impl<R: Read + Seek> Probe<R> {
 					b"fLaC" => Ok(Some(FileType::FLAC)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
+						// Seek back to the start of the frame sync to check if we are dealing with
+						// an AAC or MPEG file. See `FileType::quick_type_guess` for explanation.
+						self.inner.seek(SeekFrom::Current(-2))?;
+
+						let mut buf = [0; 2];
+						self.inner.read_exact(&mut buf)?;
+
+						if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
+							return Ok(Some(FileType::AAC));
+						}
+
 						Ok(Some(FileType::MPEG))
 					},
 					_ => Ok(None),
@@ -619,6 +630,16 @@ mod tests {
 	fn test_probe_path(path: &str, expected_file_type_guess: FileType) {
 		let probe = Probe::open(path).unwrap();
 		assert_eq!(probe.file_type(), Some(expected_file_type_guess));
+	}
+
+	#[test]
+	fn probe_aac() {
+		test_probe("tests/files/assets/minimal/untagged.aac", FileType::AAC);
+	}
+
+	#[test]
+	fn probe_aac_with_id3v2() {
+		test_probe("tests/files/assets/minimal/full_test.aac", FileType::AAC);
 	}
 
 	#[test]

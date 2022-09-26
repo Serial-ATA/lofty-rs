@@ -166,6 +166,7 @@
 extern crate self as lofty;
 pub(crate) mod _this_is_internal {}
 
+pub mod aac;
 pub mod ape;
 pub mod error;
 pub(crate) mod file;
