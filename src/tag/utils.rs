@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
-use crate::{ape, flac, iff, mpeg, wavpack};
+use crate::{aac, ape, flac, iff, mpeg, wavpack};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -25,6 +25,7 @@ use std::io::Write;
 #[allow(unreachable_patterns)]
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
 	match file_type {
+		FileType::AAC => aac::write::write_to(file, tag),
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
 		FileType::APE => ape::write::write_to(file, tag),
 		FileType::FLAC => flac::write::write_to(file, tag),

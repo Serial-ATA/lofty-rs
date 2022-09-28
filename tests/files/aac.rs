@@ -54,7 +54,6 @@ fn read_with_junk_bytes_between_frames() {
 }
 
 #[test]
-#[ignore]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.aac");
 

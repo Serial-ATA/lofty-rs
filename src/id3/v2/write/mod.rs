@@ -8,6 +8,7 @@ use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::util::synch_u32;
+use crate::id3::v2::ID3v2Tag;
 use crate::macros::err;
 use crate::probe::Probe;
 
@@ -15,7 +16,6 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
 
-use crate::id3::v2::ID3v2Tag;
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header

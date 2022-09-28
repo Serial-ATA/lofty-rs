@@ -441,10 +441,10 @@ impl<R: Read + Seek> Probe<R> {
 						self.inner.read_exact(&mut buf)?;
 
 						if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
-							return Ok(Some(FileType::AAC));
+							Ok(Some(FileType::AAC))
+						} else {
+							Ok(Some(FileType::MPEG))
 						}
-
-						Ok(Some(FileType::MPEG))
 					},
 					_ => Ok(None),
 				};

@@ -568,11 +568,7 @@ impl FileType {
 				true
 			},
 			#[cfg(feature = "ape")]
-			FileType::APE | FileType::MPEG | FileType::WavPack | FileType::AAC
-				if tag_type == TagType::APE =>
-			{
-				true
-			},
+			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::APE => true,
 			#[cfg(feature = "vorbis_comments")]
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
