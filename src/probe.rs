@@ -1,3 +1,4 @@
+use crate::aac::AACFile;
 use crate::ape::ApeFile;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
@@ -504,6 +505,7 @@ impl<R: Read + Seek> Probe<R> {
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
+				FileType::AAC => AACFile::read_from(reader, options)?.into(),
 				FileType::AIFF => AiffFile::read_from(reader, options)?.into(),
 				FileType::APE => ApeFile::read_from(reader, options)?.into(),
 				FileType::FLAC => FlacFile::read_from(reader, options)?.into(),
