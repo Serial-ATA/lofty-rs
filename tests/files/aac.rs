@@ -4,8 +4,6 @@ use lofty::{
 };
 use std::io::{Seek, Write};
 
-// TODO
-
 #[test]
 fn read() {
 	// Here we have an AAC file with an ID3v2, and an ID3v1 tag
@@ -87,13 +85,11 @@ fn write() {
 }
 
 #[test]
-#[ignore]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aac", TagType::ID3v2);
 }
 
 #[test]
-#[ignore]
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aac", TagType::ID3v1);
 }
