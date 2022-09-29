@@ -6,40 +6,35 @@ use crate::macros::err;
 use crate::probe::Probe;
 
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::{Cursor, Seek, Write};
 
 use byteorder::WriteBytesExt;
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v1(writer: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()> {
-	let probe = Probe::new(writer).guess_file_type()?;
+pub(crate) fn write_id3v1(file: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()> {
+	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {
 		Some(FileType::APE | FileType::MPEG | FileType::WavPack) => {},
 		_ => err!(UnsupportedTag),
 	}
 
-	let writer = probe.into_inner();
+	let file = probe.into_inner();
 
 	// This will seek us to the writing position
-	let ID3FindResults(header, _) = find_id3v1(writer, false)?;
+	let ID3FindResults(header, _) = find_id3v1(file, false)?;
 
 	if tag.is_empty() && header.is_some() {
-		writer.rewind()?;
-
-		let mut file_bytes = Vec::new();
-		writer.read_to_end(&mut file_bytes)?;
-
-		writer.rewind()?;
-		writer.set_len(0)?;
-		writer.write_all(&file_bytes[..file_bytes.len() - 128])?;
+		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
+		// shrink it down.
+		file.set_len(file.metadata()?.len().saturating_sub(128))?;
 
 		return Ok(());
 	}
 
 	let tag = encode(tag)?;
 
-	writer.write_all(&tag)?;
+	file.write_all(&tag)?;
 
 	Ok(())
 }
