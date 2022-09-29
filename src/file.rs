@@ -496,15 +496,14 @@ pub enum FileType {
 }
 
 impl FileType {
-	#[allow(unreachable_patterns, clippy::match_same_arms)]
 	/// Returns the file type's "primary" [`TagType`], or the one most likely to be used in the target format
 	///
-	/// | [`FileType`]             | [`TagType`]      |
-	/// |--------------------------|------------------|
-	/// | `AIFF`, `MP3`, `WAV`     | `Id3v2`          |
-	/// | `APE` , `WavPack`        | `Ape`            |
-	/// | `FLAC`, `Opus`, `Vorbis` | `VorbisComments` |
-	/// | `MP4`                    | `Mp4Ilst`        |
+	/// | [`FileType`]                      | [`TagType`]      |
+	/// |-----------------------------------|------------------|
+	/// | `AIFF`, `MP3`, `WAV`              | `ID3v2`          |
+	/// | `APE` , `WavPack`                 | `APE`            |
+	/// | `FLAC`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
+	/// | `MP4`                             | `MP4ilst`        |
 	///
 	/// # Panics
 	///
@@ -520,17 +519,7 @@ impl FileType {
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			#[cfg(all(not(feature = "id3v2"), feature = "aiff_text_chunks"))]
-			FileType::AIFF => TagType::AIFFText,
-			#[cfg(all(not(feature = "id3v2"), feature = "riff_info_list"))]
-			FileType::WAV => TagType::RIFFInfo,
-			#[cfg(all(not(feature = "id3v2"), feature = "id3v1"))]
-			FileType::MPEG => TagType::ID3v1,
-			#[cfg(all(not(feature = "id3v2"), not(feature = "id3v1"), feature = "ape"))]
-			FileType::MPEG => TagType::APE,
 			FileType::AIFF | FileType::MPEG | FileType::WAV => TagType::ID3v2,
-			#[cfg(all(not(feature = "ape"), feature = "id3v1"))]
-			FileType::MPEG | FileType::WavPack => TagType::ID3v1,
 			FileType::APE | FileType::WavPack => TagType::APE,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
@@ -550,6 +539,10 @@ impl FileType {
 	}
 
 	/// Returns if the target `FileType` supports a [`TagType`]
+	///
+	/// NOTE: This is feature dependent, meaning if you do not have the
+	///       `id3v2` feature enabled, [`FileType::MPEG`] will return `false` for
+	///        [`TagType::ID3v2`].
 	///
 	/// # Panics
 	///
