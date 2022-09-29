@@ -5,7 +5,7 @@ use crate::properties::FileProperties;
 use std::time::Duration;
 
 /// An AAC file's audio properties
-#[derive(Default, Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct AACProperties {
 	pub(crate) version: MpegVersion,
 	pub(crate) audio_object_type: AudioObjectType,

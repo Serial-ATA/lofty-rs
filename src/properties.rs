@@ -78,6 +78,7 @@ impl FileProperties {
 
 #[cfg(test)]
 mod tests {
+	use crate::aac::{AACFile, AACProperties};
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::FlacFile;
 	use crate::iff::aiff::AiffFile;
@@ -97,6 +98,18 @@ mod tests {
 	// These values are taken from FFmpeg's ffprobe
 	// There is a chance they will be +/- 1, anything greater (for real world files)
 	// is an issue.
+
+	const AAC_PROPERTIES: AACProperties = AACProperties {
+		version: MpegVersion::V4,
+		audio_object_type: AudioObjectType::AacLowComplexity,
+		duration: Duration::from_millis(1370),
+		overall_bitrate: 126,
+		audio_bitrate: 126,
+		sample_rate: 48000,
+		channels: 2,
+		copyright: false,
+		original: false,
+	};
 
 	const AIFF_PROPERTIES: FileProperties = FileProperties {
 		duration: Duration::from_millis(1428),
@@ -279,6 +292,15 @@ mod tests {
 		let audio_file = T::read_from(&mut f, ParseOptions::default()).unwrap();
 
 		audio_file.properties().clone()
+	}
+
+	#[test]
+	#[ignore]
+	fn aac_properties() {
+		assert_eq!(
+			get_properties::<AACFile>("tests/files/assets/minimal/full_test.aac"),
+			AAC_PROPERTIES
+		);
 	}
 
 	#[test]
