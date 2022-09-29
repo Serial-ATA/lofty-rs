@@ -3,7 +3,6 @@ mod constants;
 pub(crate) mod header;
 mod properties;
 mod read;
-pub(crate) mod write;
 
 pub use header::{ChannelMode, Emphasis, Layer, MpegVersion};
 pub use properties::MPEGProperties;
@@ -20,6 +19,7 @@ use lofty_attr::LoftyFile;
 /// An MPEG file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct MPEGFile {
 	/// An ID3v2 tag
 	#[cfg(feature = "id3v2")]
