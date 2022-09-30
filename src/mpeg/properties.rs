@@ -1,7 +1,6 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
 use crate::error::Result;
 use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult};
-use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -105,7 +104,6 @@ impl MPEGProperties {
 pub(super) fn read_properties<R>(
 	properties: &mut MPEGProperties,
 	reader: &mut R,
-	parse_options: ParseOptions,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,
 	xing_header: Option<XingHeader>,
@@ -157,9 +155,7 @@ where
 						last_frame_offset = reader.stream_position()?;
 						let last_frame_data = reader.read_u32::<BigEndian>()?;
 
-						if let Some(last_frame_header) =
-							Header::read(last_frame_data, parse_options.parsing_mode)?
-						{
+						if let Some(last_frame_header) = Header::read(last_frame_data) {
 							match cmp_header(reader, last_frame_header.len, last_frame_data) {
 								HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
 									last_frame = Some(last_frame_header);

@@ -526,14 +526,8 @@ impl FileType {
 			},
 			FileType::MP4 => TagType::MP4ilst,
 			FileType::Custom(c) => {
-				if let Some(r) = crate::resolve::lookup_resolver(c) {
-					r.primary_tag_type()
-				} else {
-					panic!(
-						"Encountered an unregistered custom `FileType` named `{}`",
-						c
-					);
-				}
+				let resolver = crate::resolve::lookup_resolver(c);
+				resolver.primary_tag_type()
 			},
 		}
 	}
@@ -579,14 +573,8 @@ impl FileType {
 			#[cfg(feature = "riff_info_list")]
 			FileType::WAV => tag_type == TagType::RIFFInfo,
 			FileType::Custom(c) => {
-				if let Some(r) = crate::resolve::lookup_resolver(c) {
-					r.supported_tag_types().contains(&tag_type)
-				} else {
-					panic!(
-						"Encountered an unregistered custom `FileType` named `{}`",
-						c
-					);
-				}
+				let resolver = crate::resolve::lookup_resolver(c);
+				resolver.supported_tag_types().contains(&tag_type)
 			},
 			_ => false,
 		}

@@ -40,11 +40,17 @@ type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
 pub(crate) static CUSTOM_RESOLVERS: Lazy<Arc<Mutex<ResolverMap>>> =
 	Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 
-// TODO: Just panic in here, rather than return an Option
-pub(crate) fn lookup_resolver(name: &'static str) -> Option<&'static dyn ObjectSafeFileResolver> {
-	let res = CUSTOM_RESOLVERS.lock().ok()?;
+pub(crate) fn lookup_resolver(name: &'static str) -> &'static dyn ObjectSafeFileResolver {
+	let res = CUSTOM_RESOLVERS.lock().unwrap();
 
-	res.get(name).copied()
+	if let Some(resolver) = res.get(name).copied() {
+		return resolver;
+	}
+
+	panic!(
+		"Encountered an unregistered custom `FileType` named `{}`",
+		name
+	);
 }
 
 // A `Read + Seek` supertrait for use in [`ObjectSafeFileResolver::read_from`]

@@ -503,17 +503,14 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::MP4 => Mp4File::read_from(reader, options)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
-				FileType::Custom(c) if options.use_custom_resolvers => {
-					if let Some(r) = crate::resolve::lookup_resolver(c) {
-						r.read_from(reader, options)?
-					} else {
-						panic!(
-							"Encountered an unregistered custom `FileType` named `{}`",
-							c
-						);
+				FileType::Custom(c) => {
+					if !options.use_custom_resolvers {
+						err!(UnknownFormat)
 					}
+
+					let resolver = crate::resolve::lookup_resolver(c);
+					resolver.read_from(reader, options)?
 				},
-				_ => err!(UnknownFormat),
 			}),
 			None => err!(UnknownFormat),
 		}
