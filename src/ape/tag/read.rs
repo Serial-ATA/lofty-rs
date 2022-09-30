@@ -48,8 +48,8 @@ where
 		let read_only = (flags & 1) == 1;
 		let item_type = (flags >> 1) & 3;
 
-		// TODO: This could use a warning
 		if value_size == 0 || key.len() < 2 || key.len() > 255 {
+			log::debug!("APE: Encountered invalid item key ({})", key);
 			continue;
 		}
 

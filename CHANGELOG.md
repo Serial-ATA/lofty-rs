@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       `read_properties`, specified with a `bool` in `read_from{_path}`. This will now default to `true`,
       and can be overridden when using `Probe`.
 - **FileProperties**: `FileProperties::new`
+- Debug logging via the [log](crates.io/crates/log) crate for exposing recoverable errors.
 
 ### Changed
 - **ID3v2**: Frame/tag flags with optional additional data are now `Option<T>` instead of `(bool, T)`

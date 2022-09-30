@@ -19,7 +19,10 @@ byteorder = "1.4.3"
 cfg-if = "1.0.0"
 # ID3 compressed frames
 flate2 = { version = "1.0.24", optional = true }
+# Proc macros
 lofty_attr = { path = "lofty_attr" }
+# Debug logging
+log = "0.4.17"
 # OGG Vorbis/Opus
 ogg_pager = "0.3.2"
 # Key maps
