@@ -1,5 +1,7 @@
 //! AAC (ADTS) specific items
 
+// TODO: Currently we only support ADTS, might want to look into ADIF in the future.
+
 mod header;
 mod properties;
 mod read;
