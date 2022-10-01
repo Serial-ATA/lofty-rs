@@ -1,5 +1,6 @@
 //! AAC (ADTS) specific items
 
+mod header;
 mod properties;
 mod read;
 

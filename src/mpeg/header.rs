@@ -70,39 +70,49 @@ where
 	ret
 }
 
-pub(super) enum HeaderCmpResult {
+pub(crate) enum HeaderCmpResult {
 	Equal,
 	Undetermined,
 	NotEqual,
 }
 
-pub(super) fn cmp_header<R>(
+// Used to compare the versions, layers, and sample rates of two frame headers.
+// If they aren't equal, something is broken.
+pub(super) const HEADER_MASK: u32 = 0xFFFE_0C00;
+
+pub(crate) fn cmp_header<R>(
 	reader: &mut R,
+	header_size: u32,
 	first_header_len: u32,
 	first_header_bytes: u32,
+	header_mask: u32,
 ) -> HeaderCmpResult
 where
 	R: Read + Seek,
 {
-	// Used to compare the versions, layers, and sample rates of two frame headers.
-	// If they aren't equal, something is broken.
-	const HEADER_MASK: u32 = 0xFFFE_0C00;
-
 	// Read the next header and see if they are the same
 	let res = reader.seek(SeekFrom::Current(i64::from(
-		first_header_len.saturating_sub(4),
+		first_header_len.saturating_sub(header_size),
 	)));
 	if res.is_err() {
 		return HeaderCmpResult::Undetermined;
 	}
 
-	match reader.read_u32::<BigEndian>() {
+	let second_header_data = reader.read_u32::<BigEndian>();
+	if second_header_data.is_err() {
+		return HeaderCmpResult::Undetermined;
+	}
+
+	if reader.seek(SeekFrom::Current(-4)).is_err() {
+		return HeaderCmpResult::Undetermined;
+	}
+
+	match second_header_data {
 		Ok(second_header_data)
-			if first_header_bytes & HEADER_MASK == second_header_data & HEADER_MASK =>
+			if first_header_bytes & header_mask == second_header_data & header_mask =>
 		{
 			HeaderCmpResult::Equal
 		},
-		Err(_) => HeaderCmpResult::Undetermined,
 		_ => HeaderCmpResult::NotEqual,
 	}
 }

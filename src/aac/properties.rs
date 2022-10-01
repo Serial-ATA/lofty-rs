@@ -1,3 +1,4 @@
+use crate::aac::header::ADTSHeader;
 use crate::mp4::AudioObjectType;
 use crate::mpeg::header::MpegVersion;
 use crate::properties::FileProperties;
@@ -82,5 +83,26 @@ impl From<AACProperties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.channels),
 		}
+	}
+}
+
+pub(super) fn read_properties(
+	properties: &mut AACProperties,
+	first_frame: ADTSHeader,
+	stream_len: u64,
+) {
+	properties.version = first_frame.version;
+	properties.audio_object_type = first_frame.audio_object_ty;
+	properties.sample_rate = first_frame.sample_rate;
+	properties.channels = first_frame.channels;
+	properties.copyright = first_frame.copyright;
+	properties.original = first_frame.original;
+
+	let bitrate = first_frame.bitrate;
+
+	if bitrate > 0 {
+		properties.audio_bitrate = bitrate;
+		properties.overall_bitrate = bitrate;
+		properties.duration = Duration::from_millis((stream_len * 8) / u64::from(bitrate));
 	}
 }

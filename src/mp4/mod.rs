@@ -31,6 +31,8 @@ cfg_if::cfg_if! {
 
 pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
 
+pub(crate) use properties::SAMPLE_RATES;
+
 /// An MP4 file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
