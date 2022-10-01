@@ -14,7 +14,7 @@ use std::fs::File;
 // See `lofty::AudioFile::read_from` for the expected signature.
 #[lofty(read_fn = "Self::parse_my_file")]
 // The `FileType` variant of the file
-#[lofty(file_type = "Custom(\"MyFile\")")]
+#[lofty(file_type = "MyFile")]
 struct MyFile {
 	// A file has two requirements, at least one tag field, and a properties field.
 

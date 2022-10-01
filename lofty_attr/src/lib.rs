@@ -65,14 +65,17 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 	};
 
 	let struct_name = input.ident.clone();
+
+	// TODO: This is not readable in the slightest
+
+	let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
+
+	let has_internal_file_type = opt_file_type.is_some();
 	let is_internal = input
 		.attrs
 		.iter()
 		.any(|attr| util::has_path_attr(attr, "internal_write_module_do_not_use_anywhere_else"));
 
-	// TODO: This is not readable in the slightest
-
-	let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
 	if opt_file_type.is_none() && is_internal {
 		// TODO: This is the best check we can do for now I think?
 		//       Definitely needs some work when a better solution comes out.
@@ -186,6 +189,13 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 
 	let getters = get_getters(&tag_fields, &struct_name);
 
+	let file_type_variant = if has_internal_file_type {
+		quote! { lofty::FileType::#file_type }
+	} else {
+		let file_ty_str = file_type.to_string();
+		quote! { lofty::FileType::Custom(#file_ty_str) }
+	};
+
 	let mut ret = quote! {
 		#assert_properties_impl
 
@@ -196,7 +206,7 @@ fn parse(input: DeriveInput, errors: &mut Vec<syn::Error>) -> proc_macro2::Token
 		impl std::convert::From<#struct_name> for lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {
 				lofty::TaggedFile::new(
-					lofty::FileType::#file_type,
+					#file_type_variant,
 					lofty::FileProperties::from(input.properties),
 					{
 						let mut tags: Vec<lofty::Tag> = Vec::new();

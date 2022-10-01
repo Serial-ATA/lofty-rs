@@ -141,7 +141,7 @@ mod tests {
 
 	#[derive(LoftyFile, Default)]
 	#[lofty(read_fn = "Self::read")]
-	#[lofty(file_type = "Custom(\"MyFile\")")]
+	#[lofty(file_type = "MyFile")]
 	struct MyFile {
 		#[lofty(tag_type = "ID3v2")]
 		id3v2_tag: Option<ID3v2Tag>,

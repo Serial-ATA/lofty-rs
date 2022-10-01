@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `read_from{_path}` will no longer take a `bool` for reading properties, and will do it by default. To
   change this behavior, you must now use `Probe`.
 - **FileType**: `primary_tag_type` will no longer change its return depending on the enabled features.
+- **lofty_attr**: Simplify the `file_type` attribute:
+  - Before, you had to specify custom file types as `#[lofty(file_type = "Custom(\"MyFile\")")]`. Now
+    you can simply do `#[lofty(file_type = "MyFile")]` and it will infer the rest.
 
 ## Removed
 - **lofty_attr**: The `#[lofty(always_present)]` attribute has been removed, and is now inferred.
