@@ -27,6 +27,10 @@ name = "mp3file_read_from"
 path = "fuzz_targets/mpegfile_read_from.rs"
 
 [[bin]]
+name = "aacfile_read_from"
+path = "fuzz_targets/aacfile_read_from.rs"
+
+[[bin]]
 name = "aifffile_read_from"
 path = "fuzz_targets/aifffile_read_from.rs"
 
