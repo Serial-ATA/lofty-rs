@@ -11,6 +11,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use byteorder::BigEndian;
+use lofty_attr::LoftyTag;
 
 /// Represents an AIFF `COMT` chunk
 ///
@@ -60,7 +61,8 @@ pub struct Comment {
 /// * [`ItemKey::Comment`](crate::ItemKey::Comment)
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(LoftyTag, Default, Clone, Debug, PartialEq, Eq)]
+#[lofty(supported_formats(AIFF))]
 pub struct AIFFTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,

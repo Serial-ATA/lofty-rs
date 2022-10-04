@@ -3,6 +3,15 @@ use std::fmt::Display;
 use proc_macro2::Span;
 use syn::{Attribute, Lit, Meta, MetaList, NestedMeta, Type};
 
+macro_rules! bail {
+	($errors:ident, $span:expr, $msg:literal) => {
+		$errors.push(crate::util::err($span, $msg));
+		return proc_macro2::TokenStream::new();
+	};
+}
+
+pub(crate) use bail;
+
 pub(crate) fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::TokenStream> {
 	for attr in attrs {
 		if let Some(list) = get_attr_list("lofty", attr) {

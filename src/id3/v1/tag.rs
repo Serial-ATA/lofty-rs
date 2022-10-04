@@ -8,6 +8,8 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
+use lofty_attr::LoftyTag;
+
 macro_rules! impl_accessor {
 	($($name:ident,)+) => {
 		paste::paste! {
@@ -52,7 +54,8 @@ macro_rules! impl_accessor {
 ///
 /// * [`GENRES`] contains the string
 /// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
-#[derive(Default, Debug, PartialEq, Eq, Clone)]
+#[derive(LoftyTag, Default, Debug, PartialEq, Eq, Clone)]
+#[lofty(supported_formats(APE, MPEG, WavPack))]
 pub struct ID3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,

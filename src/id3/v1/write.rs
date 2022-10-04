@@ -1,6 +1,5 @@
 use super::tag::Id3v1TagRef;
 use crate::error::Result;
-use crate::file::FileType;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::err;
 use crate::probe::Probe;
@@ -15,7 +14,7 @@ pub(crate) fn write_id3v1(file: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()> 
 	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(FileType::APE | FileType::MPEG | FileType::WavPack) => {},
+		Some(ft) if super::ID3v1Tag::SUPPORTED_FORMATS.contains(&ft) => {},
 		_ => err!(UnsupportedTag),
 	}
 

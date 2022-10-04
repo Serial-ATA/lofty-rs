@@ -4,7 +4,6 @@ use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 use crate::error::Result;
-use crate::file::FileType;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
@@ -23,7 +22,7 @@ where
 	let probe = Probe::new(data).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(FileType::APE | FileType::MPEG | FileType::WavPack) => {},
+		Some(ft) if super::ApeTag::SUPPORTED_FORMATS.contains(&ft) => {},
 		_ => err!(UnsupportedTag),
 	}
 

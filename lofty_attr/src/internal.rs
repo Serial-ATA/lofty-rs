@@ -1,6 +1,6 @@
 // Items that only pertain to internal usage of lofty_attr
 
-use crate::FieldContents;
+use crate::lofty_file::FieldContents;
 
 use std::collections::HashMap;
 

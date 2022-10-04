@@ -15,6 +15,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
 
+use crate::id3::v2::ID3v2Tag;
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header
@@ -41,8 +42,11 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 
 	let data = probe.into_inner();
 
+	if file_type.is_none() || !ID3v2Tag::SUPPORTED_FORMATS.contains(&(file_type.unwrap())) {
+		err!(UnsupportedTag);
+	}
+
 	match file_type {
-		Some(FileType::APE | FileType::MPEG | FileType::FLAC) => {},
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		Some(FileType::WAV) => {
 			tag.flags.footer = false;
@@ -52,7 +56,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?);
 		},
-		_ => err!(UnsupportedTag),
+		_ => {},
 	}
 
 	let id3v2 = create_tag(tag)?;
