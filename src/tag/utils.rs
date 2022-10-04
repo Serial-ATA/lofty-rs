@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
-use crate::{ape, iff, mpeg, wavpack};
+use crate::{ape, flac, iff, mpeg, wavpack};
 
 #[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -27,8 +27,9 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 	match file_type {
 		FileType::AIFF => iff::aiff::write::write_to(file, tag),
 		FileType::APE => ape::write::write_to(file, tag),
+		FileType::FLAC => flac::write::write_to(file, tag),
 		#[cfg(feature = "vorbis_comments")]
-		FileType::FLAC | FileType::Opus | FileType::Speex | FileType::Vorbis => {
+		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type)
 		},
 		FileType::MPEG => mpeg::write::write_to(file, tag),

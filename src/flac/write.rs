@@ -5,6 +5,7 @@ use crate::macros::err;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
+use crate::tag::{Tag, TagType};
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -13,21 +14,40 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
-pub(crate) fn write_to<'a, II, IP>(
-	data: &mut File,
+pub(crate) fn write_to(file: &mut File, tag: &Tag) -> Result<()> {
+	match tag.tag_type() {
+		TagType::VorbisComments => {
+			let (vendor, items, pictures) = crate::ogg::tag::create_vorbis_comments_ref(tag);
+
+			let mut comments_ref = VorbisCommentsRef {
+				vendor,
+				items,
+				pictures,
+			};
+
+			write_to_inner(file, &mut comments_ref)
+		},
+		// This tag can *only* be removed in this format
+		TagType::ID3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file),
+		_ => err!(UnsupportedTag),
+	}
+}
+
+pub(crate) fn write_to_inner<'a, II, IP>(
+	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
-	let stream_info = verify_flac(data)?;
+	let stream_info = verify_flac(file)?;
 	let stream_info_end = stream_info.end as usize;
 
 	let mut last_block = stream_info.last;
 
 	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
+	file.read_to_end(&mut file_bytes)?;
 
 	let mut cursor = Cursor::new(file_bytes);
 
@@ -103,9 +123,9 @@ where
 		file_bytes.splice(first.0 as usize..first.1 as usize, comment_blocks);
 	}
 
-	data.seek(SeekFrom::Start(stream_info_end as u64))?;
-	data.set_len(stream_info_end as u64)?;
-	data.write_all(&file_bytes)?;
+	file.seek(SeekFrom::Start(stream_info_end as u64))?;
+	file.set_len(stream_info_end as u64)?;
+	file.write_all(&file_bytes)?;
 
 	Ok(())
 }

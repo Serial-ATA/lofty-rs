@@ -1,6 +1,5 @@
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
-use crate::flac::write;
 use crate::macros::err;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation, PictureType};
@@ -532,7 +531,7 @@ where
 		let file = probe.into_inner();
 
 		match f_ty {
-			Some(FileType::FLAC) => write::write_to(file, self),
+			Some(FileType::FLAC) => crate::flac::write::write_to_inner(file, self),
 			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
 			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
 			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),

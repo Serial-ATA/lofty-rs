@@ -1,7 +1,6 @@
 use super::verify_signature;
 use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
-use crate::flac;
 use crate::macros::{err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
@@ -34,37 +33,26 @@ impl OGGFormat {
 }
 
 pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
-	match tag.tag_type() {
-		#[cfg(feature = "vorbis_comments")]
-		TagType::VorbisComments => {
-			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+	if tag.tag_type() == TagType::VorbisComments {
+		let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
-			let mut comments_ref = VorbisCommentsRef {
-				vendor,
-				items,
-				pictures,
-			};
+		let mut comments_ref = VorbisCommentsRef {
+			vendor,
+			items,
+			pictures,
+		};
 
-			if file_type == FileType::FLAC {
-				return flac::write::write_to(file, &mut comments_ref);
-			}
+		let format = match file_type {
+			FileType::Opus => OGGFormat::Opus,
+			FileType::Vorbis => OGGFormat::Vorbis,
+			FileType::Speex => OGGFormat::Speex,
+			_ => unreachable!(),
+		};
 
-			let format = match file_type {
-				FileType::Opus => OGGFormat::Opus,
-				FileType::Vorbis => OGGFormat::Vorbis,
-				FileType::Speex => OGGFormat::Speex,
-				_ => unreachable!(),
-			};
-
-			write(file, &mut comments_ref, format)
-		},
-		#[cfg(feature = "id3v2")]
-		TagType::ID3v2 if file_type == FileType::FLAC => {
-			// This tag can *only* be removed in this format
-			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file)
-		},
-		_ => err!(UnsupportedTag),
+		return write(file, &mut comments_ref, format);
 	}
+
+	err!(UnsupportedTag);
 }
 
 #[cfg(feature = "vorbis_comments")]
