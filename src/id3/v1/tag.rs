@@ -47,7 +47,7 @@ macro_rules! impl_accessor {
 /// * [`GENRES`] contains the string
 /// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "An ID3v1 tag", supported_formats(APE, MPEG, WavPack))]
+#[tag(description = "An ID3v1 tag", supported_formats(AAC, APE, MPEG, WavPack))]
 pub struct ID3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,
