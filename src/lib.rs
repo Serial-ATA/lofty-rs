@@ -5,9 +5,7 @@
 //! Parse, convert, and write metadata to audio formats.
 //!
 //! # Supported Formats
-//!
-//! [See here](https://github.com/Serial-ATA/lofty-rs#supported-formats)
-//!
+#![doc = include_str!("../SUPPORTED_FORMATS.md")]
 //! # Examples
 //!
 //! ## Reading a generic file
