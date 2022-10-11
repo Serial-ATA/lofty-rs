@@ -1,6 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::skip_unneeded;
-use super::trak::Trak;
+use super::read::{nested_atom, skip_unneeded};
 #[cfg(feature = "mp4_ilst")]
 use super::{
 	ilst::{read::parse_ilst, Ilst},
@@ -12,9 +11,10 @@ use crate::macros::decode_err;
 use std::io::{Read, Seek};
 
 pub(crate) struct Moov {
-	pub(crate) traks: Vec<Trak>,
+	// Represents the trak.mdia atom
+	pub(crate) traks: Vec<AtomInfo>,
 	#[cfg(feature = "mp4_ilst")]
-	// Represents a parsed moov.udta.meta.ilst since we don't need anything else
+	// Represents a parsed moov.udta.meta.ilst
 	pub(crate) meta: Option<Ilst>,
 }
 
@@ -48,7 +48,12 @@ impl Moov {
 		while let Ok(atom) = reader.next() {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
-					b"trak" if read_properties => traks.push(Trak::parse(reader, &atom)?),
+					b"trak" if read_properties => {
+						// All we need from here is trak.mdia
+						if let Some(mdia) = nested_atom(reader, atom.len, b"mdia")? {
+							traks.push(mdia);
+						}
+					},
 					#[cfg(feature = "mp4_ilst")]
 					b"udta" => {
 						meta = meta_from_udta(reader, atom.len - 8)?;

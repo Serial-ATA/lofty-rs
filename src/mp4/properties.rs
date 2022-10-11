@@ -1,6 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
-use super::trak::Trak;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
 use crate::properties::FileProperties;
@@ -34,7 +33,7 @@ impl Default for Mp4Codec {
 #[non_exhaustive]
 pub enum AudioObjectType {
 	// https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
-	
+
 	NULL = 0,
 	AacMain = 1,                                       // AAC Main Profile
 	AacLowComplexity = 2,                              // AAC Low Complexity
@@ -214,7 +213,7 @@ impl Mp4Properties {
 
 pub(super) fn read_properties<R>(
 	reader: &mut AtomReader<R>,
-	traks: &[Trak],
+	traks: &[AtomInfo],
 	file_length: u64,
 ) -> Result<Mp4Properties>
 where
@@ -226,7 +225,7 @@ where
 	let mut minf = None;
 
 	// We have to search through the traks with a mdia atom to find the audio track
-	for mdia in traks.iter().filter_map(|trak| trak.mdia.as_ref()) {
+	for mdia in traks.iter() {
 		if audio_track {
 			break;
 		}

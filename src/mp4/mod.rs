@@ -7,7 +7,6 @@ mod atom_info;
 mod moov;
 mod properties;
 mod read;
-mod trak;
 
 use lofty_attr::LoftyFile;
 
