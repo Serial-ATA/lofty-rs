@@ -34,11 +34,7 @@ impl Moov {
 			skip_unneeded(reader, atom.extended, atom.len)?;
 		}
 
-		if let Some(moov) = moov {
-			Ok(moov)
-		} else {
-			decode_err!(@BAIL MP4, "No \"moov\" atom found");
-		}
+		moov.ok_or_else(|| decode_err!(MP4, "No \"moov\" atom found"))
 	}
 
 	pub(super) fn parse<R>(reader: &mut AtomReader<R>, read_properties: bool) -> Result<Self>
