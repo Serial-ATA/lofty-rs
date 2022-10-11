@@ -408,7 +408,7 @@ impl From<Ilst> for Tag {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
 					},
 					AtomIdent::Freeform { mean, name } => {
-						format!("----:{}:{}", mean, name)
+						format!("----:{mean}:{name}")
 					},
 				},
 			);

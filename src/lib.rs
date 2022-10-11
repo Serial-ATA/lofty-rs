@@ -157,7 +157,8 @@
 	clippy::type_repetition_in_bounds,
 	unused_qualifications,
 	clippy::return_self_not_must_use,
-	clippy::bool_to_int_with_if
+	clippy::bool_to_int_with_if,
+	clippy::uninlined_format_args, /* This should be changed for any normal "{}", but I'm not a fan of it for any debug or width specific formatting */
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 

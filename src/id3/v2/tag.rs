@@ -312,7 +312,7 @@ impl Accessor for ID3v2Tag {
 	fn set_track_total(&mut self, value: u32) {
 		let current_track = self.split_num_pair("TRCK").0.unwrap_or(1);
 
-		self.insert(Frame::text("TRCK", format!("{}/{}", current_track, value)));
+		self.insert(Frame::text("TRCK", format!("{current_track}/{value}")));
 	}
 
 	fn remove_track_total(&mut self) {
@@ -343,7 +343,7 @@ impl Accessor for ID3v2Tag {
 	fn set_disk_total(&mut self, value: u32) {
 		let current_disk = self.split_num_pair("TPOS").0.unwrap_or(1);
 
-		self.insert(Frame::text("TPOS", format!("{}/{}", current_disk, value)));
+		self.insert(Frame::text("TPOS", format!("{current_disk}/{value}")));
 	}
 
 	fn remove_disk_total(&mut self) {

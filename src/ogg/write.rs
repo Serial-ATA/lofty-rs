@@ -66,7 +66,7 @@ pub(crate) fn create_comments(
 			continue;
 		}
 
-		let comment = format!("{}={}", k, v);
+		let comment = format!("{k}={v}");
 
 		let comment_b = comment.as_bytes();
 		let bytes_len = comment_b.len();

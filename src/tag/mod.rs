@@ -202,7 +202,7 @@ impl Accessor for Tag {
 		if let Some(item) = self.get_string(&ItemKey::RecordingDate) {
 			if item.len() >= 4 {
 				let (_, remaining) = item.split_at(4);
-				self.insert_text(ItemKey::RecordingDate, format!("{}{}", value, remaining));
+				self.insert_text(ItemKey::RecordingDate, format!("{value}{remaining}"));
 			}
 		}
 	}

@@ -153,10 +153,7 @@ impl Accessor for ApeTag {
 	fn set_track_total(&mut self, value: u32) {
 		let current_track = self.split_num_pair("Track").0.unwrap_or(1);
 
-		self.insert(ApeItem::text(
-			"Track",
-			format!("{}/{}", current_track, value),
-		));
+		self.insert(ApeItem::text("Track", format!("{current_track}/{value}")));
 	}
 
 	fn remove_track_total(&mut self) {
@@ -187,7 +184,7 @@ impl Accessor for ApeTag {
 	fn set_disk_total(&mut self, value: u32) {
 		let current_disk = self.split_num_pair("Disc").0.unwrap_or(1);
 
-		self.insert(ApeItem::text("Disc", format!("{}/{}", current_disk, value)));
+		self.insert(ApeItem::text("Disc", format!("{current_disk}/{value}")));
 	}
 
 	fn remove_disk_total(&mut self) {

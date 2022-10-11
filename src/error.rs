@@ -93,8 +93,8 @@ impl Display for ID3v2ErrorKind {
 		match self {
 			ID3v2ErrorKind::BadId3v2Version(major, minor) => write!(
 				f,
-				"Found an invalid version (v{}.{}), expected any major revision in: (2, 3, 4)",
-				major, minor
+				"Found an invalid version (v{major}.{minor}), expected any major revision in: (2, \
+				 3, 4)"
 			),
 			#[cfg(feature = "id3v2")]
 			ID3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
@@ -113,9 +113,9 @@ impl Display for ID3v2ErrorKind {
 			),
 			#[cfg(feature = "id3v2")]
 			ID3v2ErrorKind::BadPictureFormat(format) => {
-				write!(f, "Picture: Found unexpected format \"{}\"", format)
+				write!(f, "Picture: Found unexpected format \"{format}\"")
 			},
-			ID3v2ErrorKind::Other(message) => write!(f, "{}", message),
+			ID3v2ErrorKind::Other(message) => write!(f, "{message}"),
 		}
 	}
 }
@@ -350,11 +350,11 @@ impl Display for LoftyError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self.kind {
 			// Conversions
-			ErrorKind::OggPage(ref err) => write!(f, "{}", err),
-			ErrorKind::StringFromUtf8(ref err) => write!(f, "{}", err),
-			ErrorKind::StrFromUtf8(ref err) => write!(f, "{}", err),
-			ErrorKind::Io(ref err) => write!(f, "{}", err),
-			ErrorKind::Alloc(ref err) => write!(f, "{}", err),
+			ErrorKind::OggPage(ref err) => write!(f, "{err}"),
+			ErrorKind::StringFromUtf8(ref err) => write!(f, "{err}"),
+			ErrorKind::StrFromUtf8(ref err) => write!(f, "{err}"),
+			ErrorKind::Io(ref err) => write!(f, "{err}"),
+			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
@@ -372,13 +372,13 @@ impl Display for LoftyError {
 				"Attempted to write a tag to a format that does not support it"
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
-			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {}", message),
-			ErrorKind::ID3v2(ref id3v2_err) => write!(f, "{}", id3v2_err),
-			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {}", message),
+			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			ErrorKind::ID3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
+			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 
 			// Files
-			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{}", file_decode_err),
-			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{}", file_encode_err),
+			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
+			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
 		}
 	}
 }
