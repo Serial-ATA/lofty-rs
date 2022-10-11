@@ -13,7 +13,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $($key:literal)|+;)+) => {
@@ -49,14 +49,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// An `APE` tag
-///
-/// ## Supported file types
-///
-/// * [`FileType::APE`](crate::FileType::APE)
-/// * [`FileType::MPEG`](crate::FileType::MPEG)
-/// * [`FileType::WavPack`](crate::FileType::WavPack)
-///
 /// ## Item storage
 ///
 /// `APE` isn't a very strict format. An [`ApeItem`] only restricted by its name, meaning it can use
@@ -72,8 +64,8 @@ macro_rules! impl_accessor {
 ///
 /// When converting pictures, any of type [`PictureType::Undefined`](crate::PictureType::Undefined) will be discarded.
 /// For items, see [`ApeItem::new`].
-#[derive(LoftyTag, Default, Debug, PartialEq, Eq, Clone)]
-#[lofty(supported_formats(APE, MPEG, WavPack))]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+#[tag(description = "An `APE` tag", supported_formats(APE, MPEG, WavPack))]
 pub struct ApeTag {
 	/// Whether or not to mark the tag as read only
 	pub read_only: bool,

@@ -10,7 +10,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -32,12 +32,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// A RIFF INFO LIST
-///
-/// ## Supported file types
-///
-/// * [`FileType::WAV`](crate::FileType::WAV)
-///
 /// ## Conversions
 ///
 /// ## From `Tag`
@@ -46,8 +40,8 @@ macro_rules! impl_accessor {
 ///
 /// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
 /// * It has a key that is 4 bytes in length and within the ASCII range
-#[derive(LoftyTag, Default, Debug, PartialEq, Eq, Clone)]
-#[lofty(supported_formats(WAV))]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+#[tag(description = "A RIFF INFO LIST", supported_formats(WAV))]
 pub struct RIFFInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,

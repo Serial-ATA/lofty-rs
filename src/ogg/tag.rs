@@ -12,7 +12,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{Cursor, Write};
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -34,16 +34,11 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// Vorbis comments
-///
-/// ## Supported file types
-///
-/// * [`FileType::FLAC`](crate::FileType::FLAC)
-/// * [`FileType::Opus`](crate::FileType::Opus)
-/// * [`FileType::Speex`](crate::FileType::Speex)
-/// * [`FileType::Vorbis`](crate::FileType::Vorbis)
-#[derive(LoftyTag, Default, PartialEq, Eq, Debug, Clone)]
-#[lofty(supported_formats(FLAC, Opus, Speex, Vorbis))]
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
+#[tag(
+	description = "Vorbis comments",
+	supported_formats(FLAC, Opus, Speex, Vorbis)
+)]
 pub struct VorbisComments {
 	/// An identifier for the encoding software
 	pub(crate) vendor: String,

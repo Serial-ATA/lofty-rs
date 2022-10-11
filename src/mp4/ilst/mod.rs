@@ -18,7 +18,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
 const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
@@ -55,12 +55,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// An MP4 ilst atom
-///
-/// ## Supported file types
-///
-/// * [`FileType::MP4`](crate::FileType::MP4)
-///
 /// ## Pictures
 ///
 /// Unlike other formats, ilst does not store a [`PictureType`]. All pictures will have
@@ -81,8 +75,8 @@ macro_rules! impl_accessor {
 /// well as pictures, will be preserved.
 ///
 /// An attempt will be made to create the `TrackNumber/TrackTotal` (trkn) and `DiscNumber/DiscTotal` (disk) pairs.
-#[derive(LoftyTag, Default, PartialEq, Debug, Clone)]
-#[lofty(supported_formats(MP4))]
+#[derive(Default, PartialEq, Debug, Clone)]
+#[tag(description = "An MP4 ilst atom", supported_formats(MP4))]
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom>,
 }

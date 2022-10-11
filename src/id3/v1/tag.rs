@@ -8,7 +8,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident,)+) => {
@@ -30,8 +30,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// An ID3v1 tag
-///
 /// ID3v1 is a severely limited format, with each field
 /// being incredibly small in size. All fields have been
 /// commented with their maximum sizes and any other additional
@@ -39,12 +37,6 @@ macro_rules! impl_accessor {
 ///
 /// Attempting to write a field greater than the maximum size
 /// will **not** error, it will just be shrunk.
-///
-/// ## Supported file types
-///
-/// * [`FileType::APE`](crate::FileType::APE)
-/// * [`FileType::MP3`](crate::FileType::MPEG)
-/// * [`FileType::WavPack`](crate::FileType::WavPack)
 ///
 /// ## Conversions
 ///
@@ -54,8 +46,8 @@ macro_rules! impl_accessor {
 ///
 /// * [`GENRES`] contains the string
 /// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
-#[derive(LoftyTag, Default, Debug, PartialEq, Eq, Clone)]
-#[lofty(supported_formats(APE, MPEG, WavPack))]
+#[derive(Default, Debug, PartialEq, Eq, Clone)]
+#[tag(description = "An ID3v1 tag", supported_formats(APE, MPEG, WavPack))]
 pub struct ID3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,

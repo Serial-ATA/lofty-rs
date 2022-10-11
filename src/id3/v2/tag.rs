@@ -18,7 +18,7 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
 
-use lofty_attr::LoftyTag;
+use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
@@ -61,15 +61,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-/// An `ID3v2` tag
-///
-/// ## Supported file types
-///
-/// * [`FileType::MPEG`](crate::FileType::MPEG)
-/// * [`FileType::WAV`](crate::FileType::WAV)
-/// * [`FileType::AIFF`](crate::FileType::AIFF)
-/// * [`FileType::APE`](crate::FileType::APE) **(READ ONLY)**
-///
 /// ## Conversions
 ///
 /// ⚠ **Warnings** ⚠
@@ -98,8 +89,11 @@ macro_rules! impl_accessor {
 /// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse) respectively, and converted back to binary with
 /// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
 /// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
-#[derive(LoftyTag, PartialEq, Eq, Debug, Clone)]
-#[lofty(supported_formats(APE, AIFF, FLAC, MPEG, WAV))]
+#[derive(PartialEq, Eq, Debug, Clone)]
+#[tag(
+	description = "An `ID3v2` tag",
+	supported_formats(AIFF, MPEG, WAV, read_only(FLAC, APE))
+)]
 pub struct ID3v2Tag {
 	flags: ID3v2TagFlags,
 	pub(super) original_version: ID3v2Version,
