@@ -651,7 +651,7 @@ impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 }
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
-pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
+pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone + '_ {
 	let items = tag
 		.items()
 		.iter()
@@ -670,7 +670,7 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + '_ {
 	items.chain(pictures)
 }
 
-impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
+impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		super::write::write_id3v2(file, self)
 	}

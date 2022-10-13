@@ -33,7 +33,7 @@ static CRC_32_TABLE: once_cell::sync::Lazy<[u32; 256]> = once_cell::sync::Lazy::
 });
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
+pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 	data: &mut File,
 	tag: &mut Id3v2TagRef<'a, I>,
 ) -> Result<()> {
@@ -42,17 +42,33 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 
 	let data = probe.into_inner();
 
-	if file_type.is_none() || !ID3v2Tag::SUPPORTED_FORMATS.contains(&(file_type.unwrap())) {
+	// Unable to determine a format
+	if file_type.is_none() {
 		err!(UnsupportedTag);
+	}
+
+	let file_type = file_type.unwrap();
+
+	if !ID3v2Tag::SUPPORTED_FORMATS.contains(&file_type) {
+		err!(UnsupportedTag);
+	}
+
+	// Attempting to write a non-empty tag to a read only format
+	// An empty tag implies the tag should be stripped.
+	if ID3v2Tag::READ_ONLY_FORMATS.contains(&file_type) {
+		let mut peek = tag.frames.clone().peekable();
+		if peek.peek().is_some() {
+			err!(UnsupportedTag);
+		}
 	}
 
 	match file_type {
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-		Some(FileType::WAV) => {
+		FileType::WAV => {
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?);
 		},
-		Some(FileType::AIFF) => {
+		FileType::AIFF => {
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?);
 		},

@@ -93,6 +93,10 @@ pub(crate) fn parse(
 	let flattened_file_types = supported_formats.iter().map(|format| match format {
 		SupportedFormat::Full(path) | SupportedFormat::ReadOnly(path) => path,
 	});
+	let read_only_file_types = supported_formats.iter().filter_map(|format| match format {
+		SupportedFormat::ReadOnly(path) => Some(path),
+		_ => None,
+	});
 
 	quote! {
 		#[doc = #desc]
@@ -105,6 +109,10 @@ pub(crate) fn parse(
 		impl #ident {
 			pub(crate) const SUPPORTED_FORMATS: &'static [lofty::FileType] = &[
 				#( lofty::FileType:: #flattened_file_types ),*
+			];
+
+			pub(crate) const READ_ONLY_FORMATS: &'static [lofty::FileType] = &[
+				#( lofty::FileType:: #read_only_file_types ),*
 			];
 		}
 	}

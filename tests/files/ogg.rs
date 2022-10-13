@@ -164,3 +164,16 @@ fn flac_with_id3v2() {
 fn flac_remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::ID3v2);
 }
+
+#[test]
+fn flac_try_write_non_empty_id3v2() {
+	use lofty::id3::v2::ID3v2Tag;
+	use lofty::Accessor;
+
+	let mut tag = ID3v2Tag::default();
+	tag.set_artist(String::from("Foo artist"));
+
+	assert!(tag
+		.save_to_path("tests/files/assets/flac_with_id3v2.flac")
+		.is_err());
+}
