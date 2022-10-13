@@ -75,7 +75,7 @@ impl AtomInfo {
 		// `len` includes itself
 		if (len - 4) > reader_size {
 			data.seek(SeekFrom::Current(-4))?;
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		let mut atom_ident = AtomIdent::Fourcc(ident);

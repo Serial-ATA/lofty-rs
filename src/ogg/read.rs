@@ -27,7 +27,7 @@ where
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 	if u64::from(vendor_len) > len {
-		err!(TooMuchData);
+		err!(SizeMismatch);
 	}
 
 	let mut vendor = try_vec![0; vendor_len as usize];
@@ -61,8 +61,7 @@ where
 	for _ in 0..comments_total_len {
 		let comment_len = data.read_u32::<LittleEndian>()?;
 		if u64::from(comment_len) > len {
-			// TODO: Maybe add ErrorKind::SizeMismatch?
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		let mut comment_bytes = try_vec![0; comment_len as usize];

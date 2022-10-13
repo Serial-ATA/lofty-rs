@@ -24,7 +24,7 @@ where
 
 		let value_size = data.read_u32::<LittleEndian>()?;
 		if value_size > remaining_size {
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		remaining_size -= 4;

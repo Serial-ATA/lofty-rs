@@ -82,7 +82,7 @@ impl<B: ByteOrder> Chunks<B> {
 		R: Read,
 	{
 		if size > self.remaining_size {
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		let mut content = try_vec![0; size as usize];

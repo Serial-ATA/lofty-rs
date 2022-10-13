@@ -62,7 +62,7 @@ where
 
 	pub(super) fn next(&mut self) -> Result<AtomInfo> {
 		if self.remaining_size < 8 {
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		AtomInfo::read(self, self.remaining_size)

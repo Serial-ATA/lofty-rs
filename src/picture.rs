@@ -779,7 +779,7 @@ impl Picture {
 		size -= 4;
 
 		if mime_len > size {
-			err!(TooMuchData);
+			err!(SizeMismatch);
 		}
 
 		let mime_type_str = std::str::from_utf8(&content[8..8 + mime_len])?;

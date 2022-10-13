@@ -24,6 +24,11 @@ pub enum ErrorKind {
 	// File data related errors
 	/// Attempting to read/write an abnormally large amount of data
 	TooMuchData,
+	/// Expected the data to be a different size than provided
+	///
+	/// This occurs when the size of an item is written as one value, but that size is either too
+	/// big or small to be valid within the bounds of that item.
+	SizeMismatch,
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -359,10 +364,6 @@ impl Display for LoftyError {
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
 			},
-			ErrorKind::TooMuchData => write!(
-				f,
-				"An abnormally large amount of data was provided, and an overflow occurred"
-			),
 			ErrorKind::NotAPicture => write!(f, "Picture: Encountered invalid data"),
 			ErrorKind::UnsupportedPicture => {
 				write!(f, "Picture: attempted to write an unsupported picture")
@@ -377,6 +378,14 @@ impl Display for LoftyError {
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 
 			// Files
+			ErrorKind::TooMuchData => write!(
+				f,
+				"An abnormally large amount of data was provided, and an overflow occurred"
+			),
+			ErrorKind::SizeMismatch => write!(
+				f,
+				"Encountered an invalid item size, either too big or too small to be valid"
+			),
 			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
 		}
