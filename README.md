@@ -6,6 +6,11 @@
 
 Parse, convert, and write metadata to various audio formats.
 
+⚠️ **LOOKING FOR HELP WITH DOCUMENTATION** ⚠️
+
+I'm looking for help with the refinement of the docs. Any contribution, whether it be typos,
+grammar, punctuation, or missing examples is highly appreciated!
+
 ## Supported Formats
 
 [See here](./SUPPORTED_FORMATS.md)
