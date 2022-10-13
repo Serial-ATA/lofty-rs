@@ -1,5 +1,6 @@
 | File Format | Metadata Format(s)                   |
 |-------------|--------------------------------------|
+| AAC (ADTS)  | `ID3v2`, `ID3v1`                     |
 | Ape         | `APEv2`, `APEv1`, `ID3v2`\*, `ID3v1` |
 | AIFF        | `ID3v2`, `Text Chunks`               |
 | FLAC        | `Vorbis Comments`, `ID3v2`\*         |
