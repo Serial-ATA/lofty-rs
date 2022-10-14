@@ -525,13 +525,23 @@ where
 
 		let file = probe.into_inner();
 
-		match f_ty {
-			Some(FileType::FLAC) => crate::flac::write::write_to_inner(file, self),
-			Some(FileType::Opus) => super::write::write(file, self, OGGFormat::Opus),
-			Some(FileType::Vorbis) => super::write::write(file, self, OGGFormat::Vorbis),
-			Some(FileType::Speex) => super::write::write(file, self, OGGFormat::Speex),
+		let file_type = match f_ty {
+			Some(ft) if VorbisComments::SUPPORTED_FORMATS.contains(&ft) => ft,
 			_ => err!(UnsupportedTag),
-		}
+		};
+
+		let ogg_format = match file_type {
+			FileType::Opus => OGGFormat::Opus,
+			FileType::Vorbis => OGGFormat::Vorbis,
+			FileType::Speex => OGGFormat::Speex,
+			// FLAC has its own special writing needs :)
+			FileType::FLAC => {
+				return crate::flac::write::write_to_inner(file, self);
+			},
+			_ => unreachable!("You forgot to add support for FileType::{:?}!", file_type),
+		};
+
+		super::write::write(file, self, ogg_format)
 	}
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
