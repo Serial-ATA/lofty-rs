@@ -12,6 +12,7 @@ use std::io::{Cursor, Read};
 
 use byteorder::ReadBytesExt;
 
+#[rustfmt::skip]
 pub(super) fn parse_content(
 	content: &mut &[u8],
 	id: &str,
@@ -32,7 +33,7 @@ pub(super) fn parse_content(
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
 		_ if id.starts_with('W') => parse_link(content)?,
-		"POPM" => Some(parse_popularimeter(content)?),
+		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::from_bytes(content)?)),
 		// SYLT, GEOB, and any unknown frames
 		_ => Some(FrameValue::Binary(content.to_vec())),
 	})
@@ -158,29 +159,6 @@ fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {
 	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
 
 	Ok(Some(FrameValue::URL(link)))
-}
-
-fn parse_popularimeter(content: &mut &[u8]) -> Result<FrameValue> {
-	let email = decode_text(content, TextEncoding::Latin1, true)?;
-	let rating = content.read_u8()?;
-
-	let counter;
-	let remaining_size = content.len();
-	if remaining_size > 8 {
-		counter = u64::MAX;
-	} else {
-		let mut counter_bytes = [0; 8];
-		let counter_start_pos = 8 - remaining_size;
-
-		counter_bytes[counter_start_pos..].copy_from_slice(content);
-		counter = u64::from_be_bytes(counter_bytes);
-	}
-
-	Ok(FrameValue::Popularimeter(Popularimeter {
-		email: email.unwrap_or_default(),
-		rating,
-		counter,
-	}))
 }
 
 fn verify_encoding(encoding: u8, version: ID3v2Version) -> Result<TextEncoding> {

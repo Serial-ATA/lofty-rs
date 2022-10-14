@@ -1,6 +1,7 @@
-use crate::error::LoftyError;
-use crate::util::text::{encode_text, TextEncoding};
+use crate::error::Result;
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
+use byteorder::ReadBytesExt;
 use std::hash::{Hash, Hasher};
 
 /// The contents of a popularimeter ("POPM") frame
@@ -48,26 +49,29 @@ impl Popularimeter {
 	}
 
 	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
-	pub fn from_bytes(bytes: &[u8]) -> Result<Self, LoftyError> {
-		let mut pop = Self {
-			email: String::new(),
-			rating: 0,
-			counter: 0,
-		};
+	pub fn from_bytes(mut bytes: &[u8]) -> Result<Self> {
+		let content = &mut bytes;
 
-		for (idx, chunk) in bytes.splitn(3, |b| b.eq(&0)).enumerate() {
-			match idx {
-				0 => pop.email = String::from_utf8(chunk.to_vec())?,
-				1 => pop.rating = *chunk.first().unwrap_or(&0),
-				2 => chunk.iter().for_each(|&b| {
-					pop.counter <<= 8;
-					pop.counter += u64::from(b);
-				}),
-				_ => unreachable!(),
-			}
+		let email = decode_text(content, TextEncoding::Latin1, true)?;
+		let rating = content.read_u8()?;
+
+		let counter;
+		let remaining_size = content.len();
+		if remaining_size > 8 {
+			counter = u64::MAX;
+		} else {
+			let mut counter_bytes = [0; 8];
+			let counter_start_pos = 8 - remaining_size;
+
+			counter_bytes[counter_start_pos..].copy_from_slice(content);
+			counter = u64::from_be_bytes(counter_bytes);
 		}
 
-		Ok(pop)
+		Ok(Self {
+			email: email.unwrap_or_default(),
+			rating,
+			counter,
+		})
 	}
 }
 
