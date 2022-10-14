@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       eagerness and other settings. Previously, when reading a file the only option available was
       `read_properties`, specified with a `bool` in `read_from{_path}`. This will now default to `true`,
       and can be overridden when using `Probe`.
+- **🎉 Support for AAC (ADTS) files** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/58))
 - **FileProperties**: `FileProperties::new`
 - Debug logging via the [log](https://crates.io/crates/log) crate for exposing recoverable errors.
 - **Error**: `ErrorKind::SizeMismatch`
