@@ -190,6 +190,8 @@ pub(crate) fn parse(
 		ret = quote! {
 			#ret
 
+			use crate::_this_is_internal;
+
 			#write_mod
 		}
 	}

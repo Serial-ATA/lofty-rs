@@ -43,44 +43,44 @@ pub(crate) fn init_write_lookup(
 	}
 
 	insert!(map, APE, {
-		crate::ape::tag::ApeTagRef {
+		lofty::ape::tag::ApeTagRef {
 			read_only: false,
-			items: crate::ape::tag::tagitems_into_ape(tag.items()),
+			items: lofty::ape::tag::tagitems_into_ape(tag.items()),
 		}
 		.write_to(data)
 	});
 
 	insert!(map, ID3v1, {
-		Into::<crate::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data)
+		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data)
 	});
 
 	if id3v2_strippable {
 		insert!(map, ID3v2, {
-			crate::id3::v2::tag::Id3v2TagRef::empty().write_to(data)
+			lofty::id3::v2::tag::Id3v2TagRef::empty().write_to(data)
 		});
 	} else {
 		insert!(map, ID3v2, {
-			crate::id3::v2::tag::Id3v2TagRef {
-				flags: crate::id3::v2::ID3v2TagFlags::default(),
-				frames: crate::id3::v2::tag::tag_frames(tag),
+			lofty::id3::v2::tag::Id3v2TagRef {
+				flags: lofty::id3::v2::ID3v2TagFlags::default(),
+				frames: lofty::id3::v2::tag::tag_frames(tag),
 			}
 			.write_to(data)
 		});
 	}
 
 	insert!(map, RIFFInfo, {
-		crate::iff::wav::tag::RIFFInfoListRef::new(crate::iff::wav::tag::tagitems_into_riff(
+		lofty::iff::wav::tag::RIFFInfoListRef::new(lofty::iff::wav::tag::tagitems_into_riff(
 			tag.items(),
 		))
 		.write_to(data)
 	});
 
 	insert!(map, AIFFText, {
-		crate::iff::aiff::tag::AiffTextChunksRef {
-			name: tag.get_string(&crate::tag::item::ItemKey::TrackTitle),
-			author: tag.get_string(&crate::tag::item::ItemKey::TrackArtist),
-			copyright: tag.get_string(&crate::tag::item::ItemKey::CopyrightMessage),
-			annotations: Some(tag.get_strings(&crate::tag::item::ItemKey::Comment)),
+		lofty::iff::aiff::tag::AiffTextChunksRef {
+			name: tag.get_string(&lofty::tag::item::ItemKey::TrackTitle),
+			author: tag.get_string(&lofty::tag::item::ItemKey::TrackArtist),
+			copyright: tag.get_string(&lofty::tag::item::ItemKey::CopyrightMessage),
+			annotations: Some(tag.get_strings(&lofty::tag::item::ItemKey::Comment)),
 			comments: None,
 		}
 		.write_to(data)
@@ -95,11 +95,11 @@ pub(crate) fn write_module(
 ) -> proc_macro2::TokenStream {
 	let applicable_formats = fields.iter().map(|f| {
 		let tag_ty =
-			syn::parse_str::<syn::Path>(&format!("crate::tag::TagType::{}", &f.tag_type)).unwrap();
+			syn::parse_str::<syn::Path>(&format!("lofty::TagType::{}", &f.tag_type)).unwrap();
 
 		let features = f.cfg_features.iter();
 
-		let block = lookup.get(&*tag_ty.segments[3].ident.to_string()).unwrap();
+		let block = lookup.get(&*tag_ty.segments[2].ident.to_string()).unwrap();
 
 		quote! {
 			#( #features )*
@@ -110,7 +110,7 @@ pub(crate) fn write_module(
 	quote! {
 		pub(crate) mod write {
 			#[allow(unused_variables)]
-			pub(crate) fn write_to(data: &mut std::fs::File, tag: &crate::tag::Tag) -> crate::error::Result<()> {
+			pub(crate) fn write_to(data: &mut std::fs::File, tag: &lofty::Tag) -> lofty::error::Result<()> {
 				match tag.tag_type() {
 					#( #applicable_formats )*
 					_ => crate::macros::err!(UnsupportedTag),

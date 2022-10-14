@@ -99,6 +99,8 @@ pub(crate) fn parse(
 	});
 
 	quote! {
+		use crate::_this_is_internal;
+
 		#[doc = #desc]
 		#[doc = "\n"]
 		#[doc = "## Supported file types\n\n"]
