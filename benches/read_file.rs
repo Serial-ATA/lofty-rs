@@ -30,6 +30,7 @@ fn content_infer_read(c: &mut Criterion) {
 	test_read_file!(
 		c,
 		[
+			(AAC, "../tests/files/assets/minimal/full_test.aac"),
 			(AIFF, "../tests/files/assets/minimal/full_test.aiff"),
 			(APE, "../tests/files/assets/minimal/full_test.ape"),
 			(FLAC, "../tests/files/assets/minimal/full_test.flac"),

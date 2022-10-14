@@ -360,6 +360,11 @@ where
 	Ok(properties)
 }
 
+// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Sampling_Frequencies
+pub(crate) const SAMPLE_RATES: [u32; 15] = [
+	96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0,
+];
+
 fn mp4a_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
 where
 	R: Read + Seek,
@@ -367,12 +372,6 @@ where
 	const ELEMENTARY_DESCRIPTOR_TAG: u8 = 0x03;
 	const DECODER_CONFIG_TAG: u8 = 0x04;
 	const DECODER_SPECIFIC_DESCRIPTOR_TAG: u8 = 0x05;
-
-	// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Sampling_Frequencies
-	const SAMPLE_RATES: [u32; 15] = [
-		96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0,
-		0,
-	];
 
 	// Set the codec to AAC, which is a good guess if we fail before reaching the `esds`
 	properties.codec = Mp4Codec::AAC;

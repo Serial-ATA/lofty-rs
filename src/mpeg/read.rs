@@ -10,6 +10,7 @@ use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 use crate::macros::{decode_err, err};
+use crate::mpeg::header::HEADER_MASK;
 use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -187,7 +188,7 @@ where
 		let first_header_data = reader.read_u32::<BigEndian>()?;
 
 		if let Some(first_header) = Header::read(first_header_data) {
-			match cmp_header(reader, first_header.len, first_header_data) {
+			match cmp_header(reader, 4, first_header.len, first_header_data, HEADER_MASK) {
 				HeaderCmpResult::Equal => {
 					return Ok(Some((first_header, first_mp3_frame_start_absolute)))
 				},

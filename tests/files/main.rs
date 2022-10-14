@@ -1,3 +1,4 @@
+mod aac;
 mod aiff;
 mod ape;
 mod mp4;

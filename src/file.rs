@@ -482,6 +482,7 @@ impl AudioFile for TaggedFile {
 #[non_exhaustive]
 /// The type of file read
 pub enum FileType {
+	AAC,
 	AIFF,
 	APE,
 	FLAC,
@@ -500,7 +501,7 @@ impl FileType {
 	///
 	/// | [`FileType`]                      | [`TagType`]      |
 	/// |-----------------------------------|------------------|
-	/// | `AIFF`, `MP3`, `WAV`              | `ID3v2`          |
+	/// | `AAC`, `AIFF`, `MP3`, `WAV`       | `ID3v2`          |
 	/// | `APE` , `WavPack`                 | `APE`            |
 	/// | `FLAC`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
 	/// | `MP4`                             | `MP4ilst`        |
@@ -519,7 +520,7 @@ impl FileType {
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::AIFF | FileType::MPEG | FileType::WAV => TagType::ID3v2,
+			FileType::AIFF | FileType::MPEG | FileType::WAV | FileType::AAC => TagType::ID3v2,
 			FileType::APE | FileType::WavPack => TagType::APE,
 			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
@@ -553,7 +554,7 @@ impl FileType {
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
 			#[cfg(feature = "id3v2")]
-			FileType::AIFF | FileType::APE | FileType::MPEG | FileType::WAV
+			FileType::AIFF | FileType::APE | FileType::MPEG | FileType::WAV | FileType::AAC
 				if tag_type == TagType::ID3v2 =>
 			{
 				true
@@ -561,7 +562,11 @@ impl FileType {
 			#[cfg(feature = "aiff_text_chunks")]
 			FileType::AIFF if tag_type == TagType::AIFFText => true,
 			#[cfg(feature = "id3v1")]
-			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::ID3v1 => true,
+			FileType::APE | FileType::MPEG | FileType::WavPack | FileType::AAC
+				if tag_type == TagType::ID3v1 =>
+			{
+				true
+			},
 			#[cfg(feature = "ape")]
 			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::APE => true,
 			#[cfg(feature = "vorbis_comments")]
@@ -597,6 +602,7 @@ impl FileType {
 		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
 
 		match ext.as_str() {
+			"aac" => Some(Self::AAC),
 			"ape" => Some(Self::APE),
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
 			"mp3" | "mp2" | "mp1" => Some(Self::MPEG),
@@ -716,7 +722,40 @@ impl FileType {
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
 			77 if buf.starts_with(b"MAC") => Some(Self::APE),
-			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => Some(Self::MPEG),
+			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => {
+				// ADTS and MPEG frame headers are way too similar
+
+				// ADTS (https://wiki.multimedia.cx/index.php/ADTS#Header):
+				//
+				// AAAAAAAA AAAABCCX
+				//
+				// Letter 	Length (bits) 	Description
+				// A 	    12 	            Syncword, all bits must be set to 1.
+				// B 	    1 	            MPEG Version, set to 0 for MPEG-4 and 1 for MPEG-2.
+				// C 	    2 	            Layer, always set to 0.
+
+				// MPEG (http://www.mp3-tech.org/programmer/frame_header.html):
+				//
+				// AAAAAAAA AAABBCCX
+				//
+				// Letter 	Length (bits) 	Description
+				// A 	    11              Syncword, all bits must be set to 1.
+				// B 	    2 	            MPEG Audio version ID
+				// C 	    2 	            Layer description
+
+				// The subtle overlap in the ADTS header's frame sync and MPEG's version ID
+				// is the first condition to check. However, since 0b10 and 0b11 are valid versions
+				// in MPEG, we have to also check the layer.
+
+				// So, if we have a version 1 (0b11) or version 2 (0b10) MPEG frame AND a layer of 0b00,
+				// we can assume we have an ADTS header. Awesome!
+
+				if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
+					return Some(Self::AAC);
+				}
+
+				Some(Self::MPEG)
+			},
 			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {
 				let id = &buf[8..12];
 
