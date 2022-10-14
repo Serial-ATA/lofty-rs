@@ -80,7 +80,8 @@ impl FileProperties {
 mod tests {
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::FlacFile;
-	use crate::iff::{AiffFile, WavFile, WavFormat, WavProperties};
+	use crate::iff::aiff::AiffFile;
+	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::mpeg::{ChannelMode, Emphasis, Layer, MPEGFile, MPEGProperties, MpegVersion};
 	use crate::ogg::{

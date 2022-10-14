@@ -251,7 +251,7 @@ pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&st
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::RIFFInfoList;
+	use crate::iff::wav::RIFFInfoList;
 	use crate::{Tag, TagExt, TagType};
 
 	use crate::iff::chunk::Chunks;

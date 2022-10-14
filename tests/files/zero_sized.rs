@@ -1,6 +1,7 @@
 use lofty::ape::ApeFile;
 use lofty::flac::FlacFile;
-use lofty::iff::{AiffFile, WavFile};
+use lofty::iff::aiff::AiffFile;
+use lofty::iff::wav::WavFile;
 use lofty::mp4::Mp4File;
 use lofty::mpeg::MPEGFile;
 use lofty::{AudioFile, ParseOptions};

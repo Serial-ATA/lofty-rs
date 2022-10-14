@@ -1,7 +1,8 @@
 use lofty::ape::ApeTag;
 use lofty::id3::v1::ID3v1Tag;
 use lofty::id3::v2::ID3v2Tag;
-use lofty::iff::{AIFFTextChunks, RIFFInfoList};
+use lofty::iff::aiff::AIFFTextChunks;
+use lofty::iff::wav::RIFFInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
 use lofty::{Accessor, TagExt};

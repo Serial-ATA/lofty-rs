@@ -1,3 +1,5 @@
+//! AIFF specific items
+
 mod properties;
 mod read;
 
@@ -7,10 +9,13 @@ use crate::properties::FileProperties;
 
 use lofty_attr::LoftyFile;
 
+// Exports
+
 cfg_if::cfg_if! {
 	if #[cfg(feature = "aiff_text_chunks")] {
 		pub(crate) mod tag;
-		use tag::AIFFTextChunks;
+		pub use tag::AIFFTextChunks;
+		pub use tag::Comment;
 	}
 }
 

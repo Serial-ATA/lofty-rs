@@ -420,7 +420,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::{AIFFTextChunks, Comment};
+	use crate::iff::aiff::{AIFFTextChunks, Comment};
 	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
 	use crate::probe::ParseOptions;

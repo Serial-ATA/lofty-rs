@@ -1,5 +1,5 @@
 use crate::oom_test;
-use lofty::iff::WavFile;
+use lofty::iff::wav::WavFile;
 
 #[test]
 fn oom1() {

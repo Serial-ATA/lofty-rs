@@ -1,5 +1,5 @@
 use crate::oom_test;
-use lofty::iff::AiffFile;
+use lofty::iff::aiff::AiffFile;
 
 #[test]
 fn oom1() {

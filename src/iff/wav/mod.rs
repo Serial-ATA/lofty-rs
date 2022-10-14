@@ -1,3 +1,5 @@
+//! WAV specific items
+
 mod properties;
 mod read;
 
@@ -6,15 +8,15 @@ use crate::id3::v2::tag::ID3v2Tag;
 
 use lofty_attr::LoftyFile;
 
+// Exports
+pub use crate::iff::wav::properties::{WavFormat, WavProperties};
+
 cfg_if::cfg_if! {
 	if #[cfg(feature = "riff_info_list")] {
 		pub(crate) mod tag;
-		use tag::RIFFInfoList;
+		pub use tag::RIFFInfoList;
 	}
 }
-
-// Exports
-pub use crate::iff::wav::properties::{WavFormat, WavProperties};
 
 /// A WAV file
 #[derive(LoftyFile)]

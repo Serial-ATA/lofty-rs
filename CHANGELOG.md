@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **lofty_attr**: Simplified the `file_type` attribute:
   - Before, you had to specify custom file types as `#[lofty(file_type = "Custom(\"MyFile\")")]`. Now
     you can simply do `#[lofty(file_type = "MyFile")]` and it will infer the rest.
+- **IFF**: `WAV` and `AIFF` items are no longer combined in the `iff` module. They are now separated
+			into their own modules at `iff::wav` and `iff::aiff` respectively.
 
 ### Removed
 - **lofty_attr**: The `#[lofty(always_present)]` attribute has been removed, and is now inferred.
