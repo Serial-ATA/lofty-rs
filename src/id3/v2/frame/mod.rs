@@ -296,6 +296,9 @@ impl From<TagItem> for Option<Frame> {
 							content: text,
 						})
 					},
+					(FrameID::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
+						FrameValue::Popularimeter(Popularimeter::from_bytes(&text).ok()?)
+					},
 					(_, value) => value.into(),
 				};
 
@@ -394,6 +397,9 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					description: String::new(),
 					content: text.clone(),
 				}),
+				("POPM", ItemValue::Binary(contents)) => {
+					FrameValue::Popularimeter(Popularimeter::from_bytes(contents)?)
+				},
 				(_, value) => value.into(),
 			}),
 			flags: FrameFlags::default(),

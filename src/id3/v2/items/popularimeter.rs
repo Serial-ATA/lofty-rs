@@ -1,5 +1,7 @@
-use crate::util::text::{encode_text, TextEncoding};
+use crate::error::Result;
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
+use byteorder::ReadBytesExt;
 use std::hash::{Hash, Hasher};
 
 /// The contents of a popularimeter ("POPM") frame
@@ -44,6 +46,32 @@ impl Popularimeter {
 		}
 
 		content
+	}
+
+	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
+	pub fn from_bytes(mut bytes: &[u8]) -> Result<Self> {
+		let content = &mut bytes;
+
+		let email = decode_text(content, TextEncoding::Latin1, true)?;
+		let rating = content.read_u8()?;
+
+		let counter;
+		let remaining_size = content.len();
+		if remaining_size > 8 {
+			counter = u64::MAX;
+		} else {
+			let mut counter_bytes = [0; 8];
+			let counter_start_pos = 8 - remaining_size;
+
+			counter_bytes[counter_start_pos..].copy_from_slice(content);
+			counter = u64::from_be_bytes(counter_bytes);
+		}
+
+		Ok(Self {
+			email: email.unwrap_or_default(),
+			rating,
+			counter,
+		})
 	}
 }
 
