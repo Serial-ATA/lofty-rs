@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- `ParseOptions`:
+- `ParseOptions` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/50)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/70)):
   - ⚠️ Important ⚠️: This update introduces `ParseOptions` to allow for finer grained control over error
       eagerness and other settings. Previously, when reading a file the only option available was
       `read_properties`, specified with a `bool` in `read_from{_path}`. This will now default to `true`,
       and can be overridden when using `Probe`.
-- **🎉 Support for AAC (ADTS) files** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/58))
+- **🎉 Support for AAC (ADTS) files** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/58)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/71))
 - **FileProperties**: `FileProperties::new`
 - Debug logging via the [log](https://crates.io/crates/log) crate for exposing recoverable errors.
 - **Error**: `ErrorKind::SizeMismatch`
@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     you can simply do `#[lofty(file_type = "MyFile")]` and it will infer the rest.
 - **IFF**: `WAV` and `AIFF` items are no longer combined in the `iff` module. They are now separated
 			into their own modules at `iff::wav` and `iff::aiff` respectively.
+
+### Fixed
+- **ID3v2**: Populate the `Populatimeter` field in the `ID3v2` -> `Tag` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/63)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/64))
 
 ### Removed
 - **lofty_attr**: The `#[lofty(always_present)]` attribute has been removed, and is now inferred.
