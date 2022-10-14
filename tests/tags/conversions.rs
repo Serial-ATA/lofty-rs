@@ -1,7 +1,7 @@
 // Tests for special case conversions
 
-use lofty::id3::v2::{Frame, FrameFlags, FrameValue, ID3v2Tag, LanguageFrame, TextEncoding};
-use lofty::{ItemKey, Tag, TagType};
+use lofty::id3::v2::{Frame, FrameFlags, FrameValue, ID3v2Tag, LanguageFrame};
+use lofty::{ItemKey, Tag, TagType, TextEncoding};
 
 #[test]
 fn tag_to_id3v2_lang_frame() {

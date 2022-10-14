@@ -1,5 +1,5 @@
-use lofty::id3::v2::{ID3v2Version, TextEncoding};
-use lofty::{Picture, PictureInformation, PictureType};
+use lofty::id3::v2::ID3v2Version;
+use lofty::{Picture, PictureInformation, PictureType, TextEncoding};
 
 use std::fs::File;
 use std::io::Read;

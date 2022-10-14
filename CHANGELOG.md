@@ -17,7 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Error**: `ErrorKind::SizeMismatch`
 
 ### Changed
-- **ID3v2**: Frame/tag flags with optional additional data are now `Option<T>` instead of `(bool, T)`
+- **ID3v2**:
+  - Frame/tag flags with optional additional data are now `Option<T>` instead of `(bool, T)`
+  - `id3::v2::TextEncoding` is now exported as `lofty::TextEncoding`
 - `read_from{_path}` will no longer take a `bool` for reading properties, and will do it by default. To
   change this behavior, you must now use `Probe`.
 - **FileType**: `primary_tag_type` will no longer change its return depending on the enabled features.

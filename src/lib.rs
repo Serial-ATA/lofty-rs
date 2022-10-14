@@ -193,6 +193,7 @@ pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::properties::FileProperties;
 pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};
+pub use util::text::TextEncoding;
 
 pub use crate::traits::{Accessor, TagExt};
 
