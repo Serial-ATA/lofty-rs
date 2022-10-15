@@ -35,6 +35,17 @@ cargo run --example custom_resolver
 
 Available [here](https://docs.rs/lofty)
 
+## Benchmarking
+
+There are benchmarks available [here](./benches).
+
+These benchmarks make use of [criterion](https://github.com/bheisler/criterion.rs), and
+due to its size it cannot be a normal dev-dependency. To run the benchmarks do:
+
+```shell
+RUSTFLAGS="--cfg bench" cargo bench
+```
+
 ## License
 
 Licensed under either of

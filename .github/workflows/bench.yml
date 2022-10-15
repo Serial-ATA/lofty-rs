@@ -23,6 +23,8 @@ jobs:
           override: true
 
       - name: Run benchmark
+        env:
+            RUSTFLAGS: "--cfg bench"
         run: cargo bench --all-features -- --output-format bencher | tee output.txt
 
       - name: Store benchmark result
