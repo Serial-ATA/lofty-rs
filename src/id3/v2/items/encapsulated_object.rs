@@ -3,8 +3,8 @@ use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::io::{Cursor, Read};
 
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 /// Information about a [`GeneralEncapsulatedObject`]
+#[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub struct GEOBInformation {
 	/// The text encoding of `file_name` and `description`
 	pub encoding: TextEncoding,

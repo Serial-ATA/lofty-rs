@@ -9,10 +9,10 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+/// An MP4 file's audio codec
 #[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
-/// An MP4 file's audio codec
 pub enum Mp4Codec {
 	Unknown,
 	AAC,
@@ -138,9 +138,9 @@ impl TryFrom<u8> for AudioObjectType {
 	}
 }
 
+/// An MP4 file's audio properties
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// An MP4 file's audio properties
 pub struct Mp4Properties {
 	pub(crate) codec: Mp4Codec,
 	pub(crate) extended_audio_object_type: Option<AudioObjectType>,

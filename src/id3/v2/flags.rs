@@ -1,9 +1,9 @@
 #[cfg(feature = "id3v2_restrictions")]
 use super::restrictions::TagRestrictions;
 
+/// Flags that apply to the entire tag
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(clippy::struct_excessive_bools)]
-/// Flags that apply to the entire tag
 pub struct ID3v2TagFlags {
 	/// Whether or not all frames are unsynchronised. See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation)
 	pub unsynchronisation: bool,

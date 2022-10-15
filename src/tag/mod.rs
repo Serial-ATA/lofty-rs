@@ -42,7 +42,6 @@ macro_rules! impl_accessor {
 	}
 }
 
-#[derive(Clone)]
 /// Represents a parsed tag
 ///
 /// This is a tag that is loosely bound to a specific [`TagType`].
@@ -99,6 +98,7 @@ macro_rules! impl_accessor {
 /// let tag = Tag::new(TagType::ID3v2);
 /// let id3v2_tag: ID3v2Tag = tag.into();
 /// ```
+#[derive(Clone)]
 pub struct Tag {
 	tag_type: TagType,
 	pub(crate) pictures: Vec<Picture>,

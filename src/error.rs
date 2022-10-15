@@ -13,9 +13,9 @@ use ogg_pager::PageError;
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
 
+/// The types of errors that can occur
 #[derive(Debug)]
 #[non_exhaustive]
-/// The types of errors that can occur
 pub enum ErrorKind {
 	// File format related errors
 	/// Unable to guess the format
@@ -66,9 +66,9 @@ pub enum ErrorKind {
 	Alloc(TryReserveError),
 }
 
+/// The types of errors that can occur while interacting with ID3v2 tags
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-/// The types of errors that can occur while interacting with ID3v2 tags
 pub enum ID3v2ErrorKind {
 	#[cfg(feature = "id3v2")]
 	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::ID3v2Version::V2)

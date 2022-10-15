@@ -9,9 +9,9 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
+/// A Speex file's audio properties
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// A Speex file's audio properties
 pub struct SpeexProperties {
 	pub(crate) duration: Duration,
 	pub(crate) version: u32,

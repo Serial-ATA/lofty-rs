@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+/// An MPEG file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// An MPEG file's audio properties
 pub struct MPEGProperties {
 	pub(crate) version: MpegVersion,
 	pub(crate) layer: Layer,

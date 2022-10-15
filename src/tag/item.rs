@@ -555,8 +555,8 @@ gen_item_keys!(
 	]
 );
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Represents a tag item's value
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ItemValue {
 	/// Any UTF-8 encoded text
 	Text(String),
@@ -627,8 +627,8 @@ impl<'a> Into<ItemValueRef<'a>> for &'a ItemValue {
 	}
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 /// Represents a tag item (key/value)
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TagItem {
 	pub(crate) item_key: ItemKey,
 	pub(crate) item_value: ItemValue,

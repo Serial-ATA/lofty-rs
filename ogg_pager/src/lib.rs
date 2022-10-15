@@ -276,7 +276,6 @@ impl Page {
 	}
 }
 
-#[allow(clippy::mixed_read_write_in_expression)]
 /// Create pages from a packet
 ///
 /// # Example
@@ -290,6 +289,7 @@ impl Page {
 ///
 /// let pages = paginate(&comment_header_packet, stream_serial_number, 0, 0);
 /// ```
+#[allow(clippy::mixed_read_write_in_expression)]
 pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<Page> {
 	let mut pages = Vec::new();
 

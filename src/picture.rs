@@ -25,8 +25,8 @@ use byteorder::ReadBytesExt;
 #[cfg(feature = "id3v2")]
 use byteorder::WriteBytesExt;
 
-#[cfg(feature = "ape")]
 /// Common picture item keys for APE
+#[cfg(feature = "ape")]
 pub const APE_PICTURE_TYPES: [&str; 21] = [
 	"Cover Art (Other)",
 	"Cover Art (Png Icon)",
@@ -51,9 +51,9 @@ pub const APE_PICTURE_TYPES: [&str; 21] = [
 	"Cover Art (Publisher Logotype)",
 ];
 
+/// Mime types for pictures.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 #[non_exhaustive]
-/// Mime types for pictures.
 pub enum MimeType {
 	/// PNG image
 	Png,
@@ -265,12 +265,12 @@ impl PictureType {
 	}
 }
 
-#[cfg(feature = "vorbis_comments")]
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 /// Information about a [`Picture`]
 ///
 /// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
 /// See [`Picture::as_flac_bytes`] for more information.
+#[cfg(feature = "vorbis_comments")]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
 	pub width: u32,

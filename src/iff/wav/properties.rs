@@ -10,9 +10,9 @@ const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xFFFE;
 
+/// A WAV file's format
 #[allow(missing_docs, non_camel_case_types)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-/// A WAV file's format
 pub enum WavFormat {
 	PCM,
 	IEEE_FLOAT,
@@ -25,9 +25,9 @@ impl Default for WavFormat {
 	}
 }
 
+/// A WAV file's audio properties
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// A WAV file's audio properties
 pub struct WavProperties {
 	pub(crate) format: WavFormat,
 	pub(crate) duration: Duration,

@@ -1,6 +1,6 @@
+/// Restrictions on the tag size
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
-/// Restrictions on the tag size
 pub enum TagSizeRestrictions {
 	/// No more than 128 frames and 1 MB total tag size
 	S_128F_1M,
@@ -18,9 +18,9 @@ impl Default for TagSizeRestrictions {
 	}
 }
 
+/// Restrictions on text field sizes
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
-/// Restrictions on text field sizes
 pub enum TextSizeRestrictions {
 	/// No size restrictions
 	None,
@@ -38,9 +38,9 @@ impl Default for TextSizeRestrictions {
 	}
 }
 
+/// Restrictions on all image sizes
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
-/// Restrictions on all image sizes
 pub enum ImageSizeRestrictions {
 	/// No size restrictions
 	None,
@@ -58,8 +58,8 @@ impl Default for ImageSizeRestrictions {
 	}
 }
 
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 /// Restrictions on the content of an ID3v2 tag
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct TagRestrictions {
 	/// Restriction on the size of the tag. See [`TagSizeRestrictions`]
 	pub size: TagSizeRestrictions,
@@ -125,8 +125,8 @@ impl TagRestrictions {
 		restrictions
 	}
 
-	#[allow(clippy::trivially_copy_pass_by_ref)]
 	/// Convert a [`TagRestrictions`] into a `u8`
+	#[allow(clippy::trivially_copy_pass_by_ref)]
 	pub fn as_bytes(&self) -> u8 {
 		let mut byte = 0;
 

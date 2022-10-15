@@ -78,8 +78,8 @@ impl<'a> Iterator for AtomDataStorageIter<'a> {
 	}
 }
 
-#[derive(PartialEq, Clone)]
 /// Represents an `MP4` atom
+#[derive(PartialEq, Clone)]
 pub struct Atom {
 	pub(crate) ident: AtomIdent,
 	pub(super) data: AtomDataStorage,
@@ -152,8 +152,6 @@ impl Debug for Atom {
 	}
 }
 
-// TODO: Bool variant for the various flag atoms?
-#[derive(Debug, PartialEq, Eq, Clone)]
 /// The data of an atom
 ///
 /// NOTES:
@@ -165,7 +163,9 @@ impl Debug for Atom {
 /// will come from codes `21` and `22`. All other integer
 /// types will be stored as [`AtomData::Unknown`], refer
 /// to the link above for codes.
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AtomData {
+	// TODO: Bool variant for the various flag atoms?
 	/// A UTF-8 encoded string
 	UTF8(String),
 	/// A UTF-16 encoded string
@@ -201,8 +201,8 @@ pub enum AtomData {
 	},
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 /// The parental advisory rating
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AdvisoryRating {
 	/// A rating of 0
 	Inoffensive,

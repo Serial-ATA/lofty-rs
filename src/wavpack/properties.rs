@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+/// A WavPack file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// A WavPack file's audio properties
 pub struct WavPackProperties {
 	pub(crate) version: u16,
 	pub(crate) duration: Duration,

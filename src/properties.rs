@@ -1,8 +1,8 @@
 use std::time::Duration;
 
+/// Various *immutable* audio properties
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
-/// Various *immutable* audio properties
 pub struct FileProperties {
 	pub(crate) duration: Duration,
 	pub(crate) overall_bitrate: Option<u32>,

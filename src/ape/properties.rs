@@ -8,9 +8,9 @@ use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+/// An APE file's audio properties
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// An APE file's audio properties
 pub struct ApeProperties {
 	pub(crate) version: u16,
 	pub(crate) duration: Duration,

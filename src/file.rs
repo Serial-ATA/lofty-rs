@@ -477,10 +477,10 @@ impl AudioFile for TaggedFile {
 	}
 }
 
+/// The type of file read
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 #[non_exhaustive]
-/// The type of file read
 pub enum FileType {
 	AAC,
 	AIFF,

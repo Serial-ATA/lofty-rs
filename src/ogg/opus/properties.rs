@@ -9,9 +9,9 @@ use std::time::Duration;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::Page;
 
+/// An Opus file's audio properties
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
-/// An Opus file's audio properties
 pub struct OpusProperties {
 	pub(crate) duration: Duration,
 	pub(crate) overall_bitrate: u32,
