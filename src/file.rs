@@ -406,10 +406,10 @@ impl TaggedFile {
 	///
 	/// # Examples
 	///
-	/// ```rust,ignore
+	/// ```rust,no_run
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
 	/// // Edit the tags
 	///
@@ -428,12 +428,12 @@ impl TaggedFile {
 	///
 	/// # Examples
 	///
-	/// ```rust,ignore
+	/// ```rust,no_run
 	/// use std::fs::OpenOptions;
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path, true)?;
+	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
 	/// // Edit the tags
 	///
