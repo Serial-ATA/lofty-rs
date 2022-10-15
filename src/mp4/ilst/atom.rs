@@ -168,7 +168,7 @@ impl Debug for Atom {
 pub enum AtomData {
 	/// A UTF-8 encoded string
 	UTF8(String),
-	/// A UTf-16 encoded string
+	/// A UTF-16 encoded string
 	UTF16(String),
 	/// A JPEG, PNG, GIF *(Deprecated)*, or BMP image
 	///
