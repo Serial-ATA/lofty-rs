@@ -36,7 +36,7 @@ impl From<WavPackProperties> for FileProperties {
 }
 
 impl WavPackProperties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

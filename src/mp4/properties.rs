@@ -166,7 +166,7 @@ impl From<Mp4Properties> for FileProperties {
 }
 
 impl Mp4Properties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

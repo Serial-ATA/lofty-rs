@@ -45,7 +45,7 @@ impl FileProperties {
 		}
 	}
 
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

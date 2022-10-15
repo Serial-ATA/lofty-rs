@@ -37,7 +37,7 @@ impl AACProperties {
 		self.audio_object_type
 	}
 
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

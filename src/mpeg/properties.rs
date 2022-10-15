@@ -40,7 +40,7 @@ impl From<MPEGProperties> for FileProperties {
 }
 
 impl MPEGProperties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

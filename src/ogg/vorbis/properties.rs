@@ -37,7 +37,7 @@ impl From<VorbisProperties> for FileProperties {
 }
 
 impl VorbisProperties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

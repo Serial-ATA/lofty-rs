@@ -52,7 +52,7 @@ impl From<WavProperties> for FileProperties {
 }
 
 impl WavProperties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}

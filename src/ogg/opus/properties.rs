@@ -35,7 +35,7 @@ impl From<OpusProperties> for FileProperties {
 }
 
 impl OpusProperties {
-	/// Duration
+	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
