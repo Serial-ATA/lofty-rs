@@ -21,6 +21,11 @@ pub struct AACProperties {
 
 impl AACProperties {
 	/// MPEG version
+	///
+	/// The only possible variants are:
+	///
+	/// * [MpegVersion::V2]
+	/// * [MpegVersion::V4]
 	pub fn version(&self) -> MpegVersion {
 		self.version
 	}
