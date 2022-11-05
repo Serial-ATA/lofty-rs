@@ -420,6 +420,11 @@ impl Accessor for ID3v2Tag {
 
 impl TagExt for ID3v2Tag {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a FrameID;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		self.frames.iter().any(|frame| &frame.id == key)
+	}
 
 	fn is_empty(&self) -> bool {
 		self.frames.is_empty()

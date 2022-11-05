@@ -507,6 +507,11 @@ impl Tag {
 
 impl TagExt for Tag {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a ItemKey;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		self.items.iter().any(|item| item.key() == key)
+	}
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty() && self.pictures.is_empty()

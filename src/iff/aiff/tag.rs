@@ -137,6 +137,17 @@ impl AIFFTextChunks {
 
 impl TagExt for AIFFTextChunks {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a ItemKey;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		match key {
+			ItemKey::TrackTitle => self.name.is_some(),
+			ItemKey::TrackArtist => self.author.is_some(),
+			ItemKey::CopyrightMessage => self.copyright.is_some(),
+			ItemKey::Comment => self.annotations.is_some() || self.comments.is_some(),
+			_ => false,
+		}
+	}
 
 	fn is_empty(&self) -> bool {
 		matches!(

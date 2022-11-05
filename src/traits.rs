@@ -131,10 +131,26 @@ use std::path::Path;
 pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// The associated error which can be returned from IO operations
 	type Err;
+	/// The type of key used in the tag for non-mutating functions
+	type RefKey<'a>
+	where
+		Self: 'a;
 
-	// TODO:
-	// type Key;
-	// fn contains(key: Key) -> bool;
+	/// Whether the tag contains an item with the key
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
+	/// # let tag_type = lofty::TagType::ID3v2;
+	///
+	/// let mut tag = Tag::new(tag_type);
+	/// assert!(tag.is_empty());
+	///
+	/// tag.set_artist(String::from("Foo artist"));
+	/// assert!(tag.contains(&ItemKey::TrackArtist));
+	/// ```
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool;
 
 	/// Whether the tag has any items
 	///

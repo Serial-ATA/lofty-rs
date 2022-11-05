@@ -368,6 +368,13 @@ impl Accessor for VorbisComments {
 
 impl TagExt for VorbisComments {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a str;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		self.items
+			.iter()
+			.any(|(item_key, _)| item_key.eq_ignore_ascii_case(key))
+	}
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty() && self.pictures.is_empty()

@@ -211,6 +211,11 @@ impl Accessor for ApeTag {
 
 impl TagExt for ApeTag {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a str;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		self.items.iter().any(|i| i.key().eq_ignore_ascii_case(key))
+	}
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty()

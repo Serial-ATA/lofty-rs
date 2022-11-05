@@ -325,6 +325,11 @@ impl Accessor for Ilst {
 
 impl TagExt for Ilst {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a AtomIdent;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		self.atoms.iter().any(|atom| &atom.ident == key)
+	}
 
 	fn is_empty(&self) -> bool {
 		self.atoms.is_empty()

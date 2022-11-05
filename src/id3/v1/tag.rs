@@ -168,6 +168,20 @@ impl Accessor for ID3v1Tag {
 
 impl TagExt for ID3v1Tag {
 	type Err = LoftyError;
+	type RefKey<'a> = &'a ItemKey;
+
+	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+		match key {
+			ItemKey::TrackTitle => self.title.is_some(),
+			ItemKey::AlbumTitle => self.album.is_some(),
+			ItemKey::TrackArtist => self.artist.is_some(),
+			ItemKey::TrackNumber => self.track_number.is_some(),
+			ItemKey::Year => self.year.is_some(),
+			ItemKey::Genre => self.genre.is_some(),
+			ItemKey::Comment => self.comment.is_some(),
+			_ => false,
+		}
+	}
 
 	fn is_empty(&self) -> bool {
 		self.title.is_none()
