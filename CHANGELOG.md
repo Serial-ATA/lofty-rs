@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **TagExt**: `TagExt::contains`
+- **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
 
 ### Changed
 - **Files**: Return the removed tag from `<File>::remove(TagType)`

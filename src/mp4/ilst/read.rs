@@ -86,6 +86,23 @@ where
 
 					continue;
 				},
+				b"cpil" | b"hdvd" | b"pcst" | b"pgap" | b"shwm" => {
+					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, &atom)? {
+						if let Some((_, content)) = atom_data.first() {
+							let data = match content[..] {
+								[0, ..] => AtomData::Bool(false),
+								_ => AtomData::Bool(true),
+							};
+
+							tag.atoms.push(Atom {
+								ident: AtomIdent::Fourcc(*fourcc),
+								data: AtomDataStorage::Single(data),
+							})
+						}
+					}
+
+					continue;
+				},
 				_ => {},
 			}
 		}
