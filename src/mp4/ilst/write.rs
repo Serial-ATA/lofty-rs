@@ -381,6 +381,7 @@ where
 			AtomData::Picture(ref pic) => write_picture(pic, writer)?,
 			AtomData::SignedInteger(int) => write_signed_int(*int, writer)?,
 			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
+			AtomData::Bool(b) => write_signed_int(i32::from(*b), writer)?,
 			AtomData::Unknown { code, ref data } => write_data(*code, data, writer)?,
 		};
 	}

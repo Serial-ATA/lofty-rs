@@ -165,7 +165,6 @@ impl Debug for Atom {
 /// to the link above for codes.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AtomData {
-	// TODO: Bool variant for the various flag atoms?
 	/// A UTF-8 encoded string
 	UTF8(String),
 	/// A UTF-16 encoded string
@@ -188,6 +187,12 @@ pub enum AtomData {
 	///
 	/// NOTE: See [`AtomData::SignedInteger`]
 	UnsignedInteger(u32),
+	/// A boolean value
+	///
+	/// NOTE: This isn't an official data type, but multiple flag atoms exist,
+	///       so this makes them easier to represent. The *real* underlying type
+	///       is `SignedInteger`.
+	Bool(bool),
 	/// Unknown data
 	///
 	/// Due to the number of possible types, there are many
