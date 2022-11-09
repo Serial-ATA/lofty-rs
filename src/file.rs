@@ -297,7 +297,7 @@ impl TaggedFile {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file without an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
-	/// # let _ = tagged_file.take(TagType::ID3v2); // sneaky
+	/// # let _ = tagged_file.remove(TagType::ID3v2); // sneaky
 	///
 	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
 	///
@@ -312,7 +312,7 @@ impl TaggedFile {
 		let tag_type = tag.tag_type();
 
 		if self.supports_tag_type(tag_type) {
-			let ret = self.take(tag_type);
+			let ret = self.remove(tag_type);
 			self.tags.push(tag);
 
 			return ret;
@@ -336,12 +336,12 @@ impl TaggedFile {
 	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
 	///
 	/// // Take the ID3v2 tag
-	/// let id3v2 = tagged_file.take(TagType::ID3v2);
+	/// let id3v2 = tagged_file.remove(TagType::ID3v2);
 	///
 	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	pub fn take(&mut self, tag_type: TagType) -> Option<Tag> {
+	pub fn remove(&mut self, tag_type: TagType) -> Option<Tag> {
 		self.tags
 			.iter()
 			.position(|t| t.tag_type() == tag_type)
