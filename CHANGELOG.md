@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **TagExt**: `TagExt::contains`
 
+### Changed
+- **Files**: Return the removed tag from `<File>::remove(TagType)`
+  - Previously, the only way to remove and take a tag was through `TaggedFile::take`.
+    This was not possible when using a concrete type, such as `OpusFile`.
+
 ## [0.9.0] - 2022-10-30
 
 ### Added

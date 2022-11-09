@@ -304,7 +304,7 @@ fn get_getters<'a>(
 		let remove_ident = Ident::new(&format!("remove_{}", name), Span::call_site());
 
 		let remover = if f.needs_option {
-			quote! {self.#field_name = None;}
+			quote! { self.#field_name.take() }
 		} else {
 			let assert_field_ty_default = quote_spanned! {f.name.span()=>
 				struct _AssertDefault where #field_ty: core::default::Default;
@@ -312,7 +312,7 @@ fn get_getters<'a>(
 
 			quote! {
 				#assert_field_ty_default
-				self.#field_name = <#field_ty>::default();
+				::core::mem::replace(&mut self.#field_name, <#field_ty>::default())
 			}
 		};
 
@@ -331,7 +331,7 @@ fn get_getters<'a>(
 				}
 
 				/// Removes the tag
-				pub fn #remove_ident(&mut self) {
+				pub fn #remove_ident(&mut self) -> #ty_prefix #field_ty #ty_suffix {
 					#remover
 				}
 			}
