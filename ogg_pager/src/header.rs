@@ -4,7 +4,7 @@ use std::io::{Read, Seek};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-// An OGG page header
+/// An OGG page header
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct PageHeader {
 	/// The position in the stream the page started at
@@ -20,6 +20,7 @@ pub struct PageHeader {
 }
 
 impl PageHeader {
+	/// Creates a new `PageHeader`
 	pub fn new(header_type_flag: u8, abgp: u64, stream_serial: u32, sequence_number: u32) -> Self {
 		Self {
 			start: 0,
@@ -31,6 +32,14 @@ impl PageHeader {
 		}
 	}
 
+	/// Reads a `PageHeader` from a reader
+	///
+	/// # Errors
+	///
+	/// * [`PageError::MissingMagic`]
+	/// * [`PageError::InvalidVersion`]
+	/// * [`PageError::BadSegmentCount`]
+	/// * Reader does not have enough data
 	pub fn read<R>(data: &mut R) -> Result<(Self, Vec<u8>)>
 	where
 		R: Read + Seek,

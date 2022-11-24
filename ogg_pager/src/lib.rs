@@ -71,10 +71,12 @@ impl Page {
 		})
 	}
 
+	/// Returns a reference to the `Page`'s header
 	pub fn header(&self) -> &PageHeader {
 		&self.header
 	}
 
+	/// Returns a mutable reference to the `Page`'s header
 	pub fn header_mut(&mut self) -> &mut PageHeader {
 		&mut self.header
 	}
