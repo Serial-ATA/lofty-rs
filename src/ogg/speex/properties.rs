@@ -7,7 +7,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use ogg_pager::Page;
+use ogg_pager::{Packets, PageHeader};
 
 /// A Speex file's audio properties
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
@@ -84,13 +84,19 @@ impl SpeexProperties {
 	}
 }
 
-pub(in crate::ogg) fn read_properties<R>(data: &mut R, first_page: &Page) -> Result<SpeexProperties>
+pub(in crate::ogg) fn read_properties<R>(
+	data: &mut R,
+	first_page_header: PageHeader,
+	packets: &Packets,
+) -> Result<SpeexProperties>
 where
 	R: Read + Seek,
 {
-	let first_page_abgp = first_page.abgp;
+	// Safe to unwrap, it is impossible to get to this point without an
+	// identification header.
+	let identification_packet = packets.get(0).unwrap();
 
-	if first_page.content().len() < 80 {
+	if identification_packet.len() < 80 {
 		decode_err!(@BAIL Speex, "Header packet too small");
 	}
 
@@ -101,48 +107,63 @@ where
 	// Skipping:
 	// Speex string ("Speex   ", 8)
 	// Speex version (20)
-	let first_page_content = &mut &first_page.content()[28..];
+	let identification_packet_reader = &mut &identification_packet[28..];
 
-	properties.version = first_page_content.read_u32::<LittleEndian>()?;
+	properties.version = identification_packet_reader.read_u32::<LittleEndian>()?;
 
 	// Total size of the speex header
-	let _header_size = first_page_content.read_u32::<LittleEndian>()?;
+	let _header_size = identification_packet_reader.read_u32::<LittleEndian>()?;
 
-	properties.sample_rate = first_page_content.read_u32::<LittleEndian>()?;
-	properties.mode = first_page_content.read_u32::<LittleEndian>()?;
+	properties.sample_rate = identification_packet_reader.read_u32::<LittleEndian>()?;
+	properties.mode = identification_packet_reader.read_u32::<LittleEndian>()?;
 
 	// Version ID of the bitstream
-	let _mode_bitstream_version = first_page_content.read_u32::<LittleEndian>()?;
+	let _mode_bitstream_version = identification_packet_reader.read_u32::<LittleEndian>()?;
 
-	let channels = first_page_content.read_u32::<LittleEndian>()?;
+	let channels = identification_packet_reader.read_u32::<LittleEndian>()?;
 
 	if channels != 1 && channels != 2 {
 		decode_err!(@BAIL Speex, "Found invalid channel count, must be mono or stereo");
 	}
 
 	properties.channels = channels as u8;
-	properties.nominal_bitrate = first_page_content.read_i32::<LittleEndian>()?;
+	properties.nominal_bitrate = identification_packet_reader.read_i32::<LittleEndian>()?;
 
 	// The size of the frames in samples
-	let _frame_size = first_page_content.read_u32::<LittleEndian>()?;
+	let _frame_size = identification_packet_reader.read_u32::<LittleEndian>()?;
 
-	properties.vbr = first_page_content.read_u32::<LittleEndian>()? == 1;
+	properties.vbr = identification_packet_reader.read_u32::<LittleEndian>()? == 1;
 
-	let last_page = find_last_page(data)?;
-	let last_page_abgp = last_page.abgp;
-
+	let last_page = find_last_page(data);
 	let file_length = data.seek(SeekFrom::End(0))?;
 
-	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp) {
+	// This is used for bitrate calculation, it should be the length in
+	// milliseconds, but if we can't determine it then we'll just use 1000.
+	let mut length = 1000;
+	if let Ok(last_page) = last_page {
+		let first_page_abgp = first_page_header.abgp;
+		let last_page_abgp = last_page.header().abgp;
+
 		if properties.sample_rate > 0 {
-			let length = ((frame_count as f64) * 1000.0) / f64::from(properties.sample_rate) + 0.5;
-			properties.duration = Duration::from_millis(length as u64);
+			let total_samples = last_page_abgp.saturating_sub(first_page_abgp);
 
-			properties.overall_bitrate = ((file_length as f64) * 8.0 / length) as u32;
-
-			// TODO: Calculate with the stream length, and make this the fallback
-			properties.audio_bitrate = (properties.nominal_bitrate as u64 / 1000) as u32;
+			// Best case scenario
+			if total_samples > 0 {
+				length = total_samples * 1000 / u64::from(properties.sample_rate);
+				properties.duration = Duration::from_millis(length);
+			} else {
+				log::debug!(
+					"Speex: The file contains invalid PCM values, unable to calculate length"
+				);
+			}
+		} else {
+			log::debug!("Speex: Sample rate = 0, unable to calculate length");
 		}
+	}
+
+	if properties.nominal_bitrate > 0 {
+		properties.overall_bitrate = (file_length.saturating_mul(8) / length) as u32;
+		properties.audio_bitrate = (properties.nominal_bitrate as u64 / 1000) as u32;
 	}
 
 	Ok(properties)

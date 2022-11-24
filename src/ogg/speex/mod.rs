@@ -37,7 +37,7 @@ impl AudioFile for SpeexFile {
 		let file_information = super::read::read_from(reader, SPEEXHEADER, &[])?;
 
 		Ok(Self {
-            properties: if parse_options.read_properties { properties::read_properties(reader, &file_information.1)? } else { SpeexProperties::default() },
+            properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { SpeexProperties::default() },
             #[cfg(feature = "vorbis_comments")]
             // Safe to unwrap, a metadata packet is mandatory in Speex
             vorbis_comments_tag: file_information.0.unwrap(),

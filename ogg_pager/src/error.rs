@@ -15,6 +15,8 @@ pub enum PageError {
 	MissingMagic,
 	/// The reader contains too much data for a single page
 	TooMuchData,
+	/// The reader contains too little data to extract the expected information
+	NotEnoughData,
 	/// Any std::io::Error
 	Io(std::io::Error),
 }
@@ -28,6 +30,9 @@ impl fmt::Display for PageError {
 			PageError::BadSegmentCount => write!(f, "Page has a segment count < 1"),
 			PageError::MissingMagic => write!(f, "Page is missing a magic signature"),
 			PageError::TooMuchData => write!(f, "Too much data was provided"),
+			PageError::NotEnoughData => {
+				write!(f, "Too little data is available for the expected read")
+			},
 			PageError::Io(err) => write!(f, "{}", err),
 		}
 	}

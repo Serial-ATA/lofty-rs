@@ -36,8 +36,8 @@ pub(crate) fn write_to(
 	loop {
 		let p = Page::read(data, false)?;
 
-		if p.header_type() & 0x01 != 1 {
-			data.seek(SeekFrom::Start(p.start))?;
+		if p.header().header_type_flag() & 0x01 != 1 {
+			data.seek(SeekFrom::Start(p.header().start))?;
 			data.read_to_end(&mut remaining)?;
 
 			reached_md_end = true;

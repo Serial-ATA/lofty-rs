@@ -6,7 +6,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use ogg_pager::Page;
+use ogg_pager::{Packets, PageHeader};
 
 /// An OGG Vorbis file's audio properties
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -85,17 +85,19 @@ impl VorbisProperties {
 
 pub(in crate::ogg) fn read_properties<R>(
 	data: &mut R,
-	first_page: &Page,
+	first_page_header: PageHeader,
+	packets: &Packets,
 ) -> Result<VorbisProperties>
 where
 	R: Read + Seek,
 {
-	let first_page_abgp = first_page.abgp;
-
 	let mut properties = VorbisProperties::default();
 
+	// It's impossible to get this far without the identification packet, safe to unwrap
+	let first_packet = packets.get(0).unwrap();
+
 	// Skip identification header
-	let first_page_content = &mut &first_page.content()[7..];
+	let first_page_content = &mut &first_packet[7..];
 
 	properties.version = first_page_content.read_u32::<LittleEndian>()?;
 
@@ -106,21 +108,36 @@ where
 	properties.bitrate_nominal = first_page_content.read_i32::<LittleEndian>()?;
 	properties.bitrate_minimum = first_page_content.read_i32::<LittleEndian>()?;
 
-	let last_page = find_last_page(data)?;
-	let last_page_abgp = last_page.abgp;
-
+	let last_page = find_last_page(data);
 	let file_length = data.seek(SeekFrom::End(0))?;
 
-	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp) {
+	// This is used for bitrate calculation, it should be the length in
+	// milliseconds, but if we can't determine it then we'll just use 1000.
+	let mut length = 1000;
+	if let Ok(last_page) = last_page {
+		let first_page_abgp = first_page_header.abgp;
+		let last_page_abgp = last_page.header().abgp;
+
 		if properties.sample_rate > 0 {
-			let length = frame_count * 1000 / u64::from(properties.sample_rate);
-			properties.duration = Duration::from_millis(length);
+			let total_samples = last_page_abgp.saturating_sub(first_page_abgp);
 
-			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-
-			// TODO: Calculate with the stream length, and make this the fallback
-			properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
+			// Best case scenario
+			if total_samples > 0 {
+				length = total_samples * 1000 / u64::from(properties.sample_rate);
+				properties.duration = Duration::from_millis(length);
+			} else {
+				log::debug!(
+					"Vorbis: The file contains invalid PCM values, unable to calculate length"
+				);
+			}
+		} else {
+			log::debug!("Vorbis: Sample rate = 0, unable to calculate length");
 		}
+	}
+
+	if properties.bitrate_nominal > 0 {
+		properties.overall_bitrate = (file_length.saturating_mul(8) / length) as u32;
+		properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
 	}
 
 	Ok(properties)
