@@ -146,7 +146,7 @@ where
 {
 	let first_page = Page::read(data, false)?;
 
-	let ser = first_page.serial;
+	let ser = first_page.header().stream_serial;
 
 	let mut writer = Vec::new();
 	writer.write_all(&first_page.as_bytes()?)?;
@@ -155,7 +155,7 @@ where
 
 	let comment_signature = format.comment_signature();
 	if let Some(comment_signature) = comment_signature {
-		verify_signature(&first_md_page, comment_signature)?;
+		verify_signature(first_md_page.content(), comment_signature)?;
 	}
 
 	let comment_signature = comment_signature.unwrap_or_default();
@@ -211,8 +211,8 @@ fn replace_packet(
 	loop {
 		let p = Page::read(data, true)?;
 
-		if p.header_type() & 0x01 != 0x01 {
-			data.seek(SeekFrom::Start(p.start))?;
+		if p.header().header_type_flag() & 0x01 != 0x01 {
+			data.seek(SeekFrom::Start(p.header().start))?;
 			reached_md_end = true;
 			break;
 		}

@@ -2,13 +2,13 @@
 
 mod crc;
 mod error;
+mod header;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::{LittleEndian, ReadBytesExt};
-
 pub use crc::crc32;
 pub use error::{PageError, Result};
+pub use header::PageHeader;
 
 const CONTINUED_PACKET: u8 = 0x01;
 
@@ -23,16 +23,7 @@ pub const CONTAINS_LAST_PAGE_OF_BITSTREAM: u8 = 0x04;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Page {
 	content: Vec<u8>,
-	header_type: u8,
-	/// The page's absolute granule position
-	pub abgp: u64,
-	/// The page's stream serial number
-	pub serial: u32,
-	/// The page's sequence number
-	pub seq_num: u32,
-	checksum: u32,
-	/// The position in the stream the page started at
-	pub start: u64,
+	header: PageHeader,
 	/// The position in the stream the page ended
 	pub end: u64,
 }
@@ -66,13 +57,7 @@ impl Page {
 	///     ident_header_packet,
 	/// );
 	/// ```
-	pub fn new(
-		header_type_flag: u8,
-		abgp: u64,
-		stream_serial: u32,
-		sequence_number: u32,
-		content: Vec<u8>,
-	) -> Result<Self> {
+	pub fn new(header: PageHeader, content: Vec<u8>) -> Result<Self> {
 		let content_len = content.len();
 
 		if content_len > MAX_CONTENT_SIZE {
@@ -81,14 +66,17 @@ impl Page {
 
 		Ok(Self {
 			content,
-			header_type: header_type_flag,
-			abgp,
-			serial: stream_serial,
-			seq_num: sequence_number,
-			checksum: 0,
-			start: 0,
+			header,
 			end: content_len as u64,
 		})
+	}
+
+	pub fn header(&self) -> &PageHeader {
+		&self.header
+	}
+
+	pub fn header_mut(&mut self) -> &mut PageHeader {
+		&mut self.header
 	}
 
 	/// Convert the Page to Vec<u8> for writing
@@ -105,11 +93,11 @@ impl Page {
 
 		bytes.extend(b"OggS");
 		bytes.push(0); // Version
-		bytes.push(self.header_type);
-		bytes.extend(self.abgp.to_le_bytes());
-		bytes.extend(self.serial.to_le_bytes());
-		bytes.extend(self.seq_num.to_le_bytes());
-		bytes.extend(self.checksum.to_le_bytes());
+		bytes.push(self.header.header_type_flag);
+		bytes.extend(self.header.abgp.to_le_bytes());
+		bytes.extend(self.header.stream_serial.to_le_bytes());
+		bytes.extend(self.header.sequence_number.to_le_bytes());
+		bytes.extend(self.header.checksum.to_le_bytes());
 		bytes.push(segment_table.len() as u8);
 		bytes.append(&mut segment_table);
 		bytes.extend(self.content.iter());
@@ -129,37 +117,7 @@ impl Page {
 	where
 		V: Read + Seek,
 	{
-		let start = data.stream_position()?;
-
-		let mut sig = [0; 4];
-		data.read_exact(&mut sig)?;
-
-		if &sig != b"OggS" {
-			return Err(PageError::MissingMagic);
-		}
-
-		// Version, always 0
-		let version = data.read_u8()?;
-
-		if version != 0 {
-			return Err(PageError::InvalidVersion);
-		}
-
-		let header_type = data.read_u8()?;
-
-		let abgp = data.read_u64::<LittleEndian>()?;
-		let serial = data.read_u32::<LittleEndian>()?;
-		let seq_num = data.read_u32::<LittleEndian>()?;
-		let checksum = data.read_u32::<LittleEndian>()?;
-
-		let segments = data.read_u8()?;
-
-		if segments < 1 {
-			return Err(PageError::BadSegmentCount);
-		}
-
-		let mut segment_table = vec![0; segments as usize];
-		data.read_exact(&mut segment_table)?;
+		let (header, segment_table) = PageHeader::read(data)?;
 
 		let mut content: Vec<u8> = Vec::new();
 		let content_len: u16 = segment_table.iter().map(|&b| u16::from(b)).sum();
@@ -175,12 +133,7 @@ impl Page {
 
 		Ok(Page {
 			content,
-			header_type,
-			abgp,
-			serial,
-			seq_num,
-			checksum,
-			start,
+			header,
 			end,
 		})
 	}
@@ -191,7 +144,7 @@ impl Page {
 	///
 	/// See [`Page::as_bytes`]
 	pub fn gen_crc(&mut self) -> Result<()> {
-		self.checksum = crc::crc32(&self.as_bytes()?);
+		self.header.checksum = crc::crc32(&self.as_bytes()?);
 		Ok(())
 	}
 
@@ -220,19 +173,21 @@ impl Page {
 			let remaining = 65025 - self_len;
 
 			self.content.extend(content[0..remaining].iter());
-			self.header_type = 0;
-			self.abgp = 1_u64.wrapping_neg(); // -1 in two's complement indicates that no packets finish on this page
+			self.header.header_type_flag = 0;
+			self.header.abgp = 1_u64.wrapping_neg(); // -1 in two's complement indicates that no packets finish on this page
 			self.end += remaining as u64;
 
 			let mut p = Page {
 				content: content[remaining..].to_vec(),
-				header_type: 1,
-				abgp: 0,
-				serial: self.serial,
-				seq_num: self.seq_num + 1,
-				checksum: 0,
-				start: self.end,
-				end: self.start + content.len() as u64,
+				header: PageHeader {
+					start: self.end,
+					header_type_flag: 1,
+					abgp: 0,
+					stream_serial: self.header.stream_serial,
+					sequence_number: self.header.sequence_number + 1,
+					checksum: 0,
+				},
+				end: self.header().start + content.len() as u64,
 			};
 
 			p.gen_crc()?;
@@ -251,19 +206,6 @@ impl Page {
 	/// Consumes the page and returns it's content
 	pub fn take_content(self) -> Vec<u8> {
 		self.content
-	}
-
-	/// Returns the page's header type flag
-	pub fn header_type(&self) -> u8 {
-		self.header_type
-	}
-
-	/// Returns the page's checksum
-	///
-	/// NOTE: This will not generate a new CRC. It will return
-	/// the CRC as-is. Use [`Page::gen_crc`] to generate a new one.
-	pub fn checksum(&self) -> u32 {
-		self.checksum
 	}
 
 	/// Returns the page's segment table
@@ -299,22 +241,24 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 	for (idx, page) in packet.chunks(MAX_CONTENT_SIZE).enumerate() {
 		let p = Page {
 			content: page.to_vec(),
-			header_type: {
-				if first_page {
-					if flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM == 0x02 {
-						CONTAINS_LAST_PAGE_OF_BITSTREAM
+			header: PageHeader {
+				start: pos,
+				header_type_flag: {
+					if first_page {
+						if flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM == 0x02 {
+							CONTAINS_LAST_PAGE_OF_BITSTREAM
+						} else {
+							0
+						}
 					} else {
-						0
+						CONTINUED_PACKET
 					}
-				} else {
-					CONTINUED_PACKET
-				}
+				},
+				abgp,
+				stream_serial,
+				sequence_number: (idx + 1) as u32,
+				checksum: 0,
 			},
-			abgp,
-			serial: stream_serial,
-			seq_num: (idx + 1) as u32,
-			checksum: 0,
-			start: pos,
 			end: {
 				pos += page.len() as u64;
 				pos
@@ -327,7 +271,7 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 
 	if flags & CONTAINS_LAST_PAGE_OF_BITSTREAM == 0x04 {
 		if let Some(last) = pages.last_mut() {
-			last.header_type |= CONTAINS_LAST_PAGE_OF_BITSTREAM;
+			last.header.header_type_flag |= CONTAINS_LAST_PAGE_OF_BITSTREAM;
 		}
 	}
 
@@ -339,7 +283,7 @@ pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<
 				break;
 			}
 
-			p.abgp = 1_u64.wrapping_neg();
+			p.header.abgp = 1_u64.wrapping_neg();
 		}
 	}
 
@@ -379,9 +323,135 @@ pub fn segment_table(length: usize) -> Result<Vec<u8>> {
 	Ok(segments)
 }
 
+pub struct Packets {
+	content: Vec<u8>,
+	packet_sizes: Vec<u64>,
+}
+
+impl Packets {
+	pub fn read<R>(data: &mut R) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		Self::read_count(data, -1)
+	}
+
+	pub fn read_count<R>(data: &mut R, count: isize) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		let mut content = Vec::new();
+		let mut packet_sizes = Vec::new();
+
+		if count == 0 || count < -1 {
+			return Ok(Self {
+				content,
+				packet_sizes,
+			});
+		}
+
+		let mut read = 0;
+		'outer: loop {
+			if let Ok(page) = Page::read(data, false) {
+				let segment_table = page.segment_table()?;
+
+				let mut packet_size = 0_u64;
+				for i in segment_table {
+					packet_size += i as u64;
+
+					if i < 255 {
+						if count != -1 {
+							read += 1;
+						}
+
+						content.extend_from_slice(&page.content[0..packet_size as usize]);
+						packet_sizes.push(packet_size);
+						packet_size = 0;
+
+						if read == count {
+							break 'outer;
+						}
+					}
+				}
+
+				continue;
+			}
+
+			break;
+		}
+
+		if count != -1 && packet_sizes.len() != read as usize {
+			return Err(PageError::NotEnoughData);
+		}
+
+		Ok(Self {
+			content,
+			packet_sizes,
+		})
+	}
+
+	pub fn get(&self, idx: usize) -> Option<&[u8]> {
+		if idx >= self.content.len() {
+			return None;
+		}
+
+		let start_pos = match idx {
+			// Packet 0 starts at pos 0
+			0 => 0,
+			// Anything else we have to get the size of the previous packet
+			other => self.packet_sizes[other - 1] as usize,
+		};
+
+		if let Some(packet_size) = self.packet_sizes.get(idx) {
+			return Some(&self.content[start_pos..start_pos + *packet_size as usize]);
+		}
+
+		None
+	}
+}
+
+pub struct PacketsIter<'a> {
+	content: &'a [u8],
+	packet_sizes: &'a [u64],
+	cap: usize,
+}
+
+impl<'a> Iterator for PacketsIter<'a> {
+	type Item = &'a [u8];
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.cap == 0 {
+			return None;
+		}
+
+		let packet_size = self.packet_sizes[0];
+
+		self.cap -= 1;
+		self.packet_sizes = &self.packet_sizes[1..];
+
+		let (ret, remaining) = self.content.split_at(packet_size as usize);
+		self.content = remaining;
+
+		Some(ret)
+	}
+}
+
+impl<'a> IntoIterator for &'a Packets {
+	type Item = &'a [u8];
+	type IntoIter = PacketsIter<'a>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		PacketsIter {
+			content: &self.content,
+			packet_sizes: &self.packet_sizes,
+			cap: self.packet_sizes.len(),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
-	use crate::{paginate, segment_table, Page};
+	use crate::{paginate, segment_table, Page, PageHeader};
 	use std::io::Cursor;
 
 	#[test]
@@ -391,12 +461,14 @@ mod tests {
 				0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64, 0x01, 0x02, 0x38, 0x01, 0x80, 0xBB,
 				0, 0, 0, 0, 0,
 			],
-			header_type: 2,
-			abgp: 0,
-			serial: 1759377061,
-			seq_num: 0,
-			checksum: 3579522525,
-			start: 0,
+			header: PageHeader {
+				start: 0,
+				header_type_flag: 2,
+				abgp: 0,
+				stream_serial: 1759377061,
+				sequence_number: 0,
+				checksum: 3579522525,
+			},
 			end: 47,
 		};
 
@@ -427,21 +499,23 @@ mod tests {
 		);
 
 		for (i, page) in pages.into_iter().enumerate() {
-			assert_eq!(page.serial, 1234);
+			let header = page.header;
+
+			assert_eq!(header.stream_serial, 1234);
 
 			if i + 1 == len {
-				assert_eq!(page.abgp, 0);
+				assert_eq!(header.abgp, 0);
 			} else {
 				// -1
-				assert_eq!(page.abgp, u64::MAX);
+				assert_eq!(header.abgp, u64::MAX);
 			}
 
-			assert_eq!(page.seq_num, (i + 1) as u32);
+			assert_eq!(header.sequence_number, (i + 1) as u32);
 
 			if i == 0 {
-				assert_eq!(page.header_type, 0);
+				assert_eq!(header.header_type_flag, 0);
 			} else {
-				assert_eq!(page.header_type, 1);
+				assert_eq!(header.header_type_flag, 1);
 			}
 		}
 	}

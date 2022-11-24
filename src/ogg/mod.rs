@@ -34,10 +34,10 @@ pub use speex::SpeexFile;
 pub use vorbis::properties::VorbisProperties;
 pub use vorbis::VorbisFile;
 
-pub(self) fn verify_signature(page: &Page, sig: &[u8]) -> Result<()> {
+pub(self) fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();
 
-	if page.content().len() < sig_len || &page.content()[..sig_len] != sig {
+	if content.len() < sig_len || &content[..sig_len] != sig {
 		decode_err!(@BAIL Vorbis, "File missing magic signature");
 	}
 

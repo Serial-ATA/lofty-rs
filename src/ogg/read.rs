@@ -10,13 +10,13 @@ use std::io::{Read, Seek, SeekFrom};
 
 #[cfg(feature = "vorbis_comments")]
 use byteorder::{LittleEndian, ReadBytesExt};
-use ogg_pager::Page;
+use ogg_pager::{Packets, PageHeader};
 
 #[cfg(feature = "vorbis_comments")]
-pub type OGGTags = (Option<VorbisComments>, Page);
+pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
 #[cfg(not(feature = "vorbis_comments"))]
-pub type OGGTags = (Option<()>, Page);
+pub type OGGTags = (Option<()>, PageHeader, Packets);
 
 #[cfg(feature = "vorbis_comments")]
 pub(crate) fn read_comments<R>(data: &mut R, mut len: u64, tag: &mut VorbisComments) -> Result<()>
@@ -99,39 +99,38 @@ pub(crate) fn read_from<T>(data: &mut T, header_sig: &[u8], comment_sig: &[u8]) 
 where
 	T: Read + Seek,
 {
-	let first_page = Page::read(data, false)?;
-	verify_signature(&first_page, header_sig)?;
+	// TODO: Would be nice if we didn't have to read just to seek and reread immediately
+	let start = data.stream_position()?;
+	let (first_page_header, _) = PageHeader::read(data)?;
 
-	let md_page = Page::read(data, false)?;
-	verify_signature(&md_page, comment_sig)?;
+	data.seek(SeekFrom::Start(start))?;
 
-	let mut md_pages: Vec<u8> = Vec::new();
+	// Read the first 3 packets, which are all headers
+	let packets = Packets::read_count(data, 3)?;
 
-	md_pages.extend_from_slice(&md_page.content()[comment_sig.len()..]);
+	let identification_packet = packets
+		.get(0)
+		.ok_or_else(|| decode_err!("OGG: Expected identification packet"))?;
+	verify_signature(identification_packet, header_sig)?;
 
-	while let Ok(page) = Page::read(data, false) {
-		if md_pages.len() > 125_829_120 {
-			err!(TooMuchData);
-		}
+	let mut metadata_packet = packets
+		.get(1)
+		.ok_or_else(|| decode_err!("OGG: Expected comment packet"))?;
+	verify_signature(metadata_packet, comment_sig)?;
 
-		if page.header_type() & 0x01 == 1 {
-			md_pages.extend_from_slice(page.content());
-		} else {
-			data.seek(SeekFrom::Start(page.start))?;
-			break;
-		}
-	}
+	// Remove the signature from the packet
+	metadata_packet = &metadata_packet[comment_sig.len()..];
 
 	#[cfg(feature = "vorbis_comments")]
 	{
 		let mut tag = VorbisComments::default();
 
-		let reader = &mut &md_pages[..];
+		let reader = &mut metadata_packet;
 		read_comments(reader, reader.len() as u64, &mut tag)?;
 
-		Ok((Some(tag), first_page))
+		Ok((Some(tag), first_page_header, packets))
 	}
 
 	#[cfg(not(feature = "vorbis_comments"))]
-	Ok((None, first_page))
+	Ok((None, first_page_header, packets))
 }
