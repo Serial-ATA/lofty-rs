@@ -79,7 +79,7 @@ impl Page {
 		&mut self.header
 	}
 
-	/// Convert the Page to Vec<u8> for writing
+	/// Convert the Page to bytes for writing
 	///
 	/// NOTE: This will write the checksum as is. It is likely [`Page::gen_crc`] will have
 	/// to be used prior.
@@ -323,12 +323,31 @@ pub fn segment_table(length: usize) -> Result<Vec<u8>> {
 	Ok(segments)
 }
 
+/// A container for packets in an OGG file
 pub struct Packets {
 	content: Vec<u8>,
 	packet_sizes: Vec<u64>,
 }
 
 impl Packets {
+	/// Read as many packets as possible from a reader
+	///
+	/// # Errors
+	///
+	/// A page has a bad length
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let packets = Packets::read(&mut file)?;
+	/// # Ok(()) }
+	/// ```
 	pub fn read<R>(data: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -336,6 +355,31 @@ impl Packets {
 		Self::read_count(data, -1)
 	}
 
+	/// Read a specific number of packets from a reader
+	///
+	/// A special value of `-1` will read as many packets as possible,
+	/// in which case [`Packets::read`] should be used.
+	///
+	/// NOTE: Any value 0 or below will return an empty [`Packets`]
+	///
+	/// # Errors
+	///
+	/// * Unable to read the specified number of packets
+	/// * A page has a bad length
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// // We know that the file has at least 2 packets in it
+	/// let packets = Packets::read_count(&mut file, 2)?;
+	/// # Ok(()) }
+	/// ```
 	pub fn read_count<R>(data: &mut R, count: isize) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -390,6 +434,31 @@ impl Packets {
 		})
 	}
 
+	/// Gets the packet at a specified index, returning its contents
+	///
+	/// NOTES:
+	///
+	/// * This is zero-indexed
+	/// * If the index is out of bounds, it will return [`None`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let packets = Packets::read(&mut file)?;
+	///
+	/// let first_packet = packets.get(0);
+	/// assert!(first_packet.is_some());
+	///
+	/// let out_of_bounds = packets.get(1000000);
+	/// assert!(out_of_bounds.is_none());
+	/// # Ok(()) }
+	/// ```
 	pub fn get(&self, idx: usize) -> Option<&[u8]> {
 		if idx >= self.content.len() {
 			return None;
@@ -410,6 +479,7 @@ impl Packets {
 	}
 }
 
+/// An iterator over packets
 pub struct PacketsIter<'a> {
 	content: &'a [u8],
 	packet_sizes: &'a [u64],

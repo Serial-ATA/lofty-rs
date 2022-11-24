@@ -85,9 +85,6 @@ impl PageHeader {
 	}
 
 	/// Returns the page's checksum
-	///
-	/// NOTE: This will not generate a new CRC. It will return
-	/// the CRC as-is. Use [`Page::gen_crc`] to generate a new one.
 	pub fn checksum(&self) -> u32 {
 		self.checksum
 	}
