@@ -640,7 +640,7 @@ fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64>
 where
 	R: Read + Seek,
 {
-	reader.seek(SeekFrom::Start(0))?;
+	reader.rewind()?;
 
 	while let Ok(atom) = reader.next() {
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
