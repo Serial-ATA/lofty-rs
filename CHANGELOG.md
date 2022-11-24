@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TagExt**: `TagExt::contains`
 - **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
 - **ogg_pager**: Support for reading packets with the new `Packets` struct.
+- **ogg_pager**: `PageHeader` struct.
 
 ### Changed
 - **Files**: Return the removed tag from `<File>::remove(TagType)`
@@ -18,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TaggedFile**: Renamed `TaggedFile::take` to `TaggedFile::remove`
 - **OGG**: The reading of OGG files has switched to using packets opposed to pages, making it more
            spec-compliant and efficient.
+- **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
 
 ## [0.9.0] - 2022-10-30
 
