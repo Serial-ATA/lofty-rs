@@ -6,9 +6,9 @@ use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
-pub(in crate::id3::v2) fn create_items<'a, W>(
+pub(in crate::id3::v2) fn create_items<W>(
 	writer: &mut W,
-	frames: &mut dyn Iterator<Item = FrameRef<'a>>,
+	frames: &mut dyn Iterator<Item = FrameRef<'_>>,
 ) -> Result<()>
 where
 	W: Write,

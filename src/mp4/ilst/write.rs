@@ -341,12 +341,9 @@ where
 
 	let size = writer.get_ref().len();
 
-	write_size(
-		writer.seek(SeekFrom::Start(0))?,
-		size as u64,
-		false,
-		&mut writer,
-	)?;
+	writer.rewind()?;
+
+	write_size(0, size as u64, false, &mut writer)?;
 
 	Ok(writer.into_inner())
 }
