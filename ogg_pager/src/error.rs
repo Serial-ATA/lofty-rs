@@ -22,7 +22,7 @@ pub enum PageError {
 }
 
 impl fmt::Display for PageError {
-	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		match self {
 			PageError::InvalidVersion => {
 				write!(f, "Invalid stream structure version (Should always be 0)")

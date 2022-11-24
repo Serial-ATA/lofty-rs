@@ -1,3 +1,5 @@
+//! Macros for [Lofty](https://crates.io/crates/lofty)
+
 mod internal;
 mod lofty_file;
 mod lofty_tag;
@@ -35,7 +37,7 @@ pub fn lofty_file(input: TokenStream) -> TokenStream {
 	let mut errors = Vec::new();
 	let ret = lofty_file::parse(&input, data_struct, &mut errors);
 
-	finish(ret, errors)
+	finish(&ret, &errors)
 }
 
 #[proc_macro_attribute]
@@ -47,10 +49,10 @@ pub fn tag(args_input: TokenStream, input: TokenStream) -> TokenStream {
 	let mut errors = Vec::new();
 	let ret = lofty_tag::parse(args, input, &mut errors);
 
-	finish(ret, errors)
+	finish(&ret, &errors)
 }
 
-fn finish(ret: proc_macro2::TokenStream, errors: Vec<syn::Error>) -> TokenStream {
+fn finish(ret: &proc_macro2::TokenStream, errors: &[syn::Error]) -> TokenStream {
 	let compile_errors = errors.iter().map(syn::Error::to_compile_error);
 
 	TokenStream::from(quote! {
