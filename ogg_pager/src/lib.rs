@@ -397,11 +397,11 @@ impl Packets {
 		}
 
 		let mut read = 0;
-		'outer: loop {
-			if let Ok(page) = Page::read(data, false) {
-				let segment_table = page.segment_table()?;
 
-				let mut packet_size = 0_u64;
+		let mut packet_size = 0_u64;
+		let mut current_packet_content;
+		'outer: loop {
+			if let Ok((_, segment_table)) = PageHeader::read(data) {
 				for i in segment_table {
 					packet_size += i as u64;
 
@@ -410,14 +410,24 @@ impl Packets {
 							read += 1;
 						}
 
-						content.extend_from_slice(&page.content[0..packet_size as usize]);
+						current_packet_content = vec![0; packet_size as usize];
+						data.read_exact(&mut current_packet_content)?;
+
 						packet_sizes.push(packet_size);
 						packet_size = 0;
+
+						content.append(&mut current_packet_content);
 
 						if read == count {
 							break 'outer;
 						}
 					}
+				}
+
+				// The packet continues on the next page, write what we can so far
+				if packet_size != 0 {
+					current_packet_content = vec![0; packet_size as usize];
+					data.read_exact(&mut current_packet_content)?;
 				}
 
 				continue;
