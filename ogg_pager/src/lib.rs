@@ -479,6 +479,61 @@ impl Packets {
 
 		None
 	}
+
+	/// Sets the packet content, if it exists
+	///
+	/// NOTES:
+	///
+	/// * This is zero-indexed
+	/// * If the index is out of bounds, it will return `false`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let mut packets = Packets::read(&mut file)?;
+	///
+	/// let new_content = [0; 100];
+	///
+	/// assert_ne!(packets.get(0), Some(&new_content));
+	///
+	/// // Set our new content
+	/// assert!(packets.set(0, new_content));
+	///
+	/// // Now our packet contains the new content
+	/// assert_eq!(packets.get(0), Some(&new_content));
+	///
+	/// // We cannot index out of bounds
+	/// assert!(!packets.set(1000000, new_content));
+	/// # Ok(()) }
+	/// ```
+	pub fn set(&mut self, idx: usize, content: impl Into<Vec<u8>>) -> bool {
+		if idx >= self.packet_sizes.len() {
+			return false;
+		}
+
+		let start_pos = match idx {
+			// Packet 0 starts at pos 0
+			0 => 0,
+			// Anything else we have to get the size of the previous packet
+			other => self.packet_sizes[other - 1] as usize,
+		};
+
+		let content = content.into();
+		let content_size = content.len();
+
+		let end_pos = start_pos + self.packet_sizes[idx] as usize;
+		self.content.splice(start_pos..end_pos, content);
+
+		self.packet_sizes[idx] = content_size as u64;
+
+		true
+	}
 }
 
 /// An iterator over packets
