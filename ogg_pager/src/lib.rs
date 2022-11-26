@@ -105,7 +105,10 @@ impl Page {
 	///
 	/// See [`Page::as_bytes`]
 	pub fn gen_crc(&mut self) -> Result<()> {
+		// The value is computed over the entire header (with the CRC field in the header set to zero) and then continued over the page
+		self.header.checksum = 0;
 		self.header.checksum = crc::crc32(&self.as_bytes()?);
+
 		Ok(())
 	}
 
