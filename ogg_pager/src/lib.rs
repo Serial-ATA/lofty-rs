@@ -23,6 +23,7 @@ pub const CONTAINS_LAST_PAGE_OF_BITSTREAM: u8 = 0x04;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Page {
 	content: Vec<u8>,
+	segments: Vec<u8>,
 	header: PageHeader,
 	/// The position in the stream the page ended
 	pub end: u64,
@@ -48,8 +49,7 @@ impl Page {
 	///
 	/// See [`segment_table`]
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
-		let mut segment_table = self.segment_table()?;
-		let mut bytes = Vec::with_capacity(27 + segment_table.len() + self.content.len());
+		let mut bytes = Vec::with_capacity(27 + self.segments.len() + self.content.len());
 
 		bytes.extend(b"OggS");
 		bytes.push(0); // Version
@@ -58,8 +58,8 @@ impl Page {
 		bytes.extend(self.header.stream_serial.to_le_bytes());
 		bytes.extend(self.header.sequence_number.to_le_bytes());
 		bytes.extend(self.header.checksum.to_le_bytes());
-		bytes.push(segment_table.len() as u8);
-		bytes.append(&mut segment_table);
+		bytes.push(self.segments.len() as u8);
+		bytes.extend(&self.segments);
 		bytes.extend(self.content.iter());
 
 		Ok(bytes)
@@ -77,10 +77,10 @@ impl Page {
 	where
 		V: Read + Seek,
 	{
-		let (header, segment_table) = PageHeader::read(data)?;
+		let (header, segments) = PageHeader::read(data)?;
 
 		let mut content: Vec<u8> = Vec::new();
-		let content_len: u16 = segment_table.iter().map(|&b| u16::from(b)).sum();
+		let content_len: u16 = segments.iter().map(|&b| u16::from(b)).sum();
 
 		if skip_content {
 			data.seek(SeekFrom::Current(i64::from(content_len)))?;
@@ -93,6 +93,7 @@ impl Page {
 
 		Ok(Page {
 			content,
+			segments,
 			header,
 			end,
 		})
@@ -139,6 +140,7 @@ impl Page {
 
 			let mut p = Page {
 				content: content[remaining..].to_vec(),
+				segments: segment_table(remaining)?,
 				header: PageHeader {
 					start: self.end,
 					header_type_flag: 1,
@@ -556,6 +558,7 @@ mod tests {
 				0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64, 0x01, 0x02, 0x38, 0x01, 0x80, 0xBB,
 				0, 0, 0, 0, 0,
 			],
+			segments: vec![19],
 			header: PageHeader {
 				start: 0,
 				header_type_flag: 2,
@@ -594,7 +597,7 @@ mod tests {
 		);
 
 		for (i, page) in pages.into_iter().enumerate() {
-			let header = page.header;
+			let header = page.header();
 
 			assert_eq!(header.stream_serial, 1234);
 
