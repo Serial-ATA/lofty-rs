@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
            spec-compliant and efficient.
 - **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
 
+### Removed
+- **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
+                 `Packets::paginate`.
+
 ## [0.9.0] - 2022-10-30
 
 ### Added

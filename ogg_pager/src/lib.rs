@@ -29,48 +29,6 @@ pub struct Page {
 }
 
 impl Page {
-	/// Create a new `Page`
-	///
-	/// This will have the following defaults:
-	///
-	/// * `checksum` = 0
-	/// * `start` = 0
-	/// * `end` = `content.len()`
-	///
-	/// # Errors
-	///
-	/// `content.len()` > [`MAX_CONTENT_SIZE`]
-	///
-	/// # Example
-	///
-	/// ```rust,ignore
-	/// use ogg_pager::CONTAINS_FIRST_PAGE_OF_BITSTREAM;
-	///
-	/// // Creating the identification header
-	/// let ident_header_packet = vec![...];
-	/// let stream_serial_number = 2784419176;
-	///
-	/// let page = Page::new(
-	///     CONTAINS_FIRST_PAGE_OF_BITSTREAM,
-	///     0,
-	///     stream_serial_number,
-	///     ident_header_packet,
-	/// );
-	/// ```
-	pub fn new(header: PageHeader, content: Vec<u8>) -> Result<Self> {
-		let content_len = content.len();
-
-		if content_len > MAX_CONTENT_SIZE {
-			return Err(PageError::TooMuchData);
-		}
-
-		Ok(Self {
-			content,
-			header,
-			end: content_len as u64,
-		})
-	}
-
 	/// Returns a reference to the `Page`'s header
 	pub fn header(&self) -> &PageHeader {
 		&self.header
