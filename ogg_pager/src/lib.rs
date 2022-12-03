@@ -3,12 +3,14 @@
 mod crc;
 mod error;
 mod header;
+mod paginate;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 pub use crc::crc32;
 pub use error::{PageError, Result};
 pub use header::PageHeader;
+pub use paginate::paginate;
 
 const CONTINUED_PACKET: u8 = 0x01;
 
@@ -181,78 +183,6 @@ impl Page {
 	pub fn segment_table(&self) -> Result<Vec<u8>> {
 		segment_table(self.content.len())
 	}
-}
-
-/// Create pages from a packet
-///
-/// # Example
-///
-/// ```rust,ignore
-/// use ogg_pager::paginate;
-///
-/// // Creating the comment header
-/// let comment_header_packet = vec![...];
-/// let stream_serial_number = 2784419176;
-///
-/// let pages = paginate(&comment_header_packet, stream_serial_number, 0, 0);
-/// ```
-#[allow(clippy::mixed_read_write_in_expression)]
-pub fn paginate(packet: &[u8], stream_serial: u32, abgp: u64, flags: u8) -> Vec<Page> {
-	let mut pages = Vec::new();
-
-	let mut first_page = true;
-	let mut pos = 0;
-
-	for (idx, page) in packet.chunks(MAX_CONTENT_SIZE).enumerate() {
-		let p = Page {
-			content: page.to_vec(),
-			header: PageHeader {
-				start: pos,
-				header_type_flag: {
-					if first_page {
-						if flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM == 0x02 {
-							CONTAINS_LAST_PAGE_OF_BITSTREAM
-						} else {
-							0
-						}
-					} else {
-						CONTINUED_PACKET
-					}
-				},
-				abgp,
-				stream_serial,
-				sequence_number: (idx + 1) as u32,
-				checksum: 0,
-			},
-			end: {
-				pos += page.len() as u64;
-				pos
-			},
-		};
-
-		first_page = false;
-		pages.push(p);
-	}
-
-	if flags & CONTAINS_LAST_PAGE_OF_BITSTREAM == 0x04 {
-		if let Some(last) = pages.last_mut() {
-			last.header.header_type_flag |= CONTAINS_LAST_PAGE_OF_BITSTREAM;
-		}
-	}
-
-	if pages.len() > 1 {
-		let last_idx = pages.len() - 1;
-
-		for (idx, p) in pages.iter_mut().enumerate() {
-			if idx == last_idx {
-				break;
-			}
-
-			p.header.abgp = 1_u64.wrapping_neg();
-		}
-	}
-
-	pages
 }
 
 /// Creates a segment table based on the length
@@ -507,9 +437,43 @@ impl Packets {
 
 		true
 	}
+
+	pub fn paginate(&self, stream_serial: u32, abgp: u64, flags: u8) -> Result<Vec<Page>> {
+		let mut packets = Vec::new();
+
+		let mut pos = 0;
+		for packet_size in self.packet_sizes.iter().copied() {
+			packets.push(&self.content[pos..pos + packet_size as usize]);
+			pos += packet_size as usize;
+		}
+
+		paginate(packets, stream_serial, abgp, flags)
+	}
+
+	/// Write packets to a writer
+	pub fn write_to<W>(
+		&self,
+		writer: &mut W,
+		flags: u8,
+		stream_serial: u32,
+		abgp: u64,
+	) -> Result<()>
+	where
+		W: Write,
+	{
+		let paginated = self.paginate(stream_serial, abgp, flags)?;
+
+		for mut page in paginated.into_iter() {
+			page.gen_crc()?;
+			writer.write_all(&page.as_bytes()?)?;
+		}
+
+		Ok(())
+	}
 }
 
 /// An iterator over packets
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PacketsIter<'a> {
 	content: &'a [u8],
 	packet_sizes: &'a [u64],
@@ -584,7 +548,7 @@ mod tests {
 	fn paginate_large() {
 		let packet = std::fs::read("test_assets/large_comment_packet.page").unwrap();
 
-		let pages = paginate(&packet, 1234, 0, 0);
+		let pages = paginate([packet.as_slice()], 1234, 0, 0).unwrap();
 
 		let len = pages.len();
 
@@ -611,7 +575,7 @@ mod tests {
 				assert_eq!(header.abgp, u64::MAX);
 			}
 
-			assert_eq!(header.sequence_number, (i + 1) as u32);
+			assert_eq!(header.sequence_number, i as u32);
 
 			if i == 0 {
 				assert_eq!(header.header_type_flag, 0);
