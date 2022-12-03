@@ -1,7 +1,7 @@
 use super::verify_signature;
-use crate::error::{FileEncodingError, Result};
+use crate::error::Result;
 use crate::file::FileType;
-use crate::macros::{err, try_vec};
+use crate::macros::{decode_err, err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::PictureInformation;
@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use ogg_pager::Page;
+use ogg_pager::{Packets, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
 
 #[derive(PartialEq, Copy, Clone)]
 pub(crate) enum OGGFormat {
@@ -33,26 +33,26 @@ impl OGGFormat {
 }
 
 pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
-	if tag.tag_type() == TagType::VorbisComments {
-		let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
-
-		let mut comments_ref = VorbisCommentsRef {
-			vendor,
-			items,
-			pictures,
-		};
-
-		let format = match file_type {
-			FileType::Opus => OGGFormat::Opus,
-			FileType::Vorbis => OGGFormat::Vorbis,
-			FileType::Speex => OGGFormat::Speex,
-			_ => unreachable!(),
-		};
-
-		return write(file, &mut comments_ref, format);
+	if tag.tag_type() != TagType::VorbisComments {
+		err!(UnsupportedTag);
 	}
 
-	err!(UnsupportedTag);
+	let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
+
+	let mut comments_ref = VorbisCommentsRef {
+		vendor,
+		items,
+		pictures,
+	};
+
+	let format = match file_type {
+		FileType::Opus => OGGFormat::Opus,
+		FileType::Vorbis => OGGFormat::Vorbis,
+		FileType::Speex => OGGFormat::Speex,
+		_ => unreachable!(),
+	};
+
+	write(file, &mut comments_ref, format)
 }
 
 #[cfg(feature = "vorbis_comments")]
@@ -83,24 +83,87 @@ pub(crate) fn create_comments(
 }
 
 #[cfg(feature = "vorbis_comments")]
-pub(super) fn create_pages<'a, II, IP>(
+pub(super) fn write<'a, II, IP>(
+	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
-	writer: &mut Cursor<Vec<u8>>,
-	stream_serial: u32,
+	format: OGGFormat,
+) -> Result<()>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
+{
+	// TODO: Would be nice if we didn't have to read just to seek and reread immediately
+
+	// Read the first page header to get the stream serial number
+	let start = file.stream_position()?;
+	let (first_page_header, _) = PageHeader::read(file)?;
+
+	let stream_serial = first_page_header.stream_serial;
+
+	file.seek(SeekFrom::Start(start))?;
+	let mut packets = Packets::read_count(file, 3)?;
+
+	let mut remaining_file_content = Vec::new();
+	file.read_to_end(&mut remaining_file_content)?;
+
+	let comment_packet = packets
+		.get(1)
+		.ok_or_else(|| decode_err!("OGG: Expected metadata packet"))?;
+
+	let comment_signature = format.comment_signature();
+	if let Some(comment_signature) = comment_signature {
+		verify_signature(comment_packet, comment_signature)?;
+	}
+
+	let comment_signature = comment_signature.unwrap_or_default();
+
+	// Retain the file's vendor string
+	let md_reader = &mut &comment_packet[comment_signature.len()..];
+
+	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
+	let mut vendor = try_vec![0; vendor_len as usize];
+	md_reader.read_exact(&mut vendor)?;
+
+	let add_framing_bit = format == OGGFormat::Vorbis;
+	let new_metadata_packet =
+		create_metadata_packet(tag, comment_signature, &vendor, add_framing_bit)?;
+
+	// Replace the old comment packet
+	packets.set(1, new_metadata_packet);
+
+	file.rewind()?;
+	file.set_len(0)?;
+
+	packets.write_to(file, CONTAINS_FIRST_PAGE_OF_BITSTREAM, stream_serial, 0)?;
+
+	file.write_all(&remaining_file_content)?;
+	Ok(())
+}
+
+pub(super) fn create_metadata_packet<'a, II, IP>(
+	tag: &mut VorbisCommentsRef<'a, II, IP>,
+	comment_signature: &[u8],
+	vendor: &[u8],
 	add_framing_bit: bool,
-) -> Result<Vec<Page>>
+) -> Result<Vec<u8>>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
 {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
-	let item_count_pos = writer.stream_position()?;
+	let mut new_comment_packet = Cursor::new(Vec::new());
 
-	writer.write_u32::<LittleEndian>(0)?;
+	new_comment_packet.write_all(comment_signature)?;
+	new_comment_packet.write_u32::<LittleEndian>(vendor.len() as u32)?;
+	new_comment_packet.write_all(&vendor)?;
+
+	let item_count_pos = new_comment_packet.stream_position()?;
+
+	new_comment_packet.write_u32::<LittleEndian>(0)?;
 
 	let mut count = 0;
-	create_comments(writer, &mut count, &mut tag.items)?;
+	create_comments(&mut new_comment_packet, &mut count, &mut tag.items)?;
 
 	for (pic, info) in &mut tag.pictures {
 		let picture = pic.as_flac_bytes(info, true);
@@ -110,128 +173,25 @@ where
 		if u32::try_from(bytes_len as u64).is_ok() {
 			count += 1;
 
-			writer.write_u32::<LittleEndian>(bytes_len as u32)?;
-			writer.write_all(PICTURE_KEY.as_bytes())?;
-			writer.write_all(&picture)?;
+			new_comment_packet.write_u32::<LittleEndian>(bytes_len as u32)?;
+			new_comment_packet.write_all(PICTURE_KEY.as_bytes())?;
+			new_comment_packet.write_all(&picture)?;
 		}
 	}
+
+	let packet_end = new_comment_packet.stream_position()?;
+
+	new_comment_packet.seek(SeekFrom::Start(item_count_pos))?;
+	new_comment_packet.write_u32::<LittleEndian>(count)?;
+	new_comment_packet.seek(SeekFrom::Start(packet_end))?;
 
 	if add_framing_bit {
 		// OGG Vorbis makes use of a "framing bit" to
 		// separate the header packets
 		//
 		// https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-590004
-		writer.write_u8(1)?;
+		new_comment_packet.write_u8(1)?;
 	}
 
-	let packet_end = writer.stream_position()?;
-
-	writer.seek(SeekFrom::Start(item_count_pos))?;
-	writer.write_u32::<LittleEndian>(count)?;
-	writer.seek(SeekFrom::Start(packet_end))?;
-
-	// Checksum is calculated later
-	Ok(ogg_pager::paginate(writer.get_ref(), stream_serial, 0, 0))
-}
-
-#[cfg(feature = "vorbis_comments")]
-pub(super) fn write<'a, II, IP>(
-	data: &mut File,
-	tag: &mut VorbisCommentsRef<'a, II, IP>,
-	format: OGGFormat,
-) -> Result<()>
-where
-	II: Iterator<Item = (&'a str, &'a str)>,
-	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
-{
-	let first_page = Page::read(data, false)?;
-
-	let ser = first_page.header().stream_serial;
-
-	let mut writer = Vec::new();
-	writer.write_all(&first_page.as_bytes()?)?;
-
-	let first_md_page = Page::read(data, false)?;
-
-	let comment_signature = format.comment_signature();
-	if let Some(comment_signature) = comment_signature {
-		verify_signature(first_md_page.content(), comment_signature)?;
-	}
-
-	let comment_signature = comment_signature.unwrap_or_default();
-
-	// Retain the file's vendor string
-	let md_reader = &mut &first_md_page.content()[comment_signature.len()..];
-
-	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
-	let mut vendor = try_vec![0; vendor_len as usize];
-	md_reader.read_exact(&mut vendor)?;
-
-	let mut packet = Cursor::new(Vec::new());
-
-	packet.write_all(comment_signature)?;
-	packet.write_u32::<LittleEndian>(vendor_len)?;
-	packet.write_all(&vendor)?;
-
-	let needs_framing_bit = format == OGGFormat::Vorbis;
-	let mut pages = create_pages(tag, &mut packet, ser, needs_framing_bit)?;
-
-	match format {
-		OGGFormat::Vorbis => {
-			super::vorbis::write::write_to(
-				data,
-				&mut writer,
-				first_md_page.take_content(),
-				&mut pages,
-			)?;
-		},
-		OGGFormat::Opus => {
-			replace_packet(data, &mut writer, &mut pages, FileType::Opus)?;
-		},
-		OGGFormat::Speex => {
-			replace_packet(data, &mut writer, &mut pages, FileType::Speex)?;
-		},
-	}
-
-	data.rewind()?;
-	data.set_len(first_page.end)?;
-	data.write_all(&writer)?;
-
-	Ok(())
-}
-
-fn replace_packet(
-	data: &mut File,
-	writer: &mut Vec<u8>,
-	pages: &mut [Page],
-	file_type: FileType,
-) -> Result<()> {
-	let reached_md_end: bool;
-
-	loop {
-		let p = Page::read(data, true)?;
-
-		if p.header().header_type_flag() & 0x01 != 0x01 {
-			data.seek(SeekFrom::Start(p.header().start))?;
-			reached_md_end = true;
-			break;
-		}
-	}
-
-	if !reached_md_end {
-		return Err(FileEncodingError::new(file_type, "File ends with comment header").into());
-	}
-
-	let mut remaining = Vec::new();
-	data.read_to_end(&mut remaining)?;
-
-	for p in pages.iter_mut() {
-		p.gen_crc()?;
-
-		writer.write_all(&p.as_bytes()?)?;
-	}
-
-	writer.write_all(&remaining)?;
-
-	Ok(())
+	Ok(new_comment_packet.into_inner())
 }
