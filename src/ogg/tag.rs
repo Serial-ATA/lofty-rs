@@ -552,10 +552,9 @@ where
 	}
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
-		let mut temp = Cursor::new(Vec::new());
-		super::write::create_pages(self, &mut temp, 0, false)?;
-
-		writer.write_all(temp.get_ref())?;
+		let metadata_packet =
+			super::write::create_metadata_packet(self, &[], self.vendor.as_bytes(), false)?;
+		writer.write_all(&metadata_packet)?;
 		Ok(())
 	}
 }

@@ -1,6 +1,4 @@
 pub(super) mod properties;
-#[cfg(feature = "vorbis_comments")]
-pub(in crate::ogg) mod write;
 
 use super::find_last_page;
 #[cfg(feature = "vorbis_comments")]
