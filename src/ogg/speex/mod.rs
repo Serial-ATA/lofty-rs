@@ -34,7 +34,7 @@ impl AudioFile for SpeexFile {
 	where
 		R: Read + Seek,
 	{
-		let file_information = super::read::read_from(reader, SPEEXHEADER, &[])?;
+		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2)?;
 
 		Ok(Self {
             properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { SpeexProperties::default() },

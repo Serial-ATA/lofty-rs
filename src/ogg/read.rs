@@ -95,18 +95,25 @@ where
 	Ok(())
 }
 
-pub(crate) fn read_from<T>(data: &mut T, header_sig: &[u8], comment_sig: &[u8]) -> Result<OGGTags>
+pub(crate) fn read_from<T>(
+	data: &mut T,
+	header_sig: &[u8],
+	comment_sig: &[u8],
+	packets_to_read: isize,
+) -> Result<OGGTags>
 where
 	T: Read + Seek,
 {
+	debug_assert!(packets_to_read >= 2);
+
 	// TODO: Would be nice if we didn't have to read just to seek and reread immediately
 	let start = data.stream_position()?;
 	let (first_page_header, _) = PageHeader::read(data)?;
 
 	data.seek(SeekFrom::Start(start))?;
 
-	// Read the first 3 packets, which are all headers
-	let packets = Packets::read_count(data, 3)?;
+	// Read the header packets
+	let packets = Packets::read_count(data, packets_to_read)?;
 
 	let identification_packet = packets
 		.get(0)

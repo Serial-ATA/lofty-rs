@@ -35,7 +35,7 @@ impl AudioFile for OpusFile {
 	where
 		R: Read + Seek,
 	{
-		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS)?;
+		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS, 2)?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { OpusProperties::default() },
