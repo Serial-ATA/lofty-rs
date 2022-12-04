@@ -134,7 +134,7 @@ where
 	file.rewind()?;
 	file.set_len(0)?;
 
-	packets.write_to(file, CONTAINS_FIRST_PAGE_OF_BITSTREAM, stream_serial, 0)?;
+	packets.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)?;
 
 	file.write_all(&remaining_file_content)?;
 	Ok(())
