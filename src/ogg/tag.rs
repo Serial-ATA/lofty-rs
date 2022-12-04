@@ -624,7 +624,7 @@ mod tests {
 		// Create a zero-size vendor for comparison
 		parsed_tag.vendor = String::new();
 
-		let mut writer = vec![0, 0, 0, 0];
+		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
 
 		let temp_parsed_tag = read_tag(&writer);
