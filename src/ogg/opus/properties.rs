@@ -103,27 +103,38 @@ where
 		decode_err!(@BAIL Opus, "Invalid channel count for mapping family");
 	}
 
-	// Get the last pages' absolute granule position
-
-	let last_page = find_last_page(data)?;
-	let last_page_abgp = last_page.header().abgp;
-
-	// Get the stream length
-
-	// Also safe to unwrap, metadata is checked prior
-	let metadata_packet = packets.get(1).unwrap();
-
-	let header_size = identification_packet.len() + metadata_packet.len();
-
+	let last_page = find_last_page(data);
 	let file_length = data.seek(SeekFrom::End(0))?;
-	let stream_len = file_length - header_size as u64;
 
-	if let Some(frame_count) = last_page_abgp.checked_sub(first_page_abgp + u64::from(pre_skip)) {
-		let length = (frame_count as f64) * 1000.0 / 48000.0_f64 + 0.5;
-		properties.duration = Duration::from_millis(length as u64);
+	if let Ok(last_page) = last_page {
+		let first_page_abgp = first_page_header.abgp;
+		let last_page_abgp = last_page.header().abgp;
 
-		properties.overall_bitrate = ((file_length as f64) * 8.0 / length) as u32;
-		properties.audio_bitrate = ((stream_len as f64) * 8.0 / length) as u32;
+		let total_samples = last_page_abgp
+			.saturating_sub(first_page_abgp)
+			// https://datatracker.ietf.org/doc/html/draft-terriberry-oggopus-01#section-4.1:
+			//
+			// A 'pre-skip' field in the ID header (see Section 5.1) signals the
+			// number of samples which should be skipped (decoded but discarded)
+			.saturating_sub(u64::from(pre_skip));
+		if total_samples > 0 {
+			// Best case scenario
+			let length = total_samples as f64 * 1000.0 / 48000.0;
+
+			// Get the stream length by subtracting the length of the header packets
+
+			// Safe to unwrap, metadata is checked prior
+			let metadata_packet = packets.get(1).unwrap();
+			let header_size = identification_packet.len() + metadata_packet.len();
+
+			let stream_len = file_length - header_size as u64;
+
+			properties.duration = Duration::from_millis(length as u64);
+			properties.overall_bitrate = ((file_length as f64) * 8.0 / length) as u32;
+			properties.audio_bitrate = ((stream_len as f64) * 8.0 / length) as u32;
+		} else {
+			log::debug!("Opus: The file contains invalid PCM values, unable to calculate length");
+		}
 	}
 
 	Ok(properties)
