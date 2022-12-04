@@ -117,7 +117,7 @@ impl Page {
 	/// Extends the Page's content, returning another Page if too much data was provided
 	///
 	/// This will do nothing if `content` is greater than the max page size. In this case,
-	/// [`paginate`] should be used.
+	/// [`paginate()`] should be used.
 	///
 	/// # Errors
 	///
@@ -438,6 +438,30 @@ impl Packets {
 		true
 	}
 
+	/// Convert the packets into a stream of pages
+	///
+	/// See [paginate()] for more information.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::{Packets, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM};
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let mut packets = Packets::read(&mut file)?;
+	///
+	/// let stream_serial_number = 1234;
+	/// let absolute_granule_position = 0;
+	/// let flags = CONTAINS_FIRST_PAGE_OF_BITSTREAM | CONTAINS_LAST_PAGE_OF_BITSTREAM;
+	///
+	/// let pages = packets.paginate(stream_serial_number, absolute_granule_position, flags);
+	///
+	/// println!("We created {} pages!", pages.len());
+	/// # Ok(()) }
+	/// ```
 	pub fn paginate(&self, stream_serial: u32, abgp: u64, flags: u8) -> Result<Vec<Page>> {
 		let mut packets = Vec::new();
 
@@ -451,12 +475,39 @@ impl Packets {
 	}
 
 	/// Write packets to a writer
+	///
+	/// This will paginate and write all of the packets to a writer.
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use ogg_pager::{Packets, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM};
+	/// use std::fs::OpenOptions;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// let mut file = std::fs::File::open("foo.ogg")?;
+	///
+	/// let mut packets = Packets::read(&mut file)?;
+	///
+	/// let stream_serial_number = 1234;
+	/// let absolute_granule_position = 0;
+	/// let flags = CONTAINS_FIRST_PAGE_OF_BITSTREAM | CONTAINS_LAST_PAGE_OF_BITSTREAM;
+	///
+	/// let mut new_file = OpenOptions::new().write(true).open("bar.ogg");
+	/// let pages = packets.write_to(
+	/// 	&mut new_file,
+	/// 	stream_serial_number,
+	/// 	absolute_granule_position,
+	/// 	flags,
+	/// );
+	/// # Ok(()) }
+	/// ```
 	pub fn write_to<W>(
 		&self,
 		writer: &mut W,
-		flags: u8,
 		stream_serial: u32,
 		abgp: u64,
+		flags: u8,
 	) -> Result<()>
 	where
 		W: Write,
@@ -473,6 +524,8 @@ impl Packets {
 }
 
 /// An iterator over packets
+///
+/// This is created by calling `into_iter` on [`Packets`]
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PacketsIter<'a> {
 	content: &'a [u8],
