@@ -36,7 +36,7 @@ impl AudioFile for VorbisFile {
 		R: Read + Seek,
 	{
 		let file_information =
-			super::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD)?;
+			super::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD, 3)?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { VorbisProperties::default() },
