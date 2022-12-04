@@ -9,7 +9,7 @@ use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
 use std::fs::{File, OpenOptions};
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::path::Path;
 
 use lofty_attr::tag;

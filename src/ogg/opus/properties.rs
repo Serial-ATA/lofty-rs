@@ -76,8 +76,6 @@ where
 {
 	let mut properties = OpusProperties::default();
 
-	let first_page_abgp = first_page_header.abgp;
-
 	// Safe to unwrap, it is impossible to get this far without
 	// an identification packet.
 	let identification_packet = packets.get(0).unwrap();
