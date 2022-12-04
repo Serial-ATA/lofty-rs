@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OGG**: The reading of OGG files has switched to using packets opposed to pages, making it more
            spec-compliant and efficient.
 - **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
+- **ogg_pager**: `paginate` now works with a collection of packets
 
 ### Removed
 - **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
