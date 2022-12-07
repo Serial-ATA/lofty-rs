@@ -3,6 +3,7 @@ use crate::header::PageHeader;
 use crate::paginate::paginate;
 use crate::Page;
 
+use std::fmt::{Debug, Formatter};
 use std::io::{Read, Seek, Write};
 
 /// A container for packets in an OGG file
@@ -62,6 +63,7 @@ impl Packets {
 	/// let packets = Packets::read_count(&mut file, 2)?;
 	/// # Ok(()) }
 	/// ```
+	#[allow(clippy::read_zero_byte_vec)]
 	pub fn read_count<R>(data: &mut R, count: isize) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -79,6 +81,7 @@ impl Packets {
 		let mut read = 0;
 
 		let mut packet_size = 0_u64;
+		let mut packet_bytes_already_read = None;
 		let mut current_packet_content;
 		'outer: loop {
 			if let Ok((_, segment_table)) = PageHeader::read(data) {
@@ -90,11 +93,17 @@ impl Packets {
 							read += 1;
 						}
 
-						current_packet_content = vec![0; packet_size as usize];
+						let byte_count_to_read = Self::get_byte_count_to_read(
+							packet_size,
+							&mut packet_bytes_already_read,
+						);
+
+						current_packet_content = vec![0; byte_count_to_read as usize];
 						data.read_exact(&mut current_packet_content)?;
 
 						packet_sizes.push(packet_size);
 						packet_size = 0;
+						packet_bytes_already_read = None;
 
 						content.append(&mut current_packet_content);
 
@@ -106,8 +115,12 @@ impl Packets {
 
 				// The packet continues on the next page, write what we can so far
 				if packet_size != 0 {
-					current_packet_content = vec![0; packet_size as usize];
+					let byte_count_to_read =
+						Self::get_byte_count_to_read(packet_size, &mut packet_bytes_already_read);
+
+					current_packet_content = vec![0; byte_count_to_read as usize];
 					data.read_exact(&mut current_packet_content)?;
+					content.append(&mut current_packet_content);
 				}
 
 				continue;
@@ -124,6 +137,25 @@ impl Packets {
 			content,
 			packet_sizes,
 		})
+	}
+
+	fn get_byte_count_to_read(
+		packet_size: u64,
+		packet_bytes_already_read: &mut Option<u64>,
+	) -> u64 {
+		let byte_count_to_read;
+		match packet_bytes_already_read {
+			Some(already_read_bytes_count) => {
+				byte_count_to_read = packet_size - *already_read_bytes_count;
+				*packet_bytes_already_read = Some(*already_read_bytes_count + byte_count_to_read);
+			},
+			None => {
+				byte_count_to_read = packet_size;
+				*packet_bytes_already_read = Some(packet_size);
+			},
+		};
+
+		byte_count_to_read
 	}
 
 	/// Gets the packet at a specified index, returning its contents
@@ -350,5 +382,14 @@ impl<'a> IntoIterator for &'a Packets {
 			packet_sizes: &self.packet_sizes,
 			cap: self.packet_sizes.len(),
 		}
+	}
+}
+
+impl Debug for Packets {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("Packets")
+			.field("total_bytes", &self.content.len())
+			.field("count", &self.packet_sizes.len())
+			.finish()
 	}
 }
