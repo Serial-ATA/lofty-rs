@@ -35,35 +35,18 @@ pub trait AudioFile: Into<TaggedFile> {
 	fn contains_tag_type(&self, tag_type: TagType) -> bool;
 }
 
-/// A generic representation of a file
-///
-/// This is used when the [`FileType`] has to be guessed
-pub struct TaggedFile {
-	/// The file's type
-	pub(crate) ty: FileType,
-	/// The file's audio properties
-	pub(crate) properties: FileProperties,
-	/// A collection of the file's tags
-	pub(crate) tags: Vec<Tag>,
-}
-
-impl TaggedFile {
+/// Provides a common interface between [`TaggedFile`] and [`BoundTaggedFile`]
+pub trait TaggedFileExt {
 	#[doc(hidden)]
 	/// This exists for use in `lofty_attr`, there's no real use for this externally
-	pub fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
-		Self {
-			ty,
-			properties,
-			tags,
-		}
-	}
+	fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self;
 
 	/// Returns the file's [`FileType`]
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::FileType;
+	/// use lofty::{FileType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -72,16 +55,14 @@ impl TaggedFile {
 	/// assert_eq!(tagged_file.file_type(), FileType::MPEG);
 	/// # Ok(()) }
 	/// ```
-	pub fn file_type(&self) -> FileType {
-		self.ty
-	}
+	fn file_type(&self) -> FileType;
 
 	/// Returns all tags
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::FileType;
+	/// use lofty::{FileType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -93,9 +74,7 @@ impl TaggedFile {
 	/// assert_eq!(tags.len(), 3);
 	/// # Ok(()) }
 	/// ```
-	pub fn tags(&self) -> &[Tag] {
-		self.tags.as_slice()
-	}
+	fn tags(&self) -> &[Tag];
 
 	/// Returns the file type's primary [`TagType`]
 	///
@@ -104,7 +83,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -113,16 +92,14 @@ impl TaggedFile {
 	/// assert_eq!(tagged_file.primary_tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	pub fn primary_tag_type(&self) -> TagType {
-		self.ty.primary_tag_type()
-	}
+	fn primary_tag_type(&self) -> TagType;
 
 	/// Determines whether the file supports the given [`TagType`]
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -131,16 +108,14 @@ impl TaggedFile {
 	/// assert!(tagged_file.supports_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		self.ty.supports_tag_type(tag_type)
-	}
+	fn supports_tag_type(&self, tag_type: TagType) -> bool;
 
 	/// Get a reference to a specific [`TagType`]
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -154,16 +129,14 @@ impl TaggedFile {
 	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	pub fn tag(&self, tag_type: TagType) -> Option<&Tag> {
-		self.tags.iter().find(|i| i.tag_type() == tag_type)
-	}
+	fn tag(&self, tag_type: TagType) -> Option<&Tag>;
 
 	/// Get a mutable reference to a specific [`TagType`]
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -179,9 +152,7 @@ impl TaggedFile {
 	/// // Alter the tag...
 	/// # Ok(()) }
 	/// ```
-	pub fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
-		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
-	}
+	fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag>;
 
 	/// Returns the primary tag
 	///
@@ -190,7 +161,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -204,9 +175,7 @@ impl TaggedFile {
 	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	pub fn primary_tag(&self) -> Option<&Tag> {
-		self.tag(self.primary_tag_type())
-	}
+	fn primary_tag(&self) -> Option<&Tag>;
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
@@ -215,7 +184,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::TagType;
+	/// use lofty::{TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -231,9 +200,7 @@ impl TaggedFile {
 	/// // Alter the tag...
 	/// # Ok(()) }
 	/// ```
-	pub fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tag_mut(self.primary_tag_type())
-	}
+	fn primary_tag_mut(&mut self) -> Option<&mut Tag>;
 
 	/// Gets the first tag, if there are any
 	///
@@ -243,6 +210,8 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::TaggedFileExt;
+	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
@@ -253,9 +222,7 @@ impl TaggedFile {
 	/// assert!(tag.is_some());
 	/// # Ok(()) }
 	/// ```
-	pub fn first_tag(&self) -> Option<&Tag> {
-		self.tags.first()
-	}
+	fn first_tag(&self) -> Option<&Tag>;
 
 	/// Gets a mutable reference to the first tag, if there are any
 	///
@@ -265,6 +232,8 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::TaggedFileExt;
+	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
@@ -277,9 +246,7 @@ impl TaggedFile {
 	/// // Alter the tag...
 	/// # Ok(()) }
 	/// ```
-	pub fn first_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tags.first_mut()
-	}
+	fn first_tag_mut(&mut self) -> Option<&mut Tag>;
 
 	/// Inserts a [`Tag`]
 	///
@@ -291,7 +258,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{AudioFile, Tag, TagType};
+	/// use lofty::{AudioFile, Tag, TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -308,25 +275,14 @@ impl TaggedFile {
 	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	pub fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
-		let tag_type = tag.tag_type();
-
-		if self.supports_tag_type(tag_type) {
-			let ret = self.remove(tag_type);
-			self.tags.push(tag);
-
-			return ret;
-		}
-
-		None
-	}
+	fn insert_tag(&mut self, tag: Tag) -> Option<Tag>;
 
 	/// Removes a specific [`TagType`] and returns it
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{AudioFile, TagType};
+	/// use lofty::{AudioFile, TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -341,12 +297,7 @@ impl TaggedFile {
 	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	pub fn remove(&mut self, tag_type: TagType) -> Option<Tag> {
-		self.tags
-			.iter()
-			.position(|t| t.tag_type() == tag_type)
-			.map(|pos| self.tags.remove(pos))
-	}
+	fn remove(&mut self, tag_type: TagType) -> Option<Tag>;
 
 	/// Changes the [`FileType`]
 	///
@@ -358,7 +309,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{AudioFile, FileType, TagType};
+	/// use lofty::{AudioFile, FileType, TagType, TaggedFileExt};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -373,18 +324,15 @@ impl TaggedFile {
 	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	pub fn change_file_type(&mut self, file_type: FileType) {
-		self.ty = file_type;
-		self.properties = FileProperties::default();
-		self.tags
-			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
-	}
+	fn change_file_type(&mut self, file_type: FileType);
 
 	/// Removes all tags from the file
 	///
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::TaggedFileExt;
+	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
@@ -394,9 +342,7 @@ impl TaggedFile {
 	/// assert!(tagged_file.tags().is_empty());
 	/// # Ok(()) }
 	/// ```
-	pub fn clear(&mut self) {
-		self.tags.clear()
-	}
+	fn clear(&mut self);
 
 	/// Attempts to write all tags to a path
 	///
@@ -407,6 +353,8 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust,no_run
+	/// use lofty::TaggedFileExt;
+	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
@@ -416,9 +364,7 @@ impl TaggedFile {
 	/// tagged_file.save_to_path(path)?;
 	/// # Ok(()) }
 	/// ```
-	pub fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
-	}
+	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()>;
 
 	/// Attempts to write all tags to a file
 	///
@@ -429,6 +375,7 @@ impl TaggedFile {
 	/// # Examples
 	///
 	/// ```rust,no_run
+	/// use lofty::TaggedFileExt;
 	/// use std::fs::OpenOptions;
 	///
 	/// # fn main() -> lofty::Result<()> {
@@ -441,7 +388,107 @@ impl TaggedFile {
 	/// tagged_file.save_to(&mut file)?;
 	/// # Ok(()) }
 	/// ```
-	pub fn save_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File) -> Result<()>;
+}
+
+/// A generic representation of a file
+///
+/// This is used when the [`FileType`] has to be guessed
+pub struct TaggedFile {
+	/// The file's type
+	pub(crate) ty: FileType,
+	/// The file's audio properties
+	pub(crate) properties: FileProperties,
+	/// A collection of the file's tags
+	pub(crate) tags: Vec<Tag>,
+}
+
+impl TaggedFileExt for TaggedFile {
+	#[doc(hidden)]
+	fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
+		Self {
+			ty,
+			properties,
+			tags,
+		}
+	}
+
+	fn file_type(&self) -> FileType {
+		self.ty
+	}
+
+	fn tags(&self) -> &[Tag] {
+		self.tags.as_slice()
+	}
+
+	fn primary_tag_type(&self) -> TagType {
+		self.ty.primary_tag_type()
+	}
+
+	fn supports_tag_type(&self, tag_type: TagType) -> bool {
+		self.ty.supports_tag_type(tag_type)
+	}
+
+	fn tag(&self, tag_type: TagType) -> Option<&Tag> {
+		self.tags.iter().find(|i| i.tag_type() == tag_type)
+	}
+
+	fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
+		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
+	}
+
+	fn primary_tag(&self) -> Option<&Tag> {
+		self.tag(self.primary_tag_type())
+	}
+
+	fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.tag_mut(self.primary_tag_type())
+	}
+
+	fn first_tag(&self) -> Option<&Tag> {
+		self.tags.first()
+	}
+
+	fn first_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.tags.first_mut()
+	}
+
+	fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
+		let tag_type = tag.tag_type();
+
+		if self.supports_tag_type(tag_type) {
+			let ret = self.remove(tag_type);
+			self.tags.push(tag);
+
+			return ret;
+		}
+
+		None
+	}
+
+	fn remove(&mut self, tag_type: TagType) -> Option<Tag> {
+		self.tags
+			.iter()
+			.position(|t| t.tag_type() == tag_type)
+			.map(|pos| self.tags.remove(pos))
+	}
+
+	fn change_file_type(&mut self, file_type: FileType) {
+		self.ty = file_type;
+		self.properties = FileProperties::default();
+		self.tags
+			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
+	}
+
+	fn clear(&mut self) {
+		self.tags.clear()
+	}
+
+	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	fn save_to(&self, file: &mut File) -> Result<()> {
 		for tag in &self.tags {
 			tag.save_to(file)?;
 		}

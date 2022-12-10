@@ -55,7 +55,7 @@
 //! ```rust,no_run
 //! # use lofty::LoftyError;
 //! # fn main() -> Result<(), LoftyError> {
-//! use lofty::{read_from_path, ParseOptions};
+//! use lofty::{read_from_path, ParseOptions, TaggedFileExt};
 //!
 //! let path = "test.mp3";
 //! let tagged_file = read_from_path(path)?;
@@ -191,7 +191,7 @@ pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
 
-pub use crate::file::{AudioFile, FileType, TaggedFile};
+pub use crate::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::properties::FileProperties;
 pub use crate::tag::{Tag, TagType};

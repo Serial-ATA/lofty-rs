@@ -166,6 +166,8 @@ pub(crate) fn parse(
 
 		impl std::convert::From<#struct_name> for lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {
+				use ::lofty::TaggedFileExt as _;
+
 				lofty::TaggedFile::new(
 					#file_type_variant,
 					lofty::FileProperties::from(input.properties),
