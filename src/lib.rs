@@ -203,6 +203,8 @@ pub use crate::traits::{Accessor, TagExt};
 #[cfg(feature = "vorbis_comments")]
 pub use picture::PictureInformation;
 
+pub use lofty_attr::LoftyFile;
+
 // TODO: https://github.com/rust-lang/rust/issues/88581
 #[inline]
 pub(crate) const fn div_ceil(dividend: u64, divisor: u64) -> u64 {
