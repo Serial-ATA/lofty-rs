@@ -129,15 +129,19 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 
 #[cfg(test)]
 mod tests {
+	use crate::file::{FileType, TaggedFileExt};
 	use crate::id3::v2::ID3v2Tag;
 	use crate::probe::ParseOptions;
+	use crate::properties::FileProperties;
 	use crate::resolve::{register_custom_resolver, FileResolver};
-	use crate::{Accessor, FileProperties, FileType, TagType};
-	use lofty_attr::LoftyFile;
+	use crate::tag::TagType;
+	use crate::traits::Accessor;
 
 	use std::fs::File;
 	use std::io::{Read, Seek};
 	use std::panic;
+
+	use lofty_attr::LoftyFile;
 
 	#[derive(LoftyFile, Default)]
 	#[lofty(read_fn = "Self::read")]

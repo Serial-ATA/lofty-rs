@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
            spec-compliant and efficient.
 - **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
 - **ogg_pager**: `paginate` now works with a collection of packets.
-- **lofty_attr**: The `lofty_attr::LoftyFile` derive proc macro is now exported as `lofty::LoftyFile`
+- **lofty_attr**: The `lofty_attr::LoftyFile` derive proc macro is now exported as `lofty::LoftyFile`.
+- **TaggedFile**: All methods have been split out into a new trait, `TaggedFileExt`.
 
 ### Removed
 - **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or

@@ -1,4 +1,4 @@
-use lofty::Probe;
+use lofty::{Probe, TaggedFileExt};
 use std::io::Write;
 
 fn main() {

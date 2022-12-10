@@ -1,4 +1,4 @@
-use lofty::{Accessor, AudioFile, Probe};
+use lofty::{Accessor, AudioFile, Probe, TaggedFileExt};
 use std::path::Path;
 
 fn main() {

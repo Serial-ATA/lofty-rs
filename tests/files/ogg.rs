@@ -1,5 +1,7 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType};
+use lofty::{
+	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType, TaggedFileExt,
+};
 use std::io::{Seek, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
