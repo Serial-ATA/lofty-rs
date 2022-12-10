@@ -117,7 +117,7 @@ where
 		},
 	}
 
-	(!text_bytes.is_empty()).then(|| text_bytes)
+	(!text_bytes.is_empty()).then_some(text_bytes)
 }
 
 pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {

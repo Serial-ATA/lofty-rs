@@ -96,7 +96,7 @@ where
 	#[cfg(feature = "vorbis_comments")]
 	{
 		flac_file.vorbis_comments_tag =
-			(!(tag.items.is_empty() && tag.pictures.is_empty())).then(|| tag);
+			(!(tag.items.is_empty() && tag.pictures.is_empty())).then_some(tag);
 	}
 
 	let (stream_length, file_length) = {

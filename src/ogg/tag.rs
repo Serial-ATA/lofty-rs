@@ -96,7 +96,7 @@ impl VorbisComments {
 	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + '_ {
 		self.items
 			.iter()
-			.filter_map(move |(k, v)| (k == key).then(|| v.as_str()))
+			.filter_map(move |(k, v)| (k == key).then_some(v.as_str()))
 	}
 
 	/// Inserts an item

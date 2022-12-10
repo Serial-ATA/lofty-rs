@@ -128,8 +128,6 @@
 )]
 // TODO: This had multiple FPs right now, remove this when it is fixed
 #![allow(clippy::needless_borrow)]
-// TODO: Remove this when Ubuntu has 1.62.0 in its stable repos
-#![allow(clippy::unnecessary_lazy_evaluations)]
 #![allow(
 	unknown_lints,
 	clippy::too_many_lines,

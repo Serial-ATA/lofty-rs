@@ -109,14 +109,14 @@ pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {
 			flags & 0x2000 == 0x2000
 		},
 		grouping_identity: ((v4 && flags & 0x0040 == 0x0040) || (flags & 0x0020 == 0x0020))
-			.then(|| 0),
+			.then_some(0),
 		compression: if v4 {
 			flags & 0x0008 == 0x0008
 		} else {
 			flags & 0x0080 == 0x0080
 		},
-		encryption: ((v4 && flags & 0x0004 == 0x0004) || flags & 0x0040 == 0x0040).then(|| 0),
+		encryption: ((v4 && flags & 0x0004 == 0x0004) || flags & 0x0040 == 0x0040).then_some(0),
 		unsynchronisation: if v4 { flags & 0x0002 == 0x0002 } else { false },
-		data_length_indicator: (v4 && flags & 0x0001 == 0x0001).then(|| 0),
+		data_length_indicator: (v4 && flags & 0x0001 == 0x0001).then_some(0),
 	}
 }

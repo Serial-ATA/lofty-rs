@@ -251,7 +251,7 @@ impl From<Tag> for AIFFTextChunks {
 			name,
 			author,
 			copyright,
-			annotations: (!annotations.is_empty()).then(|| annotations),
+			annotations: (!annotations.is_empty()).then_some(annotations),
 			comments: None,
 		}
 	}
