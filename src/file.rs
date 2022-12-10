@@ -487,6 +487,9 @@ impl TaggedFileExt for TaggedFile {
 
 	fn save_to(&self, file: &mut File) -> Result<()> {
 		for tag in &self.tags {
+			// TODO: This is a temporary solution. Ideally we should probe once and use
+			//       the format-specific writing to avoid these rewinds.
+			file.rewind()?;
 			tag.save_to(file)?;
 		}
 
