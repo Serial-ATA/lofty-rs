@@ -37,10 +37,6 @@ pub trait AudioFile: Into<TaggedFile> {
 
 /// Provides a common interface between [`TaggedFile`] and [`BoundTaggedFile`]
 pub trait TaggedFileExt {
-	#[doc(hidden)]
-	/// This exists for use in `lofty_attr`, there's no real use for this externally
-	fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self;
-
 	/// Returns the file's [`FileType`]
 	///
 	/// # Examples
@@ -299,33 +295,6 @@ pub trait TaggedFileExt {
 	/// ```
 	fn remove(&mut self, tag_type: TagType) -> Option<Tag>;
 
-	/// Changes the [`FileType`]
-	///
-	/// NOTES:
-	///
-	/// * This will remove any tag the format does not support. See [`FileType::supports_tag_type`]
-	/// * This will reset the [`FileProperties`]
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::{AudioFile, FileType, TagType, TaggedFileExt};
-	///
-	/// # fn main() -> lofty::Result<()> {
-	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
-	/// // Read an MP3 file containing an ID3v2 tag
-	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
-	///
-	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
-	///
-	/// // Remap our MP3 file to WavPack, which doesn't support ID3v2
-	/// tagged_file.change_file_type(FileType::WavPack);
-	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
-	/// # Ok(()) }
-	/// ```
-	fn change_file_type(&mut self, file_type: FileType);
-
 	/// Removes all tags from the file
 	///
 	/// # Examples
@@ -403,9 +372,10 @@ pub struct TaggedFile {
 	pub(crate) tags: Vec<Tag>,
 }
 
-impl TaggedFileExt for TaggedFile {
+impl TaggedFile {
 	#[doc(hidden)]
-	fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
+	/// This exists for use in `lofty_attr`, there's no real use for this externally
+	pub fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
 		Self {
 			ty,
 			properties,
@@ -413,6 +383,40 @@ impl TaggedFileExt for TaggedFile {
 		}
 	}
 
+	/// Changes the [`FileType`]
+	///
+	/// NOTES:
+	///
+	/// * This will remove any tag the format does not support. See [`FileType::supports_tag_type`]
+	/// * This will reset the [`FileProperties`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{AudioFile, FileType, TagType, TaggedFileExt};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
+	/// // Read an MP3 file containing an ID3v2 tag
+	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
+	///
+	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	///
+	/// // Remap our MP3 file to WavPack, which doesn't support ID3v2
+	/// tagged_file.change_file_type(FileType::WavPack);
+	///
+	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// # Ok(()) }
+	/// ```
+	pub fn change_file_type(&mut self, file_type: FileType) {
+		self.ty = file_type;
+		self.properties = FileProperties::default();
+		self.tags
+			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
+	}
+}
+
+impl TaggedFileExt for TaggedFile {
 	fn file_type(&self) -> FileType {
 		self.ty
 	}
@@ -473,13 +477,6 @@ impl TaggedFileExt for TaggedFile {
 			.map(|pos| self.tags.remove(pos))
 	}
 
-	fn change_file_type(&mut self, file_type: FileType) {
-		self.ty = file_type;
-		self.properties = FileProperties::default();
-		self.tags
-			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
-	}
-
 	fn clear(&mut self) {
 		self.tags.clear()
 	}
@@ -521,6 +518,223 @@ impl AudioFile for TaggedFile {
 
 	fn contains_tag_type(&self, tag_type: TagType) -> bool {
 		self.tags.iter().any(|t| t.tag_type() == tag_type)
+	}
+}
+
+impl From<BoundTaggedFile> for TaggedFile {
+	fn from(input: BoundTaggedFile) -> Self {
+		input.inner
+	}
+}
+
+/// A variant of [`TaggedFile`] that holds a [`File`] handle, and reflects changes
+/// such as tag removals.
+///
+/// For example:
+///
+/// ```rust,no_run
+/// use lofty::{AudioFile, Tag, TagType, TaggedFileExt};
+/// # fn main() -> lofty::Result<()> {
+/// # let path = "tests/files/assets/minimal/full_test.mp3";
+///
+/// // We create an empty tag
+/// let tag = Tag::new(TagType::ID3v2);
+///
+/// let mut tagged_file = lofty::read_from_path(path)?;
+///
+/// // Push our empty tag into the TaggedFile
+/// tagged_file.insert_tag(tag);
+///
+/// // After saving, our file still "contains" the ID3v2 tag, but if we were to read
+/// // "foo.mp3", it would not have an ID3v2 tag. Lofty does not write empty tags, but this
+/// // change will not be reflected in `TaggedFile`.
+/// tagged_file.save_to_path("foo.mp3")?;
+/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+/// # Ok(()) }
+/// ```
+///
+/// However, when using `BoundTaggedFile`:
+///
+/// ```rust,no_run
+/// use lofty::{AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt};
+/// use std::fs::OpenOptions;
+/// # fn main() -> lofty::Result<()> {
+/// # let path = "tests/files/assets/minimal/full_test.mp3";
+///
+/// // We create an empty tag
+/// let tag = Tag::new(TagType::ID3v2);
+///
+/// // We'll need to open our file for reading *and* writing
+/// let file = OpenOptions::new().read(true).write(true).open(path)?;
+/// let parse_options = ParseOptions::new();
+///
+/// let mut bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
+///
+/// // Push our empty tag into the TaggedFile
+/// bound_tagged_file.insert_tag(tag);
+///
+/// // Now when saving, we no longer have to specify a path, and the tags in the `BoundTaggedFile`
+/// // reflect those in the actual file on disk.
+/// bound_tagged_file.save()?;
+/// assert!(!bound_tagged_file.contains_tag_type(TagType::ID3v2));
+/// # Ok(()) }
+/// ```
+pub struct BoundTaggedFile {
+	inner: TaggedFile,
+	file_handle: File,
+}
+
+impl BoundTaggedFile {
+	/// Create a new [`BoundTaggedFile`]
+	///
+	/// # Errors
+	///
+	/// See [`AudioFile::read_from`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::{AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt};
+	/// use std::fs::OpenOptions;
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	///
+	/// // We'll need to open our file for reading *and* writing
+	/// let file = OpenOptions::new().read(true).write(true).open(path)?;
+	/// let parse_options = ParseOptions::new();
+	///
+	/// let bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
+	/// # Ok(()) }
+	/// ```
+	pub fn read_from(mut file: File, parse_options: ParseOptions) -> Result<Self> {
+		let inner = TaggedFile::read_from(&mut file, parse_options)?;
+		file.rewind()?;
+
+		Ok(Self {
+			inner,
+			file_handle: file,
+		})
+	}
+
+	/// Save the tags to the file stored internally
+	///
+	/// # Errors
+	///
+	/// See [`TaggedFile::save_to`]
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::{AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt};
+	/// use std::fs::OpenOptions;
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	///
+	/// // We'll need to open our file for reading *and* writing
+	/// let file = OpenOptions::new().read(true).write(true).open(path)?;
+	/// let parse_options = ParseOptions::new();
+	///
+	/// let mut bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
+	///
+	/// // Do some work to the tags...
+	///
+	/// // This will save the tags to the file we provided to `read_from`
+	/// bound_tagged_file.save()?;
+	/// # Ok(()) }
+	/// ```
+	pub fn save(&mut self) -> Result<()> {
+		self.inner.save_to(&mut self.file_handle)?;
+		self.inner.tags.retain(|tag| !tag.is_empty());
+
+		Ok(())
+	}
+}
+
+impl TaggedFileExt for BoundTaggedFile {
+	fn file_type(&self) -> FileType {
+		self.inner.file_type()
+	}
+
+	fn tags(&self) -> &[Tag] {
+		self.inner.tags()
+	}
+
+	fn primary_tag_type(&self) -> TagType {
+		self.inner.primary_tag_type()
+	}
+
+	fn supports_tag_type(&self, tag_type: TagType) -> bool {
+		self.inner.supports_tag_type(tag_type)
+	}
+
+	fn tag(&self, tag_type: TagType) -> Option<&Tag> {
+		self.inner.tag(tag_type)
+	}
+
+	fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
+		self.inner.tag_mut(tag_type)
+	}
+
+	fn primary_tag(&self) -> Option<&Tag> {
+		self.inner.primary_tag()
+	}
+
+	fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.inner.primary_tag_mut()
+	}
+
+	fn first_tag(&self) -> Option<&Tag> {
+		self.inner.first_tag()
+	}
+
+	fn first_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.inner.first_tag_mut()
+	}
+
+	fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
+		self.inner.insert_tag(tag)
+	}
+
+	fn remove(&mut self, tag_type: TagType) -> Option<Tag> {
+		self.inner.remove(tag_type)
+	}
+
+	fn clear(&mut self) {
+		self.inner.clear()
+	}
+
+	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.inner.save_to_path(path)
+	}
+
+	fn save_to(&self, file: &mut File) -> Result<()> {
+		self.inner.save_to(file)
+	}
+}
+
+impl AudioFile for BoundTaggedFile {
+	type Properties = FileProperties;
+
+	fn read_from<R>(_: &mut R, _: ParseOptions) -> Result<Self>
+	where
+		R: Read + Seek,
+		Self: Sized,
+	{
+		unimplemented!(
+			"BoundTaggedFile can only be constructed through `BoundTaggedFile::read_from`"
+		)
+	}
+
+	fn properties(&self) -> &Self::Properties {
+		self.inner.properties()
+	}
+
+	fn contains_tag(&self) -> bool {
+		self.inner.contains_tag()
+	}
+
+	fn contains_tag_type(&self, tag_type: TagType) -> bool {
+		self.inner.contains_tag_type(tag_type)
 	}
 }
 
