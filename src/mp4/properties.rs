@@ -11,9 +11,10 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MP4 file's audio codec
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Mp4Codec {
+	#[default]
 	Unknown,
 	AAC,
 	ALAC,
@@ -21,19 +22,14 @@ pub enum Mp4Codec {
 	FLAC,
 }
 
-impl Default for Mp4Codec {
-	fn default() -> Self {
-		Self::Unknown
-	}
-}
-
 #[allow(missing_docs)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 #[rustfmt::skip]
 #[non_exhaustive]
 pub enum AudioObjectType {
 	// https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
 
+	#[default]
 	NULL = 0,
 	AacMain = 1,                                       // AAC Main Profile
 	AacLowComplexity = 2,                              // AAC Low Complexity
@@ -77,12 +73,6 @@ pub enum AudioObjectType {
 	LowDelayMpegSurround = 44,                         // LD MPEG Surround
 	SpatialAudioObjectCodingDialogueEnhancement = 45,  // SAOC-DE
 	AudioSync = 46,                                    // Audio Sync
-}
-
-impl Default for AudioObjectType {
-	fn default() -> Self {
-		Self::NULL
-	}
 }
 
 impl TryFrom<u8> for AudioObjectType {

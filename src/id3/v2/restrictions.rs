@@ -1,8 +1,9 @@
 /// Restrictions on the tag size
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum TagSizeRestrictions {
 	/// No more than 128 frames and 1 MB total tag size
+	#[default]
 	S_128F_1M,
 	/// No more than 64 frames and 128 KB total tag size
 	S_64F_128K,
@@ -12,17 +13,12 @@ pub enum TagSizeRestrictions {
 	S_32F_4K,
 }
 
-impl Default for TagSizeRestrictions {
-	fn default() -> Self {
-		Self::S_128F_1M
-	}
-}
-
 /// Restrictions on text field sizes
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum TextSizeRestrictions {
 	/// No size restrictions
+	#[default]
 	None,
 	/// No longer than 1024 characters
 	C_1024,
@@ -32,17 +28,12 @@ pub enum TextSizeRestrictions {
 	C_30,
 }
 
-impl Default for TextSizeRestrictions {
-	fn default() -> Self {
-		Self::None
-	}
-}
-
 /// Restrictions on all image sizes
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
 pub enum ImageSizeRestrictions {
 	/// No size restrictions
+	#[default]
 	None,
 	/// All images are 256x256 or smaller
 	P_256,
@@ -50,12 +41,6 @@ pub enum ImageSizeRestrictions {
 	P_64,
 	/// All images are **exactly** 64x64
 	P_64_64,
-}
-
-impl Default for ImageSizeRestrictions {
-	fn default() -> Self {
-		Self::None
-	}
 }
 
 /// Restrictions on the content of an ID3v2 tag

@@ -118,9 +118,10 @@ where
 }
 
 /// MPEG Audio version
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
+#[derive(Default, PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 pub enum MpegVersion {
+	#[default]
 	V1,
 	V2,
 	V2_5,
@@ -128,31 +129,21 @@ pub enum MpegVersion {
 	V4,
 }
 
-impl Default for MpegVersion {
-	fn default() -> Self {
-		Self::V1
-	}
-}
-
 /// MPEG layer
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum Layer {
 	Layer1 = 1,
 	Layer2 = 2,
+	#[default]
 	Layer3 = 3,
 }
 
-impl Default for Layer {
-	fn default() -> Self {
-		Self::Layer3
-	}
-}
-
 /// Channel mode
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs)]
 pub enum ChannelMode {
+	#[default]
 	Stereo = 0,
 	JointStereo = 1,
 	/// Two independent mono channels
@@ -160,28 +151,17 @@ pub enum ChannelMode {
 	SingleChannel = 3,
 }
 
-impl Default for ChannelMode {
-	fn default() -> Self {
-		Self::Stereo
-	}
-}
-
 /// A rarely-used decoder hint that the file must be de-emphasized
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs, non_camel_case_types)]
 pub enum Emphasis {
+	#[default]
 	None,
 	/// 50/15 ms
 	MS5015,
 	Reserved,
 	/// CCIT J.17
 	CCIT_J17,
-}
-
-impl Default for Emphasis {
-	fn default() -> Self {
-		Self::None
-	}
 }
 
 #[derive(Copy, Clone)]
