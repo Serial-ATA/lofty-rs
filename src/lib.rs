@@ -191,7 +191,7 @@ pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
 
-pub use crate::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
+pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::properties::FileProperties;
 pub use crate::tag::{Tag, TagType};

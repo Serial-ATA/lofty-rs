@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
 - **ogg_pager**: Support for reading packets with the new `Packets` struct.
 - **ogg_pager**: `PageHeader` struct.
+- **BoundTaggedFile**: A `TaggedFile` variant bound to a `File` handle.
 
 ### Changed
 - **Files**: Return the removed tag from `<File>::remove(TagType)`
