@@ -531,7 +531,7 @@ impl From<ID3v2Tag> for Tag {
 					}),
 				) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, description);
-					for c in content.split(&['\0', '/'][..]) {
+					for c in content.split('\0') {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Text(c.to_string()),
@@ -547,7 +547,7 @@ impl From<ID3v2Tag> for Tag {
 					}),
 				) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, description);
-					for c in content.split(&['\0', '/'][..]) {
+					for c in content.split('\0') {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Locator(c.to_string()),
@@ -562,7 +562,7 @@ impl From<ID3v2Tag> for Tag {
 						| FrameValue::UnSyncText(LanguageFrame { content, .. })
 						| FrameValue::Text { value: content, .. }
 						| FrameValue::UserText(EncodedTextFrame { content, .. }) => {
-							for c in content.split(&['\0', '/'][..]) {
+							for c in content.split('\0') {
 								tag.items.push(TagItem::new(
 									item_key.clone(),
 									ItemValue::Text(c.to_string()),
@@ -603,7 +603,7 @@ impl From<Tag> for ID3v2Tag {
 					let mut s = String::with_capacity(iter.size_hint().0);
 					s.push_str(&first);
 					iter.for_each(|i| {
-						s.push('/');
+						s.push('\0');
 						s.push_str(&i);
 					});
 

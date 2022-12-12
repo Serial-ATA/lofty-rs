@@ -53,6 +53,19 @@ fn read_with_junk_bytes_between_frames() {
 }
 
 #[test]
+fn issue_82_solidus_in_tag() {
+	let file = Probe::open("tests/files/assets/issue_82_solidus_in_tag.mp3")
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(file.file_type(), FileType::MPEG);
+
+	let id3v2_tag = &file.tags()[0];
+	assert_eq!(id3v2_tag.title(), Some("Foo / title"));
+}
+
+#[test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
