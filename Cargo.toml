@@ -13,7 +13,7 @@ include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "benches", 
 
 [dependencies]
 # Vorbis comments pictures
-base64     = { version = "0.13.0", optional = true }
+base64     = { version = "0.20.0", optional = true }
 byteorder  = "1.4.3"
 # TODO: rustfmt only works with cfg_if for now (https://github.com/rust-lang/rustfmt/issues/3253)
 cfg-if     = "1.0.0"
