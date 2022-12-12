@@ -157,18 +157,16 @@ impl ID3v2Tag {
 	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
 	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
 		let frame = self.get(id);
-		match frame {
-			Some(Frame {
-				value: FrameValue::Text { value, .. },
-				..
-			}) => {
-				if !value.contains('\0') || self.original_version != ID3v2Version::V4 {
-					return Some(Cow::Borrowed(value.as_str()));
-				}
+		if let Some(Frame {
+			value: FrameValue::Text { value, .. },
+			..
+		}) = frame
+		{
+			if !value.contains('\0') || self.original_version != ID3v2Version::V4 {
+				return Some(Cow::Borrowed(value.as_str()));
+			}
 
-				return Some(Cow::Owned(value.replace('\0', "/")));
-			},
-			_ => {},
+			return Some(Cow::Owned(value.replace('\0', "/")));
 		}
 
 		None

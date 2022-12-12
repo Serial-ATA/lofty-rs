@@ -24,10 +24,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ogg_pager**: `paginate` now works with a collection of packets.
 - **lofty_attr**: The `lofty_attr::LoftyFile` derive proc macro is now exported as `lofty::LoftyFile`.
 - **TaggedFile**: All methods have been split out into a new trait, `TaggedFileExt`.
+- **Accessor**: All methods returning string values now return `Cow<str>`.
+  - This is an unfortunate change that needed to be made in order to accommodate the handling of the different
+    possible text separators between ID3v2 versions.
 
 ### Removed
 - **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
                  `Packets::paginate`.
+
+### Fixed
+- **ID3v2**: The `'/'` character is no longer used as a separator ([issue](https://github.com/Serial-ATA/lofty-rs/issues/83))
 
 ## [0.9.0] - 2022-10-30
 
