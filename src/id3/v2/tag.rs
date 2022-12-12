@@ -24,17 +24,8 @@ macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
 		paste::paste! {
 			$(
-				fn $name(&self) -> Option<&str> {
-					if let Some(f) = self.get($id) {
-						if let FrameValue::Text {
-							ref value,
-							..
-						} = f.content() {
-							return Some(value)
-						}
-					}
-
-					None
+				fn $name(&self) -> Option<Cow<'_, str>> {
+					self.get_text($id)
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
@@ -158,6 +149,29 @@ impl ID3v2Tag {
 		self.frames
 			.iter()
 			.find(|f| f.id_str().eq_ignore_ascii_case(id))
+	}
+
+	/// Gets the text for a frame
+	///
+	/// If the tag is [`ID3v2Version::V4`], this will allocate if the text contains any
+	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
+	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
+		let frame = self.get(id);
+		match frame {
+			Some(Frame {
+				value: FrameValue::Text { value, .. },
+				..
+			}) => {
+				if !value.contains('\0') || self.original_version != ID3v2Version::V4 {
+					return Some(Cow::Borrowed(value.as_str()));
+				}
+
+				return Some(Cow::Owned(value.replace('\0', "/")));
+			},
+			_ => {},
+		}
+
+		None
 	}
 
 	/// Inserts a [`Frame`]
@@ -375,13 +389,13 @@ impl Accessor for ID3v2Tag {
 		self.remove("TDRC");
 	}
 
-	fn comment(&self) -> Option<&str> {
+	fn comment(&self) -> Option<Cow<'_, str>> {
 		if let Some(Frame {
 			value: FrameValue::Comment(LanguageFrame { content, .. }),
 			..
 		}) = self.get("COMM")
 		{
-			return Some(content);
+			return Some(Cow::Borrowed(content));
 		}
 
 		None
@@ -1135,7 +1149,7 @@ mod tests {
 		use crate::traits::Accessor;
 		let mut tag = ID3v2Tag::default();
 
-		tag.set_artist(String::from("foo/bar\0baz"));
+		tag.set_artist(String::from("foo\0bar\0baz"));
 
 		let tag: Tag = tag.into();
 		let collected_artists = tag.get_strings(&ItemKey::TrackArtist).collect::<Vec<_>>();
@@ -1161,7 +1175,7 @@ mod tests {
 		));
 
 		let tag: ID3v2Tag = tag.into();
-		assert_eq!(tag.artist(), Some("foo/bar/baz"))
+		assert_eq!(tag.artist().as_deref(), Some("foo/bar/baz"))
 	}
 
 	#[test]

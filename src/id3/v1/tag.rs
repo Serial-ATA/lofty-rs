@@ -4,6 +4,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
+use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -14,8 +15,12 @@ macro_rules! impl_accessor {
 	($($name:ident,)+) => {
 		paste::paste! {
 			$(
-				fn $name(&self) -> Option<&str> {
-					self.$name.as_deref()
+				fn $name(&self) -> Option<Cow<'_, str>> {
+					if let Some(item) = self.$name.as_deref() {
+						return Some(Cow::Borrowed(item));
+					}
+
+					None
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
@@ -87,12 +92,12 @@ pub struct ID3v1Tag {
 impl Accessor for ID3v1Tag {
 	impl_accessor!(title, artist, album,);
 
-	fn genre(&self) -> Option<&str> {
+	fn genre(&self) -> Option<Cow<'_, str>> {
 		if let Some(g) = self.genre {
 			let g = g as usize;
 
 			if g < GENRES.len() {
-				return Some(GENRES[g]);
+				return Some(Cow::Borrowed(GENRES[g]));
 			}
 		}
 
@@ -126,8 +131,8 @@ impl Accessor for ID3v1Tag {
 		self.track_number = None;
 	}
 
-	fn comment(&self) -> Option<&str> {
-		self.comment.as_deref()
+	fn comment(&self) -> Option<Cow<'_, str>> {
+		self.comment.as_deref().map(Cow::Borrowed)
 	}
 
 	fn set_comment(&mut self, value: String) {

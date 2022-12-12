@@ -9,6 +9,7 @@ use crate::probe::Probe;
 use crate::traits::{Accessor, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
+use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -17,9 +18,9 @@ macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
 		paste::paste! {
 			$(
-				fn $name(&self) -> Option<&str> {
+				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
-						return Some(&*txt)
+						return Some(Cow::Borrowed(txt))
 					}
 
 					None
@@ -678,7 +679,7 @@ mod tests {
 		let mut tag = Tag::new(TagType::ID3v2);
 		tag.set_title(String::from("Foo title"));
 
-		assert_eq!(tag.title(), Some("Foo title"));
+		assert_eq!(tag.title().as_deref(), Some("Foo title"));
 
 		tag.set_title(String::new());
 		assert_eq!(tag.title(), None);

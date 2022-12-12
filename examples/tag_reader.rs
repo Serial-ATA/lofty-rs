@@ -23,10 +23,10 @@ fn main() {
 	};
 
 	println!("--- Tag Information ---");
-	println!("Title: {}", tag.title().unwrap_or("None"));
-	println!("Artist: {}", tag.artist().unwrap_or("None"));
-	println!("Album: {}", tag.album().unwrap_or("None"));
-	println!("Genre: {}", tag.genre().unwrap_or("None"));
+	println!("Title: {}", tag.title().as_deref().unwrap_or("None"));
+	println!("Artist: {}", tag.artist().as_deref().unwrap_or("None"));
+	println!("Album: {}", tag.album().as_deref().unwrap_or("None"));
+	println!("Genre: {}", tag.genre().as_deref().unwrap_or("None"));
 
 	// import keys from https://docs.rs/lofty/latest/lofty/enum.ItemKey.html
 	println!(

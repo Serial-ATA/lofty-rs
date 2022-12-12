@@ -157,7 +157,10 @@ fn flac_with_id3v2() {
 		FlacFile::read_from(&mut std::io::Cursor::new(file), ParseOptions::new()).unwrap();
 
 	assert!(flac_file.id3v2().is_some());
-	assert_eq!(flac_file.id3v2().unwrap().artist(), Some("Foo artist"));
+	assert_eq!(
+		flac_file.id3v2().unwrap().artist().as_deref(),
+		Some("Foo artist")
+	);
 
 	assert!(flac_file.vorbis_comments().is_some());
 }
