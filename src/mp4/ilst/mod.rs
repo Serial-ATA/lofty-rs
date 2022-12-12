@@ -14,6 +14,7 @@ use crate::traits::{Accessor, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 use r#ref::AtomIdentRef;
 
+use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -30,10 +31,10 @@ macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
 		paste::paste! {
 			$(
-				fn $name(&self) -> Option<&str> {
+				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(atom) = self.atom(&$const) {
 						if let Some(AtomData::UTF8(val) | AtomData::UTF16(val)) = atom.data().next() {
-							return Some(val)
+							return Some(Cow::Borrowed(val));
 						}
 					}
 

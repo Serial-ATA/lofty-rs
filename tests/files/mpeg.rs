@@ -38,18 +38,18 @@ fn read_with_junk_bytes_between_frames() {
 	assert_eq!(file.file_type(), FileType::MPEG);
 
 	let id3v2_tag = &file.tags()[0];
-	assert_eq!(id3v2_tag.artist(), Some("artist test"));
-	assert_eq!(id3v2_tag.album(), Some("album test"));
-	assert_eq!(id3v2_tag.title(), Some("title test"));
+	assert_eq!(id3v2_tag.artist().as_deref(), Some("artist test"));
+	assert_eq!(id3v2_tag.album().as_deref(), Some("album test"));
+	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));
 	assert_eq!(
 		id3v2_tag.get_string(&ItemKey::EncoderSettings),
 		Some("Lavf58.62.100")
 	);
 
 	let id3v1_tag = &file.tags()[1];
-	assert_eq!(id3v1_tag.artist(), Some("artist test"));
-	assert_eq!(id3v1_tag.album(), Some("album test"));
-	assert_eq!(id3v1_tag.title(), Some("title test"));
+	assert_eq!(id3v1_tag.artist().as_deref(), Some("artist test"));
+	assert_eq!(id3v1_tag.album().as_deref(), Some("album test"));
+	assert_eq!(id3v1_tag.title().as_deref(), Some("title test"));
 }
 
 #[test]
@@ -62,7 +62,7 @@ fn issue_82_solidus_in_tag() {
 	assert_eq!(file.file_type(), FileType::MPEG);
 
 	let id3v2_tag = &file.tags()[0];
-	assert_eq!(id3v2_tag.title(), Some("Foo / title"));
+	assert_eq!(id3v2_tag.title().as_deref(), Some("Foo / title"));
 }
 
 #[test]

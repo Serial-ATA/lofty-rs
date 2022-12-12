@@ -8,6 +8,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
+use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -19,11 +20,11 @@ macro_rules! impl_accessor {
 	($($name:ident => $($key:literal)|+;)+) => {
 		paste::paste! {
 			$(
-				fn $name(&self) -> Option<&str> {
+				fn $name(&self) -> Option<Cow<'_, str>> {
 					$(
 						if let Some(i) = self.get_key($key) {
 							if let ItemValue::Text(val) = i.value() {
-								return Some(val)
+								return Some(Cow::Borrowed(val));
 							}
 						}
 					)+

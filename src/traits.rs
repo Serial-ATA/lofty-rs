@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 // This defines the `Accessor` trait, used to define unified getters/setters for commonly
 // accessed tag values.
 //
@@ -110,11 +112,11 @@ macro_rules! accessor_trait {
 }
 
 accessor_trait! {
-	[artist]<&str, String>, [title]<&str, String>,
-	[album]<&str, String>,  [genre]<&str, String>,
-	[track]<u32>,			[track total]<u32>,
-	[disk]<u32>,		  	[disk total]<u32>,
-	[year]<u32>,			[comment]<&str, String>,
+	[artist]<Cow<'_, str>, String>, [title      ]<Cow<'_, str>, String>,
+	[album ]<Cow<'_, str>, String>, [genre      ]<Cow<'_, str>, String>,
+	[track ]<u32>,                  [track total]<u32>,
+	[disk  ]<u32>,                  [disk total ]<u32>,
+	[year  ]<u32>,                  [comment    ]<Cow<'_, str>, String>,
 }
 
 use crate::tag::Tag;

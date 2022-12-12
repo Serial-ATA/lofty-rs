@@ -5,6 +5,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -77,8 +78,8 @@ pub struct AIFFTextChunks {
 }
 
 impl Accessor for AIFFTextChunks {
-	fn artist(&self) -> Option<&str> {
-		self.author.as_deref()
+	fn artist(&self) -> Option<Cow<'_, str>> {
+		self.author.as_deref().map(Cow::Borrowed)
 	}
 	fn set_artist(&mut self, value: String) {
 		self.author = Some(value)
@@ -87,8 +88,8 @@ impl Accessor for AIFFTextChunks {
 		self.author = None
 	}
 
-	fn title(&self) -> Option<&str> {
-		self.name.as_deref()
+	fn title(&self) -> Option<Cow<'_, str>> {
+		self.name.as_deref().map(Cow::Borrowed)
 	}
 	fn set_title(&mut self, value: String) {
 		self.name = Some(value)
@@ -97,15 +98,15 @@ impl Accessor for AIFFTextChunks {
 		self.name = None
 	}
 
-	fn comment(&self) -> Option<&str> {
+	fn comment(&self) -> Option<Cow<'_, str>> {
 		if let Some(ref anno) = self.annotations {
 			if !anno.is_empty() {
-				return anno.first().map(String::as_str);
+				return anno.first().map(String::as_str).map(Cow::Borrowed);
 			}
 		}
 
 		if let Some(ref comm) = self.comments {
-			return comm.first().map(|c| c.text.as_str());
+			return comm.first().map(|c| c.text.as_str()).map(Cow::Borrowed);
 		}
 
 		None
