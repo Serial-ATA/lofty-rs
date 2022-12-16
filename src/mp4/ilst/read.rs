@@ -118,6 +118,11 @@ where
 	R: Read + Seek,
 {
 	if let Some(mut atom_data) = parse_data_inner(reader, &atom_info)? {
+		// No need to store empty atoms
+		if atom_data.is_empty() {
+			return Ok(());
+		}
+
 		// Most atoms we encounter are only going to have 1 value, so store them as such
 		if atom_data.len() == 1 {
 			let (flags, content) = atom_data.remove(0);
