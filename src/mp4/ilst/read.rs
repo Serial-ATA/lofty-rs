@@ -44,8 +44,8 @@ where
 					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, &atom)? {
 						let mut data = Vec::new();
 
-						for (flags, content) in atom_data {
-							if (flags == BE_SIGNED_INTEGER || flags == 0) && content.len() >= 2 {
+						for (_, content) in atom_data {
+							if content.len() >= 2 {
 								let index = content[1] as usize;
 								if index > 0 && index <= GENRES.len() {
 									data.push(AtomData::UTF8(String::from(GENRES[index - 1])));
@@ -53,10 +53,17 @@ where
 							}
 						}
 
-						tag.atoms.push(Atom {
-							ident: AtomIdent::Fourcc(*b"\xa9gen"),
-							data: AtomDataStorage::Multiple(data),
-						})
+						if !data.is_empty() {
+							let storage = match data.len() {
+								1 => AtomDataStorage::Single(data.remove(0)),
+								_ => AtomDataStorage::Multiple(data),
+							};
+
+							tag.atoms.push(Atom {
+								ident: AtomIdent::Fourcc(*b"\xa9gen"),
+								data: storage,
+							})
+						}
 					}
 
 					continue;
