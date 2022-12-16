@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **ID3v2**: The `'/'` character is no longer used as a separator ([issue](https://github.com/Serial-ATA/lofty-rs/issues/82))
+- **MP4**: Empty atoms were able to pass through and get stored, causing a panic in the `Ilst` -> `Tag` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/84))
 
 ## [0.9.0] - 2022-10-30
 
