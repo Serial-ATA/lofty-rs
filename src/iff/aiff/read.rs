@@ -60,7 +60,18 @@ where
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
 			#[cfg(feature = "id3v2")]
-			b"ID3 " | b"id3 " => id3v2_tag = Some(chunks.id3_chunk(data)?),
+			b"ID3 " | b"id3 " => {
+				let tag = chunks.id3_chunk(data)?;
+				if let Some(existing_tag) = id3v2_tag.as_mut() {
+					// https://github.com/Serial-ATA/lofty-rs/issues/87
+					// Duplicate tags should have their frames appended to the previous
+					for frame in tag.frames {
+						existing_tag.insert(frame);
+					}
+					continue;
+				}
+				id3v2_tag = Some(tag);
+			},
 			b"COMM" if parse_options.read_properties && comm.is_none() => {
 				if chunks.size < 18 {
 					decode_err!(@BAIL AIFF, "File has an invalid \"COMM\" chunk size (< 18)");
