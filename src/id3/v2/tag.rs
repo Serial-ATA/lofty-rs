@@ -89,7 +89,7 @@ macro_rules! impl_accessor {
 pub struct ID3v2Tag {
 	flags: ID3v2TagFlags,
 	pub(super) original_version: ID3v2Version,
-	frames: Vec<Frame>,
+	pub(crate) frames: Vec<Frame>,
 }
 
 impl IntoIterator for ID3v2Tag {

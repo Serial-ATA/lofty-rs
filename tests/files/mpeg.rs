@@ -66,6 +66,29 @@ fn issue_82_solidus_in_tag() {
 }
 
 #[test]
+fn issue_87_duplicate_id3v2() {
+	// The first tag has a bunch of information: An album, artist, encoder, and a title.
+	// This tag is immediately followed by another the contains an artist.
+	// We expect that the title from the first tag has been replaced by this second tag, while
+	// retaining the rest of the information from the first tag.
+	let file = Probe::open("tests/files/assets/issue_87_duplicate_id3v2.mp3")
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(file.file_type(), FileType::MPEG);
+
+	let id3v2_tag = &file.tags()[0];
+	assert_eq!(id3v2_tag.album().as_deref(), Some("album test"));
+	assert_eq!(id3v2_tag.artist().as_deref(), Some("Foo artist")); // Original tag has "artist test"
+	assert_eq!(
+		id3v2_tag.get_string(&ItemKey::EncoderSettings),
+		Some("Lavf58.62.100")
+	);
+	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));
+}
+
+#[test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
