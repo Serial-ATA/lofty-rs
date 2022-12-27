@@ -9,36 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **TagExt**: `TagExt::contains`
 - **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
-- **ogg_pager**: Support for reading packets with the new `Packets` struct.
-- **ogg_pager**: `PageHeader` struct.
-- **BoundTaggedFile**: A `TaggedFile` variant bound to a `File` handle.
+- **ogg_pager**: Support for reading packets with the new `Packets` struct. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/76))
+- **ogg_pager**: `PageHeader` struct. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/76))
+- **BoundTaggedFile**: A `TaggedFile` variant bound to a `File` handle. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/73)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/80))
 
 ### Changed
-- **Files**: Return the removed tag from `<File>::remove(TagType)`
+- **Files**: Return the removed tag from `<File>::remove(TagType)` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/74))
   - Previously, the only way to remove and take ownership of a tag was through `TaggedFile::take`.
     This was not possible when using a concrete type, such as `OpusFile`.
-- **TaggedFile**: Renamed `TaggedFile::take` to `TaggedFile::remove`
+- **TaggedFile**: Renamed `TaggedFile::take` to `TaggedFile::remove` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/74))
 - **OGG**: The reading of OGG files has switched to using packets opposed to pages, making it more
            spec-compliant and efficient.
 - **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
-- **ogg_pager**: `paginate` now works with a collection of packets.
+- **ogg_pager**: `paginate` now works with a collection of packets. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/79))
 - **lofty_attr**: The `lofty_attr::LoftyFile` derive proc macro is now exported as `lofty::LoftyFile`.
-- **TaggedFile**: All methods have been split out into a new trait, `TaggedFileExt`.
-- **Accessor**: All methods returning string values now return `Cow<str>`.
+- **TaggedFile**: All methods have been split out into a new trait, `TaggedFileExt`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/80))
+- **Accessor**: All methods returning string values now return `Cow<str>`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/83))
   - This is an unfortunate change that needed to be made in order to accommodate the handling of the different
     possible text separators between ID3v2 versions.
-- **ID3v2**: Support reading of duplicate tags
+- **ID3v2**: Support reading of duplicate tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/87)) ([PR]((https://github.com/Serial-ATA/lofty-rs/pull/88)))
   - Previously, if we were reading a file and encountered an ID3v2 tag after having already read one,
     we would overwrite the last one, losing all of its information. Now we preserve all of the information,
     overwriting frames as necessary.
 
 ### Removed
 - **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
-                 `Packets::paginate`.
+                 `Packets::paginate`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/79))
 
 ### Fixed
 - **ID3v2**: The `'/'` character is no longer used as a separator ([issue](https://github.com/Serial-ATA/lofty-rs/issues/82))
-- **MP4**: Stopped expecting certain flags for the `gnre` atom prior to upgrading it ([issue](https://github.com/Serial-ATA/lofty-rs/issues/84))
+- **MP4**: Stopped expecting certain flags for the `gnre` atom prior to upgrading it ([issue](https://github.com/Serial-ATA/lofty-rs/issues/84)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/85))
 
 ## [0.9.0] - 2022-10-30
 
