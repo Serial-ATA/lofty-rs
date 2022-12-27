@@ -1,13 +1,13 @@
 [package]
 name        = "lofty"
-version     = "0.9.0"
+version     = "0.10.0"
 authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition     = "2021"
 license     = "MIT OR Apache-2.0"
 description = "Audio metadata library"
 repository  = "https://github.com/Serial-ATA/lofty-rs"
 keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
-categories  = ["accessibility", "multimedia::audio"]
+categories  = ["multimedia::audio"]
 readme      = "README.md"
 include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "benches", "SUPPORTED_FORMATS.md"]
 

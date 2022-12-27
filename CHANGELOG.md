@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2022-12-27
+
 ### Added
 - **TagExt**: `TagExt::contains`
 - **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
@@ -27,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Accessor**: All methods returning string values now return `Cow<str>`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/83))
   - This is an unfortunate change that needed to be made in order to accommodate the handling of the different
     possible text separators between ID3v2 versions.
-- **ID3v2**: Support reading of duplicate tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/87)) ([PR]((https://github.com/Serial-ATA/lofty-rs/pull/88)))
+- **ID3v2**: Support reading of duplicate tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/87)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/88))
   - Previously, if we were reading a file and encountered an ID3v2 tag after having already read one,
     we would overwrite the last one, losing all of its information. Now we preserve all of the information,
     overwriting frames as necessary.
@@ -358,7 +360,8 @@ This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.9.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.10.0...HEAD
+[0.10.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.1...0.9.0
 [0.8.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.7.3...0.8.0
