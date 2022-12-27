@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Accessor**: All methods returning string values now return `Cow<str>`.
   - This is an unfortunate change that needed to be made in order to accommodate the handling of the different
     possible text separators between ID3v2 versions.
+- **ID3v2**: Support reading of duplicate tags
+  - Previously, if we were reading a file and encountered an ID3v2 tag after having already read one,
+    we would overwrite the last one, losing all of its information. Now we preserve all of the information,
+    overwriting frames as necessary.
 
 ### Removed
 - **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
