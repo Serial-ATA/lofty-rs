@@ -192,10 +192,7 @@ impl SynchronizedText {
 		let mut data = vec![information.encoding as u8];
 
 		if information.language.len() == 3
-			&& information
-				.language
-				.chars()
-				.all(|c| ('a'..='z').contains(&c))
+			&& information.language.chars().all(|c| c.is_ascii_lowercase())
 		{
 			data.write_all(information.language.as_bytes())?;
 			data.write_u8(information.timestamp_format as u8)?;

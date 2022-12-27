@@ -39,5 +39,5 @@ pub(super) fn verify_key(key: &str) -> bool {
 	key.len() == 4
 		&& key
 			.chars()
-			.all(|c| ('A'..='Z').contains(&c) || ('0'..='9').contains(&c))
+			.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit())
 }

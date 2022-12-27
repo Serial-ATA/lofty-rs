@@ -41,7 +41,7 @@ impl FrameID {
 
 	pub(crate) fn verify_id(id_str: &str) -> Result<()> {
 		for c in id_str.chars() {
-			if !('A'..='Z').contains(&c) && !('0'..='9').contains(&c) {
+			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
 				return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into());
 			}
 		}
@@ -59,7 +59,7 @@ impl TryFrom<&ItemKey> for FrameID {
 				if unknown.len() == 4
 					&& unknown
 						.chars()
-						.all(|c| ('A'..='Z').contains(&c) || ('0'..='9').contains(&c)) =>
+						.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) =>
 			{
 				Ok(Self::Valid(unknown.clone()))
 			},
