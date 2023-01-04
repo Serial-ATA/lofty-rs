@@ -250,6 +250,10 @@ gen_map! (
 	"----:com.apple.iTunes:MOOD"          => Mood,
 	"----:com.apple.iTunes:BPM" | "tmpo"  => BPM, // precise bpm (freeform atom) vs. integer bpm (fourcc atom) as fallback
 	"----:com.apple.iTunes:initialkey"    => InitialKey,
+	"----:com.apple.iTunes:replaygain_album_gain" => ReplayGainAlbumGain,
+	"----:com.apple.iTunes:replaygain_album_peak" => ReplayGainAlbumPeak,
+	"----:com.apple.iTunes:replaygain_track_gain" => ReplayGainTrackGain,
+	"----:com.apple.iTunes:replaygain_track_peak" => ReplayGainTrackPeak,
 	"cprt"                                => CopyrightMessage,
 	"----:com.apple.iTunes:LICENSE"       => License,
 	"ldes"                                => PodcastDescription,
