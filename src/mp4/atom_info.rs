@@ -1,13 +1,14 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{err, try_vec};
 
+use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// Represents an `MP4` atom identifier
 #[derive(Eq, PartialEq, Debug, Clone)]
-pub enum AtomIdent {
+pub enum AtomIdent<'a> {
 	/// A four byte identifier
 	///
 	/// Many FOURCCs start with `0xA9` (©), and should be human-readable.
@@ -25,17 +26,39 @@ pub enum AtomIdent {
 	/// ```
 	Freeform {
 		/// A string using a reverse DNS naming convention
-		mean: String,
+		mean: Cow<'a, str>,
 		/// A string identifying the atom
-		name: String,
+		name: Cow<'a, str>,
 	},
+}
+
+impl<'a> AtomIdent<'a> {
+	pub(crate) fn as_borrowed(&'a self) -> Self {
+		match self {
+			Self::Fourcc(fourcc) => AtomIdent::Fourcc(*fourcc),
+			Self::Freeform { mean, name } => AtomIdent::Freeform {
+				mean: Cow::Borrowed(&mean),
+				name: Cow::Borrowed(&name),
+			},
+		}
+	}
+
+	pub(crate) fn into_owned(self) -> AtomIdent<'static> {
+		match self {
+			Self::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),
+			Self::Freeform { mean, name } => AtomIdent::Freeform {
+				mean: Cow::Owned(mean.into_owned()),
+				name: Cow::Owned(name.into_owned()),
+			},
+		}
+	}
 }
 
 pub(crate) struct AtomInfo {
 	pub(crate) start: u64,
 	pub(crate) len: u64,
 	pub(crate) extended: bool,
-	pub(crate) ident: AtomIdent,
+	pub(crate) ident: AtomIdent<'static>,
 }
 
 impl AtomInfo {
@@ -99,14 +122,17 @@ impl AtomInfo {
 	}
 }
 
-fn parse_freeform<R>(data: &mut R, reader_size: u64) -> Result<AtomIdent>
+fn parse_freeform<R>(data: &mut R, reader_size: u64) -> Result<AtomIdent<'static>>
 where
 	R: Read + Seek,
 {
 	let mean = freeform_chunk(data, b"mean", reader_size)?;
 	let name = freeform_chunk(data, b"name", reader_size - 4)?;
 
-	Ok(AtomIdent::Freeform { mean, name })
+	Ok(AtomIdent::Freeform {
+		mean: mean.into(),
+		name: name.into(),
+	})
 }
 
 fn freeform_chunk<R>(data: &mut R, name: &[u8], reader_size: u64) -> Result<String>
@@ -135,4 +161,16 @@ where
 			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms"
 		)),
 	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	// Verify that we could create freeform AtomIdent constants
+	#[allow(dead_code)]
+	const FREEFORM_ATOM_IDENT: AtomIdent<'_> = AtomIdent::Freeform {
+		mean: Cow::Borrowed("mean"),
+		name: Cow::Borrowed("name"),
+	};
 }
