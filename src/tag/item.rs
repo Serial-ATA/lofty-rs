@@ -249,6 +249,7 @@ gen_map! (
 	"\u{a9}gen"                           => Genre,
 	"----:com.apple.iTunes:MOOD"          => Mood,
 	"----:com.apple.iTunes:BPM" | "tmpo"  => BPM, // precise bpm (freeform atom) vs. integer bpm (fourcc atom) as fallback
+	"----:com.apple.iTunes:initialkey"    => InitialKey,
 	"cprt"                                => CopyrightMessage,
 	"----:com.apple.iTunes:LICENSE"       => License,
 	"ldes"                                => PodcastDescription,
