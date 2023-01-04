@@ -318,7 +318,7 @@ gen_map!(
 	"PERFORMER"                    => Performer,
 	"PRODUCER"                     => Producer,
 	"PUBLISHER"                    => Publisher,
-	"LABEL"                        => Label,
+	"LABEL" | "ORGANIZATION"       => Label,
 	"REMIXER"                      => Remixer,
 	"DISCNUMBER"                   => DiscNumber,
 	"DISCTOTAL" | "TOTALDISCS"     => DiscTotal,
