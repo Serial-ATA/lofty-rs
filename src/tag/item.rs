@@ -248,7 +248,7 @@ gen_map! (
 	"\u{a9}too"                           => EncoderSoftware,
 	"\u{a9}gen"                           => Genre,
 	"----:com.apple.iTunes:MOOD"          => Mood,
-	"tmpo"                                => BPM,
+	"----:com.apple.iTunes:BPM" | "tmpo"  => BPM, // precise bpm (freeform atom) vs. integer bpm (fourcc atom) as fallback
 	"cprt"                                => CopyrightMessage,
 	"----:com.apple.iTunes:LICENSE"       => License,
 	"ldes"                                => PodcastDescription,
