@@ -332,7 +332,7 @@ gen_map!(
 	"CATALOGNUMBER"                => CatalogNumber,
 	"COMPILATION"                  => FlagCompilation,
 	"MEDIA"                        => OriginalMediaType,
-	"ENCODED-BY"                   => EncodedBy,
+	"ENCODEDBY" | "ENCODED-BY" | "ENCODED_BY" => EncodedBy,
 	"ENCODER"                      => EncoderSoftware,
 	"ENCODING" | "ENCODERSETTINGS" => EncoderSettings,
 	"REPLAYGAIN_ALBUM_GAIN"        => ReplayGainAlbumGain,
