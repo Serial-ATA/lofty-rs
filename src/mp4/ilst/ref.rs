@@ -36,42 +36,16 @@ where
 	}
 }
 
-impl Atom {
+impl<'a> Atom<'a> {
 	pub(super) fn as_ref(&self) -> AtomRef<'_, impl IntoIterator<Item = &AtomData>> {
 		AtomRef {
-			ident: (&self.ident).into(),
+			ident: self.ident.as_borrowed(),
 			data: (&self.data).into_iter(),
 		}
 	}
 }
 
 pub(crate) struct AtomRef<'a, I> {
-	pub(crate) ident: AtomIdentRef<'a>,
+	pub(crate) ident: AtomIdent<'a>,
 	pub(crate) data: I,
-}
-
-pub(crate) enum AtomIdentRef<'a> {
-	Fourcc([u8; 4]),
-	Freeform { mean: &'a str, name: &'a str },
-}
-
-impl<'a> Into<AtomIdentRef<'a>> for &'a AtomIdent {
-	fn into(self) -> AtomIdentRef<'a> {
-		match self {
-			AtomIdent::Fourcc(fourcc) => AtomIdentRef::Fourcc(*fourcc),
-			AtomIdent::Freeform { mean, name } => AtomIdentRef::Freeform { mean, name },
-		}
-	}
-}
-
-impl<'a> From<AtomIdentRef<'a>> for AtomIdent {
-	fn from(input: AtomIdentRef<'a>) -> Self {
-		match input {
-			AtomIdentRef::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),
-			AtomIdentRef::Freeform { mean, name } => AtomIdent::Freeform {
-				mean: mean.to_string(),
-				name: name.to_string(),
-			},
-		}
-	}
 }

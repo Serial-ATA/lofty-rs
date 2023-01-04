@@ -3,7 +3,7 @@ use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo};
-use crate::mp4::ilst::r#ref::{AtomIdentRef, AtomRef};
+use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
 use crate::mp4::AtomData;
@@ -322,8 +322,8 @@ where
 		writer.write_all(&[0; 4])?;
 
 		match atom.ident {
-			AtomIdentRef::Fourcc(ref fourcc) => writer.write_all(fourcc)?,
-			AtomIdentRef::Freeform { mean, name } => write_freeform(mean, name, &mut writer)?,
+			AtomIdent::Fourcc(ref fourcc) => writer.write_all(fourcc)?,
+			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut writer)?,
 		}
 
 		write_atom_data(atom.data, &mut writer)?;

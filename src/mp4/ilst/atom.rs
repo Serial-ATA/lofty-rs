@@ -80,14 +80,14 @@ impl<'a> Iterator for AtomDataStorageIter<'a> {
 
 /// Represents an `MP4` atom
 #[derive(PartialEq, Clone)]
-pub struct Atom {
-	pub(crate) ident: AtomIdent,
+pub struct Atom<'a> {
+	pub(crate) ident: AtomIdent<'a>,
 	pub(super) data: AtomDataStorage,
 }
 
-impl Atom {
+impl<'a> Atom<'a> {
 	/// Create a new [`Atom`]
-	pub fn new(ident: AtomIdent, data: AtomData) -> Self {
+	pub fn new(ident: AtomIdent<'a>, data: AtomData) -> Self {
 		Self {
 			ident,
 			data: AtomDataStorage::Single(data),
@@ -97,7 +97,7 @@ impl Atom {
 	/// Create a new [`Atom`] from a collection of [`AtomData`]s
 	///
 	/// This will return `None` if `data` is empty, as empty atoms are useless.
-	pub fn from_collection(ident: AtomIdent, mut data: Vec<AtomData>) -> Option<Self> {
+	pub fn from_collection(ident: AtomIdent<'a>, mut data: Vec<AtomData>) -> Option<Self> {
 		let data = match data.len() {
 			0 => return None,
 			1 => AtomDataStorage::Single(data.swap_remove(0)),
@@ -108,8 +108,8 @@ impl Atom {
 	}
 
 	/// Returns the atom's [`AtomIdent`]
-	pub fn ident(&self) -> &AtomIdent {
-		&self.ident
+	pub fn ident(&self) -> AtomIdent<'_> {
+		self.ident.as_borrowed()
 	}
 
 	/// Returns the atom's [`AtomData`]
@@ -128,22 +128,30 @@ impl Atom {
 	}
 
 	// Used internally, has no correctness checks
-	pub(crate) fn unknown_implicit(ident: AtomIdent, data: Vec<u8>) -> Self {
+	pub(crate) fn unknown_implicit(ident: AtomIdent<'_>, data: Vec<u8>) -> Self {
 		Self {
-			ident,
+			ident: ident.into_owned(),
 			data: AtomDataStorage::Single(AtomData::Unknown { code: 0, data }),
 		}
 	}
 
-	pub(crate) fn text(ident: AtomIdent, data: String) -> Self {
+	pub(crate) fn text(ident: AtomIdent<'_>, data: String) -> Self {
 		Self {
-			ident,
+			ident: ident.into_owned(),
 			data: AtomDataStorage::Single(AtomData::UTF8(data)),
+		}
+	}
+
+	pub(crate) fn into_owned(self) -> Atom<'static> {
+		let Self { ident, data } = self;
+		Atom {
+			ident: ident.into_owned(),
+			data,
 		}
 	}
 }
 
-impl Debug for Atom {
+impl Debug for Atom<'_> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("Atom")
 			.field("ident", &self.ident)

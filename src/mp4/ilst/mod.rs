@@ -12,7 +12,6 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
-use r#ref::AtomIdentRef;
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -21,11 +20,11 @@ use std::path::Path;
 
 use lofty_attr::tag;
 
-const ARTIST: AtomIdent = AtomIdent::Fourcc(*b"\xa9ART");
-const TITLE: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
-const ALBUM: AtomIdent = AtomIdent::Fourcc(*b"\xa9alb");
-const GENRE: AtomIdent = AtomIdent::Fourcc(*b"\xa9gen");
-const COMMENT: AtomIdent = AtomIdent::Fourcc(*b"\xa9cmt");
+const ARTIST: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9ART");
+const TITLE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9nam");
+const ALBUM: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9alb");
+const GENRE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9gen");
+const COMMENT: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9cmt");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
@@ -79,33 +78,33 @@ macro_rules! impl_accessor {
 #[derive(Default, PartialEq, Debug, Clone)]
 #[tag(description = "An MP4 ilst atom", supported_formats(MP4))]
 pub struct Ilst {
-	pub(crate) atoms: Vec<Atom>,
+	pub(crate) atoms: Vec<Atom<'static>>,
 }
 
 impl Ilst {
 	/// Returns all of the tag's atoms
-	pub fn atoms(&self) -> &[Atom] {
+	pub fn atoms(&self) -> &[Atom<'static>] {
 		&self.atoms
 	}
 
 	/// Get an item by its [`AtomIdent`]
-	pub fn atom(&self, ident: &AtomIdent) -> Option<&Atom> {
+	pub fn atom(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
 		self.atoms.iter().find(|a| &a.ident == ident)
 	}
 
 	/// Inserts an [`Atom`]
-	pub fn insert_atom(&mut self, atom: Atom) {
-		self.atoms.push(atom);
+	pub fn insert_atom(&mut self, atom: Atom<'_>) {
+		self.atoms.push(atom.into_owned());
 	}
 
 	/// Inserts an [`Atom`], replacing any atom with the same [`AtomIdent`]
-	pub fn replace_atom(&mut self, atom: Atom) {
+	pub fn replace_atom(&mut self, atom: Atom<'_>) {
 		self.remove_atom(&atom.ident);
-		self.atoms.push(atom);
+		self.atoms.push(atom.into_owned());
 	}
 
 	/// Remove an atom by its [`AtomIdent`]
-	pub fn remove_atom(&mut self, ident: &AtomIdent) {
+	pub fn remove_atom(&mut self, ident: &AtomIdent<'_>) {
 		self.atoms
 			.iter()
 			.position(|a| &a.ident == ident)
@@ -117,14 +116,14 @@ impl Ilst {
 	/// See [`Vec::retain`](std::vec::Vec::retain)
 	pub fn retain<F>(&mut self, f: F)
 	where
-		F: FnMut(&Atom) -> bool,
+		F: FnMut(&Atom<'_>) -> bool,
 	{
 		self.atoms.retain(f)
 	}
 
 	/// Returns all pictures
 	pub fn pictures(&self) -> impl Iterator<Item = &Picture> {
-		const COVR: AtomIdent = AtomIdent::Fourcc(*b"covr");
+		const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
 
 		self.atoms.iter().filter_map(|a| match a.ident {
 			COVR => {
@@ -326,7 +325,7 @@ impl Accessor for Ilst {
 
 impl TagExt for Ilst {
 	type Err = LoftyError;
-	type RefKey<'a> = &'a AtomIdent;
+	type RefKey<'a> = &'a AtomIdent<'a>;
 
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		self.atoms.iter().any(|atom| &atom.ident == key)
@@ -455,7 +454,7 @@ impl From<Tag> for Ilst {
 		for item in input.items {
 			let key = item.item_key;
 
-			if let Some(ident) = item_key_to_ident(&key).map(Into::into) {
+			if let Some(ident) = item_key_to_ident(&key) {
 				let data = match item.item_value {
 					ItemValue::Text(text) => text,
 					_ => continue,
@@ -467,7 +466,7 @@ impl From<Tag> for Ilst {
 					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, data.as_str()),
 					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, data.as_str()),
 					_ => ilst.atoms.push(Atom {
-						ident,
+						ident: ident.into_owned(),
 						data: AtomDataStorage::Single(AtomData::UTF8(data)),
 					}),
 				}
@@ -492,7 +491,7 @@ impl From<Tag> for Ilst {
 	}
 }
 
-fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
+fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdent<'_>> {
 	key.map_key(TagType::MP4ilst, true).and_then(|ident| {
 		if ident.starts_with("----") {
 			let mut split = ident.split(':');
@@ -503,7 +502,10 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 			let name = split.next();
 
 			if let (Some(mean), Some(name)) = (mean, name) {
-				Some(AtomIdentRef::Freeform { mean, name })
+				Some(AtomIdent::Freeform {
+					mean: Cow::Borrowed(mean),
+					name: Cow::Borrowed(name),
+				})
 			} else {
 				None
 			}
@@ -511,7 +513,7 @@ fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdentRef<'_>> {
 			let fourcc = ident.chars().map(|c| c as u8).collect::<Vec<_>>();
 
 			if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
-				Some(AtomIdentRef::Fourcc(fourcc))
+				Some(AtomIdent::Fourcc(fourcc))
 			} else {
 				None
 			}
