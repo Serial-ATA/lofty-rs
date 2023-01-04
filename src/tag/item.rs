@@ -319,7 +319,7 @@ gen_map!(
 	"PRODUCER"                     => Producer,
 	"PUBLISHER"                    => Publisher,
 	"LABEL" | "ORGANIZATION"       => Label,
-	"REMIXER"                      => Remixer,
+	"REMIXER" | "MIXARTIST"        => Remixer,
 	"DISCNUMBER"                   => DiscNumber,
 	"DISCTOTAL" | "TOTALDISCS"     => DiscTotal,
 	"TRACKNUMBER"                  => TrackNumber,
