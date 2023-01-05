@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - The `InitialKey`, `ReplayGain*`, and "precise BPM" identifiers now have `ItemKey` mappings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/93))
   - `AtomIdent` now implements `TryFrom<ItemKey>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/96))
+  - Added support for the vendor-supplied XID in files from the Apple iTunes store as `AppleXID`.
 - **Vorbis Comments**:
   - Additional mappings for the `Label`, `Remixer`, and `EncodedBy` `ItemKey` variants ([PR](https://github.com/Serial-ATA/lofty-rs/pull/94))
 - **ID3v2**: A new `id3v2_compression_support` feature to optionally depend on `flate2` for decompressing frames
@@ -301,7 +302,7 @@ This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](
   - It is possible for these to be a regular atom (no version or flags).
     This information was assumed to be present and would get skipped,
     which would affect the reading of subsequent atoms.
-  
+
     This behavior has been noticed by:
     - https://leo-van-stee.github.io/
     - https://github.com/axiomatic-systems/Bento4/blob/v1.6.0-639/Source/C%2B%2B/Core/Ap4ContainerAtom.cpp#L60
