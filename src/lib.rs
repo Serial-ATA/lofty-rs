@@ -94,22 +94,6 @@
 //! # }
 //! ```
 //!
-//! # Features
-//!
-//! ## Individual metadata formats
-//! These features are available if you have a specific use case, or just don't want certain formats.
-//!
-//! * `aiff_text_chunks`
-//! * `ape`
-//! * `id3v1`
-//! * `id3v2`
-//! * `mp4_ilst`
-//! * `riff_info_list`
-//! * `vorbis_comments`
-//!
-//! ## Utilities
-//! * `id3v2_restrictions` - Parses ID3v2 extended headers and exposes flags for fine grained control
-//!
 //! # Important format-specific notes
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
