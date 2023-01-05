@@ -1,4 +1,3 @@
-#[cfg(feature = "aiff_text_chunks")]
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::Result;
@@ -11,9 +10,7 @@ use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use byteorder::BigEndian;
-#[cfg(feature = "aiff_text_chunks")]
-use byteorder::ReadBytesExt;
+use byteorder::{BigEndian, ReadBytesExt};
 
 pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
 where
@@ -45,11 +42,8 @@ where
 	let mut comm = None;
 	let mut stream_len = 0;
 
-	#[cfg(feature = "aiff_text_chunks")]
 	let mut text_chunks = AIFFTextChunks::default();
-	#[cfg(feature = "aiff_text_chunks")]
 	let mut annotations = Vec::new();
-	#[cfg(feature = "aiff_text_chunks")]
 	let mut comments = Vec::new();
 
 	#[cfg(feature = "id3v2")]
@@ -84,13 +78,11 @@ where
 				stream_len = chunks.size;
 				chunks.skip(data)?;
 			},
-			#[cfg(feature = "aiff_text_chunks")]
 			b"ANNO" => {
 				annotations.push(chunks.read_pstring(data, None)?);
 			},
 			// These four chunks are expected to appear at most once per file,
 			// so there's no need to replace anything we already read
-			#[cfg(feature = "aiff_text_chunks")]
 			b"COMT" if comments.is_empty() => {
 				if chunks.size < 2 {
 					continue;
@@ -114,15 +106,12 @@ where
 
 				chunks.correct_position(data)?;
 			},
-			#[cfg(feature = "aiff_text_chunks")]
 			b"NAME" if text_chunks.name.is_none() => {
 				text_chunks.name = Some(chunks.read_pstring(data, None)?);
 			},
-			#[cfg(feature = "aiff_text_chunks")]
 			b"AUTH" if text_chunks.author.is_none() => {
 				text_chunks.author = Some(chunks.read_pstring(data, None)?);
 			},
-			#[cfg(feature = "aiff_text_chunks")]
 			b"(c) " if text_chunks.copyright.is_none() => {
 				text_chunks.copyright = Some(chunks.read_pstring(data, None)?);
 			},
@@ -130,15 +119,12 @@ where
 		}
 	}
 
-	#[cfg(feature = "aiff_text_chunks")]
-	{
-		if !annotations.is_empty() {
-			text_chunks.annotations = Some(annotations);
-		}
+	if !annotations.is_empty() {
+		text_chunks.annotations = Some(annotations);
+	}
 
-		if !comments.is_empty() {
-			text_chunks.comments = Some(comments);
-		}
+	if !comments.is_empty() {
+		text_chunks.comments = Some(comments);
 	}
 
 	let properties;
@@ -163,7 +149,6 @@ where
 
 	Ok(AiffFile {
 		properties,
-		#[cfg(feature = "aiff_text_chunks")]
 		text_chunks_tag: match text_chunks {
 			AIFFTextChunks {
 				name: None,

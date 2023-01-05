@@ -10,7 +10,6 @@ use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
 use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use ape::tag::ApeTagRef;
-#[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
 #[cfg(feature = "riff_info_list")]
 use iff::wav::tag::RIFFInfoListRef;
@@ -69,7 +68,6 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
 		.dump_to(writer),
-		#[cfg(feature = "aiff_text_chunks")]
 		TagType::AIFFText => {
 			use crate::tag::item::ItemKey;
 

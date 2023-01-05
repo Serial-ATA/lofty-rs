@@ -62,7 +62,6 @@ macro_rules! gen_map {
 }
 
 gen_map!(
-	#[cfg(feature = "aiff_text_chunks")]
 	AIFF_TEXT_MAP;
 
 	"NAME"          => TrackTitle,
@@ -415,7 +414,6 @@ macro_rules! gen_item_keys {
 
 gen_item_keys!(
 	MAPS => [
-		#[cfg(feature = "aiff_text_chunks")]
 		[TagType::AIFFText, AIFF_TEXT_MAP],
 
 		[TagType::APE, APE_MAP],
