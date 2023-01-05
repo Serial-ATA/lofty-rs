@@ -52,7 +52,6 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(value_str.trim_end_matches('\0').to_string())
 	}
 
-	#[cfg(feature = "aiff_text_chunks")]
 	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<u32>) -> Result<String>
 	where
 		R: Read + Seek,
