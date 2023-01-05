@@ -113,6 +113,7 @@ gen_map!(
 	"REPLAYGAIN_TRACK_GAIN"        => ReplayGainTrackGain,
 	"REPLAYGAIN_TRACK_PEAK"        => ReplayGainTrackPeak,
 	"Genre"                        => Genre,
+	"Color"                        => Color,
 	"Mood"                         => Mood,
 	"Copyright"                    => CopyrightMessage,
 	"Comment"                      => Comment,
@@ -188,6 +189,7 @@ gen_map!(
 	"WPUB"                  => PublisherURL,
 	"TCON"                  => Genre,
 	"TKEY"                  => InitialKey,
+	"COLOR"                 => Color,
 	"TMOO"                  => Mood,
 	"TBPM"                  => BPM,
 	"TCOP"                  => CopyrightMessage,
@@ -245,6 +247,7 @@ gen_map!(
 	"\u{a9}enc"                                   => EncodedBy,
 	"\u{a9}too"                                   => EncoderSoftware,
 	"\u{a9}gen"                                   => Genre,
+	"----:com.apple.iTunes:COLOR"                 => Color,
 	"----:com.apple.iTunes:MOOD"                  => Mood,
 	"----:com.apple.iTunes:BPM" | "tmpo"          => BPM, // precise bpm (freeform atom) vs. integer bpm (fourcc atom) as fallback
 	"----:com.apple.iTunes:initialkey"            => InitialKey,
@@ -338,6 +341,7 @@ gen_map!(
 	"REPLAYGAIN_TRACK_GAIN"                   => ReplayGainTrackGain,
 	"REPLAYGAIN_TRACK_PEAK"                   => ReplayGainTrackPeak,
 	"GENRE"                                   => Genre,
+	"COLOR"                                   => Color,
 	"MOOD"                                    => Mood,
 	"BPM"                                     => BPM,
 	"COPYRIGHT"                               => CopyrightMessage,
@@ -529,6 +533,7 @@ gen_item_keys!(
 		// Style
 		Genre,
 		InitialKey,
+		Color,
 		Mood,
 		BPM,
 
