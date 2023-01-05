@@ -7,12 +7,10 @@
 pub(crate) mod block;
 pub(crate) mod properties;
 mod read;
-#[cfg(feature = "vorbis_comments")]
 pub(crate) mod write;
 
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
-#[cfg(feature = "vorbis_comments")]
 use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
 
@@ -37,7 +35,6 @@ pub struct FlacFile {
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: This field being `Some` does not mean the file has vorbis comments, as Picture blocks exist.
-	#[cfg(feature = "vorbis_comments")]
 	#[lofty(tag_type = "VorbisComments")]
 	pub(crate) vorbis_comments_tag: Option<VorbisComments>,
 	/// The file's audio properties

@@ -8,19 +8,18 @@ use crate::{
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
-#[cfg(any(feature = "vorbis_comments", feature = "ape", feature = "id3v2"))]
+#[cfg(any(feature = "ape", feature = "id3v2"))]
 use std::io::Cursor;
 use std::io::Read;
 #[cfg(feature = "id3v2")]
 use std::io::Write;
-#[cfg(any(feature = "vorbis_comments", feature = "ape"))]
+#[cfg(any(feature = "ape"))]
 use std::io::{Seek, SeekFrom};
 
 #[cfg(feature = "id3v2")]
 use crate::util::text::TextEncoding;
-#[cfg(any(feature = "vorbis_comments"))]
 use byteorder::BigEndian;
-#[cfg(any(feature = "vorbis_comments", feature = "id3v2", feature = "ape"))]
+#[cfg(any(feature = "id3v2", feature = "ape"))]
 use byteorder::ReadBytesExt;
 #[cfg(feature = "id3v2")]
 use byteorder::WriteBytesExt;
@@ -146,7 +145,7 @@ pub enum PictureType {
 impl PictureType {
 	// ID3/OGG specific methods
 
-	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
+	#[cfg(any(feature = "id3v2"))]
 	/// Get a u8 from a `PictureType` according to ID3v2 APIC
 	pub fn as_u8(&self) -> u8 {
 		match self {
@@ -175,7 +174,7 @@ impl PictureType {
 		}
 	}
 
-	#[cfg(any(feature = "id3v2", feature = "vorbis_comments"))]
+	#[cfg(any(feature = "id3v2"))]
 	/// Get a `PictureType` from a u8 according to ID3v2 APIC
 	pub fn from_u8(byte: u8) -> Self {
 		match byte {
@@ -269,7 +268,6 @@ impl PictureType {
 ///
 /// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
 /// See [`Picture::as_flac_bytes`] for more information.
-#[cfg(feature = "vorbis_comments")]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
@@ -282,7 +280,6 @@ pub struct PictureInformation {
 	pub num_colors: u32,
 }
 
-#[cfg(feature = "vorbis_comments")]
 impl PictureInformation {
 	/// Attempt to extract [`PictureInformation`] from a [`Picture`]
 	///
@@ -685,7 +682,6 @@ impl Picture {
 		))
 	}
 
-	#[cfg(feature = "vorbis_comments")]
 	/// Convert a [`Picture`] to a base64 encoded FLAC `METADATA_BLOCK_PICTURE` String
 	///
 	/// Use `encode` to convert the picture to a base64 encoded String ([RFC 4648 §4](http://www.faqs.org/rfcs/rfc4648.html))
@@ -734,7 +730,6 @@ impl Picture {
 		}
 	}
 
-	#[cfg(feature = "vorbis_comments")]
 	/// Get a [`Picture`] from FLAC `METADATA_BLOCK_PICTURE` bytes:
 	///
 	/// NOTE: This takes both the base64 encoded string from Vorbis comments, and
@@ -754,7 +749,6 @@ impl Picture {
 		}
 	}
 
-	#[cfg(feature = "vorbis_comments")]
 	fn from_flac_bytes_inner(content: &[u8]) -> Result<(Self, PictureInformation)> {
 		use crate::macros::try_vec;
 

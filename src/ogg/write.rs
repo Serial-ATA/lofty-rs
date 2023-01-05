@@ -55,7 +55,6 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 	write(file, &mut comments_ref, format)
 }
 
-#[cfg(feature = "vorbis_comments")]
 pub(crate) fn create_comments(
 	packet: &mut impl Write,
 	count: &mut u32,
@@ -82,7 +81,6 @@ pub(crate) fn create_comments(
 	Ok(())
 }
 
-#[cfg(feature = "vorbis_comments")]
 pub(super) fn write<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,

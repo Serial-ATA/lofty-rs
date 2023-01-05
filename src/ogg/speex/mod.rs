@@ -1,6 +1,5 @@
 pub(super) mod properties;
 
-#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
@@ -20,7 +19,6 @@ pub struct SpeexFile {
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
-	#[cfg(feature = "vorbis_comments")]
 	#[lofty(tag_type = "VorbisComments")]
 	pub(crate) vorbis_comments_tag: VorbisComments,
 	/// The file's audio properties
@@ -37,11 +35,14 @@ impl AudioFile for SpeexFile {
 		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2)?;
 
 		Ok(Self {
-            properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { SpeexProperties::default() },
-            #[cfg(feature = "vorbis_comments")]
-            // Safe to unwrap, a metadata packet is mandatory in Speex
-            vorbis_comments_tag: file_information.0.unwrap(),
-        })
+			properties: if parse_options.read_properties {
+				properties::read_properties(reader, file_information.1, &file_information.2)?
+			} else {
+				SpeexProperties::default()
+			},
+			// Safe to unwrap, a metadata packet is mandatory in Speex
+			vorbis_comments_tag: file_information.0.unwrap(),
+		})
 	}
 
 	fn properties(&self) -> &Self::Properties {

@@ -1,7 +1,6 @@
 pub(super) mod properties;
 
 use super::find_last_page;
-#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use crate::error::Result;
 use crate::file::AudioFile;
@@ -21,7 +20,6 @@ pub struct VorbisFile {
 	/// The vorbis comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
-	#[cfg(feature = "vorbis_comments")]
 	#[lofty(tag_type = "VorbisComments")]
 	pub(crate) vorbis_comments_tag: VorbisComments,
 	/// The file's audio properties
@@ -39,8 +37,11 @@ impl AudioFile for VorbisFile {
 			super::read::read_from(reader, VORBIS_IDENT_HEAD, VORBIS_COMMENT_HEAD, 3)?;
 
 		Ok(Self {
-			properties: if parse_options.read_properties { properties::read_properties(reader, file_information.1, &file_information.2)? } else { VorbisProperties::default() },
-			#[cfg(feature = "vorbis_comments")]
+			properties: if parse_options.read_properties {
+				properties::read_properties(reader, file_information.1, &file_information.2)?
+			} else {
+				VorbisProperties::default()
+			},
 			// Safe to unwrap, a metadata packet is mandatory in OGG Vorbis
 			vorbis_comments_tag: file_information.0.unwrap(),
 		})

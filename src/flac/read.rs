@@ -5,13 +5,11 @@ use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
+use crate::ogg::read::read_comments;
+use crate::ogg::tag::VorbisComments;
+use crate::picture::Picture;
 use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
-#[cfg(feature = "vorbis_comments")]
-use crate::{
-	ogg::{read::read_comments, tag::VorbisComments},
-	picture::Picture,
-};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -42,7 +40,6 @@ where
 	let mut flac_file = FlacFile {
 		#[cfg(feature = "id3v2")]
 		id3v2_tag: None,
-		#[cfg(feature = "vorbis_comments")]
 		vorbis_comments_tag: None,
 		properties: FileProperties::default(),
 	};
@@ -67,7 +64,6 @@ where
 
 	let mut last_block = stream_info.last;
 
-	#[cfg(feature = "vorbis_comments")]
 	let mut tag = VorbisComments {
 		vendor: String::new(),
 		items: vec![],
@@ -83,9 +79,7 @@ where
 		}
 
 		match block.ty {
-			#[cfg(feature = "vorbis_comments")]
 			4 => read_comments(&mut &*block.content, block.content.len() as u64, &mut tag)?,
-			#[cfg(feature = "vorbis_comments")]
 			6 => tag
 				.pictures
 				.push(Picture::from_flac_bytes(&block.content, false)?),
@@ -93,11 +87,8 @@ where
 		}
 	}
 
-	#[cfg(feature = "vorbis_comments")]
-	{
-		flac_file.vorbis_comments_tag =
-			(!(tag.items.is_empty() && tag.pictures.is_empty())).then_some(tag);
-	}
+	flac_file.vorbis_comments_tag =
+		(!(tag.items.is_empty() && tag.pictures.is_empty())).then_some(tag);
 
 	let (stream_length, file_length) = {
 		let current = data.stream_position()?;
