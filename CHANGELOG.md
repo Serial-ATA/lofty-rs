@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - The `InitialKey`, `ReplayGain*`, and "precise BPM" identifiers now have `ItemKey` mappings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/93))
   - `AtomIdent` now implements `TryFrom<ItemKey>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/96))
-  - Added support for the vendor-supplied XID in files from the Apple iTunes store as `AppleXID`.
+  - Added support for the vendor-supplied XID in files from the Apple iTunes store as `ItemKey::AppleXID`.
 - **Vorbis Comments**:
   - Additional mappings for the `Label`, `Remixer`, and `EncodedBy` `ItemKey` variants ([PR](https://github.com/Serial-ATA/lofty-rs/pull/94))
 - **ID3v2**: A new `id3v2_compression_support` feature to optionally depend on `flate2` for decompressing frames
+- **ItemKey**:
+  - New Variants: `AppleXID`, `Director`, `Color`
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))
