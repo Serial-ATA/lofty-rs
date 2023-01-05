@@ -4,7 +4,6 @@ mod read;
 
 #[cfg(feature = "ape")]
 use crate::ape::tag::ApeTag;
-#[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 
 use lofty_attr::LoftyFile;
@@ -18,7 +17,6 @@ pub use properties::WavPackProperties;
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct WavPackFile {
 	/// An ID3v1 tag
-	#[cfg(feature = "id3v1")]
 	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	/// An APEv1/v2 tag

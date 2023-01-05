@@ -10,7 +10,6 @@ pub(crate) mod header;
 mod properties;
 mod read;
 
-#[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
@@ -37,7 +36,6 @@ pub use properties::ApeProperties;
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct ApeFile {
 	/// An ID3v1 tag
-	#[cfg(feature = "id3v1")]
 	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	/// An ID3v2 tag (Not officially supported)
