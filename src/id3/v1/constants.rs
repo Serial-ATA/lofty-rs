@@ -1,5 +1,5 @@
 /// All possible genres for ID3v1
-#[cfg(any(feature = "id3v1", feature = "mp4_ilst"))]
+#[cfg(any(feature = "id3v1"))]
 pub const GENRES: [&str; 192] = [
 	"Blues",
 	"Classic rock",

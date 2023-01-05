@@ -8,7 +8,6 @@ use crate::{aac, ape, flac, iff, mpeg, wavpack};
 use crate::id3::v1::tag::Id3v1TagRef;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
-#[cfg(feature = "mp4_ilst")]
 use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 #[cfg(feature = "ape")]
@@ -32,7 +31,6 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 			crate::ogg::write::write_to(file, tag, file_type)
 		},
 		FileType::MPEG => mpeg::write::write_to(file, tag),
-		#[cfg(feature = "mp4_ilst")]
 		FileType::MP4 => {
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
 		},
@@ -59,7 +57,6 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			frames: v2::tag::tag_frames(tag),
 		}
 		.dump_to(writer),
-		#[cfg(feature = "mp4_ilst")]
 		TagType::MP4ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);

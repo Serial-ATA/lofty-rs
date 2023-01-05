@@ -163,7 +163,6 @@ where
 
 	Ok(Mp4File {
 		ftyp,
-		#[cfg(feature = "mp4_ilst")]
 		ilst_tag: moov.meta,
 		properties: if parse_options.read_properties {
 			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
@@ -220,7 +219,6 @@ where
 	Ok(ret)
 }
 
-#[cfg(feature = "mp4_ilst")]
 // Creates a tree of nested atoms
 pub(super) fn atom_tree<R>(
 	reader: &mut R,
@@ -257,7 +255,6 @@ where
 	Ok((found_idx, buf))
 }
 
-#[cfg(feature = "mp4_ilst")]
 pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool>
 where
 	R: Read + Seek,
