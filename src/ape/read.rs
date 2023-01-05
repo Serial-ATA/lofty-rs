@@ -1,7 +1,7 @@
 use super::constants::APE_PREAMBLE;
 use super::header::read_ape_header;
-#[cfg(feature = "ape")]
-use super::tag::{read::read_ape_tag, ApeTag};
+use super::tag::read::read_ape_tag;
+use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
 use crate::error::Result;
 use crate::id3::v1::tag::ID3v1Tag;
@@ -27,7 +27,6 @@ where
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 	let mut id3v1_tag: Option<ID3v1Tag> = None;
-	#[cfg(feature = "ape")]
 	let mut ape_tag: Option<ApeTag> = None;
 
 	// ID3v2 tags are unsupported in APE files, but still possible
@@ -81,14 +80,8 @@ where
 				let ape_header = read_ape_header(data, false)?;
 				stream_len -= u64::from(ape_header.size);
 
-				#[cfg(feature = "ape")]
-				{
-					let ape = read_ape_tag(data, ape_header)?;
-					ape_tag = Some(ape)
-				}
-
-				#[cfg(not(feature = "ape"))]
-				data.seek(SeekFrom::Current(ape_header.size as i64))?;
+				let ape = read_ape_tag(data, ape_header)?;
+				ape_tag = Some(ape);
 			},
 			_ => {
 				decode_err!(@BAIL APE, "Invalid data found while reading header, expected any of [\"MAC \", \"APETAGEX\", \"ID3\"]")
@@ -129,14 +122,8 @@ where
 		let ape_header = read_ape_header(data, true)?;
 		stream_len -= u64::from(ape_header.size);
 
-		#[cfg(feature = "ape")]
-		{
-			let ape = read_ape_tag(data, ape_header)?;
-			ape_tag = Some(ape)
-		}
-
-		#[cfg(not(feature = "ape"))]
-		data.seek(SeekFrom::Current(ape_header.size as i64))?;
+		let ape = read_ape_tag(data, ape_header)?;
+		ape_tag = Some(ape);
 	}
 
 	let file_length = data.stream_position()?;
@@ -148,7 +135,6 @@ where
 		id3v1_tag,
 		#[cfg(feature = "id3v2")]
 		id3v2_tag,
-		#[cfg(feature = "ape")]
 		ape_tag,
 		properties: if parse_options.read_properties {
 			super::properties::read_properties(data, stream_len, file_length)?

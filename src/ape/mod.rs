@@ -9,6 +9,7 @@ pub(crate) mod constants;
 pub(crate) mod header;
 mod properties;
 mod read;
+pub(crate) mod tag;
 
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
@@ -18,17 +19,10 @@ use lofty_attr::LoftyFile;
 
 // Exports
 
-cfg_if::cfg_if! {
-	if #[cfg(feature = "ape")] {
-		pub(crate) mod tag;
-		pub use tag::ApeTag;
-		pub use tag::item::ApeItem;
-
-		pub use crate::picture::APE_PICTURE_TYPES;
-	}
-}
-
+pub use crate::picture::APE_PICTURE_TYPES;
 pub use properties::ApeProperties;
+pub use tag::item::ApeItem;
+pub use tag::ApeTag;
 
 /// An APE file
 #[derive(LoftyFile)]
@@ -43,7 +37,6 @@ pub struct ApeFile {
 	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// An APEv1/v2 tag
-	#[cfg(feature = "ape")]
 	#[lofty(tag_type = "APE")]
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties

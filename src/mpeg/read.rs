@@ -2,7 +2,6 @@ use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, 
 use super::{MPEGFile, MPEGProperties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
-#[cfg(feature = "ape")]
 use crate::ape::tag::read::read_ape_tag;
 use crate::error::Result;
 #[cfg(feature = "id3v2")]
@@ -71,17 +70,7 @@ where
 				if &header_remaining == b"AGEX" {
 					let ape_header = read_ape_header(reader, false)?;
 
-					#[cfg(not(feature = "ape"))]
-					{
-						let size = ape_header.size;
-						reader.seek(SeekFrom::Current(size as i64))?;
-					}
-
-					#[cfg(feature = "ape")]
-					{
-						file.ape_tag =
-							Some(crate::ape::tag::read::read_ape_tag(reader, ape_header)?);
-					}
+					file.ape_tag = Some(crate::ape::tag::read::read_ape_tag(reader, ape_header)?);
 
 					continue;
 				}
@@ -124,11 +113,8 @@ where
 			let ape_header = read_ape_header(reader, true)?;
 			let size = ape_header.size;
 
-			#[cfg(feature = "ape")]
-			{
-				let ape = read_ape_tag(reader, ape_header)?;
-				file.ape_tag = Some(ape);
-			}
+			let ape = read_ape_tag(reader, ape_header)?;
+			file.ape_tag = Some(ape);
 
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;

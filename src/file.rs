@@ -830,7 +830,6 @@ impl FileType {
 			{
 				true
 			},
-			#[cfg(feature = "ape")]
 			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::APE => true,
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
