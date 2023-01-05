@@ -817,7 +817,6 @@ impl FileType {
 	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
-			#[cfg(feature = "id3v2")]
 			FileType::AIFF | FileType::APE | FileType::MPEG | FileType::WAV | FileType::AAC
 				if tag_type == TagType::ID3v2 =>
 			{

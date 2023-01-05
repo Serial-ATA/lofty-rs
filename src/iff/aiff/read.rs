@@ -1,7 +1,6 @@
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::Result;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::{decode_err, err};
@@ -46,14 +45,12 @@ where
 	let mut annotations = Vec::new();
 	let mut comments = Vec::new();
 
-	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
 	let mut chunks = Chunks::<BigEndian>::new(file_len);
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
-			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => {
 				let tag = chunks.id3_chunk(data)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
@@ -159,7 +156,6 @@ where
 			} => None,
 			_ => Some(text_chunks),
 		},
-		#[cfg(feature = "id3v2")]
 		id3v2_tag,
 	})
 }

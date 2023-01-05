@@ -4,7 +4,6 @@ use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 use crate::ape::tag::read::read_ape_tag;
 use crate::error::Result;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
@@ -42,19 +41,16 @@ where
 				let header = read_id3v2_header(reader)?;
 				let skip_footer = header.flags.footer;
 
-				#[cfg(feature = "id3v2")]
-				{
-					let id3v2 = parse_id3v2(reader, header)?;
-					if let Some(existing_tag) = &mut file.id3v2_tag {
-						// https://github.com/Serial-ATA/lofty-rs/issues/87
-						// Duplicate tags should have their frames appended to the previous
-						for frame in id3v2.frames {
-							existing_tag.insert(frame);
-						}
-						continue;
+				let id3v2 = parse_id3v2(reader, header)?;
+				if let Some(existing_tag) = &mut file.id3v2_tag {
+					// https://github.com/Serial-ATA/lofty-rs/issues/87
+					// Duplicate tags should have their frames appended to the previous
+					for frame in id3v2.frames {
+						existing_tag.insert(frame);
 					}
-					file.id3v2_tag = Some(id3v2);
+					continue;
 				}
+				file.id3v2_tag = Some(id3v2);
 
 				// Skip over the footer
 				if skip_footer {

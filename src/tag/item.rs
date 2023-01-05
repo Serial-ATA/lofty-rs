@@ -121,7 +121,6 @@ gen_map!(
 );
 
 gen_map!(
-	#[cfg(feature = "id3v2")]
 	ID3V2_MAP;
 
 	"TALB"                  => AlbumTitle,
@@ -417,7 +416,6 @@ gen_item_keys!(
 
 		[TagType::APE, APE_MAP],
 
-		#[cfg(feature = "id3v2")]
 		[TagType::ID3v2, ID3V2_MAP],
 
 		[TagType::MP4ilst, ILST_MAP],

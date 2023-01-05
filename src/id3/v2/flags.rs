@@ -1,4 +1,3 @@
-#[cfg(feature = "id3v2_restrictions")]
 use super::restrictions::TagRestrictions;
 
 /// Flags that apply to the entire tag
@@ -17,7 +16,6 @@ pub struct ID3v2TagFlags {
 	///
 	/// This is calculated if the tag is written
 	pub crc: bool,
-	#[cfg(feature = "id3v2_restrictions")]
 	/// Restrictions on the tag, written in the extended header
 	///
 	/// In addition to being setting this flag, all restrictions must be provided. See [`TagRestrictions`]

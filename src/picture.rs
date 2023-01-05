@@ -1,26 +1,13 @@
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
-#[cfg(feature = "id3v2")]
-use crate::{
-	error::{ID3v2Error, ID3v2ErrorKind},
-	id3::v2::ID3v2Version,
-};
+use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
-#[cfg(any(feature = "id3v2"))]
-use std::io::Cursor;
-#[cfg(feature = "id3v2")]
-use std::io::Write;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-#[cfg(feature = "id3v2")]
-use crate::util::text::TextEncoding;
-use byteorder::BigEndian;
-#[cfg(any(feature = "id3v2"))]
-use byteorder::ReadBytesExt;
-#[cfg(feature = "id3v2")]
-use byteorder::WriteBytesExt;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 /// Common picture item keys for APE
 pub const APE_PICTURE_TYPES: [&str; 21] = [
@@ -142,7 +129,6 @@ pub enum PictureType {
 impl PictureType {
 	// ID3/OGG specific methods
 
-	#[cfg(any(feature = "id3v2"))]
 	/// Get a u8 from a `PictureType` according to ID3v2 APIC
 	pub fn as_u8(&self) -> u8 {
 		match self {
@@ -171,7 +157,6 @@ impl PictureType {
 		}
 	}
 
-	#[cfg(any(feature = "id3v2"))]
 	/// Get a `PictureType` from a u8 according to ID3v2 APIC
 	pub fn from_u8(byte: u8) -> Self {
 		match byte {
@@ -554,7 +539,6 @@ impl Picture {
 		&self.data
 	}
 
-	#[cfg(feature = "id3v2")]
 	/// Convert a [`Picture`] to a ID3v2 A/PIC byte Vec
 	///
 	/// NOTE: This does not include the frame header
@@ -618,7 +602,6 @@ impl Picture {
 		Ok(data)
 	}
 
-	#[cfg(feature = "id3v2")]
 	/// Get a [`Picture`] and [`TextEncoding`] from ID3v2 A/PIC bytes:
 	///
 	/// NOTE: This expects *only* the frame content

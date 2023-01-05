@@ -1,5 +1,4 @@
 use crate::error::Result;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::macros::{err, try_vec};
 
@@ -91,7 +90,6 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(content)
 	}
 
-	#[cfg(feature = "id3v2")]
 	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<ID3v2Tag>
 	where
 		R: Read + Seek,

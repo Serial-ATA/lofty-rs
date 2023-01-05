@@ -31,6 +31,7 @@ impl Frame {
 			content = crate::id3::v2::util::unsynch_content(content.as_slice())?;
 		}
 
+		#[cfg(feature = "id3v2_compression_support")]
 		if flags.compression {
 			let mut decompressed = Vec::new();
 			flate2::Decompress::new(true)
@@ -42,6 +43,11 @@ impl Frame {
 				})?;
 
 			content = decompressed
+		}
+
+		#[cfg(not(feature = "id3v2_compression_support"))]
+		if flags.compression {
+			crate::macros::decode_err!(@BAIL ID3v2, "Encountered a compressed ID3v2 frame, support is disabled")
 		}
 
 		let mut content_reader = &*content;

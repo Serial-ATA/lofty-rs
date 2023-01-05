@@ -12,7 +12,6 @@ mod read;
 pub(crate) mod tag;
 
 use crate::id3::v1::tag::ID3v1Tag;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 
 use lofty_attr::LoftyFile;
@@ -33,7 +32,6 @@ pub struct ApeFile {
 	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	/// An ID3v2 tag (Not officially supported)
-	#[cfg(feature = "id3v2")]
 	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// An APEv1/v2 tag
