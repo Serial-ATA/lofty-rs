@@ -9,7 +9,6 @@ pub(crate) mod properties;
 mod read;
 pub(crate) mod write;
 
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::ogg::VorbisComments;
 use crate::properties::FileProperties;
@@ -29,7 +28,6 @@ use lofty_attr::LoftyFile;
 #[lofty(read_fn = "read::read_from")]
 pub struct FlacFile {
 	/// An ID3v2 tag
-	#[cfg(feature = "id3v2")]
 	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The vorbis comments contained in the file

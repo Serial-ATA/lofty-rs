@@ -5,8 +5,8 @@ use crate::tag::{Tag, TagType};
 use crate::{aac, ape, flac, iff, mpeg, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;
-#[cfg(feature = "id3v2")]
-use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
+use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::{self, ID3v2TagFlags};
 use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use ape::tag::ApeTagRef;
@@ -45,7 +45,6 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 		}
 		.dump_to(writer),
 		TagType::ID3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
-		#[cfg(feature = "id3v2")]
 		TagType::ID3v2 => Id3v2TagRef {
 			flags: ID3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),

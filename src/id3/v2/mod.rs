@@ -8,7 +8,13 @@
 //! * [Frame]
 
 mod flags;
+mod frame;
+mod items;
+pub(crate) mod read;
+mod restrictions;
+pub(crate) mod tag;
 pub mod util;
+pub(crate) mod write;
 
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::macros::err;
@@ -18,42 +24,26 @@ use std::io::Read;
 
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
-cfg_if::cfg_if! {
-	if #[cfg(feature = "id3v2")] {
-		pub use flags::ID3v2TagFlags;
-		pub use util::upgrade::{upgrade_v2, upgrade_v3};
+// Exports
 
-		pub(crate) mod tag;
-		pub use tag::ID3v2Tag;
+pub use flags::ID3v2TagFlags;
+pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
-		mod items;
-		pub use items::encoded_text_frame::EncodedTextFrame;
-		pub use items::language_frame::LanguageFrame;
-		pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
-		pub use items::sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
+pub use tag::ID3v2Tag;
 
-		mod frame;
-		pub use frame::id::FrameID;
-		pub use frame::Frame;
-		pub use frame::FrameFlags;
-		pub use frame::FrameValue;
+pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
+pub use items::encoded_text_frame::EncodedTextFrame;
+pub use items::language_frame::LanguageFrame;
+pub use items::sync_text::{
+	SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
+};
 
-		pub(crate) mod read;
-		pub(crate) mod write;
-	}
-}
+pub use frame::id::FrameID;
+pub use frame::{Frame, FrameFlags, FrameValue};
 
-cfg_if::cfg_if! {
-	if #[cfg(feature = "id3v2_restrictions")] {
-		mod restrictions;
-		pub use restrictions::{
-			ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
-		};
-	}
-}
-
-#[cfg(not(feature = "id3v2"))]
-use flags::ID3v2TagFlags;
+pub use restrictions::{
+	ImageSizeRestrictions, TagRestrictions, TagSizeRestrictions, TextSizeRestrictions,
+};
 
 /// The ID3v2 version
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
@@ -68,7 +58,6 @@ pub enum ID3v2Version {
 
 #[derive(Copy, Clone)]
 pub(crate) struct ID3v2Header {
-	#[cfg(feature = "id3v2")]
 	pub version: ID3v2Version,
 	pub flags: ID3v2TagFlags,
 	pub size: u32,
@@ -114,8 +103,7 @@ where
 			&& flags & 0x20 == 0x20,
 		footer: (version == ID3v2Version::V4 || version == ID3v2Version::V3)
 			&& flags & 0x10 == 0x10,
-		crc: false, // Retrieved later if applicable
-		#[cfg(feature = "id3v2_restrictions")]
+		crc: false,         // Retrieved later if applicable
 		restrictions: None, // Retrieved later if applicable
 	};
 
@@ -150,7 +138,6 @@ where
 			bytes.read_exact(&mut crc)?;
 		}
 
-		#[cfg(feature = "id3v2_restrictions")]
 		if extended_flags & 0x10 == 0x10 {
 			// We don't care about the length byte, it is always 1
 			let _data_length = bytes.read_u8()?;
@@ -164,7 +151,6 @@ where
 	}
 
 	Ok(ID3v2Header {
-		#[cfg(feature = "id3v2")]
 		version,
 		flags: flags_parsed,
 		size,

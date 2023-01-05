@@ -5,8 +5,8 @@ use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
 use crate::error::Result;
 use crate::id3::v1::tag::ID3v1Tag;
-#[cfg(feature = "id3v2")]
-use crate::id3::v2::{read::parse_id3v2, tag::ID3v2Tag};
+use crate::id3::v2::read::parse_id3v2;
+use crate::id3::v2::tag::ID3v2Tag;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
 use crate::macros::decode_err;
 use crate::probe::ParseOptions;
@@ -24,7 +24,6 @@ where
 
 	let mut stream_len = end - start;
 
-	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 	let mut id3v1_tag: Option<ID3v1Tag> = None;
 	let mut ape_tag: Option<ApeTag> = None;
@@ -39,13 +38,10 @@ where
 			stream_len -= 10;
 		}
 
-		#[cfg(feature = "id3v2")]
-		{
-			let reader = &mut &*content;
+		let reader = &mut &*content;
 
-			let id3v2 = parse_id3v2(reader, header)?;
-			id3v2_tag = Some(id3v2)
-		}
+		let id3v2 = parse_id3v2(reader, header)?;
+		id3v2_tag = Some(id3v2);
 	}
 
 	let mut found_mac = false;
@@ -133,7 +129,6 @@ where
 
 	Ok(ApeFile {
 		id3v1_tag,
-		#[cfg(feature = "id3v2")]
 		id3v2_tag,
 		ape_tag,
 		properties: if parse_options.read_properties {

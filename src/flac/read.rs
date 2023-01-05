@@ -1,7 +1,6 @@
 use super::block::Block;
 use super::FlacFile;
 use crate::error::Result;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
@@ -38,7 +37,6 @@ where
 	R: Read + Seek,
 {
 	let mut flac_file = FlacFile {
-		#[cfg(feature = "id3v2")]
 		id3v2_tag: None,
 		vorbis_comments_tag: None,
 		properties: FileProperties::default(),
@@ -46,13 +44,10 @@ where
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
-		#[cfg(feature = "id3v2")]
-		{
-			let reader = &mut &*content;
+		let reader = &mut &*content;
 
-			let id3v2 = parse_id3v2(reader, header)?;
-			flac_file.id3v2_tag = Some(id3v2)
-		}
+		let id3v2 = parse_id3v2(reader, header)?;
+		flac_file.id3v2_tag = Some(id3v2);
 	}
 
 	let stream_info = verify_flac(data)?;

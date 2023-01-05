@@ -2,7 +2,6 @@ use super::properties::WavProperties;
 use super::tag::RIFFInfoList;
 use super::WavFile;
 use crate::error::Result;
-#[cfg(feature = "id3v2")]
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
@@ -46,7 +45,6 @@ where
 	let mut fmt = Vec::new();
 
 	let mut riff_info = RIFFInfoList::default();
-	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
 
 	let mut chunks = Chunks::<LittleEndian>::new(file_len);
@@ -89,7 +87,6 @@ where
 					},
 				}
 			},
-			#[cfg(feature = "id3v2")]
 			b"ID3 " | b"id3 " => {
 				let tag = chunks.id3_chunk(data)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
@@ -125,7 +122,6 @@ where
 	Ok(WavFile {
 		properties,
 		riff_info_tag: (!riff_info.items.is_empty()).then_some(riff_info),
-		#[cfg(feature = "id3v2")]
 		id3v2_tag,
 	})
 }
