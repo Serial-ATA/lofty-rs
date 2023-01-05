@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **MP4**: `AtomIdent` now implements `TryFrom<ItemKey>`
+- **MP4**:
+  - The `InitialKey`, `ReplayGain*`, and "precise BPM" identifiers now have `ItemKey` mappings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/93))
+  - `AtomIdent` now implements `TryFrom<ItemKey>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/96))
+- **Vorbis Comments**:
+  - Additional mappings for the `Label`, `Remixer`, and `EncodedBy` `ItemKey` variants ([PR](https://github.com/Serial-ATA/lofty-rs/pull/94))
+- **ID3v2**: A new `id3v2_compression_support` feature to optionally depend on `flate2` for decompressing frames
+
+### Changed
+- **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))
+  - This allows freeform identifiers to be constructed in a const context.
+
+### Removed
+- **Metadata format features** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/97)):
+  - All of the format-specific features have been removed, as they served no purpose. They used to bring in
+    optional dependencies, but they have long since been removed.
 
 ## [0.10.0] - 2022-12-27
 
