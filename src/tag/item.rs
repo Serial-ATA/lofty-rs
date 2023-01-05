@@ -72,7 +72,6 @@ gen_map!(
 );
 
 gen_map!(
-	#[cfg(feature = "ape")]
 	APE_MAP;
 
 	"Album"                        => AlbumTitle,
@@ -419,7 +418,6 @@ gen_item_keys!(
 		#[cfg(feature = "aiff_text_chunks")]
 		[TagType::AIFFText, AIFF_TEXT_MAP],
 
-		#[cfg(feature = "ape")]
 		[TagType::APE, APE_MAP],
 
 		#[cfg(feature = "id3v2")]

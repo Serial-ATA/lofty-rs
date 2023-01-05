@@ -8,24 +8,21 @@ use crate::{
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
-#[cfg(any(feature = "ape", feature = "id3v2"))]
+#[cfg(any(feature = "id3v2"))]
 use std::io::Cursor;
-use std::io::Read;
 #[cfg(feature = "id3v2")]
 use std::io::Write;
-#[cfg(any(feature = "ape"))]
-use std::io::{Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 
 #[cfg(feature = "id3v2")]
 use crate::util::text::TextEncoding;
 use byteorder::BigEndian;
-#[cfg(any(feature = "id3v2", feature = "ape"))]
+#[cfg(any(feature = "id3v2"))]
 use byteorder::ReadBytesExt;
 #[cfg(feature = "id3v2")]
 use byteorder::WriteBytesExt;
 
 /// Common picture item keys for APE
-#[cfg(feature = "ape")]
 pub const APE_PICTURE_TYPES: [&str; 21] = [
 	"Cover Art (Other)",
 	"Cover Art (Png Icon)",
@@ -205,7 +202,6 @@ impl PictureType {
 
 	// APE specific methods
 
-	#[cfg(feature = "ape")]
 	/// Get an APE item key from a `PictureType`
 	pub fn as_ape_key(&self) -> Option<&str> {
 		match self {
@@ -234,7 +230,6 @@ impl PictureType {
 		}
 	}
 
-	#[cfg(feature = "ape")]
 	/// Get a `PictureType` from an APE item key
 	pub fn from_ape_key(key: &str) -> Self {
 		match key {
@@ -827,7 +822,6 @@ impl Picture {
 		err!(NotAPicture)
 	}
 
-	#[cfg(feature = "ape")]
 	/// Convert a [`Picture`] to an APE Cover Art byte vec:
 	///
 	/// NOTE: This is only the picture data and description, a
@@ -846,7 +840,6 @@ impl Picture {
 		data
 	}
 
-	#[cfg(feature = "ape")]
 	/// Get a [`Picture`] from an APEv2 binary item:
 	///
 	/// NOTE: This function expects `bytes` to contain *only* the APE item data

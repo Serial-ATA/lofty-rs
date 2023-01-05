@@ -9,7 +9,6 @@ use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::{self, tag::Id3v2TagRef, ID3v2TagFlags};
 use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
-#[cfg(feature = "ape")]
 use ape::tag::ApeTagRef;
 #[cfg(feature = "aiff_text_chunks")]
 use iff::aiff::tag::AiffTextChunksRef;
@@ -42,7 +41,6 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 #[allow(unreachable_patterns)]
 pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
-		#[cfg(feature = "ape")]
 		TagType::APE => ApeTagRef {
 			read_only: false,
 			items: ape::tag::tagitems_into_ape(tag.items()),

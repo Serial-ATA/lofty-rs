@@ -18,7 +18,6 @@ where
 	reader.seek(SeekFrom::Start(current_pos))?;
 
 	let mut id3v1_tag = None;
-	#[cfg(feature = "ape")]
 	let mut ape_tag = None;
 
 	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(reader, true)?;
@@ -49,19 +48,12 @@ where
 		let ape_header = read_ape_header(reader, true)?;
 		stream_length -= u64::from(ape_header.size);
 
-		#[cfg(feature = "ape")]
-		{
-			let ape = read_ape_tag(reader, ape_header)?;
-			ape_tag = Some(ape)
-		}
-
-		#[cfg(not(feature = "ape"))]
-		data.seek(SeekFrom::Current(ape_header.size as i64))?;
+		let ape = read_ape_tag(reader, ape_header)?;
+		ape_tag = Some(ape);
 	}
 
 	Ok(WavPackFile {
 		id3v1_tag,
-		#[cfg(feature = "ape")]
 		ape_tag,
 		properties: if parse_options.read_properties {
 			super::properties::read_properties(reader, stream_length, parse_options.parsing_mode)?
