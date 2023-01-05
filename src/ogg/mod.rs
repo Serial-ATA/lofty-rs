@@ -7,7 +7,9 @@ pub(crate) mod constants;
 pub(crate) mod opus;
 pub(crate) mod read;
 pub(crate) mod speex;
+pub(crate) mod tag;
 pub(crate) mod vorbis;
+pub(crate) mod write;
 
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -18,19 +20,11 @@ use ogg_pager::Page;
 
 // Exports
 
-cfg_if::cfg_if! {
-	if #[cfg(feature = "vorbis_comments")] {
-		pub(crate) mod write;
-
-		pub(crate) mod tag;
-		pub use tag::VorbisComments;
-	}
-}
-
 pub use opus::properties::OpusProperties;
 pub use opus::OpusFile;
 pub use speex::properties::SpeexProperties;
 pub use speex::SpeexFile;
+pub use tag::VorbisComments;
 pub use vorbis::properties::VorbisProperties;
 pub use vorbis::VorbisFile;
 

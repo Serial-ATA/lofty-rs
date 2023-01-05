@@ -180,7 +180,6 @@ pub use util::text::TextEncoding;
 
 pub use crate::traits::{Accessor, TagExt};
 
-#[cfg(feature = "vorbis_comments")]
 pub use picture::PictureInformation;
 
 pub use lofty_attr::LoftyFile;

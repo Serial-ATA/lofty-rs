@@ -12,10 +12,9 @@ pub(crate) use first_key;
 
 // This is used to create the key/ItemKey maps
 //
-// First comes the feature attribute, followed by the name of the map.
+// First comes the name of the map.
 // Ex:
 //
-// #[cfg(feature = "ape")]
 // APE_MAP;
 //
 // This is followed by the key value pairs separated by `=>`, with the key being the
@@ -293,7 +292,6 @@ gen_map!(
 );
 
 gen_map!(
-	#[cfg(feature = "vorbis_comments")]
 	VORBIS_MAP;
 
 	"ALBUM"                                   => AlbumTitle,
@@ -434,7 +432,6 @@ gen_item_keys!(
 		#[cfg(feature = "riff_info_list")]
 		[TagType::RIFFInfo, RIFF_INFO_MAP],
 
-		#[cfg(feature = "vorbis_comments")]
 		[TagType::VorbisComments, VORBIS_MAP]
 	];
 

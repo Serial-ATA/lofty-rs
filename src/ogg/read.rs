@@ -1,24 +1,16 @@
-#[cfg(feature = "vorbis_comments")]
 use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::Result;
 use crate::macros::{decode_err, err};
-#[cfg(feature = "vorbis_comments")]
 use crate::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
 
-#[cfg(feature = "vorbis_comments")]
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::{Packets, PageHeader};
 
-#[cfg(feature = "vorbis_comments")]
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
-#[cfg(not(feature = "vorbis_comments"))]
-pub type OGGTags = (Option<()>, PageHeader, Packets);
-
-#[cfg(feature = "vorbis_comments")]
 pub(crate) fn read_comments<R>(data: &mut R, mut len: u64, tag: &mut VorbisComments) -> Result<()>
 where
 	R: Read,
@@ -128,16 +120,10 @@ where
 	// Remove the signature from the packet
 	metadata_packet = &metadata_packet[comment_sig.len()..];
 
-	#[cfg(feature = "vorbis_comments")]
-	{
-		let mut tag = VorbisComments::default();
+	let mut tag = VorbisComments::default();
 
-		let reader = &mut metadata_packet;
-		read_comments(reader, reader.len() as u64, &mut tag)?;
+	let reader = &mut metadata_packet;
+	read_comments(reader, reader.len() as u64, &mut tag)?;
 
-		Ok((Some(tag), first_page_header, packets))
-	}
-
-	#[cfg(not(feature = "vorbis_comments"))]
-	Ok((None, first_page_header, packets))
+	Ok((Some(tag), first_page_header, packets))
 }
