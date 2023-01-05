@@ -1,10 +1,7 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::{nested_atom, skip_unneeded};
-#[cfg(feature = "mp4_ilst")]
-use super::{
-	ilst::{read::parse_ilst, Ilst},
-	read::{meta_is_full, AtomReader},
-};
+use super::ilst::read::parse_ilst;
+use super::ilst::Ilst;
+use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -13,7 +10,6 @@ use std::io::{Read, Seek};
 pub(crate) struct Moov {
 	// Represents the trak.mdia atom
 	pub(crate) traks: Vec<AtomInfo>,
-	#[cfg(feature = "mp4_ilst")]
 	// Represents a parsed moov.udta.meta.ilst
 	pub(crate) meta: Option<Ilst>,
 }
@@ -42,7 +38,6 @@ impl Moov {
 		R: Read + Seek,
 	{
 		let mut traks = Vec::new();
-		#[cfg(feature = "mp4_ilst")]
 		let mut meta = None;
 
 		while let Ok(atom) = reader.next() {
@@ -54,7 +49,6 @@ impl Moov {
 							traks.push(mdia);
 						}
 					},
-					#[cfg(feature = "mp4_ilst")]
 					b"udta" => {
 						meta = meta_from_udta(reader, atom.len - 8)?;
 					},
@@ -67,15 +61,10 @@ impl Moov {
 			skip_unneeded(reader, atom.extended, atom.len)?
 		}
 
-		Ok(Self {
-			traks,
-			#[cfg(feature = "mp4_ilst")]
-			meta,
-		})
+		Ok(Self { traks, meta })
 	}
 }
 
-#[cfg(feature = "mp4_ilst")]
 fn meta_from_udta<R>(reader: &mut AtomReader<R>, len: u64) -> Result<Option<Ilst>>
 where
 	R: Read + Seek,

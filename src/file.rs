@@ -836,7 +836,6 @@ impl FileType {
 			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
 			},
-			#[cfg(feature = "mp4_ilst")]
 			FileType::MP4 => tag_type == TagType::MP4ilst,
 			#[cfg(feature = "riff_info_list")]
 			FileType::WAV => tag_type == TagType::RIFFInfo,

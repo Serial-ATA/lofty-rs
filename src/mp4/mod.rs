@@ -4,6 +4,7 @@
 //!
 //! The only supported tag format is [`Ilst`].
 mod atom_info;
+pub(crate) mod ilst;
 mod moov;
 mod properties;
 mod read;
@@ -12,24 +13,17 @@ use lofty_attr::LoftyFile;
 
 // Exports
 
-cfg_if::cfg_if! {
-	if #[cfg(feature = "mp4_ilst")] {
-		pub(crate) mod ilst;
-
-		pub use atom_info::AtomIdent;
-		pub use ilst::atom::{Atom, AtomData, AdvisoryRating};
-		pub use ilst::Ilst;
-
-		/// This module contains the codes for all of the [Well-known data types]
-		///
-		/// [Well-known data types]: https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34
-		pub mod constants {
-			pub use super::ilst::constants::*;
-		}
-	}
+/// This module contains the codes for all of the [Well-known data types]
+///
+/// [Well-known data types]: https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34
+pub mod constants {
+	pub use super::ilst::constants::*;
 }
 
 pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
+pub use atom_info::AtomIdent;
+pub use ilst::atom::{AdvisoryRating, Atom, AtomData};
+pub use ilst::Ilst;
 
 pub(crate) use properties::SAMPLE_RATES;
 
@@ -39,7 +33,6 @@ pub(crate) use properties::SAMPLE_RATES;
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
-	#[cfg(feature = "mp4_ilst")]
 	#[lofty(tag_type = "MP4ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst_tag: Option<Ilst>,

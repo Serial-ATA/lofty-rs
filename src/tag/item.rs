@@ -204,7 +204,6 @@ gen_map!(
 );
 
 gen_map!(
-	#[cfg(feature = "mp4_ilst")]
 	ILST_MAP;
 
 	"\u{a9}alb"                                   => AlbumTitle,
@@ -426,7 +425,6 @@ gen_item_keys!(
 		#[cfg(feature = "id3v2")]
 		[TagType::ID3v2, ID3V2_MAP],
 
-		#[cfg(feature = "mp4_ilst")]
 		[TagType::MP4ilst, ILST_MAP],
 
 		#[cfg(feature = "riff_info_list")]
