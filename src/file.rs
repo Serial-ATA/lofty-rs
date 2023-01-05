@@ -834,7 +834,6 @@ impl FileType {
 				tag_type == TagType::VorbisComments
 			},
 			FileType::MP4 => tag_type == TagType::MP4ilst,
-			#[cfg(feature = "riff_info_list")]
 			FileType::WAV => tag_type == TagType::RIFFInfo,
 			FileType::Custom(c) => {
 				let resolver = crate::resolve::lookup_resolver(c);

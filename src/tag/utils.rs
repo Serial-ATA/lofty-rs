@@ -11,7 +11,6 @@ use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
-#[cfg(feature = "riff_info_list")]
 use iff::wav::tag::RIFFInfoListRef;
 
 use std::fs::File;
@@ -63,7 +62,6 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			}
 			.dump_to(writer)
 		},
-		#[cfg(feature = "riff_info_list")]
 		TagType::RIFFInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
