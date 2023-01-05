@@ -265,7 +265,6 @@ gen_map!(
 );
 
 gen_map!(
-	#[cfg(feature = "riff_info_list")]
 	RIFF_INFO_MAP;
 
 	"IPRD"          => AlbumTitle,
@@ -423,7 +422,6 @@ gen_item_keys!(
 
 		[TagType::MP4ilst, ILST_MAP],
 
-		#[cfg(feature = "riff_info_list")]
 		[TagType::RIFFInfo, RIFF_INFO_MAP],
 
 		[TagType::VorbisComments, VORBIS_MAP]

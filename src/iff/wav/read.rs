@@ -1,5 +1,4 @@
 use super::properties::WavProperties;
-#[cfg(feature = "riff_info_list")]
 use super::tag::RIFFInfoList;
 use super::WavFile;
 use crate::error::Result;
@@ -46,7 +45,6 @@ where
 	let mut total_samples = 0_u32;
 	let mut fmt = Vec::new();
 
-	#[cfg(feature = "riff_info_list")]
 	let mut riff_info = RIFFInfoList::default();
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
@@ -81,7 +79,6 @@ where
 				data.read_exact(&mut list_type)?;
 
 				match &list_type {
-					#[cfg(feature = "riff_info_list")]
 					b"INFO" => {
 						let end = data.stream_position()? + u64::from(chunks.size - 4);
 						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
@@ -127,7 +124,6 @@ where
 
 	Ok(WavFile {
 		properties,
-		#[cfg(feature = "riff_info_list")]
 		riff_info_tag: (!riff_info.items.is_empty()).then_some(riff_info),
 		#[cfg(feature = "id3v2")]
 		id3v2_tag,
