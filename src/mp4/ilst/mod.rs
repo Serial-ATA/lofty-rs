@@ -454,7 +454,7 @@ impl From<Tag> for Ilst {
 		for item in input.items {
 			let key = item.item_key;
 
-			if let Some(ident) = item_key_to_ident(&key) {
+			if let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) {
 				let data = match item.item_value {
 					ItemValue::Text(text) => text,
 					_ => continue,
@@ -489,36 +489,6 @@ impl From<Tag> for Ilst {
 
 		ilst
 	}
-}
-
-fn item_key_to_ident(key: &ItemKey) -> Option<AtomIdent<'_>> {
-	key.map_key(TagType::MP4ilst, true).and_then(|ident| {
-		if ident.starts_with("----") {
-			let mut split = ident.split(':');
-
-			split.next();
-
-			let mean = split.next();
-			let name = split.next();
-
-			if let (Some(mean), Some(name)) = (mean, name) {
-				Some(AtomIdent::Freeform {
-					mean: Cow::Borrowed(mean),
-					name: Cow::Borrowed(name),
-				})
-			} else {
-				None
-			}
-		} else {
-			let fourcc = ident.chars().map(|c| c as u8).collect::<Vec<_>>();
-
-			if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
-				Some(AtomIdent::Fourcc(fourcc))
-			} else {
-				None
-			}
-		}
-	})
 }
 
 #[cfg(test)]

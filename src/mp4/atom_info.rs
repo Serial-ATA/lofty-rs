@@ -1,5 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{err, try_vec};
+use crate::tag::item::ItemKey;
+use crate::tag::TagType;
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
@@ -51,6 +53,49 @@ impl<'a> AtomIdent<'a> {
 				name: Cow::Owned(name.into_owned()),
 			},
 		}
+	}
+}
+
+impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
+	type Error = LoftyError;
+
+	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
+		if let Some(mapped_key) = value.map_key(TagType::MP4ilst, true) {
+			if mapped_key.starts_with("----") {
+				let mut split = mapped_key.split(':');
+
+				split.next();
+
+				let mean = split.next();
+				let name = split.next();
+
+				if let (Some(mean), Some(name)) = (mean, name) {
+					return Ok(AtomIdent::Freeform {
+						mean: Cow::Borrowed(mean),
+						name: Cow::Borrowed(name),
+					});
+				}
+			} else {
+				let fourcc = mapped_key.chars().map(|c| c as u8).collect::<Vec<_>>();
+
+				if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
+					return Ok(AtomIdent::Fourcc(fourcc));
+				}
+			}
+		}
+
+		err!(TextDecode(
+			"ItemKey does not map to a freeform or fourcc identifier"
+		))
+	}
+}
+
+impl TryFrom<ItemKey> for AtomIdent<'static> {
+	type Error = LoftyError;
+
+	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
+		let ret: AtomIdent<'_> = (&value).try_into()?;
+		Ok(ret.into_owned())
 	}
 }
 

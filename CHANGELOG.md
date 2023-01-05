@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **MP4**: `AtomIdent` now implements `TryFrom<ItemKey>`
+
 ## [0.10.0] - 2022-12-27
 
 ### Added
