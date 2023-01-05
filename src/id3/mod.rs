@@ -45,16 +45,11 @@ where
 	Ok(ID3FindResults(header, size))
 }
 
-#[cfg(feature = "id3v1")]
-pub(crate) type FindID3v1Content = Option<v1::tag::ID3v1Tag>;
-#[cfg(not(feature = "id3v1"))]
-pub(crate) type FindID3v1Content = Option<()>;
-
 #[allow(unused_variables)]
 pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
-) -> Result<ID3FindResults<(), FindID3v1Content>>
+) -> Result<ID3FindResults<(), Option<v1::tag::ID3v1Tag>>>
 where
 	R: Read + Seek,
 {
@@ -71,7 +66,6 @@ where
 	if &id3v1_header == b"TAG" {
 		header = Some(());
 
-		#[cfg(feature = "id3v1")]
 		if read {
 			let mut id3v1_tag = [0; 128];
 			data.read_exact(&mut id3v1_tag)?;

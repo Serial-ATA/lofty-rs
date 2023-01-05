@@ -17,7 +17,6 @@ where
 	let mut stream_length = reader.seek(SeekFrom::End(0))?;
 	reader.seek(SeekFrom::Start(current_pos))?;
 
-	#[cfg(feature = "id3v1")]
 	let mut id3v1_tag = None;
 	#[cfg(feature = "ape")]
 	let mut ape_tag = None;
@@ -26,10 +25,7 @@ where
 
 	if id3v1_header.is_some() {
 		stream_length -= 128;
-		#[cfg(feature = "id3v1")]
-		{
-			id3v1_tag = id3v1;
-		}
+		id3v1_tag = id3v1;
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
@@ -64,7 +60,6 @@ where
 	}
 
 	Ok(WavPackFile {
-		#[cfg(feature = "id3v1")]
 		id3v1_tag,
 		#[cfg(feature = "ape")]
 		ape_tag,

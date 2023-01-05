@@ -4,7 +4,6 @@ use super::header::read_ape_header;
 use super::tag::{read::read_ape_tag, ApeTag};
 use super::{ApeFile, ApeProperties};
 use crate::error::Result;
-#[cfg(feature = "id3v1")]
 use crate::id3::v1::tag::ID3v1Tag;
 #[cfg(feature = "id3v2")]
 use crate::id3::v2::{read::parse_id3v2, tag::ID3v2Tag};
@@ -27,7 +26,6 @@ where
 
 	#[cfg(feature = "id3v2")]
 	let mut id3v2_tag: Option<ID3v2Tag> = None;
-	#[cfg(feature = "id3v1")]
 	let mut id3v1_tag: Option<ID3v1Tag> = None;
 	#[cfg(feature = "ape")]
 	let mut ape_tag: Option<ApeTag> = None;
@@ -107,10 +105,7 @@ where
 
 	if id3v1_header.is_some() {
 		stream_len -= 128;
-		#[cfg(feature = "id3v1")]
-		{
-			id3v1_tag = id3v1;
-		}
+		id3v1_tag = id3v1;
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
@@ -150,7 +145,6 @@ where
 	data.seek(SeekFrom::Start(mac_start))?;
 
 	Ok(ApeFile {
-		#[cfg(feature = "id3v1")]
 		id3v1_tag,
 		#[cfg(feature = "id3v2")]
 		id3v2_tag,

@@ -108,7 +108,6 @@ where
 	#[allow(unused_variables)]
 	let ID3FindResults(header, id3v1) = find_id3v1(reader, true)?;
 
-	#[cfg(feature = "id3v1")]
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
 	}

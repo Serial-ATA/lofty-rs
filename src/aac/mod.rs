@@ -23,7 +23,6 @@ pub struct AACFile {
 	#[cfg(feature = "id3v2")]
 	#[lofty(tag_type = "ID3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
-	#[cfg(feature = "id3v1")]
 	#[lofty(tag_type = "ID3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	pub(crate) properties: AACProperties,

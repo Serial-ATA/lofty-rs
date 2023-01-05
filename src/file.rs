@@ -825,7 +825,6 @@ impl FileType {
 			},
 			#[cfg(feature = "aiff_text_chunks")]
 			FileType::AIFF if tag_type == TagType::AIFFText => true,
-			#[cfg(feature = "id3v1")]
 			FileType::APE | FileType::MPEG | FileType::WavPack | FileType::AAC
 				if tag_type == TagType::ID3v1 =>
 			{

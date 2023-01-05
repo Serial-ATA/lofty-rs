@@ -687,7 +687,6 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {
-		#[cfg(feature = "id3v1")]
 		if tag_type == TagType::ID3v1 {
 			use crate::id3::v1::constants::VALID_ITEMKEYS;
 
