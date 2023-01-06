@@ -374,6 +374,10 @@ impl From<Ilst> for Tag {
 					tag.pictures.push(pic);
 					continue;
 				},
+				AtomData::Bool(b) => {
+					let text = if b { "1".to_owned() } else { "0".to_owned() };
+					ItemValue::Text(text)
+				},
 				// We have to special case track/disc numbers since they are stored together
 				AtomData::Unknown { code: 0, data } if data.len() >= 6 => {
 					if let AtomIdent::Fourcc(ref fourcc) = ident {
@@ -466,6 +470,22 @@ impl From<Tag> for Ilst {
 					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, data.as_str()),
 					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, data.as_str()),
 					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, data.as_str()),
+					ItemKey::FlagCompilation => {
+						if let Ok(num) = data.as_str().parse::<u8>() {
+							let data = match num {
+								0 => false,
+								1 => true,
+								_ => {
+									// Ignore all other, unexpected values
+									continue;
+								},
+							};
+							ilst.atoms.push(Atom {
+								ident: ident.into_owned(),
+								data: AtomDataStorage::Single(AtomData::Bool(data)),
+							})
+						}
+					},
 					_ => ilst.atoms.push(Atom {
 						ident: ident.into_owned(),
 						data: AtomDataStorage::Single(AtomData::UTF8(data)),
