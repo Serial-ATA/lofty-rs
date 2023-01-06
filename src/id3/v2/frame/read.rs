@@ -9,7 +9,7 @@ use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-impl Frame {
+impl<'a> Frame<'a> {
 	pub(crate) fn read<R>(reader: &mut R, version: ID3v2Version) -> Result<(Option<Self>, bool)>
 	where
 		R: Read,

@@ -37,13 +37,13 @@ use std::hash::{Hash, Hasher};
 /// `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
 /// but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
 #[derive(Clone, Debug, Eq)]
-pub struct Frame {
-	pub(super) id: FrameID,
+pub struct Frame<'a> {
+	pub(super) id: FrameID<'a>,
 	pub(super) value: FrameValue,
 	pub(super) flags: FrameFlags,
 }
 
-impl PartialEq for Frame {
+impl<'a> PartialEq for Frame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		match self.value {
 			FrameValue::Text { .. } => self.id == other.id,
@@ -52,7 +52,7 @@ impl PartialEq for Frame {
 	}
 }
 
-impl Hash for Frame {
+impl<'a> Hash for Frame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		match self.value {
 			FrameValue::Text { .. } => self.id.hash(state),
@@ -64,7 +64,7 @@ impl Hash for Frame {
 	}
 }
 
-impl Frame {
+impl<'a> Frame<'a> {
 	/// Create a new frame
 	///
 	/// NOTE: This will accept both `ID3v2.2` and `ID3v2.3/4` frame IDs
@@ -73,16 +73,16 @@ impl Frame {
 	///
 	/// * `id` is less than 3 or greater than 4 bytes
 	/// * `id` contains non-ascii characters
-	pub fn new(id: &str, value: FrameValue, flags: FrameFlags) -> Result<Self> {
+	pub fn new(id: Cow<'a, str>, value: FrameValue, flags: FrameFlags) -> Result<Self> {
 		let id_updated = match id.len() {
 			// An ID with a length of 4 could be either V3 or V4.
-			4 => match upgrade_v3(id) {
+			4 => match upgrade_v3(&id) {
 				None => id,
-				Some(upgraded) => upgraded,
+				Some(upgraded) => Cow::Borrowed(upgraded),
 			},
-			3 => match upgrade_v2(id) {
+			3 => match upgrade_v2(&id) {
 				None => id,
-				Some(upgraded) => upgraded,
+				Some(upgraded) => Cow::Borrowed(upgraded),
 			},
 			_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 		};
@@ -113,9 +113,9 @@ impl Frame {
 	}
 
 	// Used internally, has no correctness checks
-	pub(crate) fn text(id: &str, content: String) -> Self {
+	pub(crate) fn text(id: Cow<'a, str>, content: String) -> Self {
 		Self {
-			id: FrameID::Valid(String::from(id)),
+			id: FrameID::Valid(id),
 			value: FrameValue::Text {
 				encoding: TextEncoding::UTF8,
 				value: content,
@@ -256,11 +256,11 @@ pub struct FrameFlags {
 	pub data_length_indicator: Option<u32>,
 }
 
-impl From<TagItem> for Option<Frame> {
+impl From<TagItem> for Option<Frame<'static>> {
 	fn from(input: TagItem) -> Self {
 		let frame_id;
 		let value;
-		match input.key().try_into() {
+		match input.key().try_into().map(FrameID::into_owned) {
 			Ok(id) => {
 				// We make the VERY bold assumption the language is English
 				value = match (&id, input.item_value) {
@@ -307,7 +307,7 @@ impl From<TagItem> for Option<Frame> {
 			Err(_) => match input.item_key.map_key(TagType::ID3v2, true) {
 				Some(desc) => match input.item_value {
 					ItemValue::Text(text) => {
-						frame_id = FrameID::Valid(String::from("TXXX"));
+						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
 						value = FrameValue::UserText(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
@@ -315,7 +315,7 @@ impl From<TagItem> for Option<Frame> {
 						})
 					},
 					ItemValue::Locator(locator) => {
-						frame_id = FrameID::Valid(String::from("WXXX"));
+						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
 						value = FrameValue::UserURL(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
@@ -342,7 +342,7 @@ pub(crate) struct FrameRef<'a> {
 	pub flags: FrameFlags,
 }
 
-impl<'a> Frame {
+impl<'a> Frame<'a> {
 	pub(crate) fn as_opt_ref(&'a self) -> Option<FrameRef<'a>> {
 		if let FrameID::Valid(id) = &self.id {
 			Some(FrameRef {
