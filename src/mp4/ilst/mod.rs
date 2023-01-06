@@ -25,6 +25,7 @@ const TITLE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9nam");
 const ALBUM: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9alb");
 const GENRE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9gen");
 const COMMENT: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9cmt");
+const ADVISORY_RATING: AtomIdent<'_> = AtomIdent::Fourcc(*b"rtng");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
@@ -156,7 +157,7 @@ impl Ilst {
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
-		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"rtng")) {
+		if let Some(atom) = self.atom(&ADVISORY_RATING) {
 			let rating = match atom.data().next() {
 				Some(AtomData::SignedInteger(si)) => *si as u8,
 				Some(AtomData::Unknown { data: c, .. }) if !c.is_empty() => c[0],
@@ -174,7 +175,7 @@ impl Ilst {
 		let byte = advisory_rating.as_u8();
 
 		self.replace_atom(Atom {
-			ident: AtomIdent::Fourcc(*b"rtng"),
+			ident: ADVISORY_RATING,
 			data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(byte))),
 		})
 	}
