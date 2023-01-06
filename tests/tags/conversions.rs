@@ -1,5 +1,7 @@
 // Tests for special case conversions
 
+use std::borrow::Cow;
+
 use lofty::id3::v2::{Frame, FrameFlags, FrameValue, ID3v2Tag, LanguageFrame};
 use lofty::{ItemKey, Tag, TagType, TextEncoding};
 
@@ -14,7 +16,7 @@ fn tag_to_id3v2_lang_frame() {
 	assert_eq!(
 		id3.get("USLT"),
 		Frame::new(
-			"USLT",
+			Cow::Borrowed("USLT"),
 			FrameValue::UnSyncText(LanguageFrame {
 				encoding: TextEncoding::UTF8,
 				language: *b"eng",
@@ -30,7 +32,7 @@ fn tag_to_id3v2_lang_frame() {
 	assert_eq!(
 		id3.get("COMM"),
 		Frame::new(
-			"COMM",
+			Cow::Borrowed("COMM"),
 			FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::UTF8,
 				language: *b"eng",

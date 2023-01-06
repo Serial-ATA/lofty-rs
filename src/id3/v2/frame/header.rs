@@ -3,9 +3,12 @@ use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameID;
 
+use std::borrow::Cow;
 use std::io::Read;
 
-pub(crate) fn parse_v2_header<R>(reader: &mut R) -> Result<Option<(FrameID, u32, FrameFlags)>>
+pub(crate) fn parse_v2_header<R>(
+	reader: &mut R,
+) -> Result<Option<(FrameID<'static>, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -22,7 +25,7 @@ where
 
 	let id_str = std::str::from_utf8(&frame_header[..3])
 		.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadFrameID))?;
-	let id = upgrade_v2(id_str).unwrap_or(id_str);
+	let id = upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed);
 
 	let frame_id = FrameID::new(id)?;
 
@@ -35,7 +38,7 @@ where
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	synchsafe: bool,
-) -> Result<Option<(FrameID, u32, FrameFlags)>>
+) -> Result<Option<(FrameID<'static>, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -59,7 +62,7 @@ where
 		frame_id_end = 3;
 	}
 
-	let mut id_str = std::str::from_utf8(&frame_header[..frame_id_end])
+	let id_str = std::str::from_utf8(&frame_header[..frame_id_end])
 		.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadFrameID))?;
 
 	let mut size = u32::from_be_bytes([
@@ -70,20 +73,23 @@ where
 	]);
 
 	// Now upgrade the FrameID
-	if invalid_v2_frame {
+	let id = if invalid_v2_frame {
 		if let Some(id) = upgrade_v2(id_str) {
-			id_str = id;
+			Cow::Borrowed(id)
+		} else {
+			Cow::Owned(id_str.to_owned())
 		}
 	} else if !synchsafe {
-		id_str = upgrade_v3(id_str).unwrap_or(id_str);
-	}
+		upgrade_v3(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed)
+	} else {
+		Cow::Owned(id_str.to_owned())
+	};
+	let frame_id = FrameID::new(id)?;
 
 	// unsynch the frame size if necessary
 	if synchsafe {
 		size = crate::id3::v2::util::unsynch_u32(size);
 	}
-
-	let frame_id = FrameID::new(id_str)?;
 
 	let flags = u16::from_be_bytes([frame_header[8], frame_header[9]]);
 	let flags = parse_flags(flags, synchsafe);
