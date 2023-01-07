@@ -25,6 +25,11 @@ pub(crate) fn parse(
 		_ => proc_macro2::TokenStream::new(),
 	};
 
+	let write_fn = match util::get_attr("write_fn", &input.attrs) {
+		Some(wfn) => wfn,
+		_ => proc_macro2::TokenStream::new(),
+	};
+
 	let struct_name = input.ident.clone();
 
 	// TODO: This is not readable in the slightest
@@ -82,6 +87,34 @@ pub(crate) fn parse(
 		}
 	});
 
+	let save_to_body;
+	if write_fn.is_empty() {
+		let tag_field_save = tag_fields.iter().map(|f| {
+			let name = &f.name;
+			if f.needs_option {
+				quote! {
+					file.rewind()?;
+					if let Some(ref tag) = self.#name {
+						tag.save_to(file)?;
+					}
+				}
+			} else {
+				quote! {
+					file.rewind()?;
+					self.#name.save_to(file)?;
+				}
+			}
+		});
+		save_to_body = quote! {
+			#(#tag_field_save)*
+			Ok(())
+		};
+	} else {
+		save_to_body = quote! {
+			#write_fn(&self, file)
+		}
+	}
+
 	let tag_exists = tag_fields.iter().map(|f| {
 		let name = &f.name;
 		if f.needs_option {
@@ -102,19 +135,25 @@ pub(crate) fn parse(
 
 	let properties_field_ty = &properties_field.ty;
 	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
-		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<lofty::FileProperties>;
+		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<::lofty::FileProperties>;
 	};
 
 	let audiofile_impl = if impl_audiofile {
 		quote! {
-			impl lofty::AudioFile for #struct_name {
+			impl ::lofty::AudioFile for #struct_name {
 				type Properties = #properties_field_ty;
 
-				fn read_from<R>(reader: &mut R, parse_options: lofty::ParseOptions) -> lofty::error::Result<Self>
+				fn read_from<R>(reader: &mut R, parse_options: ::lofty::ParseOptions) -> ::lofty::error::Result<Self>
 				where
 					R: std::io::Read + std::io::Seek,
 				{
 					#read_fn(reader, parse_options)
+				}
+
+				fn save_to(&self, file: &mut ::std::fs::File) -> ::lofty::error::Result<()> {
+					use ::lofty::TagExt as _;
+					use ::std::io::Seek as _;
+					#save_to_body
 				}
 
 				fn properties(&self) -> &Self::Properties {
@@ -127,9 +166,9 @@ pub(crate) fn parse(
 				}
 
 				#[allow(unreachable_code, unused_variables)]
-				fn contains_tag_type(&self, tag_type: lofty::TagType) -> bool {
+				fn contains_tag_type(&self, tag_type: ::lofty::TagType) -> bool {
 					match tag_type {
-						#( lofty::TagType::#tag_type => { #tag_exists_2 } ),*
+						#( ::lofty::TagType::#tag_type => { #tag_exists_2 } ),*
 						_ => false
 					}
 				}
@@ -151,10 +190,10 @@ pub(crate) fn parse(
 	let getters = get_getters(&tag_fields, &struct_name);
 
 	let file_type_variant = if has_internal_file_type {
-		quote! { lofty::FileType::#file_type }
+		quote! { ::lofty::FileType::#file_type }
 	} else {
 		let file_ty_str = file_type.to_string();
-		quote! { lofty::FileType::Custom(#file_ty_str) }
+		quote! { ::lofty::FileType::Custom(#file_ty_str) }
 	};
 
 	let mut ret = quote! {
