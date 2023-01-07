@@ -13,7 +13,7 @@ pub(crate) fn opt_internal_file_type(
 		"AAC", "AIFF", "APE", "FLAC", "MPEG", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
 	];
 
-	const ID3V2_STRIPPABLE: [&str; 1] = ["APE"];
+	const ID3V2_STRIPPABLE: [&str; 2] = ["FLAC", "APE"];
 
 	let stripped = struct_name.strip_suffix("File");
 	if let Some(prefix) = stripped {
@@ -95,7 +95,7 @@ pub(crate) fn write_module(
 ) -> proc_macro2::TokenStream {
 	let applicable_formats = fields.iter().map(|f| {
 		let tag_ty =
-			syn::parse_str::<syn::Path>(&format!("lofty::TagType::{}", &f.tag_type)).unwrap();
+			syn::parse_str::<syn::Path>(&format!("::lofty::TagType::{}", &f.tag_type)).unwrap();
 
 		let features = f.cfg_features.iter();
 
@@ -110,7 +110,7 @@ pub(crate) fn write_module(
 	quote! {
 		pub(crate) mod write {
 			#[allow(unused_variables)]
-			pub(crate) fn write_to(data: &mut std::fs::File, tag: &lofty::Tag) -> lofty::error::Result<()> {
+			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag) -> ::lofty::error::Result<()> {
 				match tag.tag_type() {
 					#( #applicable_formats )*
 					_ => crate::macros::err!(UnsupportedTag),

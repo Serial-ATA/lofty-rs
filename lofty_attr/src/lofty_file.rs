@@ -4,7 +4,7 @@ use crate::util::{self, bail};
 use proc_macro2::{Ident, Span};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::spanned::Spanned;
-use syn::{Attribute, DataStruct, DeriveInput, Type};
+use syn::{Attribute, DataStruct, DeriveInput, Field, Type};
 
 pub(crate) fn parse(
 	input: &DeriveInput,
@@ -12,6 +12,7 @@ pub(crate) fn parse(
 	errors: &mut Vec<syn::Error>,
 ) -> proc_macro2::TokenStream {
 	let impl_audiofile = should_impl_audiofile(&input.attrs);
+	let struct_name = input.ident.clone();
 
 	let read_fn = match util::get_attr("read_fn", &input.attrs) {
 		Some(rfn) => rfn,
@@ -30,8 +31,6 @@ pub(crate) fn parse(
 		_ => proc_macro2::TokenStream::new(),
 	};
 
-	let struct_name = input.ident.clone();
-
 	// TODO: This is not readable in the slightest
 
 	let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
@@ -42,7 +41,7 @@ pub(crate) fn parse(
 		.iter()
 		.any(|attr| util::has_path_attr(attr, "internal_write_module_do_not_use_anywhere_else"));
 
-	if opt_file_type.is_none() && is_internal {
+	if !has_internal_file_type && is_internal {
 		// TODO: This is the best check we can do for now I think?
 		//       Definitely needs some work when a better solution comes out.
 		bail!(
@@ -87,138 +86,35 @@ pub(crate) fn parse(
 		}
 	});
 
-	let save_to_body;
-	if write_fn.is_empty() {
-		let tag_field_save = tag_fields.iter().map(|f| {
-			let name = &f.name;
-			if f.needs_option {
-				quote! {
-					file.rewind()?;
-					if let Some(ref tag) = self.#name {
-						tag.save_to(file)?;
-					}
-				}
-			} else {
-				quote! {
-					file.rewind()?;
-					self.#name.save_to(file)?;
-				}
-			}
-		});
-		save_to_body = quote! {
-			#(#tag_field_save)*
-			Ok(())
-		};
-	} else {
-		save_to_body = quote! {
-			#write_fn(&self, file)
-		}
-	}
-
-	let tag_exists = tag_fields.iter().map(|f| {
-		let name = &f.name;
-		if f.needs_option {
-			quote! { self.#name.is_some() }
-		} else {
-			quote! { true }
-		}
-	});
-	let tag_exists_2 = tag_exists.clone();
-
-	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
-
-	let properties_field = if let Some(field) = properties_field {
-		field
-	} else {
-		bail!(errors, input.ident.span(), "Struct has no properties field");
-	};
-
-	let properties_field_ty = &properties_field.ty;
-	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
-		struct _AssertIntoFileProperties where #properties_field_ty: std::convert::Into<::lofty::FileProperties>;
-	};
-
 	let audiofile_impl = if impl_audiofile {
-		quote! {
-			impl ::lofty::AudioFile for #struct_name {
-				type Properties = #properties_field_ty;
+		let properties_field = if let Some(field) = properties_field {
+			field
+		} else {
+			bail!(errors, input.ident.span(), "Struct has no properties field");
+		};
 
-				fn read_from<R>(reader: &mut R, parse_options: ::lofty::ParseOptions) -> ::lofty::error::Result<Self>
-				where
-					R: std::io::Read + std::io::Seek,
-				{
-					#read_fn(reader, parse_options)
-				}
-
-				fn save_to(&self, file: &mut ::std::fs::File) -> ::lofty::error::Result<()> {
-					use ::lofty::TagExt as _;
-					use ::std::io::Seek as _;
-					#save_to_body
-				}
-
-				fn properties(&self) -> &Self::Properties {
-					&self.properties
-				}
-
-				#[allow(unreachable_code)]
-				fn contains_tag(&self) -> bool {
-					#( #tag_exists )||*
-				}
-
-				#[allow(unreachable_code, unused_variables)]
-				fn contains_tag_type(&self, tag_type: ::lofty::TagType) -> bool {
-					match tag_type {
-						#( ::lofty::TagType::#tag_type => { #tag_exists_2 } ),*
-						_ => false
-					}
-				}
-			}
-		}
+		generate_audiofile_impl(
+			&struct_name,
+			&tag_fields,
+			properties_field,
+			read_fn,
+			write_fn,
+		)
 	} else {
 		proc_macro2::TokenStream::new()
 	};
 
-	let conditions = tag_fields.iter().map(|f| {
-		let name = &f.name;
-		if f.needs_option {
-			quote! { if let Some(t) = input.#name { tags.push(t.into()); } }
-		} else {
-			quote! { tags.push(input.#name.into()); }
-		}
-	});
+	let from_taggedfile_impl =
+		generate_from_taggedfile_impl(&struct_name, &tag_fields, file_type, has_internal_file_type);
 
 	let getters = get_getters(&tag_fields, &struct_name);
 
-	let file_type_variant = if has_internal_file_type {
-		quote! { ::lofty::FileType::#file_type }
-	} else {
-		let file_ty_str = file_type.to_string();
-		quote! { ::lofty::FileType::Custom(#file_ty_str) }
-	};
-
 	let mut ret = quote! {
-		#assert_properties_impl
-
 		#( #assert_tag_impl_into )*
 
 		#audiofile_impl
 
-		impl std::convert::From<#struct_name> for lofty::TaggedFile {
-			fn from(input: #struct_name) -> Self {
-				use ::lofty::TaggedFileExt as _;
-
-				lofty::TaggedFile::new(
-					#file_type_variant,
-					lofty::FileProperties::from(input.properties),
-					{
-						let mut tags: Vec<lofty::Tag> = Vec::new();
-						#( #conditions )*
-
-						tags
-					}
-				)
-			}
-		}
+		#from_taggedfile_impl
 
 		#( #getters )*
 	};
@@ -397,4 +293,148 @@ fn get_getters<'a>(
 			}
 		}
 	})
+}
+
+fn generate_audiofile_impl(
+	struct_name: &Ident,
+	tag_fields: &[FieldContents],
+	properties_field: &Field,
+	read_fn: proc_macro2::TokenStream,
+	write_fn: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+	let save_to_body = get_save_to_body(write_fn, &tag_fields);
+
+	let tag_exists = tag_exists_iter(&tag_fields);
+	let tag_exists_2 = tag_exists_iter(&tag_fields);
+
+	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
+
+	let properties_field_ty = &properties_field.ty;
+	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
+		struct _AssertIntoFileProperties where #properties_field_ty: ::std::convert::Into<::lofty::FileProperties>;
+	};
+
+	quote! {
+		#assert_properties_impl
+		impl ::lofty::AudioFile for #struct_name {
+			type Properties = #properties_field_ty;
+
+			fn read_from<R>(reader: &mut R, parse_options: ::lofty::ParseOptions) -> ::lofty::error::Result<Self>
+			where
+				R: std::io::Read + std::io::Seek,
+			{
+				#read_fn(reader, parse_options)
+			}
+
+			fn save_to(&self, file: &mut ::std::fs::File) -> ::lofty::error::Result<()> {
+				use ::lofty::TagExt as _;
+				use ::std::io::Seek as _;
+				#save_to_body
+			}
+
+			fn properties(&self) -> &Self::Properties {
+				&self.properties
+			}
+
+			#[allow(unreachable_code)]
+			fn contains_tag(&self) -> bool {
+				#( #tag_exists )||*
+			}
+
+			#[allow(unreachable_code, unused_variables)]
+			fn contains_tag_type(&self, tag_type: ::lofty::TagType) -> bool {
+				match tag_type {
+					#( ::lofty::TagType::#tag_type => { #tag_exists_2 } ),*
+					_ => false
+				}
+			}
+		}
+	}
+}
+
+fn get_save_to_body(
+	write_fn: proc_macro2::TokenStream,
+	tag_fields: &[FieldContents],
+) -> proc_macro2::TokenStream {
+	if !write_fn.is_empty() {
+		return quote! {
+			#write_fn(&self, file)
+		};
+	}
+
+	let tag_field_save = tag_fields.iter().map(|f| {
+		let name = &f.name;
+		if f.needs_option {
+			quote! {
+				file.rewind()?;
+				if let Some(ref tag) = self.#name {
+					tag.save_to(file)?;
+				}
+			}
+		} else {
+			quote! {
+				file.rewind()?;
+				self.#name.save_to(file)?;
+			}
+		}
+	});
+	quote! {
+		#(#tag_field_save)*
+		Ok(())
+	}
+}
+
+fn tag_exists_iter(
+	tag_fields: &[FieldContents],
+) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+	tag_fields.iter().map(|f| {
+		let name = &f.name;
+		if f.needs_option {
+			quote! { self.#name.is_some() }
+		} else {
+			quote! { true }
+		}
+	})
+}
+
+fn generate_from_taggedfile_impl(
+	struct_name: &Ident,
+	tag_fields: &[FieldContents],
+	file_type: proc_macro2::TokenStream,
+	has_internal_file_type: bool,
+) -> proc_macro2::TokenStream {
+	let conditions = tag_fields.iter().map(|f| {
+		let name = &f.name;
+		if f.needs_option {
+			quote! { if let Some(t) = input.#name { tags.push(t.into()); } }
+		} else {
+			quote! { tags.push(input.#name.into()); }
+		}
+	});
+
+	let file_type_variant = if has_internal_file_type {
+		quote! { ::lofty::FileType::#file_type }
+	} else {
+		let file_ty_str = file_type.to_string();
+		quote! { ::lofty::FileType::Custom(#file_ty_str) }
+	};
+
+	quote! {
+		impl ::std::convert::From<#struct_name> for ::lofty::TaggedFile {
+			fn from(input: #struct_name) -> Self {
+				use ::lofty::TaggedFileExt as _;
+
+				::lofty::TaggedFile::new(
+					#file_type_variant,
+					::lofty::FileProperties::from(input.properties),
+					{
+						let mut tags: Vec<::lofty::Tag> = Vec::new();
+						#( #conditions )*
+
+						tags
+					}
+				)
+			}
+		}
+	}
 }

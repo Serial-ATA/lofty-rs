@@ -109,12 +109,12 @@ pub(crate) fn parse(
 		#input
 
 		impl #ident {
-			pub(crate) const SUPPORTED_FORMATS: &'static [lofty::FileType] = &[
-				#( lofty::FileType:: #flattened_file_types ),*
+			pub(crate) const SUPPORTED_FORMATS: &'static [::lofty::FileType] = &[
+				#( ::lofty::FileType:: #flattened_file_types ),*
 			];
 
-			pub(crate) const READ_ONLY_FORMATS: &'static [lofty::FileType] = &[
-				#( lofty::FileType:: #read_only_file_types ),*
+			pub(crate) const READ_ONLY_FORMATS: &'static [::lofty::FileType] = &[
+				#( ::lofty::FileType:: #read_only_file_types ),*
 			];
 		}
 	}
