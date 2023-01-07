@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ItemKey**:
   - New Variants: `AppleXID`, `Director`, `Color`
 - **AudioFile**: `AudioFile::save_to{_path}`
+- **Files**: `<File>::set_{tag}`
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))

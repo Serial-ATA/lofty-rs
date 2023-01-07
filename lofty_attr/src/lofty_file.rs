@@ -342,6 +342,20 @@ fn get_getters<'a>(
 			quote! {&mut self.#field_name}
 		};
 
+		let set_ident = Ident::new(&format!("set_{}", name), Span::call_site());
+
+		let setter = if f.needs_option {
+			quote! {
+				let ret = self.#field_name.take();
+				self.#field_name = Some(tag);
+				return ret;
+			}
+		} else {
+			quote! {
+				Some(::core::mem::replace(&mut self.#field_name, tag))
+			}
+		};
+
 		let remove_ident = Ident::new(&format!("remove_{}", name), Span::call_site());
 
 		let remover = if f.needs_option {
@@ -353,7 +367,7 @@ fn get_getters<'a>(
 
 			quote! {
 				#assert_field_ty_default
-				::core::mem::replace(&mut self.#field_name, <#field_ty>::default())
+				::core::mem::take(&mut self.#field_name)
 			}
 		};
 
@@ -369,6 +383,11 @@ fn get_getters<'a>(
 				/// Returns a mutable reference to the tag
 				pub fn #mut_ident(&mut self) -> #ty_prefix &mut #field_ty #ty_suffix {
 					#mut_access
+				}
+
+				/// Sets the tag, returning the old one
+				pub fn #set_ident(&mut self, tag: #field_ty) -> Option<#field_ty> {
+					#setter
 				}
 
 				/// Removes the tag
