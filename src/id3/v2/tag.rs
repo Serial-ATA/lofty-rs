@@ -742,7 +742,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TPE1"),
+				"TPE1",
 				FrameValue::Text {
 					encoding,
 					value: String::from("Bar artist"),
@@ -754,7 +754,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TIT2"),
+				"TIT2",
 				FrameValue::Text {
 					encoding,
 					value: String::from("Foo title"),
@@ -766,7 +766,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TALB"),
+				"TALB",
 				FrameValue::Text {
 					encoding,
 					value: String::from("Baz album"),
@@ -778,7 +778,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("COMM"),
+				"COMM",
 				FrameValue::Comment(LanguageFrame {
 					encoding,
 					language: *b"eng",
@@ -792,7 +792,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TDRC"),
+				"TDRC",
 				FrameValue::Text {
 					encoding,
 					value: String::from("1984"),
@@ -804,7 +804,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TRCK"),
+				"TRCK",
 				FrameValue::Text {
 					encoding,
 					value: String::from("1"),
@@ -816,7 +816,7 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				Cow::Borrowed("TCON"),
+				"TCON",
 				FrameValue::Text {
 					encoding,
 					value: String::from("Classical"),
@@ -1194,7 +1194,7 @@ mod tests {
 		let mut tag = ID3v2Tag::default();
 		tag.insert(
 			Frame::new(
-				Cow::Borrowed("TXXX"),
+				"TXXX",
 				FrameValue::UserText(EncodedTextFrame {
 					encoding: TextEncoding::UTF8,
 					description: String::from("REPLAYGAIN_ALBUM_GAIN"),
@@ -1220,7 +1220,7 @@ mod tests {
 	#[test]
 	fn txxx_wxxx_tag_conversion() {
 		let txxx_frame = Frame::new(
-			Cow::Borrowed("TXXX"),
+			"TXXX",
 			FrameValue::UserText(EncodedTextFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("FOO_TEXT_FRAME"),
@@ -1231,7 +1231,7 @@ mod tests {
 		.unwrap();
 
 		let wxxx_frame = Frame::new(
-			Cow::Borrowed("WXXX"),
+			"WXXX",
 			FrameValue::UserURL(EncodedTextFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("BAR_URL_FRAME"),

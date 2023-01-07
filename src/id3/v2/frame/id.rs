@@ -24,7 +24,15 @@ impl<'a> FrameID<'a> {
 	///
 	/// * `id` contains invalid characters (must be 'A'..='Z' and '0'..='9')
 	/// * `id` is an invalid length (must be 3 or 4)
-	pub fn new(id: Cow<'a, str>) -> Result<Self> {
+	pub fn new<I>(id: I) -> Result<Self>
+	where
+		I: Into<Cow<'a, str>>,
+	{
+		Self::new_cow(id.into())
+	}
+
+	// Split from generic, public method to avoid code bloat by monomorphization.
+	pub(super) fn new_cow(id: Cow<'a, str>) -> Result<Self> {
 		Self::verify_id(&id)?;
 
 		match id.len() {
