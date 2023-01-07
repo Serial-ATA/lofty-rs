@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: A new `id3v2_compression_support` feature to optionally depend on `flate2` for decompressing frames
 - **ItemKey**:
   - New Variants: `AppleXID`, `Director`, `Color`
+- **AudioFile**: `AudioFile::save_to{_path}`
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))

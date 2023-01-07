@@ -27,6 +27,57 @@ pub trait AudioFile: Into<TaggedFile> {
 	where
 		R: Read + Seek,
 		Self: Sized;
+
+	/// Attempts to write all tags to a path
+	///
+	/// # Errors
+	///
+	/// * `path` does not exist
+	/// * `path` is not writable
+	/// * See [`AudioFile::save_to`]
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::{AudioFile, TaggedFileExt};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path)?;
+	///
+	/// // Edit the tags
+	///
+	/// tagged_file.save_to_path(path)?;
+	/// # Ok(()) }
+	/// ```
+	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
+		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	}
+
+	/// Attempts to write all tags to a file
+	///
+	/// # Errors
+	///
+	/// See [`Tag::save_to`], however this is applicable to every tag in the file.
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::{AudioFile, TaggedFileExt};
+	/// use std::fs::OpenOptions;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(path)?;
+	///
+	/// // Edit the tags
+	///
+	/// let mut file = OpenOptions::new().read(true).write(true).open(path)?;
+	/// tagged_file.save_to(&mut file)?;
+	/// # Ok(()) }
+	/// ```
+	fn save_to(&self, file: &mut File) -> Result<()>;
+
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;
 	/// Checks if the file contains any tags
@@ -312,52 +363,6 @@ pub trait TaggedFileExt {
 	/// # Ok(()) }
 	/// ```
 	fn clear(&mut self);
-
-	/// Attempts to write all tags to a path
-	///
-	/// # Errors
-	///
-	/// See [`TaggedFile::save_to`]
-	///
-	/// # Examples
-	///
-	/// ```rust,no_run
-	/// use lofty::TaggedFileExt;
-	///
-	/// # fn main() -> lofty::Result<()> {
-	/// # let path = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path)?;
-	///
-	/// // Edit the tags
-	///
-	/// tagged_file.save_to_path(path)?;
-	/// # Ok(()) }
-	/// ```
-	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()>;
-
-	/// Attempts to write all tags to a file
-	///
-	/// # Errors
-	///
-	/// See [`Tag::save_to`], however this is applicable to every tag in the `TaggedFile`.
-	///
-	/// # Examples
-	///
-	/// ```rust,no_run
-	/// use lofty::TaggedFileExt;
-	/// use std::fs::OpenOptions;
-	///
-	/// # fn main() -> lofty::Result<()> {
-	/// # let path = "tests/files/assets/minimal/full_test.mp3";
-	/// let mut tagged_file = lofty::read_from_path(path)?;
-	///
-	/// // Edit the tags
-	///
-	/// let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-	/// tagged_file.save_to(&mut file)?;
-	/// # Ok(()) }
-	/// ```
-	fn save_to(&self, file: &mut File) -> Result<()>;
 }
 
 /// A generic representation of a file
@@ -480,21 +485,6 @@ impl TaggedFileExt for TaggedFile {
 	fn clear(&mut self) {
 		self.tags.clear()
 	}
-
-	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
-	}
-
-	fn save_to(&self, file: &mut File) -> Result<()> {
-		for tag in &self.tags {
-			// TODO: This is a temporary solution. Ideally we should probe once and use
-			//       the format-specific writing to avoid these rewinds.
-			file.rewind()?;
-			tag.save_to(file)?;
-		}
-
-		Ok(())
-	}
 }
 
 impl AudioFile for TaggedFile {
@@ -509,6 +499,17 @@ impl AudioFile for TaggedFile {
 			.guess_file_type()?
 			.options(parse_options)
 			.read()
+	}
+
+	fn save_to(&self, file: &mut File) -> Result<()> {
+		for tag in &self.tags {
+			// TODO: This is a temporary solution. Ideally we should probe once and use
+			//       the format-specific writing to avoid these rewinds.
+			file.rewind()?;
+			tag.save_to(file)?;
+		}
+
+		Ok(())
 	}
 
 	fn properties(&self) -> &Self::Properties {
@@ -705,14 +706,6 @@ impl TaggedFileExt for BoundTaggedFile {
 	fn clear(&mut self) {
 		self.inner.clear()
 	}
-
-	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.inner.save_to_path(path)
-	}
-
-	fn save_to(&self, file: &mut File) -> Result<()> {
-		self.inner.save_to(file)
-	}
 }
 
 impl AudioFile for BoundTaggedFile {
@@ -726,6 +719,10 @@ impl AudioFile for BoundTaggedFile {
 		unimplemented!(
 			"BoundTaggedFile can only be constructed through `BoundTaggedFile::read_from`"
 		)
+	}
+
+	fn save_to(&self, file: &mut File) -> Result<()> {
+		self.inner.save_to(file)
 	}
 
 	fn properties(&self) -> &Self::Properties {

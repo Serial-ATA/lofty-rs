@@ -7,8 +7,10 @@ use crate::file::AudioFile;
 use crate::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
 use crate::probe::ParseOptions;
 use crate::tag::TagType;
+use crate::traits::TagExt;
 use properties::VorbisProperties;
 
+use std::fs::File;
 use std::io::{Read, Seek};
 
 use lofty_attr::LoftyFile;
@@ -45,6 +47,10 @@ impl AudioFile for VorbisFile {
 			// Safe to unwrap, a metadata packet is mandatory in OGG Vorbis
 			vorbis_comments_tag: file_information.0.unwrap(),
 		})
+	}
+
+	fn save_to(&self, file: &mut File) -> Result<()> {
+		self.vorbis_comments_tag.save_to(file)
 	}
 
 	fn properties(&self) -> &Self::Properties {

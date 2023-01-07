@@ -7,7 +7,9 @@ use crate::ogg::constants::SPEEXHEADER;
 use crate::probe::ParseOptions;
 use crate::tag::TagType;
 use properties::SpeexProperties;
+use crate::traits::TagExt;
 
+use std::fs::File;
 use std::io::{Read, Seek};
 
 use lofty_attr::LoftyFile;
@@ -45,6 +47,10 @@ impl AudioFile for SpeexFile {
 		})
 	}
 
+	fn save_to(&self, file: &mut File) -> Result<()> {
+		self.vorbis_comments_tag.save_to(file)
+	}
+	
 	fn properties(&self) -> &Self::Properties {
 		&self.properties
 	}
