@@ -3,21 +3,17 @@ pub(super) mod properties;
 use super::find_last_page;
 use super::tag::VorbisComments;
 use crate::error::Result;
-use crate::file::AudioFile;
 use crate::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
 use crate::probe::ParseOptions;
-use crate::tag::TagType;
-use crate::traits::TagExt;
 use properties::VorbisProperties;
 
-use std::fs::File;
 use std::io::{Read, Seek};
 
 use lofty_attr::LoftyFile;
 
 /// An OGG Vorbis file
 #[derive(LoftyFile)]
-#[lofty(no_audiofile_impl)]
+#[lofty(read_fn = "Self::read_from")]
 pub struct VorbisFile {
 	/// The vorbis comments contained in the file
 	///
@@ -28,9 +24,7 @@ pub struct VorbisFile {
 	pub(crate) properties: VorbisProperties,
 }
 
-impl AudioFile for VorbisFile {
-	type Properties = VorbisProperties;
-
+impl VorbisFile {
 	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -47,21 +41,5 @@ impl AudioFile for VorbisFile {
 			// Safe to unwrap, a metadata packet is mandatory in OGG Vorbis
 			vorbis_comments_tag: file_information.0.unwrap(),
 		})
-	}
-
-	fn save_to(&self, file: &mut File) -> Result<()> {
-		self.vorbis_comments_tag.save_to(file)
-	}
-
-	fn properties(&self) -> &Self::Properties {
-		&self.properties
-	}
-
-	fn contains_tag(&self) -> bool {
-		true
-	}
-
-	fn contains_tag_type(&self, tag_type: TagType) -> bool {
-		tag_type == TagType::VorbisComments
 	}
 }
