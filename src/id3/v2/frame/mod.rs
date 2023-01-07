@@ -73,8 +73,16 @@ impl<'a> Frame<'a> {
 	///
 	/// * `id` is less than 3 or greater than 4 bytes
 	/// * `id` contains non-ascii characters
-	pub fn new(id: Cow<'a, str>, value: FrameValue, flags: FrameFlags) -> Result<Self> {
-		let id_updated = match id.len() {
+	pub fn new<I>(id: I, value: FrameValue, flags: FrameFlags) -> Result<Self>
+	where
+		I: Into<Cow<'a, str>>,
+	{
+		Self::new_cow(id.into(), value, flags)
+	}
+
+	// Split from generic, public method to avoid code bloat by monomorphization.
+	fn new_cow(id: Cow<'a, str>, value: FrameValue, flags: FrameFlags) -> Result<Self> {
+		let id_upgraded = match id.len() {
 			// An ID with a length of 4 could be either V3 or V4.
 			4 => match upgrade_v3(&id) {
 				None => id,
@@ -87,7 +95,7 @@ impl<'a> Frame<'a> {
 			_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
 		};
 
-		let id = FrameID::new(id_updated)?;
+		let id = FrameID::new_cow(id_upgraded)?;
 
 		Ok(Self { id, value, flags })
 	}

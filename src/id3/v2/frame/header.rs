@@ -27,7 +27,7 @@ where
 		.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadFrameID))?;
 	let id = upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed);
 
-	let frame_id = FrameID::new(id)?;
+	let frame_id = FrameID::new_cow(id)?;
 
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
@@ -84,7 +84,7 @@ where
 	} else {
 		Cow::Owned(id_str.to_owned())
 	};
-	let frame_id = FrameID::new(id)?;
+	let frame_id = FrameID::new_cow(id)?;
 
 	// unsynch the frame size if necessary
 	if synchsafe {
