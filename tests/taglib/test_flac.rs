@@ -1,0 +1,715 @@
+use crate::temp_file;
+
+use std::io::{Read, Seek, SeekFrom};
+
+use lofty::flac::FlacFile;
+use lofty::id3::v2::ID3v2Tag;
+use lofty::ogg::{OggPictureStorage, VorbisComments};
+use lofty::{
+	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
+};
+
+#[test]
+fn test_signature() {
+	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert_eq!(
+		format!("{:x}", f.properties().signature()),
+		"a1b141f766e9849ac3db1030a20a3c77"
+	);
+}
+
+#[test]
+fn test_multiple_comment_blocks() {
+	let mut file = temp_file!("tests/taglib/data/multiple-vc.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert_eq!(
+			f.vorbis_comments().unwrap().artist().as_deref(),
+			Some("Artist 1")
+		);
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_artist(String::from("The Artist"));
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		assert_eq!(
+			f.vorbis_comments().unwrap().artist().as_deref(),
+			Some("The Artist")
+		);
+	}
+}
+
+#[test]
+fn test_read_picture() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let lst = f.pictures();
+	assert_eq!(lst.len(), 1);
+
+	let (pic, info) = &lst[0];
+	assert_eq!(pic.pic_type(), PictureType::CoverFront);
+	assert_eq!(info.width, 1);
+	assert_eq!(info.height, 1);
+	assert_eq!(info.color_depth, 24);
+	assert_eq!(info.num_colors, 0);
+	assert_eq!(pic.mime_type(), &MimeType::Png);
+	assert_eq!(pic.description(), Some("A pixel."));
+	assert_eq!(pic.data().len(), 150);
+}
+
+#[test]
+fn test_add_picture() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 1);
+
+		let new_pic = Picture::new_unchecked(
+			PictureType::CoverBack,
+			MimeType::Jpeg,
+			Some(String::from("new image")),
+			Vec::from("JPEG data"),
+		);
+		let new_pic_info = PictureInformation {
+			width: 5,
+			height: 6,
+			color_depth: 16,
+			num_colors: 7,
+		};
+
+		f.insert_picture(new_pic, Some(new_pic_info)).unwrap();
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 2);
+
+		let (pic, info) = &lst[0];
+		assert_eq!(pic.pic_type(), PictureType::CoverFront);
+		assert_eq!(info.width, 1);
+		assert_eq!(info.height, 1);
+		assert_eq!(info.color_depth, 24);
+		assert_eq!(info.num_colors, 0);
+		assert_eq!(pic.mime_type(), &MimeType::Png);
+		assert_eq!(pic.description(), Some("A pixel."));
+		assert_eq!(pic.data().len(), 150);
+
+		let (pic, info) = &lst[1];
+		assert_eq!(pic.pic_type(), PictureType::CoverBack);
+		assert_eq!(info.width, 5);
+		assert_eq!(info.height, 6);
+		assert_eq!(info.color_depth, 16);
+		assert_eq!(info.num_colors, 7);
+		assert_eq!(pic.mime_type(), &MimeType::Jpeg);
+		assert_eq!(pic.description(), Some("new image"));
+		assert_eq!(pic.data(), b"JPEG data");
+	}
+}
+
+#[test]
+fn test_replace_picture() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 1);
+
+		let new_pic = Picture::new_unchecked(
+			PictureType::CoverBack,
+			MimeType::Jpeg,
+			Some(String::from("new image")),
+			Vec::from("JPEG data"),
+		);
+		let new_pic_info = PictureInformation {
+			width: 5,
+			height: 6,
+			color_depth: 16,
+			num_colors: 7,
+		};
+
+		f.remove_pictures();
+		f.insert_picture(new_pic, Some(new_pic_info)).unwrap();
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 1);
+
+		let (pic, info) = &lst[0];
+		assert_eq!(pic.pic_type(), PictureType::CoverBack);
+		assert_eq!(info.width, 5);
+		assert_eq!(info.height, 6);
+		assert_eq!(info.color_depth, 16);
+		assert_eq!(info.num_colors, 7);
+		assert_eq!(pic.mime_type(), &MimeType::Jpeg);
+		assert_eq!(pic.description(), Some("new image"));
+		assert_eq!(pic.data(), b"JPEG data");
+	}
+}
+
+#[test]
+fn test_remove_all_pictures() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 1);
+
+		f.remove_pictures();
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let lst = f.pictures();
+		assert_eq!(lst.len(), 0);
+	}
+}
+
+#[test]
+#[ignore] // TODO: `VorbisComments::get` is case-sensitive for now, it shouldn't be.
+fn test_repeated_save_1() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("Silence")
+		);
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("NEW TITLE"));
+		f.save_to(&mut file).unwrap();
+
+		file.rewind().unwrap();
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("NEW TITLE")
+		);
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("NEW TITLE 2"));
+		f.save_to(&mut file).unwrap();
+
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("NEW TITLE 2")
+		);
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("NEW TITLE 2")
+		);
+	}
+}
+
+#[test]
+#[ignore]
+fn test_repeated_save_2() {
+	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
+}
+
+#[test]
+#[ignore] // TODO: We don't make use of padding blocks yet
+fn test_repeated_save_3() {
+	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
+
+	let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	let mut tag = VorbisComments::default();
+	tag.set_title(String::from_utf8(vec![b'X'; 8 * 1024]).unwrap());
+	f.set_vorbis_comments(tag);
+
+	f.save_to(&mut file).unwrap();
+	file.rewind().unwrap();
+	assert_eq!(file.metadata().unwrap().len(), 12862);
+	f.save_to(&mut file).unwrap();
+	assert_eq!(file.metadata().unwrap().len(), 12862);
+}
+
+#[test]
+fn test_save_multiple_values() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut().unwrap().insert(
+			String::from("ARTIST"),
+			String::from("artist 1"),
+			false,
+		);
+		f.vorbis_comments_mut().unwrap().insert(
+			String::from("ARTIST"),
+			String::from("artist 2"),
+			false,
+		);
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let mut m = f.vorbis_comments().unwrap().get_all("ARTIST");
+		assert_eq!(m.next(), Some("artist 1"));
+		assert_eq!(m.next(), Some("artist 2"));
+		assert_eq!(m.next(), None);
+	}
+}
+
+#[test]
+#[ignore]
+fn test_dict() {
+	// Marker test, Lofty does not replicate the dict API
+}
+
+#[test]
+fn test_properties() {
+	let mut tag = VorbisComments::default();
+	tag.insert(String::from("ALBUM"), String::from("Album"), false);
+	tag.insert(
+		String::from("ALBUMARTIST"),
+		String::from("Album Artist"),
+		false,
+	);
+	tag.insert(
+		String::from("ALBUMARTISTSORT"),
+		String::from("Album Artist Sort"),
+		false,
+	);
+	tag.insert(String::from("ALBUMSORT"), String::from("Album Sort"), false);
+	tag.insert(String::from("ARTIST"), String::from("Artist"), false);
+	tag.insert(String::from("ARTISTS"), String::from("Artists"), false);
+	tag.insert(
+		String::from("ARTISTSORT"),
+		String::from("Artist Sort"),
+		false,
+	);
+	tag.insert(String::from("ASIN"), String::from("ASIN"), false);
+	tag.insert(String::from("BARCODE"), String::from("Barcode"), false);
+	tag.insert(
+		String::from("CATALOGNUMBER"),
+		String::from("Catalog Number 1"),
+		false,
+	);
+	tag.insert(
+		String::from("CATALOGNUMBER"),
+		String::from("Catalog Number 2"),
+		false,
+	);
+	tag.insert(String::from("COMMENT"), String::from("Comment"), false);
+	tag.insert(String::from("DATE"), String::from("2021-01-10"), false);
+	tag.insert(String::from("DISCNUMBER"), String::from("3/5"), false);
+	tag.insert(String::from("GENRE"), String::from("Genre"), false);
+	tag.insert(String::from("ISRC"), String::from("UKAAA0500001"), false);
+	tag.insert(String::from("LABEL"), String::from("Label 1"), false);
+	tag.insert(String::from("LABEL"), String::from("Label 2"), false);
+	tag.insert(String::from("MEDIA"), String::from("Media"), false);
+	tag.insert(
+		String::from("MUSICBRAINZ_ALBUMARTISTID"),
+		String::from("MusicBrainz_AlbumartistID"),
+		false,
+	);
+	tag.insert(
+		String::from("MUSICBRAINZ_ALBUMID"),
+		String::from("MusicBrainz_AlbumID"),
+		false,
+	);
+	tag.insert(
+		String::from("MUSICBRAINZ_ARTISTID"),
+		String::from("MusicBrainz_ArtistID"),
+		false,
+	);
+	tag.insert(
+		String::from("MUSICBRAINZ_RELEASEGROUPID"),
+		String::from("MusicBrainz_ReleasegroupID"),
+		false,
+	);
+	tag.insert(
+		String::from("MUSICBRAINZ_RELEASETRACKID"),
+		String::from("MusicBrainz_ReleasetrackID"),
+		false,
+	);
+	tag.insert(
+		String::from("MUSICBRAINZ_TRACKID"),
+		String::from("MusicBrainz_TrackID"),
+		false,
+	);
+	tag.insert(
+		String::from("ORIGINALDATE"),
+		String::from("2021-01-09"),
+		false,
+	);
+	tag.insert(
+		String::from("RELEASECOUNTRY"),
+		String::from("Release Country"),
+		false,
+	);
+	tag.insert(
+		String::from("RELEASESTATUS"),
+		String::from("Release Status"),
+		false,
+	);
+	tag.insert(
+		String::from("RELEASETYPE"),
+		String::from("Release Type"),
+		false,
+	);
+	tag.insert(String::from("SCRIPT"), String::from("Script"), false);
+	tag.insert(String::from("TITLE"), String::from("Title"), false);
+	tag.insert(String::from("TRACKNUMBER"), String::from("2"), false);
+	tag.insert(String::from("TRACKTOTAL"), String::from("4"), false);
+
+	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+		f.set_vorbis_comments(tag.clone());
+
+		file.rewind().unwrap();
+		f.vorbis_comments().unwrap().save_to(&mut file).unwrap();
+	}
+	{
+		file.rewind().unwrap();
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+		assert_eq!(f.vorbis_comments(), Some(&tag));
+	}
+}
+
+#[test]
+#[ignore] // TODO: Keys are not yet validated
+fn test_invalid() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+	f.vorbis_comments_mut().unwrap().insert(
+		String::from("H\x00c4\x00d6"),
+		String::from("bla"),
+		false,
+	);
+}
+
+#[test]
+fn test_audio_properties() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+	let properties = f.properties();
+	assert_eq!(properties.duration().as_secs(), 3);
+	// NOTE: This is the number reported by `ffprobe`, TagLib is off here.
+	assert_eq!(properties.duration().as_millis(), 3684);
+	// TODO: We report 101, ffprobe reports 110, and TagLib reports 145
+	// assert_eq!(properties.audio_bitrate(), 145);
+	assert_eq!(properties.sample_rate(), 44100);
+	assert_eq!(properties.channels(), 2);
+	assert_eq!(properties.bit_depth(), 16);
+	// TODO
+	// CPPUNIT_ASSERT_EQUAL(156556ULL, f.audioProperties()->sampleFrames());
+	assert_eq!(
+		format!("{:X}", f.properties().signature()),
+		"6291DBD8DCB7DC480132E4C4BA154A17"
+	);
+}
+
+#[test]
+fn test_zero_sized_padding_1() {
+	let mut file = temp_file!("tests/taglib/data/zero-sized-padding.flac");
+	let _ = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+}
+
+#[test]
+fn test_zero_sized_padding_2() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("ABC"));
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from_utf8(vec![b'X'; 3067]).unwrap());
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let _ = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	}
+}
+
+#[test]
+#[ignore] // TODO: We don't make use of padding blocks yet
+fn test_shrink_padding() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from_utf8(vec![b'X'; 128 * 1024]).unwrap());
+		f.save_to(&mut file).unwrap();
+		assert!(file.metadata().unwrap().len() > 128 * 1024);
+	}
+	file.rewind().unwrap();
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("0123456789"));
+		f.save_to(&mut file).unwrap();
+		assert!(file.metadata().unwrap().len() < 8 * 1024);
+	}
+}
+
+#[test]
+#[ignore]
+fn test_save_id3v1() {
+	// Marker test, this test relies on saving an ID3v1 tag in a FLAC file, something Lofty does not and will not support.
+}
+
+#[test]
+#[ignore]
+fn test_update_id3v2() {
+	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
+}
+
+#[test]
+fn test_empty_id3v2() {
+	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.set_id3v2(ID3v2Tag::default());
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		assert!(f.id3v2().is_none());
+	}
+}
+
+#[test]
+#[ignore] // TODO: TagLib doesn't fully remove Vorbis Comments when stripping. It will preserve the vendor string. Should we do the same?
+fn test_strip_tags() {
+	// NOTE: In the TagLib test suite, this also tests ID3v1 and ID3v2. That is not replicated here.
+
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("XiphComment Title"));
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert!(f.vorbis_comments().is_some());
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("XiphComment Title")
+		);
+		f.remove_vorbis_comments();
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert!(f.vorbis_comments().is_some());
+		assert!(f.vorbis_comments().unwrap().is_empty());
+		assert_eq!(
+			f.vorbis_comments().unwrap().vendor(),
+			"reference libFLAC 1.1.0 20030126"
+		);
+	}
+}
+
+#[test]
+fn test_remove_xiph_field() {
+	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		f.vorbis_comments_mut()
+			.unwrap()
+			.set_title(String::from("XiphComment Title"));
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("XiphComment Title")
+		);
+		let _ = f.vorbis_comments_mut().unwrap().remove("TITLE");
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert!(f.vorbis_comments().unwrap().title().is_none());
+	}
+}
+
+#[test]
+fn test_empty_seek_table() {
+	let mut file = temp_file!("tests/taglib/data/empty-seektable.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let mut tag = VorbisComments::default();
+		tag.set_title(String::from("XiphComment Title"));
+		f.set_vorbis_comments(tag);
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.seek(SeekFrom::Start(42)).unwrap();
+		assert!(f.vorbis_comments().is_some());
+
+		let mut data = [0; 4];
+		file.read_exact(&mut data).unwrap();
+		assert_eq!(data, [3, 0, 0, 0]);
+	}
+}
+
+#[test]
+fn test_picture_stored_after_comment() {
+	// Blank.png from https://commons.wikimedia.org/wiki/File:Blank.png
+	const BLANK_PNG_DATA: &[u8] = &[
+		0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44,
+		0x52, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x02, 0x08, 0x06, 0x00, 0x00, 0x00, 0x9D,
+		0x74, 0x66, 0x1A, 0x00, 0x00, 0x00, 0x01, 0x73, 0x52, 0x47, 0x42, 0x00, 0xAE, 0xCE, 0x1C,
+		0xE9, 0x00, 0x00, 0x00, 0x04, 0x67, 0x41, 0x4D, 0x41, 0x00, 0x00, 0xB1, 0x8F, 0x0B, 0xFC,
+		0x61, 0x05, 0x00, 0x00, 0x00, 0x09, 0x70, 0x48, 0x59, 0x73, 0x00, 0x00, 0x0E, 0xC3, 0x00,
+		0x00, 0x0E, 0xC3, 0x01, 0xC7, 0x6F, 0xA8, 0x64, 0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41,
+		0x54, 0x18, 0x57, 0x63, 0xC0, 0x01, 0x18, 0x18, 0x00, 0x00, 0x1A, 0x00, 0x01, 0x82, 0x92,
+		0x4D, 0x60, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+	];
+
+	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
+	{
+		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert!(f.id3v2().is_none());
+		assert!(f.vorbis_comments().is_none());
+		assert!(f.pictures().is_empty());
+
+		let pic = Picture::new_unchecked(
+			PictureType::CoverFront,
+			MimeType::Png,
+			Some(String::from("blank.png")),
+			BLANK_PNG_DATA.to_vec(),
+		);
+		let pic_information = PictureInformation {
+			width: 3,
+			height: 2,
+			color_depth: 32,
+			num_colors: 0,
+		};
+		f.insert_picture(pic, Some(pic_information)).unwrap();
+
+		let mut tag = VorbisComments::default();
+		tag.set_title(String::from("Title"));
+		f.set_vorbis_comments(tag);
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		assert!(f.id3v2().is_none());
+		assert!(f.vorbis_comments().is_some());
+
+		let pictures = f.pictures();
+		assert_eq!(pictures.len(), 1);
+		assert_eq!(pictures[0].0.data(), BLANK_PNG_DATA);
+		assert_eq!(pictures[0].0.pic_type(), PictureType::CoverFront);
+		assert_eq!(pictures[0].0.mime_type(), &MimeType::Png);
+		assert_eq!(pictures[0].0.description(), Some("blank.png"));
+		assert_eq!(pictures[0].1.width, 3);
+		assert_eq!(pictures[0].1.height, 2);
+		assert_eq!(pictures[0].1.color_depth, 32);
+		assert_eq!(pictures[0].1.num_colors, 0);
+		assert_eq!(
+			f.vorbis_comments().unwrap().title().as_deref(),
+			Some("Title")
+		);
+	}
+
+	const EXPECTED_HEAD_DATA: &[u8] = &[
+		b'f', b'L', b'a', b'C', 0x00, 0x00, 0x00, 0x22, 0x12, 0x00, 0x12, 0x00, 0x00, 0x00, 0x0E,
+		0x00, 0x00, 0x10, 0x0A, 0xC4, 0x42, 0xF0, 0x00, 0x02, 0x7A, 0xC0, 0xA1, 0xB1, 0x41, 0xF7,
+		0x66, 0xE9, 0x84, 0x9A, 0xC3, 0xDB, 0x10, 0x30, 0xA2, 0x0A, 0x3C, 0x77, 0x04, 0x00, 0x00,
+		0x17, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x0B, 0x00, 0x00, 0x00, b'T', b'I',
+		b'T', b'L', b'E', b'=', b'T', b'i', b't', b'l', b'e', 0x06, 0x00, 0x00, 0xA9, 0x00, 0x00,
+		0x00, 0x03, 0x00, 0x00, 0x00, 0x09, b'i', b'm', b'a', b'g', b'e', b'/', b'p', b'n', b'g',
+		0x00, 0x00, 0x00, 0x09, b'b', b'l', b'a', b'n', b'k', b'.', b'p', b'n', b'g', 0x00, 0x00,
+		0x00, 0x03, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x77,
+	];
+
+	let mut file_data = Vec::new();
+	file.read_to_end(&mut file_data).unwrap();
+
+	assert!(file_data.starts_with(EXPECTED_HEAD_DATA));
+}
