@@ -258,13 +258,18 @@ impl From<ID3v1Tag> for Tag {
 }
 
 impl From<Tag> for ID3v1Tag {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		let title = input.take_strings(&ItemKey::TrackTitle).next();
+		let artist = input.take_strings(&ItemKey::TrackArtist).next();
+		let album = input.take_strings(&ItemKey::AlbumTitle).next();
+		let year = input.year().map(|y| y.to_string());
+		let comment = input.take_strings(&ItemKey::Comment).next();
 		Self {
-			title: input.get_string(&ItemKey::TrackTitle).map(str::to_owned),
-			artist: input.get_string(&ItemKey::TrackArtist).map(str::to_owned),
-			album: input.get_string(&ItemKey::AlbumTitle).map(str::to_owned),
-			year: input.get_string(&ItemKey::Year).map(str::to_owned),
-			comment: input.get_string(&ItemKey::Comment).map(str::to_owned),
+			title,
+			artist,
+			album,
+			year,
+			comment,
 			track_number: input
 				.get_string(&ItemKey::TrackNumber)
 				.map(|g| g.parse::<u8>().ok())

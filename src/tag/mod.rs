@@ -204,7 +204,16 @@ impl Accessor for Tag {
 			if item.len() >= 4 {
 				let (_, remaining) = item.split_at(4);
 				self.insert_text(ItemKey::RecordingDate, format!("{value}{remaining}"));
+				return;
 			}
+		}
+
+		// Some formats have a dedicated item for `Year`, others just have it as
+		// a part of `RecordingDate`
+		if ItemKey::Year.map_key(self.tag_type, false).is_some() {
+			self.insert_text(ItemKey::Year, value.to_string());
+		} else {
+			self.insert_text(ItemKey::RecordingDate, value.to_string());
 		}
 	}
 

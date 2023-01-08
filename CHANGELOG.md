@@ -30,6 +30,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All of the format-specific features have been removed, as they served no purpose. They used to bring in
     optional dependencies, but they have long since been removed.
 
+### Fixed
+- **Tag**: Handling of the `Year` tag has been improved.
+  - Previously, setting a year with `Tag::set_year` required a `RecordingDate`. Now it will check if the format
+  	supports the `Year` tag, and if not, then it will set a `RecordingDate`.
+
 ## [0.10.0] - 2022-12-27
 
 ### Added
