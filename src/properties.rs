@@ -80,7 +80,7 @@ impl FileProperties {
 mod tests {
 	use crate::aac::{AACFile, AACProperties};
 	use crate::ape::{ApeFile, ApeProperties};
-	use crate::flac::FlacFile;
+	use crate::flac::{FlacFile, FlacProperties};
 	use crate::iff::aiff::AiffFile;
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
@@ -130,13 +130,14 @@ mod tests {
 		channels: 2,
 	};
 
-	const FLAC_PROPERTIES: FileProperties = FileProperties {
+	const FLAC_PROPERTIES: FlacProperties = FlacProperties {
 		duration: Duration::from_millis(1428),
-		overall_bitrate: Some(321),
-		audio_bitrate: Some(275),
-		sample_rate: Some(48000),
-		bit_depth: Some(16),
-		channels: Some(2),
+		overall_bitrate: 321,
+		audio_bitrate: 275,
+		sample_rate: 48000,
+		bit_depth: 16,
+		channels: 2,
+		signature: 164_506_065_180_489_231_127_156_351_872_182_799_315,
 	};
 
 	const MP1_PROPERTIES: MPEGProperties = MPEGProperties {
