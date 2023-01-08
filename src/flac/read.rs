@@ -1,4 +1,5 @@
 use super::block::Block;
+use super::properties::FlacProperties;
 use super::FlacFile;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
@@ -8,7 +9,6 @@ use crate::ogg::read::read_comments;
 use crate::ogg::tag::VorbisComments;
 use crate::picture::Picture;
 use crate::probe::ParseOptions;
-use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -39,7 +39,7 @@ where
 	let mut flac_file = FlacFile {
 		id3v2_tag: None,
 		vorbis_comments_tag: None,
-		properties: FileProperties::default(),
+		properties: FlacProperties::default(),
 	};
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
@@ -92,11 +92,13 @@ where
 		(end - current, end)
 	};
 
-	flac_file.properties = if parse_options.read_properties {
-		super::properties::read_properties(&mut &*stream_info.content, stream_length, file_length)?
-	} else {
-		FileProperties::default()
-	};
+	if parse_options.read_properties {
+		flac_file.properties = super::properties::read_properties(
+			&mut &*stream_info.content,
+			stream_length,
+			file_length,
+		)?;
+	}
 
 	Ok(flac_file)
 }

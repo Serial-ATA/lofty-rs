@@ -6,11 +6,74 @@ use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+/// A FLAC file's audio properties
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub struct FlacProperties {
+	pub(crate) duration: Duration,
+	pub(crate) overall_bitrate: u32,
+	pub(crate) audio_bitrate: u32,
+	pub(crate) sample_rate: u32,
+	pub(crate) bit_depth: u8,
+	pub(crate) channels: u8,
+	pub(crate) signature: u128,
+}
+
+impl From<FlacProperties> for FileProperties {
+	fn from(input: FlacProperties) -> Self {
+		Self {
+			duration: input.duration,
+			overall_bitrate: Some(input.overall_bitrate),
+			audio_bitrate: Some(input.audio_bitrate),
+			sample_rate: Some(input.sample_rate),
+			bit_depth: Some(input.bit_depth),
+			channels: Some(input.channels),
+		}
+	}
+}
+
+impl FlacProperties {
+	/// Duration of the audio
+	pub fn duration(&self) -> Duration {
+		self.duration
+	}
+
+	/// Overall bitrate (kbps)
+	pub fn overall_bitrate(&self) -> u32 {
+		self.overall_bitrate
+	}
+
+	/// Audio bitrate (kbps)
+	pub fn audio_bitrate(&self) -> u32 {
+		self.audio_bitrate
+	}
+
+	/// Sample rate (Hz)
+	pub fn sample_rate(&self) -> u32 {
+		self.sample_rate
+	}
+
+	/// Bits per sample (usually 16 or 24 bit)
+	pub fn bit_depth(&self) -> u8 {
+		self.bit_depth
+	}
+
+	/// Channel count
+	pub fn channels(&self) -> u8 {
+		self.channels
+	}
+
+	/// MD5 signature of the unencoded audio data
+	pub fn signature(&self) -> u128 {
+		self.signature
+	}
+}
+
 pub(crate) fn read_properties<R>(
 	stream_info: &mut R,
 	stream_length: u64,
 	file_length: u64,
-) -> Result<FileProperties>
+) -> Result<FlacProperties>
 where
 	R: Read,
 {
@@ -38,11 +101,14 @@ where
 	// Read the remaining 32 bits of the total samples
 	let total_samples = stream_info.read_u32::<BigEndian>()? | (info << 28);
 
-	let mut properties = FileProperties {
-		sample_rate: Some(sample_rate),
-		bit_depth: Some(bits_per_sample as u8),
-		channels: Some(channels as u8),
-		..FileProperties::default()
+	let signature = stream_info.read_u128::<BigEndian>()?;
+
+	let mut properties = FlacProperties {
+		sample_rate,
+		bit_depth: bits_per_sample as u8,
+		channels: channels as u8,
+		signature,
+		..FlacProperties::default()
 	};
 
 	if sample_rate > 0 && total_samples > 0 {
@@ -50,8 +116,8 @@ where
 		properties.duration = Duration::from_millis(length);
 
 		if length > 0 && file_length > 0 && stream_length > 0 {
-			properties.overall_bitrate = Some(((file_length * 8) / length) as u32);
-			properties.audio_bitrate = Some(((stream_length * 8) / length) as u32);
+			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+			properties.audio_bitrate = ((stream_length * 8) / length) as u32;
 		}
 	}
 

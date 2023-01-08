@@ -11,9 +11,12 @@ pub(crate) mod write;
 
 use crate::id3::v2::tag::ID3v2Tag;
 use crate::ogg::VorbisComments;
-use crate::properties::FileProperties;
 
 use lofty_attr::LoftyFile;
+
+// Exports
+
+pub use properties::FlacProperties;
 
 /// A FLAC file
 ///
@@ -36,5 +39,5 @@ pub struct FlacFile {
 	#[lofty(tag_type = "VorbisComments")]
 	pub(crate) vorbis_comments_tag: Option<VorbisComments>,
 	/// The file's audio properties
-	pub(crate) properties: FileProperties,
+	pub(crate) properties: FlacProperties,
 }

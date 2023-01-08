@@ -617,10 +617,9 @@ where
 	let flac_properties =
 		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
 
-	// Safe to unwrap, since these fields are guaranteed to be present
-	properties.sample_rate = flac_properties.sample_rate.unwrap();
-	properties.bit_depth = flac_properties.bit_depth;
-	properties.channels = flac_properties.channels.unwrap();
+	properties.sample_rate = flac_properties.sample_rate;
+	properties.bit_depth = Some(flac_properties.bit_depth);
+	properties.channels = flac_properties.channels;
 
 	Ok(())
 }

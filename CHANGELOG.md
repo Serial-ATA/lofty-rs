@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New Variants: `AppleXID`, `Director`, `Color`
 - **AudioFile**: `AudioFile::save_to{_path}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/104))
 - **Files**: `<File>::set_{tag}`
+- **FLAC**: `FlacProperties`
+  - Previously, FLAC files used `FileProperties`. `FlacProperties` was added to support getting the MD5 signature
+    of the audio data.
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))
