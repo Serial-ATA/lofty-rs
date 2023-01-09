@@ -1,6 +1,6 @@
 use super::flags::ID3v2TagFlags;
 use super::frame::id::FrameID;
-use super::frame::{Frame, FrameFlags, FrameValue};
+use super::frame::{Frame, FrameFlags, FrameValue, UNKNOWN_LANGUAGE};
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
@@ -62,7 +62,7 @@ macro_rules! impl_accessor {
 ///
 /// * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Unlike a normal text frame, these require a [`LanguageFrame`].
 /// An attempt is made to create this information, but it may be incorrect.
-///    * `language` - Assumed to be "eng"
+///    * `language` - Unknown and set to "XXX"
 ///    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
 ///    by their descriptions, and as such they are expected to be unique for each.
 /// * [`ItemKey::Unknown("WXXX" | "TXXX")`](crate::ItemKey::Unknown) - These frames are also identified by their descriptions.
@@ -422,7 +422,7 @@ impl Accessor for ID3v2Tag {
 				id: FrameID::Valid(Cow::Borrowed("COMM")),
 				value: FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: *b"eng",
+					language: UNKNOWN_LANGUAGE,
 					description: String::new(),
 					content: value,
 				}),

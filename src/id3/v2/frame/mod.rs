@@ -20,6 +20,14 @@ use crate::id3::v2::items::popularimeter::Popularimeter;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
+// <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html>
+//
+// > The three byte language field, present in several frames, is used to describe
+// > the language of the frame’s content, according to ISO-639-2 [ISO-639-2].
+// > The language should be represented in lower case. If the language is not known
+// > the string “XXX” should be used.
+pub(super) const UNKNOWN_LANGUAGE: [u8; 3] = *b"XXX";
+
 // TODO: Messy module, rough conversions
 
 /// Represents an `ID3v2` frame
@@ -270,12 +278,11 @@ impl From<TagItem> for Option<Frame<'static>> {
 		let value;
 		match input.key().try_into().map(FrameID::into_owned) {
 			Ok(id) => {
-				// We make the VERY bold assumption the language is English
 				value = match (&id, input.item_value) {
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
 						FrameValue::Comment(LanguageFrame {
 							encoding: TextEncoding::UTF8,
-							language: *b"eng",
+							language: UNKNOWN_LANGUAGE,
 							description: String::new(),
 							content: text,
 						})
@@ -283,7 +290,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
 						FrameValue::UnSyncText(LanguageFrame {
 							encoding: TextEncoding::UTF8,
-							language: *b"eng",
+							language: UNKNOWN_LANGUAGE,
 							description: String::new(),
 							content: text,
 						})
@@ -383,13 +390,13 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			value: Cow::Owned(match (id, tag_item.value()) {
 				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: *b"eng",
+					language: UNKNOWN_LANGUAGE,
 					description: String::new(),
 					content: text.clone(),
 				}),
 				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
 					encoding: TextEncoding::UTF8,
-					language: *b"eng",
+					language: UNKNOWN_LANGUAGE,
 					description: String::new(),
 					content: text.clone(),
 				}),
