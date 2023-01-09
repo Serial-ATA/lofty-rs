@@ -22,11 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FLAC**: `FlacProperties`
   - Previously, FLAC files used `FileProperties`. `FlacProperties` was added to support getting the MD5 signature
     of the audio data.
+- **OGG**: `OggPictureStorage`
+  - This was added to cover the overlap in functionality between `VorbisComments` and `FlacFile` in that they both
+    store `(Picture, PictureInformation)`.
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))
   - This allows freeform identifiers to be constructed in a const context.
 - **ID3v2**: `FrameID` now uses `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/102))
+- **FLAC**: `FlacFile` now stores pictures separately from its `VorbisComments` tag
 
 ### Removed
 - **Metadata format features** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/97)):

@@ -5,6 +5,7 @@
 //! The only supported tag format is [`VorbisComments`]
 pub(crate) mod constants;
 pub(crate) mod opus;
+mod picture_storage;
 pub(crate) mod read;
 pub(crate) mod speex;
 pub(crate) mod tag;
@@ -22,6 +23,7 @@ use ogg_pager::Page;
 
 pub use opus::properties::OpusProperties;
 pub use opus::OpusFile;
+pub use picture_storage::OggPictureStorage;
 pub use speex::properties::SpeexProperties;
 pub use speex::SpeexFile;
 pub use tag::VorbisComments;

@@ -39,6 +39,7 @@ where
 	let mut flac_file = FlacFile {
 		id3v2_tag: None,
 		vorbis_comments_tag: None,
+		pictures: Vec::new(),
 		properties: FlacProperties::default(),
 	};
 
@@ -75,7 +76,7 @@ where
 
 		match block.ty {
 			4 => read_comments(&mut &*block.content, block.content.len() as u64, &mut tag)?,
-			6 => tag
+			6 => flac_file
 				.pictures
 				.push(Picture::from_flac_bytes(&block.content, false)?),
 			_ => {},

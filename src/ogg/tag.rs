@@ -1,8 +1,9 @@
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
+use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
-use crate::picture::{Picture, PictureInformation, PictureType};
+use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
@@ -127,138 +128,11 @@ impl VorbisComments {
 
 		self.items.drain(..split_idx).map(|(_, v)| v)
 	}
+}
 
-	/// Inserts a [`Picture`]
-	///
-	/// NOTES:
-	///
-	/// * If `information` is `None`, the [`PictureInformation`] will be inferred using [`PictureInformation::from_picture`].
-	/// * According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
-	///   When attempting to insert these types, if another is found it will be removed and returned.
-	///
-	/// # Errors
-	///
-	/// * See [`PictureInformation::from_picture`]
-	pub fn insert_picture(
-		&mut self,
-		picture: Picture,
-		information: Option<PictureInformation>,
-	) -> Result<Option<(Picture, PictureInformation)>> {
-		let ret = match picture.pic_type {
-			PictureType::Icon | PictureType::OtherIcon => self
-				.pictures
-				.iter()
-				.position(|(p, _)| p.pic_type == picture.pic_type)
-				.map(|pos| self.pictures.remove(pos)),
-			_ => None,
-		};
-
-		let info = match information {
-			Some(pic_info) => pic_info,
-			None => PictureInformation::from_picture(&picture)?,
-		};
-
-		self.pictures.push((picture, info));
-
-		Ok(ret)
-	}
-
-	/// Removes a certain [`PictureType`]
-	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
-		self.pictures.retain(|(p, _)| p.pic_type != picture_type)
-	}
-
-	/// Returns the stored [`Picture`]s as a slice
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ogg::VorbisComments;
-	///
-	/// let mut tag = VorbisComments::default();
-	///
-	/// assert!(tag.pictures().is_empty());
-	/// ```
-	pub fn pictures(&self) -> &[(Picture, PictureInformation)] {
+impl OggPictureStorage for VorbisComments {
+	fn pictures(&self) -> &[(Picture, PictureInformation)] {
 		&self.pictures
-	}
-
-	/// Replaces the picture at the given `index`
-	///
-	/// NOTE: If `index` is out of bounds, the `picture` will be appended
-	/// to the list.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ogg::VorbisComments;
-	/// # use lofty::{Picture, PictureInformation, PictureType, MimeType};
-	///
-	/// # fn main() -> lofty::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
-	/// # let front_cover_info = PictureInformation::default();
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
-	/// # let back_cover_info = PictureInformation::default();
-	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
-	/// let mut tag = VorbisComments::default();
-	///
-	/// // Add a front cover
-	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
-	///
-	/// assert_eq!(tag.pictures().len(), 1);
-	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverFront);
-	///
-	/// // Replace the front cover with a back cover
-	/// tag.set_picture(0, back_cover, back_cover_info);
-	///
-	/// assert_eq!(tag.pictures().len(), 1);
-	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverBack);
-	///
-	/// // Use an out of bounds index
-	/// tag.set_picture(100, another_picture, PictureInformation::default());
-	///
-	/// assert_eq!(tag.pictures().len(), 2);
-	/// # Ok(()) }
-	/// ```
-	#[allow(clippy::missing_panics_doc)]
-	pub fn set_picture(&mut self, index: usize, picture: Picture, info: PictureInformation) {
-		if index >= self.pictures.len() {
-			// Safe to unwrap, since `info` is guaranteed to exist
-			self.insert_picture(picture, Some(info)).unwrap();
-		} else {
-			self.pictures[index] = (picture, info);
-		}
-	}
-
-	/// Removes and returns the picture at the given `index`
-	///
-	/// # Panics
-	///
-	/// Panics if `index` is out of bounds.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ogg::VorbisComments;
-	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
-	///
-	/// # fn main() -> lofty::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
-	/// # let front_cover_info = PictureInformation::default();
-	/// let mut tag = VorbisComments::default();
-	///
-	/// // Add a front cover
-	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
-	///
-	/// assert_eq!(tag.pictures().len(), 1);
-	///
-	/// tag.remove_picture(0);
-	///
-	/// assert_eq!(tag.pictures().len(), 0);
-	/// # Ok(()) }
-	/// ```
-	pub fn remove_picture(&mut self, index: usize) -> (Picture, PictureInformation) {
-		self.pictures.remove(index)
 	}
 }
 
@@ -527,7 +401,7 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	#[allow(clippy::shadow_unrelated)]
-	fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		let probe = Probe::new(file).guess_file_type()?;
 		let f_ty = probe.file_type();
 
@@ -586,7 +460,7 @@ pub(crate) fn create_vorbis_comments_ref(
 
 #[cfg(test)]
 mod tests {
-	use crate::ogg::VorbisComments;
+	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::{Tag, TagExt, TagType};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
