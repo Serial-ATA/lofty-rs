@@ -12,6 +12,7 @@ pub(crate) fn parse(
 	errors: &mut Vec<syn::Error>,
 ) -> proc_macro2::TokenStream {
 	let impl_audiofile = should_impl_audiofile(&input.attrs);
+	let impl_into_taggedfile = should_impl_into_taggedfile(&input.attrs);
 	let struct_name = input.ident.clone();
 
 	let read_fn = match util::get_attr("read_fn", &input.attrs) {
@@ -86,26 +87,32 @@ pub(crate) fn parse(
 		}
 	});
 
-	let audiofile_impl = if impl_audiofile {
+	let mut audiofile_impl = proc_macro2::TokenStream::new();
+	if impl_audiofile {
 		let properties_field = if let Some(field) = properties_field {
 			field
 		} else {
 			bail!(errors, input.ident.span(), "Struct has no properties field");
 		};
 
-		generate_audiofile_impl(
+		audiofile_impl = generate_audiofile_impl(
 			&struct_name,
 			&tag_fields,
 			properties_field,
 			read_fn,
 			write_fn,
-		)
-	} else {
-		proc_macro2::TokenStream::new()
-	};
+		);
+	}
 
-	let from_taggedfile_impl =
-		generate_from_taggedfile_impl(&struct_name, &tag_fields, file_type, has_internal_file_type);
+	let mut from_taggedfile_impl = proc_macro2::TokenStream::new();
+	if impl_into_taggedfile {
+		from_taggedfile_impl = generate_from_taggedfile_impl(
+			&struct_name,
+			&tag_fields,
+			file_type,
+			has_internal_file_type,
+		);
+	}
 
 	let getters = get_getters(&tag_fields, &struct_name);
 
@@ -197,6 +204,16 @@ fn get_fields<'a>(
 fn should_impl_audiofile(attrs: &[Attribute]) -> bool {
 	for attr in attrs {
 		if util::has_path_attr(attr, "no_audiofile_impl") {
+			return false;
+		}
+	}
+
+	true
+}
+
+fn should_impl_into_taggedfile(attrs: &[Attribute]) -> bool {
+	for attr in attrs {
+		if util::has_path_attr(attr, "no_into_taggedfile_impl") {
 			return false;
 		}
 	}
