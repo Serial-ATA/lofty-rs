@@ -249,7 +249,7 @@ gen_map!(
 	"\u{a9}gen"                                   => Genre,
 	"----:com.apple.iTunes:COLOR"                 => Color,
 	"----:com.apple.iTunes:MOOD"                  => Mood,
-	"----:com.apple.iTunes:BPM" | "tmpo"          => BPM, // precise bpm (freeform atom) vs. integer bpm (fourcc atom) as fallback
+	"tmpo" | "----:com.apple.iTunes:BPM"          => BPM, // integer bpm (fourcc atom) vs. precise bpm (freeform atom)
 	"----:com.apple.iTunes:initialkey"            => InitialKey,
 	"----:com.apple.iTunes:replaygain_album_gain" => ReplayGainAlbumGain,
 	"----:com.apple.iTunes:replaygain_album_peak" => ReplayGainAlbumPeak,
