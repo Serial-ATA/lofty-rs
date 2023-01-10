@@ -122,7 +122,8 @@ pub struct ID3v2Error {
 
 impl ID3v2Error {
 	/// Create a new `ID3v2Error` from an [`ID3v2ErrorKind`]
-	pub fn new(kind: ID3v2ErrorKind) -> Self {
+	#[must_use]
+	pub const fn new(kind: ID3v2ErrorKind) -> Self {
 		Self { kind }
 	}
 
@@ -152,7 +153,8 @@ pub struct FileDecodingError {
 
 impl FileDecodingError {
 	/// Create a `FileDecodingError` from a [`FileType`] and description
-	pub fn new(format: FileType, description: &'static str) -> Self {
+	#[must_use]
+	pub const fn new(format: FileType, description: &'static str) -> Self {
 		Self {
 			format: Some(format),
 			description,
@@ -206,7 +208,8 @@ pub struct FileEncodingError {
 
 impl FileEncodingError {
 	/// Create a `FileEncodingError` from a [`FileType`] and description
-	pub fn new(format: FileType, description: &'static str) -> Self {
+	#[must_use]
+	pub const fn new(format: FileType, description: &'static str) -> Self {
 		Self {
 			format: Some(format),
 			description,
@@ -259,7 +262,8 @@ pub struct LoftyError {
 
 impl LoftyError {
 	/// Create a `LoftyError` from an [`ErrorKind`]
-	pub fn new(kind: ErrorKind) -> Self {
+	#[must_use]
+	pub const fn new(kind: ErrorKind) -> Self {
 		Self { kind }
 	}
 

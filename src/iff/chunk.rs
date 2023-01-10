@@ -18,7 +18,8 @@ where
 }
 
 impl<B: ByteOrder> Chunks<B> {
-	pub fn new(file_size: u64) -> Self {
+	#[must_use]
+	pub const fn new(file_size: u64) -> Self {
 		Self {
 			fourcc: [0; 4],
 			size: 0,
