@@ -83,11 +83,6 @@ pub struct Ilst {
 }
 
 impl Ilst {
-	/// Returns all of the tag's atoms
-	pub fn atoms(&self) -> &[Atom<'static>] {
-		&self.atoms
-	}
-
 	/// Get an item by its [`AtomIdent`]
 	pub fn atom(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
 		self.atoms.iter().find(|a| &a.ident == ident)
@@ -210,6 +205,24 @@ impl Ilst {
 		}
 
 		None
+	}
+}
+
+impl<'a> IntoIterator for &'a Ilst {
+	type Item = &'a Atom<'static>;
+	type IntoIter = std::slice::Iter<'a, Atom<'static>>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.atoms.iter()
+	}
+}
+
+impl IntoIterator for Ilst {
+	type Item = Atom<'static>;
+	type IntoIter = std::vec::IntoIter<Atom<'static>>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.atoms.into_iter()
 	}
 }
 
