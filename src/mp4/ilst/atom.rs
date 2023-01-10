@@ -87,7 +87,8 @@ pub struct Atom<'a> {
 
 impl<'a> Atom<'a> {
 	/// Create a new [`Atom`]
-	pub fn new(ident: AtomIdent<'a>, data: AtomData) -> Self {
+	#[must_use]
+	pub const fn new(ident: AtomIdent<'a>, data: AtomData) -> Self {
 		Self {
 			ident,
 			data: AtomDataStorage::Single(data),

@@ -41,11 +41,7 @@ impl Default for ParseOptions {
 	/// }
 	/// ```
 	fn default() -> Self {
-		Self {
-			read_properties: true,
-			use_custom_resolvers: true,
-			parsing_mode: ParsingMode::Strict,
-		}
+		Self::new()
 	}
 }
 
@@ -61,8 +57,13 @@ impl ParseOptions {
 	///
 	/// let parsing_options = ParseOptions::new();
 	/// ```
-	pub fn new() -> Self {
-		Self::default()
+	#[must_use]
+	pub const fn new() -> Self {
+		Self {
+			read_properties: true,
+			use_custom_resolvers: true,
+			parsing_mode: ParsingMode::Strict,
+		}
 	}
 
 	/// Whether or not to read the audio properties
@@ -206,7 +207,8 @@ impl<R: Read> Probe<R> {
 	/// let probe = Probe::new(reader);
 	/// # Ok(()) }
 	/// ```
-	pub fn new(reader: R) -> Self {
+	#[must_use]
+	pub const fn new(reader: R) -> Self {
 		Self {
 			inner: reader,
 			options: None,

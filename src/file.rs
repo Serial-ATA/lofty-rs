@@ -380,7 +380,8 @@ pub struct TaggedFile {
 impl TaggedFile {
 	#[doc(hidden)]
 	/// This exists for use in `lofty_attr`, there's no real use for this externally
-	pub fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
+	#[must_use]
+	pub const fn new(ty: FileType, properties: FileProperties, tags: Vec<Tag>) -> Self {
 		Self {
 			ty,
 			properties,

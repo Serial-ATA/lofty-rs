@@ -660,7 +660,8 @@ impl TagItem {
 	}
 
 	/// Create a new [`TagItem`]
-	pub fn new(item_key: ItemKey, item_value: ItemValue) -> Self {
+	#[must_use]
+	pub const fn new(item_key: ItemKey, item_value: ItemValue) -> Self {
 		Self {
 			item_key,
 			item_value,

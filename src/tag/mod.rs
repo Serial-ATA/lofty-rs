@@ -225,7 +225,8 @@ impl Accessor for Tag {
 
 impl Tag {
 	/// Initialize a new tag with a certain [`TagType`]
-	pub fn new(tag_type: TagType) -> Self {
+	#[must_use]
+	pub const fn new(tag_type: TagType) -> Self {
 		Self {
 			tag_type,
 			pictures: Vec::new(),

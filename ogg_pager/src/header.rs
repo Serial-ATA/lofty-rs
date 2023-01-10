@@ -21,7 +21,13 @@ pub struct PageHeader {
 
 impl PageHeader {
 	/// Creates a new `PageHeader`
-	pub fn new(header_type_flag: u8, abgp: u64, stream_serial: u32, sequence_number: u32) -> Self {
+	#[must_use]
+	pub const fn new(
+		header_type_flag: u8,
+		abgp: u64,
+		stream_serial: u32,
+		sequence_number: u32,
+	) -> Self {
 		Self {
 			start: 0,
 			header_type_flag,
