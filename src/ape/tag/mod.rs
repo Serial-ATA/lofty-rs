@@ -99,11 +99,6 @@ impl ApeTag {
 		self.items.retain(|i| !i.key().eq_ignore_ascii_case(key));
 	}
 
-	/// Returns all of the tag's items
-	pub fn items(&self) -> &[ApeItem] {
-		&self.items
-	}
-
 	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
 		if let Some(ApeItem {
 			value: ItemValue::Text(ref text),
@@ -115,6 +110,24 @@ impl ApeTag {
 		}
 
 		(None, None)
+	}
+}
+
+impl IntoIterator for ApeTag {
+	type Item = ApeItem;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.into_iter()
+	}
+}
+
+impl<'a> IntoIterator for &'a ApeTag {
+	type Item = &'a ApeItem;
+	type IntoIter = std::slice::Iter<'a, ApeItem>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.iter()
 	}
 }
 
@@ -458,10 +471,10 @@ mod tests {
 		let header = read_ape_header(&mut reader, false).unwrap();
 		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
 
-		assert_eq!(expected_tag.items().len(), parsed_tag.items().len());
+		assert_eq!(expected_tag.len(), parsed_tag.len());
 
-		for item in expected_tag.items() {
-			assert!(parsed_tag.items().contains(item));
+		for item in &expected_tag.items {
+			assert!(parsed_tag.items.contains(item));
 		}
 	}
 

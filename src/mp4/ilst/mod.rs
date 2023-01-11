@@ -219,7 +219,7 @@ impl<'a> IntoIterator for &'a Ilst {
 
 impl IntoIterator for Ilst {
 	type Item = Atom<'static>;
-	type IntoIter = std::vec::IntoIter<Atom<'static>>;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.atoms.into_iter()
