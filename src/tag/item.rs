@@ -267,7 +267,7 @@ gen_map!(
 	"----:com.apple.iTunes:LANGUAGE"              => Language,
 	"----:com.apple.iTunes:SCRIPT"                => Script,
 	"\u{a9}lyr"                                   => Lyrics,
-	"xid "                                        => AppleXID
+	"xid "                                        => AppleXid
 );
 
 gen_map!(
@@ -557,7 +557,7 @@ gen_item_keys!(
 		Lyrics,
 
 		// Vendor-specific
-		AppleXID,
+		AppleXid,
 	]
 );
 
