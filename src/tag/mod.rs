@@ -115,6 +115,15 @@ impl IntoIterator for Tag {
 	}
 }
 
+impl<'a> IntoIterator for &'a Tag {
+	type Item = &'a TagItem;
+	type IntoIter = std::slice::Iter<'a, TagItem>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.iter()
+	}
+}
+
 impl Accessor for Tag {
 	impl_accessor!(
 		TrackArtist => artist,

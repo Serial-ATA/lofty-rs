@@ -94,10 +94,19 @@ pub struct ID3v2Tag {
 
 impl IntoIterator for ID3v2Tag {
 	type Item = Frame<'static>;
-	type IntoIter = std::vec::IntoIter<Frame<'static>>;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
 
 	fn into_iter(self) -> Self::IntoIter {
 		self.frames.into_iter()
+	}
+}
+
+impl<'a> IntoIterator for &'a ID3v2Tag {
+	type Item = &'a Frame<'static>;
+	type IntoIter = std::slice::Iter<'a, Frame<'static>>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.frames.iter()
 	}
 }
 
@@ -132,16 +141,6 @@ impl ID3v2Tag {
 }
 
 impl ID3v2Tag {
-	/// Returns an iterator over the tag's frames
-	pub fn iter(&self) -> impl Iterator<Item = &Frame<'static>> {
-		self.frames.iter()
-	}
-
-	/// Returns the number of frames in the tag
-	pub fn len(&self) -> usize {
-		self.frames.len()
-	}
-
 	/// Gets a [`Frame`] from an id
 	///
 	/// NOTE: This is *not* case-sensitive

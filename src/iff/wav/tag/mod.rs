@@ -81,11 +81,6 @@ impl RIFFInfoList {
 			.position(|(k, _)| k.eq_ignore_ascii_case(key))
 			.map(|p| self.items.remove(p));
 	}
-
-	/// Returns the tag's items in (key, value) pairs
-	pub fn items(&self) -> &[(String, String)] {
-		self.items.as_slice()
-	}
 }
 
 impl Accessor for RIFFInfoList {
@@ -127,6 +122,24 @@ impl Accessor for RIFFInfoList {
 
 	fn remove_track_total(&mut self) {
 		self.remove("IFRM");
+	}
+}
+
+impl IntoIterator for RIFFInfoList {
+	type Item = (String, String);
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.into_iter()
+	}
+}
+
+impl<'a> IntoIterator for &'a RIFFInfoList {
+	type Item = &'a (String, String);
+	type IntoIter = std::slice::Iter<'a, (String, String)>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		self.items.iter()
 	}
 }
 
