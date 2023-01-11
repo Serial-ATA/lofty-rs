@@ -7,6 +7,7 @@ use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use base64::Engine as _;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 /// Common picture item keys for APE
@@ -702,7 +703,9 @@ impl Picture {
 		data.extend(pic_data.iter());
 
 		if encode {
-			base64::encode(data).into_bytes()
+			base64::engine::general_purpose::STANDARD
+				.encode(data)
+				.into_bytes()
 		} else {
 			data
 		}
@@ -719,8 +722,9 @@ impl Picture {
 	/// at any point it's unable to parse the data
 	pub fn from_flac_bytes(bytes: &[u8], encoded: bool) -> Result<(Self, PictureInformation)> {
 		if encoded {
-			let data =
-				base64::decode(bytes).map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
+			let data = base64::engine::general_purpose::STANDARD
+				.decode(bytes)
+				.map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
 			Self::from_flac_bytes_inner(&data)
 		} else {
 			Self::from_flac_bytes_inner(bytes)
