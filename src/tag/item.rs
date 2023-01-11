@@ -127,7 +127,8 @@ gen_map!(
 
 	"TALB"                  => AlbumTitle,
 	"TSST"                  => SetSubtitle,
-	"TIT1" | "GRP1"         => ContentGroup,
+	"TIT1"                  => ContentGroup,
+	"GRP1"                  => AppleId3v2ContentGroup,
 	"TIT2"                  => TrackTitle,
 	"TIT3"                  => TrackSubtitle,
 	"TOAL"                  => OriginalAlbumTitle,
@@ -558,6 +559,7 @@ gen_item_keys!(
 
 		// Vendor-specific
 		AppleXid,
+		AppleId3v2ContentGroup, // GRP1
 	]
 );
 
