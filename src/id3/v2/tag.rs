@@ -20,6 +20,11 @@ use std::path::Path;
 
 use lofty_attr::tag;
 
+const COMMENT_FRAME_ID: &str = "COMM";
+
+// Unspecific comment frames have an empty content descriptor.
+const COMMENT_DESCRIPTION: &str = "";
+
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
 		paste::paste! {
@@ -273,16 +278,11 @@ impl ID3v2Tag {
 		})
 	}
 
-	/// Returns all `COMM` frames
-	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> + Clone {
-		self.frames.iter().filter_map(|f| match f {
-			Frame {
-				id: FrameID::Valid(id),
-				value: FrameValue::Comment(val),
-				..
-			} if id == "COMM" => Some(val),
-			_ => None,
-		})
+	/// Returns all `COMM` frames with an empty content descriptor
+	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> {
+		self.frames
+			.iter()
+			.filter_map(|frame| filter_comment_frame_by_description(frame, COMMENT_DESCRIPTION))
 	}
 
 	fn split_num_pair(&self, id: &str) -> (Option<u32>, Option<u32>) {
@@ -296,6 +296,33 @@ impl ID3v2Tag {
 		}
 
 		(None, None)
+	}
+}
+
+fn filter_comment_frame_by_description<'a>(
+	frame: &'a Frame<'_>,
+	description: &str,
+) -> Option<&'a LanguageFrame> {
+	match &frame.value {
+		FrameValue::Comment(lang_frame) if frame.id_str() == COMMENT_FRAME_ID => {
+			(lang_frame.description == description).then_some(lang_frame)
+		},
+		_ => None,
+	}
+}
+
+fn filter_comment_frame_by_description_mut<'a>(
+	frame: &'a mut Frame<'_>,
+	description: &str,
+) -> Option<&'a mut LanguageFrame> {
+	if frame.id_str() != COMMENT_FRAME_ID {
+		return None;
+	}
+	match &mut frame.value {
+		FrameValue::Comment(lang_frame) => {
+			(lang_frame.description == description).then_some(lang_frame)
+		},
+		_ => None,
 	}
 }
 
@@ -401,45 +428,40 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn comment(&self) -> Option<Cow<'_, str>> {
-		if let Some(Frame {
-			value: FrameValue::Comment(LanguageFrame { content, .. }),
-			..
-		}) = self.get("COMM")
-		{
-			return Some(Cow::Borrowed(content));
-		}
-
-		None
+		self.frames
+			.iter()
+			.find_map(|frame| filter_comment_frame_by_description(frame, COMMENT_DESCRIPTION))
+			.map(|LanguageFrame { content, .. }| Cow::Borrowed(content.as_str()))
 	}
 
 	fn set_comment(&mut self, value: String) {
 		// We'll just replace the first comment's content if it exists, otherwise create a new one
-		let first_comment = self.frames.iter_mut().find(|f| f.id_str() == "COMM");
-		if let Some(Frame {
-			value: FrameValue::Comment(LanguageFrame { content, .. }),
-			..
-		}) = first_comment
+		if let Some(content) = self
+			.frames
+			.iter_mut()
+			.find_map(|frame| filter_comment_frame_by_description_mut(frame, COMMENT_DESCRIPTION))
+			.map(|LanguageFrame { content, .. }| content)
 		{
 			*content = value;
 			return;
 		}
 
-		if !value.is_empty() {
-			self.insert(Frame {
-				id: FrameID::Valid(Cow::Borrowed("COMM")),
-				value: FrameValue::Comment(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: UNKNOWN_LANGUAGE,
-					description: String::new(),
-					content: value,
-				}),
-				flags: FrameFlags::default(),
-			});
-		}
+		self.insert(Frame {
+			id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
+			value: FrameValue::Comment(LanguageFrame {
+				encoding: TextEncoding::UTF8,
+				language: UNKNOWN_LANGUAGE,
+				description: COMMENT_DESCRIPTION.to_owned(),
+				content: value,
+			}),
+			flags: FrameFlags::default(),
+		});
 	}
 
 	fn remove_comment(&mut self) {
-		self.remove("COMM");
+		self.frames.retain(|frame| {
+			filter_comment_frame_by_description(frame, COMMENT_DESCRIPTION).is_none()
+		})
 	}
 }
 
@@ -735,6 +757,7 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::items::popularimeter::Popularimeter;
+	use crate::id3::v2::tag::filter_comment_frame_by_description;
 	use crate::id3::v2::{
 		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
 		ID3v2Version, LanguageFrame,
@@ -742,8 +765,10 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
 	use crate::{
-		ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
+		Accessor, ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
 	};
+
+	use super::{COMMENT_DESCRIPTION, COMMENT_FRAME_ID};
 
 	fn read_tag(path: &str) -> ID3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
@@ -799,11 +824,11 @@ mod tests {
 
 		expected_tag.insert(
 			Frame::new(
-				"COMM",
+				COMMENT_FRAME_ID,
 				FrameValue::Comment(LanguageFrame {
 					encoding,
 					language: *b"eng",
-					description: String::new(),
+					description: COMMENT_DESCRIPTION.to_owned(),
 					content: String::from("Qux comment"),
 				}),
 				flags,
@@ -974,7 +999,7 @@ mod tests {
 		verify_frame(&id3v2_tag, "TPE1", "Bar artist");
 		verify_frame(&id3v2_tag, "TALB", "Baz album");
 
-		let frame = id3v2_tag.get("COMM").unwrap();
+		let frame = id3v2_tag.get(COMMENT_FRAME_ID).unwrap();
 		assert_eq!(
 			frame.content(),
 			&FrameValue::Comment(LanguageFrame {
@@ -1236,6 +1261,52 @@ mod tests {
 				item_value: ItemValue::Text(String::from("-10.43 dB"))
 			}
 		);
+	}
+
+	#[test]
+	fn comments() {
+		let mut tag = ID3v2Tag::default();
+		let encoding = TextEncoding::Latin1;
+		let flags = FrameFlags::default();
+		let custom_descriptor = "lofty-rs";
+
+		assert!(tag.comment().is_none());
+
+		// Set an empty comment, which is a valid use case.
+		tag.set_comment("".to_owned());
+		assert_eq!(Some(Cow::Borrowed("")), tag.comment());
+
+		// Insert a custom comment frame
+		assert!(tag
+			.frames
+			.iter()
+			.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
+			.is_none());
+		tag.insert(
+			Frame::new(
+				COMMENT_FRAME_ID,
+				FrameValue::Comment(LanguageFrame {
+					encoding,
+					language: *b"eng",
+					description: custom_descriptor.to_owned(),
+					content: String::from("Qux comment"),
+				}),
+				flags,
+			)
+			.unwrap(),
+		);
+		// Verify that the regular comment still exists
+		assert_eq!(Some(Cow::Borrowed("")), tag.comment());
+
+		tag.remove_comment();
+		assert!(tag.comment().is_none());
+
+		// Verify that the comment with the custom descriptor still exists
+		assert!(tag
+			.frames
+			.iter()
+			.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
+			.is_some());
 	}
 
 	#[test]
