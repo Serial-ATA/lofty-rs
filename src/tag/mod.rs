@@ -247,8 +247,8 @@ impl Tag {
 	}
 
 	/// Returns the stored [`TagItem`]s as a slice
-	pub fn items(&self) -> &[TagItem] {
-		&self.items
+	pub fn items(&self) -> impl Iterator<Item = &TagItem> + Clone {
+		self.items.iter()
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
