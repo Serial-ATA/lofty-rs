@@ -106,24 +106,6 @@ pub struct Tag {
 	pub(crate) items: Vec<TagItem>,
 }
 
-impl IntoIterator for Tag {
-	type Item = TagItem;
-	type IntoIter = std::vec::IntoIter<Self::Item>;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.items.into_iter()
-	}
-}
-
-impl<'a> IntoIterator for &'a Tag {
-	type Item = &'a TagItem;
-	type IntoIter = std::slice::Iter<'a, TagItem>;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.items.iter()
-	}
-}
-
 impl Accessor for Tag {
 	impl_accessor!(
 		TrackArtist => artist,
