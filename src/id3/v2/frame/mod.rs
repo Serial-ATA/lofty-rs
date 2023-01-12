@@ -20,12 +20,24 @@ use crate::id3::v2::items::popularimeter::Popularimeter;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
-// <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html>
-//
-// > The three byte language field, present in several frames, is used to describe
-// > the language of the frame’s content, according to ISO-639-2 [ISO-639-2].
-// > The language should be represented in lower case. If the language is not known
-// > the string “XXX” should be used.
+/// Empty content descriptor in text frame
+///
+/// Unspecific [`LanguageFrame`]s and [`EncodedTextFrame`] frames
+/// are supposed to have an empty content descriptor. Only those
+/// are currently supported as [`TagItem`]s to avoid ambiguities
+/// and to prevent inconsistencies when writing them.
+pub(super) const fn empty_content_descriptor() -> String {
+	String::new()
+}
+
+/// Unknown language-aware text frame
+///
+/// <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html>
+///
+/// > The three byte language field, present in several frames, is used to describe
+/// > the language of the frame’s content, according to ISO-639-2 [ISO-639-2].
+/// > The language should be represented in lower case. If the language is not known
+/// > the string “XXX” should be used.
 pub(super) const UNKNOWN_LANGUAGE: [u8; 3] = *b"XXX";
 
 // TODO: Messy module, rough conversions
@@ -283,7 +295,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						FrameValue::Comment(LanguageFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
-							description: String::new(),
+							description: empty_content_descriptor(),
 							content: text,
 						})
 					},
@@ -291,7 +303,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						FrameValue::UnSyncText(LanguageFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
-							description: String::new(),
+							description: empty_content_descriptor(),
 							content: text,
 						})
 					},
@@ -300,14 +312,14 @@ impl From<TagItem> for Option<Frame<'static>> {
 					{
 						FrameValue::UserURL(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
-							description: String::new(),
+							description: empty_content_descriptor(),
 							content: text,
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
 						FrameValue::UserText(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
-							description: String::new(),
+							description: empty_content_descriptor(),
 							content: text,
 						})
 					},
@@ -391,25 +403,25 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
 					language: UNKNOWN_LANGUAGE,
-					description: String::new(),
+					description: empty_content_descriptor(),
 					content: text.clone(),
 				}),
 				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
 					encoding: TextEncoding::UTF8,
 					language: UNKNOWN_LANGUAGE,
-					description: String::new(),
+					description: empty_content_descriptor(),
 					content: text.clone(),
 				}),
 				("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
 					FrameValue::UserURL(EncodedTextFrame {
 						encoding: TextEncoding::UTF8,
-						description: String::new(),
+						description: empty_content_descriptor(),
 						content: text.clone(),
 					})
 				},
 				("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
 					encoding: TextEncoding::UTF8,
-					description: String::new(),
+					description: empty_content_descriptor(),
 					content: text.clone(),
 				}),
 				("POPM", ItemValue::Binary(contents)) => {
