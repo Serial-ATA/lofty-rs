@@ -341,6 +341,10 @@ impl TagExt for Ilst {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a AtomIdent<'a>;
 
+	fn len(&self) -> usize {
+		self.atoms.len()
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		self.atoms.iter().any(|atom| &atom.ident == key)
 	}

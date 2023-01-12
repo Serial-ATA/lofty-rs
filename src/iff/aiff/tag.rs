@@ -140,6 +140,14 @@ impl TagExt for AIFFTextChunks {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	fn len(&self) -> usize {
+		usize::from(self.name.is_some())
+			+ usize::from(self.author.is_some())
+			+ usize::from(self.copyright.is_some())
+			+ self.annotations.as_ref().map_or(0, Vec::len)
+			+ self.comments.as_ref().map_or(0, Vec::len)
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		match key {
 			ItemKey::TrackTitle => self.name.is_some(),

@@ -138,6 +138,24 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	where
 		Self: 'a;
 
+	/// Returns the number of items in the tag
+	///
+	/// This will also include any extras, such as pictures.
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
+	/// # let tag_type = lofty::TagType::ID3v2;
+	///
+	/// let mut tag = Tag::new(tag_type);
+	/// assert_eq!(tag.len(), 0);
+	///
+	/// tag.set_artist(String::from("Foo artist"));
+	/// assert_eq!(tag.len(), 1);
+	/// ```
+	fn len(&self) -> usize;
+
 	/// Whether the tag contains an item with the key
 	///
 	/// # Example

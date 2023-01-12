@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OGG**: `OggPictureStorage`
   - This was added to cover the overlap in functionality between `VorbisComments` and `FlacFile` in that they both
     store `(Picture, PictureInformation)`.
+- **TagExt**: `TagExt::len`
 
 ### Changed
 - **MP4**: `AtomIdent` stores freeform identifiers as `Cow<str>` opposed to `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/95))

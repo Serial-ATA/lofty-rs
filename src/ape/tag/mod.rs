@@ -214,6 +214,10 @@ impl TagExt for ApeTag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	fn len(&self) -> usize {
+		self.items.len()
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		self.items.iter().any(|i| i.key().eq_ignore_ascii_case(key))
 	}

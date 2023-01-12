@@ -175,6 +175,16 @@ impl TagExt for ID3v1Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	fn len(&self) -> usize {
+		usize::from(self.title.is_some())
+			+ usize::from(self.artist.is_some())
+			+ usize::from(self.album.is_some())
+			+ usize::from(self.year.is_some())
+			+ usize::from(self.comment.is_some())
+			+ usize::from(self.track_number.is_some())
+			+ usize::from(self.genre.is_some())
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		match key {
 			ItemKey::TrackTitle => self.title.is_some(),
