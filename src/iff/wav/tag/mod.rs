@@ -134,6 +134,10 @@ impl TagExt for RIFFInfoList {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	fn len(&self) -> usize {
+		self.items.len()
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		self.items
 			.iter()

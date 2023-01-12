@@ -440,6 +440,10 @@ impl TagExt for ID3v2Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a FrameID<'a>;
 
+	fn len(&self) -> usize {
+		self.frames.len()
+	}
+
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
 		self.frames.iter().any(|frame| &frame.id == key)
 	}
