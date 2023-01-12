@@ -396,8 +396,10 @@ where
 	}
 }
 
-pub(crate) fn tagitems_into_ape(items: &[TagItem]) -> impl Iterator<Item = ApeItemRef<'_>> {
-	items.iter().filter_map(|i| {
+pub(crate) fn tagitems_into_ape<'a>(
+	items: impl IntoIterator<Item = &'a TagItem>,
+) -> impl Iterator<Item = ApeItemRef<'a>> {
+	items.into_iter().filter_map(|i| {
 		i.key().map_key(TagType::APE, true).map(|key| ApeItemRef {
 			read_only: false,
 			key,

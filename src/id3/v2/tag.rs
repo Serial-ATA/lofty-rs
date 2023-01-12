@@ -694,7 +694,6 @@ impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone {
 	let items = tag
 		.items()
-		.iter()
 		.map(TryInto::<FrameRef<'_>>::try_into)
 		.filter_map(Result::ok);
 
@@ -1263,19 +1262,20 @@ mod tests {
 		let tag: Tag = tag.into();
 
 		assert_eq!(tag.item_count(), 2);
-		assert_eq!(
-			tag.items(),
-			&[
-				TagItem::new(
-					ItemKey::Unknown(String::from("FOO_TEXT_FRAME")),
-					ItemValue::Text(String::from("foo content"))
-				),
-				TagItem::new(
-					ItemKey::Unknown(String::from("BAR_URL_FRAME")),
-					ItemValue::Locator(String::from("bar url"))
-				),
-			]
-		);
+		let expected_items = [
+			TagItem::new(
+				ItemKey::Unknown(String::from("FOO_TEXT_FRAME")),
+				ItemValue::Text(String::from("foo content")),
+			),
+			TagItem::new(
+				ItemKey::Unknown(String::from("BAR_URL_FRAME")),
+				ItemValue::Locator(String::from("bar url")),
+			),
+		];
+		assert!(expected_items
+			.iter()
+			.zip(tag.items())
+			.all(|(expected, actual)| expected == actual));
 
 		let tag: ID3v2Tag = tag.into();
 
