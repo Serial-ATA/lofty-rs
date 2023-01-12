@@ -381,12 +381,12 @@ impl Tag {
 	}
 
 	/// Returns references to all [`TagItem`]s with the specified key
-	pub fn get_items<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a TagItem> {
+	pub fn get_items<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a TagItem> + Clone {
 		self.items.iter().filter(move |i| i.key() == key)
 	}
 
 	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
-	pub fn get_strings<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+	pub fn get_strings<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().text()
@@ -397,7 +397,7 @@ impl Tag {
 	}
 
 	/// Returns references to all locators of [`TagItem`]s with the specified key, and [`ItemValue::Locator`]
-	pub fn get_locators<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> {
+	pub fn get_locators<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().locator()
@@ -408,7 +408,7 @@ impl Tag {
 	}
 
 	/// Returns references to all bytes of [`TagItem`]s with the specified key, and [`ItemValue::Binary`]
-	pub fn get_bytes<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a [u8]> {
+	pub fn get_bytes<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a [u8]> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().binary()

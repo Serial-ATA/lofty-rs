@@ -118,7 +118,7 @@ impl Ilst {
 	}
 
 	/// Returns all pictures
-	pub fn pictures(&self) -> impl Iterator<Item = &Picture> {
+	pub fn pictures(&self) -> impl Iterator<Item = &Picture> + Clone {
 		const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
 
 		self.atoms.iter().filter_map(|a| match a.ident {

@@ -15,7 +15,7 @@ use lofty_attr::LoftyFile;
 #[derive(LoftyFile)]
 #[lofty(read_fn = "Self::read_from")]
 pub struct VorbisFile {
-	/// The vorbis comments contained in the file
+	/// The Vorbis Comments contained in the file
 	///
 	/// NOTE: While a metadata packet is required, it isn't required to actually have any data.
 	#[lofty(tag_type = "VorbisComments")]

@@ -254,7 +254,7 @@ impl ID3v2Tag {
 	}
 
 	/// Returns all `USLT` frames
-	pub fn unsync_text(&self) -> impl Iterator<Item = &LanguageFrame> {
+	pub fn unsync_text(&self) -> impl Iterator<Item = &LanguageFrame> + Clone {
 		self.frames.iter().filter_map(|f| match f {
 			Frame {
 				id: FrameID::Valid(id),
@@ -266,7 +266,7 @@ impl ID3v2Tag {
 	}
 
 	/// Returns all `COMM` frames
-	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> {
+	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> + Clone {
 		self.frames.iter().filter_map(|f| match f {
 			Frame {
 				id: FrameID::Valid(id),
@@ -680,7 +680,7 @@ impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 }
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
-pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone + '_ {
+pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone {
 	let items = tag
 		.items()
 		.iter()

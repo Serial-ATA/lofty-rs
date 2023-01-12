@@ -61,9 +61,9 @@ impl VorbisComments {
 		self.vendor = vendor
 	}
 
-	/// Returns the tag's items in (key, value) pairs
-	pub fn items(&self) -> &[(String, String)] {
-		&self.items
+	/// Returns an [`Iterator`] over the stored key/value pairs
+	pub fn items(&self) -> impl Iterator<Item = (&str, &str)> + Clone {
+		self.items.iter().map(|(k, v)| (k.as_str(), v.as_str()))
 	}
 
 	/// Gets an item by key
@@ -95,7 +95,7 @@ impl VorbisComments {
 	/// let all_artists = vorbis_comments.get_all("ARTIST").collect::<Vec<&str>>();
 	/// assert_eq!(all_artists, vec!["Foo artist", "Bar artist", "Baz artist"]);
 	/// ```
-	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + '_ {
+	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + Clone + '_ {
 		self.items
 			.iter()
 			.filter_map(move |(k, v)| (k == key).then_some(v.as_str()))
