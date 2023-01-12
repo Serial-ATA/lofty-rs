@@ -259,7 +259,7 @@ where
 	}
 }
 
-pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&str, &str)> {
+pub(crate) fn tagitems_into_riff(items: &[TagItem]) -> impl Iterator<Item = (&str, &str)> + Clone {
 	items.iter().filter_map(|i| {
 		let item_key = i.key().map_key(TagType::RIFFInfo, true);
 
