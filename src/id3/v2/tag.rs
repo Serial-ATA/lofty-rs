@@ -22,6 +22,8 @@ use lofty_attr::tag;
 
 const COMMENT_FRAME_ID: &str = "COMM";
 
+const V4_MULTI_VALUE_SEPARATOR: char = '\0';
+const NUMBER_PAIR_SEPARATOR: char = '/';
 
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
@@ -164,11 +166,13 @@ impl ID3v2Tag {
 			..
 		}) = frame
 		{
-			if !value.contains('\0') || self.original_version != ID3v2Version::V4 {
+			if !value.contains(V4_MULTI_VALUE_SEPARATOR)
+				|| self.original_version != ID3v2Version::V4
+			{
 				return Some(Cow::Borrowed(value.as_str()));
 			}
 
-			return Some(Cow::Owned(value.replace('\0', "/")));
+			return Some(Cow::Owned(value.replace(V4_MULTI_VALUE_SEPARATOR, "/")));
 		}
 
 		None
@@ -289,7 +293,9 @@ impl ID3v2Tag {
 			..
 		}) = self.get(id)
 		{
-			let mut split = value.split(&['\0', '/'][..]).flat_map(str::parse::<u32>);
+			let mut split = value
+				.split(&[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..])
+				.flat_map(str::parse::<u32>);
 			return (split.next(), split.next());
 		}
 
@@ -537,7 +543,8 @@ impl From<ID3v2Tag> for Tag {
 			current_key: ItemKey,
 			total_key: ItemKey,
 		) -> Option<()> {
-			let mut split = content.splitn(2, &['\0', '/'][..]);
+			let mut split =
+				content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
 			let current = split.next()?.to_string();
 			tag.items
 				.push(TagItem::new(current_key, ItemValue::Text(current)));
@@ -595,7 +602,7 @@ impl From<ID3v2Tag> for Tag {
 					}),
 				) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, description);
-					for c in content.split('\0') {
+					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Text(c.to_string()),
@@ -696,7 +703,7 @@ impl From<Tag> for ID3v2Tag {
 					let mut s = String::with_capacity(iter.size_hint().0);
 					s.push_str(&first);
 					iter.for_each(|i| {
-						s.push('\0');
+						s.push(V4_MULTI_VALUE_SEPARATOR);
 						s.push_str(&i);
 					});
 
