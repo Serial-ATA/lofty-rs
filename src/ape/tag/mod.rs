@@ -316,6 +316,17 @@ impl From<ApeTag> for Tag {
 				{
 					continue
 				},
+				(ItemKey::MovementNumber | ItemKey::MovementTotal, ItemValue::Text(val))
+					if split_pair(
+						val,
+						&mut tag,
+						ItemKey::MovementNumber,
+						ItemKey::MovementTotal,
+					)
+					.is_some() =>
+				{
+					continue
+				},
 				(k, _) => tag.items.push(TagItem::new(k, item.value)),
 			}
 		}

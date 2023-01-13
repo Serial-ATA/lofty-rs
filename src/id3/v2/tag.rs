@@ -543,6 +543,17 @@ impl From<ID3v2Tag> for Tag {
 				{
 					continue
 				},
+				("MVIN", FrameValue::Text { value: content, .. })
+					if split_pair(
+						&content,
+						&mut tag,
+						ItemKey::MovementNumber,
+						ItemKey::MovementTotal,
+					)
+					.is_some() =>
+				{
+					continue
+				},
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 				(
 					"TXXX",
