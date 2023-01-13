@@ -38,11 +38,16 @@ impl LanguageFrame {
 	/// # Errors
 	///
 	/// * `language` is not exactly 3 bytes
-	/// * `language` contains invalid characters `('a'..'z')`
+	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut bytes = vec![self.encoding as u8];
 
-		if self.language.len() != 3 || self.language.iter().any(|c| !c.is_ascii_lowercase()) {
+		if self.language.len() != 3
+			|| self
+				.language
+				.iter()
+				.any(|c| !c.is_ascii_lowercase() && !c.is_ascii_uppercase())
+		{
 			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
 				"Invalid frame language found (expected 3 ascii characters)",
 			))
