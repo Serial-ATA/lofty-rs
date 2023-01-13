@@ -6,3 +6,4 @@ mod test_apetag;
 mod test_fileref;
 mod test_flac;
 mod test_flacpicture;
+mod test_id3v1;
