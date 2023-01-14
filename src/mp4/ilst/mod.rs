@@ -152,17 +152,15 @@ impl Ilst {
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
-		if let Some(atom) = self.atom(&ADVISORY_RATING) {
-			let rating = match atom.data().next() {
-				Some(AtomData::SignedInteger(si)) => *si as u8,
-				Some(AtomData::Unknown { data: c, .. }) if !c.is_empty() => c[0],
-				_ => return None,
-			};
-
-			return Some(AdvisoryRating::from(rating));
-		}
-
-		None
+		self.atom(&ADVISORY_RATING)
+			.into_iter()
+			.flat_map(Atom::data)
+			.filter_map(|data| match data {
+				AtomData::SignedInteger(si) => u8::try_from(*si).ok(),
+				AtomData::Unknown { data, .. } => data.first().copied(),
+				_ => None,
+			})
+			.find_map(|rating| AdvisoryRating::try_from(rating).ok())
 	}
 
 	/// Sets the advisory rating
