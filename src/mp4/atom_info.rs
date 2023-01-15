@@ -35,17 +35,19 @@ pub enum AtomIdent<'a> {
 }
 
 impl<'a> AtomIdent<'a> {
-	pub(crate) fn as_borrowed(&'a self) -> Self {
+	/// Obtains a borrowed instance
+	pub fn as_borrowed(&'a self) -> Self {
 		match self {
-			Self::Fourcc(fourcc) => AtomIdent::Fourcc(*fourcc),
-			Self::Freeform { mean, name } => AtomIdent::Freeform {
+			Self::Fourcc(fourcc) => Self::Fourcc(*fourcc),
+			Self::Freeform { mean, name } => Self::Freeform {
 				mean: Cow::Borrowed(&mean),
 				name: Cow::Borrowed(&name),
 			},
 		}
 	}
 
-	pub(crate) fn into_owned(self) -> AtomIdent<'static> {
+	/// Obtains an owned instance
+	pub fn into_owned(self) -> AtomIdent<'static> {
 		match self {
 			Self::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),
 			Self::Freeform { mean, name } => AtomIdent::Freeform {
