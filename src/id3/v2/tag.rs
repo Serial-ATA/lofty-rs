@@ -1,6 +1,6 @@
 use super::flags::ID3v2TagFlags;
 use super::frame::id::FrameID;
-use super::frame::{empty_content_descriptor, Frame, FrameFlags, FrameValue, UNKNOWN_LANGUAGE};
+use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
@@ -275,7 +275,7 @@ impl ID3v2Tag {
 	/// Returns all `COMM` frames with an empty content descriptor
 	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> {
 		self.frames.iter().filter_map(|frame| {
-			filter_comment_frame_by_description(frame, &empty_content_descriptor())
+			filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR)
 		})
 	}
 
@@ -426,9 +426,7 @@ impl Accessor for ID3v2Tag {
 	fn comment(&self) -> Option<Cow<'_, str>> {
 		self.frames
 			.iter()
-			.find_map(|frame| {
-				filter_comment_frame_by_description(frame, &empty_content_descriptor())
-			})
+			.find_map(|frame| filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR))
 			.map(|LanguageFrame { content, .. }| Cow::Borrowed(content.as_str()))
 	}
 
@@ -438,7 +436,7 @@ impl Accessor for ID3v2Tag {
 			.frames
 			.iter_mut()
 			.find_map(|frame| {
-				filter_comment_frame_by_description_mut(frame, &empty_content_descriptor())
+				filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR)
 			})
 			.map(|LanguageFrame { content, .. }| content)
 		{
@@ -451,7 +449,7 @@ impl Accessor for ID3v2Tag {
 			value: FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::UTF8,
 				language: UNKNOWN_LANGUAGE,
-				description: empty_content_descriptor(),
+				description: EMPTY_CONTENT_DESCRIPTOR,
 				content: value,
 			}),
 			flags: FrameFlags::default(),
@@ -460,7 +458,7 @@ impl Accessor for ID3v2Tag {
 
 	fn remove_comment(&mut self) {
 		self.frames.retain(|frame| {
-			filter_comment_frame_by_description(frame, &empty_content_descriptor()).is_none()
+			filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR).is_none()
 		})
 	}
 }
@@ -636,7 +634,7 @@ impl From<ID3v2Tag> for Tag {
 							description,
 							..
 						}) => {
-							if description == empty_content_descriptor() {
+							if description == EMPTY_CONTENT_DESCRIPTOR {
 								for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 									tag.items.push(TagItem::new(
 										item_key.clone(),
@@ -798,7 +796,7 @@ mod tests {
 		Accessor, ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
 	};
 
-	use super::{empty_content_descriptor, COMMENT_FRAME_ID};
+	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
 
 	fn read_tag(path: &str) -> ID3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
@@ -858,7 +856,7 @@ mod tests {
 				FrameValue::Comment(LanguageFrame {
 					encoding,
 					language: *b"eng",
-					description: empty_content_descriptor(),
+					description: EMPTY_CONTENT_DESCRIPTOR,
 					content: String::from("Qux comment"),
 				}),
 				flags,
@@ -1035,7 +1033,7 @@ mod tests {
 			&FrameValue::Comment(LanguageFrame {
 				encoding: TextEncoding::Latin1,
 				language: *b"eng",
-				description: empty_content_descriptor(),
+				description: EMPTY_CONTENT_DESCRIPTOR,
 				content: String::from("Qux comment")
 			})
 		);

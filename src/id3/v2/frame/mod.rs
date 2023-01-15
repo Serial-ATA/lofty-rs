@@ -26,9 +26,7 @@ use std::hash::{Hash, Hasher};
 /// are supposed to have an empty content descriptor. Only those
 /// are currently supported as [`TagItem`]s to avoid ambiguities
 /// and to prevent inconsistencies when writing them.
-pub(super) const fn empty_content_descriptor() -> String {
-	String::new()
-}
+pub(super) const EMPTY_CONTENT_DESCRIPTOR: String = String::new();
 
 /// Unknown language-aware text frame
 ///
@@ -295,7 +293,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						FrameValue::Comment(LanguageFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
-							description: empty_content_descriptor(),
+							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
@@ -303,7 +301,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						FrameValue::UnSyncText(LanguageFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
-							description: empty_content_descriptor(),
+							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
@@ -312,14 +310,14 @@ impl From<TagItem> for Option<Frame<'static>> {
 					{
 						FrameValue::UserURL(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
-							description: empty_content_descriptor(),
+							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
 						FrameValue::UserText(EncodedTextFrame {
 							encoding: TextEncoding::UTF8,
-							description: empty_content_descriptor(),
+							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
@@ -403,25 +401,25 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
 					language: UNKNOWN_LANGUAGE,
-					description: empty_content_descriptor(),
+					description: EMPTY_CONTENT_DESCRIPTOR,
 					content: text.clone(),
 				}),
 				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
 					encoding: TextEncoding::UTF8,
 					language: UNKNOWN_LANGUAGE,
-					description: empty_content_descriptor(),
+					description: EMPTY_CONTENT_DESCRIPTOR,
 					content: text.clone(),
 				}),
 				("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
 					FrameValue::UserURL(EncodedTextFrame {
 						encoding: TextEncoding::UTF8,
-						description: empty_content_descriptor(),
+						description: EMPTY_CONTENT_DESCRIPTOR,
 						content: text.clone(),
 					})
 				},
 				("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
 					encoding: TextEncoding::UTF8,
-					description: empty_content_descriptor(),
+					description: EMPTY_CONTENT_DESCRIPTOR,
 					content: text.clone(),
 				}),
 				("POPM", ItemValue::Binary(contents)) => {
