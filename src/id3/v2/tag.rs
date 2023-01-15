@@ -190,6 +190,14 @@ impl ID3v2Tag {
 		self.frames.retain(|f| f.id_str() != id)
 	}
 
+	/// Retains [`Frame`]s by evaluating the predicate
+	pub fn retain<P>(&mut self, predicate: P)
+	where
+		P: FnMut(&Frame<'_>) -> bool,
+	{
+		self.frames.retain(predicate)
+	}
+
 	/// Inserts a [`Picture`]
 	///
 	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
