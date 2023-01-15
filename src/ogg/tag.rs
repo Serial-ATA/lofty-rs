@@ -61,9 +61,19 @@ impl VorbisComments {
 		self.vendor = vendor
 	}
 
-	/// Returns an [`Iterator`] over the stored key/value pairs
-	pub fn items(&self) -> impl Iterator<Item = (&str, &str)> + Clone {
+	/// Visit all items
+	///
+	/// Returns an [`Iterator`] over the stored key/value pairs.
+	pub fn items(&self) -> impl ExactSizeIterator<Item = (&str, &str)> + Clone {
 		self.items.iter().map(|(k, v)| (k.as_str(), v.as_str()))
+	}
+
+	/// Consume all items
+	///
+	/// Returns an [`Iterator`] with the stored key/value pairs.
+	pub fn take_items(&mut self) -> impl ExactSizeIterator<Item = (String, String)> {
+		let items = std::mem::take(&mut self.items);
+		items.into_iter()
 	}
 
 	/// Gets an item by key
