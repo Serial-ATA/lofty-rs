@@ -123,6 +123,22 @@ impl Accessor for RIFFInfoList {
 	fn remove_track_total(&mut self) {
 		self.remove("IFRM");
 	}
+
+	fn year(&self) -> Option<u32> {
+		if let Some(item) = self.get("ICRD") {
+			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+		}
+
+		None
+	}
+
+	fn set_year(&mut self, value: u32) {
+		self.insert(String::from("ICRD"), value.to_string());
+	}
+
+	fn remove_year(&mut self) {
+		self.remove("ICRD");
+	}
 }
 
 impl IntoIterator for RIFFInfoList {
