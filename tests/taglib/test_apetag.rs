@@ -78,7 +78,7 @@ fn test_invalid_keys() {
 	let mut tag = ApeTag::default();
 	tag.insert(valid_space_and_tilde.unwrap());
 	tag.insert(valid_normal_one.unwrap());
-	assert_eq!(tag.items().len(), 2);
+	assert_eq!(tag.len(), 2);
 }
 
 #[test]
