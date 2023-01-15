@@ -109,8 +109,8 @@ impl<'a> Atom<'a> {
 	}
 
 	/// Returns the atom's [`AtomIdent`]
-	pub fn ident(&self) -> AtomIdent<'_> {
-		self.ident.as_borrowed()
+	pub fn ident(&self) -> &AtomIdent<'_> {
+		&self.ident
 	}
 
 	/// Returns the atom's [`AtomData`]

@@ -59,7 +59,16 @@ impl<'a> FrameID<'a> {
 		Ok(())
 	}
 
-	pub(super) fn into_owned(self) -> FrameID<'static> {
+	/// Obtains a borrowed instance
+	pub fn as_borrowed(&'a self) -> Self {
+		match self {
+			Self::Valid(inner) => Self::Valid(Cow::Borrowed(inner)),
+			Self::Outdated(inner) => Self::Outdated(Cow::Borrowed(inner)),
+		}
+	}
+
+	/// Obtains an owned instance
+	pub fn into_owned(self) -> FrameID<'static> {
 		match self {
 			Self::Valid(inner) => FrameID::Valid(Cow::Owned(inner.into_owned())),
 			Self::Outdated(inner) => FrameID::Outdated(Cow::Owned(inner.into_owned())),
