@@ -26,7 +26,7 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					self.remove($key)
+					let _ = self.remove($key);
 				}
 			)+
 		}
@@ -74,12 +74,19 @@ impl RIFFInfoList {
 
 	/// Remove an item by key
 	///
-	/// This will case-insensitively remove an item with the key
-	pub fn remove(&mut self, key: &str) {
-		self.items
+	/// This will case-insensitively remove an item with the key, returning it
+	/// if it exists.
+	pub fn remove(&mut self, key: &str) -> Option<String> {
+		if let Some((_, value)) = self
+			.items
 			.iter()
 			.position(|(k, _)| k.eq_ignore_ascii_case(key))
-			.map(|p| self.items.remove(p));
+			.map(|p| self.items.remove(p))
+		{
+			return Some(value);
+		}
+
+		None
 	}
 }
 
@@ -137,7 +144,7 @@ impl Accessor for RIFFInfoList {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove("ICRD");
+		let _ = self.remove("ICRD");
 	}
 }
 
