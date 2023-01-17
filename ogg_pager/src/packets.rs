@@ -334,8 +334,8 @@ impl Packets {
 		let paginated = self.paginate(stream_serial, abgp, flags)?;
 
 		for mut page in paginated.into_iter() {
-			page.gen_crc()?;
-			writer.write_all(&page.as_bytes()?)?;
+			page.gen_crc();
+			writer.write_all(&page.as_bytes())?;
 		}
 
 		Ok(())
