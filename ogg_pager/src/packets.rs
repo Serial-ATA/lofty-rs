@@ -158,6 +158,49 @@ impl Packets {
 		byte_count_to_read
 	}
 
+	/// Returns the number of packets
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// // I want to read 2 packets
+	/// let packets = Packets::read_count(&mut file, 2)?;
+	///
+	/// // And that's what I received!
+	/// assert_eq!(packets.len(), 2);
+	/// # Ok(()) }
+	/// ```
+	pub fn len(&self) -> usize {
+		self.packet_sizes.len()
+	}
+
+	/// Returns true if there are no packets
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let packets = Packets::read(&mut file)?;
+	///
+	/// // My file contains packets!
+	/// assert_eq!(!packets.is_empty());
+	/// # Ok(()) }
+	/// ```
+	pub fn is_empty(&self) -> bool {
+		self.packet_sizes.is_empty()
+	}
+
 	/// Gets the packet at a specified index, returning its contents
 	///
 	/// NOTES:
