@@ -85,7 +85,7 @@ impl VorbisProperties {
 
 pub(in crate::ogg) fn read_properties<R>(
 	data: &mut R,
-	first_page_header: PageHeader,
+	first_page_header: &PageHeader,
 	packets: &Packets,
 ) -> Result<VorbisProperties>
 where

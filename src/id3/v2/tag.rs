@@ -1309,7 +1309,7 @@ mod tests {
 		assert!(tag.comment().is_none());
 
 		// Add an empty comment (which is a valid use case).
-		tag.set_comment("".to_owned());
+		tag.set_comment(String::new());
 		assert_eq!(Some(Cow::Borrowed("")), tag.comment());
 
 		// Insert a custom comment frame
