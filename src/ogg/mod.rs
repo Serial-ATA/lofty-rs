@@ -45,9 +45,11 @@ where
 	R: Read + Seek,
 {
 	let mut last_page_header = PageHeader::read(data)?;
+	data.seek(SeekFrom::Current(last_page_header.content_size() as i64))?;
 
 	while let Ok(header) = PageHeader::read(data) {
-		last_page_header = header
+		last_page_header = header;
+		data.seek(SeekFrom::Current(last_page_header.content_size() as i64))?;
 	}
 
 	data.seek(SeekFrom::Start(last_page_header.start))?;
