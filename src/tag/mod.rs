@@ -690,6 +690,35 @@ mod tests {
 	}
 
 	#[test]
+	fn issue_130_huge_picture() {
+		let file_contents = read_path("tests/files/assets/minimal/full_test.opus");
+		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
+		temp_file.write_all(&file_contents).unwrap();
+		temp_file.rewind().unwrap();
+
+		let mut tag = Tag::new(TagType::VorbisComments);
+
+		// 81KB picture, which is big enough to surpass the maximum page size
+		let mut picture =
+			Picture::from_reader(&mut &*read_path("tests/files/assets/issue_37.jpg")).unwrap();
+		picture.set_pic_type(PictureType::CoverFront);
+
+		tag.push_picture(picture);
+		tag.save_to(temp_file.as_file_mut()).unwrap();
+
+		let cmd_output = Command::new("opusinfo")
+			.arg(temp_file.path().to_str().unwrap())
+			.output()
+			.unwrap();
+
+		assert!(cmd_output.status.success());
+
+		let stderr = String::from_utf8(cmd_output.stderr).unwrap();
+
+		assert!(!stderr.contains("WARNING:"));
+	}
+
+	#[test]
 	fn insert_empty() {
 		let mut tag = Tag::new(TagType::ID3v2);
 		tag.set_title(String::from("Foo title"));

@@ -21,7 +21,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Dependencies
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
+      - run: sudo apt-get install -y opus-tools # Need opusinfo for issue #130
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
