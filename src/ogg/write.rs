@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use ogg_pager::{Packets, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
+use ogg_pager::{Packets, Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
 
 #[derive(PartialEq, Copy, Clone)]
 pub(crate) enum OGGFormat {
@@ -137,9 +137,20 @@ where
 	file.rewind()?;
 	file.set_len(0)?;
 
-	packets.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)?;
+	let pages_written =
+		packets.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)? as u32;
 
-	file.write_all(&remaining_file_content)?;
+	let mut pages_reader = Cursor::new(&remaining_file_content[..]);
+	let mut idx = 0;
+	while let Ok(mut page) = Page::read(&mut pages_reader, false) {
+		let header = page.header_mut();
+		header.sequence_number = pages_written + idx;
+		page.gen_crc();
+		file.write_all(&page.as_bytes())?;
+
+		idx += 1;
+	}
+
 	Ok(())
 }
 
