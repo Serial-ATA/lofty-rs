@@ -48,11 +48,7 @@ impl Page {
 	///
 	/// NOTE: This will write the checksum as is. It is likely [`Page::gen_crc`] will have
 	/// to be used prior.
-	///
-	/// # Errors
-	///
-	/// See [`segment_table`]
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = Vec::with_capacity(27 + self.segments.len() + self.content.len());
 
 		bytes.extend(b"OggS");
@@ -66,7 +62,7 @@ impl Page {
 		bytes.extend(&self.segments);
 		bytes.extend(self.content.iter());
 
-		Ok(bytes)
+		bytes
 	}
 
 	/// Attempts to get a Page from a reader
@@ -104,29 +100,17 @@ impl Page {
 	}
 
 	/// Generates the CRC checksum of the page
-	///
-	/// # Errors
-	///
-	/// See [`Page::as_bytes`]
-	pub fn gen_crc(&mut self) -> Result<()> {
+	pub fn gen_crc(&mut self) {
 		// The value is computed over the entire header (with the CRC field in the header set to zero) and then continued over the page
 		self.header.checksum = 0;
-		self.header.checksum = crc::crc32(&self.as_bytes()?);
-
-		Ok(())
+		self.header.checksum = crc::crc32(&self.as_bytes());
 	}
 
 	/// Extends the Page's content, returning another Page if too much data was provided
 	///
 	/// This will do nothing if `content` is greater than the max page size. In this case,
 	/// [`paginate()`] should be used.
-	///
-	/// # Errors
-	///
-	/// *Only applicable if a new page is created*:
-	///
-	/// See [`Page::gen_crc`]
-	pub fn extend(&mut self, content: &[u8]) -> Result<Option<Page>> {
+	pub fn extend(&mut self, content: &[u8]) -> Option<Page> {
 		let self_len = self.content.len();
 		let content_len = content.len();
 
@@ -134,7 +118,7 @@ impl Page {
 			self.content.extend(content.iter());
 			self.end += content_len as u64;
 
-			return Ok(None);
+			return None;
 		}
 
 		if content_len <= MAX_CONTENT_SIZE {
@@ -147,7 +131,7 @@ impl Page {
 
 			let mut p = Page {
 				content: content[remaining..].to_vec(),
-				segments: segment_table(remaining)?,
+				segments: segment_table(remaining),
 				header: PageHeader {
 					start: self.end,
 					header_type_flag: 1,
@@ -159,12 +143,12 @@ impl Page {
 				end: self.header().start + content.len() as u64,
 			};
 
-			p.gen_crc()?;
+			p.gen_crc();
 
-			return Ok(Some(p));
+			return Some(p);
 		}
 
-		Ok(None)
+		None
 	}
 
 	/// Returns the page's content
@@ -178,34 +162,19 @@ impl Page {
 	}
 
 	/// Returns the page's segment table
-	///
-	/// # Errors
-	///
-	/// See [`segment_table`]
-	pub fn segment_table(&self) -> Result<Vec<u8>> {
+	pub fn segment_table(&self) -> Vec<u8> {
 		segment_table(self.content.len())
 	}
 }
 
 /// Creates a segment table based on the length
-///
-/// # Errors
-///
-/// `length` > [`MAX_CONTENT_SIZE`]
-pub fn segment_table(length: usize) -> Result<Vec<u8>> {
-	match length {
-		0 => return Ok(vec![1, 0]),
-		l if l > MAX_CONTENT_SIZE => return Err(PageError::TooMuchData),
-		_ => {},
-	};
-
-	let mut last_len = (length % 255) as u8;
-	if last_len == 0 {
-		last_len = 255;
+pub fn segment_table(length: usize) -> Vec<u8> {
+	if length == 0 {
+		return vec![1, 0];
 	}
 
-	let mut needed = (length / 255) + 1;
-	needed = std::cmp::min(needed, 255);
+	let last_len = (length % 255) as u8;
+	let needed = (length / 255) + 1;
 
 	let mut segments = Vec::with_capacity(needed);
 
@@ -217,7 +186,7 @@ pub fn segment_table(length: usize) -> Result<Vec<u8>> {
 		}
 	}
 
-	Ok(segments)
+	segments
 }
 
 #[cfg(test)]
@@ -264,10 +233,7 @@ mod tests {
 
 		assert_eq!(
 			last_page_content.len() % 255,
-			*segment_table(last_page_content.len())
-				.unwrap()
-				.last()
-				.unwrap() as usize
+			*segment_table(last_page_content.len()).last().unwrap() as usize
 		);
 
 		for (i, page) in pages.into_iter().enumerate() {
