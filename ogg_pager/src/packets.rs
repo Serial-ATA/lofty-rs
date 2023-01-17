@@ -129,7 +129,7 @@ impl Packets {
 			break;
 		}
 
-		if count != -1 && packet_sizes.len() != read as usize {
+		if count != -1 && packet_sizes.len() != count as usize {
 			return Err(PageError::NotEnoughData);
 		}
 
