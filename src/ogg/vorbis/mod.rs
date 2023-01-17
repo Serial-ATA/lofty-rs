@@ -34,7 +34,7 @@ impl VorbisFile {
 
 		Ok(Self {
 			properties: if parse_options.read_properties {
-				properties::read_properties(reader, file_information.1, &file_information.2)?
+				properties::read_properties(reader, &file_information.1, &file_information.2)?
 			} else {
 				VorbisProperties::default()
 			},
