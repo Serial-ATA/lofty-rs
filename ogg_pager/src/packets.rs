@@ -313,12 +313,14 @@ impl Packets {
 	/// let flags = CONTAINS_FIRST_PAGE_OF_BITSTREAM | CONTAINS_LAST_PAGE_OF_BITSTREAM;
 	///
 	/// let mut new_file = OpenOptions::new().write(true).open("bar.ogg");
-	/// let pages = packets.write_to(
+	/// let pages_written = packets.write_to(
 	/// 	&mut new_file,
 	/// 	stream_serial_number,
 	/// 	absolute_granule_position,
 	/// 	flags,
-	/// );
+	/// )?;
+	///
+	/// println!("We wrote {} pages!", pages_written);
 	/// # Ok(()) }
 	/// ```
 	pub fn write_to<W>(
@@ -327,18 +329,19 @@ impl Packets {
 		stream_serial: u32,
 		abgp: u64,
 		flags: u8,
-	) -> Result<()>
+	) -> Result<usize>
 	where
 		W: Write,
 	{
 		let paginated = self.paginate(stream_serial, abgp, flags)?;
+		let num_pages = paginated.len();
 
 		for mut page in paginated.into_iter() {
 			page.gen_crc();
 			writer.write_all(&page.as_bytes())?;
 		}
 
-		Ok(())
+		Ok(num_pages)
 	}
 }
 
