@@ -15,9 +15,14 @@ pub use packets::{Packets, PacketsIter};
 pub use paginate::paginate;
 
 const CONTINUED_PACKET: u8 = 0x01;
+pub(crate) const MAX_WRITTEN_SEGMENT_COUNT: usize = 32;
+pub(crate) const MAX_WRITTEN_CONTENT_SIZE: usize = MAX_WRITTEN_SEGMENT_COUNT * 255;
 
 /// The maximum page content size
-pub const MAX_CONTENT_SIZE: usize = 65025;
+// NOTE: An OGG page can have up to 255 segments, or ~64KB. We cap it at 32 segments, or ~8KB when writing.
+pub const MAX_CONTENT_SIZE: usize = MAX_WRITTEN_CONTENT_SIZE * 4;
+/// The maximum number of segments a page can contain
+pub const MAX_SEGMENT_COUNT: usize = 255;
 /// The packet contains the first page of the logical bitstream
 pub const CONTAINS_FIRST_PAGE_OF_BITSTREAM: u8 = 0x02;
 /// The packet contains the last page of the logical bitstream
