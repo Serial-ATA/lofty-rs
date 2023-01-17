@@ -426,18 +426,14 @@ where
 			_ => err!(UnsupportedTag),
 		};
 
-		let ogg_format = match file_type {
-			FileType::Opus => OGGFormat::Opus,
-			FileType::Vorbis => OGGFormat::Vorbis,
-			FileType::Speex => OGGFormat::Speex,
-			// FLAC has its own special writing needs :)
-			FileType::FLAC => {
-				return crate::flac::write::write_to_inner(file, self);
-			},
-			_ => unreachable!("You forgot to add support for FileType::{:?}!", file_type),
-		};
+		// FLAC has its own special writing needs :)
+		if file_type == FileType::FLAC {
+			return crate::flac::write::write_to_inner(file, self);
+		}
 
-		super::write::write(file, self, ogg_format)
+		let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
+
+		super::write::write(file, self, format, header_packet_count)
 	}
 
 	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {

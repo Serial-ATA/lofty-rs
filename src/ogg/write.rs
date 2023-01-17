@@ -30,6 +30,15 @@ impl OGGFormat {
 			OGGFormat::Speex => None,
 		}
 	}
+
+	pub(super) fn from_filetype(file_type: FileType) -> (Self, isize) {
+		match file_type {
+			FileType::Opus => (OGGFormat::Opus, 2),
+			FileType::Vorbis => (OGGFormat::Vorbis, 3),
+			FileType::Speex => (OGGFormat::Speex, 2),
+			_ => unreachable!("You forgot to add support for FileType::{:?}!", file_type),
+		}
+	}
 }
 
 pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
@@ -45,14 +54,9 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 		pictures,
 	};
 
-	let format = match file_type {
-		FileType::Opus => OGGFormat::Opus,
-		FileType::Vorbis => OGGFormat::Vorbis,
-		FileType::Speex => OGGFormat::Speex,
-		_ => unreachable!(),
-	};
+	let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
 
-	write(file, &mut comments_ref, format)
+	write(file, &mut comments_ref, format, header_packet_count)
 }
 
 pub(crate) fn create_comments(
@@ -85,6 +89,7 @@ pub(super) fn write<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	format: OGGFormat,
+	header_packet_count: isize,
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -99,7 +104,7 @@ where
 	let stream_serial = first_page_header.stream_serial;
 
 	file.seek(SeekFrom::Start(start))?;
-	let mut packets = Packets::read_count(file, 3)?;
+	let mut packets = Packets::read_count(file, header_packet_count)?;
 
 	let mut remaining_file_content = Vec::new();
 	file.read_to_end(&mut remaining_file_content)?;
