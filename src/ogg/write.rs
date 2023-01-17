@@ -99,7 +99,7 @@ where
 
 	// Read the first page header to get the stream serial number
 	let start = file.stream_position()?;
-	let (first_page_header, _) = PageHeader::read(file)?;
+	let first_page_header = PageHeader::read(file)?;
 
 	let stream_serial = first_page_header.stream_serial;
 
@@ -142,7 +142,7 @@ where
 
 	let mut pages_reader = Cursor::new(&remaining_file_content[..]);
 	let mut idx = 0;
-	while let Ok(mut page) = Page::read(&mut pages_reader, false) {
+	while let Ok(mut page) = Page::read(&mut pages_reader) {
 		let header = page.header_mut();
 		header.sequence_number = pages_written + idx;
 		page.gen_crc();

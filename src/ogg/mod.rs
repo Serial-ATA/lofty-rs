@@ -15,9 +15,9 @@ pub(crate) mod write;
 use crate::error::Result;
 use crate::macros::decode_err;
 
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
-use ogg_pager::Page;
+use ogg_pager::{Page, PageHeader};
 
 // Exports
 
@@ -44,11 +44,12 @@ pub(self) fn find_last_page<R>(data: &mut R) -> Result<Page>
 where
 	R: Read + Seek,
 {
-	let mut last_page = Page::read(data, true)?;
+	let mut last_page_header = PageHeader::read(data)?;
 
-	while let Ok(page) = Page::read(data, true) {
-		last_page = page
+	while let Ok(header) = PageHeader::read(data) {
+		last_page_header = header
 	}
 
-	Ok(last_page)
+	data.seek(SeekFrom::Start(last_page_header.start))?;
+	Ok(Page::read(data)?)
 }

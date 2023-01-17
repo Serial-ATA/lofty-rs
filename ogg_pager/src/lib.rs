@@ -6,11 +6,11 @@ mod header;
 mod packets;
 mod paginate;
 
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
 pub use crc::crc32;
 pub use error::{PageError, Result};
-pub use header::PageHeader;
+pub use header::{PageHeader, PAGE_HEADER_SIZE};
 pub use packets::{Packets, PacketsIter};
 pub use paginate::paginate;
 
@@ -27,7 +27,6 @@ pub const CONTAINS_LAST_PAGE_OF_BITSTREAM: u8 = 0x04;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Page {
 	content: Vec<u8>,
-	segments: Vec<u8>,
 	header: PageHeader,
 	/// The position in the stream the page ended
 	pub end: u64,
@@ -49,7 +48,10 @@ impl Page {
 	/// NOTE: This will write the checksum as is. It is likely [`Page::gen_crc`] will have
 	/// to be used prior.
 	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut bytes = Vec::with_capacity(27 + self.segments.len() + self.content.len());
+		let segment_table = &self.header.segments;
+		let num_segments = segment_table.len();
+		let mut bytes =
+			Vec::with_capacity(PAGE_HEADER_SIZE + num_segments + self.header.content_size());
 
 		bytes.extend(b"OggS");
 		bytes.push(0); // Version
@@ -58,8 +60,8 @@ impl Page {
 		bytes.extend(self.header.stream_serial.to_le_bytes());
 		bytes.extend(self.header.sequence_number.to_le_bytes());
 		bytes.extend(self.header.checksum.to_le_bytes());
-		bytes.push(self.segments.len() as u8);
-		bytes.extend(&self.segments);
+		bytes.push(num_segments as u8);
+		bytes.extend(segment_table);
 		bytes.extend(self.content.iter());
 
 		bytes
@@ -73,27 +75,19 @@ impl Page {
 	///
 	/// * [`std::io::Error`]
 	/// * [`PageError`]
-	pub fn read<V>(data: &mut V, skip_content: bool) -> Result<Self>
+	pub fn read<V>(data: &mut V) -> Result<Self>
 	where
 		V: Read + Seek,
 	{
-		let (header, segments) = PageHeader::read(data)?;
+		let header = PageHeader::read(data)?;
 
-		let mut content: Vec<u8> = Vec::new();
-		let content_len: u16 = segments.iter().map(|&b| u16::from(b)).sum();
-
-		if skip_content {
-			data.seek(SeekFrom::Current(i64::from(content_len)))?;
-		} else {
-			content = vec![0; content_len as usize];
-			data.read_exact(&mut content)?;
-		}
+		let mut content = vec![0; header.content_size()];
+		data.read_exact(&mut content)?;
 
 		let end = data.stream_position()?;
 
 		Ok(Page {
 			content,
-			segments,
 			header,
 			end,
 		})
@@ -131,13 +125,13 @@ impl Page {
 
 			let mut p = Page {
 				content: content[remaining..].to_vec(),
-				segments: segment_table(remaining),
 				header: PageHeader {
 					start: self.end,
 					header_type_flag: 1,
 					abgp: 0,
 					stream_serial: self.header.stream_serial,
 					sequence_number: self.header.sequence_number + 1,
+					segments: segment_table(remaining),
 					checksum: 0,
 				},
 				end: self.header().start + content.len() as u64,
@@ -201,13 +195,13 @@ mod tests {
 				0x4F, 0x70, 0x75, 0x73, 0x48, 0x65, 0x61, 0x64, 0x01, 0x02, 0x38, 0x01, 0x80, 0xBB,
 				0, 0, 0, 0, 0,
 			],
-			segments: vec![19],
 			header: PageHeader {
 				start: 0,
 				header_type_flag: 2,
 				abgp: 0,
 				stream_serial: 1759377061,
 				sequence_number: 0,
+				segments: vec![19],
 				checksum: 3579522525,
 			},
 			end: 47,
@@ -215,7 +209,7 @@ mod tests {
 
 		let content = std::fs::read("test_assets/opus_ident_header.page").unwrap();
 
-		let page = Page::read(&mut Cursor::new(content), false).unwrap();
+		let page = Page::read(&mut Cursor::new(content)).unwrap();
 
 		assert_eq!(expected, page);
 	}

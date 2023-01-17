@@ -100,7 +100,7 @@ where
 
 	// TODO: Would be nice if we didn't have to read just to seek and reread immediately
 	let start = data.stream_position()?;
-	let (first_page_header, _) = PageHeader::read(data)?;
+	let first_page_header = PageHeader::read(data)?;
 
 	data.seek(SeekFrom::Start(start))?;
 

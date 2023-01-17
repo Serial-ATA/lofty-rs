@@ -4,8 +4,10 @@ use std::io::{Read, Seek};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+pub const PAGE_HEADER_SIZE: usize = 27;
+
 /// An OGG page header
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PageHeader {
 	/// The position in the stream the page started at
 	pub start: u64,
@@ -16,6 +18,7 @@ pub struct PageHeader {
 	pub stream_serial: u32,
 	/// The page's sequence number
 	pub sequence_number: u32,
+	pub(crate) segments: Vec<u8>,
 	pub(crate) checksum: u32,
 }
 
@@ -34,6 +37,7 @@ impl PageHeader {
 			abgp,
 			stream_serial,
 			sequence_number,
+			segments: Vec::new(),
 			checksum: 0,
 		}
 	}
@@ -46,7 +50,7 @@ impl PageHeader {
 	/// * [`PageError::InvalidVersion`]
 	/// * [`PageError::BadSegmentCount`]
 	/// * Reader does not have enough data
-	pub fn read<R>(data: &mut R) -> Result<(Self, Vec<u8>)>
+	pub fn read<R>(data: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
@@ -88,10 +92,16 @@ impl PageHeader {
 			abgp,
 			stream_serial,
 			sequence_number,
+			segments: segment_table,
 			checksum,
 		};
 
-		Ok((header, segment_table))
+		Ok(header)
+	}
+
+	/// Returns the size of the page content, excluding the header
+	pub fn content_size(&self) -> usize {
+		self.segments.iter().map(|&b| usize::from(b)).sum::<usize>()
 	}
 
 	/// Returns the page's header type flag
