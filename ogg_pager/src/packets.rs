@@ -84,8 +84,8 @@ impl Packets {
 		let mut packet_bytes_already_read = None;
 		let mut current_packet_content;
 		'outer: loop {
-			if let Ok((_, segment_table)) = PageHeader::read(data) {
-				for i in segment_table {
+			if let Ok(header) = PageHeader::read(data) {
+				for i in header.segments {
 					packet_size += i as u64;
 
 					if i < 255 {
