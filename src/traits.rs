@@ -233,6 +233,30 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	fn clear(&mut self);
 }
 
+/// Split and rejoin tags.
+///
+/// Useful and required for implementing read/modify/write round trips.
+pub trait SplitAndRejoinTag {
+	/// Extract and split generic contents into a [`Tag`].
+	///
+	/// Leaves the remainder that cannot be represented in the
+	/// resulting tag in `self`. This is useful if the modified [`Tag`]
+	/// is rejoined later using [`SplitAndRejoinTag::rejoin_tag`].
+	// NOTE: Using the "typestate pattern" (http://cliffle.com/blog/rust-typestate/)
+	// to represent the intermediate state turned out as less flexible
+	// and useful than expected.
+	fn split_tag(&mut self) -> Tag;
+
+	/// Rejoin a [`Tag`].
+	///
+	/// Rejoin a tag that has previously been obtained with
+	/// [`SplitAndRejoinTag::split_tag`].
+	///
+	/// Restores the original representation merged with the contents of
+	/// `tag` for further processing, e.g. writing back into a file.
+	fn rejoin_tag(&mut self, tag: Tag);
+}
+
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: std::io::Seek {
 	fn stream_len(&mut self) -> crate::error::Result<u64> {

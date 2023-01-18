@@ -6,7 +6,7 @@ use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
@@ -289,8 +289,8 @@ impl TagExt for ApeTag {
 	}
 }
 
-impl From<ApeTag> for Tag {
-	fn from(input: ApeTag) -> Self {
+impl SplitAndRejoinTag for ApeTag {
+	fn split_tag(&mut self) -> Tag {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
@@ -312,7 +312,7 @@ impl From<ApeTag> for Tag {
 
 		let mut tag = Tag::new(TagType::APE);
 
-		for item in input.items {
+		for item in std::mem::take(&mut self.items) {
 			let item_key = ItemKey::from_key(TagType::APE, item.key());
 
 			// The text pairs need some special treatment
@@ -321,13 +321,13 @@ impl From<ApeTag> for Tag {
 					if split_pair(val, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
 						.is_some() =>
 				{
-					continue
+					continue; // Item consumed
 				},
 				(ItemKey::DiscNumber | ItemKey::DiscTotal, ItemValue::Text(val))
 					if split_pair(val, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
-					continue
+					continue; // Item consumed
 				},
 				(ItemKey::MovementNumber | ItemKey::MovementTotal, ItemValue::Text(val))
 					if split_pair(
@@ -338,36 +338,46 @@ impl From<ApeTag> for Tag {
 					)
 					.is_some() =>
 				{
-					continue
+					continue; // Item consumed
 				},
-				(k, _) => tag.items.push(TagItem::new(k, item.value)),
+				(k, _) => {
+					tag.items.push(TagItem::new(k, item.value));
+				},
 			}
 		}
 
 		tag
+	}
+
+	fn rejoin_tag(&mut self, tag: Tag) {
+		for item in tag.items {
+			if let Ok(ape_item) = item.try_into() {
+				self.insert(ape_item)
+			}
+		}
+
+		for pic in tag.pictures {
+			if let Some(key) = pic.pic_type.as_ape_key() {
+				if let Ok(item) =
+					ApeItem::new(key.to_string(), ItemValue::Binary(pic.as_ape_bytes()))
+				{
+					self.insert(item)
+				}
+			}
+		}
+	}
+}
+
+impl From<ApeTag> for Tag {
+	fn from(mut input: ApeTag) -> Self {
+		input.split_tag()
 	}
 }
 
 impl From<Tag> for ApeTag {
 	fn from(input: Tag) -> Self {
 		let mut ape_tag = Self::default();
-
-		for item in input.items {
-			if let Ok(ape_item) = item.try_into() {
-				ape_tag.insert(ape_item)
-			}
-		}
-
-		for pic in input.pictures {
-			if let Some(key) = pic.pic_type.as_ape_key() {
-				if let Ok(item) =
-					ApeItem::new(key.to_string(), ItemValue::Binary(pic.as_ape_bytes()))
-				{
-					ape_tag.insert(item)
-				}
-			}
-		}
-
+		ape_tag.rejoin_tag(input);
 		ape_tag
 	}
 }

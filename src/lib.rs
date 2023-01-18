@@ -178,7 +178,7 @@ pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;
 
-pub use crate::traits::{Accessor, TagExt};
+pub use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 
 pub use picture::PictureInformation;
 

@@ -7,7 +7,7 @@ use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -328,11 +328,11 @@ impl TagExt for VorbisComments {
 	}
 }
 
-impl From<VorbisComments> for Tag {
-	fn from(input: VorbisComments) -> Self {
+impl SplitAndRejoinTag for VorbisComments {
+	fn split_tag(&mut self) -> Tag {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
-		for (k, v) in input.items {
+		for (k, v) in std::mem::take(&mut self.items) {
 			tag.items.push(TagItem::new(
 				ItemKey::from_key(TagType::VorbisComments, &k),
 				ItemValue::Text(v),
@@ -347,31 +347,28 @@ impl From<VorbisComments> for Tag {
 		{
 			tag.items.push(TagItem::new(
 				ItemKey::EncoderSoftware,
-				ItemValue::Text(input.vendor),
+				// Preserve the original vendor by cloning
+				ItemValue::Text(self.vendor.clone()),
 			));
 		}
 
-		for (pic, _info) in input.pictures {
+		for (pic, _info) in std::mem::take(&mut self.pictures) {
 			tag.push_picture(pic)
 		}
 
 		tag
 	}
-}
 
-impl From<Tag> for VorbisComments {
-	fn from(mut input: Tag) -> Self {
-		let mut vorbis_comments = Self::default();
-
+	fn rejoin_tag(&mut self, mut tag: Tag) {
 		if let Some(TagItem {
 			item_value: ItemValue::Text(val),
 			..
-		}) = input.take(&ItemKey::EncoderSoftware).next()
+		}) = tag.take(&ItemKey::EncoderSoftware).next()
 		{
-			vorbis_comments.vendor = val;
+			self.vendor = val;
 		}
 
-		for item in input.items {
+		for item in tag.items {
 			let item_key = item.item_key;
 			let item_value = item.item_value;
 
@@ -386,15 +383,27 @@ impl From<Tag> for VorbisComments {
 				Some(k) => k,
 			};
 
-			vorbis_comments.items.push((key.to_string(), val));
+			self.items.push((key.to_string(), val));
 		}
 
-		for picture in input.pictures {
+		for picture in tag.pictures {
 			if let Ok(information) = PictureInformation::from_picture(&picture) {
-				vorbis_comments.pictures.push((picture, information))
+				self.pictures.push((picture, information))
 			}
 		}
+	}
+}
 
+impl From<VorbisComments> for Tag {
+	fn from(mut input: VorbisComments) -> Self {
+		input.split_tag()
+	}
+}
+
+impl From<Tag> for VorbisComments {
+	fn from(input: Tag) -> Self {
+		let mut vorbis_comments = Self::default();
+		vorbis_comments.rejoin_tag(input);
 		vorbis_comments
 	}
 }

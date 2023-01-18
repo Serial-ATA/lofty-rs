@@ -6,10 +6,10 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
-use crate::picture::{Picture, PictureType};
+use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
@@ -533,8 +533,8 @@ impl TagExt for ID3v2Tag {
 	}
 }
 
-impl From<ID3v2Tag> for Tag {
-	fn from(input: ID3v2Tag) -> Self {
+impl SplitAndRejoinTag for ID3v2Tag {
+	fn split_tag(&mut self) -> Tag {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
@@ -555,13 +555,13 @@ impl From<ID3v2Tag> for Tag {
 			Some(())
 		}
 
-		let mut tag = Self::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::ID3v2);
 
-		for frame in input.frames {
-			let id = frame.id;
+		self.frames.retain_mut(|frame| {
+			let id = &frame.id;
 
 			// The text pairs need some special treatment
-			match (id.as_str(), frame.value) {
+			match (id.as_str(), &mut frame.value) {
 				("TRCK", FrameValue::Text { value: content, .. })
 					if split_pair(
 						&content,
@@ -571,13 +571,13 @@ impl From<ID3v2Tag> for Tag {
 					)
 					.is_some() =>
 				{
-					continue
+					false // Frame consumed
 				},
 				("TPOS", FrameValue::Text { value: content, .. })
 					if split_pair(&content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
-					continue
+					false // Frame consumed
 				},
 				("MVIN", FrameValue::Text { value: content, .. })
 					if split_pair(
@@ -588,7 +588,7 @@ impl From<ID3v2Tag> for Tag {
 					)
 					.is_some() =>
 				{
-					continue
+					false // Frame consumed
 				},
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 				(
@@ -606,6 +606,7 @@ impl From<ID3v2Tag> for Tag {
 							ItemValue::Text(c.to_string()),
 						));
 					}
+					false // Frame consumed
 				},
 				(
 					"WXXX",
@@ -622,6 +623,7 @@ impl From<ID3v2Tag> for Tag {
 							ItemValue::Locator(c.to_string()),
 						));
 					}
+					false // Frame consumed
 				},
 				(id, value) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, id);
@@ -642,13 +644,14 @@ impl From<ID3v2Tag> for Tag {
 							description,
 							..
 						}) => {
-							if description == EMPTY_CONTENT_DESCRIPTOR {
+							if *description == EMPTY_CONTENT_DESCRIPTOR {
 								for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 									tag.items.push(TagItem::new(
 										item_key.clone(),
 										ItemValue::Text(c.to_string()),
 									));
 								}
+								return false; // Frame consumed
 							}
 							// ...else do not convert text frames with a non-empty content
 							// descriptor that would otherwise unintentionally be modified
@@ -656,8 +659,7 @@ impl From<ID3v2Tag> for Tag {
 							// TODO: How to convert these frames consistently and safely
 							// such that the content descriptor is preserved during read/write
 							// round trips?
-
-							continue;
+							return true; // Keep frame
 						},
 						FrameValue::Text { value: content, .. } => {
 							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
@@ -666,34 +668,34 @@ impl From<ID3v2Tag> for Tag {
 									ItemValue::Text(c.to_string()),
 								));
 							}
-
-							continue;
+							return false; // Frame consumed
 						},
 						FrameValue::URL(content)
-						| FrameValue::UserURL(EncodedTextFrame { content, .. }) => ItemValue::Locator(content),
+						| FrameValue::UserURL(EncodedTextFrame { content, .. }) => {
+							ItemValue::Locator(std::mem::take(content))
+						},
 						FrameValue::Picture { picture, .. } => {
-							tag.push_picture(picture);
-							continue;
+							tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
+							return false; // Frame consumed
 						},
 						FrameValue::Popularimeter(popularimeter) => {
 							ItemValue::Binary(popularimeter.as_bytes())
 						},
-						FrameValue::Binary(binary) => ItemValue::Binary(binary),
+						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
 					};
 
 					tag.items.push(TagItem::new(item_key, item_value));
+					false // Frame consumed
 				},
 			}
-		}
+		});
 
 		tag
 	}
-}
 
-impl From<Tag> for ID3v2Tag {
-	fn from(mut input: Tag) -> Self {
-		fn join_items(input: &mut Tag, key: &ItemKey) -> String {
-			let mut iter = input.take_strings(key);
+	fn rejoin_tag(&mut self, mut tag: Tag) {
+		fn join_items(tag: &mut Tag, key: &ItemKey) -> String {
+			let mut iter = tag.take_strings(key);
 
 			match iter.next() {
 				None => String::new(),
@@ -710,25 +712,22 @@ impl From<Tag> for ID3v2Tag {
 			}
 		}
 
-		let mut id3v2_tag = ID3v2Tag {
-			frames: Vec::with_capacity(input.item_count() as usize),
-			..ID3v2Tag::default()
-		};
+		self.frames.reserve(tag.item_count() as usize);
 
-		let artists = join_items(&mut input, &ItemKey::TrackArtist);
-		id3v2_tag.set_artist(artists);
+		let artists = join_items(&mut tag, &ItemKey::TrackArtist);
+		self.set_artist(artists);
 
-		for item in input.items {
+		for item in tag.items {
 			let frame: Frame<'_> = match item.into() {
 				Some(frame) => frame,
 				None => continue,
 			};
 
-			id3v2_tag.insert(frame);
+			self.insert(frame);
 		}
 
-		for picture in input.pictures {
-			id3v2_tag.frames.push(Frame {
+		for picture in tag.pictures {
+			self.frames.push(Frame {
 				id: FrameID::Valid(Cow::Borrowed("APIC")),
 				value: FrameValue::Picture {
 					encoding: TextEncoding::UTF8,
@@ -737,7 +736,19 @@ impl From<Tag> for ID3v2Tag {
 				flags: FrameFlags::default(),
 			})
 		}
+	}
+}
 
+impl From<ID3v2Tag> for Tag {
+	fn from(mut input: ID3v2Tag) -> Self {
+		input.split_tag()
+	}
+}
+
+impl From<Tag> for ID3v2Tag {
+	fn from(input: Tag) -> Self {
+		let mut id3v2_tag = ID3v2Tag::default();
+		id3v2_tag.rejoin_tag(input);
 		id3v2_tag
 	}
 }
