@@ -12,10 +12,10 @@ pub(super) enum AtomDataStorage {
 }
 
 impl AtomDataStorage {
-	pub(super) fn take_first(self) -> AtomData {
+	pub(super) fn first_mut(&mut self) -> &mut AtomData {
 		match self {
 			AtomDataStorage::Single(val) => val,
-			AtomDataStorage::Multiple(mut data) => data.swap_remove(0),
+			AtomDataStorage::Multiple(data) => data.first_mut().expect("not empty"),
 		}
 	}
 }

@@ -7,10 +7,10 @@ pub(crate) mod write;
 use super::AtomIdent;
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
-use crate::picture::{Picture, PictureType};
+use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
@@ -377,20 +377,23 @@ impl TagExt for Ilst {
 	}
 }
 
-impl From<Ilst> for Tag {
-	fn from(input: Ilst) -> Self {
-		let mut tag = Self::new(TagType::MP4ilst);
+impl SplitAndRejoinTag for Ilst {
+	fn split_tag(&mut self) -> Tag {
+		let mut tag = Tag::new(TagType::MP4ilst);
 
-		for atom in input.atoms {
+		self.atoms.retain_mut(|atom| {
 			let Atom { ident, data } = atom;
-			let value = match data.take_first() {
-				AtomData::UTF8(text) | AtomData::UTF16(text) => ItemValue::Text(text),
-				AtomData::Picture(pic) => {
-					tag.pictures.push(pic);
-					continue;
+			let value = match data.first_mut() {
+				AtomData::UTF8(text) | AtomData::UTF16(text) => {
+					ItemValue::Text(std::mem::take(text))
+				},
+				AtomData::Picture(picture) => {
+					tag.pictures
+						.push(std::mem::replace(picture, TOMBSTONE_PICTURE));
+					return false; // Atom consumed
 				},
 				AtomData::Bool(b) => {
-					let text = if b { "1".to_owned() } else { "0".to_owned() };
+					let text = if *b { "1".to_owned() } else { "0".to_owned() };
 					ItemValue::Text(text)
 				},
 				// We have to special case track/disc numbers since they are stored together
@@ -403,6 +406,7 @@ impl From<Ilst> for Tag {
 
 								tag.insert_text(ItemKey::TrackNumber, current.to_string());
 								tag.insert_text(ItemKey::TrackTotal, total.to_string());
+								return false; // Atom consumed
 							},
 							b"disk" => {
 								let current = u16::from_be_bytes([data[2], data[3]]);
@@ -410,14 +414,17 @@ impl From<Ilst> for Tag {
 
 								tag.insert_text(ItemKey::DiscNumber, current.to_string());
 								tag.insert_text(ItemKey::DiscTotal, total.to_string());
+								return false; // Atom consumed
 							},
 							_ => {},
 						}
 					}
 
-					continue;
+					return true; // Keep atom
 				},
-				_ => continue,
+				_ => {
+					return true; // Keep atom
+				},
 			};
 
 			let key = ItemKey::from_key(
@@ -433,14 +440,13 @@ impl From<Ilst> for Tag {
 			);
 
 			tag.items.push(TagItem::new(key, value));
-		}
+			false // Atom consumed
+		});
 
 		tag
 	}
-}
 
-impl From<Tag> for Ilst {
-	fn from(input: Tag) -> Self {
+	fn rejoin_tag(&mut self, tag: Tag) {
 		fn convert_to_uint(space: &mut Option<u16>, cont: &str) {
 			if let Ok(num) = cont.parse::<u16>() {
 				*space = Some(num);
@@ -465,13 +471,11 @@ impl From<Tag> for Ilst {
 			}
 		}
 
-		let mut ilst = Self::default();
-
 		// Storage for integer pairs
 		let mut tracks: (Option<u16>, Option<u16>) = (None, None);
 		let mut discs: (Option<u16>, Option<u16>) = (None, None);
 
-		for item in input.items {
+		for item in tag.items {
 			let key = item.item_key;
 
 			if let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) {
@@ -495,13 +499,13 @@ impl From<Tag> for Ilst {
 									continue;
 								},
 							};
-							ilst.atoms.push(Atom {
+							self.atoms.push(Atom {
 								ident: ident.into_owned(),
 								data: AtomDataStorage::Single(AtomData::Bool(data)),
 							})
 						}
 					},
-					_ => ilst.atoms.push(Atom {
+					_ => self.atoms.push(Atom {
 						ident: ident.into_owned(),
 						data: AtomDataStorage::Single(AtomData::UTF8(data)),
 					}),
@@ -509,20 +513,32 @@ impl From<Tag> for Ilst {
 			}
 		}
 
-		for mut picture in input.pictures {
+		for mut picture in tag.pictures {
 			// Just for correctness, since we can't actually
 			// assign a picture type in this format
 			picture.pic_type = PictureType::Other;
 
-			ilst.atoms.push(Atom {
+			self.atoms.push(Atom {
 				ident: AtomIdent::Fourcc([b'c', b'o', b'v', b'r']),
 				data: AtomDataStorage::Single(AtomData::Picture(picture)),
 			})
 		}
 
-		create_int_pair(&mut ilst, *b"trkn", tracks);
-		create_int_pair(&mut ilst, *b"disk", discs);
+		create_int_pair(self, *b"trkn", tracks);
+		create_int_pair(self, *b"disk", discs);
+	}
+}
 
+impl From<Ilst> for Tag {
+	fn from(mut input: Ilst) -> Self {
+		input.split_tag()
+	}
+}
+
+impl From<Tag> for Ilst {
+	fn from(input: Tag) -> Self {
+		let mut ilst = Self::default();
+		ilst.rejoin_tag(input);
 		ilst
 	}
 }

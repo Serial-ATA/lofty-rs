@@ -3,7 +3,7 @@ use crate::iff::chunk::Chunks;
 use crate::macros::err;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -216,9 +216,19 @@ impl TagExt for AIFFTextChunks {
 	}
 }
 
+impl SplitAndRejoinTag for AIFFTextChunks {
+	fn split_tag(&mut self) -> Tag {
+		std::mem::take(self).into()
+	}
+
+	fn rejoin_tag(&mut self, tag: Tag) {
+		*self = tag.into();
+	}
+}
+
 impl From<AIFFTextChunks> for Tag {
 	fn from(input: AIFFTextChunks) -> Self {
-		let mut tag = Tag::new(TagType::AIFFText);
+		let mut tag = Self::new(TagType::AIFFText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
 			if let Some(text) = field {

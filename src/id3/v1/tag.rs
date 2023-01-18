@@ -2,7 +2,7 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, TagExt};
+use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -238,32 +238,48 @@ impl TagExt for ID3v1Tag {
 	}
 }
 
-impl From<ID3v1Tag> for Tag {
-	fn from(input: ID3v1Tag) -> Self {
-		let mut tag = Self::new(TagType::ID3v1);
+impl SplitAndRejoinTag for ID3v1Tag {
+	fn split_tag(&mut self) -> Tag {
+		let mut tag = Tag::new(TagType::ID3v1);
 
-		input.title.map(|t| tag.insert_text(ItemKey::TrackTitle, t));
-		input
-			.artist
+		self.title
+			.take()
+			.map(|t| tag.insert_text(ItemKey::TrackTitle, t));
+		self.artist
+			.take()
 			.map(|a| tag.insert_text(ItemKey::TrackArtist, a));
-		input.album.map(|a| tag.insert_text(ItemKey::AlbumTitle, a));
-		input.year.map(|y| tag.insert_text(ItemKey::Year, y));
-		input.comment.map(|c| tag.insert_text(ItemKey::Comment, c));
+		self.album
+			.take()
+			.map(|a| tag.insert_text(ItemKey::AlbumTitle, a));
+		self.year.take().map(|y| tag.insert_text(ItemKey::Year, y));
+		self.comment
+			.take()
+			.map(|c| tag.insert_text(ItemKey::Comment, c));
 
-		if let Some(t) = input.track_number {
+		if let Some(t) = self.track_number.take() {
 			tag.items.push(TagItem::new(
 				ItemKey::TrackNumber,
 				ItemValue::Text(t.to_string()),
 			))
 		}
 
-		if let Some(genre_index) = input.genre {
+		if let Some(genre_index) = self.genre.take() {
 			if let Some(genre) = GENRES.get(genre_index as usize) {
 				tag.insert_text(ItemKey::Genre, (*genre).to_string());
 			}
 		}
 
 		tag
+	}
+
+	fn rejoin_tag(&mut self, tag: Tag) {
+		*self = tag.into();
+	}
+}
+
+impl From<ID3v1Tag> for Tag {
+	fn from(mut input: ID3v1Tag) -> Self {
+		input.split_tag()
 	}
 }
 

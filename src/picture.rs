@@ -502,8 +502,8 @@ impl Picture {
 		Self {
 			pic_type,
 			mime_type,
-			description: description.map(Cow::from),
-			data: Cow::from(data),
+			description: description.map(Cow::Owned),
+			data: Cow::Owned(data),
 		}
 	}
 
@@ -890,3 +890,11 @@ impl Picture {
 		}
 	}
 }
+
+// A placeholder that is needed during conversions.
+pub(crate) const TOMBSTONE_PICTURE: Picture = Picture {
+	pic_type: PictureType::Other,
+	mime_type: MimeType::Unknown(String::new()),
+	description: None,
+	data: Cow::Owned(Vec::new()),
+};
