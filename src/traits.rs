@@ -235,7 +235,42 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 
 /// Split and rejoin tags.
 ///
-/// Useful and required for implementing read/modify/write round trips.
+/// Useful and required for implementing lossless read/modify/write round trips.
+///
+/// # Example
+///
+/// ```no_run
+/// use lofty::mpeg::MPEGFile;
+/// use lofty::{AudioFile, ItemKey, SplitAndRejoinTag as _};
+///
+/// // Read the tag from a file
+/// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
+/// # let parse_options = lofty::ParseOptions::default();
+/// let mut mpeg_file = <MPEGFile as AudioFile>::read_from(&mut file, parse_options)?;
+/// let mut id3v2 = if let Some(id3v2) = mpeg_file.id3v2_mut() {
+/// 	id3v2
+/// } else {
+/// 	// Add a new ID3v2 tag if missing
+/// 	mpeg_file.set_id3v2(Default::default());
+/// 	mpeg_file.id3v2_mut().expect("ID3v2")
+/// };
+///
+/// // Split: ID3v2 -> [`lofty::Tag`]
+/// let mut tag = id3v2.split_tag();
+///
+/// // Modify the metadata in the generic [`lofty::Tag`], independent
+/// // of the underlying tag and file format.
+/// tag.insert_text(ItemKey::TrackTitle, "Track Title".to_owned());
+/// tag.remove_key(&ItemKey::Composer);
+///
+/// // ID3v2 <- [`lofty::Tag`]
+/// id3v2.rejoin_tag(tag);
+///
+/// // Write the changes back into the file
+/// mpeg_file.save_to(&mut file)?;
+///
+/// # Ok::<(), lofty::LoftyError>(())
+/// ```
 pub trait SplitAndRejoinTag {
 	/// Extract and split generic contents into a [`Tag`].
 	///
