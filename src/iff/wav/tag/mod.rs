@@ -4,7 +4,7 @@ mod write;
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -211,12 +211,12 @@ impl TagExt for RIFFInfoList {
 	}
 }
 
-impl SplitAndRejoinTag for RIFFInfoList {
+impl SplitAndMergeTag for RIFFInfoList {
 	fn split_tag(&mut self) -> Tag {
 		std::mem::take(self).into()
 	}
 
-	fn rejoin_tag(&mut self, tag: Tag) {
+	fn merge_tag(&mut self, tag: Tag) {
 		*self = tag.into();
 	}
 }

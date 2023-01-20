@@ -3,7 +3,7 @@ use crate::iff::chunk::Chunks;
 use crate::macros::err;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
@@ -216,12 +216,12 @@ impl TagExt for AIFFTextChunks {
 	}
 }
 
-impl SplitAndRejoinTag for AIFFTextChunks {
+impl SplitAndMergeTag for AIFFTextChunks {
 	fn split_tag(&mut self) -> Tag {
 		std::mem::take(self).into()
 	}
 
-	fn rejoin_tag(&mut self, tag: Tag) {
+	fn merge_tag(&mut self, tag: Tag) {
 		*self = tag.into();
 	}
 }

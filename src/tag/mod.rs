@@ -6,7 +6,7 @@ use crate::file::FileType;
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
 use std::borrow::Cow;
@@ -583,12 +583,12 @@ impl TagExt for Tag {
 	}
 }
 
-impl SplitAndRejoinTag for Tag {
+impl SplitAndMergeTag for Tag {
 	fn split_tag(&mut self) -> Self {
 		std::mem::replace(self, Self::new(self.tag_type))
 	}
 
-	fn rejoin_tag(&mut self, tag: Self) {
+	fn merge_tag(&mut self, tag: Self) {
 		*self = tag;
 	}
 }

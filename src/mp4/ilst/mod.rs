@@ -10,7 +10,7 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
@@ -377,7 +377,7 @@ impl TagExt for Ilst {
 	}
 }
 
-impl SplitAndRejoinTag for Ilst {
+impl SplitAndMergeTag for Ilst {
 	fn split_tag(&mut self) -> Tag {
 		let mut tag = Tag::new(TagType::MP4ilst);
 
@@ -446,7 +446,7 @@ impl SplitAndRejoinTag for Ilst {
 		tag
 	}
 
-	fn rejoin_tag(&mut self, tag: Tag) {
+	fn merge_tag(&mut self, tag: Tag) {
 		fn convert_to_uint(space: &mut Option<u16>, cont: &str) {
 			if let Ok(num) = cont.parse::<u16>() {
 				*space = Some(num);
@@ -538,7 +538,7 @@ impl From<Ilst> for Tag {
 impl From<Tag> for Ilst {
 	fn from(input: Tag) -> Self {
 		let mut ilst = Self::default();
-		ilst.rejoin_tag(input);
+		ilst.merge_tag(input);
 		ilst
 	}
 }

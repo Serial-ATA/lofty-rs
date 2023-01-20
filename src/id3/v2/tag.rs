@@ -9,7 +9,7 @@ use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
@@ -533,7 +533,7 @@ impl TagExt for ID3v2Tag {
 	}
 }
 
-impl SplitAndRejoinTag for ID3v2Tag {
+impl SplitAndMergeTag for ID3v2Tag {
 	fn split_tag(&mut self) -> Tag {
 		fn split_pair(
 			content: &str,
@@ -693,7 +693,7 @@ impl SplitAndRejoinTag for ID3v2Tag {
 		tag
 	}
 
-	fn rejoin_tag(&mut self, mut tag: Tag) {
+	fn merge_tag(&mut self, mut tag: Tag) {
 		fn join_items(tag: &mut Tag, key: &ItemKey) -> String {
 			let mut iter = tag.take_strings(key);
 
@@ -748,7 +748,7 @@ impl From<ID3v2Tag> for Tag {
 impl From<Tag> for ID3v2Tag {
 	fn from(input: Tag) -> Self {
 		let mut id3v2_tag = ID3v2Tag::default();
-		id3v2_tag.rejoin_tag(input);
+		id3v2_tag.merge_tag(input);
 		id3v2_tag
 	}
 }
