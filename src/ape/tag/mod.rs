@@ -6,7 +6,7 @@ use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
@@ -289,7 +289,7 @@ impl TagExt for ApeTag {
 	}
 }
 
-impl SplitAndRejoinTag for ApeTag {
+impl SplitAndMergeTag for ApeTag {
 	fn split_tag(&mut self) -> Tag {
 		fn split_pair(
 			content: &str,
@@ -349,7 +349,7 @@ impl SplitAndRejoinTag for ApeTag {
 		tag
 	}
 
-	fn rejoin_tag(&mut self, tag: Tag) {
+	fn merge_tag(&mut self, tag: Tag) {
 		for item in tag.items {
 			if let Ok(ape_item) = item.try_into() {
 				self.insert(ape_item)
@@ -377,7 +377,7 @@ impl From<ApeTag> for Tag {
 impl From<Tag> for ApeTag {
 	fn from(input: Tag) -> Self {
 		let mut ape_tag = Self::default();
-		ape_tag.rejoin_tag(input);
+		ape_tag.merge_tag(input);
 		ape_tag
 	}
 }

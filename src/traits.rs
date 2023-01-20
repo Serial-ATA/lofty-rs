@@ -233,7 +233,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	fn clear(&mut self);
 }
 
-/// Split and rejoin tags.
+/// Split and merge tags.
 ///
 /// Useful and required for implementing lossless read/modify/write round trips.
 ///
@@ -241,7 +241,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 ///
 /// ```no_run
 /// use lofty::mpeg::MPEGFile;
-/// use lofty::{AudioFile, ItemKey, SplitAndRejoinTag as _};
+/// use lofty::{AudioFile, ItemKey, SplitAndMergeTag as _};
 ///
 /// // Read the tag from a file
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
@@ -264,19 +264,19 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 /// tag.remove_key(&ItemKey::Composer);
 ///
 /// // ID3v2 <- [`lofty::Tag`]
-/// id3v2.rejoin_tag(tag);
+/// id3v2.merge_tag(tag);
 ///
 /// // Write the changes back into the file
 /// mpeg_file.save_to(&mut file)?;
 ///
 /// # Ok::<(), lofty::LoftyError>(())
 /// ```
-pub trait SplitAndRejoinTag {
+pub trait SplitAndMergeTag {
 	/// Extract and split generic contents into a [`Tag`].
 	///
 	/// Leaves the remainder that cannot be represented in the
 	/// resulting tag in `self`. This is useful if the modified [`Tag`]
-	/// is rejoined later using [`SplitAndRejoinTag::rejoin_tag`].
+	/// is merged later using [`SplitAndMergeTag::merge_tag`].
 	// NOTE: Using the "typestate pattern" (http://cliffle.com/blog/rust-typestate/)
 	// to represent the intermediate state turned out as less flexible
 	// and useful than expected.
@@ -285,11 +285,15 @@ pub trait SplitAndRejoinTag {
 	/// Rejoin a [`Tag`].
 	///
 	/// Rejoin a tag that has previously been obtained with
-	/// [`SplitAndRejoinTag::split_tag`].
+	/// [`SplitAndMergeTag::split_tag`].
 	///
 	/// Restores the original representation merged with the contents of
 	/// `tag` for further processing, e.g. writing back into a file.
-	fn rejoin_tag(&mut self, tag: Tag);
+	///
+	/// This method must only be called once and after [`Self::split_tag`]!
+	/// Otherwise the behavior is undefined and may result in redundancies
+	/// or inconsistencies.
+	fn merge_tag(&mut self, tag: Tag);
 }
 
 // TODO: https://github.com/rust-lang/rust/issues/59359

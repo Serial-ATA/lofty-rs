@@ -7,7 +7,7 @@ use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndRejoinTag, TagExt};
+use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -328,7 +328,7 @@ impl TagExt for VorbisComments {
 	}
 }
 
-impl SplitAndRejoinTag for VorbisComments {
+impl SplitAndMergeTag for VorbisComments {
 	fn split_tag(&mut self) -> Tag {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
@@ -359,7 +359,7 @@ impl SplitAndRejoinTag for VorbisComments {
 		tag
 	}
 
-	fn rejoin_tag(&mut self, mut tag: Tag) {
+	fn merge_tag(&mut self, mut tag: Tag) {
 		if let Some(TagItem {
 			item_value: ItemValue::Text(val),
 			..
@@ -403,7 +403,7 @@ impl From<VorbisComments> for Tag {
 impl From<Tag> for VorbisComments {
 	fn from(input: Tag) -> Self {
 		let mut vorbis_comments = Self::default();
-		vorbis_comments.rejoin_tag(input);
+		vorbis_comments.merge_tag(input);
 		vorbis_comments
 	}
 }
