@@ -43,13 +43,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Previously, setting a year with `Tag::set_year` required a `RecordingDate`. Now it will check if the format
   	supports the `Year` tag, and if not, then it will set a `RecordingDate`.
 
+### ogg_pager
+See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
+
 ## [0.10.0] - 2022-12-27
 
 ### Added
 - **TagExt**: `TagExt::contains`
 - **Ilst**: `AtomData::Bool` for the various flag atoms such as `cpil`, `pcst`, etc.
-- **ogg_pager**: Support for reading packets with the new `Packets` struct. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/76))
-- **ogg_pager**: `PageHeader` struct. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/76))
 - **BoundTaggedFile**: A `TaggedFile` variant bound to a `File` handle. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/73)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/80))
 
 ### Changed
@@ -57,10 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Previously, the only way to remove and take ownership of a tag was through `TaggedFile::take`.
     This was not possible when using a concrete type, such as `OpusFile`.
 - **TaggedFile**: Renamed `TaggedFile::take` to `TaggedFile::remove` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/74))
-- **OGG**: The reading of OGG files has switched to using packets opposed to pages, making it more
-           spec-compliant and efficient.
-- **ogg_pager**: Most fields in `Page` have been separated out into the new `PageHeader` struct.
-- **ogg_pager**: `paginate` now works with a collection of packets. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/79))
 - **lofty_attr**: The `lofty_attr::LoftyFile` derive proc macro is now exported as `lofty::LoftyFile`.
 - **TaggedFile**: All methods have been split out into a new trait, `TaggedFileExt`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/80))
 - **Accessor**: All methods returning string values now return `Cow<str>`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/83))
@@ -71,13 +68,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     we would overwrite the last one, losing all of its information. Now we preserve all of the information,
     overwriting frames as necessary.
 
-### Removed
-- **ogg_pager**: Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
-                 `Packets::paginate`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/79))
-
 ### Fixed
 - **ID3v2**: The `'/'` character is no longer used as a separator ([issue](https://github.com/Serial-ATA/lofty-rs/issues/82))
 - **MP4**: Stopped expecting certain flags for the `gnre` atom prior to upgrading it ([issue](https://github.com/Serial-ATA/lofty-rs/issues/84)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/85))
+
+### ogg_pager
+See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 
 ## [0.9.0] - 2022-10-30
 
@@ -338,8 +334,8 @@ This release mostly addresses issues uncovered by fuzzing, thanks to [@5225225](
 
 ## [0.5.3] - 2022-03-03
 
-### Fixed
-- **OGG**: Segment tables are written correctly with data spanning multiple pages ([issue](https://github.com/Serial-ATA/lofty-rs/issues/37))
+### ogg_pager
+See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 
 ## [0.5.2] - 2022-02-26
 
