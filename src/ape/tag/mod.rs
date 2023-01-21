@@ -33,6 +33,11 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
+					if value.is_empty() {
+						self.[<remove_ $name>]();
+						return;
+					}
+
 					self.insert(ApeItem {
 						read_only: false,
 						key: String::from(crate::tag::item::first_key!($($key)|*)),
