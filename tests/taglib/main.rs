@@ -8,4 +8,5 @@ mod test_flac;
 mod test_flacpicture;
 mod test_id3v1;
 mod test_info;
+mod test_mpeg;
 mod test_speex;
