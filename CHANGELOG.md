@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2022-1-29
+
 ### Added
 - **MP4**:
   - The `InitialKey`, `ReplayGain*`, and "precise BPM" identifiers now have `ItemKey` mappings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/93))
@@ -42,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tag**: Handling of the `Year` tag has been improved.
   - Previously, setting a year with `Tag::set_year` required a `RecordingDate`. Now it will check if the format
   	supports the `Year` tag, and if not, then it will set a `RecordingDate`.
+- **OGG**: Writing of large packets would corrupt the stream ([issue](https://github.com/Serial-ATA/lofty-rs/issues/130)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/131))
 
 ### ogg_pager
 See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
@@ -393,7 +396,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.10.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.11.0...HEAD
+[0.11.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.1...0.9.0
 [0.8.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.0...0.8.1
