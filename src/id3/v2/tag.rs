@@ -34,11 +34,6 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					if value.is_empty() {
-						self.remove($id);
-						return;
-					}
-
 					self.insert(Frame {
 						id: FrameID::Valid(String::from($id).into()),
 						value: FrameValue::Text {
@@ -694,28 +689,30 @@ impl SplitAndMergeTag for ID3v2Tag {
 	}
 
 	fn merge_tag(&mut self, mut tag: Tag) {
-		fn join_items(tag: &mut Tag, key: &ItemKey) -> String {
+		fn join_items(tag: &mut Tag, key: &ItemKey) -> Option<String> {
 			let mut iter = tag.take_strings(key);
-
-			match iter.next() {
-				None => String::new(),
-				Some(first) => {
-					let mut s = String::with_capacity(iter.size_hint().0);
-					s.push_str(&first);
-					iter.for_each(|i| {
-						s.push(V4_MULTI_VALUE_SEPARATOR);
-						s.push_str(&i);
-					});
-
-					s
-				},
-			}
+			iter.next().map(|first| {
+				// Use the length of the first string for estimating the capacity
+				// of the concatenated string.
+				let estimated_len_per_item = first.len();
+				let min_remaining_items = iter.size_hint().0;
+				let mut concatenated = first;
+				concatenated.reserve((1 + estimated_len_per_item) * min_remaining_items);
+				iter.for_each(|i| {
+					concatenated.push(V4_MULTI_VALUE_SEPARATOR);
+					concatenated.push_str(&i);
+				});
+				concatenated
+			})
 		}
 
 		self.frames.reserve(tag.item_count() as usize);
 
-		let artists = join_items(&mut tag, &ItemKey::TrackArtist);
-		self.set_artist(artists);
+		if let Some(artists) = join_items(&mut tag, &ItemKey::TrackArtist) {
+			self.set_artist(artists);
+		} else {
+			self.remove_artist()
+		}
 
 		for item in tag.items {
 			let frame: Frame<'_> = match item.into() {

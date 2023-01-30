@@ -24,11 +24,6 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					if value.is_empty() {
-						self.[<remove_ $name>]();
-						return;
-					}
-
 					self.$name = Some(value)
 				}
 

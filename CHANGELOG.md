@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **APE**/**ID3v1**/**ID3v2**/**Tag**
+  - Allow empty strings as values instead of removing the corresponding item when empty ([PR](https://github.com/Serial-ATA/lofty-rs/pull/134))
+
 ## [0.11.0] - 2022-1-29
 
 ### Added
