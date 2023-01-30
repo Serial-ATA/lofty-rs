@@ -35,7 +35,7 @@ macro_rules! impl_accessor {
 
 				fn [<set_ $name>](&mut self, value: String) {
 					self.insert(Frame {
-						id: FrameID::Valid(String::from($id).into()),
+						id: FrameID::Valid(Cow::Borrowed($id).into()),
 						value: FrameValue::Text {
 							encoding: TextEncoding::UTF8,
 							value,
