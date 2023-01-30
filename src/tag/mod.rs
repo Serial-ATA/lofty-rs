@@ -27,11 +27,6 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					if value.is_empty() {
-						self.[<remove_ $name>]();
-						return;
-					}
-
 					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
 				}
 
@@ -719,13 +714,16 @@ mod tests {
 	}
 
 	#[test]
-	fn insert_empty() {
+	fn should_preserve_empty_title() {
 		let mut tag = Tag::new(TagType::ID3v2);
 		tag.set_title(String::from("Foo title"));
 
 		assert_eq!(tag.title().as_deref(), Some("Foo title"));
 
 		tag.set_title(String::new());
+		assert_eq!(tag.title().as_deref(), Some(""));
+
+		tag.remove_title();
 		assert_eq!(tag.title(), None);
 	}
 }
