@@ -40,7 +40,7 @@ macro_rules! impl_accessor {
 					}
 
 					self.insert(Frame {
-						id: FrameID::Valid(String::from($id).into()),
+						id: FrameID::Valid(Cow::Borrowed($id).into()),
 						value: FrameValue::Text {
 							encoding: TextEncoding::UTF8,
 							value,
