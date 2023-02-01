@@ -4,7 +4,7 @@ macro_rules! temp_file {
 		let mut file = tempfile::tempfile().unwrap();
 		file.write_all(&std::fs::read($path).unwrap()).unwrap();
 
-		file.seek(std::io::SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		file
 	}};
@@ -67,7 +67,7 @@ macro_rules! set_artist {
 			ItemValue::Text(String::from($new_value)),
 		));
 
-		$file_write.seek(std::io::SeekFrom::Start(0)).unwrap();
+		$file_write.rewind().unwrap();
 
 		$tag.save_to(&mut $file_write).unwrap();
 	};
@@ -86,11 +86,11 @@ macro_rules! remove_tag {
 			.unwrap();
 		assert!(tagged_file.tag($tag_type).is_some());
 
-		file.seek(std::io::SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		$tag_type.remove_from(&mut file).unwrap();
 
-		file.seek(std::io::SeekFrom::Start(0)).unwrap();
+		file.rewind().unwrap();
 
 		let tagged_file = lofty::Probe::new(&mut file)
 			.options(lofty::ParseOptions::new().read_properties(false))
