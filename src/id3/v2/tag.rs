@@ -734,12 +734,9 @@ impl SplitAndMergeTag for ID3v2Tag {
 			}
 		}
 
-		let comment_frame_id = ItemKey::Comment
-			.map_key(TagType::ID3v2, false)
-			.expect("valid frame id");
 		if let Some(text) = join_text_items(&mut tag, &ItemKey::Comment) {
 			let frame = Frame {
-				id: FrameID::Valid(Cow::Borrowed(comment_frame_id)),
+				id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
 				value: FrameValue::Comment(LanguageFrame {
 					encoding: TextEncoding::UTF8,
 					language: UNKNOWN_LANGUAGE,
@@ -751,7 +748,7 @@ impl SplitAndMergeTag for ID3v2Tag {
 			let replaced_frame = self.insert(frame);
 			debug_assert!(replaced_frame.is_none());
 		} else {
-			self.remove(comment_frame_id);
+			self.remove_comment();
 		};
 
 		for item in tag.items {
