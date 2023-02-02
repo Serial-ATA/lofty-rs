@@ -735,18 +735,9 @@ impl SplitAndMergeTag for ID3v2Tag {
 		}
 
 		if let Some(text) = join_text_items(&mut tag, &ItemKey::Comment) {
-			let frame = Frame {
-				id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
-				value: FrameValue::Comment(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: UNKNOWN_LANGUAGE,
-					description: EMPTY_CONTENT_DESCRIPTOR,
-					content: text,
-				}),
-				flags: FrameFlags::default(),
-			};
-			let replaced_frame = self.insert(frame);
-			debug_assert!(replaced_frame.is_none());
+			// The first comment frame is either replaced or added.
+			debug_assert!(self.comments().count() <= 1);
+			self.set_comment(text);
 		} else {
 			self.remove_comment();
 		};
