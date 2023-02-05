@@ -34,14 +34,11 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					self.insert(Frame {
-						id: FrameID::Valid(Cow::Borrowed($id).into()),
-						value: FrameValue::Text {
-							encoding: TextEncoding::UTF8,
-							value,
-						},
-						flags: FrameFlags::default()
-					});
+					self.insert(new_text_frame(
+						FrameID::Valid(Cow::Borrowed($id).into()),
+						value,
+						FrameFlags::default(),
+					));
 				}
 
 				fn [<remove_ $name>](&mut self) {
@@ -233,16 +230,8 @@ impl ID3v2Tag {
 			None
 		};
 
-		let picture_frame = Frame {
-			id: FrameID::Valid(Cow::Borrowed("APIC")),
-			value: FrameValue::Picture {
-				encoding: TextEncoding::UTF8,
-				picture,
-			},
-			flags: FrameFlags::default(),
-		};
-
-		self.frames.push(picture_frame);
+		self.frames
+			.push(new_picture_frame(picture, FrameFlags::default()));
 
 		ret
 	}
@@ -322,6 +311,41 @@ fn filter_comment_frame_by_description_mut<'a>(
 			(lang_frame.description == description).then_some(lang_frame)
 		},
 		_ => None,
+	}
+}
+
+fn new_text_frame(id: FrameID<'_>, value: String, flags: FrameFlags) -> Frame<'_> {
+	Frame {
+		id,
+		value: FrameValue::Text {
+			encoding: TextEncoding::UTF8,
+			value,
+		},
+		flags,
+	}
+}
+
+fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
+	Frame {
+		id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
+		value: FrameValue::Comment(LanguageFrame {
+			encoding: TextEncoding::UTF8,
+			language: UNKNOWN_LANGUAGE,
+			description: EMPTY_CONTENT_DESCRIPTOR,
+			content,
+		}),
+		flags,
+	}
+}
+
+fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
+	Frame {
+		id: FrameID::Valid(Cow::Borrowed("APIC")),
+		value: FrameValue::Picture {
+			encoding: TextEncoding::UTF8,
+			picture,
+		},
+		flags,
 	}
 }
 
@@ -444,16 +468,8 @@ impl Accessor for ID3v2Tag {
 			}
 		});
 		if let Some(value) = value {
-			self.frames.push(Frame {
-				id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
-				value: FrameValue::Comment(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: UNKNOWN_LANGUAGE,
-					description: EMPTY_CONTENT_DESCRIPTOR,
-					content: value,
-				}),
-				flags: FrameFlags::default(),
-			});
+			self.frames
+				.push(new_comment_frame(value, FrameFlags::default()));
 		}
 	}
 
@@ -687,83 +703,141 @@ impl SplitAndMergeTag for ID3v2Tag {
 	}
 
 	fn merge_tag(&mut self, mut tag: Tag) {
-		fn join_text_items(tag: &mut Tag, key: &ItemKey) -> Option<String> {
-			let mut iter = tag.take_strings(key);
-			iter.next().map(|first| {
+		// Consistent and most efficient implementation that relies
+		// on the preconditions as stated for this operation.
+
+		fn join_text_items<'a>(
+			tag: &mut Tag,
+			keys: impl IntoIterator<Item = &'a ItemKey>,
+		) -> Option<String> {
+			let mut concatenated: Option<String> = None;
+			for key in keys {
+				let mut iter = tag.take_strings(key);
+				let Some(first) = iter.next() else {
+					continue;
+				};
 				// Use the length of the first string for estimating the capacity
 				// of the concatenated string.
 				let estimated_len_per_item = first.len();
 				let min_remaining_items = iter.size_hint().0;
-				let mut concatenated = first;
-				concatenated.reserve((1 + estimated_len_per_item) * min_remaining_items);
+				let concatenated = if let Some(concatenated) = &mut concatenated {
+					concatenated.reserve(
+						(1 + estimated_len_per_item) * (1 + min_remaining_items) + first.len(),
+					);
+					concatenated.push(V4_MULTI_VALUE_SEPARATOR);
+					concatenated.push_str(&first);
+					concatenated
+				} else {
+					let mut first = first;
+					first.reserve((1 + estimated_len_per_item) * min_remaining_items);
+					concatenated = Some(first);
+					concatenated.as_mut().expect("some")
+				};
 				iter.for_each(|i| {
 					concatenated.push(V4_MULTI_VALUE_SEPARATOR);
 					concatenated.push_str(&i);
 				});
-				concatenated
-			})
+			}
+			concatenated
 		}
 
 		self.frames.reserve(tag.item_count() as usize);
 
-		// TODO: Extend list of supported multi-valued text frames
-		for item_key in &[
+		// Multi-valued text key-to-frame mappings
+		// TODO: Extend this list of item keys as needed or desired
+		for item_key in [
 			&ItemKey::TrackArtist,
 			&ItemKey::AlbumArtist,
 			&ItemKey::TrackTitle,
 			&ItemKey::AlbumTitle,
+			&ItemKey::SetSubtitle,
+			&ItemKey::TrackSubtitle,
+			&ItemKey::OriginalAlbumTitle,
+			&ItemKey::OriginalArtist,
+			&ItemKey::OriginalLyricist,
 			&ItemKey::ContentGroup,
 			&ItemKey::AppleId3v2ContentGroup,
 			&ItemKey::Genre,
 			&ItemKey::Mood,
 			&ItemKey::Composer,
 			&ItemKey::Conductor,
+			&ItemKey::Writer,
+			&ItemKey::Director,
+			&ItemKey::InvolvedPeople,
+			&ItemKey::Lyricist,
+			&ItemKey::MusicianCredits,
+			&ItemKey::Producer,
+			&ItemKey::InternetRadioStationName,
+			&ItemKey::InternetRadioStationOwner,
+			&ItemKey::Remixer,
+			&ItemKey::Work,
+			&ItemKey::Movement,
+			&ItemKey::FileOwner,
+			&ItemKey::CopyrightMessage,
+			&ItemKey::Language,
+			&ItemKey::Lyrics,
 		] {
 			let frame_id = item_key
 				.map_key(TagType::ID3v2, false)
 				.expect("valid frame id");
-			if let Some(text) = join_text_items(&mut tag, item_key) {
-				let frame = Frame {
-					id: FrameID::Valid(Cow::Borrowed(frame_id)),
-					value: FrameValue::Text {
-						encoding: TextEncoding::UTF8,
-						value: text,
-					},
-					flags: FrameFlags::default(),
-				};
-				self.insert(frame);
-			} else {
-				self.remove(frame_id);
+			if let Some(text) = join_text_items(&mut tag, [item_key].into_iter()) {
+				let frame = new_text_frame(
+					FrameID::Valid(Cow::Borrowed(frame_id)),
+					text,
+					FrameFlags::default(),
+				);
+				// Optimization: No duplicate checking according to the preconditions
+				debug_assert!(!self.frames.contains(&frame));
+				self.frames.push(frame);
 			}
 		}
 
-		if let Some(text) = join_text_items(&mut tag, &ItemKey::Comment) {
-			// The first comment frame is either replaced or added.
-			debug_assert!(self.comments().count() <= 1);
-			self.set_comment(text);
-		} else {
-			self.remove_comment();
+		// Multi-valued Label/Publisher key-to-frame mapping
+		{
+			let frame_id = ItemKey::Label
+				.map_key(TagType::ID3v2, false)
+				.expect("valid frame id");
+			debug_assert_eq!(
+				Some(frame_id),
+				ItemKey::Publisher.map_key(TagType::ID3v2, false)
+			);
+			if let Some(text) = join_text_items(&mut tag, &[ItemKey::Label, ItemKey::Publisher]) {
+				let frame = new_text_frame(
+					FrameID::Valid(Cow::Borrowed(frame_id)),
+					text,
+					FrameFlags::default(),
+				);
+				// Optimization: No duplicate checking according to the preconditions
+				debug_assert!(!self.frames.contains(&frame));
+				self.frames.push(frame);
+			}
+		}
+
+		// Multi-valued Comment key-to-frame mapping
+		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Comment]) {
+			let frame = new_comment_frame(text, FrameFlags::default());
+			// Optimization: No duplicate checking according to the preconditions
+			debug_assert!(!self.frames.contains(&frame));
+			self.frames.push(frame);
 		};
 
+		// Insert all remaining items as single frames and deduplicate as needed
 		for item in tag.items {
 			let frame: Frame<'_> = match item.into() {
 				Some(frame) => frame,
 				None => continue,
 			};
-			if let Some(replaced_frame) = self.insert(frame) {
-				log::warn!("Replaced frame {replaced_frame:?}");
+			if let Some(replaced) = self.insert(frame) {
+				log::warn!("Replaced frame: {replaced:?}");
 			}
 		}
 
+		// Insert all pictures as single frames and deduplicate as needed
 		for picture in tag.pictures {
-			self.frames.push(Frame {
-				id: FrameID::Valid(Cow::Borrowed("APIC")),
-				value: FrameValue::Picture {
-					encoding: TextEncoding::UTF8,
-					picture,
-				},
-				flags: FrameFlags::default(),
-			})
+			let frame = new_picture_frame(picture, FrameFlags::default());
+			if let Some(replaced) = self.insert(frame) {
+				log::warn!("Replaced picture frame: {replaced:?}");
+			}
 		}
 	}
 }
