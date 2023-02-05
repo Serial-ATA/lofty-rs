@@ -429,29 +429,32 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_comment(&mut self, value: String) {
-		// We'll just replace the first comment's content if it exists, otherwise create a new one
-		if let Some(content) = self
-			.frames
-			.iter_mut()
-			.find_map(|frame| {
-				filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR)
-			})
-			.map(|LanguageFrame { content, .. }| content)
-		{
-			*content = value;
-			return;
-		}
-
-		self.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
-			value: FrameValue::Comment(LanguageFrame {
-				encoding: TextEncoding::UTF8,
-				language: UNKNOWN_LANGUAGE,
-				description: EMPTY_CONTENT_DESCRIPTOR,
-				content: value,
-			}),
-			flags: FrameFlags::default(),
+		let mut value = Some(value);
+		self.frames.retain_mut(|frame| {
+			let Some(LanguageFrame { content, .. }) = filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR) else {
+				return true;
+			};
+			if let Some(value) = value.take() {
+				// Replace value in first comment frame
+				*content = value;
+				true
+			} else {
+				// Remove all subsequent comment frames
+				false
+			}
 		});
+		if let Some(value) = value {
+			self.frames.push(Frame {
+				id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
+				value: FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: UNKNOWN_LANGUAGE,
+					description: EMPTY_CONTENT_DESCRIPTOR,
+					content: value,
+				}),
+				flags: FrameFlags::default(),
+			});
+		}
 	}
 
 	fn remove_comment(&mut self) {
