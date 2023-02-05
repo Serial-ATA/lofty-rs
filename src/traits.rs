@@ -290,9 +290,12 @@ pub trait SplitAndMergeTag {
 	/// Restores the original representation merged with the contents of
 	/// `tag` for further processing, e.g. writing back into a file.
 	///
+	/// Multi-valued items in `tag` with identical keys might get lost
+	/// depending on the support for multi-valued fields in `self`.
+	///
 	/// This method must only be called once and after [`Self::split_tag`]!
-	/// Otherwise the behavior is undefined and may result in redundancies
-	/// or inconsistencies.
+	/// None of the items in `tag` must be present in `self`. Otherwise the
+	/// behavior is undefined and may result in redundancies or inconsistencies.
 	fn merge_tag(&mut self, tag: Tag);
 }
 
