@@ -9,7 +9,7 @@ use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
+use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 
@@ -316,7 +316,7 @@ impl Accessor for Ilst {
 	fn year(&self) -> Option<u32> {
 		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"\xa9day")) {
 			if let Some(AtomData::UTF8(text)) = atom.data().next() {
-				return text.chars().take(4).collect::<String>().parse::<u32>().ok();
+				return try_parse_year(text);
 			}
 		}
 

@@ -101,6 +101,20 @@ pub struct Tag {
 	pub(crate) items: Vec<TagItem>,
 }
 
+#[must_use]
+pub(crate) fn try_parse_year(input: &str) -> Option<u32> {
+	let (num_digits, year) = input
+		.chars()
+		.skip_while(|c| c.is_whitespace())
+		.take_while(char::is_ascii_digit)
+		.take(4)
+		.fold((0usize, 0u32), |(num_digits, year), c| {
+			let decimal_digit = c.to_digit(10).expect("decimal digit");
+			(num_digits + 1, year * 10 + decimal_digit)
+		});
+	(num_digits == 4).then_some(year)
+}
+
 impl Accessor for Tag {
 	impl_accessor!(
 		TrackArtist => artist,
@@ -179,7 +193,7 @@ impl Accessor for Tag {
 			.get_string(&ItemKey::Year)
 			.map_or_else(|| self.get_string(&ItemKey::RecordingDate), Some)
 		{
-			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+			return try_parse_year(item);
 		}
 
 		None
@@ -648,6 +662,7 @@ impl TagType {
 
 #[cfg(test)]
 mod tests {
+	use super::try_parse_year;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType};
 	use std::io::{Seek, Write};
@@ -725,5 +740,24 @@ mod tests {
 
 		tag.remove_title();
 		assert_eq!(tag.title(), None);
+	}
+
+	#[test]
+	fn try_parse_year_with_leading_trailing_whitespace_and_various_formats() {
+		assert_eq!(Some(1983), try_parse_year("\t 1983\n"));
+		assert_eq!(Some(1983), try_parse_year("1983-1"));
+		assert_eq!(Some(1983), try_parse_year("1983- 1"));
+		assert_eq!(Some(1983), try_parse_year("1983-01"));
+		assert_eq!(Some(1983), try_parse_year("1983-1-2"));
+		assert_eq!(Some(1983), try_parse_year("1983- 1- 2"));
+		assert_eq!(Some(1983), try_parse_year("1983-01-02T10:24:08Z"));
+		assert_eq!(Some(1983), try_parse_year("1983-01-02T10:24:08.001Z"));
+	}
+
+	#[test]
+	fn should_not_parse_year_from_less_than_4_digits() {
+		assert!(try_parse_year("198").is_none());
+		assert!(try_parse_year("19").is_none());
+		assert!(try_parse_year("1").is_none());
 	}
 }

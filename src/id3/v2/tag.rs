@@ -8,7 +8,7 @@ use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
+use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 use crate::util::text::TextEncoding;
 
@@ -407,12 +407,7 @@ impl Accessor for ID3v2Tag {
 			..
 		}) = self.get("TDRC")
 		{
-			return value
-				.chars()
-				.take(4)
-				.collect::<String>()
-				.parse::<u32>()
-				.ok();
+			return try_parse_year(value);
 		}
 
 		None
