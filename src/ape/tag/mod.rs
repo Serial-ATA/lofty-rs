@@ -5,7 +5,7 @@ mod write;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
+use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
@@ -208,7 +208,7 @@ impl Accessor for ApeTag {
 			..
 		}) = self.get_key("Year")
 		{
-			return text.chars().take(4).collect::<String>().parse::<u32>().ok();
+			return try_parse_year(text);
 		}
 
 		None

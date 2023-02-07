@@ -3,7 +3,7 @@ mod write;
 
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
+use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
 
 use std::borrow::Cow;
@@ -133,7 +133,7 @@ impl Accessor for RIFFInfoList {
 
 	fn year(&self) -> Option<u32> {
 		if let Some(item) = self.get("ICRD") {
-			return item.chars().take(4).collect::<String>().parse::<u32>().ok();
+			return try_parse_year(item);
 		}
 
 		None
