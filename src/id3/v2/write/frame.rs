@@ -17,14 +17,14 @@ where
 		verify_frame(&frame)?;
 		let value = frame.value.as_bytes()?;
 
-		write_frame(writer, frame.id, frame.flags, &value)?;
+		write_frame(writer, frame.id.as_str(), frame.flags, &value)?;
 	}
 
 	Ok(())
 }
 
 fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
-	match (frame.id, frame.value.as_ref()) {
+	match (frame.id.as_str(), frame.value.as_ref()) {
 		("APIC", FrameValue::Picture { .. })
 		| ("USLT", FrameValue::UnSyncText(_))
 		| ("COMM", FrameValue::Comment(_))

@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- **APE**/**ID3v1**/**ID3v2**/**Tag**
+### Changed
+- **APE**/**ID3v1**/**ID3v2**/**Tag**:
   - Allow empty strings as values instead of removing the corresponding item when empty ([PR](https://github.com/Serial-ATA/lofty-rs/pull/134))
+
+### Fixed
+- **ID3v2**:
+  - Fix conversion of user defined frames when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/140)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/142))
 
 ## [0.11.0] - 2022-1-29
 

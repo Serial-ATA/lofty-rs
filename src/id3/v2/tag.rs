@@ -772,7 +772,7 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 		.filter_map(Result::ok);
 
 	let pictures = tag.pictures().iter().map(|p| FrameRef {
-		id: "APIC",
+		id: FrameID::Valid(Cow::Borrowed("APIC")),
 		value: Cow::Owned(FrameValue::Picture {
 			encoding: TextEncoding::UTF8,
 			picture: p.clone(),
@@ -809,7 +809,8 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
 	use crate::{
-		Accessor, ItemKey, ItemValue, MimeType, Picture, PictureType, Tag, TagExt, TagItem, TagType,
+		Accessor, ItemKey, ItemValue, MimeType, Picture, PictureType, SplitAndMergeTag, Tag,
+		TagExt, TagItem, TagType,
 	};
 
 	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
@@ -1405,5 +1406,59 @@ mod tests {
 
 		assert_eq!(tag.frames.len(), 2);
 		assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
+	}
+
+	#[test]
+	fn user_defined_frames_conversion() {
+		let mut id3v2 = ID3v2Tag::default();
+		id3v2.insert(
+			Frame::new(
+				"TXXX",
+				FrameValue::UserText(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::from("FOO_BAR"),
+					content: String::from("foo content"),
+				}),
+				FrameFlags::default(),
+			)
+			.unwrap(),
+		);
+
+		let tag = id3v2.split_tag();
+		assert_eq!(id3v2.len(), 0);
+		assert_eq!(tag.len(), 1);
+
+		id3v2.merge_tag(tag);
+
+		// Verify we properly convert user defined frames between Tag <-> ID3v2Tag round trips
+		assert_eq!(
+			id3v2.frames.first(),
+			Some(&Frame {
+				id: FrameID::Valid(Cow::Borrowed("TXXX")),
+				value: FrameValue::UserText(EncodedTextFrame {
+					encoding: TextEncoding::UTF8,
+					description: String::from("FOO_BAR"),
+					content: String::from("foo content"),
+				}),
+				flags: FrameFlags::default(),
+			})
+		);
+
+		// Verify we properly convert user defined frames when writing a Tag, which has to convert
+		// to the reference types.
+		let tag = id3v2.clone().split_tag();
+		assert_eq!(tag.len(), 1);
+
+		let mut content = Vec::new();
+		tag.dump_to(&mut content).unwrap();
+		assert!(!content.is_empty());
+
+		// And verify we can reread the tag
+		let mut reader = std::io::Cursor::new(&content[..]);
+
+		let header = read_id3v2_header(&mut reader).unwrap();
+		let reparsed = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+
+		assert_eq!(id3v2, reparsed);
 	}
 }
