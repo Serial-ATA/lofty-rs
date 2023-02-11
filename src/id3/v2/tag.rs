@@ -684,7 +684,7 @@ impl SplitAndMergeTag for ID3v2Tag {
 	}
 
 	fn merge_tag(&mut self, mut tag: Tag) {
-		fn join_items(tag: &mut Tag, key: &ItemKey) -> Option<String> {
+		fn join_text_items(tag: &mut Tag, key: &ItemKey) -> Option<String> {
 			let mut iter = tag.take_strings(key);
 			iter.next().map(|first| {
 				// Use the length of the first string for estimating the capacity
@@ -703,19 +703,65 @@ impl SplitAndMergeTag for ID3v2Tag {
 
 		self.frames.reserve(tag.item_count() as usize);
 
-		if let Some(artists) = join_items(&mut tag, &ItemKey::TrackArtist) {
-			self.set_artist(artists);
-		} else {
-			self.remove_artist()
+		// TODO: Extend list of supported multi-valued text frames
+		for item_key in &[
+			&ItemKey::TrackArtist,
+			&ItemKey::AlbumArtist,
+			&ItemKey::TrackTitle,
+			&ItemKey::AlbumTitle,
+			&ItemKey::ContentGroup,
+			&ItemKey::AppleId3v2ContentGroup,
+			&ItemKey::Genre,
+			&ItemKey::Mood,
+			&ItemKey::Composer,
+			&ItemKey::Conductor,
+		] {
+			let frame_id = item_key
+				.map_key(TagType::ID3v2, false)
+				.expect("valid frame id");
+			if let Some(text) = join_text_items(&mut tag, item_key) {
+				let frame = Frame {
+					id: FrameID::Valid(Cow::Borrowed(frame_id)),
+					value: FrameValue::Text {
+						encoding: TextEncoding::UTF8,
+						value: text,
+					},
+					flags: FrameFlags::default(),
+				};
+				self.insert(frame);
+			} else {
+				self.remove(frame_id);
+			}
 		}
+
+		let comment_frame_id = ItemKey::Comment
+			.map_key(TagType::ID3v2, false)
+			.expect("valid frame id");
+		if let Some(text) = join_text_items(&mut tag, &ItemKey::Comment) {
+			let frame = Frame {
+				id: FrameID::Valid(Cow::Borrowed(comment_frame_id)),
+				value: FrameValue::Comment(LanguageFrame {
+					encoding: TextEncoding::UTF8,
+					language: UNKNOWN_LANGUAGE,
+					description: EMPTY_CONTENT_DESCRIPTOR,
+					content: text,
+				}),
+				flags: FrameFlags::default(),
+			};
+			let replaced_frame = self.insert(frame);
+			debug_assert!(replaced_frame.is_none());
+		} else {
+			self.remove(comment_frame_id);
+		};
 
 		for item in tag.items {
 			let frame: Frame<'_> = match item.into() {
 				Some(frame) => frame,
 				None => continue,
 			};
-
-			self.insert(frame);
+			if let Some(replaced_frame) = self.insert(frame) {
+				log::warn!("Replaced frame {replaced_frame:?}");
+			}
 		}
 
 		for picture in tag.pictures {
@@ -804,8 +850,8 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
 	use crate::{
-		Accessor, ItemKey, ItemValue, MimeType, Picture, PictureType, SplitAndMergeTag, Tag,
-		TagExt, TagItem, TagType,
+		Accessor as _, ItemKey, ItemValue, MimeType, Picture, PictureType, SplitAndMergeTag as _,
+		Tag, TagExt as _, TagItem, TagType,
 	};
 
 	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
@@ -1301,6 +1347,73 @@ mod tests {
 				item_value: ItemValue::Text(String::from("-10.43 dB"))
 			}
 		);
+	}
+
+	#[test]
+	fn multi_value_roundtrip() {
+		let mut tag = Tag::new(TagType::ID3v2);
+		// 1st: Multi-valued text frames
+		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text("TrackArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumArtist,
+			ItemValue::Text("AlbumArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackTitle,
+			ItemValue::Text("TrackTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumTitle,
+			ItemValue::Text("AlbumTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::ContentGroup,
+			ItemValue::Text("ContentGroup 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Genre,
+			ItemValue::Text("Genre 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Mood,
+			ItemValue::Text("Mood 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Composer,
+			ItemValue::Text("Composer 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Conductor,
+			ItemValue::Text("Conductor 2".to_owned()),
+		));
+		// 2nd: Multi-valued language frames
+		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Comment,
+			ItemValue::Text("Comment 2".to_owned()),
+		));
+		assert_eq!(20, tag.len());
+
+		let mut id3v2 = ID3v2Tag::from(tag.clone());
+		let split_tag = id3v2.split_tag();
+
+		assert_eq!(0, id3v2.len());
+		assert_eq!(tag.len(), split_tag.len());
+		// The ordering of items/frames matters, see above!
+		// TODO: Replace with an unordered comparison.
+		assert_eq!(tag.items, split_tag.items);
 	}
 
 	#[test]
