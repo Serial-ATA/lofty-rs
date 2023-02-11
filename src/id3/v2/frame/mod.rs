@@ -371,7 +371,7 @@ impl<'a> Frame<'a> {
 	pub(crate) fn as_opt_ref(&'a self) -> Option<FrameRef<'a>> {
 		if let FrameID::Valid(id) = &self.id {
 			Some(FrameRef {
-				id: FrameID::Valid(id.clone()),
+				id: FrameID::Valid(Cow::Borrowed(&id)),
 				value: Cow::Borrowed(self.content()),
 				flags: self.flags,
 			})
