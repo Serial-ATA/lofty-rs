@@ -9,7 +9,7 @@ use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::item::{ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::{encode_text, TextEncoding};
 use id::FrameID;
@@ -362,7 +362,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 }
 
 pub(crate) struct FrameRef<'a> {
-	pub id: &'a str,
+	pub id: FrameID<'a>,
 	pub value: Cow<'a, FrameValue>,
 	pub flags: FrameFlags,
 }
@@ -371,7 +371,7 @@ impl<'a> Frame<'a> {
 	pub(crate) fn as_opt_ref(&'a self) -> Option<FrameRef<'a>> {
 		if let FrameID::Valid(id) = &self.id {
 			Some(FrameRef {
-				id,
+				id: FrameID::Valid(id.clone()),
 				value: Cow::Borrowed(self.content()),
 				flags: self.flags,
 			})
@@ -385,48 +385,90 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 	type Error = LoftyError;
 
 	fn try_from(tag_item: &'a TagItem) -> std::result::Result<Self, Self::Error> {
-		let id = match tag_item.key() {
-			ItemKey::Unknown(unknown) if unknown.len() == 4 => {
-				id::FrameID::verify_id(unknown)?;
-				Ok(unknown.as_str())
-			},
-			k => k
-				.map_key(TagType::ID3v2, false)
-				.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadFrameID)),
-		}?;
+		let id: Result<FrameID<'a>> = tag_item.key().try_into();
+		let frame_id: FrameID<'a>;
+		let value: FrameValue;
+		match id {
+			Ok(id) => {
+				let id_str = id.as_str();
 
-		Ok(FrameRef {
-			id,
-			value: Cow::Owned(match (id, tag_item.value()) {
-				("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: UNKNOWN_LANGUAGE,
-					description: EMPTY_CONTENT_DESCRIPTOR,
-					content: text.clone(),
-				}),
-				("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
-					encoding: TextEncoding::UTF8,
-					language: UNKNOWN_LANGUAGE,
-					description: EMPTY_CONTENT_DESCRIPTOR,
-					content: text.clone(),
-				}),
-				("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
-					FrameValue::UserURL(EncodedTextFrame {
+				value = match (id_str, tag_item.value()) {
+					("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
+						encoding: TextEncoding::UTF8,
+						language: UNKNOWN_LANGUAGE,
+						description: EMPTY_CONTENT_DESCRIPTOR,
+						content: text.clone(),
+					}),
+					("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
+						encoding: TextEncoding::UTF8,
+						language: UNKNOWN_LANGUAGE,
+						description: EMPTY_CONTENT_DESCRIPTOR,
+						content: text.clone(),
+					}),
+					("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
+						FrameValue::UserURL(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: EMPTY_CONTENT_DESCRIPTOR,
+							content: text.clone(),
+						})
+					},
+					(locator_id, ItemValue::Locator(text)) if locator_id.len() > 4 => {
+						FrameValue::UserURL(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: EMPTY_CONTENT_DESCRIPTOR,
+							content: text.clone(),
+						})
+					},
+					("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
 						encoding: TextEncoding::UTF8,
 						description: EMPTY_CONTENT_DESCRIPTOR,
 						content: text.clone(),
-					})
-				},
-				("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
-					encoding: TextEncoding::UTF8,
-					description: EMPTY_CONTENT_DESCRIPTOR,
-					content: text.clone(),
-				}),
-				("POPM", ItemValue::Binary(contents)) => {
-					FrameValue::Popularimeter(Popularimeter::from_bytes(contents)?)
-				},
-				(_, value) => value.into(),
-			}),
+					}),
+					(text_id, ItemValue::Text(text)) if text_id.len() > 4 => {
+						FrameValue::UserText(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: EMPTY_CONTENT_DESCRIPTOR,
+							content: text.clone(),
+						})
+					},
+					("POPM", ItemValue::Binary(contents)) => {
+						FrameValue::Popularimeter(Popularimeter::from_bytes(contents)?)
+					},
+					(_, value) => value.into(),
+				};
+
+				frame_id = id;
+			},
+			Err(_) => {
+				let Some(desc) = tag_item.key().map_key(TagType::ID3v2, true) else {
+					return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into());
+				};
+
+				match tag_item.value() {
+					ItemValue::Text(text) => {
+						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
+						value = FrameValue::UserText(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::from(desc),
+							content: text.clone(),
+						})
+					},
+					ItemValue::Locator(locator) => {
+						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
+						value = FrameValue::UserURL(EncodedTextFrame {
+							encoding: TextEncoding::UTF8,
+							description: String::from(desc),
+							content: locator.clone(),
+						})
+					},
+					_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
+				}
+			},
+		}
+
+		Ok(FrameRef {
+			id: frame_id,
+			value: Cow::Owned(value),
 			flags: FrameFlags::default(),
 		})
 	}

@@ -81,18 +81,20 @@ impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
 
 	fn try_from(value: &'a ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
 		match value {
-			ItemKey::Unknown(unknown)
-				if unknown.len() == 4
-					&& unknown
-						.chars()
-						.all(|c| c.is_ascii_uppercase() || c.is_ascii_digit()) =>
-			{
+			ItemKey::Unknown(unknown) if unknown.len() == 4 => {
+				Self::verify_id(&unknown)?;
 				Ok(Self::Valid(Cow::Borrowed(unknown)))
 			},
-			k => k.map_key(TagType::ID3v2, false).map_or(
-				Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
-				|id| Ok(Self::Valid(Cow::Borrowed(id))),
-			),
+			k => {
+				if let Some(mapped) = k.map_key(TagType::ID3v2, false) {
+					if mapped.len() == 4 {
+						Self::verify_id(mapped)?;
+						return Ok(Self::Valid(Cow::Borrowed(mapped)));
+					}
+				}
+
+				Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into())
+			},
 		}
 	}
 }
