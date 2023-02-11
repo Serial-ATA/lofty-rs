@@ -480,7 +480,7 @@ pub(crate) fn create_vorbis_comments_ref(
 #[cfg(test)]
 mod tests {
 	use crate::ogg::{OggPictureStorage, VorbisComments};
-	use crate::{Tag, TagExt, TagType};
+	use crate::{ItemKey, ItemValue, SplitAndMergeTag as _, Tag, TagExt as _, TagItem, TagType};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
@@ -548,6 +548,87 @@ mod tests {
 		assert_eq!(vorbis_comments.get("COMMENT"), Some("Qux comment"));
 		assert_eq!(vorbis_comments.get("TRACKNUMBER"), Some("1"));
 		assert_eq!(vorbis_comments.get("GENRE"), Some("Classical"));
+	}
+
+	#[test]
+	fn multi_value_roundtrip() {
+		let mut tag = Tag::new(TagType::VorbisComments);
+		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text("TrackArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumArtist,
+			ItemValue::Text("AlbumArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackTitle,
+			ItemValue::Text("TrackTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumTitle,
+			ItemValue::Text("AlbumTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Comment,
+			ItemValue::Text("Comment 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::ContentGroup,
+			ItemValue::Text("ContentGroup 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Genre,
+			ItemValue::Text("Genre 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Mood,
+			ItemValue::Text("Mood 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Composer,
+			ItemValue::Text("Composer 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Conductor,
+			ItemValue::Text("Conductor 2".to_owned()),
+		));
+		// Otherwise the following item would be inserted implicitly
+		// during the conversion.
+		tag.insert_text(ItemKey::EncoderSoftware, "EncoderSoftware".to_owned());
+		assert_eq!(20 + 1, tag.len());
+
+		let mut vorbis_comments1 = VorbisComments::from(tag.clone());
+
+		let mut vorbis_comments2 = vorbis_comments1.clone();
+		let split_tag = vorbis_comments2.split_tag();
+		assert_eq!(0, vorbis_comments2.len());
+		assert_eq!(tag.len(), split_tag.len());
+
+		// Merge back into Vorbis Comments for comparison
+		vorbis_comments2.merge_tag(split_tag);
+		// Soft before comparison -> unordered comparison
+		vorbis_comments1
+			.items
+			.sort_by(|(lhs_key, lhs_val), (rhs_key, rhs_val)| {
+				lhs_key.cmp(rhs_key).then_with(|| lhs_val.cmp(rhs_val))
+			});
+		vorbis_comments2
+			.items
+			.sort_by(|(lhs_key, lhs_val), (rhs_key, rhs_val)| {
+				lhs_key.cmp(rhs_key).then_with(|| lhs_val.cmp(rhs_val))
+			});
+		assert_eq!(vorbis_comments1.items, vorbis_comments2.items);
 	}
 
 	#[test]

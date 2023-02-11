@@ -550,8 +550,11 @@ mod tests {
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Accessor, AudioFile, ItemKey, ParseOptions, Tag, TagExt, TagType};
-	use std::io::{Cursor, Read, Seek, Write};
+	use crate::{
+		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, SplitAndMergeTag as _, Tag,
+		TagExt as _, TagItem, TagType,
+	};
+	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
 	fn read_ilst(path: &str) -> Ilst {
 		let tag = crate::tag::utils::test_utils::read_path(path);
@@ -872,6 +875,69 @@ mod tests {
 			*b"\xa9gen",
 			&AtomData::UTF8(String::from("Classical")),
 		);
+	}
+
+	#[test]
+	fn multi_value_roundtrip() {
+		let mut tag = Tag::new(TagType::MP4ilst);
+		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackArtist,
+			ItemValue::Text("TrackArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumArtist,
+			ItemValue::Text("AlbumArtist 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::TrackTitle,
+			ItemValue::Text("TrackTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::AlbumTitle,
+			ItemValue::Text("AlbumTitle 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Comment,
+			ItemValue::Text("Comment 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::ContentGroup,
+			ItemValue::Text("ContentGroup 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Genre,
+			ItemValue::Text("Genre 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Mood,
+			ItemValue::Text("Mood 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Composer,
+			ItemValue::Text("Composer 2".to_owned()),
+		));
+		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
+		tag.push_item(TagItem::new(
+			ItemKey::Conductor,
+			ItemValue::Text("Conductor 2".to_owned()),
+		));
+		assert_eq!(20, tag.len());
+
+		let mut ilst = Ilst::from(tag.clone());
+		let split_tag = ilst.split_tag();
+
+		assert_eq!(0, ilst.len());
+		assert_eq!(tag.len(), split_tag.len());
+		assert_eq!(tag.items, split_tag.items);
 	}
 
 	#[test]
