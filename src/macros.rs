@@ -1,17 +1,3 @@
-// See cfg-if comment in `Cargo.toml`
-//
-// macro_rules! feature_locked {
-// 	(
-// 		#![cfg($meta:meta)]
-// 		$($item:item)+
-// 	) => {
-// 		$(
-// 			#[cfg($meta)]
-// 			$item
-// 		)+
-// 	}
-// }
-
 macro_rules! try_vec {
 	($elem:expr; $size:expr) => {{
 		let mut v = Vec::new();
