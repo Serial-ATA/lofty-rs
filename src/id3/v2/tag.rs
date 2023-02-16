@@ -362,7 +362,14 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_track(&mut self, value: u32) {
-		self.insert(Frame::text(Cow::Borrowed("TRCK"), value.to_string()));
+		let existing_track_total = self.track_total();
+
+		let trck_content = match existing_track_total {
+			Some(track_total) => format!("{value}/{track_total}"),
+			None => value.to_string(),
+		};
+
+		self.insert(Frame::text(Cow::Borrowed("TRCK"), trck_content));
 	}
 
 	fn remove_track(&mut self) {
@@ -374,11 +381,11 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		let current_track = self.split_num_pair("TRCK").0.unwrap_or(1);
+		let track_number = self.track().unwrap_or(1);
 
 		self.insert(Frame::text(
 			Cow::Borrowed("TRCK"),
-			format!("{current_track}/{value}"),
+			format!("{track_number}/{value}"),
 		));
 	}
 
@@ -1633,5 +1640,53 @@ mod tests {
 		let reparsed = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
 
 		assert_eq!(id3v2, reparsed);
+	}
+
+	#[test]
+	fn set_track() {
+		let mut id3v2 = ID3v2Tag::default();
+		let track = 1;
+
+		id3v2.set_track(track);
+
+		assert_eq!(id3v2.track().unwrap(), track);
+		assert!(id3v2.track_total().is_none());
+	}
+
+	#[test]
+	fn set_track_total() {
+		let mut id3v2 = ID3v2Tag::default();
+		let track_total = 2;
+
+		id3v2.set_track_total(track_total);
+
+		assert_eq!(id3v2.track().unwrap(), 1);
+		assert_eq!(id3v2.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn set_track_and_track_total() {
+		let mut id3v2 = ID3v2Tag::default();
+		let track = 1;
+		let track_total = 2;
+
+		id3v2.set_track(track);
+		id3v2.set_track_total(track_total);
+
+		assert_eq!(id3v2.track().unwrap(), track);
+		assert_eq!(id3v2.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn set_track_total_and_track() {
+		let mut id3v2 = ID3v2Tag::default();
+		let track_total = 2;
+		let track = 1;
+
+		id3v2.set_track_total(track_total);
+		id3v2.set_track(track);
+
+		assert_eq!(id3v2.track_total().unwrap(), track_total);
+		assert_eq!(id3v2.track().unwrap(), track);
 	}
 }
