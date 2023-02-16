@@ -403,7 +403,14 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		self.insert(Frame::text(Cow::Borrowed("TPOS"), value.to_string()));
+		let existing_disk_total = self.disk_total();
+
+		let tpos_content = match existing_disk_total {
+			Some(disc_total) => format!("{value}/{disc_total}"),
+			None => value.to_string(),
+		};
+
+		self.insert(Frame::text(Cow::Borrowed("TPOS"), tpos_content));
 	}
 
 	fn remove_disk(&mut self) {
@@ -415,11 +422,11 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		let current_disk = self.split_num_pair("TPOS").0.unwrap_or(1);
+		let disk_number = self.disk().unwrap_or(1);
 
 		self.insert(Frame::text(
 			Cow::Borrowed("TPOS"),
-			format!("{current_disk}/{value}"),
+			format!("{disk_number}/{value}"),
 		));
 	}
 
@@ -1688,5 +1695,53 @@ mod tests {
 
 		assert_eq!(id3v2.track_total().unwrap(), track_total);
 		assert_eq!(id3v2.track().unwrap(), track);
+	}
+
+	#[test]
+	fn set_disk() {
+		let mut id3v2 = ID3v2Tag::default();
+		let disk = 1;
+
+		id3v2.set_disk(disk);
+
+		assert_eq!(id3v2.disk().unwrap(), disk);
+		assert!(id3v2.disk_total().is_none());
+	}
+
+	#[test]
+	fn set_disk_total() {
+		let mut id3v2 = ID3v2Tag::default();
+		let disk_total = 2;
+
+		id3v2.set_disk_total(disk_total);
+
+		assert_eq!(id3v2.disk().unwrap(), 1);
+		assert_eq!(id3v2.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn set_disk_and_disk_total() {
+		let mut id3v2 = ID3v2Tag::default();
+		let disk = 1;
+		let disk_total = 2;
+
+		id3v2.set_disk(disk);
+		id3v2.set_disk_total(disk_total);
+
+		assert_eq!(id3v2.disk().unwrap(), disk);
+		assert_eq!(id3v2.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn set_disk_total_and_disk() {
+		let mut id3v2 = ID3v2Tag::default();
+		let disk_total = 2;
+		let disk = 1;
+
+		id3v2.set_disk_total(disk_total);
+		id3v2.set_disk(disk);
+
+		assert_eq!(id3v2.disk_total().unwrap(), disk_total);
+		assert_eq!(id3v2.disk().unwrap(), disk);
 	}
 }
