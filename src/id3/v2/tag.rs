@@ -285,6 +285,41 @@ impl ID3v2Tag {
 
 		(None, None)
 	}
+
+	fn insert_item(&mut self, item: TagItem) {
+		fn set_number<F: FnMut(u32)>(item: &TagItem, mut setter: F) {
+			let text = item.value().text();
+			let number = text.map(str::parse::<u32>);
+
+			match number {
+				Some(Ok(number)) => setter(number),
+				Some(Err(parse_error)) => {
+					log::warn!(
+						"\"{}\" cannot be parsed as number in {:?}: {parse_error}",
+						text.unwrap(),
+						item.key()
+					)
+				},
+				None => {
+					log::warn!("Value does not have text in {:?}", item.key())
+				},
+			}
+		}
+
+		match item.key() {
+			ItemKey::TrackNumber => set_number(&item, |number| self.set_track(number)),
+			ItemKey::TrackTotal => set_number(&item, |number| self.set_track_total(number)),
+			ItemKey::DiscNumber => set_number(&item, |number| self.set_disk(number)),
+			ItemKey::DiscTotal => set_number(&item, |number| self.set_disk_total(number)),
+			_ => {
+				if let Some(frame) = item.into() {
+					if let Some(replaced) = self.insert(frame) {
+						log::warn!("Replaced frame: {replaced:?}");
+					}
+				}
+			},
+		};
+	}
 }
 
 fn filter_comment_frame_by_description<'a>(
@@ -837,13 +872,7 @@ impl SplitAndMergeTag for ID3v2Tag {
 
 		// Insert all remaining items as single frames and deduplicate as needed
 		for item in tag.items {
-			let frame: Frame<'_> = match item.into() {
-				Some(frame) => frame,
-				None => continue,
-			};
-			if let Some(replaced) = self.insert(frame) {
-				log::warn!("Replaced frame: {replaced:?}");
-			}
+			self.insert_item(item);
 		}
 
 		// Insert all pictures as single frames and deduplicate as needed
@@ -1743,5 +1772,53 @@ mod tests {
 
 		assert_eq!(id3v2.disk_total().unwrap(), disk_total);
 		assert_eq!(id3v2.disk().unwrap(), disk);
+	}
+
+	#[test]
+	fn track_number_and_track_total_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let track_number = 1;
+		let track_total = 2;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(track_number.to_string()),
+		));
+
+		tag.push_item(TagItem::new(
+			ItemKey::TrackTotal,
+			ItemValue::Text(track_total.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), track_number);
+		assert_eq!(tag.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn disk_number_and_disk_total_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let disk_number = 1;
+		let disk_total = 2;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::DiscNumber,
+			ItemValue::Text(disk_number.to_string()),
+		));
+
+		tag.push_item(TagItem::new(
+			ItemKey::DiscTotal,
+			ItemValue::Text(disk_total.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), disk_number);
+		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 }
