@@ -701,6 +701,16 @@ mod tests {
 
 	#[test]
 	fn issue_130_huge_picture() {
+		// Verify we have opus-tools available, otherwise skip
+		match Command::new("opusinfo").output() {
+			Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound) => {
+				eprintln!("Skipping test, `opus-tools` is not installed!");
+				return;
+			},
+			Err(e) => panic!("{}", e),
+			_ => {},
+		}
+
 		let file_contents = read_path("tests/files/assets/minimal/full_test.opus");
 		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
 		temp_file.write_all(&file_contents).unwrap();
