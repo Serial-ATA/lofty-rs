@@ -14,6 +14,7 @@ use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
 use std::convert::TryInto;
+use std::fmt::Display;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::path::Path;
@@ -24,6 +25,17 @@ const COMMENT_FRAME_ID: &str = "COMM";
 
 const V4_MULTI_VALUE_SEPARATOR: char = '\0';
 const NUMBER_PAIR_SEPARATOR: char = '/';
+
+// This is used as the default number of track and disk.
+const DEFAULT_NUMBER_IN_PAIR: u32 = 1;
+
+// These keys have the part of the number pair.
+const NUMBER_PAIR_KEYS: &[ItemKey] = &[
+	ItemKey::TrackNumber,
+	ItemKey::TrackTotal,
+	ItemKey::DiscNumber,
+	ItemKey::DiscTotal,
+];
 
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
@@ -320,6 +332,14 @@ impl ID3v2Tag {
 			},
 		};
 	}
+
+	fn insert_number_pair(&mut self, id: &'static str, number: Option<u32>, total: Option<u32>) {
+		if let Some(content) = format_number_pair(number, total) {
+			self.insert(Frame::text(Cow::Borrowed(id), content));
+		} else {
+			log::warn!("{id} is not set. number: {number:?}, total: {total:?}");
+		}
+	}
 }
 
 fn filter_comment_frame_by_description<'a>(
@@ -384,6 +404,21 @@ fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
 	}
 }
 
+fn format_number_pair<N, T>(number: Option<N>, total: Option<T>) -> Option<String>
+where
+	N: Display,
+	T: Display,
+{
+	match (number, total) {
+		(Some(number), None) => Some(number.to_string()),
+		(None, Some(total)) => Some(format!(
+			"{DEFAULT_NUMBER_IN_PAIR}{NUMBER_PAIR_SEPARATOR}{total}"
+		)),
+		(Some(number), Some(total)) => Some(format!("{number}{NUMBER_PAIR_SEPARATOR}{total}")),
+		(None, None) => None,
+	}
+}
+
 impl Accessor for ID3v2Tag {
 	impl_accessor!(
 		title  => "TIT2";
@@ -397,14 +432,7 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_track(&mut self, value: u32) {
-		let existing_track_total = self.track_total();
-
-		let trck_content = match existing_track_total {
-			Some(track_total) => format!("{value}/{track_total}"),
-			None => value.to_string(),
-		};
-
-		self.insert(Frame::text(Cow::Borrowed("TRCK"), trck_content));
+		self.insert_number_pair("TRCK", Some(value), self.track_total());
 	}
 
 	fn remove_track(&mut self) {
@@ -416,12 +444,7 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		let track_number = self.track().unwrap_or(1);
-
-		self.insert(Frame::text(
-			Cow::Borrowed("TRCK"),
-			format!("{track_number}/{value}"),
-		));
+		self.insert_number_pair("TRCK", self.track(), Some(value));
 	}
 
 	fn remove_track_total(&mut self) {
@@ -438,14 +461,7 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		let existing_disk_total = self.disk_total();
-
-		let tpos_content = match existing_disk_total {
-			Some(disc_total) => format!("{value}/{disc_total}"),
-			None => value.to_string(),
-		};
-
-		self.insert(Frame::text(Cow::Borrowed("TPOS"), tpos_content));
+		self.insert_number_pair("TPOS", Some(value), self.disk_total());
 	}
 
 	fn remove_disk(&mut self) {
@@ -457,12 +473,7 @@ impl Accessor for ID3v2Tag {
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		let disk_number = self.disk().unwrap_or(1);
-
-		self.insert(Frame::text(
-			Cow::Borrowed("TPOS"),
-			format!("{disk_number}/{value}"),
-		));
+		self.insert_number_pair("TPOS", self.disk(), Some(value));
 	}
 
 	fn remove_disk_total(&mut self) {
@@ -915,10 +926,37 @@ impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone {
+	fn create_frameref_for_number_pair<'a>(
+		number: Option<&str>,
+		total: Option<&str>,
+		id: &'a str,
+	) -> Option<FrameRef<'a>> {
+		format_number_pair(number, total).map(|value| {
+			let frame = Frame::text(Cow::Borrowed(id), value);
+
+			FrameRef {
+				id: frame.id,
+				value: Cow::Owned(frame.value),
+				flags: frame.flags,
+			}
+		})
+	}
+
 	let items = tag
 		.items()
+		.filter(|item| !NUMBER_PAIR_KEYS.contains(item.key()))
 		.map(TryInto::<FrameRef<'_>>::try_into)
-		.filter_map(Result::ok);
+		.filter_map(Result::ok)
+		.chain(create_frameref_for_number_pair(
+			tag.get_string(&ItemKey::TrackNumber),
+			tag.get_string(&ItemKey::TrackTotal),
+			"TRCK",
+		))
+		.chain(create_frameref_for_number_pair(
+			tag.get_string(&ItemKey::DiscNumber),
+			tag.get_string(&ItemKey::DiscTotal),
+			"TPOS",
+		));
 
 	let pictures = tag.pictures().iter().map(|p| FrameRef {
 		id: FrameID::Valid(Cow::Borrowed("APIC")),
@@ -950,7 +988,7 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::items::popularimeter::Popularimeter;
-	use crate::id3::v2::tag::filter_comment_frame_by_description;
+	use crate::id3::v2::tag::{filter_comment_frame_by_description, DEFAULT_NUMBER_IN_PAIR};
 	use crate::id3::v2::{
 		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
 		ID3v2Version, LanguageFrame,
@@ -1696,7 +1734,7 @@ mod tests {
 
 		id3v2.set_track_total(track_total);
 
-		assert_eq!(id3v2.track().unwrap(), 1);
+		assert_eq!(id3v2.track().unwrap(), DEFAULT_NUMBER_IN_PAIR);
 		assert_eq!(id3v2.track_total().unwrap(), track_total);
 	}
 
@@ -1744,7 +1782,7 @@ mod tests {
 
 		id3v2.set_disk_total(disk_total);
 
-		assert_eq!(id3v2.disk().unwrap(), 1);
+		assert_eq!(id3v2.disk().unwrap(), DEFAULT_NUMBER_IN_PAIR);
 		assert_eq!(id3v2.disk_total().unwrap(), disk_total);
 	}
 
@@ -1775,6 +1813,42 @@ mod tests {
 	}
 
 	#[test]
+	fn track_number_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let track_number = 1;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(track_number.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), track_number);
+		assert!(tag.track_total().is_none());
+	}
+
+	#[test]
+	fn track_total_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let track_total = 2;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::TrackTotal,
+			ItemValue::Text(track_total.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(tag.track_total().unwrap(), track_total);
+	}
+
+	#[test]
 	fn track_number_and_track_total_tag_to_id3v2() {
 		use crate::traits::Accessor;
 		let track_number = 1;
@@ -1796,6 +1870,42 @@ mod tests {
 
 		assert_eq!(tag.track().unwrap(), track_number);
 		assert_eq!(tag.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn disk_number_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let disk_number = 1;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::DiscNumber,
+			ItemValue::Text(disk_number.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), disk_number);
+		assert!(tag.disk_total().is_none());
+	}
+
+	#[test]
+	fn disk_total_tag_to_id3v2() {
+		use crate::traits::Accessor;
+		let disk_total = 2;
+
+		let mut tag = Tag::new(TagType::ID3v2);
+
+		tag.push_item(TagItem::new(
+			ItemKey::DiscTotal,
+			ItemValue::Text(disk_total.to_string()),
+		));
+
+		let tag: ID3v2Tag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 
 	#[test]

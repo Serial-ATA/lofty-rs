@@ -1,6 +1,6 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::{
-	Accessor, FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType,
+	Accessor, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem, TagType,
 	TaggedFileExt,
 };
 use std::io::{Seek, Write};
@@ -124,6 +124,172 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::ID3v1, "Baz artist", 1 => file, "Bar artist");
 
 	crate::set_artist!(tagged_file, tag_mut, TagType::APE, "Qux artist", 1 => file, "Baz artist");
+}
+
+#[test]
+fn save_to_id3v2() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+
+	let mut tag = Tag::new(TagType::ID3v2);
+
+	// Set title to save this tag.
+	tag.set_title("title".to_string());
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	let tag = tagged_file.tag(TagType::ID3v2).unwrap();
+
+	assert!(tag.track().is_none());
+	assert!(tag.track_total().is_none());
+	assert!(tag.disk().is_none());
+	assert!(tag.disk_total().is_none());
+}
+
+#[test]
+fn save_number_of_track_and_disk_to_id3v2() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+
+	let mut tag = Tag::new(TagType::ID3v2);
+
+	let track = 1;
+	let disk = 2;
+
+	tag.set_track(track);
+	tag.set_disk(disk);
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	let tag = tagged_file.tag(TagType::ID3v2).unwrap();
+
+	assert_eq!(tag.track().unwrap(), track);
+	assert!(tag.track_total().is_none());
+	assert_eq!(tag.disk().unwrap(), disk);
+	assert!(tag.disk_total().is_none());
+}
+
+#[test]
+fn save_total_of_track_and_disk_to_id3v2() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+
+	let mut tag = Tag::new(TagType::ID3v2);
+
+	let track_total = 2;
+	let disk_total = 3;
+
+	tag.set_track_total(track_total);
+	tag.set_disk_total(disk_total);
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	let tag = tagged_file.tag(TagType::ID3v2).unwrap();
+
+	assert_eq!(tag.track().unwrap(), 1);
+	assert_eq!(tag.track_total().unwrap(), track_total);
+	assert_eq!(tag.disk().unwrap(), 1);
+	assert_eq!(tag.disk_total().unwrap(), disk_total);
+}
+
+#[test]
+fn save_number_pair_of_track_and_disk_to_id3v2() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+
+	let mut tag = Tag::new(TagType::ID3v2);
+
+	let track = 1;
+	let track_total = 2;
+	let disk = 3;
+	let disk_total = 4;
+
+	tag.set_track(track);
+	tag.set_track_total(track_total);
+
+	tag.set_disk(disk);
+	tag.set_disk_total(disk_total);
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	let tag = tagged_file.tag(TagType::ID3v2).unwrap();
+
+	assert_eq!(tag.track().unwrap(), track);
+	assert_eq!(tag.track_total().unwrap(), track_total);
+	assert_eq!(tag.disk().unwrap(), disk);
+	assert_eq!(tag.disk_total().unwrap(), disk_total);
 }
 
 #[test]
