@@ -361,6 +361,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 	}
 }
 
+#[derive(Clone)]
 pub(crate) struct FrameRef<'a> {
 	pub id: FrameID<'a>,
 	pub value: Cow<'a, FrameValue>,
