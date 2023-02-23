@@ -27,7 +27,7 @@ const V4_MULTI_VALUE_SEPARATOR: char = '\0';
 const NUMBER_PAIR_SEPARATOR: char = '/';
 
 // This is used as the default number of track and disk.
-const DEFAULT_NUMBER_IN_PAIR: u32 = 1;
+const DEFAULT_NUMBER_IN_PAIR: u32 = 0;
 
 // These keys have the part of the number pair.
 const NUMBER_PAIR_KEYS: &[ItemKey] = &[
