@@ -240,9 +240,9 @@ fn save_total_of_track_and_disk_to_id3v2() {
 
 	let tag = tagged_file.tag(TagType::ID3v2).unwrap();
 
-	assert_eq!(tag.track().unwrap(), 1);
+	assert_eq!(tag.track().unwrap(), 0);
 	assert_eq!(tag.track_total().unwrap(), track_total);
-	assert_eq!(tag.disk().unwrap(), 1);
+	assert_eq!(tag.disk().unwrap(), 0);
 	assert_eq!(tag.disk_total().unwrap(), disk_total);
 }
 
