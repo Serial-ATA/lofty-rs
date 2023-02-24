@@ -13,19 +13,18 @@ jobs:
     name: Benchmark
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
 
       - name: Run benchmark
         env:
-            RUSTFLAGS: "--cfg bench"
-        run: cargo bench --all-features -- --output-format bencher | tee output.txt
+          RUSTFLAGS: '--cfg bench'
+        run: |
+          cargo bench --all-features -- --output-format bencher | tee output.txt
 
       - name: Store benchmark result
         uses: benchmark-action/github-action-benchmark@v1
