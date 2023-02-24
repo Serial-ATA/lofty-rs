@@ -16,6 +16,12 @@ env:
 
 jobs:
   test:
+    strategy:
+      matrix:
+        project: ['.', 'ogg_pager', 'lofty_attr']
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
     name: Tests
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +37,12 @@ jobs:
           override: true
       - run: cargo test --all-features --tests
   docs:
+    strategy:
+      matrix:
+        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+    defaults:
+        run:
+            working-directory: ${{ matrix.project }}
     name: Docs
     runs-on: ubuntu-latest
     env:
@@ -42,9 +54,16 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
-      - run: cargo doc --all-features --no-deps
-      - run: cargo test --all-features --doc
+      - run: |
+          cargo doc --all-features --no-deps
+          cargo test --all-features --doc
   clippy:
+    strategy:
+      matrix:
+        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+    defaults:
+        run:
+            working-directory: ${{ matrix.project }}
     name: Clippy
     runs-on: ubuntu-latest
     steps:
@@ -54,17 +73,25 @@ jobs:
           profile: minimal
           toolchain: nightly
           override: true
-      - run: rustup component add clippy
-      - run: cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic
+      - run: |
+          rustup component add clippy
+          cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic
   style:
+    strategy:
+      matrix:
+        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+    defaults:
+        run:
+            working-directory: ${{ matrix.project }}
     name: Style
     runs-on: ubuntu-latest
     steps:
-      -   uses: actions/checkout@v2
-      -   uses: actions-rs/toolchain@v1
-          with:
-            profile: minimal
-            toolchain: nightly
-            override: true
-      -   run: rustup component add rustfmt
-      -   run: cargo fmt -- --check
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - run: |
+          rustup component add rustfmt
+          cargo fmt -- --check
