@@ -319,10 +319,10 @@ fn generate_audiofile_impl(
 	read_fn: proc_macro2::TokenStream,
 	write_fn: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-	let save_to_body = get_save_to_body(write_fn, &tag_fields);
+	let save_to_body = get_save_to_body(write_fn, tag_fields);
 
-	let tag_exists = tag_exists_iter(&tag_fields);
-	let tag_exists_2 = tag_exists_iter(&tag_fields);
+	let tag_exists = tag_exists_iter(tag_fields);
+	let tag_exists_2 = tag_exists_iter(tag_fields);
 
 	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
 
