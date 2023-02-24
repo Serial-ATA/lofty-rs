@@ -67,6 +67,7 @@ static CRC_LOOKUP_ARRAY: [u32; 256] = [
 ];
 
 /// Generates a CRC checksum based on the content
+#[must_use]
 pub fn crc32(page: &[u8]) -> u32 {
 	let mut crc: u32 = 0;
 

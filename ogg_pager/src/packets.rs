@@ -86,7 +86,7 @@ impl Packets {
 		'outer: loop {
 			if let Ok(header) = PageHeader::read(data) {
 				for i in header.segments {
-					packet_size += i as u64;
+					packet_size += u64::from(i);
 
 					if i < 255 {
 						if count != -1 {
@@ -304,6 +304,10 @@ impl Packets {
 	///
 	/// See [paginate()] for more information.
 	///
+	/// # Errors
+	///
+	/// See [`paginate()`]
+	///
 	/// # Examples
 	///
 	/// ```rust
@@ -339,6 +343,10 @@ impl Packets {
 	/// Write packets to a writer
 	///
 	/// This will paginate and write all of the packets to a writer.
+	///
+	/// # Errors
+	///
+	/// * Unable to write, see [`std::io::Error`]
 	///
 	/// # Examples
 	///
@@ -379,7 +387,7 @@ impl Packets {
 		let paginated = self.paginate(stream_serial, abgp, flags)?;
 		let num_pages = paginated.len();
 
-		for mut page in paginated.into_iter() {
+		for mut page in paginated {
 			page.gen_crc();
 			writer.write_all(&page.as_bytes())?;
 		}
