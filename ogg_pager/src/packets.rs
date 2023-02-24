@@ -194,7 +194,7 @@ impl Packets {
 	/// let packets = Packets::read(&mut file)?;
 	///
 	/// // My file contains packets!
-	/// assert_eq!(!packets.is_empty());
+	/// assert!(!packets.is_empty());
 	/// # Ok(()) }
 	/// ```
 	pub fn is_empty(&self) -> bool {
@@ -265,13 +265,13 @@ impl Packets {
 	///
 	/// let new_content = [0; 100];
 	///
-	/// assert_ne!(packets.get(0), Some(&new_content));
+	/// assert_ne!(packets.get(0), Some(new_content.as_slice()));
 	///
 	/// // Set our new content
 	/// assert!(packets.set(0, new_content));
 	///
 	/// // Now our packet contains the new content
-	/// assert_eq!(packets.get(0), Some(&new_content));
+	/// assert_eq!(packets.get(0), Some(new_content.as_slice()));
 	///
 	/// // We cannot index out of bounds
 	/// assert!(!packets.set(1000000, new_content));
@@ -323,7 +323,7 @@ impl Packets {
 	/// let absolute_granule_position = 0;
 	/// let flags = CONTAINS_FIRST_PAGE_OF_BITSTREAM | CONTAINS_LAST_PAGE_OF_BITSTREAM;
 	///
-	/// let pages = packets.paginate(stream_serial_number, absolute_granule_position, flags);
+	/// let pages = packets.paginate(stream_serial_number, absolute_granule_position, flags)?;
 	///
 	/// println!("We created {} pages!", pages.len());
 	/// # Ok(()) }
@@ -363,7 +363,7 @@ impl Packets {
 	/// let absolute_granule_position = 0;
 	/// let flags = CONTAINS_FIRST_PAGE_OF_BITSTREAM | CONTAINS_LAST_PAGE_OF_BITSTREAM;
 	///
-	/// let mut new_file = OpenOptions::new().write(true).open("bar.ogg");
+	/// let mut new_file = OpenOptions::new().write(true).open("bar.ogg")?;
 	/// let pages_written = packets.write_to(
 	/// 	&mut new_file,
 	/// 	stream_serial_number,
