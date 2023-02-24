@@ -111,6 +111,10 @@ struct PaginateContextFlags {
 
 /// Create pages from a list of packets
 ///
+/// # Errors
+///
+/// * Unable to read packet content
+///
 /// # Example
 ///
 /// ```rust,ignore
