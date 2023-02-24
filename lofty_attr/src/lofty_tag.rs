@@ -29,13 +29,13 @@ pub(crate) fn parse(
 				if let Lit::Str(s) = &mnv.lit {
 					desc = Some(s.value());
 					continue;
-				} else {
-					bail!(
-						errors,
-						Span::call_site(),
-						"Invalid `description` entry, expected string value"
-					);
 				}
+
+				bail!(
+					errors,
+					Span::call_site(),
+					"Invalid `description` entry, expected string value"
+				);
 			},
 			NestedMeta::Meta(Meta::List(list)) if list.path.is_ident("supported_formats") => {
 				for nested in list.nested {
