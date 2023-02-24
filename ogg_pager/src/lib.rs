@@ -263,7 +263,7 @@ mod tests {
 
 		let len = pages.len();
 
-		assert_eq!(len, 17);
+		assert_eq!(len, 130);
 		let last_page_content = pages.last().unwrap().content();
 
 		assert_eq!(
