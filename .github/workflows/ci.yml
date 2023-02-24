@@ -25,73 +25,74 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Dependencies
+      - uses: actions/checkout@v3
+      - name: Install test dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
           sudo apt-get install -y opus-tools # Need opusinfo for issue #130
-      - uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: stable
-          override: true
-      - run: cargo test --all-features --tests
+      - run: |
+          cargo test --all-features --tests
+
   docs:
     strategy:
       matrix:
-        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+        project: ['.', 'ogg_pager', 'lofty_attr']
     defaults:
-        run:
-            working-directory: ${{ matrix.project }}
+      run:
+        working-directory: ${{ matrix.project }}
     name: Docs
     runs-on: ubuntu-latest
     env:
       RUSTDOCFLAGS: -Dwarnings
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: stable
-          override: true
       - run: |
           cargo doc --all-features --no-deps
           cargo test --all-features --doc
+
   clippy:
     strategy:
       matrix:
-        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+        project: ['.', 'ogg_pager', 'lofty_attr']
     defaults:
-        run:
-            working-directory: ${{ matrix.project }}
+      run:
+        working-directory: ${{ matrix.project }}
     name: Clippy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
+          components: clippy
       - run: |
-          rustup component add clippy
           cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic
+
   style:
     strategy:
       matrix:
-        project: [ '.', 'ogg_pager', 'lofty_attr' ]
+        project: ['.', 'ogg_pager', 'lofty_attr']
     defaults:
-        run:
-            working-directory: ${{ matrix.project }}
+      run:
+        working-directory: ${{ matrix.project }}
     name: Style
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
+          components: rustfmt
       - run: |
-          rustup component add rustfmt
           cargo fmt -- --check
