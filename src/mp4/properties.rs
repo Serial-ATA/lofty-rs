@@ -151,6 +151,7 @@ impl From<Mp4Properties> for FileProperties {
 			sample_rate: Some(input.sample_rate),
 			bit_depth: input.bit_depth,
 			channels: Some(input.channels),
+			channel_mask: None,
 		}
 	}
 }

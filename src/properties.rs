@@ -1,5 +1,7 @@
 use std::time::Duration;
 
+use crate::ChannelMask;
+
 /// Various *immutable* audio properties
 #[derive(Debug, PartialEq, Eq, Clone)]
 #[non_exhaustive]
@@ -10,6 +12,7 @@ pub struct FileProperties {
 	pub(crate) sample_rate: Option<u32>,
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) channels: Option<u8>,
+	pub(crate) channel_mask: Option<ChannelMask>,
 }
 
 impl Default for FileProperties {
@@ -21,6 +24,7 @@ impl Default for FileProperties {
 			sample_rate: None,
 			bit_depth: None,
 			channels: None,
+			channel_mask: None,
 		}
 	}
 }
@@ -35,6 +39,7 @@ impl FileProperties {
 		sample_rate: Option<u32>,
 		bit_depth: Option<u8>,
 		channels: Option<u8>,
+		channel_mask: Option<ChannelMask>,
 	) -> Self {
 		Self {
 			duration,
@@ -43,6 +48,7 @@ impl FileProperties {
 			sample_rate,
 			bit_depth,
 			channels,
+			channel_mask,
 		}
 	}
 
@@ -119,6 +125,7 @@ mod tests {
 		sample_rate: Some(48000),
 		bit_depth: Some(16),
 		channels: Some(2),
+		channel_mask: None,
 	};
 
 	const APE_PROPERTIES: ApeProperties = ApeProperties {
@@ -271,6 +278,7 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: 16,
 		channels: 2,
+		channel_mask: None,
 	};
 
 	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {

@@ -69,5 +69,6 @@ pub(super) fn read_properties(
 		sample_rate: Some(sample_rate),
 		bit_depth: Some(sample_size as u8),
 		channels: Some(channels),
+		channel_mask: None,
 	})
 }

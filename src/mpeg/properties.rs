@@ -2,6 +2,7 @@ use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeade
 use crate::error::Result;
 use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult, HEADER_MASK};
 use crate::properties::FileProperties;
+use crate::ChannelMask;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -28,13 +29,33 @@ pub struct MPEGProperties {
 
 impl From<MPEGProperties> for FileProperties {
 	fn from(input: MPEGProperties) -> Self {
+		let MPEGProperties {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			channels,
+			channel_mode,
+			version: _,
+			layer: _,
+			copyright: _,
+			emphasis: _,
+			mode_extension: _,
+			original: _,
+		} = input;
+		let channel_mask = match channel_mode {
+			ChannelMode::SingleChannel => Some(ChannelMask::mono()),
+			ChannelMode::Stereo | ChannelMode::JointStereo => Some(ChannelMask::stereo()),
+			ChannelMode::DualChannel => None, // Cannot be represented by ChannelMask
+		};
 		Self {
-			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
+			duration,
+			overall_bitrate: Some(overall_bitrate),
+			audio_bitrate: Some(audio_bitrate),
+			sample_rate: Some(sample_rate),
 			bit_depth: None,
-			channels: Some(input.channels),
+			channels: Some(channels),
+			channel_mask,
 		}
 	}
 }
