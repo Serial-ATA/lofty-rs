@@ -607,21 +607,54 @@ impl SplitAndMergeTag for ID3v2Tag {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
-			current_key: ItemKey,
+			number_key: ItemKey,
 			total_key: ItemKey,
 		) -> Option<()> {
-			let mut split =
-				content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
-			let current = split.next()?.to_string();
-			tag.items
-				.push(TagItem::new(current_key, ItemValue::Text(current)));
+			fn parse_number(source: &str) -> Option<&str> {
+				let number = source.trim();
 
-			if let Some(total) = split.next() {
-				tag.items
-					.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
+				if number.is_empty() {
+					return None;
+				}
+
+				if str::parse::<u32>(number).is_ok() {
+					Some(number)
+				} else {
+					log::warn!("{number:?} could not be parsed as a number.");
+
+					None
+				}
 			}
 
-			Some(())
+			let mut split =
+				content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
+
+			let number_source = split.next()?;
+			let number = parse_number(number_source)?;
+			let total_source = split.next();
+			let total = total_source.and_then(parse_number);
+
+			let is_valid = if let Some(total_source) = total_source {
+				total.is_some() && content.len() == number_source.len() + 1 + total_source.len()
+			} else {
+				content.len() == number_source.len()
+			};
+
+			if is_valid {
+				tag.items.push(TagItem::new(
+					number_key,
+					ItemValue::Text(number.to_string()),
+				));
+
+				if let Some(total) = total {
+					tag.items
+						.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
+				}
+
+				Some(())
+			} else {
+				None
+			}
 		}
 
 		let mut tag = Tag::new(TagType::ID3v2);
@@ -988,7 +1021,9 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::items::popularimeter::Popularimeter;
-	use crate::id3::v2::tag::{filter_comment_frame_by_description, DEFAULT_NUMBER_IN_PAIR};
+	use crate::id3::v2::tag::{
+		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
+	};
 	use crate::id3::v2::{
 		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
 		ID3v2Version, LanguageFrame,
@@ -1930,5 +1965,64 @@ mod tests {
 
 		assert_eq!(tag.disk().unwrap(), disk_number);
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
+	}
+
+	fn create_tag_with_trck_and_tpos_frame(content: &'static str) -> Tag {
+		fn insert_frame(id: &'static str, content: &'static str, tag: &mut ID3v2Tag) {
+			tag.insert(new_text_frame(
+				FrameID::Valid(Cow::Borrowed(id)),
+				content.to_string(),
+				FrameFlags::default(),
+			));
+		}
+
+		let mut tag = ID3v2Tag::default();
+
+		insert_frame("TRCK", content, &mut tag);
+		insert_frame("TPOS", content, &mut tag);
+
+		tag.into()
+	}
+
+	#[test]
+	fn valid_trck_and_tpos_frame() {
+		fn assert_valid(content: &'static str, number: Option<u32>, total: Option<u32>) {
+			let tag = create_tag_with_trck_and_tpos_frame(content);
+
+			assert_eq!(tag.track(), number);
+			assert_eq!(tag.track_total(), total);
+			assert_eq!(tag.disk(), number);
+			assert_eq!(tag.disk_total(), total);
+		}
+
+		assert_valid("0", Some(0), None);
+		assert_valid("1", Some(1), None);
+		assert_valid("0/0", Some(0), Some(0));
+		assert_valid("1/2", Some(1), Some(2));
+		assert_valid("010/011", Some(10), Some(11));
+		assert_valid(" 1/2 ", Some(1), Some(2));
+		assert_valid("1 / 2", Some(1), Some(2));
+	}
+
+	#[test]
+	fn invalid_trck_and_tpos_frame() {
+		fn assert_invalid(content: &'static str) {
+			let tag = create_tag_with_trck_and_tpos_frame(content);
+
+			assert!(tag.track().is_none());
+			assert!(tag.track_total().is_none());
+			assert!(tag.disk().is_none());
+			assert!(tag.disk_total().is_none());
+		}
+
+		assert_invalid("");
+		assert_invalid(" ");
+		assert_invalid("/");
+		assert_invalid("/1");
+		assert_invalid("1/");
+		assert_invalid("a/b");
+		assert_invalid("1/2/3");
+		assert_invalid("1//2");
+		assert_invalid("0x1/0x2");
 	}
 }
