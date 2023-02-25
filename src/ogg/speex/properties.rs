@@ -33,6 +33,7 @@ impl From<SpeexProperties> for FileProperties {
 			sample_rate: Some(input.sample_rate),
 			bit_depth: None,
 			channels: Some(input.channels),
+			channel_mask: None,
 		}
 	}
 }

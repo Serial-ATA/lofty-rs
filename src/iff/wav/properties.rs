@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::properties::FileProperties;
+use crate::ChannelMask;
 
 use std::time::Duration;
 
@@ -36,17 +37,29 @@ pub struct WavProperties {
 	pub(crate) sample_rate: u32,
 	pub(crate) bit_depth: u8,
 	pub(crate) channels: u8,
+	pub(crate) channel_mask: Option<ChannelMask>,
 }
 
 impl From<WavProperties> for FileProperties {
 	fn from(input: WavProperties) -> Self {
+		let WavProperties {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			bit_depth,
+			channels,
+			channel_mask,
+			format: _,
+		} = input;
 		Self {
-			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
-			bit_depth: Some(input.bit_depth),
-			channels: Some(input.channels),
+			duration,
+			overall_bitrate: Some(overall_bitrate),
+			audio_bitrate: Some(audio_bitrate),
+			sample_rate: Some(sample_rate),
+			bit_depth: Some(bit_depth),
+			channels: Some(channels),
+			channel_mask,
 		}
 	}
 }
@@ -82,6 +95,11 @@ impl WavProperties {
 		self.channels
 	}
 
+	/// Channel mask
+	pub fn channel_mask(&self) -> Option<ChannelMask> {
+		self.channel_mask
+	}
+
 	/// WAV format
 	pub fn format(&self) -> &WavFormat {
 		&self.format
@@ -115,6 +133,7 @@ pub(super) fn read_properties(
 		(bytes_per_sample * 8) as u8
 	};
 
+	let channel_mask;
 	if format_tag == EXTENSIBLE {
 		if fmt.len() + 16 < 40 {
 			decode_err!(@BAIL WAV, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
@@ -125,12 +144,14 @@ pub(super) fn read_properties(
 		// Valid bits per sample (2)
 		let valid_bits_per_sample = fmt.read_u16::<LittleEndian>()?;
 		// Channel mask (4)
-		let _channel_mask = fmt.read_u32::<LittleEndian>()?;
+		channel_mask = Some(ChannelMask(fmt.read_u32::<LittleEndian>()?));
 
 		if valid_bits_per_sample > 0 {
 			bit_depth = valid_bits_per_sample as u8;
 		}
 		format_tag = fmt.read_u16::<LittleEndian>()?;
+	} else {
+		channel_mask = None;
 	}
 
 	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
@@ -186,5 +207,6 @@ pub(super) fn read_properties(
 		sample_rate,
 		bit_depth,
 		channels,
+		channel_mask,
 	})
 }
