@@ -359,6 +359,11 @@ gen_map!(
 	"COLOR"                                   => Color,
 	"MOOD"                                    => Mood,
 	"BPM"                                     => BPM,
+	// MusicBrainz Picard suggests "KEY" (VirtualDJ, Denon Engine DJ), but "INITIALKEY"
+	// seems to be more common (Rekordbox, Serato DJ, Traktor DJ, Mixxx).
+	// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#initial-key>
+	// <https://github.com/beetbox/beets/issues/637#issuecomment-39528023>
+	"INITIALKEY" | "KEY"                      => InitialKey,
 	"COPYRIGHT"                               => CopyrightMessage,
 	"LICENSE"                                 => License,
 	"COMMENT"                                 => Comment,
