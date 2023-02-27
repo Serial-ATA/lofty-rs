@@ -629,32 +629,26 @@ impl SplitAndMergeTag for ID3v2Tag {
 			let mut split =
 				content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
 
-			let number_source = split.next()?;
-			let number = parse_number(number_source)?;
-			let total_source = split.next();
-			let total = total_source.and_then(parse_number);
-
-			let is_valid = if let Some(total_source) = total_source {
-				total.is_some() && content.len() == number_source.len() + 1 + total_source.len()
-			} else {
-				content.len() == number_source.len()
-			};
-
-			if is_valid {
-				tag.items.push(TagItem::new(
-					number_key,
-					ItemValue::Text(number.to_string()),
-				));
-
-				if let Some(total) = total {
-					tag.items
-						.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
-				}
-
-				Some(())
+			let number = parse_number(split.next()?)?;
+			let total = if let Some(total_source) = split.next() {
+				Some(parse_number(total_source)?)
 			} else {
 				None
+			};
+			debug_assert!(split.next().is_none());
+
+			debug_assert!(!number.is_empty());
+			tag.items.push(TagItem::new(
+				number_key,
+				ItemValue::Text(number.to_string()),
+			));
+			if let Some(total) = total {
+				debug_assert!(!total.is_empty());
+				tag.items
+					.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
 			}
+
+			Some(())
 		}
 
 		let mut tag = Tag::new(TagType::ID3v2);
