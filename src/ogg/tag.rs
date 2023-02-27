@@ -645,4 +645,22 @@ mod tests {
 		assert_eq!(tag.pictures().len(), 1);
 		assert!(tag.items.is_empty());
 	}
+
+	#[test]
+	fn initial_key_roundtrip() {
+		// Both the primary and alternate key should be mapped to the primary
+		// key if stored again. Note: The outcome is undefined if both the
+		// primary and alternate key would be stored redundantly in VorbisComments!
+		for key in ["INITIALKEY", "KEY"] {
+			let mut vorbis_comments = VorbisComments {
+				items: vec![(key.to_owned(), "Cmaj".to_owned())],
+				..Default::default()
+			};
+			let mut tag = Tag::try_from(vorbis_comments).unwrap();
+			assert_eq!(Some("Cmaj"), tag.get_string(&ItemKey::InitialKey));
+			tag.insert_text(ItemKey::InitialKey, "Cmin".to_owned());
+			vorbis_comments = tag.into();
+			assert_eq!(Some("Cmin"), vorbis_comments.get("INITIALKEY"));
+		}
+	}
 }
