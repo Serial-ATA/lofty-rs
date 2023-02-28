@@ -6,12 +6,13 @@ use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::ops::Deref;
 use std::path::Path;
 
 use lofty_attr::tag;
@@ -289,8 +290,27 @@ impl TagExt for ApeTag {
 	}
 }
 
-impl SplitAndMergeTag for ApeTag {
-	fn split_tag(&mut self) -> Tag {
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder(ApeTag);
+
+impl From<SplitTagRemainder> for ApeTag {
+	fn from(from: SplitTagRemainder) -> Self {
+		from.0
+	}
+}
+
+impl Deref for SplitTagRemainder {
+	type Target = ApeTag;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl SplitTag for ApeTag {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
@@ -346,13 +366,19 @@ impl SplitAndMergeTag for ApeTag {
 			}
 		}
 
-		tag
+		(SplitTagRemainder(self), tag)
 	}
+}
 
-	fn merge_tag(&mut self, tag: Tag) {
+impl MergeTag for SplitTagRemainder {
+	type Merged = ApeTag;
+
+	fn merge_tag(self, tag: Tag) -> Self::Merged {
+		let Self(mut merged) = self;
+
 		for item in tag.items {
 			if let Ok(ape_item) = item.try_into() {
-				self.insert(ape_item)
+				merged.insert(ape_item)
 			}
 		}
 
@@ -361,24 +387,24 @@ impl SplitAndMergeTag for ApeTag {
 				if let Ok(item) =
 					ApeItem::new(key.to_string(), ItemValue::Binary(pic.as_ape_bytes()))
 				{
-					self.insert(item)
+					merged.insert(item)
 				}
 			}
 		}
+
+		merged
 	}
 }
 
 impl From<ApeTag> for Tag {
-	fn from(mut input: ApeTag) -> Self {
-		input.split_tag()
+	fn from(input: ApeTag) -> Self {
+		input.split_tag().1
 	}
 }
 
 impl From<Tag> for ApeTag {
 	fn from(input: Tag) -> Self {
-		let mut ape_tag = Self::default();
-		ape_tag.merge_tag(input);
-		ape_tag
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 

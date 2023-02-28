@@ -2,7 +2,7 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
@@ -238,8 +238,13 @@ impl TagExt for ID3v1Tag {
 	}
 }
 
-impl SplitAndMergeTag for ID3v1Tag {
-	fn split_tag(&mut self) -> Tag {
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder;
+
+impl SplitTag for ID3v1Tag {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		let mut tag = Tag::new(TagType::ID3v1);
 
 		self.title
@@ -269,17 +274,21 @@ impl SplitAndMergeTag for ID3v1Tag {
 			}
 		}
 
-		tag
+		(SplitTagRemainder, tag)
 	}
+}
 
-	fn merge_tag(&mut self, tag: Tag) {
-		*self = tag.into();
+impl MergeTag for SplitTagRemainder {
+	type Merged = ID3v1Tag;
+
+	fn merge_tag(self, tag: Tag) -> Self::Merged {
+		tag.into()
 	}
 }
 
 impl From<ID3v1Tag> for Tag {
-	fn from(mut input: ID3v1Tag) -> Self {
-		input.split_tag()
+	fn from(input: ID3v1Tag) -> Self {
+		input.split_tag().1
 	}
 }
 

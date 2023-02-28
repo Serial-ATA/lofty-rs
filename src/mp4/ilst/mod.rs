@@ -10,12 +10,13 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::ops::Deref;
 use std::path::Path;
 
 use lofty_attr::tag;
@@ -377,8 +378,27 @@ impl TagExt for Ilst {
 	}
 }
 
-impl SplitAndMergeTag for Ilst {
-	fn split_tag(&mut self) -> Tag {
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder(Ilst);
+
+impl From<SplitTagRemainder> for Ilst {
+	fn from(from: SplitTagRemainder) -> Self {
+		from.0
+	}
+}
+
+impl Deref for SplitTagRemainder {
+	type Target = Ilst;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl SplitTag for Ilst {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		let mut tag = Tag::new(TagType::MP4ilst);
 
 		self.atoms.retain_mut(|atom| {
@@ -443,10 +463,14 @@ impl SplitAndMergeTag for Ilst {
 			false // Atom consumed
 		});
 
-		tag
+		(SplitTagRemainder(self), tag)
 	}
+}
 
-	fn merge_tag(&mut self, tag: Tag) {
+impl MergeTag for SplitTagRemainder {
+	type Merged = Ilst;
+
+	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		fn convert_to_uint(space: &mut Option<u16>, cont: &str) {
 			if let Ok(num) = cont.parse::<u16>() {
 				*space = Some(num);
@@ -470,6 +494,8 @@ impl SplitAndMergeTag for Ilst {
 				},
 			}
 		}
+
+		let Self(mut merged) = self;
 
 		// Storage for integer pairs
 		let mut tracks: (Option<u16>, Option<u16>) = (None, None);
@@ -499,13 +525,13 @@ impl SplitAndMergeTag for Ilst {
 									continue;
 								},
 							};
-							self.atoms.push(Atom {
+							merged.atoms.push(Atom {
 								ident: ident.into_owned(),
 								data: AtomDataStorage::Single(AtomData::Bool(data)),
 							})
 						}
 					},
-					_ => self.atoms.push(Atom {
+					_ => merged.atoms.push(Atom {
 						ident: ident.into_owned(),
 						data: AtomDataStorage::Single(AtomData::UTF8(data)),
 					}),
@@ -518,28 +544,28 @@ impl SplitAndMergeTag for Ilst {
 			// assign a picture type in this format
 			picture.pic_type = PictureType::Other;
 
-			self.atoms.push(Atom {
+			merged.atoms.push(Atom {
 				ident: AtomIdent::Fourcc([b'c', b'o', b'v', b'r']),
 				data: AtomDataStorage::Single(AtomData::Picture(picture)),
 			})
 		}
 
-		create_int_pair(self, *b"trkn", tracks);
-		create_int_pair(self, *b"disk", discs);
+		create_int_pair(&mut merged, *b"trkn", tracks);
+		create_int_pair(&mut merged, *b"disk", discs);
+
+		merged
 	}
 }
 
 impl From<Ilst> for Tag {
-	fn from(mut input: Ilst) -> Self {
-		input.split_tag()
+	fn from(input: Ilst) -> Self {
+		input.split_tag().1
 	}
 }
 
 impl From<Tag> for Ilst {
 	fn from(input: Tag) -> Self {
-		let mut ilst = Self::default();
-		ilst.merge_tag(input);
-		ilst
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
@@ -551,7 +577,7 @@ mod tests {
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{
-		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, SplitAndMergeTag as _, Tag,
+		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, SplitTag as _, Tag,
 		TagExt as _, TagItem, TagType,
 	};
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
@@ -932,10 +958,10 @@ mod tests {
 		));
 		assert_eq!(20, tag.len());
 
-		let mut ilst = Ilst::from(tag.clone());
-		let split_tag = ilst.split_tag();
+		let ilst = Ilst::from(tag.clone());
+		let (split_remainder, split_tag) = ilst.split_tag();
 
-		assert_eq!(0, ilst.len());
+		assert_eq!(0, split_remainder.len());
 		assert_eq!(tag.len(), split_tag.len());
 		assert_eq!(tag.items, split_tag.items);
 	}

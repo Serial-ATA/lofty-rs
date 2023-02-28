@@ -6,7 +6,7 @@ use crate::file::FileType;
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
 use std::borrow::Cow;
@@ -592,13 +592,22 @@ impl TagExt for Tag {
 	}
 }
 
-impl SplitAndMergeTag for Tag {
-	fn split_tag(&mut self) -> Self {
-		std::mem::replace(self, Self::new(self.tag_type))
-	}
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder;
 
-	fn merge_tag(&mut self, tag: Self) {
-		*self = tag;
+impl SplitTag for Tag {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(self) -> (Self::Remainder, Self) {
+		(SplitTagRemainder, self)
+	}
+}
+
+impl MergeTag for SplitTagRemainder {
+	type Merged = Tag;
+
+	fn merge_tag(self, tag: Tag) -> Self::Merged {
+		tag
 	}
 }
 

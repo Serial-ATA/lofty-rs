@@ -233,30 +233,28 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	fn clear(&mut self);
 }
 
-/// Split and merge tags.
+/// Split (and merge) tags.
 ///
 /// Useful and required for implementing lossless read/modify/write round trips.
+/// Its counterpart `MergeTag` is used for recombining the results later.
 ///
 /// # Example
 ///
 /// ```no_run
 /// use lofty::mpeg::MPEGFile;
-/// use lofty::{AudioFile, ItemKey, SplitAndMergeTag as _};
+/// use lofty::{AudioFile, ItemKey, MergeTag as _, SplitTag as _};
 ///
 /// // Read the tag from a file
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
 /// # let parse_options = lofty::ParseOptions::default();
 /// let mut mpeg_file = <MPEGFile as AudioFile>::read_from(&mut file, parse_options)?;
-/// let mut id3v2 = if let Some(id3v2) = mpeg_file.id3v2_mut() {
-/// 	id3v2
-/// } else {
-/// 	// Add a new ID3v2 tag if missing
-/// 	mpeg_file.set_id3v2(Default::default());
-/// 	mpeg_file.id3v2_mut().expect("ID3v2")
-/// };
+/// let mut id3v2 = mpeg_file
+/// 	.id3v2_mut()
+/// 	.map(std::mem::take)
+/// 	.unwrap_or_default();
 ///
 /// // Split: ID3v2 -> [`lofty::Tag`]
-/// let mut tag = id3v2.split_tag();
+/// let (mut remainder, mut tag) = id3v2.split_tag();
 ///
 /// // Modify the metadata in the generic [`lofty::Tag`], independent
 /// // of the underlying tag and file format.
@@ -264,39 +262,40 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 /// tag.remove_key(&ItemKey::Composer);
 ///
 /// // ID3v2 <- [`lofty::Tag`]
-/// id3v2.merge_tag(tag);
+/// let id3v2 = remainder.merge_tag(tag);
 ///
 /// // Write the changes back into the file
+/// mpeg_file.set_id3v2(id3v2);
 /// mpeg_file.save_to(&mut file)?;
 ///
 /// # Ok::<(), lofty::LoftyError>(())
 /// ```
-pub trait SplitAndMergeTag {
+pub trait SplitTag {
+	/// The remainder of the split operation that is not represented
+	/// in the resulting `Tag`.
+	type Remainder: MergeTag;
+
 	/// Extract and split generic contents into a [`Tag`].
 	///
-	/// Leaves the remainder that cannot be represented in the
-	/// resulting tag in `self`. This is useful if the modified [`Tag`]
-	/// is merged later using [`SplitAndMergeTag::merge_tag`].
-	// NOTE: Using the "typestate pattern" (http://cliffle.com/blog/rust-typestate/)
-	// to represent the intermediate state turned out as less flexible
-	// and useful than expected.
-	fn split_tag(&mut self) -> Tag;
+	/// Returns the remaining content that cannot be represented in the
+	/// resulting `Tag` in `Self::Remainder`. This is useful if the
+	/// modified [`Tag`] is merged later using [`MergeTag::merge_tag`].
+	fn split_tag(self) -> (Self::Remainder, Tag);
+}
 
-	/// Rejoin a [`Tag`].
-	///
-	/// Rejoin a tag that has previously been obtained with
-	/// [`SplitAndMergeTag::split_tag`].
+/// The counterpart of [`SplitTag`].
+pub trait MergeTag {
+	/// The resulting tag.
+	type Merged: SplitTag;
+
+	/// Merge a generic [`Tag`] back into the remainder of [`SplitTag::split_tag`].
 	///
 	/// Restores the original representation merged with the contents of
 	/// `tag` for further processing, e.g. writing back into a file.
 	///
 	/// Multi-valued items in `tag` with identical keys might get lost
 	/// depending on the support for multi-valued fields in `self`.
-	///
-	/// This method must only be called once and after [`Self::split_tag`]!
-	/// None of the items in `tag` must be present in `self`. Otherwise the
-	/// behavior is undefined and may result in redundancies or inconsistencies.
-	fn merge_tag(&mut self, tag: Tag);
+	fn merge_tag(self, tag: Tag) -> Self::Merged;
 }
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
