@@ -81,6 +81,11 @@ impl FileProperties {
 	pub fn channels(&self) -> Option<u8> {
 		self.channels
 	}
+
+	/// Channel mask
+	pub fn channel_mask(&self) -> Option<ChannelMask> {
+		self.channel_mask
+	}
 }
 
 #[cfg(test)]
