@@ -7,11 +7,12 @@ use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::ops::Deref;
 use std::path::Path;
 
 use lofty_attr::tag;
@@ -328,8 +329,27 @@ impl TagExt for VorbisComments {
 	}
 }
 
-impl SplitAndMergeTag for VorbisComments {
-	fn split_tag(&mut self) -> Tag {
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder(VorbisComments);
+
+impl From<SplitTagRemainder> for VorbisComments {
+	fn from(from: SplitTagRemainder) -> Self {
+		from.0
+	}
+}
+
+impl Deref for SplitTagRemainder {
+	type Target = VorbisComments;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl SplitTag for VorbisComments {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
 		for (k, v) in std::mem::take(&mut self.items) {
@@ -356,16 +376,22 @@ impl SplitAndMergeTag for VorbisComments {
 			tag.push_picture(pic)
 		}
 
-		tag
+		(SplitTagRemainder(self), tag)
 	}
+}
 
-	fn merge_tag(&mut self, mut tag: Tag) {
+impl MergeTag for SplitTagRemainder {
+	type Merged = VorbisComments;
+
+	fn merge_tag(self, mut tag: Tag) -> Self::Merged {
+		let Self(mut merged) = self;
+
 		if let Some(TagItem {
 			item_value: ItemValue::Text(val),
 			..
 		}) = tag.take(&ItemKey::EncoderSoftware).next()
 		{
-			self.vendor = val;
+			merged.vendor = val;
 		}
 
 		for item in tag.items {
@@ -383,28 +409,28 @@ impl SplitAndMergeTag for VorbisComments {
 				Some(k) => k,
 			};
 
-			self.items.push((key.to_string(), val));
+			merged.items.push((key.to_string(), val));
 		}
 
 		for picture in tag.pictures {
 			if let Ok(information) = PictureInformation::from_picture(&picture) {
-				self.pictures.push((picture, information))
+				merged.pictures.push((picture, information))
 			}
 		}
+
+		merged
 	}
 }
 
 impl From<VorbisComments> for Tag {
-	fn from(mut input: VorbisComments) -> Self {
-		input.split_tag()
+	fn from(input: VorbisComments) -> Self {
+		input.split_tag().1
 	}
 }
 
 impl From<Tag> for VorbisComments {
 	fn from(input: Tag) -> Self {
-		let mut vorbis_comments = Self::default();
-		vorbis_comments.merge_tag(input);
-		vorbis_comments
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
@@ -480,7 +506,9 @@ pub(crate) fn create_vorbis_comments_ref(
 #[cfg(test)]
 mod tests {
 	use crate::ogg::{OggPictureStorage, VorbisComments};
-	use crate::{ItemKey, ItemValue, SplitAndMergeTag as _, Tag, TagExt as _, TagItem, TagType};
+	use crate::{
+		ItemKey, ItemValue, MergeTag as _, SplitTag as _, Tag, TagExt as _, TagItem, TagType,
+	};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
@@ -610,13 +638,12 @@ mod tests {
 
 		let mut vorbis_comments1 = VorbisComments::from(tag.clone());
 
-		let mut vorbis_comments2 = vorbis_comments1.clone();
-		let split_tag = vorbis_comments2.split_tag();
-		assert_eq!(0, vorbis_comments2.len());
+		let (split_remainder, split_tag) = vorbis_comments1.clone().split_tag();
+		assert_eq!(0, split_remainder.len());
 		assert_eq!(tag.len(), split_tag.len());
 
 		// Merge back into Vorbis Comments for comparison
-		vorbis_comments2.merge_tag(split_tag);
+		let mut vorbis_comments2 = split_remainder.merge_tag(split_tag);
 		// Soft before comparison -> unordered comparison
 		vorbis_comments1
 			.items

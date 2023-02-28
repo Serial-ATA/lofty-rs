@@ -9,7 +9,7 @@ use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, SplitAndMergeTag, TagExt};
+use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
@@ -17,6 +17,7 @@ use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
+use std::ops::Deref;
 use std::path::Path;
 
 use lofty_attr::tag;
@@ -602,8 +603,27 @@ impl TagExt for ID3v2Tag {
 	}
 }
 
-impl SplitAndMergeTag for ID3v2Tag {
-	fn split_tag(&mut self) -> Tag {
+#[derive(Debug, Clone, Default)]
+pub struct SplitTagRemainder(ID3v2Tag);
+
+impl From<SplitTagRemainder> for ID3v2Tag {
+	fn from(from: SplitTagRemainder) -> Self {
+		from.0
+	}
+}
+
+impl Deref for SplitTagRemainder {
+	type Target = ID3v2Tag;
+
+	fn deref(&self) -> &Self::Target {
+		&self.0
+	}
+}
+
+impl SplitTag for ID3v2Tag {
+	type Remainder = SplitTagRemainder;
+
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		fn split_pair(
 			content: &str,
 			tag: &mut Tag,
@@ -786,13 +806,14 @@ impl SplitAndMergeTag for ID3v2Tag {
 			}
 		});
 
-		tag
+		(SplitTagRemainder(self), tag)
 	}
+}
 
-	fn merge_tag(&mut self, mut tag: Tag) {
-		// Consistent and most efficient implementation that relies
-		// on the preconditions as stated for this operation.
+impl MergeTag for SplitTagRemainder {
+	type Merged = ID3v2Tag;
 
+	fn merge_tag(self, mut tag: Tag) -> ID3v2Tag {
 		fn join_text_items<'a>(
 			tag: &mut Tag,
 			keys: impl IntoIterator<Item = &'a ItemKey>,
@@ -828,7 +849,8 @@ impl SplitAndMergeTag for ID3v2Tag {
 			concatenated
 		}
 
-		self.frames.reserve(tag.item_count() as usize);
+		let Self(mut merged) = self;
+		merged.frames.reserve(tag.item_count() as usize);
 
 		// Multi-valued text key-to-frame mappings
 		// TODO: Extend this list of item keys as needed or desired
@@ -874,8 +896,8 @@ impl SplitAndMergeTag for ID3v2Tag {
 					FrameFlags::default(),
 				);
 				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!self.frames.contains(&frame));
-				self.frames.push(frame);
+				debug_assert!(!merged.frames.contains(&frame));
+				merged.frames.push(frame);
 			}
 		}
 
@@ -895,8 +917,8 @@ impl SplitAndMergeTag for ID3v2Tag {
 					FrameFlags::default(),
 				);
 				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!self.frames.contains(&frame));
-				self.frames.push(frame);
+				debug_assert!(!merged.frames.contains(&frame));
+				merged.frames.push(frame);
 			}
 		}
 
@@ -904,36 +926,36 @@ impl SplitAndMergeTag for ID3v2Tag {
 		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Comment]) {
 			let frame = new_comment_frame(text, FrameFlags::default());
 			// Optimization: No duplicate checking according to the preconditions
-			debug_assert!(!self.frames.contains(&frame));
-			self.frames.push(frame);
+			debug_assert!(!merged.frames.contains(&frame));
+			merged.frames.push(frame);
 		};
 
 		// Insert all remaining items as single frames and deduplicate as needed
 		for item in tag.items {
-			self.insert_item(item);
+			merged.insert_item(item);
 		}
 
 		// Insert all pictures as single frames and deduplicate as needed
 		for picture in tag.pictures {
 			let frame = new_picture_frame(picture, FrameFlags::default());
-			if let Some(replaced) = self.insert(frame) {
+			if let Some(replaced) = merged.insert(frame) {
 				log::warn!("Replaced picture frame: {replaced:?}");
 			}
 		}
+
+		merged
 	}
 }
 
 impl From<ID3v2Tag> for Tag {
-	fn from(mut input: ID3v2Tag) -> Self {
-		input.split_tag()
+	fn from(input: ID3v2Tag) -> Self {
+		input.split_tag().1
 	}
 }
 
 impl From<Tag> for ID3v2Tag {
 	fn from(input: Tag) -> Self {
-		let mut id3v2_tag = ID3v2Tag::default();
-		id3v2_tag.merge_tag(input);
-		id3v2_tag
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
@@ -1025,8 +1047,8 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
 	use crate::{
-		Accessor as _, ItemKey, ItemValue, MimeType, Picture, PictureType, SplitAndMergeTag as _,
-		Tag, TagExt as _, TagItem, TagType,
+		Accessor as _, ItemKey, ItemValue, MergeTag as _, MimeType, Picture, PictureType,
+		SplitTag as _, Tag, TagExt as _, TagItem, TagType,
 	};
 
 	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
@@ -1581,10 +1603,10 @@ mod tests {
 		));
 		assert_eq!(20, tag.len());
 
-		let mut id3v2 = ID3v2Tag::from(tag.clone());
-		let split_tag = id3v2.split_tag();
+		let id3v2 = ID3v2Tag::from(tag.clone());
+		let (split_remainder, split_tag) = id3v2.clone().split_tag();
 
-		assert_eq!(0, id3v2.len());
+		assert_eq!(0, split_remainder.0.len());
 		assert_eq!(tag.len(), split_tag.len());
 		// The ordering of items/frames matters, see above!
 		// TODO: Replace with an unordered comparison.
@@ -1707,11 +1729,11 @@ mod tests {
 			.unwrap(),
 		);
 
-		let tag = id3v2.split_tag();
-		assert_eq!(id3v2.len(), 0);
-		assert_eq!(tag.len(), 1);
+		let (split_remainder, split_tag) = id3v2.split_tag();
+		assert_eq!(split_remainder.0.len(), 0);
+		assert_eq!(split_tag.len(), 1);
 
-		id3v2.merge_tag(tag);
+		let id3v2 = split_remainder.merge_tag(split_tag);
 
 		// Verify we properly convert user defined frames between Tag <-> ID3v2Tag round trips
 		assert_eq!(
@@ -1729,7 +1751,7 @@ mod tests {
 
 		// Verify we properly convert user defined frames when writing a Tag, which has to convert
 		// to the reference types.
-		let tag = id3v2.clone().split_tag();
+		let (_remainder, tag) = id3v2.clone().split_tag();
 		assert_eq!(tag.len(), 1);
 
 		let mut content = Vec::new();
