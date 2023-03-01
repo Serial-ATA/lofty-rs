@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Properties**: Expose channel mask (only supported for WAV and MPEG for now) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/155))
+- **ItemKey**: `InitialKey` mapping for Vorbis Comments ([PR](https://github.com/Serial-ATA/lofty-rs/pull/156))
+
 ### Changed
 - **APE**/**ID3v1**/**ID3v2**/**Tag**:
   - Allow empty strings as values instead of removing the corresponding item when empty ([PR](https://github.com/Serial-ATA/lofty-rs/pull/134))
@@ -14,8 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **ID3v2**:
   - Fix conversion of user defined frames when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/140)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/142))
+  - Fix writing of tag/disk numbers when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/145)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/149))
 
-## [0.11.0] - 2022-1-29
+## [0.11.0] - 2023-1-29
 
 ### Added
 - **MP4**:
