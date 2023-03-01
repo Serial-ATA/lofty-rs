@@ -283,93 +283,21 @@ fn test_repeated_save_3() {
 }
 
 #[test]
+#[ignore]
 fn test_empty_id3v2() {
-	let mut file = temp_file!("tests/taglib/data/xing.mp3");
-
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut id3v2 = ID3v2Tag::default();
-		id3v2.set_title(String::from("0123456789"));
-		f.set_id3v2(id3v2);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut id3v2 = ID3v2Tag::default();
-		id3v2.set_title(String::new());
-		f.set_id3v2(id3v2);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(f.id3v2().is_none());
-	}
+	// Marker test, Lofty accepts empty strings as valid values
 }
 
 #[test]
+#[ignore]
 fn test_empty_id3v1() {
-	let mut file = temp_file!("tests/taglib/data/xing.mp3");
-
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut id3v1 = ID3v1Tag::default();
-		id3v1.set_title(String::from("0123456789"));
-		f.set_id3v1(id3v1);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut id3v1 = ID3v1Tag::default();
-		id3v1.set_title(String::new());
-		f.set_id3v1(id3v1);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(f.id3v1().is_none());
-	}
+	// Marker test, Lofty accepts empty strings as valid values
 }
 
 #[test]
+#[ignore]
 fn test_empty_ape() {
-	let mut file = temp_file!("tests/taglib/data/xing.mp3");
-
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut ape = ApeTag::default();
-		ape.set_title(String::from("0123456789"));
-		f.set_ape(ape);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut ape = ApeTag::default();
-		ape.set_title(String::new());
-		f.set_ape(ape);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(f.ape().is_none());
-	}
+	// Marker test, Lofty accepts empty strings as valid values
 }
 
 #[test]
