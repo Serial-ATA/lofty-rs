@@ -174,7 +174,7 @@ pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Pro
 
 pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
-pub use crate::properties::FileProperties;
+pub use crate::properties::{ChannelMask, FileProperties};
 pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;
@@ -194,37 +194,5 @@ pub(crate) const fn div_ceil(dividend: u64, divisor: u64) -> u64 {
 		d + 1
 	} else {
 		d
-	}
-}
-
-/// Channel mask
-///
-/// A mask of (at least) 18 bits, one for each channel.
-///
-/// Standard speaker channels: <https://www.wikipedia.org/wiki/Surround_sound>
-/// CAF channel bitmap: <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-BCGBHHHI>
-/// WAV default channel ordering: <https://learn.microsoft.com/en-us/previous-versions/windows/hardware/design/dn653308(v=vs.85)?redirectedfrom=MSDN#default-channel-ordering>
-/// FFmpeg: <https://ffmpeg.org/doxygen/trunk/group__channel__masks.html>
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-#[repr(transparent)]
-pub struct ChannelMask(pub(crate) u32);
-
-impl ChannelMask {
-	/// A single front center channel
-	#[must_use]
-	pub const fn mono() -> Self {
-		Self(0x4) // front center
-	}
-
-	/// Front left+right channels
-	#[must_use]
-	pub const fn stereo() -> Self {
-		Self(0x3) // front left (0x1) + front right (0x2)
-	}
-
-	/// The bit mask
-	#[must_use]
-	pub const fn bits(self) -> u32 {
-		self.0
 	}
 }
