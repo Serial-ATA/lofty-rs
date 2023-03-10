@@ -139,7 +139,9 @@ pub trait TaggedFileExt {
 	/// assert_eq!(tagged_file.primary_tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	fn primary_tag_type(&self) -> TagType;
+	fn primary_tag_type(&self) -> TagType {
+		self.file_type().primary_tag_type()
+	}
 
 	/// Determines whether the file supports the given [`TagType`]
 	///
@@ -155,7 +157,9 @@ pub trait TaggedFileExt {
 	/// assert!(tagged_file.supports_tag_type(TagType::ID3v2));
 	/// # Ok(()) }
 	/// ```
-	fn supports_tag_type(&self, tag_type: TagType) -> bool;
+	fn supports_tag_type(&self, tag_type: TagType) -> bool {
+		self.file_type().supports_tag_type(tag_type)
+	}
 
 	/// Get a reference to a specific [`TagType`]
 	///
@@ -222,7 +226,9 @@ pub trait TaggedFileExt {
 	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
 	/// # Ok(()) }
 	/// ```
-	fn primary_tag(&self) -> Option<&Tag>;
+	fn primary_tag(&self) -> Option<&Tag> {
+		self.tag(self.primary_tag_type())
+	}
 
 	/// Gets a mutable reference to the file's "Primary tag"
 	///
@@ -247,7 +253,9 @@ pub trait TaggedFileExt {
 	/// // Alter the tag...
 	/// # Ok(()) }
 	/// ```
-	fn primary_tag_mut(&mut self) -> Option<&mut Tag>;
+	fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
+		self.tag_mut(self.primary_tag_type())
+	}
 
 	/// Gets the first tag, if there are any
 	///
@@ -269,7 +277,9 @@ pub trait TaggedFileExt {
 	/// assert!(tag.is_some());
 	/// # Ok(()) }
 	/// ```
-	fn first_tag(&self) -> Option<&Tag>;
+	fn first_tag(&self) -> Option<&Tag> {
+		self.tags().first()
+	}
 
 	/// Gets a mutable reference to the first tag, if there are any
 	///
@@ -431,32 +441,12 @@ impl TaggedFileExt for TaggedFile {
 		self.tags.as_slice()
 	}
 
-	fn primary_tag_type(&self) -> TagType {
-		self.ty.primary_tag_type()
-	}
-
-	fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		self.ty.supports_tag_type(tag_type)
-	}
-
 	fn tag(&self, tag_type: TagType) -> Option<&Tag> {
 		self.tags.iter().find(|i| i.tag_type() == tag_type)
 	}
 
 	fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
 		self.tags.iter_mut().find(|i| i.tag_type() == tag_type)
-	}
-
-	fn primary_tag(&self) -> Option<&Tag> {
-		self.tag(self.primary_tag_type())
-	}
-
-	fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.tag_mut(self.primary_tag_type())
-	}
-
-	fn first_tag(&self) -> Option<&Tag> {
-		self.tags.first()
 	}
 
 	fn first_tag_mut(&mut self) -> Option<&mut Tag> {
@@ -664,32 +654,12 @@ impl TaggedFileExt for BoundTaggedFile {
 		self.inner.tags()
 	}
 
-	fn primary_tag_type(&self) -> TagType {
-		self.inner.primary_tag_type()
-	}
-
-	fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		self.inner.supports_tag_type(tag_type)
-	}
-
 	fn tag(&self, tag_type: TagType) -> Option<&Tag> {
 		self.inner.tag(tag_type)
 	}
 
 	fn tag_mut(&mut self, tag_type: TagType) -> Option<&mut Tag> {
 		self.inner.tag_mut(tag_type)
-	}
-
-	fn primary_tag(&self) -> Option<&Tag> {
-		self.inner.primary_tag()
-	}
-
-	fn primary_tag_mut(&mut self) -> Option<&mut Tag> {
-		self.inner.primary_tag_mut()
-	}
-
-	fn first_tag(&self) -> Option<&Tag> {
-		self.inner.first_tag()
 	}
 
 	fn first_tag_mut(&mut self) -> Option<&mut Tag> {
