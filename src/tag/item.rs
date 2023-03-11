@@ -123,7 +123,11 @@ gen_map!(
 	"Comment"                      => Comment,
 	"language"                     => Language,
 	"Script"                       => Script,
-	"Lyrics"                       => Lyrics
+	"Lyrics"                       => Lyrics,
+	"MUSICBRAINZ_TRACKID"          => MusicBrainzRecordingId,
+	"MUSICBRAINZ_RELEASETRACKID"   => MusicBrainzTrackId,
+	"MUSICBRAINZ_ALBUMID"          => MusicBrainzReleaseId,
+	"MUSICBRAINZ_RELEASEGROUPID"   => MusicBrainzReleaseGroupId
 );
 
 gen_map!(
@@ -208,7 +212,10 @@ gen_map!(
 	"TKWD"                  => PodcastKeywords,
 	"COMM"                  => Comment,
 	"TLAN"                  => Language,
-	"USLT"                  => Lyrics
+	"USLT"                  => Lyrics,
+	"MusicBrainz Release Track Id" => MusicBrainzTrackId,
+	"MusicBrainz Album Id"  => MusicBrainzReleaseId,
+	"MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId
 );
 
 gen_map!(
@@ -278,7 +285,11 @@ gen_map!(
 	"----:com.apple.iTunes:LANGUAGE"              => Language,
 	"----:com.apple.iTunes:SCRIPT"                => Script,
 	"\u{a9}lyr"                                   => Lyrics,
-	"xid "                                        => AppleXid
+	"xid "                                        => AppleXid,
+	"----:com.apple.iTunes:MusicBrainz Track Id"  => MusicBrainzRecordingId,
+	"----:com.apple.iTunes:MusicBrainz Release Track Id" => MusicBrainzTrackId,
+	"----:com.apple.iTunes:MusicBrainz Album Id"  => MusicBrainzReleaseId,
+	"----:com.apple.iTunes:MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId
 );
 
 gen_map!(
@@ -369,7 +380,11 @@ gen_map!(
 	"COMMENT"                                 => Comment,
 	"LANGUAGE"                                => Language,
 	"SCRIPT"                                  => Script,
-	"LYRICS"                                  => Lyrics
+	"LYRICS"                                  => Lyrics,
+	"MUSICBRAINZ_TRACKID"                     => MusicBrainzRecordingId,
+	"MUSICBRAINZ_RELEASETRACKID"              => MusicBrainzTrackId,
+	"MUSICBRAINZ_ALBUMID"                     => MusicBrainzReleaseId,
+	"MUSICBRAINZ_RELEASEGROUPID"              => MusicBrainzReleaseGroupId
 );
 
 macro_rules! gen_item_keys {
@@ -519,6 +534,10 @@ gen_item_keys!(
 		Movement,
 		MovementNumber,
 		MovementTotal,
+		MusicBrainzRecordingId,
+		MusicBrainzTrackId,
+		MusicBrainzReleaseId,
+		MusicBrainzReleaseGroupId,
 
 		// Flags
 		FlagCompilation,
