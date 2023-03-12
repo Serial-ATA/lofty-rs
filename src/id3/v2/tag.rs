@@ -1770,9 +1770,9 @@ mod tests {
 			Some(&Frame {
 				id: FrameID::Valid(Cow::Borrowed("TXXX")),
 				value: FrameValue::UserText(EncodedTextFrame {
-					encoding: TextEncoding::UTF8,
 					description: String::from("FOO_BAR"),
-					content: String::from("foo content"),
+					encoding: TextEncoding::UTF8, // Not considered by PartialEq!
+					content: Default::default(),  // Not considered by PartialEq!
 				}),
 				flags: FrameFlags::default(),
 			})
