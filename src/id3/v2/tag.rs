@@ -3,20 +3,21 @@ use super::frame::id::FrameID;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::frame::FrameRef;
+use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
+use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::util::text::TextEncoding;
+use crate::util::text::{decode_text, TextEncoding};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fmt::Display;
 use std::fs::{File, OpenOptions};
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::ops::Deref;
 use std::path::Path;
 
@@ -741,6 +742,29 @@ impl SplitTag for ID3v2Tag {
 					}
 					false // Frame consumed
 				},
+				(
+					"UFID",
+					FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+						ref owner,
+						ref identifier,
+						..
+					}),
+				) => {
+					if owner == MUSICBRAINZ_UFID_OWNER {
+						let mut identifier = Cursor::new(identifier);
+						let Ok(recording_id) = decode_text(&mut identifier, TextEncoding::Latin1, false) else {
+							return true; // Keep frame
+						};
+						tag.items.push(TagItem::new(
+							ItemKey::MusicBrainzRecordingId,
+							ItemValue::Text(recording_id.unwrap_or_default()),
+						));
+						false // Frame consumed
+					} else {
+						// Unsupported owner
+						true // Keep frame
+					}
+				},
 				(id, value) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, id);
 
@@ -798,6 +822,9 @@ impl SplitTag for ID3v2Tag {
 							ItemValue::Binary(popularimeter.as_bytes())
 						},
 						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
+						FrameValue::UniqueFileIdentifier(_) => {
+							return true; // Keep unsupported frame
+						},
 					};
 
 					tag.items.push(TagItem::new(item_key, item_value));
@@ -1036,6 +1063,8 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
 mod tests {
 	use std::borrow::Cow;
 
+	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
+	use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
 	use crate::id3::v2::items::popularimeter::Popularimeter;
 	use crate::id3::v2::tag::{
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
@@ -2040,5 +2069,79 @@ mod tests {
 		assert_invalid("1/2/3");
 		assert_invalid("1//2");
 		assert_invalid("0x1/0x2");
+	}
+
+	#[test]
+	fn ufid_frame_with_musicbrainz_record_id() {
+		let mut id3v2 = ID3v2Tag::default();
+		let unknown_ufid_frame = UniqueFileIdentifierFrame {
+			owner: "other".to_owned(),
+			identifier: b"0123456789".to_vec(),
+		};
+		id3v2.insert(
+			Frame::new(
+				"UFID",
+				FrameValue::UniqueFileIdentifier(unknown_ufid_frame.clone()),
+				FrameFlags::default(),
+			)
+			.unwrap(),
+		);
+		let musicbrainz_recording_id = b"189002e7-3285-4e2e-92a3-7f6c30d407a2";
+		let musicbrainz_recording_id_frame = UniqueFileIdentifierFrame {
+			owner: MUSICBRAINZ_UFID_OWNER.to_owned(),
+			identifier: musicbrainz_recording_id.to_vec(),
+		};
+		id3v2.insert(
+			Frame::new(
+				"UFID",
+				FrameValue::UniqueFileIdentifier(musicbrainz_recording_id_frame.clone()),
+				FrameFlags::default(),
+			)
+			.unwrap(),
+		);
+		assert_eq!(2, id3v2.len());
+
+		let (split_remainder, split_tag) = id3v2.split_tag();
+		assert_eq!(split_remainder.0.len(), 1);
+		assert_eq!(split_tag.len(), 1);
+		assert_eq!(
+			ItemValue::Text(String::from_utf8(musicbrainz_recording_id.to_vec()).unwrap()),
+			*split_tag
+				.get_items(&ItemKey::MusicBrainzRecordingId)
+				.next()
+				.unwrap()
+				.value()
+		);
+
+		let id3v2 = split_remainder.merge_tag(split_tag);
+		assert_eq!(2, id3v2.len());
+		match &id3v2.frames[..] {
+			[Frame {
+				id: _,
+				value:
+					FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+						owner: first_owner,
+						identifier: first_identifier,
+					}),
+				flags: _,
+			}, Frame {
+				id: _,
+				value:
+					FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+						owner: second_owner,
+						identifier: second_identifier,
+					}),
+				flags: _,
+			}] => {
+				assert_eq!(&unknown_ufid_frame.owner, first_owner);
+				assert_eq!(&unknown_ufid_frame.identifier, first_identifier);
+				assert_eq!(&musicbrainz_recording_id_frame.owner, second_owner);
+				assert_eq!(
+					&musicbrainz_recording_id_frame.identifier,
+					second_identifier
+				);
+			},
+			_ => unreachable!(),
+		}
 	}
 }

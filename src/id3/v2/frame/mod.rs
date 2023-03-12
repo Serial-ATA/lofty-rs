@@ -12,6 +12,7 @@ use crate::picture::Picture;
 use crate::tag::item::{ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::{encode_text, TextEncoding};
+use crate::ItemKey;
 use id::FrameID;
 
 use std::borrow::Cow;
@@ -19,6 +20,10 @@ use std::borrow::Cow;
 use crate::id3::v2::items::popularimeter::Popularimeter;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
+
+use super::items::identifier::UniqueFileIdentifierFrame;
+
+pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 
 /// Empty content descriptor in text frame
 ///
@@ -204,6 +209,8 @@ pub enum FrameValue {
 	/// * This is used for **all** frames with an ID of [`FrameID::Outdated`]
 	/// * This is used for unknown frames
 	Binary(Vec<u8>),
+	/// Unique file identifier
+	UniqueFileIdentifier(UniqueFileIdentifierFrame),
 }
 
 impl From<ItemValue> for FrameValue {
@@ -236,6 +243,7 @@ impl FrameValue {
 			},
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
+			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 		})
 	}
 }
@@ -349,7 +357,22 @@ impl From<TagItem> for Option<Frame<'static>> {
 					},
 					ItemValue::Binary(_) => return None,
 				},
-				None => return None,
+				None => match (input.item_key, input.item_value) {
+					(ItemKey::MusicBrainzRecordingId, ItemValue::Text(recording_id)) => {
+						if !recording_id.is_ascii() {
+							return None;
+						}
+						let frame = UniqueFileIdentifierFrame {
+							owner: MUSICBRAINZ_UFID_OWNER.to_owned(),
+							identifier: recording_id.into_bytes(),
+						};
+						frame_id = FrameID::Valid(Cow::Borrowed("UFID"));
+						value = FrameValue::UniqueFileIdentifier(frame);
+					},
+					_ => {
+						return None;
+					},
+				},
 			},
 		}
 
