@@ -1,6 +1,7 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
+use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::items::popularimeter::Popularimeter;
 use crate::id3::v2::ID3v2Version;
@@ -28,6 +29,7 @@ pub(super) fn parse_content(
 		"TXXX" => parse_user_defined(content, false, version)?,
 		"WXXX" => parse_user_defined(content, true, version)?,
 		"COMM" | "USLT" => parse_text_language(content, id, version)?,
+		"UFID" => UniqueFileIdentifierFrame::decode_bytes(content)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => parse_text(content, version)?,
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
