@@ -73,10 +73,6 @@ where
 		AtomInfo::read(self, self.remaining_size)
 	}
 
-	pub(super) fn position(&mut self) -> std::io::Result<u64> {
-		self.reader.stream_position()
-	}
-
 	pub(super) fn into_inner(self) -> R {
 		self.reader
 	}

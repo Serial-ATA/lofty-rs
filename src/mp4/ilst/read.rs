@@ -163,7 +163,7 @@ where
 	// An atom can contain multiple data atoms
 	let mut ret = Vec::new();
 
-	let to_read = (atom_info.start + atom_info.len) - reader.position()?;
+	let to_read = (atom_info.start + atom_info.len) - reader.stream_position()?;
 	let mut pos = 0;
 	while pos < to_read {
 		let data_atom = reader.next()?;
