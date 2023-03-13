@@ -95,22 +95,7 @@ where
 		}
 	} else {
 		// We have to create the `udta` atom
-
-		// `udta` + `meta` (12) + `hdlr` (33) + `ilst`
-		let capacity = 53 + ilst.len();
-		let buf = Vec::with_capacity(capacity);
-
-		let mut bytes = Cursor::new(buf);
-		bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
-
-		create_meta(&mut bytes, &ilst)?;
-
-		// udta size
-		bytes.rewind()?;
-		write_size(0, ilst.len() as u64 + 8, false, &mut bytes)?;
-
-		let bytes = bytes.into_inner();
-
+		let bytes = create_udta(&ilst)?;
 		new_udta_size = bytes.len() as u64;
 
 		let udta_pos = (moov.start + 8) as usize;
@@ -242,9 +227,25 @@ fn save_to_existing(
 	Ok(())
 }
 
-fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
-	const HDLR_SIZE: u64 = 33;
+const HDLR_SIZE: u64 = 33;
+fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
+	// `udta` + `meta` (12) + `hdlr` (33) + `ilst`
+	let capacity = 63 + ilst.len();
+	let buf = Vec::with_capacity(capacity);
 
+	let mut bytes = Cursor::new(buf);
+	bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
+
+	create_meta(&mut bytes, &ilst)?;
+
+	// udta size
+	bytes.rewind()?;
+	write_size(0, bytes.get_ref().len() as u64, false, &mut bytes)?;
+
+	Ok(bytes.into_inner())
+}
+
+fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
 	let start = cursor.stream_position()?;
 	// meta atom
 	cursor.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
