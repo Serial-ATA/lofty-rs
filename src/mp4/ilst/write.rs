@@ -23,7 +23,7 @@ where
 	verify_mp4(&mut reader)?;
 
 	let moov = Moov::find(&mut reader)?;
-	let pos = reader.position()?;
+	let pos = reader.stream_position()?;
 
 	reader.rewind()?;
 
