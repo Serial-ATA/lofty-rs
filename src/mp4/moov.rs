@@ -46,6 +46,7 @@ impl Moov {
 					b"trak" if read_properties => {
 						// All we need from here is trak.mdia
 						if let Some(mdia) = nested_atom(reader, atom.len, b"mdia")? {
+							skip_unneeded(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
 						}
 					},
