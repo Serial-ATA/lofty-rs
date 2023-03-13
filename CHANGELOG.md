@@ -19,6 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**:
   - Fix conversion of user defined frames when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/140)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/142))
   - Fix writing of tag/disk numbers when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/145)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/149))
+- **MP4**:
+  - Fix the incorrect size being written for newly created `moov.udta.meta` atoms
+    - Previously, the 8 bytes for the size and identifier were not accounted for
+  - The parser has been further restricted to avoid going out of bounds
+    - This was only an issue if there was garbage data after the `moov` item *and* the parser had not yet found
+      the `moov.udta` atom.
 
 ## [0.11.0] - 2023-1-29
 
