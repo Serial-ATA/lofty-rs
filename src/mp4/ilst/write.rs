@@ -228,18 +228,19 @@ fn save_to_existing(
 	Ok(())
 }
 
+const FULL_META_ATOM_SIZE: u64 = 12;
 const HDLR_SIZE: u64 = 33;
 fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
-	// `udta` + `meta` (12) + `hdlr` (33) + `ilst`
-	let capacity = 63 + ilst.len();
-	let buf = Vec::with_capacity(capacity);
+	// `udta` (8) + `meta` + `hdlr` + `ilst`
+	let capacity = 8 + FULL_META_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
+	let buf = Vec::with_capacity(capacity as usize);
 
 	let mut bytes = Cursor::new(buf);
 	bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
 
 	create_meta(&mut bytes, &ilst)?;
 
-	// udta size
+	// `udta` size
 	bytes.rewind()?;
 	write_size(0, bytes.get_ref().len() as u64, false, &mut bytes)?;
 
@@ -260,7 +261,7 @@ fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
 
 	cursor.seek(SeekFrom::Start(start))?;
 
-	let meta_size = 8 + 4 + HDLR_SIZE + ilst.len() as u64;
+	let meta_size = FULL_META_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
 	write_size(start, meta_size, false, cursor)?;
 
 	// Seek to `hdlr` size
