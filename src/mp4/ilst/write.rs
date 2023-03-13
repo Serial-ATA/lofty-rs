@@ -88,9 +88,10 @@ where
 				cursor.seek(SeekFrom::Start(udta.start))?;
 				write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
 
+				let meta_start_pos = (udta.start + 8) as usize;
 				cursor
 					.get_mut()
-					.splice(udta.start as usize..udta.start as usize, bytes);
+					.splice(meta_start_pos..meta_start_pos, bytes);
 			},
 		}
 	} else {
@@ -259,7 +260,7 @@ fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
 
 	cursor.seek(SeekFrom::Start(start))?;
 
-	let meta_size = 4 + HDLR_SIZE + ilst.len() as u64;
+	let meta_size = 8 + 4 + HDLR_SIZE + ilst.len() as u64;
 	write_size(start, meta_size, false, cursor)?;
 
 	// Seek to `hdlr` size
