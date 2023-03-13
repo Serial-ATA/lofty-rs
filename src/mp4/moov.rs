@@ -71,13 +71,15 @@ where
 	R: Read + Seek,
 {
 	let mut read = 8;
-	let mut meta = (false, 0_u64);
+	let mut found_meta = false;
+	let mut meta_atom_size = 0;
 
 	while read < len {
 		let atom = reader.next()?;
 
 		if atom.ident == AtomIdent::Fourcc(*b"meta") {
-			meta = (true, atom.len);
+			found_meta = true;
+			meta_atom_size = atom.len;
 			break;
 		}
 
@@ -85,7 +87,7 @@ where
 		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
-	if !meta.0 {
+	if !found_meta {
 		return Ok(None);
 	}
 
@@ -99,13 +101,15 @@ where
 		read = 8;
 	}
 
-	let mut islt = (false, 0_u64);
+	let mut found_ilst = false;
+	let mut ilst_atom_size = 0;
 
-	while read < meta.1 {
+	while read < meta_atom_size {
 		let atom = reader.next()?;
 
 		if atom.ident == AtomIdent::Fourcc(*b"ilst") {
-			islt = (true, atom.len);
+			found_ilst = true;
+			ilst_atom_size = atom.len;
 			break;
 		}
 
@@ -113,8 +117,8 @@ where
 		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
-	if islt.0 {
-		return parse_ilst(reader, islt.1 - 8).map(Some);
+	if found_ilst {
+		return parse_ilst(reader, ilst_atom_size - 8).map(Some);
 	}
 
 	Ok(None)
