@@ -5,6 +5,7 @@ use super::Mp4File;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
 use crate::probe::ParseOptions;
+use crate::traits::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -15,6 +16,7 @@ where
 	R: Read + Seek,
 {
 	reader: R,
+	start: u64,
 	remaining_size: u64,
 	len: u64,
 }
@@ -24,18 +26,18 @@ where
 	R: Read + Seek,
 {
 	pub(super) fn new(mut reader: R) -> Result<Self> {
-		use crate::traits::SeekStreamLen;
-
 		#[allow(unstable_name_collisions)]
 		let len = reader.stream_len()?;
 		Ok(Self {
 			reader,
+			start: 0,
 			remaining_size: len,
 			len,
 		})
 	}
 
-	pub(super) fn reset_length(&mut self, len: u64) {
+	pub(super) fn reset_bounds(&mut self, start_position: u64, len: u64) {
+		self.start = start_position;
 		self.remaining_size = len;
 		self.len = len;
 	}
@@ -84,12 +86,29 @@ where
 {
 	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
 		match pos {
-			SeekFrom::Start(_) | SeekFrom::End(_) => {
-				let ret = self.reader.seek(pos)?;
-				let new_rem = self.len.saturating_sub(ret);
+			SeekFrom::Start(s) => {
+				if s > self.len {
+					self.remaining_size = 0;
 
-				self.remaining_size = new_rem;
+					let bound_end = self.start + self.len;
+					return self.reader.seek(SeekFrom::Start(bound_end));
+				}
+
+				let ret = self.reader.seek(SeekFrom::Start(self.start + s))?;
+				self.remaining_size = self.len.saturating_sub(ret);
 				Ok(ret)
+			},
+			SeekFrom::End(s) => {
+				if s.is_positive() || s == 0 {
+					self.remaining_size = 0;
+					return self.reader.seek(SeekFrom::Start(self.start + self.len));
+				}
+
+				let bound_end = self.start + self.len;
+				let relative_seek_count = core::cmp::min(self.len, s.unsigned_abs());
+				self.reader.seek(SeekFrom::Start(
+					bound_end.saturating_sub(relative_seek_count),
+				))
 			},
 			SeekFrom::Current(s) => {
 				if s.is_negative() {
@@ -101,10 +120,6 @@ where
 				self.reader.seek(pos)
 			},
 		}
-	}
-
-	fn stream_position(&mut self) -> std::io::Result<u64> {
-		self.position()
 	}
 }
 
@@ -154,23 +169,22 @@ where
 	R: Read + Seek,
 {
 	let mut reader = AtomReader::new(data)?;
+	let file_length = reader.stream_len()?;
 
 	let ftyp = verify_mp4(&mut reader)?;
 
 	// Find the `moov` atom and restrict the reader to its length
 	let moov_info = Moov::find(&mut reader)?;
-	reader.reset_length(moov_info.len - 8);
+	reader.reset_bounds(moov_info.start + 8, moov_info.len - 8);
 
 	let moov = Moov::parse(&mut reader, parse_options.read_properties)?;
-
-	let file_length = reader.seek(SeekFrom::End(0))?;
 
 	Ok(Mp4File {
 		ftyp,
 		ilst_tag: moov.meta,
 		properties: if parse_options.read_properties {
 			// Remove the length restriction
-			reader.reset_length(file_length);
+			reader.reset_bounds(0, file_length);
 			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
 		} else {
 			Mp4Properties::default()
@@ -265,8 +279,6 @@ pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool>
 where
 	R: Read + Seek,
 {
-	let meta_pos = reader.stream_position()?;
-
 	// A full `meta` atom should have the following:
 	//
 	// Version (1)
@@ -282,11 +294,11 @@ where
 
 	match &possible_ident {
 		b"hdlr" | b"ilst" | b"mhdr" | b"ctry" | b"lang" => {
-			reader.seek(SeekFrom::Start(meta_pos))?;
+			reader.seek(SeekFrom::Current(-8))?;
 			Ok(false)
 		},
 		_ => {
-			reader.seek(SeekFrom::Start(meta_pos + 4))?;
+			reader.seek(SeekFrom::Current(-4))?;
 			Ok(true)
 		},
 	}
