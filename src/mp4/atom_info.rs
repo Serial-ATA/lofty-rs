@@ -142,8 +142,8 @@ impl AtomInfo {
 			err!(BadAtom("Found an invalid length (< 8)"));
 		}
 
-		// `len` includes itself
-		if (len - 4) > reader_size {
+		// `len` includes itself (4) and the identifier (4)
+		if (len - 8) > reader_size {
 			data.seek(SeekFrom::Current(-4))?;
 			err!(SizeMismatch);
 		}
