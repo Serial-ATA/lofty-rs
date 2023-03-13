@@ -164,6 +164,7 @@ where
 		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
 }
 
+#[allow(unstable_name_collisions)]
 pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<Mp4File>
 where
 	R: Read + Seek,
