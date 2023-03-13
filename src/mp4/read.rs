@@ -35,6 +35,11 @@ where
 		})
 	}
 
+	pub(super) fn reset_length(&mut self, len: u64) {
+		self.remaining_size = len;
+		self.len = len;
+	}
+
 	pub(super) fn read_u8(&mut self) -> std::io::Result<u8> {
 		self.remaining_size = self.remaining_size.saturating_sub(1);
 		self.reader.read_u8()
@@ -156,7 +161,10 @@ where
 
 	let ftyp = verify_mp4(&mut reader)?;
 
-	Moov::find(&mut reader)?;
+	// Find the `moov` atom and restrict the reader to its length
+	let moov_info = Moov::find(&mut reader)?;
+	reader.reset_length(moov_info.len - 8);
+
 	let moov = Moov::parse(&mut reader, parse_options.read_properties)?;
 
 	let file_length = reader.seek(SeekFrom::End(0))?;
@@ -165,6 +173,8 @@ where
 		ftyp,
 		ilst_tag: moov.meta,
 		properties: if parse_options.read_properties {
+			// Remove the length restriction
+			reader.reset_length(file_length);
 			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
 		} else {
 			Mp4Properties::default()
