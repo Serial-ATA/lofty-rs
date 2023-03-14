@@ -90,7 +90,7 @@ macro_rules! parse_mode_choice {
 			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?
 			$(crate::probe::ParsingMode::Relaxed => { $relaxed_handler },)?
 			#[allow(unreachable_patterns)]
-			_ => { unreachable!() }
+			_ => {}
 		}
 	};
 }
