@@ -2,7 +2,7 @@ use super::r#ref::IlstRef;
 use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
 use crate::macros::{err, try_vec};
-use crate::mp4::atom_info::{AtomIdent, AtomInfo};
+use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN, IDENTIFIER_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
@@ -13,6 +13,10 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
+
+// A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
+const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
+const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
 pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
 where
@@ -74,8 +78,8 @@ where
 			None => {
 				existing_udta_size = udta.len;
 
-				// `meta` (12) + `ilst`
-				let capacity = 12 + ilst.len();
+				// `meta` + `ilst`
+				let capacity = FULL_ATOM_SIZE as usize + ilst.len();
 				let buf = Vec::with_capacity(capacity);
 
 				let mut bytes = Cursor::new(buf);
@@ -88,7 +92,8 @@ where
 				cursor.seek(SeekFrom::Start(udta.start))?;
 				write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
 
-				let meta_start_pos = (udta.start + 8) as usize;
+				// We'll put the new `meta` atom right at the start of `udta`
+				let meta_start_pos = (udta.start + ATOM_HEADER_LEN) as usize;
 				cursor
 					.get_mut()
 					.splice(meta_start_pos..meta_start_pos, bytes);
@@ -99,7 +104,8 @@ where
 		let bytes = create_udta(&ilst)?;
 		new_udta_size = bytes.len() as u64;
 
-		let udta_pos = (moov.start + 8) as usize;
+		// We'll put the new `udta` atom right at the start of `moov`
+		let udta_pos = (moov.start + ATOM_HEADER_LEN) as usize;
 		cursor.get_mut().splice(udta_pos..udta_pos, bytes);
 	}
 
@@ -132,7 +138,7 @@ fn save_to_existing(
 	let replacement;
 	let range;
 
-	let (ilst_idx, tree) = atom_tree(cursor, meta.len - 8, b"ilst")?;
+	let (ilst_idx, tree) = atom_tree(cursor, meta.len - ATOM_HEADER_LEN, b"ilst")?;
 
 	if tree.is_empty() {
 		// Nothing to do
@@ -198,7 +204,8 @@ fn save_to_existing(
 				// Write the remaining padding
 				cursor.write_u32::<BigEndian>(remaining_space)?;
 				cursor.write_all(b"free")?;
-				cursor.write_all(&try_vec![1; (remaining_space - 8) as usize])?;
+				cursor
+					.write_all(&try_vec![1; (remaining_space - ATOM_HEADER_LEN as u32) as usize])?;
 
 				return Ok(());
 			}
@@ -228,11 +235,9 @@ fn save_to_existing(
 	Ok(())
 }
 
-const FULL_META_ATOM_SIZE: u64 = 12;
-const HDLR_SIZE: u64 = 33;
 fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
-	// `udta` (8) + `meta` + `hdlr` + `ilst`
-	let capacity = 8 + FULL_META_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
+	// `udta` + `meta` + `hdlr` + `ilst`
+	let capacity = ATOM_HEADER_LEN + FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
 	let buf = Vec::with_capacity(capacity as usize);
 
 	let mut bytes = Cursor::new(buf);
@@ -261,7 +266,7 @@ fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
 
 	cursor.seek(SeekFrom::Start(start))?;
 
-	let meta_size = FULL_META_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
+	let meta_size = FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
 	write_size(start, meta_size, false, cursor)?;
 
 	// Seek to `hdlr` size
@@ -279,7 +284,7 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 		// 0001 (identifier) ????????
 		writer.write_u32::<BigEndian>(1)?;
 		// Skip identifier
-		writer.seek(SeekFrom::Current(4))?;
+		writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
 
 		let extended_size = size.to_be_bytes();
 		let inner = writer.get_mut();
@@ -297,7 +302,7 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	} else {
 		// ???? (identifier)
 		writer.write_u32::<BigEndian>(size as u32)?;
-		writer.seek(SeekFrom::Current(4))?;
+		writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
 	}
 
 	Ok(())
@@ -322,7 +327,7 @@ where
 		let start = writer.stream_position()?;
 
 		// Empty size, we get it later
-		writer.write_all(&[0; 4])?;
+		writer.write_all(&[0; FOURCC_LEN as usize])?;
 
 		match atom.ident {
 			AtomIdent::Fourcc(ref fourcc) => writer.write_all(fourcc)?,
@@ -358,12 +363,12 @@ fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Resul
 	writer.write_all(b"----")?;
 
 	// .... MEAN 0000 ????
-	writer.write_u32::<BigEndian>((12 + mean.len()) as u32)?;
+	writer.write_u32::<BigEndian>((FULL_ATOM_SIZE + mean.len() as u64) as u32)?;
 	writer.write_all(&[b'm', b'e', b'a', b'n', 0, 0, 0, 0])?;
 	writer.write_all(mean.as_bytes())?;
 
 	// .... NAME 0000 ????
-	writer.write_u32::<BigEndian>((12 + name.len()) as u32)?;
+	writer.write_u32::<BigEndian>((FULL_ATOM_SIZE + name.len() as u64) as u32)?;
 	writer.write_all(&[b'n', b'a', b'm', b'e', 0, 0, 0, 0])?;
 	writer.write_all(name.as_bytes())?;
 
@@ -438,7 +443,7 @@ fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<(
 	}
 
 	// .... DATA (version = 0) (flags) (locale = 0000) (data)
-	let size = 16_u64 + data.len() as u64;
+	let size = FULL_ATOM_SIZE + 4 + data.len() as u64;
 
 	writer.write_all(&[0, 0, 0, 0, b'd', b'a', b't', b'a'])?;
 	write_size(writer.seek(SeekFrom::Current(-8))?, size, false, writer)?;
