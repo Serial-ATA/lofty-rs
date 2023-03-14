@@ -44,8 +44,8 @@ impl<'a> AtomIdent<'a> {
 		match self {
 			Self::Fourcc(fourcc) => Self::Fourcc(*fourcc),
 			Self::Freeform { mean, name } => Self::Freeform {
-				mean: Cow::Borrowed(&mean),
-				name: Cow::Borrowed(&name),
+				mean: Cow::Borrowed(mean),
+				name: Cow::Borrowed(name),
 			},
 		}
 	}

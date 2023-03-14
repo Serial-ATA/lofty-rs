@@ -243,7 +243,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
 	let mut bytes = Cursor::new(buf);
 	bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
 
-	create_meta(&mut bytes, &ilst)?;
+	create_meta(&mut bytes, ilst)?;
 
 	// `udta` size
 	bytes.rewind()?;

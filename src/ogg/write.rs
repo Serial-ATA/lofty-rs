@@ -170,7 +170,7 @@ where
 
 	new_comment_packet.write_all(comment_signature)?;
 	new_comment_packet.write_u32::<LittleEndian>(vendor.len() as u32)?;
-	new_comment_packet.write_all(&vendor)?;
+	new_comment_packet.write_all(vendor)?;
 
 	let item_count_pos = new_comment_packet.stream_position()?;
 

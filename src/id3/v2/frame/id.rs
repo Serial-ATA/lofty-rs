@@ -45,7 +45,7 @@ impl<'a> FrameID<'a> {
 	/// Extracts the string from the ID
 	pub fn as_str(&self) -> &str {
 		match self {
-			FrameID::Valid(v) | FrameID::Outdated(v) => &v,
+			FrameID::Valid(v) | FrameID::Outdated(v) => v,
 		}
 	}
 
@@ -82,7 +82,7 @@ impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
 	fn try_from(value: &'a ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
 		match value {
 			ItemKey::Unknown(unknown) if unknown.len() == 4 => {
-				Self::verify_id(&unknown)?;
+				Self::verify_id(unknown)?;
 				Ok(Self::Valid(Cow::Borrowed(unknown)))
 			},
 			k => {
