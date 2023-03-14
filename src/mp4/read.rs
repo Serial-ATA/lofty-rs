@@ -99,7 +99,7 @@ where
 				Ok(ret)
 			},
 			SeekFrom::End(s) => {
-				if s.is_positive() || s == 0 {
+				if s >= 0 {
 					self.remaining_size = 0;
 					return self.reader.seek(SeekFrom::Start(self.start + self.len));
 				}
