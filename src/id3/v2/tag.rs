@@ -1633,7 +1633,7 @@ mod tests {
 		assert_eq!(20, tag.len());
 
 		let id3v2 = ID3v2Tag::from(tag.clone());
-		let (split_remainder, split_tag) = id3v2.clone().split_tag();
+		let (split_remainder, split_tag) = id3v2.split_tag();
 
 		assert_eq!(0, split_remainder.0.len());
 		assert_eq!(tag.len(), split_tag.len());
@@ -1772,7 +1772,7 @@ mod tests {
 				value: FrameValue::UserText(EncodedTextFrame {
 					description: String::from("FOO_BAR"),
 					encoding: TextEncoding::UTF8, // Not considered by PartialEq!
-					content: Default::default(),  // Not considered by PartialEq!
+					content: String::new(),       // Not considered by PartialEq!
 				}),
 				flags: FrameFlags::default(),
 			})

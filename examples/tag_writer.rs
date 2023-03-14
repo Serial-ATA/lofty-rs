@@ -39,10 +39,7 @@ fn main() {
 			} else {
 				let tag_type = tagged_file.primary_tag_type();
 
-				eprintln!(
-					"WARN: No tags found, creating a new tag of type `{:?}`",
-					tag_type
-				);
+				eprintln!("WARN: No tags found, creating a new tag of type `{tag_type:?}`");
 				tagged_file.insert_tag(Tag::new(tag_type));
 
 				tagged_file.primary_tag_mut().unwrap()

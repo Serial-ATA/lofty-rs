@@ -23,7 +23,7 @@ fn main() {
 	for (num, tag) in tags.iter().enumerate() {
 		let tag_type = tag.tag_type();
 
-		println!("{}: {:?}", num, tag_type);
+		println!("{num}: {tag_type:?}");
 		available_tag_types.push(tag_type);
 	}
 
@@ -51,7 +51,7 @@ fn main() {
 	let tag_remove = available_tag_types[to_remove.unwrap()];
 
 	if tag_remove.remove_from_path(path).is_ok() {
-		println!("INFO: Removed tag: `{:?}`", tag_remove);
+		println!("INFO: Removed tag: `{tag_remove:?}`");
 	} else {
 		eprintln!("ERROR: Failed to remove the tag")
 	}
