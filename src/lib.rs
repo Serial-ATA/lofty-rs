@@ -110,8 +110,6 @@
 	unused_import_braces,
 	explicit_outlives_requirements
 )]
-// TODO: This had multiple FPs right now, remove this when it is fixed
-#![allow(clippy::needless_borrow)]
 #![allow(
 	unknown_lints,
 	clippy::too_many_lines,

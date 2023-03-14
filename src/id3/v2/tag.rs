@@ -680,25 +680,20 @@ impl SplitTag for ID3v2Tag {
 			// The text pairs need some special treatment
 			match (id.as_str(), &mut frame.value) {
 				("TRCK", FrameValue::Text { value: content, .. })
-					if split_pair(
-						&content,
-						&mut tag,
-						ItemKey::TrackNumber,
-						ItemKey::TrackTotal,
-					)
-					.is_some() =>
+					if split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
+						.is_some() =>
 				{
 					false // Frame consumed
 				},
 				("TPOS", FrameValue::Text { value: content, .. })
-					if split_pair(&content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
+					if split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
 					false // Frame consumed
 				},
 				("MVIN", FrameValue::Text { value: content, .. })
 					if split_pair(
-						&content,
+						content,
 						&mut tag,
 						ItemKey::MovementNumber,
 						ItemKey::MovementTotal,
