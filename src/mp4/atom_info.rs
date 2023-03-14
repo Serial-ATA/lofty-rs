@@ -8,6 +8,10 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+pub(super) const FOURCC_LEN: u64 = 4;
+pub(super) const IDENTIFIER_LEN: u64 = 4;
+pub(super) const ATOM_HEADER_LEN: u64 = FOURCC_LEN + IDENTIFIER_LEN;
+
 /// Represents an `MP4` atom identifier
 #[derive(Eq, PartialEq, Debug, Clone)]
 pub enum AtomIdent<'a> {
@@ -117,8 +121,8 @@ impl AtomInfo {
 
 		let len_raw = u64::from(data.read_u32::<BigEndian>()?);
 
-		let mut ident = [0; 4];
-		data.read_exact(&mut ident)?;
+		let mut identifier = [0; IDENTIFIER_LEN as usize];
+		data.read_exact(&mut identifier)?;
 
 		let (len, extended) = match len_raw {
 			// The atom extends to the end of the file
@@ -135,25 +139,25 @@ impl AtomInfo {
 			_ => (len_raw, false),
 		};
 
-		if len < 8 {
+		if len < ATOM_HEADER_LEN {
 			// Seek to the end, since we can't recover from this
 			data.seek(SeekFrom::End(0))?;
 
 			err!(BadAtom("Found an invalid length (< 8)"));
 		}
 
-		// `len` includes itself (4) and the identifier (4)
-		if (len - 8) > reader_size {
+		// `len` includes itself and the identifier
+		if (len - ATOM_HEADER_LEN) > reader_size {
 			data.seek(SeekFrom::Current(-4))?;
 			err!(SizeMismatch);
 		}
 
-		let mut atom_ident = AtomIdent::Fourcc(ident);
+		let mut atom_ident = AtomIdent::Fourcc(identifier);
 
 		// Encountered a freeform identifier
-		if &ident == b"----" {
-			reader_size -= 8;
-			if reader_size < 8 {
+		if &identifier == b"----" {
+			reader_size -= ATOM_HEADER_LEN;
+			if reader_size < ATOM_HEADER_LEN {
 				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
 
