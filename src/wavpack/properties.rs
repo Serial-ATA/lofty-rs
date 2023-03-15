@@ -149,7 +149,7 @@ where
 				);
 			}
 
-			if let Err(e) = get_extended_meta_info(reader, &mut properties, block_contents.len() as u64)
+			if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
 			{
 				parse_mode_choice!(
 					parse_mode,
@@ -258,23 +258,26 @@ where
 	})
 }
 
-fn get_extended_meta_info<R>(
-	reader: &mut R,
+fn get_extended_meta_info(
+	parse_mode: ParsingMode,
+	block_content: &[u8],
 	properties: &mut WavPackProperties,
-	block_size: u64,
-) -> Result<()>
-where
-	R: Read + Seek,
-{
-	while reader.stream_position()? < block_size {
-		let id = reader.read_u8()?;
+) -> Result<()> {
+	let mut index = 0;
+	let block_size = block_content.len();
+	while index < block_size {
+		let id = block_content[index];
+		index += 1;
+
+		let mut size = u32::from(block_content[index]) << 1;
+		index += 1;
 
 		let is_large = id & ID_FLAG_LARGE_SIZE > 0;
-		let mut size = if is_large {
-			reader.read_u24::<LittleEndian>()? << 1
-		} else {
-			u32::from(reader.read_u8()?) << 1
-		};
+		if is_large {
+			size += u32::from(block_content[index]) << 9;
+			size += u32::from(block_content[index + 1]) << 17;
+			index += 2;
+		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
 			size -= 1;
@@ -282,53 +285,70 @@ where
 
 		match id & 0x3F {
 			ID_NON_STANDARD_SAMPLE_RATE => {
-				properties.sample_rate = reader.read_u24::<LittleEndian>()?;
+				properties.sample_rate =
+					(&mut &block_content[index..]).read_u24::<LittleEndian>()?;
 			},
 			ID_DSD => {
 				if size <= 1 {
 					decode_err!(@BAIL WavPack, "Encountered an invalid DSD block size");
 				}
 
-				let rate_multiplier = u32::from(reader.read_u8()?);
+				let mut rate_multiplier = u32::from(block_content[index]);
+				index += 1;
+
+				if rate_multiplier > 30 {
+					parse_mode_choice!(
+						parse_mode,
+						STRICT: decode_err!(@BAIL WavPack, "Encountered an invalid sample rate multiplier"),
+						DEFAULT: break
+					)
+				}
+
+				rate_multiplier = 1 << rate_multiplier;
 				if let (sample_rate, false) =
 					properties.sample_rate.overflowing_shl(rate_multiplier)
 				{
 					properties.sample_rate = sample_rate;
 				}
 
-				reader.seek(SeekFrom::Current(i64::from(size - 1)))?;
+				// Skip DSD mode
+				index += 1;
 			},
 			ID_MULTICHANNEL => {
 				if size <= 1 {
 					decode_err!(@BAIL WavPack, "Unable to extract channel information");
 				}
 
-				properties.channels = reader.read_u8()?;
+				properties.channels = block_content[index];
+				index += 1;
+
 				let s = size - 2;
 				match s {
 					0..=3 => {
-						reader.seek(SeekFrom::Current(i64::from(s + 1)))?;
+						// Skip the Microsoft channel mask
+						index += (s + 1) as usize;
 						continue;
 					},
 					4 | 5 => {},
 					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
 				}
 
-				reader.seek(SeekFrom::Current(1))?;
+				index += 1;
 
-				properties.channels |= reader.read_u8()? & 0xF;
+				properties.channels |= block_content[1] & 0xF;
 				properties.channels += 1;
+				index += 1;
 
 				// Skip the Microsoft channel mask
-				reader.seek(SeekFrom::Current(i64::from(s - 1)))?;
+				index += (s - 1) as usize;
 			},
 			_ => {
-				reader.seek(SeekFrom::Current(i64::from(size)))?;
+				index += size as usize;
 			},
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
-			reader.seek(SeekFrom::Current(1))?;
+			index += 1;
 		}
 	}
 
