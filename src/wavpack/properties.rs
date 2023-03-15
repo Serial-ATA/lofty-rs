@@ -67,6 +67,11 @@ impl WavPackProperties {
 		self.version
 	}
 
+	/// Bits per sample
+	pub fn bit_depth(&self) -> u8 {
+		self.bit_depth
+	}
+
 	/// Whether the audio is lossless
 	pub fn is_lossless(&self) -> bool {
 		self.lossless
