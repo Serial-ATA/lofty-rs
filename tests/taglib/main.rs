@@ -11,3 +11,4 @@ mod test_info;
 mod test_mp4;
 mod test_mpeg;
 mod test_speex;
+mod test_wavpack;
