@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The parser has been further restricted to avoid going out of bounds
     - This was only an issue if there was garbage data after the `moov` item *and* the parser had not yet found
       the `moov.udta` atom.
+- **WavPack**:
+  - Fewer errors are suppressed
+  - Metadata sub-blocks are now properly parsed
+  - Bitrate calculation will now properly round down
 
 ## [0.11.0] - 2023-1-29
 
