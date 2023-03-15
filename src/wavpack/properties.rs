@@ -149,9 +149,13 @@ where
 				);
 			}
 
-			if get_extended_meta_info(reader, &mut properties, block_contents.len() as u64).is_err()
+			if let Err(e) = get_extended_meta_info(reader, &mut properties, block_contents.len() as u64)
 			{
-				break;
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: return Err(e),
+					DEFAULT: break
+				);
 			}
 		} else {
 			properties.sample_rate = sample_rate;
