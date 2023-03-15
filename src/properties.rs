@@ -319,8 +319,8 @@ mod tests {
 	const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
 		version: 1040,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 599,
-		audio_bitrate: 598,
+		overall_bitrate: 598,
+		audio_bitrate: 597,
 		sample_rate: 48000,
 		channels: 2,
 		bit_depth: 16,

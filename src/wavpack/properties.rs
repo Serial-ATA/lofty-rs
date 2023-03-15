@@ -189,12 +189,12 @@ where
 	}
 
 	if total_samples > 0 && properties.sample_rate > 0 {
-		let length = u64::from(total_samples * 1000 / properties.sample_rate);
-		properties.duration = Duration::from_millis(length);
-		properties.audio_bitrate = crate::div_ceil(stream_length * 8, length) as u32;
+		let length = f64::from(total_samples) * 1000. / f64::from(properties.sample_rate);
+		properties.duration = Duration::from_millis((length + 0.5) as u64);
+		properties.audio_bitrate = (stream_length as f64 * 8. / length + 0.5) as u32;
 
 		let file_length = reader.seek(SeekFrom::End(0))?;
-		properties.overall_bitrate = crate::div_ceil(file_length * 8, length) as u32;
+		properties.overall_bitrate = (file_length as f64 * 8. / length + 0.5) as u32;
 	} else {
 		parse_mode_choice!(
 			parse_mode,
