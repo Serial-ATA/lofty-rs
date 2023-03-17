@@ -81,6 +81,10 @@ impl VorbisComments {
 	///
 	/// NOTE: This is case-sensitive
 	pub fn get(&self, key: &str) -> Option<&str> {
+		if !verify_key(key) {
+			return None;
+		}
+
 		self.items
 			.iter()
 			.find(|(k, _)| k == key)
@@ -114,8 +118,14 @@ impl VorbisComments {
 
 	/// Inserts an item
 	///
+	/// NOTE: This will do nothing if the key is invalid. This specification is available [here](https://xiph.org/vorbis/doc/v-comment.html#vectorformat).
+	///
 	/// If `replace_all` is true, it will remove all items with the key before insertion
 	pub fn insert(&mut self, key: String, value: String, replace_all: bool) {
+		if !verify_key(&key) {
+			return;
+		}
+
 		if replace_all {
 			self.items.retain(|(k, _)| k != &key);
 		}
@@ -139,6 +149,17 @@ impl VorbisComments {
 
 		self.items.drain(..split_idx).map(|(_, v)| v)
 	}
+}
+
+// A case-insensitive field name that may consist of ASCII 0x20 through 0x7D, 0x3D ('=') excluded.
+// ASCII 0x41 through 0x5A inclusive (A-Z) is to be considered equivalent to ASCII 0x61 through 0x7A inclusive (a-z).
+fn verify_key(key: &str) -> bool {
+	if key.is_empty() {
+		return false;
+	}
+
+	key.bytes()
+		.all(|byte| (0x20..0x7D).contains(&byte) && byte != 0x3D)
 }
 
 impl OggPictureStorage for VorbisComments {
