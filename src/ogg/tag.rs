@@ -206,7 +206,10 @@ impl Accessor for VorbisComments {
 	);
 
 	fn track(&self) -> Option<u32> {
-		if let Some(item) = self.get("TRACKNUMBER") {
+		if let Some(item) = self
+			.get("TRACKNUMBER")
+			.map_or_else(|| self.get("TRACKNUM"), Some)
+		{
 			return item.parse::<u32>().ok();
 		}
 
@@ -214,11 +217,13 @@ impl Accessor for VorbisComments {
 	}
 
 	fn set_track(&mut self, value: u32) {
+		self.remove_track();
 		self.insert(String::from("TRACKNUMBER"), value.to_string());
 	}
 
 	fn remove_track(&mut self) {
 		let _ = self.remove("TRACKNUMBER");
+		let _ = self.remove("TRACKNUM");
 	}
 
 	fn track_total(&self) -> Option<u32> {
