@@ -26,7 +26,7 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					self.insert(String::from($key), value, true)
+					self.insert(String::from($key), value)
 				}
 
 				fn [<remove_ $name>](&mut self) {
@@ -99,9 +99,9 @@ impl VorbisComments {
 	/// let mut vorbis_comments = VorbisComments::default();
 	///
 	/// // Vorbis comments allows multiple fields with the same key, such as artist
-	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Foo artist"), false);
-	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Bar artist"), false);
-	/// vorbis_comments.insert(String::from("ARTIST"), String::from("Baz artist"), false);
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Foo artist"));
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Bar artist"));
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Baz artist"));
 	///
 	/// let all_artists = vorbis_comments.get_all("ARTIST").collect::<Vec<&str>>();
 	/// assert_eq!(all_artists, vec!["Foo artist", "Bar artist", "Baz artist"]);
@@ -114,16 +114,50 @@ impl VorbisComments {
 
 	/// Inserts an item
 	///
+	/// This is the same as [`VorbisComments::push`], except it will remove any items with the same key.
+	///
 	/// NOTE: This will do nothing if the key is invalid. This specification is available [here](https://xiph.org/vorbis/doc/v-comment.html#vectorformat).
 	///
-	/// If `replace_all` is true, it will remove all items with the key before insertion
-	pub fn insert(&mut self, key: String, value: String, replace_all: bool) {
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut tag = VorbisComments::default();
+	/// tag.insert(String::from("TITLE"), String::from("Title 1"));
+	/// tag.insert(String::from("TITLE"), String::from("Title 2"));
+	///
+	/// // We only retain the last title inserted
+	/// let mut titles = tag.get_all("TITLE");
+	/// assert_eq!(titles.next(), Some("Title 2"));
+	/// assert_eq!(titles.next(), None);
+	/// ```
+	pub fn insert(&mut self, key: String, value: String) {
 		if !verify_key(&key) {
 			return;
 		}
 
-		if replace_all {
-			self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
+		self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
+		self.items.push((key, value))
+	}
+
+	/// Appends an item
+	///
+	/// NOTE: This will do nothing if the key is invalid. This specification is available [here](https://xiph.org/vorbis/doc/v-comment.html#vectorformat).
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut tag = VorbisComments::default();
+	/// tag.push(String::from("TITLE"), String::from("Title 1"));
+	/// tag.push(String::from("TITLE"), String::from("Title 2"));
+	///
+	/// // We retain both titles
+	/// let mut titles = tag.get_all("TITLE");
+	/// assert_eq!(titles.next(), Some("Title 1"));
+	/// assert_eq!(titles.next(), Some("Title 2"));
+	/// ```
+	pub fn push(&mut self, key: String, value: String) {
+		if !verify_key(&key) {
+			return;
 		}
 
 		self.items.push((key, value))
@@ -180,7 +214,7 @@ impl Accessor for VorbisComments {
 	}
 
 	fn set_track(&mut self, value: u32) {
-		self.insert(String::from("TRACKNUMBER"), value.to_string(), true);
+		self.insert(String::from("TRACKNUMBER"), value.to_string());
 	}
 
 	fn remove_track(&mut self) {
@@ -199,7 +233,7 @@ impl Accessor for VorbisComments {
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		self.insert(String::from("TRACKTOTAL"), value.to_string(), true);
+		self.insert(String::from("TRACKTOTAL"), value.to_string());
 		let _ = self.remove("TOTALTRACKS");
 	}
 
@@ -217,7 +251,7 @@ impl Accessor for VorbisComments {
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		self.insert(String::from("DISCNUMBER"), value.to_string(), true);
+		self.insert(String::from("DISCNUMBER"), value.to_string());
 	}
 
 	fn remove_disk(&mut self) {
@@ -236,7 +270,7 @@ impl Accessor for VorbisComments {
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		self.insert(String::from("DISCTOTAL"), value.to_string(), true);
+		self.insert(String::from("DISCTOTAL"), value.to_string());
 		let _ = self.remove("TOTALDISCS");
 	}
 
@@ -256,7 +290,7 @@ impl Accessor for VorbisComments {
 	fn set_year(&mut self, value: u32) {
 		// DATE is the preferred way of storing the year, but it is still possible we will
 		// encounter YEAR
-		self.insert(String::from("DATE"), value.to_string(), true);
+		self.insert(String::from("DATE"), value.to_string());
 		let _ = self.remove("YEAR");
 	}
 
@@ -539,13 +573,13 @@ mod tests {
 
 		expected_tag.set_vendor(String::from("Lavf58.76.100"));
 
-		expected_tag.insert(String::from("ALBUM"), String::from("Baz album"), false);
-		expected_tag.insert(String::from("ARTIST"), String::from("Bar artist"), false);
-		expected_tag.insert(String::from("COMMENT"), String::from("Qux comment"), false);
-		expected_tag.insert(String::from("DATE"), String::from("1984"), false);
-		expected_tag.insert(String::from("GENRE"), String::from("Classical"), false);
-		expected_tag.insert(String::from("TITLE"), String::from("Foo title"), false);
-		expected_tag.insert(String::from("TRACKNUMBER"), String::from("1"), false);
+		expected_tag.push(String::from("ALBUM"), String::from("Baz album"));
+		expected_tag.push(String::from("ARTIST"), String::from("Bar artist"));
+		expected_tag.push(String::from("COMMENT"), String::from("Qux comment"));
+		expected_tag.push(String::from("DATE"), String::from("1984"));
+		expected_tag.push(String::from("GENRE"), String::from("Classical"));
+		expected_tag.push(String::from("TITLE"), String::from("Foo title"));
+		expected_tag.push(String::from("TRACKNUMBER"), String::from("1"));
 
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
 		let parsed_tag = read_tag(&file_cont);
