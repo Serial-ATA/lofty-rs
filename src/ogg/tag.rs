@@ -187,7 +187,7 @@ fn verify_key(key: &str) -> bool {
 	}
 
 	key.bytes()
-		.all(|byte| (0x20..0x7D).contains(&byte) && byte != 0x3D)
+		.all(|byte| (0x20..=0x7D).contains(&byte) && byte != 0x3D)
 }
 
 impl OggPictureStorage for VorbisComments {
