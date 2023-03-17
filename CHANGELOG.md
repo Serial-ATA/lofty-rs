@@ -9,11 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Properties**: Expose channel mask (only supported for WAV and MPEG for now) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/155))
 - **ItemKey**: `InitialKey` mapping for Vorbis Comments ([PR](https://github.com/Serial-ATA/lofty-rs/pull/156))
+- **VorbisComments**: `VorbisComments::push` to allow for a non-replacing insertion
 
 ### Changed
 - **APE**/**ID3v1**/**ID3v2**/**Tag**:
   - Allow empty strings as values instead of removing the corresponding item when empty ([PR](https://github.com/Serial-ATA/lofty-rs/pull/134))
   - Separated the trait `SplitAndMergeTag` into `SplitTag` and `MergeTag` to prevent any unexpected or undefined behavior at runtime ([#143](https://github.com/Serial-ATA/lofty-rs/pull/143))
+- **VorbisComments**:
+  - Keys will now be verified according to spec before insertion
+  - Getters will now case-insensitively search for keys
 
 ### Fixed
 - **ID3v2**:
