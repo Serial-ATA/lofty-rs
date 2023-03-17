@@ -78,8 +78,6 @@ impl VorbisComments {
 	}
 
 	/// Gets an item by key
-	///
-	/// NOTE: This is case-sensitive
 	pub fn get(&self, key: &str) -> Option<&str> {
 		if !verify_key(key) {
 			return None;
@@ -87,13 +85,11 @@ impl VorbisComments {
 
 		self.items
 			.iter()
-			.find(|(k, _)| k == key)
+			.find(|(k, _)| k.eq_ignore_ascii_case(key))
 			.map(|(_, v)| v.as_str())
 	}
 
 	/// Gets all items with the key
-	///
-	/// NOTE: This is case-sensitive
 	///
 	/// # Examples
 	///
@@ -113,7 +109,7 @@ impl VorbisComments {
 	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + Clone + '_ {
 		self.items
 			.iter()
-			.filter_map(move |(k, v)| (k == key).then_some(v.as_str()))
+			.filter_map(move |(k, v)| (k.eq_ignore_ascii_case(key)).then_some(v.as_str()))
 	}
 
 	/// Inserts an item
@@ -127,21 +123,19 @@ impl VorbisComments {
 		}
 
 		if replace_all {
-			self.items.retain(|(k, _)| k != &key);
+			self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
 		}
 
 		self.items.push((key, value))
 	}
 
 	/// Removes all items with a key, returning an iterator
-	///
-	/// NOTE: This is case-sensitive
 	pub fn remove(&mut self, key: &str) -> impl Iterator<Item = String> + '_ {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
 		for read_idx in 0..self.items.len() {
-			if self.items[read_idx].0 == key {
+			if self.items[read_idx].0.eq_ignore_ascii_case(key) {
 				self.items.swap(split_idx, read_idx);
 				split_idx += 1;
 			}
