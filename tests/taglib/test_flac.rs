@@ -264,16 +264,12 @@ fn test_save_multiple_values() {
 		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		f.vorbis_comments_mut().unwrap().insert(
-			String::from("ARTIST"),
-			String::from("artist 1"),
-			false,
-		);
-		f.vorbis_comments_mut().unwrap().insert(
-			String::from("ARTIST"),
-			String::from("artist 2"),
-			false,
-		);
+		f.vorbis_comments_mut()
+			.unwrap()
+			.push(String::from("ARTIST"), String::from("artist 1"));
+		f.vorbis_comments_mut()
+			.unwrap()
+			.push(String::from("ARTIST"), String::from("artist 2"));
 		f.save_to(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
@@ -295,99 +291,72 @@ fn test_dict() {
 #[test]
 fn test_properties() {
 	let mut tag = VorbisComments::default();
-	tag.insert(String::from("ALBUM"), String::from("Album"), false);
-	tag.insert(
-		String::from("ALBUMARTIST"),
-		String::from("Album Artist"),
-		false,
-	);
-	tag.insert(
+	tag.push(String::from("ALBUM"), String::from("Album"));
+	tag.push(String::from("ALBUMARTIST"), String::from("Album Artist"));
+	tag.push(
 		String::from("ALBUMARTISTSORT"),
 		String::from("Album Artist Sort"),
-		false,
 	);
-	tag.insert(String::from("ALBUMSORT"), String::from("Album Sort"), false);
-	tag.insert(String::from("ARTIST"), String::from("Artist"), false);
-	tag.insert(String::from("ARTISTS"), String::from("Artists"), false);
-	tag.insert(
-		String::from("ARTISTSORT"),
-		String::from("Artist Sort"),
-		false,
-	);
-	tag.insert(String::from("ASIN"), String::from("ASIN"), false);
-	tag.insert(String::from("BARCODE"), String::from("Barcode"), false);
-	tag.insert(
+	tag.push(String::from("ALBUMSORT"), String::from("Album Sort"));
+	tag.push(String::from("ARTIST"), String::from("Artist"));
+	tag.push(String::from("ARTISTS"), String::from("Artists"));
+	tag.push(String::from("ARTISTSORT"), String::from("Artist Sort"));
+	tag.push(String::from("ASIN"), String::from("ASIN"));
+	tag.push(String::from("BARCODE"), String::from("Barcode"));
+	tag.push(
 		String::from("CATALOGNUMBER"),
 		String::from("Catalog Number 1"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("CATALOGNUMBER"),
 		String::from("Catalog Number 2"),
-		false,
 	);
-	tag.insert(String::from("COMMENT"), String::from("Comment"), false);
-	tag.insert(String::from("DATE"), String::from("2021-01-10"), false);
-	tag.insert(String::from("DISCNUMBER"), String::from("3/5"), false);
-	tag.insert(String::from("GENRE"), String::from("Genre"), false);
-	tag.insert(String::from("ISRC"), String::from("UKAAA0500001"), false);
-	tag.insert(String::from("LABEL"), String::from("Label 1"), false);
-	tag.insert(String::from("LABEL"), String::from("Label 2"), false);
-	tag.insert(String::from("MEDIA"), String::from("Media"), false);
-	tag.insert(
+	tag.push(String::from("COMMENT"), String::from("Comment"));
+	tag.push(String::from("DATE"), String::from("2021-01-10"));
+	tag.push(String::from("DISCNUMBER"), String::from("3/5"));
+	tag.push(String::from("GENRE"), String::from("Genre"));
+	tag.push(String::from("ISRC"), String::from("UKAAA0500001"));
+	tag.push(String::from("LABEL"), String::from("Label 1"));
+	tag.push(String::from("LABEL"), String::from("Label 2"));
+	tag.push(String::from("MEDIA"), String::from("Media"));
+	tag.push(
 		String::from("MUSICBRAINZ_ALBUMARTISTID"),
 		String::from("MusicBrainz_AlbumartistID"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("MUSICBRAINZ_ALBUMID"),
 		String::from("MusicBrainz_AlbumID"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("MUSICBRAINZ_ARTISTID"),
 		String::from("MusicBrainz_ArtistID"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("MUSICBRAINZ_RELEASEGROUPID"),
 		String::from("MusicBrainz_ReleasegroupID"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("MUSICBRAINZ_RELEASETRACKID"),
 		String::from("MusicBrainz_ReleasetrackID"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("MUSICBRAINZ_TRACKID"),
 		String::from("MusicBrainz_TrackID"),
-		false,
 	);
-	tag.insert(
-		String::from("ORIGINALDATE"),
-		String::from("2021-01-09"),
-		false,
-	);
-	tag.insert(
+	tag.push(String::from("ORIGINALDATE"), String::from("2021-01-09"));
+	tag.push(
 		String::from("RELEASECOUNTRY"),
 		String::from("Release Country"),
-		false,
 	);
-	tag.insert(
+	tag.push(
 		String::from("RELEASESTATUS"),
 		String::from("Release Status"),
-		false,
 	);
-	tag.insert(
-		String::from("RELEASETYPE"),
-		String::from("Release Type"),
-		false,
-	);
-	tag.insert(String::from("SCRIPT"), String::from("Script"), false);
-	tag.insert(String::from("TITLE"), String::from("Title"), false);
-	tag.insert(String::from("TRACKNUMBER"), String::from("2"), false);
-	tag.insert(String::from("TRACKTOTAL"), String::from("4"), false);
+	tag.push(String::from("RELEASETYPE"), String::from("Release Type"));
+	tag.push(String::from("SCRIPT"), String::from("Script"));
+	tag.push(String::from("TITLE"), String::from("Title"));
+	tag.push(String::from("TRACKNUMBER"), String::from("2"));
+	tag.push(String::from("TRACKTOTAL"), String::from("4"));
 
 	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
 	{
@@ -412,11 +381,9 @@ fn test_invalid() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
-	f.vorbis_comments_mut().unwrap().insert(
-		String::from("H\x00c4\x00d6"),
-		String::from("bla"),
-		false,
-	);
+	f.vorbis_comments_mut()
+		.unwrap()
+		.push(String::from("H\x00c4\x00d6"), String::from("bla"));
 }
 
 #[test]
