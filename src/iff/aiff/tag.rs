@@ -120,6 +120,21 @@ impl Accessor for AIFFTextChunks {
 }
 
 impl AIFFTextChunks {
+	/// Create a new empty `AIFFTextChunks`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::iff::aiff::AIFFTextChunks;
+	/// use lofty::TagExt;
+	///
+	/// let aiff_tag = AIFFTextChunks::new();
+	/// assert!(aiff_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Returns the copyright message
 	pub fn copyright(&self) -> Option<&str> {
 		self.copyright.as_deref()

@@ -49,6 +49,21 @@ pub struct RIFFInfoList {
 }
 
 impl RIFFInfoList {
+	/// Create a new empty `RIFFInfoList`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::iff::wav::RIFFInfoList;
+	/// use lofty::TagExt;
+	///
+	/// let riff_info_tag = RIFFInfoList::new();
+	/// assert!(riff_info_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Get an item by key
 	pub fn get(&self, key: &str) -> Option<&str> {
 		self.items

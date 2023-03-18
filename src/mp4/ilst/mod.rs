@@ -84,6 +84,21 @@ pub struct Ilst {
 }
 
 impl Ilst {
+	/// Create a new empty `Ilst`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::Ilst;
+	/// use lofty::TagExt;
+	///
+	/// let ilst_tag = Ilst::new();
+	/// assert!(ilst_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Get an item by its [`AtomIdent`]
 	pub fn atom(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
 		self.atoms.iter().find(|a| &a.ident == ident)
