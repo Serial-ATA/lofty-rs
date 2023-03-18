@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Keys will now be verified according to spec before insertion
   - Getters will now case-insensitively search for keys
   - `TRACKNUM` will now be considered in the `Accessor::*track` methods
+- **Tags**: Method names are more consistent
 
 ### Fixed
 - **ID3v2**:

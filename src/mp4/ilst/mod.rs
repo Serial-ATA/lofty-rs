@@ -33,7 +33,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
-					if let Some(atom) = self.atom(&$const) {
+					if let Some(atom) = self.get(&$const) {
 						if let Some(AtomData::UTF8(val) | AtomData::UTF16(val)) = atom.data().next() {
 							return Some(Cow::Borrowed(val));
 						}
@@ -50,7 +50,7 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					self.remove_atom(&$const)
+					self.remove(&$const)
 				}
 			)+
 		}
@@ -100,23 +100,77 @@ impl Ilst {
 	}
 
 	/// Get an item by its [`AtomIdent`]
-	pub fn atom(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{AtomIdent, Ilst};
+	/// use lofty::Accessor;
+	///
+	/// let mut ilst = Ilst::new();
+	/// ilst.set_title(String::from("Foo title"));
+	///
+	/// // Get the title by its FOURCC identifier
+	/// let title = ilst.get(&AtomIdent::Fourcc(*b"\xa9nam"));
+	/// assert!(title.is_some());
+	/// ```
+	pub fn get(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
 		self.atoms.iter().find(|a| &a.ident == ident)
 	}
 
 	/// Inserts an [`Atom`]
-	pub fn insert_atom(&mut self, atom: Atom<'_>) {
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
+	///
+	/// const TITLE_IDENTIFIER: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
+	///
+	/// let mut ilst = Ilst::new();
+	///
+	/// // Set the title by manually constructing an `Atom`
+	/// let title_atom = Atom::new(TITLE_IDENTIFIER, AtomData::UTF8(String::from("Foo title")));
+	/// ilst.insert(title_atom);
+	///
+	/// // Get the title by its FOURCC identifier
+	/// let title = ilst.get(&TITLE_IDENTIFIER);
+	/// assert!(title.is_some());
+	/// ```
+	pub fn insert(&mut self, atom: Atom<'_>) {
 		self.atoms.push(atom.into_owned());
 	}
 
 	/// Inserts an [`Atom`], replacing any atom with the same [`AtomIdent`]
 	pub fn replace_atom(&mut self, atom: Atom<'_>) {
-		self.remove_atom(&atom.ident);
+		self.remove(&atom.ident);
 		self.atoms.push(atom.into_owned());
 	}
 
 	/// Remove an atom by its [`AtomIdent`]
-	pub fn remove_atom(&mut self, ident: &AtomIdent<'_>) {
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
+	/// use lofty::Accessor;
+	///
+	/// const TITLE_IDENTIFIER: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
+	///
+	/// let mut ilst = Ilst::new();
+	/// ilst.set_title(String::from("Foo title"));
+	///
+	/// // Get the title by its FOURCC identifier
+	/// let title = ilst.get(&TITLE_IDENTIFIER);
+	/// assert!(title.is_some());
+	///
+	/// // Remove the title
+	/// ilst.remove(&TITLE_IDENTIFIER);
+	///
+	/// let title = ilst.get(&TITLE_IDENTIFIER);
+	/// assert!(title.is_none());
+	/// ```
+	pub fn remove(&mut self, ident: &AtomIdent<'_>) {
 		self.atoms
 			.iter()
 			.position(|a| &a.ident == ident)
@@ -168,7 +222,7 @@ impl Ilst {
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
-		self.atom(&ADVISORY_RATING)
+		self.get(&ADVISORY_RATING)
 			.into_iter()
 			.flat_map(Atom::data)
 			.filter_map(|data| match data {
@@ -206,7 +260,7 @@ impl Ilst {
 
 	// Extracts a u16 from an integer pair
 	fn extract_number(&self, fourcc: [u8; 4], expected_size: usize) -> Option<u16> {
-		if let Some(atom) = self.atom(&AtomIdent::Fourcc(fourcc)) {
+		if let Some(atom) = self.get(&AtomIdent::Fourcc(fourcc)) {
 			match atom.data().next() {
 				Some(AtomData::Unknown { code: 0, data }) if data.len() >= expected_size => {
 					return Some(u16::from_be_bytes([
@@ -262,7 +316,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_track(&mut self) {
-		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+		self.remove(&AtomIdent::Fourcc(*b"trkn"));
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -279,7 +333,7 @@ impl Accessor for Ilst {
 
 	fn remove_track_total(&mut self) {
 		let track_num = self.track();
-		self.remove_atom(&AtomIdent::Fourcc(*b"trkn"));
+		self.remove(&AtomIdent::Fourcc(*b"trkn"));
 
 		if let Some(track_num) = track_num {
 			let track_bytes = (track_num as u16).to_be_bytes();
@@ -302,7 +356,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_disk(&mut self) {
-		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+		self.remove(&AtomIdent::Fourcc(*b"disk"));
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -319,7 +373,7 @@ impl Accessor for Ilst {
 
 	fn remove_disk_total(&mut self) {
 		let disk_num = self.disk();
-		self.remove_atom(&AtomIdent::Fourcc(*b"disk"));
+		self.remove(&AtomIdent::Fourcc(*b"disk"));
 
 		if let Some(disk_num) = disk_num {
 			let disk_bytes = (disk_num as u16).to_be_bytes();
@@ -330,7 +384,7 @@ impl Accessor for Ilst {
 	}
 
 	fn year(&self) -> Option<u32> {
-		if let Some(atom) = self.atom(&AtomIdent::Fourcc(*b"\xa9day")) {
+		if let Some(atom) = self.get(&AtomIdent::Fourcc(*b"\xa9day")) {
 			if let Some(AtomData::UTF8(text)) = atom.data().next() {
 				return try_parse_year(text);
 			}
@@ -347,7 +401,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove_atom(&AtomIdent::Fourcc(*b"Year"));
+		self.remove(&AtomIdent::Fourcc(*b"Year"));
 	}
 }
 
@@ -608,7 +662,7 @@ mod tests {
 	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
-		let atom = ilst.atom(&AtomIdent::Fourcc(ident)).unwrap();
+		let atom = ilst.get(&AtomIdent::Fourcc(ident)).unwrap();
 		assert_eq!(atom.data().next().unwrap(), data);
 	}
 
@@ -619,7 +673,7 @@ mod tests {
 		// The track number is stored with a code 0,
 		// meaning the there is no need to indicate the type,
 		// which is `u64` in this case
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"trkn"),
 			AtomData::Unknown {
 				code: 0,
@@ -628,7 +682,7 @@ mod tests {
 		));
 
 		// Same with disc numbers
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"disk"),
 			AtomData::Unknown {
 				code: 0,
@@ -636,32 +690,32 @@ mod tests {
 			},
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9ART"),
 			AtomData::UTF8(String::from("Bar artist")),
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9alb"),
 			AtomData::UTF8(String::from("Baz album")),
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9cmt"),
 			AtomData::UTF8(String::from("Qux comment")),
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9day"),
 			AtomData::UTF8(String::from("1984")),
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9gen"),
 			AtomData::UTF8(String::from("Classical")),
 		));
 
-		expected_tag.insert_atom(Atom::new(
+		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"\xa9nam"),
 			AtomData::UTF8(String::from("Foo title")),
 		));
@@ -879,7 +933,7 @@ mod tests {
 		file.rewind().unwrap();
 
 		let mut tag = Ilst::default();
-		tag.insert_atom(Atom {
+		tag.insert(Atom {
 			ident: AtomIdent::Fourcc(*b"\xa9ART"),
 			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
 		});
@@ -900,7 +954,7 @@ mod tests {
 	#[test]
 	fn multi_value_atom() {
 		let ilst = read_ilst("tests/tags/assets/ilst/multi_value_atom.ilst");
-		let artist_atom = ilst.atom(&AtomIdent::Fourcc(*b"\xa9ART")).unwrap();
+		let artist_atom = ilst.get(&AtomIdent::Fourcc(*b"\xa9ART")).unwrap();
 
 		assert_eq!(
 			artist_atom.data,
@@ -922,52 +976,52 @@ mod tests {
 	fn multi_value_roundtrip() {
 		let mut tag = Tag::new(TagType::MP4ilst);
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text("TrackArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumArtist,
 			ItemValue::Text("AlbumArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackTitle,
 			ItemValue::Text("TrackTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumTitle,
 			ItemValue::Text("AlbumTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Comment,
 			ItemValue::Text("Comment 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::ContentGroup,
 			ItemValue::Text("ContentGroup 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Genre,
 			ItemValue::Text("Genre 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Mood,
 			ItemValue::Text("Mood 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Composer,
 			ItemValue::Text("Composer 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Conductor,
 			ItemValue::Text("Conductor 2".to_owned()),
 		));

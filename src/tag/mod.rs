@@ -19,7 +19,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
-					if let Some(ItemValue::Text(txt)) = self.get_item_ref(&ItemKey::$item_key).map(TagItem::value) {
+					if let Some(ItemValue::Text(txt)) = self.get(&ItemKey::$item_key).map(TagItem::value) {
 						return Some(Cow::Borrowed(txt))
 					}
 
@@ -27,11 +27,11 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
-					self.insert_item(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
+					self.insert(TagItem::new(ItemKey::$item_key, ItemValue::Text(value)));
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					self.retain_items(|i| i.item_key != ItemKey::$item_key)
+					self.retain(|i| i.item_key != ItemKey::$item_key)
 				}
 			)+
 		}
@@ -236,7 +236,7 @@ impl Tag {
 
 	/// Change the [`TagType`], remapping all items
 	pub fn re_map(&mut self, tag_type: TagType) {
-		self.retain_items(|i| i.re_map(tag_type));
+		self.retain(|i| i.re_map(tag_type));
 		self.tag_type = tag_type
 	}
 
@@ -261,13 +261,13 @@ impl Tag {
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
-	pub fn get_item_ref(&self, item_key: &ItemKey) -> Option<&TagItem> {
+	pub fn get(&self, item_key: &ItemKey) -> Option<&TagItem> {
 		self.items.iter().find(|i| &i.item_key == item_key)
 	}
 
 	/// Get a string value from an [`ItemKey`]
 	pub fn get_string(&self, item_key: &ItemKey) -> Option<&str> {
-		if let Some(ItemValue::Text(ret)) = self.get_item_ref(item_key).map(TagItem::value) {
+		if let Some(ItemValue::Text(ret)) = self.get(item_key).map(TagItem::value) {
 			return Some(ret);
 		}
 
@@ -278,7 +278,7 @@ impl Tag {
 	///
 	/// Use `convert` to convert [`ItemValue::Text`] and [`ItemValue::Locator`] to byte slices
 	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
-		if let Some(item) = self.get_item_ref(item_key) {
+		if let Some(item) = self.get(item_key) {
 			match item.value() {
 				ItemValue::Text(text) | ItemValue::Locator(text) if convert => {
 					return Some(text.as_bytes())
@@ -296,9 +296,9 @@ impl Tag {
 	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
 	/// This will return `true` if the item was inserted.
-	pub fn insert_item(&mut self, item: TagItem) -> bool {
+	pub fn insert(&mut self, item: TagItem) -> bool {
 		if item.re_map(self.tag_type) {
-			self.insert_item_unchecked(item);
+			self.insert_unchecked(item);
 			return true;
 		}
 
@@ -313,14 +313,14 @@ impl Tag {
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
 	///
 	/// This is only necessary if dealing with [`ItemKey::Unknown`].
-	pub fn insert_item_unchecked(&mut self, item: TagItem) {
-		self.retain_items(|i| i.item_key != item.item_key);
+	pub fn insert_unchecked(&mut self, item: TagItem) {
+		self.retain(|i| i.item_key != item.item_key);
 		self.items.push(item);
 	}
 
 	/// Append a [`TagItem`] to the tag
 	///
-	/// This will not remove any items of the same [`ItemKey`], unlike [`Tag::insert_item`]
+	/// This will not remove any items of the same [`ItemKey`], unlike [`Tag::insert`]
 	///
 	/// NOTE: This **will** verify an [`ItemKey`] mapping exists for the target [`TagType`]
 	///
@@ -328,7 +328,7 @@ impl Tag {
 	/// the first available item will be used.
 	///
 	/// This will return `true` if the item was pushed.
-	pub fn push_item(&mut self, item: TagItem) -> bool {
+	pub fn push(&mut self, item: TagItem) -> bool {
 		if item.re_map(self.tag_type) {
 			self.items.push(item);
 			return true;
@@ -339,16 +339,16 @@ impl Tag {
 
 	/// Append a [`TagItem`] to the tag
 	///
-	/// Notes: See [`Tag::insert_item_unchecked`]
-	pub fn push_item_unchecked(&mut self, item: TagItem) {
+	/// Notes: See [`Tag::insert_unchecked`]
+	pub fn push_unchecked(&mut self, item: TagItem) {
 		self.items.push(item);
 	}
 
-	/// An alias for [`Tag::insert_item`] that doesn't require the user to create a [`TagItem`]
+	/// An alias for [`Tag::insert`] that doesn't require the user to create a [`TagItem`]
 	///
-	/// NOTE: This will replace any existing item with `item_key`. See [`Tag::insert_item`]
+	/// NOTE: This will replace any existing item with `item_key`. See [`Tag::insert`]
 	pub fn insert_text(&mut self, item_key: ItemKey, text: String) -> bool {
-		self.insert_item(TagItem::new(item_key, ItemValue::Text(text)))
+		self.insert(TagItem::new(item_key, ItemValue::Text(text)))
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and returns them
@@ -419,7 +419,7 @@ impl Tag {
 	/// Retain tag items based on the predicate
 	///
 	/// See [`Vec::retain`](std::vec::Vec::retain)
-	pub fn retain_items<F>(&mut self, f: F)
+	pub fn retain<F>(&mut self, f: F)
 	where
 		F: FnMut(&TagItem) -> bool,
 	{

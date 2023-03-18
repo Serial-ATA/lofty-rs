@@ -651,52 +651,52 @@ mod tests {
 	fn multi_value_roundtrip() {
 		let mut tag = Tag::new(TagType::VorbisComments);
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text("TrackArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumArtist,
 			ItemValue::Text("AlbumArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackTitle,
 			ItemValue::Text("TrackTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumTitle,
 			ItemValue::Text("AlbumTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Comment,
 			ItemValue::Text("Comment 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::ContentGroup,
 			ItemValue::Text("ContentGroup 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Genre,
 			ItemValue::Text("Genre 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Mood,
 			ItemValue::Text("Mood 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Composer,
 			ItemValue::Text("Composer 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Conductor,
 			ItemValue::Text("Conductor 2".to_owned()),
 		));

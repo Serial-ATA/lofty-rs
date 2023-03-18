@@ -581,11 +581,11 @@ mod tests {
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
 		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
 		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));
-		tag.push_item_unchecked(TagItem::new(
+		tag.push_unchecked(TagItem::new(
 			ItemKey::Comment,
 			ItemValue::Text(String::from("Qux annotation")),
 		));
-		tag.push_item_unchecked(TagItem::new(
+		tag.push_unchecked(TagItem::new(
 			ItemKey::Comment,
 			ItemValue::Text(String::from("Quux annotation")),
 		));
