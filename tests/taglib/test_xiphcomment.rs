@@ -9,22 +9,22 @@ use std::io::Seek;
 fn test_year() {
 	let mut cmt = VorbisComments::default();
 	assert_eq!(cmt.year(), None);
-	cmt.insert(String::from("YEAR"), String::from("2009"), false);
+	cmt.push(String::from("YEAR"), String::from("2009"));
 	assert_eq!(cmt.year(), Some(2009));
 
 	// NOTE: Lofty will *always* prioritize "YEAR" over "DATE". TagLib doesn't have the same ideas,
 	//       so we have to remove "YEAR".
 	let _ = cmt.remove("YEAR");
 
-	cmt.insert(String::from("DATE"), String::from("2008"), false);
+	cmt.push(String::from("DATE"), String::from("2008"));
 	assert_eq!(cmt.year(), Some(2008));
 }
 
 #[test]
 fn test_set_year() {
 	let mut cmt = VorbisComments::default();
-	cmt.insert(String::from("YEAR"), String::from("2009"), false);
-	cmt.insert(String::from("DATE"), String::from("2008"), false);
+	cmt.push(String::from("YEAR"), String::from("2009"));
+	cmt.push(String::from("DATE"), String::from("2008"));
 	cmt.set_year(1995);
 	assert!(cmt.get("YEAR").is_none());
 	assert_eq!(cmt.get("DATE"), Some("1995"));
@@ -34,17 +34,17 @@ fn test_set_year() {
 fn test_track() {
 	let mut cmt = VorbisComments::default();
 	assert_eq!(cmt.track(), None);
-	cmt.insert(String::from("TRACKNUM"), String::from("7"), false);
+	cmt.push(String::from("TRACKNUM"), String::from("7"));
 	assert_eq!(cmt.track(), Some(7));
-	cmt.insert(String::from("TRACKNUMBER"), String::from("8"), false);
+	cmt.push(String::from("TRACKNUMBER"), String::from("8"));
 	assert_eq!(cmt.year(), Some(8));
 }
 
 #[test]
 fn test_set_track() {
 	let mut cmt = VorbisComments::default();
-	cmt.insert(String::from("TRACKNUM"), String::from("7"), false);
-	cmt.insert(String::from("TRACKNUMBER"), String::from("8"), false);
+	cmt.push(String::from("TRACKNUM"), String::from("7"));
+	cmt.push(String::from("TRACKNUMBER"), String::from("8"));
 	cmt.set_track(3);
 	assert!(cmt.get("TRACKNUM").is_none());
 	assert_eq!(cmt.get("TRACKNUMBER"), Some("3"));
@@ -59,11 +59,11 @@ fn test_invalid_keys1() {
 #[test]
 fn test_invalid_keys2() {
 	let mut cmt = VorbisComments::default();
-	cmt.insert(String::new(), String::new(), false);
-	cmt.insert(String::from("A=B"), String::new(), false);
-	cmt.insert(String::from("A~B"), String::new(), false);
-	cmt.insert(String::from("A\x7F"), String::new(), false);
-	cmt.insert(String::from("A\u{3456}"), String::new(), false);
+	cmt.push(String::new(), String::new());
+	cmt.push(String::from("A=B"), String::new());
+	cmt.push(String::from("A~B"), String::new());
+	cmt.push(String::from("A\x7F"), String::new());
+	cmt.push(String::from("A\u{3456}"), String::new());
 
 	assert!(cmt.is_empty());
 }
@@ -77,7 +77,7 @@ fn test_clear_comment() {
 		file.rewind().unwrap();
 
 		f.vorbis_comments_mut()
-			.insert(String::from("COMMENT"), String::from("Comment1"), false);
+			.push(String::from("COMMENT"), String::from("Comment1"));
 		f.save_to(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
