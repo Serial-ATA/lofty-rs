@@ -13,3 +13,4 @@ mod test_mpeg;
 mod test_speex;
 mod test_wavpack;
 mod test_xiphcomment;
+mod test_wav;
