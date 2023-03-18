@@ -75,6 +75,21 @@ pub struct ApeTag {
 }
 
 impl ApeTag {
+	/// Create a new empty `ApeTag`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::TagExt;
+	///
+	/// let ape_tag = ApeTag::new();
+	/// assert!(ape_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Get an [`ApeItem`] by key
 	///
 	/// NOTE: While `APE` items are supposed to be case-sensitive,

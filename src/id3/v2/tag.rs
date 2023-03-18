@@ -132,6 +132,21 @@ impl Default for ID3v2Tag {
 }
 
 impl ID3v2Tag {
+	/// Create a new empty `ID3v2Tag`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::ID3v2Tag;
+	/// use lofty::TagExt;
+	///
+	/// let id3v2_tag = ID3v2Tag::new();
+	/// assert!(id3v2_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Returns the [`ID3v2TagFlags`]
 	pub fn flags(&self) -> &ID3v2TagFlags {
 		&self.flags

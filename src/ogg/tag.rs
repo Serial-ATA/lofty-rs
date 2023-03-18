@@ -52,6 +52,21 @@ pub struct VorbisComments {
 }
 
 impl VorbisComments {
+	/// Create a new empty `VorbisComments`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// use lofty::TagExt;
+	///
+	/// let vorbis_comments_tag = VorbisComments::new();
+	/// assert!(vorbis_comments_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+
 	/// Returns the vendor string
 	pub fn vendor(&self) -> &str {
 		&self.vendor

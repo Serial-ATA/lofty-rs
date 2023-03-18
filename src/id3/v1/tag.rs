@@ -89,6 +89,23 @@ pub struct ID3v1Tag {
 	pub genre: Option<u8>,
 }
 
+impl ID3v1Tag {
+	/// Create a new empty `ID3v1Tag`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v1::ID3v1Tag;
+	/// use lofty::TagExt;
+	///
+	/// let id3v1_tag = ID3v1Tag::new();
+	/// assert!(id3v1_tag.is_empty());
+	/// ```
+	pub fn new() -> Self {
+		Self::default()
+	}
+}
+
 impl Accessor for ID3v1Tag {
 	impl_accessor!(title, artist, album,);
 

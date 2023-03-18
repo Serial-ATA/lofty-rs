@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Properties**: Expose channel mask (only supported for WAV and MPEG for now) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/155))
 - **ItemKey**: `InitialKey` mapping for Vorbis Comments ([PR](https://github.com/Serial-ATA/lofty-rs/pull/156))
 - **VorbisComments**: `VorbisComments::push` to allow for a non-replacing insertion
+- **Tags**: `<Tag>::new()` as an alias for `<Tag>::default()`
 
 ### Changed
 - **APE**/**ID3v1**/**ID3v2**/**Tag**:
