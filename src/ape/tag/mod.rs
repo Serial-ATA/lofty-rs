@@ -23,7 +23,7 @@ macro_rules! impl_accessor {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					$(
-						if let Some(i) = self.get_key($key) {
+						if let Some(i) = self.get($key) {
 							if let ItemValue::Text(val) = i.value() {
 								return Some(Cow::Borrowed(val));
 							}
@@ -43,7 +43,7 @@ macro_rules! impl_accessor {
 
 				fn [<remove_ $name>](&mut self) {
 					$(
-						self.remove_key($key);
+						self.remove($key);
 					)+
 				}
 			)+
@@ -94,7 +94,21 @@ impl ApeTag {
 	///
 	/// NOTE: While `APE` items are supposed to be case-sensitive,
 	/// this rule is rarely followed, so this will ignore case when searching.
-	pub fn get_key(&self, key: &str) -> Option<&ApeItem> {
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::Accessor;
+	///
+	/// let mut ape_tag = ApeTag::new();
+	/// ape_tag.set_title(String::from("Foo title"));
+	///
+	/// // Get the title by its key
+	/// let title = ape_tag.get("Title");
+	/// assert!(title.is_some());
+	/// ```
+	pub fn get(&self, key: &str) -> Option<&ApeItem> {
 		self.items
 			.iter()
 			.find(|i| i.key().eq_ignore_ascii_case(key))
@@ -104,14 +118,34 @@ impl ApeTag {
 	///
 	/// This will remove any item with the same key prior to insertion
 	pub fn insert(&mut self, value: ApeItem) {
-		self.remove_key(value.key());
+		self.remove(value.key());
 		self.items.push(value);
 	}
 
 	/// Remove an [`ApeItem`] by key
 	///
-	/// NOTE: Like [`ApeTag::get_key`], this is not case-sensitive
-	pub fn remove_key(&mut self, key: &str) {
+	/// NOTE: Like [`ApeTag::get`], this is not case-sensitive
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::Accessor;
+	///
+	/// let mut ape_tag = ApeTag::new();
+	/// ape_tag.set_title(String::from("Foo title"));
+	///
+	/// // Get the title by its key
+	/// let title = ape_tag.get("Title");
+	/// assert!(title.is_some());
+	///
+	/// // Remove the title
+	/// ape_tag.remove("Title");
+	///
+	/// let title = ape_tag.get("Title");
+	/// assert!(title.is_none());
+	/// ```
+	pub fn remove(&mut self, key: &str) {
 		self.items.retain(|i| !i.key().eq_ignore_ascii_case(key));
 	}
 
@@ -119,7 +153,7 @@ impl ApeTag {
 		if let Some(ApeItem {
 			value: ItemValue::Text(ref text),
 			..
-		}) = self.get_key(key)
+		}) = self.get(key)
 		{
 			let mut split = text.split('/').flat_map(str::parse::<u32>);
 			return (split.next(), split.next());
@@ -165,7 +199,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn remove_track(&mut self) {
-		self.remove_key("Track");
+		self.remove("Track");
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -180,7 +214,7 @@ impl Accessor for ApeTag {
 
 	fn remove_track_total(&mut self) {
 		let existing_track_number = self.track();
-		self.remove_key("Track");
+		self.remove("Track");
 
 		if let Some(track) = existing_track_number {
 			self.insert(ApeItem::text("Track", track.to_string()));
@@ -196,7 +230,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn remove_disk(&mut self) {
-		self.remove_key("Disc");
+		self.remove("Disc");
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -211,7 +245,7 @@ impl Accessor for ApeTag {
 
 	fn remove_disk_total(&mut self) {
 		let existing_track_number = self.track();
-		self.remove_key("Disc");
+		self.remove("Disc");
 
 		if let Some(track) = existing_track_number {
 			self.insert(ApeItem::text("Disc", track.to_string()));
@@ -222,7 +256,7 @@ impl Accessor for ApeTag {
 		if let Some(ApeItem {
 			value: ItemValue::Text(ref text),
 			..
-		}) = self.get_key("Year")
+		}) = self.get("Year")
 		{
 			return try_parse_year(text);
 		}
@@ -235,7 +269,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove_key("Year");
+		self.remove("Year");
 	}
 }
 
@@ -577,7 +611,7 @@ mod tests {
 	fn tag_to_ape() {
 		fn verify_key(tag: &ApeTag, key: &str, expected_val: &str) {
 			assert_eq!(
-				tag.get_key(key).map(ApeItem::value),
+				tag.get(key).map(ApeItem::value),
 				Some(&ItemValue::Text(String::from(expected_val)))
 			);
 		}

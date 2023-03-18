@@ -30,7 +30,7 @@ macro_rules! verify_artist {
 		assert_eq!(tag.item_count(), $item_count);
 
 		assert_eq!(
-			tag.get_item_ref(&ItemKey::TrackArtist),
+			tag.get(&ItemKey::TrackArtist),
 			Some(&TagItem::new(
 				ItemKey::TrackArtist,
 				ItemValue::Text(String::from($expected_value))
@@ -62,7 +62,7 @@ macro_rules! set_artist {
 		set_artist!($file_write, $new_value, tag)
 	};
 	($file_write:ident, $new_value:literal, $tag:ident) => {
-		$tag.insert_item_unchecked(TagItem::new(
+		$tag.insert_unchecked(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text(String::from($new_value)),
 		));

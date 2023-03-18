@@ -1243,7 +1243,7 @@ mod tests {
 	#[test]
 	fn tag_to_id3v2_popm() {
 		let mut tag = Tag::new(TagType::ID3v2);
-		tag.insert_item(TagItem::new(
+		tag.insert(TagItem::new(
 			ItemKey::Popularimeter,
 			ItemValue::Binary(vec![
 				b'f', b'o', b'o', b'@', b'b', b'a', b'r', b'.', b'c', b'o', b'm', 0, 196, 0, 0,
@@ -1535,15 +1535,15 @@ mod tests {
 		use crate::traits::Accessor;
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item_unchecked(TagItem::new(
+		tag.push_unchecked(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text(String::from("foo")),
 		));
-		tag.push_item_unchecked(TagItem::new(
+		tag.push_unchecked(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text(String::from("bar")),
 		));
-		tag.push_item_unchecked(TagItem::new(
+		tag.push_unchecked(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text(String::from("baz")),
 		));
@@ -1590,53 +1590,53 @@ mod tests {
 		let mut tag = Tag::new(TagType::ID3v2);
 		// 1st: Multi-valued text frames
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackArtist,
 			ItemValue::Text("TrackArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumArtist, "AlbumArtist 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumArtist,
 			ItemValue::Text("AlbumArtist 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::TrackTitle, "TrackTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackTitle,
 			ItemValue::Text("TrackTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::AlbumTitle, "AlbumTitle 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::AlbumTitle,
 			ItemValue::Text("AlbumTitle 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::ContentGroup, "ContentGroup 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::ContentGroup,
 			ItemValue::Text("ContentGroup 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Genre, "Genre 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Genre,
 			ItemValue::Text("Genre 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Mood, "Mood 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Mood,
 			ItemValue::Text("Mood 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Composer, "Composer 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Composer,
 			ItemValue::Text("Composer 2".to_owned()),
 		));
 		tag.insert_text(ItemKey::Conductor, "Conductor 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Conductor,
 			ItemValue::Text("Conductor 2".to_owned()),
 		));
 		// 2nd: Multi-valued language frames
 		tag.insert_text(ItemKey::Comment, "Comment 1".to_owned());
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::Comment,
 			ItemValue::Text("Comment 2".to_owned()),
 		));
@@ -1909,7 +1909,7 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackNumber,
 			ItemValue::Text(track_number.to_string()),
 		));
@@ -1927,7 +1927,7 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackTotal,
 			ItemValue::Text(track_total.to_string()),
 		));
@@ -1946,12 +1946,12 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackNumber,
 			ItemValue::Text(track_number.to_string()),
 		));
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::TrackTotal,
 			ItemValue::Text(track_total.to_string()),
 		));
@@ -1969,7 +1969,7 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::DiscNumber,
 			ItemValue::Text(disk_number.to_string()),
 		));
@@ -1987,7 +1987,7 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::DiscTotal,
 			ItemValue::Text(disk_total.to_string()),
 		));
@@ -2006,12 +2006,12 @@ mod tests {
 
 		let mut tag = Tag::new(TagType::ID3v2);
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::DiscNumber,
 			ItemValue::Text(disk_number.to_string()),
 		));
 
-		tag.push_item(TagItem::new(
+		tag.push(TagItem::new(
 			ItemKey::DiscTotal,
 			ItemValue::Text(disk_total.to_string()),
 		));
