@@ -37,7 +37,7 @@ fn test_track() {
 	cmt.push(String::from("TRACKNUM"), String::from("7"));
 	assert_eq!(cmt.track(), Some(7));
 	cmt.push(String::from("TRACKNUMBER"), String::from("8"));
-	assert_eq!(cmt.year(), Some(8));
+	assert_eq!(cmt.track(), Some(8));
 }
 
 #[test]
