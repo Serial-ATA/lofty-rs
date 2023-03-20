@@ -157,7 +157,7 @@ fn test_freeform() {
 			name: Cow::Borrowed("iTunNORM"),
 		}));
 
-		f.ilst_mut().unwrap().insert_atom(Atom::new(
+		f.ilst_mut().unwrap().insert(Atom::new(
 			AtomIdent::Freeform {
 				mean: Cow::Borrowed("org.kde.TagLib"),
 				name: Cow::Borrowed("Foo"),
@@ -177,7 +177,7 @@ fn test_freeform() {
 		assert_eq!(
 			f.ilst()
 				.unwrap()
-				.atom(&AtomIdent::Freeform {
+				.get(&AtomIdent::Freeform {
 					mean: Cow::Borrowed("org.kde.TagLib"),
 					name: Cow::Borrowed("Foo"),
 				})
@@ -200,7 +200,7 @@ fn test_save_existing_when_ilst_is_last() {
 
 		let ilst = f.ilst_mut().unwrap();
 		assert_eq!(
-			ilst.atom(&AtomIdent::Freeform {
+			ilst.get(&AtomIdent::Freeform {
 				mean: Cow::Borrowed("com.apple.iTunes"),
 				name: Cow::Borrowed("replaygain_track_minmax"),
 			})
@@ -220,7 +220,7 @@ fn test_save_existing_when_ilst_is_last() {
 		let ilst = f.ilst().unwrap();
 
 		assert_eq!(
-			ilst.atom(&AtomIdent::Freeform {
+			ilst.get(&AtomIdent::Freeform {
 				mean: Cow::Borrowed("com.apple.iTunes"),
 				name: Cow::Borrowed("replaygain_track_minmax"),
 			})
@@ -252,7 +252,7 @@ fn test_covr_read() {
 	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
 	let tag = f.ilst().unwrap();
 	assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
-	let mut covrs = tag.atom(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
+	let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
 	let Some(AtomData::Picture(picture1)) = covrs.next() else {
 		unreachable!()
 	};
@@ -291,7 +291,7 @@ fn test_covr_write() {
 		let tag = f.ilst().unwrap();
 		assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
 
-		let mut covrs = tag.atom(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
+		let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
 		let Some(AtomData::Picture(picture1)) = covrs.next() else {
 			unreachable!()
 		};
@@ -318,7 +318,7 @@ fn test_covr_read2() {
 	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
 	let tag = f.ilst().unwrap();
 	assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
-	let mut covrs = tag.atom(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
+	let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
 	let Some(AtomData::Picture(picture1)) = covrs.next() else {
 		unreachable!()
 	};
@@ -456,7 +456,7 @@ fn test_non_full_meta_atom() {
 
 	let tag = f.ilst().unwrap();
 	assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
-	let mut covrs = tag.atom(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
+	let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
 	let Some(AtomData::Picture(picture1)) = covrs.next() else {
 		unreachable!()
 	};
@@ -472,7 +472,7 @@ fn test_non_full_meta_atom() {
 
 	assert_eq!(tag.artist().as_deref(), Some("Test Artist!!!!"));
 	assert_eq!(
-		tag.atom(&AtomIdent::Fourcc(*b"\xa9too"))
+		tag.get(&AtomIdent::Fourcc(*b"\xa9too"))
 			.unwrap()
 			.data()
 			.next()
