@@ -535,9 +535,14 @@ impl Picture {
 		self.description = description.map(Cow::from);
 	}
 
-	/// Returns the picture data
+	/// Returns the [`Picture`] data as borrowed bytes.
 	pub fn data(&self) -> &[u8] {
 		&self.data
+	}
+
+	/// Consumes a [`Picture`], returning the data as [`Vec`] without clones or allocation.
+	pub fn into_data(self) -> Vec<u8> {
+		self.data.into_owned()
 	}
 
 	/// Convert a [`Picture`] to a ID3v2 A/PIC byte Vec
