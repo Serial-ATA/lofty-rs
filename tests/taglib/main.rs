@@ -15,3 +15,4 @@ mod test_speex;
 mod test_wav;
 mod test_wavpack;
 mod test_xiphcomment;
+mod test_opus;
