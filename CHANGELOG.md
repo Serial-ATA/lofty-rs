@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2023-04-04
+
 ### Added
 - **Properties**: Expose channel mask (only supported for WAV and MPEG for now) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/155))
 - **ItemKey**: `InitialKey` mapping for Vorbis Comments ([PR](https://github.com/Serial-ATA/lofty-rs/pull/156))
@@ -38,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Metadata sub-blocks are now properly parsed
   - Bitrate calculation will now properly round down
 
-## [0.11.0] - 2023-1-29
+## [0.11.0] - 2023-01-29
 
 ### Added
 - **MP4**:
@@ -428,7 +430,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.11.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.0...HEAD
+[0.12.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.11.0...0.12.0
 [0.11.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.9.0...0.10.0
 [0.9.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.8.1...0.9.0
