@@ -9,30 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Properties**: Expose channel mask (only supported for WAV and MPEG for now) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/155))
 - **ItemKey**: `InitialKey` mapping for Vorbis Comments ([PR](https://github.com/Serial-ATA/lofty-rs/pull/156))
-- **VorbisComments**: `VorbisComments::push` to allow for a non-replacing insertion
-- **Tags**: `<Tag>::new()` as an alias for `<Tag>::default()`
+- **VorbisComments**: `VorbisComments::push` to allow for a non-replacing insertion ([PR](https://github.com/Serial-ATA/lofty-rs/pull/169))
+- **Tags**: `<Tag>::new()` as an alias for `<Tag>::default()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/170))
+- **Picture**: `Picture::into_data()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/173))
 
 ### Changed
 - **APE**/**ID3v1**/**ID3v2**/**Tag**:
   - Allow empty strings as values instead of removing the corresponding item when empty ([PR](https://github.com/Serial-ATA/lofty-rs/pull/134))
-  - Separated the trait `SplitAndMergeTag` into `SplitTag` and `MergeTag` to prevent any unexpected or undefined behavior at runtime ([#143](https://github.com/Serial-ATA/lofty-rs/pull/143))
-- **VorbisComments**:
+  - Separated the trait `SplitAndMergeTag` into `SplitTag` and `MergeTag` to prevent any unexpected or undefined behavior at runtime ([PR](https://github.com/Serial-ATA/lofty-rs/pull/143))
+- **VorbisComments** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/169)):
   - Keys will now be verified according to spec before insertion
   - Getters will now case-insensitively search for keys
   - `TRACKNUM` will now be considered in the `Accessor::*track` methods
-- **Tags**: Method names are more consistent
+- **Tags**: Method names are more consistent ([PR](https://github.com/Serial-ATA/lofty-rs/pull/171))
 
 ### Fixed
 - **ID3v2**:
   - Fix conversion of user defined frames when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/140)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/142))
   - Fix writing of tag/disk numbers when using `Tag` writing interface ([issue](https://github.com/Serial-ATA/lofty-rs/issues/145)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/149))
-- **MP4**:
+- **MP4** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/163)):
   - Fix the incorrect size being written for newly created `moov.udta.meta` atoms
     - Previously, the 8 bytes for the size and identifier were not accounted for
   - The parser has been further restricted to avoid going out of bounds
     - This was only an issue if there was garbage data after the `moov` item *and* the parser had not yet found
       the `moov.udta` atom.
-- **WavPack**:
+- **WavPack** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/168)):
   - Fewer errors are suppressed
   - Metadata sub-blocks are now properly parsed
   - Bitrate calculation will now properly round down
