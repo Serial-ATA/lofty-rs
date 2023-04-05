@@ -180,7 +180,7 @@ pub(super) fn read_properties(
 				audio_bitrate,
 			)
 		}
-	} else if bytes_per_second > 0 {
+	} else if stream_len > 0 && bytes_per_second > 0 {
 		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
 
 		let overall_bitrate = ((file_length * 8) / length) as u32;
