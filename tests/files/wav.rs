@@ -70,3 +70,15 @@ fn remove_riff_info() {
 		TagType::RIFFInfo
 	);
 }
+
+#[test]
+fn issue_174_divide_by_zero() {
+	let file = Probe::open(
+		"tests/files/assets/issue_174_waveformatextensible-ieeefloat-44100Hz-mono95060.wav",
+	)
+	.unwrap()
+	.read()
+	.unwrap();
+
+	assert_eq!(file.file_type(), FileType::WAV);
+}
