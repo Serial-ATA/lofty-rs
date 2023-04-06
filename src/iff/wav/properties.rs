@@ -182,15 +182,18 @@ pub(super) fn read_properties(
 		}
 	} else if stream_len > 0 && bytes_per_second > 0 {
 		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
+		if length == 0 {
+			(Duration::ZERO, 0, 0)
+		} else {
+			let overall_bitrate = ((file_length * 8) / length) as u32;
+			let audio_bitrate = (bytes_per_second * 8) / 1000;
 
-		let overall_bitrate = ((file_length * 8) / length) as u32;
-		let audio_bitrate = (bytes_per_second * 8) / 1000;
-
-		(
-			Duration::from_millis(length),
-			overall_bitrate,
-			audio_bitrate,
-		)
+			(
+				Duration::from_millis(length),
+				overall_bitrate,
+				audio_bitrate,
+			)
+		}
 	} else {
 		(Duration::ZERO, 0, 0)
 	};
