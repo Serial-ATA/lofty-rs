@@ -6,7 +6,7 @@ mod popularimeter;
 mod sync_text;
 
 pub use encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
-pub use encoded_text_frame::EncodedTextFrame;
+pub use encoded_text_frame::ExtendedTextFrame;
 pub use identifier::UniqueFileIdentifierFrame;
 pub use language_frame::LanguageFrame;
 pub use popularimeter::Popularimeter;

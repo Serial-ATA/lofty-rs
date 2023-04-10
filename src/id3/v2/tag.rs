@@ -4,7 +4,7 @@ use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKN
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
-use crate::id3::v2::items::{EncodedTextFrame, LanguageFrame, UniqueFileIdentifierFrame};
+use crate::id3::v2::items::{ExtendedTextFrame, LanguageFrame, UniqueFileIdentifierFrame};
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -199,7 +199,7 @@ impl ID3v2Tag {
 
 	/// Inserts a [`Frame`]
 	///
-	/// This will replace any frame of the same id (**or description!** See [`EncodedTextFrame`])
+	/// This will replace any frame of the same id (**or description!** See [`ExtendedTextFrame`])
 	pub fn insert(&mut self, frame: Frame<'static>) -> Option<Frame<'static>> {
 		let replaced = self
 			.frames
@@ -718,7 +718,7 @@ impl SplitTag for ID3v2Tag {
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 				(
 					"TXXX",
-					FrameValue::UserText(EncodedTextFrame {
+					FrameValue::UserText(ExtendedTextFrame {
 						ref description,
 						ref content,
 						..
@@ -735,7 +735,7 @@ impl SplitTag for ID3v2Tag {
 				},
 				(
 					"WXXX",
-					FrameValue::UserURL(EncodedTextFrame {
+					FrameValue::UserURL(ExtendedTextFrame {
 						ref description,
 						ref content,
 						..
@@ -787,7 +787,7 @@ impl SplitTag for ID3v2Tag {
 							description,
 							..
 						})
-						| FrameValue::UserText(EncodedTextFrame {
+						| FrameValue::UserText(ExtendedTextFrame {
 							content,
 							description,
 							..
@@ -819,7 +819,7 @@ impl SplitTag for ID3v2Tag {
 							return false; // Frame consumed
 						},
 						FrameValue::URL(content)
-						| FrameValue::UserURL(EncodedTextFrame { content, .. }) => {
+						| FrameValue::UserURL(ExtendedTextFrame { content, .. }) => {
 							ItemValue::Locator(std::mem::take(content))
 						},
 						FrameValue::Picture { picture, .. } => {
@@ -1077,7 +1077,7 @@ mod tests {
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
 	};
 	use crate::id3::v2::{
-		read_id3v2_header, EncodedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
+		read_id3v2_header, ExtendedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
 		ID3v2Version, LanguageFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -1560,7 +1560,7 @@ mod tests {
 		tag.insert(
 			Frame::new(
 				"TXXX",
-				FrameValue::UserText(EncodedTextFrame {
+				FrameValue::UserText(ExtendedTextFrame {
 					encoding: TextEncoding::UTF8,
 					description: String::from("REPLAYGAIN_ALBUM_GAIN"),
 					content: String::from("-10.43 dB"),
@@ -1700,7 +1700,7 @@ mod tests {
 	fn txxx_wxxx_tag_conversion() {
 		let txxx_frame = Frame::new(
 			"TXXX",
-			FrameValue::UserText(EncodedTextFrame {
+			FrameValue::UserText(ExtendedTextFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("FOO_TEXT_FRAME"),
 				content: String::from("foo content"),
@@ -1711,7 +1711,7 @@ mod tests {
 
 		let wxxx_frame = Frame::new(
 			"WXXX",
-			FrameValue::UserURL(EncodedTextFrame {
+			FrameValue::UserURL(ExtendedTextFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("BAR_URL_FRAME"),
 				content: String::from("bar url"),
@@ -1755,7 +1755,7 @@ mod tests {
 		id3v2.insert(
 			Frame::new(
 				"TXXX",
-				FrameValue::UserText(EncodedTextFrame {
+				FrameValue::UserText(ExtendedTextFrame {
 					encoding: TextEncoding::UTF8,
 					description: String::from("FOO_BAR"),
 					content: String::from("foo content"),
@@ -1776,7 +1776,7 @@ mod tests {
 			id3v2.frames.first(),
 			Some(&Frame {
 				id: FrameID::Valid(Cow::Borrowed("TXXX")),
-				value: FrameValue::UserText(EncodedTextFrame {
+				value: FrameValue::UserText(ExtendedTextFrame {
 					description: String::from("FOO_BAR"),
 					encoding: TextEncoding::UTF8, // Not considered by PartialEq!
 					content: String::new(),       // Not considered by PartialEq!

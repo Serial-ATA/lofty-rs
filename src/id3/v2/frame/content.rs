@@ -1,7 +1,7 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
-	EncodedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame,
+	ExtendedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -73,7 +73,7 @@ fn parse_user_defined(
 	Ok(Some(if link {
 		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
 
-		FrameValue::UserURL(EncodedTextFrame {
+		FrameValue::UserURL(ExtendedTextFrame {
 			encoding,
 			description,
 			content,
@@ -97,7 +97,7 @@ fn parse_user_defined(
 			frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
 		}
 
-		FrameValue::UserText(EncodedTextFrame {
+		FrameValue::UserText(ExtendedTextFrame {
 			encoding,
 			description,
 			content: frame_content,

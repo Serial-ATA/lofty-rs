@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 /// This means for each `EncodedTextFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]
-pub struct EncodedTextFrame {
+pub struct ExtendedTextFrame {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// Unique content description
@@ -18,20 +18,20 @@ pub struct EncodedTextFrame {
 	pub content: String,
 }
 
-impl PartialEq for EncodedTextFrame {
+impl PartialEq for ExtendedTextFrame {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl Hash for EncodedTextFrame {
+impl Hash for ExtendedTextFrame {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl EncodedTextFrame {
-	/// Convert an [`EncodedTextFrame`] to a byte vec
+impl ExtendedTextFrame {
+	/// Convert an [`ExtendedTextFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = vec![self.encoding as u8];
 

@@ -3,7 +3,7 @@ mod header;
 pub(super) mod id;
 pub(super) mod read;
 
-use super::items::{EncodedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame};
+use super::items::{ExtendedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame};
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::ID3v2Version;
@@ -23,7 +23,7 @@ pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 
 /// Empty content descriptor in text frame
 ///
-/// Unspecific [`LanguageFrame`]s and [`EncodedTextFrame`] frames
+/// Unspecific [`LanguageFrame`]s and [`ExtendedTextFrame`] frames
 /// are supposed to have an empty content descriptor. Only those
 /// are currently supported as [`TagItem`]s to avoid ambiguities
 /// and to prevent inconsistencies when writing them.
@@ -175,8 +175,8 @@ pub enum FrameValue {
 	},
 	/// Represents a "TXXX" frame
 	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`EncodedTextFrame`]
-	UserText(EncodedTextFrame),
+	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedTextFrame`]
+	UserText(ExtendedTextFrame),
 	/// Represents a "W..." (excluding WXXX) frame
 	///
 	/// NOTE: URL frame descriptions **must** be unique
@@ -185,8 +185,8 @@ pub enum FrameValue {
 	URL(String),
 	/// Represents a "WXXX" frame
 	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`EncodedTextFrame`]
-	UserURL(EncodedTextFrame),
+	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedTextFrame`]
+	UserURL(ExtendedTextFrame),
 	/// Represents an "APIC" or "PIC" frame
 	Picture {
 		/// The encoding of the description
@@ -312,14 +312,14 @@ impl From<TagItem> for Option<Frame<'static>> {
 					(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
 						if s == "WXXX" =>
 					{
-						FrameValue::UserURL(EncodedTextFrame {
+						FrameValue::UserURL(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
-						FrameValue::UserText(EncodedTextFrame {
+						FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
@@ -337,7 +337,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 				Some(desc) => match input.item_value {
 					ItemValue::Text(text) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
-						value = FrameValue::UserText(EncodedTextFrame {
+						value = FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: text,
@@ -345,7 +345,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(EncodedTextFrame {
+						value = FrameValue::UserURL(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator,
@@ -426,26 +426,26 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						content: text.clone(),
 					}),
 					("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
-						FrameValue::UserURL(EncodedTextFrame {
+						FrameValue::UserURL(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
 						})
 					},
 					(locator_id, ItemValue::Locator(text)) if locator_id.len() > 4 => {
-						FrameValue::UserURL(EncodedTextFrame {
+						FrameValue::UserURL(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
 						})
 					},
-					("TXXX", ItemValue::Text(text)) => FrameValue::UserText(EncodedTextFrame {
+					("TXXX", ItemValue::Text(text)) => FrameValue::UserText(ExtendedTextFrame {
 						encoding: TextEncoding::UTF8,
 						description: EMPTY_CONTENT_DESCRIPTOR,
 						content: text.clone(),
 					}),
 					(text_id, ItemValue::Text(text)) if text_id.len() > 4 => {
-						FrameValue::UserText(EncodedTextFrame {
+						FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
@@ -467,7 +467,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				match tag_item.value() {
 					ItemValue::Text(text) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
-						value = FrameValue::UserText(EncodedTextFrame {
+						value = FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: text.clone(),
@@ -475,7 +475,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(EncodedTextFrame {
+						value = FrameValue::UserURL(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator.clone(),
