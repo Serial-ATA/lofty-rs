@@ -4,7 +4,9 @@ use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKN
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
-use crate::id3::v2::items::{ExtendedTextFrame, LanguageFrame, UniqueFileIdentifierFrame};
+use crate::id3::v2::items::{
+	ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, UniqueFileIdentifierFrame,
+};
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -735,7 +737,7 @@ impl SplitTag for ID3v2Tag {
 				},
 				(
 					"WXXX",
-					FrameValue::UserURL(ExtendedTextFrame {
+					FrameValue::UserURL(ExtendedUrlFrame {
 						ref description,
 						ref content,
 						..
@@ -819,7 +821,7 @@ impl SplitTag for ID3v2Tag {
 							return false; // Frame consumed
 						},
 						FrameValue::URL(content)
-						| FrameValue::UserURL(ExtendedTextFrame { content, .. }) => {
+						| FrameValue::UserURL(ExtendedUrlFrame { content, .. }) => {
 							ItemValue::Locator(std::mem::take(content))
 						},
 						FrameValue::Picture { picture, .. } => {
@@ -1072,7 +1074,7 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
-	use crate::id3::v2::items::{Popularimeter, UniqueFileIdentifierFrame};
+	use crate::id3::v2::items::{ExtendedUrlFrame, Popularimeter, UniqueFileIdentifierFrame};
 	use crate::id3::v2::tag::{
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
 	};
@@ -1711,7 +1713,7 @@ mod tests {
 
 		let wxxx_frame = Frame::new(
 			"WXXX",
-			FrameValue::UserURL(ExtendedTextFrame {
+			FrameValue::UserURL(ExtendedUrlFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("BAR_URL_FRAME"),
 				content: String::from("bar url"),
