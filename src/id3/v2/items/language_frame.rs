@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 
 /// Information about an `ID3v2` frame that requires a language
 ///
-/// See [`EncodedTextFrame`](crate::id3::v2::EncodedTextFrame)
+/// See [`EncodedTextFrame`](crate::id3::v2::ExtendedTextFrame)
 #[derive(Clone, Debug, Eq)]
 pub struct LanguageFrame {
 	/// The encoding of the description and comment text
