@@ -21,19 +21,19 @@ pub(super) fn parse_content(
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
-			let attached_picture = AttachedPictureFrame::from_bytes(content, version)?;
+			let attached_picture = AttachedPictureFrame::parse(content, version)?;
 			Some(FrameValue::Picture(attached_picture))
 		},
 		"TXXX" => parse_user_defined(content, false, version)?,
 		"WXXX" => parse_user_defined(content, true, version)?,
 		"COMM" | "USLT" => parse_text_language(content, id, version)?,
-		"UFID" => UniqueFileIdentifierFrame::decode_bytes(content)?.map(FrameValue::UniqueFileIdentifier),
+		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => parse_text(content, version)?,
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
 		_ if id.starts_with('W') => parse_link(content)?,
-		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::from_bytes(content)?)),
+		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(content)?)),
 		// SYLT, GEOB, and any unknown frames
 		_ => Some(FrameValue::Binary(content.to_vec())),
 	})
