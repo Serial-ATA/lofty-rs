@@ -217,6 +217,36 @@ impl From<ItemValue> for FrameValue {
 	}
 }
 
+impl From<ExtendedTextFrame> for FrameValue {
+	fn from(value: ExtendedTextFrame) -> Self {
+		Self::UserText(value)
+	}
+}
+
+impl From<ExtendedUrlFrame> for FrameValue {
+	fn from(value: ExtendedUrlFrame) -> Self {
+		Self::UserURL(value)
+	}
+}
+
+impl From<AttachedPictureFrame> for FrameValue {
+	fn from(value: AttachedPictureFrame) -> Self {
+		Self::Picture(value)
+	}
+}
+
+impl From<Popularimeter> for FrameValue {
+	fn from(value: Popularimeter) -> Self {
+		Self::Popularimeter(value)
+	}
+}
+
+impl From<UniqueFileIdentifierFrame> for FrameValue {
+	fn from(value: UniqueFileIdentifierFrame) -> Self {
+		Self::UniqueFileIdentifier(value)
+	}
+}
+
 impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
