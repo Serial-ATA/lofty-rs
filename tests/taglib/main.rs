@@ -7,6 +7,7 @@ mod test_fileref;
 mod test_flac;
 mod test_flacpicture;
 mod test_id3v1;
+mod test_id3v2;
 mod test_info;
 mod test_mp4;
 mod test_mpeg;
