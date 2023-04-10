@@ -5,14 +5,14 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	UniqueFileIdentifierFrame,
+	TextInformationFrame, UniqueFileIdentifierFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
-use crate::util::text::{encode_text, TextEncoding};
+use crate::util::text::TextEncoding;
 use id::FrameID;
 
 use std::borrow::Cow;
@@ -143,10 +143,10 @@ impl<'a> Frame<'a> {
 	pub(crate) fn text(id: Cow<'a, str>, content: String) -> Self {
 		Self {
 			id: FrameID::Valid(id),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: content,
-			},
+			}),
 			flags: FrameFlags::default(),
 		}
 	}
@@ -165,14 +165,7 @@ pub enum FrameValue {
 	/// Due to the amount of information needed, it is contained in a separate struct, [`LanguageFrame`]
 	UnSyncText(LanguageFrame),
 	/// Represents a "T..." (excluding TXXX) frame
-	///
-	/// NOTE: Text frame descriptions **must** be unique
-	Text {
-		/// The encoding of the text
-		encoding: TextEncoding,
-		/// The text itself
-		value: String,
-	},
+	Text(TextInformationFrame),
 	/// Represents a "TXXX" frame
 	///
 	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedTextFrame`]
@@ -207,13 +200,19 @@ pub enum FrameValue {
 impl From<ItemValue> for FrameValue {
 	fn from(input: ItemValue) -> Self {
 		match input {
-			ItemValue::Text(text) => FrameValue::Text {
+			ItemValue::Text(text) => FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: text,
-			},
+			}),
 			ItemValue::Locator(locator) => FrameValue::URL(locator),
 			ItemValue::Binary(binary) => FrameValue::Binary(binary),
 		}
+	}
+}
+
+impl From<TextInformationFrame> for FrameValue {
+	fn from(value: TextInformationFrame) -> Self {
+		Self::Text(value)
 	}
 }
 
@@ -251,12 +250,7 @@ impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
 			FrameValue::Comment(lf) | FrameValue::UnSyncText(lf) => lf.as_bytes()?,
-			FrameValue::Text { encoding, value } => {
-				let mut content = encode_text(value, *encoding, false);
-
-				content.insert(0, *encoding as u8);
-				content
-			},
+			FrameValue::Text(tif) => tif.as_bytes(),
 			FrameValue::UserText(content) => content.as_bytes(),
 			FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
@@ -521,10 +515,10 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 impl<'a> Into<FrameValue> for &'a ItemValue {
 	fn into(self) -> FrameValue {
 		match self {
-			ItemValue::Text(text) => FrameValue::Text {
+			ItemValue::Text(text) => FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: text.clone(),
-			},
+			}),
 			ItemValue::Locator(locator) => FrameValue::URL(locator.clone()),
 			ItemValue::Binary(binary) => FrameValue::Binary(binary.clone()),
 		}
