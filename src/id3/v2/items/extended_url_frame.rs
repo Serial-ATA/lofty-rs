@@ -1,6 +1,11 @@
-use crate::util::text::{encode_text, TextEncoding};
+use crate::error::Result;
+use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::ID3v2Version;
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
+
+use byteorder::ReadBytesExt;
 
 /// An extended `ID3v2` URL frame
 ///
@@ -31,6 +36,35 @@ impl Hash for ExtendedUrlFrame {
 }
 
 impl ExtendedUrlFrame {
+	/// Read an [`ExtendedUrlFrame`] from a slice
+	///
+	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Unable to decode the text
+	///
+	/// ID3v2.2:
+	///
+	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
+	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
+		if content.len() < 2 {
+			return Ok(None);
+		}
+
+		let content = &mut &content[..];
+
+		let encoding = verify_encoding(content.read_u8()?, version)?;
+		let description = decode_text(content, encoding, true)?.unwrap_or_default();
+		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
+
+		Ok(Some(ExtendedUrlFrame {
+			encoding,
+			description,
+			content,
+		}))
+	}
+
 	/// Convert an [`ExtendedUrlFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = vec![self.encoding as u8];
