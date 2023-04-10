@@ -49,6 +49,11 @@ impl Popularimeter {
 	}
 
 	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
+	///
+	/// # Errors
+	///
+	/// * Email is improperly encoded
+	/// * `bytes` doesn't contain enough data
 	pub fn from_bytes(mut bytes: &[u8]) -> Result<Self> {
 		let content = &mut bytes;
 
