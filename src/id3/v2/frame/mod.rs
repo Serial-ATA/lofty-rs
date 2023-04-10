@@ -3,19 +3,19 @@ mod header;
 pub(super) mod id;
 pub(super) mod read;
 
-use super::items::{ExtendedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame};
+use super::items::{
+	ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame,
+};
+use super::util::upgrade::{upgrade_v2, upgrade_v3};
+use super::ID3v2Version;
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
-use crate::tag::item::{ItemValue, TagItem};
+use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::{encode_text, TextEncoding};
-use crate::ItemKey;
 use id::FrameID;
 
 use std::borrow::Cow;
-
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
@@ -185,8 +185,8 @@ pub enum FrameValue {
 	URL(String),
 	/// Represents a "WXXX" frame
 	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedTextFrame`]
-	UserURL(ExtendedTextFrame),
+	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedUrlFrame`]
+	UserURL(ExtendedUrlFrame),
 	/// Represents an "APIC" or "PIC" frame
 	Picture {
 		/// The encoding of the description
@@ -232,7 +232,8 @@ impl FrameValue {
 				content.insert(0, *encoding as u8);
 				content
 			},
-			FrameValue::UserText(content) | FrameValue::UserURL(content) => content.as_bytes(),
+			FrameValue::UserText(content) => content.as_bytes(),
+			FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
 			FrameValue::Picture { encoding, picture } => {
 				picture.as_apic_bytes(ID3v2Version::V4, *encoding)?
@@ -312,7 +313,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
 						if s == "WXXX" =>
 					{
-						FrameValue::UserURL(ExtendedTextFrame {
+						FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
@@ -345,7 +346,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(ExtendedTextFrame {
+						value = FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator,
@@ -426,14 +427,14 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						content: text.clone(),
 					}),
 					("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
-						FrameValue::UserURL(ExtendedTextFrame {
+						FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
 						})
 					},
 					(locator_id, ItemValue::Locator(text)) if locator_id.len() > 4 => {
-						FrameValue::UserURL(ExtendedTextFrame {
+						FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
@@ -475,7 +476,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(ExtendedTextFrame {
+						value = FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator.clone(),

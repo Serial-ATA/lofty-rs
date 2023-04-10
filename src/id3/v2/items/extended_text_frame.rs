@@ -2,11 +2,11 @@ use crate::util::text::{encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 
-/// An `ID3v2` text frame
+/// An extended `ID3v2` text frame
 ///
-/// This is used in the frames `TXXX` and `WXXX`, where the frames
+/// This is used in the `TXXX` frame, where the frames
 /// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameID)s.
-/// This means for each `EncodedTextFrame` in the tag, the description
+/// This means for each `ExtendedTextFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]
 pub struct ExtendedTextFrame {
