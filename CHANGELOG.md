@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **WAV**: Fix division by zero when reading the properties of an empty stream ([issue](https://github.com/Serial-ATA/lofty-rs/issues/174)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/175))
-- **ID3v2**: Export `id3::v2::UniqueFileIdentifierFrame`
+- **ID3v2**:
+  - Export `id3::v2::UniqueFileIdentifierFrame`
+  - Export `id3::v2::Popularimeter`
 
 ## [0.12.0] - 2023-04-04
 
