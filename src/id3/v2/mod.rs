@@ -31,14 +31,7 @@ pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
 pub use tag::ID3v2Tag;
 
-pub use items::encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
-pub use items::encoded_text_frame::EncodedTextFrame;
-pub use items::identifier::UniqueFileIdentifierFrame;
-pub use items::language_frame::LanguageFrame;
-pub use items::popularimeter::Popularimeter;
-pub use items::sync_text::{
-	SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
-};
+pub use items::*;
 
 pub use frame::id::FrameID;
 pub use frame::{Frame, FrameFlags, FrameValue};

@@ -1,9 +1,8 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
-use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
-use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
-use crate::id3::v2::items::language_frame::LanguageFrame;
-use crate::id3::v2::items::popularimeter::Popularimeter;
+use crate::id3::v2::items::{
+	EncodedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame,
+};
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
 use crate::picture::Picture;
