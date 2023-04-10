@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **ID3v2**: All uses of `ID3v2ErrorKind::Other` have been replaced with concrete errors
+
 ## [0.12.1] - 2023-04-10
 
 ### Fixed
