@@ -93,10 +93,7 @@ where
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
 	if version == ID3v2Version::V2 && flags & 0x40 == 0x40 {
-		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-			"Encountered a compressed ID3v2.2 tag",
-		))
-		.into());
+		return Err(ID3v2Error::new(ID3v2ErrorKind::V2Compression).into());
 	}
 
 	let mut flags_parsed = ID3v2TagFlags {
@@ -119,10 +116,7 @@ where
 		extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
 
 		if extended_size < 6 {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-				"Found an extended header with an invalid size (< 6)",
-			))
-			.into());
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadExtendedHeaderSize).into());
 		}
 
 		// Useless byte since there's only 1 byte for flags
@@ -146,10 +140,6 @@ where
 
 			flags_parsed.restrictions = Some(TagRestrictions::from_byte(bytes.read_u8()?));
 		}
-	}
-
-	if extended_size > 0 && extended_size >= size {
-		return Err(ID3v2Error::new(ID3v2ErrorKind::Other("Tag has an invalid size")).into());
 	}
 
 	Ok(ID3v2Header {

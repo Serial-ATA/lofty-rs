@@ -67,50 +67,113 @@ pub enum ErrorKind {
 }
 
 /// The types of errors that can occur while interacting with ID3v2 tags
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum ID3v2ErrorKind {
-	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::ID3v2Version::V2)
-	BadPictureFormat(String),
+	// Header
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),
+	/// Arises when a compressed ID3v2.2 tag is encountered
+	///
+	/// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
+	/// As such, it is recommended to ignore the tag entirely.
+	V2Compression,
+	/// Arises when an extended header has an invalid size (must be >= 6 bytes)
+	BadExtendedHeaderSize,
+
+	// Frame
 	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
 	BadFrameID,
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
+	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
+	MissingDataLengthIndicator,
+	/// Arises when a frame or tag has its unsynchronisation flag set, but the content is not actually synchsafe
+	///
+	/// See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
+	InvalidUnsynchronisation,
+	/// Arises when a text encoding other than Latin-1 or UTF-16 appear in an ID3v2.2 tag
+	V2InvalidTextEncoding,
+	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::ID3v2Version::V2)
+	BadPictureFormat(String),
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,
+	/// Arises when decoding a [`UniqueFileIdentifierFrame`](crate::id3::v2::UniqueFileIdentifierFrame) with no owner
+	MissingUFIDOwner,
+
+	// Compression
+	#[cfg(feature = "id3v2_compression_support")]
+	/// Arises when a compressed frame is unable to be decompressed
+	Decompression(flate2::DecompressError),
+	#[cfg(not(feature = "id3v2_compression_support"))]
+	/// Arises when a compressed frame is encountered, but support is disabled
+	CompressedFrameEncountered,
+
+	// Writing
+	/// Arises when attempting to write an encrypted frame with an invalid encryption method symbol (must be <= 0x80)
+	InvalidEncryptionMethodSymbol(u8),
 	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
 	BadFrame(String, &'static str),
-	/// A catch-all for all remaining errors
-	///
-	/// NOTE: This will likely be deprecated in the future
-	Other(&'static str),
+	/// Arises when attempting to write a [`LanguageFrame`](crate::id3::v2::LanguageFrame) with an invalid language
+	InvalidLanguage([u8; 3]),
 }
 
 impl Display for ID3v2ErrorKind {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
-			ID3v2ErrorKind::BadId3v2Version(major, minor) => write!(
+			// Header
+			Self::BadId3v2Version(major, minor) => write!(
 				f,
 				"Found an invalid version (v{major}.{minor}), expected any major revision in: (2, \
 				 3, 4)"
 			),
-			ID3v2ErrorKind::BadFrameID => write!(f, "Failed to parse a frame ID"),
-			ID3v2ErrorKind::BadFrameLength => write!(
+			Self::V2Compression => write!(f, "Encountered a compressed ID3v2.2 tag"),
+			Self::BadExtendedHeaderSize => {
+				write!(f, "Found an extended header with an invalid size (< 6)")
+			},
+
+			// Frame
+			Self::BadFrameID => write!(f, "Failed to parse a frame ID"),
+			Self::BadFrameLength => write!(
 				f,
 				"Frame isn't long enough to extract the necessary information"
 			),
-			ID3v2ErrorKind::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
-			ID3v2ErrorKind::BadFrame(ref frame_id, frame_value) => write!(
+			Self::MissingDataLengthIndicator => write!(
 				f,
-				"Attempted to write an invalid frame. ID: \"{}\", Value: \"{}\"",
-				frame_id, frame_value
+				"Encountered an encrypted frame without a data length indicator"
 			),
-			ID3v2ErrorKind::BadPictureFormat(format) => {
+			Self::InvalidUnsynchronisation => write!(f, "Encountered an invalid unsynchronisation"),
+			Self::V2InvalidTextEncoding => {
+				write!(f, "ID3v2.2 only supports Latin-1 and UTF-16 encodings")
+			},
+			Self::BadPictureFormat(format) => {
 				write!(f, "Picture: Found unexpected format \"{format}\"")
 			},
-			ID3v2ErrorKind::Other(message) => write!(f, "{message}"),
+			Self::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
+			Self::MissingUFIDOwner => write!(f, "Missing owner in UFID frame"),
+
+			// Compression
+			#[cfg(feature = "id3v2_compression_support")]
+			Self::Decompression(err) => write!(f, "Failed to decompress frame: {err}"),
+			#[cfg(not(feature = "id3v2_compression_support"))]
+			Self::CompressedFrameEncountered => write!(
+				f,
+				"Encountered a compressed ID3v2 frame, support is disabled"
+			),
+
+			// Writing
+			Self::InvalidEncryptionMethodSymbol(symbol) => write!(
+				f,
+				"Attempted to write an encrypted frame with an invalid method symbol ({symbol})"
+			),
+			Self::BadFrame(ref frame_id, frame_value) => write!(
+				f,
+				"Attempted to write an invalid frame. ID: \"{frame_id}\", Value: \"{frame_value}\"",
+			),
+			Self::InvalidLanguage(lang) => write!(
+				f,
+				"Invalid frame language found: {lang:?} (expected 3 ascii characters)"
+			),
 		}
 	}
 }
@@ -128,8 +191,8 @@ impl ID3v2Error {
 	}
 
 	/// Returns the [`ID3v2ErrorKind`]
-	pub fn kind(&self) -> ID3v2ErrorKind {
-		self.kind.clone()
+	pub fn kind(&self) -> &ID3v2ErrorKind {
+		&self.kind
 	}
 }
 

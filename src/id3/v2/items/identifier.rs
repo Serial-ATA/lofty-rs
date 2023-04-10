@@ -36,9 +36,7 @@ impl UniqueFileIdentifierFrame {
 		}
 
 		let Some(owner) = decode_text(input, TextEncoding::Latin1, true)? else {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-				"Missing owner in UFID frame",
-			)).into());
+			return Err(ID3v2Error::new(ID3v2ErrorKind::MissingUFIDOwner).into());
 		};
 		let identifier = input.to_vec();
 

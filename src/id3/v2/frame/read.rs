@@ -36,18 +36,14 @@ impl<'a> Frame<'a> {
 			let mut decompressed = Vec::new();
 			flate2::Decompress::new(true)
 				.decompress_vec(&content, &mut decompressed, flate2::FlushDecompress::None)
-				.map_err(|_| {
-					ID3v2Error::new(ID3v2ErrorKind::Other(
-						"Encountered a compressed frame, failed to decompress",
-					))
-				})?;
+				.map_err(|err| ID3v2Error::new(ID3v2ErrorKind::Decompression(err)))?;
 
 			content = decompressed
 		}
 
 		#[cfg(not(feature = "id3v2_compression_support"))]
 		if flags.compression {
-			crate::macros::decode_err!(@BAIL ID3v2, "Encountered a compressed ID3v2 frame, support is disabled")
+			return Err(ID3v2Error::new(ID3v2ErrorKind::CompressedFrameEncountered).into());
 		}
 
 		let mut content_reader = &*content;
@@ -69,10 +65,7 @@ impl<'a> Frame<'a> {
 
 		let value = if flags.encryption.is_some() {
 			if flags.data_length_indicator.is_none() {
-				return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-					"Encountered an encrypted frame without a data length indicator",
-				))
-				.into());
+				return Err(ID3v2Error::new(ID3v2ErrorKind::MissingDataLengthIndicator).into());
 			}
 
 			Some(FrameValue::Binary(content))

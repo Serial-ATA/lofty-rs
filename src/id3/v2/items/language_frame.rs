@@ -43,10 +43,7 @@ impl LanguageFrame {
 		let mut bytes = vec![self.encoding as u8];
 
 		if self.language.len() != 3 || self.language.iter().any(|c| !c.is_ascii_alphabetic()) {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-				"Invalid frame language found (expected 3 ascii characters)",
-			))
-			.into());
+			return Err(ID3v2Error::new(ID3v2ErrorKind::InvalidLanguage(self.language)).into());
 		}
 
 		bytes.extend(self.language);
