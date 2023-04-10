@@ -266,7 +266,7 @@ fn test_save_multiple_values() {
 
 		f.vorbis_comments_mut()
 			.unwrap()
-			.push(String::from("ARTIST"), String::from("artist 1"));
+			.insert(String::from("ARTIST"), String::from("artist 1"));
 		f.vorbis_comments_mut()
 			.unwrap()
 			.push(String::from("ARTIST"), String::from("artist 2"));
