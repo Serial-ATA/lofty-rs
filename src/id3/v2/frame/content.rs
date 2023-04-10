@@ -1,11 +1,11 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
-	ExtendedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame, ExtendedUrlFrame
+	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
+	UniqueFileIdentifierFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
-use crate::picture::Picture;
 use crate::util::text::{decode_text, read_to_terminator, utf16_decode, TextEncoding};
 
 use std::io::{Cursor, Read};
@@ -21,9 +21,8 @@ pub(super) fn parse_content(
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
-			let (picture, encoding) = Picture::from_apic_bytes(content, version)?;
-
-			Some(FrameValue::Picture { encoding, picture })
+			let attached_picture = AttachedPictureFrame::from_bytes(content, version)?;
+			Some(FrameValue::Picture(attached_picture))
 		},
 		"TXXX" => parse_user_defined(content, false, version)?,
 		"WXXX" => parse_user_defined(content, true, version)?,

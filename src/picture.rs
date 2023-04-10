@@ -1,14 +1,12 @@
-use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::ID3v2Version;
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
-use crate::util::text::TextEncoding;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use base64::Engine as _;
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt};
 
 /// Common picture item keys for APE
 pub const APE_PICTURE_TYPES: [&str; 21] = [
@@ -543,127 +541,6 @@ impl Picture {
 	/// Consumes a [`Picture`], returning the data as [`Vec`] without clones or allocation.
 	pub fn into_data(self) -> Vec<u8> {
 		self.data.into_owned()
-	}
-
-	/// Convert a [`Picture`] to a ID3v2 A/PIC byte Vec
-	///
-	/// NOTE: This does not include the frame header
-	///
-	/// # Errors
-	///
-	/// * Too much data was provided
-	///
-	/// ID3v2.2:
-	///
-	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
-	pub fn as_apic_bytes(
-		&self,
-		version: ID3v2Version,
-		text_encoding: TextEncoding,
-	) -> Result<Vec<u8>> {
-		let mut data = vec![text_encoding as u8];
-
-		let max_size = match version {
-			// ID3v2.2 uses a 24-bit number for sizes
-			ID3v2Version::V2 => 0xFFFF_FF16_u64,
-			_ => u64::from(u32::MAX),
-		};
-
-		if version == ID3v2Version::V2 {
-			// ID3v2.2 PIC is pretty limited with formats
-			let format = match self.mime_type {
-				MimeType::Png => "PNG",
-				MimeType::Jpeg => "JPG",
-				_ => {
-					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
-						self.mime_type.to_string(),
-					))
-					.into())
-				},
-			};
-
-			data.write_all(format.as_bytes())?;
-		} else {
-			data.write_all(self.mime_type.as_str().as_bytes())?;
-			data.write_u8(0)?;
-		};
-
-		data.write_u8(self.pic_type.as_u8())?;
-
-		match &self.description {
-			Some(description) => data.write_all(&crate::util::text::encode_text(
-				description,
-				text_encoding,
-				true,
-			))?,
-			None => data.write_u8(0)?,
-		}
-
-		data.write_all(&self.data)?;
-
-		if data.len() as u64 > max_size {
-			err!(TooMuchData);
-		}
-
-		Ok(data)
-	}
-
-	/// Get a [`Picture`] and [`TextEncoding`] from ID3v2 A/PIC bytes:
-	///
-	/// NOTE: This expects *only* the frame content
-	///
-	/// # Errors
-	///
-	/// * There isn't enough data present
-	/// * The data isn't a picture
-	///
-	/// ID3v2.2:
-	///
-	/// * The format is not "PNG" or "JPG"
-	pub fn from_apic_bytes(bytes: &[u8], version: ID3v2Version) -> Result<(Self, TextEncoding)> {
-		let mut cursor = Cursor::new(bytes);
-
-		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
-			Some(encoding) => encoding,
-			None => err!(NotAPicture),
-		};
-
-		let mime_type = if version == ID3v2Version::V2 {
-			let mut format = [0; 3];
-			cursor.read_exact(&mut format)?;
-
-			match format {
-				[b'P', b'N', b'G'] => MimeType::Png,
-				[b'J', b'P', b'G'] => MimeType::Jpeg,
-				_ => {
-					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
-						String::from_utf8_lossy(&format).into_owned(),
-					))
-					.into())
-				},
-			}
-		} else {
-			(crate::util::text::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
-				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
-		};
-
-		let pic_type = PictureType::from_u8(cursor.read_u8()?);
-
-		let description =
-			crate::util::text::decode_text(&mut cursor, encoding, true)?.map(Cow::from);
-
-		let mut data = Vec::new();
-		cursor.read_to_end(&mut data)?;
-
-		Ok((
-			Picture {
-				pic_type,
-				mime_type,
-				description,
-				data: Cow::from(data),
-			},
-			encoding,
-		))
 	}
 
 	/// Convert a [`Picture`] to a base64 encoded FLAC `METADATA_BLOCK_PICTURE` String
