@@ -24,37 +24,13 @@ pub struct Popularimeter {
 }
 
 impl Popularimeter {
-	/// Convert a [`Popularimeter`] into an ID3v2 POPM frame byte Vec
-	///
-	/// NOTE: This does not include a frame header
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = Vec::with_capacity(self.email.len() + 9);
-		content.extend(encode_text(self.email.as_str(), TextEncoding::Latin1, true));
-		content.push(self.rating);
-
-		// When the counter reaches all one's, one byte is inserted in front of the counter
-		// thus making the counter eight bits bigger in the same away as the play counter ("PCNT")
-		//
-		// $xx xx xx xx (xx ...)
-		if let Ok(counter) = u32::try_from(self.counter) {
-			content.extend(counter.to_be_bytes())
-		} else {
-			let counter_bytes = self.counter.to_be_bytes();
-			let i = counter_bytes.iter().position(|b| *b != 0).unwrap_or(4);
-
-			content.extend(&counter_bytes[i..]);
-		}
-
-		content
-	}
-
 	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
 	///
 	/// # Errors
 	///
 	/// * Email is improperly encoded
 	/// * `bytes` doesn't contain enough data
-	pub fn from_bytes(mut bytes: &[u8]) -> Result<Self> {
+	pub fn parse(mut bytes: &[u8]) -> Result<Self> {
 		let content = &mut bytes;
 
 		let email = decode_text(content, TextEncoding::Latin1, true)?;
@@ -77,6 +53,30 @@ impl Popularimeter {
 			rating,
 			counter,
 		})
+	}
+	
+	/// Convert a [`Popularimeter`] into an ID3v2 POPM frame byte Vec
+	///
+	/// NOTE: This does not include a frame header
+	pub fn as_bytes(&self) -> Vec<u8> {
+		let mut content = Vec::with_capacity(self.email.len() + 9);
+		content.extend(encode_text(self.email.as_str(), TextEncoding::Latin1, true));
+		content.push(self.rating);
+
+		// When the counter reaches all one's, one byte is inserted in front of the counter
+		// thus making the counter eight bits bigger in the same away as the play counter ("PCNT")
+		//
+		// $xx xx xx xx (xx ...)
+		if let Ok(counter) = u32::try_from(self.counter) {
+			content.extend(counter.to_be_bytes())
+		} else {
+			let counter_bytes = self.counter.to_be_bytes();
+			let i = counter_bytes.iter().position(|b| *b != 0).unwrap_or(4);
+
+			content.extend(&counter_bytes[i..]);
+		}
+
+		content
 	}
 }
 

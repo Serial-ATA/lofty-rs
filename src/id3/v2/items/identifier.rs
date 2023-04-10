@@ -14,23 +14,12 @@ pub struct UniqueFileIdentifierFrame {
 }
 
 impl UniqueFileIdentifierFrame {
-	/// Encode the frame contents as bytes
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let Self { owner, identifier } = self;
-
-		let mut content = Vec::with_capacity(owner.len() + 1 + identifier.len());
-		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
-		content.extend_from_slice(identifier);
-
-		content
-	}
-
 	/// Decode the frame contents from bytes
 	///
 	/// # Errors
 	///
 	/// Owner is missing or improperly encoded
-	pub fn decode_bytes(input: &mut &[u8]) -> Result<Option<Self>> {
+	pub fn parse(input: &mut &[u8]) -> Result<Option<Self>> {
 		if input.is_empty() {
 			return Ok(None);
 		}
@@ -41,6 +30,17 @@ impl UniqueFileIdentifierFrame {
 		let identifier = input.to_vec();
 
 		Ok(Some(Self { owner, identifier }))
+	}
+
+	/// Encode the frame contents as bytes
+	pub fn as_bytes(&self) -> Vec<u8> {
+		let Self { owner, identifier } = self;
+
+		let mut content = Vec::with_capacity(owner.len() + 1 + identifier.len());
+		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
+		content.extend_from_slice(identifier);
+
+		content
 	}
 }
 

@@ -33,7 +33,7 @@ impl AttachedPictureFrame {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn from_bytes(bytes: &[u8], version: ID3v2Version) -> Result<Self> {
+	pub fn parse(bytes: &[u8], version: ID3v2Version) -> Result<Self> {
 		let mut cursor = Cursor::new(bytes);
 
 		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
@@ -52,7 +52,7 @@ impl AttachedPictureFrame {
 					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
 						String::from_utf8_lossy(&format).into_owned(),
 					))
-						.into())
+					.into())
 				},
 			}
 		} else {
@@ -74,13 +74,10 @@ impl AttachedPictureFrame {
 			description,
 			data: Cow::from(data),
 		};
-		
-		Ok(Self {
-			encoding,
-			picture
-		})
+
+		Ok(Self { encoding, picture })
 	}
-	
+
 	/// Convert an [`AttachedPictureFrame`] to a ID3v2 A/PIC byte Vec
 	///
 	/// NOTE: This does not include the frame header

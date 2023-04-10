@@ -320,7 +320,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
-						FrameValue::Popularimeter(Popularimeter::from_bytes(&text).ok()?)
+						FrameValue::Popularimeter(Popularimeter::parse(&text).ok()?)
 					},
 					(_, value) => value.into(),
 				};
@@ -446,7 +446,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						})
 					},
 					("POPM", ItemValue::Binary(contents)) => {
-						FrameValue::Popularimeter(Popularimeter::from_bytes(contents)?)
+						FrameValue::Popularimeter(Popularimeter::parse(contents)?)
 					},
 					(_, value) => value.into(),
 				};
