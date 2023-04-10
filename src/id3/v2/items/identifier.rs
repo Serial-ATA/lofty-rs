@@ -14,7 +14,7 @@ pub struct UniqueFileIdentifierFrame {
 }
 
 impl UniqueFileIdentifierFrame {
-	/// Encode the frame contents as bytes.
+	/// Encode the frame contents as bytes
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let Self { owner, identifier } = self;
 
@@ -25,7 +25,11 @@ impl UniqueFileIdentifierFrame {
 		content
 	}
 
-	/// Decode the frame contents from bytes.
+	/// Decode the frame contents from bytes
+	///
+	/// # Errors
+	///
+	/// Owner is missing or improperly encoded
 	pub fn decode_bytes(input: &mut &[u8]) -> Result<Option<Self>> {
 		if input.is_empty() {
 			return Ok(None);
