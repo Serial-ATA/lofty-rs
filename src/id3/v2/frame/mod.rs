@@ -4,12 +4,12 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::items::{
-	ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame,
+	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
+	UniqueFileIdentifierFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::picture::Picture;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::{encode_text, TextEncoding};
@@ -188,12 +188,7 @@ pub enum FrameValue {
 	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedUrlFrame`]
 	UserURL(ExtendedUrlFrame),
 	/// Represents an "APIC" or "PIC" frame
-	Picture {
-		/// The encoding of the description
-		encoding: TextEncoding,
-		/// The picture itself
-		picture: Picture,
-	},
+	Picture(AttachedPictureFrame),
 	/// Represents a "POPM" frame
 	Popularimeter(Popularimeter),
 	/// Binary data
@@ -235,9 +230,7 @@ impl FrameValue {
 			FrameValue::UserText(content) => content.as_bytes(),
 			FrameValue::UserURL(content) => content.as_bytes(),
 			FrameValue::URL(link) => link.as_bytes().to_vec(),
-			FrameValue::Picture { encoding, picture } => {
-				picture.as_apic_bytes(ID3v2Version::V4, *encoding)?
-			},
+			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(ID3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),

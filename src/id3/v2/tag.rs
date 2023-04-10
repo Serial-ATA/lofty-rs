@@ -5,7 +5,8 @@ use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
-	ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, UniqueFileIdentifierFrame,
+	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
+	UniqueFileIdentifierFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -241,10 +242,10 @@ impl ID3v2Tag {
 					Frame {
 						id: FrameID::Valid(id),
 						value:
-							FrameValue::Picture {
+							FrameValue::Picture(AttachedPictureFrame {
 								picture: Picture { pic_type, .. },
 								..
-							},
+							}),
 						..
 					} if id == "APIC" && pic_type == &picture.pic_type => {
 						pos = Some(i);
@@ -270,12 +271,12 @@ impl ID3v2Tag {
 		self.frames.retain(|f| {
 			!matches!(f, Frame {
 					id: FrameID::Valid(id),
-					value: FrameValue::Picture {
+					value: FrameValue::Picture(AttachedPictureFrame {
 						picture: Picture {
 							pic_type: p_ty,
 							..
 						}, ..
-					},
+					}),
 					..
 				} if id == "APIC" && p_ty == &picture_type)
 		})
@@ -413,10 +414,10 @@ fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
 fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
 	Frame {
 		id: FrameID::Valid(Cow::Borrowed("APIC")),
-		value: FrameValue::Picture {
+		value: FrameValue::Picture(AttachedPictureFrame {
 			encoding: TextEncoding::UTF8,
 			picture,
-		},
+		}),
 		flags,
 	}
 }
@@ -824,7 +825,7 @@ impl SplitTag for ID3v2Tag {
 						| FrameValue::UserURL(ExtendedUrlFrame { content, .. }) => {
 							ItemValue::Locator(std::mem::take(content))
 						},
-						FrameValue::Picture { picture, .. } => {
+						FrameValue::Picture(AttachedPictureFrame { picture, .. }) => {
 							tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
 							return false; // Frame consumed
 						},
@@ -1046,10 +1047,10 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 
 	let pictures = tag.pictures().iter().map(|p| FrameRef {
 		id: FrameID::Valid(Cow::Borrowed("APIC")),
-		value: Cow::Owned(FrameValue::Picture {
+		value: Cow::Owned(FrameValue::Picture(AttachedPictureFrame {
 			encoding: TextEncoding::UTF8,
 			picture: p.clone(),
-		}),
+		})),
 		flags: FrameFlags::default(),
 	});
 
@@ -1079,8 +1080,8 @@ mod tests {
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
 	};
 	use crate::id3::v2::{
-		read_id3v2_header, ExtendedTextFrame, Frame, FrameFlags, FrameID, FrameValue, ID3v2Tag,
-		ID3v2Version, LanguageFrame,
+		read_id3v2_header, AttachedPictureFrame, ExtendedTextFrame, Frame, FrameFlags, FrameID,
+		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -1408,7 +1409,7 @@ mod tests {
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("APIC")),
-			value: FrameValue::Picture {
+			value: FrameValue::Picture(AttachedPictureFrame {
 				encoding: TextEncoding::Latin1,
 				picture: Picture {
 					pic_type: PictureType::CoverFront,
@@ -1416,7 +1417,7 @@ mod tests {
 					description: None,
 					data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
 				},
-			},
+			}),
 			flags,
 		});
 
@@ -1490,10 +1491,10 @@ mod tests {
 			tag.frames.first(),
 			Some(&Frame {
 				id: FrameID::Valid(Cow::Borrowed("APIC")),
-				value: FrameValue::Picture {
+				value: FrameValue::Picture(AttachedPictureFrame {
 					encoding: TextEncoding::UTF8,
 					picture
-				},
+				}),
 				flags: FrameFlags::default()
 			})
 		);
