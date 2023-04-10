@@ -164,13 +164,8 @@ fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {
 }
 
 fn verify_encoding(encoding: u8, version: ID3v2Version) -> Result<TextEncoding> {
-	if let ID3v2Version::V2 = version {
-		if encoding != 0 && encoding != 1 {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-				"ID3v2.2 only supports Latin-1 and UTF-16 encodings",
-			))
-			.into());
-		}
+	if version == ID3v2Version::V2 && (encoding != 0 && encoding != 1) {
+		return Err(ID3v2Error::new(ID3v2ErrorKind::V2InvalidTextEncoding).into());
 	}
 
 	match TextEncoding::from_u8(encoding) {

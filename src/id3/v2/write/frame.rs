@@ -91,10 +91,9 @@ where
 	let method_symbol = flags.encryption.unwrap();
 
 	if method_symbol > 0x80 {
-		return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-			"Attempted to write an encrypted frame with an invalid method symbol (> 0x80)",
-		))
-		.into());
+		return Err(
+			ID3v2Error::new(ID3v2ErrorKind::InvalidEncryptionMethodSymbol(method_symbol)).into(),
+		);
 	}
 
 	if let Some(len) = flags.data_length_indicator {
@@ -108,10 +107,7 @@ where
 		}
 	}
 
-	Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-		"Attempted to write an encrypted frame without a data length indicator",
-	))
-	.into())
+	Err(ID3v2Error::new(ID3v2ErrorKind::MissingDataLengthIndicator).into())
 }
 
 fn write_frame_header<W>(writer: &mut W, name: &str, len: u32, flags: FrameFlags) -> Result<()>

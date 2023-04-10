@@ -19,10 +19,7 @@ pub(in crate::id3::v2) fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
 		// Then remove the next byte if it is a zero
 		if discard {
 			if content[next] >= 0xE0 {
-				return Err(ID3v2Error::new(ID3v2ErrorKind::Other(
-					"Encountered an invalid unsynchronisation",
-				))
-				.into());
+				return Err(ID3v2Error::new(ID3v2ErrorKind::InvalidUnsynchronisation).into());
 			}
 
 			if content[next] == 0 {
