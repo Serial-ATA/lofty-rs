@@ -90,10 +90,10 @@ impl FileProperties {
 ///
 /// A mask of (at least) 18 bits, one for each channel.
 ///
-/// Standard speaker channels: <https://www.wikipedia.org/wiki/Surround_sound>
-/// CAF channel bitmap: <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-BCGBHHHI>
-/// WAV default channel ordering: <https://learn.microsoft.com/en-us/previous-versions/windows/hardware/design/dn653308(v=vs.85)?redirectedfrom=MSDN#default-channel-ordering>
-/// FFmpeg: <https://ffmpeg.org/doxygen/trunk/group__channel__masks.html>
+/// * Standard speaker channels: <https://www.wikipedia.org/wiki/Surround_sound>
+/// * CAF channel bitmap: <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-BCGBHHHI>
+/// * WAV default channel ordering: <https://learn.microsoft.com/en-us/previous-versions/windows/hardware/design/dn653308(v=vs.85)?redirectedfrom=MSDN#default-channel-ordering>
+/// * FFmpeg: <https://ffmpeg.org/doxygen/trunk/group__channel__masks.html>
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct ChannelMask(pub(crate) u32);
