@@ -67,7 +67,7 @@ pub struct SyncTextInformation {
 	/// The text encoding (description/text)
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
-	pub language: String,
+	pub language: [u8; 3],
 	/// The format of the timestamps
 	pub timestamp_format: TimestampFormat,
 	/// The type of content stored
@@ -93,6 +93,7 @@ impl SynchronizedText {
 	/// # Errors
 	///
 	/// This function will return [`BadSyncText`][ID3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
+	#[allow(clippy::missing_panics_doc)] // Infallible
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 7 {
 			return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameLength).into());
@@ -100,8 +101,10 @@ impl SynchronizedText {
 
 		let encoding = TextEncoding::from_u8(data[0])
 			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
-		let lang = std::str::from_utf8(&data[1..4])
-			.map_err(|_| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
+		let language: [u8; 3] = data[1..4].try_into().unwrap();
+		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
+			return Err(ID3v2Error::new(ID3v2ErrorKind::BadSyncText).into());
+		}
 		let timestamp_format = TimestampFormat::from_u8(data[4])
 			.ok_or_else(|| ID3v2Error::new(ID3v2ErrorKind::BadSyncText))?;
 		let content_type = SyncTextContentType::from_u8(data[5])
@@ -169,7 +172,7 @@ impl SynchronizedText {
 		Ok(Self {
 			information: SyncTextInformation {
 				encoding,
-				language: lang.to_string(),
+				language,
 				timestamp_format,
 				content_type,
 				description,
@@ -192,12 +195,9 @@ impl SynchronizedText {
 		let mut data = vec![information.encoding as u8];
 
 		if information.language.len() == 3
-			&& information
-				.language
-				.chars()
-				.all(|c| c.is_ascii_alphabetic())
+			&& information.language.iter().all(u8::is_ascii_alphabetic)
 		{
-			data.write_all(information.language.as_bytes())?;
+			data.write_all(&information.language)?;
 			data.write_u8(information.timestamp_format as u8)?;
 			data.write_u8(information.content_type as u8)?;
 
@@ -235,7 +235,7 @@ mod tests {
 		let expected = SynchronizedText {
 			information: SyncTextInformation {
 				encoding: TextEncoding::Latin1,
-				language: String::from("eng"),
+				language: *b"eng",
 				timestamp_format: TimestampFormat::MS,
 				content_type: SyncTextContentType::Lyrics,
 				description: Some(String::from("Test Sync Text")),
@@ -261,7 +261,7 @@ mod tests {
 		let to_encode = SynchronizedText {
 			information: SyncTextInformation {
 				encoding: TextEncoding::Latin1,
-				language: String::from("eng"),
+				language: *b"eng",
 				timestamp_format: TimestampFormat::MS,
 				content_type: SyncTextContentType::Lyrics,
 				description: Some(String::from("Test Sync Text")),
