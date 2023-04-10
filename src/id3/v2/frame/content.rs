@@ -2,7 +2,7 @@ use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	UniqueFileIdentifierFrame,
+	UniqueFileIdentifierFrame, TextInformationFrame
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -28,10 +28,10 @@ pub(super) fn parse_content(
 		"WXXX" => ExtendedUrlFrame::parse(content, version)?.map(FrameValue::UserURL),
 		"COMM" | "USLT" => parse_text_language(content, id, version)?,
 		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
-		_ if id.starts_with('T') => parse_text(content, version)?,
+		_ if id.starts_with('T') => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
-		"WFED" | "GRP1" | "MVNM" | "MVIN" => parse_text(content, version)?,
+		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
 		_ if id.starts_with('W') => parse_link(content)?,
 		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(content)?)),
 		// SYLT, GEOB, and any unknown frames
@@ -70,20 +70,6 @@ fn parse_text_language(
 	};
 
 	Ok(Some(value))
-}
-
-fn parse_text(content: &mut &[u8], version: ID3v2Version) -> Result<Option<FrameValue>> {
-	if content.len() < 2 {
-		return Ok(None);
-	}
-
-	let encoding = verify_encoding(content.read_u8()?, version)?;
-	let text = decode_text(content, encoding, true)?.unwrap_or_default();
-
-	Ok(Some(FrameValue::Text {
-		encoding,
-		value: text,
-	}))
 }
 
 fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {

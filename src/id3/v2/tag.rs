@@ -5,7 +5,7 @@ use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
-	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
+	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, TextInformationFrame,
 	UniqueFileIdentifierFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
@@ -184,7 +184,7 @@ impl ID3v2Tag {
 	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
 		let frame = self.get(id);
 		if let Some(Frame {
-			value: FrameValue::Text { value, .. },
+			value: FrameValue::Text(TextInformationFrame { value, .. }),
 			..
 		}) = frame
 		{
@@ -303,7 +303,7 @@ impl ID3v2Tag {
 
 	fn split_num_pair(&self, id: &str) -> (Option<u32>, Option<u32>) {
 		if let Some(Frame {
-			value: FrameValue::Text { ref value, .. },
+			value: FrameValue::Text(TextInformationFrame { ref value, .. }),
 			..
 		}) = self.get(id)
 		{
@@ -390,10 +390,10 @@ fn filter_comment_frame_by_description_mut<'a>(
 fn new_text_frame(id: FrameID<'_>, value: String, flags: FrameFlags) -> Frame<'_> {
 	Frame {
 		id,
-		value: FrameValue::Text {
+		value: FrameValue::Text(TextInformationFrame {
 			encoding: TextEncoding::UTF8,
 			value,
-		},
+		}),
 		flags,
 	}
 }
@@ -505,7 +505,7 @@ impl Accessor for ID3v2Tag {
 
 	fn year(&self) -> Option<u32> {
 		if let Some(Frame {
-			value: FrameValue::Text { value, .. },
+			value: FrameValue::Text(TextInformationFrame { value, .. }),
 			..
 		}) = self.get("TDRC")
 		{
@@ -695,19 +695,19 @@ impl SplitTag for ID3v2Tag {
 
 			// The text pairs need some special treatment
 			match (id.as_str(), &mut frame.value) {
-				("TRCK", FrameValue::Text { value: content, .. })
+				("TRCK", FrameValue::Text(TextInformationFrame { value: content, .. }))
 					if split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
 						.is_some() =>
 				{
 					false // Frame consumed
 				},
-				("TPOS", FrameValue::Text { value: content, .. })
+				("TPOS", FrameValue::Text(TextInformationFrame { value: content, .. }))
 					if split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
 					false // Frame consumed
 				},
-				("MVIN", FrameValue::Text { value: content, .. })
+				("MVIN", FrameValue::Text(TextInformationFrame { value: content, .. }))
 					if split_pair(
 						content,
 						&mut tag,
@@ -812,7 +812,7 @@ impl SplitTag for ID3v2Tag {
 							// round trips?
 							return true; // Keep frame
 						},
-						FrameValue::Text { value: content, .. } => {
+						FrameValue::Text(TextInformationFrame { value: content, .. }) => {
 							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 								tag.items.push(TagItem::new(
 									item_key.clone(),
@@ -1081,7 +1081,7 @@ mod tests {
 	};
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, ExtendedTextFrame, Frame, FrameFlags, FrameID,
-		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame,
+		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame, TextInformationFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -1111,10 +1111,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TPE1",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("Bar artist"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1123,10 +1123,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TIT2",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("Foo title"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1135,10 +1135,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TALB",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("Baz album"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1161,10 +1161,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TDRC",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("1984"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1173,10 +1173,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TRCK",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("1"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1185,10 +1185,10 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				"TCON",
-				FrameValue::Text {
+				FrameValue::Text(TextInformationFrame {
 					encoding,
 					value: String::from("Classical"),
-				},
+				}),
 				flags,
 			)
 			.unwrap(),
@@ -1306,10 +1306,10 @@ mod tests {
 
 			assert_eq!(
 				frame.content(),
-				&FrameValue::Text {
+				&FrameValue::Text(TextInformationFrame {
 					encoding: TextEncoding::UTF8,
 					value: String::from(value)
-				}
+				})
 			);
 		}
 
@@ -1346,64 +1346,64 @@ mod tests {
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TIT2")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("TempleOS Hymn Risen (Remix)"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TPE1")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Dave Eddy"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TRCK")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::Latin1,
 				value: String::from("1"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TALB")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Summer"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TDRC")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("2017"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TCON")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Electronic"),
-			},
+			}),
 			flags,
 		});
 
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("TLEN")),
-			value: FrameValue::Text {
+			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF16,
 				value: String::from("213017"),
-			},
+			}),
 			flags,
 		});
 
