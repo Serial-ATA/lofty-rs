@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2023-04-10
+
 ### Fixed
 - **WAV**: Fix division by zero when reading the properties of an empty stream ([issue](https://github.com/Serial-ATA/lofty-rs/issues/174)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/175))
 - **ID3v2** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/177)):
@@ -436,7 +438,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.1...HEAD
+[0.12.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.0...0.12.1
 [0.12.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.11.0...0.12.0
 [0.11.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.10.0...0.11.0
 [0.10.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.9.0...0.10.0
