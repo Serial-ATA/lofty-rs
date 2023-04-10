@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
@@ -6,9 +6,9 @@ use crate::id3::v2::items::{
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
-use crate::util::text::{decode_text, read_to_terminator, utf16_decode, TextEncoding};
+use crate::util::text::{decode_text, TextEncoding};
 
-use std::io::{Cursor, Read};
+use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
@@ -24,8 +24,8 @@ pub(super) fn parse_content(
 			let attached_picture = AttachedPictureFrame::parse(content, version)?;
 			Some(FrameValue::Picture(attached_picture))
 		},
-		"TXXX" => parse_user_defined(content, false, version)?,
-		"WXXX" => parse_user_defined(content, true, version)?,
+		"TXXX" => ExtendedTextFrame::parse(content, version)?.map(FrameValue::UserText),
+		"WXXX" => ExtendedUrlFrame::parse(content, version)?.map(FrameValue::UserURL),
 		"COMM" | "USLT" => parse_text_language(content, id, version)?,
 		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => parse_text(content, version)?,
@@ -37,71 +37,6 @@ pub(super) fn parse_content(
 		// SYLT, GEOB, and any unknown frames
 		_ => Some(FrameValue::Binary(content.to_vec())),
 	})
-}
-
-// There are 2 possibilities for the frame's content: text or link.
-fn parse_user_defined(
-	mut content: &mut &[u8],
-	link: bool,
-	version: ID3v2Version,
-) -> Result<Option<FrameValue>> {
-	if content.len() < 2 {
-		return Ok(None);
-	}
-
-	let encoding = verify_encoding(content.read_u8()?, version)?;
-
-	let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
-	if encoding == TextEncoding::UTF16 {
-		let mut cursor = Cursor::new(content);
-		let mut bom = [0; 2];
-		cursor.read_exact(&mut bom)?;
-
-		match [bom[0], bom[1]] {
-			[0xFF, 0xFE] => endianness = u16::from_le_bytes,
-			[0xFE, 0xFF] => endianness = u16::from_be_bytes,
-			// We'll catch an invalid BOM below
-			_ => {},
-		};
-
-		content = cursor.into_inner();
-	}
-
-	let description = decode_text(content, encoding, true)?.unwrap_or_default();
-
-	Ok(Some(if link {
-		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
-
-		FrameValue::UserURL(ExtendedUrlFrame {
-			encoding,
-			description,
-			content,
-		})
-	} else {
-		let frame_content;
-		// It's possible for the description to be the only string with a BOM
-		if encoding == TextEncoding::UTF16 {
-			if content.len() >= 2 && (content[..2] == [0xFF, 0xFE] || content[..2] == [0xFE, 0xFF])
-			{
-				frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
-			} else {
-				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
-					Some(raw_text) => utf16_decode(&raw_text, endianness).map_err(|_| {
-						Into::<LoftyError>::into(ID3v2Error::new(ID3v2ErrorKind::BadSyncText))
-					})?,
-					None => String::new(),
-				}
-			}
-		} else {
-			frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
-		}
-
-		FrameValue::UserText(ExtendedTextFrame {
-			encoding,
-			description,
-			content: frame_content,
-		})
-	}))
 }
 
 fn parse_text_language(
@@ -161,7 +96,10 @@ fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {
 	Ok(Some(FrameValue::URL(link)))
 }
 
-fn verify_encoding(encoding: u8, version: ID3v2Version) -> Result<TextEncoding> {
+pub(in crate::id3::v2) fn verify_encoding(
+	encoding: u8,
+	version: ID3v2Version,
+) -> Result<TextEncoding> {
 	if version == ID3v2Version::V2 && (encoding != 0 && encoding != 1) {
 		return Err(ID3v2Error::new(ID3v2ErrorKind::V2InvalidTextEncoding).into());
 	}
