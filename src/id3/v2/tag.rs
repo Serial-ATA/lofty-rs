@@ -4,9 +4,7 @@ use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKN
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
-use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
-use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
-use crate::id3::v2::items::language_frame::LanguageFrame;
+use crate::id3::v2::items::{EncodedTextFrame, LanguageFrame, UniqueFileIdentifierFrame};
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -1074,8 +1072,7 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
-	use crate::id3::v2::items::identifier::UniqueFileIdentifierFrame;
-	use crate::id3::v2::items::popularimeter::Popularimeter;
+	use crate::id3::v2::items::{Popularimeter, UniqueFileIdentifierFrame};
 	use crate::id3::v2::tag::{
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
 	};

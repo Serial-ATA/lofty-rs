@@ -3,9 +3,8 @@ mod header;
 pub(super) mod id;
 pub(super) mod read;
 
+use super::items::{EncodedTextFrame, LanguageFrame, Popularimeter, UniqueFileIdentifierFrame};
 use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::items::encoded_text_frame::EncodedTextFrame;
-use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::ID3v2Version;
 use crate::picture::Picture;
@@ -17,11 +16,8 @@ use id::FrameID;
 
 use std::borrow::Cow;
 
-use crate::id3::v2::items::popularimeter::Popularimeter;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
-
-use super::items::identifier::UniqueFileIdentifierFrame;
 
 pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 
