@@ -2,7 +2,7 @@ use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	UniqueFileIdentifierFrame, TextInformationFrame
+	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -32,7 +32,7 @@ pub(super) fn parse_content(
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
-		_ if id.starts_with('W') => parse_link(content)?,
+		_ if id.starts_with('W') => UrlLinkFrame::parse(content)?.map(FrameValue::URL),
 		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(content)?)),
 		// SYLT, GEOB, and any unknown frames
 		_ => Some(FrameValue::Binary(content.to_vec())),
@@ -70,16 +70,6 @@ fn parse_text_language(
 	};
 
 	Ok(Some(value))
-}
-
-fn parse_link(content: &mut &[u8]) -> Result<Option<FrameValue>> {
-	if content.is_empty() {
-		return Ok(None);
-	}
-
-	let link = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
-
-	Ok(Some(FrameValue::URL(link)))
 }
 
 pub(in crate::id3::v2) fn verify_encoding(

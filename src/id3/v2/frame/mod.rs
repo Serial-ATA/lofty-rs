@@ -5,11 +5,11 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	TextInformationFrame, UniqueFileIdentifierFrame,
+	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
-use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::TextEncoding;
@@ -157,28 +157,16 @@ impl<'a> Frame<'a> {
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub enum FrameValue {
 	/// Represents a "COMM" frame
-	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`LanguageFrame`]
 	Comment(LanguageFrame),
 	/// Represents a "USLT" frame
-	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`LanguageFrame`]
 	UnSyncText(LanguageFrame),
 	/// Represents a "T..." (excluding TXXX) frame
 	Text(TextInformationFrame),
 	/// Represents a "TXXX" frame
-	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedTextFrame`]
 	UserText(ExtendedTextFrame),
 	/// Represents a "W..." (excluding WXXX) frame
-	///
-	/// NOTE: URL frame descriptions **must** be unique
-	///
-	/// No encoding needs to be provided as all URLs are [`TextEncoding::Latin1`]
-	URL(String),
+	URL(UrlLinkFrame),
 	/// Represents a "WXXX" frame
-	///
-	/// Due to the amount of information needed, it is contained in a separate struct, [`ExtendedUrlFrame`]
 	UserURL(ExtendedUrlFrame),
 	/// Represents an "APIC" or "PIC" frame
 	Picture(AttachedPictureFrame),
@@ -197,15 +185,25 @@ pub enum FrameValue {
 	UniqueFileIdentifier(UniqueFileIdentifierFrame),
 }
 
-impl From<ItemValue> for FrameValue {
-	fn from(input: ItemValue) -> Self {
+impl TryFrom<ItemValue> for FrameValue {
+	type Error = LoftyError;
+
+	fn try_from(input: ItemValue) -> std::result::Result<FrameValue, Self::Error> {
 		match input {
-			ItemValue::Text(text) => FrameValue::Text(TextInformationFrame {
+			ItemValue::Text(text) => Ok(FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: text,
-			}),
-			ItemValue::Locator(locator) => FrameValue::URL(locator),
-			ItemValue::Binary(binary) => FrameValue::Binary(binary),
+			})),
+			ItemValue::Locator(locator) => {
+				if TextEncoding::verify_latin1(&locator) {
+					Ok(FrameValue::URL(UrlLinkFrame(locator)))
+				} else {
+					Err(LoftyError::new(ErrorKind::TextDecode(
+						"ID3v2 URL frames must be Latin-1",
+					)))
+				}
+			},
+			ItemValue::Binary(binary) => Ok(FrameValue::Binary(binary)),
 		}
 	}
 }
@@ -219,6 +217,12 @@ impl From<TextInformationFrame> for FrameValue {
 impl From<ExtendedTextFrame> for FrameValue {
 	fn from(value: ExtendedTextFrame) -> Self {
 		Self::UserText(value)
+	}
+}
+
+impl From<UrlLinkFrame> for FrameValue {
+	fn from(value: UrlLinkFrame) -> Self {
+		Self::URL(value)
 	}
 }
 
@@ -253,7 +257,7 @@ impl FrameValue {
 			FrameValue::Text(tif) => tif.as_bytes(),
 			FrameValue::UserText(content) => content.as_bytes(),
 			FrameValue::UserURL(content) => content.as_bytes(),
-			FrameValue::URL(link) => link.as_bytes().to_vec(),
+			FrameValue::URL(link) => link.as_bytes(),
 			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(ID3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
@@ -346,7 +350,13 @@ impl From<TagItem> for Option<Frame<'static>> {
 					(FrameID::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
 						FrameValue::Popularimeter(Popularimeter::parse(&text).ok()?)
 					},
-					(_, value) => value.into(),
+					(_, item_value) => {
+						let Ok(value) = item_value.try_into() else {
+							return None;
+						};
+
+						value
+					},
 				};
 
 				frame_id = id;
@@ -472,7 +482,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					("POPM", ItemValue::Binary(contents)) => {
 						FrameValue::Popularimeter(Popularimeter::parse(contents)?)
 					},
-					(_, value) => value.into(),
+					(_, value) => value.try_into()?,
 				};
 
 				frame_id = id;
@@ -512,15 +522,25 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 	}
 }
 
-impl<'a> Into<FrameValue> for &'a ItemValue {
-	fn into(self) -> FrameValue {
+impl<'a> TryInto<FrameValue> for &'a ItemValue {
+	type Error = LoftyError;
+
+	fn try_into(self) -> std::result::Result<FrameValue, Self::Error> {
 		match self {
-			ItemValue::Text(text) => FrameValue::Text(TextInformationFrame {
+			ItemValue::Text(text) => Ok(FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: text.clone(),
-			}),
-			ItemValue::Locator(locator) => FrameValue::URL(locator.clone()),
-			ItemValue::Binary(binary) => FrameValue::Binary(binary.clone()),
+			})),
+			ItemValue::Locator(locator) => {
+				if TextEncoding::verify_latin1(locator) {
+					Ok(FrameValue::URL(UrlLinkFrame(locator.clone())))
+				} else {
+					Err(LoftyError::new(ErrorKind::TextDecode(
+						"ID3v2 URL frames must be Latin-1",
+					)))
+				}
+			},
+			ItemValue::Binary(binary) => Ok(FrameValue::Binary(binary.clone())),
 		}
 	}
 }

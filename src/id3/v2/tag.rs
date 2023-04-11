@@ -6,7 +6,7 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
 	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, TextInformationFrame,
-	UniqueFileIdentifierFrame,
+	UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -821,7 +821,7 @@ impl SplitTag for ID3v2Tag {
 							}
 							return false; // Frame consumed
 						},
-						FrameValue::URL(content)
+						FrameValue::URL(UrlLinkFrame(content))
 						| FrameValue::UserURL(ExtendedUrlFrame { content, .. }) => {
 							ItemValue::Locator(std::mem::take(content))
 						},
@@ -1081,7 +1081,7 @@ mod tests {
 	};
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, ExtendedTextFrame, Frame, FrameFlags, FrameID,
-		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame, TextInformationFrame,
+		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame, TextInformationFrame, UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -1280,7 +1280,7 @@ mod tests {
 		let mut tag = ID3v2Tag::default();
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("ABCD")),
-			value: FrameValue::URL(String::from("FOO URL")),
+			value: FrameValue::URL(UrlLinkFrame(String::from("FOO URL"))),
 			flags: FrameFlags::default(),
 		});
 

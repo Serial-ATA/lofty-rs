@@ -31,6 +31,10 @@ impl TextEncoding {
 			_ => None,
 		}
 	}
+
+	pub(crate) fn verify_latin1(text: &str) -> bool {
+		text.chars().all(|c| c as u32 <= 255)
+	}
 }
 
 pub(crate) fn decode_text<R>(
