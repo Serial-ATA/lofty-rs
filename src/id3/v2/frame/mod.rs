@@ -92,11 +92,12 @@ impl<'a> Frame<'a> {
 	///
 	/// * `id` is less than 3 or greater than 4 bytes
 	/// * `id` contains non-ascii characters
-	pub fn new<I>(id: I, value: FrameValue, flags: FrameFlags) -> Result<Self>
+	pub fn new<I, V>(id: I, value: V, flags: FrameFlags) -> Result<Self>
 	where
 		I: Into<Cow<'a, str>>,
+		V: Into<FrameValue>,
 	{
-		Self::new_cow(id.into(), value, flags)
+		Self::new_cow(id.into(), value.into(), flags)
 	}
 
 	// Split from generic, public method to avoid code bloat by monomorphization.
