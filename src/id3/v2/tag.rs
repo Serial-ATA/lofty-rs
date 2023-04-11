@@ -5,8 +5,8 @@ use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
-	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, TextInformationFrame,
-	UniqueFileIdentifierFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
+	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -295,7 +295,7 @@ impl ID3v2Tag {
 	}
 
 	/// Returns all `COMM` frames with an empty content descriptor
-	pub fn comments(&self) -> impl Iterator<Item = &LanguageFrame> {
+	pub fn comments(&self) -> impl Iterator<Item = &CommentFrame> {
 		self.frames.iter().filter_map(|frame| {
 			filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR)
 		})
@@ -363,10 +363,10 @@ impl ID3v2Tag {
 fn filter_comment_frame_by_description<'a>(
 	frame: &'a Frame<'_>,
 	description: &str,
-) -> Option<&'a LanguageFrame> {
+) -> Option<&'a CommentFrame> {
 	match &frame.value {
-		FrameValue::Comment(lang_frame) if frame.id_str() == COMMENT_FRAME_ID => {
-			(lang_frame.description == description).then_some(lang_frame)
+		FrameValue::Comment(comment_frame) if frame.id_str() == COMMENT_FRAME_ID => {
+			(comment_frame.description == description).then_some(comment_frame)
 		},
 		_ => None,
 	}
@@ -375,13 +375,13 @@ fn filter_comment_frame_by_description<'a>(
 fn filter_comment_frame_by_description_mut<'a>(
 	frame: &'a mut Frame<'_>,
 	description: &str,
-) -> Option<&'a mut LanguageFrame> {
+) -> Option<&'a mut CommentFrame> {
 	if frame.id_str() != COMMENT_FRAME_ID {
 		return None;
 	}
 	match &mut frame.value {
-		FrameValue::Comment(lang_frame) => {
-			(lang_frame.description == description).then_some(lang_frame)
+		FrameValue::Comment(comment_frame) => {
+			(comment_frame.description == description).then_some(comment_frame)
 		},
 		_ => None,
 	}
@@ -401,7 +401,7 @@ fn new_text_frame(id: FrameID<'_>, value: String, flags: FrameFlags) -> Frame<'_
 fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
 	Frame {
 		id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
-		value: FrameValue::Comment(LanguageFrame {
+		value: FrameValue::Comment(CommentFrame {
 			encoding: TextEncoding::UTF8,
 			language: UNKNOWN_LANGUAGE,
 			description: EMPTY_CONTENT_DESCRIPTOR,
@@ -527,13 +527,13 @@ impl Accessor for ID3v2Tag {
 		self.frames
 			.iter()
 			.find_map(|frame| filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR))
-			.map(|LanguageFrame { content, .. }| Cow::Borrowed(content.as_str()))
+			.map(|CommentFrame { content, .. }| Cow::Borrowed(content.as_str()))
 	}
 
 	fn set_comment(&mut self, value: String) {
 		let mut value = Some(value);
 		self.frames.retain_mut(|frame| {
-			let Some(LanguageFrame { content, .. }) = filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR) else {
+			let Some(CommentFrame { content, .. }) = filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR) else {
 				return true;
 			};
 			if let Some(value) = value.take() {
@@ -780,7 +780,7 @@ impl SplitTag for ID3v2Tag {
 					let item_key = ItemKey::from_key(TagType::ID3v2, id);
 
 					let item_value = match value {
-						FrameValue::Comment(LanguageFrame {
+						FrameValue::Comment(CommentFrame {
 							content,
 							description,
 							..
@@ -1080,8 +1080,9 @@ mod tests {
 		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
 	};
 	use crate::id3::v2::{
-		read_id3v2_header, AttachedPictureFrame, ExtendedTextFrame, Frame, FrameFlags, FrameID,
-		FrameValue, ID3v2Tag, ID3v2Version, LanguageFrame, TextInformationFrame, UrlLinkFrame,
+		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
+		FrameFlags, FrameID, FrameValue, ID3v2Tag, ID3v2Version, TextInformationFrame,
+		UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -1147,7 +1148,7 @@ mod tests {
 		expected_tag.insert(
 			Frame::new(
 				COMMENT_FRAME_ID,
-				FrameValue::Comment(LanguageFrame {
+				FrameValue::Comment(CommentFrame {
 					encoding,
 					language: *b"eng",
 					description: EMPTY_CONTENT_DESCRIPTOR,
@@ -1324,7 +1325,7 @@ mod tests {
 		let frame = id3v2_tag.get(COMMENT_FRAME_ID).unwrap();
 		assert_eq!(
 			frame.content(),
-			&FrameValue::Comment(LanguageFrame {
+			&FrameValue::Comment(CommentFrame {
 				encoding: TextEncoding::Latin1,
 				language: *b"eng",
 				description: EMPTY_CONTENT_DESCRIPTOR,
@@ -1674,7 +1675,7 @@ mod tests {
 		tag.insert(
 			Frame::new(
 				COMMENT_FRAME_ID,
-				FrameValue::Comment(LanguageFrame {
+				FrameValue::Comment(CommentFrame {
 					encoding,
 					language: *b"eng",
 					description: custom_descriptor.to_owned(),

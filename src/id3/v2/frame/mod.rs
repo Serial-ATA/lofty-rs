@@ -4,8 +4,8 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::items::{
-	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
@@ -157,7 +157,7 @@ impl<'a> Frame<'a> {
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub enum FrameValue {
 	/// Represents a "COMM" frame
-	Comment(LanguageFrame),
+	Comment(CommentFrame),
 	/// Represents a "USLT" frame
 	UnSyncText(LanguageFrame),
 	/// Represents a "T..." (excluding TXXX) frame
@@ -208,6 +208,12 @@ impl TryFrom<ItemValue> for FrameValue {
 	}
 }
 
+impl From<CommentFrame> for FrameValue {
+	fn from(value: CommentFrame) -> Self {
+		Self::Comment(value)
+	}
+}
+
 impl From<TextInformationFrame> for FrameValue {
 	fn from(value: TextInformationFrame) -> Self {
 		Self::Text(value)
@@ -253,7 +259,8 @@ impl From<UniqueFileIdentifierFrame> for FrameValue {
 impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
-			FrameValue::Comment(lf) | FrameValue::UnSyncText(lf) => lf.as_bytes()?,
+			FrameValue::Comment(comment) => comment.as_bytes()?,
+			FrameValue::UnSyncText(lf) => lf.as_bytes()?,
 			FrameValue::Text(tif) => tif.as_bytes(),
 			FrameValue::UserText(content) => content.as_bytes(),
 			FrameValue::UserURL(content) => content.as_bytes(),
@@ -316,7 +323,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 			Ok(id) => {
 				value = match (&id, input.item_value) {
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
-						FrameValue::Comment(LanguageFrame {
+						FrameValue::Comment(CommentFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
 							description: EMPTY_CONTENT_DESCRIPTOR,
@@ -441,7 +448,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				let id_str = id.as_str();
 
 				value = match (id_str, tag_item.value()) {
-					("COMM", ItemValue::Text(text)) => FrameValue::Comment(LanguageFrame {
+					("COMM", ItemValue::Text(text)) => FrameValue::Comment(CommentFrame {
 						encoding: TextEncoding::UTF8,
 						language: UNKNOWN_LANGUAGE,
 						description: EMPTY_CONTENT_DESCRIPTOR,
