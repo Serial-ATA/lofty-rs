@@ -1,8 +1,8 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
-	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame, Popularimeter,
-	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -56,16 +56,19 @@ fn parse_text_language(
 	let description = decode_text(content, encoding, true)?;
 	let content = decode_text(content, encoding, false)?.unwrap_or_default();
 
-	let information = LanguageFrame {
-		encoding,
-		language,
-		description: description.unwrap_or_default(),
-		content,
-	};
-
 	let value = match id {
-		"COMM" => FrameValue::Comment(information),
-		"USLT" => FrameValue::UnSyncText(information),
+		"COMM" => FrameValue::Comment(CommentFrame {
+			encoding,
+			language,
+			description: description.unwrap_or_default(),
+			content,
+		}),
+		"USLT" => FrameValue::UnSyncText(LanguageFrame {
+			encoding,
+			language,
+			description: description.unwrap_or_default(),
+			content,
+		}),
 		_ => unreachable!(),
 	};
 
