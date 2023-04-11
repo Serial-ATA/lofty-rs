@@ -127,7 +127,10 @@ gen_map!(
 	"MUSICBRAINZ_TRACKID"          => MusicBrainzRecordingId,
 	"MUSICBRAINZ_RELEASETRACKID"   => MusicBrainzTrackId,
 	"MUSICBRAINZ_ALBUMID"          => MusicBrainzReleaseId,
-	"MUSICBRAINZ_RELEASEGROUPID"   => MusicBrainzReleaseGroupId
+	"MUSICBRAINZ_RELEASEGROUPID"   => MusicBrainzReleaseGroupId,
+	"MUSICBRAINZ_ARTISTID"         => MusicBrainzArtistId,
+	"MUSICBRAINZ_ALBUMARTISTID"    => MusicBrainzReleaseArtistId,
+	"MUSICBRAINZ_WORKID"           => MusicBrainzWorkId
 );
 
 gen_map!(
@@ -215,7 +218,10 @@ gen_map!(
 	"USLT"                         => Lyrics,
 	"MusicBrainz Release Track Id" => MusicBrainzTrackId,
 	"MusicBrainz Album Id"         => MusicBrainzReleaseId,
-	"MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId
+	"MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId,
+	"MusicBrainz Artist Id"        => MusicBrainzArtistId,
+	"MusicBrainz Album Artist Id"  => MusicBrainzReleaseArtistId,
+	"MusicBrainz Work Id"          => MusicBrainzWorkId
 );
 
 gen_map!(
@@ -289,7 +295,10 @@ gen_map!(
 	"----:com.apple.iTunes:MusicBrainz Track Id"         => MusicBrainzRecordingId,
 	"----:com.apple.iTunes:MusicBrainz Release Track Id" => MusicBrainzTrackId,
 	"----:com.apple.iTunes:MusicBrainz Album Id"         => MusicBrainzReleaseId,
-	"----:com.apple.iTunes:MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId
+	"----:com.apple.iTunes:MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId,
+	"----:com.apple.iTunes:MusicBrainz Artist Id"        => MusicBrainzArtistId,
+	"----:com.apple.iTunes:MusicBrainz Album Artist Id"  => MusicBrainzReleaseArtistId,
+	"----:com.apple.iTunes:MusicBrainz Work Id"          => MusicBrainzWorkId
 );
 
 gen_map!(
@@ -384,7 +393,10 @@ gen_map!(
 	"MUSICBRAINZ_TRACKID"                     => MusicBrainzRecordingId,
 	"MUSICBRAINZ_RELEASETRACKID"              => MusicBrainzTrackId,
 	"MUSICBRAINZ_ALBUMID"                     => MusicBrainzReleaseId,
-	"MUSICBRAINZ_RELEASEGROUPID"              => MusicBrainzReleaseGroupId
+	"MUSICBRAINZ_RELEASEGROUPID"              => MusicBrainzReleaseGroupId,
+	"MUSICBRAINZ_ARTISTID"                    => MusicBrainzArtistId,
+	"MUSICBRAINZ_ALBUMARTISTID"               => MusicBrainzReleaseArtistId,
+	"MUSICBRAINZ_WORKID"                      => MusicBrainzWorkId
 );
 
 macro_rules! gen_item_keys {
@@ -534,10 +546,20 @@ gen_item_keys!(
 		Movement,
 		MovementNumber,
 		MovementTotal,
+		// MusicBrainz Recording ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id21>
 		MusicBrainzRecordingId,
+		// MusicBrainz Track ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id24>
 		MusicBrainzTrackId,
+		// MusicBrainz Release ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id23>
 		MusicBrainzReleaseId,
+		// MusicBrainz Release Group ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-release-group-id>
 		MusicBrainzReleaseGroupId,
+		// MusicBrainz Artist ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id17>
+		MusicBrainzArtistId,
+		// MusicBrainz Release Artist ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id22>
+		MusicBrainzReleaseArtistId,
+		// MusicBrainz Work ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-work-id>
+		MusicBrainzWorkId,
 
 		// Flags
 		FlagCompilation,
