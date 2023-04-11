@@ -190,8 +190,7 @@ mod tests {
 	use crate::util::text::TextEncoding;
 	use std::io::Cursor;
 
-	#[allow(clippy::non_ascii_literal)]
-	const TEST_STRING: &str = "løft¥";
+	const TEST_STRING: &str = "l\u{00f8}ft\u{00a5}";
 
 	#[test]
 	fn text_decode() {
