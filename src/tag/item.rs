@@ -367,6 +367,7 @@ gen_map!(
 	"YEAR"                                    => Year,
 	"ORIGINALDATE"                            => OriginalReleaseDate,
 	"ISRC"                                    => ISRC,
+	"BARCODE"                                 => Barcode,
 	"CATALOGNUMBER"                           => CatalogNumber,
 	"COMPILATION"                             => FlagCompilation,
 	"MEDIA"                                   => OriginalMediaType,
