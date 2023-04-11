@@ -657,6 +657,15 @@ impl ItemValue {
 			_ => None,
 		}
 	}
+
+	/// Check for emptiness
+	pub fn is_empty(&self) -> bool {
+		match self {
+			Self::Binary(binary) => binary.is_empty(),
+			Self::Locator(locator) => locator.is_empty(),
+			Self::Text(text) => text.is_empty(),
+		}
+	}
 }
 
 pub(crate) enum ItemValueRef<'a> {

@@ -426,6 +426,11 @@ impl Tag {
 		self.items.retain(f)
 	}
 
+	/// Remove all items with empty values
+	pub fn remove_empty(&mut self) {
+		self.items.retain(|item| !item.value().is_empty());
+	}
+
 	/// Returns the stored [`Picture`]s as a slice
 	pub fn pictures(&self) -> &[Picture] {
 		&self.pictures
