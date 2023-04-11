@@ -173,6 +173,8 @@ gen_map!(
 	"TDRC"                         => RecordingDate,
 	"TDOR"                         => OriginalReleaseDate,
 	"TSRC"                         => ISRC,
+	"BARCODE"                      => Barcode,
+	"CATALOGNUMBER"                => CatalogNumber,
 	"WORK"                         => Work, // ID3v2.4: TXXX:WORK (Apple uses TIT1/ContentGroup, see GRP1/AppleId3v2ContentGroup for disambiguation)
 	"MVNM"                         => Movement,
 	"MVIN"                         => MovementNumber,
