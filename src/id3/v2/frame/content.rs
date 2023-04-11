@@ -2,7 +2,8 @@ use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -63,7 +64,7 @@ fn parse_text_language(
 			description: description.unwrap_or_default(),
 			content,
 		}),
-		"USLT" => FrameValue::UnSyncText(LanguageFrame {
+		"USLT" => FrameValue::UnSyncText(UnsynchronizedTextFrame {
 			encoding,
 			language,
 			description: description.unwrap_or_default(),
