@@ -5,7 +5,8 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
@@ -159,7 +160,7 @@ pub enum FrameValue {
 	/// Represents a "COMM" frame
 	Comment(CommentFrame),
 	/// Represents a "USLT" frame
-	UnSyncText(LanguageFrame),
+	UnSyncText(UnsynchronizedTextFrame),
 	/// Represents a "T..." (excluding TXXX) frame
 	Text(TextInformationFrame),
 	/// Represents a "TXXX" frame
@@ -211,6 +212,12 @@ impl TryFrom<ItemValue> for FrameValue {
 impl From<CommentFrame> for FrameValue {
 	fn from(value: CommentFrame) -> Self {
 		Self::Comment(value)
+	}
+}
+
+impl From<UnsynchronizedTextFrame> for FrameValue {
+	fn from(value: UnsynchronizedTextFrame) -> Self {
+		Self::UnSyncText(value)
 	}
 }
 
@@ -331,7 +338,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
-						FrameValue::UnSyncText(LanguageFrame {
+						FrameValue::UnSyncText(UnsynchronizedTextFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
 							description: EMPTY_CONTENT_DESCRIPTOR,
@@ -454,12 +461,14 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						description: EMPTY_CONTENT_DESCRIPTOR,
 						content: text.clone(),
 					}),
-					("USLT", ItemValue::Text(text)) => FrameValue::UnSyncText(LanguageFrame {
-						encoding: TextEncoding::UTF8,
-						language: UNKNOWN_LANGUAGE,
-						description: EMPTY_CONTENT_DESCRIPTOR,
-						content: text.clone(),
-					}),
+					("USLT", ItemValue::Text(text)) => {
+						FrameValue::UnSyncText(UnsynchronizedTextFrame {
+							encoding: TextEncoding::UTF8,
+							language: UNKNOWN_LANGUAGE,
+							description: EMPTY_CONTENT_DESCRIPTOR,
+							content: text.clone(),
+						})
+					},
 					("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
 						FrameValue::UserURL(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,

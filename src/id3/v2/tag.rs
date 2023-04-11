@@ -6,7 +6,7 @@ use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	TextInformationFrame, UniqueFileIdentifierFrame, UrlLinkFrame,
+	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -283,7 +283,7 @@ impl ID3v2Tag {
 	}
 
 	/// Returns all `USLT` frames
-	pub fn unsync_text(&self) -> impl Iterator<Item = &LanguageFrame> + Clone {
+	pub fn unsync_text(&self) -> impl Iterator<Item = &UnsynchronizedTextFrame> + Clone {
 		self.frames.iter().filter_map(|f| match f {
 			Frame {
 				id: FrameID::Valid(id),
@@ -785,7 +785,7 @@ impl SplitTag for ID3v2Tag {
 							description,
 							..
 						})
-						| FrameValue::UnSyncText(LanguageFrame {
+						| FrameValue::UnSyncText(UnsynchronizedTextFrame {
 							content,
 							description,
 							..
