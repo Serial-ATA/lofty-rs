@@ -114,7 +114,7 @@ pub enum ID3v2ErrorKind {
 	InvalidEncryptionMethodSymbol(u8),
 	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
 	BadFrame(String, &'static str),
-	/// Arises when attempting to write a [`LanguageFrame`](crate::id3::v2::LanguageFrame) with an invalid language
+	/// Arises when attempting to write a [`CommentFrame`](crate::id3::v2::CommentFrame) or [`UnsynchronizedTextFrame`](crate::id3::v2::UnsynchronizedTextFrame) with an invalid language
 	InvalidLanguage([u8; 3]),
 }
 

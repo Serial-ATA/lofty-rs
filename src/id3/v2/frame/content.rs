@@ -1,17 +1,13 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
+use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
-	UrlLinkFrame,
+	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter, TextInformationFrame,
+	UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
-use crate::util::text::{decode_text, TextEncoding};
-
-use std::io::Read;
-
-use byteorder::ReadBytesExt;
+use crate::util::text::TextEncoding;
 
 #[rustfmt::skip]
 pub(super) fn parse_content(
@@ -27,7 +23,8 @@ pub(super) fn parse_content(
 		},
 		"TXXX" => ExtendedTextFrame::parse(content, version)?.map(FrameValue::UserText),
 		"WXXX" => ExtendedUrlFrame::parse(content, version)?.map(FrameValue::UserURL),
-		"COMM" | "USLT" => parse_text_language(content, id, version)?,
+		"COMM" => LanguageFrame::parse(content, version)?.map(|lf| FrameValue::Comment(lf.into())),
+		"USLT" => LanguageFrame::parse(content, version)?.map(|lf| FrameValue::UnSyncText(lf.into())),
 		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
@@ -38,42 +35,6 @@ pub(super) fn parse_content(
 		// SYLT, GEOB, and any unknown frames
 		_ => Some(FrameValue::Binary(content.to_vec())),
 	})
-}
-
-fn parse_text_language(
-	content: &mut &[u8],
-	id: &str,
-	version: ID3v2Version,
-) -> Result<Option<FrameValue>> {
-	if content.len() < 5 {
-		return Ok(None);
-	}
-
-	let encoding = verify_encoding(content.read_u8()?, version)?;
-
-	let mut language = [0; 3];
-	content.read_exact(&mut language)?;
-
-	let description = decode_text(content, encoding, true)?;
-	let content = decode_text(content, encoding, false)?.unwrap_or_default();
-
-	let value = match id {
-		"COMM" => FrameValue::Comment(CommentFrame {
-			encoding,
-			language,
-			description: description.unwrap_or_default(),
-			content,
-		}),
-		"USLT" => FrameValue::UnSyncText(UnsynchronizedTextFrame {
-			encoding,
-			language,
-			description: description.unwrap_or_default(),
-			content,
-		}),
-		_ => unreachable!(),
-	};
-
-	Ok(Some(value))
 }
 
 pub(in crate::id3::v2) fn verify_encoding(
