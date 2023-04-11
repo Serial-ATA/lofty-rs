@@ -5,8 +5,8 @@ use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, TextInformationFrame,
+	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -70,20 +70,20 @@ macro_rules! impl_accessor {
 ///
 /// ### From `Tag`
 ///
-/// When converting from a [`Tag`](crate::Tag) to an `Id3v2Tag`, some frames may need editing.
+/// When converting from a [`Tag`] to an `Id3v2Tag`, some frames may need editing.
 ///
-/// * [`ItemKey::Comment`](crate::ItemKey::Comment) and [`ItemKey::Lyrics`](crate::ItemKey::Lyrics) - Unlike a normal text frame, these require a [`LanguageFrame`].
+/// * [`ItemKey::Comment`] and [`ItemKey::Lyrics`] - Unlike a normal text frame, these require a language. See [`CommentFrame`] and [`UnsynchronizedTextFrame`] respectively.
 /// An attempt is made to create this information, but it may be incorrect.
 ///    * `language` - Unknown and set to "XXX"
 ///    * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
 ///    by their descriptions, and as such they are expected to be unique for each.
-/// * [`ItemKey::Unknown("WXXX" | "TXXX")`](crate::ItemKey::Unknown) - These frames are also identified by their descriptions.
+/// * [`ItemKey::Unknown("WXXX" | "TXXX")`](ItemKey::Unknown) - These frames are also identified by their descriptions.
 ///
 /// ### To `Tag`
 ///
 /// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist for these descriptions, such as the one for `ReplayGain`,
 /// otherwise [`ItemKey::Unknown`] will be used.
-/// * Any [`LanguageFrame`] - With ID3v2 being the only format that allows for language-specific items, this information is not retained. These frames **will** be discarded.
+/// * Frame that require a language (COMM/USLT) - With ID3v2 being the only format that allows for language-specific items, this information is not retained.
 /// * POPM - These frames will be stored as a raw [`ItemValue::Binary`] value under the [`ItemKey::Popularimeter`] key.
 ///
 /// ## Special Frames

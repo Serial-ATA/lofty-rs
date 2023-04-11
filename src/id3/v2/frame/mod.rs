@@ -4,9 +4,8 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, LanguageFrame,
-	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
-	UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
+	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
@@ -24,7 +23,7 @@ pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 
 /// Empty content descriptor in text frame
 ///
-/// Unspecific [`LanguageFrame`]s and [`ExtendedTextFrame`] frames
+/// Unspecific [`CommentFrame`]s, [`UnsynchronizedTextFrame`]s, and [`ExtendedTextFrame`] frames
 /// are supposed to have an empty content descriptor. Only those
 /// are currently supported as [`TagItem`]s to avoid ambiguities
 /// and to prevent inconsistencies when writing them.

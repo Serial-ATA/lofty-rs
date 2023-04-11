@@ -188,7 +188,8 @@ impl SynchronizedText {
 	/// # Errors
 	///
 	/// * `content`'s length > [`u32::MAX`]
-	/// * See [`LanguageFrame`](crate::id3::v2::LanguageFrame)
+	/// * `language` is not exactly 3 bytes
+	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let information = &self.information;
 
