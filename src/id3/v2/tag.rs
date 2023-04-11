@@ -307,7 +307,7 @@ impl ID3v2Tag {
 		}) = self.get(id)
 		{
 			let mut split = value
-				.split(&[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..])
+				.split_terminator(&[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..])
 				.flat_map(str::parse::<u32>);
 			return (split.next(), split.next());
 		}
@@ -727,7 +727,7 @@ impl SplitTag for ID3v2Tag {
 					}),
 				) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, description);
-					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+					for c in content.split_terminator(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Text(c.to_string()),
@@ -744,7 +744,7 @@ impl SplitTag for ID3v2Tag {
 					}),
 				) => {
 					let item_key = ItemKey::from_key(TagType::ID3v2, description);
-					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+					for c in content.split_terminator(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
 							ItemValue::Locator(c.to_string()),
@@ -795,7 +795,7 @@ impl SplitTag for ID3v2Tag {
 							..
 						}) => {
 							if *description == EMPTY_CONTENT_DESCRIPTOR {
-								for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+								for c in content.split_terminator(V4_MULTI_VALUE_SEPARATOR) {
 									tag.items.push(TagItem::new(
 										item_key.clone(),
 										ItemValue::Text(c.to_string()),
@@ -812,7 +812,7 @@ impl SplitTag for ID3v2Tag {
 							return true; // Keep frame
 						},
 						FrameValue::Text { value: content, .. } => {
-							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+							for c in content.split_terminator(V4_MULTI_VALUE_SEPARATOR) {
 								tag.items.push(TagItem::new(
 									item_key.clone(),
 									ItemValue::Text(c.to_string()),
@@ -2153,5 +2153,24 @@ mod tests {
 			},
 			_ => unreachable!(),
 		}
+	}
+
+	#[test]
+	fn multi_value_separator_and_terminator() {
+		let mut id3v2_tag: ID3v2Tag = Tag::new(TagType::ID3v2).into();
+		// A frame with multiple terminators
+		id3v2_tag.frames.push(Frame::text(
+			"TIT1".into(),
+			"title 1\0\0 Title 2 \0\0".into(),
+		));
+
+		let tag = Tag::from(id3v2_tag);
+		assert_eq!(4, tag.item_count());
+		let mut items = tag.items();
+		assert_eq!("title 1", items.next().unwrap().value().text().unwrap());
+		assert_eq!("", items.next().unwrap().value().text().unwrap());
+		assert_eq!(" Title 2 ", items.next().unwrap().value().text().unwrap());
+		assert_eq!("", items.next().unwrap().value().text().unwrap());
+		assert!(items.next().is_none());
 	}
 }
