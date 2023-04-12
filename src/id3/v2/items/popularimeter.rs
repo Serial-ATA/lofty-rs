@@ -54,7 +54,7 @@ impl Popularimeter {
 			counter,
 		})
 	}
-	
+
 	/// Convert a [`Popularimeter`] into an ID3v2 POPM frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
