@@ -5,6 +5,12 @@ use std::io::{Read, Seek};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+pub(in crate::flac) const BLOCK_ID_STREAMINFO: u8 = 0;
+pub(in crate::flac) const BLOCK_ID_PADDING: u8 = 1;
+pub(in crate::flac) const BLOCK_ID_SEEKTABLE: u8 = 3;
+pub(in crate::flac) const BLOCK_ID_VORBIS_COMMENTS: u8 = 4;
+pub(in crate::flac) const BLOCK_ID_PICTURE: u8 = 6;
+
 pub(crate) struct Block {
 	pub(super) byte: u8,
 	pub(super) ty: u8,

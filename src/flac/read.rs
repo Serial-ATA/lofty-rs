@@ -2,6 +2,10 @@ use super::block::Block;
 use super::properties::FlacProperties;
 use super::FlacFile;
 use crate::error::Result;
+use crate::flac::block::{
+	BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_SEEKTABLE, BLOCK_ID_STREAMINFO,
+	BLOCK_ID_VORBIS_COMMENTS,
+};
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
@@ -25,7 +29,7 @@ where
 
 	let block = Block::read(data)?;
 
-	if block.ty != 0 {
+	if block.ty != BLOCK_ID_STREAMINFO {
 		decode_err!(@BAIL FLAC, "File missing mandatory STREAMINFO block");
 	}
 
@@ -60,31 +64,42 @@ where
 
 	let mut last_block = stream_info.last;
 
-	let mut tag = VorbisComments {
-		vendor: String::new(),
-		items: vec![],
-		pictures: vec![],
-	};
-
 	while !last_block {
 		let block = Block::read(data)?;
 		last_block = block.last;
 
-		if block.content.is_empty() && (block.ty != 1 && block.ty != 3) {
+		if block.content.is_empty()
+			&& (block.ty != BLOCK_ID_PADDING && block.ty != BLOCK_ID_SEEKTABLE)
+		{
 			decode_err!(@BAIL FLAC, "Encountered a zero-sized metadata block");
 		}
 
-		match block.ty {
-			4 => read_comments(&mut &*block.content, block.content.len() as u64, &mut tag)?,
-			6 => flac_file
+		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
+			if flac_file.vorbis_comments_tag.is_some() {
+				decode_err!(@BAIL FLAC, "Streams are only allowed one Vorbis Comments block per stream");
+			}
+
+			let mut vorbis_comments = VorbisComments::new();
+			read_comments(
+				&mut &*block.content,
+				block.content.len() as u64,
+				&mut vorbis_comments,
+			)?;
+
+			flac_file.vorbis_comments_tag = Some(vorbis_comments);
+			continue;
+		}
+
+		if block.ty == BLOCK_ID_PICTURE {
+			flac_file
 				.pictures
-				.push(Picture::from_flac_bytes(&block.content, false)?),
-			_ => {},
+				.push(Picture::from_flac_bytes(&block.content, false)?)
 		}
 	}
 
-	flac_file.vorbis_comments_tag =
-		(!(tag.items.is_empty() && tag.pictures.is_empty())).then_some(tag);
+	if !parse_options.read_properties {
+		return Ok(flac_file);
+	}
 
 	let (stream_length, file_length) = {
 		let current = data.stream_position()?;
@@ -93,13 +108,8 @@ where
 		(end - current, end)
 	};
 
-	if parse_options.read_properties {
-		flac_file.properties = super::properties::read_properties(
-			&mut &*stream_info.content,
-			stream_length,
-			file_length,
-		)?;
-	}
+	flac_file.properties =
+		super::properties::read_properties(&mut &*stream_info.content, stream_length, file_length)?;
 
 	Ok(flac_file)
 }
