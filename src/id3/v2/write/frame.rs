@@ -26,24 +26,24 @@ where
 fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 	match (frame.id.as_str(), frame.value.as_ref()) {
 		("APIC", FrameValue::Picture { .. })
-		| ("USLT", FrameValue::UnSyncText(_))
+		| ("USLT", FrameValue::UnsynchronizedText(_))
 		| ("COMM", FrameValue::Comment(_))
 		| ("TXXX", FrameValue::UserText(_))
-		| ("WXXX", FrameValue::UserURL(_))
+		| ("WXXX", FrameValue::UserUrl(_))
 		| (_, FrameValue::Binary(_))
 		| ("UFID", FrameValue::UniqueFileIdentifier(_))
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
-		(id, FrameValue::URL(_)) if id.starts_with('W') => Ok(()),
+		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
 		(id, frame_value) => Err(ID3v2Error::new(ID3v2ErrorKind::BadFrame(
 			id.to_string(),
 			match frame_value {
 				FrameValue::Comment(_) => "Comment",
-				FrameValue::UnSyncText(_) => "UnSyncText",
+				FrameValue::UnsynchronizedText(_) => "UnSyncText",
 				FrameValue::Text { .. } => "Text",
 				FrameValue::UserText(_) => "UserText",
-				FrameValue::URL(_) => "URL",
-				FrameValue::UserURL(_) => "UserURL",
+				FrameValue::Url(_) => "URL",
+				FrameValue::UserUrl(_) => "UserURL",
 				FrameValue::Picture { .. } => "Picture",
 				FrameValue::Popularimeter(_) => "Popularimeter",
 				FrameValue::Binary(_) => "Binary",

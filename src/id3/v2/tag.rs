@@ -287,7 +287,7 @@ impl ID3v2Tag {
 		self.frames.iter().filter_map(|f| match f {
 			Frame {
 				id: FrameID::Valid(id),
-				value: FrameValue::UnSyncText(val),
+				value: FrameValue::UnsynchronizedText(val),
 				..
 			} if id == "USLT" => Some(val),
 			_ => None,
@@ -738,7 +738,7 @@ impl SplitTag for ID3v2Tag {
 				},
 				(
 					"WXXX",
-					FrameValue::UserURL(ExtendedUrlFrame {
+					FrameValue::UserUrl(ExtendedUrlFrame {
 						ref description,
 						ref content,
 						..
@@ -785,7 +785,7 @@ impl SplitTag for ID3v2Tag {
 							description,
 							..
 						})
-						| FrameValue::UnSyncText(UnsynchronizedTextFrame {
+						| FrameValue::UnsynchronizedText(UnsynchronizedTextFrame {
 							content,
 							description,
 							..
@@ -821,8 +821,8 @@ impl SplitTag for ID3v2Tag {
 							}
 							return false; // Frame consumed
 						},
-						FrameValue::URL(UrlLinkFrame(content))
-						| FrameValue::UserURL(ExtendedUrlFrame { content, .. }) => {
+						FrameValue::Url(UrlLinkFrame(content))
+						| FrameValue::UserUrl(ExtendedUrlFrame { content, .. }) => {
 							ItemValue::Locator(std::mem::take(content))
 						},
 						FrameValue::Picture(AttachedPictureFrame { picture, .. }) => {
@@ -1281,7 +1281,7 @@ mod tests {
 		let mut tag = ID3v2Tag::default();
 		tag.insert(Frame {
 			id: FrameID::Valid(Cow::Borrowed("ABCD")),
-			value: FrameValue::URL(UrlLinkFrame(String::from("FOO URL"))),
+			value: FrameValue::Url(UrlLinkFrame(String::from("FOO URL"))),
 			flags: FrameFlags::default(),
 		});
 
@@ -1715,7 +1715,7 @@ mod tests {
 
 		let wxxx_frame = Frame::new(
 			"WXXX",
-			FrameValue::UserURL(ExtendedUrlFrame {
+			FrameValue::UserUrl(ExtendedUrlFrame {
 				encoding: TextEncoding::UTF8,
 				description: String::from("BAR_URL_FRAME"),
 				content: String::from("bar url"),
