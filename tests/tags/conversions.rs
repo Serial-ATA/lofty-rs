@@ -1,6 +1,6 @@
 // Tests for special case conversions
 
-use lofty::id3::v2::{Frame, FrameFlags, FrameValue, ID3v2Tag, LanguageFrame};
+use lofty::id3::v2::{CommentFrame, Frame, FrameFlags, ID3v2Tag, UnsynchronizedTextFrame};
 use lofty::{ItemKey, Tag, TagType, TextEncoding};
 
 #[test]
@@ -15,12 +15,12 @@ fn tag_to_id3v2_lang_frame() {
 		id3.get("USLT"),
 		Frame::new(
 			"USLT",
-			FrameValue::UnSyncText(LanguageFrame {
+			UnsynchronizedTextFrame {
 				encoding: TextEncoding::UTF8,
 				language: *b"eng",
 				description: String::new(),
 				content: String::from("Test lyrics")
-			}),
+			},
 			FrameFlags::default()
 		)
 		.ok()
@@ -31,12 +31,12 @@ fn tag_to_id3v2_lang_frame() {
 		id3.get("COMM"),
 		Frame::new(
 			"COMM",
-			FrameValue::Comment(LanguageFrame {
+			CommentFrame {
 				encoding: TextEncoding::UTF8,
 				language: *b"eng",
 				description: String::new(),
 				content: String::from("Test comment")
-			}),
+			},
 			FrameFlags::default()
 		)
 		.ok()
