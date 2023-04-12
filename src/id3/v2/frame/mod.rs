@@ -160,15 +160,15 @@ pub enum FrameValue {
 	/// Represents a "COMM" frame
 	Comment(CommentFrame),
 	/// Represents a "USLT" frame
-	UnSyncText(UnsynchronizedTextFrame),
+	UnsynchronizedText(UnsynchronizedTextFrame),
 	/// Represents a "T..." (excluding TXXX) frame
 	Text(TextInformationFrame),
 	/// Represents a "TXXX" frame
 	UserText(ExtendedTextFrame),
 	/// Represents a "W..." (excluding WXXX) frame
-	URL(UrlLinkFrame),
+	Url(UrlLinkFrame),
 	/// Represents a "WXXX" frame
-	UserURL(ExtendedUrlFrame),
+	UserUrl(ExtendedUrlFrame),
 	/// Represents an "APIC" or "PIC" frame
 	Picture(AttachedPictureFrame),
 	/// Represents a "POPM" frame
@@ -197,7 +197,7 @@ impl TryFrom<ItemValue> for FrameValue {
 			})),
 			ItemValue::Locator(locator) => {
 				if TextEncoding::verify_latin1(&locator) {
-					Ok(FrameValue::URL(UrlLinkFrame(locator)))
+					Ok(FrameValue::Url(UrlLinkFrame(locator)))
 				} else {
 					Err(LoftyError::new(ErrorKind::TextDecode(
 						"ID3v2 URL frames must be Latin-1",
@@ -217,7 +217,7 @@ impl From<CommentFrame> for FrameValue {
 
 impl From<UnsynchronizedTextFrame> for FrameValue {
 	fn from(value: UnsynchronizedTextFrame) -> Self {
-		Self::UnSyncText(value)
+		Self::UnsynchronizedText(value)
 	}
 }
 
@@ -235,13 +235,13 @@ impl From<ExtendedTextFrame> for FrameValue {
 
 impl From<UrlLinkFrame> for FrameValue {
 	fn from(value: UrlLinkFrame) -> Self {
-		Self::URL(value)
+		Self::Url(value)
 	}
 }
 
 impl From<ExtendedUrlFrame> for FrameValue {
 	fn from(value: ExtendedUrlFrame) -> Self {
-		Self::UserURL(value)
+		Self::UserUrl(value)
 	}
 }
 
@@ -267,11 +267,11 @@ impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
 			FrameValue::Comment(comment) => comment.as_bytes()?,
-			FrameValue::UnSyncText(lf) => lf.as_bytes()?,
+			FrameValue::UnsynchronizedText(lf) => lf.as_bytes()?,
 			FrameValue::Text(tif) => tif.as_bytes(),
 			FrameValue::UserText(content) => content.as_bytes(),
-			FrameValue::UserURL(content) => content.as_bytes(),
-			FrameValue::URL(link) => link.as_bytes(),
+			FrameValue::UserUrl(content) => content.as_bytes(),
+			FrameValue::Url(link) => link.as_bytes(),
 			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(ID3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
@@ -338,7 +338,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						})
 					},
 					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
-						FrameValue::UnSyncText(UnsynchronizedTextFrame {
+						FrameValue::UnsynchronizedText(UnsynchronizedTextFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
 							description: EMPTY_CONTENT_DESCRIPTOR,
@@ -348,7 +348,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
 						if s == "WXXX" =>
 					{
-						FrameValue::UserURL(ExtendedUrlFrame {
+						FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
@@ -387,7 +387,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(ExtendedUrlFrame {
+						value = FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator,
@@ -462,7 +462,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						content: text.clone(),
 					}),
 					("USLT", ItemValue::Text(text)) => {
-						FrameValue::UnSyncText(UnsynchronizedTextFrame {
+						FrameValue::UnsynchronizedText(UnsynchronizedTextFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
 							description: EMPTY_CONTENT_DESCRIPTOR,
@@ -470,14 +470,14 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						})
 					},
 					("WXXX", ItemValue::Locator(text) | ItemValue::Text(text)) => {
-						FrameValue::UserURL(ExtendedUrlFrame {
+						FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
 						})
 					},
 					(locator_id, ItemValue::Locator(text)) if locator_id.len() > 4 => {
-						FrameValue::UserURL(ExtendedUrlFrame {
+						FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text.clone(),
@@ -519,7 +519,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 					},
 					ItemValue::Locator(locator) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
-						value = FrameValue::UserURL(ExtendedUrlFrame {
+						value = FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator.clone(),
@@ -549,7 +549,7 @@ impl<'a> TryInto<FrameValue> for &'a ItemValue {
 			})),
 			ItemValue::Locator(locator) => {
 				if TextEncoding::verify_latin1(locator) {
-					Ok(FrameValue::URL(UrlLinkFrame(locator.clone())))
+					Ok(FrameValue::Url(UrlLinkFrame(locator.clone())))
 				} else {
 					Err(LoftyError::new(ErrorKind::TextDecode(
 						"ID3v2 URL frames must be Latin-1",
