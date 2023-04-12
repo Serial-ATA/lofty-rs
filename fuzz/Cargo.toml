@@ -79,10 +79,6 @@ name = "picture_from_reader"
 path = "fuzz_targets/picture_from_reader.rs"
 
 [[bin]]
-name = "picture_from_apic_bytes"
-path = "fuzz_targets/picture_from_apic_bytes.rs"
-
-[[bin]]
 name = "picture_from_flac_bytes"
 path = "fuzz_targets/picture_from_flac_bytes.rs"
 
