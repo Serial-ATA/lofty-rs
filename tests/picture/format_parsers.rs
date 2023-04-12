@@ -1,4 +1,4 @@
-use lofty::id3::v2::ID3v2Version;
+use lofty::id3::v2::{AttachedPictureFrame, ID3v2Version};
 use lofty::{Picture, PictureInformation, PictureType, TextEncoding};
 
 use std::fs::File;
@@ -28,9 +28,9 @@ fn create_original_picture() -> Picture {
 fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
-	let (pic, _) = Picture::from_apic_bytes(&buf, ID3v2Version::V4).unwrap();
+	let apic = AttachedPictureFrame::parse(&buf, ID3v2Version::V4).unwrap();
 
-	assert_eq!(create_original_picture(), pic);
+	assert_eq!(create_original_picture(), apic.picture);
 }
 
 #[test]
@@ -38,10 +38,12 @@ fn as_apic_bytes() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
 	let original_picture = create_original_picture();
+	let apic = AttachedPictureFrame {
+		encoding: TextEncoding::Latin1,
+		picture: original_picture,
+	};
 
-	let original_as_apic = original_picture
-		.as_apic_bytes(ID3v2Version::V4, TextEncoding::Latin1)
-		.unwrap();
+	let original_as_apic = apic.as_bytes(ID3v2Version::V4).unwrap();
 
 	assert_eq!(buf, original_as_apic);
 }
@@ -50,9 +52,9 @@ fn as_apic_bytes() {
 fn id3v22_pic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
-	let (pic, _) = Picture::from_apic_bytes(&buf, ID3v2Version::V2).unwrap();
+	let pic = AttachedPictureFrame::parse(&buf, ID3v2Version::V2).unwrap();
 
-	assert_eq!(create_original_picture(), pic);
+	assert_eq!(create_original_picture(), pic.picture);
 }
 
 #[test]
@@ -60,10 +62,12 @@ fn as_apic_bytes_v2() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
 	let original_picture = create_original_picture();
+	let pic = AttachedPictureFrame {
+		encoding: TextEncoding::Latin1,
+		picture: original_picture,
+	};
 
-	let original_as_pic = original_picture
-		.as_apic_bytes(ID3v2Version::V2, TextEncoding::Latin1)
-		.unwrap();
+	let original_as_pic = pic.as_bytes(ID3v2Version::V2).unwrap();
 
 	assert_eq!(buf, original_as_pic);
 }
