@@ -1291,7 +1291,7 @@ mod tests {
 		assert_eq!(
 			res.unwrap_err().to_string(),
 			String::from(
-				"ID3v2: Attempted to write an invalid frame. ID: \"ABCD\", Value: \"URL\""
+				"ID3v2: Attempted to write an invalid frame. ID: \"ABCD\", Value: \"Url\""
 			)
 		);
 	}
