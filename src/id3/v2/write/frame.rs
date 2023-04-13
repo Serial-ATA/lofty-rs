@@ -1,6 +1,6 @@
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
-use crate::id3::v2::util::synch_u32;
+use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
 use std::io::Write;
 
@@ -99,7 +99,7 @@ where
 	if let Some(len) = flags.data_length_indicator {
 		if len > 0 {
 			write_frame_header(writer, name, (value.len() + 1) as u32, flags)?;
-			writer.write_u32::<BigEndian>(synch_u32(len)?)?;
+			writer.write_u32::<BigEndian>(len.synch()?)?;
 			writer.write_u8(method_symbol)?;
 			writer.write_all(value)?;
 
@@ -115,7 +115,7 @@ where
 	W: Write,
 {
 	writer.write_all(name.as_bytes())?;
-	writer.write_u32::<BigEndian>(synch_u32(len)?)?;
+	writer.write_u32::<BigEndian>(len.synch()?)?;
 	writer.write_u16::<BigEndian>(get_flags(flags))?;
 
 	Ok(())

@@ -7,7 +7,7 @@ use crate::file::FileType;
 use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::tag::Id3v2TagRef;
-use crate::id3::v2::util::synch_u32;
+use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::ID3v2Tag;
 use crate::macros::err;
 use crate::probe::Probe;
@@ -117,7 +117,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 
 	// Go back to the start and write the final size
 	id3v2.seek(SeekFrom::Start(6))?;
-	id3v2.write_u32::<BigEndian>(synch_u32(extended_header_len + len as u32)?)?;
+	id3v2.write_u32::<BigEndian>((extended_header_len + len as u32).synch()?)?;
 
 	if needs_crc {
 		// The CRC is calculated on all the data between the header and footer
@@ -217,7 +217,7 @@ fn create_tag_header(flags: ID3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
 		header.seek(SeekFrom::Start(10))?;
 
 		// Seek back and write the actual values
-		header.write_u32::<BigEndian>(synch_u32(extended_header_size)?)?;
+		header.write_u32::<BigEndian>(extended_header_size.synch()?)?;
 		header.write_u8(1)?;
 		header.write_u8(ext_flags)?;
 

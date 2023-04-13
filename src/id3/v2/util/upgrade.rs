@@ -1,3 +1,5 @@
+//! Utilities for upgrading old ID3v2 frame IDs
+
 use std::collections::HashMap;
 
 macro_rules! gen_upgrades {

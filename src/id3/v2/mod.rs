@@ -18,7 +18,7 @@ pub(crate) mod write;
 
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
 use crate::macros::err;
-use util::unsynch_u32;
+use util::synchsafe::SynchsafeInteger;
 
 use std::io::Read;
 
@@ -106,14 +106,14 @@ where
 		restrictions: None, // Retrieved later if applicable
 	};
 
-	let size = unsynch_u32(BigEndian::read_u32(&header[6..]));
+	let size = BigEndian::read_u32(&header[6..]).unsynch();
 	let mut extended_size = 0;
 
 	let extended_header =
 		(version == ID3v2Version::V4 || version == ID3v2Version::V3) && flags & 0x40 == 0x40;
 
 	if extended_header {
-		extended_size = unsynch_u32(bytes.read_u32::<BigEndian>()?);
+		extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
 
 		if extended_size < 6 {
 			return Err(ID3v2Error::new(ID3v2ErrorKind::BadExtendedHeaderSize).into());
