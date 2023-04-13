@@ -15,7 +15,7 @@ where
 
 	// Unsynchronize the entire tag
 	if header.flags.unsynchronisation {
-		tag_bytes = super::util::unsynch_content(&tag_bytes)?;
+		tag_bytes = super::util::synchsafe::unsynch_content(&tag_bytes)?;
 	}
 
 	let mut tag = ID3v2Tag::default();

@@ -28,7 +28,7 @@ impl<'a> Frame<'a> {
 		reader.read_exact(&mut content)?;
 
 		if flags.unsynchronisation {
-			content = crate::id3::v2::util::unsynch_content(content.as_slice())?;
+			content = crate::id3::v2::util::synchsafe::unsynch_content(content.as_slice())?;
 		}
 
 		#[cfg(feature = "id3v2_compression_support")]

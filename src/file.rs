@@ -913,7 +913,7 @@ impl FileType {
 
 	// TODO: APE tags in the beginning of the file
 	pub(crate) fn from_buffer_inner(buf: &[u8]) -> (Option<Self>, Option<u32>) {
-		use crate::id3::v2::util::unsynch_u32;
+		use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
 		// Start out with an empty return: (File type, id3 size)
 		// Only one can be set
@@ -931,7 +931,7 @@ impl FileType {
 				// This is infallible, but preferable to an unwrap
 				if let Ok(arr) = buf[6..10].try_into() {
 					// Set the ID3v2 size
-					ret.1 = Some(unsynch_u32(u32::from_be_bytes(arr)));
+					ret.1 = Some(u32::from_be_bytes(arr).unsynch());
 				}
 			},
 			// We aren't able to determine a format

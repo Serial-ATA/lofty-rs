@@ -1,5 +1,6 @@
 use super::FrameFlags;
 use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameID;
 
@@ -88,7 +89,7 @@ where
 
 	// unsynch the frame size if necessary
 	if synchsafe {
-		size = crate::id3::v2::util::unsynch_u32(size);
+		size = size.unsynch();
 	}
 
 	let flags = u16::from_be_bytes([frame_header[8], frame_header[9]]);
