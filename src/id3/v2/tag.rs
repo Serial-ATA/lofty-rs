@@ -17,7 +17,7 @@ use crate::util::text::{decode_text, TextEncoding};
 use std::borrow::Cow;
 use std::convert::TryInto;
 use std::fmt::Display;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
 use std::path::Path;
@@ -572,10 +572,6 @@ impl TagExt for ID3v2Tag {
 
 	fn is_empty(&self) -> bool {
 		self.frames.is_empty()
-	}
-
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Writes the tag to a file

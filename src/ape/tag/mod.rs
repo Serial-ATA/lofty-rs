@@ -10,7 +10,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
 use std::path::Path;
@@ -287,16 +287,6 @@ impl TagExt for ApeTag {
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty()
-	}
-
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`ApeTag::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Write an `APE` tag to a file

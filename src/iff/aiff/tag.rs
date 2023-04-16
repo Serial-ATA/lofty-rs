@@ -7,7 +7,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
@@ -184,16 +184,6 @@ impl TagExt for AIFFTextChunks {
 				comments: None
 			}
 		)
-	}
-
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`AIFFTextChunks::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {

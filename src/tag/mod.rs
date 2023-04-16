@@ -537,17 +537,6 @@ impl TagExt for Tag {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Save the `Tag` to a path
-	///
-	/// # Errors
-	///
-	/// * Path doesn't exist
-	/// * Path is not writable
-	/// * See [`Tag::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
-	}
-
 	/// Save the `Tag` to a [`File`](std::fs::File)
 	///
 	/// # Errors

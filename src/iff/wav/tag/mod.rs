@@ -7,7 +7,7 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
@@ -197,10 +197,6 @@ impl TagExt for RIFFInfoList {
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty()
-	}
-
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {

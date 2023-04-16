@@ -10,7 +10,7 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
 use std::path::Path;
@@ -337,16 +337,6 @@ impl TagExt for VorbisComments {
 
 	fn is_empty(&self) -> bool {
 		self.items.is_empty() && self.pictures.is_empty()
-	}
-
-	/// Writes the tag to a path
-	///
-	/// # Errors
-	///
-	/// * `path` does not exist
-	/// * See [`VorbisComments::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	/// Writes the tag to a file

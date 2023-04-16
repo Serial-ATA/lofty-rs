@@ -132,7 +132,7 @@ use std::path::Path;
 /// This can be implemented downstream to provide a familiar interface for custom tags.
 pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// The associated error which can be returned from IO operations
-	type Err;
+	type Err: From<std::io::Error>;
 	/// The type of key used in the tag for non-mutating functions
 	type RefKey<'a>
 	where
@@ -195,7 +195,14 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// * Path doesn't exist
 	/// * Path is not writable
 	/// * See [`TagExt::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
+	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.save_to(
+			&mut std::fs::OpenOptions::new()
+				.read(true)
+				.write(true)
+				.open(path)?,
+		)
+	}
 
 	/// Save the tag to a [`File`]
 	///

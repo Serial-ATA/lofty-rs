@@ -5,7 +5,7 @@ use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
@@ -223,10 +223,6 @@ impl TagExt for ID3v1Tag {
 			&& self.comment.is_none()
 			&& self.track_number.is_none()
 			&& self.genre.is_none()
-	}
-
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
 	}
 
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
