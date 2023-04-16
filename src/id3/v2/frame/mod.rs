@@ -177,8 +177,8 @@ pub enum FrameValue {
 	///
 	/// NOTES:
 	///
-	/// * This is used for "GEOB" and "SYLT" frames, see
-	/// [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse) and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse) respectively
+	/// * This is used for rare frames, such as GEOB, SYLT, and ATXT to skip additional unnecessary work.
+	///   See [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse), [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse), and [`AudioTextFrame::parse`](crate::id3::v2::AudioTextFrame::parse) respectively
 	/// * This is used for **all** frames with an ID of [`FrameID::Outdated`]
 	/// * This is used for unknown frames
 	Binary(Vec<u8>),

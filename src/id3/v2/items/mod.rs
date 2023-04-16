@@ -1,4 +1,5 @@
 mod attached_picture_frame;
+mod audio_text_frame;
 mod encapsulated_object;
 mod extended_text_frame;
 mod extended_url_frame;
@@ -10,6 +11,7 @@ mod text_information_frame;
 mod url_link_frame;
 
 pub use attached_picture_frame::AttachedPictureFrame;
+pub use audio_text_frame::{scramble, AudioTextFrame, AudioTextFrameFlags};
 pub use encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
 pub use extended_text_frame::ExtendedTextFrame;
 pub use extended_url_frame::ExtendedUrlFrame;
