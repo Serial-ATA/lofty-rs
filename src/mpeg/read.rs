@@ -1,5 +1,5 @@
 use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
-use super::{MPEGFile, MPEGProperties};
+use super::{MpegFile, MpegProperties};
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
 use crate::ape::tag::read::read_ape_tag;
@@ -15,11 +15,11 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MPEGFile>
+pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MpegFile>
 where
 	R: Read + Seek,
 {
-	let mut file = MPEGFile::default();
+	let mut file = MpegFile::default();
 
 	let mut first_frame_offset = 0;
 	let mut first_frame_header = None;
@@ -123,7 +123,7 @@ where
 	}
 
 	let last_frame_offset = reader.stream_position()?;
-	file.properties = MPEGProperties::default();
+	file.properties = MpegProperties::default();
 
 	if parse_options.read_properties {
 		let first_frame_header = match first_frame_header {

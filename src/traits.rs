@@ -247,13 +247,13 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 /// # Example
 ///
 /// ```no_run
-/// use lofty::mpeg::MPEGFile;
+/// use lofty::mpeg::MpegFile;
 /// use lofty::{AudioFile, ItemKey, MergeTag as _, SplitTag as _};
 ///
 /// // Read the tag from a file
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
 /// # let parse_options = lofty::ParseOptions::default();
-/// let mut mpeg_file = <MPEGFile as AudioFile>::read_from(&mut file, parse_options)?;
+/// let mut mpeg_file = <MpegFile as AudioFile>::read_from(&mut file, parse_options)?;
 /// let mut id3v2 = mpeg_file
 /// 	.id3v2_mut()
 /// 	.map(std::mem::take)

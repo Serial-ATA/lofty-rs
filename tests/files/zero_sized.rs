@@ -3,7 +3,7 @@ use lofty::flac::FlacFile;
 use lofty::iff::aiff::AiffFile;
 use lofty::iff::wav::WavFile;
 use lofty::mp4::Mp4File;
-use lofty::mpeg::MPEGFile;
+use lofty::mpeg::MpegFile;
 use lofty::{AudioFile, ParseOptions};
 
 fn read_file_with_properties<A: AudioFile>(path: &str) -> bool {
@@ -51,9 +51,9 @@ fn zero_audio_flac() {
 fn zero_audio_mp3() {
 	let path = "tests/files/assets/zero/zero.mp3";
 	// A zero-size MP3 will error, since we need MPEG frames to extract audio properties
-	assert!(!read_file_with_properties::<MPEGFile>(path));
+	assert!(!read_file_with_properties::<MpegFile>(path));
 
-	assert!(read_file_no_properties::<MPEGFile>(path))
+	assert!(read_file_no_properties::<MpegFile>(path))
 }
 
 #[test]

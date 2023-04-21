@@ -126,7 +126,7 @@ mod tests {
 	use crate::iff::aiff::AiffFile;
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
-	use crate::mpeg::{ChannelMode, Emphasis, Layer, MPEGFile, MPEGProperties, MpegVersion};
+	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
@@ -183,7 +183,7 @@ mod tests {
 		signature: 164_506_065_180_489_231_127_156_351_872_182_799_315,
 	};
 
-	const MP1_PROPERTIES: MPEGProperties = MPEGProperties {
+	const MP1_PROPERTIES: MpegProperties = MpegProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer1,
 		channel_mode: ChannelMode::Stereo,
@@ -198,7 +198,7 @@ mod tests {
 		emphasis: Emphasis::None,
 	};
 
-	const MP2_PROPERTIES: MPEGProperties = MPEGProperties {
+	const MP2_PROPERTIES: MpegProperties = MpegProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer2,
 		channel_mode: ChannelMode::Stereo,
@@ -213,7 +213,7 @@ mod tests {
 		emphasis: Emphasis::None,
 	};
 
-	const MP3_PROPERTIES: MPEGProperties = MPEGProperties {
+	const MP3_PROPERTIES: MpegProperties = MpegProperties {
 		version: MpegVersion::V1,
 		layer: Layer::Layer3,
 		channel_mode: ChannelMode::Stereo,
@@ -374,7 +374,7 @@ mod tests {
 	#[test]
 	fn mp1_properties() {
 		assert_eq!(
-			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp1"),
+			get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp1"),
 			MP1_PROPERTIES
 		)
 	}
@@ -382,7 +382,7 @@ mod tests {
 	#[test]
 	fn mp2_properties() {
 		assert_eq!(
-			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp2"),
+			get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp2"),
 			MP2_PROPERTIES
 		)
 	}
@@ -390,7 +390,7 @@ mod tests {
 	#[test]
 	fn mp3_properties() {
 		assert_eq!(
-			get_properties::<MPEGFile>("tests/files/assets/minimal/full_test.mp3"),
+			get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp3"),
 			MP3_PROPERTIES
 		)
 	}
