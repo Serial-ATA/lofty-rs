@@ -92,7 +92,7 @@ impl SynchronizedText {
 	///
 	/// # Errors
 	///
-	/// This function will return [`BadSyncText`][ID3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
+	/// This function will return [`BadSyncText`][Id3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
 	#[allow(clippy::missing_panics_doc)] // Infallible
 	pub fn parse(data: &[u8]) -> Result<Self> {
 		if data.len() < 7 {
