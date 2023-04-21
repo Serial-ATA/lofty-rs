@@ -136,7 +136,7 @@ pub trait TaggedFileExt {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert_eq!(tagged_file.primary_tag_type(), TagType::ID3v2);
+	/// assert_eq!(tagged_file.primary_tag_type(), TagType::Id3v2);
 	/// # Ok(()) }
 	/// ```
 	fn primary_tag_type(&self) -> TagType {
@@ -154,7 +154,7 @@ pub trait TaggedFileExt {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.supports_tag_type(TagType::ID3v2));
+	/// assert!(tagged_file.supports_tag_type(TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	fn supports_tag_type(&self, tag_type: TagType) -> bool {
@@ -174,10 +174,10 @@ pub trait TaggedFileExt {
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
-	/// let tag = tagged_file.tag(TagType::ID3v2);
+	/// let tag = tagged_file.tag(TagType::Id3v2);
 	///
 	/// assert!(tag.is_some());
-	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::Id3v2);
 	/// # Ok(()) }
 	/// ```
 	fn tag(&self, tag_type: TagType) -> Option<&Tag>;
@@ -195,10 +195,10 @@ pub trait TaggedFileExt {
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
 	/// // An ID3v2 tag
-	/// let tag = tagged_file.tag(TagType::ID3v2);
+	/// let tag = tagged_file.tag(TagType::Id3v2);
 	///
 	/// assert!(tag.is_some());
-	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::Id3v2);
 	///
 	/// // Alter the tag...
 	/// # Ok(()) }
@@ -223,7 +223,7 @@ pub trait TaggedFileExt {
 	/// let tag = tagged_file.primary_tag();
 	///
 	/// assert!(tag.is_some());
-	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::Id3v2);
 	/// # Ok(()) }
 	/// ```
 	fn primary_tag(&self) -> Option<&Tag> {
@@ -248,7 +248,7 @@ pub trait TaggedFileExt {
 	/// let tag = tagged_file.primary_tag_mut();
 	///
 	/// assert!(tag.is_some());
-	/// assert_eq!(tag.unwrap().tag_type(), TagType::ID3v2);
+	/// assert_eq!(tag.unwrap().tag_type(), TagType::Id3v2);
 	///
 	/// // Alter the tag...
 	/// # Ok(()) }
@@ -321,15 +321,15 @@ pub trait TaggedFileExt {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file without an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
-	/// # let _ = tagged_file.remove(TagType::ID3v2); // sneaky
+	/// # let _ = tagged_file.remove(TagType::Id3v2); // sneaky
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
 	///
 	/// // Insert the ID3v2 tag
-	/// let new_id3v2_tag = Tag::new(TagType::ID3v2);
+	/// let new_id3v2_tag = Tag::new(TagType::Id3v2);
 	/// tagged_file.insert_tag(new_id3v2_tag);
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	fn insert_tag(&mut self, tag: Tag) -> Option<Tag>;
@@ -346,12 +346,12 @@ pub trait TaggedFileExt {
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 	///
 	/// // Take the ID3v2 tag
-	/// let id3v2 = tagged_file.remove(TagType::ID3v2);
+	/// let id3v2 = tagged_file.remove(TagType::Id3v2);
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	fn remove(&mut self, tag_type: TagType) -> Option<Tag>;
@@ -416,12 +416,12 @@ impl TaggedFile {
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 	///
 	/// // Remap our MP3 file to WavPack, which doesn't support ID3v2
 	/// tagged_file.change_file_type(FileType::WavPack);
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::ID3v2));
+	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	pub fn change_file_type(&mut self, file_type: FileType) {
@@ -533,7 +533,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
 /// // We create an empty tag
-/// let tag = Tag::new(TagType::ID3v2);
+/// let tag = Tag::new(TagType::Id3v2);
 ///
 /// let mut tagged_file = lofty::read_from_path(path)?;
 ///
@@ -544,7 +544,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// // "foo.mp3", it would not have an ID3v2 tag. Lofty does not write empty tags, but this
 /// // change will not be reflected in `TaggedFile`.
 /// tagged_file.save_to_path("foo.mp3")?;
-/// assert!(tagged_file.contains_tag_type(TagType::ID3v2));
+/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
 ///
@@ -557,7 +557,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
 /// // We create an empty tag
-/// let tag = Tag::new(TagType::ID3v2);
+/// let tag = Tag::new(TagType::Id3v2);
 ///
 /// // We'll need to open our file for reading *and* writing
 /// let file = OpenOptions::new().read(true).write(true).open(path)?;
@@ -571,7 +571,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// // Now when saving, we no longer have to specify a path, and the tags in the `BoundTaggedFile`
 /// // reflect those in the actual file on disk.
 /// bound_tagged_file.save()?;
-/// assert!(!bound_tagged_file.contains_tag_type(TagType::ID3v2));
+/// assert!(!bound_tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
 pub struct BoundTaggedFile {
@@ -748,16 +748,16 @@ impl FileType {
 	/// use lofty::{FileType, TagType};
 	///
 	/// let file_type = FileType::Mpeg;
-	/// assert_eq!(file_type.primary_tag_type(), TagType::ID3v2);
+	/// assert_eq!(file_type.primary_tag_type(), TagType::Id3v2);
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::Aiff | FileType::Mpeg | FileType::Wav | FileType::Aac => TagType::ID3v2,
-			FileType::Ape | FileType::WavPack => TagType::APE,
+			FileType::Aiff | FileType::Mpeg | FileType::Wav | FileType::Aac => TagType::Id3v2,
+			FileType::Ape | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
-			FileType::Mp4 => TagType::MP4ilst,
+			FileType::Mp4 => TagType::Mp4Ilst,
 			FileType::Custom(c) => {
 				let resolver = crate::resolve::lookup_resolver(c);
 				resolver.primary_tag_type()
@@ -769,7 +769,7 @@ impl FileType {
 	///
 	/// NOTE: This is feature dependent, meaning if you do not have the
 	///       `id3v2` feature enabled, [`FileType::Mpeg`] will return `false` for
-	///        [`TagType::ID3v2`].
+	///        [`TagType::Id3v2`].
 	///
 	/// # Panics
 	///
@@ -781,27 +781,27 @@ impl FileType {
 	/// use lofty::{FileType, TagType};
 	///
 	/// let file_type = FileType::Mpeg;
-	/// assert!(file_type.supports_tag_type(TagType::ID3v2));
+	/// assert!(file_type.supports_tag_type(TagType::Id3v2));
 	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
 			FileType::Aiff | FileType::Ape | FileType::Mpeg | FileType::Wav | FileType::Aac
-				if tag_type == TagType::ID3v2 =>
+				if tag_type == TagType::Id3v2 =>
 			{
 				true
 			},
-			FileType::Aiff if tag_type == TagType::AIFFText => true,
+			FileType::Aiff if tag_type == TagType::AiffText => true,
 			FileType::Ape | FileType::Mpeg | FileType::WavPack | FileType::Aac
-				if tag_type == TagType::ID3v1 =>
+				if tag_type == TagType::Id3v1 =>
 			{
 				true
 			},
-			FileType::Ape | FileType::Mpeg | FileType::WavPack if tag_type == TagType::APE => true,
+			FileType::Ape | FileType::Mpeg | FileType::WavPack if tag_type == TagType::Ape => true,
 			FileType::Opus | FileType::Flac | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
 			},
-			FileType::Mp4 => tag_type == TagType::MP4ilst,
-			FileType::Wav => tag_type == TagType::RIFFInfo,
+			FileType::Mp4 => tag_type == TagType::Mp4Ilst,
+			FileType::Wav => tag_type == TagType::RiffInfo,
 			FileType::Custom(c) => {
 				let resolver = crate::resolve::lookup_resolver(c);
 				resolver.supported_tag_types().contains(&tag_type)

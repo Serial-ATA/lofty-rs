@@ -58,7 +58,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{Accessor, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::ID3v2);
+/// let tag = Tag::new(TagType::Id3v2);
 ///
 /// // There are multiple quick getter methods for common items
 ///
@@ -73,7 +73,7 @@ macro_rules! impl_accessor {
 /// ```rust
 /// use lofty::{ItemKey, Tag, TagType};
 ///
-/// let tag = Tag::new(TagType::ID3v2);
+/// let tag = Tag::new(TagType::Id3v2);
 ///
 /// // If the type of an item is known, there are getter methods
 /// // to prevent having to match against the value
@@ -91,7 +91,7 @@ macro_rules! impl_accessor {
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
 ///
-/// let tag = Tag::new(TagType::ID3v2);
+/// let tag = Tag::new(TagType::Id3v2);
 /// let id3v2_tag: ID3v2Tag = tag.into();
 /// ```
 #[derive(Clone)]
@@ -467,7 +467,7 @@ impl Tag {
 	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
 	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
 	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
-	/// let mut tag = Tag::new(TagType::ID3v2);
+	/// let mut tag = Tag::new(TagType::Id3v2);
 	///
 	/// // Add a front cover
 	/// tag.push_picture(front_cover);
@@ -507,7 +507,7 @@ impl Tag {
 	/// # use lofty::{PictureType, MimeType};
 	///
 	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
-	/// let mut tag = Tag::new(TagType::ID3v2);
+	/// let mut tag = Tag::new(TagType::Id3v2);
 	/// tag.push_picture(picture);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
@@ -610,19 +610,19 @@ impl MergeTag for SplitTagRemainder {
 #[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
-	APE,
+	Ape,
 	/// Represents an ID3v1 tag
-	ID3v1,
+	Id3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
-	ID3v2,
+	Id3v2,
 	/// Represents an MP4 ilst atom
-	MP4ilst,
+	Mp4Ilst,
 	/// Represents vorbis comments
 	VorbisComments,
 	/// Represents a RIFF INFO LIST
-	RIFFInfo,
+	RiffInfo,
 	/// Represents AIFF text chunks
-	AIFFText,
+	AiffText,
 }
 
 impl TagType {
@@ -652,7 +652,7 @@ impl TagType {
 		};
 
 		let special_exceptions =
-			(file_type == FileType::Ape || file_type == FileType::Flac) && *self == TagType::ID3v2;
+			(file_type == FileType::Ape || file_type == FileType::Flac) && *self == TagType::Id3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			err!(UnsupportedTag);
@@ -743,7 +743,7 @@ mod tests {
 
 	#[test]
 	fn should_preserve_empty_title() {
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 		tag.set_title(String::from("Foo title"));
 
 		assert_eq!(tag.title().as_deref(), Some("Foo title"));

@@ -43,7 +43,7 @@ pub use properties::FlacProperties;
 #[lofty(no_into_taggedfile_impl)]
 pub struct FlacFile {
 	/// An ID3v2 tag
-	#[lofty(tag_type = "ID3v2")]
+	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The vorbis comments contained in the file
 	#[lofty(tag_type = "VorbisComments")]

@@ -209,11 +209,11 @@ impl TagExt for AIFFTextChunks {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::AIFFText.remove_from_path(path)
+		TagType::AiffText.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::AIFFText.remove_from(file)
+		TagType::AiffText.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -242,7 +242,7 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<AIFFTextChunks> for Tag {
 	fn from(input: AIFFTextChunks) -> Self {
-		let mut tag = Self::new(TagType::AIFFText);
+		let mut tag = Self::new(TagType::AiffText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
 			if let Some(text) = field {
@@ -567,7 +567,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_aiff_text() {
-		let mut tag = Tag::new(TagType::AIFFText);
+		let mut tag = Tag::new(TagType::AiffText);
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
 		tag.insert_text(ItemKey::TrackArtist, String::from("Bar artist"));
 		tag.insert_text(ItemKey::CopyrightMessage, String::from("Baz copyright"));

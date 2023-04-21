@@ -375,7 +375,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 
 				frame_id = id;
 			},
-			Err(_) => match input.item_key.map_key(TagType::ID3v2, true) {
+			Err(_) => match input.item_key.map_key(TagType::Id3v2, true) {
 				Some(desc) => match input.item_value {
 					ItemValue::Text(text) => {
 						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
@@ -504,7 +504,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				frame_id = id;
 			},
 			Err(_) => {
-				let Some(desc) = tag_item.key().map_key(TagType::ID3v2, true) else {
+				let Some(desc) = tag_item.key().map_key(TagType::Id3v2, true) else {
 					return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
 				};
 

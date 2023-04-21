@@ -19,13 +19,13 @@ use lofty_attr::LoftyFile;
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct MPEGFile {
 	/// An ID3v2 tag
-	#[lofty(tag_type = "ID3v2")]
+	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// An ID3v1 tag
-	#[lofty(tag_type = "ID3v1")]
+	#[lofty(tag_type = "Id3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,
 	/// An APEv1/v2 tag
-	#[lofty(tag_type = "APE")]
+	#[lofty(tag_type = "Ape")]
 	pub(crate) ape_tag: Option<ApeTag>,
 	/// The file's audio properties
 	pub(crate) properties: MPEGProperties,

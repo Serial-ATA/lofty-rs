@@ -39,18 +39,18 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 #[allow(unreachable_patterns)]
 pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
-		TagType::APE => ApeTagRef {
+		TagType::Ape => ApeTagRef {
 			read_only: false,
 			items: ape::tag::tagitems_into_ape(tag.items()),
 		}
 		.dump_to(writer),
-		TagType::ID3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
-		TagType::ID3v2 => Id3v2TagRef {
+		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
+		TagType::Id3v2 => Id3v2TagRef {
 			flags: ID3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}
 		.dump_to(writer),
-		TagType::MP4ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
+		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
@@ -61,11 +61,11 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 			}
 			.dump_to(writer)
 		},
-		TagType::RIFFInfo => RIFFInfoListRef {
+		TagType::RiffInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
 		.dump_to(writer),
-		TagType::AIFFText => {
+		TagType::AiffText => {
 			use crate::tag::item::ItemKey;
 
 			AiffTextChunksRef {

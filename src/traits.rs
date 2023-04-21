@@ -59,9 +59,8 @@ macro_rules! accessor_trait {
 			/// ```rust
 			/// use lofty::{Tag, Accessor};
 			///
-			/// # let tag_type = lofty::TagType::ID3v2;
-			/// let mut tag = Tag::new(tag_type);
-			///
+			/// # let tag_type = lofty::TagType::Id3v2;
+			/// let mut tag = Tag::new(tag_type);            ///
 			#[doc = "assert_eq!(tag." $name $(_ $other)* "(), None);"]
 			/// ```
 			fn [<
@@ -146,7 +145,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// ```rust
 	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
-	/// # let tag_type = lofty::TagType::ID3v2;
+	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
 	/// assert_eq!(tag.len(), 0);
@@ -162,7 +161,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// ```rust
 	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
-	/// # let tag_type = lofty::TagType::ID3v2;
+	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
 	/// assert!(tag.is_empty());
@@ -178,7 +177,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// ```rust
 	/// use lofty::{Accessor, Tag, TagExt};
-	/// # let tag_type = lofty::TagType::ID3v2;
+	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
 	/// assert!(tag.is_empty());

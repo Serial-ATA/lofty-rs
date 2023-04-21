@@ -19,10 +19,10 @@ pub use tag::{AIFFTextChunks, Comment};
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct AiffFile {
 	/// Any text chunks included in the file
-	#[lofty(tag_type = "AIFFText")]
+	#[lofty(tag_type = "AiffText")]
 	pub(crate) text_chunks_tag: Option<AIFFTextChunks>,
 	/// An ID3v2 tag
-	#[lofty(tag_type = "ID3v2")]
+	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: FileProperties,
