@@ -57,7 +57,7 @@ pub struct Comment {
 ///
 /// When converting [Comment]s, only the `text` field will be preserved.
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-#[tag(description = "`AIFF` text chunks", supported_formats(AIFF))]
+#[tag(description = "`AIFF` text chunks", supported_formats(Aiff))]
 pub struct AIFFTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,

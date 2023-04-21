@@ -288,7 +288,7 @@ impl XingHeader {
 		match &header {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
-					decode_err!(@BAIL MPEG, "Xing header has an invalid size (< 16)");
+					decode_err!(@BAIL Mpeg, "Xing header has an invalid size (< 16)");
 				}
 
 				let mut flags = [0; 4];
@@ -308,7 +308,7 @@ impl XingHeader {
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
-					decode_err!(@BAIL MPEG, "VBRI header has an invalid size (< 32)");
+					decode_err!(@BAIL Mpeg, "VBRI header has an invalid size (< 32)");
 				}
 
 				// Skip 6 bytes

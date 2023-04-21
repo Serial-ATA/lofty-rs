@@ -123,7 +123,7 @@ impl TryFrom<u8> for AudioObjectType {
 			44 => Ok(Self::LowDelayMpegSurround),
 			45 => Ok(Self::SpatialAudioObjectCodingDialogueEnhancement),
 			46 => Ok(Self::AudioSync),
-			_ => decode_err!(@BAIL MP4, "Encountered an invalid audio object type"),
+			_ => decode_err!(@BAIL Mp4, "Encountered an invalid audio object type"),
 		}
 	}
 }
@@ -261,7 +261,7 @@ where
 	}
 
 	if !audio_track {
-		decode_err!(@BAIL MP4, "File contains no audio tracks");
+		decode_err!(@BAIL Mp4, "File contains no audio tracks");
 	}
 
 	let mdhd = match mdhd {
@@ -640,7 +640,7 @@ where
 		skip_unneeded(reader, atom.extended, atom.len)?;
 	}
 
-	decode_err!(@BAIL MP4, "Failed to find \"mdat\" atom");
+	decode_err!(@BAIL Mp4, "Failed to find \"mdat\" atom");
 }
 
 struct Descriptor {

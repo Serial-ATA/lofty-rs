@@ -39,10 +39,10 @@ where
 		}
 
 		let key = String::from_utf8(key)
-			.map_err(|_| decode_err!(APE, "APE tag item contains a non UTF-8 key"))?;
+			.map_err(|_| decode_err!(Ape, "APE tag item contains a non UTF-8 key"))?;
 
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			decode_err!(@BAIL APE, "APE tag item contains an illegal key");
+			decode_err!(@BAIL Ape, "APE tag item contains an illegal key");
 		}
 
 		let read_only = (flags & 1) == 1;
@@ -58,13 +58,13 @@ where
 
 		let parsed_value = match item_type {
 			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
-				decode_err!(APE, "Failed to convert text item into a UTF-8 string")
+				decode_err!(Ape, "Failed to convert text item into a UTF-8 string")
 			})?),
 			1 => ItemValue::Binary(value),
 			2 => ItemValue::Locator(String::from_utf8(value).map_err(|_| {
-				decode_err!(APE, "Failed to convert locator item into a UTF-8 string")
+				decode_err!(Ape, "Failed to convert locator item into a UTF-8 string")
 			})?),
-			_ => decode_err!(@BAIL APE, "APE tag item contains an invalid item type"),
+			_ => decode_err!(@BAIL Ape, "APE tag item contains an invalid item type"),
 		};
 
 		let mut item = ApeItem::new(key, parsed_value)?;

@@ -10,10 +10,10 @@ pub(crate) fn opt_internal_file_type(
 	struct_name: String,
 ) -> Option<(proc_macro2::TokenStream, bool)> {
 	const LOFTY_FILE_TYPES: [&str; 11] = [
-		"AAC", "AIFF", "APE", "FLAC", "MPEG", "MP4", "Opus", "Vorbis", "Speex", "WAV", "WavPack",
+		"Aac", "Aiff", "Ape", "Flac", "Mpeg", "Mp4", "Opus", "Vorbis", "Speex", "Wav", "WavPack",
 	];
 
-	const ID3V2_STRIPPABLE: [&str; 2] = ["FLAC", "APE"];
+	const ID3V2_STRIPPABLE: [&str; 2] = ["Flac", "Ape"];
 
 	let stripped = struct_name.strip_suffix("File");
 	if let Some(prefix) = stripped {

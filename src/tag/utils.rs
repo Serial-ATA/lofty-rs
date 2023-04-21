@@ -19,18 +19,18 @@ use std::io::Write;
 #[allow(unreachable_patterns)]
 pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
 	match file_type {
-		FileType::AAC => aac::write::write_to(file, tag),
-		FileType::AIFF => iff::aiff::write::write_to(file, tag),
-		FileType::APE => ape::write::write_to(file, tag),
-		FileType::FLAC => flac::write::write_to(file, tag),
+		FileType::Aac => aac::write::write_to(file, tag),
+		FileType::Aiff => iff::aiff::write::write_to(file, tag),
+		FileType::Ape => ape::write::write_to(file, tag),
+		FileType::Flac => flac::write::write_to(file, tag),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type)
 		},
-		FileType::MPEG => mpeg::write::write_to(file, tag),
-		FileType::MP4 => {
+		FileType::Mpeg => mpeg::write::write_to(file, tag),
+		FileType::Mp4 => {
 			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
 		},
-		FileType::WAV => iff::wav::write::write_to(file, tag),
+		FileType::Wav => iff::wav::write::write_to(file, tag),
 		FileType::WavPack => wavpack::write::write_to(file, tag),
 		_ => err!(UnsupportedTag),
 	}

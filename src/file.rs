@@ -99,7 +99,7 @@ pub trait TaggedFileExt {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	/// assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 	/// # Ok(()) }
 	/// ```
 	fn file_type(&self) -> FileType;
@@ -714,16 +714,16 @@ impl AudioFile for BoundTaggedFile {
 #[allow(missing_docs)]
 #[non_exhaustive]
 pub enum FileType {
-	AAC,
-	AIFF,
-	APE,
-	FLAC,
-	MPEG,
-	MP4,
+	Aac,
+	Aiff,
+	Ape,
+	Flac,
+	Mpeg,
+	Mp4,
 	Opus,
 	Vorbis,
 	Speex,
-	WAV,
+	Wav,
 	WavPack,
 	Custom(&'static str),
 }
@@ -747,17 +747,17 @@ impl FileType {
 	/// ```rust
 	/// use lofty::{FileType, TagType};
 	///
-	/// let file_type = FileType::MPEG;
+	/// let file_type = FileType::Mpeg;
 	/// assert_eq!(file_type.primary_tag_type(), TagType::ID3v2);
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::AIFF | FileType::MPEG | FileType::WAV | FileType::AAC => TagType::ID3v2,
-			FileType::APE | FileType::WavPack => TagType::APE,
-			FileType::FLAC | FileType::Opus | FileType::Vorbis | FileType::Speex => {
+			FileType::Aiff | FileType::Mpeg | FileType::Wav | FileType::Aac => TagType::ID3v2,
+			FileType::Ape | FileType::WavPack => TagType::APE,
+			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
-			FileType::MP4 => TagType::MP4ilst,
+			FileType::Mp4 => TagType::MP4ilst,
 			FileType::Custom(c) => {
 				let resolver = crate::resolve::lookup_resolver(c);
 				resolver.primary_tag_type()
@@ -768,7 +768,7 @@ impl FileType {
 	/// Returns if the target `FileType` supports a [`TagType`]
 	///
 	/// NOTE: This is feature dependent, meaning if you do not have the
-	///       `id3v2` feature enabled, [`FileType::MPEG`] will return `false` for
+	///       `id3v2` feature enabled, [`FileType::Mpeg`] will return `false` for
 	///        [`TagType::ID3v2`].
 	///
 	/// # Panics
@@ -780,28 +780,28 @@ impl FileType {
 	/// ```rust
 	/// use lofty::{FileType, TagType};
 	///
-	/// let file_type = FileType::MPEG;
+	/// let file_type = FileType::Mpeg;
 	/// assert!(file_type.supports_tag_type(TagType::ID3v2));
 	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		match self {
-			FileType::AIFF | FileType::APE | FileType::MPEG | FileType::WAV | FileType::AAC
+			FileType::Aiff | FileType::Ape | FileType::Mpeg | FileType::Wav | FileType::Aac
 				if tag_type == TagType::ID3v2 =>
 			{
 				true
 			},
-			FileType::AIFF if tag_type == TagType::AIFFText => true,
-			FileType::APE | FileType::MPEG | FileType::WavPack | FileType::AAC
+			FileType::Aiff if tag_type == TagType::AIFFText => true,
+			FileType::Ape | FileType::Mpeg | FileType::WavPack | FileType::Aac
 				if tag_type == TagType::ID3v1 =>
 			{
 				true
 			},
-			FileType::APE | FileType::MPEG | FileType::WavPack if tag_type == TagType::APE => true,
-			FileType::Opus | FileType::FLAC | FileType::Vorbis | FileType::Speex => {
+			FileType::Ape | FileType::Mpeg | FileType::WavPack if tag_type == TagType::APE => true,
+			FileType::Opus | FileType::Flac | FileType::Vorbis | FileType::Speex => {
 				tag_type == TagType::VorbisComments
 			},
-			FileType::MP4 => tag_type == TagType::MP4ilst,
-			FileType::WAV => tag_type == TagType::RIFFInfo,
+			FileType::Mp4 => tag_type == TagType::MP4ilst,
+			FileType::Wav => tag_type == TagType::RIFFInfo,
 			FileType::Custom(c) => {
 				let resolver = crate::resolve::lookup_resolver(c);
 				resolver.supported_tag_types().contains(&tag_type)
@@ -818,7 +818,7 @@ impl FileType {
 	/// use lofty::FileType;
 	///
 	/// let extension = "mp3";
-	/// assert_eq!(FileType::from_ext(extension), Some(FileType::MPEG));
+	/// assert_eq!(FileType::from_ext(extension), Some(FileType::Mpeg));
 	/// ```
 	pub fn from_ext<E>(ext: E) -> Option<Self>
 	where
@@ -827,16 +827,16 @@ impl FileType {
 		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
 
 		match ext.as_str() {
-			"aac" => Some(Self::AAC),
-			"ape" => Some(Self::APE),
-			"aiff" | "aif" | "afc" | "aifc" => Some(Self::AIFF),
-			"mp3" | "mp2" | "mp1" => Some(Self::MPEG),
-			"wav" | "wave" => Some(Self::WAV),
+			"aac" => Some(Self::Aac),
+			"ape" => Some(Self::Ape),
+			"aiff" | "aif" | "afc" | "aifc" => Some(Self::Aiff),
+			"mp3" | "mp2" | "mp1" => Some(Self::Mpeg),
+			"wav" | "wave" => Some(Self::Wav),
 			"wv" => Some(Self::WavPack),
 			"opus" => Some(Self::Opus),
-			"flac" => Some(Self::FLAC),
+			"flac" => Some(Self::Flac),
 			"ogg" => Some(Self::Vorbis),
-			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::MP4),
+			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::Mp4),
 			"spx" => Some(Self::Speex),
 			e => {
 				if let Some((ty, _)) = CUSTOM_RESOLVERS
@@ -862,7 +862,7 @@ impl FileType {
 	/// use std::path::Path;
 	///
 	/// let path = Path::new("path/to/my.mp3");
-	/// assert_eq!(FileType::from_path(path), Some(FileType::MPEG));
+	/// assert_eq!(FileType::from_path(path), Some(FileType::Mpeg));
 	/// ```
 	pub fn from_path<P>(path: P) -> Option<Self>
 	where
@@ -946,7 +946,7 @@ impl FileType {
 
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
-			77 if buf.starts_with(b"MAC") => Some(Self::APE),
+			77 if buf.starts_with(b"MAC") => Some(Self::Ape),
 			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => {
 				// ADTS and MPEG frame headers are way too similar
 
@@ -976,16 +976,16 @@ impl FileType {
 				// we can assume we have an ADTS header. Awesome!
 
 				if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
-					return Some(Self::AAC);
+					return Some(Self::Aac);
 				}
 
-				Some(Self::MPEG)
+				Some(Self::Mpeg)
 			},
 			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {
 				let id = &buf[8..12];
 
 				if id == b"AIFF" || id == b"AIFC" {
-					return Some(Self::AIFF);
+					return Some(Self::Aiff);
 				}
 
 				None
@@ -1001,16 +1001,16 @@ impl FileType {
 
 				None
 			},
-			102 if buf.starts_with(b"fLaC") => Some(Self::FLAC),
+			102 if buf.starts_with(b"fLaC") => Some(Self::Flac),
 			82 if buf.len() >= 12 && &buf[..4] == b"RIFF" => {
 				if &buf[8..12] == b"WAVE" {
-					return Some(Self::WAV);
+					return Some(Self::Wav);
 				}
 
 				None
 			},
 			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
-			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::MP4),
+			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::Mp4),
 			_ => None,
 		}
 	}

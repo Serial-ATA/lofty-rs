@@ -24,7 +24,7 @@ where
 	if size < 32 {
 		// If the size is < 32, something went wrong during encoding
 		// The size includes the footer and all items
-		decode_err!(@BAIL APE, "APE tag has an invalid size (< 32)");
+		decode_err!(@BAIL Ape, "APE tag has an invalid size (< 32)");
 	}
 
 	let item_count = data.read_u32::<LittleEndian>()?;
@@ -46,7 +46,7 @@ where
 
 	#[allow(unstable_name_collisions)]
 	if u64::from(size) > data.stream_len()? {
-		decode_err!(@BAIL APE, "APE tag has an invalid size (> file size)");
+		decode_err!(@BAIL Ape, "APE tag has an invalid size (> file size)");
 	}
 
 	Ok(ApeHeader { size, item_count })

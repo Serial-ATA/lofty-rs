@@ -13,7 +13,7 @@ fn read() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::WAV);
+	assert_eq!(file.file_type(), FileType::Wav);
 
 	// Verify the ID3v2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -33,7 +33,7 @@ fn write() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::WAV);
+	assert_eq!(tagged_file.file_type(), FileType::Wav);
 
 	// ID3v2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
@@ -80,5 +80,5 @@ fn issue_174_divide_by_zero() {
 	.read()
 	.unwrap();
 
-	assert_eq!(file.file_type(), FileType::WAV);
+	assert_eq!(file.file_type(), FileType::Wav);
 }

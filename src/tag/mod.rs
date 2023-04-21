@@ -652,7 +652,7 @@ impl TagType {
 		};
 
 		let special_exceptions =
-			(file_type == FileType::APE || file_type == FileType::FLAC) && *self == TagType::ID3v2;
+			(file_type == FileType::Ape || file_type == FileType::Flac) && *self == TagType::ID3v2;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			err!(UnsupportedTag);

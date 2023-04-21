@@ -78,7 +78,7 @@ macro_rules! impl_accessor {
 ///
 /// An attempt will be made to create the `TrackNumber/TrackTotal` (trkn) and `DiscNumber/DiscTotal` (disk) pairs.
 #[derive(Default, PartialEq, Debug, Clone)]
-#[tag(description = "An MP4 ilst atom", supported_formats(MP4))]
+#[tag(description = "An MP4 ilst atom", supported_formats(Mp4))]
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom<'static>>,
 }

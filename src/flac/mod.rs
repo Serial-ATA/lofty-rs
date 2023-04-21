@@ -101,7 +101,7 @@ impl OggPictureStorage for FlacFile {
 impl From<FlacFile> for TaggedFile {
 	fn from(mut value: FlacFile) -> Self {
 		TaggedFile {
-			ty: FileType::FLAC,
+			ty: FileType::Flac,
 			properties: value.properties.into(),
 			tags: {
 				let mut tags = Vec::with_capacity(2);

@@ -64,13 +64,13 @@ where
 				let mut remaining = [0; 4];
 				data.read_exact(&mut remaining).map_err(|_| {
 					decode_err!(
-						APE,
+						Ape,
 						"Found partial APE tag, but there isn't enough data left in the reader"
 					)
 				})?;
 
 				if &remaining[..4] != b"AGEX" {
-					decode_err!(@BAIL APE, "Found incomplete APE tag");
+					decode_err!(@BAIL Ape, "Found incomplete APE tag");
 				}
 
 				let ape_header = read_ape_header(data, false)?;
@@ -80,7 +80,7 @@ where
 				ape_tag = Some(ape);
 			},
 			_ => {
-				decode_err!(@BAIL APE, "Invalid data found while reading header, expected any of [\"MAC \", \"APETAGEX\", \"ID3\"]")
+				decode_err!(@BAIL Ape, "Invalid data found while reading header, expected any of [\"MAC \", \"APETAGEX\", \"ID3\"]")
 			},
 		}
 	}

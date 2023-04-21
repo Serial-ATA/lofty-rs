@@ -116,7 +116,7 @@ pub(super) fn read_properties(
 	let channels = fmt.read_u16::<LittleEndian>()? as u8;
 
 	if channels == 0 {
-		decode_err!(@BAIL WAV, "File contains 0 channels");
+		decode_err!(@BAIL Wav, "File contains 0 channels");
 	}
 
 	let sample_rate = fmt.read_u32::<LittleEndian>()?;
@@ -136,7 +136,7 @@ pub(super) fn read_properties(
 	let channel_mask;
 	if format_tag == EXTENSIBLE {
 		if fmt.len() + 16 < 40 {
-			decode_err!(@BAIL WAV, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
+			decode_err!(@BAIL Wav, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
 		}
 
 		// cbSize (Size of extra format information) (2)
@@ -157,7 +157,7 @@ pub(super) fn read_properties(
 	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
 
 	if non_pcm && total_samples == 0 {
-		decode_err!(@BAIL WAV, "Non-PCM format identified, no \"fact\" chunk found");
+		decode_err!(@BAIL Wav, "Non-PCM format identified, no \"fact\" chunk found");
 	}
 
 	if bits_per_sample > 0 {
