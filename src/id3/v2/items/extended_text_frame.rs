@@ -11,7 +11,7 @@ use byteorder::ReadBytesExt;
 /// An extended `ID3v2` text frame
 ///
 /// This is used in the `TXXX` frame, where the frames
-/// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameID)s.
+/// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameId)s.
 /// This means for each `ExtendedTextFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]

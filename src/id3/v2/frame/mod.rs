@@ -13,7 +13,7 @@ use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::TextEncoding;
-use id::FrameID;
+use id::FrameId;
 
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
@@ -48,16 +48,16 @@ pub(super) const UNKNOWN_LANGUAGE: [u8; 3] = *b"XXX";
 /// ### ID3v2.2
 ///
 /// `ID3v2.2` frame IDs are 3 characters. When reading these tags, [`upgrade_v2`] is used, which has a list of all of the common IDs
-/// that have a mapping to `ID3v2.4`. Any ID that fails to be converted will be stored as [`FrameID::Outdated`], and it must be manually
+/// that have a mapping to `ID3v2.4`. Any ID that fails to be converted will be stored as [`FrameId::Outdated`], and it must be manually
 /// upgraded before it can be written. **Lofty** will not write `ID3v2.2` tags.
 ///
 /// ### ID3v2.3
 ///
 /// `ID3v2.3`, unlike `ID3v2.2`, stores frame IDs in 4 characters like `ID3v2.4`. There are some IDs that need upgrading (See [`upgrade_v3`]),
-/// but anything that fails to be upgraded **will not** be stored as [`FrameID::Outdated`], as it is likely not an issue to write.
+/// but anything that fails to be upgraded **will not** be stored as [`FrameId::Outdated`], as it is likely not an issue to write.
 #[derive(Clone, Debug, Eq)]
 pub struct Frame<'a> {
-	pub(super) id: FrameID<'a>,
+	pub(super) id: FrameId<'a>,
 	pub(super) value: FrameValue,
 	pub(super) flags: FrameFlags,
 }
@@ -112,15 +112,15 @@ impl<'a> Frame<'a> {
 				None => id,
 				Some(upgraded) => Cow::Borrowed(upgraded),
 			},
-			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
 		};
 
-		let id = FrameID::new_cow(id_upgraded)?;
+		let id = FrameId::new_cow(id_upgraded)?;
 
 		Ok(Self { id, value, flags })
 	}
 
-	/// Extract the string from the [`FrameID`]
+	/// Extract the string from the [`FrameId`]
 	pub fn id_str(&self) -> &str {
 		self.id.as_str()
 	}
@@ -143,7 +143,7 @@ impl<'a> Frame<'a> {
 	// Used internally, has no correctness checks
 	pub(crate) fn text(id: Cow<'a, str>, content: String) -> Self {
 		Self {
-			id: FrameID::Valid(id),
+			id: FrameId::Valid(id),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF8,
 				value: content,
@@ -179,7 +179,7 @@ pub enum FrameValue {
 	///
 	/// * This is used for rare frames, such as GEOB, SYLT, and ATXT to skip additional unnecessary work.
 	///   See [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse), [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse), and [`AudioTextFrame::parse`](crate::id3::v2::AudioTextFrame::parse) respectively
-	/// * This is used for **all** frames with an ID of [`FrameID::Outdated`]
+	/// * This is used for **all** frames with an ID of [`FrameId::Outdated`]
 	/// * This is used for unknown frames
 	Binary(Vec<u8>),
 	/// Unique file identifier
@@ -326,10 +326,10 @@ impl From<TagItem> for Option<Frame<'static>> {
 	fn from(input: TagItem) -> Self {
 		let frame_id;
 		let value;
-		match input.key().try_into().map(FrameID::into_owned) {
+		match input.key().try_into().map(FrameId::into_owned) {
 			Ok(id) => {
 				value = match (&id, input.item_value) {
-					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
+					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
 						FrameValue::Comment(CommentFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
@@ -337,7 +337,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 							content: text,
 						})
 					},
-					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
+					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
 						FrameValue::UnsynchronizedText(UnsynchronizedTextFrame {
 							encoding: TextEncoding::UTF8,
 							language: UNKNOWN_LANGUAGE,
@@ -345,7 +345,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 							content: text,
 						})
 					},
-					(FrameID::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
+					(FrameId::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
 						if s == "WXXX" =>
 					{
 						FrameValue::UserUrl(ExtendedUrlFrame {
@@ -354,14 +354,14 @@ impl From<TagItem> for Option<Frame<'static>> {
 							content: text,
 						})
 					},
-					(FrameID::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
+					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
 						FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: EMPTY_CONTENT_DESCRIPTOR,
 							content: text,
 						})
 					},
-					(FrameID::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
+					(FrameId::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
 						FrameValue::Popularimeter(Popularimeter::parse(&text).ok()?)
 					},
 					(_, item_value) => {
@@ -378,7 +378,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 			Err(_) => match input.item_key.map_key(TagType::Id3v2, true) {
 				Some(desc) => match input.item_value {
 					ItemValue::Text(text) => {
-						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
+						frame_id = FrameId::Valid(Cow::Borrowed("TXXX"));
 						value = FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
@@ -386,7 +386,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 						})
 					},
 					ItemValue::Locator(locator) => {
-						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
+						frame_id = FrameId::Valid(Cow::Borrowed("WXXX"));
 						value = FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
@@ -404,7 +404,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 							owner: MUSICBRAINZ_UFID_OWNER.to_owned(),
 							identifier: recording_id.into_bytes(),
 						};
-						frame_id = FrameID::Valid(Cow::Borrowed("UFID"));
+						frame_id = FrameId::Valid(Cow::Borrowed("UFID"));
 						value = FrameValue::UniqueFileIdentifier(frame);
 					},
 					_ => {
@@ -424,16 +424,16 @@ impl From<TagItem> for Option<Frame<'static>> {
 
 #[derive(Clone)]
 pub(crate) struct FrameRef<'a> {
-	pub id: FrameID<'a>,
+	pub id: FrameId<'a>,
 	pub value: Cow<'a, FrameValue>,
 	pub flags: FrameFlags,
 }
 
 impl<'a> Frame<'a> {
 	pub(crate) fn as_opt_ref(&'a self) -> Option<FrameRef<'a>> {
-		if let FrameID::Valid(id) = &self.id {
+		if let FrameId::Valid(id) = &self.id {
 			Some(FrameRef {
-				id: FrameID::Valid(Cow::Borrowed(id)),
+				id: FrameId::Valid(Cow::Borrowed(id)),
 				value: Cow::Borrowed(self.content()),
 				flags: self.flags,
 			})
@@ -447,8 +447,8 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 	type Error = LoftyError;
 
 	fn try_from(tag_item: &'a TagItem) -> std::result::Result<Self, Self::Error> {
-		let id: Result<FrameID<'a>> = tag_item.key().try_into();
-		let frame_id: FrameID<'a>;
+		let id: Result<FrameId<'a>> = tag_item.key().try_into();
+		let frame_id: FrameId<'a>;
 		let value: FrameValue;
 		match id {
 			Ok(id) => {
@@ -505,12 +505,12 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			},
 			Err(_) => {
 				let Some(desc) = tag_item.key().map_key(TagType::Id3v2, true) else {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into());
 				};
 
 				match tag_item.value() {
 					ItemValue::Text(text) => {
-						frame_id = FrameID::Valid(Cow::Borrowed("TXXX"));
+						frame_id = FrameId::Valid(Cow::Borrowed("TXXX"));
 						value = FrameValue::UserText(ExtendedTextFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
@@ -518,14 +518,14 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						})
 					},
 					ItemValue::Locator(locator) => {
-						frame_id = FrameID::Valid(Cow::Borrowed("WXXX"));
+						frame_id = FrameId::Valid(Cow::Borrowed("WXXX"));
 						value = FrameValue::UserUrl(ExtendedUrlFrame {
 							encoding: TextEncoding::UTF8,
 							description: String::from(desc),
 							content: locator.clone(),
 						})
 					},
-					_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+					_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
 				}
 			},
 		}

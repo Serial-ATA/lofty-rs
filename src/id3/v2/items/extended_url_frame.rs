@@ -10,7 +10,7 @@ use byteorder::ReadBytesExt;
 /// An extended `ID3v2` URL frame
 ///
 /// This is used in the `WXXX` frame, where the frames
-/// are told apart by descriptions, rather than their [`FrameID`](crate::id3::v2::FrameID)s.
+/// are told apart by descriptions, rather than their [`FrameId`](crate::id3::v2::FrameId)s.
 /// This means for each `ExtendedUrlFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]
