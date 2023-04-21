@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::ID3v2Version;
 use crate::util::text::{decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding};
@@ -83,7 +83,7 @@ impl ExtendedTextFrame {
 			} else {
 				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
 					Some(raw_text) => utf16_decode(&raw_text, endianness).map_err(|_| {
-						Into::<LoftyError>::into(ID3v2Error::new(ID3v2ErrorKind::BadSyncText))
+						Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
 					})?,
 					None => String::new(),
 				}

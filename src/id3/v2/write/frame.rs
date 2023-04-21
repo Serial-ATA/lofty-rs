@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
@@ -35,7 +35,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
-		(id, frame_value) => Err(ID3v2Error::new(ID3v2ErrorKind::BadFrame(
+		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
 			id.to_string(),
 			match frame_value {
 				FrameValue::Comment(_) => "Comment",
@@ -92,7 +92,7 @@ where
 
 	if method_symbol > 0x80 {
 		return Err(
-			ID3v2Error::new(ID3v2ErrorKind::InvalidEncryptionMethodSymbol(method_symbol)).into(),
+			Id3v2Error::new(Id3v2ErrorKind::InvalidEncryptionMethodSymbol(method_symbol)).into(),
 		);
 	}
 
@@ -107,7 +107,7 @@ where
 		}
 	}
 
-	Err(ID3v2Error::new(ID3v2ErrorKind::MissingDataLengthIndicator).into())
+	Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into())
 }
 
 fn write_frame_header<W>(writer: &mut W, name: &str, len: u32, flags: FrameFlags) -> Result<()>

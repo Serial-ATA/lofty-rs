@@ -1,4 +1,4 @@
-use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use byteorder::ReadBytesExt as _;
@@ -75,7 +75,7 @@ impl AudioTextFrame {
 	/// * Improperly encoded text
 	pub fn parse(bytes: &[u8]) -> Result<Self> {
 		if bytes.len() < 4 {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameLength).into());
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
 		let content = &mut &bytes[..];

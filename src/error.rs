@@ -48,7 +48,7 @@ pub enum ErrorKind {
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
-	ID3v2(ID3v2Error),
+	Id3v2(Id3v2Error),
 
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
@@ -69,7 +69,7 @@ pub enum ErrorKind {
 /// The types of errors that can occur while interacting with ID3v2 tags
 #[derive(Debug)]
 #[non_exhaustive]
-pub enum ID3v2ErrorKind {
+pub enum Id3v2ErrorKind {
 	// Header
 	/// Arises when an invalid ID3v2 version is found
 	BadId3v2Version(u8, u8),
@@ -99,7 +99,7 @@ pub enum ID3v2ErrorKind {
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,
 	/// Arises when decoding a [`UniqueFileIdentifierFrame`](crate::id3::v2::UniqueFileIdentifierFrame) with no owner
-	MissingUFIDOwner,
+	MissingUfidOwner,
 
 	// Compression
 	#[cfg(feature = "id3v2_compression_support")]
@@ -118,7 +118,7 @@ pub enum ID3v2ErrorKind {
 	InvalidLanguage([u8; 3]),
 }
 
-impl Display for ID3v2ErrorKind {
+impl Display for Id3v2ErrorKind {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			// Header
@@ -150,7 +150,7 @@ impl Display for ID3v2ErrorKind {
 				write!(f, "Picture: Found unexpected format \"{format}\"")
 			},
 			Self::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
-			Self::MissingUFIDOwner => write!(f, "Missing owner in UFID frame"),
+			Self::MissingUfidOwner => write!(f, "Missing owner in UFID frame"),
 
 			// Compression
 			#[cfg(feature = "id3v2_compression_support")]
@@ -179,30 +179,30 @@ impl Display for ID3v2ErrorKind {
 }
 
 /// An error that arises while interacting with an ID3v2 tag
-pub struct ID3v2Error {
-	kind: ID3v2ErrorKind,
+pub struct Id3v2Error {
+	kind: Id3v2ErrorKind,
 }
 
-impl ID3v2Error {
-	/// Create a new `ID3v2Error` from an [`ID3v2ErrorKind`]
+impl Id3v2Error {
+	/// Create a new `ID3v2Error` from an [`Id3v2ErrorKind`]
 	#[must_use]
-	pub const fn new(kind: ID3v2ErrorKind) -> Self {
+	pub const fn new(kind: Id3v2ErrorKind) -> Self {
 		Self { kind }
 	}
 
-	/// Returns the [`ID3v2ErrorKind`]
-	pub fn kind(&self) -> &ID3v2ErrorKind {
+	/// Returns the [`Id3v2ErrorKind`]
+	pub fn kind(&self) -> &Id3v2ErrorKind {
 		&self.kind
 	}
 }
 
-impl Debug for ID3v2Error {
+impl Debug for Id3v2Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "ID3v2: {:?}", self.kind)
 	}
 }
 
-impl Display for ID3v2Error {
+impl Display for Id3v2Error {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		write!(f, "ID3v2: {}", self.kind)
 	}
@@ -344,10 +344,10 @@ impl Debug for LoftyError {
 	}
 }
 
-impl From<ID3v2Error> for LoftyError {
-	fn from(input: ID3v2Error) -> Self {
+impl From<Id3v2Error> for LoftyError {
+	fn from(input: Id3v2Error) -> Self {
 		Self {
-			kind: ErrorKind::ID3v2(input),
+			kind: ErrorKind::Id3v2(input),
 		}
 	}
 }
@@ -431,7 +431,7 @@ impl Display for LoftyError {
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
-			ErrorKind::ID3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
+			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 
 			// Files

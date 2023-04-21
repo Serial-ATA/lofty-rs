@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::error::{ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::ItemKey;
 use crate::tag::TagType;
 
@@ -38,7 +38,7 @@ impl<'a> FrameID<'a> {
 		match id.len() {
 			3 => Ok(FrameID::Outdated(id)),
 			4 => Ok(FrameID::Valid(id)),
-			_ => Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
+			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 		}
 	}
 
@@ -52,7 +52,7 @@ impl<'a> FrameID<'a> {
 	pub(super) fn verify_id(id_str: &str) -> Result<()> {
 		for c in id_str.chars() {
 			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
-				return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into());
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
 			}
 		}
 
@@ -93,7 +93,7 @@ impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
 					}
 				}
 
-				Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into())
+				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into())
 			},
 		}
 	}

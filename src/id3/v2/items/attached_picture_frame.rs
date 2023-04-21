@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
@@ -49,7 +49,7 @@ impl AttachedPictureFrame {
 				[b'P', b'N', b'G'] => MimeType::Png,
 				[b'J', b'P', b'G'] => MimeType::Jpeg,
 				_ => {
-					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
 						String::from_utf8_lossy(&format).into_owned(),
 					))
 					.into())
@@ -104,7 +104,7 @@ impl AttachedPictureFrame {
 				MimeType::Png => "PNG",
 				MimeType::Jpeg => "JPG",
 				_ => {
-					return Err(ID3v2Error::new(ID3v2ErrorKind::BadPictureFormat(
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
 						self.picture.mime_type.to_string(),
 					))
 					.into())

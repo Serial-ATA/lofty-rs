@@ -1,6 +1,6 @@
 use super::header::{parse_header, parse_v2_header};
 use super::Frame;
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::{FrameValue, ID3v2Version};
 use crate::macros::try_vec;
@@ -36,14 +36,14 @@ impl<'a> Frame<'a> {
 			let mut decompressed = Vec::new();
 			flate2::Decompress::new(true)
 				.decompress_vec(&content, &mut decompressed, flate2::FlushDecompress::None)
-				.map_err(|err| ID3v2Error::new(ID3v2ErrorKind::Decompression(err)))?;
+				.map_err(|err| Id3v2Error::new(Id3v2ErrorKind::Decompression(err)))?;
 
 			content = decompressed
 		}
 
 		#[cfg(not(feature = "id3v2_compression_support"))]
 		if flags.compression {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::CompressedFrameEncountered).into());
+			return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
 		}
 
 		let mut content_reader = &*content;
@@ -65,7 +65,7 @@ impl<'a> Frame<'a> {
 
 		let value = if flags.encryption.is_some() {
 			if flags.data_length_indicator.is_none() {
-				return Err(ID3v2Error::new(ID3v2ErrorKind::MissingDataLengthIndicator).into());
+				return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
 			}
 
 			Some(FrameValue::Binary(content))

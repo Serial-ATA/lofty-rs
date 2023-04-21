@@ -16,7 +16,7 @@ pub(crate) mod tag;
 pub mod util;
 pub(crate) mod write;
 
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::macros::err;
 use util::synchsafe::SynchsafeInteger;
 
@@ -76,7 +76,7 @@ where
 		3 => ID3v2Version::V3,
 		4 => ID3v2Version::V4,
 		major => {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::BadId3v2Version(major, header[4])).into())
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into())
 		},
 	};
 
@@ -86,7 +86,7 @@ where
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
 	if version == ID3v2Version::V2 && flags & 0x40 == 0x40 {
-		return Err(ID3v2Error::new(ID3v2ErrorKind::V2Compression).into());
+		return Err(Id3v2Error::new(Id3v2ErrorKind::V2Compression).into());
 	}
 
 	let mut flags_parsed = ID3v2TagFlags {
@@ -109,7 +109,7 @@ where
 		extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
 
 		if extended_size < 6 {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::BadExtendedHeaderSize).into());
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
 		}
 
 		// Useless byte since there's only 1 byte for flags
