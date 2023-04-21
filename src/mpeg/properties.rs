@@ -12,7 +12,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 /// An MPEG file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
-pub struct MPEGProperties {
+pub struct MpegProperties {
 	pub(crate) version: MpegVersion,
 	pub(crate) layer: Layer,
 	pub(crate) duration: Duration,
@@ -27,9 +27,9 @@ pub struct MPEGProperties {
 	pub(crate) emphasis: Emphasis,
 }
 
-impl From<MPEGProperties> for FileProperties {
-	fn from(input: MPEGProperties) -> Self {
-		let MPEGProperties {
+impl From<MpegProperties> for FileProperties {
+	fn from(input: MpegProperties) -> Self {
+		let MpegProperties {
 			duration,
 			overall_bitrate,
 			audio_bitrate,
@@ -60,7 +60,7 @@ impl From<MPEGProperties> for FileProperties {
 	}
 }
 
-impl MPEGProperties {
+impl MpegProperties {
 	/// Duration of the audio
 	pub fn duration(&self) -> Duration {
 		self.duration
@@ -123,7 +123,7 @@ impl MPEGProperties {
 }
 
 pub(super) fn read_properties<R>(
-	properties: &mut MPEGProperties,
+	properties: &mut MpegProperties,
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,

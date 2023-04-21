@@ -8,7 +8,7 @@ use crate::iff::wav::WavFile;
 use crate::macros::err;
 use crate::mp4::Mp4File;
 use crate::mpeg::header::search_for_frame_sync;
-use crate::mpeg::MPEGFile;
+use crate::mpeg::MpegFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
@@ -511,7 +511,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
 				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
 				FileType::Flac => FlacFile::read_from(reader, options)?.into(),
-				FileType::Mpeg => MPEGFile::read_from(reader, options)?.into(),
+				FileType::Mpeg => MpegFile::read_from(reader, options)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, options)?.into(),
 				FileType::Vorbis => VorbisFile::read_from(reader, options)?.into(),
 				FileType::Wav => WavFile::read_from(reader, options)?.into(),
