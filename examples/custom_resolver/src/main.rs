@@ -24,12 +24,12 @@ struct MyFile {
 
 
 	// Specify a tag type
-	#[lofty(tag_type = "ID3v2")]
+	#[lofty(tag_type = "Id3v2")]
 	// Let's say our file *always* has an ID3v2Tag present.
 	pub id3v2_tag: ID3v2Tag,
 
 	// Our APE tag is optional in this format, so we wrap it in an `Option`
-	#[lofty(tag_type = "APE")]
+	#[lofty(tag_type = "Ape")]
 	pub ape_tag: Option<ApeTag>,
 
 	// The properties field *must* be present and named as such.
@@ -62,13 +62,13 @@ impl FileResolver for MyFile {
 	// The primary `TagType` of the file, or the one most
 	// likely to be used with it
 	fn primary_tag_type() -> TagType {
-		TagType::ID3v2
+		TagType::Id3v2
 	}
 
 	// All of the `TagType`s this file supports, including the
 	// primary one.
 	fn supported_tag_types() -> &'static [TagType] {
-		&[TagType::ID3v2, TagType::APE]
+		&[TagType::Id3v2, TagType::Ape]
 	}
 
 	// This is used to guess the `FileType` when reading the file contents.

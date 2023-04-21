@@ -19,7 +19,7 @@ fn read() {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify the text chunks
-	crate::verify_artist!(file, tag, TagType::AIFFText, "Bar artist", 1);
+	crate::verify_artist!(file, tag, TagType::AiffText, "Bar artist", 1);
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn write() {
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// Text chunks
-	crate::set_artist!(tagged_file, tag_mut, TagType::AIFFText, "Bar artist", 1 => file, "Baz artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -52,18 +52,18 @@ fn write() {
 
 	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::AIFFText, "Baz artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
 }
 
 #[test]
 fn remove_text_chunks() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/full_test.aiff",
-		TagType::AIFFText
+		TagType::AiffText
 	);
 }
 
 #[test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.aiff", TagType::ID3v2);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.aiff", TagType::Id3v2);
 }

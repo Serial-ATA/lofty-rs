@@ -147,7 +147,7 @@ mod tests {
 	#[lofty(read_fn = "Self::read")]
 	#[lofty(file_type = "MyFile")]
 	struct MyFile {
-		#[lofty(tag_type = "ID3v2")]
+		#[lofty(tag_type = "Id3v2")]
 		id3v2_tag: Option<ID3v2Tag>,
 		properties: FileProperties,
 	}
@@ -158,11 +158,11 @@ mod tests {
 		}
 
 		fn primary_tag_type() -> TagType {
-			TagType::ID3v2
+			TagType::Id3v2
 		}
 
 		fn supported_tag_types() -> &'static [TagType] {
-			&[TagType::ID3v2]
+			&[TagType::Id3v2]
 		}
 
 		fn guess(buf: &[u8]) -> Option<FileType> {

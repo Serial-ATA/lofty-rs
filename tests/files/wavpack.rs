@@ -19,7 +19,7 @@ fn read() {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 
 	// Now verify the ID3v1 tag
-	crate::verify_artist!(file, tag, TagType::ID3v1, "Bar artist", 1);
+	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn write() {
 	set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
 
 	// ID3v1
-	set_artist!(tagged_file, tag_mut, TagType::ID3v1, "Bar artist", 1 => file, "Baz artist");
+	set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -52,15 +52,15 @@ fn write() {
 
 	set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 
-	set_artist!(tagged_file, tag_mut, TagType::ID3v1, "Baz artist", 1 => file, "Bar artist");
+	set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
 }
 
 #[test]
 fn remove_id3v1() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::ID3v1);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::Id3v1);
 }
 
 #[test]
 fn remove_ape() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::APE);
+	crate::remove_tag!("tests/files/assets/minimal/full_test.wv", TagType::Ape);
 }

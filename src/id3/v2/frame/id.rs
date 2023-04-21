@@ -86,7 +86,7 @@ impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
 				Ok(Self::Valid(Cow::Borrowed(unknown)))
 			},
 			k => {
-				if let Some(mapped) = k.map_key(TagType::ID3v2, false) {
+				if let Some(mapped) = k.map_key(TagType::Id3v2, false) {
 					if mapped.len() == 4 {
 						Self::verify_id(mapped)?;
 						return Ok(Self::Valid(Cow::Borrowed(mapped)));

@@ -239,11 +239,11 @@ impl TagExt for ID3v1Tag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::ID3v1.remove_from_path(path)
+		TagType::Id3v1.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::ID3v1.remove_from(file)
+		TagType::Id3v1.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -258,7 +258,7 @@ impl SplitTag for ID3v1Tag {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
-		let mut tag = Tag::new(TagType::ID3v1);
+		let mut tag = Tag::new(TagType::Id3v1);
 
 		self.title
 			.take()
@@ -455,7 +455,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v1() {
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v1);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
 
 		let id3v1_tag: ID3v1Tag = tag.into();
 

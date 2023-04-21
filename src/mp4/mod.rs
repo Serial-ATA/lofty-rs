@@ -33,7 +33,7 @@ pub(crate) use properties::SAMPLE_RATES;
 pub struct Mp4File {
 	/// The file format from ftyp's "major brand" (Ex. "M4A ")
 	pub(crate) ftyp: String,
-	#[lofty(tag_type = "MP4ilst")]
+	#[lofty(tag_type = "Mp4Ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst_tag: Option<Ilst>,
 	/// The file's audio properties

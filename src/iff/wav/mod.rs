@@ -18,10 +18,10 @@ pub use tag::RIFFInfoList;
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct WavFile {
 	/// A RIFF INFO LIST
-	#[lofty(tag_type = "RIFFInfo")]
+	#[lofty(tag_type = "RiffInfo")]
 	pub(crate) riff_info_tag: Option<RIFFInfoList>,
 	/// An ID3v2 tag
-	#[lofty(tag_type = "ID3v2")]
+	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<ID3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: WavProperties,

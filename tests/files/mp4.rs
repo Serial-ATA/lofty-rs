@@ -33,7 +33,7 @@ fn write() {
 	assert_eq!(tagged_file.file_type(), FileType::Mp4);
 
 	// ilst
-	crate::set_artist!(tagged_file, tag_mut, TagType::MP4ilst, "Foo artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Foo artist", 1 => file, "Bar artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -45,13 +45,13 @@ fn write() {
 		.read()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::MP4ilst, "Bar artist", 1 => file, "Foo artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Bar artist", 1 => file, "Foo artist");
 }
 
 #[test]
 fn remove() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/m4a_codec_aac.m4a",
-		TagType::MP4ilst
+		TagType::Mp4Ilst
 	);
 }

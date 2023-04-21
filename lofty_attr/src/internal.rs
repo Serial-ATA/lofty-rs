@@ -42,7 +42,7 @@ pub(crate) fn init_write_lookup(
 		};
 	}
 
-	insert!(map, APE, {
+	insert!(map, Ape, {
 		lofty::ape::tag::ApeTagRef {
 			read_only: false,
 			items: lofty::ape::tag::tagitems_into_ape(tag.items()),
@@ -50,16 +50,16 @@ pub(crate) fn init_write_lookup(
 		.write_to(data)
 	});
 
-	insert!(map, ID3v1, {
+	insert!(map, Id3v1, {
 		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data)
 	});
 
 	if id3v2_strippable {
-		insert!(map, ID3v2, {
+		insert!(map, Id3v2, {
 			lofty::id3::v2::tag::Id3v2TagRef::empty().write_to(data)
 		});
 	} else {
-		insert!(map, ID3v2, {
+		insert!(map, Id3v2, {
 			lofty::id3::v2::tag::Id3v2TagRef {
 				flags: lofty::id3::v2::ID3v2TagFlags::default(),
 				frames: lofty::id3::v2::tag::tag_frames(tag),
@@ -68,14 +68,14 @@ pub(crate) fn init_write_lookup(
 		});
 	}
 
-	insert!(map, RIFFInfo, {
+	insert!(map, RiffInfo, {
 		lofty::iff::wav::tag::RIFFInfoListRef::new(lofty::iff::wav::tag::tagitems_into_riff(
 			tag.items(),
 		))
 		.write_to(data)
 	});
 
-	insert!(map, AIFFText, {
+	insert!(map, AiffText, {
 		lofty::iff::aiff::tag::AiffTextChunksRef {
 			name: tag.get_string(&lofty::tag::item::ItemKey::TrackTitle),
 			author: tag.get_string(&lofty::tag::item::ItemKey::TrackArtist),

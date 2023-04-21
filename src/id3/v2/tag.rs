@@ -604,11 +604,11 @@ impl TagExt for ID3v2Tag {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::ID3v2.remove_from_path(path)
+		TagType::Id3v2.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::ID3v2.remove_from(file)
+		TagType::Id3v2.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -684,7 +684,7 @@ impl SplitTag for ID3v2Tag {
 			Some(())
 		}
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		self.frames.retain_mut(|frame| {
 			let id = &frame.id;
@@ -723,7 +723,7 @@ impl SplitTag for ID3v2Tag {
 						..
 					}),
 				) => {
-					let item_key = ItemKey::from_key(TagType::ID3v2, description);
+					let item_key = ItemKey::from_key(TagType::Id3v2, description);
 					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
@@ -740,7 +740,7 @@ impl SplitTag for ID3v2Tag {
 						..
 					}),
 				) => {
-					let item_key = ItemKey::from_key(TagType::ID3v2, description);
+					let item_key = ItemKey::from_key(TagType::Id3v2, description);
 					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
 							item_key.clone(),
@@ -773,7 +773,7 @@ impl SplitTag for ID3v2Tag {
 					}
 				},
 				(id, value) => {
-					let item_key = ItemKey::from_key(TagType::ID3v2, id);
+					let item_key = ItemKey::from_key(TagType::Id3v2, id);
 
 					let item_value = match value {
 						FrameValue::Comment(CommentFrame {
@@ -921,7 +921,7 @@ impl MergeTag for SplitTagRemainder {
 			&ItemKey::Lyrics,
 		] {
 			let frame_id = item_key
-				.map_key(TagType::ID3v2, false)
+				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key].into_iter()) {
 				let frame = new_text_frame(
@@ -938,11 +938,11 @@ impl MergeTag for SplitTagRemainder {
 		// Multi-valued Label/Publisher key-to-frame mapping
 		{
 			let frame_id = ItemKey::Label
-				.map_key(TagType::ID3v2, false)
+				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
 			debug_assert_eq!(
 				Some(frame_id),
-				ItemKey::Publisher.map_key(TagType::ID3v2, false)
+				ItemKey::Publisher.map_key(TagType::Id3v2, false)
 			);
 			if let Some(text) = join_text_items(&mut tag, &[ItemKey::Label, ItemKey::Publisher]) {
 				let frame = new_text_frame(
@@ -1239,7 +1239,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v2_popm() {
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 		tag.insert(TagItem::new(
 			ItemKey::Popularimeter,
 			ItemValue::Binary(vec![
@@ -1310,7 +1310,7 @@ mod tests {
 			);
 		}
 
-		let tag = crate::tag::utils::test_utils::create_tag(TagType::ID3v2);
+		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v2);
 
 		let id3v2_tag: ID3v2Tag = tag.into();
 
@@ -1472,7 +1472,7 @@ mod tests {
 			picture_data,
 		);
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 		tag.push_picture(picture.clone());
 
 		let mut writer = Vec::new();
@@ -1530,7 +1530,7 @@ mod tests {
 	#[test]
 	fn multi_item_tag_to_id3v2() {
 		use crate::traits::Accessor;
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push_unchecked(TagItem::new(
 			ItemKey::TrackArtist,
@@ -1584,7 +1584,7 @@ mod tests {
 
 	#[test]
 	fn multi_value_roundtrip() {
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 		// 1st: Multi-valued text frames
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
 		tag.push(TagItem::new(
@@ -1904,7 +1904,7 @@ mod tests {
 		use crate::traits::Accessor;
 		let track_number = 1;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::TrackNumber,
@@ -1922,7 +1922,7 @@ mod tests {
 		use crate::traits::Accessor;
 		let track_total = 2;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::TrackTotal,
@@ -1941,7 +1941,7 @@ mod tests {
 		let track_number = 1;
 		let track_total = 2;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::TrackNumber,
@@ -1964,7 +1964,7 @@ mod tests {
 		use crate::traits::Accessor;
 		let disk_number = 1;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::DiscNumber,
@@ -1982,7 +1982,7 @@ mod tests {
 		use crate::traits::Accessor;
 		let disk_total = 2;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::DiscTotal,
@@ -2001,7 +2001,7 @@ mod tests {
 		let disk_number = 1;
 		let disk_total = 2;
 
-		let mut tag = Tag::new(TagType::ID3v2);
+		let mut tag = Tag::new(TagType::Id3v2);
 
 		tag.push(TagItem::new(
 			ItemKey::DiscNumber,

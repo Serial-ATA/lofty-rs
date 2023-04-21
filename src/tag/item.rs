@@ -471,15 +471,15 @@ macro_rules! gen_item_keys {
 
 gen_item_keys!(
 	MAPS => [
-		[TagType::AIFFText, AIFF_TEXT_MAP],
+		[TagType::AiffText, AIFF_TEXT_MAP],
 
-		[TagType::APE, APE_MAP],
+		[TagType::Ape, APE_MAP],
 
-		[TagType::ID3v2, ID3V2_MAP],
+		[TagType::Id3v2, ID3V2_MAP],
 
-		[TagType::MP4ilst, ILST_MAP],
+		[TagType::Mp4Ilst, ILST_MAP],
 
-		[TagType::RIFFInfo, RIFF_INFO_MAP],
+		[TagType::RiffInfo, RIFF_INFO_MAP],
 
 		[TagType::VorbisComments, VORBIS_MAP]
 	];
@@ -770,7 +770,7 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {
-		if tag_type == TagType::ID3v1 {
+		if tag_type == TagType::Id3v1 {
 			use crate::id3::v1::constants::VALID_ITEMKEYS;
 
 			return VALID_ITEMKEYS.contains(&self.item_key);

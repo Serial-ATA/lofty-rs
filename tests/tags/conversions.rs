@@ -5,7 +5,7 @@ use lofty::{ItemKey, Tag, TagType, TextEncoding};
 
 #[test]
 fn tag_to_id3v2_lang_frame() {
-	let mut tag = Tag::new(TagType::ID3v2);
+	let mut tag = Tag::new(TagType::Id3v2);
 	tag.insert_text(ItemKey::Lyrics, String::from("Test lyrics"));
 	tag.insert_text(ItemKey::Comment, String::from("Test comment"));
 

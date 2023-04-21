@@ -28,7 +28,7 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag) -> Result<()> {
 			write_to_inner(file, &mut comments_ref)
 		},
 		// This tag can *only* be removed in this format
-		TagType::ID3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file),
+		TagType::Id3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file),
 		_ => err!(UnsupportedTag),
 	}
 }

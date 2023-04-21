@@ -435,11 +435,11 @@ impl TagExt for Ilst {
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::MP4ilst.remove_from_path(path)
+		TagType::Mp4Ilst.remove_from_path(path)
 	}
 
 	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::MP4ilst.remove_from(file)
+		TagType::Mp4Ilst.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -468,7 +468,7 @@ impl SplitTag for Ilst {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
-		let mut tag = Tag::new(TagType::MP4ilst);
+		let mut tag = Tag::new(TagType::Mp4Ilst);
 
 		self.atoms.retain_mut(|atom| {
 			let Atom { ident, data } = atom;
@@ -517,7 +517,7 @@ impl SplitTag for Ilst {
 			};
 
 			let key = ItemKey::from_key(
-				TagType::MP4ilst,
+				TagType::Mp4Ilst,
 				&match ident {
 					AtomIdent::Fourcc(fourcc) => {
 						fourcc.iter().map(|b| *b as char).collect::<String>()
@@ -768,7 +768,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_ilst() {
-		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::MP4ilst);
+		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::Mp4Ilst);
 
 		tag.insert_text(ItemKey::DiscNumber, String::from("1"));
 		tag.insert_text(ItemKey::DiscTotal, String::from("2"));
@@ -974,7 +974,7 @@ mod tests {
 
 	#[test]
 	fn multi_value_roundtrip() {
-		let mut tag = Tag::new(TagType::MP4ilst);
+		let mut tag = Tag::new(TagType::Mp4Ilst);
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
 		tag.push(TagItem::new(
 			ItemKey::TrackArtist,
