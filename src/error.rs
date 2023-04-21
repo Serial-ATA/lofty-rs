@@ -83,7 +83,7 @@ pub enum Id3v2ErrorKind {
 
 	// Frame
 	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
-	BadFrameID,
+	BadFrameId,
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
 	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
@@ -112,7 +112,7 @@ pub enum Id3v2ErrorKind {
 	// Writing
 	/// Arises when attempting to write an encrypted frame with an invalid encryption method symbol (must be <= 0x80)
 	InvalidEncryptionMethodSymbol(u8),
-	/// Arises when attempting to write an invalid Frame (Bad `FrameID`/`FrameValue` pairing)
+	/// Arises when attempting to write an invalid Frame (Bad `FrameId`/`FrameValue` pairing)
 	BadFrame(String, &'static str),
 	/// Arises when attempting to write a [`CommentFrame`](crate::id3::v2::CommentFrame) or [`UnsynchronizedTextFrame`](crate::id3::v2::UnsynchronizedTextFrame) with an invalid language
 	InvalidLanguage([u8; 3]),
@@ -133,7 +133,7 @@ impl Display for Id3v2ErrorKind {
 			},
 
 			// Frame
-			Self::BadFrameID => write!(f, "Failed to parse a frame ID"),
+			Self::BadFrameId => write!(f, "Failed to parse a frame ID"),
 			Self::BadFrameLength => write!(
 				f,
 				"Frame isn't long enough to extract the necessary information"

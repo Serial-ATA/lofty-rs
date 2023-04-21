@@ -6,7 +6,7 @@ use crate::tag::TagType;
 
 /// An `ID3v2` frame ID
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub enum FrameID<'a> {
+pub enum FrameId<'a> {
 	/// A valid `ID3v2.3/4` frame
 	Valid(Cow<'a, str>),
 	/// When an `ID3v2.2` key couldn't be upgraded
@@ -17,8 +17,8 @@ pub enum FrameID<'a> {
 	Outdated(Cow<'a, str>),
 }
 
-impl<'a> FrameID<'a> {
-	/// Attempts to create a `FrameID` from an ID string
+impl<'a> FrameId<'a> {
+	/// Attempts to create a `FrameId` from an ID string
 	///
 	/// # Errors
 	///
@@ -36,23 +36,23 @@ impl<'a> FrameID<'a> {
 		Self::verify_id(&id)?;
 
 		match id.len() {
-			3 => Ok(FrameID::Outdated(id)),
-			4 => Ok(FrameID::Valid(id)),
-			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
+			3 => Ok(FrameId::Outdated(id)),
+			4 => Ok(FrameId::Valid(id)),
+			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
 		}
 	}
 
 	/// Extracts the string from the ID
 	pub fn as_str(&self) -> &str {
 		match self {
-			FrameID::Valid(v) | FrameID::Outdated(v) => v,
+			FrameId::Valid(v) | FrameId::Outdated(v) => v,
 		}
 	}
 
 	pub(super) fn verify_id(id_str: &str) -> Result<()> {
 		for c in id_str.chars() {
 			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into());
 			}
 		}
 
@@ -68,15 +68,15 @@ impl<'a> FrameID<'a> {
 	}
 
 	/// Obtains an owned instance
-	pub fn into_owned(self) -> FrameID<'static> {
+	pub fn into_owned(self) -> FrameId<'static> {
 		match self {
-			Self::Valid(inner) => FrameID::Valid(Cow::Owned(inner.into_owned())),
-			Self::Outdated(inner) => FrameID::Outdated(Cow::Owned(inner.into_owned())),
+			Self::Valid(inner) => FrameId::Valid(Cow::Owned(inner.into_owned())),
+			Self::Outdated(inner) => FrameId::Outdated(Cow::Owned(inner.into_owned())),
 		}
 	}
 }
 
-impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
+impl<'a> TryFrom<&'a ItemKey> for FrameId<'a> {
 	type Error = LoftyError;
 
 	fn try_from(value: &'a ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
@@ -93,7 +93,7 @@ impl<'a> TryFrom<&'a ItemKey> for FrameID<'a> {
 					}
 				}
 
-				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into())
+				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into())
 			},
 		}
 	}

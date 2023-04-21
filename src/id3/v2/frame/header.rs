@@ -2,14 +2,14 @@ use super::FrameFlags;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::id3::v2::FrameID;
+use crate::id3::v2::FrameId;
 
 use std::borrow::Cow;
 use std::io::Read;
 
 pub(crate) fn parse_v2_header<R>(
 	reader: &mut R,
-) -> Result<Option<(FrameID<'static>, u32, FrameFlags)>>
+) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -25,10 +25,10 @@ where
 	}
 
 	let id_str = std::str::from_utf8(&frame_header[..3])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameID))?;
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId))?;
 	let id = upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed);
 
-	let frame_id = FrameID::new_cow(id)?;
+	let frame_id = FrameId::new_cow(id)?;
 
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
@@ -39,7 +39,7 @@ where
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	synchsafe: bool,
-) -> Result<Option<(FrameID<'static>, u32, FrameFlags)>>
+) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
 where
 	R: Read,
 {
@@ -64,7 +64,7 @@ where
 	}
 
 	let id_str = std::str::from_utf8(&frame_header[..frame_id_end])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameID))?;
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId))?;
 
 	let mut size = u32::from_be_bytes([
 		frame_header[4],
@@ -73,7 +73,7 @@ where
 		frame_header[7],
 	]);
 
-	// Now upgrade the FrameID
+	// Now upgrade the FrameId
 	let id = if invalid_v2_frame {
 		if let Some(id) = upgrade_v2(id_str) {
 			Cow::Borrowed(id)
@@ -85,7 +85,7 @@ where
 	} else {
 		Cow::Owned(id_str.to_owned())
 	};
-	let frame_id = FrameID::new_cow(id)?;
+	let frame_id = FrameId::new_cow(id)?;
 
 	// unsynch the frame size if necessary
 	if synchsafe {

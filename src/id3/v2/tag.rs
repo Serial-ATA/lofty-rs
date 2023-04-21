@@ -1,5 +1,5 @@
 use super::flags::ID3v2TagFlags;
-use super::frame::id::FrameID;
+use super::frame::id::FrameId;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::ID3v2Version;
 use crate::error::{LoftyError, Result};
@@ -50,7 +50,7 @@ macro_rules! impl_accessor {
 
 				fn [<set_ $name>](&mut self, value: String) {
 					self.insert(new_text_frame(
-						FrameID::Valid(Cow::Borrowed($id).into()),
+						FrameId::Valid(Cow::Borrowed($id).into()),
 						value,
 						FrameFlags::default(),
 					));
@@ -240,7 +240,7 @@ impl ID3v2Tag {
 			for (i, frame) in self.frames.iter().enumerate() {
 				match frame {
 					Frame {
-						id: FrameID::Valid(id),
+						id: FrameId::Valid(id),
 						value:
 							FrameValue::Picture(AttachedPictureFrame {
 								picture: Picture { pic_type, .. },
@@ -270,7 +270,7 @@ impl ID3v2Tag {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.frames.retain(|f| {
 			!matches!(f, Frame {
-					id: FrameID::Valid(id),
+					id: FrameId::Valid(id),
 					value: FrameValue::Picture(AttachedPictureFrame {
 						picture: Picture {
 							pic_type: p_ty,
@@ -286,7 +286,7 @@ impl ID3v2Tag {
 	pub fn unsync_text(&self) -> impl Iterator<Item = &UnsynchronizedTextFrame> + Clone {
 		self.frames.iter().filter_map(|f| match f {
 			Frame {
-				id: FrameID::Valid(id),
+				id: FrameId::Valid(id),
 				value: FrameValue::UnsynchronizedText(val),
 				..
 			} if id == "USLT" => Some(val),
@@ -387,7 +387,7 @@ fn filter_comment_frame_by_description_mut<'a>(
 	}
 }
 
-fn new_text_frame(id: FrameID<'_>, value: String, flags: FrameFlags) -> Frame<'_> {
+fn new_text_frame(id: FrameId<'_>, value: String, flags: FrameFlags) -> Frame<'_> {
 	Frame {
 		id,
 		value: FrameValue::Text(TextInformationFrame {
@@ -400,7 +400,7 @@ fn new_text_frame(id: FrameID<'_>, value: String, flags: FrameFlags) -> Frame<'_
 
 fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
 	Frame {
-		id: FrameID::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
+		id: FrameId::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
 		value: FrameValue::Comment(CommentFrame {
 			encoding: TextEncoding::UTF8,
 			language: UNKNOWN_LANGUAGE,
@@ -413,7 +413,7 @@ fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
 
 fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
 	Frame {
-		id: FrameID::Valid(Cow::Borrowed("APIC")),
+		id: FrameId::Valid(Cow::Borrowed("APIC")),
 		value: FrameValue::Picture(AttachedPictureFrame {
 			encoding: TextEncoding::UTF8,
 			picture,
@@ -560,7 +560,7 @@ impl Accessor for ID3v2Tag {
 
 impl TagExt for ID3v2Tag {
 	type Err = LoftyError;
-	type RefKey<'a> = &'a FrameID<'a>;
+	type RefKey<'a> = &'a FrameId<'a>;
 
 	fn len(&self) -> usize {
 		self.frames.len()
@@ -580,7 +580,7 @@ impl TagExt for ID3v2Tag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
-	/// * Attempting to write an invalid [`FrameID`]/[`FrameValue`] pairing
+	/// * Attempting to write an invalid [`FrameId`]/[`FrameValue`] pairing
 	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
@@ -925,7 +925,7 @@ impl MergeTag for SplitTagRemainder {
 				.expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key].into_iter()) {
 				let frame = new_text_frame(
-					FrameID::Valid(Cow::Borrowed(frame_id)),
+					FrameId::Valid(Cow::Borrowed(frame_id)),
 					text,
 					FrameFlags::default(),
 				);
@@ -946,7 +946,7 @@ impl MergeTag for SplitTagRemainder {
 			);
 			if let Some(text) = join_text_items(&mut tag, &[ItemKey::Label, ItemKey::Publisher]) {
 				let frame = new_text_frame(
-					FrameID::Valid(Cow::Borrowed(frame_id)),
+					FrameId::Valid(Cow::Borrowed(frame_id)),
 					text,
 					FrameFlags::default(),
 				);
@@ -1042,7 +1042,7 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 		));
 
 	let pictures = tag.pictures().iter().map(|p| FrameRef {
-		id: FrameID::Valid(Cow::Borrowed("APIC")),
+		id: FrameId::Valid(Cow::Borrowed("APIC")),
 		value: Cow::Owned(FrameValue::Picture(AttachedPictureFrame {
 			encoding: TextEncoding::UTF8,
 			picture: p.clone(),
@@ -1077,7 +1077,7 @@ mod tests {
 	};
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
-		FrameFlags, FrameID, FrameValue, ID3v2Tag, ID3v2Version, TextInformationFrame,
+		FrameFlags, FrameId, FrameValue, ID3v2Tag, ID3v2Version, TextInformationFrame,
 		UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -1259,7 +1259,7 @@ mod tests {
 		assert_eq!(converted_tag.frames.len(), 1);
 		let actual_frame = converted_tag.frames.first().unwrap();
 
-		assert_eq!(actual_frame.id, FrameID::Valid(Cow::Borrowed("POPM")));
+		assert_eq!(actual_frame.id, FrameId::Valid(Cow::Borrowed("POPM")));
 		// Note: as POPM frames are considered equal by email alone, each field must
 		// be separately validated
 		match actual_frame.content() {
@@ -1276,7 +1276,7 @@ mod tests {
 	fn fail_write_bad_frame() {
 		let mut tag = ID3v2Tag::default();
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("ABCD")),
+			id: FrameId::Valid(Cow::Borrowed("ABCD")),
 			value: FrameValue::Url(UrlLinkFrame(String::from("FOO URL"))),
 			flags: FrameFlags::default(),
 		});
@@ -1342,7 +1342,7 @@ mod tests {
 		let flags = FrameFlags::default();
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TIT2")),
+			id: FrameId::Valid(Cow::Borrowed("TIT2")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("TempleOS Hymn Risen (Remix)"),
@@ -1351,7 +1351,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TPE1")),
+			id: FrameId::Valid(Cow::Borrowed("TPE1")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Dave Eddy"),
@@ -1360,7 +1360,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TRCK")),
+			id: FrameId::Valid(Cow::Borrowed("TRCK")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::Latin1,
 				value: String::from("1"),
@@ -1369,7 +1369,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TALB")),
+			id: FrameId::Valid(Cow::Borrowed("TALB")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Summer"),
@@ -1378,7 +1378,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TDRC")),
+			id: FrameId::Valid(Cow::Borrowed("TDRC")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("2017"),
@@ -1387,7 +1387,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TCON")),
+			id: FrameId::Valid(Cow::Borrowed("TCON")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding,
 				value: String::from("Electronic"),
@@ -1396,7 +1396,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("TLEN")),
+			id: FrameId::Valid(Cow::Borrowed("TLEN")),
 			value: FrameValue::Text(TextInformationFrame {
 				encoding: TextEncoding::UTF16,
 				value: String::from("213017"),
@@ -1405,7 +1405,7 @@ mod tests {
 		});
 
 		tag.insert(Frame {
-			id: FrameID::Valid(Cow::Borrowed("APIC")),
+			id: FrameId::Valid(Cow::Borrowed("APIC")),
 			value: FrameValue::Picture(AttachedPictureFrame {
 				encoding: TextEncoding::Latin1,
 				picture: Picture {
@@ -1487,7 +1487,7 @@ mod tests {
 		assert_eq!(
 			tag.frames.first(),
 			Some(&Frame {
-				id: FrameID::Valid(Cow::Borrowed("APIC")),
+				id: FrameId::Valid(Cow::Borrowed("APIC")),
 				value: FrameValue::Picture(AttachedPictureFrame {
 					encoding: TextEncoding::UTF8,
 					picture
@@ -1504,7 +1504,7 @@ mod tests {
 		assert_eq!(parsed_tag.frames.len(), 1);
 		let popm_frame = parsed_tag.frames.first().unwrap();
 
-		assert_eq!(popm_frame.id, FrameID::Valid(Cow::Borrowed("POPM")));
+		assert_eq!(popm_frame.id, FrameId::Valid(Cow::Borrowed("POPM")));
 		assert_eq!(
 			popm_frame.value,
 			FrameValue::Popularimeter(Popularimeter {
@@ -1775,7 +1775,7 @@ mod tests {
 		assert_eq!(
 			id3v2.frames.first(),
 			Some(&Frame {
-				id: FrameID::Valid(Cow::Borrowed("TXXX")),
+				id: FrameId::Valid(Cow::Borrowed("TXXX")),
 				value: FrameValue::UserText(ExtendedTextFrame {
 					description: String::from("FOO_BAR"),
 					encoding: TextEncoding::UTF8, // Not considered by PartialEq!
@@ -2022,7 +2022,7 @@ mod tests {
 	fn create_tag_with_trck_and_tpos_frame(content: &'static str) -> Tag {
 		fn insert_frame(id: &'static str, content: &'static str, tag: &mut ID3v2Tag) {
 			tag.insert(new_text_frame(
-				FrameID::Valid(Cow::Borrowed(id)),
+				FrameId::Valid(Cow::Borrowed(id)),
 				content.to_string(),
 				FrameFlags::default(),
 			));
