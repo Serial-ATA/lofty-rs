@@ -64,11 +64,11 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 
 	match file_type {
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-		FileType::WAV => {
+		FileType::Wav => {
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?);
 		},
-		FileType::AIFF => {
+		FileType::Aiff => {
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?);
 		},

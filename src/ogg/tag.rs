@@ -40,7 +40,7 @@ macro_rules! impl_accessor {
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "Vorbis comments",
-	supported_formats(FLAC, Opus, Speex, Vorbis)
+	supported_formats(Flac, Opus, Speex, Vorbis)
 )]
 pub struct VorbisComments {
 	/// An identifier for the encoding software
@@ -521,7 +521,7 @@ where
 		};
 
 		// FLAC has its own special writing needs :)
-		if file_type == FileType::FLAC {
+		if file_type == FileType::Flac {
 			return crate::flac::write::write_to_inner(file, self);
 		}
 

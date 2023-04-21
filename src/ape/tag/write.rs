@@ -96,7 +96,7 @@ where
 		if let Some(start) = start.checked_sub(size as usize) {
 			ape_tag_location = Some(start..start + size as usize);
 		} else {
-			decode_err!(@BAIL APE, "File has a tag with an invalid size");
+			decode_err!(@BAIL Ape, "File has a tag with an invalid size");
 		}
 	}
 

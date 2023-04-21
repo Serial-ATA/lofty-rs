@@ -65,7 +65,7 @@ where
 			},
 			b"COMM" if parse_options.read_properties && comm.is_none() => {
 				if chunks.size < 18 {
-					decode_err!(@BAIL AIFF, "File has an invalid \"COMM\" chunk size (< 18)");
+					decode_err!(@BAIL Aiff, "File has an invalid \"COMM\" chunk size (< 18)");
 				}
 
 				comm = Some(chunks.content(data)?);
@@ -129,7 +129,7 @@ where
 		match comm {
 			Some(comm) => {
 				if stream_len == 0 {
-					decode_err!(@BAIL AIFF, "File does not contain a \"SSND\" chunk");
+					decode_err!(@BAIL Aiff, "File does not contain a \"SSND\" chunk");
 				}
 
 				properties = super::properties::read_properties(
@@ -138,7 +138,7 @@ where
 					data.stream_position()?,
 				)?;
 			},
-			None => decode_err!(@BAIL AIFF, "File does not contain a \"COMM\" chunk"),
+			None => decode_err!(@BAIL Aiff, "File does not contain a \"COMM\" chunk"),
 		}
 	} else {
 		properties = FileProperties::default();

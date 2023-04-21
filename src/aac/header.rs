@@ -81,7 +81,7 @@ impl ADTSHeader {
 		let sample_rate_idx = (byte3 >> 2) & 0b1111;
 		if sample_rate_idx == 15 {
 			// 15 is forbidden
-			decode_err!(@BAIL AAC, "File contains an invalid sample frequency index");
+			decode_err!(@BAIL Aac, "File contains an invalid sample frequency index");
 		}
 
 		let sample_rate = SAMPLE_RATES[sample_rate_idx as usize];

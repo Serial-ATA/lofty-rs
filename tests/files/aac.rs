@@ -14,7 +14,7 @@ fn read() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::AAC);
+	assert_eq!(file.file_type(), FileType::Aac);
 
 	// Verify the ID3v2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -35,7 +35,7 @@ fn read_with_junk_bytes_between_frames() {
 		.unwrap();
 
 	// note that the file contains ID3v2 and ID3v1 data
-	assert_eq!(file.file_type(), FileType::AAC);
+	assert_eq!(file.file_type(), FileType::Aac);
 
 	let id3v2_tag = &file.tags()[0];
 	assert_eq!(id3v2_tag.artist().as_deref(), Some("artist test"));
@@ -63,7 +63,7 @@ fn write() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::AAC);
+	assert_eq!(tagged_file.file_type(), FileType::Aac);
 
 	// ID3v2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");

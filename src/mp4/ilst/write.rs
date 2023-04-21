@@ -426,7 +426,7 @@ fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> 
 		// We'll assume implicit (0) was the intended type
 		MimeType::None => write_data(0, &picture.data, writer),
 		_ => Err(FileEncodingError::new(
-			FileType::MP4,
+			FileType::Mp4,
 			"Attempted to write an unsupported picture format",
 		)
 		.into()),
@@ -436,7 +436,7 @@ fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> 
 fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	if flags > 16_777_215 {
 		return Err(FileEncodingError::new(
-			FileType::MP4,
+			FileType::Mp4,
 			"Attempted to write a code that cannot fit in 24 bits",
 		)
 		.into());

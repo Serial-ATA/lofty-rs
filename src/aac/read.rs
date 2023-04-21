@@ -1,5 +1,5 @@
 use super::header::{ADTSHeader, HEADER_MASK};
-use super::AACFile;
+use super::AacFile;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
@@ -13,13 +13,13 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::ReadBytesExt;
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<AACFile>
+pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<AacFile>
 where
 	R: Read + Seek,
 {
 	let parse_mode = parse_options.parsing_mode;
 
-	let mut file = AACFile::default();
+	let mut file = AacFile::default();
 
 	let mut first_frame_header = None;
 	let mut first_frame_end = 0;
@@ -97,18 +97,18 @@ where
 		let mut first_frame_header = match first_frame_header {
 			Some(header) => header,
 			// The search for sync bits was unsuccessful
-			None => decode_err!(@BAIL MPEG, "File contains an invalid frame"),
+			None => decode_err!(@BAIL Mpeg, "File contains an invalid frame"),
 		};
 
 		if first_frame_header.sample_rate == 0 {
 			parse_mode_choice!(
 				parse_mode,
-				STRICT: decode_err!(@BAIL MPEG, "Sample rate is 0"),
+				STRICT: decode_err!(@BAIL Mpeg, "Sample rate is 0"),
 			);
 		}
 
 		if first_frame_header.bitrate == 0 {
-			parse_mode_choice!(parse_mode, STRICT: decode_err!(@BAIL MPEG, "Bitrate is 0"),);
+			parse_mode_choice!(parse_mode, STRICT: decode_err!(@BAIL Mpeg, "Bitrate is 0"),);
 		}
 
 		// Read as many frames as we can to try and fine the average bitrate

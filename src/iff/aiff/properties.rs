@@ -15,7 +15,7 @@ pub(super) fn read_properties(
 	let channels = comm.read_u16::<BigEndian>()? as u8;
 
 	if channels == 0 {
-		decode_err!(@BAIL AIFF, "File contains 0 channels");
+		decode_err!(@BAIL Aiff, "File contains 0 channels");
 	}
 
 	let sample_frames = comm.read_u32::<BigEndian>()?;

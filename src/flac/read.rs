@@ -24,13 +24,13 @@ where
 	data.read_exact(&mut marker)?;
 
 	if &marker != b"fLaC" {
-		decode_err!(@BAIL FLAC, "File missing \"fLaC\" stream marker");
+		decode_err!(@BAIL Flac, "File missing \"fLaC\" stream marker");
 	}
 
 	let block = Block::read(data)?;
 
 	if block.ty != BLOCK_ID_STREAMINFO {
-		decode_err!(@BAIL FLAC, "File missing mandatory STREAMINFO block");
+		decode_err!(@BAIL Flac, "File missing mandatory STREAMINFO block");
 	}
 
 	Ok(block)
@@ -59,7 +59,7 @@ where
 	let stream_info_len = (stream_info.end - stream_info.start) as u32;
 
 	if stream_info_len < 18 {
-		decode_err!(@BAIL FLAC, "File has an invalid STREAMINFO block size (< 18)");
+		decode_err!(@BAIL Flac, "File has an invalid STREAMINFO block size (< 18)");
 	}
 
 	let mut last_block = stream_info.last;
@@ -71,12 +71,12 @@ where
 		if block.content.is_empty()
 			&& (block.ty != BLOCK_ID_PADDING && block.ty != BLOCK_ID_SEEKTABLE)
 		{
-			decode_err!(@BAIL FLAC, "Encountered a zero-sized metadata block");
+			decode_err!(@BAIL Flac, "Encountered a zero-sized metadata block");
 		}
 
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
 			if flac_file.vorbis_comments_tag.is_some() {
-				decode_err!(@BAIL FLAC, "Streams are only allowed one Vorbis Comments block per stream");
+				decode_err!(@BAIL Flac, "Streams are only allowed one Vorbis Comments block per stream");
 			}
 
 			let mut vorbis_comments = VorbisComments::new();

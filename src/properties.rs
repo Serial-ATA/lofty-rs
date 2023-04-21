@@ -120,7 +120,7 @@ impl ChannelMask {
 
 #[cfg(test)]
 mod tests {
-	use crate::aac::{AACFile, AACProperties};
+	use crate::aac::{AACProperties, AacFile};
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::{FlacFile, FlacProperties};
 	use crate::iff::aiff::AiffFile;
@@ -342,7 +342,7 @@ mod tests {
 	#[test]
 	fn aac_properties() {
 		assert_eq!(
-			get_properties::<AACFile>("tests/files/assets/minimal/full_test.aac"),
+			get_properties::<AacFile>("tests/files/assets/minimal/full_test.aac"),
 			AAC_PROPERTIES
 		);
 	}

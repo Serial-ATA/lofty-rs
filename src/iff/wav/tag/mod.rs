@@ -42,7 +42,7 @@ macro_rules! impl_accessor {
 /// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
 /// * It has a key that is 4 bytes in length and within the ASCII range
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "A RIFF INFO LIST", supported_formats(WAV))]
+#[tag(description = "A RIFF INFO LIST", supported_formats(Wav))]
 pub struct RIFFInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,

@@ -19,11 +19,11 @@ where
 	data.read_exact(&mut id)?;
 
 	if &id[..4] != b"RIFF" {
-		decode_err!(@BAIL WAV, "WAV file doesn't contain a RIFF chunk");
+		decode_err!(@BAIL Wav, "WAV file doesn't contain a RIFF chunk");
 	}
 
 	if &id[8..] != b"WAVE" {
-		decode_err!(@BAIL WAV, "Found RIFF file, format is not WAVE");
+		decode_err!(@BAIL Wav, "Found RIFF file, format is not WAVE");
 	}
 
 	Ok(())
@@ -105,11 +105,11 @@ where
 
 	let properties = if parse_options.read_properties {
 		if fmt.len() < 16 {
-			decode_err!(@BAIL WAV, "File does not contain a valid \"fmt \" chunk");
+			decode_err!(@BAIL Wav, "File does not contain a valid \"fmt \" chunk");
 		}
 
 		if stream_len == 0 {
-			decode_err!(@BAIL WAV, "File does not contain a \"data\" chunk");
+			decode_err!(@BAIL Wav, "File does not contain a \"data\" chunk");
 		}
 
 		let file_length = data.stream_position()?;

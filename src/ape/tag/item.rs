@@ -28,15 +28,15 @@ impl ApeItem {
 	/// * `key` contains invalid characters (must be in the range 0x20 to 0x7E, inclusive)
 	pub fn new(key: String, value: ItemValue) -> Result<Self> {
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			decode_err!(@BAIL APE, "APE tag item contains an illegal key");
+			decode_err!(@BAIL Ape, "APE tag item contains an illegal key");
 		}
 
 		if !(2..=255).contains(&key.len()) {
-			decode_err!(@BAIL APE, "APE tag item key has an invalid length (< 2 || > 255)");
+			decode_err!(@BAIL Ape, "APE tag item key has an invalid length (< 2 || > 255)");
 		}
 
 		if key.chars().any(|c| !(0x20..=0x7E).contains(&(c as u32))) {
-			decode_err!(@BAIL APE, "APE tag item key contains invalid characters");
+			decode_err!(@BAIL Ape, "APE tag item key contains invalid characters");
 		}
 
 		Ok(Self {
@@ -74,7 +74,7 @@ impl TryFrom<TagItem> for ApeItem {
 			value
 				.item_key
 				.map_key(TagType::APE, false)
-				.ok_or_else(|| decode_err!(APE, "Attempted to convert an unsupported item key"))?
+				.ok_or_else(|| decode_err!(Ape, "Attempted to convert an unsupported item key"))?
 				.to_string(),
 			value.item_value,
 		)

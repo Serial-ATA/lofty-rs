@@ -129,11 +129,11 @@ where
 		let first_frame_header = match first_frame_header {
 			Some(header) => header,
 			// The search for sync bits was unsuccessful
-			None => decode_err!(@BAIL MPEG, "File contains an invalid frame"),
+			None => decode_err!(@BAIL Mpeg, "File contains an invalid frame"),
 		};
 
 		if first_frame_header.sample_rate == 0 {
-			decode_err!(@BAIL MPEG, "Sample rate is 0");
+			decode_err!(@BAIL Mpeg, "Sample rate is 0");
 		}
 
 		let first_frame_offset = first_frame_offset;

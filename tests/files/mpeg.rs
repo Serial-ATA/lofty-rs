@@ -14,7 +14,7 @@ fn read() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::MPEG);
+	assert_eq!(file.file_type(), FileType::Mpeg);
 
 	// Verify the ID3v2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -35,7 +35,7 @@ fn read_with_junk_bytes_between_frames() {
 		.unwrap();
 
 	// note that the file contains ID3v2 and ID3v1 data
-	assert_eq!(file.file_type(), FileType::MPEG);
+	assert_eq!(file.file_type(), FileType::Mpeg);
 
 	let id3v2_tag = &file.tags()[0];
 	assert_eq!(id3v2_tag.artist().as_deref(), Some("artist test"));
@@ -59,7 +59,7 @@ fn issue_82_solidus_in_tag() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::MPEG);
+	assert_eq!(file.file_type(), FileType::Mpeg);
 
 	let id3v2_tag = &file.tags()[0];
 	assert_eq!(id3v2_tag.title().as_deref(), Some("Foo / title"));
@@ -76,7 +76,7 @@ fn issue_87_duplicate_id3v2() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::MPEG);
+	assert_eq!(file.file_type(), FileType::Mpeg);
 
 	let id3v2_tag = &file.tags()[0];
 	assert_eq!(id3v2_tag.album().as_deref(), Some("album test"));
@@ -99,7 +99,7 @@ fn write() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	// ID3v2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
@@ -137,7 +137,7 @@ fn save_to_id3v2() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	let mut tag = Tag::new(TagType::ID3v2);
 
@@ -175,7 +175,7 @@ fn save_number_of_track_and_disk_to_id3v2() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	let mut tag = Tag::new(TagType::ID3v2);
 
@@ -216,7 +216,7 @@ fn save_total_of_track_and_disk_to_id3v2() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	let mut tag = Tag::new(TagType::ID3v2);
 
@@ -257,7 +257,7 @@ fn save_number_pair_of_track_and_disk_to_id3v2() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::MPEG);
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	let mut tag = Tag::new(TagType::ID3v2);
 

@@ -13,7 +13,7 @@ fn read() {
 		.read()
 		.unwrap();
 
-	assert_eq!(file.file_type(), FileType::APE);
+	assert_eq!(file.file_type(), FileType::Ape);
 
 	// Verify the APEv2 tag first
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
@@ -37,7 +37,7 @@ fn write() {
 		.read()
 		.unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::APE);
+	assert_eq!(tagged_file.file_type(), FileType::Ape);
 
 	// APEv2
 	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");

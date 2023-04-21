@@ -28,12 +28,12 @@ fn opus_remove() {
 #[test]
 fn flac_read() {
 	// FLAC does **not** require a Vorbis comment block be present, this file has one
-	read("tests/files/assets/minimal/full_test.flac", FileType::FLAC)
+	read("tests/files/assets/minimal/full_test.flac", FileType::Flac)
 }
 
 #[test]
 fn flac_write() {
-	write("tests/files/assets/minimal/full_test.flac", FileType::FLAC)
+	write("tests/files/assets/minimal/full_test.flac", FileType::Flac)
 }
 
 #[test]

@@ -1,4 +1,4 @@
-use crate::aac::AACFile;
+use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
@@ -142,7 +142,7 @@ pub enum ParsingMode {
 /// let probe = Probe::open("path/to/my.mp3")?;
 ///
 /// // Inferred from the `mp3` extension
-/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
+/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 /// # Ok(())
 /// # }
 /// ```
@@ -158,7 +158,7 @@ pub enum ParsingMode {
 /// let probe = Probe::open("path/to/my.mp3")?.guess_file_type()?;
 ///
 /// // Inferred from the file's content
-/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
+/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 /// # Ok(())
 /// # }
 /// ```
@@ -176,7 +176,7 @@ pub enum ParsingMode {
 /// let probe = Probe::new(Cursor::new(MAC_HEADER)).guess_file_type()?;
 ///
 /// // Inferred from the MAC header
-/// assert_eq!(probe.file_type(), Some(FileType::APE));
+/// assert_eq!(probe.file_type(), Some(FileType::Ape));
 /// # Ok(())
 /// # }
 /// ```
@@ -235,7 +235,7 @@ impl<R: Read> Probe<R> {
 	/// let file = File::open(my_mp3_path)?;
 	/// let reader = BufReader::new(file);
 	///
-	/// let probe = Probe::with_file_type(reader, FileType::MPEG);
+	/// let probe = Probe::with_file_type(reader, FileType::Mpeg);
 	/// # Ok(()) }
 	/// ```
 	pub fn with_file_type(reader: R, file_type: FileType) -> Self {
@@ -276,9 +276,9 @@ impl<R: Read> Probe<R> {
 	/// let mut probe = Probe::new(reader);
 	/// assert_eq!(probe.file_type(), None);
 	///
-	/// probe.set_file_type(FileType::MPEG);
+	/// probe.set_file_type(FileType::Mpeg);
 	///
-	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
+	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
 	/// ```
 	pub fn set_file_type(&mut self, file_type: FileType) {
@@ -345,7 +345,7 @@ impl Probe<BufReader<File>> {
 	/// let probe = Probe::open("path/to/my.mp3")?;
 	///
 	/// // Guessed from the "mp3" extension, see `FileType::from_ext`
-	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
+	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
 	/// ```
 	pub fn open<P>(path: P) -> Result<Self>
@@ -385,7 +385,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// let probe = Probe::new(reader).guess_file_type()?;
 	///
 	/// // Determined the file is MP3 from the content
-	/// assert_eq!(probe.file_type(), Some(FileType::MPEG));
+	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
 	/// ```
 	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
@@ -431,8 +431,8 @@ impl<R: Read + Seek> Probe<R> {
 				self.inner.seek(SeekFrom::Start(position_after_id3_block))?;
 
 				let file_type_after_id3_block = match &ident {
-					[b'M', b'A', b'C', ..] => Ok(Some(FileType::APE)),
-					b"fLaC" => Ok(Some(FileType::FLAC)),
+					[b'M', b'A', b'C', ..] => Ok(Some(FileType::Ape)),
+					b"fLaC" => Ok(Some(FileType::Flac)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
 						// Seek back to the start of the frame sync to check if we are dealing with
@@ -443,9 +443,9 @@ impl<R: Read + Seek> Probe<R> {
 						self.inner.read_exact(&mut buf)?;
 
 						if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
-							Ok(Some(FileType::AAC))
+							Ok(Some(FileType::Aac))
 						} else {
-							Ok(Some(FileType::MPEG))
+							Ok(Some(FileType::Mpeg))
 						}
 					},
 					_ => Ok(None),
@@ -507,15 +507,15 @@ impl<R: Read + Seek> Probe<R> {
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
-				FileType::AAC => AACFile::read_from(reader, options)?.into(),
-				FileType::AIFF => AiffFile::read_from(reader, options)?.into(),
-				FileType::APE => ApeFile::read_from(reader, options)?.into(),
-				FileType::FLAC => FlacFile::read_from(reader, options)?.into(),
-				FileType::MPEG => MPEGFile::read_from(reader, options)?.into(),
+				FileType::Aac => AacFile::read_from(reader, options)?.into(),
+				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
+				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
+				FileType::Flac => FlacFile::read_from(reader, options)?.into(),
+				FileType::Mpeg => MPEGFile::read_from(reader, options)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, options)?.into(),
 				FileType::Vorbis => VorbisFile::read_from(reader, options)?.into(),
-				FileType::WAV => WavFile::read_from(reader, options)?.into(),
-				FileType::MP4 => Mp4File::read_from(reader, options)?.into(),
+				FileType::Wav => WavFile::read_from(reader, options)?.into(),
+				FileType::Mp4 => Mp4File::read_from(reader, options)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
 				FileType::Custom(c) => {
@@ -615,7 +615,7 @@ mod tests {
 		let data: Vec<u8> = data.into_iter().flatten().copied().collect();
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
-		assert_eq!(probe.file_type(), Some(FileType::MPEG));
+		assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	}
 
 	fn test_probe(path: &str, expected_file_type_guess: FileType) {
@@ -638,37 +638,37 @@ mod tests {
 
 	#[test]
 	fn probe_aac() {
-		test_probe("tests/files/assets/minimal/untagged.aac", FileType::AAC);
+		test_probe("tests/files/assets/minimal/untagged.aac", FileType::Aac);
 	}
 
 	#[test]
 	fn probe_aac_with_id3v2() {
-		test_probe("tests/files/assets/minimal/full_test.aac", FileType::AAC);
+		test_probe("tests/files/assets/minimal/full_test.aac", FileType::Aac);
 	}
 
 	#[test]
 	fn probe_aiff() {
-		test_probe("tests/files/assets/minimal/full_test.aiff", FileType::AIFF);
+		test_probe("tests/files/assets/minimal/full_test.aiff", FileType::Aiff);
 	}
 
 	#[test]
 	fn probe_ape_with_id3v2() {
-		test_probe("tests/files/assets/minimal/full_test.ape", FileType::APE);
+		test_probe("tests/files/assets/minimal/full_test.ape", FileType::Ape);
 	}
 
 	#[test]
 	fn probe_flac() {
-		test_probe("tests/files/assets/minimal/full_test.flac", FileType::FLAC);
+		test_probe("tests/files/assets/minimal/full_test.flac", FileType::Flac);
 	}
 
 	#[test]
 	fn probe_flac_with_id3v2() {
-		test_probe("tests/files/assets/flac_with_id3v2.flac", FileType::FLAC);
+		test_probe("tests/files/assets/flac_with_id3v2.flac", FileType::Flac);
 	}
 
 	#[test]
 	fn probe_mp3_with_id3v2() {
-		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::MPEG);
+		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::Mpeg);
 	}
 
 	#[test]
@@ -690,7 +690,7 @@ mod tests {
 	fn probe_mp4() {
 		test_probe(
 			"tests/files/assets/minimal/m4a_codec_aac.m4a",
-			FileType::MP4,
+			FileType::Mp4,
 		);
 	}
 
@@ -698,7 +698,7 @@ mod tests {
 	fn probe_wav() {
 		test_probe(
 			"tests/files/assets/minimal/wav_format_pcm.wav",
-			FileType::WAV,
+			FileType::Wav,
 		);
 	}
 }

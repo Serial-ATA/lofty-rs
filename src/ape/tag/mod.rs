@@ -67,7 +67,7 @@ macro_rules! impl_accessor {
 /// When converting pictures, any of type [`PictureType::Undefined`](crate::PictureType::Undefined) will be discarded.
 /// For items, see [`ApeItem::new`].
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "An `APE` tag", supported_formats(APE, MPEG, WavPack))]
+#[tag(description = "An `APE` tag", supported_formats(Ape, Mpeg, WavPack))]
 pub struct ApeTag {
 	/// Whether or not to mark the tag as read only
 	pub read_only: bool,

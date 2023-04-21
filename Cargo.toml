@@ -18,7 +18,7 @@ byteorder  = "1.4.3"
 # ID3 compressed frames
 flate2     = { version = "1.0.25", optional = true }
 # Proc macros
-lofty_attr = "0.6.0"
+lofty_attr = { path = "lofty_attr" }
 # Debug logging
 log        = "0.4.17"
 # OGG Vorbis/Opus

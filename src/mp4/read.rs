@@ -152,7 +152,7 @@ where
 	// size + identifier + major brand
 	// There *should* be more, but this is all we need from it
 	if atom.len < 12 {
-		decode_err!(@BAIL MP4, "\"ftyp\" atom too short");
+		decode_err!(@BAIL Mp4, "\"ftyp\" atom too short");
 	}
 
 	let mut major_brand = vec![0; 4];
