@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::ID3v2Version;
 use crate::util::text::{decode_text, encode_text, TextEncoding};
@@ -50,7 +50,7 @@ impl LanguageFrame {
 		let mut bytes = vec![encoding as u8];
 
 		if language.len() != 3 || language.iter().any(|c| !c.is_ascii_alphabetic()) {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::InvalidLanguage(language)).into());
+			return Err(Id3v2Error::new(Id3v2ErrorKind::InvalidLanguage(language)).into());
 		}
 
 		bytes.extend(language);

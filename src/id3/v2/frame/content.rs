@@ -1,4 +1,4 @@
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::items::{
@@ -42,7 +42,7 @@ pub(in crate::id3::v2) fn verify_encoding(
 	version: ID3v2Version,
 ) -> Result<TextEncoding> {
 	if version == ID3v2Version::V2 && (encoding != 0 && encoding != 1) {
-		return Err(ID3v2Error::new(ID3v2ErrorKind::V2InvalidTextEncoding).into());
+		return Err(Id3v2Error::new(Id3v2ErrorKind::V2InvalidTextEncoding).into());
 	}
 
 	match TextEncoding::from_u8(encoding) {

@@ -2,7 +2,7 @@
 //!
 //! See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
 
-use crate::error::{ID3v2Error, ID3v2ErrorKind, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 
 /// Unsynchronise a syncsafe buffer
 ///
@@ -26,7 +26,7 @@ pub fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
 		// Then remove the next byte if it is a zero
 		if discard {
 			if content[next] >= 0xE0 {
-				return Err(ID3v2Error::new(ID3v2ErrorKind::InvalidUnsynchronisation).into());
+				return Err(Id3v2Error::new(Id3v2ErrorKind::InvalidUnsynchronisation).into());
 			}
 
 			if content[next] == 0 {

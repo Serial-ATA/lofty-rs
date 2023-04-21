@@ -9,7 +9,7 @@ use super::items::{
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::ID3v2Version;
-use crate::error::{ErrorKind, ID3v2Error, ID3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::TextEncoding;
@@ -112,7 +112,7 @@ impl<'a> Frame<'a> {
 				None => id,
 				Some(upgraded) => Cow::Borrowed(upgraded),
 			},
-			_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
+			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 		};
 
 		let id = FrameID::new_cow(id_upgraded)?;
@@ -505,7 +505,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			},
 			Err(_) => {
 				let Some(desc) = tag_item.key().map_key(TagType::ID3v2, true) else {
-					return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into());
+					return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into());
 				};
 
 				match tag_item.value() {
@@ -525,7 +525,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 							content: locator.clone(),
 						})
 					},
-					_ => return Err(ID3v2Error::new(ID3v2ErrorKind::BadFrameID).into()),
+					_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameID).into()),
 				}
 			},
 		}

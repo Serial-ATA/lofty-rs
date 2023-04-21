@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::error::{ID3v2Error, ID3v2ErrorKind};
+use crate::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::util::text::{decode_text, encode_text};
 use crate::{Result, TextEncoding};
 
@@ -25,7 +25,7 @@ impl UniqueFileIdentifierFrame {
 		}
 
 		let Some(owner) = decode_text(input, TextEncoding::Latin1, true)? else {
-			return Err(ID3v2Error::new(ID3v2ErrorKind::MissingUFIDOwner).into());
+			return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into());
 		};
 		let identifier = input.to_vec();
 
