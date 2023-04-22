@@ -193,7 +193,7 @@ fn test_strip_tags() {
 		assert!(f.id3v2().is_some());
 		assert!(f.riff_info().is_some());
 
-		TagType::RIFFInfo.remove_from(&mut file).unwrap();
+		TagType::RiffInfo.remove_from(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -215,7 +215,7 @@ fn test_strip_tags() {
 		assert!(f.id3v2().is_some());
 		assert!(f.riff_info().is_some());
 
-		TagType::ID3v2.remove_from(&mut file).unwrap();
+		TagType::Id3v2.remove_from(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -311,9 +311,9 @@ fn test_file_with_garbage_appended() {
 	}
 	file.rewind().unwrap();
 	{
-		TagType::ID3v2.remove_from(&mut file).unwrap();
+		TagType::Id3v2.remove_from(&mut file).unwrap();
 		file.rewind().unwrap();
-		TagType::RIFFInfo.remove_from(&mut file).unwrap();
+		TagType::RiffInfo.remove_from(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
 	{
