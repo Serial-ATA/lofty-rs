@@ -3,7 +3,7 @@ use crate::temp_file;
 use std::io::Seek;
 
 use lofty::id3::v1::{ID3v1Tag, GENRES};
-use lofty::mpeg::MPEGFile;
+use lofty::mpeg::MpegFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
 
 #[test]
@@ -11,7 +11,7 @@ use lofty::{Accessor, AudioFile, ParseOptions};
 fn test_strip_whitespace() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 	{
-		let mut f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let mut f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
 		let mut tag = ID3v1Tag::default();
@@ -21,7 +21,7 @@ fn test_strip_whitespace() {
 	}
 	file.rewind().unwrap();
 	{
-		let f = MPEGFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		assert_eq!(f.id3v1().unwrap().artist().as_deref(), Some("Artist"));
 	}
 }
