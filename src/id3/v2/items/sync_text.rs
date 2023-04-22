@@ -236,11 +236,10 @@ mod tests {
 	};
 	use crate::util::text::TextEncoding;
 
-	#[test]
-	fn sylt_decode() {
-		let expected = SynchronizedText {
+	fn expected(encoding: TextEncoding) -> SynchronizedText {
+		SynchronizedText {
 			information: SyncTextInformation {
-				encoding: TextEncoding::Latin1,
+				encoding,
 				language: *b"eng",
 				timestamp_format: TimestampFormat::MS,
 				content_type: SyncTextContentType::Lyrics,
@@ -253,38 +252,44 @@ mod tests {
 				(30000, String::from("\nThis")),
 				(1_938_000, String::from("\nCorrectly")),
 			],
-		};
+		}
+	}
 
+	#[test]
+	fn sylt_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
 		let parsed_sylt = SynchronizedText::parse(&cont).unwrap();
 
-		assert_eq!(parsed_sylt, expected);
+		assert_eq!(parsed_sylt, expected(TextEncoding::Latin1));
 	}
 
 	#[test]
 	fn sylt_encode() {
-		let to_encode = SynchronizedText {
-			information: SyncTextInformation {
-				encoding: TextEncoding::Latin1,
-				language: *b"eng",
-				timestamp_format: TimestampFormat::MS,
-				content_type: SyncTextContentType::Lyrics,
-				description: Some(String::from("Test Sync Text")),
-			},
-			content: vec![
-				(0, String::from("\nLofty")),
-				(10000, String::from("\nIs")),
-				(15000, String::from("\nReading")),
-				(30000, String::from("\nThis")),
-				(1_938_000, String::from("\nCorrectly")),
-			],
-		};
-
-		let encoded = to_encode.as_bytes().unwrap();
+		let encoded = expected(TextEncoding::Latin1).as_bytes().unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
+
+		assert_eq!(encoded, expected_bytes);
+	}
+
+	#[test]
+	fn sylt_decode_utf16() {
+		let cont =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.sylt");
+
+		let parsed_sylt = SynchronizedText::parse(&cont).unwrap();
+
+		assert_eq!(parsed_sylt, expected(TextEncoding::UTF16));
+	}
+
+	#[test]
+	fn sylt_encode_utf_16() {
+		let encoded = expected(TextEncoding::UTF16).as_bytes().unwrap();
+
+		let expected_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.sylt");
 
 		assert_eq!(encoded, expected_bytes);
 	}
