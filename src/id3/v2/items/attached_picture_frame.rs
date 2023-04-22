@@ -56,14 +56,15 @@ impl AttachedPictureFrame {
 				},
 			}
 		} else {
-			(crate::util::text::decode_text(&mut cursor, TextEncoding::UTF8, true)?)
+			(crate::util::text::decode_text(&mut cursor, TextEncoding::UTF8, true)?.text_or_none())
 				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
 		};
 
 		let pic_type = PictureType::from_u8(cursor.read_u8()?);
 
-		let description =
-			crate::util::text::decode_text(&mut cursor, encoding, true)?.map(Cow::from);
+		let description = crate::util::text::decode_text(&mut cursor, encoding, true)?
+			.text_or_none()
+			.map(Cow::from);
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;

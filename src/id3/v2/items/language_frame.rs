@@ -30,8 +30,8 @@ impl LanguageFrame {
 		let mut language = [0; 3];
 		content.read_exact(&mut language)?;
 
-		let description = decode_text(content, encoding, true)?.unwrap_or_default();
-		let content = decode_text(content, encoding, false)?.unwrap_or_default();
+		let description = decode_text(content, encoding, true)?.content;
+		let content = decode_text(content, encoding, false)?.content;
 
 		Ok(Some(Self {
 			encoding,

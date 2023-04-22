@@ -72,14 +72,14 @@ impl ExtendedTextFrame {
 			content = cursor.into_inner();
 		}
 
-		let description = decode_text(content, encoding, true)?.unwrap_or_default();
+		let description = decode_text(content, encoding, true)?.content;
 
 		let frame_content;
 		// It's possible for the description to be the only string with a BOM
 		if encoding == TextEncoding::UTF16 {
 			if content.len() >= 2 && (content[..2] == [0xFF, 0xFE] || content[..2] == [0xFE, 0xFF])
 			{
-				frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
+				frame_content = decode_text(content, encoding, false)?.content;
 			} else {
 				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
 					Some(raw_text) => utf16_decode(&raw_text, endianness).map_err(|_| {
@@ -89,7 +89,7 @@ impl ExtendedTextFrame {
 				}
 			}
 		} else {
-			frame_content = decode_text(content, encoding, false)?.unwrap_or_default();
+			frame_content = decode_text(content, encoding, false)?.content;
 		}
 
 		Ok(Some(ExtendedTextFrame {

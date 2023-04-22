@@ -82,11 +82,11 @@ impl AudioTextFrame {
 		let encoding = TextEncoding::from_u8(content.read_u8()?)
 			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
 
-		let mime_type = decode_text(content, TextEncoding::Latin1, true)?.unwrap_or_default();
+		let mime_type = decode_text(content, TextEncoding::Latin1, true)?.content;
 
 		let flags = AudioTextFrameFlags::from_u8(content.read_u8()?);
 
-		let equivalent_text = decode_text(content, encoding, true)?.unwrap_or_default();
+		let equivalent_text = decode_text(content, encoding, true)?.content;
 
 		Ok(Self {
 			encoding,

@@ -24,7 +24,7 @@ impl UniqueFileIdentifierFrame {
 			return Ok(None);
 		}
 
-		let Some(owner) = decode_text(input, TextEncoding::Latin1, true)? else {
+		let Some(owner) = decode_text(input, TextEncoding::Latin1, true)?.text_or_none() else {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into());
 		};
 		let identifier = input.to_vec();

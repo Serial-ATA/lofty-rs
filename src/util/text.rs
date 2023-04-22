@@ -37,30 +37,59 @@ impl TextEncoding {
 	}
 }
 
+#[derive(Eq, PartialEq, Debug)]
+pub(crate) struct DecodeTextResult {
+	pub(crate) content: String,
+	pub(crate) bytes_read: usize,
+}
+
+impl DecodeTextResult {
+	pub(crate) fn text_or_none(self) -> Option<String> {
+		if self.content.is_empty() {
+			return None;
+		}
+
+		Some(self.content)
+	}
+}
+
+const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
+	content: String::new(),
+	bytes_read: 0,
+};
+
 pub(crate) fn decode_text<R>(
 	reader: &mut R,
 	encoding: TextEncoding,
 	terminated: bool,
-) -> Result<Option<String>>
+) -> Result<DecodeTextResult>
 where
 	R: Read,
 {
 	let raw_bytes;
+	let bytes_read;
 
 	if terminated {
 		if let Some(bytes) = read_to_terminator(reader, encoding) {
-			raw_bytes = bytes
+			let null_terminator_length = match encoding {
+				TextEncoding::Latin1 | TextEncoding::UTF8 => 1,
+				TextEncoding::UTF16 | TextEncoding::UTF16BE => 2,
+			};
+
+			bytes_read = bytes.len() + null_terminator_length;
+			raw_bytes = bytes;
 		} else {
-			return Ok(None);
+			return Ok(EMPTY_DECODED_TEXT);
 		}
 	} else {
 		let mut bytes = Vec::new();
 		reader.read_to_end(&mut bytes)?;
 
 		if bytes.is_empty() {
-			return Ok(None);
+			return Ok(EMPTY_DECODED_TEXT);
 		}
 
+		bytes_read = bytes.len();
 		raw_bytes = bytes;
 	}
 
@@ -86,11 +115,14 @@ where
 			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
 	};
 
-	if !read_string.is_empty() {
-		return Ok(Some(read_string));
+	if read_string.is_empty() {
+		return Ok(EMPTY_DECODED_TEXT);
 	}
 
-	Ok(None)
+	Ok(DecodeTextResult {
+		content: read_string,
+		bytes_read,
+	})
 }
 
 pub(crate) fn read_to_terminator<R>(reader: &mut R, encoding: TextEncoding) -> Option<Vec<u8>>
@@ -121,7 +153,11 @@ where
 		},
 	}
 
-	(!text_bytes.is_empty()).then_some(text_bytes)
+	if text_bytes.is_empty() {
+		return None;
+	}
+
+	Some(text_bytes)
 }
 
 pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
@@ -226,12 +262,12 @@ mod tests {
 		.unwrap();
 
 		assert_eq!(be_utf16_decode, le_utf16_decode);
-		assert_eq!(be_utf16_decode, Some(TEST_STRING.to_string()));
+		assert_eq!(be_utf16_decode.content, TEST_STRING.to_string());
 
 		let utf8_decode =
-			super::decode_text(&mut TEST_STRING.as_bytes(), TextEncoding::UTF8, false);
+			super::decode_text(&mut TEST_STRING.as_bytes(), TextEncoding::UTF8, false).unwrap();
 
-		assert_eq!(utf8_decode.unwrap(), Some(TEST_STRING.to_string()));
+		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}
 
 	#[test]

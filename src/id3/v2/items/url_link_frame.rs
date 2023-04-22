@@ -18,7 +18,7 @@ impl UrlLinkFrame {
 			return Ok(None);
 		}
 
-		let url = decode_text(&mut &content[..], TextEncoding::Latin1, true)?.unwrap_or_default();
+		let url = decode_text(&mut &content[..], TextEncoding::Latin1, true)?.content;
 
 		Ok(Some(UrlLinkFrame(url)))
 	}

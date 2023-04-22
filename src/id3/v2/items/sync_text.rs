@@ -112,14 +112,15 @@ impl SynchronizedText {
 
 		let mut cursor = Cursor::new(&data[6..]);
 		let description = crate::util::text::decode_text(&mut cursor, encoding, true)
-			.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
+			.text_or_none();
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
 
 		// It's possible for the description to be the only string with a BOM
 		// To be safe, we change the encoding to the concrete variant determined from the description
 		if encoding == TextEncoding::UTF16 {
-			endianness = match [cursor.get_ref()[6], cursor.get_ref()[7]] {
+			endianness = match cursor.get_ref()[..=1] {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
 				// Since the description was already read, we can assume the BOM was valid
@@ -127,26 +128,28 @@ impl SynchronizedText {
 			};
 		}
 
-		let mut pos = cursor.stream_position()?;
-		let total = (data.len() - 6) as u64 - pos;
+		let mut pos = 0;
+		let total = (data.len() - 6) as u64 - cursor.stream_position()?;
 
 		let mut content = Vec::new();
 
 		while pos < total {
 			let text = (|| -> Result<String> {
 				if encoding == TextEncoding::UTF16 {
+					// Check for a BOM
 					let mut bom = [0; 2];
 					cursor
 						.read_exact(&mut bom)
 						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
+					cursor.seek(SeekFrom::Current(-2))?;
+
 					// Encountered text that doesn't include a BOM
 					if bom != [0xFF, 0xFE] && bom != [0xFE, 0xFF] {
-						cursor.seek(SeekFrom::Current(-2))?;
-
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
-							pos += raw_text.len() as u64;
+							// text + null terminator
+							pos += (raw_text.len() + 2) as u64;
 
 							return utf16_decode(&raw_text, endianness)
 								.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
@@ -156,12 +159,12 @@ impl SynchronizedText {
 					}
 				}
 
-				Ok(decode_text(&mut cursor, encoding, true)
-					.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
-					.unwrap_or_default())
-			})()?;
+				let decoded_text = decode_text(&mut cursor, encoding, true)
+					.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+				pos += decoded_text.bytes_read as u64;
 
-			pos += (text.len() + 1) as u64;
+				Ok(decoded_text.content)
+			})()?;
 
 			let time = cursor
 				.read_u32::<BigEndian>()

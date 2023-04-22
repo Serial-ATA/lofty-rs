@@ -49,7 +49,7 @@ impl Popularimeter {
 		}
 
 		Ok(Self {
-			email: email.unwrap_or_default(),
+			email: email.content,
 			rating,
 			counter,
 		})

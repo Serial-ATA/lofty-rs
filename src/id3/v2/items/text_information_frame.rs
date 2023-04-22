@@ -33,12 +33,9 @@ impl TextInformationFrame {
 
 		let content = &mut &content[..];
 		let encoding = verify_encoding(content.read_u8()?, version)?;
-		let text = decode_text(content, encoding, true)?.unwrap_or_default();
+		let value = decode_text(content, encoding, true)?.content;
 
-		Ok(Some(TextInformationFrame {
-			encoding,
-			value: text,
-		}))
+		Ok(Some(TextInformationFrame { encoding, value }))
 	}
 
 	/// Convert an [`TextInformationFrame`] to a byte vec

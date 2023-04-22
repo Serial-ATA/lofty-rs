@@ -53,9 +53,9 @@ impl GeneralEncapsulatedObject {
 		Ok(Self {
 			information: GEOBInformation {
 				encoding,
-				mime_type,
-				file_name,
-				descriptor,
+				mime_type: mime_type.text_or_none(),
+				file_name: file_name.text_or_none(),
+				descriptor: descriptor.text_or_none(),
 			},
 			data,
 		})

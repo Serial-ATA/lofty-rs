@@ -764,7 +764,7 @@ impl SplitTag for ID3v2Tag {
 						};
 						tag.items.push(TagItem::new(
 							ItemKey::MusicBrainzRecordingId,
-							ItemValue::Text(recording_id.unwrap_or_default()),
+							ItemValue::Text(recording_id.content),
 						));
 						false // Frame consumed
 					} else {

@@ -55,8 +55,8 @@ impl ExtendedUrlFrame {
 		let content = &mut &content[..];
 
 		let encoding = verify_encoding(content.read_u8()?, version)?;
-		let description = decode_text(content, encoding, true)?.unwrap_or_default();
-		let content = decode_text(content, TextEncoding::Latin1, false)?.unwrap_or_default();
+		let description = decode_text(content, encoding, true)?.content;
+		let content = decode_text(content, TextEncoding::Latin1, false)?.content;
 
 		Ok(Some(ExtendedUrlFrame {
 			encoding,
