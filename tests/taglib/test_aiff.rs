@@ -10,7 +10,7 @@ use crate::{assert_delta, temp_file};
 fn test_aiff_properties() {
 	let file = lofty::read_from_path("tests/taglib/data/empty.aiff").unwrap();
 
-	assert_eq!(file.file_type(), FileType::AIFF);
+	assert_eq!(file.file_type(), FileType::Aiff);
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
@@ -29,7 +29,7 @@ fn test_aiff_properties() {
 fn test_aifc_properties() {
 	let file = lofty::read_from_path("tests/taglib/data/alaw.aifc").unwrap();
 
-	assert_eq!(file.file_type(), FileType::AIFF);
+	assert_eq!(file.file_type(), FileType::Aiff);
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
@@ -53,16 +53,16 @@ fn test_save_id3v2() {
 	{
 		let mut tfile = lofty::read_from(&mut file).unwrap();
 
-		assert_eq!(tfile.file_type(), FileType::AIFF);
+		assert_eq!(tfile.file_type(), FileType::Aiff);
 
-		assert!(tfile.tag(lofty::TagType::ID3v2).is_none());
+		assert!(tfile.tag(lofty::TagType::Id3v2).is_none());
 
-		let mut tag = lofty::Tag::new(lofty::TagType::ID3v2);
+		let mut tag = lofty::Tag::new(lofty::TagType::Id3v2);
 		tag.set_title("TitleXXX".to_string());
 		tfile.insert_tag(tag);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
-		assert!(tfile.contains_tag_type(lofty::TagType::ID3v2));
+		assert!(tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 
 	file.rewind().unwrap();
@@ -70,15 +70,15 @@ fn test_save_id3v2() {
 	{
 		let mut tfile = lofty::read_from(&mut file).unwrap();
 
-		assert_eq!(tfile.file_type(), FileType::AIFF);
+		assert_eq!(tfile.file_type(), FileType::Aiff);
 
-		let mut tag = tfile.tag(lofty::TagType::ID3v2).unwrap().to_owned();
+		let mut tag = tfile.tag(lofty::TagType::Id3v2).unwrap().to_owned();
 		assert_eq!(tag.title().as_deref(), Some("TitleXXX"));
 		tag.set_title("".to_string());
 		tfile.insert_tag(tag);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
-		assert!(!tfile.contains_tag_type(lofty::TagType::ID3v2));
+		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 
 	file.rewind().unwrap();
@@ -86,9 +86,9 @@ fn test_save_id3v2() {
 	{
 		let tfile = lofty::read_from(&mut file).unwrap();
 
-		assert_eq!(tfile.file_type(), FileType::AIFF);
+		assert_eq!(tfile.file_type(), FileType::Aiff);
 
-		assert!(!tfile.contains_tag_type(lofty::TagType::ID3v2));
+		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 }
 
@@ -100,7 +100,7 @@ fn test_save_id3v2() {
 fn test_fuzzed_file1() {
 	assert_eq!(
 		get_filetype("tests/taglib/data/segfault.aif"),
-		FileType::AIFF
+		FileType::Aiff
 	);
 }
 
