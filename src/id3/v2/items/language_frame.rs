@@ -11,7 +11,7 @@ use byteorder::ReadBytesExt;
 // Generic struct for a text frame that has a language
 //
 // This exists to deduplicate some code between `CommentFrame` and `UnsynchronizedTextFrame`
-pub(in crate::id3::v2) struct LanguageFrame {
+struct LanguageFrame {
 	pub encoding: TextEncoding,
 	pub language: [u8; 3],
 	pub description: String,
@@ -19,7 +19,7 @@ pub(in crate::id3::v2) struct LanguageFrame {
 }
 
 impl LanguageFrame {
-	pub(crate) fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
+	fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
 		if content.len() < 5 {
 			return Ok(None);
 		}
@@ -100,6 +100,21 @@ impl From<LanguageFrame> for CommentFrame {
 }
 
 impl CommentFrame {
+	/// Read a [`CommentFrame`] from a slice
+	///
+	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Unable to decode the text
+	///
+	/// ID3v2.2:
+	///
+	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
+	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
+		Ok(LanguageFrame::parse(content, version)?.map(Into::into))
+	}
+
 	/// Convert a [`CommentFrame`] to a byte vec
 	///
 	/// NOTE: This does not include a frame header
@@ -157,6 +172,21 @@ impl From<LanguageFrame> for UnsynchronizedTextFrame {
 }
 
 impl UnsynchronizedTextFrame {
+	/// Read a [`UnsynchronizedTextFrame`] from a slice
+	///
+	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Unable to decode the text
+	///
+	/// ID3v2.2:
+	///
+	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
+	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
+		Ok(LanguageFrame::parse(content, version)?.map(Into::into))
+	}
+
 	/// Convert a [`UnsynchronizedTextFrame`] to a byte vec
 	///
 	/// NOTE: This does not include a frame header

@@ -1,9 +1,8 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
-use crate::id3::v2::items::language_frame::LanguageFrame;
 use crate::id3::v2::items::{
-	AttachedPictureFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter, TextInformationFrame,
-	UniqueFileIdentifierFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
+	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
@@ -23,8 +22,8 @@ pub(super) fn parse_content(
 		},
 		"TXXX" => ExtendedTextFrame::parse(content, version)?.map(FrameValue::UserText),
 		"WXXX" => ExtendedUrlFrame::parse(content, version)?.map(FrameValue::UserUrl),
-		"COMM" => LanguageFrame::parse(content, version)?.map(|lf| FrameValue::Comment(lf.into())),
-		"USLT" => LanguageFrame::parse(content, version)?.map(|lf| FrameValue::UnsynchronizedText(lf.into())),
+		"COMM" => CommentFrame::parse(content, version)?.map(FrameValue::Comment),
+		"USLT" => UnsynchronizedTextFrame::parse(content, version)?.map(FrameValue::UnsynchronizedText),
 		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
