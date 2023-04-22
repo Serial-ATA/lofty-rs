@@ -2,6 +2,7 @@ use super::header::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
+use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::{FrameValue, ID3v2Version};
 use crate::macros::try_vec;
 
@@ -15,7 +16,7 @@ impl<'a> Frame<'a> {
 		R: Read,
 	{
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
-		let (id, size, mut flags) = match match version {
+		let (id, mut size, mut flags) = match match version {
 			ID3v2Version::V2 => parse_v2_header(reader)?,
 			ID3v2Version::V3 => parse_header(reader, false)?,
 			ID3v2Version::V4 => parse_header(reader, true)?,
@@ -23,6 +24,27 @@ impl<'a> Frame<'a> {
 			None => return Ok((None, true)),
 			Some(frame_header) => frame_header,
 		};
+
+		// Get the encryption method symbol
+		if let Some(enc) = flags.encryption.as_mut() {
+			*enc = reader.read_u8()?;
+			size -= 1;
+		}
+
+		// Get the group identifier
+		if let Some(group) = flags.grouping_identity.as_mut() {
+			*group = reader.read_u8()?;
+			size -= 1;
+		}
+
+		// Get the real data length
+		if flags.data_length_indicator.is_some() || flags.compression {
+			// For some reason, no one can follow the spec, so while a data length indicator is *written*
+			// the flag **isn't always set**
+			let len = reader.read_u32::<BigEndian>()?.unsynch();
+			flags.data_length_indicator = Some(len);
+			size -= 4;
+		}
 
 		let mut content = try_vec![0; size as usize];
 		reader.read_exact(&mut content)?;
@@ -33,10 +55,14 @@ impl<'a> Frame<'a> {
 
 		#[cfg(feature = "id3v2_compression_support")]
 		if flags.compression {
-			let mut decompressed = Vec::new();
-			flate2::Decompress::new(true)
-				.decompress_vec(&content, &mut decompressed, flate2::FlushDecompress::None)
-				.map_err(|err| Id3v2Error::new(Id3v2ErrorKind::Decompression(err)))?;
+			// This is guaranteed to be set above
+			let data_length_indicator = flags.data_length_indicator.unwrap() as usize;
+
+			let mut decompressed = Vec::with_capacity(data_length_indicator);
+			flate2::read::ZlibDecoder::new(&content[..]).read_to_end(&mut decompressed)?;
+			if data_length_indicator != decompressed.len() {
+				log::debug!("Frame data length indicator does not match true decompressed length");
+			}
 
 			content = decompressed
 		}
@@ -46,23 +72,6 @@ impl<'a> Frame<'a> {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
 		}
 
-		let mut content_reader = &*content;
-
-		// Get the encryption method symbol
-		if let Some(enc) = flags.encryption.as_mut() {
-			*enc = content_reader.read_u8()?;
-		}
-
-		// Get the group identifier
-		if let Some(group) = flags.grouping_identity.as_mut() {
-			*group = content_reader.read_u8()?;
-		}
-
-		// Get the real data length
-		if let Some(len) = flags.data_length_indicator.as_mut() {
-			*len = content_reader.read_u32::<BigEndian>()?;
-		}
-
 		let value = if flags.encryption.is_some() {
 			if flags.data_length_indicator.is_none() {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
@@ -70,7 +79,7 @@ impl<'a> Frame<'a> {
 
 			Some(FrameValue::Binary(content))
 		} else {
-			parse_content(&mut content_reader, id.as_str(), version)?
+			parse_content(&mut &content[..], id.as_str(), version)?
 		};
 
 		match value {
