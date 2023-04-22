@@ -80,13 +80,13 @@ fn test_properties_390() {
 fn test_fuzzed_file_1() {
 	assert_eq!(
 		get_filetype("tests/taglib/data/longloop.ape"),
-		FileType::APE
+		FileType::Ape
 	);
 }
 
 #[test]
 fn test_fuzzed_file_2() {
-	assert_eq!(get_filetype("tests/taglib/data/zerodiv.ape"), FileType::APE);
+	assert_eq!(get_filetype("tests/taglib/data/zerodiv.ape"), FileType::Ape);
 }
 
 #[test]

@@ -420,7 +420,7 @@ fn test_remove_metadata() {
 
 		assert!(f.ilst().is_some());
 		assert!(!f.ilst().unwrap().is_empty());
-		TagType::MP4ilst.remove_from(&mut file).unwrap();
+		TagType::Mp4Ilst.remove_from(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
 	{

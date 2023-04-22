@@ -103,12 +103,12 @@ fn test_speex() {
 
 #[test]
 fn test_flac() {
-	file_ref_save("no-tags.flac", FileType::FLAC);
+	file_ref_save("no-tags.flac", FileType::Flac);
 }
 
 #[test]
 fn test_mp3() {
-	file_ref_save("xing.mp3", FileType::MPEG);
+	file_ref_save("xing.mp3", FileType::Mpeg);
 }
 
 #[test]
@@ -120,35 +120,35 @@ fn test_true_audio() {
 
 #[test]
 fn test_mp4_1() {
-	file_ref_save("has-tags.m4a", FileType::MP4);
+	file_ref_save("has-tags.m4a", FileType::Mp4);
 }
 
 #[test]
 #[ignore] // TODO: The file has a malformed `free` atom. How does TagLib handle this? Currently we mess up entirely and just write a duplicate tag.
 fn test_mp4_2() {
-	file_ref_save("no-tags.m4a", FileType::MP4);
+	file_ref_save("no-tags.m4a", FileType::Mp4);
 }
 
 #[test]
 #[ignore] // TODO: We are able to write the first tag and even reread, but the second save causes a `SizeMismatch`.
 fn test_mp4_3() {
-	file_ref_save("no-tags.3g2", FileType::MP4);
+	file_ref_save("no-tags.3g2", FileType::Mp4);
 }
 
 #[test]
 fn test_mp4_4() {
-	file_ref_save("blank_video.m4v", FileType::MP4);
+	file_ref_save("blank_video.m4v", FileType::Mp4);
 }
 
 #[test]
 fn test_wav() {
-	file_ref_save("empty.wav", FileType::WAV);
+	file_ref_save("empty.wav", FileType::Wav);
 }
 
 #[test]
 #[ignore] // TODO: We don't yet support FLAC in oga
 fn test_oga_flac() {
-	file_ref_save("empty_flac.oga", FileType::FLAC);
+	file_ref_save("empty_flac.oga", FileType::Flac);
 }
 
 #[test]
@@ -158,17 +158,17 @@ fn test_oga_vorbis() {
 
 #[test]
 fn test_ape() {
-	file_ref_save("mac-399.ape", FileType::APE);
+	file_ref_save("mac-399.ape", FileType::Ape);
 }
 
 #[test]
 fn test_aiff_1() {
-	file_ref_save("empty.aiff", FileType::AIFF);
+	file_ref_save("empty.aiff", FileType::Aiff);
 }
 
 #[test]
 fn test_aiff_2() {
-	file_ref_save("alaw.aifc", FileType::AIFF);
+	file_ref_save("alaw.aifc", FileType::Aiff);
 }
 
 #[test]
@@ -222,7 +222,7 @@ fn test_default_file_extensions() {
 fn test_file_resolver() {
 	{
 		let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
-		assert_eq!(file.file_type(), FileType::MPEG);
+		assert_eq!(file.file_type(), FileType::Mpeg);
 	}
 
 	struct DummyResolver;
