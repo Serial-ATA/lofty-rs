@@ -127,8 +127,8 @@ impl SynchronizedText {
 			};
 		}
 
-		let mut pos = cursor.stream_position()? as u32;
-		let total = (data.len() - 6) as u32 - pos;
+		let mut pos = cursor.stream_position()?;
+		let total = (data.len() - 6) as u64 - pos;
 
 		let mut content = Vec::new();
 
@@ -146,6 +146,8 @@ impl SynchronizedText {
 
 						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
 						{
+							pos += raw_text.len() as u64;
+
 							return utf16_decode(&raw_text, endianness)
 								.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
 						}
@@ -159,7 +161,7 @@ impl SynchronizedText {
 					.unwrap_or_default())
 			})()?;
 
-			pos += text.len() as u32;
+			pos += (text.len() + 1) as u64;
 
 			let time = cursor
 				.read_u32::<BigEndian>()
