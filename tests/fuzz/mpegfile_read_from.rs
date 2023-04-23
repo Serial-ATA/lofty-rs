@@ -11,6 +11,14 @@ fn crash1() {
 }
 
 #[test]
+fn crash2() {
+	let mut reader =
+		get_reader("mpegfile_read_from/crash-718f75611e77caac968c7f68cdefa1472172f64b");
+
+	let _ = MpegFile::read_from(&mut reader, ParseOptions::new());
+}
+
+#[test]
 fn oom1() {
 	oom_test::<MpegFile>("mpegfile_read_from/oom-f8730cbfa5682ab12343ccb70de9b71a061ef4d0");
 }
