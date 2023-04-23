@@ -51,7 +51,7 @@ pub enum ID3v2Version {
 	V4,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct ID3v2Header {
 	pub version: ID3v2Version,
 	pub flags: ID3v2TagFlags,
