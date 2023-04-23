@@ -19,19 +19,21 @@ struct LanguageFrame {
 }
 
 impl LanguageFrame {
-	fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		if content.len() < 5 {
+	fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let Ok(encoding_byte) = reader.read_u8() else {
 			return Ok(None);
-		}
+		};
 
-		let content = &mut &content[..];
-		let encoding = verify_encoding(content.read_u8()?, version)?;
+		let encoding = verify_encoding(encoding_byte, version)?;
 
 		let mut language = [0; 3];
-		content.read_exact(&mut language)?;
+		reader.read_exact(&mut language)?;
 
-		let description = decode_text(content, encoding, true)?.content;
-		let content = decode_text(content, encoding, false)?.content;
+		let description = decode_text(reader, encoding, true)?.content;
+		let content = decode_text(reader, encoding, false)?.content;
 
 		Ok(Some(Self {
 			encoding,
@@ -111,8 +113,11 @@ impl CommentFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		Ok(LanguageFrame::parse(content, version)?.map(Into::into))
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		Ok(LanguageFrame::parse(reader, version)?.map(Into::into))
 	}
 
 	/// Convert a [`CommentFrame`] to a byte vec
@@ -183,8 +188,11 @@ impl UnsynchronizedTextFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		Ok(LanguageFrame::parse(content, version)?.map(Into::into))
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		Ok(LanguageFrame::parse(reader, version)?.map(Into::into))
 	}
 
 	/// Convert a [`UnsynchronizedTextFrame`] to a byte vec

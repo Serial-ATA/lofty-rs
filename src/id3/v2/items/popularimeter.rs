@@ -1,8 +1,10 @@
 use crate::error::Result;
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
-use byteorder::ReadBytesExt;
 use std::hash::{Hash, Hasher};
+use std::io::Read;
+
+use byteorder::ReadBytesExt;
 
 /// The contents of a popularimeter ("POPM") frame
 ///
@@ -30,21 +32,25 @@ impl Popularimeter {
 	///
 	/// * Email is improperly encoded
 	/// * `bytes` doesn't contain enough data
-	pub fn parse(mut bytes: &[u8]) -> Result<Self> {
-		let content = &mut bytes;
+	pub fn parse<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read,
+	{
+		let email = decode_text(reader, TextEncoding::Latin1, true)?;
+		let rating = reader.read_u8()?;
 
-		let email = decode_text(content, TextEncoding::Latin1, true)?;
-		let rating = content.read_u8()?;
+		let mut counter_content = Vec::new();
+		reader.read_to_end(&mut counter_content)?;
 
 		let counter;
-		let remaining_size = content.len();
+		let remaining_size = counter_content.len();
 		if remaining_size > 8 {
 			counter = u64::MAX;
 		} else {
 			let mut counter_bytes = [0; 8];
 			let counter_start_pos = 8 - remaining_size;
 
-			counter_bytes[counter_start_pos..].copy_from_slice(content);
+			counter_bytes[counter_start_pos..].copy_from_slice(&counter_content);
 			counter = u64::from_be_bytes(counter_bytes);
 		}
 

@@ -5,7 +5,7 @@ use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{encode_text, TextEncoding};
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read, Write as _};
+use std::io::{Read, Write as _};
 
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
@@ -33,17 +33,18 @@ impl AttachedPictureFrame {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn parse(bytes: &[u8], version: ID3v2Version) -> Result<Self> {
-		let mut cursor = Cursor::new(bytes);
-
-		let encoding = match TextEncoding::from_u8(cursor.read_u8()?) {
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Self>
+	where
+		R: Read,
+	{
+		let encoding = match TextEncoding::from_u8(reader.read_u8()?) {
 			Some(encoding) => encoding,
 			None => err!(NotAPicture),
 		};
 
 		let mime_type = if version == ID3v2Version::V2 {
 			let mut format = [0; 3];
-			cursor.read_exact(&mut format)?;
+			reader.read_exact(&mut format)?;
 
 			match format {
 				[b'P', b'N', b'G'] => MimeType::Png,
@@ -56,18 +57,18 @@ impl AttachedPictureFrame {
 				},
 			}
 		} else {
-			(crate::util::text::decode_text(&mut cursor, TextEncoding::UTF8, true)?.text_or_none())
+			(crate::util::text::decode_text(reader, TextEncoding::UTF8, true)?.text_or_none())
 				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
 		};
 
-		let pic_type = PictureType::from_u8(cursor.read_u8()?);
+		let pic_type = PictureType::from_u8(reader.read_u8()?);
 
-		let description = crate::util::text::decode_text(&mut cursor, encoding, true)?
+		let description = crate::util::text::decode_text(reader, encoding, true)?
 			.text_or_none()
 			.map(Cow::from);
 
 		let mut data = Vec::new();
-		cursor.read_to_end(&mut data)?;
+		reader.read_to_end(&mut data)?;
 
 		let picture = Picture {
 			pic_type,

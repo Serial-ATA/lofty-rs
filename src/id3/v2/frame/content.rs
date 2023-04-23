@@ -8,31 +8,38 @@ use crate::id3::v2::ID3v2Version;
 use crate::macros::err;
 use crate::util::text::TextEncoding;
 
+use std::io::Read;
+
 #[rustfmt::skip]
-pub(super) fn parse_content(
-	content: &mut &[u8],
+pub(super) fn parse_content<R: Read>(
+	reader: &mut R,
 	id: &str,
 	version: ID3v2Version,
 ) -> Result<Option<FrameValue>> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
-			let attached_picture = AttachedPictureFrame::parse(content, version)?;
+			let attached_picture = AttachedPictureFrame::parse(reader, version)?;
 			Some(FrameValue::Picture(attached_picture))
 		},
-		"TXXX" => ExtendedTextFrame::parse(content, version)?.map(FrameValue::UserText),
-		"WXXX" => ExtendedUrlFrame::parse(content, version)?.map(FrameValue::UserUrl),
-		"COMM" => CommentFrame::parse(content, version)?.map(FrameValue::Comment),
-		"USLT" => UnsynchronizedTextFrame::parse(content, version)?.map(FrameValue::UnsynchronizedText),
-		"UFID" => UniqueFileIdentifierFrame::parse(content)?.map(FrameValue::UniqueFileIdentifier),
-		_ if id.starts_with('T') => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
+		"TXXX" => ExtendedTextFrame::parse(reader, version)?.map(FrameValue::UserText),
+		"WXXX" => ExtendedUrlFrame::parse(reader, version)?.map(FrameValue::UserUrl),
+		"COMM" => CommentFrame::parse(reader, version)?.map(FrameValue::Comment),
+		"USLT" => UnsynchronizedTextFrame::parse(reader, version)?.map(FrameValue::UnsynchronizedText),
+		"UFID" => UniqueFileIdentifierFrame::parse(reader)?.map(FrameValue::UniqueFileIdentifier),
+		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
-		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(content, version)?.map(FrameValue::Text),
-		_ if id.starts_with('W') => UrlLinkFrame::parse(content)?.map(FrameValue::Url),
-		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(content)?)),
+		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
+		_ if id.starts_with('W') => UrlLinkFrame::parse(reader)?.map(FrameValue::Url),
+		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(reader)?)),
 		// SYLT, GEOB, and any unknown frames
-		_ => Some(FrameValue::Binary(content.to_vec())),
+		_ => {
+			let mut content = Vec::new();
+			reader.read_to_end(&mut content)?;
+
+			Some(FrameValue::Binary(content))
+		},
 	})
 }
 

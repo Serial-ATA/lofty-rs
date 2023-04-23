@@ -41,6 +41,7 @@ impl TextEncoding {
 pub(crate) struct DecodeTextResult {
 	pub(crate) content: String,
 	pub(crate) bytes_read: usize,
+	pub(crate) bom: [u8; 2],
 }
 
 impl DecodeTextResult {
@@ -56,6 +57,7 @@ impl DecodeTextResult {
 const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
 	content: String::new(),
 	bytes_read: 0,
+	bom: [0, 0],
 };
 
 pub(crate) fn decode_text<R>(
@@ -93,6 +95,7 @@ where
 		raw_bytes = bytes;
 	}
 
+	let mut bom = [0, 0];
 	let read_string = match encoding {
 		TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
 		TextEncoding::UTF16 => {
@@ -105,8 +108,14 @@ where
 			}
 
 			match (raw_bytes[0], raw_bytes[1]) {
-				(0xFE, 0xFF) => utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?,
-				(0xFF, 0xFE) => utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?,
+				(0xFE, 0xFF) => {
+					bom = [0xFE, 0xFF];
+					utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?
+				},
+				(0xFF, 0xFE) => {
+					bom = [0xFF, 0xFE];
+					utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?
+				},
 				_ => err!(TextDecode("UTF-16 string has an invalid byte order mark")),
 			}
 		},
@@ -122,6 +131,7 @@ where
 	Ok(DecodeTextResult {
 		content: read_string,
 		bytes_read,
+		bom,
 	})
 }
 
@@ -261,7 +271,8 @@ mod tests {
 		)
 		.unwrap();
 
-		assert_eq!(be_utf16_decode, le_utf16_decode);
+		assert_eq!(be_utf16_decode.content, le_utf16_decode.content);
+		assert_eq!(be_utf16_decode.bytes_read, le_utf16_decode.bytes_read);
 		assert_eq!(be_utf16_decode.content, TEST_STRING.to_string());
 
 		let utf8_decode =

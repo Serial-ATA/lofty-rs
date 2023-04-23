@@ -1,6 +1,8 @@
 use crate::error::Result;
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
+use std::io::Read;
+
 /// An `ID3v2` URL frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct UrlLinkFrame(pub(crate) String);
@@ -13,14 +15,16 @@ impl UrlLinkFrame {
 	/// # Errors
 	///
 	/// * Unable to decode the text as [`TextEncoding::Latin1`]
-	pub fn parse(content: &[u8]) -> Result<Option<Self>> {
-		if content.is_empty() {
+	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let url = decode_text(reader, TextEncoding::Latin1, true)?;
+		if url.bytes_read == 0 {
 			return Ok(None);
 		}
 
-		let url = decode_text(&mut &content[..], TextEncoding::Latin1, true)?.content;
-
-		Ok(Some(UrlLinkFrame(url)))
+		Ok(Some(UrlLinkFrame(url.content)))
 	}
 
 	/// Convert an [`UrlLinkFrame`] to a byte vec

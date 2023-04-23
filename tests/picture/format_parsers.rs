@@ -28,7 +28,7 @@ fn create_original_picture() -> Picture {
 fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
-	let apic = AttachedPictureFrame::parse(&buf, ID3v2Version::V4).unwrap();
+	let apic = AttachedPictureFrame::parse(&mut &buf[..], ID3v2Version::V4).unwrap();
 
 	assert_eq!(create_original_picture(), apic.picture);
 }
@@ -52,7 +52,7 @@ fn as_apic_bytes() {
 fn id3v22_pic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
-	let pic = AttachedPictureFrame::parse(&buf, ID3v2Version::V2).unwrap();
+	let pic = AttachedPictureFrame::parse(&mut &buf[..], ID3v2Version::V2).unwrap();
 
 	assert_eq!(create_original_picture(), pic.picture);
 }

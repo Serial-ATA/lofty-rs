@@ -1,8 +1,9 @@
-use std::hash::{Hash, Hasher};
-
 use crate::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::util::text::{decode_text, encode_text};
 use crate::{Result, TextEncoding};
+
+use std::hash::{Hash, Hasher};
+use std::io::Read;
 
 /// An `ID3v2` unique file identifier frame (UFID).
 #[derive(Clone, Debug, Eq)]
@@ -19,15 +20,16 @@ impl UniqueFileIdentifierFrame {
 	/// # Errors
 	///
 	/// Owner is missing or improperly encoded
-	pub fn parse(input: &mut &[u8]) -> Result<Option<Self>> {
-		if input.is_empty() {
-			return Ok(None);
-		}
-
-		let Some(owner) = decode_text(input, TextEncoding::Latin1, true)?.text_or_none() else {
+	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let Some(owner) = decode_text(reader, TextEncoding::Latin1, true)?.text_or_none() else {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into());
 		};
-		let identifier = input.to_vec();
+
+		let mut identifier = Vec::new();
+		reader.read_to_end(&mut identifier)?;
 
 		Ok(Some(Self { owner, identifier }))
 	}
