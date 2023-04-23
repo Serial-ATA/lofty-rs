@@ -78,7 +78,7 @@ pub enum Id3v2ErrorKind {
 	/// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	/// As such, it is recommended to ignore the tag entirely.
 	V2Compression,
-	/// Arises when an extended header has an invalid size (must be >= 6 bytes)
+	/// Arises when an extended header has an invalid size (must be >= 6 bytes and less than the total tag size)
 	BadExtendedHeaderSize,
 
 	// Frame
@@ -129,7 +129,7 @@ impl Display for Id3v2ErrorKind {
 			),
 			Self::V2Compression => write!(f, "Encountered a compressed ID3v2.2 tag"),
 			Self::BadExtendedHeaderSize => {
-				write!(f, "Found an extended header with an invalid size (< 6)")
+				write!(f, "Found an extended header with an invalid size")
 			},
 
 			// Frame
