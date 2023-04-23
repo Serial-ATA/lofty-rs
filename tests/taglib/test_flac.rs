@@ -190,7 +190,6 @@ fn test_remove_all_pictures() {
 }
 
 #[test]
-#[ignore] // TODO: `VorbisComments::get` is case-sensitive for now, it shouldn't be.
 fn test_repeated_save_1() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -367,8 +366,8 @@ fn test_properties() {
 		file.rewind().unwrap();
 		f.vorbis_comments().unwrap().save_to(&mut file).unwrap();
 	}
+	file.rewind().unwrap();
 	{
-		file.rewind().unwrap();
 		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
 		assert_eq!(f.vorbis_comments(), Some(&tag));
@@ -376,14 +375,17 @@ fn test_properties() {
 }
 
 #[test]
-#[ignore] // TODO: Keys are not yet validated
 fn test_invalid() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
+	// NOTE: In TagLib, there's a `setProperties` method. This is equivalent.
+	f.vorbis_comments_mut().unwrap().clear();
+
 	f.vorbis_comments_mut()
 		.unwrap()
 		.push(String::from("H\x00c4\x00d6"), String::from("bla"));
+	assert!(f.vorbis_comments().unwrap().is_empty());
 }
 
 #[test]
