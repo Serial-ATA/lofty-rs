@@ -1,6 +1,7 @@
-use lofty::{Accessor, AudioFile, FileType, TaggedFileExt};
+use lofty::{Accessor, AudioFile, FileType, ParseOptions, TaggedFileExt};
 
-use std::io::Seek;
+use lofty::iff::aiff::AiffFile;
+use std::io::{Read, Seek};
 
 use crate::util::get_filetype;
 use crate::{assert_delta, temp_file};
@@ -74,7 +75,7 @@ fn test_save_id3v2() {
 
 		let mut tag = tfile.tag(lofty::TagType::Id3v2).unwrap().to_owned();
 		assert_eq!(tag.title().as_deref(), Some("TitleXXX"));
-		tag.set_title("".to_string());
+		tag.set_title(String::new());
 		tfile.insert_tag(tag);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
@@ -92,8 +93,15 @@ fn test_save_id3v2() {
 	}
 }
 
-// TODO: testSaveID3v23
-// TODO: testDuplicateID3v2
+#[test]
+#[ignore] // TODO: Support writing ID3v2.3 tags
+fn test_save_id3v23() {}
+
+#[test]
+#[ignore]
+fn test_duplicate_id3v2() {
+	// Marker test, Lofty will overwrite values in the original tag with any new values it finds in the next tag.
+}
 
 #[test]
 #[ignore]
@@ -104,14 +112,8 @@ fn test_fuzzed_file1() {
 	);
 }
 
-// the file doesn't even have a valid signature
-// #[test]
-// #[ignore]
-// fn test_fuzzed_file2() {
-// let mut file = File::open("tests/taglib/data/excessive_alloc.aif").unwrap();
-//
-// let mut buf = [0; 12];
-// file.read_exact(&mut buf).unwrap();
-//
-// assert_eq!(FileType::from_buffer(&buf).unwrap(), FileType::AIFF);
-// }
+#[test]
+#[ignore]
+fn test_fuzzed_file2() {
+	// Marker test, this file doesn't even have a valid signature. No idea how TagLib manages to read it.
+}
