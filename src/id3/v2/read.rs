@@ -2,7 +2,7 @@ use super::frame::Frame;
 use super::tag::ID3v2Tag;
 use super::ID3v2Header;
 use crate::error::Result;
-use crate::macros::try_vec;
+use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
 
 use std::io::Read;
 
@@ -10,19 +10,32 @@ pub(crate) fn parse_id3v2<R>(bytes: &mut R, header: ID3v2Header) -> Result<ID3v2
 where
 	R: Read,
 {
-	let mut tag_bytes = try_vec![0; (header.size - header.extended_size) as usize];
-	bytes.read_exact(&mut tag_bytes)?;
+	let mut tag_bytes = bytes.take(u64::from(header.size - header.extended_size));
 
-	// Unsynchronize the entire tag
+	let ret;
 	if header.flags.unsynchronisation {
-		tag_bytes = super::util::synchsafe::unsynch_content(&tag_bytes)?;
-	}
+		// Unsynchronize the entire tag
+		let mut unsyncronized_reader = UnsynchronizedStream::new(tag_bytes);
+		ret = read_all_frames_into_tag(&mut unsyncronized_reader, header)?;
 
+		// Get the `Take` back from the `UnsynchronizedStream`
+		tag_bytes = unsyncronized_reader.into_inner();
+	} else {
+		ret = read_all_frames_into_tag(&mut tag_bytes, header)?;
+	};
+
+	// Throw away the rest of the tag (padding, bad frames)
+	std::io::copy(&mut tag_bytes, &mut std::io::sink())?;
+	Ok(ret)
+}
+
+fn read_all_frames_into_tag<R>(reader: &mut R, header: ID3v2Header) -> Result<ID3v2Tag>
+where
+	R: Read,
+{
 	let mut tag = ID3v2Tag::default();
 	tag.original_version = header.version;
 	tag.set_flags(header.flags);
-
-	let reader = &mut &*tag_bytes;
 
 	loop {
 		match Frame::read(reader, header.version)? {

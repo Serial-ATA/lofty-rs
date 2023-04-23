@@ -3,6 +3,129 @@
 //! See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
 
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use std::io::Read;
+
+/// A reader for unsynchronized content
+///
+/// See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
+///
+/// # Examples
+///
+/// ```rust
+/// use std::io::{Cursor, Read};
+/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
+///
+/// fn main() -> lofty::Result<()> {
+/// // The content has two `0xFF 0x00` pairs, which will be removed
+/// let content = [0xFF, 0x00, 0x1A, 0xFF, 0x00, 0x15];
+///
+/// let mut unsynchronized_reader = UnsynchronizedStream::new(Cursor::new(content));
+///
+/// let mut unsynchronized_content = Vec::new();
+/// unsynchronized_reader.read_to_end(&mut unsynchronized_content)?;
+///
+/// // All null bytes following `0xFF` have been removed
+/// assert_eq!(unsynchronized_content, [0xFF, 0x1A, 0xFF, 0x15]);
+/// # Ok(()) }
+/// ```
+pub struct UnsynchronizedStream<R> {
+	reader: R,
+	// Same buffer size as `BufReader`
+	buf: [u8; 8 * 1024],
+	bytes_available: usize,
+	pos: usize,
+	encountered_ff: bool,
+}
+
+impl<R> UnsynchronizedStream<R> {
+	/// Create a new [`UnsynchronizedStream`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
+	/// use std::io::Cursor;
+	///
+	/// let reader = Cursor::new([0xFF, 0x00, 0x1A]);
+	/// let unsynchronized_reader = UnsynchronizedStream::new(reader);
+	/// ```
+	pub fn new(reader: R) -> Self {
+		Self {
+			reader,
+			buf: [0; 8 * 1024],
+			bytes_available: 0,
+			pos: 0,
+			encountered_ff: false,
+		}
+	}
+
+	/// Extract the reader, discarding the [`UnsynchronizedStream`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
+	/// use std::io::Cursor;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// let reader = Cursor::new([0xFF, 0x00, 0x1A]);
+	/// let unsynchronized_reader = UnsynchronizedStream::new(reader);
+	///
+	/// let reader = unsynchronized_reader.into_inner();
+	/// # Ok(()) }
+	/// ```
+	pub fn into_inner(self) -> R {
+		self.reader
+	}
+}
+
+impl<R: Read> Read for UnsynchronizedStream<R> {
+	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+		let dest_len = buf.len();
+		if dest_len == 0 {
+			return Ok(0);
+		}
+
+		let mut dest_pos = 0;
+		loop {
+			if dest_pos == dest_len {
+				break;
+			}
+
+			if self.pos >= self.bytes_available {
+				self.bytes_available = self.reader.read(&mut self.buf)?;
+				self.pos = 0;
+			}
+
+			// Exhausted the reader
+			if self.bytes_available == 0 {
+				break;
+			}
+
+			if self.encountered_ff {
+				self.encountered_ff = false;
+
+				// Only skip the next byte if this is valid unsynchronization
+				// Otherwise just continue as normal
+				if self.buf[self.pos] == 0 {
+					self.pos += 1;
+					continue;
+				}
+			}
+
+			let current_byte = self.buf[self.pos];
+			buf[dest_pos] = current_byte;
+			dest_pos += 1;
+			self.pos += 1;
+
+			if current_byte == 0xFF {
+				self.encountered_ff = true;
+			}
+		}
+
+		Ok(dest_pos)
+	}
+}
 
 /// Unsynchronise a syncsafe buffer
 ///
@@ -222,13 +345,58 @@ impl_synchsafe! {
 
 #[cfg(test)]
 mod tests {
+	const UNSYNCHRONIZED_CONTENT: &[u8] =
+		&[0xFF, 0x00, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00, 0x00];
+	const EXPECTED: &[u8] = &[0xFF, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00];
+
+	#[test]
+	fn unsynchronized_stream() {
+		let reader = Cursor::new(UNSYNCHRONIZED_CONTENT);
+		let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
+
+		let mut final_content = Vec::new();
+		unsynchronized_reader
+			.read_to_end(&mut final_content)
+			.unwrap();
+
+		assert_eq!(final_content, EXPECTED);
+	}
+
+	#[test]
+	fn unsynchronized_stream_large() {
+		// Create a buffer >10k to force a buffer reset
+		let reader = Cursor::new(UNSYNCHRONIZED_CONTENT.repeat(1000));
+		let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
+
+		let mut final_content = Vec::new();
+		unsynchronized_reader
+			.read_to_end(&mut final_content)
+			.unwrap();
+
+		// UNSYNCHRONIZED_CONTENT * 1000 should equal EXPECTED * 1000
+		assert_eq!(final_content, EXPECTED.repeat(1000));
+	}
+
+	#[test]
+	fn unsynchronized_stream_should_not_replace_unrelated() {
+		const ORIGINAL_CONTENT: &[u8] = &[0xFF, 0x1A, 0xFF, 0xC0, 0x10, 0x01];
+
+		let reader = Cursor::new(ORIGINAL_CONTENT);
+		let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
+
+		let mut final_content = Vec::new();
+		unsynchronized_reader
+			.read_to_end(&mut final_content)
+			.unwrap();
+
+		assert_eq!(final_content, ORIGINAL_CONTENT);
+	}
+
 	#[test]
 	fn unsynchronisation() {
-		let valid_unsync = vec![0xFF, 0x00, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00, 0x00];
-
 		assert_eq!(
-			super::unsynch_content(valid_unsync.as_slice()).unwrap(),
-			vec![0xFF, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00]
+			super::unsynch_content(UNSYNCHRONIZED_CONTENT).unwrap(),
+			EXPECTED
 		);
 
 		let invalid_unsync = vec![
@@ -238,7 +406,8 @@ mod tests {
 		assert!(super::unsynch_content(invalid_unsync.as_slice()).is_err());
 	}
 
-	use crate::id3::v2::util::synchsafe::SynchsafeInteger;
+	use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
+	use std::io::{Cursor, Read};
 	macro_rules! synchsafe_integer_tests {
 		(
 			$($int:ty => {
