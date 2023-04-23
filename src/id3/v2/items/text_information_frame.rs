@@ -5,6 +5,8 @@ use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use byteorder::ReadBytesExt;
 
+use std::io::Read;
+
 /// An `ID3v2` text frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct TextInformationFrame {
@@ -26,14 +28,16 @@ impl TextInformationFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		if content.len() < 2 {
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let Ok(encoding_byte) = reader.read_u8() else {
 			return Ok(None);
-		}
+		};
 
-		let content = &mut &content[..];
-		let encoding = verify_encoding(content.read_u8()?, version)?;
-		let value = decode_text(content, encoding, true)?.content;
+		let encoding = verify_encoding(encoding_byte, version)?;
+		let value = decode_text(reader, encoding, true)?.content;
 
 		Ok(Some(TextInformationFrame { encoding, value }))
 	}

@@ -4,6 +4,7 @@ use crate::id3::v2::ID3v2Version;
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
+use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
@@ -47,16 +48,17 @@ impl ExtendedUrlFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		if content.len() < 2 {
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let Ok(encoding_byte) = reader.read_u8() else {
 			return Ok(None);
-		}
+		};
 
-		let content = &mut &content[..];
-
-		let encoding = verify_encoding(content.read_u8()?, version)?;
-		let description = decode_text(content, encoding, true)?.content;
-		let content = decode_text(content, TextEncoding::Latin1, false)?.content;
+		let encoding = verify_encoding(encoding_byte, version)?;
+		let description = decode_text(reader, encoding, true)?.content;
+		let content = decode_text(reader, TextEncoding::Latin1, false)?.content;
 
 		Ok(Some(ExtendedUrlFrame {
 			encoding,

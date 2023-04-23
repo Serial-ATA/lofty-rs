@@ -2,8 +2,8 @@ use super::header::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
-use crate::id3::v2::util::synchsafe::SynchsafeInteger;
-use crate::id3::v2::{FrameValue, ID3v2Version};
+use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
+use crate::id3::v2::{FrameFlags, FrameId, FrameValue, ID3v2Version};
 use crate::macros::try_vec;
 
 use std::io::Read;
@@ -58,50 +58,122 @@ impl<'a> Frame<'a> {
 			size -= 4;
 		}
 
-		let mut content = try_vec![0; size as usize];
-		reader.read_exact(&mut content)?;
-
-		if flags.unsynchronisation {
-			content = crate::id3::v2::util::synchsafe::unsynch_content(content.as_slice())?;
-		}
-
-		#[cfg(feature = "id3v2_compression_support")]
-		if flags.compression {
-			// This is guaranteed to be set above
-			let data_length_indicator = flags.data_length_indicator.unwrap() as usize;
-
-			let mut decompressed = Vec::with_capacity(data_length_indicator);
-			flate2::read::ZlibDecoder::new(&content[..]).read_to_end(&mut decompressed)?;
-			if data_length_indicator != decompressed.len() {
-				log::debug!("Frame data length indicator does not match true decompressed length");
-			}
-
-			content = decompressed
-		}
-
-		#[cfg(not(feature = "id3v2_compression_support"))]
-		if flags.compression {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
-		}
-
 		// Frames must have at least 1 byte, *after* all of the additional data flags can provide
 		if size == 0 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
-		let value = if flags.encryption.is_some() {
-			if flags.data_length_indicator.is_none() {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
-			}
+		// Restrict the reader to the frame content
+		let mut reader = reader.take(u64::from(size));
 
-			Some(FrameValue::Binary(content))
-		} else {
-			parse_content(&mut &content[..], id.as_str(), version)?
-		};
+		// It seems like the flags are applied in the order:
+		//
+		// unsynchronization -> compression -> encryption
+		//
+		// Which all have their own needs, so this gets a little messy...
+		match flags {
+			// Possible combinations:
+			//
+			// * unsynchronized + compressed + encrypted
+			// * unsynchronized + compressed
+			// * unsynchronized + encrypted
+			// * unsynchronized
+			FrameFlags {
+				unsynchronisation: true,
+				..
+			} => {
+				let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
 
-		match value {
-			Some(value) => Ok((Some(Self { id, value, flags }), false)),
-			None => Ok((None, false)),
+				if flags.compression {
+					let mut compression_reader = handle_compression(unsynchronized_reader)?;
+
+					if flags.encryption.is_some() {
+						return handle_encryption(&mut compression_reader, size, id, flags);
+					}
+
+					return parse_frame(&mut compression_reader, id, flags, version);
+				}
+
+				if flags.encryption.is_some() {
+					return handle_encryption(&mut unsynchronized_reader, size, id, flags);
+				}
+
+				return parse_frame(&mut unsynchronized_reader, id, flags, version);
+			},
+			// Possible combinations:
+			//
+			// * compressed + encrypted
+			// * compressed
+			FrameFlags {
+				compression: true, ..
+			} => {
+				let mut compression_reader = handle_compression(reader)?;
+
+				if flags.encryption.is_some() {
+					return handle_encryption(&mut compression_reader, size, id, flags);
+				}
+
+				return parse_frame(&mut compression_reader, id, flags, version);
+			},
+			// Possible combinations:
+			//
+			// * encrypted
+			FrameFlags {
+				encryption: Some(_),
+				..
+			} => {
+				return handle_encryption(&mut reader, size, id, flags);
+			},
+			// Everything else that doesn't have special flags
+			_ => {
+				return parse_frame(&mut reader, id, flags, version);
+			},
 		}
+	}
+}
+
+#[cfg(feature = "id3v2_compression_support")]
+#[allow(clippy::unnecessary_wraps)]
+fn handle_compression<R: Read>(reader: R) -> Result<flate2::read::ZlibDecoder<R>> {
+	Ok(flate2::read::ZlibDecoder::new(reader))
+}
+
+#[cfg(not(feature = "id3v2_compression_support"))]
+fn handle_compression<R>(reader: &mut R) -> flate2::read::ZlibDecoder<R> {
+	return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
+}
+
+fn handle_encryption<R: Read>(
+	reader: &mut R,
+	size: u32,
+	id: FrameId<'static>,
+	flags: FrameFlags,
+) -> Result<(Option<Frame<'static>>, bool)> {
+	if flags.data_length_indicator.is_none() {
+		return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
+	}
+
+	let mut content = try_vec![0; size as usize];
+	reader.read_exact(&mut content)?;
+
+	let encrypted_frame = Frame {
+		id,
+		value: FrameValue::Binary(content),
+		flags,
+	};
+
+	// Nothing further we can do with encrypted frames
+	Ok((Some(encrypted_frame), false))
+}
+
+fn parse_frame<R: Read>(
+	reader: &mut R,
+	id: FrameId<'static>,
+	flags: FrameFlags,
+	version: ID3v2Version,
+) -> Result<(Option<Frame<'static>>, bool)> {
+	match parse_content(reader, id.as_str(), version)? {
+		Some(value) => Ok((Some(Frame { id, value, flags }), false)),
+		None => Ok((None, false)),
 	}
 }

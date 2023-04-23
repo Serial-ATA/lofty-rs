@@ -4,7 +4,7 @@ use crate::id3::v2::ID3v2Version;
 use crate::util::text::{decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding};
 
 use std::hash::{Hash, Hasher};
-use std::io::{Cursor, Read};
+use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
@@ -48,53 +48,58 @@ impl ExtendedTextFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse(content: &[u8], version: ID3v2Version) -> Result<Option<Self>> {
-		if content.len() < 2 {
+	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	where
+		R: Read,
+	{
+		let Ok(encoding_byte) = reader.read_u8() else {
 			return Ok(None);
-		}
+		};
 
-		let mut content = &mut &content[..];
-		let encoding = verify_encoding(content.read_u8()?, version)?;
-
-		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
-		if encoding == TextEncoding::UTF16 {
-			let mut cursor = Cursor::new(content);
-			let mut bom = [0; 2];
-			cursor.read_exact(&mut bom)?;
-
-			match [bom[0], bom[1]] {
-				[0xFF, 0xFE] => endianness = u16::from_le_bytes,
-				[0xFE, 0xFF] => endianness = u16::from_be_bytes,
-				// We'll catch an invalid BOM below
-				_ => {},
-			};
-
-			content = cursor.into_inner();
-		}
-
-		let description = decode_text(content, encoding, true)?.content;
+		let encoding = verify_encoding(encoding_byte, version)?;
+		let description = decode_text(reader, encoding, true)?;
 
 		let frame_content;
+		if encoding != TextEncoding::UTF16 {
+			frame_content = decode_text(reader, encoding, false)?.content;
+
+			return Ok(Some(ExtendedTextFrame {
+				encoding,
+				description: description.content,
+				content: frame_content,
+			}));
+		}
+
 		// It's possible for the description to be the only string with a BOM
-		if encoding == TextEncoding::UTF16 {
-			if content.len() >= 2 && (content[..2] == [0xFF, 0xFE] || content[..2] == [0xFE, 0xFF])
-			{
-				frame_content = decode_text(content, encoding, false)?.content;
-			} else {
-				frame_content = match read_to_terminator(content, TextEncoding::UTF16) {
-					Some(raw_text) => utf16_decode(&raw_text, endianness).map_err(|_| {
-						Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
-					})?,
-					None => String::new(),
-				}
+		'utf16: {
+			let bom = description.bom;
+			let Some(raw_text) = read_to_terminator(reader, TextEncoding::UTF16) else {
+				// Nothing left to do
+				frame_content = String::new();
+				break 'utf16;
+			};
+
+			if raw_text.starts_with(&[0xFF, 0xFE]) || raw_text.starts_with(&[0xFE, 0xFF]) {
+				frame_content =
+					decode_text(&mut &raw_text[..], TextEncoding::UTF16, false)?.content;
+				break 'utf16;
 			}
-		} else {
-			frame_content = decode_text(content, encoding, false)?.content;
+
+			let endianness = match bom {
+				[0xFF, 0xFE] => u16::from_le_bytes,
+				[0xFE, 0xFF] => u16::from_be_bytes,
+				// Handled in description decoding
+				_ => unreachable!(),
+			};
+
+			frame_content = utf16_decode(&raw_text, endianness).map_err(|_| {
+				Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
+			})?;
 		}
 
 		Ok(Some(ExtendedTextFrame {
 			encoding,
-			description,
+			description: description.content,
 			content: frame_content,
 		}))
 	}
