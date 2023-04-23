@@ -27,18 +27,30 @@ impl<'a> Frame<'a> {
 
 		// Get the encryption method symbol
 		if let Some(enc) = flags.encryption.as_mut() {
+			if size < 1 {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			}
+
 			*enc = reader.read_u8()?;
 			size -= 1;
 		}
 
 		// Get the group identifier
 		if let Some(group) = flags.grouping_identity.as_mut() {
+			if size < 1 {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			}
+
 			*group = reader.read_u8()?;
 			size -= 1;
 		}
 
 		// Get the real data length
 		if flags.data_length_indicator.is_some() || flags.compression {
+			if size < 4 {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			}
+
 			// For some reason, no one can follow the spec, so while a data length indicator is *written*
 			// the flag **isn't always set**
 			let len = reader.read_u32::<BigEndian>()?.unsynch();
@@ -70,6 +82,11 @@ impl<'a> Frame<'a> {
 		#[cfg(not(feature = "id3v2_compression_support"))]
 		if flags.compression {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
+		}
+
+		// Frames must have at least 1 byte, *after* all of the additional data flags can provide
+		if size == 0 {
+			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
 		let value = if flags.encryption.is_some() {
