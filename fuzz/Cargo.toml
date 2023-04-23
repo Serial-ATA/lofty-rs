@@ -23,7 +23,7 @@ name = "filetype_from_buffer"
 path = "fuzz_targets/filetype_from_buffer.rs"
 
 [[bin]]
-name = "mp3file_read_from"
+name = "mpegfile_read_from"
 path = "fuzz_targets/mpegfile_read_from.rs"
 
 [[bin]]
