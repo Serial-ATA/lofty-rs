@@ -135,6 +135,10 @@ where
 		}
 	}
 
+	if extended_size > 0 && extended_size >= size {
+		return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
+	}
+
 	Ok(ID3v2Header {
 		version,
 		flags: flags_parsed,
