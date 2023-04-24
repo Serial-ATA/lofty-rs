@@ -6,6 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Tag**/**ItemValue**: `Tag::remove_empty`/`ItemValue::is_empty` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/181))
+- **ItemKey**: Variants for MusicBrainz Release group/Artist/Release artist/Work IDs ([PR](https://github.com/Serial-ATA/lofty-rs/pull/182))
+- **ID3v2**:
+  - `ItemKey::{Barcode, CatalogNumber}` mappings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/183))
+  - `SynchsafeInteger` trait to convert multiple integer types to/from their unsynchronized variants ([PR](https://github.com/Serial-ATA/lofty-rs/pull/187))
+  - Concrete types for all `FrameValue` variants ([PR](https://github.com/Serial-ATA/lofty-rs/pull/184))
+  - Support for the audio-text accessibility (ATXT) frame ([PR](https://github.com/Serial-ATA/lofty-rs/pull/188))
+- **VorbisComments**: `ItemKey::Barcode` mapping ([PR](https://github.com/Serial-ATA/lofty-rs/pull/183))
+
+### Changed
+- **ID3v2**:
+  - `SyncTextInformation` no longer uses a String for its language ([PR](https://github.com/Serial-ATA/lofty-rs/pull/184))
+  - `FrameID` -> `FrameId`
+  - There are fewer redundant, intermediate allocations ([PR](https://github.com/Serial-ATA/lofty-rs/pull/194))
+- **FileType/TagType/ItemKey**: All variants have been changed to UpperCamelCase ([PR](https://github.com/Serial-ATA/lofty-rs/pull/190))
+- **MPEG**:
+  - `MPEGFile` -> `MpegFile`
+  - `MPEGProperties` -> `MpegProperties`
+
+### Fixed
+- **ID3v2**: Compressed frames are now properly handled ([PR](https://github.com/Serial-ATA/lofty-rs/pull/191))
+
 ### Removed
 - **ID3v2**: All uses of `ID3v2ErrorKind::Other` have been replaced with concrete errors
 
