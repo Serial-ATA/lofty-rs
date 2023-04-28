@@ -34,7 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**: Compressed frames are now properly handled ([PR](https://github.com/Serial-ATA/lofty-rs/pull/191))
 
 ### Removed
-- **ID3v2**: All uses of `ID3v2ErrorKind::Other` have been replaced with concrete errors
+- **ID3v2**:
+  - All uses of `ID3v2ErrorKind::Other` have been replaced with concrete errors
+  - `SyncTextInformation` and `GEOBInformation` have been flattened into their respective items ([PR](https://github.com/Serial-ATA/lofty-rs/pull/196))
 
 ## [0.12.1] - 2023-04-10
 
