@@ -1,6 +1,8 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
+use std::hash::{Hash, Hasher};
+
 use byteorder::ReadBytesExt as _;
 
 /// Flags for an ID3v2 audio-text flag
@@ -38,7 +40,7 @@ impl AudioTextFrameFlags {
 }
 
 /// An `ID3v2` audio-text frame
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Eq)]
 pub struct AudioTextFrame {
 	/// The encoding of the description
 	pub encoding: TextEncoding,
@@ -62,6 +64,18 @@ pub struct AudioTextFrame {
 	/// NOTE: Do not replace this field with the unscrambled data unless the [`AudioTextFrameFlags::scrambling`] flag
 	///       has been unset. Otherwise, this frame will no longer be readable.
 	pub audio_data: Vec<u8>,
+}
+
+impl PartialEq for AudioTextFrame {
+	fn eq(&self, other: &Self) -> bool {
+		self.equivalent_text == other.equivalent_text
+	}
+}
+
+impl Hash for AudioTextFrame {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.equivalent_text.hash(state);
+	}
 }
 
 impl AudioTextFrame {
