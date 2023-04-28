@@ -18,6 +18,6 @@ pub use extended_url_frame::ExtendedUrlFrame;
 pub use identifier::UniqueFileIdentifierFrame;
 pub use language_frame::{CommentFrame, UnsynchronizedTextFrame};
 pub use popularimeter::Popularimeter;
-pub use sync_text::{SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat};
+pub use sync_text::{SyncTextContentType, SynchronizedText, TimestampFormat};
 pub use text_information_frame::TextInformationFrame;
 pub use url_link_frame::UrlLinkFrame;

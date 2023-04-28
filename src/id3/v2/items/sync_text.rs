@@ -61,9 +61,9 @@ impl SyncTextContentType {
 	}
 }
 
-/// Information about a [`SynchronizedText`]
+/// Represents an ID3v2 synchronized text frame
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct SyncTextInformation {
+pub struct SynchronizedText {
 	/// The text encoding (description/text)
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
@@ -74,13 +74,6 @@ pub struct SyncTextInformation {
 	pub content_type: SyncTextContentType,
 	/// Unique content description
 	pub description: Option<String>,
-}
-
-/// Represents an ID3v2 synchronized text frame
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct SynchronizedText {
-	/// Information about the synchronized text
-	pub information: SyncTextInformation,
 	/// Collection of timestamps and text
 	pub content: Vec<(u32, String)>,
 }
@@ -175,13 +168,11 @@ impl SynchronizedText {
 		}
 
 		Ok(Self {
-			information: SyncTextInformation {
-				encoding,
-				language,
-				timestamp_format,
-				content_type,
-				description,
-			},
+			encoding,
+			language,
+			timestamp_format,
+			content_type,
+			description,
 			content,
 		})
 	}
@@ -196,25 +187,21 @@ impl SynchronizedText {
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
-		let information = &self.information;
+		let mut data = vec![self.encoding as u8];
 
-		let mut data = vec![information.encoding as u8];
+		if self.language.len() == 3 && self.language.iter().all(u8::is_ascii_alphabetic) {
+			data.write_all(&self.language)?;
+			data.write_u8(self.timestamp_format as u8)?;
+			data.write_u8(self.content_type as u8)?;
 
-		if information.language.len() == 3
-			&& information.language.iter().all(u8::is_ascii_alphabetic)
-		{
-			data.write_all(&information.language)?;
-			data.write_u8(information.timestamp_format as u8)?;
-			data.write_u8(information.content_type as u8)?;
-
-			if let Some(description) = &information.description {
-				data.write_all(&encode_text(description, information.encoding, true))?;
+			if let Some(description) = &self.description {
+				data.write_all(&encode_text(description, self.encoding, true))?;
 			} else {
 				data.write_u8(0)?;
 			}
 
 			for (time, ref text) in &self.content {
-				data.write_all(&encode_text(text, information.encoding, true))?;
+				data.write_all(&encode_text(text, self.encoding, true))?;
 				data.write_u32::<BigEndian>(*time)?;
 			}
 
@@ -231,20 +218,16 @@ impl SynchronizedText {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{
-		SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
-	};
+	use crate::id3::v2::{SyncTextContentType, SynchronizedText, TimestampFormat};
 	use crate::util::text::TextEncoding;
 
 	fn expected(encoding: TextEncoding) -> SynchronizedText {
 		SynchronizedText {
-			information: SyncTextInformation {
-				encoding,
-				language: *b"eng",
-				timestamp_format: TimestampFormat::MS,
-				content_type: SyncTextContentType::Lyrics,
-				description: Some(String::from("Test Sync Text")),
-			},
+			encoding,
+			language: *b"eng",
+			timestamp_format: TimestampFormat::MS,
+			content_type: SyncTextContentType::Lyrics,
+			description: Some(String::from("Test Sync Text")),
 			content: vec![
 				(0, String::from("\nLofty")),
 				(10000, String::from("\nIs")),
