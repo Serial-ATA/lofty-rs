@@ -12,7 +12,7 @@ mod url_link_frame;
 
 pub use attached_picture_frame::AttachedPictureFrame;
 pub use audio_text_frame::{scramble, AudioTextFrame, AudioTextFrameFlags};
-pub use encapsulated_object::{GEOBInformation, GeneralEncapsulatedObject};
+pub use encapsulated_object::GeneralEncapsulatedObject;
 pub use extended_text_frame::ExtendedTextFrame;
 pub use extended_url_frame::ExtendedUrlFrame;
 pub use identifier::UniqueFileIdentifierFrame;

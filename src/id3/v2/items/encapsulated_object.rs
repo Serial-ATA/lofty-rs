@@ -3,9 +3,9 @@ use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::io::{Cursor, Read};
 
-/// Information about a [`GeneralEncapsulatedObject`]
+/// Allows for encapsulation of any file type inside an ID3v2 tag
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct GEOBInformation {
+pub struct GeneralEncapsulatedObject {
 	/// The text encoding of `file_name` and `description`
 	pub encoding: TextEncoding,
 	/// The file's mimetype
@@ -14,13 +14,6 @@ pub struct GEOBInformation {
 	pub file_name: Option<String>,
 	/// A unique content descriptor
 	pub descriptor: Option<String>,
-}
-
-/// Allows for encapsulation of any file type inside an ID3v2 tag
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct GeneralEncapsulatedObject {
-	/// Information about the data
-	pub information: GEOBInformation,
 	/// The file's content
 	pub data: Vec<u8>,
 }
@@ -51,12 +44,10 @@ impl GeneralEncapsulatedObject {
 		cursor.read_to_end(&mut data)?;
 
 		Ok(Self {
-			information: GEOBInformation {
-				encoding,
-				mime_type: mime_type.text_or_none(),
-				file_name: file_name.text_or_none(),
-				descriptor: descriptor.text_or_none(),
-			},
+			encoding,
+			mime_type: mime_type.text_or_none(),
+			file_name: file_name.text_or_none(),
+			descriptor: descriptor.text_or_none(),
 			data,
 		})
 	}
@@ -65,20 +56,20 @@ impl GeneralEncapsulatedObject {
 	///
 	/// NOTE: This does not include a frame header
 	pub fn as_bytes(&self) -> Vec<u8> {
-		let encoding = self.information.encoding;
+		let encoding = self.encoding;
 
 		let mut bytes = vec![encoding as u8];
 
-		if let Some(ref mime_type) = self.information.mime_type {
+		if let Some(ref mime_type) = self.mime_type {
 			bytes.extend(mime_type.as_bytes())
 		}
 
 		bytes.push(0);
 
-		let file_name = self.information.file_name.as_deref();
+		let file_name = self.file_name.as_deref();
 		bytes.extend(&*encode_text(file_name.unwrap_or(""), encoding, true));
 
-		let descriptor = self.information.descriptor.as_deref();
+		let descriptor = self.descriptor.as_deref();
 		bytes.extend(&*encode_text(descriptor.unwrap_or(""), encoding, true));
 
 		bytes.extend(&self.data);
@@ -89,18 +80,16 @@ impl GeneralEncapsulatedObject {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{GEOBInformation, GeneralEncapsulatedObject};
+	use crate::id3::v2::GeneralEncapsulatedObject;
 	use crate::util::text::TextEncoding;
 
 	#[test]
 	fn geob_decode() {
 		let expected = GeneralEncapsulatedObject {
-			information: GEOBInformation {
-				encoding: TextEncoding::Latin1,
-				mime_type: Some(String::from("audio/mpeg")),
-				file_name: Some(String::from("a.mp3")),
-				descriptor: Some(String::from("Test Asset")),
-			},
+			encoding: TextEncoding::Latin1,
+			mime_type: Some(String::from("audio/mpeg")),
+			file_name: Some(String::from("a.mp3")),
+			descriptor: Some(String::from("Test Asset")),
 			data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
@@ -116,12 +105,10 @@ mod tests {
 	#[test]
 	fn geob_encode() {
 		let to_encode = GeneralEncapsulatedObject {
-			information: GEOBInformation {
-				encoding: TextEncoding::Latin1,
-				mime_type: Some(String::from("audio/mpeg")),
-				file_name: Some(String::from("a.mp3")),
-				descriptor: Some(String::from("Test Asset")),
-			},
+			encoding: TextEncoding::Latin1,
+			mime_type: Some(String::from("audio/mpeg")),
+			file_name: Some(String::from("a.mp3")),
+			descriptor: Some(String::from("Test Asset")),
 			data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
