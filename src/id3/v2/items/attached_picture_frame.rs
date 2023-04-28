@@ -1,5 +1,5 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
-use crate::id3::v2::ID3v2Version;
+use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{encode_text, TextEncoding};
@@ -33,7 +33,7 @@ impl AttachedPictureFrame {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Self>
 	where
 		R: Read,
 	{
@@ -42,7 +42,7 @@ impl AttachedPictureFrame {
 			None => err!(NotAPicture),
 		};
 
-		let mime_type = if version == ID3v2Version::V2 {
+		let mime_type = if version == Id3v2Version::V2 {
 			let mut format = [0; 3];
 			reader.read_exact(&mut format)?;
 
@@ -91,16 +91,16 @@ impl AttachedPictureFrame {
 	/// ID3v2.2:
 	///
 	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
-	pub fn as_bytes(&self, version: ID3v2Version) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
 		let mut data = vec![self.encoding as u8];
 
 		let max_size = match version {
 			// ID3v2.2 uses a 24-bit number for sizes
-			ID3v2Version::V2 => 0xFFFF_FF16_u64,
+			Id3v2Version::V2 => 0xFFFF_FF16_u64,
 			_ => u64::from(u32::MAX),
 		};
 
-		if version == ID3v2Version::V2 {
+		if version == Id3v2Version::V2 {
 			// ID3v2.2 PIC is pretty limited with formats
 			let format = match self.picture.mime_type {
 				MimeType::Png => "PNG",

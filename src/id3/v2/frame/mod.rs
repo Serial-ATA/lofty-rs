@@ -8,7 +8,7 @@ use super::items::{
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
-use super::ID3v2Version;
+use super::Id3v2Version;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
@@ -272,7 +272,7 @@ impl FrameValue {
 			FrameValue::UserText(content) => content.as_bytes(),
 			FrameValue::UserUrl(content) => content.as_bytes(),
 			FrameValue::Url(link) => link.as_bytes(),
-			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(ID3v2Version::V4)?,
+			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(Id3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),

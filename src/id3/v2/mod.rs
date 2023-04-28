@@ -26,7 +26,7 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 // Exports
 
-pub use flags::ID3v2TagFlags;
+pub use flags::Id3v2TagFlags;
 pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
 pub use tag::Id3v2Tag;
@@ -42,7 +42,7 @@ pub use restrictions::{
 
 /// The ID3v2 version
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
-pub enum ID3v2Version {
+pub enum Id3v2Version {
 	/// ID3v2.2
 	V2,
 	/// ID3v2.3
@@ -52,14 +52,14 @@ pub enum ID3v2Version {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct ID3v2Header {
-	pub version: ID3v2Version,
-	pub flags: ID3v2TagFlags,
+pub(crate) struct Id3v2Header {
+	pub version: Id3v2Version,
+	pub flags: Id3v2TagFlags,
 	pub size: u32,
 	pub extended_size: u32,
 }
 
-pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<ID3v2Header>
+pub(crate) fn read_id3v2_header<R>(bytes: &mut R) -> Result<Id3v2Header>
 where
 	R: Read,
 {
@@ -72,9 +72,9 @@ where
 
 	// Version is stored as [major, minor], but here we don't care about minor revisions unless there's an error.
 	let version = match header[3] {
-		2 => ID3v2Version::V2,
-		3 => ID3v2Version::V3,
-		4 => ID3v2Version::V4,
+		2 => Id3v2Version::V2,
+		3 => Id3v2Version::V3,
+		4 => Id3v2Version::V4,
 		major => {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into())
 		},
@@ -85,15 +85,15 @@ where
 	// Compression was a flag only used in ID3v2.2 (bit 2).
 	// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 	// The spec recommends just ignoring the tag in this case.
-	if version == ID3v2Version::V2 && flags & 0x40 == 0x40 {
+	if version == Id3v2Version::V2 && flags & 0x40 == 0x40 {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::V2Compression).into());
 	}
 
-	let mut flags_parsed = ID3v2TagFlags {
+	let mut flags_parsed = Id3v2TagFlags {
 		unsynchronisation: flags & 0x80 == 0x80,
-		experimental: (version == ID3v2Version::V4 || version == ID3v2Version::V3)
+		experimental: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x20 == 0x20,
-		footer: (version == ID3v2Version::V4 || version == ID3v2Version::V3)
+		footer: (version == Id3v2Version::V4 || version == Id3v2Version::V3)
 			&& flags & 0x10 == 0x10,
 		crc: false,         // Retrieved later if applicable
 		restrictions: None, // Retrieved later if applicable
@@ -103,7 +103,7 @@ where
 	let mut extended_size = 0;
 
 	let extended_header =
-		(version == ID3v2Version::V4 || version == ID3v2Version::V3) && flags & 0x40 == 0x40;
+		(version == Id3v2Version::V4 || version == Id3v2Version::V3) && flags & 0x40 == 0x40;
 
 	if extended_header {
 		extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
@@ -139,7 +139,7 @@ where
 		return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
 	}
 
-	Ok(ID3v2Header {
+	Ok(Id3v2Header {
 		version,
 		flags: flags_parsed,
 		size,

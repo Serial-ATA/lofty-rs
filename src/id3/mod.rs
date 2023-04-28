@@ -8,7 +8,7 @@ pub mod v2;
 
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::try_vec;
-use v2::{read_id3v2_header, ID3v2Header};
+use v2::{read_id3v2_header, Id3v2Header};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
@@ -85,7 +85,7 @@ where
 pub(crate) fn find_id3v2<R>(
 	data: &mut R,
 	read: bool,
-) -> Result<ID3FindResults<ID3v2Header, Option<Vec<u8>>>>
+) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>>
 where
 	R: Read + Seek,
 {

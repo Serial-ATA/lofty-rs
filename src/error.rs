@@ -94,7 +94,7 @@ pub enum Id3v2ErrorKind {
 	InvalidUnsynchronisation,
 	/// Arises when a text encoding other than Latin-1 or UTF-16 appear in an ID3v2.2 tag
 	V2InvalidTextEncoding,
-	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::ID3v2Version::V2)
+	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
 	BadPictureFormat(String),
 	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
 	BadSyncText,

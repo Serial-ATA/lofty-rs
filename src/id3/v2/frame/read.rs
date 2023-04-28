@@ -3,7 +3,7 @@ use super::Frame;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
-use crate::id3::v2::{FrameFlags, FrameId, FrameValue, ID3v2Version};
+use crate::id3::v2::{FrameFlags, FrameId, FrameValue, Id3v2Version};
 use crate::macros::try_vec;
 
 use std::io::Read;
@@ -11,15 +11,15 @@ use std::io::Read;
 use byteorder::{BigEndian, ReadBytesExt};
 
 impl<'a> Frame<'a> {
-	pub(crate) fn read<R>(reader: &mut R, version: ID3v2Version) -> Result<(Option<Self>, bool)>
+	pub(crate) fn read<R>(reader: &mut R, version: Id3v2Version) -> Result<(Option<Self>, bool)>
 	where
 		R: Read,
 	{
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
 		let (id, mut size, mut flags) = match match version {
-			ID3v2Version::V2 => parse_v2_header(reader)?,
-			ID3v2Version::V3 => parse_header(reader, false)?,
-			ID3v2Version::V4 => parse_header(reader, true)?,
+			Id3v2Version::V2 => parse_v2_header(reader)?,
+			Id3v2Version::V3 => parse_header(reader, false)?,
+			Id3v2Version::V4 => parse_header(reader, true)?,
 		} {
 			None => return Ok((None, true)),
 			Some(frame_header) => frame_header,
@@ -170,7 +170,7 @@ fn parse_frame<R: Read>(
 	reader: &mut R,
 	id: FrameId<'static>,
 	flags: FrameFlags,
-	version: ID3v2Version,
+	version: Id3v2Version,
 ) -> Result<(Option<Frame<'static>>, bool)> {
 	match parse_content(reader, id.as_str(), version)? {
 		Some(value) => Ok((Some(Frame { id, value, flags }), false)),
