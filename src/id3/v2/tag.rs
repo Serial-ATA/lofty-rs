@@ -98,13 +98,13 @@ macro_rules! impl_accessor {
 	description = "An `ID3v2` tag",
 	supported_formats(Aac, Aiff, Mpeg, Wav, read_only(Flac, Ape))
 )]
-pub struct ID3v2Tag {
+pub struct Id3v2Tag {
 	flags: ID3v2TagFlags,
 	pub(super) original_version: ID3v2Version,
 	pub(crate) frames: Vec<Frame<'static>>,
 }
 
-impl IntoIterator for ID3v2Tag {
+impl IntoIterator for Id3v2Tag {
 	type Item = Frame<'static>;
 	type IntoIter = std::vec::IntoIter<Self::Item>;
 
@@ -113,7 +113,7 @@ impl IntoIterator for ID3v2Tag {
 	}
 }
 
-impl<'a> IntoIterator for &'a ID3v2Tag {
+impl<'a> IntoIterator for &'a Id3v2Tag {
 	type Item = &'a Frame<'static>;
 	type IntoIter = std::slice::Iter<'a, Frame<'static>>;
 
@@ -122,7 +122,7 @@ impl<'a> IntoIterator for &'a ID3v2Tag {
 	}
 }
 
-impl Default for ID3v2Tag {
+impl Default for Id3v2Tag {
 	fn default() -> Self {
 		Self {
 			flags: ID3v2TagFlags::default(),
@@ -132,16 +132,16 @@ impl Default for ID3v2Tag {
 	}
 }
 
-impl ID3v2Tag {
+impl Id3v2Tag {
 	/// Create a new empty `ID3v2Tag`
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::id3::v2::ID3v2Tag;
+	/// use lofty::id3::v2::Id3v2Tag;
 	/// use lofty::TagExt;
 	///
-	/// let id3v2_tag = ID3v2Tag::new();
+	/// let id3v2_tag = Id3v2Tag::new();
 	/// assert!(id3v2_tag.is_empty());
 	/// ```
 	pub fn new() -> Self {
@@ -167,7 +167,7 @@ impl ID3v2Tag {
 	}
 }
 
-impl ID3v2Tag {
+impl Id3v2Tag {
 	/// Gets a [`Frame`] from an id
 	///
 	/// NOTE: This is *not* case-sensitive
@@ -437,7 +437,7 @@ where
 	}
 }
 
-impl Accessor for ID3v2Tag {
+impl Accessor for Id3v2Tag {
 	impl_accessor!(
 		title  => "TIT2";
 		artist => "TPE1";
@@ -558,7 +558,7 @@ impl Accessor for ID3v2Tag {
 	}
 }
 
-impl TagExt for ID3v2Tag {
+impl TagExt for Id3v2Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a FrameId<'a>;
 
@@ -617,23 +617,23 @@ impl TagExt for ID3v2Tag {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct SplitTagRemainder(ID3v2Tag);
+pub struct SplitTagRemainder(Id3v2Tag);
 
-impl From<SplitTagRemainder> for ID3v2Tag {
+impl From<SplitTagRemainder> for Id3v2Tag {
 	fn from(from: SplitTagRemainder) -> Self {
 		from.0
 	}
 }
 
 impl Deref for SplitTagRemainder {
-	type Target = ID3v2Tag;
+	type Target = Id3v2Tag;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
 }
 
-impl SplitTag for ID3v2Tag {
+impl SplitTag for Id3v2Tag {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
@@ -845,9 +845,9 @@ impl SplitTag for ID3v2Tag {
 }
 
 impl MergeTag for SplitTagRemainder {
-	type Merged = ID3v2Tag;
+	type Merged = Id3v2Tag;
 
-	fn merge_tag(self, mut tag: Tag) -> ID3v2Tag {
+	fn merge_tag(self, mut tag: Tag) -> Id3v2Tag {
 		fn join_text_items<'a>(
 			tag: &mut Tag,
 			keys: impl IntoIterator<Item = &'a ItemKey>,
@@ -981,13 +981,13 @@ impl MergeTag for SplitTagRemainder {
 	}
 }
 
-impl From<ID3v2Tag> for Tag {
-	fn from(input: ID3v2Tag) -> Self {
+impl From<Id3v2Tag> for Tag {
+	fn from(input: Id3v2Tag) -> Self {
 		input.split_tag().1
 	}
 }
 
-impl From<Tag> for ID3v2Tag {
+impl From<Tag> for Id3v2Tag {
 	fn from(input: Tag) -> Self {
 		SplitTagRemainder::default().merge_tag(input)
 	}
@@ -1077,7 +1077,7 @@ mod tests {
 	};
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
-		FrameFlags, FrameId, FrameValue, ID3v2Tag, ID3v2Version, TextInformationFrame,
+		FrameFlags, FrameId, FrameValue, ID3v2Version, Id3v2Tag, TextInformationFrame,
 		UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -1089,7 +1089,7 @@ mod tests {
 
 	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
 
-	fn read_tag(path: &str) -> ID3v2Tag {
+	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
@@ -1100,7 +1100,7 @@ mod tests {
 
 	#[test]
 	fn parse_id3v2() {
-		let mut expected_tag = ID3v2Tag::default();
+		let mut expected_tag = Id3v2Tag::default();
 
 		let encoding = TextEncoding::Latin1;
 		let flags = FrameFlags::default();
@@ -1254,7 +1254,7 @@ mod tests {
 			counter: 65535,
 		};
 
-		let converted_tag: ID3v2Tag = tag.into();
+		let converted_tag: Id3v2Tag = tag.into();
 
 		assert_eq!(converted_tag.frames.len(), 1);
 		let actual_frame = converted_tag.frames.first().unwrap();
@@ -1274,7 +1274,7 @@ mod tests {
 
 	#[test]
 	fn fail_write_bad_frame() {
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		tag.insert(Frame {
 			id: FrameId::Valid(Cow::Borrowed("ABCD")),
 			value: FrameValue::Url(UrlLinkFrame(String::from("FOO URL"))),
@@ -1294,7 +1294,7 @@ mod tests {
 
 	#[test]
 	fn tag_to_id3v2() {
-		fn verify_frame(tag: &ID3v2Tag, id: &str, value: &str) {
+		fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
 			let frame = tag.get(id);
 
 			assert!(frame.is_some());
@@ -1312,7 +1312,7 @@ mod tests {
 
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v2);
 
-		let id3v2_tag: ID3v2Tag = tag.into();
+		let id3v2_tag: Id3v2Tag = tag.into();
 
 		verify_frame(&id3v2_tag, "TIT2", "Foo title");
 		verify_frame(&id3v2_tag, "TPE1", "Bar artist");
@@ -1334,8 +1334,8 @@ mod tests {
 	}
 
 	#[allow(clippy::field_reassign_with_default)]
-	fn create_full_test_tag(version: ID3v2Version) -> ID3v2Tag {
-		let mut tag = ID3v2Tag::default();
+	fn create_full_test_tag(version: ID3v2Version) -> Id3v2Tag {
+		let mut tag = Id3v2Tag::default();
 		tag.original_version = version;
 
 		let encoding = TextEncoding::UTF16;
@@ -1518,7 +1518,7 @@ mod tests {
 	#[test]
 	fn multi_value_frame_to_tag() {
 		use crate::traits::Accessor;
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 
 		tag.set_artist(String::from("foo\0bar\0baz"));
 
@@ -1545,7 +1545,7 @@ mod tests {
 			ItemValue::Text(String::from("baz")),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 		assert_eq!(tag.artist().as_deref(), Some("foo/bar/baz"))
 	}
 
@@ -1556,7 +1556,7 @@ mod tests {
 
 	#[test]
 	fn replaygain_tag_conversion() {
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		tag.insert(
 			Frame::new(
 				"TXXX",
@@ -1639,7 +1639,7 @@ mod tests {
 		));
 		assert_eq!(20, tag.len());
 
-		let id3v2 = ID3v2Tag::from(tag.clone());
+		let id3v2 = Id3v2Tag::from(tag.clone());
 		let (split_remainder, split_tag) = id3v2.split_tag();
 
 		assert_eq!(0, split_remainder.0.len());
@@ -1651,7 +1651,7 @@ mod tests {
 
 	#[test]
 	fn comments() {
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		let encoding = TextEncoding::Latin1;
 		let flags = FrameFlags::default();
 		let custom_descriptor = "lofty-rs";
@@ -1720,7 +1720,7 @@ mod tests {
 		)
 		.unwrap();
 
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 
 		tag.insert(txxx_frame.clone());
 		tag.insert(wxxx_frame.clone());
@@ -1743,7 +1743,7 @@ mod tests {
 			.zip(tag.items())
 			.all(|(expected, actual)| expected == actual));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.frames.len(), 2);
 		assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
@@ -1751,7 +1751,7 @@ mod tests {
 
 	#[test]
 	fn user_defined_frames_conversion() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		id3v2.insert(
 			Frame::new(
 				"TXXX",
@@ -1805,7 +1805,7 @@ mod tests {
 
 	#[test]
 	fn set_track() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let track = 1;
 
 		id3v2.set_track(track);
@@ -1816,7 +1816,7 @@ mod tests {
 
 	#[test]
 	fn set_track_total() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let track_total = 2;
 
 		id3v2.set_track_total(track_total);
@@ -1827,7 +1827,7 @@ mod tests {
 
 	#[test]
 	fn set_track_and_track_total() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let track = 1;
 		let track_total = 2;
 
@@ -1840,7 +1840,7 @@ mod tests {
 
 	#[test]
 	fn set_track_total_and_track() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let track_total = 2;
 		let track = 1;
 
@@ -1853,7 +1853,7 @@ mod tests {
 
 	#[test]
 	fn set_disk() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let disk = 1;
 
 		id3v2.set_disk(disk);
@@ -1864,7 +1864,7 @@ mod tests {
 
 	#[test]
 	fn set_disk_total() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let disk_total = 2;
 
 		id3v2.set_disk_total(disk_total);
@@ -1875,7 +1875,7 @@ mod tests {
 
 	#[test]
 	fn set_disk_and_disk_total() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let disk = 1;
 		let disk_total = 2;
 
@@ -1888,7 +1888,7 @@ mod tests {
 
 	#[test]
 	fn set_disk_total_and_disk() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let disk_total = 2;
 		let disk = 1;
 
@@ -1911,7 +1911,7 @@ mod tests {
 			ItemValue::Text(track_number.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.track().unwrap(), track_number);
 		assert!(tag.track_total().is_none());
@@ -1929,7 +1929,7 @@ mod tests {
 			ItemValue::Text(track_total.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.track().unwrap(), DEFAULT_NUMBER_IN_PAIR);
 		assert_eq!(tag.track_total().unwrap(), track_total);
@@ -1953,7 +1953,7 @@ mod tests {
 			ItemValue::Text(track_total.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.track().unwrap(), track_number);
 		assert_eq!(tag.track_total().unwrap(), track_total);
@@ -1971,7 +1971,7 @@ mod tests {
 			ItemValue::Text(disk_number.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.disk().unwrap(), disk_number);
 		assert!(tag.disk_total().is_none());
@@ -1989,7 +1989,7 @@ mod tests {
 			ItemValue::Text(disk_total.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.disk().unwrap(), DEFAULT_NUMBER_IN_PAIR);
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
@@ -2013,14 +2013,14 @@ mod tests {
 			ItemValue::Text(disk_total.to_string()),
 		));
 
-		let tag: ID3v2Tag = tag.into();
+		let tag: Id3v2Tag = tag.into();
 
 		assert_eq!(tag.disk().unwrap(), disk_number);
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 
 	fn create_tag_with_trck_and_tpos_frame(content: &'static str) -> Tag {
-		fn insert_frame(id: &'static str, content: &'static str, tag: &mut ID3v2Tag) {
+		fn insert_frame(id: &'static str, content: &'static str, tag: &mut Id3v2Tag) {
 			tag.insert(new_text_frame(
 				FrameId::Valid(Cow::Borrowed(id)),
 				content.to_string(),
@@ -2028,7 +2028,7 @@ mod tests {
 			));
 		}
 
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 
 		insert_frame("TRCK", content, &mut tag);
 		insert_frame("TPOS", content, &mut tag);
@@ -2080,7 +2080,7 @@ mod tests {
 
 	#[test]
 	fn ufid_frame_with_musicbrainz_record_id() {
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		let unknown_ufid_frame = UniqueFileIdentifierFrame {
 			owner: "other".to_owned(),
 			identifier: b"0123456789".to_vec(),

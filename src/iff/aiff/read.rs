@@ -1,7 +1,7 @@
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::Result;
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::{decode_err, err};
 use crate::probe::ParseOptions;
@@ -45,7 +45,7 @@ where
 	let mut annotations = Vec::new();
 	let mut comments = Vec::new();
 
-	let mut id3v2_tag: Option<ID3v2Tag> = None;
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
 	let mut chunks = Chunks::<BigEndian>::new(file_len);
 

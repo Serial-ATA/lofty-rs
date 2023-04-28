@@ -2,7 +2,7 @@ use super::properties::WavProperties;
 use super::tag::RIFFInfoList;
 use super::WavFile;
 use crate::error::Result;
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
 use crate::probe::ParseOptions;
@@ -45,7 +45,7 @@ where
 	let mut fmt = Vec::new();
 
 	let mut riff_info = RIFFInfoList::default();
-	let mut id3v2_tag: Option<ID3v2Tag> = None;
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
 	let mut chunks = Chunks::<LittleEndian>::new(file_len);
 

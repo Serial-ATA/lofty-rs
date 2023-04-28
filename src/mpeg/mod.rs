@@ -9,7 +9,7 @@ pub use properties::MpegProperties;
 
 use crate::ape::tag::ApeTag;
 use crate::id3::v1::tag::ID3v1Tag;
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 
 use lofty_attr::LoftyFile;
 
@@ -20,7 +20,7 @@ use lofty_attr::LoftyFile;
 pub struct MpegFile {
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
-	pub(crate) id3v2_tag: Option<ID3v2Tag>,
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	/// An ID3v1 tag
 	#[lofty(tag_type = "Id3v1")]
 	pub(crate) id3v1_tag: Option<ID3v1Tag>,

@@ -6,7 +6,7 @@ use super::{ApeFile, ApeProperties};
 use crate::error::Result;
 use crate::id3::v1::tag::ID3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
 use crate::macros::decode_err;
 use crate::probe::ParseOptions;
@@ -24,7 +24,7 @@ where
 
 	let mut stream_len = end - start;
 
-	let mut id3v2_tag: Option<ID3v2Tag> = None;
+	let mut id3v2_tag: Option<Id3v2Tag> = None;
 	let mut id3v1_tag: Option<ID3v1Tag> = None;
 	let mut ape_tag: Option<ApeTag> = None;
 

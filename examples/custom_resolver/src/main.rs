@@ -1,6 +1,6 @@
 use lofty::ape::ApeTag;
 use lofty::error::Result as LoftyResult;
-use lofty::id3::v2::ID3v2Tag;
+use lofty::id3::v2::Id3v2Tag;
 use lofty::resolve::FileResolver;
 use lofty::{FileProperties, FileType, ParseOptions, TagType};
 use lofty_attr::LoftyFile;
@@ -26,7 +26,7 @@ struct MyFile {
 	// Specify a tag type
 	#[lofty(tag_type = "Id3v2")]
 	// Let's say our file *always* has an ID3v2Tag present.
-	pub id3v2_tag: ID3v2Tag,
+	pub id3v2_tag: Id3v2Tag,
 
 	// Our APE tag is optional in this format, so we wrap it in an `Option`
 	#[lofty(tag_type = "Ape")]
@@ -45,7 +45,7 @@ impl MyFile {
 		// Your parsing logic...
 
 		Ok(Self {
-			id3v2_tag: ID3v2Tag::default(),
+			id3v2_tag: Id3v2Tag::default(),
 			ape_tag: None,
 			properties: FileProperties::default(),
 		})

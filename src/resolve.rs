@@ -130,7 +130,7 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 #[cfg(test)]
 mod tests {
 	use crate::file::{FileType, TaggedFileExt};
-	use crate::id3::v2::ID3v2Tag;
+	use crate::id3::v2::Id3v2Tag;
 	use crate::probe::ParseOptions;
 	use crate::properties::FileProperties;
 	use crate::resolve::{register_custom_resolver, FileResolver};
@@ -148,7 +148,7 @@ mod tests {
 	#[lofty(file_type = "MyFile")]
 	struct MyFile {
 		#[lofty(tag_type = "Id3v2")]
-		id3v2_tag: Option<ID3v2Tag>,
+		id3v2_tag: Option<Id3v2Tag>,
 		properties: FileProperties,
 	}
 
@@ -180,7 +180,7 @@ mod tests {
 			_reader: &mut R,
 			_parse_options: ParseOptions,
 		) -> crate::error::Result<Self> {
-			let mut tag = ID3v2Tag::default();
+			let mut tag = Id3v2Tag::default();
 			tag.set_artist(String::from("All is well!"));
 
 			Ok(Self {
