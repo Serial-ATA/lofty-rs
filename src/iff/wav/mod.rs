@@ -4,7 +4,7 @@ mod properties;
 mod read;
 pub(crate) mod tag;
 
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 
 use lofty_attr::LoftyFile;
 
@@ -22,7 +22,7 @@ pub struct WavFile {
 	pub(crate) riff_info_tag: Option<RIFFInfoList>,
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
-	pub(crate) id3v2_tag: Option<ID3v2Tag>,
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	/// The file's audio properties
 	pub(crate) properties: WavProperties,
 }

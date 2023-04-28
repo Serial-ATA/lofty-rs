@@ -4,7 +4,7 @@
 //!
 //! See:
 //!
-//! * [`ID3v2Tag`]
+//! * [`Id3v2Tag`]
 //! * [Frame]
 
 mod flags;
@@ -29,7 +29,7 @@ use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 pub use flags::ID3v2TagFlags;
 pub use util::upgrade::{upgrade_v2, upgrade_v3};
 
-pub use tag::ID3v2Tag;
+pub use tag::Id3v2Tag;
 
 pub use items::*;
 

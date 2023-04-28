@@ -11,7 +11,7 @@ pub(crate) mod write;
 
 use crate::error::Result;
 use crate::file::{FileType, TaggedFile};
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
@@ -44,7 +44,7 @@ pub use properties::FlacProperties;
 pub struct FlacFile {
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
-	pub(crate) id3v2_tag: Option<ID3v2Tag>,
+	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	/// The vorbis comments contained in the file
 	#[lofty(tag_type = "VorbisComments")]
 	pub(crate) vorbis_comments_tag: Option<VorbisComments>,

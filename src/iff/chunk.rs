@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::id3::v2::tag::ID3v2Tag;
+use crate::id3::v2::tag::Id3v2Tag;
 use crate::macros::{err, try_vec};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -91,7 +91,7 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(content)
 	}
 
-	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<ID3v2Tag>
+	pub fn id3_chunk<R>(&mut self, data: &mut R) -> Result<Id3v2Tag>
 	where
 		R: Read + Seek,
 	{

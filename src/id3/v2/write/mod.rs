@@ -8,7 +8,7 @@ use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
-use crate::id3::v2::ID3v2Tag;
+use crate::id3::v2::Id3v2Tag;
 use crate::macros::err;
 use crate::probe::Probe;
 
@@ -49,13 +49,13 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 
 	let file_type = file_type.unwrap();
 
-	if !ID3v2Tag::SUPPORTED_FORMATS.contains(&file_type) {
+	if !Id3v2Tag::SUPPORTED_FORMATS.contains(&file_type) {
 		err!(UnsupportedTag);
 	}
 
 	// Attempting to write a non-empty tag to a read only format
 	// An empty tag implies the tag should be stripped.
-	if ID3v2Tag::READ_ONLY_FORMATS.contains(&file_type) {
+	if Id3v2Tag::READ_ONLY_FORMATS.contains(&file_type) {
 		let mut peek = tag.frames.clone().peekable();
 		if peek.peek().is_some() {
 			err!(UnsupportedTag);
@@ -253,12 +253,12 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{ID3v2Tag, ID3v2TagFlags};
+	use crate::id3::v2::{ID3v2TagFlags, Id3v2Tag};
 	use crate::{Accessor, TagExt};
 
 	#[test]
 	fn id3v2_write_crc32() {
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		tag.set_artist(String::from("Foo artist"));
 
 		let flags = ID3v2TagFlags {

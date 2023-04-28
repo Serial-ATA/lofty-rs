@@ -172,10 +172,10 @@ fn flac_remove_id3v2() {
 
 #[test]
 fn flac_try_write_non_empty_id3v2() {
-	use lofty::id3::v2::ID3v2Tag;
+	use lofty::id3::v2::Id3v2Tag;
 	use lofty::Accessor;
 
-	let mut tag = ID3v2Tag::default();
+	let mut tag = Id3v2Tag::default();
 	tag.set_artist(String::from("Foo artist"));
 
 	assert!(tag
