@@ -2,7 +2,7 @@
 //!
 //! # ID3v1 notes
 //!
-//! See also: [`ID3v1Tag`]
+//! See also: [`Id3v1Tag`]
 //!
 //! ## Genres
 //!
@@ -22,4 +22,4 @@ pub(crate) mod write;
 // Exports
 
 pub use constants::GENRES;
-pub use tag::ID3v1Tag;
+pub use tag::Id3v1Tag;

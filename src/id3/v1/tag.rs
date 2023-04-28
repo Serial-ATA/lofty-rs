@@ -56,7 +56,7 @@ macro_rules! impl_accessor {
 	description = "An ID3v1 tag",
 	supported_formats(Aac, Ape, Mpeg, WavPack)
 )]
-pub struct ID3v1Tag {
+pub struct Id3v1Tag {
 	/// Track title, 30 bytes max
 	pub title: Option<String>,
 	/// Track artist, 30 bytes max
@@ -89,16 +89,16 @@ pub struct ID3v1Tag {
 	pub genre: Option<u8>,
 }
 
-impl ID3v1Tag {
+impl Id3v1Tag {
 	/// Create a new empty `ID3v1Tag`
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::id3::v1::ID3v1Tag;
+	/// use lofty::id3::v1::Id3v1Tag;
 	/// use lofty::TagExt;
 	///
-	/// let id3v1_tag = ID3v1Tag::new();
+	/// let id3v1_tag = Id3v1Tag::new();
 	/// assert!(id3v1_tag.is_empty());
 	/// ```
 	pub fn new() -> Self {
@@ -106,7 +106,7 @@ impl ID3v1Tag {
 	}
 }
 
-impl Accessor for ID3v1Tag {
+impl Accessor for Id3v1Tag {
 	impl_accessor!(title, artist, album,);
 
 	fn genre(&self) -> Option<Cow<'_, str>> {
@@ -188,7 +188,7 @@ impl Accessor for ID3v1Tag {
 	}
 }
 
-impl TagExt for ID3v1Tag {
+impl TagExt for Id3v1Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
@@ -254,7 +254,7 @@ impl TagExt for ID3v1Tag {
 #[derive(Debug, Clone, Default)]
 pub struct SplitTagRemainder;
 
-impl SplitTag for ID3v1Tag {
+impl SplitTag for Id3v1Tag {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
@@ -292,20 +292,20 @@ impl SplitTag for ID3v1Tag {
 }
 
 impl MergeTag for SplitTagRemainder {
-	type Merged = ID3v1Tag;
+	type Merged = Id3v1Tag;
 
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		tag.into()
 	}
 }
 
-impl From<ID3v1Tag> for Tag {
-	fn from(input: ID3v1Tag) -> Self {
+impl From<Id3v1Tag> for Tag {
+	fn from(input: Id3v1Tag) -> Self {
 		input.split_tag().1
 	}
 }
 
-impl From<Tag> for ID3v1Tag {
+impl From<Tag> for Id3v1Tag {
 	fn from(mut input: Tag) -> Self {
 		let title = input.take_strings(&ItemKey::TrackTitle).next();
 		let artist = input.take_strings(&ItemKey::TrackArtist).next();
@@ -345,7 +345,7 @@ pub(crate) struct Id3v1TagRef<'a> {
 	pub genre: Option<u8>,
 }
 
-impl<'a> Into<Id3v1TagRef<'a>> for &'a ID3v1Tag {
+impl<'a> Into<Id3v1TagRef<'a>> for &'a Id3v1Tag {
 	fn into(self) -> Id3v1TagRef<'a> {
 		Id3v1TagRef {
 			title: self.title.as_deref(),
@@ -409,12 +409,12 @@ impl<'a> Id3v1TagRef<'a> {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v1::ID3v1Tag;
+	use crate::id3::v1::Id3v1Tag;
 	use crate::{Tag, TagExt, TagType};
 
 	#[test]
 	fn parse_id3v1() {
-		let expected_tag = ID3v1Tag {
+		let expected_tag = Id3v1Tag {
 			title: Some(String::from("Foo title")),
 			artist: Some(String::from("Bar artist")),
 			album: Some(String::from("Baz album")),
@@ -457,7 +457,7 @@ mod tests {
 	fn tag_to_id3v1() {
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
 
-		let id3v1_tag: ID3v1Tag = tag.into();
+		let id3v1_tag: Id3v1Tag = tag.into();
 
 		assert_eq!(id3v1_tag.title.as_deref(), Some("Foo title"));
 		assert_eq!(id3v1_tag.artist.as_deref(), Some("Bar artist"));

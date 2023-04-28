@@ -6,7 +6,7 @@ mod header;
 mod properties;
 mod read;
 
-use crate::id3::v1::tag::ID3v1Tag;
+use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::tag::Id3v2Tag;
 
 use lofty_attr::LoftyFile;
@@ -23,6 +23,6 @@ pub struct AacFile {
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	#[lofty(tag_type = "Id3v1")]
-	pub(crate) id3v1_tag: Option<ID3v1Tag>,
+	pub(crate) id3v1_tag: Option<Id3v1Tag>,
 	pub(crate) properties: AACProperties,
 }
