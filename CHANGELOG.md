@@ -17,9 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VorbisComments**: `ItemKey::Barcode` mapping ([PR](https://github.com/Serial-ATA/lofty-rs/pull/183))
 
 ### Changed
+- **ID3v1**: `ID3v1Tag` -> `Id3v1Tag`
 - **ID3v2**:
   - `SyncTextInformation` no longer uses a String for its language ([PR](https://github.com/Serial-ATA/lofty-rs/pull/184))
   - `FrameID` -> `FrameId`
+  - `ID3v2Version` -> `Id3v2Version`
+  - `ID3v2TagFlags` -> `Id3v2TagFlags`
+  - `ID3v2Tag` -> `Id3v2Tag`
   - There are fewer redundant, intermediate allocations ([PR](https://github.com/Serial-ATA/lofty-rs/pull/194))
 - **FileType/TagType/ItemKey**: All variants have been changed to UpperCamelCase ([PR](https://github.com/Serial-ATA/lofty-rs/pull/190))
 - **MPEG**:
