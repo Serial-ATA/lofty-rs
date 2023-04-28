@@ -32,6 +32,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		| ("WXXX", FrameValue::UserUrl(_))
 		| (_, FrameValue::Binary(_))
 		| ("UFID", FrameValue::UniqueFileIdentifier(_))
+		| ("POPM", FrameValue::Popularimeter(_))
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
