@@ -1,7 +1,7 @@
-use super::flags::ID3v2TagFlags;
+use super::flags::Id3v2TagFlags;
 use super::frame::id::FrameId;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
-use super::ID3v2Version;
+use super::Id3v2Version;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
@@ -99,8 +99,8 @@ macro_rules! impl_accessor {
 	supported_formats(Aac, Aiff, Mpeg, Wav, read_only(Flac, Ape))
 )]
 pub struct Id3v2Tag {
-	flags: ID3v2TagFlags,
-	pub(super) original_version: ID3v2Version,
+	flags: Id3v2TagFlags,
+	pub(super) original_version: Id3v2Version,
 	pub(crate) frames: Vec<Frame<'static>>,
 }
 
@@ -125,8 +125,8 @@ impl<'a> IntoIterator for &'a Id3v2Tag {
 impl Default for Id3v2Tag {
 	fn default() -> Self {
 		Self {
-			flags: ID3v2TagFlags::default(),
-			original_version: ID3v2Version::V4,
+			flags: Id3v2TagFlags::default(),
+			original_version: Id3v2Version::V4,
 			frames: Vec::new(),
 		}
 	}
@@ -148,13 +148,13 @@ impl Id3v2Tag {
 		Self::default()
 	}
 
-	/// Returns the [`ID3v2TagFlags`]
-	pub fn flags(&self) -> &ID3v2TagFlags {
+	/// Returns the [`Id3v2TagFlags`]
+	pub fn flags(&self) -> &Id3v2TagFlags {
 		&self.flags
 	}
 
 	/// Restrict the tag's flags
-	pub fn set_flags(&mut self, flags: ID3v2TagFlags) {
+	pub fn set_flags(&mut self, flags: Id3v2TagFlags) {
 		self.flags = flags
 	}
 
@@ -162,7 +162,7 @@ impl Id3v2Tag {
 	///
 	/// This is here, since the tag is upgraded to `ID3v2.4`, but a `v2.2` or `v2.3`
 	/// tag may have been read.
-	pub fn original_version(&self) -> ID3v2Version {
+	pub fn original_version(&self) -> Id3v2Version {
 		self.original_version
 	}
 }
@@ -179,7 +179,7 @@ impl Id3v2Tag {
 
 	/// Gets the text for a frame
 	///
-	/// If the tag is [`ID3v2Version::V4`], this will allocate if the text contains any
+	/// If the tag is [`Id3v2Version::V4`], this will allocate if the text contains any
 	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
 	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
 		let frame = self.get(id);
@@ -189,7 +189,7 @@ impl Id3v2Tag {
 		}) = frame
 		{
 			if !value.contains(V4_MULTI_VALUE_SEPARATOR)
-				|| self.original_version != ID3v2Version::V4
+				|| self.original_version != Id3v2Version::V4
 			{
 				return Some(Cow::Borrowed(value.as_str()));
 			}
@@ -994,14 +994,14 @@ impl From<Tag> for Id3v2Tag {
 }
 
 pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
-	pub(crate) flags: ID3v2TagFlags,
+	pub(crate) flags: Id3v2TagFlags,
 	pub(crate) frames: I,
 }
 
 impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 	pub(crate) fn empty() -> Self {
 		Self {
-			flags: ID3v2TagFlags::default(),
+			flags: Id3v2TagFlags::default(),
 			frames: std::iter::empty(),
 		}
 	}
@@ -1077,7 +1077,7 @@ mod tests {
 	};
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
-		FrameFlags, FrameId, FrameValue, ID3v2Version, Id3v2Tag, TextInformationFrame,
+		FrameFlags, FrameId, FrameValue, Id3v2Tag, Id3v2Version, TextInformationFrame,
 		UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
@@ -1334,7 +1334,7 @@ mod tests {
 	}
 
 	#[allow(clippy::field_reassign_with_default)]
-	fn create_full_test_tag(version: ID3v2Version) -> Id3v2Tag {
+	fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 		let mut tag = Id3v2Tag::default();
 		tag.original_version = version;
 
@@ -1423,7 +1423,7 @@ mod tests {
 
 	#[test]
 	fn id3v24_full() {
-		let tag = create_full_test_tag(ID3v2Version::V4);
+		let tag = create_full_test_tag(Id3v2Version::V4);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v24");
 
 		assert_eq!(tag, parsed_tag);
@@ -1431,7 +1431,7 @@ mod tests {
 
 	#[test]
 	fn id3v23_full() {
-		let tag = create_full_test_tag(ID3v2Version::V3);
+		let tag = create_full_test_tag(Id3v2Version::V3);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
 
 		assert_eq!(tag, parsed_tag);
@@ -1439,7 +1439,7 @@ mod tests {
 
 	#[test]
 	fn id3v22_full() {
-		let tag = create_full_test_tag(ID3v2Version::V2);
+		let tag = create_full_test_tag(Id3v2Version::V2);
 		let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v22");
 
 		assert_eq!(tag, parsed_tag);
@@ -1447,7 +1447,7 @@ mod tests {
 
 	#[test]
 	fn id3v24_footer() {
-		let mut tag = create_full_test_tag(ID3v2Version::V4);
+		let mut tag = create_full_test_tag(Id3v2Version::V4);
 		tag.flags.footer = true;
 
 		let mut writer = Vec::new();

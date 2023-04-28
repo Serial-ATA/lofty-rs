@@ -1,12 +1,12 @@
 use super::frame::Frame;
 use super::tag::Id3v2Tag;
-use super::ID3v2Header;
+use super::Id3v2Header;
 use crate::error::Result;
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
 
 use std::io::Read;
 
-pub(crate) fn parse_id3v2<R>(bytes: &mut R, header: ID3v2Header) -> Result<Id3v2Tag>
+pub(crate) fn parse_id3v2<R>(bytes: &mut R, header: Id3v2Header) -> Result<Id3v2Tag>
 where
 	R: Read,
 {
@@ -29,7 +29,7 @@ where
 	Ok(ret)
 }
 
-fn read_all_frames_into_tag<R>(reader: &mut R, header: ID3v2Header) -> Result<Id3v2Tag>
+fn read_all_frames_into_tag<R>(reader: &mut R, header: Id3v2Header) -> Result<Id3v2Tag>
 where
 	R: Read,
 {

@@ -4,7 +4,7 @@ use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
-use crate::id3::v2::ID3v2Version;
+use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
 use crate::util::text::TextEncoding;
 
@@ -12,9 +12,9 @@ use std::io::Read;
 
 #[rustfmt::skip]
 pub(super) fn parse_content<R: Read>(
-	reader: &mut R,
-	id: &str,
-	version: ID3v2Version,
+    reader: &mut R,
+    id: &str,
+    version: Id3v2Version,
 ) -> Result<Option<FrameValue>> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
@@ -45,9 +45,9 @@ pub(super) fn parse_content<R: Read>(
 
 pub(in crate::id3::v2) fn verify_encoding(
 	encoding: u8,
-	version: ID3v2Version,
+	version: Id3v2Version,
 ) -> Result<TextEncoding> {
-	if version == ID3v2Version::V2 && (encoding != 0 && encoding != 1) {
+	if version == Id3v2Version::V2 && (encoding != 0 && encoding != 1) {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::V2InvalidTextEncoding).into());
 	}
 

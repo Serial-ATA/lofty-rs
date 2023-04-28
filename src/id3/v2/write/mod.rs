@@ -1,7 +1,7 @@
 mod chunk_file;
 mod frame;
 
-use super::ID3v2TagFlags;
+use super::Id3v2TagFlags;
 use crate::error::Result;
 use crate::file::FileType;
 use crate::id3::find_id3v2;
@@ -157,7 +157,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	Ok(id3v2.into_inner())
 }
 
-fn create_tag_header(flags: ID3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
+fn create_tag_header(flags: Id3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
 	let mut header = Cursor::new(Vec::new());
 
 	header.write_all(&[b'I', b'D', b'3'])?;
@@ -253,7 +253,7 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{ID3v2TagFlags, Id3v2Tag};
+	use crate::id3::v2::{Id3v2Tag, Id3v2TagFlags};
 	use crate::{Accessor, TagExt};
 
 	#[test]
@@ -261,9 +261,9 @@ mod tests {
 		let mut tag = Id3v2Tag::default();
 		tag.set_artist(String::from("Foo artist"));
 
-		let flags = ID3v2TagFlags {
+		let flags = Id3v2TagFlags {
 			crc: true,
-			..ID3v2TagFlags::default()
+			..Id3v2TagFlags::default()
 		};
 		tag.set_flags(flags);
 

@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
-use crate::id3::v2::ID3v2Version;
+use crate::id3::v2::Id3v2Version;
 use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use byteorder::ReadBytesExt;
@@ -28,7 +28,7 @@ impl TextInformationFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: ID3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
