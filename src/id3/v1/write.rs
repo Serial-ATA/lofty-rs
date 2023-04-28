@@ -14,7 +14,7 @@ pub(crate) fn write_id3v1(file: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()> 
 	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {
-		Some(ft) if super::ID3v1Tag::SUPPORTED_FORMATS.contains(&ft) => {},
+		Some(ft) if super::Id3v1Tag::SUPPORTED_FORMATS.contains(&ft) => {},
 		_ => err!(UnsupportedTag),
 	}
 

@@ -1,5 +1,5 @@
 use lofty::ape::ApeTag;
-use lofty::id3::v1::ID3v1Tag;
+use lofty::id3::v1::Id3v1Tag;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::AIFFTextChunks;
 use lofty::iff::wav::RIFFInfoList;
@@ -37,7 +37,7 @@ fn bench_write(c: &mut Criterion) {
 			("AIFF Text Chunks", AIFFTextChunks),
 			("APEv2", ApeTag),
 			("ID3v2", Id3v2Tag),
-			("ID3v1", ID3v1Tag),
+			("ID3v1", Id3v1Tag),
 			("MP4 Ilst", Ilst),
 			("RIFF INFO", RIFFInfoList),
 			("Vorbis Comments", VorbisComments),

@@ -49,7 +49,7 @@ where
 pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
-) -> Result<ID3FindResults<(), Option<v1::tag::ID3v1Tag>>>
+) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>
 where
 	R: Read + Seek,
 {
