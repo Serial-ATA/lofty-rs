@@ -61,7 +61,7 @@ pub(crate) fn init_write_lookup(
 	} else {
 		insert!(map, Id3v2, {
 			lofty::id3::v2::tag::Id3v2TagRef {
-				flags: lofty::id3::v2::ID3v2TagFlags::default(),
+				flags: lofty::id3::v2::Id3v2TagFlags::default(),
 				frames: lofty::id3::v2::tag::tag_frames(tag),
 			}
 			.write_to(data)
