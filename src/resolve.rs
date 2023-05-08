@@ -121,7 +121,7 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 		name
 	);
 
-	let ghost = GhostlyResolver::<T>(PhantomData::default());
+	let ghost = GhostlyResolver::<T>(PhantomData);
 	let b: Box<dyn ObjectSafeFileResolver> = Box::new(ghost);
 
 	res.insert(name, Box::leak::<'static>(b));
