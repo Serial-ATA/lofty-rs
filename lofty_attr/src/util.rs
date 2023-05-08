@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
 use proc_macro2::Span;
-use syn::{Attribute, Lit, Meta, MetaList, NestedMeta, Type};
+use syn::{Attribute, Error, LitStr, Meta, MetaList, Type};
 
 macro_rules! bail {
-	($errors:ident, $span:expr, $msg:literal) => {
+	($errors:ident, $span:expr, $msg:expr) => {
 		$errors.push(crate::util::err($span, $msg));
 		return proc_macro2::TokenStream::new();
 	};
@@ -13,43 +13,49 @@ macro_rules! bail {
 pub(crate) use bail;
 
 pub(crate) fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::TokenStream> {
+	let mut found = None;
 	for attr in attrs {
 		if let Some(list) = get_attr_list("lofty", attr) {
-			if let Some(NestedMeta::Meta(Meta::NameValue(mnv))) = list.nested.first() {
-				if mnv
-					.path
-					.segments
-					.first()
-					.expect("path shouldn't be empty")
-					.ident == name
-				{
-					if let Lit::Str(lit_str) = &mnv.lit {
-						return Some(lit_str.parse::<proc_macro2::TokenStream>().unwrap());
-					}
+			let res = list.parse_nested_meta(|meta| {
+				if meta.path.is_ident(name) {
+					let value = meta.value()?;
+					let value_str: LitStr = value.parse()?;
+					found = Some(value_str.parse::<proc_macro2::TokenStream>().unwrap());
+					return Ok(());
 				}
+
+				Err(meta.error(""))
+			});
+
+			if res.is_ok() {
+				return found;
 			}
 		}
 	}
 
-	None
+	found
 }
 
 pub(crate) fn has_path_attr(attr: &Attribute, name: &str) -> bool {
 	if let Some(list) = get_attr_list("lofty", attr) {
-		if let Some(NestedMeta::Meta(Meta::Path(p))) = list.nested.first() {
-			if p.is_ident(name) {
-				return true;
+		let res = list.parse_nested_meta(|meta| {
+			if meta.path.is_ident(name) {
+				return Ok(());
 			}
-		}
+
+			Err(Error::new(Span::call_site(), ""))
+		});
+
+		return res.is_ok();
 	}
 
 	false
 }
 
 pub(crate) fn get_attr_list(path: &str, attr: &Attribute) -> Option<MetaList> {
-	if attr.path.is_ident(path) {
-		if let Ok(Meta::List(list)) = attr.parse_meta() {
-			return Some(list);
+	if attr.path().is_ident(path) {
+		if let Meta::List(list) = &attr.meta {
+			return Some(list.clone());
 		}
 	}
 
