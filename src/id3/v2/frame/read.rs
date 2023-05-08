@@ -139,8 +139,9 @@ fn handle_compression<R: Read>(reader: R) -> Result<flate2::read::ZlibDecoder<R>
 }
 
 #[cfg(not(feature = "id3v2_compression_support"))]
-fn handle_compression<R>(reader: &mut R) -> flate2::read::ZlibDecoder<R> {
-	return Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into());
+#[allow(clippy::unnecessary_wraps)]
+fn handle_compression<R>(_: R) -> Result<std::io::Empty> {
+	Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into())
 }
 
 fn handle_encryption<R: Read>(
