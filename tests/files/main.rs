@@ -2,6 +2,7 @@ mod aac;
 mod aiff;
 mod ape;
 mod mp4;
+mod mpc;
 mod mpeg;
 mod ogg;
 pub(crate) mod util;

@@ -152,6 +152,7 @@ pub mod iff;
 pub(crate) mod macros;
 pub mod mp4;
 pub mod mpeg;
+pub mod musepack;
 pub mod ogg;
 pub(crate) mod picture;
 mod probe;

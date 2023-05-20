@@ -9,6 +9,7 @@ use crate::macros::err;
 use crate::mp4::Mp4File;
 use crate::mpeg::header::search_for_frame_sync;
 use crate::mpeg::MpegFile;
+use crate::musepack::MpcFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
@@ -475,6 +476,7 @@ impl<R: Read + Seek> Probe<R> {
 				let file_type_after_id3_block = match &ident {
 					[b'M', b'A', b'C', ..] => Ok(Some(FileType::Ape)),
 					b"fLaC" => Ok(Some(FileType::Flac)),
+					b"MPCK" | [.., b'M', b'P', b'+'] => Ok(Some(FileType::Mpc)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
 						// Seek back to the start of the frame sync to check if we are dealing with
@@ -558,6 +560,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Vorbis => VorbisFile::read_from(reader, options)?.into(),
 				FileType::Wav => WavFile::read_from(reader, options)?.into(),
 				FileType::Mp4 => Mp4File::read_from(reader, options)?.into(),
+				FileType::Mpc => MpcFile::read_from(reader, options)?.into(),
 				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
 				FileType::Custom(c) => {

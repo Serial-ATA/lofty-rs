@@ -720,6 +720,7 @@ pub enum FileType {
 	Flac,
 	Mpeg,
 	Mp4,
+	Mpc,
 	Opus,
 	Vorbis,
 	Speex,
@@ -753,7 +754,7 @@ impl FileType {
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
 			FileType::Aiff | FileType::Mpeg | FileType::Wav | FileType::Aac => TagType::Id3v2,
-			FileType::Ape | FileType::WavPack => TagType::Ape,
+			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
@@ -827,6 +828,7 @@ impl FileType {
 			"flac" => Some(Self::Flac),
 			"ogg" => Some(Self::Vorbis),
 			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::Mp4),
+			"mpc" | "mp+" | "mpp" => Some(Self::Mpc),
 			"spx" => Some(Self::Speex),
 			e => {
 				if let Some((ty, _)) = CUSTOM_RESOLVERS
@@ -1001,6 +1003,7 @@ impl FileType {
 			},
 			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::Mp4),
+			_ if buf.starts_with(b"MPCK") || buf.starts_with(b"MP+") => Some(Self::Mpc),
 			_ => None,
 		}
 	}
