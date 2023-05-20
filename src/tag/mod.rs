@@ -651,8 +651,12 @@ impl TagType {
 			None => err!(UnknownFormat),
 		};
 
-		let special_exceptions =
-			(file_type == FileType::Ape || file_type == FileType::Flac) && *self == TagType::Id3v2;
+		// TODO: This should not have to be manually updated
+		let special_exceptions = ((file_type == FileType::Ape
+			|| file_type == FileType::Mpc
+			|| file_type == FileType::Flac)
+			&& *self == TagType::Id3v2)
+			|| file_type == FileType::Mpc && *self == TagType::Id3v1;
 
 		if !special_exceptions && !file_type.supports_tag_type(*self) {
 			err!(UnsupportedTag);
