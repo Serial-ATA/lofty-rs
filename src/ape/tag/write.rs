@@ -1,8 +1,7 @@
 use super::item::ApeItemRef;
-use super::read::read_ape_tag;
 use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
-use crate::ape::header::read_ape_header;
+use crate::ape::tag::read;
 use crate::error::Result;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::{decode_err, err};
@@ -41,26 +40,21 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_ape_tag = (false, (0, 0));
 
-	if &ape_preamble == APE_PREAMBLE {
-		let start = data.seek(SeekFrom::Current(-8))?;
+	let start = data.stream_position()?;
+	match read::read_ape_tag(data, false)? {
+		Some((mut existing_tag, header)) => {
+			// Only keep metadata around that's marked read only
+			existing_tag.items.retain(|i| i.read_only);
 
-		data.seek(SeekFrom::Current(8))?;
+			if !existing_tag.items.is_empty() {
+				read_only = Some(existing_tag)
+			}
 
-		let header = read_ape_header(data, false)?;
-		let size = header.size;
-
-		let mut existing = read_ape_tag(data, header)?;
-
-		// Only keep metadata around that's marked read only
-		existing.items.retain(|i| i.read_only);
-
-		if !existing.items.is_empty() {
-			read_only = Some(existing)
-		}
-
-		header_ape_tag = (true, (start, start + u64::from(size)))
-	} else {
-		data.seek(SeekFrom::Current(-8))?;
+			header_ape_tag = (true, (start, start + u64::from(header.size)))
+		},
+		None => {
+			data.seek(SeekFrom::Current(-8))?;
+		},
 	}
 
 	// Skip over ID3v1 and Lyrics3v2 tags
@@ -73,23 +67,17 @@ where
 	// Now search for an APE tag at the end
 	data.seek(SeekFrom::Current(-32))?;
 
-	data.read_exact(&mut ape_preamble)?;
-
 	let mut ape_tag_location = None;
 
 	// Also check this tag for any read only items
-	if &ape_preamble == APE_PREAMBLE {
-		let start = data.stream_position()? as usize + 24;
-
-		let header = read_ape_header(data, true)?;
+	let start = data.stream_position()? as usize + 32;
+	if let Some((mut existing_tag, header)) = read::read_ape_tag(data, true)? {
 		let size = header.size;
 
-		let mut existing = read_ape_tag(data, header)?;
+		existing_tag.items.retain(|i| i.read_only);
 
-		existing.items.retain(|i| i.read_only);
-
-		if !existing.items.is_empty() {
-			read_only = Some(existing)
+		if !existing_tag.items.is_empty() {
+			read_only = Some(existing_tag)
 		}
 
 		// Since the "start" was really at the end of the tag, this sanity check seems necessary

@@ -1,7 +1,7 @@
 use super::item::ApeItem;
 use super::ApeTag;
-use crate::ape::constants::INVALID_KEYS;
-use crate::ape::header::ApeHeader;
+use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
+use crate::ape::header::{self, ApeHeader};
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
 use crate::tag::item::ItemValue;
@@ -10,7 +10,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(crate) fn read_ape_tag<R>(data: &mut R, header: ApeHeader) -> Result<ApeTag>
+pub(crate) fn read_ape_tag_with_header<R>(data: &mut R, header: ApeHeader) -> Result<ApeTag>
 where
 	R: Read + Seek,
 {
@@ -80,4 +80,21 @@ where
 	data.seek(SeekFrom::Current(32))?;
 
 	Ok(tag)
+}
+
+pub(crate) fn read_ape_tag<R: Read + Seek>(
+	reader: &mut R,
+	footer: bool,
+) -> Result<Option<(ApeTag, ApeHeader)>> {
+	let mut ape_preamble = [0; 8];
+	reader.read_exact(&mut ape_preamble)?;
+
+	if &ape_preamble == APE_PREAMBLE {
+		let ape_header = header::read_ape_header(reader, footer)?;
+
+		let ape = read_ape_tag_with_header(reader, ape_header)?;
+		return Ok(Some((ape, ape_header)));
+	}
+
+	Ok(None)
 }

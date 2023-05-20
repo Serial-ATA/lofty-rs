@@ -485,7 +485,6 @@ pub(crate) fn tagitems_into_ape<'a>(
 
 #[cfg(test)]
 mod tests {
-	use crate::ape::header::read_ape_header;
 	use crate::ape::{ApeItem, ApeTag};
 	use crate::{ItemValue, Tag, TagExt, TagType};
 
@@ -545,8 +544,9 @@ mod tests {
 		// Remove the APE preamble
 		reader.seek(SeekFrom::Current(8)).unwrap();
 
-		let header = read_ape_header(&mut reader, false).unwrap();
-		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
+		let (parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
+			.unwrap()
+			.unwrap();
 
 		assert_eq!(expected_tag.len(), parsed_tag.len());
 
@@ -563,8 +563,9 @@ mod tests {
 		// Remove the APE preamble
 		reader.seek(SeekFrom::Current(8)).unwrap();
 
-		let header = read_ape_header(&mut reader, false).unwrap();
-		let parsed_tag = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
+		let (parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
+			.unwrap()
+			.unwrap();
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
@@ -574,9 +575,9 @@ mod tests {
 		// Remove the APE preamble
 		temp_reader.seek(SeekFrom::Current(8)).unwrap();
 
-		let temp_header = read_ape_header(&mut temp_reader, false).unwrap();
-		let temp_parsed_tag =
-			crate::ape::tag::read::read_ape_tag(&mut temp_reader, temp_header).unwrap();
+		let (temp_parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut temp_reader, false)
+			.unwrap()
+			.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -589,8 +590,9 @@ mod tests {
 		// Remove the APE preamble
 		reader.seek(SeekFrom::Current(8)).unwrap();
 
-		let header = read_ape_header(&mut reader, false).unwrap();
-		let ape = crate::ape::tag::read::read_ape_tag(&mut reader, header).unwrap();
+		let (ape, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
+			.unwrap()
+			.unwrap();
 
 		let tag: Tag = ape.into();
 

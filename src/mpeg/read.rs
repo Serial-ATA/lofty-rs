@@ -1,8 +1,6 @@
 use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
 use super::{MpegFile, MpegProperties};
-use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::header::read_ape_header;
-use crate::ape::tag::read::read_ape_tag;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::read_id3v2_header;
@@ -66,7 +64,9 @@ where
 				if &header_remaining == b"AGEX" {
 					let ape_header = read_ape_header(reader, false)?;
 
-					file.ape_tag = Some(crate::ape::tag::read::read_ape_tag(reader, ape_header)?);
+					file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
+						reader, ape_header,
+					)?);
 
 					continue;
 				}
@@ -101,23 +101,16 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	let mut ape_preamble = [0; 8];
-	reader.read_exact(&mut ape_preamble)?;
-
-	match &ape_preamble {
-		APE_PREAMBLE => {
-			let ape_header = read_ape_header(reader, true)?;
-			let size = ape_header.size;
-
-			let ape = read_ape_tag(reader, ape_header)?;
-			file.ape_tag = Some(ape);
+	match crate::ape::tag::read::read_ape_tag(reader, true)? {
+		Some((tag, header)) => {
+			file.ape_tag = Some(tag);
 
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
-			reader.seek(SeekFrom::Start(pos - u64::from(size)))?;
+			reader.seek(SeekFrom::Start(pos - u64::from(header.size)))?;
 		},
-		// Correct the position (APE header - Preamble)
-		_ => {
+		None => {
+			// Correct the position (APE header - Preamble)
 			reader.seek(SeekFrom::Current(24))?;
 		},
 	}

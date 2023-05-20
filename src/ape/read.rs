@@ -1,8 +1,7 @@
-use super::constants::APE_PREAMBLE;
 use super::header::read_ape_header;
-use super::tag::read::read_ape_tag;
 use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
+use crate::ape::tag::read::{read_ape_tag, read_ape_tag_with_header};
 use crate::error::Result;
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
@@ -76,7 +75,7 @@ where
 				let ape_header = read_ape_header(data, false)?;
 				stream_len -= u64::from(ape_header.size);
 
-				let ape = read_ape_tag(data, ape_header)?;
+				let ape = read_ape_tag_with_header(data, ape_header)?;
 				ape_tag = Some(ape);
 			},
 			_ => {
@@ -111,15 +110,9 @@ where
 	// Strongly recommended to be at the end of the file
 	data.seek(SeekFrom::Current(-32))?;
 
-	let mut ape_preamble = [0; 8];
-	data.read_exact(&mut ape_preamble)?;
-
-	if &ape_preamble == APE_PREAMBLE {
-		let ape_header = read_ape_header(data, true)?;
-		stream_len -= u64::from(ape_header.size);
-
-		let ape = read_ape_tag(data, ape_header)?;
-		ape_tag = Some(ape);
+	if let Some((tag, header)) = read_ape_tag(data, true)? {
+		stream_len -= u64::from(header.size);
+		ape_tag = Some(tag);
 	}
 
 	let file_length = data.stream_position()?;
