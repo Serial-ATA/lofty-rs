@@ -1,3 +1,5 @@
+use super::sv4to6::MpcSv4to6Properties;
+use super::sv7::MpcSv7Properties;
 use super::sv8::MpcSv8Properties;
 use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::error::Result;
@@ -48,8 +50,16 @@ where
 				file.properties =
 					MpcProperties::Sv8(MpcSv8Properties::read(reader, parse_options.parsing_mode)?)
 			},
-			MpcStreamVersion::Sv7 => todo!(),
-			MpcStreamVersion::Sv4to6 => todo!(),
+			MpcStreamVersion::Sv7 => {
+				file.properties =
+					MpcProperties::Sv7(MpcSv7Properties::read(reader, parse_options.parsing_mode)?)
+			},
+			MpcStreamVersion::Sv4to6 => {
+				file.properties = MpcProperties::Sv4to6(MpcSv4to6Properties::read(
+					reader,
+					parse_options.parsing_mode,
+				)?)
+			},
 		}
 	}
 
