@@ -784,29 +784,19 @@ impl FileType {
 	/// assert!(file_type.supports_tag_type(TagType::Id3v2));
 	/// ```
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		match self {
-			FileType::Aiff | FileType::Ape | FileType::Mpeg | FileType::Wav | FileType::Aac
-				if tag_type == TagType::Id3v2 =>
-			{
-				true
-			},
-			FileType::Aiff if tag_type == TagType::AiffText => true,
-			FileType::Ape | FileType::Mpeg | FileType::WavPack | FileType::Aac
-				if tag_type == TagType::Id3v1 =>
-			{
-				true
-			},
-			FileType::Ape | FileType::Mpeg | FileType::WavPack if tag_type == TagType::Ape => true,
-			FileType::Opus | FileType::Flac | FileType::Vorbis | FileType::Speex => {
-				tag_type == TagType::VorbisComments
-			},
-			FileType::Mp4 => tag_type == TagType::Mp4Ilst,
-			FileType::Wav => tag_type == TagType::RiffInfo,
-			FileType::Custom(c) => {
-				let resolver = crate::resolve::lookup_resolver(c);
-				resolver.supported_tag_types().contains(&tag_type)
-			},
-			_ => false,
+		if let FileType::Custom(c) = self {
+			let resolver = crate::resolve::lookup_resolver(c);
+			return resolver.supported_tag_types().contains(&tag_type);
+		}
+
+		match tag_type {
+			TagType::Ape => crate::ape::ApeTag::SUPPORTED_FORMATS.contains(self),
+			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::SUPPORTED_FORMATS.contains(self),
+			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::SUPPORTED_FORMATS.contains(self),
+			TagType::Mp4Ilst => crate::mp4::Ilst::SUPPORTED_FORMATS.contains(self),
+			TagType::VorbisComments => crate::ogg::VorbisComments::SUPPORTED_FORMATS.contains(self),
+			TagType::RiffInfo => crate::iff::wav::RIFFInfoList::SUPPORTED_FORMATS.contains(self),
+			TagType::AiffText => crate::iff::aiff::AIFFTextChunks::SUPPORTED_FORMATS.contains(self),
 		}
 	}
 
