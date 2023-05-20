@@ -1,8 +1,5 @@
 use super::properties::WavPackProperties;
 use super::WavPackFile;
-use crate::ape::constants::APE_PREAMBLE;
-use crate::ape::header::read_ape_header;
-use crate::ape::tag::read::read_ape_tag;
 use crate::error::Result;
 use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
 use crate::probe::ParseOptions;
@@ -41,15 +38,9 @@ where
 	// Strongly recommended to be at the end of the file
 	reader.seek(SeekFrom::Current(-32))?;
 
-	let mut ape_preamble = [0; 8];
-	reader.read_exact(&mut ape_preamble)?;
-
-	if &ape_preamble == APE_PREAMBLE {
-		let ape_header = read_ape_header(reader, true)?;
-		stream_length -= u64::from(ape_header.size);
-
-		let ape = read_ape_tag(reader, ape_header)?;
-		ape_tag = Some(ape);
+	if let Some((tag, header)) = crate::ape::tag::read::read_ape_tag(reader, true)? {
+		stream_length -= u64::from(header.size);
+		ape_tag = Some(tag);
 	}
 
 	Ok(WavPackFile {
