@@ -1,6 +1,8 @@
 //! Musepack specific items
 mod constants;
 mod read;
+pub mod sv4to6;
+pub mod sv7;
 pub mod sv8;
 
 use crate::ape::tag::ApeTag;
@@ -17,6 +19,10 @@ use lofty_attr::LoftyFile;
 pub enum MpcProperties {
 	/// MPC stream version 8 properties
 	Sv8(sv8::MpcSv8Properties),
+	/// MPC stream version 7 properties
+	Sv7(sv7::MpcSv7Properties),
+	/// MPC stream version 4-6 properties
+	Sv4to6(sv4to6::MpcSv4to6Properties),
 }
 
 impl Default for MpcProperties {
@@ -29,6 +35,8 @@ impl From<MpcProperties> for FileProperties {
 	fn from(input: MpcProperties) -> Self {
 		match input {
 			MpcProperties::Sv8(sv8prop) => sv8prop.into(),
+			MpcProperties::Sv7(sv7prop) => sv7prop.into(),
+			MpcProperties::Sv4to6(sv4to6prop) => sv4to6prop.into(),
 		}
 	}
 }
