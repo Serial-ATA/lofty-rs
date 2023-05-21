@@ -127,6 +127,8 @@ mod tests {
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
+	use crate::musepack::sv8::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
+	use crate::musepack::{MpcFile, MpcProperties};
 	use crate::ogg::{
 		OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 	};
@@ -270,6 +272,37 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: Some(16),
 		channels: 2,
+	};
+
+	const MPC_SV8_PROPERTIES: MpcSv8Properties = MpcSv8Properties {
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 82, // TODO: Reference decoder reports 84
+		audio_bitrate: 82,
+		stream_header: StreamHeader {
+			crc: 4_252_559_415,
+			stream_version: 8,
+			sample_count: 68546,
+			beginning_silence: 0,
+			sample_rate: 48000,
+			max_used_bands: 26,
+			channels: 2,
+			ms_used: true,
+			audio_block_frames: 64,
+		},
+		replay_gain: ReplayGain {
+			version: 1,
+			title_gain: 16655,
+			title_peak: 21475,
+			album_gain: 16655,
+			album_peak: 21475,
+		},
+		encoder_info: Some(EncoderInfo {
+			profile: 10.0,
+			pns_tool: false,
+			major: 1,
+			minor: 30,
+			build: 1,
+		}),
 	};
 
 	const OPUS_PROPERTIES: OpusProperties = OpusProperties {
@@ -424,6 +457,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
 			MP4_FLAC_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mpc_sv8_properties() {
+		assert_eq!(
+			get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv8.mpc"),
+			MpcProperties::Sv8(MPC_SV8_PROPERTIES)
 		)
 	}
 

@@ -128,13 +128,13 @@ impl StreamHeader {
 		let sample_rate_index = (remaining_flags_byte_1 & 0xE0) >> 5;
 		let sample_rate = FREQUENCY_TABLE[sample_rate_index as usize];
 
-		let max_used_bands = remaining_flags_byte_1 & 0x1F;
+		let max_used_bands = (remaining_flags_byte_1 & 0x1F) + 1;
 
 		// Channel count, MS used, audio block frames
 		let remaining_flags_byte_2 = reader.read_u8()?;
 
-		let channels = (remaining_flags_byte_2 & 0xF0) >> 4;
-		let ms_used = remaining_flags_byte_2 & 0x80 == 0x80;
+		let channels = (remaining_flags_byte_2 >> 4) + 1;
+		let ms_used = remaining_flags_byte_2 & 0x08 == 0x08;
 
 		let audio_block_frames_value = remaining_flags_byte_2 & 0x07;
 		let audio_block_frames = 4u16.pow(audio_block_frames_value as u32);
@@ -165,16 +165,16 @@ impl StreamHeader {
 /// * ReplayGain finds that this title has a loudness of 78.56 dB. It will be encoded as $ 78.56 * 256 ~ 20111 = 0x4E8F $
 /// * For 16-bit output (range \[-32767 32768]), the max is 68813 (out of range). It will be encoded as $ 20 * log10(68813) * 256 ~ 24769 = 0x60C1 $
 /// * For float output (range \[-1 1]), the max is 0.96. It will be encoded as $ 20 * log10(0.96 * 215) * 256 ~ 23029 = 0x59F5 $ (for peak values it is suggested to round to nearest higher integer)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 #[allow(missing_docs)]
 pub struct ReplayGain {
 	/// The replay gain version
 	pub version: u8,
 	/// The loudness calculated for the title, and not the gain that the player must apply
-	pub title_gain: i16,
+	pub title_gain: u16,
 	pub title_peak: u16,
 	/// The loudness calculated for the album
-	pub album_gain: i16,
+	pub album_gain: u16,
 	pub album_peak: u16,
 }
 
@@ -190,9 +190,9 @@ impl ReplayGain {
 		// Album peak         | 16          |       |
 
 		let version = reader.read_u8()?;
-		let title_gain = reader.read_i16::<BigEndian>()?;
+		let title_gain = reader.read_u16::<BigEndian>()?;
 		let title_peak = reader.read_u16::<BigEndian>()?;
-		let album_gain = reader.read_i16::<BigEndian>()?;
+		let album_gain = reader.read_u16::<BigEndian>()?;
 		let album_peak = reader.read_u16::<BigEndian>()?;
 
 		Ok(Self {

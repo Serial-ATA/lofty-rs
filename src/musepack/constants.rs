@@ -6,3 +6,7 @@
 //
 // So it's safe to just fill the rest with zeroes
 pub(super) const FREQUENCY_TABLE: [u32; 8] = [44100, 48000, 37800, 32000, 0, 0, 0, 0];
+
+// Taken from mpcdec
+/// This is the gain reference used in old ReplayGain
+pub const MPC_OLD_GAIN_REF: f32 = 64.82;
