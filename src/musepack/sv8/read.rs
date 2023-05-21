@@ -97,7 +97,7 @@ where
 
 	if sample_count > 0 && beginning_silence <= sample_count && sample_rate > 0 {
 		let total_samples = sample_count - beginning_silence;
-		let length = (total_samples as f64 * 1000.0) / sample_rate as f64;
+		let length = (total_samples as f64 * 1000.0) / f64::from(sample_rate);
 
 		properties.duration = Duration::from_millis(length as u64);
 		properties.audio_bitrate = ((stream_length * 8) / length as u64) as u32;
@@ -142,16 +142,18 @@ impl<R: Read> PacketReader<R> {
 			decode_err!(@BAIL Mpc, "Packet key contains characters that are out of the allowed range")
 		}
 
-		let (packet_size, packet_size_byte_count) = self.read_size()?;
+		let (packet_size, packet_size_byte_count) = Self::read_size(&mut self.reader)?;
 
 		// The packet size contains the key (2) and the size (?, variable length <= 9)
-		self.capacity = packet_size.saturating_sub((2 + packet_size_byte_count) as u64);
+		self.capacity = packet_size.saturating_sub(u64::from(2 + packet_size_byte_count));
 
 		Ok((key, self.capacity))
 	}
 
 	/// Read the variable-length packet size
-	pub fn read_size(&mut self) -> Result<(u64, u8)> {
+	///
+	/// This takes a reader since we need to both use it for packet reading *and* setting up the reader itself in `PacketReader::next`
+	pub fn read_size(reader: &mut R) -> Result<(u64, u8)> {
 		let mut current;
 		let mut size = 0u64;
 
@@ -164,7 +166,7 @@ impl<R: Read> PacketReader<R> {
 
 		let mut bytes_read = 0;
 		loop {
-			current = self.read_u8()?;
+			current = reader.read_u8()?;
 			bytes_read += 1;
 
 			// Sizes cannot go above 9 bytes
@@ -172,7 +174,7 @@ impl<R: Read> PacketReader<R> {
 				return Err(LoftyError::new(ErrorKind::TooMuchData));
 			}
 
-			size = (size << 7) | (current & 0x7F) as u64;
+			size = (size << 7) | u64::from(current & 0x7F);
 			if current & 0x80 == 0 {
 				break;
 			}
@@ -184,7 +186,7 @@ impl<R: Read> PacketReader<R> {
 
 impl<R: Read> Read for PacketReader<R> {
 	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-		let bytes_read = self.take(self.capacity).read(buf)?;
+		let bytes_read = self.reader.by_ref().take(self.capacity).read(buf)?;
 		self.capacity = self.capacity.saturating_sub(bytes_read as u64);
 		Ok(bytes_read)
 	}
