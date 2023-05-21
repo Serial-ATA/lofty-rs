@@ -127,6 +127,7 @@ mod tests {
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
+	use crate::musepack::sv7::{Link, MpcSv7Properties, Profile};
 	use crate::musepack::sv8::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
 	use crate::musepack::{MpcFile, MpcProperties};
 	use crate::ogg::{
@@ -274,9 +275,32 @@ mod tests {
 		channels: 2,
 	};
 
+	const MPC_SV7_PROPERTIES: MpcSv7Properties = MpcSv7Properties {
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 86,
+		audio_bitrate: 86,
+		channels: 2,
+		frame_count: 60,
+		intensity_stereo: false,
+		mid_side_stereo: true,
+		max_band: 26,
+		profile: Profile::Standard,
+		link: Link::VeryLowStartOrEnd,
+		sample_freq: 48000,
+		max_level: 0,
+		title_gain: 16594,
+		title_peak: 0,
+		album_gain: 16594,
+		album_peak: 0,
+		true_gapless: true,
+		last_frame_length: 578,
+		fast_seeking_safe: false,
+		encoder_version: 192,
+	};
+
 	const MPC_SV8_PROPERTIES: MpcSv8Properties = MpcSv8Properties {
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 82, // TODO: Reference decoder reports 84
+		overall_bitrate: 82,
 		audio_bitrate: 82,
 		stream_header: StreamHeader {
 			crc: 4_252_559_415,
@@ -457,6 +481,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
 			MP4_FLAC_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mpc_sv7_properties() {
+		assert_eq!(
+			get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv7.mpc"),
+			MpcProperties::Sv7(MPC_SV7_PROPERTIES)
 		)
 	}
 

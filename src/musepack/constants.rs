@@ -1,3 +1,5 @@
+//! MusePack constants
+
 // There are only 4 frequencies defined in the spec, but there are 8 possible indices in the header.
 //
 // The reference decoder defines the table as:

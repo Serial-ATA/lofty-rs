@@ -476,7 +476,7 @@ impl<R: Read + Seek> Probe<R> {
 				let file_type_after_id3_block = match &ident {
 					[b'M', b'A', b'C', ..] => Ok(Some(FileType::Ape)),
 					b"fLaC" => Ok(Some(FileType::Flac)),
-					b"MPCK" | [.., b'M', b'P', b'+'] => Ok(Some(FileType::Mpc)),
+					b"MPCK" | [b'M', b'P', b'+', ..] => Ok(Some(FileType::Mpc)),
 					// Search for a frame sync, which may be preceded by junk
 					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
 						// Seek back to the start of the frame sync to check if we are dealing with
