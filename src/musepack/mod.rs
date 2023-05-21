@@ -1,5 +1,5 @@
 //! Musepack specific items
-mod constants;
+pub mod constants;
 mod read;
 pub mod sv4to6;
 pub mod sv7;
