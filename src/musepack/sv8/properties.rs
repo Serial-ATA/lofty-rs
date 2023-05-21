@@ -119,8 +119,8 @@ impl StreamHeader {
 
 		let crc = reader.read_u32::<BigEndian>()?;
 		let stream_version = reader.read_u8()?;
-		let (sample_count, _) = reader.read_size()?;
-		let (beginning_silence, _) = reader.read_size()?;
+		let (sample_count, _) = PacketReader::read_size(reader)?;
+		let (beginning_silence, _) = PacketReader::read_size(reader)?;
 
 		// Sample rate and max used bands
 		let remaining_flags_byte_1 = reader.read_u8()?;
