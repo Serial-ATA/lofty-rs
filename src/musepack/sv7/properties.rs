@@ -266,7 +266,6 @@ impl MpcSv7Properties {
 		self.encoder_version
 	}
 
-	#[allow(clippy::field_reassign_with_default)]
 	pub(crate) fn read<R>(reader: &mut R, stream_length: u64) -> Result<Self>
 	where
 		R: Read,

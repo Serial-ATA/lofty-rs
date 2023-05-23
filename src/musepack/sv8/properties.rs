@@ -137,7 +137,7 @@ impl StreamHeader {
 		let ms_used = remaining_flags_byte_2 & 0x08 == 0x08;
 
 		let audio_block_frames_value = remaining_flags_byte_2 & 0x07;
-		let audio_block_frames = 4u16.pow(audio_block_frames_value as u32);
+		let audio_block_frames = 4u16.pow(u32::from(audio_block_frames_value));
 
 		Ok(Self {
 			crc,
