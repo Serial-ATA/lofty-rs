@@ -18,6 +18,7 @@ where
 	let mut version = MpcStreamVersion::Sv4to6;
 	let mut file = MpcFile::default();
 
+	#[allow(unstable_name_collisions)]
 	let mut stream_length = reader.stream_len()?;
 
 	// ID3v2 tags are unsupported in MPC files, but still possible
@@ -33,7 +34,7 @@ where
 			size += 10;
 		}
 
-		stream_length -= size as u64;
+		stream_length -= u64::from(size);
 	}
 
 	// Save the current position, so we can go back and read the properties after the tags
@@ -48,7 +49,7 @@ where
 	}
 
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
-	stream_length -= lyrics3v2_size as u64;
+	stream_length -= u64::from(lyrics3v2_size);
 
 	reader.seek(SeekFrom::Current(-32))?;
 
@@ -59,7 +60,7 @@ where
 		let pos = reader.stream_position()?;
 		reader.seek(SeekFrom::Start(pos - u64::from(header.size)))?;
 
-		stream_length -= header.size as u64;
+		stream_length -= u64::from(header.size);
 	}
 
 	// Restore the position of the magic signature
@@ -96,6 +97,7 @@ where
 				file.properties = MpcProperties::Sv4to6(MpcSv4to6Properties::read(
 					reader,
 					parse_options.parsing_mode,
+					stream_length,
 				)?)
 			},
 		}
