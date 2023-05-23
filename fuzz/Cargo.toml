@@ -23,6 +23,10 @@ name = "filetype_from_buffer"
 path = "fuzz_targets/filetype_from_buffer.rs"
 
 [[bin]]
+name = "mpcfile_read_from"
+path = "fuzz_targets/mpcfile_read_from.rs"
+
+[[bin]]
 name = "mpegfile_read_from"
 path = "fuzz_targets/mpegfile_read_from.rs"
 

@@ -36,6 +36,7 @@ fn content_infer_read(c: &mut Criterion) {
 			(FLAC, "../tests/files/assets/minimal/full_test.flac"),
 			(MP4, "../tests/files/assets/minimal/m4a_codec_aac.m4a"),
 			(MP3, "../tests/files/assets/minimal/full_test.mp3"),
+			(MPC, "../tests/files/assets/minimal/mpc_sv8.mpc"),
 			(OPUS, "../tests/files/assets/minimal/full_test.opus"),
 			(RIFF, "../tests/files/assets/minimal/wav_format_pcm.wav"),
 			(SPEEX, "../tests/files/assets/minimal/full_test.spx"),
