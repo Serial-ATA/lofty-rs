@@ -135,6 +135,7 @@
 	clippy::uninlined_format_args, /* This should be changed for any normal "{}", but I'm not a fan of it for any debug or width specific formatting */
 	clippy::manual_let_else,
 	clippy::let_underscore_untyped,
+	clippy::field_reassign_with_default,
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
