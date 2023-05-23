@@ -1,6 +1,8 @@
 use crate::{set_artist, temp_file, verify_artist};
+use lofty::musepack::MpcFile;
 use lofty::{
-	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType, TaggedFileExt,
+	AudioFile, FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType,
+	TaggedFile, TaggedFileExt,
 };
 use std::io::{Seek, Write};
 
@@ -81,3 +83,26 @@ macro_rules! generate_tests {
 
 generate_tests!(sv8, "tests/files/assets/minimal/mpc_sv8.mpc");
 generate_tests!(sv7, "tests/files/assets/minimal/mpc_sv7.mpc");
+
+// We have to use `MpcFile::read_from` for stream versions <= 6
+
+#[test]
+fn read_sv5() {
+	let mut file = temp_file!("tests/files/assets/minimal/mpc_sv5.mpc");
+
+	// Here we have an MPC file with an ID3v2, ID3v1, and an APEv2 tag
+	let file: TaggedFile = MpcFile::read_from(&mut file, ParseOptions::new())
+		.unwrap()
+		.into();
+
+	assert_eq!(file.file_type(), FileType::Mpc);
+
+	// Verify the APE tag first
+	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
+
+	// Now verify ID3v1 (read only)
+	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
+
+	// Finally, verify ID3v2 (read only)
+	crate::verify_artist!(file, tag, TagType::Id3v2, "Baz artist", 1);
+}
