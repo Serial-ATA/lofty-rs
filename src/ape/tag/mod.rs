@@ -491,7 +491,7 @@ mod tests {
 	use crate::ape::{ApeItem, ApeTag};
 	use crate::{ItemValue, Tag, TagExt, TagType};
 
-	use std::io::{Cursor, Seek, SeekFrom};
+	use std::io::Cursor;
 
 	#[test]
 	fn parse_ape() {

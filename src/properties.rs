@@ -127,6 +127,7 @@ mod tests {
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
+	use crate::musepack::sv4to6::MpcSv4to6Properties;
 	use crate::musepack::sv7::{Link, MpcSv7Properties, Profile};
 	use crate::musepack::sv8::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
 	use crate::musepack::{MpcFile, MpcProperties};
@@ -273,6 +274,17 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: Some(16),
 		channels: 2,
+	};
+
+	const MPC_SV5_PROPERTIES: MpcSv4to6Properties = MpcSv4to6Properties {
+		duration: Duration::from_millis(27),
+		audio_bitrate: 41,
+		channels: 2,
+		frame_count: 1009,
+		mid_side_stereo: true,
+		stream_version: 5,
+		max_band: 31,
+		sample_rate: 44100,
 	};
 
 	const MPC_SV7_PROPERTIES: MpcSv7Properties = MpcSv7Properties {
@@ -481,6 +493,14 @@ mod tests {
 		assert_eq!(
 			get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
 			MP4_FLAC_PROPERTIES
+		)
+	}
+
+	#[test]
+	fn mpc_sv5_properties() {
+		assert_eq!(
+			get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv5.mpc"),
+			MpcProperties::Sv4to6(MPC_SV5_PROPERTIES)
 		)
 	}
 
