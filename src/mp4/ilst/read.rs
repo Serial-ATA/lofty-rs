@@ -1,6 +1,5 @@
 use super::constants::{
-	BE_64BIT_SIGNED_INTEGER, BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED,
-	UTF16, UTF8,
+	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::error::Result;
@@ -75,9 +74,7 @@ where
 						let mut data = Vec::new();
 
 						for (code, content) in atom_data {
-							if (code == BE_SIGNED_INTEGER || code == BE_64BIT_SIGNED_INTEGER)
-								&& content.len() == 8
-							{
+							if content.len() == 8 {
 								data.push(AtomData::Unknown {
 									code,
 									data: content,
@@ -85,10 +82,17 @@ where
 							}
 						}
 
-						tag.atoms.push(Atom {
-							ident: AtomIdent::Fourcc(*b"plID"),
-							data: AtomDataStorage::Multiple(data),
-						})
+						if !data.is_empty() {
+							let storage = match data.len() {
+								1 => AtomDataStorage::Single(data.remove(0)),
+								_ => AtomDataStorage::Multiple(data),
+							};
+
+							tag.atoms.push(Atom {
+								ident: AtomIdent::Fourcc(*b"plID"),
+								data: storage,
+							})
+						}
 					}
 
 					continue;
