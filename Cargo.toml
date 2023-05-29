@@ -40,7 +40,7 @@ tempfile  = "3.5.0"
 
 # Pretty heavy dependency, we don't want this compiling for test/doc runs
 [target.'cfg(bench)'.dev-dependencies]
-criterion = { version = "0.4.0", features = ["html_reports"] }
+criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [lib]
 bench = false
