@@ -566,14 +566,21 @@ pub(crate) fn create_vorbis_comments_ref(
 mod tests {
 	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::{
-		ItemKey, ItemValue, MergeTag as _, SplitTag as _, Tag, TagExt as _, TagItem, TagType,
+		ItemKey, ItemValue, MergeTag as _, ParsingMode, SplitTag as _, Tag, TagExt as _, TagItem,
+		TagType,
 	};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
 		let mut parsed_tag = VorbisComments::default();
 
-		crate::ogg::read::read_comments(&mut reader, tag.len() as u64, &mut parsed_tag).unwrap();
+		crate::ogg::read::read_comments(
+			&mut reader,
+			tag.len() as u64,
+			&mut parsed_tag,
+			ParsingMode::Strict,
+		)
+		.unwrap();
 		parsed_tag
 	}
 

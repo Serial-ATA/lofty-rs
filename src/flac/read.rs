@@ -84,6 +84,7 @@ where
 				&mut &*block.content,
 				block.content.len() as u64,
 				&mut vorbis_comments,
+				parse_options.parsing_mode,
 			)?;
 
 			flac_file.vorbis_comments_tag = Some(vorbis_comments);
