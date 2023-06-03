@@ -1068,6 +1068,7 @@ impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
 
 #[cfg(test)]
 mod tests {
+	use crate::ParsingMode;
 	use std::borrow::Cow;
 
 	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
@@ -1095,7 +1096,7 @@ mod tests {
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 
 		let header = read_id3v2_header(&mut reader).unwrap();
-		crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap()
+		crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()
 	}
 
 	#[test]
@@ -1206,7 +1207,9 @@ mod tests {
 		let temp_reader = &mut &*writer;
 
 		let temp_header = read_id3v2_header(temp_reader).unwrap();
-		let temp_parsed_tag = crate::id3::v2::read::parse_id3v2(temp_reader, temp_header).unwrap();
+		let temp_parsed_tag =
+			crate::id3::v2::read::parse_id3v2(temp_reader, temp_header, ParsingMode::Strict)
+				.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -1456,7 +1459,7 @@ mod tests {
 		let mut reader = &mut &writer[..];
 
 		let header = read_id3v2_header(&mut reader).unwrap();
-		assert!(crate::id3::v2::read::parse_id3v2(reader, header).is_ok());
+		assert!(crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).is_ok());
 
 		assert_eq!(writer[3..10], writer[writer.len() - 7..])
 	}
@@ -1481,7 +1484,7 @@ mod tests {
 		let mut reader = &mut &writer[..];
 
 		let header = read_id3v2_header(&mut reader).unwrap();
-		let tag = crate::id3::v2::read::parse_id3v2(reader, header).unwrap();
+		let tag = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
 
 		assert_eq!(tag.len(), 1);
 		assert_eq!(
@@ -1798,7 +1801,8 @@ mod tests {
 		let mut reader = std::io::Cursor::new(&content[..]);
 
 		let header = read_id3v2_header(&mut reader).unwrap();
-		let reparsed = crate::id3::v2::read::parse_id3v2(&mut reader, header).unwrap();
+		let reparsed =
+			crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap();
 
 		assert_eq!(id3v2, reparsed);
 	}

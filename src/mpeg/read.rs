@@ -41,7 +41,7 @@ where
 				let header = read_id3v2_header(reader)?;
 				let skip_footer = header.flags.footer;
 
-				let id3v2 = parse_id3v2(reader, header)?;
+				let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
 				if let Some(existing_tag) = &mut file.id3v2_tag {
 					// https://github.com/Serial-ATA/lofty-rs/issues/87
 					// Duplicate tags should have their frames appended to the previous

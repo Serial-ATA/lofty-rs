@@ -51,7 +51,7 @@ where
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
 		flac_file.id3v2_tag = Some(id3v2);
 	}
 

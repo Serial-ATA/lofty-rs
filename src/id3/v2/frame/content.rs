@@ -6,6 +6,7 @@ use crate::id3::v2::items::{
 };
 use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
+use crate::probe::ParsingMode;
 use crate::util::text::TextEncoding;
 
 use std::io::Read;
@@ -15,6 +16,7 @@ pub(super) fn parse_content<R: Read>(
     reader: &mut R,
     id: &str,
     version: Id3v2Version,
+	parse_mode: ParsingMode,
 ) -> Result<Option<FrameValue>> {
 	Ok(match id {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
