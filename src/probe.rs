@@ -20,7 +20,7 @@ use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
 /// Options to control how Lofty parses a file
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct ParseOptions {
 	pub(crate) read_properties: bool,
@@ -62,7 +62,7 @@ impl ParseOptions {
 		Self {
 			read_properties: true,
 			use_custom_resolvers: true,
-			parsing_mode: ParsingMode::Strict,
+			parsing_mode: ParsingMode::BestAttempt,
 		}
 	}
 
@@ -115,12 +115,25 @@ impl ParseOptions {
 }
 
 /// The parsing strictness mode
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default)]
 #[non_exhaustive]
 pub enum ParsingMode {
-	/// The default mode, will eagerly error on invalid input
+	/// Will eagerly error on invalid input
+	///
+	/// This mode will eagerly error on any non spec-compliant input.
 	Strict,
-	/// Less eager to error, may produce invalid output
+	/// Default mode, less eager to error on recoverably malformed input
+	///
+	/// This mode will attempt to fill in any holes where possible in otherwise valid, spec-compliant input.
+	///
+	/// NOTE: A readable input does *not* necessarily make it writeable.
+	#[default]
+	BestAttempt,
+	/// Least eager to error, may produce invalid output
+	///
+	/// This mode will discard any invalid fields, and ignore the majority of non-fatal errors.
+	///
+	/// Tags and properties read using this mode may come out missing items if the input is malformed.
 	Relaxed,
 }
 
