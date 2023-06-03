@@ -1,6 +1,7 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind};
-use crate::util::text::{decode_text, encode_text};
-use crate::{Result, TextEncoding};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::macros::parse_mode_choice;
+use crate::probe::ParsingMode;
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -20,13 +21,23 @@ impl UniqueFileIdentifierFrame {
 	/// # Errors
 	///
 	/// Owner is missing or improperly encoded
-	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
+	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
-		let Some(owner) = decode_text(reader, TextEncoding::Latin1, true)?.text_or_none() else {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into());
-		};
+		let owner_decode_result = decode_text(reader, TextEncoding::Latin1, true)?;
+
+		let owner;
+		match owner_decode_result.text_or_none() {
+			Some(valid) => owner = valid,
+			None => {
+				parse_mode_choice!(
+					parse_mode,
+					BESTATTEMPT: owner = String::new(),
+					DEFAULT: return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into())
+				);
+			},
+		}
 
 		let mut identifier = Vec::new();
 		reader.read_to_end(&mut identifier)?;
