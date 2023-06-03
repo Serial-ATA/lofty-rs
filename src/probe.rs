@@ -135,19 +135,34 @@ pub enum ParsingMode {
 	/// Will eagerly error on invalid input
 	///
 	/// This mode will eagerly error on any non spec-compliant input.
+	///
+	/// ## Examples of behavior
+	///
+	/// * Unable to decode text - The parser will error and the entire input is discarded
+	/// * Unable to determine the sample rate - The parser will error and the entire input is discarded
 	Strict,
 	/// Default mode, less eager to error on recoverably malformed input
 	///
 	/// This mode will attempt to fill in any holes where possible in otherwise valid, spec-compliant input.
 	///
 	/// NOTE: A readable input does *not* necessarily make it writeable.
+	///
+	/// ## Examples of behavior
+	///
+	/// * Unable to decode text - If valid otherwise, the field will be replaced by an empty string and the parser moves on
+	/// * Unable to determine the sample rate - The sample rate will be 0
 	#[default]
 	BestAttempt,
-	/// Least eager to error, may produce invalid output
+	/// Least eager to error, may produce invalid/partial output
 	///
 	/// This mode will discard any invalid fields, and ignore the majority of non-fatal errors.
 	///
-	/// Tags and properties read using this mode may come out missing items if the input is malformed.
+	/// If the input is malformed, the resulting tags may be incomplete, and the properties zeroed.
+	///
+	/// ## Examples of behavior
+	///
+	/// * Unable to decode text - The entire item is discarded and the parser moves on
+	/// * Unable to determine the sample rate - The sample rate will be 0
 	Relaxed,
 }
 
