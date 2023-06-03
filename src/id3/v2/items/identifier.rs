@@ -68,3 +68,24 @@ impl Hash for UniqueFileIdentifierFrame {
 		self.owner.hash(state);
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	#[test]
+	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
+		use crate::id3::v2::UniqueFileIdentifierFrame;
+		use crate::ParsingMode;
+
+		let ufid_no_owner = UniqueFileIdentifierFrame {
+			owner: String::new(),
+			identifier: vec![0],
+		};
+
+		let bytes = ufid_no_owner.as_bytes();
+
+		assert!(UniqueFileIdentifierFrame::parse(&mut &bytes[..], ParsingMode::Strict).is_err());
+		assert!(
+			UniqueFileIdentifierFrame::parse(&mut &bytes[..], ParsingMode::BestAttempt).is_ok()
+		);
+	}
+}
