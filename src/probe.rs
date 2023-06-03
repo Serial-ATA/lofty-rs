@@ -115,6 +115,20 @@ impl ParseOptions {
 }
 
 /// The parsing strictness mode
+///
+/// This can be set with [`Probe::options`].
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use lofty::{ParseOptions, ParsingMode, Probe};
+///
+/// # fn main() -> lofty::Result<()> {
+/// // We only want to read spec-compliant inputs
+/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
+/// let tagged_file = Probe::open("foo.mp3")?.options(parsing_options).read()?;
+/// # Ok(()) }
+/// ```
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default)]
 #[non_exhaustive]
 pub enum ParsingMode {
