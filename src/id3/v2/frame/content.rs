@@ -28,7 +28,7 @@ pub(super) fn parse_content<R: Read>(
 		"WXXX" => ExtendedUrlFrame::parse(reader, version)?.map(FrameValue::UserUrl),
 		"COMM" => CommentFrame::parse(reader, version)?.map(FrameValue::Comment),
 		"USLT" => UnsynchronizedTextFrame::parse(reader, version)?.map(FrameValue::UnsynchronizedText),
-		"UFID" => UniqueFileIdentifierFrame::parse(reader)?.map(FrameValue::UniqueFileIdentifier),
+		"UFID" => UniqueFileIdentifierFrame::parse(reader, parse_mode)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
