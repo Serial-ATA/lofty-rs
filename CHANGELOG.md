@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **ParsingMode**: A new variant, `BestAttempt` will attempt to fill holes in otherwise valid tag items ([PR](https://github.com/Serial-ATA/lofty-rs/pull/205))
+
+### Changed
+- **Probe**: The default `ParsingMode` is now `ParsingMode::BestAttempt` (It was previously `ParsingMode::Strict`)
+
 ### Fixed
 - **MP4**: Fixed potential panic with malformed `plID` atoms ([issue](https://github.com/Serial-ATA/lofty-rs/issues/201)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/202))
 
