@@ -28,7 +28,8 @@ impl SpeexFile {
 	where
 		R: Read + Seek,
 	{
-		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2)?;
+		let file_information =
+			super::read::read_from(reader, SPEEXHEADER, &[], 2, parse_options.parsing_mode)?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {

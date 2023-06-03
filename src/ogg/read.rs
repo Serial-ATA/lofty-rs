@@ -1,8 +1,9 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::error::Result;
-use crate::macros::{decode_err, err};
+use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::Picture;
+use crate::probe::ParsingMode;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -11,7 +12,12 @@ use ogg_pager::{Packets, PageHeader};
 
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
-pub(crate) fn read_comments<R>(data: &mut R, mut len: u64, tag: &mut VorbisComments) -> Result<()>
+pub(crate) fn read_comments<R>(
+	data: &mut R,
+	mut len: u64,
+	tag: &mut VorbisComments,
+	parse_mode: ParsingMode,
+) -> Result<()>
 where
 	R: Read,
 {
@@ -30,6 +36,12 @@ where
 	let vendor = match String::from_utf8(vendor) {
 		Ok(v) => v,
 		Err(e) => {
+			// The actions following this are not spec-compliant in the slightest, so
+			// we need to short circuit if strict.
+			if parse_mode == ParsingMode::Strict {
+				return Err(LoftyError::new(ErrorKind::StringFromUtf8(e)));
+			}
+
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
 			// the replacement character
@@ -72,14 +84,32 @@ where
 		// Make sure there was a separator present, otherwise just move on
 		if let Some(value) = comment_split.next() {
 			match key {
-				k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => tag
-					.pictures
-					.push(Picture::from_flac_bytes(value.as_bytes(), true)?),
+				k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => {
+					let picture;
+					match Picture::from_flac_bytes(value.as_bytes(), true) {
+						Ok(pic) => picture = pic,
+						Err(e) => {
+							parse_mode_choice!(
+								parse_mode,
+								RELAXED: continue,
+								DEFAULT: return Err(e)
+							)
+						},
+					}
+
+					tag.pictures.push(picture)
+				},
 				// The valid range is 0x20..=0x7D not including 0x3D
 				k if k.chars().all(|c| (' '..='}').contains(&c) && c != '=') => {
 					tag.items.push((k.to_string(), value.to_string()))
 				},
-				_ => {}, // Discard invalid keys
+				_ => {
+					parse_mode_choice!(
+						parse_mode,
+						STRICT: decode_err!(@BAIL "OGG: Vorbis comments contain an invalid key"),
+						// Otherwise discard invalid keys
+					)
+				},
 			}
 		}
 	}
@@ -92,6 +122,7 @@ pub(crate) fn read_from<T>(
 	header_sig: &[u8],
 	comment_sig: &[u8],
 	packets_to_read: isize,
+	parse_mode: ParsingMode,
 ) -> Result<OGGTags>
 where
 	T: Read + Seek,
@@ -123,7 +154,7 @@ where
 	let mut tag = VorbisComments::default();
 
 	let reader = &mut metadata_packet;
-	read_comments(reader, reader.len() as u64, &mut tag)?;
+	read_comments(reader, reader.len() as u64, &mut tag, parse_mode)?;
 
 	Ok((Some(tag), first_page_header, packets))
 }
