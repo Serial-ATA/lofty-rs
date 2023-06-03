@@ -5,13 +5,18 @@ use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{FrameFlags, FrameId, FrameValue, Id3v2Version};
 use crate::macros::try_vec;
+use crate::probe::ParsingMode;
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
 impl<'a> Frame<'a> {
-	pub(crate) fn read<R>(reader: &mut R, version: Id3v2Version) -> Result<(Option<Self>, bool)>
+	pub(crate) fn read<R>(
+		reader: &mut R,
+		version: Id3v2Version,
+		parse_mode: ParsingMode,
+	) -> Result<(Option<Self>, bool)>
 	where
 		R: Read,
 	{
@@ -91,14 +96,14 @@ impl<'a> Frame<'a> {
 						return handle_encryption(&mut compression_reader, size, id, flags);
 					}
 
-					return parse_frame(&mut compression_reader, id, flags, version);
+					return parse_frame(&mut compression_reader, id, flags, version, parse_mode);
 				}
 
 				if flags.encryption.is_some() {
 					return handle_encryption(&mut unsynchronized_reader, size, id, flags);
 				}
 
-				return parse_frame(&mut unsynchronized_reader, id, flags, version);
+				return parse_frame(&mut unsynchronized_reader, id, flags, version, parse_mode);
 			},
 			// Possible combinations:
 			//
@@ -113,7 +118,7 @@ impl<'a> Frame<'a> {
 					return handle_encryption(&mut compression_reader, size, id, flags);
 				}
 
-				return parse_frame(&mut compression_reader, id, flags, version);
+				return parse_frame(&mut compression_reader, id, flags, version, parse_mode);
 			},
 			// Possible combinations:
 			//
@@ -126,7 +131,7 @@ impl<'a> Frame<'a> {
 			},
 			// Everything else that doesn't have special flags
 			_ => {
-				return parse_frame(&mut reader, id, flags, version);
+				return parse_frame(&mut reader, id, flags, version, parse_mode);
 			},
 		}
 	}
@@ -172,8 +177,9 @@ fn parse_frame<R: Read>(
 	id: FrameId<'static>,
 	flags: FrameFlags,
 	version: Id3v2Version,
+	parse_mode: ParsingMode,
 ) -> Result<(Option<Frame<'static>>, bool)> {
-	match parse_content(reader, id.as_str(), version)? {
+	match parse_content(reader, id.as_str(), version, parse_mode)? {
 		Some(value) => Ok((Some(Frame { id, value, flags }), false)),
 		None => Ok((None, false)),
 	}
