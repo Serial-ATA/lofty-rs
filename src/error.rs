@@ -279,6 +279,17 @@ pub struct FileEncodingError {
 
 impl FileEncodingError {
 	/// Create a `FileEncodingError` from a [`FileType`] and description
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::FileEncodingError;
+	/// use lofty::FileType;
+	///
+	/// // This error is bounded to `FileType::Mpeg`, which will be displayed when the error is formatted
+	/// let mpeg_error =
+	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
+	/// ```
 	#[must_use]
 	pub const fn new(format: FileType, description: &'static str) -> Self {
 		Self {
@@ -288,6 +299,17 @@ impl FileEncodingError {
 	}
 
 	/// Create a `FileEncodingError` without binding it to a [`FileType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::FileEncodingError;
+	/// use lofty::FileType;
+	///
+	/// // The error isn't bounded to FileType::Mpeg, only the message will be displayed when the
+	/// // error is formatted
+	/// let mpeg_error = FileEncodingError::from_description("Something went wrong in the MPEG file!");
+	/// ```
 	pub fn from_description(description: &'static str) -> Self {
 		Self {
 			format: None,
@@ -296,11 +318,38 @@ impl FileEncodingError {
 	}
 
 	/// Returns the associated [`FileType`], if one exists
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::FileEncodingError;
+	/// use lofty::FileType;
+	///
+	/// let mpeg_error =
+	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
+	///
+	/// assert_eq!(mpeg_error.format(), Some(FileType::Mpeg));
+	/// ```
 	pub fn format(&self) -> Option<FileType> {
 		self.format
 	}
 
 	/// Returns the error description
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::FileEncodingError;
+	/// use lofty::FileType;
+	///
+	/// let mpeg_error =
+	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
+	///
+	/// assert_eq!(
+	/// 	mpeg_error.description(),
+	/// 	"Something went wrong in the MPEG file!"
+	/// );
+	/// ```
 	pub fn description(&self) -> &str {
 		self.description
 	}
@@ -333,12 +382,33 @@ pub struct LoftyError {
 
 impl LoftyError {
 	/// Create a `LoftyError` from an [`ErrorKind`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::ErrorKind;
+	/// use lofty::LoftyError;
+	///
+	/// let unknown_format = LoftyError::new(ErrorKind::UnknownFormat);
+	/// ```
 	#[must_use]
 	pub const fn new(kind: ErrorKind) -> Self {
 		Self { kind }
 	}
 
 	/// Returns the [`ErrorKind`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::error::ErrorKind;
+	/// use lofty::LoftyError;
+	///
+	/// let unknown_format = LoftyError::new(ErrorKind::UnknownFormat);
+	/// if let ErrorKind::UnknownFormat = unknown_format.kind() {
+	/// 	println!("What's the format?");
+	/// }
+	/// ```
 	pub fn kind(&self) -> &ErrorKind {
 		&self.kind
 	}
