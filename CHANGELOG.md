@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Probe**: The default `ParsingMode` is now `ParsingMode::BestAttempt` (It was previously `ParsingMode::Strict`)
+- **Alloc**:
+  - ⚠️ Important ⚠️: The allocation limit for any single tag item is now **8MB** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/207)).
+                   This is not configurable yet ([issue](https://github.com/Serial-ATA/lofty-rs/issues/208)).
 
 ### Fixed
 - **MP4**: Fixed potential panic with malformed `plID` atoms ([issue](https://github.com/Serial-ATA/lofty-rs/issues/201)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/202))
