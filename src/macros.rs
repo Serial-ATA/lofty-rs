@@ -1,10 +1,6 @@
 macro_rules! try_vec {
 	($elem:expr; $size:expr) => {{
-		let mut v = Vec::new();
-		v.try_reserve_exact($size)?;
-		v.resize($size, $elem);
-
-		v
+		$crate::util::alloc::fallible_vec_from_element($elem, $size)?
 	}};
 }
 
