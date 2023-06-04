@@ -2,6 +2,38 @@
 
 use std::collections::HashMap;
 
+/// Upgrade an ID3v2.2 key to an ID3v2.4 key
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::id3::v2::upgrade_v2;
+///
+/// let old_title = "TT2";
+/// let new_title = upgrade_v2(old_title);
+///
+/// assert_eq!(new_title, Some("TIT2"));
+/// ```
+pub fn upgrade_v2(key: &str) -> Option<&'static str> {
+	V2KEYS.get(key).copied()
+}
+
+/// Upgrade an ID3v2.3 key to an ID3v2.4 key
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::id3::v2::upgrade_v3;
+///
+/// let old_involved_people_list = "IPLS";
+/// let new_involved_people_list = upgrade_v3(old_involved_people_list);
+///
+/// assert_eq!(new_involved_people_list, Some("TIPL"));
+/// ```
+pub fn upgrade_v3(key: &str) -> Option<&'static str> {
+	V3KEYS.get(key).copied()
+}
+
 macro_rules! gen_upgrades {
     (V2 => [$($($v2_key:literal)|* => $id3v24_from_v2:literal),+]; V3 => [$($($v3_key:literal)|* => $id3v24_from_v3:literal),+]) => {
 		use once_cell::sync::Lazy;
@@ -25,16 +57,6 @@ macro_rules! gen_upgrades {
 			)+
 			map
 		});
-
-		/// Upgrade an ID3v2.2 key to an ID3v2.4 key
-        pub fn upgrade_v2(key: &str) -> Option<&'static str> {
-            V2KEYS.get(key).map(|s| *s)
-        }
-
-		/// Upgrade an ID3v2.3 key to an ID3v2.4 key
-        pub fn upgrade_v3(key: &str) -> Option<&'static str> {
-            V3KEYS.get(key).map(|s| *s)
-        }
     }
 }
 

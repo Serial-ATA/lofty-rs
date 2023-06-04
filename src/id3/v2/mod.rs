@@ -5,7 +5,7 @@
 //! See:
 //!
 //! * [`Id3v2Tag`]
-//! * [Frame]
+//! * [`Frame`]
 
 mod flags;
 mod frame;
