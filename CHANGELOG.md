@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **MP4**: Fixed potential panic with malformed `plID` atoms ([issue](https://github.com/Serial-ATA/lofty-rs/issues/201)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/202))
 
+### Removed
+- **ID3v2**: Removed `id3::util::synchsafe::unsynch_content`. This has been replaced with [UnsynchronizedStream](https://docs.rs/lofty/latest/lofty/id3/v2/util/synchsafe/struct.UnsynchronizedStream.html).
+
 ## [0.13.0] - 2023-05-08
 
 ### Added

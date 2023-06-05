@@ -127,54 +127,6 @@ impl<R: Read> Read for UnsynchronizedStream<R> {
 	}
 }
 
-/// Unsynchronise a syncsafe buffer
-///
-/// See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
-///
-/// # Errors
-///
-/// The content is not properly unsynchronized
-pub fn unsynch_content(content: &[u8]) -> Result<Vec<u8>> {
-	let mut unsync_content = Vec::new();
-
-	let mut discard = false;
-
-	let mut i = 0;
-	let mut next = 0;
-	let content_len = content.len();
-
-	// Check for (0xFF, 0x00, 0x00), replace with (0xFF, 0x00)
-	while i < content_len && next < content_len {
-		// Verify the next byte is less than 0xE0 (0b111xxxxx)
-		// Then remove the next byte if it is a zero
-		if discard {
-			if content[next] >= 0xE0 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::InvalidUnsynchronisation).into());
-			}
-
-			if content[next] == 0 {
-				discard = false;
-				next += 1;
-
-				continue;
-			}
-		}
-
-		discard = false;
-
-		unsync_content.push(content[next]);
-
-		if content[next] == 0xFF {
-			discard = true
-		}
-
-		i += 1;
-		next += 1;
-	}
-
-	Ok(unsync_content)
-}
-
 /// An integer that can be converted to and from synchsafe variants
 pub trait SynchsafeInteger: Sized {
 	/// The integer type that this can be widened to for use in [`SynchsafeInteger::widening_synch`]
@@ -390,20 +342,6 @@ mod tests {
 			.unwrap();
 
 		assert_eq!(final_content, ORIGINAL_CONTENT);
-	}
-
-	#[test]
-	fn unsynchronisation() {
-		assert_eq!(
-			super::unsynch_content(UNSYNCHRONIZED_CONTENT).unwrap(),
-			EXPECTED
-		);
-
-		let invalid_unsync = vec![
-			0xFF, 0xE0, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00, 0x50, 0x01,
-		];
-
-		assert!(super::unsynch_content(invalid_unsync.as_slice()).is_err());
 	}
 
 	use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
