@@ -2,7 +2,8 @@
 //!
 //! See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
 
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
+
 use std::io::Read;
 
 /// A reader for unsynchronized content
