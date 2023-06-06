@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **ParsingMode**: A new variant, `BestAttempt` will attempt to fill holes in otherwise valid tag items ([PR](https://github.com/Serial-ATA/lofty-rs/pull/205))
+- **🎉 Support for Musepack files** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/199)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/200))
 
 ### Changed
 - **Probe**: The default `ParsingMode` is now `ParsingMode::BestAttempt` (It was previously `ParsingMode::Strict`)
