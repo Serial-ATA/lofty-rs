@@ -9,9 +9,9 @@ use quote::quote;
 pub(crate) fn opt_internal_file_type(
 	struct_name: String,
 ) -> Option<(proc_macro2::TokenStream, bool)> {
-	const LOFTY_FILE_TYPES: [&str; 12] = [
-		"Aac", "Aiff", "Ape", "Flac", "Mpeg", "Mp4", "Mpc", "Opus", "Vorbis", "Speex", "Wav",
-		"WavPack",
+	const LOFTY_FILE_TYPES: [&str; 13] = [
+		"Aac", "Aiff", "Ape", "Ebml", "Flac", "Mpeg", "Mp4", "Mpc", "Opus", "Vorbis", "Speex",
+		"Wav", "WavPack",
 	];
 
 	const ID3V2_STRIPPABLE: [&str; 2] = ["Flac", "Ape"];
