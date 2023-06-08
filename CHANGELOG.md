@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2023-06-08
+
 ### Added
 - **ParsingMode**: A new variant, `BestAttempt` will attempt to fill holes in otherwise valid tag items ([PR](https://github.com/Serial-ATA/lofty-rs/pull/205))
 - **🎉 Support for Musepack files** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/199)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/200))
@@ -488,7 +490,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.13.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.14.0...HEAD
+[0.14.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.13.0...0.14.0
 [0.13.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.1...0.13.0
 [0.12.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.0...0.12.1
 [0.12.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.11.0...0.12.0
