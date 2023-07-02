@@ -38,7 +38,7 @@ impl KeyValueFrame {
 
 		let encoding = verify_encoding(encoding_byte, version)?;
 
-		let mut values = vec![];
+		let mut values = Vec::new();
 
 		loop {
 			let key = decode_text(reader, encoding, true)?;
