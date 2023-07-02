@@ -533,9 +533,7 @@ impl Accessor for Id3v2Tag {
 	fn set_comment(&mut self, value: String) {
 		let mut value = Some(value);
 		self.frames.retain_mut(|frame| {
-			let Some(CommentFrame { content, .. }) =
-				filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR)
-			else {
+			let Some(CommentFrame { content, .. }) = filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR) else {
 				return true;
 			};
 			if let Some(value) = value.take() {
@@ -761,9 +759,7 @@ impl SplitTag for Id3v2Tag {
 				) => {
 					if owner == MUSICBRAINZ_UFID_OWNER {
 						let mut identifier = Cursor::new(identifier);
-						let Ok(recording_id) =
-							decode_text(&mut identifier, TextEncoding::Latin1, false)
-						else {
+						let Ok(recording_id) = decode_text(&mut identifier, TextEncoding::Latin1, false) else {
 							return true; // Keep frame
 						};
 						tag.items.push(TagItem::new(
