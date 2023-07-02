@@ -24,8 +24,9 @@ where
 		return Ok(None);
 	}
 
-	let id_str = std::str::from_utf8(&frame_header[..3])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId))?;
+	let frame_id = &frame_header[..3];
+	let id_str = std::str::from_utf8(frame_id)
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id.to_vec())))?;
 	let id = upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed);
 
 	let frame_id = FrameId::new_cow(id)?;
@@ -63,8 +64,9 @@ where
 		frame_id_end = 3;
 	}
 
+	let frame_id = &frame_header[..frame_id_end];
 	let id_str = std::str::from_utf8(&frame_header[..frame_id_end])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId))?;
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id.to_vec())))?;
 
 	let mut size = u32::from_be_bytes([
 		frame_header[4],

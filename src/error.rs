@@ -4,6 +4,7 @@
 //! which can be extended at any time.
 
 use crate::file::FileType;
+use crate::ItemKey;
 
 use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
@@ -83,7 +84,11 @@ pub enum Id3v2ErrorKind {
 
 	// Frame
 	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
-	BadFrameId,
+	/// or if the ID is too short/long.
+	BadFrameId(Vec<u8>),
+	/// Arises when no frame ID is available in the ID3v2 specification for an item key
+	/// and the associated value type.
+	UnsupportedFrameId(ItemKey),
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
 	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
@@ -133,7 +138,10 @@ impl Display for Id3v2ErrorKind {
 			},
 
 			// Frame
-			Self::BadFrameId => write!(f, "Failed to parse a frame ID"),
+			Self::BadFrameId(frame_id) => write!(f, "Failed to parse a frame ID: 0x{frame_id:x?}"),
+			Self::UnsupportedFrameId(item_key) => {
+				write!(f, "Unsupported frame ID for item key {item_key:?}")
+			},
 			Self::BadFrameLength => write!(
 				f,
 				"Frame isn't long enough to extract the necessary information"
