@@ -145,7 +145,7 @@ where
 
 				(1_u32 << 1, value)
 			},
-			ItemValueRef::Text(value) => {
+			ItemValueRef::Text(ref value) => {
 				tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
 
 				(0_u32, value.as_bytes())

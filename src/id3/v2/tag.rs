@@ -8,6 +8,9 @@ use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, TextInformationFrame,
 	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
+use crate::id3::v2::util::pairs::{
+	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
+};
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -16,7 +19,6 @@ use crate::util::text::{decode_text, TextEncoding};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
-use std::fmt::Display;
 use std::fs::File;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
@@ -27,18 +29,6 @@ use lofty_attr::tag;
 const COMMENT_FRAME_ID: &str = "COMM";
 
 const V4_MULTI_VALUE_SEPARATOR: char = '\0';
-const NUMBER_PAIR_SEPARATOR: char = '/';
-
-// This is used as the default number of track and disk.
-const DEFAULT_NUMBER_IN_PAIR: u32 = 0;
-
-// These keys have the part of the number pair.
-const NUMBER_PAIR_KEYS: &[ItemKey] = &[
-	ItemKey::TrackNumber,
-	ItemKey::TrackTotal,
-	ItemKey::DiscNumber,
-	ItemKey::DiscTotal,
-];
 
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
@@ -317,25 +307,6 @@ impl Id3v2Tag {
 	}
 
 	fn insert_item(&mut self, item: TagItem) {
-		fn set_number<F: FnMut(u32)>(item: &TagItem, mut setter: F) {
-			let text = item.value().text();
-			let number = text.map(str::parse::<u32>);
-
-			match number {
-				Some(Ok(number)) => setter(number),
-				Some(Err(parse_error)) => {
-					log::warn!(
-						"\"{}\" cannot be parsed as number in {:?}: {parse_error}",
-						text.unwrap(),
-						item.key()
-					)
-				},
-				None => {
-					log::warn!("Value does not have text in {:?}", item.key())
-				},
-			}
-		}
-
 		match item.key() {
 			ItemKey::TrackNumber => set_number(&item, |number| self.set_track(number)),
 			ItemKey::TrackTotal => set_number(&item, |number| self.set_track_total(number)),
@@ -419,21 +390,6 @@ fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
 			picture,
 		}),
 		flags,
-	}
-}
-
-fn format_number_pair<N, T>(number: Option<N>, total: Option<T>) -> Option<String>
-where
-	N: Display,
-	T: Display,
-{
-	match (number, total) {
-		(Some(number), None) => Some(number.to_string()),
-		(None, Some(total)) => Some(format!(
-			"{DEFAULT_NUMBER_IN_PAIR}{NUMBER_PAIR_SEPARATOR}{total}"
-		)),
-		(Some(number), Some(total)) => Some(format!("{number}{NUMBER_PAIR_SEPARATOR}{total}")),
-		(None, None) => None,
 	}
 }
 
@@ -533,7 +489,9 @@ impl Accessor for Id3v2Tag {
 	fn set_comment(&mut self, value: String) {
 		let mut value = Some(value);
 		self.frames.retain_mut(|frame| {
-			let Some(CommentFrame { content, .. }) = filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR) else {
+			let Some(CommentFrame { content, .. }) =
+				filter_comment_frame_by_description_mut(frame, &EMPTY_CONTENT_DESCRIPTOR)
+			else {
 				return true;
 			};
 			if let Some(value) = value.take() {
@@ -759,7 +717,9 @@ impl SplitTag for Id3v2Tag {
 				) => {
 					if owner == MUSICBRAINZ_UFID_OWNER {
 						let mut identifier = Cursor::new(identifier);
-						let Ok(recording_id) = decode_text(&mut identifier, TextEncoding::Latin1, false) else {
+						let Ok(recording_id) =
+							decode_text(&mut identifier, TextEncoding::Latin1, false)
+						else {
 							return true; // Keep frame
 						};
 						tag.items.push(TagItem::new(
@@ -1073,9 +1033,8 @@ mod tests {
 
 	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 	use crate::id3::v2::items::{ExtendedUrlFrame, Popularimeter, UniqueFileIdentifierFrame};
-	use crate::id3::v2::tag::{
-		filter_comment_frame_by_description, new_text_frame, DEFAULT_NUMBER_IN_PAIR,
-	};
+	use crate::id3::v2::tag::{filter_comment_frame_by_description, new_text_frame};
+	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::id3::v2::{
 		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
 		FrameFlags, FrameId, FrameValue, Id3v2Tag, Id3v2Version, TextInformationFrame,

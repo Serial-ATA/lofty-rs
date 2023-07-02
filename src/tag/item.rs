@@ -1,5 +1,6 @@
 use crate::tag::TagType;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 macro_rules! first_key {
@@ -694,7 +695,7 @@ impl ItemValue {
 }
 
 pub(crate) enum ItemValueRef<'a> {
-	Text(&'a str),
+	Text(Cow<'a, str>),
 	Locator(&'a str),
 	Binary(&'a [u8]),
 }
@@ -702,7 +703,7 @@ pub(crate) enum ItemValueRef<'a> {
 impl<'a> Into<ItemValueRef<'a>> for &'a ItemValue {
 	fn into(self) -> ItemValueRef<'a> {
 		match self {
-			ItemValue::Text(text) => ItemValueRef::Text(text),
+			ItemValue::Text(text) => ItemValueRef::Text(Cow::Borrowed(text)),
 			ItemValue::Locator(locator) => ItemValueRef::Locator(locator),
 			ItemValue::Binary(binary) => ItemValueRef::Binary(binary),
 		}
