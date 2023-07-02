@@ -29,7 +29,7 @@ pub(super) fn parse_content<R: Read>(
 		"WXXX" => ExtendedUrlFrame::parse(reader, version)?.map(FrameValue::UserUrl),
 		"COMM" => CommentFrame::parse(reader, version)?.map(FrameValue::Comment),
 		"USLT" => UnsynchronizedTextFrame::parse(reader, version)?.map(FrameValue::UnsynchronizedText),
-		"TIPL" => KeyValueFrame::parse(reader, version)?.map(FrameValue::KeyValueFrame),
+		"TIPL" | "TMCL" => KeyValueFrame::parse(reader, version)?.map(FrameValue::KeyValue),
 		"UFID" => UniqueFileIdentifierFrame::parse(reader, parse_mode)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
