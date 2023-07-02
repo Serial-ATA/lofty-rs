@@ -3,12 +3,14 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameId;
+use crate::ParsingMode;
 
 use std::borrow::Cow;
 use std::io::Read;
 
 pub(crate) fn parse_v2_header<R>(
 	reader: &mut R,
+	parse_mode: ParsingMode,
 ) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
 where
 	R: Read,
@@ -24,12 +26,20 @@ where
 		return Ok(None);
 	}
 
-	let frame_id = &frame_header[..3];
-	let id_str = std::str::from_utf8(frame_id)
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id.to_vec())))?;
-	let id = upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed);
-
-	let frame_id = FrameId::new_cow(id)?;
+	let frame_id_bytes = &frame_header[..3];
+	let frame_id = match std::str::from_utf8(frame_id_bytes)
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id_bytes.to_vec())).into())
+		.map(|id_str| {
+			upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed)
+		})
+		.and_then(FrameId::new_cow)
+	{
+		Ok(id) => id,
+		Err(err) => match parse_mode {
+			ParsingMode::Strict => return Err(err),
+			ParsingMode::BestAttempt | ParsingMode::Relaxed => return Ok(None),
+		},
+	};
 
 	let size = u32::from_be_bytes([0, frame_header[3], frame_header[4], frame_header[5]]);
 
@@ -40,6 +50,7 @@ where
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	synchsafe: bool,
+	parse_mode: ParsingMode,
 ) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
 where
 	R: Read,
@@ -64,9 +75,16 @@ where
 		frame_id_end = 3;
 	}
 
-	let frame_id = &frame_header[..frame_id_end];
-	let id_str = std::str::from_utf8(&frame_header[..frame_id_end])
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id.to_vec())))?;
+	let frame_id_bytes = &frame_header[..frame_id_end];
+	let id_str = match std::str::from_utf8(frame_id_bytes)
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(frame_id_bytes.to_vec())).into())
+	{
+		Ok(id_str) => id_str,
+		Err(err) => match parse_mode {
+			ParsingMode::Strict => return Err(err),
+			ParsingMode::BestAttempt | ParsingMode::Relaxed => return Ok(None),
+		},
+	};
 
 	let mut size = u32::from_be_bytes([
 		frame_header[4],
@@ -87,7 +105,13 @@ where
 	} else {
 		Cow::Owned(id_str.to_owned())
 	};
-	let frame_id = FrameId::new_cow(id)?;
+	let frame_id = match FrameId::new_cow(id) {
+		Ok(frame_id) => frame_id,
+		Err(err) => match parse_mode {
+			ParsingMode::Strict => return Err(err),
+			ParsingMode::BestAttempt | ParsingMode::Relaxed => return Ok(None),
+		},
+	};
 
 	// unsynch the frame size if necessary
 	if synchsafe {
