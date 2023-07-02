@@ -262,7 +262,7 @@ impl From<Popularimeter> for FrameValue {
 
 impl From<KeyValueFrame> for FrameValue {
 	fn from(value: KeyValueFrame) -> Self {
-		Self::KeyValueFrame(value)
+		Self::KeyValue(value)
 	}
 }
 
@@ -283,7 +283,7 @@ impl FrameValue {
 			FrameValue::Url(link) => link.as_bytes(),
 			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(Id3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
-			FrameValue::KeyValueFrame(content) => content.as_bytes(),
+			FrameValue::KeyValue(content) => content.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 		})
