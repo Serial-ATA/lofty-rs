@@ -788,7 +788,7 @@ impl SplitTag for Id3v2Tag {
 						FrameValue::Popularimeter(popularimeter) => {
 							ItemValue::Binary(popularimeter.as_bytes())
 						},
-						FrameValue::KeyValueFrame(_)  => {
+						FrameValue::KeyValueFrame(_) => {
 							return true; // Keep frame
 						},
 						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
