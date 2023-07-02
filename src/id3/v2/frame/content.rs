@@ -1,9 +1,9 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
-	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
-	KeyValueFrame
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use crate::id3::v2::Id3v2Version;
 use crate::macros::err;

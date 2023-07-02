@@ -7,17 +7,17 @@ use byteorder::ReadBytesExt;
 
 use std::io::Read;
 
-/// An `ID3v2` text frame
+/// An `ID3v2` key-value frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct KeyValueFrame {
 	/// The encoding of the text
 	pub encoding: TextEncoding,
-	/// The text itself
-	pub values: Vec<(String, String)>,
+	/// The key value pairs. Keys can be specified multiple times
+	pub key_value_pairs: Vec<(String, String)>,
 }
 
 impl KeyValueFrame {
-	/// Read an [`TextInformationFrame`] from a slice
+	/// Read an [`KeyValueFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
 	///
@@ -37,31 +37,30 @@ impl KeyValueFrame {
 		};
 
 		let encoding = verify_encoding(encoding_byte, version)?;
-        
-        let mut values = vec![];
 
-        loop {
-            let key = decode_text(reader, encoding, true)?;
-            let value = decode_text(reader, encoding, true)?;
-            if key.bytes_read == 0 || value.bytes_read == 0 {
-                break;
-            }
+		let mut values = vec![];
 
-            values.push((key.content, value.content));
-        }
+		loop {
+			let key = decode_text(reader, encoding, true)?;
+			let value = decode_text(reader, encoding, true)?;
+			if key.bytes_read == 0 || value.bytes_read == 0 {
+				break;
+			}
 
+			values.push((key.content, value.content));
+		}
 
-		Ok(Some(Self{ encoding, values }))
+		Ok(Some(Self { encoding, key_value_pairs: values }))
 	}
 
-	/// Convert an [`TextInformationFrame`] to a byte vec
+	/// Convert a [`KeyValueFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = vec![];
-        
-        for (key, value) in &self.values {
-            content.append(&mut encode_text(key, self.encoding, true));
-            content.append(&mut encode_text(value, self.encoding, true));
-        }
+
+		for (key, value) in &self.key_value_pairs {
+			content.append(&mut encode_text(key, self.encoding, true));
+			content.append(&mut encode_text(value, self.encoding, true));
+		}
 
 		content.insert(0, self.encoding as u8);
 		content

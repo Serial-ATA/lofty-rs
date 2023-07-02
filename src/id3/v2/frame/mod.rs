@@ -4,9 +4,9 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
-	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
-	KeyValueFrame
+	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
+	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::Id3v2Version;
@@ -261,9 +261,9 @@ impl From<Popularimeter> for FrameValue {
 }
 
 impl From<KeyValueFrame> for FrameValue {
-    fn from(value: KeyValueFrame) -> Self {
-        Self::KeyValueFrame(value)
-    }
+	fn from(value: KeyValueFrame) -> Self {
+		Self::KeyValueFrame(value)
+	}
 }
 
 impl From<UniqueFileIdentifierFrame> for FrameValue {
