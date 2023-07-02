@@ -3,6 +3,7 @@ use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	KeyValueFrame
 };
 use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
@@ -28,6 +29,7 @@ pub(super) fn parse_content<R: Read>(
 		"WXXX" => ExtendedUrlFrame::parse(reader, version)?.map(FrameValue::UserUrl),
 		"COMM" => CommentFrame::parse(reader, version)?.map(FrameValue::Comment),
 		"USLT" => UnsynchronizedTextFrame::parse(reader, version)?.map(FrameValue::UnsynchronizedText),
+		"TIPL" => KeyValueFrame::parse(reader, version)?.map(FrameValue::KeyValueFrame),
 		"UFID" => UniqueFileIdentifierFrame::parse(reader, parse_mode)?.map(FrameValue::UniqueFileIdentifier),
 		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames

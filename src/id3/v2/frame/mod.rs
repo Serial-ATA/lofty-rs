@@ -6,6 +6,7 @@ pub(super) mod read;
 use super::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Popularimeter,
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	KeyValueFrame
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::Id3v2Version;
@@ -178,6 +179,8 @@ pub enum FrameValue {
 	Picture(AttachedPictureFrame),
 	/// Represents a "POPM" frame
 	Popularimeter(Popularimeter),
+	/// Represents an "IPLS" or "TPIL" frame
+	KeyValueFrame(KeyValueFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -262,6 +265,12 @@ impl From<Popularimeter> for FrameValue {
 	}
 }
 
+impl From<KeyValueFrame> for FrameValue {
+    fn from(value: KeyValueFrame) -> Self {
+        Self::KeyValueFrame(value)
+    }
+}
+
 impl From<UniqueFileIdentifierFrame> for FrameValue {
 	fn from(value: UniqueFileIdentifierFrame) -> Self {
 		Self::UniqueFileIdentifier(value)
@@ -279,6 +288,7 @@ impl FrameValue {
 			FrameValue::Url(link) => link.as_bytes(),
 			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(Id3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
+			FrameValue::KeyValueFrame(content) => content.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 		})
