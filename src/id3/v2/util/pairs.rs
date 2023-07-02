@@ -1,4 +1,5 @@
-/// Contains utilities for ID3v2 style number pairs
+//! Contains utilities for ID3v2 style number pairs
+
 use crate::tag::item::{ItemKey, TagItem};
 
 use std::fmt::Display;
