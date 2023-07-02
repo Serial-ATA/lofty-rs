@@ -22,9 +22,9 @@ impl<'a> Frame<'a> {
 	{
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
 		let (id, mut size, mut flags) = match match version {
-			Id3v2Version::V2 => parse_v2_header(reader)?,
-			Id3v2Version::V3 => parse_header(reader, false)?,
-			Id3v2Version::V4 => parse_header(reader, true)?,
+			Id3v2Version::V2 => parse_v2_header(reader, parse_mode)?,
+			Id3v2Version::V3 => parse_header(reader, false, parse_mode)?,
+			Id3v2Version::V4 => parse_header(reader, true, parse_mode)?,
 		} {
 			None => return Ok((None, true)),
 			Some(frame_header) => frame_header,
