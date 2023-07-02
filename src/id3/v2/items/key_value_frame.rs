@@ -58,14 +58,12 @@ impl KeyValueFrame {
 
 	/// Convert a [`KeyValueFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = vec![];
+		let mut content = vec![self.encoding as u8];
 
 		for (key, value) in &self.key_value_pairs {
 			content.append(&mut encode_text(key, self.encoding, true));
 			content.append(&mut encode_text(value, self.encoding, true));
 		}
-
-		content.insert(0, self.encoding as u8);
 		content
 	}
 }
