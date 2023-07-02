@@ -38,7 +38,9 @@ impl<'a> FrameId<'a> {
 		match id.len() {
 			3 => Ok(FrameId::Outdated(id)),
 			4 => Ok(FrameId::Valid(id)),
-			_ => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
+			_ => Err(
+				Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id.into_owned().into_bytes())).into(),
+			),
 		}
 	}
 
@@ -52,7 +54,10 @@ impl<'a> FrameId<'a> {
 	pub(super) fn verify_id(id_str: &str) -> Result<()> {
 		for c in id_str.chars() {
 			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into());
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId(
+					id_str.as_bytes().to_vec(),
+				))
+				.into());
 			}
 		}
 
@@ -93,7 +98,7 @@ impl<'a> TryFrom<&'a ItemKey> for FrameId<'a> {
 					}
 				}
 
-				Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into())
+				Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(k.clone())).into())
 			},
 		}
 	}

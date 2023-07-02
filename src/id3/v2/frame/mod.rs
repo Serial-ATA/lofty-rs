@@ -112,7 +112,12 @@ impl<'a> Frame<'a> {
 				None => id,
 				Some(upgraded) => Cow::Borrowed(upgraded),
 			},
-			_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
+			_ => {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId(
+					id.into_owned().into_bytes(),
+				))
+				.into())
+			},
 		};
 
 		let id = FrameId::new_cow(id_upgraded)?;
@@ -504,8 +509,12 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 				frame_id = id;
 			},
 			Err(_) => {
-				let Some(desc) = tag_item.key().map_key(TagType::Id3v2, true) else {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into());
+				let item_key = tag_item.key();
+				let Some(desc) = item_key.map_key(TagType::Id3v2, true) else {
+					return Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(
+						item_key.clone(),
+					))
+					.into());
 				};
 
 				match tag_item.value() {
@@ -525,7 +534,12 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 							content: locator.clone(),
 						})
 					},
-					_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId).into()),
+					_ => {
+						return Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(
+							item_key.clone(),
+						))
+						.into())
+					},
 				}
 			},
 		}
