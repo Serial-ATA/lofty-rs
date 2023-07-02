@@ -9,6 +9,7 @@ mod popularimeter;
 mod sync_text;
 mod text_information_frame;
 mod url_link_frame;
+mod key_value_frame;
 
 pub use attached_picture_frame::AttachedPictureFrame;
 pub use audio_text_frame::{scramble, AudioTextFrame, AudioTextFrameFlags};
@@ -21,3 +22,4 @@ pub use popularimeter::Popularimeter;
 pub use sync_text::{SyncTextContentType, SynchronizedText, TimestampFormat};
 pub use text_information_frame::TextInformationFrame;
 pub use url_link_frame::UrlLinkFrame;
+pub use key_value_frame::KeyValueFrame;

@@ -47,6 +47,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 				FrameValue::UserUrl(_) => "UserUrl",
 				FrameValue::Picture { .. } => "Picture",
 				FrameValue::Popularimeter(_) => "Popularimeter",
+				FrameValue::KeyValueFrame(_) => "KeyValueData",
 				FrameValue::Binary(_) => "Binary",
 				FrameValue::UniqueFileIdentifier(_) => "UniqueFileIdentifier",
 			},
