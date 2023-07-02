@@ -1,9 +1,10 @@
 use crate::{set_artist, temp_file, verify_artist};
+use byteorder::ReadBytesExt;
 use lofty::{
 	Accessor, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem, TagType,
-	TaggedFileExt,
+	TaggedFileExt, id3::v2::{Id3v2Tag, Frame, FrameValue, KeyValueFrame, FrameFlags},
 };
-use std::io::{Seek, Write};
+use std::{io::{Seek, Write, Read}, fs::File};
 
 #[test]
 fn read() {
@@ -305,4 +306,58 @@ fn remove_id3v1() {
 #[test]
 fn remove_ape() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
+}
+
+#[test]
+fn read_and_write_tpil_frame() {
+	let key_value_pairs = vec![
+					("engineer".to_string(), "testperson".to_string()), 
+					("vocalist".to_string(), "testhuman".to_string())
+				];
+
+	let mut file = temp_file!("tests/files/assets/issue_213.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
+
+	let mut tag: Id3v2Tag = tagged_file.tag(TagType::Id3v2).unwrap().clone().into();
+	
+	tag.insert(
+		Frame::new(
+			"TIPL", 
+			KeyValueFrame {
+				encoding: lofty::TextEncoding::UTF8,
+				key_value_pairs: key_value_pairs.clone()
+			},
+	 		FrameFlags::default()
+		).unwrap()
+	);
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+	
+
+	let tag: Id3v2Tag = tagged_file.tag(TagType::Id3v2).unwrap().clone().into();
+
+	let content = match tag.get("TIPL").unwrap().content() {
+		FrameValue::KeyValue(content) => content,
+		_ => panic!("Wrong Frame Value Type for TIPL")
+	};
+
+	assert_eq!(key_value_pairs, content.key_value_pairs);
 }
