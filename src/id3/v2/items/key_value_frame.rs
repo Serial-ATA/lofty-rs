@@ -50,7 +50,10 @@ impl KeyValueFrame {
 			values.push((key.content, value.content));
 		}
 
-		Ok(Some(Self { encoding, key_value_pairs: values }))
+		Ok(Some(Self {
+			encoding,
+			key_value_pairs: values,
+		}))
 	}
 
 	/// Convert a [`KeyValueFrame`] to a byte vec
