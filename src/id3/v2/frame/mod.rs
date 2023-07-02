@@ -175,7 +175,7 @@ pub enum FrameValue {
 	/// Represents a "POPM" frame
 	Popularimeter(Popularimeter),
 	/// Represents an "IPLS" or "TPIL" frame
-	KeyValueFrame(KeyValueFrame),
+	KeyValue(KeyValueFrame),
 	/// Binary data
 	///
 	/// NOTES:
