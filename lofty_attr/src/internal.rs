@@ -46,7 +46,7 @@ pub(crate) fn init_write_lookup(
 	insert!(map, Ape, {
 		lofty::ape::tag::ApeTagRef {
 			read_only: false,
-			items: lofty::ape::tag::tagitems_into_ape(tag.items()),
+			items: lofty::ape::tag::tagitems_into_ape(tag),
 		}
 		.write_to(data)
 	});

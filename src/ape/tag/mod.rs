@@ -4,7 +4,8 @@ mod write;
 
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
+use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
@@ -152,6 +153,20 @@ impl ApeTag {
 		self.items.retain(|i| !i.key().eq_ignore_ascii_case(key));
 	}
 
+	fn insert_item(&mut self, item: TagItem) {
+		match item.key() {
+			ItemKey::TrackNumber => set_number(&item, |number| self.set_track(number)),
+			ItemKey::TrackTotal => set_number(&item, |number| self.set_track_total(number)),
+			ItemKey::DiscNumber => set_number(&item, |number| self.set_disk(number)),
+			ItemKey::DiscTotal => set_number(&item, |number| self.set_disk_total(number)),
+			_ => {
+				if let Ok(item) = item.try_into() {
+					self.insert(item);
+				}
+			},
+		};
+	}
+
 	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
 		if let Some(ApeItem {
 			value: ItemValue::Text(ref text),
@@ -163,6 +178,14 @@ impl ApeTag {
 		}
 
 		(None, None)
+	}
+
+	fn insert_number_pair(&mut self, key: &'static str, number: Option<u32>, total: Option<u32>) {
+		if let Some(value) = format_number_pair(number, total) {
+			self.insert(ApeItem::text(key, value));
+		} else {
+			log::warn!("{key} is not set. number: {number:?}, total: {total:?}");
+		}
 	}
 }
 
@@ -198,7 +221,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn set_track(&mut self, value: u32) {
-		self.insert(ApeItem::text("Track", value.to_string()))
+		self.insert_number_pair("Track", Some(value), self.track_total());
 	}
 
 	fn remove_track(&mut self) {
@@ -210,9 +233,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		let current_track = self.split_num_pair("Track").0.unwrap_or(1);
-
-		self.insert(ApeItem::text("Track", format!("{current_track}/{value}")));
+		self.insert_number_pair("Track", self.track(), Some(value));
 	}
 
 	fn remove_track_total(&mut self) {
@@ -229,7 +250,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		self.insert(ApeItem::text("Disc", value.to_string()));
+		self.insert_number_pair("Disc", Some(value), self.disk_total());
 	}
 
 	fn remove_disk(&mut self) {
@@ -241,9 +262,7 @@ impl Accessor for ApeTag {
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		let current_disk = self.split_num_pair("Disc").0.unwrap_or(1);
-
-		self.insert(ApeItem::text("Disc", format!("{current_disk}/{value}")));
+		self.insert_number_pair("Disc", self.disk(), Some(value));
 	}
 
 	fn remove_disk_total(&mut self) {
@@ -419,9 +438,7 @@ impl MergeTag for SplitTagRemainder {
 		let Self(mut merged) = self;
 
 		for item in tag.items {
-			if let Ok(ape_item) = item.try_into() {
-				merged.insert(ape_item)
-			}
+			merged.insert_item(item);
 		}
 
 		for pic in tag.pictures {
@@ -474,23 +491,46 @@ where
 	}
 }
 
-pub(crate) fn tagitems_into_ape<'a>(
-	items: impl IntoIterator<Item = &'a TagItem>,
-) -> impl Iterator<Item = ApeItemRef<'a>> {
-	items.into_iter().filter_map(|i| {
-		i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
+pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_>> {
+	fn create_apeitemref_for_number_pair<'a>(
+		number: Option<&str>,
+		total: Option<&str>,
+		key: &'a str,
+	) -> Option<ApeItemRef<'a>> {
+		format_number_pair(number, total).map(|value| ApeItemRef {
 			read_only: false,
 			key,
-			value: (&i.item_value).into(),
+			value: ItemValueRef::Text(Cow::Owned(value)),
 		})
-	})
+	}
+
+	tag.items()
+		.filter(|item| !NUMBER_PAIR_KEYS.contains(item.key()))
+		.filter_map(|i| {
+			i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
+				read_only: false,
+				key,
+				value: (&i.item_value).into(),
+			})
+		})
+		.chain(create_apeitemref_for_number_pair(
+			tag.get_string(&ItemKey::TrackNumber),
+			tag.get_string(&ItemKey::TrackTotal),
+			"Track",
+		))
+		.chain(create_apeitemref_for_number_pair(
+			tag.get_string(&ItemKey::DiscNumber),
+			tag.get_string(&ItemKey::DiscTotal),
+			"Disk",
+		))
 }
 
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
-	use crate::{ItemValue, Tag, TagExt, TagType};
+	use crate::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
 
+	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use std::io::Cursor;
 
 	#[test]
@@ -609,5 +649,221 @@ mod tests {
 		verify_key(&ape_tag, "Comment", "Qux comment");
 		verify_key(&ape_tag, "Track", "1");
 		verify_key(&ape_tag, "Genre", "Classical");
+	}
+
+	#[test]
+	fn set_track() {
+		let mut ape = ApeTag::default();
+		let track = 1;
+
+		ape.set_track(track);
+
+		assert_eq!(ape.track().unwrap(), track);
+		assert!(ape.track_total().is_none());
+	}
+
+	#[test]
+	fn set_track_total() {
+		let mut ape = ApeTag::default();
+		let track_total = 2;
+
+		ape.set_track_total(track_total);
+
+		assert_eq!(ape.track().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(ape.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn set_track_and_track_total() {
+		let mut ape = ApeTag::default();
+		let track = 1;
+		let track_total = 2;
+
+		ape.set_track(track);
+		ape.set_track_total(track_total);
+
+		assert_eq!(ape.track().unwrap(), track);
+		assert_eq!(ape.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn set_track_total_and_track() {
+		let mut ape = ApeTag::default();
+		let track_total = 2;
+		let track = 1;
+
+		ape.set_track_total(track_total);
+		ape.set_track(track);
+
+		assert_eq!(ape.track_total().unwrap(), track_total);
+		assert_eq!(ape.track().unwrap(), track);
+	}
+
+	#[test]
+	fn set_disk() {
+		let mut ape = ApeTag::default();
+		let disk = 1;
+
+		ape.set_disk(disk);
+
+		assert_eq!(ape.disk().unwrap(), disk);
+		assert!(ape.disk_total().is_none());
+	}
+
+	#[test]
+	fn set_disk_total() {
+		let mut ape = ApeTag::default();
+		let disk_total = 2;
+
+		ape.set_disk_total(disk_total);
+
+		assert_eq!(ape.disk().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(ape.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn set_disk_and_disk_total() {
+		let mut ape = ApeTag::default();
+		let disk = 1;
+		let disk_total = 2;
+
+		ape.set_disk(disk);
+		ape.set_disk_total(disk_total);
+
+		assert_eq!(ape.disk().unwrap(), disk);
+		assert_eq!(ape.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn set_disk_total_and_disk() {
+		let mut ape = ApeTag::default();
+		let disk_total = 2;
+		let disk = 1;
+
+		ape.set_disk_total(disk_total);
+		ape.set_disk(disk);
+
+		assert_eq!(ape.disk_total().unwrap(), disk_total);
+		assert_eq!(ape.disk().unwrap(), disk);
+	}
+
+	#[test]
+	fn track_number_tag_to_ape() {
+		use crate::traits::Accessor;
+		let track_number = 1;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(track_number.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), track_number);
+		assert!(tag.track_total().is_none());
+	}
+
+	#[test]
+	fn track_total_tag_to_ape() {
+		use crate::traits::Accessor;
+		let track_total = 2;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::TrackTotal,
+			ItemValue::Text(track_total.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(tag.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn track_number_and_track_total_tag_to_ape() {
+		use crate::traits::Accessor;
+		let track_number = 1;
+		let track_total = 2;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(track_number.to_string()),
+		));
+
+		tag.push(TagItem::new(
+			ItemKey::TrackTotal,
+			ItemValue::Text(track_total.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.track().unwrap(), track_number);
+		assert_eq!(tag.track_total().unwrap(), track_total);
+	}
+
+	#[test]
+	fn disk_number_tag_to_ape() {
+		use crate::traits::Accessor;
+		let disk_number = 1;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::DiscNumber,
+			ItemValue::Text(disk_number.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), disk_number);
+		assert!(tag.disk_total().is_none());
+	}
+
+	#[test]
+	fn disk_total_tag_to_ape() {
+		use crate::traits::Accessor;
+		let disk_total = 2;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::DiscTotal,
+			ItemValue::Text(disk_total.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), DEFAULT_NUMBER_IN_PAIR);
+		assert_eq!(tag.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn disk_number_and_disk_total_tag_to_ape() {
+		use crate::traits::Accessor;
+		let disk_number = 1;
+		let disk_total = 2;
+
+		let mut tag = Tag::new(TagType::Ape);
+
+		tag.push(TagItem::new(
+			ItemKey::DiscNumber,
+			ItemValue::Text(disk_number.to_string()),
+		));
+
+		tag.push(TagItem::new(
+			ItemKey::DiscTotal,
+			ItemValue::Text(disk_total.to_string()),
+		));
+
+		let tag: ApeTag = tag.into();
+
+		assert_eq!(tag.disk().unwrap(), disk_number);
+		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 }

@@ -42,7 +42,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
 		TagType::Ape => ApeTagRef {
 			read_only: false,
-			items: ape::tag::tagitems_into_ape(tag.items()),
+			items: ape::tag::tagitems_into_ape(tag),
 		}
 		.dump_to(writer),
 		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
