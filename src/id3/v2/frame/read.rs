@@ -11,23 +11,43 @@ use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-impl<'a> Frame<'a> {
+pub(crate) enum ParsedFrame<'a> {
+	Next(Frame<'a>),
+	Skipped,
+	Eof,
+}
+
+impl<'a> ParsedFrame<'a> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
 		parse_mode: ParsingMode,
-	) -> Result<(Option<Self>, bool)>
+	) -> Result<Self>
 	where
 		R: Read,
 	{
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
-		let (id, mut size, mut flags) = match match version {
-			Id3v2Version::V2 => parse_v2_header(reader, parse_mode)?,
-			Id3v2Version::V3 => parse_header(reader, false, parse_mode)?,
-			Id3v2Version::V4 => parse_header(reader, true, parse_mode)?,
-		} {
-			None => return Ok((None, true)),
-			Some(frame_header) => frame_header,
+		let parse_header_result = match version {
+			Id3v2Version::V2 => parse_v2_header(reader),
+			Id3v2Version::V3 => parse_header(reader, false),
+			Id3v2Version::V4 => parse_header(reader, true),
+		};
+		let (id, mut size, mut flags) = match parse_header_result {
+			Ok(None) => {
+				// Stop reading
+				return Ok(Self::Eof);
+			},
+			Ok(Some(some)) => some,
+			Err(err) => {
+				match parse_mode {
+					ParsingMode::Strict => return Err(err),
+					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+						// Skip this frame and continue reading
+						// TODO: Log error?
+						return Ok(Self::Skipped);
+					},
+				}
+			},
 		};
 
 		// Get the encryption method symbol
@@ -154,7 +174,7 @@ fn handle_encryption<R: Read>(
 	size: u32,
 	id: FrameId<'static>,
 	flags: FrameFlags,
-) -> Result<(Option<Frame<'static>>, bool)> {
+) -> Result<ParsedFrame<'static>> {
 	if flags.data_length_indicator.is_none() {
 		return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
 	}
@@ -169,7 +189,7 @@ fn handle_encryption<R: Read>(
 	};
 
 	// Nothing further we can do with encrypted frames
-	Ok((Some(encrypted_frame), false))
+	Ok(ParsedFrame::Next(encrypted_frame))
 }
 
 fn parse_frame<R: Read>(
@@ -178,9 +198,9 @@ fn parse_frame<R: Read>(
 	flags: FrameFlags,
 	version: Id3v2Version,
 	parse_mode: ParsingMode,
-) -> Result<(Option<Frame<'static>>, bool)> {
+) -> Result<ParsedFrame<'static>> {
 	match parse_content(reader, id.as_str(), version, parse_mode)? {
-		Some(value) => Ok((Some(Frame { id, value, flags }), false)),
-		None => Ok((None, false)),
+		Some(value) => Ok(ParsedFrame::Next(Frame { id, value, flags })),
+		None => Ok(ParsedFrame::Skipped),
 	}
 }

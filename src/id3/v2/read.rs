@@ -1,4 +1,4 @@
-use super::frame::Frame;
+use super::frame::read::ParsedFrame;
 use super::tag::Id3v2Tag;
 use super::Id3v2Header;
 use crate::error::Result;
@@ -47,12 +47,12 @@ where
 	tag.set_flags(header.flags);
 
 	loop {
-		match Frame::read(reader, header.version, parse_mode)? {
+		match ParsedFrame::read(reader, header.version, parse_mode)? {
+			ParsedFrame::Next(frame) => drop(tag.insert(frame)),
+			// No frame content found or ignored due to errors, but we can expect more frames
+			ParsedFrame::Skipped => continue,
 			// No frame content found, and we can expect there are no more frames
-			(None, true) => break,
-			(Some(f), false) => drop(tag.insert(f)),
-			// No frame content found, but we can expect more frames
-			_ => {},
+			ParsedFrame::Eof => break,
 		}
 	}
 
