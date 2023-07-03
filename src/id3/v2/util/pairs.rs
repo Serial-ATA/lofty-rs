@@ -35,20 +35,53 @@ where
 
 /// Attempts to convert a `TagItem` to a number, passing it to `setter`
 pub(crate) fn set_number<F: FnMut(u32)>(item: &TagItem, mut setter: F) {
-	let text = item.value().text();
-	let number = text.map(str::parse::<u32>);
+	let text = item.value().text().map(str::trim);
 
-	match number {
-		Some(Ok(number)) => setter(number),
-		Some(Err(parse_error)) => {
+	let trimmed;
+	match text {
+		None | Some("") => {
+			log::warn!("Value does not have text in {:?}", item.key());
+			return;
+		},
+		Some(trimmed_text) => trimmed = trimmed_text,
+	}
+
+	match trimmed.parse::<u32>() {
+		Ok(number) => setter(number),
+		Err(parse_error) => {
 			log::warn!(
 				"\"{}\" cannot be parsed as number in {:?}: {parse_error}",
 				text.unwrap(),
 				item.key()
 			)
 		},
-		None => {
-			log::warn!("Value does not have text in {:?}", item.key())
-		},
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::util::pairs::set_number;
+	use crate::{ItemKey, ItemValue, TagItem};
+
+	#[test]
+	fn whitespace_in_number() {
+		let item = TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(String::from("  12  ")),
+		);
+		set_number(&item, |number| assert_eq!(number, 12));
+	}
+
+	#[test]
+	fn empty_number_string() {
+		let item = TagItem::new(ItemKey::TrackNumber, ItemValue::Text(String::new()));
+		set_number(&item, |_| unreachable!("Should not be called"));
+
+		// Also with whitespace only strings
+		let item = TagItem::new(
+			ItemKey::TrackNumber,
+			ItemValue::Text(String::from("        ")),
+		);
+		set_number(&item, |_| unreachable!("Should not be called"));
 	}
 }
