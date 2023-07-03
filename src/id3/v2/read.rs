@@ -1,7 +1,7 @@
 use super::frame::read::ParsedFrame;
 use super::tag::Id3v2Tag;
 use super::Id3v2Header;
-use crate::error::Result;
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
 use crate::probe::ParsingMode;
 
@@ -34,6 +34,17 @@ where
 	Ok(ret)
 }
 
+fn skip_frame(reader: &mut impl Read, size: u32) -> Result<()> {
+	let size = u64::from(size);
+	let mut reader = reader.take(size);
+	let skipped = std::io::copy(&mut reader, &mut std::io::sink())?;
+	debug_assert!(skipped <= size);
+	if skipped != size {
+		return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+	}
+	Ok(())
+}
+
 fn read_all_frames_into_tag<R>(
 	reader: &mut R,
 	header: Id3v2Header,
@@ -50,7 +61,9 @@ where
 		match ParsedFrame::read(reader, header.version, parse_mode)? {
 			ParsedFrame::Next(frame) => drop(tag.insert(frame)),
 			// No frame content found or ignored due to errors, but we can expect more frames
-			ParsedFrame::Skipped => continue,
+			ParsedFrame::Skip { size } => {
+				skip_frame(reader, size)?;
+			},
 			// No frame content found, and we can expect there are no more frames
 			ParsedFrame::Eof => break,
 		}

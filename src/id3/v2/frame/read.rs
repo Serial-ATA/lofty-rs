@@ -13,7 +13,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) enum ParsedFrame<'a> {
 	Next(Frame<'a>),
-	Skipped,
+	Skip { size: u32 },
 	Eof,
 }
 
@@ -26,13 +26,15 @@ impl<'a> ParsedFrame<'a> {
 	where
 		R: Read,
 	{
+		let mut size = 0u32;
+
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
 		let parse_header_result = match version {
-			Id3v2Version::V2 => parse_v2_header(reader),
-			Id3v2Version::V3 => parse_header(reader, false),
-			Id3v2Version::V4 => parse_header(reader, true),
+			Id3v2Version::V2 => parse_v2_header(reader, &mut size),
+			Id3v2Version::V3 => parse_header(reader, &mut size, false),
+			Id3v2Version::V4 => parse_header(reader, &mut size, true),
 		};
-		let (id, mut size, mut flags) = match parse_header_result {
+		let (id, mut flags) = match parse_header_result {
 			Ok(None) => {
 				// Stop reading
 				return Ok(Self::Eof);
@@ -44,7 +46,7 @@ impl<'a> ParsedFrame<'a> {
 					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
 						// Skip this frame and continue reading
 						// TODO: Log error?
-						return Ok(Self::Skipped);
+						return Ok(Self::Skip { size });
 					},
 				}
 			},
@@ -116,14 +118,28 @@ impl<'a> ParsedFrame<'a> {
 						return handle_encryption(&mut compression_reader, size, id, flags);
 					}
 
-					return parse_frame(&mut compression_reader, id, flags, version, parse_mode);
+					return parse_frame(
+						&mut compression_reader,
+						size,
+						id,
+						flags,
+						version,
+						parse_mode,
+					);
 				}
 
 				if flags.encryption.is_some() {
 					return handle_encryption(&mut unsynchronized_reader, size, id, flags);
 				}
 
-				return parse_frame(&mut unsynchronized_reader, id, flags, version, parse_mode);
+				return parse_frame(
+					&mut unsynchronized_reader,
+					size,
+					id,
+					flags,
+					version,
+					parse_mode,
+				);
 			},
 			// Possible combinations:
 			//
@@ -138,7 +154,14 @@ impl<'a> ParsedFrame<'a> {
 					return handle_encryption(&mut compression_reader, size, id, flags);
 				}
 
-				return parse_frame(&mut compression_reader, id, flags, version, parse_mode);
+				return parse_frame(
+					&mut compression_reader,
+					size,
+					id,
+					flags,
+					version,
+					parse_mode,
+				);
 			},
 			// Possible combinations:
 			//
@@ -151,7 +174,7 @@ impl<'a> ParsedFrame<'a> {
 			},
 			// Everything else that doesn't have special flags
 			_ => {
-				return parse_frame(&mut reader, id, flags, version, parse_mode);
+				return parse_frame(&mut reader, size, id, flags, version, parse_mode);
 			},
 		}
 	}
@@ -194,6 +217,7 @@ fn handle_encryption<R: Read>(
 
 fn parse_frame<R: Read>(
 	reader: &mut R,
+	size: u32,
 	id: FrameId<'static>,
 	flags: FrameFlags,
 	version: Id3v2Version,
@@ -201,6 +225,6 @@ fn parse_frame<R: Read>(
 ) -> Result<ParsedFrame<'static>> {
 	match parse_content(reader, id.as_str(), version, parse_mode)? {
 		Some(value) => Ok(ParsedFrame::Next(Frame { id, value, flags })),
-		None => Ok(ParsedFrame::Skipped),
+		None => Ok(ParsedFrame::Skip { size }),
 	}
 }
