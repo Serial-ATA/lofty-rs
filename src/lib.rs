@@ -136,6 +136,8 @@
 	clippy::manual_let_else,
 	clippy::let_underscore_untyped,
 	clippy::field_reassign_with_default,
+	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */
+	clippy::explicit_iter_loop,
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 

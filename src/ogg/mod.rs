@@ -30,7 +30,7 @@ pub use tag::VorbisComments;
 pub use vorbis::properties::VorbisProperties;
 pub use vorbis::VorbisFile;
 
-pub(self) fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
+fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();
 
 	if content.len() < sig_len || &content[..sig_len] != sig {
@@ -40,7 +40,7 @@ pub(self) fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 	Ok(())
 }
 
-pub(self) fn find_last_page<R>(data: &mut R) -> Result<Page>
+fn find_last_page<R>(data: &mut R) -> Result<Page>
 where
 	R: Read + Seek,
 {

@@ -923,7 +923,7 @@ impl MergeTag for SplitTagRemainder {
 			let frame_id = item_key
 				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
-			if let Some(text) = join_text_items(&mut tag, [item_key].into_iter()) {
+			if let Some(text) = join_text_items(&mut tag, [item_key]) {
 				let frame = new_text_frame(
 					FrameId::Valid(Cow::Borrowed(frame_id)),
 					text,
