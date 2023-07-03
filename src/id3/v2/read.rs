@@ -69,3 +69,31 @@ fn zero_size_id3v2() {
 	let header = read_id3v2_header(&mut f).unwrap();
 	assert!(parse_id3v2(&mut f, header, ParsingMode::Strict).is_ok());
 }
+
+#[test]
+fn bad_frame_id_relaxed_id3v2() {
+	use crate::id3::v2::read_id3v2_header;
+	use crate::{Accessor, ParsingMode, TagExt};
+	use std::io::Cursor;
+
+	// Contains a frame with a "+" in the ID, which is invalid.
+	// All other frames in the tag are valid, however.
+	let mut f = Cursor::new(
+		std::fs::read("tests/tags/assets/id3v2/bad_frame_otherwise_valid.id3v24").unwrap(),
+	);
+	let header = read_id3v2_header(&mut f).unwrap();
+	let id3v2 = parse_id3v2(&mut f, header, ParsingMode::Relaxed);
+	assert!(id3v2.is_ok());
+
+	let id3v2 = id3v2.unwrap();
+
+	// There are 6 valid frames and 1 invalid frame
+	assert_eq!(id3v2.len(), 6);
+
+	assert_eq!(id3v2.title().as_deref(), Some("Foo title"));
+	assert_eq!(id3v2.artist().as_deref(), Some("Bar artist"));
+	assert_eq!(id3v2.comment().as_deref(), Some("Qux comment"));
+	assert_eq!(id3v2.year(), Some(1984));
+	assert_eq!(id3v2.track(), Some(1));
+	assert_eq!(id3v2.genre().as_deref(), Some("Classical"));
+}
