@@ -9,7 +9,8 @@ use std::io::Read;
 
 pub(crate) fn parse_v2_header<R>(
 	reader: &mut R,
-) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
+	size: &mut u32,
+) -> Result<Option<(FrameId<'static>, FrameFlags)>>
 where
 	R: Read,
 {
@@ -24,6 +25,8 @@ where
 		return Ok(None);
 	}
 
+	*size = u32::from_be_bytes([0, header[3], header[4], header[5]]);
+
 	let id_bytes = &header[..3];
 	let id_str = std::str::from_utf8(id_bytes)
 		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id_bytes.to_vec())))
@@ -32,16 +35,15 @@ where
 		})?;
 	let id = FrameId::new_cow(id_str)?;
 
-	let size = u32::from_be_bytes([0, header[3], header[4], header[5]]);
-
 	// V2 doesn't store flags
-	Ok(Some((id, size, FrameFlags::default())))
+	Ok(Some((id, FrameFlags::default())))
 }
 
 pub(crate) fn parse_header<R>(
 	reader: &mut R,
+	size: &mut u32,
 	synchsafe: bool,
-) -> Result<Option<(FrameId<'static>, u32, FrameFlags)>>
+) -> Result<Option<(FrameId<'static>, FrameFlags)>>
 where
 	R: Read,
 {
@@ -54,6 +56,12 @@ where
 	// Assume we just started reading padding
 	if header[0] == 0 {
 		return Ok(None);
+	}
+
+	*size = u32::from_be_bytes([header[4], header[5], header[6], header[7]]);
+	// unsynch the frame size if necessary
+	if synchsafe {
+		*size = size.unsynch();
 	}
 
 	// For some reason, some apps make v3 tags with v2 frame IDs.
@@ -69,8 +77,6 @@ where
 	let id_str = std::str::from_utf8(id_bytes)
 		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id_bytes.to_vec())))?;
 
-	let mut size = u32::from_be_bytes([header[4], header[5], header[6], header[7]]);
-
 	// Now upgrade the FrameId
 	let id = if invalid_v2_frame {
 		if let Some(id) = upgrade_v2(id_str) {
@@ -85,15 +91,10 @@ where
 	};
 	let frame_id = FrameId::new_cow(id)?;
 
-	// unsynch the frame size if necessary
-	if synchsafe {
-		size = size.unsynch();
-	}
-
 	let flags = u16::from_be_bytes([header[8], header[9]]);
 	let flags = parse_flags(flags, synchsafe);
 
-	Ok(Some((frame_id, size, flags)))
+	Ok(Some((frame_id, flags)))
 }
 
 pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {
