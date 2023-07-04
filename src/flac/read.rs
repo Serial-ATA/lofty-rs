@@ -10,7 +10,6 @@ use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
 use crate::ogg::read::read_comments;
-use crate::ogg::tag::VorbisComments;
 use crate::picture::Picture;
 use crate::probe::ParseOptions;
 
@@ -79,11 +78,9 @@ where
 				decode_err!(@BAIL Flac, "Streams are only allowed one Vorbis Comments block per stream");
 			}
 
-			let mut vorbis_comments = VorbisComments::new();
-			read_comments(
+			let vorbis_comments = read_comments(
 				&mut &*block.content,
 				block.content.len() as u64,
-				&mut vorbis_comments,
 				parse_options.parsing_mode,
 			)?;
 

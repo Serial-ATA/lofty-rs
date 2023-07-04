@@ -15,9 +15,8 @@ pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 pub(crate) fn read_comments<R>(
 	data: &mut R,
 	mut len: u64,
-	tag: &mut VorbisComments,
 	parse_mode: ParsingMode,
-) -> Result<()>
+) -> Result<VorbisComments>
 where
 	R: Read,
 {
@@ -58,9 +57,13 @@ where
 		},
 	};
 
-	tag.vendor = vendor;
-
 	let comments_total_len = data.read_u32::<LittleEndian>()?;
+
+	let mut tag = VorbisComments {
+		vendor,
+		items: Vec::with_capacity(comments_total_len as usize),
+		pictures: Vec::new(),
+	};
 
 	for _ in 0..comments_total_len {
 		let comment_len = data.read_u32::<LittleEndian>()?;
@@ -114,7 +117,7 @@ where
 		}
 	}
 
-	Ok(())
+	Ok(tag)
 }
 
 pub(crate) fn read_from<T>(
@@ -151,10 +154,8 @@ where
 	// Remove the signature from the packet
 	metadata_packet = &metadata_packet[comment_sig.len()..];
 
-	let mut tag = VorbisComments::default();
-
 	let reader = &mut metadata_packet;
-	read_comments(reader, reader.len() as u64, &mut tag, parse_mode)?;
+	let tag = read_comments(reader, reader.len() as u64, parse_mode)?;
 
 	Ok((Some(tag), first_page_header, packets))
 }
