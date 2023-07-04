@@ -140,6 +140,7 @@ where
 	let pages_written =
 		packets.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)? as u32;
 
+	// Correct all remaining page sequence numbers
 	let mut pages_reader = Cursor::new(&remaining_file_content[..]);
 	let mut idx = 0;
 	while let Ok(mut page) = Page::read(&mut pages_reader) {
@@ -172,8 +173,8 @@ where
 	new_comment_packet.write_u32::<LittleEndian>(vendor.len() as u32)?;
 	new_comment_packet.write_all(vendor)?;
 
+	// Zero out the item count for later
 	let item_count_pos = new_comment_packet.stream_position()?;
-
 	new_comment_packet.write_u32::<LittleEndian>(0)?;
 
 	let mut count = 0;
@@ -193,18 +194,16 @@ where
 		}
 	}
 
-	let packet_end = new_comment_packet.stream_position()?;
-
+	// Seek back and write the item count
 	new_comment_packet.seek(SeekFrom::Start(item_count_pos))?;
 	new_comment_packet.write_u32::<LittleEndian>(count)?;
-	new_comment_packet.seek(SeekFrom::Start(packet_end))?;
 
 	if add_framing_bit {
 		// OGG Vorbis makes use of a "framing bit" to
 		// separate the header packets
 		//
 		// https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-590004
-		new_comment_packet.write_u8(1)?;
+		new_comment_packet.get_mut().push(1);
 	}
 
 	Ok(new_comment_packet.into_inner())
