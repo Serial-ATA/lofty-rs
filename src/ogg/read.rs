@@ -92,17 +92,14 @@ where
 
 		match key {
 			k if k.eq_ignore_ascii_case(b"METADATA_BLOCK_PICTURE") => {
-				let picture;
-				match Picture::from_flac_bytes(value, true) {
-					Ok(pic) => picture = pic,
-					Err(e) => {
-						parse_mode_choice!(
-							parse_mode,
-							RELAXED: continue,
-							DEFAULT: return Err(e)
-						)
-					},
-				}
+				let Ok(picture) = Picture::from_flac_bytes(value, true) else {
+					if parse_mode == ParsingMode::Strict {
+						return Err(e);
+					}
+
+					log::warn!("Failed to decode FLAC picture, discarding field");
+					continue;
+				};
 
 				tag.pictures.push(picture)
 			},
@@ -110,7 +107,15 @@ where
 			k if k.iter().all(|c| (b' '..=b'}').contains(c) && c != b'=') => {
 				// SAFETY: We just verified that all of the bytes fall within the subset of ASCII
 				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
-				let value = String::from_utf8(value.to_vec())?;
+
+				let Ok(value) = String::from_utf8(value.to_vec()) else {
+					if parse_mode == ParsingMode::Strict {
+						decode_err!(@BAIL "OGG: Vorbis comments contain a non UTF-8 field value");
+					}
+
+					log::warn!("Non UTF-8 value found, discarding field");
+					continue;
+				};
 
 				tag.items.push((key, value))
 			},
