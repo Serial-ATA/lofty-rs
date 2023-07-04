@@ -6,7 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+- **ID3v2**: `Id3v2ErrorKind::UnsupportedFrameId` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/212))
+
 ## Changed
+- **ID3v2**:
+  - `Id3v2ErrorKind::BadFrameId` now contains the frame ID ([PR](https://github.com/Serial-ATA/lofty-rs/pull/212))
+  - Bad frame IDs will no longer error when using `ParsingMode::{Relaxed, BestAttempt}`. The parser will now just move on to the next frame. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
 - **APE**: The default track/disk number is now `0` to line up with ID3v2.
            This is only used when `set_{track, disk}_total` is used without a corresponding `set_{track, disk}`.
 
