@@ -24,7 +24,7 @@ impl TagExt for EbmlTag {
 		todo!()
 	}
 
-	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
+	fn contains<'a>(&'a self, _key: Self::RefKey<'a>) -> bool {
 		todo!()
 	}
 
@@ -32,19 +32,19 @@ impl TagExt for EbmlTag {
 		todo!()
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(&self, _file: &mut File) -> std::result::Result<(), Self::Err> {
 		todo!()
 	}
 
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(&self, _writer: &mut W) -> std::result::Result<(), Self::Err> {
 		todo!()
 	}
 
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+	fn remove_from_path<P: AsRef<Path>>(&self, _path: P) -> std::result::Result<(), Self::Err> {
 		todo!()
 	}
 
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from(&self, _file: &mut File) -> std::result::Result<(), Self::Err> {
 		todo!()
 	}
 
@@ -81,7 +81,7 @@ impl SplitTag for EbmlTag {
 impl MergeTag for SplitTagRemainder {
 	type Merged = EbmlTag;
 
-	fn merge_tag(self, tag: Tag) -> Self::Merged {
+	fn merge_tag(self, _tag: Tag) -> Self::Merged {
 		todo!()
 	}
 }
