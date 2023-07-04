@@ -572,15 +572,10 @@ mod tests {
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
-		let mut parsed_tag = VorbisComments::default();
 
-		crate::ogg::read::read_comments(
-			&mut reader,
-			tag.len() as u64,
-			&mut parsed_tag,
-			ParsingMode::Strict,
-		)
-		.unwrap();
+		let parsed_tag =
+			crate::ogg::read::read_comments(&mut reader, tag.len() as u64, ParsingMode::Strict)
+				.unwrap();
 		parsed_tag
 	}
 
