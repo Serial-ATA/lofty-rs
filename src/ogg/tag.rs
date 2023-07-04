@@ -68,18 +68,51 @@ impl VorbisComments {
 	}
 
 	/// Returns the vendor string
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	/// assert!(vorbis_comments.vendor().is_empty());
+	///
+	/// vorbis_comments.set_vendor(String::from("FooBar"));
+	/// assert_eq!(vorbis_comments.vendor(), "FooBar");
+	/// ```
 	pub fn vendor(&self) -> &str {
 		&self.vendor
 	}
 
 	/// Sets the vendor string
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	///
+	/// vorbis_comments.set_vendor(String::from("FooBar"));
+	/// assert_eq!(vorbis_comments.vendor(), "FooBar");
+	/// ```
 	pub fn set_vendor(&mut self, vendor: String) {
 		self.vendor = vendor
 	}
 
-	/// Visit all items
+	/// Get all items
 	///
 	/// Returns an [`Iterator`] over the stored key/value pairs.
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	///
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Foo artist"));
+	/// vorbis_comments.push(String::from("TITLE"), String::from("Bar title"));
+	///
+	/// let mut items = vorbis_comments.items();
+	///
+	/// assert_eq!(items.next(), Some(("ARTIST", "Foo artist")));
+	/// assert_eq!(items.next(), Some(("TITLE", "Bar title")));
+	/// ```
 	pub fn items(&self) -> impl ExactSizeIterator<Item = (&str, &str)> + Clone {
 		self.items.iter().map(|(k, v)| (k.as_str(), v.as_str()))
 	}
@@ -87,12 +120,47 @@ impl VorbisComments {
 	/// Consume all items
 	///
 	/// Returns an [`Iterator`] with the stored key/value pairs.
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	/// use lofty::TagExt;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	///
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Foo artist"));
+	/// vorbis_comments.push(String::from("TITLE"), String::from("Bar title"));
+	///
+	/// for (key, value) in vorbis_comments.take_items() {
+	/// 	println!("We took field: {key}={value}");
+	/// }
+	///
+	/// // We've taken all the items
+	/// assert!(vorbis_comments.is_empty());
+	/// ```
 	pub fn take_items(&mut self) -> impl ExactSizeIterator<Item = (String, String)> {
 		let items = std::mem::take(&mut self.items);
 		items.into_iter()
 	}
 
-	/// Gets an item by key
+	/// Gets the first item with `key`
+	///
+	/// NOTE: There can be multiple items with the same key, this grabs whichever happens to be the first
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut vorbis_comments = VorbisComments::default();
+	///
+	/// // Vorbis comments allows multiple fields with the same key, such as artist
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Foo artist"));
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Bar artist"));
+	/// vorbis_comments.push(String::from("ARTIST"), String::from("Baz artist"));
+	///
+	/// let first_artist = vorbis_comments.get("ARTIST").unwrap();
+	/// assert_eq!(first_artist, "Foo artist");
+	/// ```
 	pub fn get(&self, key: &str) -> Option<&str> {
 		if !verify_key(key) {
 			return None;
@@ -133,6 +201,8 @@ impl VorbisComments {
 	///
 	/// NOTE: This will do nothing if the key is invalid. This specification is available [here](https://xiph.org/vorbis/doc/v-comment.html#vectorformat).
 	///
+	/// # Examples
+	///
 	/// ```rust
 	/// use lofty::ogg::VorbisComments;
 	///
@@ -158,6 +228,8 @@ impl VorbisComments {
 	///
 	/// NOTE: This will do nothing if the key is invalid. This specification is available [here](https://xiph.org/vorbis/doc/v-comment.html#vectorformat).
 	///
+	/// # Examples
+	///
 	/// ```rust
 	/// use lofty::ogg::VorbisComments;
 	///
@@ -179,6 +251,21 @@ impl VorbisComments {
 	}
 
 	/// Removes all items with a key, returning an iterator
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ogg::VorbisComments;
+	///
+	/// let mut tag = VorbisComments::default();
+	/// tag.push(String::from("TITLE"), String::from("Title 1"));
+	/// tag.push(String::from("TITLE"), String::from("Title 2"));
+	///
+	/// // Remove both titles
+	/// for title in tag.remove("TITLE") {
+	/// 	println!("We removed the title: {title}");
+	/// }
+	/// ```
 	pub fn remove(&mut self, key: &str) -> impl Iterator<Item = String> + '_ {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
