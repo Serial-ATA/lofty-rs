@@ -13,9 +13,10 @@ pub use tag::EbmlTag;
 /// An EBML file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
+// TODO: #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct EbmlFile {
-	/// An ID3v2 tag
-	#[lofty(tag_type = "Id3v2")]
+	/// An EBML tag
+	#[lofty(tag_type = "Ebml")]
 	pub(crate) ebml_tag: Option<EbmlTag>,
 	/// The file's audio properties
 	pub(crate) properties: EbmlProperties,
