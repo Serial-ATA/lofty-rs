@@ -35,18 +35,15 @@ where
 
 /// Attempts to convert a `TagItem` to a number, passing it to `setter`
 pub(crate) fn set_number<F: FnMut(u32)>(item: &TagItem, mut setter: F) {
-	let text = item.value().text().map(str::trim);
+	let text = item.value().text();
 
-	let trimmed;
-	match text {
-		None | Some("") => {
-			log::warn!("Value does not have text in {:?}", item.key());
-			return;
-		},
-		Some(trimmed_text) => trimmed = trimmed_text,
+	let trimmed_text = text.unwrap_or_default().trim();
+	if trimmed_text.is_empty() {
+		log::warn!("Value does not have text in {:?}", item.key());
+		return;
 	}
 
-	match trimmed.parse::<u32>() {
+	match trimmed_text.parse::<u32>() {
 		Ok(number) => setter(number),
 		Err(parse_error) => {
 			log::warn!(
