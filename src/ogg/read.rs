@@ -76,8 +76,8 @@ where
 
 		len -= u64::from(comment_len);
 
-		let comment = String::from_utf8(comment_bytes)?;
-		let mut comment_split = comment.splitn(2, '=');
+		// KEY=VALUE
+		let mut comment_split = comment_bytes.splitn(2, b'=');
 
 		let key = match comment_split.next() {
 			Some(k) => k,
@@ -91,9 +91,9 @@ where
 		};
 
 		match key {
-			k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => {
+			k if k.eq_ignore_ascii_case(b"METADATA_BLOCK_PICTURE") => {
 				let picture;
-				match Picture::from_flac_bytes(value.as_bytes(), true) {
+				match Picture::from_flac_bytes(value, true) {
 					Ok(pic) => picture = pic,
 					Err(e) => {
 						parse_mode_choice!(
@@ -107,8 +107,12 @@ where
 				tag.pictures.push(picture)
 			},
 			// The valid range is 0x20..=0x7D not including 0x3D
-			k if k.chars().all(|c| (' '..='}').contains(&c) && c != '=') => {
-				tag.items.push((k.to_string(), value.to_string()))
+			k if k.iter().all(|c| (b' '..=b'}').contains(c) && c != b'=') => {
+				// SAFETY: We just verified that all of the bytes fall within the subset of ASCII
+				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
+				let value = String::from_utf8(value.to_vec())?;
+
+				tag.items.push((key, value))
 			},
 			_ => {
 				parse_mode_choice!(
