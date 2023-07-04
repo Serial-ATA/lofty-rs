@@ -70,16 +70,16 @@ pub(crate) fn create_comments(
 		}
 
 		let comment = format!("{k}={v}");
+		let comment_bytes = comment.as_bytes();
 
-		let comment_b = comment.as_bytes();
-		let bytes_len = comment_b.len();
+		let Ok(bytes_len) = u32::try_from(comment_bytes.len()) else {
+			err!(TooMuchData);
+		};
 
-		if u32::try_from(bytes_len as u64).is_ok() {
-			*count += 1;
+		*count += 1;
 
-			packet.write_all(&(bytes_len as u32).to_le_bytes())?;
-			packet.write_all(comment_b)?;
-		}
+		packet.write_u32::<LittleEndian>(bytes_len)?;
+		packet.write_all(comment_bytes)?;
 	}
 
 	Ok(())
@@ -88,22 +88,22 @@ pub(crate) fn create_comments(
 fn create_pictures(
 	packet: &mut impl Write,
 	count: &mut u32,
-	pictures: &mut dyn Iterator<Item = (Picture, PictureInformation)>,
+	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
 ) -> Result<()> {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
 	for (pic, info) in pictures {
 		let picture = pic.as_flac_bytes(info, true);
 
-		let bytes_len = picture.len() + PICTURE_KEY.len();
+		let Ok(bytes_len) = u32::try_from(picture.len() + PICTURE_KEY.len()) else {
+			err!(TooMuchData);
+		};
 
-		if u32::try_from(bytes_len as u64).is_ok() {
-			*count += 1;
+		*count += 1;
 
-			packet.write_u32::<LittleEndian>(bytes_len as u32)?;
-			packet.write_all(PICTURE_KEY.as_bytes())?;
-			packet.write_all(&picture)?;
-		}
+		packet.write_u32::<LittleEndian>(bytes_len)?;
+		packet.write_all(PICTURE_KEY.as_bytes())?;
+		packet.write_all(&picture)?;
 	}
 
 	Ok(())
@@ -189,8 +189,6 @@ where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
-	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
-
 	let mut new_comment_packet = Cursor::new(Vec::new());
 
 	new_comment_packet.write_all(comment_signature)?;
