@@ -58,56 +58,6 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 	write(file, &mut comments_ref, format, header_packet_count)
 }
 
-pub(crate) fn create_comments(
-	packet: &mut impl Write,
-	count: &mut u32,
-	items: &mut dyn Iterator<Item = (&str, &str)>,
-) -> Result<()> {
-	for (k, v) in items {
-		if v.is_empty() {
-			continue;
-		}
-
-		let comment = format!("{k}={v}");
-		let comment_bytes = comment.as_bytes();
-
-		let Ok(bytes_len) = u32::try_from(comment_bytes.len()) else {
-			err!(TooMuchData);
-		};
-
-		*count += 1;
-
-		packet.write_u32::<LittleEndian>(bytes_len)?;
-		packet.write_all(comment_bytes)?;
-	}
-
-	Ok(())
-}
-
-fn create_pictures(
-	packet: &mut impl Write,
-	count: &mut u32,
-	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
-) -> Result<()> {
-	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
-
-	for (pic, info) in pictures {
-		let picture = pic.as_flac_bytes(info, true);
-
-		let Ok(bytes_len) = u32::try_from(picture.len() + PICTURE_KEY.len()) else {
-			err!(TooMuchData);
-		};
-
-		*count += 1;
-
-		packet.write_u32::<LittleEndian>(bytes_len)?;
-		packet.write_all(PICTURE_KEY.as_bytes())?;
-		packet.write_all(&picture)?;
-	}
-
-	Ok(())
-}
-
 pub(super) fn write<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
@@ -215,4 +165,54 @@ where
 	}
 
 	Ok(new_comment_packet.into_inner())
+}
+
+pub(crate) fn create_comments(
+	packet: &mut impl Write,
+	count: &mut u32,
+	items: &mut dyn Iterator<Item = (&str, &str)>,
+) -> Result<()> {
+	for (k, v) in items {
+		if v.is_empty() {
+			continue;
+		}
+
+		let comment = format!("{k}={v}");
+		let comment_bytes = comment.as_bytes();
+
+		let Ok(bytes_len) = u32::try_from(comment_bytes.len()) else {
+			err!(TooMuchData);
+		};
+
+		*count += 1;
+
+		packet.write_u32::<LittleEndian>(bytes_len)?;
+		packet.write_all(comment_bytes)?;
+	}
+
+	Ok(())
+}
+
+fn create_pictures(
+	packet: &mut impl Write,
+	count: &mut u32,
+	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
+) -> Result<()> {
+	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
+
+	for (pic, info) in pictures {
+		let picture = pic.as_flac_bytes(info, true);
+
+		let Ok(bytes_len) = u32::try_from(picture.len() + PICTURE_KEY.len()) else {
+			err!(TooMuchData);
+		};
+
+		*count += 1;
+
+		packet.write_u32::<LittleEndian>(bytes_len)?;
+		packet.write_all(PICTURE_KEY.as_bytes())?;
+		packet.write_all(&picture)?;
+	}
+
+	Ok(())
 }
