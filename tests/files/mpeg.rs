@@ -2,7 +2,7 @@ use crate::{set_artist, temp_file, verify_artist};
 use byteorder::ReadBytesExt;
 use lofty::{
 	Accessor, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem, TagType,
-	TaggedFileExt, id3::v2::{Id3v2Tag, Frame, FrameValue, KeyValueFrame, FrameFlags},
+	TaggedFileExt, id3::v2::{Id3v2Tag, Frame, FrameValue, KeyValueFrame, FrameFlags}, mpeg::MpegFile, AudioFile,
 };
 use std::{io::{Seek, Write, Read}, fs::File};
 
@@ -315,18 +315,11 @@ fn read_and_write_tpil_frame() {
 					("vocalist".to_string(), "testhuman".to_string())
 				];
 
-	let mut file = temp_file!("tests/files/assets/issue_213.mp3");
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
-	let tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
+	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
-	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
-
-	let mut tag: Id3v2Tag = tagged_file.tag(TagType::Id3v2).unwrap().clone().into();
+	let tag: &mut Id3v2Tag = mpeg_file.id3v2_mut().unwrap();
 	
 	tag.insert(
 		Frame::new(
@@ -344,15 +337,9 @@ fn read_and_write_tpil_frame() {
 
 	// Now reread the file
 	file.rewind().unwrap();
-	let tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
-	
+	let mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
-	let tag: Id3v2Tag = tagged_file.tag(TagType::Id3v2).unwrap().clone().into();
+	let tag: &Id3v2Tag = mpeg_file.id3v2().unwrap();
 
 	let content = match tag.get("TIPL").unwrap().content() {
 		FrameValue::KeyValue(content) => content,
