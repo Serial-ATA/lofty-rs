@@ -33,8 +33,8 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		| (_, FrameValue::Binary(_))
 		| ("UFID", FrameValue::UniqueFileIdentifier(_))
 		| ("POPM", FrameValue::Popularimeter(_))
+		| ("TIPL" | "TMCL", FrameValue::KeyValue { .. })
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. }) => Ok(()),
-		| (("TIPL" | "TMCL"), FrameValue::KeyValue { .. }) => Ok(()),
 		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
 		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(

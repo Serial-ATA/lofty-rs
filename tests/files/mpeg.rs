@@ -1,10 +1,12 @@
 use crate::{set_artist, temp_file, verify_artist};
-use byteorder::ReadBytesExt;
+
+use lofty::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, KeyValueFrame};
+use lofty::mpeg::MpegFile;
 use lofty::{
-	Accessor, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem, TagType,
-	TaggedFileExt, id3::v2::{Id3v2Tag, Frame, FrameValue, KeyValueFrame, FrameFlags}, mpeg::MpegFile, AudioFile,
+	Accessor, AudioFile, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem,
+	TagType, TaggedFileExt,
 };
-use std::{io::{Seek, Write, Read}, fs::File};
+use std::io::{Seek, Write};
 
 #[test]
 fn read() {
@@ -311,25 +313,26 @@ fn remove_ape() {
 #[test]
 fn read_and_write_tpil_frame() {
 	let key_value_pairs = vec![
-					("engineer".to_string(), "testperson".to_string()), 
-					("vocalist".to_string(), "testhuman".to_string())
-				];
+		("engineer".to_string(), "testperson".to_string()),
+		("vocalist".to_string(), "testhuman".to_string()),
+	];
 
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
 	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
 	let tag: &mut Id3v2Tag = mpeg_file.id3v2_mut().unwrap();
-	
+
 	tag.insert(
 		Frame::new(
-			"TIPL", 
+			"TIPL",
 			KeyValueFrame {
 				encoding: lofty::TextEncoding::UTF8,
-				key_value_pairs: key_value_pairs.clone()
+				key_value_pairs: key_value_pairs.clone(),
 			},
-	 		FrameFlags::default()
-		).unwrap()
+			FrameFlags::default(),
+		)
+		.unwrap(),
 	);
 
 	file.rewind().unwrap();
@@ -343,7 +346,7 @@ fn read_and_write_tpil_frame() {
 
 	let content = match tag.get("TIPL").unwrap().content() {
 		FrameValue::KeyValue(content) => content,
-		_ => panic!("Wrong Frame Value Type for TIPL")
+		_ => panic!("Wrong Frame Value Type for TIPL"),
 	};
 
 	assert_eq!(key_value_pairs, content.key_value_pairs);
