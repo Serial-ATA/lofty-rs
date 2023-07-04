@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bad frame IDs will no longer error when using `ParsingMode::{Relaxed, BestAttempt}`. The parser will now just move on to the next frame. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
 - **APE**: The default track/disk number is now `0` to line up with ID3v2.
            This is only used when `set_{track, disk}_total` is used without a corresponding `set_{track, disk}`.
+- **VorbisComments**: When writing, items larger than `u32::MAX` will throw `ErrorKind::TooMuchData`, rather than be silently discarded.
 
 ## Fixed
 - **APE**: Track/Disk number pairs are properly converted when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/159)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/216))
