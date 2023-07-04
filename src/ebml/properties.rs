@@ -5,7 +5,7 @@ use crate::properties::FileProperties;
 pub struct EbmlProperties {}
 
 impl From<EbmlProperties> for FileProperties {
-	fn from(input: EbmlProperties) -> Self {
+	fn from(_input: EbmlProperties) -> Self {
 		todo!()
 	}
 }
