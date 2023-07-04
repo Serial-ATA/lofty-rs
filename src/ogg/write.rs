@@ -22,8 +22,7 @@ pub(crate) enum OGGFormat {
 }
 
 impl OGGFormat {
-	#[allow(clippy::trivially_copy_pass_by_ref)]
-	pub(crate) fn comment_signature(&self) -> Option<&[u8]> {
+	pub(crate) fn comment_signature(self) -> Option<&'static [u8]> {
 		match self {
 			OGGFormat::Opus => Some(OPUSTAGS),
 			OGGFormat::Vorbis => Some(VORBIS_COMMENT_HEAD),
