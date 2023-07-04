@@ -85,35 +85,38 @@ where
 		};
 
 		// Make sure there was a separator present, otherwise just move on
-		if let Some(value) = comment_split.next() {
-			match key {
-				k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => {
-					let picture;
-					match Picture::from_flac_bytes(value.as_bytes(), true) {
-						Ok(pic) => picture = pic,
-						Err(e) => {
-							parse_mode_choice!(
-								parse_mode,
-								RELAXED: continue,
-								DEFAULT: return Err(e)
-							)
-						},
-					}
+		let Some(value) = comment_split.next() else {
+			log::warn!("No separator found, discarding field");
+			continue;
+		};
 
-					tag.pictures.push(picture)
-				},
-				// The valid range is 0x20..=0x7D not including 0x3D
-				k if k.chars().all(|c| (' '..='}').contains(&c) && c != '=') => {
-					tag.items.push((k.to_string(), value.to_string()))
-				},
-				_ => {
-					parse_mode_choice!(
-						parse_mode,
-						STRICT: decode_err!(@BAIL "OGG: Vorbis comments contain an invalid key"),
-						// Otherwise discard invalid keys
-					)
-				},
-			}
+		match key {
+			k if k.eq_ignore_ascii_case("METADATA_BLOCK_PICTURE") => {
+				let picture;
+				match Picture::from_flac_bytes(value.as_bytes(), true) {
+					Ok(pic) => picture = pic,
+					Err(e) => {
+						parse_mode_choice!(
+							parse_mode,
+							RELAXED: continue,
+							DEFAULT: return Err(e)
+						)
+					},
+				}
+
+				tag.pictures.push(picture)
+			},
+			// The valid range is 0x20..=0x7D not including 0x3D
+			k if k.chars().all(|c| (' '..='}').contains(&c) && c != '=') => {
+				tag.items.push((k.to_string(), value.to_string()))
+			},
+			_ => {
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: decode_err!(@BAIL "OGG: Vorbis comments contain an invalid key"),
+					// Otherwise discard invalid keys
+				)
+			},
 		}
 	}
 
