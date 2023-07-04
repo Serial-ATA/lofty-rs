@@ -4,7 +4,7 @@ use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
-use crate::picture::PictureInformation;
+use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 
 use std::convert::TryFrom;
@@ -85,6 +85,30 @@ pub(crate) fn create_comments(
 	Ok(())
 }
 
+fn create_pictures(
+	packet: &mut impl Write,
+	count: &mut u32,
+	pictures: &mut dyn Iterator<Item = (Picture, PictureInformation)>,
+) -> Result<()> {
+	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
+
+	for (pic, info) in pictures {
+		let picture = pic.as_flac_bytes(info, true);
+
+		let bytes_len = picture.len() + PICTURE_KEY.len();
+
+		if u32::try_from(bytes_len as u64).is_ok() {
+			*count += 1;
+
+			packet.write_u32::<LittleEndian>(bytes_len as u32)?;
+			packet.write_all(PICTURE_KEY.as_bytes())?;
+			packet.write_all(&picture)?;
+		}
+	}
+
+	Ok(())
+}
+
 pub(super) fn write<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
@@ -93,7 +117,7 @@ pub(super) fn write<'a, II, IP>(
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
-	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	// TODO: Would be nice if we didn't have to read just to seek and reread immediately
 
@@ -163,7 +187,7 @@ pub(super) fn create_metadata_packet<'a, II, IP>(
 ) -> Result<Vec<u8>>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
-	IP: Iterator<Item = (&'a crate::picture::Picture, PictureInformation)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	const PICTURE_KEY: &str = "METADATA_BLOCK_PICTURE=";
 
@@ -179,20 +203,7 @@ where
 
 	let mut count = 0;
 	create_comments(&mut new_comment_packet, &mut count, &mut tag.items)?;
-
-	for (pic, info) in &mut tag.pictures {
-		let picture = pic.as_flac_bytes(info, true);
-
-		let bytes_len = picture.len() + PICTURE_KEY.len();
-
-		if u32::try_from(bytes_len as u64).is_ok() {
-			count += 1;
-
-			new_comment_packet.write_u32::<LittleEndian>(bytes_len as u32)?;
-			new_comment_packet.write_all(PICTURE_KEY.as_bytes())?;
-			new_comment_packet.write_all(&picture)?;
-		}
-	}
+	create_pictures(&mut new_comment_packet, &mut count, &mut tag.pictures)?;
 
 	// Seek back and write the item count
 	new_comment_packet.seek(SeekFrom::Start(item_count_pos))?;
