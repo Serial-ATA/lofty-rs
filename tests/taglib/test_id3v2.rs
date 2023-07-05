@@ -1,13 +1,14 @@
 use crate::temp_file;
 use lofty::id3::v2::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
-	FrameId, FrameValue, GEOBInformation, GeneralEncapsulatedObject, ID3v2Tag, ID3v2Version,
-	Popularimeter, SyncTextContentType, SyncTextInformation, SynchronizedText, TimestampFormat,
-	UniqueFileIdentifierFrame, UrlLinkFrame,
+	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, Popularimeter,
+	SyncTextContentType, SynchronizedText, TimestampFormat, UniqueFileIdentifierFrame,
+	UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
 use lofty::{
-	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureType, TagExt, TextEncoding,
+	Accessor, AudioFile, MimeType, ParseOptions, ParsingMode, Picture, PictureType, TagExt,
+	TextEncoding,
 };
 use std::borrow::Cow;
 use std::io::Seek;
@@ -60,13 +61,13 @@ fn test_read_string_field() {
 #[test]
 fn test_parse_apic() {
 	let f = AttachedPictureFrame::parse(
-		b"\
+		&mut &b"\
 	\x00\
 	m\x00\
 	\x01\
 	d\x00\
-	\x00",
-		ID3v2Version::V4,
+	\x00"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap();
 	assert_eq!(f.picture.mime_type(), &MimeType::Unknown(String::from("m")));
@@ -77,11 +78,11 @@ fn test_parse_apic() {
 #[test]
 fn test_parse_apic_utf16_bom() {
 	let f = AttachedPictureFrame::parse(
-		b"\
+		&mut &b"\
 	\x01\x69\x6d\x61\x67\x65\
 	\x2f\x6a\x70\x65\x67\x00\x00\xfe\xff\x00\x63\x00\x6f\x00\x76\x00\
-	\x65\x00\x72\x00\x2e\x00\x6a\x00\x70\x00\x67\x00\x00\xff\xd8\xff",
-		ID3v2Version::V4,
+	\x65\x00\x72\x00\x2e\x00\x6a\x00\x70\x00\x67\x00\x00\xff\xd8\xff"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap();
 
@@ -94,13 +95,13 @@ fn test_parse_apic_utf16_bom() {
 #[test]
 fn test_parse_apicv22() {
 	let frame = AttachedPictureFrame::parse(
-		b"\
+		&mut &b"\
 	\x00\
 	JPG\
 	\x01\
 	d\x00\
-	\x00",
-		ID3v2Version::V2,
+	\x00"[..],
+		Id3v2Version::V2,
 	)
 	.unwrap();
 
@@ -122,7 +123,7 @@ fn test_render_apic() {
 	};
 
 	assert_eq!(
-		f.as_bytes(ID3v2Version::V4).unwrap(),
+		f.as_bytes(Id3v2Version::V4).unwrap(),
 		b"\
 	\x03\
 	image/png\x00\
@@ -149,20 +150,18 @@ fn test_parse_geob() {
 	\x00",
 	)
 	.unwrap();
-	assert_eq!(f.information.mime_type.as_deref(), Some("m"));
-	assert_eq!(f.information.file_name.as_deref(), Some("f"));
-	assert_eq!(f.information.descriptor.as_deref(), Some("d"));
+	assert_eq!(f.mime_type.as_deref(), Some("m"));
+	assert_eq!(f.file_name.as_deref(), Some("f"));
+	assert_eq!(f.descriptor.as_deref(), Some("d"));
 }
 
 #[test]
 fn test_render_geob() {
 	let f = GeneralEncapsulatedObject {
-		information: GEOBInformation {
-			encoding: TextEncoding::Latin1,
-			mime_type: Some(String::from("application/octet-stream")),
-			file_name: Some(String::from("test.bin")),
-			descriptor: Some(String::from("Description")),
-		},
+		encoding: TextEncoding::Latin1,
+		mime_type: Some(String::from("application/octet-stream")),
+		file_name: Some(String::from("test.bin")),
+		descriptor: Some(String::from("Description")),
 		data: vec![0x01; 3],
 	};
 
@@ -180,10 +179,10 @@ fn test_render_geob() {
 #[test]
 fn test_parse_popm() {
 	let f = Popularimeter::parse(
-		b"\
+		&mut &b"\
 	email@example.com\x00\
 	\x02\
-	\x00\x00\x00\x03",
+	\x00\x00\x00\x03"[..],
 	)
 	.unwrap();
 	assert_eq!(f.email, "email@example.com");
@@ -194,9 +193,9 @@ fn test_parse_popm() {
 #[test]
 fn test_parse_popm_without_counter() {
 	let f = Popularimeter::parse(
-		b"\
+		&mut &b"\
 	email@example.com\x00\
-	\x02",
+	\x02"[..],
 	)
 	.unwrap();
 	assert_eq!(f.email, "email@example.com");
@@ -241,7 +240,7 @@ fn test_popm_from_file() {
 		let mut foo = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut tag = ID3v2Tag::new();
+		let mut tag = Id3v2Tag::new();
 		tag.insert(
 			Frame::new("POPM", FrameValue::Popularimeter(f), FrameFlags::default()).unwrap(),
 		);
@@ -276,6 +275,7 @@ fn test_parse_unique_file_identifier_frame() {
 		&mut &b"\
 	owner\x00\
 	\x00\x01\x02"[..],
+		ParsingMode::Strict,
 	)
 	.unwrap()
 	.unwrap();
@@ -290,6 +290,7 @@ fn test_parse_empty_unique_file_identifier_frame() {
 		&mut &b"\
 	\x00\
 	"[..],
+		ParsingMode::Strict,
 	);
 
 	// NOTE: TagLib considers a missing owner to be valid, we do not
@@ -313,24 +314,28 @@ owner\x00\
 
 #[test]
 fn test_parse_url_link_frame() {
-	let f = UrlLinkFrame::parse(b"http://example.com").unwrap().unwrap();
+	let f = UrlLinkFrame::parse(&mut &b"http://example.com"[..])
+		.unwrap()
+		.unwrap();
 	assert_eq!(f.url(), "http://example.com");
 }
 
 #[test]
 fn test_render_url_link_frame() {
-	let f = UrlLinkFrame::parse(b"http://example.com").unwrap().unwrap();
+	let f = UrlLinkFrame::parse(&mut &b"http://example.com"[..])
+		.unwrap()
+		.unwrap();
 	assert_eq!(f.as_bytes(), b"http://example.com");
 }
 
 #[test]
 fn test_parse_user_url_link_frame() {
 	let f = ExtendedUrlFrame::parse(
-		b"\
+		&mut &b"\
 	\x00\
 	foo\x00\
-	http://example.com",
-		ID3v2Version::V4,
+	http://example.com"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap()
 	.unwrap();
@@ -380,11 +385,11 @@ Lyrics\x00\
 	)
 	.unwrap();
 
-	assert_eq!(f.information.encoding, TextEncoding::Latin1);
-	assert_eq!(f.information.language, *b"eng");
-	assert_eq!(f.information.timestamp_format, TimestampFormat::MS);
-	assert_eq!(f.information.content_type, SyncTextContentType::Lyrics);
-	assert_eq!(f.information.description.as_deref(), Some("foo"));
+	assert_eq!(f.encoding, TextEncoding::Latin1);
+	assert_eq!(f.language, *b"eng");
+	assert_eq!(f.timestamp_format, TimestampFormat::MS);
+	assert_eq!(f.content_type, SyncTextContentType::Lyrics);
+	assert_eq!(f.description.as_deref(), Some("foo"));
 
 	assert_eq!(f.content.len(), 2);
 	assert_eq!(f.content[0].1, "Example");
@@ -409,11 +414,11 @@ fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 	)
 	.unwrap();
 
-	assert_eq!(f.information.encoding, TextEncoding::Latin1);
-	assert_eq!(f.information.language, *b"eng");
-	assert_eq!(f.information.timestamp_format, TimestampFormat::MS);
-	assert_eq!(f.information.content_type, SyncTextContentType::Lyrics);
-	assert!(f.information.description.is_none());
+	assert_eq!(f.encoding, TextEncoding::Latin1);
+	assert_eq!(f.language, *b"eng");
+	assert_eq!(f.timestamp_format, TimestampFormat::MS);
+	assert_eq!(f.content_type, SyncTextContentType::Lyrics);
+	assert!(f.description.is_none());
 
 	assert_eq!(f.content.len(), 2);
 	assert_eq!(f.content[0].1, "Example");
@@ -425,13 +430,11 @@ fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 #[test]
 fn test_render_synchronized_lyrics_frame() {
 	let f = SynchronizedText {
-		information: SyncTextInformation {
-			encoding: TextEncoding::Latin1,
-			language: *b"eng",
-			timestamp_format: TimestampFormat::MS,
-			content_type: SyncTextContentType::Lyrics,
-			description: Some(String::from("foo")),
-		},
+		encoding: TextEncoding::Latin1,
+		language: *b"eng",
+		timestamp_format: TimestampFormat::MS,
+		content_type: SyncTextContentType::Lyrics,
+		description: Some(String::from("foo")),
 		content: vec![
 			(1234, String::from("Example")),
 			(4567, String::from("Lyrics")),
@@ -464,11 +467,11 @@ fn test_render_event_timing_codes_frame() {}
 #[test]
 fn test_parse_comments_frame() {
 	let f = CommentFrame::parse(
-		b"\x03\
+		&mut &b"\x03\
 								deu\
 								Description\x00\
-								Text",
-		ID3v2Version::V4,
+								Text"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap()
 	.unwrap();
@@ -521,11 +524,11 @@ fn test_render_private_frame() {}
 #[test]
 fn test_parse_user_text_identification_frame() {
 	let frame_without_description = ExtendedUrlFrame::parse(
-		b"\
+		&mut &b"\
 	\x00\
 	\x00\
-	Text",
-		ID3v2Version::V4,
+	Text"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap()
 	.unwrap();
@@ -534,11 +537,11 @@ fn test_parse_user_text_identification_frame() {
 	assert_eq!(frame_without_description.content, String::from("Text"));
 
 	let frame_with_description = ExtendedUrlFrame::parse(
-		b"\
+		&mut &b"\
 	\x00\
 	Description\x00\
-	Text",
-		ID3v2Version::V4,
+	Text"[..],
+		Id3v2Version::V4,
 	)
 	.unwrap()
 	.unwrap();
@@ -601,7 +604,7 @@ fn test_save_utf16_comment() {
 		let mut foo = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut tag = ID3v2Tag::new();
+		let mut tag = Id3v2Tag::new();
 		tag.insert(
 			Frame::new(
 				"COMM",
@@ -761,7 +764,7 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 		let mut foo = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut tag = ID3v2Tag::new();
+		let mut tag = Id3v2Tag::new();
 		tag.set_artist(String::from("Artist"));
 		foo.set_id3v2(tag);
 		foo.save_to(&mut file).unwrap();

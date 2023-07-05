@@ -1,5 +1,5 @@
 use crate::temp_file;
-use lofty::id3::v2::{ID3v2Tag, ID3v2Version};
+use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
 use lofty::{Accessor, AudioFile, ParseOptions, TagType};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -80,7 +80,7 @@ fn test_id3v2_tag() {
 		file.rewind().unwrap();
 		assert!(f.id3v2().is_none());
 
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		id3v2.set_title(String::from("Title"));
 		id3v2.set_artist(String::from("Artist"));
 		f.set_id3v2(id3v2);
@@ -126,7 +126,7 @@ fn test_save_id3v23() {
 	{
 		let f2 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		let tag = f2.id3v2().unwrap();
-		assert_eq!(tag.original_version(), ID3v2Version::V3);
+		assert_eq!(tag.original_version(), Id3v2Version::V3);
 		assert_eq!(tag.artist().as_deref(), Some("Artist A"));
 		assert_eq!(tag.title().as_deref(), Some(&*xxx));
 	}
@@ -176,7 +176,7 @@ fn test_strip_tags() {
 		let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		id3v2.set_title(String::from("test title"));
 		f.set_id3v2(id3v2);
 
@@ -299,7 +299,7 @@ fn test_file_with_garbage_appended() {
 		let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		id3v2.set_title(String::from("ID3v2 Title"));
 		f.set_id3v2(id3v2);
 
