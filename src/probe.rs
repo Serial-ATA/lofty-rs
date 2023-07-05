@@ -20,6 +20,8 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
+const MAX_JUNK_BYTES: usize = 1024;
+
 /// Options to control how Lofty parses a file
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[non_exhaustive]
@@ -27,6 +29,7 @@ pub struct ParseOptions {
 	pub(crate) read_properties: bool,
 	pub(crate) use_custom_resolvers: bool,
 	pub(crate) parsing_mode: ParsingMode,
+	pub(crate) max_junk_bytes: usize,
 }
 
 impl Default for ParseOptions {
@@ -38,7 +41,8 @@ impl Default for ParseOptions {
 	/// ParseOptions {
 	/// 	read_properties: true,
 	/// 	use_custom_resolvers: true,
-	/// 	parsing_mode: ParsingMode::Strict,
+	/// 	parsing_mode: ParsingMode::BestAttempt,
+	///     max_junk_bytes: 1024
 	/// }
 	/// ```
 	fn default() -> Self {
@@ -64,6 +68,7 @@ impl ParseOptions {
 			read_properties: true,
 			use_custom_resolvers: true,
 			parsing_mode: ParsingMode::BestAttempt,
+			max_junk_bytes: MAX_JUNK_BYTES,
 		}
 	}
 
@@ -106,11 +111,29 @@ impl ParseOptions {
 	/// ```rust
 	/// use lofty::{ParseOptions, ParsingMode};
 	///
-	/// // By default, `parsing_mode` is ParsingMode::Strict. Here, we don't need absolute correctness.
-	/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Relaxed);
+	/// // By default, `parsing_mode` is ParsingMode::BestAttempt. Here, we need absolute correctness.
+	/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
 	/// ```
 	pub fn parsing_mode(&mut self, parsing_mode: ParsingMode) -> Self {
 		self.parsing_mode = parsing_mode;
+		*self
+	}
+
+	/// The maximum number of allowed junk bytes to search
+	///
+	/// Some information may be surrounded by junk bytes, such as tag padding remnants. This sets the maximum
+	/// number of junk/unrecognized bytes Lofty will search for required information before giving up.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // I have files full of junk, I'll double the search window!
+	/// let parsing_options = ParseOptions::new().max_junk_bytes(2048);
+	/// ```
+	pub fn max_junk_bytes(&mut self, max_junk_bytes: usize) -> Self {
+		self.max_junk_bytes = max_junk_bytes;
 		*self
 	}
 }
