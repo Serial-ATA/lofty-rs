@@ -894,8 +894,8 @@ impl FileType {
 	/// ```
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
-			(Some(f_ty), _) => Some(f_ty),
-			// We make no attempt to search past an ID3v2 tag here, since
+			FileTypeGuessResult::Determined(file_ty) => Some(file_ty),
+			// We make no attempt to search past an ID3v2 tag or junk here, since
 			// we only provided a fixed-sized buffer to search from.
 			//
 			// That case is handled in `Probe::guess_file_type`
@@ -904,27 +904,30 @@ impl FileType {
 	}
 
 	// TODO: APE tags in the beginning of the file
-	pub(crate) fn from_buffer_inner(buf: &[u8]) -> (Option<Self>, Option<u32>) {
+	pub(crate) fn from_buffer_inner(buf: &[u8]) -> FileTypeGuessResult {
 		use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
-		// Start out with an empty return: (File type, id3 size)
-		// Only one can be set
-		let mut ret = (None, None);
+		// Start out with an empty return
+		let mut ret = FileTypeGuessResult::Undetermined;
 
 		if buf.is_empty() {
 			return ret;
 		}
 
 		match Self::quick_type_guess(buf) {
-			Some(f_ty) => ret.0 = Some(f_ty),
+			Some(f_ty) => ret = FileTypeGuessResult::Determined(f_ty),
 			// Special case for ID3, gets checked in `Probe::guess_file_type`
 			// The bare minimum size for an ID3v2 header is 10 bytes
 			None if buf.len() >= 10 && &buf[..3] == b"ID3" => {
 				// This is infallible, but preferable to an unwrap
 				if let Ok(arr) = buf[6..10].try_into() {
 					// Set the ID3v2 size
-					ret.1 = Some(u32::from_be_bytes(arr).unsynch());
+					ret =
+						FileTypeGuessResult::MaybePrecededById3(u32::from_be_bytes(arr).unsynch());
 				}
+			},
+			None if buf.first().copied() == Some(0) => {
+				ret = FileTypeGuessResult::MaybePrecededByJunk
 			},
 			// We aren't able to determine a format
 			_ => {},
@@ -1007,4 +1010,19 @@ impl FileType {
 			_ => None,
 		}
 	}
+}
+
+/// The result of a `FileType` guess
+///
+/// External callers of `FileType::from_buffer()` will only ever see `Determined` cases.
+/// The remaining cases are used internally in `Probe::guess_file_type()`.
+pub(crate) enum FileTypeGuessResult {
+	/// The `FileType` was guessed
+	Determined(FileType),
+	/// The stream starts with an ID3v2 tag
+	MaybePrecededById3(u32),
+	/// The stream starts with junk zero bytes
+	MaybePrecededByJunk,
+	/// The `FileType` could not be guessed
+	Undetermined,
 }

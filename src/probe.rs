@@ -1,7 +1,7 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, TaggedFile};
+use crate::file::{AudioFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
@@ -433,6 +433,8 @@ impl<R: Read + Seek> Probe<R> {
 	///
 	/// On success, the file type will be replaced
 	///
+	/// NOTE: This is influenced by `ParseOptions`, be sure to set it with `Probe::options()` prior to calling this.
+	///
 	/// # Errors
 	///
 	/// All errors that occur within this function are [`std::io::Error`].
@@ -455,14 +457,18 @@ impl<R: Read + Seek> Probe<R> {
 	/// # Ok(()) }
 	/// ```
 	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
-		let f_ty = self.guess_inner()?;
+		let max_junk_bytes = self
+			.options
+			.map_or(MAX_JUNK_BYTES, |options| options.max_junk_bytes);
+
+		let f_ty = self.guess_inner(max_junk_bytes)?;
 		self.f_ty = f_ty.or(self.f_ty);
 
 		Ok(self)
 	}
 
 	#[allow(clippy::shadow_unrelated)]
-	fn guess_inner(&mut self) -> std::io::Result<Option<FileType>> {
+	fn guess_inner(&mut self, max_junk_bytes: usize) -> std::io::Result<Option<FileType>> {
 		// temporary buffer for storing 36 bytes
 		// (36 is just a guess as to how long the data for estimating the file type might be)
 		let mut buf = [0; 36];
@@ -479,9 +485,9 @@ impl<R: Read + Seek> Probe<R> {
 		// Guess the file type by using these 36 bytes
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
 			// We were able to determine a file type
-			(Some(f_ty), _) => Ok(Some(f_ty)),
+			FileTypeGuessResult::Determined(file_ty) => Ok(Some(file_ty)),
 			// The file starts with an ID3v2 tag; this means other data can follow (e.g. APE or MP3 frames)
-			(None, Some(id3_len)) => {
+			FileTypeGuessResult::MaybePrecededById3(id3_len) => {
 				// `id3_len` is the size of the tag, not including the header (10 bytes)
 				let position_after_id3_block = self
 					.inner
@@ -501,27 +507,22 @@ impl<R: Read + Seek> Probe<R> {
 					b"fLaC" => Ok(Some(FileType::Flac)),
 					b"MPCK" | [b'M', b'P', b'+', ..] => Ok(Some(FileType::Mpc)),
 					// Search for a frame sync, which may be preceded by junk
-					_ if search_for_frame_sync(&mut self.inner)?.is_some() => {
-						// Seek back to the start of the frame sync to check if we are dealing with
-						// an AAC or MPEG file. See `FileType::quick_type_guess` for explanation.
-						self.inner.seek(SeekFrom::Current(-2))?;
-
-						let mut buf = [0; 2];
-						self.inner.read_exact(&mut buf)?;
-
-						if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
-							Ok(Some(FileType::Aac))
-						} else {
-							Ok(Some(FileType::Mpeg))
-						}
-					},
-					_ => Ok(None),
+					_ => self.check_mpeg_or_aac(max_junk_bytes),
 				};
 
 				// before returning any result for a file type, seek back to the front
 				self.inner.seek(SeekFrom::Start(starting_position))?;
 
 				file_type_after_id3_block
+			},
+			// TODO: Check more than MPEG/AAC
+			FileTypeGuessResult::MaybePrecededByJunk => {
+				let ret = self.check_mpeg_or_aac(max_junk_bytes);
+
+				// before returning any result for a file type, seek back to the front
+				self.inner.seek(SeekFrom::Start(starting_position))?;
+
+				ret
 			},
 			_ => {
 				if let Ok(lock) = CUSTOM_RESOLVERS.lock() {
@@ -535,6 +536,29 @@ impl<R: Read + Seek> Probe<R> {
 
 				Ok(None)
 			},
+		}
+	}
+
+	/// Searches for an MPEG/AAC frame sync, which may be preceded by junk bytes
+	fn check_mpeg_or_aac(&mut self, max_junk_bytes: usize) -> std::io::Result<Option<FileType>> {
+		{
+			let mut restricted_reader = self.inner.by_ref().take(max_junk_bytes as u64);
+			if search_for_frame_sync(&mut restricted_reader)?.is_none() {
+				return Ok(None);
+			}
+		}
+
+		// Seek back to the start of the frame sync to check if we are dealing with
+		// an AAC or MPEG file. See `FileType::quick_type_guess` for explanation.
+		self.inner.seek(SeekFrom::Current(-2))?;
+
+		let mut buf = [0; 2];
+		self.inner.read_exact(&mut buf)?;
+
+		if buf[1] & 0b10000 > 0 && buf[1] & 0b110 == 0 {
+			Ok(Some(FileType::Aac))
+		} else {
+			Ok(Some(FileType::Mpeg))
 		}
 	}
 
@@ -737,6 +761,11 @@ mod tests {
 	#[test]
 	fn probe_mp3_with_id3v2() {
 		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::Mpeg);
+	}
+
+	#[test]
+	fn probe_mp3_with_lots_of_junk() {
+		test_probe("tests/files/assets/junk.mp3", FileType::Mpeg);
 	}
 
 	#[test]
