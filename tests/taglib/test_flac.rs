@@ -3,7 +3,7 @@ use crate::temp_file;
 use std::io::{Read, Seek, SeekFrom};
 
 use lofty::flac::FlacFile;
-use lofty::id3::v2::ID3v2Tag;
+use lofty::id3::v2::Id3v2Tag;
 use lofty::ogg::{OggPictureStorage, VorbisComments};
 use lofty::{
 	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
@@ -490,7 +490,7 @@ fn test_empty_id3v2() {
 		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		f.set_id3v2(ID3v2Tag::default());
+		f.set_id3v2(Id3v2Tag::default());
 		f.save_to(&mut file).unwrap();
 	}
 	file.rewind().unwrap();

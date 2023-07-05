@@ -6,7 +6,7 @@ use std::io::Seek;
 use std::time::Duration;
 
 use lofty::ape::{ApeFile, ApeItem, ApeTag};
-use lofty::id3::v1::ID3v1Tag;
+use lofty::id3::v1::Id3v1Tag;
 use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, TagExt};
 
 fn test_399(path: &str) {
@@ -99,7 +99,7 @@ fn test_strip_and_properties() {
 		ape_tag.set_title(String::from("APE"));
 		ape_file.set_ape(ape_tag);
 
-		let mut id3v1_tag = ID3v1Tag::default();
+		let mut id3v1_tag = Id3v1Tag::default();
 		id3v1_tag.set_title(String::from("ID3v1"));
 		ape_file.set_id3v1(id3v1_tag);
 
@@ -363,7 +363,7 @@ fn test_repeated_save() {
 		ape_file.save_to(&mut file).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v1_tag = ID3v1Tag::default();
+		let mut id3v1_tag = Id3v1Tag::default();
 		id3v1_tag.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 		ape_file.set_id3v1(id3v1_tag);
 		ape_file.ape_mut().unwrap().set_title(String::from(
