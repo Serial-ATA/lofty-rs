@@ -2,7 +2,7 @@ use crate::temp_file;
 
 use std::io::Seek;
 
-use lofty::id3::v1::{ID3v1Tag, GENRES};
+use lofty::id3::v1::{Id3v1Tag, GENRES};
 use lofty::mpeg::MpegFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
 
@@ -14,7 +14,7 @@ fn test_strip_whitespace() {
 		let mut f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut tag = ID3v1Tag::default();
+		let mut tag = Id3v1Tag::default();
 		tag.set_artist(String::from("Artist     "));
 		f.set_id3v1(tag);
 		f.save_to(&mut file).unwrap();

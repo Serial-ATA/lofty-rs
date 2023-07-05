@@ -4,8 +4,8 @@ use std::fs::File;
 use std::io::Seek;
 
 use lofty::ape::ApeTag;
-use lofty::id3::v1::ID3v1Tag;
-use lofty::id3::v2::{ID3v2Tag, ID3v2Version};
+use lofty::id3::v1::Id3v1Tag;
+use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::mpeg::MpegFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
 
@@ -127,7 +127,7 @@ fn test_save_id3v24() {
 		file.rewind().unwrap();
 		assert!(f.id3v2().is_none());
 
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		tag.set_title(xxx.clone());
 		tag.set_artist(String::from("Artist A"));
 		f.set_id3v2(tag);
@@ -136,7 +136,7 @@ fn test_save_id3v24() {
 	file.rewind().unwrap();
 	{
 		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert_eq!(f.id3v2().unwrap().original_version(), ID3v2Version::V4);
+		assert_eq!(f.id3v2().unwrap().original_version(), Id3v2Version::V4);
 		assert_eq!(f.id3v2().unwrap().artist().as_deref(), Some("Artist A"));
 		assert_eq!(f.id3v2().unwrap().title().as_deref(), Some(xxx.as_str()));
 	}
@@ -159,7 +159,7 @@ fn test_save_id3v23() {
 		file.rewind().unwrap();
 		assert!(f.id3v2().is_none());
 
-		let mut tag = ID3v2Tag::default();
+		let mut tag = Id3v2Tag::default();
 		tag.set_title(xxx.clone());
 		tag.set_artist(String::from("Artist A"));
 		f.set_id3v2(tag);
@@ -168,7 +168,7 @@ fn test_save_id3v23() {
 	file.rewind().unwrap();
 	{
 		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert_eq!(f.id3v2().unwrap().original_version(), ID3v2Version::V3);
+		assert_eq!(f.id3v2().unwrap().original_version(), Id3v2Version::V3);
 		assert_eq!(f.id3v2().unwrap().artist().as_deref(), Some("Artist A"));
 		assert_eq!(f.id3v2().unwrap().title().as_deref(), Some(xxx.as_str()));
 	}
@@ -201,13 +201,13 @@ fn test_strip_and_properties() {
 		let mut f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v2 = ID3v2Tag::default();
+		let mut id3v2 = Id3v2Tag::default();
 		id3v2.set_title(String::from("ID3v2"));
 		f.set_id3v2(id3v2);
 		let mut ape = ApeTag::default();
 		ape.set_title(String::from("APE"));
 		f.set_ape(ape);
-		let mut id3v1 = ID3v1Tag::default();
+		let mut id3v1 = Id3v1Tag::default();
 		id3v1.set_title(String::from("ID3v1"));
 		f.set_id3v1(id3v1);
 		f.save_to(&mut file).unwrap();
@@ -262,7 +262,7 @@ fn test_repeated_save_3() {
 			f.save_to(&mut file).unwrap();
 		}
 		{
-			let mut id3v1 = ID3v1Tag::default();
+			let mut id3v1 = Id3v1Tag::default();
 			id3v1.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 			f.set_id3v1(id3v1);
 		}
