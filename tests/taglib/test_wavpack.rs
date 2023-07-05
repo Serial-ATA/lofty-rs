@@ -3,7 +3,7 @@ use crate::temp_file;
 use std::io::Seek;
 
 use lofty::ape::ApeTag;
-use lofty::id3::v1::ID3v1Tag;
+use lofty::id3::v1::Id3v1Tag;
 use lofty::wavpack::WavPackFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
 
@@ -100,7 +100,7 @@ fn test_strip_and_properties() {
 		ape.set_title(String::from("APE"));
 		f.set_ape(ape);
 
-		let mut id3v1 = ID3v1Tag::default();
+		let mut id3v1 = Id3v1Tag::default();
 		id3v1.set_title(String::from("ID3v1"));
 		f.set_id3v1(id3v1);
 
@@ -139,7 +139,7 @@ fn test_repeated_save() {
 		f.save_to(&mut file).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v1 = ID3v1Tag::default();
+		let mut id3v1 = Id3v1Tag::default();
 		id3v1.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 		f.set_id3v1(id3v1);
 		f.ape_mut().unwrap().set_title(String::from(
