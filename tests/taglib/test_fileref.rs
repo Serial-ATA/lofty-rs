@@ -80,8 +80,7 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 #[test]
 #[ignore]
 fn test_musepack() {
-	// TODO: We don't support MusePack yet
-	// file_ref_save("click.mpc", FileType::MusePack);
+	file_ref_save("click.mpc", FileType::Mpc);
 }
 
 #[test]
