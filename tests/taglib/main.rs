@@ -10,6 +10,7 @@ mod test_id3v1;
 mod test_id3v2;
 mod test_info;
 mod test_mp4;
+mod test_mpc;
 mod test_mpeg;
 mod test_ogaflac;
 mod test_ogg;
