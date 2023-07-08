@@ -70,6 +70,18 @@ impl ToString for MimeType {
 impl MimeType {
 	#[allow(clippy::should_implement_trait)]
 	/// Get a `MimeType` from a string
+	///
+	/// Empty strings will map to `MimeType::None`, while any unrecognized MIME types will
+	/// map to `MimeType::Unknown`.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::MimeType;
+	///
+	/// let jpeg_mimetype_str = "image/jpeg";
+	/// assert_eq!(MimeType::from_str(jpeg_mimetype_str), MimeType::Jpeg);
+	/// ```
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
 			"image/jpeg" | "image/jpg" => Self::Jpeg,
@@ -83,6 +95,17 @@ impl MimeType {
 	}
 
 	/// Get a &str from a `MimeType`
+	///
+	/// NOTE: `MimeType::None` will return an empty string.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::MimeType;
+	///
+	/// let jpeg_mimetype = MimeType::Jpeg;
+	/// assert_eq!(jpeg_mimetype.as_str(), "image/jpeg")
+	/// ```
 	pub fn as_str(&self) -> &str {
 		match self {
 			MimeType::Jpeg => "image/jpeg",
