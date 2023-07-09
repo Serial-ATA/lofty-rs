@@ -16,6 +16,7 @@ mod test_ogaflac;
 mod test_ogg;
 mod test_opus;
 mod test_speex;
+mod test_synchdata;
 mod test_wav;
 mod test_wavpack;
 mod test_xiphcomment;
