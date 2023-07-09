@@ -62,7 +62,7 @@ fn test_properties_alac() {
 #[test]
 #[allow(clippy::needless_range_loop)]
 fn test_properties_alac_without_bitrate() {
-	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
+	let mut file = temp_file!("tests/taglib/data/empty_alac.m4a");
 	let mut alac_data = Vec::new();
 	file.read_to_end(&mut alac_data).unwrap();
 
@@ -386,7 +386,7 @@ fn test_repeated_save() {
 
 #[test]
 fn test_with_zero_length_atom() {
-	let mut file = temp_file!("tests/taglib/data/infloop.m4a");
+	let mut file = temp_file!("tests/taglib/data/zero-length-mdat.m4a");
 	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
 	assert_eq!(f.properties().duration().as_millis(), 1115);
 	assert_eq!(f.properties().sample_rate(), 22050);
