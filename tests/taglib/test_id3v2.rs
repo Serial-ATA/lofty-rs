@@ -1,4 +1,8 @@
 use crate::temp_file;
+
+use std::borrow::Cow;
+use std::io::Seek;
+
 use lofty::id3::v2::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
 	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, Popularimeter,
@@ -10,8 +14,6 @@ use lofty::{
 	Accessor, AudioFile, MimeType, ParseOptions, ParsingMode, Picture, PictureType, TagExt,
 	TextEncoding,
 };
-use std::borrow::Cow;
-use std::io::Seek;
 
 #[test]
 fn test_unsynch_decode() {
