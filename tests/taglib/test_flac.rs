@@ -390,15 +390,13 @@ fn test_invalid() {
 
 #[test]
 fn test_audio_properties() {
-	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
+	let mut file = temp_file!("tests/taglib/data/sinewave.flac");
 	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
 	let properties = f.properties();
 	assert_eq!(properties.duration().as_secs(), 3);
-	// NOTE: This is the number reported by `ffprobe`, TagLib is off here.
-	assert_eq!(properties.duration().as_millis(), 3684);
-	// TODO: We report 101, ffprobe reports 110, and TagLib reports 145
-	// assert_eq!(properties.audio_bitrate(), 145);
+	assert_eq!(properties.duration().as_millis(), 3550);
+	assert_eq!(properties.audio_bitrate(), 145);
 	assert_eq!(properties.sample_rate(), 44100);
 	assert_eq!(properties.channels(), 2);
 	assert_eq!(properties.bit_depth(), 16);
@@ -406,7 +404,7 @@ fn test_audio_properties() {
 	// CPPUNIT_ASSERT_EQUAL(156556ULL, f.audioProperties()->sampleFrames());
 	assert_eq!(
 		format!("{:X}", f.properties().signature()),
-		"6291DBD8DCB7DC480132E4C4BA154A17"
+		"CFE3D9DABADEAB2CBF2CA235274B7F76"
 	);
 }
 
