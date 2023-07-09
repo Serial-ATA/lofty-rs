@@ -1,12 +1,14 @@
 use crate::temp_file;
+use crate::util::get_file;
+
+use std::io::Seek;
+
 use lofty::ogg::OpusFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
-use std::io::Seek;
 
 #[test]
 fn test_audio_properties() {
-	let mut file = temp_file!("tests/taglib/data/correctness_gain_silent_output.opus");
-	let f = OpusFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<OpusFile>("tests/taglib/data/correctness_gain_silent_output.opus");
 	assert_eq!(f.properties().duration().as_secs(), 7);
 	assert_eq!(f.properties().duration().as_millis(), 7737);
 	assert_eq!(f.properties().audio_bitrate(), 36);
@@ -17,8 +19,7 @@ fn test_audio_properties() {
 
 #[test]
 fn test_read_comments() {
-	let mut file = temp_file!("tests/taglib/data/correctness_gain_silent_output.opus");
-	let f = OpusFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<OpusFile>("tests/taglib/data/correctness_gain_silent_output.opus");
 	assert_eq!(
 		f.vorbis_comments().get("ENCODER"),
 		Some("Xiph.Org Opus testvectormaker")

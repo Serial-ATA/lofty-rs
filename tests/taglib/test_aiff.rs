@@ -1,11 +1,11 @@
-use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe};
+use crate::util::get_file;
+use crate::{assert_delta, temp_file};
+
+use std::io::Seek;
 
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::AiffFile;
-use std::io::Seek;
-
-use crate::util::get_file;
-use crate::{assert_delta, temp_file};
+use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe};
 
 #[test]
 #[ignore]

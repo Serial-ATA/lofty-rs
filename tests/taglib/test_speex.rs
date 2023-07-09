@@ -1,4 +1,5 @@
 use crate::temp_file;
+use crate::util::get_file;
 
 use std::io::Seek;
 
@@ -8,8 +9,7 @@ use lofty::{Accessor, AudioFile, ParseOptions};
 #[test]
 #[ignore]
 fn test_audio_properties() {
-	let mut file = temp_file!("tests/taglib/data/empty.spx");
-	let f = SpeexFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<SpeexFile>("tests/taglib/data/empty.spx");
 
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	// TODO: We report 3684, we're off by one

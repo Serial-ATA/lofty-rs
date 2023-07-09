@@ -1,8 +1,10 @@
 use crate::temp_file;
+
+use std::io::{Seek, SeekFrom};
+
 use lofty::flac::FlacFile;
 use lofty::ogg::VorbisComments;
 use lofty::{Accessor, AudioFile, ParseOptions};
-use std::io::{Seek, SeekFrom};
 
 #[test]
 #[ignore] // TODO: We don't support FLAC in OGA

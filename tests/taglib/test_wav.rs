@@ -1,4 +1,5 @@
 use crate::temp_file;
+use crate::util::get_file;
 use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
 use lofty::{Accessor, AudioFile, ParseOptions, TagType};
@@ -6,8 +7,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 #[test]
 fn test_pcm_properties() {
-	let mut file = temp_file!("tests/taglib/data/empty.wav");
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavFile>("tests/taglib/data/empty.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3675);
 	assert_eq!(f.properties().bitrate(), 32);
@@ -20,8 +20,7 @@ fn test_pcm_properties() {
 
 #[test]
 fn test_alaw_properties() {
-	let mut file = temp_file!("tests/taglib/data/alaw.wav");
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavFile>("tests/taglib/data/alaw.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3550);
 	assert_eq!(f.properties().bitrate(), 128);
@@ -34,8 +33,7 @@ fn test_alaw_properties() {
 
 #[test]
 fn test_float_properties() {
-	let mut file = temp_file!("tests/taglib/data/float64.wav");
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavFile>("tests/taglib/data/float64.wav");
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 97);
 	assert_eq!(f.properties().bitrate(), 5645);
@@ -257,8 +255,7 @@ fn test_duplicate_tags() {
 
 #[test]
 fn test_fuzzed_file1() {
-	let mut file = temp_file!("tests/taglib/data/infloop.wav");
-	let f1 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f1 = get_file::<WavFile>("tests/taglib/data/infloop.wav");
 	// The file has problems:
 	// Chunk 'ISTt' has invalid size (larger than the file size).
 	// Its properties can nevertheless be read.
@@ -331,8 +328,7 @@ fn test_strip_and_properties() {
 
 #[test]
 fn test_pcm_with_fact_chunk() {
-	let mut file = temp_file!("tests/taglib/data/pcm_with_fact_chunk.wav");
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavFile>("tests/taglib/data/pcm_with_fact_chunk.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3675);
 	assert_eq!(f.properties().bitrate(), 32);
@@ -345,8 +341,7 @@ fn test_pcm_with_fact_chunk() {
 
 #[test]
 fn test_wave_format_extensible() {
-	let mut file = temp_file!("tests/taglib/data/uint8we.wav");
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavFile>("tests/taglib/data/uint8we.wav");
 	assert_eq!(f.properties().duration().as_secs(), 2);
 	assert_eq!(f.properties().duration().as_millis(), 2937);
 	assert_eq!(f.properties().bitrate(), 128);

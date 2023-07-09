@@ -1,6 +1,6 @@
 use crate::temp_file;
+use crate::util::get_file;
 
-use std::fs::File;
 use std::io::Seek;
 use std::time::Duration;
 
@@ -9,9 +9,8 @@ use lofty::id3::v1::Id3v1Tag;
 use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, Probe, TagExt};
 
 fn test_399(path: &str) {
-	let mut file = File::open(path).unwrap();
-	let file = ApeFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	let properties = file.properties();
+	let f = get_file::<ApeFile>(path);
+	let properties = f.properties();
 
 	assert_eq!(properties.duration(), Duration::from_millis(3550));
 	assert_eq!(properties.bitrate(), 192);
@@ -44,9 +43,8 @@ fn test_properties_399_id3v2() {
 #[test]
 #[ignore]
 fn test_properties_396() {
-	let mut file = File::open("tests/taglib/data/mac-396.ape").unwrap();
-	let file = ApeFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	let properties = file.properties();
+	let f = get_file::<ApeFile>("tests/taglib/data/mac-396.ape");
+	let properties = f.properties();
 
 	assert_eq!(properties.duration(), Duration::from_millis(3685));
 	assert_eq!(properties.bitrate(), 0);
@@ -61,9 +59,8 @@ fn test_properties_396() {
 #[test]
 #[ignore]
 fn test_properties_390() {
-	let mut file = File::open("tests/taglib/data/mac-390-hdr.ape").unwrap();
-	let file = ApeFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	let properties = file.properties();
+	let f = get_file::<ApeFile>("tests/taglib/data/mac-390-hdr.ape");
+	let properties = f.properties();
 
 	assert_eq!(properties.duration(), Duration::from_millis(15630));
 	assert_eq!(properties.bitrate(), 0);
