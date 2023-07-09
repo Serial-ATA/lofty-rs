@@ -343,7 +343,7 @@ fn get_extended_meta_info(
 					decode_err!(@BAIL WavPack, "Unable to extract channel information");
 				}
 
-				properties.channels = block_content[index] as u16;
+				properties.channels = u16::from(block_content[index]);
 				index += 1;
 
 				let reader = &mut &block_content[index..];
@@ -353,11 +353,11 @@ fn get_extended_meta_info(
 				match s {
 					0 => {
 						let channel_mask = reader.read_u8()?;
-						properties.channel_mask = ChannelMask(channel_mask as u32);
+						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					1 => {
 						let channel_mask = reader.read_u16::<LittleEndian>()?;
-						properties.channel_mask = ChannelMask(channel_mask as u32);
+						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					2 => {
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
@@ -368,14 +368,14 @@ fn get_extended_meta_info(
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					4 => {
-						properties.channels |= ((reader.read_u8()? & 0xF) as u16) << 8;
+						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
 
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					5 => {
-						properties.channels |= ((reader.read_u8()? & 0xF) as u16) << 8;
+						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
 
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
