@@ -1,5 +1,6 @@
-use lofty::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use std::io::Read;
+
+use lofty::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 
 #[test]
 fn test1() {

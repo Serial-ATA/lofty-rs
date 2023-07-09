@@ -1,4 +1,5 @@
 use crate::temp_file;
+use crate::util::get_file;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -11,8 +12,7 @@ use lofty::{
 
 #[test]
 fn test_signature() {
-	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
-	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<FlacFile>("tests/taglib/data/no-tags.flac");
 	assert_eq!(
 		format!("{:x}", f.properties().signature()),
 		"a1b141f766e9849ac3db1030a20a3c77"
@@ -390,8 +390,7 @@ fn test_invalid() {
 
 #[test]
 fn test_audio_properties() {
-	let mut file = temp_file!("tests/taglib/data/sinewave.flac");
-	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<FlacFile>("tests/taglib/data/sinewave.flac");
 
 	let properties = f.properties();
 	assert_eq!(properties.duration().as_secs(), 3);
@@ -410,8 +409,7 @@ fn test_audio_properties() {
 
 #[test]
 fn test_zero_sized_padding_1() {
-	let mut file = temp_file!("tests/taglib/data/zero-sized-padding.flac");
-	let _ = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let _f = get_file::<FlacFile>("tests/taglib/data/zero-sized-padding.flac");
 }
 
 #[test]

@@ -1,4 +1,5 @@
 use crate::temp_file;
+use crate::util::get_file;
 
 use std::fs::File;
 use std::io::Seek;
@@ -12,8 +13,7 @@ use lofty::{Accessor, AudioFile, ParseOptions};
 #[test]
 #[ignore]
 fn test_audio_properties_xing_header_cbr() {
-	let mut file = File::open("tests/taglib/data/lame_cbr.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/lame_cbr.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 1887); // TODO: Off by 9
 	assert_eq!(f.properties().duration().as_millis(), 1887164);
@@ -27,8 +27,7 @@ fn test_audio_properties_xing_header_cbr() {
 #[test]
 #[ignore]
 fn test_audio_properties_xing_header_vbr() {
-	let mut file = File::open("tests/taglib/data/lame_vbr.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/lame_vbr.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 1887); // TODO: Off by 9
 	assert_eq!(f.properties().duration().as_millis(), 1887164);
@@ -42,8 +41,7 @@ fn test_audio_properties_xing_header_vbr() {
 #[test]
 #[ignore]
 fn test_audio_properties_vbri_header() {
-	let mut file = File::open("tests/taglib/data/rare_frames.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/rare_frames.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 222); // TODO: Off by 1
 	assert_eq!(f.properties().duration().as_millis(), 222198);
@@ -57,8 +55,7 @@ fn test_audio_properties_vbri_header() {
 #[test]
 #[ignore]
 fn test_audio_properties_no_vbr_headers() {
-	let mut file = File::open("tests/taglib/data/bladeenc.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/bladeenc.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 3); // Off by 1
 	assert_eq!(f.properties().duration().as_millis(), 3553);
@@ -72,8 +69,7 @@ fn test_audio_properties_no_vbr_headers() {
 
 #[test]
 fn test_skip_invalid_frames_1() {
-	let mut file = File::open("tests/taglib/data/invalid-frames1.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames1.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 392);
@@ -85,8 +81,7 @@ fn test_skip_invalid_frames_1() {
 #[test]
 #[ignore]
 fn test_skip_invalid_frames_2() {
-	let mut file = File::open("tests/taglib/data/invalid-frames2.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames2.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 314); // TODO: Off by 79
@@ -98,8 +93,7 @@ fn test_skip_invalid_frames_2() {
 #[test]
 #[ignore]
 fn test_skip_invalid_frames_3() {
-	let mut file = File::open("tests/taglib/data/invalid-frames3.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames3.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 183); // TODO: Off by 26
@@ -111,8 +105,7 @@ fn test_skip_invalid_frames_3() {
 #[test]
 #[ignore]
 fn test_version_2_duration_with_xing_header() {
-	let mut file = File::open("tests/taglib/data/mpeg2.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/mpeg2.mp3");
 	assert_eq!(f.properties().duration().as_secs(), 5387); // TODO: Off by 15
 	assert_eq!(f.properties().duration().as_millis(), 5387285);
 }
@@ -176,8 +169,7 @@ fn test_save_id3v23() {
 
 #[test]
 fn test_duplicate_id3v2() {
-	let mut file = File::open("tests/taglib/data/duplicate_id3v2.mp3").unwrap();
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<MpegFile>("tests/taglib/data/duplicate_id3v2.mp3");
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
