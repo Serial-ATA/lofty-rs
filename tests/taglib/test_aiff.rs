@@ -1,17 +1,16 @@
-use lofty::{Accessor, AudioFile, FileType, ParseOptions, TaggedFileExt};
+use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe};
 
+use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::AiffFile;
-use std::io::{Read, Seek};
+use std::io::Seek;
 
-use crate::util::get_filetype;
+use crate::util::get_file;
 use crate::{assert_delta, temp_file};
 
 #[test]
 #[ignore]
 fn test_aiff_properties() {
-	let file = lofty::read_from_path("tests/taglib/data/empty.aiff").unwrap();
-
-	assert_eq!(file.file_type(), FileType::Aiff);
+	let file = get_file::<AiffFile>("tests/taglib/data/empty.aiff");
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
@@ -28,9 +27,7 @@ fn test_aiff_properties() {
 #[test]
 #[ignore]
 fn test_aifc_properties() {
-	let file = lofty::read_from_path("tests/taglib/data/alaw.aifc").unwrap();
-
-	assert_eq!(file.file_type(), FileType::Aiff);
+	let file = get_file::<AiffFile>("tests/taglib/data/alaw.aifc");
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
@@ -52,15 +49,13 @@ fn test_save_id3v2() {
 	let mut file = temp_file!("tests/taglib/data/empty.aiff");
 
 	{
-		let mut tfile = lofty::read_from(&mut file).unwrap();
+		let mut tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
-		assert_eq!(tfile.file_type(), FileType::Aiff);
+		assert!(tfile.id3v2().is_none());
 
-		assert!(tfile.tag(lofty::TagType::Id3v2).is_none());
-
-		let mut tag = lofty::Tag::new(lofty::TagType::Id3v2);
-		tag.set_title("TitleXXX".to_string());
-		tfile.insert_tag(tag);
+		let mut id3v2 = Id3v2Tag::new();
+		id3v2.set_title("TitleXXX".to_string());
+		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
 		assert!(tfile.contains_tag_type(lofty::TagType::Id3v2));
@@ -69,14 +64,12 @@ fn test_save_id3v2() {
 	file.rewind().unwrap();
 
 	{
-		let mut tfile = lofty::read_from(&mut file).unwrap();
+		let mut tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
-		assert_eq!(tfile.file_type(), FileType::Aiff);
-
-		let mut tag = tfile.tag(lofty::TagType::Id3v2).unwrap().to_owned();
-		assert_eq!(tag.title().as_deref(), Some("TitleXXX"));
-		tag.set_title(String::new());
-		tfile.insert_tag(tag);
+		let mut id3v2 = tfile.id3v2().unwrap().to_owned();
+		assert_eq!(id3v2.title().as_deref(), Some("TitleXXX"));
+		id3v2.set_title(String::new());
+		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
 		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
@@ -85,10 +78,7 @@ fn test_save_id3v2() {
 	file.rewind().unwrap();
 
 	{
-		let tfile = lofty::read_from(&mut file).unwrap();
-
-		assert_eq!(tfile.file_type(), FileType::Aiff);
-
+		let tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 }
@@ -104,11 +94,14 @@ fn test_duplicate_id3v2() {
 }
 
 #[test]
-#[ignore]
 fn test_fuzzed_file1() {
 	assert_eq!(
-		get_filetype("tests/taglib/data/segfault.aif"),
-		FileType::Aiff
+		Probe::open("tests/taglib/data/segfault.aif")
+			.unwrap()
+			.guess_file_type()
+			.unwrap()
+			.file_type(),
+		Some(FileType::Aiff)
 	);
 }
 

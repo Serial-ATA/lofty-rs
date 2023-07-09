@@ -1,5 +1,4 @@
 use crate::temp_file;
-use crate::util::get_filetype;
 
 use std::fs::File;
 use std::io::Seek;
@@ -7,7 +6,7 @@ use std::time::Duration;
 
 use lofty::ape::{ApeFile, ApeItem, ApeTag};
 use lofty::id3::v1::Id3v1Tag;
-use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, TagExt};
+use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, Probe, TagExt};
 
 fn test_399(path: &str) {
 	let mut file = File::open(path).unwrap();
@@ -79,14 +78,25 @@ fn test_properties_390() {
 #[test]
 fn test_fuzzed_file_1() {
 	assert_eq!(
-		get_filetype("tests/taglib/data/longloop.ape"),
-		FileType::Ape
+		Probe::open("tests/taglib/data/longloop.ape")
+			.unwrap()
+			.guess_file_type()
+			.unwrap()
+			.file_type(),
+		Some(FileType::Ape)
 	);
 }
 
 #[test]
 fn test_fuzzed_file_2() {
-	assert_eq!(get_filetype("tests/taglib/data/zerodiv.ape"), FileType::Ape);
+	assert_eq!(
+		Probe::open("tests/taglib/data/zerodiv.ape")
+			.unwrap()
+			.guess_file_type()
+			.unwrap()
+			.file_type(),
+		Some(FileType::Ape)
+	);
 }
 
 #[test]
