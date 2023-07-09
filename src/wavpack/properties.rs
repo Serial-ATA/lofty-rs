@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
 use crate::probe::ParsingMode;
-use crate::properties::FileProperties;
+use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -17,7 +17,8 @@ pub struct WavPackProperties {
 	pub(crate) overall_bitrate: u32,
 	pub(crate) audio_bitrate: u32,
 	pub(crate) sample_rate: u32,
-	pub(crate) channels: u8,
+	pub(crate) channels: u16,
+	pub(crate) channel_mask: ChannelMask,
 	pub(crate) bit_depth: u8,
 	pub(crate) lossless: bool,
 }
@@ -30,8 +31,8 @@ impl From<WavPackProperties> for FileProperties {
 			audio_bitrate: Some(input.audio_bitrate),
 			sample_rate: Some(input.sample_rate),
 			bit_depth: Some(input.bit_depth),
-			channels: Some(input.channels),
-			channel_mask: None,
+			channels: Some(input.channels as u8),
+			channel_mask: Some(input.channel_mask),
 		}
 	}
 }
@@ -58,8 +59,15 @@ impl WavPackProperties {
 	}
 
 	/// Channel count
-	pub fn channels(&self) -> u8 {
+	///
+	/// This is a `u16` since WavPack supports "unlimited" streams
+	pub fn channels(&self) -> u16 {
 		self.channels
+	}
+
+	/// Channel mask
+	pub fn channel_mask(&self) -> ChannelMask {
+		self.channel_mask
 	}
 
 	/// WavPack version
@@ -191,6 +199,7 @@ where
 			if flags & FLAG_FINAL_BLOCK > 0 {
 				let is_mono = flags & FLAG_MONO > 0;
 				properties.channels = if is_mono { 1 } else { 2 };
+				properties.channel_mask = if is_mono { ChannelMask::mono() } else { ChannelMask::stereo() };
 			}
 		}
 
@@ -334,28 +343,46 @@ fn get_extended_meta_info(
 					decode_err!(@BAIL WavPack, "Unable to extract channel information");
 				}
 
-				properties.channels = block_content[index];
+				properties.channels = block_content[index] as u16;
 				index += 1;
 
+				let reader = &mut &block_content[index..];
+
+				// size - (id length + channel length)
 				let s = size - 2;
 				match s {
-					0..=3 => {
-						// Skip the Microsoft channel mask
-						index += (s + 1) as usize;
-						continue;
+					0 => {
+						let channel_mask = reader.read_u8()?;
+						properties.channel_mask = ChannelMask(channel_mask as u32);
 					},
-					4 | 5 => {},
+					1 => {
+						let channel_mask = reader.read_u16::<LittleEndian>()?;
+						properties.channel_mask = ChannelMask(channel_mask as u32);
+					},
+					2 => {
+						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						properties.channel_mask = ChannelMask(channel_mask);
+					},
+					3 => {
+						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						properties.channel_mask = ChannelMask(channel_mask);
+					},
+					4 => {
+						properties.channels |= ((reader.read_u8()? & 0xF) as u16) << 8;
+						properties.channels += 1;
+
+						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						properties.channel_mask = ChannelMask(channel_mask);
+					},
+					5 => {
+						properties.channels |= ((reader.read_u8()? & 0xF) as u16) << 8;
+						properties.channels += 1;
+
+						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						properties.channel_mask = ChannelMask(channel_mask);
+					},
 					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
 				}
-
-				index += 1;
-
-				properties.channels |= block_content[1] & 0xF;
-				properties.channels += 1;
-				index += 1;
-
-				// Skip the Microsoft channel mask
-				index += (s - 1) as usize;
 			},
 			_ => {
 				index += size as usize;
