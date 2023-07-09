@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FrameValue::KeyValue` for TIPL/TMCL frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
 - **ParseOptions**: `ParseOptions::max_junk_bytes`, allowing the parser to sift through junk bytes to find required information, rather than
                     immediately declare a file invalid. ([discussion](https://github.com/Serial-ATA/lofty-rs/discussions/219)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/227))
+- **WavPack**: `WavPackProperties` now contains the channel mask, accessible through `WavPackProperties::channel_mask()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/230))
 
 ## Changed
 - **ID3v2**:
@@ -24,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Fixed
 - **APE**: Track/Disk number pairs are properly converted when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/159)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/216))
 - **ID3v2**: TIPL/TMCL frames will no longer be read as a single terminated string ([issue](https://github.com/Serial-ATA/lofty-rs/pull/213)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
+- **WavPack**: Multichannel files will no longer be marked as mono, supporting up to 4095 channels ([PR](https://github.com/Serial-ATA/lofty-rs/pull/230))
 
 ## [0.14.0] - 2023-06-08
 
