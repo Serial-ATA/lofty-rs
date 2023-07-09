@@ -94,7 +94,7 @@ impl FileProperties {
 /// * CAF channel bitmap: <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_spec/CAF_spec.html#//apple_ref/doc/uid/TP40001862-CH210-BCGBHHHI>
 /// * WAV default channel ordering: <https://learn.microsoft.com/en-us/previous-versions/windows/hardware/design/dn653308(v=vs.85)?redirectedfrom=MSDN#default-channel-ordering>
 /// * FFmpeg: <https://ffmpeg.org/doxygen/trunk/group__channel__masks.html>
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 #[repr(transparent)]
 pub struct ChannelMask(pub(crate) u32);
 
@@ -136,7 +136,7 @@ mod tests {
 	};
 	use crate::probe::ParseOptions;
 	use crate::wavpack::{WavPackFile, WavPackProperties};
-	use crate::{AudioFile, FileProperties};
+	use crate::{AudioFile, ChannelMask, FileProperties};
 
 	use std::fs::File;
 	use std::time::Duration;
@@ -392,6 +392,7 @@ mod tests {
 		audio_bitrate: 597,
 		sample_rate: 48000,
 		channels: 2,
+		channel_mask: ChannelMask::stereo(),
 		bit_depth: 16,
 		lossless: true,
 	};
