@@ -1,10 +1,11 @@
 use crate::temp_file;
-use lofty::ogg::VorbisFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use crate::util::get_file;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use lofty::ogg::VorbisFile;
+use lofty::{Accessor, AudioFile, ParseOptions};
 
 #[test]
 fn test_simple() {
@@ -74,8 +75,7 @@ fn test_dict_interface2() {
 
 #[test]
 fn test_audio_properties() {
-	let mut file = temp_file!("tests/taglib/data/empty.ogg");
-	let f = VorbisFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<VorbisFile>("tests/taglib/data/empty.ogg");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3685);
 	assert_eq!(f.properties().audio_bitrate(), 1);
