@@ -1,4 +1,6 @@
 use crate::temp_file;
+use crate::util::get_file;
+
 use std::borrow::Cow;
 use std::io::{Read, Seek};
 
@@ -7,8 +9,7 @@ use lofty::{Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureType, T
 
 #[test]
 fn test_properties_aac() {
-	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3708);
 	assert_eq!(f.properties().audio_bitrate(), 3);
@@ -47,8 +48,7 @@ fn test_properties_aac_without_bitrate() {
 
 #[test]
 fn test_properties_alac() {
-	let mut file = temp_file!("tests/taglib/data/empty_alac.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/empty_alac.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3705);
 	assert_eq!(f.properties().audio_bitrate(), 3);
@@ -86,8 +86,7 @@ fn test_properties_alac_without_bitrate() {
 
 #[test]
 fn test_properties_m4v() {
-	let mut file = temp_file!("tests/taglib/data/blank_video.m4v");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/blank_video.m4v");
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 975);
 	assert_eq!(f.properties().audio_bitrate(), 96);
@@ -107,8 +106,7 @@ fn test_check_valid() {
 #[test]
 fn test_has_tag() {
 	{
-		let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
-		let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+		let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 		assert!(f.ilst().is_some());
 	}
 
@@ -241,15 +239,13 @@ fn test_64bit_atom() {}
 
 #[test]
 fn test_gnre() {
-	let mut file = temp_file!("tests/taglib/data/gnre.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/gnre.m4a");
 	assert_eq!(f.ilst().unwrap().genre().as_deref(), Some("Ska"));
 }
 
 #[test]
 fn test_covr_read() {
-	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 	let tag = f.ilst().unwrap();
 	assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
 	let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
@@ -314,8 +310,7 @@ fn test_covr_write() {
 
 #[test]
 fn test_covr_read2() {
-	let mut file = temp_file!("tests/taglib/data/covr-junk.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/covr-junk.m4a");
 	let tag = f.ilst().unwrap();
 	assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
 	let mut covrs = tag.get(&AtomIdent::Fourcc(*b"covr")).unwrap().data();
@@ -353,8 +348,7 @@ fn test_properties_movement() {
 
 #[test]
 fn test_fuzzed_file() {
-	let mut file = temp_file!("tests/taglib/data/infloop.m4a");
-	let _ = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let _f = get_file::<Mp4File>("tests/taglib/data/infloop.m4a");
 }
 
 #[test]
@@ -386,8 +380,7 @@ fn test_repeated_save() {
 
 #[test]
 fn test_with_zero_length_atom() {
-	let mut file = temp_file!("tests/taglib/data/zero-length-mdat.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/zero-length-mdat.m4a");
 	assert_eq!(f.properties().duration().as_millis(), 1115);
 	assert_eq!(f.properties().sample_rate(), 22050);
 }
@@ -450,8 +443,7 @@ fn test_remove_metadata() {
 
 #[test]
 fn test_non_full_meta_atom() {
-	let mut file = temp_file!("tests/taglib/data/non-full-meta.m4a");
-	let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<Mp4File>("tests/taglib/data/non-full-meta.m4a");
 	assert!(f.ilst().is_some());
 
 	let tag = f.ilst().unwrap();

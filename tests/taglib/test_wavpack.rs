@@ -1,4 +1,5 @@
 use crate::temp_file;
+use crate::util::get_file;
 
 use std::io::Seek;
 
@@ -9,8 +10,7 @@ use lofty::{Accessor, AudioFile, ParseOptions};
 
 #[test]
 fn test_no_length_properties() {
-	let mut file = temp_file!("tests/taglib/data/no_length.wv");
-	let f = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavPackFile>("tests/taglib/data/no_length.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3705);
 	assert_eq!(f.properties().audio_bitrate(), 1);
@@ -24,8 +24,7 @@ fn test_no_length_properties() {
 
 #[test]
 fn test_multi_channel_properties() {
-	let mut file = temp_file!("tests/taglib/data/four_channels.wv");
-	let f = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavPackFile>("tests/taglib/data/four_channels.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3833);
 	assert_eq!(f.properties().audio_bitrate(), 112);
@@ -39,8 +38,7 @@ fn test_multi_channel_properties() {
 
 #[test]
 fn test_dsd_stereo_properties() {
-	let mut file = temp_file!("tests/taglib/data/dsd_stereo.wv");
-	let f = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavPackFile>("tests/taglib/data/dsd_stereo.wv");
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 200);
 	assert_eq!(f.properties().audio_bitrate(), 2096);
@@ -54,8 +52,7 @@ fn test_dsd_stereo_properties() {
 
 #[test]
 fn test_non_standard_rate_properties() {
-	let mut file = temp_file!("tests/taglib/data/non_standard_rate.wv");
-	let f = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavPackFile>("tests/taglib/data/non_standard_rate.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3675);
 	assert_eq!(f.properties().audio_bitrate(), 0);
@@ -69,8 +66,7 @@ fn test_non_standard_rate_properties() {
 
 #[test]
 fn test_tagged_properties() {
-	let mut file = temp_file!("tests/taglib/data/tagged.wv");
-	let f = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = get_file::<WavPackFile>("tests/taglib/data/tagged.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3550);
 	assert_eq!(f.properties().audio_bitrate(), 172);
@@ -84,8 +80,7 @@ fn test_tagged_properties() {
 
 #[test]
 fn test_fuzzed_file() {
-	let mut file = temp_file!("tests/taglib/data/infloop.wv");
-	let _ = WavPackFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let _f = get_file::<WavPackFile>("tests/taglib/data/infloop.wv");
 }
 
 #[test]
