@@ -127,6 +127,39 @@ where
 		}
 
 		let flags = block_header.flags;
+		let sample_rate_idx = ((flags >> 23) & 0xF) as usize;
+
+		// In the case of non-standard sample rates and DSD audio, we need to actually read the
+		// block to get the sample rate
+		if properties.sample_rate == 0 || flags & FLAG_DSD == FLAG_DSD {
+			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
+			if reader.read_exact(&mut block_contents).is_err() {
+				parse_mode_choice!(
+						parse_mode,
+						STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
+						DEFAULT: break
+					);
+			}
+
+			if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
+			{
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: return Err(e),
+					DEFAULT: break
+				);
+			}
+
+			// A sample rate index of 15 indicates a custom sample rate, which should have been found
+			// when we just parsed the metadata blocks
+			if sample_rate_idx == 15 && properties.sample_rate == 0 {
+				parse_mode_choice!(
+					parse_mode,
+					STRICT: decode_err!(@BAIL WavPack, "Expected custom sample rate"),
+					DEFAULT: break
+				)
+			}
+		}
 
 		if flags & FLAG_INITIAL_BLOCK == FLAG_INITIAL_BLOCK {
 			if block_header.version < MIN_STREAM_VERSION
@@ -142,46 +175,22 @@ where
 			total_samples = block_header.total_samples;
 			properties.bit_depth = ((((flags & BYTES_PER_SAMPLE_MASK) + 1) * 8) - ((flags & BIT_DEPTH_SHIFT_MASK) >> BIT_DEPTH_SHL)) as u8;
 
-			let sample_rate_idx = ((flags >> 23) & 0xF) as usize;
 			let sample_rate = SAMPLE_RATES[sample_rate_idx];
 			properties.sample_rate = sample_rate;
 
 			properties.version = block_header.version;
 			properties.lossless = flags & FLAG_HYBRID_COMPRESSION == 0;
 
-			let is_mono = flags & FLAG_MONO > 0;
-			properties.channels = if is_mono { 1 } else { 2 };
 
-			// In the case of non-standard sample rates and DSD audio, we need to actually read the
-			// block to get the sample rate
-			if sample_rate == 0 || flags & FLAG_DSD == FLAG_DSD {
-				let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
-				if reader.read_exact(&mut block_contents).is_err() {
-					parse_mode_choice!(
-						parse_mode,
-						STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
-						DEFAULT: break
-					);
-				}
-
-				if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
-				{
-					parse_mode_choice!(
-						parse_mode,
-						STRICT: return Err(e),
-						DEFAULT: break
-					);
-				}
-			}
-
-			// A sample rate index of 15 indicates a custom sample rate, which should have been found
-			// when we just parsed the metadata blocks
-			if sample_rate_idx == 15 && properties.sample_rate == 0 {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Expected custom sample rate"),
-					DEFAULT: break
-				)
+			// https://web.archive.org/web/20150424062034/https://www.wavpack.com/file_format.txt:
+			//
+			// A flag in the header indicates whether the block is the first or the last in the
+			// sequence (for simple mono or stereo files both of these would always be set).
+			//
+			// We already checked if `FLAG_INITIAL_BLOCK` is set
+			if flags & FLAG_FINAL_BLOCK > 0 {
+				let is_mono = flags & FLAG_MONO > 0;
+				properties.channels = if is_mono { 1 } else { 2 };
 			}
 		}
 
