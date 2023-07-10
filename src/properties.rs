@@ -123,7 +123,7 @@ mod tests {
 	use crate::aac::{AACProperties, AacFile};
 	use crate::ape::{ApeFile, ApeProperties};
 	use crate::flac::{FlacFile, FlacProperties};
-	use crate::iff::aiff::AiffFile;
+	use crate::iff::aiff::{AiffFile, AiffProperties};
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
@@ -136,7 +136,7 @@ mod tests {
 	};
 	use crate::probe::ParseOptions;
 	use crate::wavpack::{WavPackFile, WavPackProperties};
-	use crate::{AudioFile, ChannelMask, FileProperties};
+	use crate::{AudioFile, ChannelMask};
 
 	use std::fs::File;
 	use std::time::Duration;
@@ -157,14 +157,14 @@ mod tests {
 		original: false,
 	};
 
-	const AIFF_PROPERTIES: FileProperties = FileProperties {
+	const AIFF_PROPERTIES: AiffProperties = AiffProperties {
 		duration: Duration::from_millis(1428),
-		overall_bitrate: Some(1542),
-		audio_bitrate: Some(1536),
-		sample_rate: Some(48000),
-		bit_depth: Some(16),
-		channels: Some(2),
-		channel_mask: None,
+		overall_bitrate: 1542,
+		audio_bitrate: 1536,
+		sample_rate: 48000,
+		sample_size: 16,
+		channels: 2,
+		compression_type: None,
 	};
 
 	const APE_PROPERTIES: ApeProperties = ApeProperties {

@@ -1,3 +1,4 @@
+use super::properties::AiffProperties;
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
 use crate::error::Result;
@@ -5,24 +6,34 @@ use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::{decode_err, err};
 use crate::probe::ParseOptions;
-use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<()>
+/// Whether we are dealing with an AIFC file
+#[derive(Eq, PartialEq)]
+pub(in crate::iff) enum CompressionPresent {
+	Yes,
+	No,
+}
+
+pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<CompressionPresent>
 where
 	R: Read + Seek,
 {
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if !(&id[..4] == b"FORM" && (&id[8..] == b"AIFF" || &id[8..] == b"AIFC")) {
+	if !(&id[..4] == b"FORM") {
 		err!(UnknownFormat);
 	}
 
-	Ok(())
+	match &id[8..] {
+		b"AIFF" => Ok(CompressionPresent::No),
+		b"AIFC" => Ok(CompressionPresent::Yes),
+		_ => err!(UnknownFormat),
+	}
 }
 
 pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<AiffFile>
@@ -31,7 +42,7 @@ where
 {
 	// TODO: Maybe one day the `Seek` bound can be removed?
 	// let file_size = verify_aiff(data)?;
-	verify_aiff(data)?;
+	let compression_present = verify_aiff(data)?;
 
 	let current_pos = data.stream_position()?;
 	let file_len = data.seek(SeekFrom::End(0))?;
@@ -134,6 +145,7 @@ where
 
 				properties = super::properties::read_properties(
 					&mut &*comm,
+					compression_present,
 					stream_len,
 					data.stream_position()?,
 				)?;
@@ -141,7 +153,7 @@ where
 			None => decode_err!(@BAIL Aiff, "File does not contain a \"COMM\" chunk"),
 		}
 	} else {
-		properties = FileProperties::default();
+		properties = AiffProperties::default();
 	};
 
 	Ok(AiffFile {
