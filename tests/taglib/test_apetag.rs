@@ -2,7 +2,7 @@ use crate::temp_file;
 
 use std::io::Seek;
 
-use lofty::ape::{ApeFile, ApeItem, ApeTag};
+use lofty::ape::{ApeItem, ApeTag};
 use lofty::musepack::MpcFile;
 use lofty::{Accessor, AudioFile, ItemValue, ParseOptions, TagExt};
 
