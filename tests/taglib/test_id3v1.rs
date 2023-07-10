@@ -1,29 +1,9 @@
-use crate::temp_file;
-
-use std::io::Seek;
-
-use lofty::id3::v1::{Id3v1Tag, GENRES};
-use lofty::mpeg::MpegFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::id3::v1::GENRES;
 
 #[test]
-#[ignore] // TODO: We probably should be stripping whitespace
+#[ignore]
 fn test_strip_whitespace() {
-	let mut file = temp_file!("tests/taglib/data/xing.mp3");
-	{
-		let mut f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut tag = Id3v1Tag::default();
-		tag.set_artist(String::from("Artist     "));
-		f.set_id3v1(tag);
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert_eq!(f.id3v1().unwrap().artist().as_deref(), Some("Artist"));
-	}
+	// Marker test, we'd be overstepping to remove trailing whitespace that may be intentional
 }
 
 #[test]
