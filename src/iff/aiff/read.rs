@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// Whether we are dealing with an AIFC file
-#[derive(Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub(in crate::iff) enum CompressionPresent {
 	Yes,
 	No,
@@ -25,7 +25,7 @@ where
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if !(&id[..4] == b"FORM") {
+	if &id[..4] != b"FORM" {
 		err!(UnknownFormat);
 	}
 
