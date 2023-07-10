@@ -243,19 +243,19 @@ fn test_file_resolver() {
 		}
 
 		fn save_to(&self, _: &mut File) -> lofty::Result<()> {
-			todo!()
+			unimplemented!()
 		}
 
 		fn properties(&self) -> &Self::Properties {
-			todo!()
+			unimplemented!()
 		}
 
 		fn contains_tag(&self) -> bool {
-			todo!()
+			unimplemented!()
 		}
 
 		fn contains_tag_type(&self, _: TagType) -> bool {
-			todo!()
+			unimplemented!()
 		}
 	}
 
@@ -265,11 +265,11 @@ fn test_file_resolver() {
 		}
 
 		fn primary_tag_type() -> TagType {
-			todo!()
+			unimplemented!()
 		}
 
 		fn supported_tag_types() -> &'static [TagType] {
-			todo!()
+			unimplemented!()
 		}
 
 		fn guess(_: &[u8]) -> Option<FileType> {
