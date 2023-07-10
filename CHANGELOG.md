@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**:
   - `Id3v2ErrorKind::UnsupportedFrameId` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/212))
   - `FrameValue::KeyValue` for TIPL/TMCL frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
+  - `Id3v2Tag::get_user_text` and `Id3v2Tag::insert_user_text` for working with TXXX frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/232))
 - **ParseOptions**: `ParseOptions::max_junk_bytes`, allowing the parser to sift through junk bytes to find required information, rather than
                     immediately declare a file invalid. ([discussion](https://github.com/Serial-ATA/lofty-rs/discussions/219)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/227))
 - **WavPack**: `WavPackProperties` now contains the channel mask, accessible through `WavPackProperties::channel_mask()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/230))
