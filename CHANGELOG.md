@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ParseOptions**: `ParseOptions::max_junk_bytes`, allowing the parser to sift through junk bytes to find required information, rather than
                     immediately declare a file invalid. ([discussion](https://github.com/Serial-ATA/lofty-rs/discussions/219)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/227))
 - **WavPack**: `WavPackProperties` now contains the channel mask, accessible through `WavPackProperties::channel_mask()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/230))
+- **AIFF**:
+  - `AiffProperties` to hold additional AIFF-specific information
+  - AIFC compression types are now exposed through `AiffCompressionType`
 
 ## Changed
 - **ID3v2**:
@@ -21,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **APE**: The default track/disk number is now `0` to line up with ID3v2.
            This is only used when `set_{track, disk}_total` is used without a corresponding `set_{track, disk}`.
 - **VorbisComments**: When writing, items larger than `u32::MAX` will throw `ErrorKind::TooMuchData`, rather than be silently discarded.
+- **AIFF**: `AiffFile` will no longer use `FileProperties`. It now uses `AiffProperties`.
 
 ## Fixed
 - **APE**: Track/Disk number pairs are properly converted when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/159)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/216))

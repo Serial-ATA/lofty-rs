@@ -5,12 +5,12 @@ mod read;
 pub(crate) mod tag;
 
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::properties::FileProperties;
 
 use lofty_attr::LoftyFile;
 
 // Exports
 
+pub use properties::{AiffCompressionType, AiffProperties};
 pub use tag::{AIFFTextChunks, Comment};
 
 /// An AIFF file
@@ -25,5 +25,5 @@ pub struct AiffFile {
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,
 	/// The file's audio properties
-	pub(crate) properties: FileProperties,
+	pub(crate) properties: AiffProperties,
 }
