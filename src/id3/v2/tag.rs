@@ -26,6 +26,7 @@ use std::path::Path;
 
 use lofty_attr::tag;
 
+const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";
 const COMMENT_FRAME_ID: &str = "COMM";
 
 const V4_MULTI_VALUE_SEPARATOR: char = '\0';
@@ -169,6 +170,8 @@ impl Id3v2Tag {
 
 	/// Gets the text for a frame
 	///
+	/// NOTE: This will not work for `TXXX` frames, use [`Id3v2Tag::get_user_text`] for that.
+	///
 	/// If the tag is [`Id3v2Version::V4`], this will allocate if the text contains any
 	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
 	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
@@ -188,6 +191,82 @@ impl Id3v2Tag {
 		}
 
 		None
+	}
+
+	/// Gets the text for a user-defined frame
+	///
+	/// NOTE: If the tag is [`Id3v2Version::V4`], there could be multiple values separated by null characters (`'\0'`).
+	///       The caller is responsible for splitting these values as necessary.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::Id3v2Tag;
+	///
+	/// let mut tag = Id3v2Tag::new();
+	///
+	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
+	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
+	///
+	/// // Now we can get the value back using the description
+	/// let value = tag.get_user_text("SOME_DESCRIPTION");
+	/// assert_eq!(value, Some("Some value"));
+	/// ```
+	pub fn get_user_text(&self, description: &str) -> Option<&str> {
+		self.frames
+			.iter()
+			.filter(|frame| frame.id.as_str() == "TXXX")
+			.find_map(|frame| match frame {
+				Frame {
+					value:
+						FrameValue::UserText(ExtendedTextFrame {
+							description: desc,
+							content,
+							..
+						}),
+					..
+				} if desc == description => Some(content.as_str()),
+				_ => None,
+			})
+	}
+
+	/// Inserts a new user-defined text frame (`TXXX`)
+	///
+	/// NOTE: The encoding will be UTF-8
+	///
+	/// This will replace any TXXX frame with the same description, see [`Id3v2Tag::insert`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::Id3v2Tag;
+	/// use lofty::TagExt;
+	///
+	/// let mut tag = Id3v2Tag::new();
+	///
+	/// assert!(tag.is_empty());
+	///
+	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
+	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
+	///
+	/// // Now we can get the value back using `get_user_text`
+	/// let value = tag.get_user_text("SOME_DESCRIPTION");
+	/// assert_eq!(value, Some("Some value"));
+	/// ```
+	pub fn insert_user_text(
+		&mut self,
+		description: String,
+		content: String,
+	) -> Option<Frame<'static>> {
+		self.insert(Frame {
+			id: FrameId::Valid(Cow::Borrowed(USER_DEFINED_TEXT_FRAME_ID)),
+			value: FrameValue::UserText(ExtendedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description,
+				content,
+			}),
+			flags: FrameFlags::default(),
+		})
 	}
 
 	/// Inserts a [`Frame`]
@@ -2113,5 +2192,52 @@ mod tests {
 			},
 			_ => unreachable!(),
 		}
+	}
+
+	#[test]
+	fn get_set_user_defined_text() {
+		let description = String::from("FOO_BAR");
+		let content = String::from("Baz!\0Qux!");
+
+		let mut id3v2 = Id3v2Tag::default();
+		let txxx_frame = Frame::new(
+			"TXXX",
+			ExtendedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: description.clone(),
+				content: content.clone(),
+			},
+			FrameFlags::default(),
+		)
+		.unwrap();
+
+		id3v2.insert(txxx_frame.clone());
+
+		// Insert another to verify we can search through multiple
+		let txxx_frame2 = Frame::new(
+			"TXXX",
+			ExtendedTextFrame {
+				encoding: TextEncoding::UTF8,
+				description: String::from("FOO_BAR_2"),
+				content: String::new(),
+			},
+			FrameFlags::default(),
+		)
+		.unwrap();
+		id3v2.insert(txxx_frame2);
+
+		// We cannot get user defined texts through `get_text`
+		assert!(id3v2.get_text("TXXX").is_none());
+
+		assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
+
+		// Wipe the tag
+		id3v2.clear();
+
+		// Same thing process as above, using simplified setter
+		assert!(id3v2
+			.insert_user_text(description.clone(), content.clone())
+			.is_none());
+		assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
 	}
 }
