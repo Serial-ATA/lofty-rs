@@ -3,6 +3,7 @@ use crate::temp_file;
 use std::io::Seek;
 
 use lofty::ape::{ApeFile, ApeItem, ApeTag};
+use lofty::musepack::MpcFile;
 use lofty::{Accessor, AudioFile, ItemValue, ParseOptions, TagExt};
 
 #[test]
@@ -92,25 +93,23 @@ fn test_text_binary() {
 #[test]
 #[ignore]
 fn test_id3v1_collision() {
-	// TODO: This uses a musepack file in the TagLib test suite. It makes no difference for this test, but should
-	//       be changed once Musepack is supported in Lofty.
-	let mut file = temp_file!("tests/taglib/data/no-tags.ape");
+	let mut file = temp_file!("tests/taglib/data/no-tags.mpc");
 	{
-		let mut ape_file =
-			ApeFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
-		assert!(ape_file.ape().is_none());
-		assert!(ape_file.id3v1().is_none());
+		let mut mpc_file =
+			MpcFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
+		assert!(mpc_file.ape().is_none());
+		assert!(mpc_file.id3v1().is_none());
 
 		let mut ape_tag = ApeTag::default();
 		ape_tag.set_artist(String::from("Filltointersect    "));
 		ape_tag.set_title(String::from("Filltointersect    "));
-		ape_file.set_ape(ape_tag);
-		ape_file.save_to(&mut file).unwrap();
+		mpc_file.set_ape(ape_tag);
+		mpc_file.save_to(&mut file).unwrap();
 	}
 	{
 		file.rewind().unwrap();
-		let ape_file =
-			ApeFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
-		assert!(ape_file.id3v1().is_none());
+		let mpc_file =
+			MpcFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
+		assert!(mpc_file.id3v1().is_none());
 	}
 }
