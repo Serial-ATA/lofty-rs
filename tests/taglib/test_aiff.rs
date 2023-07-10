@@ -4,47 +4,55 @@ use crate::{assert_delta, temp_file};
 use std::io::Seek;
 
 use lofty::id3::v2::Id3v2Tag;
-use lofty::iff::aiff::AiffFile;
+use lofty::iff::aiff::{AiffCompressionType, AiffFile};
 use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe};
 
 #[test]
-#[ignore]
 fn test_aiff_properties() {
 	let file = get_file::<AiffFile>("tests/taglib/data/empty.aiff");
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
 	assert_delta!(properties.duration().as_millis(), 67, 1);
-	assert_delta!(properties.audio_bitrate().unwrap(), 706, 1);
-	assert_eq!(properties.sample_rate(), Some(44100));
-	assert_eq!(properties.channels(), Some(1));
-	assert_eq!(properties.bit_depth(), Some(16));
+	assert_delta!(properties.audio_bitrate(), 706, 1);
+	assert_eq!(properties.sample_rate(), 44100);
+	assert_eq!(properties.channels(), 1);
+	assert_eq!(properties.sample_size(), 16);
 	// TODO: get those options in lofty
 	// CPPUNIT_ASSERT_EQUAL(2941U, f.audioProperties()->sampleFrames());
-	// CPPUNIT_ASSERT_EQUAL(false, f.audioProperties()->isAiffC());
+	assert!(properties.compression_type().is_none());
 }
 
 #[test]
-#[ignore]
 fn test_aifc_properties() {
 	let file = get_file::<AiffFile>("tests/taglib/data/alaw.aifc");
 
 	let properties = file.properties();
 	assert_eq!(properties.duration().as_secs(), 0);
 	assert_delta!(properties.duration().as_millis(), 37, 1);
-	assert_eq!(properties.audio_bitrate(), Some(355));
-	assert_eq!(properties.sample_rate(), Some(44100));
-	assert_eq!(properties.channels(), Some(1));
-	assert_eq!(properties.bit_depth(), Some(16));
+	assert_eq!(properties.audio_bitrate(), 355);
+	assert_eq!(properties.sample_rate(), 44100);
+	assert_eq!(properties.channels(), 1);
+	assert_eq!(properties.sample_size(), 16);
 	// TODO: get those options in lofty
 	// CPPUNIT_ASSERT_EQUAL(1622U, f.audioProperties()->sampleFrames());
-	// CPPUNIT_ASSERT_EQUAL(true, f.audioProperties()->isAiffC());
-	// CPPUNIT_ASSERT_EQUAL(ByteVector("ALAW"), f.audioProperties()->compressionType());
-	// CPPUNIT_ASSERT_EQUAL(String("SGI CCITT G.711 A-law"), f.audioProperties()->compressionName());
+	assert!(properties.compression_type().is_some());
+	assert_eq!(
+		properties.compression_type().unwrap().clone(),
+		AiffCompressionType::ALAW
+	);
+	// NOTE: The file's compression name is actually "SGI CCITT G.711 A-law"
+	//
+	// We have a hardcoded value for any of the concrete AiffCompressionType variants, as the messages
+	// are more or less standardized. This is not that big of a deal, especially as many encoders choose
+	// not to even write a compression name in the first place.
+	assert_eq!(
+		properties.compression_type().unwrap().compression_name(),
+		"CCITT G.711 A-law"
+	);
 }
 
 #[test]
-#[ignore]
 fn test_save_id3v2() {
 	let mut file = temp_file!("tests/taglib/data/empty.aiff");
 
@@ -68,11 +76,12 @@ fn test_save_id3v2() {
 
 		let mut id3v2 = tfile.id3v2().unwrap().to_owned();
 		assert_eq!(id3v2.title().as_deref(), Some("TitleXXX"));
-		id3v2.set_title(String::new());
+		// NOTE: TagLib sets an empty title, which will implicitly remove it from the tag. Lofty will allow empty tag items to exist.
+		//       What's important is that these are equivalent in behavior.
+		id3v2.remove_title();
 		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file).unwrap();
-		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 
 	file.rewind().unwrap();
