@@ -10,9 +10,9 @@ readme = "README.md"
 include = ["src", "Cargo.toml", "../LICENSE-*"]
 
 [dependencies]
-syn = { version = "2.0.15", features = ["full", "parsing"] }
-quote = "1.0.26"
-proc-macro2 = "1.0.56"
+syn = { version = "2.0.25", features = ["full", "parsing"] }
+quote = "1.0.29"
+proc-macro2 = "1.0.64"
 
 [lib]
 proc-macro = true
