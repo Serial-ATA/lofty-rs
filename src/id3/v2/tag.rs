@@ -283,6 +283,42 @@ impl Id3v2Tag {
 		replaced
 	}
 
+	/// Removes a user-defined text frame (`TXXX`) by its description
+	///
+	/// This will return the matching frame.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::Id3v2Tag;
+	/// use lofty::TagExt;
+	///
+	/// let mut tag = Id3v2Tag::new();
+	/// assert!(tag.is_empty());
+	///
+	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
+	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
+	/// assert!(!tag.is_empty());
+	///
+	/// // Now we can remove it by its description
+	/// let value = tag.remove_user_text("SOME_DESCRIPTION");
+	/// assert!(tag.is_empty());
+	/// ```
+	pub fn remove_user_text(&mut self, description: &str) -> Option<Frame<'static>> {
+		self.frames
+			.iter()
+			.position(|frame| {
+				matches!(frame, Frame {
+                     value:
+                         FrameValue::UserText(ExtendedTextFrame {
+                             description: desc, ..
+                         }),
+                     ..
+                 } if desc == description)
+			})
+			.map(|pos| self.frames.remove(pos))
+	}
+
 	/// Removes a [`Frame`] by id
 	pub fn remove(&mut self, id: &str) {
 		self.frames.retain(|f| f.id_str() != id)
@@ -2198,6 +2234,8 @@ mod tests {
 	fn get_set_user_defined_text() {
 		let description = String::from("FOO_BAR");
 		let content = String::from("Baz!\0Qux!");
+		let description2 = String::from("FOO_BAR_2");
+		let content2 = String::new();
 
 		let mut id3v2 = Id3v2Tag::default();
 		let txxx_frame = Frame::new(
@@ -2218,8 +2256,8 @@ mod tests {
 			"TXXX",
 			ExtendedTextFrame {
 				encoding: TextEncoding::UTF8,
-				description: String::from("FOO_BAR_2"),
-				content: String::new(),
+				description: description2.clone(),
+				content: content2.clone(),
 			},
 			FrameFlags::default(),
 		)
@@ -2238,6 +2276,17 @@ mod tests {
 		assert!(id3v2
 			.insert_user_text(description.clone(), content.clone())
 			.is_none());
+		assert!(id3v2
+			.insert_user_text(description2.clone(), content2.clone())
+			.is_none());
 		assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
+
+		// Remove one frame
+		assert!(id3v2.remove_user_text(&description).is_some());
+		assert!(!id3v2.is_empty());
+
+		// Now clear the remaining item
+		assert!(id3v2.remove_user_text(&description2).is_some());
+		assert!(id3v2.is_empty());
 	}
 }
