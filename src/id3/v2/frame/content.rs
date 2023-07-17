@@ -2,8 +2,8 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
-	Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame, UniqueFileIdentifierFrame,
-	UnsynchronizedTextFrame, UrlLinkFrame,
+	OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame,
+	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
@@ -32,6 +32,7 @@ pub(super) fn parse_content<R: Read>(
 		"TIPL" | "TMCL" => KeyValueFrame::parse(reader, version)?.map(FrameValue::KeyValue),
 		"UFID" => UniqueFileIdentifierFrame::parse(reader, parse_mode)?.map(FrameValue::UniqueFileIdentifier),
 		"RVA2" => RelativeVolumeAdjustmentFrame::parse(reader, parse_mode)?.map(FrameValue::RelativeVolumeAdjustment),
+		"OWNE" => OwnershipFrame::parse(reader)?.map(FrameValue::Ownership),
 		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)

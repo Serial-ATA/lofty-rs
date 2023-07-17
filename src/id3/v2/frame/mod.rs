@@ -5,8 +5,8 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
-	Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame, UniqueFileIdentifierFrame,
-	UnsynchronizedTextFrame, UrlLinkFrame,
+	OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame,
+	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::Id3v2Version;
@@ -184,6 +184,8 @@ pub enum FrameValue {
 	RelativeVolumeAdjustment(RelativeVolumeAdjustmentFrame),
 	/// Unique file identifier
 	UniqueFileIdentifier(UniqueFileIdentifierFrame),
+	/// Represents an "OWNE" frame
+	Ownership(OwnershipFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -292,6 +294,7 @@ impl FrameValue {
 			FrameValue::KeyValue(content) => content.as_bytes(),
 			FrameValue::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
+			FrameValue::Ownership(frame) => frame.as_bytes()?,
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}
