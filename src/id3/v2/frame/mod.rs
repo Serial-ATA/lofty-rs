@@ -5,8 +5,8 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
-	Popularimeter, TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
-	UrlLinkFrame,
+	Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame, UniqueFileIdentifierFrame,
+	UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::Id3v2Version;
@@ -15,7 +15,6 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::TextEncoding;
 use id::FrameId;
-
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
@@ -181,6 +180,10 @@ pub enum FrameValue {
 	Popularimeter(Popularimeter),
 	/// Represents an "IPLS" or "TPIL" frame
 	KeyValue(KeyValueFrame),
+	/// Represents an "RVA2" frame
+	RelativeVolumeAdjustment(RelativeVolumeAdjustmentFrame),
+	/// Unique file identifier
+	UniqueFileIdentifier(UniqueFileIdentifierFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -190,8 +193,6 @@ pub enum FrameValue {
 	/// * This is used for **all** frames with an ID of [`FrameId::Outdated`]
 	/// * This is used for unknown frames
 	Binary(Vec<u8>),
-	/// Unique file identifier
-	UniqueFileIdentifier(UniqueFileIdentifierFrame),
 }
 
 impl TryFrom<ItemValue> for FrameValue {
@@ -289,8 +290,9 @@ impl FrameValue {
 			FrameValue::Picture(attached_picture) => attached_picture.as_bytes(Id3v2Version::V4)?,
 			FrameValue::Popularimeter(popularimeter) => popularimeter.as_bytes(),
 			FrameValue::KeyValue(content) => content.as_bytes(),
-			FrameValue::Binary(binary) => binary.clone(),
+			FrameValue::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
+			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}
 }

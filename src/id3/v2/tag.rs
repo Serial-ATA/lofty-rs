@@ -904,7 +904,9 @@ impl SplitTag for Id3v2Tag {
 							ItemValue::Binary(popularimeter.as_bytes())
 						},
 						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
-						FrameValue::KeyValue(_) | FrameValue::UniqueFileIdentifier(_) => {
+						FrameValue::KeyValue(_)
+						| FrameValue::UniqueFileIdentifier(_)
+						| FrameValue::RelativeVolumeAdjustment(_) => {
 							return true; // Keep unsupported frame
 						},
 					};

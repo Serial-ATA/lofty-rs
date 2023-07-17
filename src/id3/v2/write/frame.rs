@@ -49,8 +49,9 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 				FrameValue::Picture { .. } => "Picture",
 				FrameValue::Popularimeter(_) => "Popularimeter",
 				FrameValue::KeyValue(_) => "KeyValue",
-				FrameValue::Binary(_) => "Binary",
 				FrameValue::UniqueFileIdentifier(_) => "UniqueFileIdentifier",
+				FrameValue::RelativeVolumeAdjustment(_) => "RelativeVolumeAdjustment",
+				FrameValue::Binary(_) => "Binary",
 			},
 		))
 		.into()),
