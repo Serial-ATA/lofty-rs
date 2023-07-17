@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changed
+- **ID3v2**: For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
+             in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
+
 ## [0.15.0] - 2023-07-11
 
 ## Added
