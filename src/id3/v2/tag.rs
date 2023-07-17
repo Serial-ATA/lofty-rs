@@ -48,7 +48,7 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					self.remove($id)
+					let _ = self.remove($id);
 				}
 			)+
 		}
@@ -273,6 +273,17 @@ impl Id3v2Tag {
 	///
 	/// This will replace any frame of the same id (**or description!** See [`ExtendedTextFrame`])
 	pub fn insert(&mut self, frame: Frame<'static>) -> Option<Frame<'static>> {
+		// Some frames can only appear once in a tag, handle them separately
+		const ONE_PER_TAG: [&str; 11] = [
+			"MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", "ASPI",
+		];
+
+		if ONE_PER_TAG.contains(&frame.id_str()) {
+			let ret = self.remove(frame.id_str()).next();
+			self.frames.push(frame);
+			return ret;
+		}
+
 		let replaced = self
 			.frames
 			.iter()
@@ -320,8 +331,18 @@ impl Id3v2Tag {
 	}
 
 	/// Removes a [`Frame`] by id
-	pub fn remove(&mut self, id: &str) {
-		self.frames.retain(|f| f.id_str() != id)
+	pub fn remove(&mut self, id: &str) -> impl Iterator<Item = Frame<'static>> + '_ {
+		// TODO: drain_filter
+		let mut split_idx = 0_usize;
+
+		for read_idx in 0..self.frames.len() {
+			if self.frames[read_idx].id_str().eq_ignore_ascii_case(id) {
+				self.frames.swap(split_idx, read_idx);
+				split_idx += 1;
+			}
+		}
+
+		self.frames.drain(..split_idx)
 	}
 
 	/// Retains [`Frame`]s by evaluating the predicate
@@ -525,7 +546,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_track(&mut self) {
-		self.remove("TRCK");
+		let _ = self.remove("TRCK");
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -538,7 +559,7 @@ impl Accessor for Id3v2Tag {
 
 	fn remove_track_total(&mut self) {
 		let existing_track_number = self.track();
-		self.remove("TRCK");
+		let _ = self.remove("TRCK");
 
 		if let Some(track) = existing_track_number {
 			self.insert(Frame::text(Cow::Borrowed("TRCK"), track.to_string()));
@@ -554,7 +575,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_disk(&mut self) {
-		self.remove("TPOS");
+		let _ = self.remove("TPOS");
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -567,7 +588,7 @@ impl Accessor for Id3v2Tag {
 
 	fn remove_disk_total(&mut self) {
 		let existing_track_number = self.track();
-		self.remove("TPOS");
+		let _ = self.remove("TPOS");
 
 		if let Some(track) = existing_track_number {
 			self.insert(Frame::text(Cow::Borrowed("TPOS"), track.to_string()));
@@ -591,7 +612,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove("TDRC");
+		let _ = self.remove("TDRC");
 	}
 
 	fn comment(&self) -> Option<Cow<'_, str>> {
@@ -906,7 +927,8 @@ impl SplitTag for Id3v2Tag {
 						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
 						FrameValue::KeyValue(_)
 						| FrameValue::UniqueFileIdentifier(_)
-						| FrameValue::RelativeVolumeAdjustment(_) => {
+						| FrameValue::RelativeVolumeAdjustment(_)
+						| FrameValue::Ownership(_) => {
 							return true; // Keep unsupported frame
 						},
 					};
