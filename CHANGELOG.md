@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Added
+- **ID3v2**: Support for "RVA2", "OWNE", "ETCO", and "PRIV" frames through
+             `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}`
+
 ## Changed
 - **ID3v2**: For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
              in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
