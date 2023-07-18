@@ -329,6 +329,27 @@ impl FrameValue {
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}
+
+	/// Used for errors in write::frame::verify_frame
+	pub(super) fn name(&self) -> &'static str {
+		match self {
+			FrameValue::Comment(_) => "Comment",
+			FrameValue::UnsynchronizedText(_) => "UnsynchronizedText",
+			FrameValue::Text { .. } => "Text",
+			FrameValue::UserText(_) => "UserText",
+			FrameValue::Url(_) => "Url",
+			FrameValue::UserUrl(_) => "UserUrl",
+			FrameValue::Picture { .. } => "Picture",
+			FrameValue::Popularimeter(_) => "Popularimeter",
+			FrameValue::KeyValue(_) => "KeyValue",
+			FrameValue::UniqueFileIdentifier(_) => "UniqueFileIdentifier",
+			FrameValue::RelativeVolumeAdjustment(_) => "RelativeVolumeAdjustment",
+			FrameValue::Ownership(_) => "Ownership",
+			FrameValue::EventTimingCodes(_) => "EventTimingCodes",
+			FrameValue::Private(_) => "Private",
+			FrameValue::Binary(_) => "Binary",
+		}
+	}
 }
 
 /// Various flags to describe the content of an item

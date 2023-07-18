@@ -39,23 +39,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
 		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
 			id.to_string(),
-			match frame_value {
-				FrameValue::Comment(_) => "Comment",
-				FrameValue::UnsynchronizedText(_) => "UnsynchronizedText",
-				FrameValue::Text { .. } => "Text",
-				FrameValue::UserText(_) => "UserText",
-				FrameValue::Url(_) => "Url",
-				FrameValue::UserUrl(_) => "UserUrl",
-				FrameValue::Picture { .. } => "Picture",
-				FrameValue::Popularimeter(_) => "Popularimeter",
-				FrameValue::KeyValue(_) => "KeyValue",
-				FrameValue::UniqueFileIdentifier(_) => "UniqueFileIdentifier",
-				FrameValue::RelativeVolumeAdjustment(_) => "RelativeVolumeAdjustment",
-				FrameValue::Ownership(_) => "Ownership",
-				FrameValue::EventTimingCodes(_) => "EventTimingCodes",
-				FrameValue::Private(_) => "Private",
-				FrameValue::Binary(_) => "Binary",
-			},
+			frame_value.name(),
 		))
 		.into()),
 	}
