@@ -1,6 +1,7 @@
 mod attached_picture_frame;
 mod audio_text_frame;
 mod encapsulated_object;
+mod event_timing_codes_frame;
 mod extended_text_frame;
 mod extended_url_frame;
 mod identifier;
@@ -16,6 +17,7 @@ mod url_link_frame;
 pub use attached_picture_frame::AttachedPictureFrame;
 pub use audio_text_frame::{scramble, AudioTextFrame, AudioTextFrameFlags};
 pub use encapsulated_object::GeneralEncapsulatedObject;
+pub use event_timing_codes_frame::{Event, EventTimingCodesFrame, EventType};
 pub use extended_text_frame::ExtendedTextFrame;
 pub use extended_url_frame::ExtendedUrlFrame;
 pub use identifier::UniqueFileIdentifierFrame;

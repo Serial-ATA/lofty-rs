@@ -99,7 +99,7 @@ impl SynchronizedText {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
 		}
 		let timestamp_format = TimestampFormat::from_u8(data[4])
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadTimestampFormat))?;
 		let content_type = SyncTextContentType::from_u8(data[5])
 			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
