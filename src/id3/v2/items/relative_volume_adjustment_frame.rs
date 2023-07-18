@@ -101,6 +101,11 @@ impl RelativeVolumeAdjustmentFrame {
 	/// Read an [`RelativeVolumeAdjustmentFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Bad channel type (See [Id3v2ErrorKind::BadRva2ChannelType])
+	/// * Not enough data
 	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
 	where
 		R: Read,
@@ -156,11 +161,11 @@ impl RelativeVolumeAdjustmentFrame {
 			true,
 		));
 
-		for (_, info) in &self.channels {
+		for (channel_type, info) in &self.channels {
 			let mut bits_representing_peak = info.bits_representing_peak;
 			let expected_peak_byte_length = (bits_representing_peak + 7) >> 3;
 
-			content.push(info.channel_type as u8);
+			content.push(*channel_type as u8);
 			content.extend(info.volume_adjustment.to_be_bytes());
 
 			if info.peak_volume.is_none() {

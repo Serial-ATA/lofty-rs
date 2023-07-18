@@ -223,7 +223,7 @@ impl EventTimingCodesFrame {
 	/// Convert an [`EventTimingCodesFrame`] to a byte vec
 	///
 	/// NOTE: This will sort all events according to their timestamps
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = vec![self.timestamp_format as u8];
 
 		let mut sorted_events = Vec::from_iter(self.events.iter());
@@ -234,7 +234,7 @@ impl EventTimingCodesFrame {
 			content.extend(event.timestamp.to_be_bytes())
 		}
 
-		Ok(content)
+		content
 	}
 }
 
@@ -283,7 +283,7 @@ mod tests {
 
 	#[test]
 	fn etco_encode() {
-		let encoded = expected().as_bytes().unwrap();
+		let encoded = expected().as_bytes();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.etco");
