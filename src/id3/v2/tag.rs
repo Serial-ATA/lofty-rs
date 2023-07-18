@@ -929,7 +929,8 @@ impl SplitTag for Id3v2Tag {
 						| FrameValue::UniqueFileIdentifier(_)
 						| FrameValue::RelativeVolumeAdjustment(_)
 						| FrameValue::Ownership(_)
-						| FrameValue::EventTimingCodes(_) => {
+						| FrameValue::EventTimingCodes(_)
+						| FrameValue::Private(_) => {
 							return true; // Keep unsupported frame
 						},
 					};

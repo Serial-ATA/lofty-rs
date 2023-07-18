@@ -177,7 +177,7 @@ pub struct EventTimingCodesFrame {
 	/// The events
 	///
 	/// Events are guaranteed to be sorted by their timestamps when read. They can be inserted in
-	/// arbitrary order after the fact, and will be sorted against prior to writing.
+	/// arbitrary order after the fact, and will be sorted again prior to writing.
 	pub events: Vec<Event>,
 }
 

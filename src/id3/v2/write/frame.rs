@@ -53,6 +53,7 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 				FrameValue::RelativeVolumeAdjustment(_) => "RelativeVolumeAdjustment",
 				FrameValue::Ownership(_) => "Ownership",
 				FrameValue::EventTimingCodes(_) => "EventTimingCodes",
+				FrameValue::Private(_) => "Private",
 				FrameValue::Binary(_) => "Binary",
 			},
 		))

@@ -5,7 +5,7 @@ pub(super) mod read;
 
 use super::items::{
 	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
-	KeyValueFrame, OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame,
+	KeyValueFrame, OwnershipFrame, Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame,
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
@@ -189,6 +189,8 @@ pub enum FrameValue {
 	Ownership(OwnershipFrame),
 	/// Represents an "ETCO" frame
 	EventTimingCodes(EventTimingCodesFrame),
+	/// Represents a "PRIV" frame
+	Private(PrivateFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -301,6 +303,12 @@ impl From<EventTimingCodesFrame> for FrameValue {
 	}
 }
 
+impl From<PrivateFrame> for FrameValue {
+	fn from(value: PrivateFrame) -> Self {
+		Self::Private(value)
+	}
+}
+
 impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
@@ -317,6 +325,7 @@ impl FrameValue {
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 			FrameValue::Ownership(frame) => frame.as_bytes()?,
 			FrameValue::EventTimingCodes(frame) => frame.as_bytes()?,
+			FrameValue::Private(frame) => frame.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}

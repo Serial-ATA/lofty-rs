@@ -9,6 +9,7 @@ mod key_value_frame;
 pub(in crate::id3::v2) mod language_frame;
 mod ownership_frame;
 mod popularimeter;
+mod private_frame;
 mod relative_volume_adjustment_frame;
 mod sync_text;
 mod text_information_frame;
@@ -25,6 +26,7 @@ pub use key_value_frame::KeyValueFrame;
 pub use language_frame::{CommentFrame, UnsynchronizedTextFrame};
 pub use ownership_frame::OwnershipFrame;
 pub use popularimeter::Popularimeter;
+pub use private_frame::PrivateFrame;
 pub use relative_volume_adjustment_frame::{
 	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame,
 };
