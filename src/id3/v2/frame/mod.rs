@@ -277,9 +277,27 @@ impl From<KeyValueFrame> for FrameValue {
 	}
 }
 
+impl From<RelativeVolumeAdjustmentFrame> for FrameValue {
+	fn from(value: RelativeVolumeAdjustmentFrame) -> Self {
+		Self::RelativeVolumeAdjustment(value)
+	}
+}
+
 impl From<UniqueFileIdentifierFrame> for FrameValue {
 	fn from(value: UniqueFileIdentifierFrame) -> Self {
 		Self::UniqueFileIdentifier(value)
+	}
+}
+
+impl From<OwnershipFrame> for FrameValue {
+	fn from(value: OwnershipFrame) -> Self {
+		Self::Ownership(value)
+	}
+}
+
+impl From<EventTimingCodesFrame> for FrameValue {
+	fn from(value: EventTimingCodesFrame) -> Self {
+		Self::EventTimingCodes(value)
 	}
 }
 
