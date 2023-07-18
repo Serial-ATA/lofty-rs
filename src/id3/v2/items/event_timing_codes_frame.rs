@@ -260,11 +260,11 @@ mod tests {
 				},
 				Event {
 					event_type: EventType::MainPartEnd,
-					timestamp: 900000,
+					timestamp: 900_000,
 				},
 				Event {
 					event_type: EventType::AudioFileEnds,
-					timestamp: 750000000,
+					timestamp: 750_000_000,
 				},
 			],
 		}
