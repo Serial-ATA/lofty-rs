@@ -107,6 +107,8 @@ pub enum Id3v2ErrorKind {
 	MissingUfidOwner,
 	/// Arises when decoding a [`RelativeVolumeAdjustmentFrame`](crate::id3::v2::RelativeVolumeAdjustmentFrame) with an invalid channel type
 	BadRva2ChannelType,
+	/// Arises when decoding a [`TimestampFormat`](crate::id3::v2::TimestampFormat) with an invalid type
+	BadTimestampFormat,
 
 	// Compression
 	#[cfg(feature = "id3v2_compression_support")]
@@ -162,6 +164,10 @@ impl Display for Id3v2ErrorKind {
 			Self::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
 			Self::MissingUfidOwner => write!(f, "Missing owner in UFID frame"),
 			Self::BadRva2ChannelType => write!(f, "Encountered invalid channel type in RVA2 frame"),
+			Self::BadTimestampFormat => write!(
+				f,
+				"Encountered an invalid timestamp format in a synchronized frame"
+			),
 
 			// Compression
 			#[cfg(feature = "id3v2_compression_support")]

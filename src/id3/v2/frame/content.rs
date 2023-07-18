@@ -3,7 +3,7 @@ use crate::id3::v2::frame::FrameValue;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
 	OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame,
-	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame, EventTimingCodesFrame
 };
 use crate::id3::v2::Id3v2Version;
 use crate::macros::err;
@@ -33,6 +33,7 @@ pub(super) fn parse_content<R: Read>(
 		"UFID" => UniqueFileIdentifierFrame::parse(reader, parse_mode)?.map(FrameValue::UniqueFileIdentifier),
 		"RVA2" => RelativeVolumeAdjustmentFrame::parse(reader, parse_mode)?.map(FrameValue::RelativeVolumeAdjustment),
 		"OWNE" => OwnershipFrame::parse(reader)?.map(FrameValue::Ownership),
+		"ETCO" => EventTimingCodesFrame::parse(reader)?.map(FrameValue::EventTimingCodes),
 		_ if id.starts_with('T') => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)

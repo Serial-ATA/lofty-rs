@@ -4,9 +4,9 @@ pub(super) mod id;
 pub(super) mod read;
 
 use super::items::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame,
-	OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame, TextInformationFrame,
-	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
+	KeyValueFrame, OwnershipFrame, Popularimeter, RelativeVolumeAdjustmentFrame,
+	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use super::Id3v2Version;
@@ -15,6 +15,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;
 use crate::util::text::TextEncoding;
 use id::FrameId;
+
 use std::borrow::Cow;
 use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
@@ -186,6 +187,8 @@ pub enum FrameValue {
 	UniqueFileIdentifier(UniqueFileIdentifierFrame),
 	/// Represents an "OWNE" frame
 	Ownership(OwnershipFrame),
+	/// Represents an "ETCO" frame
+	EventTimingCodes(EventTimingCodesFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -295,6 +298,7 @@ impl FrameValue {
 			FrameValue::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 			FrameValue::Ownership(frame) => frame.as_bytes()?,
+			FrameValue::EventTimingCodes(frame) => frame.as_bytes()?,
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}
