@@ -73,8 +73,42 @@ impl OwnershipFrame {
 		}
 
 		bytes.extend(self.date_of_purchase.as_bytes().iter().take(8));
-		bytes.extend(encode_text(&self.seller, self.encoding, true));
+		bytes.extend(encode_text(&self.seller, self.encoding, false));
 
 		Ok(bytes)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::id3::v2::OwnershipFrame;
+	use crate::TextEncoding;
+
+	fn expected() -> OwnershipFrame {
+		OwnershipFrame {
+			encoding: TextEncoding::Latin1,
+			price_paid: String::from("USD1000"),
+			date_of_purchase: String::from("19840407"),
+			seller: String::from("FooBar"),
+		}
+	}
+
+	#[test]
+	fn owne_decode() {
+		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");
+
+		let parsed_owne = OwnershipFrame::parse(&mut &cont[..]).unwrap().unwrap();
+
+		assert_eq!(parsed_owne, expected());
+	}
+
+	#[test]
+	fn owne_encode() {
+		let encoded = expected().as_bytes().unwrap();
+
+		let expected_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");
+
+		assert_eq!(encoded, expected_bytes);
 	}
 }
