@@ -324,7 +324,7 @@ impl FrameValue {
 			FrameValue::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			FrameValue::UniqueFileIdentifier(frame) => frame.as_bytes(),
 			FrameValue::Ownership(frame) => frame.as_bytes()?,
-			FrameValue::EventTimingCodes(frame) => frame.as_bytes()?,
+			FrameValue::EventTimingCodes(frame) => frame.as_bytes(),
 			FrameValue::Private(frame) => frame.as_bytes(),
 			FrameValue::Binary(binary) => binary.clone(),
 		})

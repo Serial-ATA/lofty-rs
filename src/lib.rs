@@ -138,6 +138,7 @@
 	clippy::field_reassign_with_default,
 	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */
 	clippy::explicit_iter_loop,
+	clippy::from_iter_instead_of_collect
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 

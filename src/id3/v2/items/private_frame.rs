@@ -20,6 +20,10 @@ impl PrivateFrame {
 	/// Read an [`PrivateFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Failure to read from `reader`
 	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
 	where
 		R: Read,

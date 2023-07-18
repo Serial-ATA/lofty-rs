@@ -30,6 +30,11 @@ impl OwnershipFrame {
 	/// Read an [`OwnershipFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
+	///
+	/// # Errors
+	///
+	/// * Invalid text encoding
+	/// * Not enough data
 	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
 	where
 		R: Read,
