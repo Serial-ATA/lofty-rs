@@ -11,8 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
              `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}`
 
 ## Changed
-- **ID3v2**: For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
-             in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
+- **ID3v2**:
+  - For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
+    in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
+  - `Id3v2Tag::remove` will now take a `FrameId` rather than `&str`
+  - `FrameId` now implements `Into<Cow<'_, str>>`, making it possible to use it in `Frame::new`
 
 ## [0.15.0] - 2023-07-11
 
