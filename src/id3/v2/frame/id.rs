@@ -5,6 +5,8 @@ use crate::tag::item::ItemKey;
 use crate::tag::TagType;
 
 /// An `ID3v2` frame ID
+///
+/// ⚠ WARNING ⚠: Be very careful when constructing this by hand. It is recommended to use [`FrameId::new`].
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
 pub enum FrameId<'a> {
 	/// A valid `ID3v2.3/4` frame
@@ -19,6 +21,8 @@ pub enum FrameId<'a> {
 
 impl<'a> FrameId<'a> {
 	/// Attempts to create a `FrameId` from an ID string
+	///
+	/// NOTE: This will not upgrade IDs, for that behavior use [`Frame::new`](crate::id3::v2::Frame::new).
 	///
 	/// # Errors
 	///
@@ -78,6 +82,19 @@ impl<'a> FrameId<'a> {
 			Self::Valid(inner) => FrameId::Valid(Cow::Owned(inner.into_owned())),
 			Self::Outdated(inner) => FrameId::Outdated(Cow::Owned(inner.into_owned())),
 		}
+	}
+
+	/// Consumes the [`FrameId`], returning the inner value
+	pub fn into_inner(self) -> Cow<'a, str> {
+		match self {
+			FrameId::Valid(v) | FrameId::Outdated(v) => v,
+		}
+	}
+}
+
+impl<'a> Into<Cow<'a, str>> for FrameId<'a> {
+	fn into(self) -> Cow<'a, str> {
+		self.into_inner()
 	}
 }
 
