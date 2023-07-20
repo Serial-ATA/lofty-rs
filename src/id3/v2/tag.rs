@@ -41,14 +41,14 @@ macro_rules! impl_accessor {
 
 				fn [<set_ $name>](&mut self, value: String) {
 					self.insert(new_text_frame(
-						FrameId::Valid(Cow::Borrowed($id).into()),
+						[<$name:upper _ID>],
 						value,
 						FrameFlags::default(),
 					));
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					let _ = self.remove($id);
+					let _ = self.remove(&[<$name:upper _ID>]);
 				}
 			)+
 		}
@@ -279,7 +279,7 @@ impl Id3v2Tag {
 		];
 
 		if ONE_PER_TAG.contains(&frame.id_str()) {
-			let ret = self.remove(frame.id_str()).next();
+			let ret = self.remove(&frame.id).next();
 			self.frames.push(frame);
 			return ret;
 		}
@@ -331,12 +331,54 @@ impl Id3v2Tag {
 	}
 
 	/// Removes a [`Frame`] by id
-	pub fn remove(&mut self, id: &str) -> impl Iterator<Item = Frame<'static>> + '_ {
+	///
+	/// This will remove any frames with the same ID. To remove `TXXX` frames by their descriptions,
+	/// see [`Id3v2Tag::remove_user_text`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::{Frame, FrameFlags, FrameId, Id3v2Tag, TextInformationFrame};
+	/// use lofty::{TagExt, TextEncoding};
+	/// use std::borrow::Cow;
+	///
+	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// let mut tag = Id3v2Tag::new();
+	/// assert!(tag.is_empty());
+	///
+	/// // Add a new "TMOO" frame
+	/// let tmoo_frame = Frame::new(
+	/// 	MOOD_FRAME_ID,
+	/// 	TextInformationFrame {
+	/// 		encoding: TextEncoding::Latin1,
+	/// 		value: String::from("Classical"),
+	/// 	},
+	/// 	FrameFlags::default(),
+	/// )?;
+	///
+	/// let _ = tag.insert(tmoo_frame.clone());
+	/// assert!(!tag.is_empty());
+	///
+	/// // Now we can remove it by its ID
+	/// let mut values = tag.remove(&MOOD_FRAME_ID);
+	///
+	/// // We got back exactly what we inserted
+	/// assert_eq!(values.next(), Some(tmoo_frame));
+	/// assert!(values.next().is_none());
+	/// drop(values);
+	///
+	/// // The tag is now empty
+	/// assert!(tag.is_empty());
+	/// # Ok(()) }
+	/// ```
+	pub fn remove(&mut self, id: &FrameId<'_>) -> impl Iterator<Item = Frame<'static>> + '_ {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
 		for read_idx in 0..self.frames.len() {
-			if self.frames[read_idx].id_str().eq_ignore_ascii_case(id) {
+			if &self.frames[read_idx].id == id {
 				self.frames.swap(split_idx, read_idx);
 				split_idx += 1;
 			}
@@ -529,6 +571,14 @@ fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
 	}
 }
 
+const TITLE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIT2"));
+const ARTIST_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TPE1"));
+const ALBUM_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TALB"));
+const GENRE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TCON"));
+const TRACK_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TRCK"));
+const DISC_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TPOS"));
+const RECORDING_TIME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TDRC"));
+
 impl Accessor for Id3v2Tag {
 	impl_accessor!(
 		title  => "TIT2";
@@ -546,7 +596,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_track(&mut self) {
-		let _ = self.remove("TRCK");
+		let _ = self.remove(&TRACK_ID);
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -559,7 +609,7 @@ impl Accessor for Id3v2Tag {
 
 	fn remove_track_total(&mut self) {
 		let existing_track_number = self.track();
-		let _ = self.remove("TRCK");
+		let _ = self.remove(&TRACK_ID);
 
 		if let Some(track) = existing_track_number {
 			self.insert(Frame::text(Cow::Borrowed("TRCK"), track.to_string()));
@@ -575,7 +625,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_disk(&mut self) {
-		let _ = self.remove("TPOS");
+		let _ = self.remove(&DISC_ID);
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -588,7 +638,7 @@ impl Accessor for Id3v2Tag {
 
 	fn remove_disk_total(&mut self) {
 		let existing_track_number = self.track();
-		let _ = self.remove("TPOS");
+		let _ = self.remove(&DISC_ID);
 
 		if let Some(track) = existing_track_number {
 			self.insert(Frame::text(Cow::Borrowed("TPOS"), track.to_string()));
@@ -612,7 +662,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_year(&mut self) {
-		let _ = self.remove("TDRC");
+		let _ = self.remove(&RECORDING_TIME_ID);
 	}
 
 	fn comment(&self) -> Option<Cow<'_, str>> {
