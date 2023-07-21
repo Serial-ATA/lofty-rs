@@ -219,6 +219,7 @@ gen_map!(
 	"COMM"                         => Comment,
 	"TLAN"                         => Language,
 	"USLT"                         => Lyrics,
+	// Mapping of MusicBrainzRecordingId is implemented as a special case
 	"MusicBrainz Release Track Id" => MusicBrainzTrackId,
 	"MusicBrainz Album Id"         => MusicBrainzReleaseId,
 	"MusicBrainz Release Group Id" => MusicBrainzReleaseGroupId,
