@@ -412,7 +412,11 @@ macro_rules! gen_item_keys {
 			),+
 		];
 		KEYS => [
-			$($variant:ident),+ $(,)?
+			$(
+				$(#[$variant_meta:meta])*
+				$variant_ident:ident
+			),+
+			$(,)?
 		]
 	) => {
 		#[derive(PartialEq, Clone, Debug, Eq, Hash)]
@@ -421,7 +425,8 @@ macro_rules! gen_item_keys {
 		/// A generic representation of a tag's key
 		pub enum ItemKey {
 			$(
-				$variant,
+				$(#[$variant_meta])*
+				$variant_ident,
 			)+
 			/// When a key couldn't be mapped to another variant
 			///
@@ -550,20 +555,60 @@ gen_item_keys!(
 		Movement,
 		MovementNumber,
 		MovementTotal,
-		// MusicBrainz Recording ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id21>
+
+		///////////////////////////////////////////////////////////////
+		// MusicBrainz Identfiers
+
+		/// MusicBrainz Recording ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id21>
 		MusicBrainzRecordingId,
-		// MusicBrainz Track ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id24>
+
+		/// MusicBrainz Track ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id24>
 		MusicBrainzTrackId,
-		// MusicBrainz Release ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id23>
+
+		/// MusicBrainz Release ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id23>
 		MusicBrainzReleaseId,
-		// MusicBrainz Release Group ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-release-group-id>
+
+		/// MusicBrainz Release Group ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-release-group-id>
 		MusicBrainzReleaseGroupId,
-		// MusicBrainz Artist ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id17>
+
+		/// MusicBrainz Artist ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id17>
 		MusicBrainzArtistId,
-		// MusicBrainz Release Artist ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id22>
+
+		/// MusicBrainz Release Artist ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id22>
 		MusicBrainzReleaseArtistId,
-		// MusicBrainz Work ID: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-work-id>
+
+		/// MusicBrainz Work ID
+		///
+		/// Textual representation of the UUID.
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-work-id>
 		MusicBrainzWorkId,
+
+		///////////////////////////////////////////////////////////////
 
 		// Flags
 		FlagCompilation,
