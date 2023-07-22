@@ -558,7 +558,7 @@ gen_item_keys!(
 		MovementTotal,
 
 		///////////////////////////////////////////////////////////////
-		// MusicBrainz Identfiers
+		// MusicBrainz Identifiers
 
 		/// MusicBrainz Recording ID
 		///
