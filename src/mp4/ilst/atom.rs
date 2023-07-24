@@ -20,6 +20,13 @@ impl AtomDataStorage {
 			AtomDataStorage::Multiple(data) => data.first_mut().expect("not empty"),
 		}
 	}
+
+	pub(super) fn is_pictures(&self) -> bool {
+		match self {
+			AtomDataStorage::Single(v) => matches!(v, AtomData::Picture(_)),
+			AtomDataStorage::Multiple(v) => v.iter().all(|p| matches!(p, AtomData::Picture(_))),
+		}
+	}
 }
 
 impl Debug for AtomDataStorage {
