@@ -176,7 +176,7 @@ fn test_duplicate_id3v2() {
 #[test]
 fn test_fuzzed_file() {
 	let mut file = File::open("tests/taglib/data/excessive_alloc.mp3").unwrap();
-	let _ = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert!(MpegFile::read_from(&mut file, ParseOptions::new()).is_err())
 }
 
 #[test]
