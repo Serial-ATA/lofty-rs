@@ -27,6 +27,7 @@ const ALBUM: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9alb");
 const GENRE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9gen");
 const COMMENT: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9cmt");
 const ADVISORY_RATING: AtomIdent<'_> = AtomIdent::Fourcc(*b"rtng");
+const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
@@ -118,6 +119,10 @@ impl Ilst {
 		self.atoms.iter().find(|a| &a.ident == ident)
 	}
 
+	fn get_mut(&mut self, ident: &AtomIdent<'_>) -> Option<&mut Atom<'static>> {
+		self.atoms.iter_mut().find(|a| &a.ident == ident)
+	}
+
 	/// Inserts an [`Atom`]
 	///
 	/// # Examples
@@ -138,6 +143,16 @@ impl Ilst {
 	/// assert!(title.is_some());
 	/// ```
 	pub fn insert(&mut self, atom: Atom<'_>) {
+		if atom.ident == COVR && atom.data.is_pictures() {
+			for data in atom.data {
+				match data {
+					AtomData::Picture(p) => self.insert_picture(p),
+					_ => unreachable!(),
+				}
+			}
+			return;
+		}
+
 		self.atoms.push(atom.into_owned());
 	}
 
@@ -216,31 +231,98 @@ impl Ilst {
 		self.atoms.retain(f)
 	}
 
-	/// Returns all pictures
-	pub fn pictures(&self) -> impl Iterator<Item = &Picture> + Clone {
-		const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
+	/// Returns all pictures, if there are any
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::Ilst;
+	/// use lofty::{MimeType, Picture, PictureType, TagExt};
+	///
+	/// let mut ilst = Ilst::new();
+	///
+	/// # let png_data = b"foo".to_vec();
+	/// // Insert pictures
+	/// ilst.insert_picture(Picture::new_unchecked(
+	/// 	PictureType::Other,
+	/// 	MimeType::Png,
+	/// 	None,
+	/// 	png_data,
+	/// ));
+	///
+	/// # let jpeg_data = b"bar".to_vec();
+	/// ilst.insert_picture(Picture::new_unchecked(
+	/// 	PictureType::Other,
+	/// 	MimeType::Jpeg,
+	/// 	None,
+	/// 	jpeg_data,
+	/// ));
+	///
+	/// assert_eq!(ilst.pictures().unwrap().count(), 2);
+	/// ```
+	pub fn pictures(&self) -> Option<impl Iterator<Item = &Picture>> {
+		let Some(covr) = self.get(&COVR) else {
+			return None;
+		};
 
-		self.atoms.iter().filter_map(|a| match a.ident {
-			COVR => {
-				if let Some(AtomData::Picture(pic)) = a.data().next() {
-					Some(pic)
-				} else {
-					None
-				}
-			},
-			_ => None,
-		})
+		Some(covr.data().filter_map(|d| {
+			if let AtomData::Picture(pic) = d {
+				Some(pic)
+			} else {
+				None
+			}
+		}))
 	}
 
 	/// Inserts a picture
+	///
+	/// NOTE: If a `covr` atom exists in the tag, the picture will be appended to it.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::Ilst;
+	/// use lofty::{MimeType, Picture, PictureType, TagExt};
+	///
+	/// let mut ilst = Ilst::new();
+	///
+	/// # let png_data = b"foo".to_vec();
+	/// // Insert a single picture
+	/// ilst.insert_picture(Picture::new_unchecked(
+	/// 	PictureType::Other,
+	/// 	MimeType::Png,
+	/// 	None,
+	/// 	png_data,
+	/// ));
+	/// assert_eq!(ilst.len(), 1);
+	///
+	/// # let jpeg_data = b"bar".to_vec();
+	/// // Insert another picture
+	/// ilst.insert_picture(Picture::new_unchecked(
+	/// 	PictureType::Other,
+	/// 	MimeType::Jpeg,
+	/// 	None,
+	/// 	jpeg_data,
+	/// ));
+	///
+	/// // The existing `covr` atom is reused
+	/// assert_eq!(ilst.len(), 1);
+	/// assert_eq!(ilst.pictures().unwrap().count(), 2);
+	/// ```
 	pub fn insert_picture(&mut self, mut picture: Picture) {
 		// This is just for correctness, it doesn't really matter.
 		picture.pic_type = PictureType::Other;
 
-		self.atoms.push(Atom {
-			ident: AtomIdent::Fourcc(*b"covr"),
-			data: AtomDataStorage::Single(AtomData::Picture(picture)),
-		})
+		let data = AtomData::Picture(picture);
+		let Some(existing_covr) = self.get_mut(&COVR) else {
+			self.atoms.push(Atom {
+				ident: COVR,
+				data: AtomDataStorage::Single(data),
+			});
+			return;
+		};
+
+		existing_covr.push_data(data);
 	}
 
 	/// Removes all pictures
