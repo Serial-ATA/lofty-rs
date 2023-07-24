@@ -1,3 +1,5 @@
+use crate::error::Result;
+use crate::macros::err;
 use crate::mp4::AtomIdent;
 use crate::picture::Picture;
 
@@ -25,6 +27,18 @@ impl Debug for AtomDataStorage {
 		match &self {
 			AtomDataStorage::Single(v) => write!(f, "{:?}", v),
 			AtomDataStorage::Multiple(v) => f.debug_list().entries(v.iter()).finish(),
+		}
+	}
+}
+
+impl IntoIterator for AtomDataStorage {
+	type Item = AtomData;
+	type IntoIter = std::vec::IntoIter<Self::Item>;
+
+	fn into_iter(self) -> Self::IntoIter {
+		match self {
+			AtomDataStorage::Single(s) => vec![s].into_iter(),
+			AtomDataStorage::Multiple(v) => v.into_iter(),
 		}
 	}
 }
@@ -118,6 +132,16 @@ impl<'a> Atom<'a> {
 		(&self.data).into_iter()
 	}
 
+	/// Consumes the atom, returning its [`AtomData`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// ```
+	pub fn into_data(self) -> impl Iterator<Item = AtomData> {
+		self.data.into_iter()
+	}
+
 	/// Append a value to the atom
 	pub fn push_data(&mut self, data: AtomData) {
 		match self.data {
@@ -126,6 +150,49 @@ impl<'a> Atom<'a> {
 			},
 			AtomDataStorage::Multiple(ref mut m) => m.push(data),
 		}
+	}
+
+	/// Merge the data of another atom into this one
+	///
+	/// NOTE: Both atoms must have the same identifier
+	///
+	/// # Errors
+	///
+	/// * `self.ident()` != `other.ident()`
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{Atom, AtomData, AtomIdent};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// // Create an artist atom
+	/// let mut atom = Atom::new(
+	/// 	AtomIdent::Fourcc(*b"\x49ART"),
+	/// 	AtomData::UTF8(String::from("foo")),
+	/// );
+	///
+	/// // Create a second and merge it into the first
+	/// let atom2 = Atom::new(
+	/// 	AtomIdent::Fourcc(*b"\x49ART"),
+	/// 	AtomData::UTF8(String::from("bar")),
+	/// );
+	/// atom.merge(atom2)?;
+	///
+	/// // Our first atom now contains the second atom's content
+	/// assert_eq!(atom.data().count(), 2);
+	/// # Ok(()) }
+	/// ```
+	pub fn merge(&mut self, other: Atom<'_>) -> Result<()> {
+		if self.ident != other.ident {
+			err!(AtomMismatch);
+		}
+
+		for data in other.data {
+			self.push_data(data)
+		}
+
+		Ok(())
 	}
 
 	// Used internally, has no correctness checks
@@ -248,7 +315,7 @@ impl AdvisoryRating {
 impl TryFrom<u8> for AdvisoryRating {
 	type Error = u8;
 
-	fn try_from(input: u8) -> Result<Self, Self::Error> {
+	fn try_from(input: u8) -> std::result::Result<Self, Self::Error> {
 		match input {
 			0 => Ok(Self::Inoffensive),
 			1 | 4 => Ok(Self::Explicit),

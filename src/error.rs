@@ -53,6 +53,8 @@ pub enum ErrorKind {
 
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
+	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
+	AtomMismatch,
 
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
@@ -520,6 +522,10 @@ impl Display for LoftyError {
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
 			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
+			ErrorKind::AtomMismatch => write!(
+				f,
+				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"
+			),
 
 			// Files
 			ErrorKind::TooMuchData => write!(
