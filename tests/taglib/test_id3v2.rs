@@ -1,13 +1,15 @@
 use crate::temp_file;
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io::Seek;
 
 use lofty::id3::v2::{
-	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
-	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, Popularimeter,
-	SyncTextContentType, SynchronizedText, TimestampFormat, UniqueFileIdentifierFrame,
-	UrlLinkFrame,
+	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
+	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
+	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, OwnershipFrame,
+	Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType,
+	SynchronizedText, TimestampFormat, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
 use lofty::{
@@ -264,12 +266,61 @@ fn test_popm_from_file() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support RVA2 frames yet
-fn test_parse_relative_volume_frame() {}
+fn test_parse_relative_volume_frame() {
+	let f = RelativeVolumeAdjustmentFrame::parse(
+		&mut &b"\
+	ident\x00\
+    \x02\
+    \x00\x0F\
+    \x08\
+    \x45"[..],
+		ParsingMode::Strict,
+	)
+	.unwrap()
+	.unwrap();
+
+	assert_eq!(f.identification, "ident");
+	let front_right = f.channels.get(&ChannelType::FrontRight).unwrap();
+	assert_eq!(
+		front_right.volume_adjustment as f32 / 512.0f32,
+		15.0f32 / 512.0f32
+	);
+	assert_eq!(front_right.volume_adjustment, 15);
+	assert_eq!(front_right.bits_representing_peak, 8);
+	assert_eq!(front_right.peak_volume, Some(vec![0x45]));
+	let channels = f.channels;
+	assert_eq!(channels.len(), 1);
+}
 
 #[test]
-#[ignore] // TODO: We don't support RVA2 frames yet
-fn test_render_relative_volume_frame() {}
+fn test_render_relative_volume_frame() {
+	let f = RelativeVolumeAdjustmentFrame {
+		identification: String::from("ident"),
+		channels: {
+			let mut m = HashMap::new();
+			m.insert(
+				ChannelType::FrontRight,
+				ChannelInformation {
+					channel_type: ChannelType::FrontRight,
+					volume_adjustment: 15,
+					bits_representing_peak: 8,
+					peak_volume: Some(vec![0x45]),
+				},
+			);
+			m
+		},
+	};
+
+	assert_eq!(
+		f.as_bytes(),
+		b"\
+	ident\x00\
+    \x02\
+    \x00\x0F\
+    \x08\
+    \x45"
+	);
+}
 
 #[test]
 fn test_parse_unique_file_identifier_frame() {
@@ -364,12 +415,40 @@ fn test_render_user_url_link_frame() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support OWNE frames yet
-fn test_parse_ownership_frame() {}
+fn test_parse_ownership_frame() {
+	let f = OwnershipFrame::parse(
+		&mut &b"\
+		\x00\
+        GBP1.99\x00\
+		20120905\
+		Beatport"[..],
+	)
+	.unwrap()
+	.unwrap();
+
+	assert_eq!(f.price_paid, "GBP1.99");
+	assert_eq!(f.date_of_purchase, "20120905");
+	assert_eq!(f.seller, "Beatport");
+}
 
 #[test]
-#[ignore] // TODO: We don't support OWNE frames yet
-fn test_render_ownership_frame() {}
+fn test_render_ownership_frame() {
+	let f = OwnershipFrame {
+		encoding: TextEncoding::Latin1,
+		price_paid: String::from("GBP1.99"),
+		date_of_purchase: String::from("20120905"),
+		seller: String::from("Beatport"),
+	};
+
+	assert_eq!(
+		f.as_bytes().unwrap(),
+		b"\
+		\x00\
+        GBP1.99\x00\
+		20120905\
+		Beatport"[..]
+	)
+}
 
 #[test]
 fn test_parse_synchronized_lyrics_frame() {
@@ -459,12 +538,54 @@ fn test_render_synchronized_lyrics_frame() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support ETCO frames yet
-fn test_parse_event_timing_codes_frame() {}
+fn test_parse_event_timing_codes_frame() {
+	let f = EventTimingCodesFrame::parse(
+		&mut &b"\
+	\x02\
+	\x02\
+	\x00\x00\xf3\x5c\
+	\xfe\
+	\x00\x36\xee\x80"[..],
+	)
+	.unwrap()
+	.unwrap();
+
+	assert_eq!(f.timestamp_format, TimestampFormat::MS);
+
+	let sel = f.events;
+	assert_eq!(sel.len(), 2);
+	assert_eq!(sel[0].event_type, EventType::IntroStart);
+	assert_eq!(sel[0].timestamp, 62300);
+	assert_eq!(sel[1].event_type, EventType::AudioFileEnds);
+	assert_eq!(sel[1].timestamp, 3600000);
+}
 
 #[test]
-#[ignore] // TODO: We don't support ETCO frames yet
-fn test_render_event_timing_codes_frame() {}
+fn test_render_event_timing_codes_frame() {
+	let f = EventTimingCodesFrame {
+		timestamp_format: TimestampFormat::MS,
+		events: vec![
+			Event {
+				event_type: EventType::IntroStart,
+				timestamp: 62300,
+			},
+			Event {
+				event_type: EventType::AudioFileEnds,
+				timestamp: 3600000,
+			},
+		],
+	};
+
+	assert_eq!(
+		f.as_bytes(),
+		b"\
+	\x02\
+	\x02\
+	\x00\x00\xf3\x5c\
+	\xfe\
+	\x00\x36\xee\x80"
+	)
+}
 
 #[test]
 fn test_parse_comments_frame() {
@@ -516,12 +637,33 @@ fn test_render_podcast_frame() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support PRIV frames yet
-fn test_parse_private_frame() {}
+fn test_parse_private_frame() {
+	let f = PrivateFrame::parse(
+		&mut &b"\
+	WM/Provider\x00\
+	TL"[..],
+	)
+	.unwrap()
+	.unwrap();
+
+	assert_eq!(f.owner, "WM/Provider");
+	assert_eq!(f.private_data, b"TL");
+}
 
 #[test]
-#[ignore] // TODO: We don't support PRIV frames yet
-fn test_render_private_frame() {}
+fn test_render_private_frame() {
+	let f = PrivateFrame {
+		owner: String::from("WM/Provider"),
+		private_data: b"TL".to_vec(),
+	};
+
+	assert_eq!(
+		f.as_bytes(),
+		b"\
+	WM/Provider\x00\
+	TL"
+	);
+}
 
 #[test]
 fn test_parse_user_text_identification_frame() {
@@ -747,7 +889,7 @@ fn test_delete_frame() {
 		file.rewind().unwrap();
 
 		let t = f.id3v2_mut().unwrap();
-		t.remove("TCON");
+		let _ = t.remove(&FrameId::Valid(Cow::Borrowed("TCON")));
 		f.save_to(&mut file).unwrap();
 	}
 	file.rewind().unwrap();
@@ -776,7 +918,10 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 		let mut bar = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		bar.id3v2_mut().unwrap().remove("TPE1");
+		let _ = bar
+			.id3v2_mut()
+			.unwrap()
+			.remove(&FrameId::Valid(Cow::Borrowed("TPE1")));
 
 		bar.save_to(&mut file).unwrap();
 	}
