@@ -50,7 +50,7 @@ macro_rules! impl_accessor {
 				}
 
 				fn [<remove_ $name>](&mut self) {
-					self.remove(&$const)
+					let _ = self.remove(&$const);
 				}
 			)+
 		}
@@ -142,8 +142,29 @@ impl Ilst {
 	}
 
 	/// Inserts an [`Atom`], replacing any atom with the same [`AtomIdent`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
+	/// use lofty::Accessor;
+	///
+	/// const TITLE_IDENTIFIER: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
+	///
+	/// let mut ilst = Ilst::new();
+	///
+	/// ilst.set_title(String::from("FooBar"));
+	/// assert_eq!(ilst.title().as_deref(), Some("FooBar"));
+	///
+	/// // Replace our old title
+	/// ilst.replace_atom(Atom::new(
+	/// 	TITLE_IDENTIFIER,
+	/// 	AtomData::UTF8(String::from("BarFoo")),
+	/// ));
+	/// assert_eq!(ilst.title().as_deref(), Some("BarFoo"));
+	/// ```
 	pub fn replace_atom(&mut self, atom: Atom<'_>) {
-		self.remove(&atom.ident);
+		let _ = self.remove(&atom.ident);
 		self.atoms.push(atom.into_owned());
 	}
 
@@ -165,16 +186,24 @@ impl Ilst {
 	/// assert!(title.is_some());
 	///
 	/// // Remove the title
-	/// ilst.remove(&TITLE_IDENTIFIER);
+	/// let returned = ilst.remove(&TITLE_IDENTIFIER);
+	/// assert_eq!(returned.count(), 1);
 	///
 	/// let title = ilst.get(&TITLE_IDENTIFIER);
 	/// assert!(title.is_none());
 	/// ```
-	pub fn remove(&mut self, ident: &AtomIdent<'_>) {
-		self.atoms
-			.iter()
-			.position(|a| &a.ident == ident)
-			.map(|p| self.atoms.remove(p));
+	pub fn remove(&mut self, ident: &AtomIdent<'_>) -> impl Iterator<Item = Atom<'static>> + '_ {
+		// TODO: drain_filter
+		let mut split_idx = 0_usize;
+
+		for read_idx in 0..self.atoms.len() {
+			if &self.atoms[read_idx].ident == ident {
+				self.atoms.swap(split_idx, read_idx);
+				split_idx += 1;
+			}
+		}
+
+		self.atoms.drain(..split_idx)
 	}
 
 	/// Retain atoms based on the predicate
@@ -316,7 +345,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_track(&mut self) {
-		self.remove(&AtomIdent::Fourcc(*b"trkn"));
+		let _ = self.remove(&AtomIdent::Fourcc(*b"trkn"));
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -333,7 +362,7 @@ impl Accessor for Ilst {
 
 	fn remove_track_total(&mut self) {
 		let track_num = self.track();
-		self.remove(&AtomIdent::Fourcc(*b"trkn"));
+		let _ = self.remove(&AtomIdent::Fourcc(*b"trkn"));
 
 		if let Some(track_num) = track_num {
 			let track_bytes = (track_num as u16).to_be_bytes();
@@ -356,7 +385,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_disk(&mut self) {
-		self.remove(&AtomIdent::Fourcc(*b"disk"));
+		let _ = self.remove(&AtomIdent::Fourcc(*b"disk"));
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -373,7 +402,7 @@ impl Accessor for Ilst {
 
 	fn remove_disk_total(&mut self) {
 		let disk_num = self.disk();
-		self.remove(&AtomIdent::Fourcc(*b"disk"));
+		let _ = self.remove(&AtomIdent::Fourcc(*b"disk"));
 
 		if let Some(disk_num) = disk_num {
 			let disk_bytes = (disk_num as u16).to_be_bytes();
@@ -401,7 +430,7 @@ impl Accessor for Ilst {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove(&AtomIdent::Fourcc(*b"Year"));
+		let _ = self.remove(&AtomIdent::Fourcc(*b"Year"));
 	}
 }
 
