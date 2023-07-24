@@ -840,7 +840,7 @@ fn test_compressed_frame_with_broken_length() {
 #[test]
 fn test_w000() {
 	let mut file = temp_file!("tests/taglib/data/w000.mp3");
-	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 
 	assert!(f
 		.id3v2()
