@@ -144,6 +144,13 @@ impl<'a> Atom<'a> {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::mp4::{Atom, AtomData, AtomIdent};
+	///
+	/// let atom = Atom::new(
+	/// 	AtomIdent::Fourcc(*b"\x49ART"),
+	/// 	AtomData::UTF8(String::from("Foo")),
+	/// );
+	/// assert_eq!(atom.into_data().count(), 1);
 	/// ```
 	pub fn into_data(self) -> impl Iterator<Item = AtomData> {
 		self.data.into_iter()
