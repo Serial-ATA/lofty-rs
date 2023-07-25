@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - `Ilst::remove` will now return all of the removed atoms
   - `Ilst::insert_picture` will now combine all pictures into a single `covr` atom
+  - `Ilst::insert` will now merge atoms with the same identifier into a single atom
 
 ## [0.15.0] - 2023-07-11
 
