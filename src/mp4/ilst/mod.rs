@@ -125,6 +125,10 @@ impl Ilst {
 
 	/// Inserts an [`Atom`]
 	///
+	/// NOTE: Do not use this to replace atoms. This will take the value from the provided atom and
+	///       merge it into an atom of the same type, keeping any existing value(s). To ensure an atom
+	///       is replaced, use [`Ilst::replace_atom`].
+	///
 	/// # Examples
 	///
 	/// ```rust
@@ -142,7 +146,8 @@ impl Ilst {
 	/// let title = ilst.get(&TITLE_IDENTIFIER);
 	/// assert!(title.is_some());
 	/// ```
-	pub fn insert(&mut self, atom: Atom<'_>) {
+	#[allow(clippy::missing_panics_doc)] // Unwrap on an infallible
+	pub fn insert(&mut self, atom: Atom<'static>) {
 		if atom.ident == COVR && atom.data.is_pictures() {
 			for data in atom.data {
 				match data {
@@ -153,7 +158,14 @@ impl Ilst {
 			return;
 		}
 
-		self.atoms.push(atom.into_owned());
+		if let Some(existing) = self.get_mut(atom.ident()) {
+			existing.merge(atom).expect(
+				"Somehow the atom merge condition failed, despite the validation beforehand.",
+			);
+			return;
+		}
+
+		self.atoms.push(atom);
 	}
 
 	/// Inserts an [`Atom`], replacing any atom with the same [`AtomIdent`]
@@ -752,6 +764,7 @@ impl From<Tag> for Ilst {
 #[cfg(test)]
 mod tests {
 	use crate::mp4::ilst::atom::AtomDataStorage;
+	use crate::mp4::ilst::TITLE;
 	use crate::mp4::read::AtomReader;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
 	use crate::tag::utils::test_utils;
@@ -1155,5 +1168,21 @@ mod tests {
 		.unwrap();
 
 		assert_eq!(file.ilst(), Some(&Ilst::default()));
+	}
+
+	#[test]
+	fn merge_insert() {
+		let mut ilst = Ilst::new();
+
+		// Insert two titles
+		ilst.set_title(String::from("Foo"));
+		ilst.insert(Atom::new(TITLE, AtomData::UTF8(String::from("Bar"))));
+
+		// Title should still be the first value, but there should be two total values
+		assert_eq!(ilst.title().as_deref(), Some("Foo"));
+		assert_eq!(ilst.get(&TITLE).unwrap().data().count(), 2);
+
+		// Meaning we only have 1 atom
+		assert_eq!(ilst.len(), 1);
 	}
 }
