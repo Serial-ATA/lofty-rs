@@ -131,22 +131,24 @@ where
 		let block_header;
 		match parse_wv_header(reader) {
 			Ok(header) => block_header = header,
+			Err(e) if parse_mode == ParsingMode::Strict => return Err(e),
 			_ => break,
 		}
 
 		let flags = block_header.flags;
 		let sample_rate_idx = ((flags >> 23) & 0xF) as usize;
+		properties.sample_rate = SAMPLE_RATES[sample_rate_idx];
 
 		// In the case of non-standard sample rates and DSD audio, we need to actually read the
 		// block to get the sample rate
-		if properties.sample_rate == 0 || flags & FLAG_DSD == FLAG_DSD {
+		if sample_rate_idx == 15 || flags & FLAG_DSD == FLAG_DSD {
 			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
 			if reader.read_exact(&mut block_contents).is_err() {
 				parse_mode_choice!(
-						parse_mode,
-						STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
-						DEFAULT: break
-					);
+					parse_mode,
+					STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
+					DEFAULT: break
+				);
 			}
 
 			if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
@@ -183,9 +185,6 @@ where
 			total_samples = block_header.total_samples;
 			properties.bit_depth = ((((flags & BYTES_PER_SAMPLE_MASK) + 1) * 8) - ((flags & BIT_DEPTH_SHIFT_MASK) >> BIT_DEPTH_SHL)) as u8;
 
-			let sample_rate = SAMPLE_RATES[sample_rate_idx];
-			properties.sample_rate = sample_rate;
-
 			properties.version = block_header.version;
 			properties.lossless = flags & FLAG_HYBRID_COMPRESSION == 0;
 
@@ -216,19 +215,21 @@ where
 		offset += u64::from(block_header.block_size + 8);
 	}
 
-	if total_samples > 0 && properties.sample_rate > 0 {
-		let length = f64::from(total_samples) * 1000. / f64::from(properties.sample_rate);
-		properties.duration = Duration::from_millis((length + 0.5) as u64);
-		properties.audio_bitrate = (stream_length as f64 * 8. / length + 0.5) as u32;
+	if total_samples == 0 || properties.sample_rate == 0 {
+		if parse_mode == ParsingMode::Strict {
+			decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)")
+		}
 
-		let file_length = reader.seek(SeekFrom::End(0))?;
-		properties.overall_bitrate = (file_length as f64 * 8. / length + 0.5) as u32;
-	} else {
-		parse_mode_choice!(
-			parse_mode,
-			STRICT: decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)"),
-		);
+		// We aren't able to determine the duration/bitrate, just early return
+		return Ok(properties);
 	}
+
+	let length = f64::from(total_samples) * 1000. / f64::from(properties.sample_rate);
+	properties.duration = Duration::from_millis((length + 0.5) as u64);
+	properties.audio_bitrate = (stream_length as f64 * 8. / length + 0.5) as u32;
+
+	let file_length = reader.seek(SeekFrom::End(0))?;
+	properties.overall_bitrate = (file_length as f64 * 8. / length + 0.5) as u32;
 
 	Ok(properties)
 }
@@ -245,7 +246,7 @@ struct WVHeader {
 	flags: u32,
 }
 
-// TODO: for now, all errors are just discarded
+// NOTE: Any error here is ignored unless using `ParsingMode::Strict`
 fn parse_wv_header<R>(reader: &mut R) -> Result<WVHeader>
 where
 	R: Read + Seek,
