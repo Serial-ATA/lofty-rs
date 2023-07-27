@@ -395,25 +395,34 @@ where
 }
 
 fn write_signed_int(int: i32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
-	let start_pos = int.trailing_zeros() as usize;
-	write_int(21, int.to_be_bytes(), start_pos, writer)
+	write_int(21, int.to_be_bytes(), 4, writer)
+}
+
+fn bytes_to_occupy_uint(uint: u32) -> usize {
+	if uint == 0 {
+		return 1;
+	}
+
+	let ret = 4 - (uint.to_le().leading_zeros() >> 3) as usize;
+	if ret == 3 {
+		return 4;
+	}
+	ret
 }
 
 fn write_unsigned_int(uint: u32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
-	let start_pos = uint.trailing_zeros() as usize;
-	write_int(22, uint.to_be_bytes(), start_pos, writer)
+	let bytes_needed = bytes_to_occupy_uint(uint);
+	write_int(22, uint.to_be_bytes(), bytes_needed, writer)
 }
 
 fn write_int(
 	flags: u32,
 	bytes: [u8; 4],
-	mut start_pos: usize,
+	bytes_needed: usize,
 	writer: &mut Cursor<Vec<u8>>,
 ) -> Result<()> {
-	if start_pos == 1 || start_pos == 4 {
-		start_pos = 0;
-	}
-	write_data(flags, &bytes[start_pos..], writer)
+	debug_assert!(bytes_needed != 0);
+	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
 fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
@@ -458,4 +467,63 @@ fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<(
 	writer.write_all(data)?;
 
 	Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+	use crate::mp4::ilst::write::bytes_to_occupy_uint;
+
+	macro_rules! int_test {
+		(
+			func: $fun:expr,
+			$(
+				{
+					input: $input:expr,
+					expected: $expected:expr $(,)?
+				}
+			),+ $(,)?
+		) => {
+			$(
+				{
+					let bytes = $fun($input);
+					assert_eq!(&$input.to_be_bytes()[4 - bytes..], &$expected[..]);
+				}
+			)+
+		}
+	}
+
+	#[test]
+	fn integer_shrinking_unsigned() {
+		int_test! {
+			func: bytes_to_occupy_uint,
+			{
+				input: 0u32,
+				expected: [0],
+			},
+			{
+				input: 1u32,
+				expected: [1],
+			},
+			{
+				input: 32767u32,
+				expected: [127, 255],
+			},
+			{
+				input: 65535u32,
+				expected: [255, 255],
+			},
+			{
+				input: 8_388_607_u32,
+				expected: [0, 127, 255, 255],
+			},
+			{
+				input: 16_777_215_u32,
+				expected: [0, 255, 255, 255],
+			},
+			{
+				input: u32::MAX,
+				expected: [255, 255, 255, 255],
+			},
+		}
+	}
 }
