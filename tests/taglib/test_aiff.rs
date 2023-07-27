@@ -93,8 +93,9 @@ fn test_save_id3v2() {
 }
 
 #[test]
-#[ignore] // TODO: Support writing ID3v2.3 tags
-fn test_save_id3v23() {}
+fn test_save_id3v23() {
+	todo!("Support writing ID3v2.3 tags")
+}
 
 #[test]
 #[ignore]

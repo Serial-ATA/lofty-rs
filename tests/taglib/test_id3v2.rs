@@ -30,20 +30,24 @@ fn test_unsynch_decode() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support downgrading 2.4 tags to 2.3
-fn test_downgrade_utf8_for_id3v23_1() {}
+fn test_downgrade_utf8_for_id3v23_1() {
+	todo!("We don't support downgrading 2.4 tags to 2.3")
+}
 
 #[test]
-#[ignore] // TODO: We don't support downgrading 2.4 tags to 2.3
-fn test_downgrade_utf8_for_id3v23_2() {}
+fn test_downgrade_utf8_for_id3v23_2() {
+	todo!("We don't support downgrading 2.4 tags to 2.3")
+}
 
 #[test]
-#[ignore] // TODO: Need to think of a nice way to handle multiple UTF-16 values separated by null
-fn test_utf16be_delimiter() {}
+fn test_utf16be_delimiter() {
+	todo!("Need to think of a nice way to handle multiple UTF-16 values separated by null")
+}
 
 #[test]
-#[ignore] // TODO: Need to think of a nice way to handle multiple UTF-16 values separated by null
-fn test_utf16_delimiter() {}
+fn test_utf16_delimiter() {
+	todo!("Need to think of a nice way to handle multiple UTF-16 values separated by null")
+}
 
 #[test]
 fn test_broken_frame1() {
@@ -723,8 +727,8 @@ fn test_render_user_text_identification_frame() {
 	);
 }
 
+// TODO: iTunes, being the great application it is writes unsynchronized integers for sizes. There's no *great* way to detect this.
 #[test]
-#[ignore] // TODO: iTunes, being the great application it is writes unsynchronized integers for sizes. There's no *great* way to detect this.
 fn test_itunes_24_frame_size() {
 	let mut file = temp_file!("tests/taglib/data/005411.id3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
@@ -776,8 +780,9 @@ fn test_save_utf16_comment() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support downgrading to 2.3 tags yet
-fn test_update_genre_23_1() {}
+fn test_update_genre_23_1() {
+	todo!("We don't support downgrading to 2.3 tags yet")
+}
 
 #[test]
 #[ignore]
@@ -792,8 +797,12 @@ fn test_update_genre23_3() {
 }
 
 #[test]
-#[ignore] // TODO: We currently just return the genre string as it is in the tag, need to think about whether or not to convert numerical strings
-fn test_update_genre_24() {}
+fn test_update_genre_24() {
+	todo!(
+		"We currently just return the genre string as it is in the tag, need to think about \
+		 whether or not to convert numerical strings"
+	)
+}
 
 #[test]
 fn test_update_date22() {
@@ -803,8 +812,8 @@ fn test_update_date22() {
 	assert_eq!(f.id3v2().unwrap().year(), Some(2010));
 }
 
+// TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4
 #[test]
-#[ignore] // TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4
 fn test_update_full_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -813,8 +822,9 @@ fn test_update_full_date22() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support downgrading 2.4 tags to 2.3
-fn test_downgrade_to_23() {}
+fn test_downgrade_to_23() {
+	todo!("We don't support downgrading 2.4 tags to 2.3")
+}
 
 #[test]
 fn test_compressed_frame_with_broken_length() {
@@ -932,20 +942,24 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support CHAP frames yet
-fn test_parse_chapter_frame() {}
+fn test_parse_chapter_frame() {
+	todo!("We don't support CHAP frames yet")
+}
 
 #[test]
-#[ignore] // TODO: We don't support CHAP frames yet
-fn test_render_chapter_frame() {}
+fn test_render_chapter_frame() {
+	todo!("We don't support CHAP frames yet")
+}
 
 #[test]
-#[ignore] // TODO: We don't support CTOC frames yet
-fn test_parse_table_of_contents_frame() {}
+fn test_parse_table_of_contents_frame() {
+	todo!("We don't support CTOC frames yet")
+}
 
 #[test]
-#[ignore] // TODO: We don't support CTOC frames yet
-fn test_render_table_of_contents_frame() {}
+fn test_render_table_of_contents_frame() {
+	todo!("We don't support CTOC frames yet")
+}
 
 #[test]
 #[ignore]
@@ -960,5 +974,6 @@ fn test_duplicate_tags() {
 }
 
 #[test]
-#[ignore] // TODO: We don't support CTOC frames yet
-fn test_parse_toc_frame_with_many_children() {}
+fn test_parse_toc_frame_with_many_children() {
+	todo!("We don't support CTOC frames yet")
+}

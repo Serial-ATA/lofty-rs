@@ -139,7 +139,7 @@ fn test_is_empty() {
 
 #[test]
 fn test_update_stco() {
-	// TODO: We don't update stco atoms
+	todo!("We don't update stco atoms")
 }
 
 #[test]
@@ -234,8 +234,11 @@ fn test_save_existing_when_ilst_is_last() {
 }
 
 #[test]
-#[ignore] // TODO: Maybe? This just checks the moov atom's length. We don't retain any atoms we don't need.
-fn test_64bit_atom() {}
+fn test_64bit_atom() {
+	todo!(
+		"Maybe? This just checks the moov atom's length. We don't retain any atoms we don't need."
+	)
+}
 
 #[test]
 fn test_gnre() {
