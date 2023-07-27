@@ -23,17 +23,12 @@ fn test_no_length_properties() {
 }
 
 #[test]
+#[ignore]
 fn test_multi_channel_properties() {
-	let f = get_file::<WavPackFile>("tests/taglib/data/four_channels.wv");
-	assert_eq!(f.properties().duration().as_secs(), 3);
-	assert_eq!(f.properties().duration().as_millis(), 3833);
-	assert_eq!(f.properties().audio_bitrate(), 112);
-	assert_eq!(f.properties().channels(), 4);
-	assert_eq!(f.properties().bit_depth(), 16);
-	assert_eq!(f.properties().is_lossless(), false);
-	assert_eq!(f.properties().sample_rate(), 44100);
-	// TODO: CPPUNIT_ASSERT_EQUAL(169031U, f.audioProperties()->sampleFrames());
-	assert_eq!(f.properties().version(), 1031);
+	// Marker test, this is not a valid file and TagLib does not handle it properly.
+	//
+	// A multichannel file should make use of the multichannel metadata sub block, which
+	// this file does not. Even FFMpeg thinks this is a mono file.
 }
 
 #[test]
