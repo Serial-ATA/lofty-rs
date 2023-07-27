@@ -1,6 +1,7 @@
 mod aac;
 mod aiff;
 mod ape;
+mod flac;
 mod mp4;
 mod mpc;
 mod mpeg;

@@ -11,7 +11,7 @@ use crate::id3::{find_id3v2, ID3FindResults};
 use crate::macros::decode_err;
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
-use crate::probe::ParseOptions;
+use crate::probe::{ParseOptions, ParsingMode};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -74,7 +74,18 @@ where
 		}
 
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
-			if flac_file.vorbis_comments_tag.is_some() {
+			// NOTE: According to the spec
+			//
+			// <https://xiph.org/flac/format.html#def_VORBIS_COMMENT>:
+			// "There may be only one VORBIS_COMMENT block in a stream."
+			//
+			// But of course, we can't ever expect any spec compliant inputs, so we just
+			// take whatever happens to be the latest block in the stream. This is safe behavior,
+			// as when writing to a file with multiple tags, we end up removing all `VORBIS_COMMENT`
+			// blocks anyway.
+			if flac_file.vorbis_comments_tag.is_some()
+				&& parse_options.parsing_mode == ParsingMode::Strict
+			{
 				decode_err!(@BAIL Flac, "Streams are only allowed one Vorbis Comments block per stream");
 			}
 
