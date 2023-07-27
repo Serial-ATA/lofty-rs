@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     to encounter in the wild. Now we will just tag whichever tag happens to be latest in the stream and
     use it, they **will not be merged**.
 
+## Fixed
+- **WavPack**: Custom sample rates will no longer be overwritten
+  - When a custom sample rate (or multiplier) was encountered, it would accidentally be overwritten with 0, causing
+    incorrect duration and bitrate values.
+
 ## [0.15.0] - 2023-07-11
 
 ## Added
