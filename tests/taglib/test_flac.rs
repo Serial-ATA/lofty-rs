@@ -20,29 +20,11 @@ fn test_signature() {
 }
 
 #[test]
+#[ignore]
 fn test_multiple_comment_blocks() {
-	let mut file = temp_file!("tests/taglib/data/multiple-vc.flac");
-	{
-		let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		assert_eq!(
-			f.vorbis_comments().unwrap().artist().as_deref(),
-			Some("Artist 1")
-		);
-		f.vorbis_comments_mut()
-			.unwrap()
-			.set_artist(String::from("The Artist"));
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert_eq!(
-			f.vorbis_comments().unwrap().artist().as_deref(),
-			Some("The Artist")
-		);
-	}
+	// Marker test, Lofty does not replicate TagLib's behavior
+	//
+	// TagLib will use the *first* tag in the stream, while we use the latest.
 }
 
 #[test]
