@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Ilst::remove` will now return all of the removed atoms
   - `Ilst::insert_picture` will now combine all pictures into a single `covr` atom
   - `Ilst::insert` will now merge atoms with the same identifier into a single atom
+- **FLAC**: Allow multiple Vorbis Comment blocks when not using `ParsingMode::Strict`
+  - This is not allowed [by spec](https://xiph.org/flac/format.html#def_VORBIS_COMMENT), but is still possible
+    to encounter in the wild. Now we will just tag whichever tag happens to be latest in the stream and
+    use it, they **will not be merged**.
 
 ## [0.15.0] - 2023-07-11
 
