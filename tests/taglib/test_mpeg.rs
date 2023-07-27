@@ -11,7 +11,6 @@ use lofty::mpeg::MpegFile;
 use lofty::{Accessor, AudioFile, ParseOptions};
 
 #[test]
-#[ignore]
 fn test_audio_properties_xing_header_cbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_cbr.mp3");
 
@@ -25,7 +24,6 @@ fn test_audio_properties_xing_header_cbr() {
 }
 
 #[test]
-#[ignore]
 fn test_audio_properties_xing_header_vbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_vbr.mp3");
 
@@ -39,7 +37,6 @@ fn test_audio_properties_xing_header_vbr() {
 }
 
 #[test]
-#[ignore]
 fn test_audio_properties_vbri_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/rare_frames.mp3");
 
@@ -53,7 +50,6 @@ fn test_audio_properties_vbri_header() {
 }
 
 #[test]
-#[ignore]
 fn test_audio_properties_no_vbr_headers() {
 	let f = get_file::<MpegFile>("tests/taglib/data/bladeenc.mp3");
 
@@ -79,7 +75,6 @@ fn test_skip_invalid_frames_1() {
 }
 
 #[test]
-#[ignore]
 fn test_skip_invalid_frames_2() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames2.mp3");
 
@@ -91,7 +86,6 @@ fn test_skip_invalid_frames_2() {
 }
 
 #[test]
-#[ignore]
 fn test_skip_invalid_frames_3() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames3.mp3");
 
@@ -103,7 +97,6 @@ fn test_skip_invalid_frames_3() {
 }
 
 #[test]
-#[ignore]
 fn test_version_2_duration_with_xing_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/mpeg2.mp3");
 	assert_eq!(f.properties().duration().as_secs(), 5387); // TODO: Off by 15
@@ -141,8 +134,9 @@ fn test_save_id3v24_wrong_param() {
 	// Marker test, Lofty does not replicate the TagLib saving API
 }
 
+// TODO: We don't yet support writing an ID3v23 tag (#62)
 #[test]
-#[ignore] // TODO: We don't yet support writing an ID3v23 tag (#62)
+#[ignore]
 fn test_save_id3v23() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -292,8 +286,8 @@ fn test_empty_ape() {
 	// Marker test, Lofty accepts empty strings as valid values
 }
 
+// TODO: We can't find an ID3v2 tag after saving with garbage
 #[test]
-#[ignore] // TODO: We can't find an ID3v2 tag after saving with garbage
 fn test_ignore_garbage() {
 	let mut file = temp_file!("tests/taglib/data/garbage.mp3");
 
