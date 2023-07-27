@@ -106,28 +106,28 @@ fn test_id3v2_tag() {
 }
 
 #[test]
-#[ignore] // TODO: Support writing ID3v2.3
 fn test_save_id3v23() {
-	let mut file = temp_file!("tests/taglib/data/empty.wav");
-
-	let xxx = "X".repeat(254);
-	{
-		let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(f.id3v2().is_none());
-
-		f.id3v2_mut().unwrap().set_title(xxx.clone());
-		f.id3v2_mut().unwrap().set_artist(String::from("Artist A"));
-
-		// f.save(RIFF::WAV::File::AllTags, File::StripOthers, ID3v2::v3);
-		// assert!(f.id3v2().is_some());
-	}
-	{
-		let f2 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		let tag = f2.id3v2().unwrap();
-		assert_eq!(tag.original_version(), Id3v2Version::V3);
-		assert_eq!(tag.artist().as_deref(), Some("Artist A"));
-		assert_eq!(tag.title().as_deref(), Some(&*xxx));
-	}
+	todo!("Support writing ID3v2.3")
+	// let mut file = temp_file!("tests/taglib/data/empty.wav");
+	//
+	// let xxx = "X".repeat(254);
+	// {
+	// 	let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	// 	assert!(f.id3v2().is_none());
+	//
+	// 	f.id3v2_mut().unwrap().set_title(xxx.clone());
+	// 	f.id3v2_mut().unwrap().set_artist(String::from("Artist A"));
+	//
+	// 	// f.save(RIFF::WAV::File::AllTags, File::StripOthers, ID3v2::v3);
+	// 	// assert!(f.id3v2().is_some());
+	// }
+	// {
+	// 	let f2 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	// 	let tag = f2.id3v2().unwrap();
+	// 	assert_eq!(tag.original_version(), Id3v2Version::V3);
+	// 	assert_eq!(tag.artist().as_deref(), Some("Artist A"));
+	// 	assert_eq!(tag.title().as_deref(), Some(&*xxx));
+	// }
 }
 
 #[test]
@@ -275,49 +275,49 @@ fn test_fuzzed_file2() {
 }
 
 #[test]
-#[ignore] // TODO: Doesn't pass, need to check what TagLib is doing here
 fn test_file_with_garbage_appended() {
-	let mut file = temp_file!("tests/taglib/data/empty.wav");
-	let contents_before_modification;
-	{
-		file.seek(SeekFrom::End(0)).unwrap();
-
-		let garbage = b"12345678";
-		file.write_all(garbage).unwrap();
-		file.rewind().unwrap();
-
-		let mut file_contents = Vec::new();
-		file.read_to_end(&mut file_contents).unwrap();
-
-		contents_before_modification = file_contents;
-	}
-	file.rewind().unwrap();
-	{
-		let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.rewind().unwrap();
-
-		let mut id3v2 = Id3v2Tag::default();
-		id3v2.set_title(String::from("ID3v2 Title"));
-		f.set_id3v2(id3v2);
-
-		let mut riff_info = RIFFInfoList::default();
-		riff_info.set_title(String::from("INFO Title"));
-		f.set_riff_info(riff_info);
-
-		f.save_to(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		TagType::Id3v2.remove_from(&mut file).unwrap();
-		file.rewind().unwrap();
-		TagType::RiffInfo.remove_from(&mut file).unwrap();
-	}
-	file.rewind().unwrap();
-	{
-		let mut contents_after_modification = Vec::new();
-		file.read_to_end(&mut contents_after_modification).unwrap();
-		assert_eq!(contents_before_modification, contents_after_modification);
-	}
+	todo!("Doesn't pass, need to check what TagLib is doing here")
+	// let mut file = temp_file!("tests/taglib/data/empty.wav");
+	// let contents_before_modification;
+	// {
+	// 	file.seek(SeekFrom::End(0)).unwrap();
+	//
+	// 	let garbage = b"12345678";
+	// 	file.write_all(garbage).unwrap();
+	// 	file.rewind().unwrap();
+	//
+	// 	let mut file_contents = Vec::new();
+	// 	file.read_to_end(&mut file_contents).unwrap();
+	//
+	// 	contents_before_modification = file_contents;
+	// }
+	// file.rewind().unwrap();
+	// {
+	// 	let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	// 	file.rewind().unwrap();
+	//
+	// 	let mut id3v2 = Id3v2Tag::default();
+	// 	id3v2.set_title(String::from("ID3v2 Title"));
+	// 	f.set_id3v2(id3v2);
+	//
+	// 	let mut riff_info = RIFFInfoList::default();
+	// 	riff_info.set_title(String::from("INFO Title"));
+	// 	f.set_riff_info(riff_info);
+	//
+	// 	f.save_to(&mut file).unwrap();
+	// }
+	// file.rewind().unwrap();
+	// {
+	// 	TagType::Id3v2.remove_from(&mut file).unwrap();
+	// 	file.rewind().unwrap();
+	// 	TagType::RiffInfo.remove_from(&mut file).unwrap();
+	// }
+	// file.rewind().unwrap();
+	// {
+	// 	let mut contents_after_modification = Vec::new();
+	// 	file.read_to_end(&mut contents_after_modification).unwrap();
+	// 	assert_eq!(contents_before_modification, contents_after_modification);
+	// }
 }
 
 #[test]
