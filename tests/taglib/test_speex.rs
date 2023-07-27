@@ -7,7 +7,6 @@ use lofty::ogg::{SpeexFile, VorbisComments};
 use lofty::{Accessor, AudioFile, ParseOptions};
 
 #[test]
-#[ignore]
 fn test_audio_properties() {
 	let f = get_file::<SpeexFile>("tests/taglib/data/empty.spx");
 
@@ -21,8 +20,8 @@ fn test_audio_properties() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
+// TODO: This test doesn't work, it's very specific with file/packet sizes. Have to determine whether or not to even keep this one.
 #[test]
-#[ignore] // TODO: This test doesn't work, it's very specific with file/packet sizes. Have to determine whether or not to even keep this one.
 fn test_split_packets() {
 	let mut file = temp_file!("tests/taglib/data/empty.spx");
 

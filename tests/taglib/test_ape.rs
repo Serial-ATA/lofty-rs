@@ -23,25 +23,21 @@ fn test_399(path: &str) {
 }
 
 #[test]
-#[ignore]
 fn test_properties_399() {
 	test_399("tests/taglib/data/mac-399.ape")
 }
 
 #[test]
-#[ignore]
 fn test_properties_399_tagged() {
 	test_399("tests/taglib/data/mac-399-tagged.ape")
 }
 
 #[test]
-#[ignore]
 fn test_properties_399_id3v2() {
 	test_399("tests/taglib/data/mac-399-id3v2.ape")
 }
 
 #[test]
-#[ignore]
 fn test_properties_396() {
 	let f = get_file::<ApeFile>("tests/taglib/data/mac-396.ape");
 	let properties = f.properties();
@@ -57,7 +53,6 @@ fn test_properties_396() {
 }
 
 #[test]
-#[ignore]
 fn test_properties_390() {
 	let f = get_file::<ApeFile>("tests/taglib/data/mac-390-hdr.ape");
 	let properties = f.properties();
