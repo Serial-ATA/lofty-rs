@@ -78,7 +78,6 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 }
 
 #[test]
-#[ignore]
 fn test_musepack() {
 	file_ref_save("click.mpc", FileType::Mpc);
 }
@@ -202,7 +201,6 @@ fn test_create() {
 }
 
 #[test]
-#[ignore] // TODO: We're off by over 200ms
 fn test_audio_properties() {
 	let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
 	let properties = file.properties();
@@ -216,8 +214,8 @@ fn test_default_file_extensions() {
 	// Marker test, Lofty does not replicate this API
 }
 
+// TODO: We need to check resolvers *first* and then resort to our default implementations
 #[test]
-#[ignore] // TODO: We need to check resolvers *first* and then resort to our default implementations
 fn test_file_resolver() {
 	{
 		let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
