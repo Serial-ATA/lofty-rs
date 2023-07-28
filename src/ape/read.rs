@@ -125,7 +125,12 @@ where
 		id3v2_tag,
 		ape_tag,
 		properties: if parse_options.read_properties {
-			super::properties::read_properties(data, stream_len, file_length)?
+			super::properties::read_properties(
+				data,
+				stream_len,
+				file_length,
+				parse_options.parsing_mode,
+			)?
 		} else {
 			ApeProperties::default()
 		},

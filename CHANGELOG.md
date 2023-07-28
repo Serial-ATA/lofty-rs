@@ -32,6 +32,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WavPack**: Custom sample rates will no longer be overwritten
   - When a custom sample rate (or multiplier) was encountered, it would accidentally be overwritten with 0, causing
     incorrect duration and bitrate values.
+- **APE**: Reading properties on older files will no longer error
+  - Older APE stream versions were not properly handled, leading to incorrect properties and errors.
 
 ## [0.15.0] - 2023-07-11
 

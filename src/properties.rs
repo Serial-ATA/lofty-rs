@@ -171,7 +171,7 @@ mod tests {
 		version: 3990,
 		duration: Duration::from_millis(1428),
 		overall_bitrate: 361,
-		audio_bitrate: 361,
+		audio_bitrate: 360,
 		sample_rate: 48000,
 		bit_depth: 16,
 		channels: 2,

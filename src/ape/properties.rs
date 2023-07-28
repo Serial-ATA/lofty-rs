@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::macros::decode_err;
+use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::convert::TryInto;
@@ -76,6 +77,7 @@ pub(super) fn read_properties<R>(
 	data: &mut R,
 	stream_len: u64,
 	file_length: u64,
+	parse_mode: ParsingMode,
 ) -> Result<ApeProperties>
 where
 	R: Read + Seek,
@@ -86,9 +88,9 @@ where
 
 	// Property reading differs between versions
 	if version >= 3980 {
-		properties_gt_3980(data, version, stream_len, file_length)
+		properties_gt_3980(data, version, stream_len, file_length, parse_mode)
 	} else {
-		properties_lt_3980(data, version, stream_len, file_length)
+		properties_lt_3980(data, version, stream_len, file_length, parse_mode)
 	}
 }
 
@@ -97,6 +99,7 @@ fn properties_gt_3980<R>(
 	version: u16,
 	stream_len: u64,
 	file_length: u64,
+	parse_mode: ParsingMode,
 ) -> Result<ApeProperties>
 where
 	R: Read + Seek,
@@ -126,6 +129,9 @@ where
 	data.read_exact(&mut header)
 		.map_err(|_| decode_err!(Ape, "Not enough data left in reader to finish MAC header"))?;
 
+	let mut properties = ApeProperties::default();
+	properties.version = version;
+
 	// Skip the first 4 bytes of the header
 	// Compression type (2)
 	// Format flags (2)
@@ -135,38 +141,26 @@ where
 	let final_frame_blocks = header_read.read_u32::<LittleEndian>()?;
 	let total_frames = header_read.read_u32::<LittleEndian>()?;
 
-	if total_frames == 0 {
-		decode_err!(@BAIL Ape, "File contains no frames");
+	properties.bit_depth = header_read.read_u16::<LittleEndian>()? as u8;
+	properties.channels = header_read.read_u16::<LittleEndian>()? as u8;
+	properties.sample_rate = header_read.read_u32::<LittleEndian>()?;
+
+	match verify(total_frames, properties.channels) {
+		Err(e) if parse_mode == ParsingMode::Strict => return Err(e),
+		Err(_) => return Ok(properties),
+		_ => {},
 	}
 
-	let bits_per_sample = header_read.read_u16::<LittleEndian>()?;
-
-	let channels = header_read.read_u16::<LittleEndian>()?;
-
-	if !(1..=32).contains(&channels) {
-		decode_err!(@BAIL Ape, "File has an invalid channel count (must be between 1 and 32 inclusive)");
-	}
-
-	let sample_rate = header_read.read_u32::<LittleEndian>()?;
-
-	let (duration, overall_bitrate, audio_bitrate) = get_duration_bitrate(
+	get_duration_bitrate(
+		&mut properties,
 		file_length,
 		total_frames,
 		final_frame_blocks,
 		blocks_per_frame,
-		sample_rate,
 		stream_len,
 	);
 
-	Ok(ApeProperties {
-		version,
-		duration,
-		overall_bitrate,
-		audio_bitrate,
-		sample_rate,
-		bit_depth: bits_per_sample as u8,
-		channels: channels as u8,
-	})
+	Ok(properties)
 }
 
 fn properties_lt_3980<R>(
@@ -174,33 +168,30 @@ fn properties_lt_3980<R>(
 	version: u16,
 	stream_len: u64,
 	file_length: u64,
+	parse_mode: ParsingMode,
 ) -> Result<ApeProperties>
 where
-	R: Read + Seek,
+	R: Read,
 {
 	// Versions < 3980 don't have a descriptor
 	let mut header = [0; 26];
 	data.read_exact(&mut header)
 		.map_err(|_| decode_err!(Ape, "Not enough data left in reader to finish MAC header"))?;
 
-	// We don't need all the header data, so just make 2 slices
-	let header_first = &mut &header[..8];
+	let mut properties = ApeProperties::default();
+	properties.version = version;
 
-	// Skipping 8 bytes
-	// WAV header length (4)
-	// WAV tail length (4)
-	let header_second = &mut &header[18..];
+	let header_reader = &mut &header[..];
 
-	let compression_level = header_first.read_u16::<LittleEndian>()?;
-
-	let format_flags = header_first.read_u16::<LittleEndian>()?;
 	// https://github.com/fernandotcl/monkeys-audio/blob/5fe956c7e67c13daa80518a4cc7001e9fa185297/src/MACLib/MACLib.h#L74
-	let bit_depth = if (format_flags & 0b1) == 1 {
-		8
-	} else if (format_flags & 0b100) == 4 {
-		24
+	let compression_level = header_reader.read_u16::<LittleEndian>()?;
+	let format_flags = header_reader.read_u16::<LittleEndian>()?;
+	if (format_flags & 0b1) == 1 {
+		properties.bit_depth = 8
+	} else if (format_flags & 0b1000) == 8 {
+		properties.bit_depth = 24
 	} else {
-		16
+		properties.bit_depth = 16
 	};
 
 	let blocks_per_frame = match version {
@@ -209,74 +200,68 @@ where
 		_ => 9216,
 	};
 
-	let channels = header_first.read_u16::<LittleEndian>()?;
+	properties.channels = header_reader.read_u16::<LittleEndian>()? as u8;
+	properties.sample_rate = header_reader.read_u32::<LittleEndian>()?;
 
+	// Skipping 8 bytes
+	// WAV header length (4)
+	// WAV tail length (4)
+	let mut _skip = [0; 8];
+	header_reader.read_exact(&mut _skip)?;
+
+	let total_frames = header_reader.read_u32::<LittleEndian>()?;
+	let final_frame_blocks = header_reader.read_u32::<LittleEndian>()?;
+
+	match verify(total_frames, properties.channels) {
+		Err(e) if parse_mode == ParsingMode::Strict => return Err(e),
+		Err(_) => return Ok(properties),
+		_ => {},
+	}
+
+	get_duration_bitrate(
+		&mut properties,
+		file_length,
+		total_frames,
+		final_frame_blocks,
+		blocks_per_frame,
+		stream_len,
+	);
+
+	Ok(properties)
+}
+
+/// Verifies the channel count falls within the bounds of the spec, and we have some audio frames to work with.
+fn verify(total_frames: u32, channels: u8) -> Result<()> {
 	if !(1..=32).contains(&channels) {
 		decode_err!(@BAIL Ape, "File has an invalid channel count (must be between 1 and 32 inclusive)");
 	}
-
-	let sample_rate = header_first.read_u32::<LittleEndian>()?;
-
-	// Move on the second part of header
-	let total_frames = header_second.read_u32::<LittleEndian>()?;
 
 	if total_frames == 0 {
 		decode_err!(@BAIL Ape, "File contains no frames");
 	}
 
-	let final_frame_blocks = data.read_u32::<LittleEndian>()?;
-
-	let (duration, overall_bitrate, audio_bitrate) = get_duration_bitrate(
-		file_length,
-		total_frames,
-		final_frame_blocks,
-		blocks_per_frame,
-		sample_rate,
-		stream_len,
-	);
-
-	Ok(ApeProperties {
-		version,
-		duration,
-		overall_bitrate,
-		audio_bitrate,
-		sample_rate,
-		bit_depth,
-		channels: channels as u8,
-	})
+	Ok(())
 }
 
 fn get_duration_bitrate(
+	properties: &mut ApeProperties,
 	file_length: u64,
 	total_frames: u32,
 	final_frame_blocks: u32,
 	blocks_per_frame: u32,
-	sample_rate: u32,
 	stream_len: u64,
-) -> (Duration, u32, u32) {
+) {
 	let mut total_samples = u64::from(final_frame_blocks);
 
 	if total_samples > 1 {
 		total_samples += u64::from(blocks_per_frame) * u64::from(total_frames - 1)
 	}
 
-	let mut overall_bitrate = 0;
-	let mut audio_bitrate = 0;
+	if properties.sample_rate > 0 {
+		let length = (total_samples as f64 * 1000.0) / f64::from(properties.sample_rate);
 
-	if sample_rate > 0 {
-		let length = (total_samples * 1000) / u64::from(sample_rate);
-
-		if length > 0 {
-			overall_bitrate = crate::div_ceil(file_length * 8, length) as u32;
-			audio_bitrate = crate::div_ceil(stream_len * 8, length) as u32;
-		}
-
-		(
-			Duration::from_millis(length),
-			overall_bitrate,
-			audio_bitrate,
-		)
-	} else {
-		(Duration::ZERO, overall_bitrate, audio_bitrate)
+		properties.duration = Duration::from_millis((length + 0.5) as u64);
+		properties.audio_bitrate = ((stream_len as f64) * 8.0 / length + 0.5) as u32;
+		properties.overall_bitrate = ((file_length as f64) * 8.0 / length + 0.5) as u32;
 	}
 }
