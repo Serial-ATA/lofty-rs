@@ -138,7 +138,9 @@
 	clippy::field_reassign_with_default,
 	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */
 	clippy::explicit_iter_loop,
-	clippy::from_iter_instead_of_collect
+	clippy::from_iter_instead_of_collect,
+	clippy::no_effect_underscore_binding,
+	clippy::used_underscore_binding,
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
@@ -183,15 +185,3 @@ pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 pub use picture::PictureInformation;
 
 pub use lofty_attr::LoftyFile;
-
-// TODO: https://github.com/rust-lang/rust/issues/88581
-#[inline]
-pub(crate) const fn div_ceil(dividend: u64, divisor: u64) -> u64 {
-	let d = dividend / divisor;
-	let r = dividend % divisor;
-	if r > 0 && divisor > 0 {
-		d + 1
-	} else {
-		d
-	}
-}
