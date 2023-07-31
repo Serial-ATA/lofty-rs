@@ -1,7 +1,6 @@
-use super::flags::Id3v2TagFlags;
 use super::frame::id::FrameId;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
-use super::Id3v2Version;
+use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
@@ -1223,13 +1222,13 @@ mod tests {
 	use std::borrow::Cow;
 
 	use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
+	use crate::id3::v2::header::{Id3v2Header, Id3v2Version};
 	use crate::id3::v2::items::{ExtendedUrlFrame, Popularimeter, UniqueFileIdentifierFrame};
 	use crate::id3::v2::tag::{filter_comment_frame_by_description, new_text_frame};
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::id3::v2::{
-		read_id3v2_header, AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame,
-		FrameFlags, FrameId, FrameValue, Id3v2Tag, Id3v2Version, TextInformationFrame,
-		UrlLinkFrame,
+		AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame, FrameFlags, FrameId,
+		FrameValue, Id3v2Tag, TextInformationFrame, UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -1245,7 +1244,7 @@ mod tests {
 
 		let mut reader = std::io::Cursor::new(&tag_bytes[..]);
 
-		let header = read_id3v2_header(&mut reader).unwrap();
+		let header = Id3v2Header::parse(&mut reader).unwrap();
 		crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()
 	}
 
@@ -1356,7 +1355,7 @@ mod tests {
 
 		let temp_reader = &mut &*writer;
 
-		let temp_header = read_id3v2_header(temp_reader).unwrap();
+		let temp_header = Id3v2Header::parse(temp_reader).unwrap();
 		let temp_parsed_tag =
 			crate::id3::v2::read::parse_id3v2(temp_reader, temp_header, ParsingMode::Strict)
 				.unwrap();
@@ -1608,7 +1607,7 @@ mod tests {
 
 		let mut reader = &mut &writer[..];
 
-		let header = read_id3v2_header(&mut reader).unwrap();
+		let header = Id3v2Header::parse(&mut reader).unwrap();
 		assert!(crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).is_ok());
 
 		assert_eq!(writer[3..10], writer[writer.len() - 7..])
@@ -1633,7 +1632,7 @@ mod tests {
 
 		let mut reader = &mut &writer[..];
 
-		let header = read_id3v2_header(&mut reader).unwrap();
+		let header = Id3v2Header::parse(&mut reader).unwrap();
 		let tag = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
 
 		assert_eq!(tag.len(), 1);
@@ -1950,7 +1949,7 @@ mod tests {
 		// And verify we can reread the tag
 		let mut reader = std::io::Cursor::new(&content[..]);
 
-		let header = read_id3v2_header(&mut reader).unwrap();
+		let header = Id3v2Header::parse(&mut reader).unwrap();
 		let reparsed =
 			crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap();
 

@@ -1,5 +1,5 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
-use crate::id3::v2::Id3v2Version;
+use crate::id3::v2::header::Id3v2Version;
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{encode_text, TextEncoding};

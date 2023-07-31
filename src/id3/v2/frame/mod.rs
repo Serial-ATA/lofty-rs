@@ -3,13 +3,13 @@ mod header;
 pub(super) mod id;
 pub(super) mod read;
 
+use super::header::Id3v2Version;
 use super::items::{
 	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
 	KeyValueFrame, OwnershipFrame, Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame,
 	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
-use super::Id3v2Version;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::TagType;

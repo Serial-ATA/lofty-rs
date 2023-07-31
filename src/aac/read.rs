@@ -1,8 +1,8 @@
 use super::header::{ADTSHeader, HEADER_MASK};
 use super::AacFile;
 use crate::error::Result;
+use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::v2::read_id3v2_header;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::{decode_err, parse_mode_choice};
 use crate::mpeg::header::{cmp_header, search_for_frame_sync, HeaderCmpResult};
@@ -43,7 +43,7 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = read_id3v2_header(reader)?;
+				let header = Id3v2Header::parse(reader)?;
 				let skip_footer = header.flags.footer;
 
 				stream_len -= u64::from(header.size);

@@ -96,14 +96,14 @@ impl<B: ByteOrder> Chunks<B> {
 	where
 		R: Read + Seek,
 	{
+		use crate::id3::v2::header::Id3v2Header;
 		use crate::id3::v2::read::parse_id3v2;
-		use crate::id3::v2::read_id3v2_header;
 
 		let content = self.content(data)?;
 
 		let reader = &mut &*content;
 
-		let header = read_id3v2_header(reader)?;
+		let header = Id3v2Header::parse(reader)?;
 		let id3v2 = parse_id3v2(reader, header, parse_mode)?;
 
 		// Skip over the footer
