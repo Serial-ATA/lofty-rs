@@ -2,8 +2,9 @@ use super::header::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
+use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
-use crate::id3::v2::{FrameFlags, FrameId, FrameValue, Id3v2Version};
+use crate::id3::v2::{FrameFlags, FrameId, FrameValue};
 use crate::macros::try_vec;
 use crate::probe::ParsingMode;
 
