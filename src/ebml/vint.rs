@@ -108,16 +108,15 @@ impl VInt {
 		}
 
 		let octet_length = (Self::MAX_OCTET_LENGTH as u32) - start.ilog2();
-		dbg!(octet_length);
 		if octet_length > 8 || octet_length as u8 > max_length {
 			err!(BadVintSize);
 		}
 
 		let mut bytes_read = 1;
-		let mut val = start as u64 ^ (1 << start.ilog2()) as u64;
+		let mut val = u64::from(start) ^ (1 << start.ilog2()) as u64;
 		while bytes_read < octet_length {
 			bytes_read += 1;
-			val = (val << 8) | reader.read_u8()? as u64;
+			val = (val << 8) | u64::from(reader.read_u8()?);
 		}
 
 		Ok(Self(val))
@@ -196,7 +195,7 @@ impl VInt {
 		let mut val = self.value();
 
 		// Add the octet length
-		val |= 1 << octets * (Self::USABLE_BITS_PER_BYTE as u8);
+		val |= 1 << (octets * (Self::USABLE_BITS_PER_BYTE as u8));
 
 		let mut byte_shift = (octets - 1) as i8;
 		while byte_shift >= 0 {
