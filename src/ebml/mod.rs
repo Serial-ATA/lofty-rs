@@ -2,6 +2,7 @@
 mod properties;
 mod read;
 mod tag;
+mod vint;
 
 use lofty_attr::LoftyFile;
 
@@ -9,6 +10,7 @@ use lofty_attr::LoftyFile;
 
 pub use properties::EbmlProperties;
 pub use tag::EbmlTag;
+pub use vint::VInt;
 
 /// An EBML file
 #[derive(LoftyFile, Default)]
