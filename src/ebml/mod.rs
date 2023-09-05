@@ -1,4 +1,5 @@
 //! EBML specific items
+mod element_reader;
 mod properties;
 mod read;
 mod tag;
