@@ -85,7 +85,7 @@ macro_rules! define_master_elements {
 
 define_master_elements! {
 	EBML: {
-		id: 0x1A45DFA3,
+		id: 0x1A45_DFA3,
 		children: [
 			EBMLVersion: { 0x4286, UnsignedInt },
 			EBMLReadVersion: { 0x42F7, UnsignedInt },
@@ -213,7 +213,7 @@ where
 	pub(crate) fn read_float(&mut self, element_length: u64) -> Result<f64> {
 		Ok(match element_length {
 			0 => 0.0,
-			4 => self.reader.read_f32::<BigEndian>()? as f64,
+			4 => f64::from(self.reader.read_f32::<BigEndian>()?),
 			8 => self.reader.read_f64::<BigEndian>()?,
 			_ => decode_err!(@BAIL Ebml, "Invalid size for float element"),
 		})
