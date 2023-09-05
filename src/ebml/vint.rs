@@ -11,8 +11,8 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 ///
 /// To ensure safe construction of `VInt`s, users must create them through [`VInt::parse`] or [`VInt::from_u64`].
 #[repr(transparent)]
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug)]
-pub struct VInt(u64);
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+pub struct VInt(pub(crate) u64);
 
 impl VInt {
 	// Each octet will shave a single bit off each byte
