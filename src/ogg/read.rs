@@ -94,7 +94,7 @@ where
 
 		match key {
 			k if k.eq_ignore_ascii_case(b"METADATA_BLOCK_PICTURE") => {
-				match Picture::from_flac_bytes(value, true) {
+				match Picture::from_flac_bytes(value, true, parse_mode) {
 					Ok(picture) => tag.pictures.push(picture),
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {

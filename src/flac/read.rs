@@ -100,9 +100,17 @@ where
 		}
 
 		if block.ty == BLOCK_ID_PICTURE {
-			flac_file
-				.pictures
-				.push(Picture::from_flac_bytes(&block.content, false)?)
+			match Picture::from_flac_bytes(&block.content, false, parse_options.parsing_mode) {
+				Ok(picture) => flac_file.pictures.push(picture),
+				Err(e) => {
+					if parse_options.parsing_mode == ParsingMode::Strict {
+						return Err(e);
+					}
+
+					log::warn!("Unable to read FLAC picture block, discarding");
+					continue;
+				},
+			}
 		}
 	}
 
