@@ -1,5 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
+use crate::probe::ParsingMode;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
@@ -625,18 +626,25 @@ impl Picture {
 	///
 	/// This function will return [`NotAPicture`][ErrorKind::NotAPicture] if
 	/// at any point it's unable to parse the data
-	pub fn from_flac_bytes(bytes: &[u8], encoded: bool) -> Result<(Self, PictureInformation)> {
+	pub fn from_flac_bytes(
+		bytes: &[u8],
+		encoded: bool,
+		parse_mode: ParsingMode,
+	) -> Result<(Self, PictureInformation)> {
 		if encoded {
 			let data = base64::engine::general_purpose::STANDARD
 				.decode(bytes)
 				.map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
-			Self::from_flac_bytes_inner(&data)
+			Self::from_flac_bytes_inner(&data, parse_mode)
 		} else {
-			Self::from_flac_bytes_inner(bytes)
+			Self::from_flac_bytes_inner(bytes, parse_mode)
 		}
 	}
 
-	fn from_flac_bytes_inner(content: &[u8]) -> Result<(Self, PictureInformation)> {
+	fn from_flac_bytes_inner(
+		content: &[u8],
+		parse_mode: ParsingMode,
+	) -> Result<(Self, PictureInformation)> {
 		use crate::macros::try_vec;
 
 		let mut size = content.len();
@@ -652,7 +660,7 @@ impl Picture {
 		// ID3v2 APIC uses a single byte for picture type.
 		// Anything greater than that is probably invalid, so
 		// we just stop early
-		if pic_ty > 255 {
+		if pic_ty > 255 && parse_mode == ParsingMode::Strict {
 			err!(NotAPicture);
 		}
 

@@ -24,10 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Ilst::remove` will now return all of the removed atoms
   - `Ilst::insert_picture` will now combine all pictures into a single `covr` atom
   - `Ilst::insert` will now merge atoms with the same identifier into a single atom
-- **FLAC**: Allow multiple Vorbis Comment blocks when not using `ParsingMode::Strict`
-  - This is not allowed [by spec](https://xiph.org/flac/format.html#def_VORBIS_COMMENT), but is still possible
-    to encounter in the wild. Now we will just tag whichever tag happens to be latest in the stream and
-    use it, they **will not be merged**.
+- **FLAC**:
+  - Allow multiple Vorbis Comment blocks when not using `ParsingMode::Strict`
+    - This is not allowed [by spec](https://xiph.org/flac/format.html#def_VORBIS_COMMENT), but is still possible
+      to encounter in the wild. Now we will just tag whichever tag happens to be latest in the stream and
+      use it, they **will not be merged**.
+  - Allow picture types greater than 255 when not using `ParsingMode::Strict`
+    - This is not allowed [by spec](https://xiph.org/flac/format.html#metadata_block_picture), but has been encountered
+      in the wild. Now we will just cap the picture type at 255.
 
 ## Fixed
 - **WavPack**: Custom sample rates will no longer be overwritten
