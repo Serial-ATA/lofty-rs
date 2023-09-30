@@ -141,6 +141,9 @@
 	clippy::from_iter_instead_of_collect,
 	clippy::no_effect_underscore_binding,
 	clippy::used_underscore_binding,
+	clippy::ignored_unit_patterns, /* Not a fan of this lint, doesn't make anything clearer as it claims */
+	clippy::needless_return, /* Explicit returns are needed from time to time for clarity */
+	clippy::redundant_guards, /* Currently broken for some cases, might enable later*/
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
