@@ -784,7 +784,7 @@ impl Picture {
 		})
 	}
 
-	fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType> {
+	pub(crate) fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType> {
 		match bytes[..8] {
 			[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => Ok(MimeType::Png),
 			[0xFF, 0xD8, ..] => Ok(MimeType::Jpeg),
