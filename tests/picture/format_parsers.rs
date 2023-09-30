@@ -1,5 +1,5 @@
 use lofty::id3::v2::{AttachedPictureFrame, Id3v2Version};
-use lofty::{Picture, PictureInformation, PictureType, TextEncoding};
+use lofty::{ParsingMode, Picture, PictureInformation, PictureType, TextEncoding};
 
 use std::fs::File;
 use std::io::Read;
@@ -96,7 +96,7 @@ fn as_ape_bytes() {
 fn flac_metadata_block_picture() {
 	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
 
-	let (pic, _) = Picture::from_flac_bytes(&buf, true).unwrap();
+	let (pic, _) = Picture::from_flac_bytes(&buf, true, ParsingMode::Strict).unwrap();
 
 	assert_eq!(create_original_picture(), pic);
 }
