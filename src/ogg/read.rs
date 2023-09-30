@@ -2,11 +2,13 @@ use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
-use crate::picture::Picture;
+use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::probe::ParsingMode;
 
+use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
+use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::{Packets, PageHeader};
 
@@ -97,6 +99,37 @@ where
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
 							return Err(e);
+						}
+
+						log::warn!("Failed to decode FLAC picture, discarding field");
+						continue;
+					},
+				}
+			},
+			k if k.eq_ignore_ascii_case(b"COVERART") => {
+				// `COVERART` is an old deprecated image storage format. We have to convert it
+				// to a `METADATA_BLOCK_PICTURE` for it to be useful.
+				//
+				// <https://wiki.xiph.org/VorbisComment#Conversion_to_METADATA_BLOCK_PICTURE>
+				let picture_data = base64::engine::general_purpose::STANDARD.decode(value);
+
+				match picture_data {
+					Ok(picture_data) => {
+						let mime_type = Picture::mimetype_from_bin(&picture_data)
+							.unwrap_or_else(|_| MimeType::Unknown(String::from("image/")));
+
+						let picture = Picture {
+							pic_type: PictureType::Other,
+							mime_type,
+							description: None,
+							data: Cow::from(picture_data),
+						};
+
+						tag.pictures.push((picture, PictureInformation::default()))
+					},
+					Err(_) => {
+						if parse_mode == ParsingMode::Strict {
+							return Err(LoftyError::new(ErrorKind::NotAPicture));
 						}
 
 						log::warn!("Failed to decode FLAC picture, discarding field");

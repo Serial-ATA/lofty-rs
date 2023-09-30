@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - `Atom::into_data`
   - `Atom::merge`
+- **OGG**: Support for reading "COVERART" fields, an old deprecated image storage format.
 
 ## Changed
 - **ID3v2**:
