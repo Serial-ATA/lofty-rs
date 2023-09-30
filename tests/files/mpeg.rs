@@ -351,3 +351,17 @@ fn read_and_write_tpil_frame() {
 
 	assert_eq!(key_value_pairs, content.key_value_pairs);
 }
+
+#[test]
+#[ignore]
+fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
+	let mut file = temp_file!("tests/files/assets/id3v2_multiple_composers.mp3");
+	let mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	let tag: &Id3v2Tag = mpeg_file.id3v2().unwrap();
+	assert_eq!(
+		2,
+		tag.into_iter()
+			.filter(|frame| frame.id_str() == "TCOM")
+			.count()
+	);
+}
