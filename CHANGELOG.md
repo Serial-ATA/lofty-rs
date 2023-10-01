@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     incorrect duration and bitrate values.
 - **APE**: Reading properties on older files will no longer error
   - Older APE stream versions were not properly handled, leading to incorrect properties and errors.
+- **ID3v2**: Don't expect text frames to be null terminated
 
 ## [0.15.0] - 2023-07-11
 

@@ -37,7 +37,7 @@ impl TextInformationFrame {
 		};
 
 		let encoding = verify_encoding(encoding_byte, version)?;
-		let value = decode_text(reader, encoding, true)?.content;
+		let value = decode_text(reader, encoding, false)?.content;
 
 		Ok(Some(TextInformationFrame { encoding, value }))
 	}
