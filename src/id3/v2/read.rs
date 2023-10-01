@@ -20,11 +20,11 @@ where
 	let ret;
 	if header.flags.unsynchronisation {
 		// Unsynchronize the entire tag
-		let mut unsyncronized_reader = UnsynchronizedStream::new(tag_bytes);
-		ret = read_all_frames_into_tag(&mut unsyncronized_reader, header, parse_mode)?;
+		let mut unsynchronized_reader = UnsynchronizedStream::new(tag_bytes);
+		ret = read_all_frames_into_tag(&mut unsynchronized_reader, header, parse_mode)?;
 
 		// Get the `Take` back from the `UnsynchronizedStream`
-		tag_bytes = unsyncronized_reader.into_inner();
+		tag_bytes = unsynchronized_reader.into_inner();
 	} else {
 		ret = read_all_frames_into_tag(&mut tag_bytes, header, parse_mode)?;
 	};
