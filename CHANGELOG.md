@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support for "RVA2", "OWNE", "ETCO", and "PRIV" frames through
                `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}`
   - `FrameId` now implements `Display`
+  - `Id3v2Tag::get_texts` for multi-value text frames
 - **MP4**:
   - `Atom::into_data`
   - `Atom::merge`
@@ -22,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
   - `Id3v2Tag::remove` will now take a `FrameId` rather than `&str`
   - `FrameId` now implements `Into<Cow<'_, str>>`, making it possible to use it in `Frame::new`
-  - `ID3v2Tag` getters will now use `&FrameId` instead of `&str` for IDs
+  - `Id3v2Tag` getters will now use `&FrameId` instead of `&str` for IDs
 - **MP4**:
   - `Ilst::remove` will now return all of the removed atoms
   - `Ilst::insert_picture` will now combine all pictures into a single `covr` atom
