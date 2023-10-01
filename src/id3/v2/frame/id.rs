@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::{Display, Formatter};
 
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::tag::item::ItemKey;
@@ -89,6 +90,12 @@ impl<'a> FrameId<'a> {
 		match self {
 			FrameId::Valid(v) | FrameId::Outdated(v) => v,
 		}
+	}
+}
+
+impl Display for FrameId<'_> {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.write_str(self.as_str())
 	}
 }
 

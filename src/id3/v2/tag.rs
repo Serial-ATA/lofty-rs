@@ -35,7 +35,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
-					self.get_text($id)
+					self.get_text(&[<$name:upper _ID>])
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
@@ -161,10 +161,8 @@ impl Id3v2Tag {
 	/// Gets a [`Frame`] from an id
 	///
 	/// NOTE: This is *not* case-sensitive
-	pub fn get(&self, id: &str) -> Option<&Frame<'static>> {
-		self.frames
-			.iter()
-			.find(|f| f.id_str().eq_ignore_ascii_case(id))
+	pub fn get(&self, id: &FrameId<'_>) -> Option<&Frame<'static>> {
+		self.frames.iter().find(|f| &f.id == id)
 	}
 
 	/// Gets the text for a frame
@@ -173,7 +171,7 @@ impl Id3v2Tag {
 	///
 	/// If the tag is [`Id3v2Version::V4`], this will allocate if the text contains any
 	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
-	pub fn get_text(&self, id: &str) -> Option<Cow<'_, str>> {
+	pub fn get_text(&self, id: &FrameId<'_>) -> Option<Cow<'_, str>> {
 		let frame = self.get(id);
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { value, .. }),
@@ -468,7 +466,7 @@ impl Id3v2Tag {
 		})
 	}
 
-	fn split_num_pair(&self, id: &str) -> (Option<u32>, Option<u32>) {
+	fn split_num_pair(&self, id: &FrameId<'_>) -> (Option<u32>, Option<u32>) {
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { ref value, .. }),
 			..
@@ -499,9 +497,14 @@ impl Id3v2Tag {
 		};
 	}
 
-	fn insert_number_pair(&mut self, id: &'static str, number: Option<u32>, total: Option<u32>) {
+	fn insert_number_pair(
+		&mut self,
+		id: FrameId<'static>,
+		number: Option<u32>,
+		total: Option<u32>,
+	) {
 		if let Some(content) = format_number_pair(number, total) {
-			self.insert(Frame::text(Cow::Borrowed(id), content));
+			self.insert(Frame::text(id.into_inner(), content));
 		} else {
 			log::warn!("{id} is not set. number: {number:?}, total: {total:?}");
 		}
@@ -587,11 +590,11 @@ impl Accessor for Id3v2Tag {
 	);
 
 	fn track(&self) -> Option<u32> {
-		self.split_num_pair("TRCK").0
+		self.split_num_pair(&TRACK_ID).0
 	}
 
 	fn set_track(&mut self, value: u32) {
-		self.insert_number_pair("TRCK", Some(value), self.track_total());
+		self.insert_number_pair(TRACK_ID, Some(value), self.track_total());
 	}
 
 	fn remove_track(&mut self) {
@@ -599,11 +602,11 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn track_total(&self) -> Option<u32> {
-		self.split_num_pair("TRCK").1
+		self.split_num_pair(&TRACK_ID).1
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		self.insert_number_pair("TRCK", self.track(), Some(value));
+		self.insert_number_pair(TRACK_ID, self.track(), Some(value));
 	}
 
 	fn remove_track_total(&mut self) {
@@ -616,11 +619,11 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn disk(&self) -> Option<u32> {
-		self.split_num_pair("TPOS").0
+		self.split_num_pair(&DISC_ID).0
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		self.insert_number_pair("TPOS", Some(value), self.disk_total());
+		self.insert_number_pair(DISC_ID, Some(value), self.disk_total());
 	}
 
 	fn remove_disk(&mut self) {
@@ -628,11 +631,11 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn disk_total(&self) -> Option<u32> {
-		self.split_num_pair("TPOS").1
+		self.split_num_pair(&DISC_ID).1
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		self.insert_number_pair("TPOS", self.disk(), Some(value));
+		self.insert_number_pair(DISC_ID, self.disk(), Some(value));
 	}
 
 	fn remove_disk_total(&mut self) {
@@ -648,7 +651,7 @@ impl Accessor for Id3v2Tag {
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { value, .. }),
 			..
-		}) = self.get("TDRC")
+		}) = self.get(&RECORDING_TIME_ID)
 		{
 			return try_parse_year(value);
 		}
@@ -1447,7 +1450,7 @@ mod tests {
 	#[test]
 	fn tag_to_id3v2() {
 		fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
-			let frame = tag.get(id);
+			let frame = tag.get(&FrameId::Valid(Cow::Borrowed(id)));
 
 			assert!(frame.is_some());
 
@@ -1470,7 +1473,9 @@ mod tests {
 		verify_frame(&id3v2_tag, "TPE1", "Bar artist");
 		verify_frame(&id3v2_tag, "TALB", "Baz album");
 
-		let frame = id3v2_tag.get(COMMENT_FRAME_ID).unwrap();
+		let frame = id3v2_tag
+			.get(&FrameId::Valid(Cow::Borrowed(COMMENT_FRAME_ID)))
+			.unwrap();
 		assert_eq!(
 			frame.content(),
 			&FrameValue::Comment(CommentFrame {
@@ -2340,7 +2345,9 @@ mod tests {
 		id3v2.insert(txxx_frame2);
 
 		// We cannot get user defined texts through `get_text`
-		assert!(id3v2.get_text("TXXX").is_none());
+		assert!(id3v2
+			.get_text(&FrameId::Valid(Cow::Borrowed("TXXX")))
+			.is_none());
 
 		assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
 
@@ -2369,6 +2376,11 @@ mod tests {
 	fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
 		// Issue #255
 		let tag = read_tag("tests/tags/assets/id3v2/multiple_composers.id3v24");
-		assert_eq!(tag.get_text("TCOM").as_deref().unwrap(), "A/B");
+		assert_eq!(
+			tag.get_text(&FrameId::Valid(Cow::Borrowed("TCOM")))
+				.as_deref()
+				.unwrap(),
+			"A/B"
+		);
 	}
 }
