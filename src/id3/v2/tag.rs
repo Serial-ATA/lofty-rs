@@ -190,6 +190,41 @@ impl Id3v2Tag {
 		None
 	}
 
+	/// Gets all of the values for a text frame
+	///
+	/// NOTE: Multiple values are only supported in ID3v2.4, this will not be
+	///       very useful for ID3v2.2/3 tags.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
+	/// use lofty::Accessor;
+	/// use std::borrow::Cow;
+	///
+	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
+	///
+	/// let mut tag = Id3v2Tag::new();
+	///
+	/// tag.set_title(String::from("Foo\0Bar"));
+	///
+	/// let mut titles = tag.get_texts(&TITLE_ID);
+	///
+	/// assert_eq!(titles.next(), Some("Foo"));
+	/// assert_eq!(titles.next(), Some("Bar"));
+	/// ```
+	pub fn get_texts(&self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &str>> {
+		if let Some(Frame {
+			value: FrameValue::Text(TextInformationFrame { value, .. }),
+			..
+		}) = self.get(id)
+		{
+			return Some(value.split('\0'));
+		}
+
+		None
+	}
+
 	/// Gets the text for a user-defined frame
 	///
 	/// NOTE: If the tag is [`Id3v2Version::V4`], there could be multiple values separated by null characters (`'\0'`).
@@ -2376,11 +2411,12 @@ mod tests {
 	fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
 		// Issue #255
 		let tag = read_tag("tests/tags/assets/id3v2/multiple_composers.id3v24");
-		assert_eq!(
-			tag.get_text(&FrameId::Valid(Cow::Borrowed("TCOM")))
-				.as_deref()
-				.unwrap(),
-			"A/B"
-		);
+		let mut composers = tag
+			.get_texts(&FrameId::Valid(Cow::Borrowed("TCOM")))
+			.unwrap();
+
+		assert_eq!(composers.next(), Some("A"));
+		assert_eq!(composers.next(), Some("B"));
+		assert_eq!(composers.next(), None)
 	}
 }
