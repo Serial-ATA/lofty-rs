@@ -1,6 +1,7 @@
 use crate::{set_artist, temp_file, verify_artist};
+use std::borrow::Cow;
 
-use lofty::id3::v2::{Frame, FrameFlags, FrameValue, Id3v2Tag, KeyValueFrame};
+use lofty::id3::v2::{Frame, FrameFlags, FrameId, FrameValue, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::{
 	Accessor, AudioFile, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem,
@@ -344,7 +345,11 @@ fn read_and_write_tpil_frame() {
 
 	let tag: &Id3v2Tag = mpeg_file.id3v2().unwrap();
 
-	let content = match tag.get("TIPL").unwrap().content() {
+	let content = match tag
+		.get(&FrameId::Valid(Cow::Borrowed("TIPL")))
+		.unwrap()
+		.content()
+	{
 		FrameValue::KeyValue(content) => content,
 		_ => panic!("Wrong Frame Value Type for TIPL"),
 	};

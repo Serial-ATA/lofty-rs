@@ -159,8 +159,6 @@ impl Id3v2Tag {
 
 impl Id3v2Tag {
 	/// Gets a [`Frame`] from an id
-	///
-	/// NOTE: This is *not* case-sensitive
 	pub fn get(&self, id: &FrameId<'_>) -> Option<&Frame<'static>> {
 		self.frames.iter().find(|f| &f.id == id)
 	}
@@ -208,7 +206,7 @@ impl Id3v2Tag {
 	///
 	/// tag.set_title(String::from("Foo\0Bar"));
 	///
-	/// let mut titles = tag.get_texts(&TITLE_ID);
+	/// let mut titles = tag.get_texts(&TITLE_ID).expect("Should exist");
 	///
 	/// assert_eq!(titles.next(), Some("Foo"));
 	/// assert_eq!(titles.next(), Some("Bar"));

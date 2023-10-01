@@ -1,7 +1,8 @@
 // Tests for special case conversions
 
-use lofty::id3::v2::{CommentFrame, Frame, FrameFlags, Id3v2Tag, UnsynchronizedTextFrame};
+use lofty::id3::v2::{CommentFrame, Frame, FrameFlags, FrameId, Id3v2Tag, UnsynchronizedTextFrame};
 use lofty::{ItemKey, Tag, TagType, TextEncoding};
+use std::borrow::Cow;
 
 #[test]
 fn tag_to_id3v2_lang_frame() {
@@ -12,7 +13,7 @@ fn tag_to_id3v2_lang_frame() {
 	let id3: Id3v2Tag = tag.into();
 
 	assert_eq!(
-		id3.get("USLT"),
+		id3.get(&FrameId::Valid(Cow::Borrowed("USLT"))),
 		Frame::new(
 			"USLT",
 			UnsynchronizedTextFrame {
@@ -28,7 +29,7 @@ fn tag_to_id3v2_lang_frame() {
 	);
 
 	assert_eq!(
-		id3.get("COMM"),
+		id3.get(&FrameId::Valid(Cow::Borrowed("COMM"))),
 		Frame::new(
 			"COMM",
 			CommentFrame {
