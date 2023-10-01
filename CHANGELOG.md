@@ -6,44 +6,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2023-10-01
+
 ## Added
 - **ID3v2**:
   - Support for "RVA2", "OWNE", "ETCO", and "PRIV" frames through
-               `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}`
-  - `FrameId` now implements `Display`
-  - `Id3v2Tag::get_texts` for multi-value text frames
-- **MP4**:
+               `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/236))
+  - `FrameId` now implements `Display` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/257))
+  - `Id3v2Tag::get_texts` for multi-value text frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/257))
+- **MP4** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/241)):
   - `Atom::into_data`
   - `Atom::merge`
-- **OGG**: Support for reading "COVERART" fields, an old deprecated image storage format.
+- **OGG**: Support for reading "COVERART" fields, an old deprecated image storage format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/253)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/254))
 
 ## Changed
 - **ID3v2**:
+  - Tag header parsing errors will be ignored unless using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
   - For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
-    in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI".
-  - `Id3v2Tag::remove` will now take a `FrameId` rather than `&str`
-  - `FrameId` now implements `Into<Cow<'_, str>>`, making it possible to use it in `Frame::new`
-  - `Id3v2Tag` getters will now use `&FrameId` instead of `&str` for IDs
-- **MP4**:
+  in a tag once and remove them. Those frames are: "MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", and "ASPI". ([PR](https://github.com/Serial-ATA/lofty-rs/pull/236))
+  - `Id3v2Tag::remove` will now take a `FrameId` rather than `&str` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/237))
+  - `FrameId` now implements `Into<Cow<'_, str>>`, making it possible to use it in `Frame::new` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/237))
+  - `Id3v2Tag` getters will now use `&FrameId` instead of `&str` for IDs ([PR](https://github.com/Serial-ATA/lofty-rs/pull/257))
+- **MP4** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/241)):
   - `Ilst::remove` will now return all of the removed atoms
   - `Ilst::insert_picture` will now combine all pictures into a single `covr` atom
   - `Ilst::insert` will now merge atoms with the same identifier into a single atom
 - **FLAC**:
-  - Allow multiple Vorbis Comment blocks when not using `ParsingMode::Strict`
+  - Allow multiple Vorbis Comment blocks when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/242))
     - This is not allowed [by spec](https://xiph.org/flac/format.html#def_VORBIS_COMMENT), but is still possible
-      to encounter in the wild. Now we will just tag whichever tag happens to be latest in the stream and
+      to encounter in the wild. Now we will just take whichever tag happens to be latest in the stream and
       use it, they **will not be merged**.
-  - Allow picture types greater than 255 when not using `ParsingMode::Strict`
+  - Allow picture types greater than 255 when not using `ParsingMode::Strict` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/253)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/254))
     - This is not allowed [by spec](https://xiph.org/flac/format.html#metadata_block_picture), but has been encountered
       in the wild. Now we will just cap the picture type at 255.
 
 ## Fixed
-- **WavPack**: Custom sample rates will no longer be overwritten
+- **WavPack**: Custom sample rates will no longer be overwritten ([PR](https://github.com/Serial-ATA/lofty-rs/pull/244))
   - When a custom sample rate (or multiplier) was encountered, it would accidentally be overwritten with 0, causing
     incorrect duration and bitrate values.
-- **APE**: Reading properties on older files will no longer error
+- **APE**: Reading properties on older files will no longer error ([PR](https://github.com/Serial-ATA/lofty-rs/pull/245))
   - Older APE stream versions were not properly handled, leading to incorrect properties and errors.
-- **ID3v2**: Don't expect text frames to be null terminated
+- **ID3v2**: Don't expect text frames to be null terminated ([issue](https://github.com/Serial-ATA/lofty-rs/issues/255)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/256))
 
 ## [0.15.0] - 2023-07-11
 
@@ -557,7 +560,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.15.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.0...HEAD
+[0.16.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.15.0...0.16.0
 [0.15.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.14.0...0.15.0
 [0.14.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.13.0...0.14.0
 [0.13.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.12.1...0.13.0
