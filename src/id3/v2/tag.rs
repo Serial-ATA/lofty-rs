@@ -2364,4 +2364,11 @@ mod tests {
 		assert!(id3v2.remove_user_text(&description2).is_some());
 		assert!(id3v2.is_empty());
 	}
+
+	#[test]
+	fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
+		// Issue #255
+		let tag = read_tag("tests/tags/assets/id3v2/multiple_composers.id3v24");
+		assert_eq!(tag.get_text("TCOM").as_deref().unwrap(), "A/B");
+	}
 }
