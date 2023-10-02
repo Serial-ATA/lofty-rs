@@ -782,7 +782,7 @@ mod tests {
 		let cursor = Cursor::new(tag);
 		let mut reader = AtomReader::new(cursor).unwrap();
 
-		super::read::parse_ilst(&mut reader, len as u64).unwrap()
+		super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap()
 	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
@@ -850,7 +850,8 @@ mod tests {
 		let cursor = Cursor::new(tag);
 		let mut reader = AtomReader::new(cursor).unwrap();
 
-		let parsed_tag = super::read::parse_ilst(&mut reader, len as u64).unwrap();
+		let parsed_tag =
+			super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -866,8 +867,12 @@ mod tests {
 		let mut reader = AtomReader::new(cursor).unwrap();
 
 		// Remove the ilst identifier and size
-		let temp_parsed_tag =
-			super::read::parse_ilst(&mut reader, (writer.len() - 8) as u64).unwrap();
+		let temp_parsed_tag = super::read::parse_ilst(
+			&mut reader,
+			crate::ParsingMode::Strict,
+			(writer.len() - 8) as u64,
+		)
+		.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -880,7 +885,8 @@ mod tests {
 		let cursor = Cursor::new(tag);
 		let mut reader = AtomReader::new(cursor).unwrap();
 
-		let ilst = super::read::parse_ilst(&mut reader, len as u64).unwrap();
+		let ilst =
+			super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap();
 
 		let tag: Tag = ilst.into();
 
@@ -999,7 +1005,12 @@ mod tests {
 			let cursor = Cursor::new(ilst_bytes);
 			let mut reader = AtomReader::new(cursor).unwrap();
 
-			ilst = super::read::parse_ilst(&mut reader, ilst_bytes.len() as u64).unwrap();
+			ilst = super::read::parse_ilst(
+				&mut reader,
+				crate::ParsingMode::Strict,
+				ilst_bytes.len() as u64,
+			)
+			.unwrap();
 		}
 
 		let mut file = tempfile::tempfile().unwrap();
