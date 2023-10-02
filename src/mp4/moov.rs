@@ -4,6 +4,7 @@ use super::ilst::Ilst;
 use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
 use crate::error::Result;
 use crate::macros::decode_err;
+use crate::ParsingMode;
 
 use std::io::{Read, Seek};
 
@@ -33,7 +34,11 @@ impl Moov {
 		moov.ok_or_else(|| decode_err!(Mp4, "No \"moov\" atom found"))
 	}
 
-	pub(super) fn parse<R>(reader: &mut AtomReader<R>, read_properties: bool) -> Result<Self>
+	pub(super) fn parse<R>(
+		reader: &mut AtomReader<R>,
+		parsing_mode: ParsingMode,
+		read_properties: bool,
+	) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
@@ -51,7 +56,7 @@ impl Moov {
 						}
 					},
 					b"udta" => {
-						meta = meta_from_udta(reader, atom.len - 8)?;
+						meta = meta_from_udta(reader, parsing_mode, atom.len - 8)?;
 					},
 					_ => skip_unneeded(reader, atom.extended, atom.len)?,
 				}
@@ -66,7 +71,11 @@ impl Moov {
 	}
 }
 
-fn meta_from_udta<R>(reader: &mut AtomReader<R>, len: u64) -> Result<Option<Ilst>>
+fn meta_from_udta<R>(
+	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
+	len: u64,
+) -> Result<Option<Ilst>>
 where
 	R: Read + Seek,
 {
@@ -118,7 +127,7 @@ where
 	}
 
 	if found_ilst {
-		return parse_ilst(reader, ilst_atom_size - 8).map(Some);
+		return parse_ilst(reader, parsing_mode, ilst_atom_size - 8).map(Some);
 	}
 
 	Ok(None)

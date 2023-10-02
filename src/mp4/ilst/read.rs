@@ -10,11 +10,16 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::utf16_decode;
+use crate::ParsingMode;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-pub(in crate::mp4) fn parse_ilst<R>(reader: &mut AtomReader<R>, len: u64) -> Result<Ilst>
+pub(in crate::mp4) fn parse_ilst<R>(
+	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
+	len: u64,
+) -> Result<Ilst>
 where
 	R: Read + Seek,
 {
@@ -35,12 +40,14 @@ where
 					continue;
 				},
 				b"covr" => {
-					handle_covr(&mut ilst_reader, &mut tag, &atom)?;
+					handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)?;
 					continue;
 				},
 				// Upgrade this to a \xa9gen atom
 				b"gnre" => {
-					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, &atom)? {
+					if let Some(atom_data) =
+						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					{
 						let mut data = Vec::new();
 
 						for (_, content) in atom_data {
@@ -70,7 +77,9 @@ where
 				// Special case the "Album ID", as it has the code "BE signed integer" (21), but
 				// must be interpreted as a "BE 64-bit Signed Integer" (74)
 				b"plID" => {
-					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, &atom)? {
+					if let Some(atom_data) =
+						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					{
 						let mut data = Vec::new();
 
 						for (code, content) in atom_data {
@@ -98,7 +107,9 @@ where
 					continue;
 				},
 				b"cpil" | b"hdvd" | b"pcst" | b"pgap" | b"shwm" => {
-					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, &atom)? {
+					if let Some(atom_data) =
+						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					{
 						if let Some((_, content)) = atom_data.first() {
 							let data = match content[..] {
 								[0, ..] => AtomData::Bool(false),
@@ -118,17 +129,22 @@ where
 			}
 		}
 
-		parse_data(&mut ilst_reader, &mut tag, atom)?;
+		parse_data(&mut ilst_reader, parsing_mode, &mut tag, atom)?;
 	}
 
 	Ok(tag)
 }
 
-fn parse_data<R>(reader: &mut AtomReader<R>, tag: &mut Ilst, atom_info: AtomInfo) -> Result<()>
+fn parse_data<R>(
+	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
+	tag: &mut Ilst,
+	atom_info: AtomInfo,
+) -> Result<()>
 where
 	R: Read + Seek,
 {
-	if let Some(mut atom_data) = parse_data_inner(reader, &atom_info)? {
+	if let Some(mut atom_data) = parse_data_inner(reader, parsing_mode, &atom_info)? {
 		// Most atoms we encounter are only going to have 1 value, so store them as such
 		if atom_data.len() == 1 {
 			let (flags, content) = atom_data.remove(0);
@@ -157,8 +173,11 @@ where
 	Ok(())
 }
 
+const DATA_ATOM_IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"data");
+
 fn parse_data_inner<R>(
 	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
 	atom_info: &AtomInfo,
 ) -> Result<Option<Vec<(u32, Vec<u8>)>>>
 where
@@ -170,11 +189,7 @@ where
 	let to_read = (atom_info.start + atom_info.len) - reader.stream_position()?;
 	let mut pos = 0;
 	while pos < to_read {
-		let data_atom = reader.next()?;
-		match data_atom.ident {
-			AtomIdent::Fourcc(ref name) if name == b"data" => {},
-			_ => err!(BadAtom("Expected atom \"data\" to follow name")),
-		}
+		let next_atom = reader.next()?;
 
 		// We don't care about the version
 		let _version = reader.read_u8()?;
@@ -187,17 +202,32 @@ where
 		// We don't care about the locale
 		reader.seek(SeekFrom::Current(4))?;
 
-		let content_len = (data_atom.len - 16) as usize;
-		if content_len == 0 {
-			// We won't add empty atoms
-			return Ok(None);
+		match next_atom.ident {
+			DATA_ATOM_IDENT => {
+				debug_assert!(next_atom.len >= 16);
+				let content_len = (next_atom.len - 16) as usize;
+				if content_len > 0 {
+					let mut content = try_vec![0; content_len];
+					reader.read_exact(&mut content)?;
+					ret.push((flags, content));
+				} else {
+					log::warn!("Skipping empty \"data\" atom");
+				}
+			},
+			_ => match parsing_mode {
+				ParsingMode::Strict => {
+					err!(BadAtom("Expected atom \"data\" to follow name"))
+				},
+				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+					log::warn!(
+						"Skipping unexpected atom {actual_ident:?}, expected {expected_ident:?}",
+						actual_ident = next_atom.ident,
+						expected_ident = DATA_ATOM_IDENT
+					)
+				},
+			},
 		}
-
-		let mut content = try_vec![0; content_len];
-		reader.read_exact(&mut content)?;
-
-		pos += data_atom.len;
-		ret.push((flags, content));
+		pos += next_atom.len;
 	}
 
 	let ret = if ret.is_empty() { None } else { Some(ret) };
@@ -228,11 +258,16 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 	})
 }
 
-fn handle_covr<R>(reader: &mut AtomReader<R>, tag: &mut Ilst, atom_info: &AtomInfo) -> Result<()>
+fn handle_covr<R>(
+	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
+	tag: &mut Ilst,
+	atom_info: &AtomInfo,
+) -> Result<()>
 where
 	R: Read + Seek,
 {
-	if let Some(atom_data) = parse_data_inner(reader, atom_info)? {
+	if let Some(atom_data) = parse_data_inner(reader, parsing_mode, atom_info)? {
 		let mut data = Vec::new();
 
 		let len = atom_data.len();

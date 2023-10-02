@@ -178,7 +178,11 @@ where
 	let moov_info = Moov::find(&mut reader)?;
 	reader.reset_bounds(moov_info.start + 8, moov_info.len - 8);
 
-	let moov = Moov::parse(&mut reader, parse_options.read_properties)?;
+	let moov = Moov::parse(
+		&mut reader,
+		parse_options.parsing_mode,
+		parse_options.read_properties,
+	)?;
 
 	Ok(Mp4File {
 		ftyp,
