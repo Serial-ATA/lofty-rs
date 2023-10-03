@@ -20,8 +20,6 @@ use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
-const MAX_JUNK_BYTES: usize = 1024;
-
 /// Options to control how Lofty parses a file
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[non_exhaustive]
@@ -51,6 +49,12 @@ impl Default for ParseOptions {
 }
 
 impl ParseOptions {
+	/// Default parsing mode
+	pub const DEFAULT_PARSING_MODE: ParsingMode = ParsingMode::BestAttempt;
+
+	/// Default number of junk bytes to read
+	pub const DEFAULT_MAX_JUNK_BYTES: usize = 1024;
+
 	/// Creates a new `ParseOptions`, alias for `Default` implementation
 	///
 	/// See also: [`ParseOptions::default`]
@@ -67,8 +71,8 @@ impl ParseOptions {
 		Self {
 			read_properties: true,
 			use_custom_resolvers: true,
-			parsing_mode: ParsingMode::BestAttempt,
-			max_junk_bytes: MAX_JUNK_BYTES,
+			parsing_mode: Self::DEFAULT_PARSING_MODE,
+			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
 		}
 	}
 
@@ -433,7 +437,9 @@ impl<R: Read + Seek> Probe<R> {
 	///
 	/// On success, the file type will be replaced
 	///
-	/// NOTE: This is influenced by `ParseOptions`, be sure to set it with `Probe::options()` prior to calling this.
+	/// NOTE: The chance for succeeding is influenced by [`ParseOptions`].
+	/// Be sure to set it with [`Probe::options()`] prior to calling this method.
+	/// Some files may require more than the default [`ParseOptions::DEFAULT_MAX_JUNK_BYTES`] to be detected successfully.
 	///
 	/// # Errors
 	///
@@ -459,7 +465,9 @@ impl<R: Read + Seek> Probe<R> {
 	pub fn guess_file_type(mut self) -> std::io::Result<Self> {
 		let max_junk_bytes = self
 			.options
-			.map_or(MAX_JUNK_BYTES, |options| options.max_junk_bytes);
+			.map_or(ParseOptions::DEFAULT_MAX_JUNK_BYTES, |options| {
+				options.max_junk_bytes
+			});
 
 		let f_ty = self.guess_inner(max_junk_bytes)?;
 		self.f_ty = f_ty.or(self.f_ty);
