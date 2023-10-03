@@ -13,7 +13,7 @@ include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "benches", 
 
 [dependencies]
 # Vorbis comments pictures
-base64     = "0.21.4"
+data-encoding = "2.4.0"
 byteorder  = "1.4.3"
 # ID3 compressed frames
 flate2     = { version = "1.0.27", optional = true }

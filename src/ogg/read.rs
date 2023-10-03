@@ -8,8 +8,8 @@ use crate::probe::ParsingMode;
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
-use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
+use data_encoding::BASE64;
 use ogg_pager::{Packets, PageHeader};
 
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
@@ -111,7 +111,7 @@ where
 				// to a `METADATA_BLOCK_PICTURE` for it to be useful.
 				//
 				// <https://wiki.xiph.org/VorbisComment#Conversion_to_METADATA_BLOCK_PICTURE>
-				let picture_data = base64::engine::general_purpose::STANDARD.decode(value);
+				let picture_data = BASE64.decode(value);
 
 				match picture_data {
 					Ok(picture_data) => {
