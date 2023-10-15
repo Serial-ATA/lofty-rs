@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2023-10-15
+
+- **MP4**: Skip unexpected or empty data atoms in ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/261))
+  - It is possible for an `ilst` item to have both empty `data` atoms and unexpected (likely vendor-specific) atoms other than `data`.
+    These are both cases we can safely ignore unless using `ParsingMode::Strict`.
+
 ## [0.16.0] - 2023-10-01
 
 ## Added
@@ -560,7 +566,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.1...HEAD
+[0.16.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.15.0...0.16.0
 [0.15.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.14.0...0.15.0
 [0.14.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.13.0...0.14.0
