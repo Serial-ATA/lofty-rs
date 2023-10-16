@@ -113,6 +113,15 @@ pub(crate) struct AtomInfo {
 	pub(crate) ident: AtomIdent<'static>,
 }
 
+// The spec permits any characters to be used in atom identifiers. This doesn't
+// leave us any room for error detection.
+//
+// TagLib has decided on a character set to consider valid, so we will do the same:
+// <https://github.com/taglib/taglib/issues/1077#issuecomment-1440385838>
+fn is_valid_identifier_byte(b: u8) -> bool {
+	(b' '..=b'~').contains(&b) || b == b'\xA9'
+}
+
 impl AtomInfo {
 	pub(crate) fn read<R>(
 		data: &mut R,
@@ -129,16 +138,7 @@ impl AtomInfo {
 		let mut identifier = [0; IDENTIFIER_LEN as usize];
 		data.read_exact(&mut identifier)?;
 
-		// The spec permits any characters to be used in atom identifiers. This doesn't
-		// leave us any room for error detection.
-		//
-		// TagLib has decided on a character set to consider valid, so we will do the same:
-		// <https://github.com/taglib/taglib/issues/1077#issuecomment-1440385838>
-		if identifier
-			.iter()
-			.copied()
-			.any(|byte| !(b' '..=b'~').contains(&byte) && byte != b'\xA9')
-		{
+		if !identifier.iter().copied().all(is_valid_identifier_byte) {
 			// The atom identifier contains invalid characters
 			//
 			// Seek to the end, since we can't recover from this
