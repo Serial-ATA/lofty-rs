@@ -22,7 +22,7 @@ impl Moov {
 	{
 		let mut moov = None;
 
-		while let Ok(atom) = reader.next() {
+		while let Ok(Some(atom)) = reader.next() {
 			if atom.ident == AtomIdent::Fourcc(*b"moov") {
 				moov = Some(atom);
 				break;
@@ -36,7 +36,7 @@ impl Moov {
 
 	pub(super) fn parse<R>(
 		reader: &mut AtomReader<R>,
-		parsing_mode: ParsingMode,
+		parse_mode: ParsingMode,
 		read_properties: bool,
 	) -> Result<Self>
 	where
@@ -45,18 +45,18 @@ impl Moov {
 		let mut traks = Vec::new();
 		let mut meta = None;
 
-		while let Ok(atom) = reader.next() {
+		while let Ok(Some(atom)) = reader.next() {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
 					b"trak" if read_properties => {
 						// All we need from here is trak.mdia
-						if let Some(mdia) = nested_atom(reader, atom.len, b"mdia")? {
+						if let Some(mdia) = nested_atom(reader, atom.len, b"mdia", parse_mode)? {
 							skip_unneeded(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
 						}
 					},
 					b"udta" => {
-						meta = meta_from_udta(reader, parsing_mode, atom.len - 8)?;
+						meta = meta_from_udta(reader, parse_mode, atom.len - 8)?;
 					},
 					_ => skip_unneeded(reader, atom.extended, atom.len)?,
 				}
@@ -84,7 +84,9 @@ where
 	let mut meta_atom_size = 0;
 
 	while read < len {
-		let atom = reader.next()?;
+		let Some(atom) = reader.next()? else {
+			break;
+		};
 
 		if atom.ident == AtomIdent::Fourcc(*b"meta") {
 			found_meta = true;
@@ -114,7 +116,9 @@ where
 	let mut ilst_atom_size = 0;
 
 	while read < meta_atom_size {
-		let atom = reader.next()?;
+		let Some(atom) = reader.next()? else {
+			break;
+		};
 
 		if atom.ident == AtomIdent::Fourcc(*b"ilst") {
 			found_ilst = true;

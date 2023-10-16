@@ -1,5 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{err, try_vec};
+use crate::probe::ParsingMode;
 use crate::tag::item::ItemKey;
 use crate::tag::TagType;
 
@@ -113,7 +114,11 @@ pub(crate) struct AtomInfo {
 }
 
 impl AtomInfo {
-	pub(crate) fn read<R>(data: &mut R, mut reader_size: u64) -> Result<Self>
+	pub(crate) fn read<R>(
+		data: &mut R,
+		mut reader_size: u64,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>>
 	where
 		R: Read + Seek,
 	{
@@ -123,6 +128,29 @@ impl AtomInfo {
 
 		let mut identifier = [0; IDENTIFIER_LEN as usize];
 		data.read_exact(&mut identifier)?;
+
+		// The spec permits any characters to be used in atom identifiers. This doesn't
+		// leave us any room for error detection.
+		//
+		// TagLib has decided on a character set to consider valid, so we will do the same:
+		// <https://github.com/taglib/taglib/issues/1077#issuecomment-1440385838>
+		if identifier
+			.iter()
+			.copied()
+			.any(|byte| !(b' '..=b'~').contains(&byte) && byte != b'\xA9')
+		{
+			// The atom identifier contains invalid characters
+			//
+			// Seek to the end, since we can't recover from this
+			data.seek(SeekFrom::End(0))?;
+
+			if parse_mode == ParsingMode::Strict {
+				err!(BadAtom("Encountered an atom with invalid characters"));
+			}
+
+			log::warn!("Encountered an atom with invalid characters, stopping");
+			return Ok(None);
+		}
 
 		let (len, extended) = match len_raw {
 			// The atom extends to the end of the file
@@ -161,24 +189,28 @@ impl AtomInfo {
 				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
 
-			atom_ident = parse_freeform(data, reader_size)?;
+			atom_ident = parse_freeform(data, reader_size, parse_mode)?;
 		}
 
-		Ok(Self {
+		Ok(Some(Self {
 			start,
 			len,
 			extended,
 			ident: atom_ident,
-		})
+		}))
 	}
 }
 
-fn parse_freeform<R>(data: &mut R, reader_size: u64) -> Result<AtomIdent<'static>>
+fn parse_freeform<R>(
+	data: &mut R,
+	reader_size: u64,
+	parse_mode: ParsingMode,
+) -> Result<AtomIdent<'static>>
 where
 	R: Read + Seek,
 {
-	let mean = freeform_chunk(data, b"mean", reader_size)?;
-	let name = freeform_chunk(data, b"name", reader_size - 4)?;
+	let mean = freeform_chunk(data, b"mean", reader_size, parse_mode)?;
+	let name = freeform_chunk(data, b"name", reader_size - 4, parse_mode)?;
 
 	Ok(AtomIdent::Freeform {
 		mean: mean.into(),
@@ -186,20 +218,29 @@ where
 	})
 }
 
-fn freeform_chunk<R>(data: &mut R, name: &[u8], reader_size: u64) -> Result<String>
+fn freeform_chunk<R>(
+	data: &mut R,
+	name: &[u8],
+	reader_size: u64,
+	parse_mode: ParsingMode,
+) -> Result<String>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data, reader_size)?;
+	let atom = AtomInfo::read(data, reader_size, parse_mode)?;
 
-	match atom.ident {
-		AtomIdent::Fourcc(ref fourcc) if fourcc == name => {
+	match atom {
+		Some(AtomInfo {
+			ident: AtomIdent::Fourcc(ref fourcc),
+			len,
+			..
+		}) if fourcc == name => {
 			// Version (1)
 			// Flags (3)
 			data.seek(SeekFrom::Current(4))?;
 
 			// Already read the size, identifier, and version/flags (12 bytes)
-			let mut content = try_vec![0; (atom.len - 12) as usize];
+			let mut content = try_vec![0; (len - 12) as usize];
 			data.read_exact(&mut content)?;
 
 			String::from_utf8(content).map_err(|_| {

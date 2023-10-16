@@ -2,6 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
+use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -206,6 +207,7 @@ pub(super) fn read_properties<R>(
 	reader: &mut AtomReader<R>,
 	traks: &[AtomInfo],
 	file_length: u64,
+	parse_mode: ParsingMode,
 ) -> Result<Mp4Properties>
 where
 	R: Read + Seek,
@@ -225,7 +227,8 @@ where
 
 		let mut read = 8;
 		while read < mdia.len {
-			let atom = reader.next()?;
+			let Some(atom) = reader.next()? else { break };
+
 			read += atom.len;
 
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
@@ -304,14 +307,14 @@ where
 	if let Some(minf) = minf {
 		reader.seek(SeekFrom::Start(minf.start + 8))?;
 
-		if let Some(stbl) = nested_atom(reader, minf.len, b"stbl")? {
-			if let Some(stsd) = nested_atom(reader, stbl.len, b"stsd")? {
+		if let Some(stbl) = nested_atom(reader, minf.len, b"stbl", parse_mode)? {
+			if let Some(stsd) = nested_atom(reader, stbl.len, b"stsd", parse_mode)? {
 				let mut stsd = try_vec![0; (stsd.len - 8) as usize];
 				reader.read_exact(&mut stsd)?;
 
 				let mut cursor = Cursor::new(&*stsd);
 
-				let mut stsd_reader = AtomReader::new(&mut cursor)?;
+				let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
 
 				// Skipping 8 bytes
 				// Version (1)
@@ -319,7 +322,10 @@ where
 				// Number of entries (4)
 				stsd_reader.seek(SeekFrom::Current(8))?;
 
-				let atom = AtomInfo::read(&mut stsd_reader, stsd.len() as u64)?;
+				let Some(atom) = AtomInfo::read(&mut stsd_reader, stsd.len() as u64, parse_mode)?
+				else {
+					err!(BadAtom("Expected sample entry atom in `stsd` atom"))
+				};
 
 				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 					match fourcc {
@@ -387,127 +393,137 @@ where
 	stsd.seek(SeekFrom::Current(2))?;
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
-	if let Ok(esds) = stsd.next() {
-		// There are 4 bytes we expect to be zeroed out
-		// Version (1)
-		// Flags (3)
-		if esds.ident == AtomIdent::Fourcc(*b"esds") && stsd.read_u32()? == 0 {
+	let Ok(Some(esds)) = stsd.next() else {
+		return Ok(());
+	};
+
+	if esds.ident != AtomIdent::Fourcc(*b"esds") {
+		return Ok(());
+	}
+
+	// There are 4 bytes we expect to be zeroed out
+	// Version (1)
+	// Flags (3)
+	//
+	// Otherwise, we don't know how to handle it, and can simply bail.
+	if stsd.read_u32()? != 0 {
+		return Ok(());
+	}
+
+	let descriptor = Descriptor::read(stsd)?;
+	if descriptor.tag == ELEMENTARY_DESCRIPTOR_TAG {
+		// Skipping 3 bytes
+		// Elementary stream ID (2)
+		// Flags (1)
+		stsd.seek(SeekFrom::Current(3))?;
+
+		// There is another descriptor embedded in the previous one
+		let descriptor = Descriptor::read(stsd)?;
+		if descriptor.tag == DECODER_CONFIG_TAG {
+			let codec = stsd.read_u8()?;
+
+			properties.codec = match codec {
+				0x40 | 0x41 | 0x66 | 0x67 | 0x68 => Mp4Codec::AAC,
+				0x69 | 0x6B => Mp4Codec::MP3,
+				_ => Mp4Codec::Unknown,
+			};
+
+			// Skipping 8 bytes
+			// Stream type (1)
+			// Buffer size (3)
+			// Max bitrate (4)
+			stsd.seek(SeekFrom::Current(8))?;
+
+			let average_bitrate = stsd.read_u32()?;
+
+			// Yet another descriptor to check
 			let descriptor = Descriptor::read(stsd)?;
-			if descriptor.tag == ELEMENTARY_DESCRIPTOR_TAG {
-				// Skipping 3 bytes
-				// Elementary stream ID (2)
-				// Flags (1)
-				stsd.seek(SeekFrom::Current(3))?;
+			if descriptor.tag == DECODER_SPECIFIC_DESCRIPTOR_TAG {
+				// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
+				//
+				// 5 bits: object type
+				// if (object type == 31)
+				//     6 bits + 32: object type
+				// 4 bits: frequency index
+				// if (frequency index == 15)
+				//     24 bits: frequency
+				// 4 bits: channel configuration
+				let byte_a = stsd.read_u8()?;
+				let byte_b = stsd.read_u8()?;
 
-				// There is another descriptor embedded in the previous one
-				let descriptor = Descriptor::read(stsd)?;
-				if descriptor.tag == DECODER_CONFIG_TAG {
-					let codec = stsd.read_u8()?;
+				let mut object_type = byte_a >> 3;
+				let mut frequency_index = ((byte_a & 0x07) << 1) | (byte_b >> 7);
+				let mut channel_conf = (byte_b >> 3) & 0x0F;
 
-					properties.codec = match codec {
-						0x40 | 0x41 | 0x66 | 0x67 | 0x68 => Mp4Codec::AAC,
-						0x69 | 0x6B => Mp4Codec::MP3,
-						_ => Mp4Codec::Unknown,
-					};
+				let mut extended_object_type = false;
+				if object_type == 31 {
+					extended_object_type = true;
 
-					// Skipping 8 bytes
-					// Stream type (1)
-					// Buffer size (3)
-					// Max bitrate (4)
-					stsd.seek(SeekFrom::Current(8))?;
+					object_type = 32 + ((byte_a & 7) | (byte_b >> 5));
+					frequency_index = (byte_b >> 1) & 0x0F;
+				}
 
-					let average_bitrate = stsd.read_u32()?;
+				properties.extended_audio_object_type =
+					Some(AudioObjectType::try_from(object_type)?);
 
-					// Yet another descriptor to check
-					let descriptor = Descriptor::read(stsd)?;
-					if descriptor.tag == DECODER_SPECIFIC_DESCRIPTOR_TAG {
-						// https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config
-						//
-						// 5 bits: object type
-						// if (object type == 31)
-						//     6 bits + 32: object type
-						// 4 bits: frequency index
-						// if (frequency index == 15)
-						//     24 bits: frequency
-						// 4 bits: channel configuration
-						let byte_a = stsd.read_u8()?;
-						let byte_b = stsd.read_u8()?;
+				match frequency_index {
+					// 15 means the sample rate is stored in the next 24 bits
+					0x0F => {
+						let sample_rate;
+						let explicit_sample_rate = stsd.read_u24::<BigEndian>()?;
+						if extended_object_type {
+							sample_rate = explicit_sample_rate >> 1;
+							channel_conf = ((explicit_sample_rate >> 4) & 0x0F) as u8;
+						} else {
+							sample_rate = explicit_sample_rate << 1;
+							let byte_c = stsd.read_u8()?;
 
-						let mut object_type = byte_a >> 3;
-						let mut frequency_index = ((byte_a & 0x07) << 1) | (byte_b >> 7);
-						let mut channel_conf = (byte_b >> 3) & 0x0F;
-
-						let mut extended_object_type = false;
-						if object_type == 31 {
-							extended_object_type = true;
-
-							object_type = 32 + ((byte_a & 7) | (byte_b >> 5));
-							frequency_index = (byte_b >> 1) & 0x0F;
+							channel_conf =
+								((explicit_sample_rate & 0x80) as u8 | (byte_c >> 1)) & 0x0F;
 						}
 
-						properties.extended_audio_object_type =
-							Some(AudioObjectType::try_from(object_type)?);
-
-						match frequency_index {
-							// 15 means the sample rate is stored in the next 24 bits
-							0x0F => {
-								let sample_rate;
-								let explicit_sample_rate = stsd.read_u24::<BigEndian>()?;
-								if extended_object_type {
-									sample_rate = explicit_sample_rate >> 1;
-									channel_conf = ((explicit_sample_rate >> 4) & 0x0F) as u8;
-								} else {
-									sample_rate = explicit_sample_rate << 1;
-									let byte_c = stsd.read_u8()?;
-
-									channel_conf = ((explicit_sample_rate & 0x80) as u8
-										| (byte_c >> 1)) & 0x0F;
-								}
-
-								// Just use the sample rate we already read above if this is invalid
-								if sample_rate > 0 {
-									properties.sample_rate = sample_rate;
-								}
-							},
-							i if i < SAMPLE_RATES.len() as u8 => {
-								properties.sample_rate = SAMPLE_RATES[i as usize];
-
-								if extended_object_type {
-									let byte_c = stsd.read_u8()?;
-									channel_conf = (byte_b & 1) | (byte_c & 0xE0);
-								} else {
-									channel_conf = (byte_b >> 3) & 0x0F;
-								}
-							},
-							// Keep the sample rate we read above
-							_ => {},
+						// Just use the sample rate we already read above if this is invalid
+						if sample_rate > 0 {
+							properties.sample_rate = sample_rate;
 						}
+					},
+					i if i < SAMPLE_RATES.len() as u8 => {
+						properties.sample_rate = SAMPLE_RATES[i as usize];
 
-						// The channel configuration isn't always set, at least when testing with
-						// the Audio Lossless Coding reference software
-						if channel_conf > 0 {
-							properties.channels = channel_conf;
+						if extended_object_type {
+							let byte_c = stsd.read_u8()?;
+							channel_conf = (byte_b & 1) | (byte_c & 0xE0);
+						} else {
+							channel_conf = (byte_b >> 3) & 0x0F;
 						}
+					},
+					// Keep the sample rate we read above
+					_ => {},
+				}
 
-						// We just check for ALS here, might extend it for more codes eventually
-						if object_type == 36 {
-							let mut ident = [0; 5];
-							stsd.read_exact(&mut ident)?;
+				// The channel configuration isn't always set, at least when testing with
+				// the Audio Lossless Coding reference software
+				if channel_conf > 0 {
+					properties.channels = channel_conf;
+				}
 
-							if &ident == b"\0ALS\0" {
-								properties.sample_rate = stsd.read_u32()?;
+				// We just check for ALS here, might extend it for more codes eventually
+				if object_type == 36 {
+					let mut ident = [0; 5];
+					stsd.read_exact(&mut ident)?;
 
-								// Sample count
-								stsd.seek(SeekFrom::Current(4))?;
-								properties.channels = stsd.read_u16()? as u8 + 1;
-							}
-						}
-					}
+					if &ident == b"\0ALS\0" {
+						properties.sample_rate = stsd.read_u32()?;
 
-					if average_bitrate > 0 || properties.duration.is_zero() {
-						properties.audio_bitrate = average_bitrate / 1000;
+						// Sample count
+						stsd.seek(SeekFrom::Current(4))?;
+						properties.channels = stsd.read_u16()? as u8 + 1;
 					}
 				}
+			}
+
+			if average_bitrate > 0 || properties.duration.is_zero() {
+				properties.audio_bitrate = average_bitrate / 1000;
 			}
 		}
 	}
@@ -533,37 +549,41 @@ where
 	// First alac atom's content (28)
 	stsd.seek(SeekFrom::Start(44))?;
 
-	if let Ok(alac) = stsd.next() {
-		if alac.ident == AtomIdent::Fourcc(*b"alac") {
-			properties.codec = Mp4Codec::ALAC;
+	let Ok(Some(alac)) = stsd.next() else {
+		return Ok(());
+	};
 
-			// Skipping 9 bytes
-			// Version (4)
-			// Samples per frame (4)
-			// Compatible version (1)
-			stsd.seek(SeekFrom::Current(9))?;
-
-			// Sample size (1)
-			let sample_size = stsd.read_u8()?;
-			properties.bit_depth = Some(sample_size);
-
-			// Skipping 3 bytes
-			// Rice history mult (1)
-			// Rice initial history (1)
-			// Rice parameter limit (1)
-			stsd.seek(SeekFrom::Current(3))?;
-
-			properties.channels = stsd.read_u8()?;
-
-			// Skipping 6 bytes
-			// Max run (2)
-			// Max frame size (4)
-			stsd.seek(SeekFrom::Current(6))?;
-
-			properties.audio_bitrate = stsd.read_u32()? / 1000;
-			properties.sample_rate = stsd.read_u32()?;
-		}
+	if alac.ident != AtomIdent::Fourcc(*b"alac") {
+		return Ok(());
 	}
+
+	properties.codec = Mp4Codec::ALAC;
+
+	// Skipping 9 bytes
+	// Version (4)
+	// Samples per frame (4)
+	// Compatible version (1)
+	stsd.seek(SeekFrom::Current(9))?;
+
+	// Sample size (1)
+	let sample_size = stsd.read_u8()?;
+	properties.bit_depth = Some(sample_size);
+
+	// Skipping 3 bytes
+	// Rice history mult (1)
+	// Rice initial history (1)
+	// Rice parameter limit (1)
+	stsd.seek(SeekFrom::Current(3))?;
+
+	properties.channels = stsd.read_u8()?;
+
+	// Skipping 6 bytes
+	// Max run (2)
+	// Max frame size (4)
+	stsd.seek(SeekFrom::Current(6))?;
+
+	properties.audio_bitrate = stsd.read_u32()? / 1000;
+	properties.sample_rate = stsd.read_u32()?;
 
 	Ok(())
 }
@@ -596,11 +616,13 @@ where
 
 	let _reserved = stsd.read_u16()?;
 
-	let dfla_atom = stsd.next()?;
-	match dfla_atom.ident {
-		// There should be a dfla atom, but it's not worth erroring if absent.
-		AtomIdent::Fourcc(ref fourcc) if fourcc == b"dfla" => {},
-		_ => return Ok(()),
+	// There should be a dfla atom, but it's not worth erroring if absent.
+	let Some(dfla) = stsd.next()? else {
+		return Ok(());
+	};
+
+	if dfla.ident != AtomIdent::Fourcc(*b"dfla") {
+		return Ok(());
 	}
 
 	// Skipping 4 bytes
@@ -609,7 +631,7 @@ where
 	// Flags (3)
 	stsd.seek(SeekFrom::Current(4))?;
 
-	if dfla_atom.len - 12 < 18 {
+	if dfla.len - 12 < 18 {
 		// The atom isn't long enough to hold a STREAMINFO block, also not worth an error.
 		return Ok(());
 	}
@@ -632,7 +654,7 @@ where
 {
 	reader.rewind()?;
 
-	while let Ok(atom) = reader.next() {
+	while let Ok(Some(atom)) = reader.next() {
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
 			return Ok(atom.len);
 		}

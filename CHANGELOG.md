@@ -6,8 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+- **MP4**: Verify atom identifiers fall within a subset of characters ([PR](https://github.com/Serial-ATA/lofty-rs/pull/267))
+  - For a multitude of reasons, garbage data can be left at the end of an atom, resulting in Lofty attempting to
+    parse it as another atom definition. As the specification is broad, there is no way for us to say *with certainty*
+    that an identifier is invalid. Now we unfortunately have to guess the validity based on the commonly known atoms.
+    For this, we follow [TagLib]'s [checks](https://github.com/taglib/taglib/blob/b40b834b1bdbd74593c5619e969e793d4d4886d9/taglib/mp4/mp4atom.cpp#L89).
+
 ## [0.16.1] - 2023-10-15
 
+## Fixed
 - **MP4**: Skip unexpected or empty data atoms in ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/261))
   - It is possible for an `ilst` item to have both empty `data` atoms and unexpected (likely vendor-specific) atoms other than `data`.
     These are both cases we can safely ignore unless using `ParsingMode::Strict`.
@@ -591,3 +599,5 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 [0.5.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.1...0.5.2
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...0.5.0
+
+[TagLib]: https://github.com/taglib/taglib
