@@ -144,12 +144,15 @@ impl AtomInfo {
 			// Seek to the end, since we can't recover from this
 			data.seek(SeekFrom::End(0))?;
 
-			if parse_mode == ParsingMode::Strict {
-				err!(BadAtom("Encountered an atom with invalid characters"));
+			match parse_mode {
+				ParsingMode::Strict => {
+					err!(BadAtom("Encountered an atom with invalid characters"));
+				},
+				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+					log::warn!("Encountered an atom with invalid characters, stopping");
+					return Ok(None);
+				},
 			}
-
-			log::warn!("Encountered an atom with invalid characters, stopping");
-			return Ok(None);
 		}
 
 		let (len, extended) = match len_raw {
