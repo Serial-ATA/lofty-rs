@@ -4,7 +4,7 @@ use super::properties::Mp4Properties;
 use super::Mp4File;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
-use crate::probe::ParseOptions;
+use crate::probe::{ParseOptions, ParsingMode};
 use crate::traits::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -19,13 +19,14 @@ where
 	start: u64,
 	remaining_size: u64,
 	len: u64,
+	parse_mode: ParsingMode,
 }
 
 impl<R> AtomReader<R>
 where
 	R: Read + Seek,
 {
-	pub(super) fn new(mut reader: R) -> Result<Self> {
+	pub(super) fn new(mut reader: R, parse_mode: ParsingMode) -> Result<Self> {
 		#[allow(unstable_name_collisions)]
 		let len = reader.stream_len()?;
 		Ok(Self {
@@ -33,6 +34,7 @@ where
 			start: 0,
 			remaining_size: len,
 			len,
+			parse_mode,
 		})
 	}
 
@@ -67,12 +69,16 @@ where
 		self.reader.read_uint::<BigEndian>(size)
 	}
 
-	pub(super) fn next(&mut self) -> Result<AtomInfo> {
+	pub(super) fn next(&mut self) -> Result<Option<AtomInfo>> {
+		if self.remaining_size == 0 {
+			return Ok(None);
+		}
+
 		if self.remaining_size < 8 {
 			err!(SizeMismatch);
 		}
 
-		AtomInfo::read(self, self.remaining_size)
+		AtomInfo::read(self, self.remaining_size, self.parse_mode)
 	}
 
 	pub(super) fn into_inner(self) -> R {
@@ -143,7 +149,9 @@ pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String
 where
 	R: Read + Seek,
 {
-	let atom = reader.next()?;
+	let Some(atom) = reader.next()? else {
+		err!(UnknownFormat);
+	};
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
 		err!(UnknownFormat);
@@ -169,7 +177,7 @@ pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<
 where
 	R: Read + Seek,
 {
-	let mut reader = AtomReader::new(data)?;
+	let mut reader = AtomReader::new(data, parse_options.parsing_mode)?;
 	let file_length = reader.stream_len()?;
 
 	let ftyp = verify_mp4(&mut reader)?;
@@ -190,7 +198,12 @@ where
 		properties: if parse_options.read_properties {
 			// Remove the length restriction
 			reader.reset_bounds(0, file_length);
-			super::properties::read_properties(&mut reader, &moov.traks, file_length)?
+			super::properties::read_properties(
+				&mut reader,
+				&moov.traks,
+				file_length,
+				parse_options.parsing_mode,
+			)?
 		} else {
 			Mp4Properties::default()
 		},
@@ -220,6 +233,7 @@ pub(super) fn nested_atom<R>(
 	reader: &mut R,
 	mut len: u64,
 	expected: &[u8],
+	parse_mode: ParsingMode,
 ) -> Result<Option<AtomInfo>>
 where
 	R: Read + Seek,
@@ -227,7 +241,9 @@ where
 	let mut ret = None;
 
 	while len > 8 {
-		let atom = AtomInfo::read(reader, len)?;
+		let Some(atom) = AtomInfo::read(reader, len, parse_mode)? else {
+			break;
+		};
 
 		match atom.ident {
 			AtomIdent::Fourcc(ref fourcc) if fourcc == expected => {
@@ -249,6 +265,7 @@ pub(super) fn atom_tree<R>(
 	reader: &mut R,
 	mut len: u64,
 	up_to: &[u8],
+	parse_mode: ParsingMode,
 ) -> Result<(usize, Vec<AtomInfo>)>
 where
 	R: Read + Seek,
@@ -259,7 +276,9 @@ where
 	let mut i = 0;
 
 	while len > 8 {
-		let atom = AtomInfo::read(reader, len)?;
+		let Some(atom) = AtomInfo::read(reader, len, parse_mode)? else {
+			break;
+		};
 
 		skip_unneeded(reader, atom.extended, atom.len)?;
 		len = len.saturating_sub(atom.len);

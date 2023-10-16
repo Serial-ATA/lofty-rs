@@ -28,11 +28,11 @@ where
 
 	let mut cursor = Cursor::new(contents);
 
-	let mut ilst_reader = AtomReader::new(&mut cursor)?;
+	let mut ilst_reader = AtomReader::new(&mut cursor, parsing_mode)?;
 
 	let mut tag = Ilst::default();
 
-	while let Ok(atom) = ilst_reader.next() {
+	while let Ok(Some(atom)) = ilst_reader.next() {
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 			match fourcc {
 				b"free" | b"skip" => {
@@ -189,7 +189,9 @@ where
 	let to_read = (atom_info.start + atom_info.len) - reader.stream_position()?;
 	let mut pos = 0;
 	while pos < to_read {
-		let next_atom = reader.next()?;
+		let Some(next_atom) = reader.next()? else {
+			break;
+		};
 
 		// We don't care about the version
 		let _version = reader.read_u8()?;
@@ -227,6 +229,7 @@ where
 				},
 			},
 		}
+
 		pos += next_atom.len;
 	}
 

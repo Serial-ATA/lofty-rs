@@ -8,6 +8,7 @@ use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
+use crate::probe::ParseOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -18,11 +19,12 @@ use byteorder::{BigEndian, WriteBytesExt};
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
+// TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	let mut reader = AtomReader::new(data)?;
+	let mut reader = AtomReader::new(data, ParseOptions::DEFAULT_PARSING_MODE)?;
 
 	verify_mp4(&mut reader)?;
 
@@ -40,7 +42,12 @@ where
 	let ilst = build_ilst(&mut tag.atoms)?;
 	let remove_tag = ilst.is_empty();
 
-	let udta = nested_atom(&mut cursor, moov.len, b"udta")?;
+	let udta = nested_atom(
+		&mut cursor,
+		moov.len,
+		b"udta",
+		ParseOptions::DEFAULT_PARSING_MODE,
+	)?;
 
 	// Nothing to do
 	if remove_tag && udta.is_none() {
@@ -57,7 +64,12 @@ where
 		existing_udta_size = udta.len;
 		new_udta_size = existing_udta_size;
 
-		let meta = nested_atom(&mut cursor, udta.len, b"meta")?;
+		let meta = nested_atom(
+			&mut cursor,
+			udta.len,
+			b"meta",
+			ParseOptions::DEFAULT_PARSING_MODE,
+		)?;
 		match meta {
 			Some(meta) => {
 				// We may encounter a non-full `meta` atom
@@ -128,6 +140,7 @@ where
 	Ok(())
 }
 
+// TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 fn save_to_existing(
 	cursor: &mut Cursor<Vec<u8>>,
 	(meta, udta): (AtomInfo, AtomInfo),
@@ -138,7 +151,12 @@ fn save_to_existing(
 	let replacement;
 	let range;
 
-	let (ilst_idx, tree) = atom_tree(cursor, meta.len - ATOM_HEADER_LEN, b"ilst")?;
+	let (ilst_idx, tree) = atom_tree(
+		cursor,
+		meta.len - ATOM_HEADER_LEN,
+		b"ilst",
+		ParseOptions::DEFAULT_PARSING_MODE,
+	)?;
 
 	if tree.is_empty() {
 		// Nothing to do
