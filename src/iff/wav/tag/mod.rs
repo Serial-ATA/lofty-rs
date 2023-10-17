@@ -35,9 +35,13 @@ macro_rules! impl_accessor {
 
 /// ## Conversions
 ///
-/// ## From `Tag`
+/// ### To `Tag`
 ///
-/// Two conditions must be met:
+/// All items will be converted to a [`TagItem`], with all unknown keys being stored with [`ItemKey::Unknown`].
+///
+/// ### From `Tag`
+///
+/// When converting a [`TagItem`], two conditions must be met:
 ///
 /// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
 /// * It has a key that is 4 bytes in length and within the ASCII range
