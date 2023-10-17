@@ -1196,4 +1196,18 @@ mod tests {
 		// Meaning we only have 1 atom
 		assert_eq!(ilst.len(), 1);
 	}
+
+	#[test]
+	fn invalid_atom_type() {
+		let ilst = read_ilst("tests/tags/assets/ilst/invalid_atom_type.ilst");
+
+		// The tag contains 3 items, however the last one has an invalid type. We will stop at that point, but retain the
+		// first two items.
+		assert_eq!(ilst.len(), 2);
+
+		assert_eq!(ilst.track().unwrap(), 1);
+		assert_eq!(ilst.track_total().unwrap(), 0);
+		assert_eq!(ilst.disk().unwrap(), 1);
+		assert_eq!(ilst.disk_total().unwrap(), 2);
+	}
 }
