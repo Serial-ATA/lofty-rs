@@ -63,6 +63,10 @@ macro_rules! impl_accessor {
 ///
 /// ## Conversions
 ///
+/// ### To `Tag`
+///
+/// Any [`ApeItem`] with an [`ItemKey`] mapping will have a 1:1 conversion to [`TagItem`].
+///
 /// ### From `Tag`
 ///
 /// When converting pictures, any of type [`PictureType::Undefined`](crate::PictureType::Undefined) will be discarded.
