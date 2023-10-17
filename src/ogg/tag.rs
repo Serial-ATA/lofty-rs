@@ -51,6 +51,9 @@ macro_rules! impl_accessor {
 /// If a [`TagItem`] with the key [`ItemKey::EncoderSoftware`] is available, it will be taken and
 /// used for the vendor string.
 ///
+/// [`TagItem`]s with [`ItemKey::Unknown`] will have their keys verified for spec compliance. They must fall within
+/// ASCII range `0x20` through `0x7D`, excluding `0x3D` ('=').
+///
 /// When converting [Picture]s, they will first be passed through [`PictureInformation::from_picture`].
 /// If the information is available, it will be used. Otherwise, the picture will be stored with zeroed out
 /// [`PictureInformation`].
@@ -567,12 +570,22 @@ impl MergeTag for SplitTagRemainder {
 				_ => continue,
 			};
 
-			let key = match item_key.map_key(TagType::VorbisComments, true) {
-				None => continue,
-				Some(k) => k,
-			};
+			let key;
+			match item_key {
+				ItemKey::Unknown(unknown) => {
+					if !verify_key(&unknown) {
+						continue; // Bad key, discard the item
+					}
 
-			merged.items.push((key.to_string(), val));
+					key = unknown
+				},
+				_ => match item_key.map_key(TagType::VorbisComments, false) {
+					Some(mapped_key) => key = mapped_key.to_string(),
+					None => continue, // No mapping exists, discard the item
+				},
+			}
+
+			merged.items.push((key, val));
 		}
 
 		for picture in tag.pictures {
