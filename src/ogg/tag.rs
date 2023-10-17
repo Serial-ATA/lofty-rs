@@ -37,6 +37,23 @@ macro_rules! impl_accessor {
 	}
 }
 
+/// ## Conversions
+///
+/// ### To `Tag`
+///
+/// All items will be converted to a [`TagItem`], with all unknown keys being stored with [`ItemKey::Unknown`].
+///
+/// In order to preserve the vendor string, a required part of the OGG formats, it will simply be inserted as
+/// [`ItemKey::EncoderSoftware`], given an item with this key does not already exist.
+///
+/// ### From `Tag`
+///
+/// If a [`TagItem`] with the key [`ItemKey::EncoderSoftware`] is available, it will be taken and
+/// used for the vendor string.
+///
+/// When converting [Picture]s, they will first be passed through [`PictureInformation::from_picture`].
+/// If the information is available, it will be used. Otherwise, the picture will be stored with zeroed out
+/// [`PictureInformation`].
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "Vorbis comments",
