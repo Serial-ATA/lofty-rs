@@ -1,4 +1,4 @@
-use lofty::{MimeType, Picture, PictureType};
+use lofty::{MimeType, ParsingMode, Picture, PictureType};
 
 const DATA: &[u8] = &[
 	0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x09, 0x69, 0x6D, 0x61, 0x67, 0x65, 0x2F, 0x70, 0x6E,
@@ -18,7 +18,7 @@ const DATA: &[u8] = &[
 
 #[test]
 fn test_parse() {
-	let (picture, info) = Picture::from_flac_bytes(DATA, false).unwrap();
+	let (picture, info) = Picture::from_flac_bytes(DATA, false, ParsingMode::Strict).unwrap();
 
 	assert_eq!(picture.pic_type(), PictureType::CoverFront);
 	assert_eq!(info.width, 1);
@@ -32,6 +32,6 @@ fn test_parse() {
 
 #[test]
 fn test_pass_through() {
-	let (picture, info) = Picture::from_flac_bytes(DATA, false).unwrap();
+	let (picture, info) = Picture::from_flac_bytes(DATA, false, ParsingMode::Strict).unwrap();
 	assert_eq!(DATA, picture.as_flac_bytes(info, false).as_slice());
 }
