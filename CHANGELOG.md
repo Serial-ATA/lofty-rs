@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     that an identifier is invalid. Now we unfortunately have to guess the validity based on the commonly known atoms.
     For this, we follow [TagLib]'s [checks](https://github.com/taglib/taglib/blob/b40b834b1bdbd74593c5619e969e793d4d4886d9/taglib/mp4/mp4atom.cpp#L89).
 
+## Removed
+- **MP4**: `Ilst::{track_total, disc_number, disc_total}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/269))
+  - These existed prior to the methods on `Accessor`. There is no need to keep them around, as they behave the same.
+
 ## [0.16.1] - 2023-10-15
 
 ## Fixed
