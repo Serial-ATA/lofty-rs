@@ -183,16 +183,18 @@ impl AtomInfo {
 			err!(SizeMismatch);
 		}
 
-		let atom_ident = if identifier == *b"----" {
+		let atom_ident;
+		if identifier == *b"----" {
 			// Encountered a freeform identifier
 			reader_size -= ATOM_HEADER_LEN;
 			if reader_size < ATOM_HEADER_LEN {
 				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
-			parse_freeform(data, reader_size, parse_mode)?
+
+			atom_ident = parse_freeform(data, reader_size, parse_mode)?;
 		} else {
-			AtomIdent::Fourcc(identifier)
-		};
+			atom_ident = AtomIdent::Fourcc(identifier);
+		}
 
 		Ok(Some(Self {
 			start,
