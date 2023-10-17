@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **VorbisComments**: When converting from `Tag` to `VorbisComments`, `ItemKey::Unknown`s will be checked for spec compliance. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/272))
+
 ### Fixed
 - **MP4**: Verify atom identifiers fall within a subset of characters ([PR](https://github.com/Serial-ATA/lofty-rs/pull/267))
   - For a multitude of reasons, garbage data can be left at the end of an atom, resulting in Lofty attempting to
