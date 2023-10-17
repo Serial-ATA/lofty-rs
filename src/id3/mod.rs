@@ -56,27 +56,32 @@ where
 	let mut id3v1 = None;
 	let mut header = None;
 
-	data.seek(SeekFrom::End(-128))?;
+	// Reader is too small to contain an ID3v2 tag
+	if data.seek(SeekFrom::End(-128)).is_err() {
+		data.seek(SeekFrom::End(0))?;
+		return Ok(ID3FindResults(header, id3v1));
+	}
 
 	let mut id3v1_header = [0; 3];
 	data.read_exact(&mut id3v1_header)?;
 
 	data.seek(SeekFrom::Current(-3))?;
 
-	if &id3v1_header == b"TAG" {
-		header = Some(());
-
-		if read {
-			let mut id3v1_tag = [0; 128];
-			data.read_exact(&mut id3v1_tag)?;
-
-			data.seek(SeekFrom::End(-128))?;
-
-			id3v1 = Some(v1::read::parse_id3v1(id3v1_tag))
-		}
-	} else {
-		// No ID3v1 tag found
+	// No ID3v1 tag found
+	if &id3v1_header != b"TAG" {
 		data.seek(SeekFrom::End(0))?;
+		return Ok(ID3FindResults(header, id3v1));
+	}
+
+	header = Some(());
+
+	if read {
+		let mut id3v1_tag = [0; 128];
+		data.read_exact(&mut id3v1_tag)?;
+
+		data.seek(SeekFrom::End(-128))?;
+
+		id3v1 = Some(v1::read::parse_id3v1(id3v1_tag))
 	}
 
 	Ok(ID3FindResults(header, id3v1))
