@@ -45,12 +45,30 @@ macro_rules! impl_accessor {
 ///
 /// ## Conversions
 ///
+/// ### To `Tag`
+///
+/// All fields can be translated to a `TagItem`:
+///
+/// * `title` -> [`ItemKey::TrackTitle`]
+/// * `artist` -> [`ItemKey::TrackArtist`]
+/// * `album` -> [`ItemKey::AlbumTitle`]
+/// * `year` -> [`ItemKey::Year`]
+/// * `comment` -> [`ItemKey::Comment`]
+/// * `track_number` -> [`ItemKey::TrackNumber`]
+/// * `genre` -> [`ItemKey::Genre`] (As long as the genre is a valid index into [`GENRES`])
+///
+///
 /// ### From `Tag`
 ///
-/// Two checks are performed when converting a genre:
+/// All of the [`ItemKey`]s referenced in the conversion to [`Tag`] will be checked.
 ///
-/// * [`GENRES`] contains the string
-/// * The [`ItemValue`](crate::ItemValue) can be parsed into a `u8`
+/// The values will be used as-is, with two exceptions:
+///
+/// * [`ItemKey::TrackNumber`] - Will only be used if the value can be parsed as a `u8`
+/// * [`ItemKey::Genre`] - Will only be used if:
+///
+/// 	[`GENRES`] contains the string **OR** The [`ItemValue`](crate::ItemValue) can be parsed into
+/// 	a `u8` ***and*** it is a valid index into [`GENRES`]
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(
 	description = "An ID3v1 tag",
