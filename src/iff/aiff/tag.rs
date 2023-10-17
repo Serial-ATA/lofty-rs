@@ -44,18 +44,21 @@ pub struct Comment {
 ///
 /// ### To `Tag`
 ///
-/// Items with [`ItemKey::Comment`] will be stored in the `annotations` field
+/// All fields can be converted losslessly to a [`TagItem`], with the exception of [`Comment`]s.
+///
+/// * `name` -> [`ItemKey::TrackTitle`]
+/// * `author` -> [`ItemKey::TrackArtist`]
+/// * `copyright` -> [`ItemKey::CopyrightMessage`]
+/// * `annotations` -> [`ItemKey::Comment`]
+///
+/// For the `comments` field, they will be treated as an annotation, having their `timestamp` and `marker_id`
+/// discarded.
 ///
 /// ### From `Tag`
 ///
-/// When converting from [`Tag`](crate::Tag), the following [`ItemKey`](crate::ItemKey)s will be used:
+/// All of the [`ItemKey`]s referenced in the conversion to [`Tag`] will be checked.
 ///
-/// * [`ItemKey::TrackTitle`](crate::ItemKey::TrackTitle)
-/// * [`ItemKey::TrackArtist`](crate::ItemKey::TrackArtist)
-/// * [`ItemKey::CopyrightMessage`](crate::ItemKey::CopyrightMessage)
-/// * [`ItemKey::Comment`](crate::ItemKey::Comment)
-///
-/// When converting [Comment]s, only the `text` field will be preserved.
+/// Every item with the key [`ItemKey::Comment`] will be stored as an annotation.
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 #[tag(description = "`AIFF` text chunks", supported_formats(Aiff))]
 pub struct AIFFTextChunks {
