@@ -6,27 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## Fixed
+### Fixed
 - **MP4**: Verify atom identifiers fall within a subset of characters ([PR](https://github.com/Serial-ATA/lofty-rs/pull/267))
   - For a multitude of reasons, garbage data can be left at the end of an atom, resulting in Lofty attempting to
     parse it as another atom definition. As the specification is broad, there is no way for us to say *with certainty*
     that an identifier is invalid. Now we unfortunately have to guess the validity based on the commonly known atoms.
     For this, we follow [TagLib]'s [checks](https://github.com/taglib/taglib/blob/b40b834b1bdbd74593c5619e969e793d4d4886d9/taglib/mp4/mp4atom.cpp#L89).
+- **ID3v2**: No longer error on inputs shorter than 128 bytes (the length of an ID3v1 tag). ([PR](https://github.com/Serial-ATA/lofty-rs/pull/270))
 
-## Removed
+### Removed
 - **MP4**: `Ilst::{track_total, disc_number, disc_total}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/269))
   - These existed prior to the methods on `Accessor`. There is no need to keep them around, as they behave the same.
 
 ## [0.16.1] - 2023-10-15
 
-## Fixed
+### Fixed
 - **MP4**: Skip unexpected or empty data atoms in ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/261))
   - It is possible for an `ilst` item to have both empty `data` atoms and unexpected (likely vendor-specific) atoms other than `data`.
     These are both cases we can safely ignore unless using `ParsingMode::Strict`.
 
 ## [0.16.0] - 2023-10-01
 
-## Added
+### Added
 - **ID3v2**:
   - Support for "RVA2", "OWNE", "ETCO", and "PRIV" frames through
                `id3::v2::{RelativeVolumeAdjustmentFrame, OwnershipFrame, EventTimingCodesFrame, PrivateFrame}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/236))
@@ -37,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Atom::merge`
 - **OGG**: Support for reading "COVERART" fields, an old deprecated image storage format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/253)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/254))
 
-## Changed
+### Changed
 - **ID3v2**:
   - Tag header parsing errors will be ignored unless using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
   - For spec compliance, `Id3v2Tag::insert` will now check for frames that are only meant to appear
@@ -58,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - This is not allowed [by spec](https://xiph.org/flac/format.html#metadata_block_picture), but has been encountered
       in the wild. Now we will just cap the picture type at 255.
 
-## Fixed
+### Fixed
 - **WavPack**: Custom sample rates will no longer be overwritten ([PR](https://github.com/Serial-ATA/lofty-rs/pull/244))
   - When a custom sample rate (or multiplier) was encountered, it would accidentally be overwritten with 0, causing
     incorrect duration and bitrate values.
@@ -68,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.15.0] - 2023-07-11
 
-## Added
+### Added
 - **ID3v2**:
   - `Id3v2ErrorKind::UnsupportedFrameId` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/212))
   - `FrameValue::KeyValue` for TIPL/TMCL frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
@@ -80,7 +81,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AiffProperties` to hold additional AIFF-specific information
   - AIFC compression types are now exposed through `AiffCompressionType`
 
-## Changed
+### Changed
 - **ID3v2**:
   - `Id3v2ErrorKind::BadFrameId` now contains the frame ID ([PR](https://github.com/Serial-ATA/lofty-rs/pull/212))
   - Bad frame IDs will no longer error when using `ParsingMode::{Relaxed, BestAttempt}`. The parser will now just move on to the next frame. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
@@ -89,7 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VorbisComments**: When writing, items larger than `u32::MAX` will throw `ErrorKind::TooMuchData`, rather than be silently discarded.
 - **AIFF**: `AiffFile` will no longer use `FileProperties`. It now uses `AiffProperties`.
 
-## Fixed
+### Fixed
 - **APE**: Track/Disk number pairs are properly converted when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/159)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/216))
 - **ID3v2**: TIPL/TMCL frames will no longer be read as a single terminated string ([issue](https://github.com/Serial-ATA/lofty-rs/pull/213)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/214))
 - **WavPack**: Multichannel files will no longer be marked as mono, supporting up to 4095 channels ([PR](https://github.com/Serial-ATA/lofty-rs/pull/230))
