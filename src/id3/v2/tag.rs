@@ -73,7 +73,7 @@ macro_rules! impl_accessor {
 ///
 /// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist for these descriptions, such as the one for `ReplayGain`,
 /// otherwise [`ItemKey::Unknown`] will be used.
-/// * Frame that require a language (COMM/USLT) - With ID3v2 being the only format that allows for language-specific items, this information is not retained.
+/// * Frames that require a language (COMM/USLT) - With ID3v2 being the only format that allows for language-specific items, this information is not retained.
 /// * POPM - These frames will be stored as a raw [`ItemValue::Binary`] value under the [`ItemKey::Popularimeter`] key.
 ///
 /// ## Special Frames
