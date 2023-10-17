@@ -1,9 +1,9 @@
 use crate::temp_file;
 use crate::util::get_file;
-use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
+use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
 use lofty::{Accessor, AudioFile, ParseOptions, TagType};
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 #[test]
 fn test_pcm_properties() {
