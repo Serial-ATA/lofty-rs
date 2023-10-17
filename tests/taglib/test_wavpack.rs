@@ -1,5 +1,6 @@
 use crate::temp_file;
 use crate::util::get_file;
+use std::fs::File;
 
 use std::io::Seek;
 
@@ -75,7 +76,8 @@ fn test_tagged_properties() {
 
 #[test]
 fn test_fuzzed_file() {
-	let _f = get_file::<WavPackFile>("tests/taglib/data/infloop.wv");
+	let mut f = File::open("tests/taglib/data/infloop.wv").unwrap();
+	assert!(WavPackFile::read_from(&mut f, ParseOptions::new()).is_err());
 }
 
 #[test]
