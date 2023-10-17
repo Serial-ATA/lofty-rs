@@ -258,7 +258,11 @@ fn test_popm_from_file() {
 	file.rewind().unwrap();
 	{
 		let bar = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		let popm_frame = bar.id3v2().unwrap().get("POPM").unwrap();
+		let popm_frame = bar
+			.id3v2()
+			.unwrap()
+			.get(&FrameId::Valid(Cow::Borrowed("POPM")))
+			.unwrap();
 		let popularimeter = match popm_frame.content() {
 			FrameValue::Popularimeter(popm) => popm,
 			_ => unreachable!(),
@@ -738,7 +742,10 @@ fn test_itunes_24_frame_size() {
 		.unwrap()
 		.contains(&FrameId::Valid(Cow::from("TIT2"))));
 	assert_eq!(
-		f.id3v2().unwrap().get_text("TIT2").unwrap(),
+		f.id3v2()
+			.unwrap()
+			.get_text(&FrameId::Valid(Cow::Borrowed("TIT2")))
+			.unwrap(),
 		"Sunshine Superman"
 	);
 }
@@ -818,7 +825,13 @@ fn test_update_full_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 	assert!(f.id3v2().is_some());
-	assert_eq!(f.id3v2().unwrap().get_text("TDRC").unwrap(), "2010-04-03");
+	assert_eq!(
+		f.id3v2()
+			.unwrap()
+			.get_text(&FrameId::Valid(Cow::Borrowed("TDRC")))
+			.unwrap(),
+		"2010-04-03"
+	);
 }
 
 #[test]
@@ -835,7 +848,11 @@ fn test_compressed_frame_with_broken_length() {
 		.unwrap()
 		.contains(&FrameId::Valid(Cow::from("APIC"))));
 
-	let frame = f.id3v2().unwrap().get("APIC").unwrap();
+	let frame = f
+		.id3v2()
+		.unwrap()
+		.get(&FrameId::Valid(Cow::Borrowed("APIC")))
+		.unwrap();
 	let picture = match frame.content() {
 		FrameValue::Picture(AttachedPictureFrame { picture, .. }) => picture,
 		_ => unreachable!(),
@@ -856,7 +873,11 @@ fn test_w000() {
 		.id3v2()
 		.unwrap()
 		.contains(&FrameId::Valid(Cow::from("W000"))));
-	let frame = f.id3v2().unwrap().get("W000").unwrap();
+	let frame = f
+		.id3v2()
+		.unwrap()
+		.get(&FrameId::Valid(Cow::Borrowed("W000")))
+		.unwrap();
 	let url_frame = match frame.content() {
 		FrameValue::Url(url_frame) => url_frame,
 		_ => unreachable!(),
