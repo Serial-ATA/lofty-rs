@@ -366,21 +366,6 @@ impl Ilst {
 		})
 	}
 
-	/// Returns the total number of tracks
-	pub fn track_total(&self) -> Option<u16> {
-		self.extract_number(*b"trkn", 6)
-	}
-
-	/// Returns the disc number
-	pub fn disc_number(&self) -> Option<u16> {
-		self.extract_number(*b"disk", 4)
-	}
-
-	/// Returns the total number of discs
-	pub fn disc_total(&self) -> Option<u16> {
-		self.extract_number(*b"disk", 6)
-	}
-
 	// Extracts a u16 from an integer pair
 	fn extract_number(&self, fourcc: [u8; 4], expected_size: usize) -> Option<u16> {
 		if let Some(atom) = self.get(&AtomIdent::Fourcc(fourcc)) {
