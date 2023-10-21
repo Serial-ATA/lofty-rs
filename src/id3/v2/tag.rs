@@ -2417,4 +2417,30 @@ mod tests {
 		assert_eq!(composers.next(), Some("B"));
 		assert_eq!(composers.next(), None)
 	}
+
+	#[test]
+	fn trim_end_nulls_when_reading_frame_content() {
+		// Issue #273
+		// Tag written by mid3v2. All frames contain null-terminated UTF-8 text
+		let tag = read_tag("tests/tags/assets/id3v2/trailing_nulls.id3v24");
+
+		// Verify that each different frame type no longer has null terminator
+		let artist = tag.get_text(&FrameId::Valid(Cow::Borrowed("TPE1")));
+		assert_eq!(artist.unwrap(), "Artist");
+
+		let writer = tag.get_user_text("Writer");
+		assert_eq!(writer.unwrap(), "Writer");
+
+		let lyrics = &tag.unsync_text().next().unwrap().content;
+		assert_eq!(lyrics, "Lyrics to the song");
+
+		let comment = tag.comment().unwrap();
+		assert_eq!(comment, "Comment");
+
+		let url_frame = tag.get(&FrameId::Valid(Cow::Borrowed("WXXX"))).unwrap();
+		let FrameValue::UserUrl(url) = &url_frame.value else {
+			panic!("Expected a UserUrl")
+		};
+		assert_eq!(url.content, "https://www.myfanpage.com");
+	}
 }
