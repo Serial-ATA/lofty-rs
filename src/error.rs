@@ -530,7 +530,7 @@ impl Display for LoftyError {
 			// Files
 			ErrorKind::TooMuchData => write!(
 				f,
-				"An abnormally large amount of data was provided, and an overflow occurred"
+				"Attempted to read/write an abnormally large amount of data"
 			),
 			ErrorKind::SizeMismatch => write!(
 				f,

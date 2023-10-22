@@ -149,7 +149,7 @@ impl ParseOptions {
 	/// The maximum number of bytes to allocate for any single tag item
 	///
 	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
-	/// exceeds this limit, the allocator will return [`ErrorKind::TooMuchData`].
+	/// exceeds this limit, the allocator will return [`crate::error::ErrorKind::TooMuchData`].
 	///
 	/// # Examples
 	///
