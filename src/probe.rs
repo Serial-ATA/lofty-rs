@@ -163,6 +163,14 @@ impl ParseOptions {
 		self.allocation_limit = allocation_limit;
 		*self
 	}
+
+	fn finalize(self) -> Self {
+		unsafe {
+			crate::util::alloc::update_allocation_limit(self.allocation_limit);
+		}
+
+		self
+	}
 }
 
 /// The parsing strictness mode
@@ -626,7 +634,9 @@ impl<R: Read + Seek> Probe<R> {
 	/// ```
 	pub fn read(mut self) -> Result<TaggedFile> {
 		let reader = &mut self.inner;
-		let options = self.options.unwrap_or_default();
+		let options = self
+			.options
+			.map_or_else(ParseOptions::default, ParseOptions::finalize);
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
@@ -714,6 +724,7 @@ where
 mod tests {
 	use crate::{FileType, Probe};
 
+	use lofty::ParseOptions;
 	use std::fs::File;
 
 	#[test]
@@ -740,6 +751,95 @@ mod tests {
 		let data = std::io::Cursor::new(&data);
 		let probe = Probe::new(data).guess_file_type().unwrap();
 		assert_eq!(probe.file_type(), Some(FileType::Mpeg));
+	}
+
+	#[test]
+	fn parse_options_allocation_limit() {
+		// In this test, we read a partial MP3 file that has an ID3v2 tag containing a frame outside
+		// of the allocation limit. We'll be testing with an encrypted frame, since we immediately read those into memory.
+
+		use crate::id3::v2::util::synchsafe::SynchsafeInteger;
+
+		fn create_encrypted_frame(size: usize) -> Vec<u8> {
+			// Encryption method (1 byte) + encryption method data length indicator (4 bytes)
+			// This is required and goes before the data.
+			let flag_data = vec![0; 5];
+
+			let bytes = vec![0; size];
+
+			let frame_length_synch = ((bytes.len() + flag_data.len()) as u32)
+				.synch()
+				.unwrap()
+				.to_be_bytes();
+			let frame_header = vec![
+				b'S',
+				b'M',
+				b'T',
+				b'H',
+				frame_length_synch[0],
+				frame_length_synch[1],
+				frame_length_synch[2],
+				frame_length_synch[3],
+				0x00,
+				0b0000_0101, // Encrypted, Has data length indicator
+			];
+
+			[frame_header, flag_data, bytes].concat()
+		}
+
+		fn create_fake_mp3(frame_size: u32) -> Vec<u8> {
+			let id3v2_tag_length = (frame_size + 5 + 10).synch().unwrap().to_be_bytes();
+			[
+				// ID3v2.4 header (10 bytes)
+				vec![
+					0x49,
+					0x44,
+					0x33,
+					0x04,
+					0x00,
+					0x00,
+					id3v2_tag_length[0],
+					id3v2_tag_length[1],
+					id3v2_tag_length[2],
+					id3v2_tag_length[3],
+				],
+				// Random encrypted frame
+				create_encrypted_frame(frame_size as usize),
+				// start of MP3 frame (not all bytes are shown in this slice)
+				vec![
+					0xFF, 0xFB, 0x50, 0xC4, 0x00, 0x03, 0xC0, 0x00, 0x01, 0xA4, 0x00, 0x00, 0x00,
+					0x20, 0x00, 0x00, 0x34, 0x80, 0x00, 0x00, 0x04,
+				],
+			]
+			.into_iter()
+			.flatten()
+			.collect::<Vec<u8>>()
+		}
+
+		let parse_options = ParseOptions::new()
+			.allocation_limit(50)
+			.read_properties(false);
+
+		// An allocation with a size of 40 bytes should be ok
+		let within_limits = create_fake_mp3(40);
+		let probe = Probe::new(std::io::Cursor::new(&within_limits))
+			.set_file_type(FileType::Mpeg)
+			.options(parse_options);
+		assert!(probe.read().is_ok());
+
+		// An allocation with a size of 60 bytes should fail
+		let too_big = create_fake_mp3(60);
+		let probe = Probe::new(std::io::Cursor::new(&too_big))
+			.set_file_type(FileType::Mpeg)
+			.options(parse_options);
+		assert!(probe.read().is_err());
+
+		// Now test the default allocation limit (16MB), which should of course be ok with 60 bytes
+		let parse_options = ParseOptions::new().read_properties(false);
+		let probe = Probe::new(std::io::Cursor::new(&too_big))
+			.set_file_type(FileType::Mpeg)
+			.options(parse_options);
+		assert!(probe.read().is_ok());
 	}
 
 	fn test_probe(path: &str, expected_file_type_guess: FileType) {
