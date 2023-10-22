@@ -28,6 +28,7 @@ pub struct ParseOptions {
 	pub(crate) use_custom_resolvers: bool,
 	pub(crate) parsing_mode: ParsingMode,
 	pub(crate) max_junk_bytes: usize,
+	pub(crate) allocation_limit: usize,
 }
 
 impl Default for ParseOptions {
@@ -55,6 +56,9 @@ impl ParseOptions {
 	/// Default number of junk bytes to read
 	pub const DEFAULT_MAX_JUNK_BYTES: usize = 1024;
 
+	/// Default allocation limit for any single tag item
+	pub const DEFAULT_ALLOCATION_LIMIT: usize = 16 * 1024 * 1024;
+
 	/// Creates a new `ParseOptions`, alias for `Default` implementation
 	///
 	/// See also: [`ParseOptions::default`]
@@ -73,6 +77,7 @@ impl ParseOptions {
 			use_custom_resolvers: true,
 			parsing_mode: Self::DEFAULT_PARSING_MODE,
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
+			allocation_limit: Self::DEFAULT_ALLOCATION_LIMIT,
 		}
 	}
 
@@ -138,6 +143,24 @@ impl ParseOptions {
 	/// ```
 	pub fn max_junk_bytes(&mut self, max_junk_bytes: usize) -> Self {
 		self.max_junk_bytes = max_junk_bytes;
+		*self
+	}
+
+	/// The maximum number of bytes to allocate for any single tag item
+	///
+	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
+	/// exceeds this limit, the allocator will return [`ErrorKind::TooMuchData`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ParseOptions;
+	///
+	/// // I have files with gigantic images, I'll double the allocation limit!
+	/// let parsing_options = ParseOptions::new().allocation_limit(32 * 1024 * 1024);
+	/// ```
+	pub fn allocation_limit(&mut self, allocation_limit: usize) -> Self {
+		self.allocation_limit = allocation_limit;
 		*self
 	}
 }
