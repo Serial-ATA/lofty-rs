@@ -151,6 +151,9 @@ impl ParseOptions {
 	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
 	/// exceeds this limit, the allocator will return [`crate::error::ErrorKind::TooMuchData`].
 	///
+	/// NOTE: This only needs to be set once per thread. The limit will be used for all subsequent
+	///       reads, until a new one is set.
+	///
 	/// # Examples
 	///
 	/// ```rust
