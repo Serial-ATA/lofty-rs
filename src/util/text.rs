@@ -212,6 +212,13 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 	}
 }
 
+pub(crate) fn trim_end_nulls(text: &mut String) {
+	if text.ends_with('\0') {
+		let new_len = text.trim_end_matches('\0').len();
+		text.truncate(new_len);
+	}
+}
+
 fn utf16_encode(
 	text: &str,
 	endianness: fn(u16) -> [u8; 2],
