@@ -2,6 +2,16 @@ use crate::error::Result;
 use crate::macros::err;
 use crate::probe::ParseOptions;
 
+use std::cell::UnsafeCell;
+
+thread_local! {
+	static ALLOCATION_LIMIT: UnsafeCell<usize> = const { UnsafeCell::new(ParseOptions::DEFAULT_ALLOCATION_LIMIT) };
+}
+
+pub(crate) unsafe fn update_allocation_limit(limit: usize) {
+	ALLOCATION_LIMIT.with(|l| *l.get() = limit);
+}
+
 /// Provides the `fallible_repeat` method on `Vec`
 ///
 /// It is intended to be used in [`try_vec!`](crate::macros::try_vec).
@@ -20,9 +30,12 @@ impl<T> VecFallibleRepeat<T> for Vec<T> {
 			return Ok(self);
 		}
 
-		if expected_size > ParseOptions::DEFAULT_ALLOCATION_LIMIT {
-			err!(TooMuchData);
-		}
+		ALLOCATION_LIMIT.with(|limit| {
+			if expected_size > unsafe { *limit.get() } {
+				err!(TooMuchData);
+			}
+			Ok(())
+		})?;
 
 		self.try_reserve(expected_size)?;
 
