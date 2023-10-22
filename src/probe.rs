@@ -377,7 +377,7 @@ impl<R: Read> Probe<R> {
 	/// let mut probe = Probe::new(reader);
 	/// assert_eq!(probe.file_type(), None);
 	///
-	/// probe.set_file_type(FileType::Mpeg);
+	/// let probe = probe.set_file_type(FileType::Mpeg);
 	///
 	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
