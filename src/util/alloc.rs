@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::macros::err;
 
-// We have an allocation limit of 8MB for any one item
-const ALLOCATION_LIMIT: usize = 1024 * 1024 * 8;
+// We have an allocation limit of 16MB for any one item
+const ALLOCATION_LIMIT: usize = 16 * 1024 * 1024;
 
 /// Provides the `fallible_repeat` method on `Vec`
 ///
