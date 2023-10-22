@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **VorbisComments**: When converting from `Tag` to `VorbisComments`, `ItemKey::Unknown`s will be checked for spec compliance. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/272))
+- **ID3v2**: Any trailing null terminators will be trimmed when reading Comment, Text, UserText, UserUrl, and UnsynchronizedText frames. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/275))
 - **Alloc**: The default allocation limit for any single tag item is now **16MB**. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/276))
 - **Probe**: `Probe::set_file_type()` will return the `Probe` to allow for builder-style usage. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/276))
 

@@ -1,7 +1,9 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::util::text::{decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding};
+use crate::util::text::{
+	decode_text, encode_text, read_to_terminator, trim_end_nulls, utf16_decode, TextEncoding,
+};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -59,9 +61,10 @@ impl ExtendedTextFrame {
 		let encoding = verify_encoding(encoding_byte, version)?;
 		let description = decode_text(reader, encoding, true)?;
 
-		let frame_content;
+		let mut frame_content;
 		if encoding != TextEncoding::UTF16 {
 			frame_content = decode_text(reader, encoding, false)?.content;
+			trim_end_nulls(&mut frame_content);
 
 			return Ok(Some(ExtendedTextFrame {
 				encoding,
