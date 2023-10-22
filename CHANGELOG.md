@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **VorbisComments**: When converting from `Tag` to `VorbisComments`, `ItemKey::Unknown`s will be checked for spec compliance. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/272))
 - **Alloc**: The default allocation limit for any single tag item is now **16MB**.
+- **Probe**: `Probe::set_file_type()` will return the `Probe` to allow for builder-style usage.
 
 ### Fixed
 - **MP4**: Verify atom identifiers fall within a subset of characters ([PR](https://github.com/Serial-ATA/lofty-rs/pull/267))

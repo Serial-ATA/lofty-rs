@@ -374,8 +374,9 @@ impl<R: Read> Probe<R> {
 	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
 	/// ```
-	pub fn set_file_type(&mut self, file_type: FileType) {
-		self.f_ty = Some(file_type)
+	pub fn set_file_type(mut self, file_type: FileType) -> Self {
+		self.f_ty = Some(file_type);
+		self
 	}
 
 	/// Set the [`ParseOptions`] for the Probe
