@@ -144,6 +144,7 @@
 	clippy::ignored_unit_patterns, /* Not a fan of this lint, doesn't make anything clearer as it claims */
 	clippy::needless_return, /* Explicit returns are needed from time to time for clarity */
 	clippy::redundant_guards, /* Currently broken for some cases, might enable later*/
+	clippy::into_iter_without_iter, /* This is only going to fire on some internal types, doesn't matter much */
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
