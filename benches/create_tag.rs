@@ -20,9 +20,14 @@ macro_rules! bench_tag_write {
 					let mut v = Vec::new();
 					let mut tag = <$tag>::default();
 
-					tag.set_artist(String::from("Foo artist"));
-					tag.set_title(String::from("Bar title"));
-					tag.set_album(String::from("Baz album"));
+					tag.set_artist(String::from("Dave Eddy"));
+					tag.set_title(String::from("TempleOS Hymn Risen (Remix)"));
+					tag.set_album(String::from("Summer"));
+					tag.set_year(2017);
+					tag.set_track_number(1);
+					tag.set_genre(String::from("Electronic"));
+					// TODO: Front cover
+					// TODO: Encoder
 					tag.dump_to(&mut v).unwrap();
 				})
 			);
