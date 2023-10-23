@@ -30,18 +30,18 @@ fn content_infer_read(c: &mut Criterion) {
 	test_read_file!(
 		c,
 		[
-			(AAC, "../tests/files/assets/minimal/full_test.aac"),
-			(AIFF, "../tests/files/assets/minimal/full_test.aiff"),
-			(APE, "../tests/files/assets/minimal/full_test.ape"),
-			(FLAC, "../tests/files/assets/minimal/full_test.flac"),
-			(MP4, "../tests/files/assets/minimal/m4a_codec_aac.m4a"),
-			(MP3, "../tests/files/assets/minimal/full_test.mp3"),
-			(MPC, "../tests/files/assets/minimal/mpc_sv8.mpc"),
-			(OPUS, "../tests/files/assets/minimal/full_test.opus"),
-			(RIFF, "../tests/files/assets/minimal/wav_format_pcm.wav"),
-			(SPEEX, "../tests/files/assets/minimal/full_test.spx"),
-			(VORBIS, "../tests/files/assets/minimal/full_test.ogg"),
-			(WAVPACK, "../tests/files/assets/minimal/full_test.wv"),
+			(AAC, "assets/01 TempleOS Hymn Risen (Remix).aac"),
+			(AIFF, "assets/01 TempleOS Hymn Risen (Remix).aiff"),
+			(APE, "assets/01 TempleOS Hymn Risen (Remix).ape"),
+			(FLAC, "assets/01 TempleOS Hymn Risen (Remix).flac"),
+			(MP4, "assets/01 TempleOS Hymn Risen (Remix).m4a"),
+			(MP3, "assets/01 TempleOS Hymn Risen (Remix).mp3"),
+			(MPC, "assets/01 TempleOS Hymn Risen (Remix).mpc"),
+			(OPUS, "assets/01 TempleOS Hymn Risen (Remix).opus"),
+			(RIFF, "assets/01 TempleOS Hymn Risen (Remix).wav"),
+			(SPEEX, "assets/01 TempleOS Hymn Risen (Remix).spx"),
+			(VORBIS, "assets/01 TempleOS Hymn Risen (Remix).ogg"),
+			(WAVPACK, "assets/01 TempleOS Hymn Risen (Remix).wv"),
 		]
 	);
 }
