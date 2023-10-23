@@ -734,10 +734,10 @@ impl FileType {
 	///
 	/// | [`FileType`]                      | [`TagType`]      |
 	/// |-----------------------------------|------------------|
-	/// | `AAC`, `AIFF`, `MP3`, `WAV`       | `ID3v2`          |
-	/// | `APE` , `WavPack`                 | `APE`            |
-	/// | `FLAC`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
-	/// | `MP4`                             | `MP4ilst`        |
+	/// | `Aac`, `Aiff`, `Mp3`, `Wav`       | `Id3v2`          |
+	/// | `Ape` , `Mpc`, `WavPack`          | `Ape`            |
+	/// | `Flac`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
+	/// | `Mp4`                             | `Mp4Ilst`        |
 	///
 	/// # Panics
 	///
@@ -753,7 +753,7 @@ impl FileType {
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::Aiff | FileType::Mpeg | FileType::Wav | FileType::Aac => TagType::Id3v2,
+			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
