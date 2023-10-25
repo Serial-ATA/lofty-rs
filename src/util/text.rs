@@ -97,7 +97,7 @@ where
 
 	let mut bom = [0, 0];
 	let read_string = match encoding {
-		TextEncoding::Latin1 => raw_bytes.iter().map(|c| *c as char).collect::<String>(),
+		TextEncoding::Latin1 => latin1_decode(&raw_bytes),
 		TextEncoding::UTF16 => {
 			if raw_bytes.len() < 2 {
 				err!(TextDecode("UTF-16 string has an invalid length (< 2)"));
@@ -110,17 +110,17 @@ where
 			match (raw_bytes[0], raw_bytes[1]) {
 				(0xFE, 0xFF) => {
 					bom = [0xFE, 0xFF];
-					utf16_decode(&raw_bytes[2..], u16::from_be_bytes)?
+					utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?
 				},
 				(0xFF, 0xFE) => {
 					bom = [0xFF, 0xFE];
-					utf16_decode(&raw_bytes[2..], u16::from_le_bytes)?
+					utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?
 				},
 				_ => err!(TextDecode("UTF-16 string has an invalid byte order mark")),
 			}
 		},
-		TextEncoding::UTF16BE => utf16_decode(raw_bytes.as_slice(), u16::from_be_bytes)?,
-		TextEncoding::UTF8 => String::from_utf8(raw_bytes)
+		TextEncoding::UTF16BE => utf16_decode_bytes(raw_bytes.as_slice(), u16::from_be_bytes)?,
+		TextEncoding::UTF8 => utf8_decode(raw_bytes)
 			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
 	};
 
@@ -170,12 +170,36 @@ where
 	Some(text_bytes)
 }
 
-pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
-	if reader.is_empty() {
+pub(crate) fn latin1_decode(bytes: &[u8]) -> String {
+	let mut text = bytes.iter().map(|c| *c as char).collect::<String>();
+	trim_end_nulls(&mut text);
+	text
+}
+
+pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
+	String::from_utf8(bytes)
+		.map(|mut text| {
+			trim_end_nulls(&mut text);
+			text
+		})
+		.map_err(Into::into)
+}
+
+pub(crate) fn utf16_decode(words: &[u16]) -> Result<String> {
+	String::from_utf16(words)
+		.map(|mut text| {
+			trim_end_nulls(&mut text);
+			text
+		})
+		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
+}
+
+pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
+	if bytes.is_empty() {
 		return Ok(String::new());
 	}
 
-	let unverified: Vec<u16> = reader
+	let unverified: Vec<u16> = bytes
 		.chunks_exact(2)
 		.map_while(|c| match c {
 			[0, 0] => None,
@@ -183,8 +207,7 @@ pub(crate) fn utf16_decode(reader: &[u8], endianness: fn([u8; 2]) -> u16) -> Res
 		})
 		.collect();
 
-	String::from_utf16(&unverified)
-		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
+	utf16_decode(&unverified)
 }
 
 pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
@@ -252,8 +275,10 @@ mod tests {
 	#[test]
 	fn text_decode() {
 		// No BOM
-		let utf16_decode = super::utf16_decode(
-			&[0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5],
+		let utf16_decode = super::utf16_decode_bytes(
+			&[
+				0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00,
+			],
 			u16::from_be_bytes,
 		)
 		.unwrap();
@@ -263,7 +288,7 @@ mod tests {
 		// BOM test
 		let be_utf16_decode = super::decode_text(
 			&mut Cursor::new(&[
-				0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5,
+				0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00,
 			]),
 			TextEncoding::UTF16,
 			false,
@@ -271,7 +296,7 @@ mod tests {
 		.unwrap();
 		let le_utf16_decode = super::decode_text(
 			&mut Cursor::new(&[
-				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00,
+				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00, 0x00,
 			]),
 			TextEncoding::UTF16,
 			false,

@@ -9,7 +9,7 @@ use crate::mp4::atom_info::AtomInfo;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
-use crate::util::text::utf16_decode;
+use crate::util::text::{utf16_decode_bytes, utf8_decode};
 use crate::ParsingMode;
 
 use std::borrow::Cow;
@@ -317,8 +317,8 @@ where
 fn interpret_atom_content(flags: u32, content: Vec<u8>) -> Result<AtomData> {
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	Ok(match flags {
-		UTF8 => AtomData::UTF8(String::from_utf8(content)?),
-		UTF16 => AtomData::UTF16(utf16_decode(&content, u16::from_be_bytes)?),
+		UTF8 => AtomData::UTF8(utf8_decode(content)?),
+		UTF16 => AtomData::UTF16(utf16_decode_bytes(&content, u16::from_be_bytes)?),
 		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
 		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
 		code => AtomData::Unknown {

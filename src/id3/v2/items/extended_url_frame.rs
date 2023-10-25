@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::util::text::{decode_text, encode_text, trim_end_nulls, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -58,8 +58,7 @@ impl ExtendedUrlFrame {
 
 		let encoding = verify_encoding(encoding_byte, version)?;
 		let description = decode_text(reader, encoding, true)?.content;
-		let mut content = decode_text(reader, TextEncoding::Latin1, false)?.content;
-		trim_end_nulls(&mut content);
+		let content = decode_text(reader, TextEncoding::Latin1, false)?.content;
 
 		Ok(Some(ExtendedUrlFrame {
 			encoding,

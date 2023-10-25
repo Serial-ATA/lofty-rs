@@ -1,6 +1,8 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::macros::err;
-use crate::util::text::{decode_text, encode_text, read_to_terminator, utf16_decode, TextEncoding};
+use crate::util::text::{
+	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextEncoding,
+};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
@@ -144,7 +146,7 @@ impl SynchronizedText {
 							// text + null terminator
 							pos += (raw_text.len() + 2) as u64;
 
-							return utf16_decode(&raw_text, endianness)
+							return utf16_decode_bytes(&raw_text, endianness)
 								.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
 						}
 
