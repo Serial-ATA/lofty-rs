@@ -388,7 +388,7 @@ impl Display for FileEncodingError {
 
 /// Errors that could occur within Lofty
 pub struct LoftyError {
-	kind: ErrorKind,
+	pub(crate) kind: ErrorKind,
 }
 
 impl LoftyError {

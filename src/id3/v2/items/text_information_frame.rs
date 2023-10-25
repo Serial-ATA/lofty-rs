@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::util::text::{decode_text, encode_text, trim_end_nulls, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextEncoding};
 
 use byteorder::ReadBytesExt;
 
@@ -37,8 +37,7 @@ impl TextInformationFrame {
 		};
 
 		let encoding = verify_encoding(encoding_byte, version)?;
-		let mut value = decode_text(reader, encoding, false)?.content;
-		trim_end_nulls(&mut value);
+		let value = decode_text(reader, encoding, false)?.content;
 
 		Ok(Some(TextInformationFrame { encoding, value }))
 	}

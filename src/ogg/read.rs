@@ -4,6 +4,7 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::probe::ParsingMode;
+use crate::util::text::{utf16_decode, utf8_decode};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
@@ -34,25 +35,31 @@ where
 
 	len -= u64::from(vendor_len);
 
-	let vendor = match String::from_utf8(vendor) {
+	let vendor = match utf8_decode(vendor) {
 		Ok(v) => v,
 		Err(e) => {
 			// The actions following this are not spec-compliant in the slightest, so
 			// we need to short circuit if strict.
 			if parse_mode == ParsingMode::Strict {
-				return Err(LoftyError::new(ErrorKind::StringFromUtf8(e)));
+				return Err(e);
 			}
 
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
 			// the replacement character
+			let LoftyError {
+				kind: ErrorKind::StringFromUtf8(e),
+			} = e
+			else {
+				return Err(e);
+			};
 			let s = e
 				.as_bytes()
 				.iter()
 				.map(|c| u16::from(*c))
 				.collect::<Vec<_>>();
 
-			match String::from_utf16(&s) {
+			match utf16_decode(&s) {
 				Ok(vendor) => vendor,
 				Err(_) => decode_err!(@BAIL "OGG: File has an invalid vendor string"),
 			}
@@ -142,14 +149,14 @@ where
 				// SAFETY: We just verified that all of the bytes fall within the subset of ASCII
 				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
 
-				match String::from_utf8(value.to_vec()) {
+				match utf8_decode(value.to_vec()) {
 					Ok(value) => tag.items.push((key, value)),
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
-							return Err(LoftyError::new(ErrorKind::StringFromUtf8(e)));
+							return Err(e);
 						}
 
-						log::warn!("Non UTF-8 value found, discarding field");
+						log::warn!("Non UTF-8 value found, discarding field {key:?}");
 						continue;
 					},
 				}

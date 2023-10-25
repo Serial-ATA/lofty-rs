@@ -1,6 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
 use crate::probe::ParsingMode;
+use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
@@ -683,8 +684,8 @@ impl Picture {
 		if desc_len > 0 && desc_len < size {
 			let pos = 12 + mime_len;
 
-			if let Ok(desc) = std::str::from_utf8(&content[pos..pos + desc_len]) {
-				description = Some(Cow::from(desc.to_string()));
+			if let Ok(desc) = utf8_decode(content[pos..pos + desc_len].to_vec()) {
+				description = Some(desc.into());
 			}
 
 			size -= desc_len;

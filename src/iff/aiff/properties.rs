@@ -2,6 +2,7 @@ use super::read::CompressionPresent;
 use crate::error::Result;
 use crate::macros::{decode_err, try_vec};
 use crate::properties::FileProperties;
+use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
 use std::io::Read;
@@ -234,7 +235,7 @@ pub(super) fn read_properties(
 					let mut compression_name_bytes = try_vec![0u8; compression_name_size as usize];
 					comm.read_exact(&mut compression_name_bytes)?;
 
-					compression_name = String::from_utf8(compression_name_bytes)?;
+					compression_name = utf8_decode(compression_name_bytes)?;
 				}
 
 				AiffCompressionType::Other {

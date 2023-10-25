@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::macros::{err, try_vec};
 use crate::probe::ParsingMode;
+use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
@@ -67,7 +68,7 @@ impl<B: ByteOrder> Chunks<B> {
 			data.seek(SeekFrom::Current(1))?;
 		}
 
-		Ok(String::from_utf8(cont)?)
+		utf8_decode(cont)
 	}
 
 	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>

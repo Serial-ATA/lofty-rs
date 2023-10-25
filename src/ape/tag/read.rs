@@ -5,6 +5,7 @@ use crate::ape::header::{self, ApeHeader};
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
 use crate::tag::item::ItemValue;
+use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -38,7 +39,7 @@ where
 			key_char = data.read_u8()?;
 		}
 
-		let key = String::from_utf8(key)
+		let key = utf8_decode(key)
 			.map_err(|_| decode_err!(Ape, "APE tag item contains a non UTF-8 key"))?;
 
 		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
@@ -57,11 +58,11 @@ where
 		data.read_exact(&mut value)?;
 
 		let parsed_value = match item_type {
-			0 => ItemValue::Text(String::from_utf8(value).map_err(|_| {
+			0 => ItemValue::Text(utf8_decode(value).map_err(|_| {
 				decode_err!(Ape, "Failed to convert text item into a UTF-8 string")
 			})?),
 			1 => ItemValue::Binary(value),
-			2 => ItemValue::Locator(String::from_utf8(value).map_err(|_| {
+			2 => ItemValue::Locator(utf8_decode(value).map_err(|_| {
 				decode_err!(Ape, "Failed to convert locator item into a UTF-8 string")
 			})?),
 			_ => decode_err!(@BAIL Ape, "APE tag item contains an invalid item type"),

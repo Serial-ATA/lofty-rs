@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, utf8_decode, TextEncoding};
 
 use std::hash::Hash;
 use std::io::Read;
@@ -50,7 +50,7 @@ impl OwnershipFrame {
 		let mut date_bytes = vec![0u8; 8];
 		reader.read_exact(&mut date_bytes)?;
 
-		let date_of_purchase = String::from_utf8(date_bytes)?;
+		let date_of_purchase = utf8_decode(date_bytes)?;
 
 		let seller = decode_text(reader, encoding, false)?.content;
 
