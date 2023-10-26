@@ -49,9 +49,7 @@ impl<B: ByteOrder> Chunks<B> {
 		let cont = self.content(data)?;
 		self.correct_position(data)?;
 
-		let value_str = std::str::from_utf8(&cont)?;
-
-		Ok(value_str.trim_end_matches('\0').to_string())
+		utf8_decode(cont)
 	}
 
 	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<u32>) -> Result<String>

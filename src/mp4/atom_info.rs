@@ -3,6 +3,7 @@ use crate::macros::{err, try_vec};
 use crate::probe::ParsingMode;
 use crate::tag::item::ItemKey;
 use crate::tag::TagType;
+use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
@@ -247,7 +248,7 @@ where
 			let mut content = try_vec![0; (len - 12) as usize];
 			data.read_exact(&mut content)?;
 
-			String::from_utf8(content).map_err(|_| {
+			utf8_decode(content).map_err(|_| {
 				LoftyError::new(ErrorKind::BadAtom(
 					"Found a non UTF-8 string while reading freeform identifier",
 				))

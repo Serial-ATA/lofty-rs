@@ -8,6 +8,7 @@ pub mod v2;
 
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::try_vec;
+use crate::util::text::utf8_decode_str;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -30,7 +31,7 @@ where
 	if &lyrics3v2[7..] == b"LYRICS200" {
 		header = Some(());
 
-		let lyrics_size = std::str::from_utf8(&lyrics3v2[..7])?;
+		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
 		let lyrics_size = lyrics_size.parse::<u32>().map_err(|_| {
 			LoftyError::new(ErrorKind::TextDecode(
 				"Lyrics3v2 tag has an invalid size string",

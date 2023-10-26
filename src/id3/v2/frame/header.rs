@@ -3,6 +3,7 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameId;
+use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
 use std::io::Read;
@@ -74,7 +75,7 @@ where
 	}
 
 	let id_bytes = &header[..id_end];
-	let id_str = std::str::from_utf8(id_bytes)
+	let id_str = utf8_decode_str(id_bytes)
 		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id_bytes.to_vec())))?;
 
 	// Now upgrade the FrameId
