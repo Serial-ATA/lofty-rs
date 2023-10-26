@@ -30,11 +30,13 @@ fn test_unsynch_decode() {
 }
 
 #[test]
+#[ignore]
 fn test_downgrade_utf8_for_id3v23_1() {
 	todo!("We don't support downgrading 2.4 tags to 2.3")
 }
 
 #[test]
+#[ignore]
 fn test_downgrade_utf8_for_id3v23_2() {
 	todo!("We don't support downgrading 2.4 tags to 2.3")
 }
@@ -835,6 +837,7 @@ fn test_update_full_date22() {
 }
 
 #[test]
+#[ignore]
 fn test_downgrade_to_23() {
 	todo!("We don't support downgrading 2.4 tags to 2.3")
 }
