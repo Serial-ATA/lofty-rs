@@ -185,6 +185,12 @@ pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
 		.map_err(Into::into)
 }
 
+pub(crate) fn utf8_decode_str(bytes: &[u8]) -> Result<&str> {
+	std::str::from_utf8(bytes)
+		.map(trim_end_nulls_str)
+		.map_err(Into::into)
+}
+
 pub(crate) fn utf16_decode(words: &[u16]) -> Result<String> {
 	String::from_utf16(words)
 		.map(|mut text| {
@@ -240,6 +246,10 @@ pub(crate) fn trim_end_nulls(text: &mut String) {
 		let new_len = text.trim_end_matches('\0').len();
 		text.truncate(new_len);
 	}
+}
+
+pub(crate) fn trim_end_nulls_str(text: &str) -> &str {
+	text.trim_end_matches('\0')
 }
 
 fn utf16_encode(

@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
 use crate::probe::ParsingMode;
-use crate::util::text::utf8_decode;
+use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Formatter};
@@ -672,7 +672,7 @@ impl Picture {
 			err!(SizeMismatch);
 		}
 
-		let mime_type_str = std::str::from_utf8(&content[8..8 + mime_len])?;
+		let mime_type_str = utf8_decode_str(&content[8..8 + mime_len])?;
 		size -= mime_len;
 
 		reader.seek(SeekFrom::Current(mime_len as i64))?;
@@ -684,8 +684,8 @@ impl Picture {
 		if desc_len > 0 && desc_len < size {
 			let pos = 12 + mime_len;
 
-			if let Ok(desc) = utf8_decode(content[pos..pos + desc_len].to_vec()) {
-				description = Some(desc.into());
+			if let Ok(desc) = utf8_decode_str(&content[pos..pos + desc_len]) {
+				description = Some(desc.to_owned().into());
 			}
 
 			size -= desc_len;

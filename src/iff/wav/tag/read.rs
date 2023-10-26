@@ -2,6 +2,7 @@ use super::RIFFInfoList;
 use crate::error::Result;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
+use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek};
 
@@ -17,15 +18,15 @@ where
 	R: Read + Seek,
 {
 	while data.stream_position()? != end && chunks.next(data).is_ok() {
-		let key_str = String::from_utf8(chunks.fourcc.to_vec())
+		let key_str = utf8_decode_str(&chunks.fourcc)
 			.map_err(|_| decode_err!(Wav, "Non UTF-8 item key found in RIFF INFO"))?;
 
-		if !verify_key(&key_str) {
+		if !verify_key(key_str) {
 			decode_err!(@BAIL Wav, "RIFF INFO item key contains invalid characters");
 		}
 
 		tag.items.push((
-			key_str,
+			key_str.to_owned(),
 			chunks
 				.read_cstring(data)
 				.map_err(|_| decode_err!(Wav, "Failed to read RIFF INFO item value"))?,

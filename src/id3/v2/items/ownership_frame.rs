@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::util::text::{decode_text, encode_text, utf8_decode, TextEncoding};
+use crate::util::text::{decode_text, encode_text, utf8_decode_str, TextEncoding};
 
 use std::hash::Hash;
 use std::io::Read;
@@ -47,10 +47,10 @@ impl OwnershipFrame {
 			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
 		let price_paid = decode_text(reader, TextEncoding::Latin1, true)?.content;
 
-		let mut date_bytes = vec![0u8; 8];
+		let mut date_bytes = [0u8; 8];
 		reader.read_exact(&mut date_bytes)?;
 
-		let date_of_purchase = utf8_decode(date_bytes)?;
+		let date_of_purchase = utf8_decode_str(&date_bytes)?.to_owned();
 
 		let seller = decode_text(reader, encoding, false)?.content;
 

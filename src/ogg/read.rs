@@ -4,7 +4,7 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::probe::ParsingMode;
-use crate::util::text::{utf16_decode, utf8_decode};
+use crate::util::text::{utf16_decode, utf8_decode, utf8_decode_str};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
@@ -149,8 +149,8 @@ where
 				// SAFETY: We just verified that all of the bytes fall within the subset of ASCII
 				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
 
-				match utf8_decode(value.to_vec()) {
-					Ok(value) => tag.items.push((key, value)),
+				match utf8_decode_str(value) {
+					Ok(value) => tag.items.push((key, value.to_owned())),
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
 							return Err(e);

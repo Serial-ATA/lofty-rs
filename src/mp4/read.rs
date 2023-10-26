@@ -6,6 +6,7 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
 use crate::probe::{ParseOptions, ParsingMode};
 use crate::traits::SeekStreamLen;
+use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -163,12 +164,13 @@ where
 		decode_err!(@BAIL Mp4, "\"ftyp\" atom too short");
 	}
 
-	let mut major_brand = vec![0; 4];
+	let mut major_brand = [0u8; 4];
 	reader.read_exact(&mut major_brand)?;
 
 	reader.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
-	String::from_utf8(major_brand)
+	utf8_decode_str(&major_brand)
+		.map(ToOwned::to_owned)
 		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
 }
 
