@@ -207,8 +207,11 @@ pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -
 
 	let unverified: Vec<u16> = bytes
 		.chunks_exact(2)
-		.map_while(|c| match c {
-			[0, 0] => None,
+		// In ID3v2, it is possible to have multiple UTF-16 strings separated by null.
+		// This also makes it possible for us to encounter multiple BOMs in a single string.
+		// We must filter them out.
+		.filter_map(|c| match c {
+			[0xFF, 0xFE] | [0xFE, 0xFF] => None,
 			_ => Some(endianness(c.try_into().unwrap())), // Infallible
 		})
 		.collect();

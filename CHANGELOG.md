@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     parse it as another atom definition. As the specification is broad, there is no way for us to say *with certainty*
     that an identifier is invalid. Now we unfortunately have to guess the validity based on the commonly known atoms.
     For this, we follow [TagLib]'s [checks](https://github.com/taglib/taglib/blob/b40b834b1bdbd74593c5619e969e793d4d4886d9/taglib/mp4/mp4atom.cpp#L89).
-- **ID3v2**: No longer error on inputs shorter than 128 bytes (the length of an ID3v1 tag). ([PR](https://github.com/Serial-ATA/lofty-rs/pull/270))
+- **ID3v1**: No longer error on inputs shorter than 128 bytes (the length of an ID3v1 tag). ([PR](https://github.com/Serial-ATA/lofty-rs/pull/270))
+- **ID3v2**: No longer error on multi-value UTF-16 encoded text frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/265)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/284))
 
 ### Removed
 - **MP4**: `Ilst::{track_total, disc_number, disc_total}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/269))
