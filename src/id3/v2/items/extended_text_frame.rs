@@ -1,9 +1,7 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::util::text::{
-	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextEncoding,
-};
+use crate::util::text::{decode_text, encode_text, utf16_decode_bytes, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -74,17 +72,19 @@ impl ExtendedTextFrame {
 
 		// It's possible for the description to be the only string with a BOM
 		'utf16: {
-			let bom = description.bom;
-			let Some(raw_text) = read_to_terminator(reader, TextEncoding::UTF16) else {
+			let mut raw_text = Vec::new();
+			reader.read_to_end(&mut raw_text)?;
+
+			if raw_text.is_empty() {
 				// Nothing left to do
 				frame_content = String::new();
 				break 'utf16;
-			};
+			}
 
+			let mut bom = description.bom;
 			if raw_text.starts_with(&[0xFF, 0xFE]) || raw_text.starts_with(&[0xFE, 0xFF]) {
-				frame_content =
-					decode_text(&mut &raw_text[..], TextEncoding::UTF16, false)?.content;
-				break 'utf16;
+				// The text specifies a BOM
+				bom = [raw_text[0], raw_text[1]];
 			}
 
 			let endianness = match bom {
