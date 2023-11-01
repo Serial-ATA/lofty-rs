@@ -2,6 +2,7 @@ use super::frame::id::FrameId;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::error::{LoftyError, Result};
+use crate::id3::v1::GENRES;
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, TextInformationFrame,
@@ -530,6 +531,22 @@ impl Id3v2Tag {
 		};
 	}
 
+	/// Returns all genres contained in a `TCON` frame.
+	///
+	/// This will translate any numeric genre IDs to their textual equivalent.
+	/// ID3v2.4-style multi-value fields will be split as normal.
+	pub fn genres(&self) -> Option<impl Iterator<Item = &str>> {
+		if let Some(Frame {
+			value: FrameValue::Text(TextInformationFrame { ref value, .. }),
+			..
+		}) = self.get(&GENRE_ID)
+		{
+			return Some(GenresIter::new(value));
+		}
+
+		None
+	}
+
 	fn insert_number_pair(
 		&mut self,
 		id: FrameId<'static>,
@@ -541,6 +558,69 @@ impl Id3v2Tag {
 		} else {
 			log::warn!("{id} is not set. number: {number:?}, total: {total:?}");
 		}
+	}
+}
+
+struct GenresIter<'a> {
+	value: &'a str,
+	pos: usize,
+}
+
+impl<'a> GenresIter<'a> {
+	pub fn new(value: &'a str) -> GenresIter<'_> {
+		GenresIter { value, pos: 0 }
+	}
+}
+
+impl<'a> Iterator for GenresIter<'a> {
+	type Item = &'a str;
+
+	fn next(&mut self) -> Option<Self::Item> {
+		if self.pos >= self.value.len() {
+			return None;
+		}
+
+		let remainder = &self.value[self.pos..];
+
+		if let Some(idx) = remainder.find(V4_MULTI_VALUE_SEPARATOR) {
+			let start = self.pos;
+			let end = self.pos + idx;
+			self.pos = end + 1;
+			return Some(parse_genre(&self.value[start..end]));
+		}
+
+		if remainder.starts_with('(') && remainder.contains(')') {
+			let start = self.pos + 1;
+			let mut end = self.pos + remainder.find(')').unwrap();
+			self.pos = end + 1;
+			// handle bracketed refinement e.g. (55)((I think...)"
+			if remainder.starts_with("((") {
+				end += 1;
+			}
+			return Some(parse_genre(&self.value[start..end]));
+		}
+
+		self.pos = self.value.len();
+		Some(parse_genre(remainder))
+	}
+}
+
+fn parse_genre(genre: &str) -> &str {
+	if genre.len() > 3 {
+		return genre;
+	}
+	if let Ok(id) = genre.parse::<usize>() {
+		if id < GENRES.len() {
+			GENRES[id]
+		} else {
+			genre
+		}
+	} else if genre == "RX" {
+		"Remix"
+	} else if genre == "CR" {
+		"Cover"
+	} else {
+		genre
 	}
 }
 
@@ -891,6 +971,17 @@ impl SplitTag for Id3v2Tag {
 					)
 					.is_some() =>
 				{
+					false // Frame consumed
+				},
+				// TCON needs special treatment to translate genre IDs
+				("TCON", FrameValue::Text(TextInformationFrame { value: content, .. })) => {
+					let genres = GenresIter::new(content);
+					for genre in genres {
+						tag.items.push(TagItem::new(
+							ItemKey::Genre,
+							ItemValue::Text(genre.to_string()),
+						));
+					}
 					false // Frame consumed
 				},
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
@@ -1273,7 +1364,7 @@ mod tests {
 		SplitTag as _, Tag, TagExt as _, TagItem, TagType,
 	};
 
-	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR};
+	use super::{COMMENT_FRAME_ID, EMPTY_CONTENT_DESCRIPTOR, GENRE_ID};
 
 	fn read_tag(path: &str) -> Id3v2Tag {
 		let tag_bytes = crate::tag::utils::test_utils::read_path(path);
@@ -2442,5 +2533,70 @@ mod tests {
 			panic!("Expected a UserUrl")
 		};
 		assert_eq!(url.content, "https://www.myfanpage.com");
+	}
+
+	fn id3v2_tag_with_genre(value: &str) -> Id3v2Tag {
+		let mut tag = Id3v2Tag::default();
+		let frame = new_text_frame(GENRE_ID, String::from(value), FrameFlags::default());
+		tag.insert(frame);
+		tag
+	}
+
+	#[test]
+	fn genres_id_multiple() {
+		let tag = id3v2_tag_with_genre("(51)(39)");
+		let mut genres = tag.genres().unwrap();
+		assert_eq!(genres.next(), Some("Techno-Industrial"));
+		assert_eq!(genres.next(), Some("Noise"));
+		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn genres_id_multiple_into_tag() {
+		let id3v2 = id3v2_tag_with_genre("(51)(39)");
+		let tag: Tag = id3v2.into();
+		let mut genres = tag.get_strings(&ItemKey::Genre);
+		assert_eq!(genres.next(), Some("Techno-Industrial"));
+		assert_eq!(genres.next(), Some("Noise"));
+		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn genres_null_separated() {
+		let tag = id3v2_tag_with_genre("Samba-rock\0MPB\0Funk");
+		let mut genres = tag.genres().unwrap();
+		assert_eq!(genres.next(), Some("Samba-rock"));
+		assert_eq!(genres.next(), Some("MPB"));
+		assert_eq!(genres.next(), Some("Funk"));
+		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn genres_id_textual_refinement() {
+		let tag = id3v2_tag_with_genre("(4)Eurodisco");
+		let mut genres = tag.genres().unwrap();
+		assert_eq!(genres.next(), Some("Disco"));
+		assert_eq!(genres.next(), Some("Eurodisco"));
+		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn genres_id_bracketed_refinement() {
+		let tag = id3v2_tag_with_genre("(26)(55)((I think...)");
+		let mut genres = tag.genres().unwrap();
+		assert_eq!(genres.next(), Some("Ambient"));
+		assert_eq!(genres.next(), Some("Dream"));
+		assert_eq!(genres.next(), Some("(I think...)"));
+		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn genres_id_remix_cover() {
+		let tag = id3v2_tag_with_genre("(0)(RX)(CR)");
+		let mut genres = tag.genres().unwrap();
+		assert_eq!(genres.next(), Some("Blues"));
+		assert_eq!(genres.next(), Some("Remix"));
+		assert_eq!(genres.next(), Some("Cover"));
+		assert_eq!(genres.next(), None);
 	}
 }
