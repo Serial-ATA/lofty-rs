@@ -699,7 +699,6 @@ impl Accessor for Id3v2Tag {
 		title  => "TIT2";
 		artist => "TPE1";
 		album  => "TALB";
-		genre  => "TCON";
 	);
 
 	fn track(&self) -> Option<u32> {
@@ -758,6 +757,31 @@ impl Accessor for Id3v2Tag {
 		if let Some(track) = existing_track_number {
 			self.insert(Frame::text(Cow::Borrowed("TPOS"), track.to_string()));
 		}
+	}
+
+	fn genre(&self) -> Option<Cow<'_, str>> {
+		let mut genres = self.genres()?.peekable();
+		let first = genres.next()?;
+
+		if genres.peek().is_none() {
+			return Some(Cow::Borrowed(first));
+		};
+
+		let mut joined = String::from(first);
+		for genre in genres {
+			joined.push_str(" / ");
+			joined.push_str(genre);
+		}
+
+		Some(Cow::Owned(joined))
+	}
+
+	fn set_genre(&mut self, value: String) {
+		self.insert(new_text_frame(GENRE_ID, value, FrameFlags::default()));
+	}
+
+	fn remove_genre(&mut self) {
+		let _ = self.remove(&GENRE_ID);
 	}
 
 	fn year(&self) -> Option<u32> {
@@ -2540,6 +2564,32 @@ mod tests {
 		let frame = new_text_frame(GENRE_ID, String::from(value), FrameFlags::default());
 		tag.insert(frame);
 		tag
+	}
+
+	#[test]
+	fn genre_text() {
+		let tag = id3v2_tag_with_genre("Dream Pop");
+		assert_eq!(tag.genre(), Some(Cow::Borrowed("Dream Pop")));
+	}
+	#[test]
+	fn genre_id_brackets() {
+		let tag = id3v2_tag_with_genre("(21)");
+		assert_eq!(tag.genre(), Some(Cow::Borrowed("Ska")));
+	}
+
+	#[test]
+	fn genre_id_numeric() {
+		let tag = id3v2_tag_with_genre("21");
+		assert_eq!(tag.genre(), Some(Cow::Borrowed("Ska")));
+	}
+
+	#[test]
+	fn genre_id_multiple_joined() {
+		let tag = id3v2_tag_with_genre("(51)(39)");
+		assert_eq!(
+			tag.genre(),
+			Some(Cow::Borrowed("Techno-Industrial / Noise"))
+		);
 	}
 
 	#[test]
