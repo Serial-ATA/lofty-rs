@@ -1,5 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
@@ -8,7 +9,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{SeekFrom, Write};
 use std::path::Path;
 
 use byteorder::BigEndian;
@@ -189,7 +190,12 @@ impl TagExt for AIFFTextChunks {
 		)
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
 			author: self.author.as_deref(),
@@ -309,7 +315,12 @@ where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
 
@@ -400,9 +411,14 @@ where
 		Ok(text_chunks)
 	}
 
-	fn write_to_inner(data: &mut File, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()> {
-		super::read::verify_aiff(data)?;
-		let file_len = data.metadata()?.len().saturating_sub(12);
+	fn write_to_inner<F>(file: &mut F, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
+		super::read::verify_aiff(file)?;
+		let file_len = file.len()?.saturating_sub(12);
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
@@ -410,10 +426,10 @@ where
 
 		let mut chunks = Chunks::<BigEndian>::new(file_len);
 
-		while chunks.next(data).is_ok() {
+		while chunks.next(file).is_ok() {
 			match &chunks.fourcc {
 				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
-					let start = (data.stream_position()? - 8) as usize;
+					let start = (file.stream_position()? - 8) as usize;
 					let mut end = start + 8 + chunks.size as usize;
 
 					if chunks.size % 2 != 0 {
@@ -425,19 +441,19 @@ where
 				_ => {},
 			}
 
-			chunks.skip(data)?;
+			chunks.skip(file)?;
 		}
 
-		data.rewind()?;
+		file.rewind()?;
 
 		let mut file_bytes = Vec::new();
-		data.read_to_end(&mut file_bytes)?;
+		file.read_to_end(&mut file_bytes)?;
 
 		if chunks_remove.is_empty() {
-			data.seek(SeekFrom::Start(16))?;
+			file.seek(SeekFrom::Start(16))?;
 
 			let mut size = [0; 4];
-			data.read_exact(&mut size)?;
+			file.read_exact(&mut size)?;
 
 			let comm_end = (20 + u32::from_le_bytes(size)) as usize;
 			file_bytes.splice(comm_end..comm_end, text_chunks);
@@ -457,9 +473,9 @@ where
 		let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
 		file_bytes.splice(4..8, total_size.to_vec());
 
-		data.rewind()?;
-		data.set_len(0)?;
-		data.write_all(&file_bytes)?;
+		file.rewind()?;
+		file.truncate(0)?;
+		file.write_all(&file_bytes)?;
 
 		Ok(())
 	}

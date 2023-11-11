@@ -1,6 +1,7 @@
 use super::r#ref::IlstRef;
-use crate::error::{FileEncodingError, Result};
+use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN, IDENTIFIER_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
@@ -10,7 +11,6 @@ use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 use crate::probe::ParseOptions;
 
-use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
@@ -20,11 +20,14 @@ const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
-pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
+pub(crate) fn write_to<'a, F, I: 'a>(file: &mut F, tag: &mut IlstRef<'a, I>) -> Result<()>
 where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	let mut reader = AtomReader::new(data, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut reader = AtomReader::new(file, ParseOptions::DEFAULT_PARSING_MODE)?;
 
 	verify_mp4(&mut reader)?;
 
@@ -131,11 +134,11 @@ where
 		&mut cursor,
 	)?;
 
-	let data = reader.into_inner();
+	let file = reader.into_inner();
 
-	data.rewind()?;
-	data.set_len(0)?;
-	data.write_all(&cursor.into_inner())?;
+	file.rewind()?;
+	file.truncate(0)?;
+	file.write_all(&cursor.into_inner())?;
 
 	Ok(())
 }

@@ -1,5 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
@@ -243,7 +244,12 @@ impl TagExt for Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		Into::<Id3v1TagRef<'_>>::into(self).write_to(file)
 	}
 
@@ -413,7 +419,12 @@ impl<'a> Id3v1TagRef<'a> {
 			&& self.genre.is_none()
 	}
 
-	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		super::write::write_id3v1(file, self)
 	}
 

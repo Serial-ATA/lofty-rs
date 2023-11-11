@@ -11,6 +11,7 @@ use crate::id3::v2::items::{
 use crate::id3::v2::util::pairs::{
 	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
 };
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -864,7 +865,12 @@ impl TagExt for Id3v2Tag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	/// * Attempting to write an invalid [`FrameId`]/[`FrameValue`] pairing
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		Id3v2TagRef {
 			flags: self.flags,
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
@@ -1355,7 +1361,12 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 }
 
 impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		super::write::write_id3v2(file, self)
 	}
 

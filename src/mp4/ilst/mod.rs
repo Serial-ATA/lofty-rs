@@ -6,6 +6,7 @@ pub(crate) mod write;
 
 use super::AtomIdent;
 use crate::error::LoftyError;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
@@ -534,7 +535,12 @@ impl TagExt for Ilst {
 		self.save_to(&mut f)
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.as_ref().write_to(file)
 	}
 

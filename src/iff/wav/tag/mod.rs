@@ -2,6 +2,7 @@ pub(super) mod read;
 mod write;
 
 use crate::error::{LoftyError, Result};
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
@@ -203,7 +204,12 @@ impl TagExt for RIFFInfoList {
 		self.items.is_empty()
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.write_to(file)
 	}
@@ -302,7 +308,12 @@ where
 		RIFFInfoListRef { items }
 	}
 
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		write::write_riff_info(file, self)
 	}
 

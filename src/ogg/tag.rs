@@ -1,5 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
@@ -454,7 +455,12 @@ impl TagExt for VorbisComments {
 	/// * The file does not contain valid packets
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
@@ -626,7 +632,12 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	#[allow(clippy::shadow_unrelated)]
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 		let f_ty = probe.file_type();
 

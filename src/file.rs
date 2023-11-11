@@ -1,4 +1,5 @@
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 use crate::resolve::CUSTOM_RESOLVERS;
@@ -76,7 +77,11 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to(&mut file)?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to(&self, file: &mut File) -> Result<()>;
+	fn save_to<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;
@@ -492,7 +497,12 @@ impl AudioFile for TaggedFile {
 			.read()
 	}
 
-	fn save_to(&self, file: &mut File) -> Result<()> {
+	fn save_to<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		for tag in &self.tags {
 			// TODO: This is a temporary solution. Ideally we should probe once and use
 			//       the format-specific writing to avoid these rewinds.
@@ -692,7 +702,12 @@ impl AudioFile for BoundTaggedFile {
 		)
 	}
 
-	fn save_to(&self, file: &mut File) -> Result<()> {
+	fn save_to<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.inner.save_to(file)
 	}
 

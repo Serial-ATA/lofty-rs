@@ -3,6 +3,7 @@ pub(crate) mod utils;
 
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
@@ -543,7 +544,12 @@ impl TagExt for Tag {
 	///
 	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
 	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 
 		match probe.file_type() {

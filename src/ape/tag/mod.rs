@@ -5,6 +5,7 @@ mod write;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
+use crate::io_traits::{FileLike, Truncate};
 use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
@@ -321,7 +322,11 @@ impl TagExt for ApeTag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * An existing tag has an invalid size
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+	{
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
@@ -483,7 +488,11 @@ impl<'a, I> ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+	{
 		write::write_to(file, self)
 	}
 

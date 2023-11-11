@@ -1,3 +1,6 @@
+use crate::error::LoftyError;
+use crate::io_traits::{FileLike, Length, Truncate};
+
 use std::borrow::Cow;
 
 // This defines the `Accessor` trait, used to define unified getters/setters for commonly
@@ -203,19 +206,23 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 		)
 	}
 
-	/// Save the tag to a [`File`]
+	/// Save the tag to a writer
 	///
 	/// # Errors
 	///
 	/// * The file format could not be determined
 	/// * Attempting to write a tag to a format that does not support it.
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>;
 
 	#[allow(clippy::missing_errors_doc)]
 	/// Dump the tag to a writer
 	///
 	/// This will only write the tag, it will not produce a usable file.
-	fn dump_to<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err>;
+	fn dump_to<W: std::io::Write>(&self, file: &mut W) -> std::result::Result<(), Self::Err>;
 
 	/// Remove a tag from a [`Path`]
 	///
@@ -303,19 +310,3 @@ pub trait MergeTag {
 	/// depending on the support for multi-valued fields in `self`.
 	fn merge_tag(self, tag: Tag) -> Self::Merged;
 }
-
-// TODO: https://github.com/rust-lang/rust/issues/59359
-pub(crate) trait SeekStreamLen: std::io::Seek {
-	fn stream_len(&mut self) -> crate::error::Result<u64> {
-		use std::io::SeekFrom;
-
-		let current_pos = self.stream_position()?;
-		let len = self.seek(SeekFrom::End(0))?;
-
-		self.seek(SeekFrom::Start(current_pos))?;
-
-		Ok(len)
-	}
-}
-
-impl<T> SeekStreamLen for T where T: std::io::Seek {}

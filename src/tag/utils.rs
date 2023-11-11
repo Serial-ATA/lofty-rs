@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
@@ -7,17 +7,22 @@ use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::{self, Id3v2TagFlags};
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::mp4::Ilst;
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
 
-use std::fs::File;
 use std::io::Write;
 
 #[allow(unreachable_patterns)]
-pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
+pub(crate) fn write_tag<F>(tag: &Tag, file: &mut F, file_type: FileType) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	match file_type {
 		FileType::Aac => aac::write::write_to(file, tag),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag),
