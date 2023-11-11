@@ -4,7 +4,9 @@ use crate::file::FileType;
 use crate::macros::err;
 use crate::probe::Probe;
 
-use std::fs::{File, OpenOptions};
+use crate::error::LoftyError;
+use crate::io::{FileLike, Length, Truncate};
+use std::fs::OpenOptions;
 use std::path::Path;
 
 /// The tag's format
@@ -46,7 +48,12 @@ impl TagType {
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	pub fn remove_from(&self, file: &mut File) -> crate::error::Result<()> {
+	pub fn remove_from<F>(&self, file: &mut F) -> crate::error::Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 		let Some(file_type) = probe.file_type() else {
 			err!(UnknownFormat);

@@ -1,13 +1,13 @@
 use crate::config::ParsingMode;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::read::skip_unneeded;
 
 use std::cell::{RefCell, RefMut};
-use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
+use crate::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
@@ -111,7 +111,12 @@ impl AtomWriter {
 	/// Create a new [`AtomWriter`]
 	///
 	/// This will read the entire file into memory, and parse its atoms.
-	pub(super) fn new_from_file(file: &mut File, parse_mode: ParsingMode) -> Result<Self> {
+	pub(super) fn new_from_file<F>(file: &mut F, parse_mode: ParsingMode) -> Result<Self>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let mut contents = Cursor::new(Vec::new());
 		file.read_to_end(contents.get_mut())?;
 
@@ -145,9 +150,14 @@ impl AtomWriter {
 		}
 	}
 
-	pub(super) fn save_to(&mut self, file: &mut File) -> Result<()> {
+	pub(super) fn save_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		file.rewind()?;
-		file.set_len(0)?;
+		file.truncate(0)?;
 		file.write_all(self.contents.borrow().get_ref())?;
 
 		Ok(())

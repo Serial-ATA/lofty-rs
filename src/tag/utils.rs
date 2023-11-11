@@ -1,5 +1,5 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
@@ -14,16 +14,21 @@ use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
 
-use std::fs::File;
+use crate::util::io::{FileLike, Length, Truncate};
 use std::io::Write;
 
 #[allow(unreachable_patterns)]
-pub(crate) fn write_tag(
+pub(crate) fn write_tag<F>(
 	tag: &Tag,
-	file: &mut File,
+	file: &mut F,
 	file_type: FileType,
 	write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	match file_type {
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),

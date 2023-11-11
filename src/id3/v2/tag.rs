@@ -24,11 +24,10 @@ use crate::tag::{
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
-use std::path::Path;
 
+use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";
@@ -896,6 +895,11 @@ impl TagExt for Id3v2Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a FrameId<'a>;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Id3v2
+	}
+
 	fn len(&self) -> usize {
 		self.frames.len()
 	}
@@ -915,11 +919,16 @@ impl TagExt for Id3v2Tag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	/// * Attempting to write an invalid [`FrameId`]/[`FrameValue`] pairing
-	fn save_to(
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		Id3v2TagRef {
 			flags: self.flags,
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
@@ -943,14 +952,6 @@ impl TagExt for Id3v2Tag {
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
 		}
 		.dump_to(writer, write_options)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -1495,7 +1496,12 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 }
 
 impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		super::write::write_id3v2(file, self, write_options)
 	}
 

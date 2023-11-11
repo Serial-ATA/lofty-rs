@@ -1,6 +1,6 @@
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileEncodingError, Result};
+use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN};
@@ -9,10 +9,9 @@ use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomRea
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
-
-use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
@@ -20,25 +19,28 @@ const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
-pub(crate) fn write_to<'a, I: 'a>(
-	data: &mut File,
+pub(crate) fn write_to<'a, F, I: 'a>(
+	file: &mut F,
 	tag: &mut IlstRef<'a, I>,
 	write_options: WriteOptions,
 ) -> Result<()>
 where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
 	I: IntoIterator<Item = &'a AtomData>,
 {
 	log::debug!("Attempting to write `ilst` tag to file");
 
 	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
-	let mut reader = AtomReader::new(data, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut reader = AtomReader::new(file, ParseOptions::DEFAULT_PARSING_MODE)?;
 	verify_mp4(&mut reader)?;
 
 	// Now we can just read the entire file into memory
-	let data = reader.into_inner();
-	data.rewind()?;
+	let file = reader.into_inner();
+	file.rewind()?;
 
-	let mut atom_writer = AtomWriter::new_from_file(data, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
 		return Err(FileEncodingError::new(
@@ -198,7 +200,7 @@ where
 
 	drop(write_handle);
 
-	atom_writer.save_to(data)?;
+	atom_writer.save_to(file)?;
 
 	Ok(())
 }

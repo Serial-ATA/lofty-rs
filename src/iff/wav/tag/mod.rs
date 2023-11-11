@@ -8,10 +8,9 @@ use crate::tag::{
 };
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 
+use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -190,6 +189,11 @@ impl TagExt for RIFFInfoList {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::RiffInfo
+	}
+
 	fn len(&self) -> usize {
 		self.items.len()
 	}
@@ -204,11 +208,16 @@ impl TagExt for RIFFInfoList {
 		self.items.is_empty()
 	}
 
-	fn save_to(
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.write_to(file, write_options)
 	}
@@ -220,14 +229,6 @@ impl TagExt for RIFFInfoList {
 	) -> std::result::Result<(), Self::Err> {
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.dump_to(writer, write_options)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -311,7 +312,12 @@ where
 		RIFFInfoListRef { items }
 	}
 
-	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		write::write_riff_info(file, self, write_options)
 	}
 

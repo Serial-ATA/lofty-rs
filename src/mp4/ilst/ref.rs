@@ -3,10 +3,10 @@
 // *********************
 
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
 
-use std::fs::File;
+use crate::util::io::{FileLike, Length, Truncate};
 use std::io::Write;
 
 impl Ilst {
@@ -25,7 +25,12 @@ impl<'a, I: 'a> IlstRef<'a, I>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		super::write::write_to(file, self, write_options)
 	}
 

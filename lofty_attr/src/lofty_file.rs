@@ -445,7 +445,12 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 				#read_fn(reader, parse_options)
 			}
 
-			fn save_to(&self, file: &mut ::std::fs::File, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()> {
+			fn save_to<F>(&self, file: &mut F, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()>
+			where
+				F: ::lofty::io::FileLike,
+				::lofty::error::LoftyError: ::std::convert::From<<F as ::lofty::io::Truncate>::Error>,
+				::lofty::error::LoftyError: ::std::convert::From<<F as ::lofty::io::Length>::Error>,
+			{
 				use ::lofty::tag::TagExt as _;
 				use ::std::io::Seek as _;
 				#save_to_body

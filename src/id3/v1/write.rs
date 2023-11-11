@@ -1,21 +1,26 @@
 use super::tag::Id3v1TagRef;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::err;
 use crate::probe::Probe;
 
-use std::fs::File;
 use std::io::{Cursor, Seek, Write};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::WriteBytesExt;
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v1(
-	file: &mut File,
+pub(crate) fn write_id3v1<F>(
+	file: &mut F,
 	tag: &Id3v1TagRef<'_>,
 	_write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {
@@ -31,7 +36,8 @@ pub(crate) fn write_id3v1(
 	if tag.is_empty() && header.is_some() {
 		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
 		// shrink it down.
-		file.set_len(file.metadata()?.len().saturating_sub(128))?;
+		let new_length = file.len()?.saturating_sub(128);
+		file.truncate(new_length)?;
 
 		return Ok(());
 	}

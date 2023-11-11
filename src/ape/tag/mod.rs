@@ -12,11 +12,10 @@ use crate::tag::{
 };
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
+use crate::util::io::{FileLike, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -304,6 +303,11 @@ impl TagExt for ApeTag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Ape
+	}
+
 	fn len(&self) -> usize {
 		self.items.len()
 	}
@@ -322,11 +326,15 @@ impl TagExt for ApeTag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * An existing tag has an invalid size
-	fn save_to(
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+	{
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
@@ -349,14 +357,6 @@ impl TagExt for ApeTag {
 			items: self.items.iter().map(Into::into),
 		}
 		.dump_to(writer, write_options)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -492,7 +492,11 @@ impl<'a, I> ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+	{
 		write::write_to(file, self, write_options)
 	}
 

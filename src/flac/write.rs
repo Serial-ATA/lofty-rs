@@ -1,22 +1,27 @@
 use super::block::Block;
 use super::read::verify_flac;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::macros::{err, try_vec};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 
-use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 const BLOCK_HEADER_SIZE: usize = 4;
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
-pub(crate) fn write_to(file: &mut File, tag: &Tag, write_options: WriteOptions) -> Result<()> {
+pub(crate) fn write_to<F>(file: &mut F, tag: &Tag, write_options: WriteOptions) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	match tag.tag_type() {
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = crate::ogg::tag::create_vorbis_comments_ref(tag);
@@ -35,12 +40,14 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, write_options: WriteOptions) 
 	}
 }
 
-pub(crate) fn write_to_inner<'a, II, IP>(
-	file: &mut File,
+pub(crate) fn write_to_inner<'a, F, II, IP>(
+	file: &mut F,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	write_options: WriteOptions,
 ) -> Result<()>
 where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
@@ -131,7 +138,7 @@ where
 	}
 
 	file.seek(SeekFrom::Start(stream_info_end as u64))?;
-	file.set_len(stream_info_end as u64)?;
+	file.truncate(stream_info_end as u64)?;
 	file.write_all(&file_bytes)?;
 
 	Ok(())

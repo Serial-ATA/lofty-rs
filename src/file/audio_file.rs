@@ -1,9 +1,10 @@
 use super::tagged_file::TaggedFile;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::tag::TagType;
 
-use std::fs::{File, OpenOptions};
+use crate::util::io::{FileLike, Length, Truncate};
+use std::fs::OpenOptions;
 use std::io::{Read, Seek};
 use std::path::Path;
 
@@ -77,7 +78,11 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to(&mut file, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()>;
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;

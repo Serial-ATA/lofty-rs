@@ -15,11 +15,10 @@ use crate::tag::{
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
+use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 const ARTIST: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9ART");
@@ -518,6 +517,11 @@ impl TagExt for Ilst {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a AtomIdent<'a>;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Mp4Ilst
+	}
+
 	fn len(&self) -> usize {
 		self.atoms.len()
 	}
@@ -530,11 +534,16 @@ impl TagExt for Ilst {
 		self.atoms.is_empty()
 	}
 
-	fn save_to(
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.as_ref().write_to(file, write_options)
 	}
 
@@ -544,14 +553,6 @@ impl TagExt for Ilst {
 		write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err> {
 		self.as_ref().dump_to(writer, write_options)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from(file)
 	}
 
 	fn clear(&mut self) {
