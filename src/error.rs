@@ -68,6 +68,8 @@ pub enum ErrorKind {
 	Io(std::io::Error),
 	/// Failure to allocate enough memory
 	Alloc(TryReserveError),
+	/// This should **never** be encountered
+	Infallible(std::convert::Infallible),
 }
 
 /// The types of errors that can occur while interacting with ID3v2 tags
@@ -499,6 +501,14 @@ impl From<std::collections::TryReserveError> for LoftyError {
 	}
 }
 
+impl From<std::convert::Infallible> for LoftyError {
+	fn from(input: std::convert::Infallible) -> Self {
+		Self {
+			kind: ErrorKind::Infallible(input),
+		}
+	}
+}
+
 impl Display for LoftyError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self.kind {
@@ -540,6 +550,8 @@ impl Display for LoftyError {
 			),
 			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
+
+			ErrorKind::Infallible(_) => write!(f, "A expected condition was not upheld"),
 		}
 	}
 }

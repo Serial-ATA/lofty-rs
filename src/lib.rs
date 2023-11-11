@@ -179,6 +179,8 @@ pub use util::text::TextEncoding;
 
 pub use lofty_attr::LoftyFile;
 
+pub use util::io;
+
 pub mod prelude {
 	//! A prelude for commonly used items in the library.
 	//!

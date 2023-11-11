@@ -3,40 +3,42 @@ use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::read;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
+use crate::util::io::{FileLike, Truncate};
 
-use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_to<'a, I>(
-	data: &mut File,
+pub(crate) fn write_to<'a, F, I>(
+	file: &mut F,
 	tag_ref: &mut ApeTagRef<'a, I>,
 	write_options: WriteOptions,
 ) -> Result<()>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
 {
-	let probe = Probe::new(data).guess_file_type()?;
+	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {
 		Some(ft) if super::ApeTag::SUPPORTED_FORMATS.contains(&ft) => {},
 		_ => err!(UnsupportedTag),
 	}
 
-	let data = probe.into_inner();
+	let file = probe.into_inner();
 
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(data, FindId3v2Config::NO_READ_TAG)?;
+	find_id3v2(file, FindId3v2Config::NO_READ_TAG)?;
 
 	let mut ape_preamble = [0; 8];
-	data.read_exact(&mut ape_preamble)?;
+	file.read_exact(&mut ape_preamble)?;
 
 	// We have to check the APE tag for any read only items first
 	let mut read_only = None;
@@ -45,8 +47,8 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_ape_tag = (false, (0, 0));
 
-	let start = data.stream_position()?;
-	match read::read_ape_tag(data, false)? {
+	let start = file.stream_position()?;
+	match read::read_ape_tag(file, false)? {
 		Some((mut existing_tag, header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
@@ -60,25 +62,25 @@ where
 			header_ape_tag = (true, (start, start + u64::from(header.size)))
 		},
 		None => {
-			data.seek(SeekFrom::Current(-8))?;
+			file.seek(SeekFrom::Current(-8))?;
 		},
 	}
 
 	// Skip over ID3v1 and Lyrics3v2 tags
-	find_id3v1(data, false)?;
-	find_lyrics3v2(data)?;
+	find_id3v1(file, false)?;
+	find_lyrics3v2(file)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
-	let ape_position = data.stream_position()?;
+	let ape_position = file.stream_position()?;
 
 	// Now search for an APE tag at the end
-	data.seek(SeekFrom::Current(-32))?;
+	file.seek(SeekFrom::Current(-32))?;
 
 	let mut ape_tag_location = None;
 
 	// Also check this tag for any read only items
-	let start = data.stream_position()? as usize + 32;
-	if let Some((mut existing_tag, header)) = read::read_ape_tag(data, true)? {
+	let start = file.stream_position()? as usize + 32;
+	if let Some((mut existing_tag, header)) = read::read_ape_tag(file, true)? {
 		if write_options.respect_read_only {
 			existing_tag.items.retain(|i| i.read_only);
 
@@ -114,10 +116,10 @@ where
 		tag = create_ape_tag(tag_ref, std::iter::empty(), write_options)?;
 	};
 
-	data.rewind()?;
+	file.rewind()?;
 
 	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
+	file.read_to_end(&mut file_bytes)?;
 
 	// Write the tag in the appropriate place
 	if let Some(range) = ape_tag_location {
@@ -131,9 +133,9 @@ where
 		file_bytes.drain(header_ape_tag.1 .0 as usize..header_ape_tag.1 .1 as usize);
 	}
 
-	data.rewind()?;
-	data.set_len(0)?;
-	data.write_all(&file_bytes)?;
+	file.rewind()?;
+	file.truncate(0)?;
+	file.write_all(&file_bytes)?;
 
 	Ok(())
 }

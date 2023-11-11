@@ -14,11 +14,11 @@ use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
 // Exports
+use crate::util::io::{FileLike, Length, Truncate};
 pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use split_merge_tag::{MergeTag, SplitTag};
@@ -543,6 +543,11 @@ impl TagExt for Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		self.tag_type
+	}
+
 	fn len(&self) -> usize {
 		self.items.len() + self.pictures.len()
 	}
@@ -555,17 +560,22 @@ impl TagExt for Tag {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Save the `Tag` to a [`File`](std::fs::File)
+	/// Save the `Tag` to a [`FileLike`]
 	///
 	/// # Errors
 	///
 	/// * A [`FileType`](crate::file::FileType) couldn't be determined from the File
-	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::file::FileType::supports_tag_type)
-	fn save_to(
+	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 
 		match probe.file_type() {
@@ -593,12 +603,17 @@ impl TagExt for Tag {
 		self.tag_type.remove_from_path(path)
 	}
 
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
 	/// See [`TagType::remove_from`]
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.tag_type.remove_from(file)
 	}
 

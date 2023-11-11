@@ -1,6 +1,6 @@
 use super::verify_signature;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
@@ -8,9 +8,9 @@ use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 
-use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{Packets, Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
 
@@ -40,12 +40,17 @@ impl OGGFormat {
 	}
 }
 
-pub(crate) fn write_to(
-	file: &mut File,
+pub(crate) fn write_to<F>(
+	file: &mut F,
 	tag: &Tag,
 	file_type: FileType,
 	write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	if tag.tag_type() != TagType::VorbisComments {
 		err!(UnsupportedTag);
 	}
@@ -69,14 +74,17 @@ pub(crate) fn write_to(
 	)
 }
 
-pub(super) fn write<'a, II, IP>(
-	file: &mut File,
+pub(super) fn write<'a, F, II, IP>(
+	file: &mut F,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	format: OGGFormat,
 	header_packet_count: isize,
 	_write_options: WriteOptions,
 ) -> Result<()>
 where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
@@ -120,7 +128,7 @@ where
 	packets.set(1, new_metadata_packet);
 
 	file.rewind()?;
-	file.set_len(0)?;
+	file.truncate(0)?;
 
 	let pages_written =
 		packets.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)? as u32;

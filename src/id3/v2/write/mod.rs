@@ -3,7 +3,7 @@ mod frame;
 
 use super::Id3v2TagFlags;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::tag::Id3v2TagRef;
@@ -13,11 +13,11 @@ use crate::id3::{find_id3v2, FindId3v2Config};
 use crate::macros::{err, try_vec};
 use crate::probe::Probe;
 
-use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
 use std::sync::OnceLock;
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header
@@ -38,15 +38,21 @@ fn crc_32_table() -> &'static [u32; 256] {
 }
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
-	data: &mut File,
+pub(crate) fn write_id3v2<'a, F, I>(
+	file: &mut F,
 	tag: &mut Id3v2TagRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<()> {
-	let probe = Probe::new(data).guess_file_type()?;
+) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+	I: Iterator<Item = FrameRef<'a>> + Clone + 'a,
+{
+	let probe = Probe::new(file).guess_file_type()?;
 	let file_type = probe.file_type();
 
-	let data = probe.into_inner();
+	let file = probe.into_inner();
 
 	// Unable to determine a format
 	if file_type.is_none() {
@@ -74,27 +80,27 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		FileType::Wav => {
 			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &id3v2, write_options);
+			return chunk_file::write_to_chunk_file::<F, LittleEndian>(file, &id3v2, write_options);
 		},
 		FileType::Aiff => {
 			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<BigEndian>(data, &id3v2, write_options);
+			return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
 		},
 		_ => {},
 	}
 
 	// find_id3v2 will seek us to the end of the tag
 	// TODO: Search through junk
-	find_id3v2(data, FindId3v2Config::NO_READ_TAG)?;
+	find_id3v2(file, FindId3v2Config::NO_READ_TAG)?;
 
 	let mut file_bytes = Vec::new();
-	data.read_to_end(&mut file_bytes)?;
+	file.read_to_end(&mut file_bytes)?;
 
 	file_bytes.splice(0..0, id3v2);
 
-	data.rewind()?;
-	data.set_len(0)?;
-	data.write_all(&file_bytes)?;
+	file.rewind()?;
+	file.truncate(0)?;
+	file.write_all(&file_bytes)?;
 
 	Ok(())
 }

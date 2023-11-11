@@ -1,10 +1,11 @@
 use super::audio_file::AudioFile;
 use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagType};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use std::fs::File;
 use std::io::{Read, Seek};
 
@@ -423,7 +424,12 @@ impl AudioFile for TaggedFile {
 			.read()
 	}
 
-	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		for tag in &self.tags {
 			// TODO: This is a temporary solution. Ideally we should probe once and use
 			//       the format-specific writing to avoid these rewinds.
@@ -631,7 +637,12 @@ impl AudioFile for BoundTaggedFile {
 		)
 	}
 
-	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.inner.save_to(file, write_options)
 	}
 

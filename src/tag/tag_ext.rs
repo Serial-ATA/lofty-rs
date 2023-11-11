@@ -1,7 +1,8 @@
 use crate::config::WriteOptions;
-use crate::tag::{Accessor, Tag};
+use crate::error::LoftyError;
+use crate::io::{FileLike, Length, Truncate};
+use crate::tag::{Accessor, Tag, TagType};
 
-use std::fs::File;
 use std::path::Path;
 
 /// A set of common methods between tags
@@ -12,11 +13,14 @@ use std::path::Path;
 /// This can be implemented downstream to provide a familiar interface for custom tags.
 pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// The associated error which can be returned from IO operations
-	type Err: From<std::io::Error>;
+	type Err: From<std::io::Error> + From<LoftyError>;
 	/// The type of key used in the tag for non-mutating functions
 	type RefKey<'a>
 	where
 		Self: 'a;
+
+	#[doc(hidden)]
+	fn tag_type(&self) -> TagType;
 
 	/// Returns the number of items in the tag
 	///
@@ -95,11 +99,15 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// * The file format could not be determined
 	/// * Attempting to write a tag to a format that does not support it.
-	fn save_to(
+	fn save_to<F>(
 		&self,
-		file: &mut File,
+		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>;
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>;
 
 	#[allow(clippy::missing_errors_doc)]
 	/// Dump the tag to a writer
@@ -116,7 +124,9 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// # Errors
 	///
 	/// See [`TagExt::remove_from`]
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err>;
+	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+		self.tag_type().remove_from_path(path).map_err(Into::into)
+	}
 
 	/// Remove a tag from a [`File`]
 	///
@@ -125,7 +135,14 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
+		self.tag_type().remove_from(file).map_err(Into::into)
+	}
 
 	/// Clear the tag, removing all items
 	///

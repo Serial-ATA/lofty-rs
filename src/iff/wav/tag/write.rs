@@ -1,56 +1,64 @@
 use super::RIFFInfoListRef;
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
 
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Read, Seek, SeekFrom};
 
+use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
-pub(in crate::iff::wav) fn write_riff_info<'a, I>(
-	data: &mut File,
+pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(
+	file: &mut F,
 	tag: &mut RIFFInfoListRef<'a, I>,
 	_write_options: WriteOptions,
 ) -> Result<()>
 where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
 	I: Iterator<Item = (&'a str, &'a str)>,
 {
-	verify_wav(data)?;
-	let file_len = data.metadata()?.len().saturating_sub(12);
+	verify_wav(file)?;
+	let file_len = file.len()?.saturating_sub(12);
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
 
-	if let Some(info_list_size) = find_info_list(data, file_len)? {
-		let info_list_start = data.seek(SeekFrom::Current(-12))? as usize;
-		let info_list_end = info_list_start + 8 + info_list_size as usize;
+	let Some(info_list_size) = find_info_list(file, file_len)? else {
+		// Simply append the info list to the end of the file and update the file size
+		file.seek(SeekFrom::End(0))?;
 
-		data.rewind()?;
+		file.write_all(&riff_info_bytes)?;
 
-		let mut file_bytes = Vec::new();
-		data.read_to_end(&mut file_bytes)?;
+		let len = (file.stream_position()? - 8) as u32;
 
-		let _ = file_bytes.splice(info_list_start..info_list_end, riff_info_bytes);
+		file.seek(SeekFrom::Start(4))?;
+		file.write_u32::<LittleEndian>(len)?;
 
-		let total_size = (file_bytes.len() - 8) as u32;
-		let _ = file_bytes.splice(4..8, total_size.to_le_bytes());
+		return Ok(());
+	};
 
-		data.rewind()?;
-		data.set_len(0)?;
-		data.write_all(&file_bytes)?;
-	} else {
-		data.seek(SeekFrom::End(0))?;
+	// Replace the existing tag
 
-		data.write_all(&riff_info_bytes)?;
+	let info_list_start = file.seek(SeekFrom::Current(-12))? as usize;
+	let info_list_end = info_list_start + 8 + info_list_size as usize;
 
-		let len = (data.stream_position()? - 8) as u32;
+	file.rewind()?;
 
-		data.seek(SeekFrom::Start(4))?;
-		data.write_u32::<LittleEndian>(len)?;
-	}
+	let mut file_bytes = Vec::new();
+	file.read_to_end(&mut file_bytes)?;
+
+	let _ = file_bytes.splice(info_list_start..info_list_end, riff_info_bytes);
+
+	let total_size = (file_bytes.len() - 8) as u32;
+	let _ = file_bytes.splice(4..8, total_size.to_le_bytes());
+
+	file.rewind()?;
+	file.truncate(0)?;
+	file.write_all(&file_bytes)?;
 
 	Ok(())
 }
