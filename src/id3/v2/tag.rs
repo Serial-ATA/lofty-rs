@@ -20,10 +20,8 @@ use crate::util::text::{decode_text, TextEncoding};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
-use std::fs::File;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -846,6 +844,11 @@ impl TagExt for Id3v2Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a FrameId<'a>;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Id3v2
+	}
+
 	fn len(&self) -> usize {
 		self.frames.len()
 	}
@@ -890,14 +893,6 @@ impl TagExt for Id3v2Tag {
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
 		}
 		.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v2.remove_from(file)
 	}
 
 	fn clear(&mut self) {

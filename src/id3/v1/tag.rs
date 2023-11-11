@@ -6,7 +6,6 @@ use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
@@ -211,6 +210,11 @@ impl TagExt for Id3v1Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Id3v1
+	}
+
 	fn len(&self) -> usize {
 		usize::from(self.title.is_some())
 			+ usize::from(self.artist.is_some())
@@ -266,7 +270,12 @@ impl TagExt for Id3v1Tag {
 		TagType::Id3v1.remove_from_path(path)
 	}
 
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		TagType::Id3v1.remove_from(file)
 	}
 

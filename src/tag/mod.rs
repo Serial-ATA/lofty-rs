@@ -11,7 +11,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 
@@ -526,6 +526,11 @@ impl TagExt for Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		self.tag_type
+	}
+
 	fn len(&self) -> usize {
 		self.items.len() + self.pictures.len()
 	}
@@ -582,7 +587,12 @@ impl TagExt for Tag {
 	/// # Errors
 	///
 	/// See [`TagType::remove_from`]
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.tag_type.remove_from(file)
 	}
 
@@ -650,7 +660,12 @@ impl TagType {
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	pub fn remove_from(&self, file: &mut File) -> Result<()> {
+	pub fn remove_from<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 		let file_type = match probe.file_type() {
 			Some(f_ty) => f_ty,

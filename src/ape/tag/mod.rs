@@ -12,10 +12,8 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -304,6 +302,11 @@ impl TagExt for ApeTag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Ape
+	}
+
 	fn len(&self) -> usize {
 		self.items.len()
 	}
@@ -345,14 +348,6 @@ impl TagExt for ApeTag {
 			items: self.items.iter().map(Into::into),
 		}
 		.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Ape.remove_from(file)
 	}
 
 	fn clear(&mut self) {

@@ -8,9 +8,7 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -190,6 +188,11 @@ impl TagExt for RIFFInfoList {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::RiffInfo
+	}
+
 	fn len(&self) -> usize {
 		self.items.len()
 	}
@@ -217,14 +220,6 @@ impl TagExt for RIFFInfoList {
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
 			.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::RiffInfo.remove_from(file)
 	}
 
 	fn clear(&mut self) {

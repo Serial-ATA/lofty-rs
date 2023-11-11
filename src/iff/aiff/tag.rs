@@ -8,9 +8,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::fs::File;
 use std::io::{SeekFrom, Write};
-use std::path::Path;
 
 use byteorder::BigEndian;
 use lofty_attr::tag;
@@ -159,6 +157,11 @@ impl TagExt for AIFFTextChunks {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::AiffText
+	}
+
 	fn len(&self) -> usize {
 		usize::from(self.name.is_some())
 			+ usize::from(self.author.is_some())
@@ -215,14 +218,6 @@ impl TagExt for AIFFTextChunks {
 			comments: self.comments.as_deref(),
 		}
 		.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::AiffText.remove_from(file)
 	}
 
 	fn clear(&mut self) {

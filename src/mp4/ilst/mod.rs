@@ -15,7 +15,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::ops::Deref;
 use std::path::Path;
@@ -518,6 +518,11 @@ impl TagExt for Ilst {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a AtomIdent<'a>;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Mp4Ilst
+	}
+
 	fn len(&self) -> usize {
 		self.atoms.len()
 	}
@@ -546,14 +551,6 @@ impl TagExt for Ilst {
 
 	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
 		self.as_ref().dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::Mp4Ilst.remove_from(file)
 	}
 
 	fn clear(&mut self) {

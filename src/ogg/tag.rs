@@ -11,10 +11,8 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -433,6 +431,11 @@ impl TagExt for VorbisComments {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::VorbisComments
+	}
+
 	fn len(&self) -> usize {
 		self.items.len() + self.pictures.len()
 	}
@@ -485,14 +488,6 @@ impl TagExt for VorbisComments {
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
 		.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::VorbisComments.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::VorbisComments.remove_from(file)
 	}
 
 	fn clear(&mut self) {
