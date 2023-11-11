@@ -5,8 +5,8 @@ use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
-use crate::probe::ParseOptions;
 use crate::io_traits::SeekStreamLen;
+use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 
