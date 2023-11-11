@@ -543,7 +543,7 @@ impl TagExt for Tag {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Save the `Tag` to a [`File`](std::fs::File)
+	/// Save the `Tag` to a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
@@ -582,7 +582,7 @@ impl TagExt for Tag {
 		self.tag_type.remove_from_path(path)
 	}
 
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
@@ -653,7 +653,7 @@ impl TagType {
 	}
 
 	#[allow(clippy::shadow_unrelated)]
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
