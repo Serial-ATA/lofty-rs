@@ -235,7 +235,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 		self.tag_type().remove_from_path(path).map_err(Into::into)
 	}
 
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
