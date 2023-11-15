@@ -13,10 +13,10 @@ include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "benches", 
 
 [dependencies]
 # Vorbis comments pictures
-base64     = "0.21.4"
-byteorder  = "1.4.3"
+base64     = "0.21.5"
+byteorder  = "1.5.0"
 # ID3 compressed frames
-flate2     = { version = "1.0.27", optional = true }
+flate2     = { version = "1.0.28", optional = true }
 # Proc macros
 lofty_attr = "0.9.0"
 # Debug logging
@@ -36,7 +36,7 @@ id3v2_compression_support = ["dep:flate2"]
 hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683dd6acb92df792683ee46ad6a59" }
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
-tempfile  = "3.8.0"
+tempfile  = "3.8.1"
 
 # Pretty heavy dependency, we don't want this compiling for test/doc runs
 [target.'cfg(bench)'.dev-dependencies]
