@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2023-11-14
+
 ### Added
 - **ParseOptions**: `ParseOptions::allocation_limit` to change the default allocation limit. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/276))
 - **ID3v2**: `Id3v2Tag::genres` to handle all the ways genres can be stored in `TCON` frames. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/286))
@@ -590,7 +592,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.1...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.0...HEAD
+[0.17.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.1...0.17.0
 [0.16.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.15.0...0.16.0
 [0.15.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.14.0...0.15.0
