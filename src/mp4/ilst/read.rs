@@ -2,7 +2,7 @@ use super::constants::{
 	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
-use crate::error::{Result, LoftyError};
+use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::AtomInfo;
@@ -144,16 +144,15 @@ fn parse_data<R>(
 where
 	R: Read + Seek,
 {
-	let handle_error =
-		|err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
-			match parsing_mode {
-				ParsingMode::Strict => Err(err),
-				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-					log::warn!("Skipping atom with invalid content: {}", err);
-					Ok(())
-				},
-			}
-		};
+	let handle_error = |err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
+		match parsing_mode {
+			ParsingMode::Strict => Err(err),
+			ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+				log::warn!("Skipping atom with invalid content: {}", err);
+				Ok(())
+			},
+		}
+	};
 
 	if let Some(mut atom_data) = parse_data_inner(reader, parsing_mode, &atom_info)? {
 		// Most atoms we encounter are only going to have 1 value, so store them as such
@@ -178,7 +177,7 @@ where
 				Ok(data) => data,
 				Err(err) => return handle_error(err, parsing_mode),
 			};
-			
+
 			data.push(value);
 		}
 
