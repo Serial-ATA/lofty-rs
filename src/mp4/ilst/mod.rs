@@ -755,19 +755,27 @@ mod tests {
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{
-		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, SplitTag as _, Tag,
-		TagExt as _, TagItem, TagType,
+		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, ParsingMode, SplitTag as _,
+		Tag, TagExt as _, TagItem, TagType,
 	};
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
-	fn read_ilst(path: &str) -> Ilst {
-		let tag = crate::tag::utils::test_utils::read_path(path);
+	fn read_ilst(path: &str, parse_mode: ParsingMode) -> Ilst {
+		let tag = std::fs::read(path).unwrap();
 		let len = tag.len();
 
 		let cursor = Cursor::new(tag);
-		let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
+		let mut reader = AtomReader::new(cursor, parse_mode).unwrap();
 
-		super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap()
+		super::read::parse_ilst(&mut reader, parse_mode, len as u64).unwrap()
+	}
+
+	fn read_ilst_strict(path: &str) -> Ilst {
+		read_ilst(path, ParsingMode::Strict)
+	}
+
+	fn read_ilst_bestattempt(path: &str) -> Ilst {
+		read_ilst(path, ParsingMode::BestAttempt)
 	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
@@ -843,7 +851,7 @@ mod tests {
 
 	#[test]
 	fn ilst_re_read() {
-		let parsed_tag = read_ilst("tests/tags/assets/ilst/test.ilst");
+		let parsed_tag = read_ilst_strict("tests/tags/assets/ilst/test.ilst");
 
 		let mut writer = Vec::new();
 		parsed_tag.dump_to(&mut writer).unwrap();
@@ -935,7 +943,7 @@ mod tests {
 
 	#[test]
 	fn issue_34() {
-		let ilst = read_ilst("tests/tags/assets/ilst/issue_34.ilst");
+		let ilst = read_ilst_strict("tests/tags/assets/ilst/issue_34.ilst");
 
 		verify_atom(
 			&ilst,
@@ -954,7 +962,7 @@ mod tests {
 
 	#[test]
 	fn advisory_rating() {
-		let ilst = read_ilst("tests/tags/assets/ilst/advisory_rating.ilst");
+		let ilst = read_ilst_strict("tests/tags/assets/ilst/advisory_rating.ilst");
 
 		verify_atom(
 			&ilst,
@@ -1073,7 +1081,7 @@ mod tests {
 
 	#[test]
 	fn multi_value_atom() {
-		let ilst = read_ilst("tests/tags/assets/ilst/multi_value_atom.ilst");
+		let ilst = read_ilst_strict("tests/tags/assets/ilst/multi_value_atom.ilst");
 		let artist_atom = ilst.get(&AtomIdent::Fourcc(*b"\xa9ART")).unwrap();
 
 		assert_eq!(
@@ -1184,7 +1192,7 @@ mod tests {
 
 	#[test]
 	fn invalid_atom_type() {
-		let ilst = read_ilst("tests/tags/assets/ilst/invalid_atom_type.ilst");
+		let ilst = read_ilst_strict("tests/tags/assets/ilst/invalid_atom_type.ilst");
 
 		// The tag contains 3 items, however the last one has an invalid type. We will stop at that point, but retain the
 		// first two items.
@@ -1194,5 +1202,20 @@ mod tests {
 		assert_eq!(ilst.track_total().unwrap(), 0);
 		assert_eq!(ilst.disk().unwrap(), 1);
 		assert_eq!(ilst.disk_total().unwrap(), 2);
+	}
+
+	#[test]
+	fn invalid_string_encoding() {
+		let ilst = read_ilst_bestattempt("tests/tags/assets/ilst/invalid_string_encoding.ilst");
+
+		// The tag has an album string with some unknown encoding, but the rest of the tag
+		// is valid. We should have all items present except the album.
+		assert_eq!(ilst.len(), 3);
+
+		assert_eq!(ilst.artist().unwrap(), "Foo artist");
+		assert_eq!(ilst.title().unwrap(), "Bar title");
+		assert_eq!(ilst.comment().unwrap(), "Baz comment");
+
+		assert!(ilst.album().is_none());
 	}
 }

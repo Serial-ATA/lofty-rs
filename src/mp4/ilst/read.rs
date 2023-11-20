@@ -2,7 +2,7 @@ use super::constants::{
 	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
-use crate::error::Result;
+use crate::error::{Result, LoftyError};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::AtomInfo;
@@ -144,11 +144,25 @@ fn parse_data<R>(
 where
 	R: Read + Seek,
 {
+	let handle_error =
+		|err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
+			match parsing_mode {
+				ParsingMode::Strict => Err(err),
+				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+					log::warn!("Skipping atom with invalid content: {}", err);
+					Ok(())
+				},
+			}
+		};
+
 	if let Some(mut atom_data) = parse_data_inner(reader, parsing_mode, &atom_info)? {
 		// Most atoms we encounter are only going to have 1 value, so store them as such
 		if atom_data.len() == 1 {
 			let (flags, content) = atom_data.remove(0);
-			let data = interpret_atom_content(flags, content)?;
+			let data = match interpret_atom_content(flags, content) {
+				Ok(data) => data,
+				Err(err) => return handle_error(err, parsing_mode),
+			};
 
 			tag.atoms.push(Atom {
 				ident: atom_info.ident,
@@ -160,7 +174,11 @@ where
 
 		let mut data = Vec::new();
 		for (flags, content) in atom_data {
-			let value = interpret_atom_content(flags, content)?;
+			let value = match interpret_atom_content(flags, content) {
+				Ok(data) => data,
+				Err(err) => return handle_error(err, parsing_mode),
+			};
+			
 			data.push(value);
 		}
 
