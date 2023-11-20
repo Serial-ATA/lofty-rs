@@ -4,7 +4,7 @@
 //! which can be extended at any time.
 
 use crate::file::FileType;
-use crate::ItemKey;
+use crate::tag::item::ItemKey;
 
 use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};

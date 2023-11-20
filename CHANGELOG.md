@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **MP4**: Skip over invalid `ilst` atoms by default ([issue](https://github.com/Serial-ATA/lofty-rs/issues/291)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/292))
+
 ## [0.17.0] - 2023-11-14
 
 ### Added
