@@ -5,6 +5,7 @@ use crate::macros::decode_err;
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use lofty_attr::ebml_master_elements;
 
 pub struct ElementHeader {
 	pub(crate) id: VInt,
@@ -47,43 +48,7 @@ pub(crate) struct ChildElementDescriptor {
 	pub(crate) data_type: ElementDataType,
 }
 
-macro_rules! define_master_elements {
-	($(
-		$_readable_ident:ident : {
-			id: $vint_id:literal,
-			children: [
-				$($_readable_child_ident:ident : { $child_id:literal, $data_ty:ident }),* $(,)?
-			] $(,)?
-		}
-	),+ $(,)?) => {
-		#[derive(Copy, Clone, Eq, PartialEq)]
-		pub(crate) enum ElementIdent {
-			$(
-			$_readable_ident,
-			$($_readable_child_ident,)*
-			)+
-		}
-
-		static MASTER_ELEMENTS: once_cell::sync::Lazy<std::collections::HashMap<VInt, MasterElement>> = once_cell::sync::Lazy::new(|| {
-			let mut m = std::collections::HashMap::new();
-			$(
-				m.insert(
-					VInt($vint_id),
-					MasterElement {
-						id: ElementIdent::$_readable_ident,
-						children: &[$((VInt($child_id), ChildElementDescriptor {
-							ident: ElementIdent::$_readable_child_ident,
-							data_type: ElementDataType::$data_ty,
-						})),*][..]
-					}
-				);
-			)+
-			m
-		});
-	}
-}
-
-define_master_elements! {
+ebml_master_elements! {
 	EBML: {
 		id: 0x1A45_DFA3,
 		children: [
@@ -101,6 +66,21 @@ define_master_elements! {
 		children: [
 			DocTypeExtensionName: { 0x4283, String },
 			DocTypeExtensionVersion: { 0x4284, UnsignedInt },
+		],
+	},
+
+	// The Root Element that contains all other Top-Level Elements
+	Segment: {
+		id: 0x1853_8067,
+		children: [
+			SeekHead: { 0x114D_9B74, Master },
+			Info: { 0x1549_A966, Master },
+			Cluster: { 0x1F43_B675, Master },
+			Tracks: { 0x1654_AE6B, Master },
+			Cues: { 0x1C53_BB6B, Master },
+			Tags: { 0x1254_C367, Master },
+			Attachments: { 0x1941_A469, Master },
+			Chapters: { 0x1043_A770, Master },
 		],
 	},
 }

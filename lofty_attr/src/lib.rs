@@ -34,6 +34,7 @@
 )]
 
 mod attribute;
+mod ebml;
 mod internal;
 mod lofty_file;
 mod lofty_tag;
@@ -65,4 +66,55 @@ pub fn tag(args_input: TokenStream, input: TokenStream) -> TokenStream {
 
 	let lofty_tag = LoftyTag::new(attribute, input);
 	lofty_tag.emit()
+}
+
+#[proc_macro]
+#[doc(hidden)]
+pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
+	let ret = ebml::parse_ebml_master_elements(input);
+
+	if let Err(err) = ret {
+		return TokenStream::from(err.to_compile_error());
+	}
+
+	let (identifiers, elements) = ret.unwrap();
+	let identifiers_iter = identifiers.iter();
+	let elements_map_inserts = elements.iter().map(|element| {
+		let readable_ident = &element.readable_ident;
+		let id = element.info.id;
+		let children = element.info.children.iter().map(|child| {
+			let readable_ident = &child.readable_ident;
+			let id = child.info.id;
+			let data_type = &child.info.data_type;
+			quote! {
+				(VInt(#id), ChildElementDescriptor {
+					ident: ElementIdent::#readable_ident,
+					data_type: ElementDataType::#data_type,
+				})
+			}
+		});
+
+		quote! {
+			m.insert(
+				VInt(#id),
+				MasterElement {
+					id: ElementIdent::#readable_ident,
+					children: &[#( #children ),*][..]
+				}
+			);
+		}
+	});
+
+	TokenStream::from(quote! {
+		#[derive(Copy, Clone, Eq, PartialEq)]
+		pub(crate) enum ElementIdent {
+			#( #identifiers_iter ),*
+		}
+
+		static MASTER_ELEMENTS: once_cell::sync::Lazy<std::collections::HashMap<VInt, MasterElement>> = once_cell::sync::Lazy::new(|| {
+			let mut m = std::collections::HashMap::new();
+			#( #elements_map_inserts )*
+			m
+		});
+	})
 }
