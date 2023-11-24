@@ -13,12 +13,12 @@ pub struct ElementHeader {
 }
 
 impl ElementHeader {
-	fn read<R>(reader: &mut R, max_vint_length: u8) -> Result<Self>
+	fn read<R>(reader: &mut R, max_id_length: u8, max_vint_length: u8) -> Result<Self>
 	where
 		R: Read,
 	{
 		Ok(Self {
-			id: VInt::parse(reader, max_vint_length)?,
+			id: VInt::parse(reader, max_id_length)?,
 			size: VInt::parse(reader, max_vint_length)?,
 		})
 	}
@@ -141,7 +141,11 @@ where
 	}
 
 	fn next_master(&mut self) -> Result<ElementReaderYield> {
-		let header = ElementHeader::read(&mut self.reader, self.ctx.max_size_length)?;
+		let header = ElementHeader::read(
+			&mut self.reader,
+			self.ctx.max_id_length,
+			self.ctx.max_size_length,
+		)?;
 		let Some(master) = MASTER_ELEMENTS.get(&header.id) else {
 			// We encountered an unknown master element
 			return Ok(ElementReaderYield::Unknown(header));
@@ -164,7 +168,11 @@ where
 			return self.next_master();
 		}
 
-		let header = ElementHeader::read(&mut self.reader, self.ctx.max_size_length)?;
+		let header = ElementHeader::read(
+			&mut self.reader,
+			self.ctx.max_id_length,
+			self.ctx.max_size_length,
+		)?;
 
 		let Some((_, child)) = current_master
 			.children
