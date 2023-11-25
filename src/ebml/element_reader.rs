@@ -1,6 +1,6 @@
 use crate::ebml::vint::VInt;
 use crate::error::Result;
-use crate::macros::decode_err;
+use crate::macros::{decode_err, try_vec};
 
 use std::io::Read;
 
@@ -342,8 +342,21 @@ where
 		})
 	}
 
-	pub(crate) fn read_string(&mut self) -> Result<String> {
-		todo!()
+	pub(crate) fn read_string(&mut self, element_length: u64) -> Result<String> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.4
+		// A String Element MUST declare a length in octets from zero to VINTMAX
+		let mut content = try_vec![0; element_length as usize];
+		self.reader.read_exact(&mut content)?;
+
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-13
+		// Null Octets, which are octets with all bits set to zero,
+		// MAY follow the value of a String Element or UTF-8 Element to serve as a terminator.
+		if let Some(i) = content.iter().rposition(|x| *x != 0) {
+			let new_len = i + 1;
+			content.truncate(new_len);
+		}
+
+		String::from_utf8(content).map_err(Into::into)
 	}
 
 	pub(crate) fn read_utf8(&mut self) -> Result<String> {
