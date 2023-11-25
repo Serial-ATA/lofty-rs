@@ -192,6 +192,17 @@ pub struct ElementReader<R> {
 	ctx: ElementReaderContext,
 }
 
+impl<R> Read for ElementReader<R>
+where
+	R: Read,
+{
+	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+		let ret = self.reader.read(buf)?;
+		self.ctx.master_length = self.ctx.master_length.saturating_sub(ret as u64);
+		Ok(ret)
+	}
+}
+
 impl<R> ElementReader<R>
 where
 	R: Read,
@@ -262,11 +273,7 @@ where
 			return self.next_master();
 		}
 
-		let header = ElementHeader::read(
-			&mut self.reader,
-			self.ctx.max_id_length,
-			self.ctx.max_size_length,
-		)?;
+		let header = ElementHeader::read(self, self.ctx.max_id_length, self.ctx.max_size_length)?;
 
 		let Some((_, child)) = current_master
 			.children
@@ -295,7 +302,7 @@ where
 	}
 
 	pub(crate) fn skip(&mut self, length: u64) -> Result<()> {
-		std::io::copy(&mut self.reader.by_ref().take(length), &mut std::io::sink())?;
+		std::io::copy(&mut self.by_ref().take(length), &mut std::io::sink())?;
 		Ok(())
 	}
 
@@ -307,8 +314,7 @@ where
 		}
 
 		let mut buf = [0; 8];
-		self.reader
-			.read_exact(&mut buf[8 - element_length as usize..])?;
+		self.read_exact(&mut buf[8 - element_length as usize..])?;
 		let value = u64::from_be_bytes(buf);
 
 		// Signed Integers are stored with two's complement notation with the leftmost bit being the sign bit.
@@ -325,8 +331,7 @@ where
 		}
 
 		let mut buf = [0; 8];
-		self.reader
-			.read_exact(&mut buf[8 - element_length as usize..])?;
+		self.read_exact(&mut buf[8 - element_length as usize..])?;
 		Ok(u64::from_be_bytes(buf))
 	}
 
@@ -336,8 +341,8 @@ where
 		// four octets (32 bit), or eight octets (64 bit)
 		Ok(match element_length {
 			0 => 0.0,
-			4 => f64::from(self.reader.read_f32::<BigEndian>()?),
-			8 => self.reader.read_f64::<BigEndian>()?,
+			4 => f64::from(self.read_f32::<BigEndian>()?),
+			8 => self.read_f64::<BigEndian>()?,
 			_ => decode_err!(@BAIL Ebml, "Invalid size for float element"),
 		})
 	}
@@ -346,7 +351,7 @@ where
 		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.4
 		// A String Element MUST declare a length in octets from zero to VINTMAX
 		let mut content = try_vec![0; element_length as usize];
-		self.reader.read_exact(&mut content)?;
+		self.read_exact(&mut content)?;
 
 		// https://www.rfc-editor.org/rfc/rfc8794.html#section-13
 		// Null Octets, which are octets with all bits set to zero,

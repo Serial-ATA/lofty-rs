@@ -68,6 +68,8 @@ where
 		Err(e) => return Err(e),
 	}
 
+	element_reader.lock();
+
 	loop {
 		let ident;
 		let data_ty;
@@ -129,5 +131,6 @@ where
 		}
 	}
 
+	element_reader.unlock();
 	Ok(())
 }
