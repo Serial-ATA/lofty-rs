@@ -94,13 +94,13 @@ where
 		}
 
 		if ident == ElementIdent::EBMLMaxIDLength {
-			properties.header.max_id_length = element_reader.read_unsigned_int()? as u8;
+			properties.header.max_id_length = element_reader.read_unsigned_int(size)? as u8;
 			element_reader.set_max_id_length(properties.header.max_id_length);
 			continue;
 		}
 
 		if ident == ElementIdent::EBMLMaxSizeLength {
-			properties.header.max_size_length = element_reader.read_unsigned_int()? as u8;
+			properties.header.max_size_length = element_reader.read_unsigned_int(size)? as u8;
 			element_reader.set_max_size_length(properties.header.max_size_length);
 			continue;
 		}
@@ -114,14 +114,14 @@ where
 
 		match ident {
 			ElementIdent::EBMLVersion => {
-				properties.header.version = element_reader.read_unsigned_int()?
+				properties.header.version = element_reader.read_unsigned_int(size)?
 			},
 			ElementIdent::EBMLReadVersion => {
-				properties.header.read_version = element_reader.read_unsigned_int()?
+				properties.header.read_version = element_reader.read_unsigned_int(size)?
 			},
 			ElementIdent::DocType => properties.header.doc_type = element_reader.read_string()?,
 			ElementIdent::DocTypeVersion => {
-				properties.header.doc_type_version = element_reader.read_unsigned_int()?
+				properties.header.doc_type_version = element_reader.read_unsigned_int(size)?
 			},
 			_ => element_reader.skip(size)?,
 		}

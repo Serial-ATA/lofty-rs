@@ -299,15 +299,41 @@ where
 		Ok(())
 	}
 
-	pub(crate) fn read_signed_int(&mut self) -> Result<i64> {
-		todo!()
+	pub(crate) fn read_signed_int(&mut self, element_length: u64) -> Result<i64> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.1
+		// A Signed Integer Element MUST declare a length from zero to eight octets
+		if element_length > 8 {
+			decode_err!(@BAIL Ebml, "Invalid size for signed int element")
+		}
+
+		let mut buf = [0; 8];
+		self.reader
+			.read_exact(&mut buf[8 - element_length as usize..])?;
+		let value = u64::from_be_bytes(buf);
+
+		// Signed Integers are stored with two's complement notation with the leftmost bit being the sign bit.
+		let value_width = element_length * 8;
+		let shift = (64 - value_width) as u32;
+		Ok((value.wrapping_shl(shift) as i64).wrapping_shr(shift))
 	}
 
-	pub(crate) fn read_unsigned_int(&mut self) -> Result<u64> {
-		todo!()
+	pub(crate) fn read_unsigned_int(&mut self, element_length: u64) -> Result<u64> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.2
+		// An Unsigned Integer Element MUST declare a length from zero to eight octets
+		if element_length > 8 {
+			decode_err!(@BAIL Ebml, "Invalid size for unsigned int element")
+		}
+
+		let mut buf = [0; 8];
+		self.reader
+			.read_exact(&mut buf[8 - element_length as usize..])?;
+		Ok(u64::from_be_bytes(buf))
 	}
 
 	pub(crate) fn read_float(&mut self, element_length: u64) -> Result<f64> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.3
+		// A Float Element MUST declare a length of either zero octets (0 bit),
+		// four octets (32 bit), or eight octets (64 bit)
 		Ok(match element_length {
 			0 => 0.0,
 			4 => f64::from(self.reader.read_f32::<BigEndian>()?),
