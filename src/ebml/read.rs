@@ -119,7 +119,9 @@ where
 			ElementIdent::EBMLReadVersion => {
 				properties.header.read_version = element_reader.read_unsigned_int(size)?
 			},
-			ElementIdent::DocType => properties.header.doc_type = element_reader.read_string()?,
+			ElementIdent::DocType => {
+				properties.header.doc_type = element_reader.read_string(size)?
+			},
 			ElementIdent::DocTypeVersion => {
 				properties.header.doc_type_version = element_reader.read_unsigned_int(size)?
 			},
