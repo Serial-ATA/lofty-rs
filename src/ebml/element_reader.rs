@@ -18,7 +18,7 @@ impl ElementHeader {
 		R: Read,
 	{
 		Ok(Self {
-			id: VInt::parse(reader, max_id_length)?,
+			id: VInt::parse_from_element_id(reader, max_id_length)?,
 			size: VInt::parse(reader, max_vint_length)?,
 		})
 	}

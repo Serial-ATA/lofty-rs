@@ -101,16 +101,8 @@ impl VInt {
 	where
 		R: Read,
 	{
-		// A value of 0b0000_0000 indicates either an invalid VInt, or one with an octet length > 8
 		let start = reader.read_u8()?;
-		if start == 0b0000_0000 {
-			err!(BadVintSize);
-		}
-
-		let octet_length = (Self::MAX_OCTET_LENGTH as u32) - start.ilog2();
-		if octet_length > 8 || octet_length as u8 > max_length {
-			err!(BadVintSize);
-		}
+		let octet_length = Self::verify_length(start, max_length)?;
 
 		let mut bytes_read = 1;
 		let mut val = u64::from(start) ^ (1 << start.ilog2()) as u64;
@@ -120,6 +112,58 @@ impl VInt {
 		}
 
 		Ok(Self(val))
+	}
+
+	/// Parse a `VInt` from a reader, given the element ID
+	///
+	/// An element ID is parsed similarly to a normal `VInt`, but the `VINT_MARKER` is not
+	/// removed.
+	///
+	/// # Errors
+	///
+	/// * `uint` cannot fit within the maximum width
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ebml::VInt;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// // Parse the EBML header element ID
+	/// let mut reader = &[0x1A, 0x45, 0xDF, 0xA3];
+	/// let vint = VInt::parse_from_element_id(&mut reader, 8)?;
+	/// assert_eq!(vint.value(), 0x1A45DFA3);
+	/// # Ok(()) }
+	pub fn parse_from_element_id<R>(reader: &mut R, max_id_length: u8) -> Result<Self>
+	where
+		R: Read,
+	{
+		let start = reader.read_u8()?;
+		let octet_length = Self::verify_length(start, max_id_length)?;
+
+		let mut bytes_read = 1;
+		let mut val = u64::from(start);
+		while bytes_read < octet_length {
+			bytes_read += 1;
+			val = (val << 8) | u64::from(reader.read_u8()?);
+		}
+
+		Ok(Self(val))
+	}
+
+	// Verify that the octet length is nonzero and <= 8
+	fn verify_length(first_byte: u8, max_length: u8) -> Result<u32> {
+		// A value of 0b0000_0000 indicates either an invalid VInt, or one with an octet length > 8
+		if first_byte == 0b0000_0000 {
+			err!(BadVintSize);
+		}
+
+		let octet_length = (Self::MAX_OCTET_LENGTH as u32) - first_byte.ilog2();
+		if octet_length > 8 || octet_length as u8 > max_length {
+			err!(BadVintSize);
+		}
+
+		Ok(octet_length)
 	}
 
 	/// Represents the length of the `VInt` in octets
