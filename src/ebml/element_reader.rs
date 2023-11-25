@@ -73,14 +73,76 @@ ebml_master_elements! {
 	Segment: {
 		id: 0x1853_8067,
 		children: [
-			SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
 			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
-			Cues: { 0x1C53_BB6B, Master },
 			Tags: { 0x1254_C367, Master },
 			Attachments: { 0x1941_A469, Master },
 			Chapters: { 0x1043_A770, Master },
+		],
+	},
+
+	// segment.info
+	Info: {
+		id: 0x1549_A966,
+		children: [
+			TimecodeScale: { 0x2AD7_B1, UnsignedInt },
+			MuxingApp: { 0x4D80, Utf8 },
+			WritingApp: { 0x5741, Utf8 },
+		],
+	},
+
+	// segment.tracks
+	Tracks: {
+		id: 0x1654_AE6B,
+		children: [
+			TrackEntry: { 0xAE, Master },
+		],
+	},
+
+	// segment.tracks.trackEntry
+	TrackEntry: {
+		id: 0xAE,
+		children: [
+			TrackType: { 0x83, UnsignedInt },
+			FlagEnabled: { 0xB9, UnsignedInt },
+			FlagDefault: { 0x88, UnsignedInt },
+			FlagLacing: { 0x9C, UnsignedInt },
+			DefaultDuration: { 0x23E3_83, UnsignedInt },
+			TrackTimecodeScale: { 0x2331_59, Float },
+			MaxBlockAdditionID: { 0x55EE, UnsignedInt },
+			Language: { 0x22B5_9C, String },
+			CodecID: { 0x86, String },
+			CodecDelay: { 0x56AA, UnsignedInt },
+			SeekPreRoll: { 0x56BB, UnsignedInt },
+			TrackTranslate: { 0x6624, Master },
+			Video: { 0xE0, Master },
+			Audio: { 0xE1, Master },
+			TrackOperation: { 0xE2, Master },
+			ContentEncodings: { 0x6D80, Master },
+		],
+	},
+
+	// segment.attachments
+	Attachments: {
+		id: 0x1941_A469,
+		children: [
+			AttachedFile: { 0x61A7, Master },
+		],
+	},
+
+	// segment.attachments.attachedFile
+	AttachedFile: {
+		id: 0x61A7,
+		children: [
+			FileDescription: { 0x467E, String },
+			FileName: { 0x466E, Utf8 },
+			FileMimeType: { 0x4660, String },
+			FileData: { 0x465C, Binary },
+			FileUID: { 0x46AE, UnsignedInt },
+			FileReferral: { 0x4675, Binary },
+			FileUsedStartTime: { 0x4661, UnsignedInt },
+			FileUsedEndTime: { 0x4662, UnsignedInt },
 		],
 	},
 }
