@@ -106,7 +106,7 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 	});
 
 	TokenStream::from(quote! {
-		#[derive(Copy, Clone, Eq, PartialEq)]
+		#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 		pub(crate) enum ElementIdent {
 			#( #identifiers_iter ),*
 		}

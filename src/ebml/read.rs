@@ -1,5 +1,8 @@
+mod segment;
+
 use super::EbmlFile;
-use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::vint::VInt;
 use crate::ebml::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -15,35 +18,38 @@ where
 	// new ones all scattered throughout the file
 	let mut properties = EbmlProperties::default();
 
+	let mut ebml_tag = None;
+
 	let mut element_reader = ElementReader::new(reader);
 
 	// First we need to go through the elements in the EBML master element
 	read_ebml_header(&mut element_reader, parse_options, &mut properties)?;
 
 	loop {
-		let ident;
-		let data_ty;
-		let size;
-
 		let res = element_reader.next()?;
 		match res {
-			ElementReaderYield::Master(_) => continue,
-			ElementReaderYield::Child((child, size_)) => {
-				ident = child.ident;
-				data_ty = child.data_type;
-				size = size_;
+			ElementReaderYield::Master((ElementIdent::Segment, _)) => {
+				ebml_tag = segment::read_from(&mut element_reader, parse_options, &mut properties)?;
+				break;
 			},
-			ElementReaderYield::Unknown(element) => {
-				log::debug!("Encountered unknown EBML element: {}", element.id.0);
-				element_reader.skip(element.size.value())?;
+			// CRC-32 (0xBF) and Void (0xEC) elements can occur at the top level.
+			// This is valid, and we can just skip them.
+			ElementReaderYield::Unknown(ElementHeader {
+				id: VInt(id @ (0xBF | 0xEC)),
+				size,
+			}) => {
+				log::debug!("Skipping global element: {:X}", id);
+				element_reader.skip(size.value())?;
 				continue;
 			},
-			ElementReaderYield::Eof => break,
+			_ => {
+				decode_err!(@BAIL Ebml, "File does not contain a segment element")
+			},
 		}
 	}
 
 	Ok(EbmlFile {
-		ebml_tag: None,
+		ebml_tag,
 		properties,
 	})
 }
@@ -78,7 +84,7 @@ where
 			},
 			ElementReaderYield::Unknown(element) => {
 				log::debug!(
-					"Encountered unknown EBML element in header: {}",
+					"Encountered unknown EBML element in header: {:X}",
 					element.id.0
 				);
 				element_reader.skip(element.size.value())?;
