@@ -224,6 +224,11 @@ where
 		self.ctx.max_size_length = len
 	}
 
+	fn store_previous_master(&mut self) {
+		self.ctx.previous_master = self.ctx.current_master;
+		self.ctx.previous_master_length = self.ctx.master_length;
+	}
+
 	fn next_master(&mut self) -> Result<ElementReaderYield> {
 		let header = ElementHeader::read(
 			&mut self.reader,
@@ -235,8 +240,7 @@ where
 			return Ok(ElementReaderYield::Unknown(header));
 		};
 
-		self.ctx.previous_master = self.ctx.current_master;
-		self.ctx.previous_master_length = self.ctx.master_length;
+		self.store_previous_master();
 		self.ctx.current_master = Some(*master);
 		self.ctx.master_length = header.size.value();
 		Ok(ElementReaderYield::Master((
@@ -288,6 +292,7 @@ where
 		};
 
 		if child.data_type == ElementDataType::Master {
+			self.store_previous_master();
 			self.ctx.current_master = Some(
 				*MASTER_ELEMENTS
 					.get(&header.id)

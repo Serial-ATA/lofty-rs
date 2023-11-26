@@ -17,11 +17,19 @@ pub struct EbmlExtension {
 	pub(crate) version: u64,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct SegmentInfo {
+	pub(crate) timecode_scale: u64,
+	pub(crate) muxing_app: String,
+	pub(crate) writing_app: String,
+}
+
 /// EBML audio properties
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EbmlProperties {
 	pub(crate) header: EbmlHeaderProperties,
 	pub(crate) extensions: Vec<EbmlExtension>,
+	pub(crate) segment_info: SegmentInfo,
 }
 
 impl From<EbmlProperties> for FileProperties {
