@@ -41,8 +41,12 @@ where
 							}
 						}
 					},
-					ElementIdent::MuxingApp => todo!("Support segment.Info.MuxingApp"),
-					ElementIdent::WritingApp => todo!("Support segment.Info.WritingApp"),
+					ElementIdent::MuxingApp => {
+						properties.segment_info.muxing_app = element_reader.read_utf8(size)?
+					},
+					ElementIdent::WritingApp => {
+						properties.segment_info.writing_app = element_reader.read_utf8(size)?
+					},
 					_ => {
 						// We do not end up using information from all of the segment
 						// elements, so we can just skip any useless ones.

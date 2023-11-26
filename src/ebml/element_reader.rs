@@ -373,8 +373,13 @@ where
 		String::from_utf8(content).map_err(Into::into)
 	}
 
-	pub(crate) fn read_utf8(&mut self) -> Result<String> {
-		todo!()
+	pub(crate) fn read_utf8(&mut self, element_length: u64) -> Result<String> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.5
+		// A UTF-8 Element MUST declare a length in octets from zero to VINTMAX
+
+		// Since the UTF-8 and String elements are both just turned into `String`s,
+		// we can just reuse the `read_string` method.
+		self.read_string(element_length)
 	}
 
 	pub(crate) fn read_date(&mut self) -> Result<String> {
