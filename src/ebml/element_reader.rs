@@ -150,6 +150,7 @@ ebml_master_elements! {
 struct ElementReaderContext {
 	/// Previous master element
 	previous_master: Option<MasterElement>,
+	previous_master_length: u64,
 	/// Current master element
 	current_master: Option<MasterElement>,
 	/// Remaining length of the master element
@@ -169,6 +170,7 @@ impl Default for ElementReaderContext {
 	fn default() -> Self {
 		Self {
 			previous_master: None,
+			previous_master_length: 0,
 			current_master: None,
 			master_length: 0,
 			// https://www.rfc-editor.org/rfc/rfc8794.html#name-ebmlmaxidlength-element
@@ -234,6 +236,7 @@ where
 		};
 
 		self.ctx.previous_master = self.ctx.current_master;
+		self.ctx.previous_master_length = self.ctx.master_length;
 		self.ctx.current_master = Some(*master);
 		self.ctx.master_length = header.size.value();
 		Ok(ElementReaderYield::Master((
@@ -254,6 +257,7 @@ where
 	pub(crate) fn goto_previous_master(&mut self) -> Result<()> {
 		if let Some(previous_master) = self.ctx.previous_master {
 			self.ctx.current_master = Some(previous_master);
+			self.ctx.master_length = self.ctx.previous_master_length;
 			Ok(())
 		} else {
 			decode_err!(@BAIL Ebml, "Expected a parent element to be available")
