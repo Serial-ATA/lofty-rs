@@ -1,14 +1,15 @@
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
+use crate::macros::decode_err;
 use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
 	element_reader: &mut ElementReader<R>,
-	_parse_options: ParseOptions,
-	_properties: &mut EbmlProperties,
+	parse_options: ParseOptions,
+	properties: &mut EbmlProperties,
 ) -> Result<()>
 where
 	R: Read + Seek,
@@ -29,7 +30,17 @@ where
 			},
 			ElementReaderYield::Child((child, size)) => {
 				match child.ident {
-					ElementIdent::TimecodeScale => todo!("Support segment.Info.TimecodeScale"),
+					ElementIdent::TimecodeScale => {
+						properties.segment_info.timecode_scale =
+							element_reader.read_unsigned_int(size)?;
+
+						if properties.segment_info.timecode_scale == 0 {
+							log::warn!("Segment.Info.TimecodeScale is 0, which is invalid");
+							if parse_options.parsing_mode == crate::probe::ParsingMode::Strict {
+								decode_err!(@BAIL Ebml, "Segment.Info.TimecodeScale must be nonzero");
+							}
+						}
+					},
 					ElementIdent::MuxingApp => todo!("Support segment.Info.MuxingApp"),
 					ElementIdent::WritingApp => todo!("Support segment.Info.WritingApp"),
 					_ => {
