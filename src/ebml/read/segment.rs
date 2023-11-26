@@ -1,3 +1,4 @@
+use super::segment_info;
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::tag::EbmlTag;
@@ -9,8 +10,8 @@ use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
 	element_reader: &mut ElementReader<R>,
-	_parse_options: ParseOptions,
-	_properties: &mut EbmlProperties,
+	parse_options: ParseOptions,
+	properties: &mut EbmlProperties,
 ) -> Result<Option<EbmlTag>>
 where
 	R: Read + Seek,
@@ -23,7 +24,9 @@ where
 		let res = element_reader.next()?;
 		match res {
 			ElementReaderYield::Master((id, size)) => match id {
-				ElementIdent::Info => todo!("Support segment.Info"),
+				ElementIdent::Info => {
+					segment_info::read_from(element_reader, parse_options, properties)?
+				},
 				ElementIdent::Cluster => todo!("Support segment.Cluster"),
 				ElementIdent::Tracks => todo!("Support segment.Tracks"),
 				ElementIdent::Tags => todo!("Support segment.Tags"),

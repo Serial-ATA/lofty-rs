@@ -1,4 +1,5 @@
 mod segment;
+mod segment_info;
 
 use super::EbmlFile;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
