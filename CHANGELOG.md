@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2023-11-26
+
 ### Changed
 - **MP4**: Skip over invalid `ilst` atoms by default ([issue](https://github.com/Serial-ATA/lofty-rs/issues/291)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/292))
 
@@ -595,7 +597,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.1...HEAD
+[0.17.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.0...0.17.1
 [0.17.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.1...0.17.0
 [0.16.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.0...0.16.1
 [0.16.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.15.0...0.16.0
