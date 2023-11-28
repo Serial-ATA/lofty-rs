@@ -24,7 +24,7 @@ impl ElementHeader {
 	}
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq)]
 pub enum ElementDataType {
 	SignedInt,
 	UnsignedInt,
