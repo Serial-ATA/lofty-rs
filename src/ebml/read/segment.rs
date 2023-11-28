@@ -1,4 +1,4 @@
-use super::segment_info;
+use super::{segment_info, segment_tracks};
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::tag::EbmlTag;
@@ -26,7 +26,9 @@ where
 					segment_info::read_from(children_reader.inner(), parse_options, properties)?
 				},
 				ElementIdent::Cluster => todo!("Support segment.Cluster"),
-				ElementIdent::Tracks => todo!("Support segment.Tracks"),
+				ElementIdent::Tracks => {
+					segment_tracks::read_from(children_reader.inner(), parse_options, properties)?
+				},
 				ElementIdent::Tags => todo!("Support segment.Tags"),
 				ElementIdent::Attachments => todo!("Support segment.Attachments"),
 				ElementIdent::Chapters => todo!("Support segment.Chapters"),
