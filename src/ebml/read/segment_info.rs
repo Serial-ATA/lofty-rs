@@ -31,10 +31,10 @@ where
 			ElementReaderYield::Child((child, size)) => {
 				match child.ident {
 					ElementIdent::TimecodeScale => {
-						properties.segment_info.timecode_scale =
+						properties.segment_info.timestamp_scale =
 							element_reader.read_unsigned_int(size)?;
 
-						if properties.segment_info.timecode_scale == 0 {
+						if properties.segment_info.timestamp_scale == 0 {
 							log::warn!("Segment.Info.TimecodeScale is 0, which is invalid");
 							if parse_options.parsing_mode == crate::probe::ParsingMode::Strict {
 								decode_err!(@BAIL Ebml, "Segment.Info.TimecodeScale must be nonzero");
