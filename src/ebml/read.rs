@@ -1,5 +1,6 @@
 mod segment;
 mod segment_info;
+mod segment_tracks;
 
 use super::EbmlFile;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
