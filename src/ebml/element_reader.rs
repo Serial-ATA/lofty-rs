@@ -3,6 +3,7 @@ use crate::error::Result;
 use crate::macros::{decode_err, try_vec};
 
 use std::io::Read;
+use std::ops::{Deref, DerefMut};
 
 use byteorder::{BigEndian, ReadBytesExt};
 use lofty_attr::ebml_master_elements;
@@ -229,7 +230,11 @@ where
 		self.ctx.previous_master_length = self.ctx.master_length;
 	}
 
-	fn next_master(&mut self) -> Result<ElementReaderYield> {
+	fn goto_next_master(&mut self) -> Result<ElementReaderYield> {
+		if self.ctx.master_length != 0 {
+			self.skip(self.ctx.master_length)?;
+		}
+
 		let header = ElementHeader::read(
 			&mut self.reader,
 			self.ctx.max_id_length,
@@ -249,15 +254,6 @@ where
 		)))
 	}
 
-	/// Lock the reader to the current master element
-	pub(crate) fn lock(&mut self) {
-		self.ctx.locked = true;
-	}
-
-	pub(crate) fn unlock(&mut self) {
-		self.ctx.locked = false;
-	}
-
 	pub(crate) fn goto_previous_master(&mut self) -> Result<()> {
 		if let Some(previous_master) = self.ctx.previous_master {
 			self.ctx.current_master = Some(previous_master);
@@ -270,7 +266,7 @@ where
 
 	pub(crate) fn next(&mut self) -> Result<ElementReaderYield> {
 		let Some(current_master) = self.ctx.current_master else {
-			return self.next_master();
+			return self.goto_next_master();
 		};
 
 		if self.ctx.master_length == 0 {
@@ -278,7 +274,7 @@ where
 				return Ok(ElementReaderYield::Eof);
 			}
 
-			return self.next_master();
+			return self.goto_next_master();
 		}
 
 		let header = ElementHeader::read(self, self.ctx.max_id_length, self.ctx.max_size_length)?;
@@ -310,8 +306,30 @@ where
 		Ok(ElementReaderYield::Child((*child, header.size.value())))
 	}
 
+	fn lock(&mut self) {
+		self.ctx.locked = true;
+	}
+
+	fn unlock(&mut self) {
+		self.ctx.locked = false;
+	}
+
+	pub(crate) fn children(&mut self) -> ElementChildIterator<'_, R> {
+		self.lock();
+		ElementChildIterator::new(self)
+	}
+
 	pub(crate) fn skip(&mut self, length: u64) -> Result<()> {
 		std::io::copy(&mut self.by_ref().take(length), &mut std::io::sink())?;
+		Ok(())
+	}
+
+	pub(crate) fn skip_element(&mut self, element_header: ElementHeader) -> Result<()> {
+		log::debug!(
+			"Encountered unknown EBML element in header: {:X}",
+			element_header.id.0
+		);
+		self.skip(element_header.size.value())?;
 		Ok(())
 	}
 
@@ -388,5 +406,70 @@ where
 
 	pub(crate) fn read_binary(&mut self) -> Result<Vec<u8>> {
 		todo!()
+	}
+}
+
+pub(crate) struct ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	reader: &'a mut ElementReader<R>,
+}
+
+impl<'a, R> ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	pub(crate) fn new(reader: &'a mut ElementReader<R>) -> Self {
+		Self { reader }
+	}
+
+	pub(crate) fn next(&mut self) -> Result<Option<ElementReaderYield>> {
+		match self.reader.next() {
+			Ok(ElementReaderYield::Unknown(header)) => {
+				self.reader.skip_element(header)?;
+				self.next()
+			},
+			Ok(ElementReaderYield::Eof) => Ok(None),
+			Err(e) => Err(e),
+			element => element.map(Some),
+		}
+	}
+
+	pub(crate) fn master_exhausted(&self) -> bool {
+		self.reader.ctx.master_length == 0
+	}
+
+	pub(crate) fn inner(&mut self) -> &mut ElementReader<R> {
+		self.reader
+	}
+}
+
+impl<'a, R> Deref for ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	type Target = ElementReader<R>;
+
+	fn deref(&self) -> &Self::Target {
+		self.reader
+	}
+}
+
+impl<'a, R> DerefMut for ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.reader
+	}
+}
+
+impl<'a, R> Drop for ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	fn drop(&mut self) {
+		self.reader.unlock();
 	}
 }

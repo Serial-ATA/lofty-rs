@@ -69,15 +69,13 @@ where
 		Err(e) => return Err(e),
 	}
 
-	element_reader.lock();
-
-	loop {
+	let mut child_reader = element_reader.children();
+	while let Some(child) = child_reader.next()? {
 		let ident;
 		let data_ty;
 		let size;
 
-		let res = element_reader.next()?;
-		match res {
+		match child {
 			// The only expected master element in the header is `DocTypeExtension`
 			ElementReaderYield::Master((ElementIdent::DocTypeExtension, _)) => continue,
 			ElementReaderYield::Child((child, size_)) => {
@@ -85,53 +83,46 @@ where
 				data_ty = child.data_type;
 				size = size_;
 			},
-			ElementReaderYield::Unknown(element) => {
-				log::debug!(
-					"Encountered unknown EBML element in header: {:X}",
-					element.id.0
-				);
-				element_reader.skip(element.size.value())?;
-				continue;
-			},
 			_ => break,
 		}
 
 		if ident == ElementIdent::EBMLMaxIDLength {
-			properties.header.max_id_length = element_reader.read_unsigned_int(size)? as u8;
-			element_reader.set_max_id_length(properties.header.max_id_length);
+			properties.header.max_id_length = child_reader.read_unsigned_int(size)? as u8;
+			child_reader.set_max_id_length(properties.header.max_id_length);
 			continue;
 		}
 
 		if ident == ElementIdent::EBMLMaxSizeLength {
-			properties.header.max_size_length = element_reader.read_unsigned_int(size)? as u8;
-			element_reader.set_max_size_length(properties.header.max_size_length);
+			properties.header.max_size_length = child_reader.read_unsigned_int(size)? as u8;
+			child_reader.set_max_size_length(properties.header.max_size_length);
 			continue;
 		}
 
 		// Anything else in the header is unnecessary, and only read for the properties
 		// struct
 		if !parse_options.read_properties {
-			element_reader.skip(size)?;
+			child_reader.skip(size)?;
 			continue;
 		}
 
 		match ident {
 			ElementIdent::EBMLVersion => {
-				properties.header.version = element_reader.read_unsigned_int(size)?
+				properties.header.version = child_reader.read_unsigned_int(size)?
 			},
 			ElementIdent::EBMLReadVersion => {
-				properties.header.read_version = element_reader.read_unsigned_int(size)?
+				properties.header.read_version = child_reader.read_unsigned_int(size)?
 			},
-			ElementIdent::DocType => {
-				properties.header.doc_type = element_reader.read_string(size)?
-			},
+			ElementIdent::DocType => properties.header.doc_type = child_reader.read_string(size)?,
 			ElementIdent::DocTypeVersion => {
-				properties.header.doc_type_version = element_reader.read_unsigned_int(size)?
+				properties.header.doc_type_version = child_reader.read_unsigned_int(size)?
 			},
-			_ => element_reader.skip(size)?,
+			_ => child_reader.skip(size)?,
 		}
 	}
 
-	element_reader.unlock();
+	debug_assert!(
+		child_reader.master_exhausted(),
+		"There should be no remaining elements in the header"
+	);
 	Ok(())
 }

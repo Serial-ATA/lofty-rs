@@ -16,16 +16,14 @@ pub(super) fn read_from<R>(
 where
 	R: Read + Seek,
 {
-	element_reader.lock();
-
 	let mut tags = None;
 
-	loop {
-		let res = element_reader.next()?;
-		match res {
+	let mut children_reader = element_reader.children();
+	while let Some(child) = children_reader.next()? {
+		match child {
 			ElementReaderYield::Master((id, size)) => match id {
 				ElementIdent::Info => {
-					segment_info::read_from(element_reader, parse_options, properties)?
+					segment_info::read_from(children_reader.inner(), parse_options, properties)?
 				},
 				ElementIdent::Cluster => todo!("Support segment.Cluster"),
 				ElementIdent::Tracks => todo!("Support segment.Tracks"),
@@ -37,23 +35,15 @@ where
 					// elements, so we can just skip any useless ones.
 
 					log::debug!("Skipping EBML master element: {:?}", id);
-					element_reader.skip(size)?;
-					element_reader.goto_previous_master()?;
+					children_reader.skip(size)?;
+					children_reader.goto_previous_master()?;
 					continue;
 				},
 			},
-			ElementReaderYield::Unknown(element) => {
-				log::debug!("Skipping unknown EBML element: {:X}", element.id.0);
-				element_reader.skip(element.size.value())?;
-				continue;
-			},
-			ElementReaderYield::Eof => {
-				element_reader.unlock();
-				break;
-			},
-			_ => {
+			ElementReaderYield::Child(_) => {
 				decode_err!(@BAIL Ebml, "Segment element should only contain master elements")
 			},
+			_ => break,
 		}
 	}
 
