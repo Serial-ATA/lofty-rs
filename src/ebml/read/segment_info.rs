@@ -51,7 +51,7 @@ where
 						// We do not end up using information from all of the segment
 						// elements, so we can just skip any useless ones.
 
-						log::debug!("Skipping EBML child element: {:?}", child);
+						log::debug!("Skipping EBML child element: {:?}", child.ident);
 						element_reader.skip(size)?;
 						continue;
 					},
