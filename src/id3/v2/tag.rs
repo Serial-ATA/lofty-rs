@@ -1784,7 +1784,7 @@ mod tests {
 				encoding: TextEncoding::Latin1,
 				picture: Picture {
 					pic_type: PictureType::CoverFront,
-					mime_type: MimeType::Png,
+					mime_type: Some(MimeType::Png),
 					description: None,
 					data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
 				},
@@ -1841,7 +1841,7 @@ mod tests {
 
 		let picture = Picture::new_unchecked(
 			PictureType::CoverFront,
-			MimeType::Jpeg,
+			Some(MimeType::Jpeg),
 			Some(String::from("cover")),
 			picture_data,
 		);

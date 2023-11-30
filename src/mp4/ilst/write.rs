@@ -446,12 +446,12 @@ fn write_int(
 fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
 	match picture.mime_type {
 		// GIF is deprecated
-		MimeType::Gif => write_data(12, &picture.data, writer),
-		MimeType::Jpeg => write_data(13, &picture.data, writer),
-		MimeType::Png => write_data(14, &picture.data, writer),
-		MimeType::Bmp => write_data(27, &picture.data, writer),
+		Some(MimeType::Gif) => write_data(12, &picture.data, writer),
+		Some(MimeType::Jpeg) => write_data(13, &picture.data, writer),
+		Some(MimeType::Png) => write_data(14, &picture.data, writer),
+		Some(MimeType::Bmp) => write_data(27, &picture.data, writer),
 		// We'll assume implicit (0) was the intended type
-		MimeType::None => write_data(0, &picture.data, writer),
+		None => write_data(0, &picture.data, writer),
 		_ => Err(FileEncodingError::new(
 			FileType::Mp4,
 			"Attempted to write an unsupported picture format",

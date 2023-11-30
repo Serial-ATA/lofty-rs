@@ -42,13 +42,14 @@ impl AttachedPictureFrame {
 			None => err!(NotAPicture),
 		};
 
-		let mime_type = if version == Id3v2Version::V2 {
+		let mime_type;
+		if version == Id3v2Version::V2 {
 			let mut format = [0; 3];
 			reader.read_exact(&mut format)?;
 
 			match format {
-				[b'P', b'N', b'G'] => MimeType::Png,
-				[b'J', b'P', b'G'] => MimeType::Jpeg,
+				[b'P', b'N', b'G'] => mime_type = Some(MimeType::Png),
+				[b'J', b'P', b'G'] => mime_type = Some(MimeType::Jpeg),
 				_ => {
 					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
 						String::from_utf8_lossy(&format).into_owned(),
@@ -57,8 +58,9 @@ impl AttachedPictureFrame {
 				},
 			}
 		} else {
-			(crate::util::text::decode_text(reader, TextEncoding::UTF8, true)?.text_or_none())
-				.map_or(MimeType::None, |mime_type| MimeType::from_str(&mime_type))
+			let mime_type_str =
+				crate::util::text::decode_text(reader, TextEncoding::UTF8, true)?.text_or_none();
+			mime_type = mime_type_str.map(|mime_type_str| MimeType::from_str(&mime_type_str));
 		};
 
 		let pic_type = PictureType::from_u8(reader.read_u8()?);
@@ -103,19 +105,22 @@ impl AttachedPictureFrame {
 		if version == Id3v2Version::V2 {
 			// ID3v2.2 PIC is pretty limited with formats
 			let format = match self.picture.mime_type {
-				MimeType::Png => "PNG",
-				MimeType::Jpeg => "JPG",
+				Some(MimeType::Png) => "PNG",
+				Some(MimeType::Jpeg) => "JPG",
 				_ => {
+					let mime_str = self.picture.mime_str();
 					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
-						self.picture.mime_type.to_string(),
+						mime_str.to_string(),
 					))
-					.into())
+					.into());
 				},
 			};
 
 			data.write_all(format.as_bytes())?;
 		} else {
-			data.write_all(self.picture.mime_type.as_str().as_bytes())?;
+			if let Some(mime_type) = &self.picture.mime_type {
+				data.write_all(mime_type.as_str().as_bytes())?;
+			}
 			data.write_u8(0)?;
 		};
 
