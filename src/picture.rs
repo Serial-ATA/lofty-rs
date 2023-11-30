@@ -70,9 +70,6 @@ impl MimeType {
 	#[allow(clippy::should_implement_trait)]
 	/// Get a `MimeType` from a string
 	///
-	/// Empty strings will map to `MimeType::None`, while any unrecognized MIME types will
-	/// map to `MimeType::Unknown`.
-	///
 	/// # Examples
 	///
 	/// ```rust
@@ -93,8 +90,6 @@ impl MimeType {
 	}
 
 	/// Get a &str from a `MimeType`
-	///
-	/// NOTE: `MimeType::None` will return an empty string.
 	///
 	/// # Examples
 	///
