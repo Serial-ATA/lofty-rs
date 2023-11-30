@@ -51,8 +51,6 @@ pub enum MimeType {
 	Gif,
 	/// Some unknown mimetype
 	Unknown(String),
-	/// No mimetype
-	None,
 }
 
 impl ToString for MimeType {
@@ -64,7 +62,6 @@ impl ToString for MimeType {
 			MimeType::Bmp => "image/bmp".to_string(),
 			MimeType::Gif => "image/gif".to_string(),
 			MimeType::Unknown(unknown) => unknown.clone(),
-			MimeType::None => String::new(),
 		}
 	}
 }
@@ -91,7 +88,6 @@ impl MimeType {
 			"image/tiff" => Self::Tiff,
 			"image/bmp" => Self::Bmp,
 			"image/gif" => Self::Gif,
-			"" => Self::None,
 			_ => Self::Unknown(mime_type.to_string()),
 		}
 	}
@@ -116,7 +112,6 @@ impl MimeType {
 			MimeType::Bmp => "image/bmp",
 			MimeType::Gif => "image/gif",
 			MimeType::Unknown(unknown) => unknown,
-			MimeType::None => "",
 		}
 	}
 }
@@ -457,7 +452,7 @@ pub struct Picture {
 	/// The picture type according to ID3v2 APIC
 	pub(crate) pic_type: PictureType,
 	/// The picture's mimetype
-	pub(crate) mime_type: MimeType,
+	pub(crate) mime_type: Option<MimeType>,
 	/// The picture's description
 	pub(crate) description: Option<Cow<'static, str>>,
 	/// The binary data of the picture
@@ -505,7 +500,7 @@ impl Picture {
 
 		Ok(Self {
 			pic_type: PictureType::Other,
-			mime_type,
+			mime_type: Some(mime_type),
 			description: None,
 			data: data.into(),
 		})
@@ -518,7 +513,7 @@ impl Picture {
 	/// beforehand.
 	pub fn new_unchecked(
 		pic_type: PictureType,
-		mime_type: MimeType,
+		mime_type: Option<MimeType>,
 		description: Option<String>,
 		data: Vec<u8>,
 	) -> Self {
@@ -544,8 +539,16 @@ impl Picture {
 	///
 	/// The `mime_type` is determined from the `data`, and
 	/// is immutable.
-	pub fn mime_type(&self) -> &MimeType {
-		&self.mime_type
+	pub fn mime_type(&self) -> Option<&MimeType> {
+		self.mime_type.as_ref()
+	}
+
+	// Used commonly internally
+	pub(crate) fn mime_str(&self) -> &str {
+		match self.mime_type.as_ref() {
+			Some(mime_type) => mime_type.as_str(),
+			None => "",
+		}
 	}
 
 	/// Returns the description
@@ -582,7 +585,7 @@ impl Picture {
 
 		let picture_type = u32::from(self.pic_type.as_u8()).to_be_bytes();
 
-		let mime_str = self.mime_type.to_string();
+		let mime_str = self.mime_str();
 		let mime_len = mime_str.len() as u32;
 
 		data.extend(picture_type);
@@ -703,10 +706,17 @@ impl Picture {
 			let mut data = try_vec![0; data_len];
 
 			if let Ok(()) = reader.read_exact(&mut data) {
+				let mime_type;
+				if mime_type_str.is_empty() {
+					mime_type = None;
+				} else {
+					mime_type = Some(MimeType::from_str(&mime_type_str));
+				}
+
 				return Ok((
 					Self {
 						pic_type: PictureType::from_u8(pic_ty as u8),
-						mime_type: MimeType::from_str(mime_type_str),
+						mime_type,
 						description,
 						data: Cow::from(data),
 					},
@@ -787,7 +797,7 @@ impl Picture {
 
 		Ok(Picture {
 			pic_type,
-			mime_type,
+			mime_type: Some(mime_type),
 			description,
 			data,
 		})
@@ -808,7 +818,7 @@ impl Picture {
 // A placeholder that is needed during conversions.
 pub(crate) const TOMBSTONE_PICTURE: Picture = Picture {
 	pic_type: PictureType::Other,
-	mime_type: MimeType::Unknown(String::new()),
+	mime_type: None,
 	description: None,
 	data: Cow::Owned(Vec::new()),
 };

@@ -294,12 +294,12 @@ where
 		for (flags, value) in atom_data {
 			let mime_type = match flags {
 				// Type 0 is implicit
-				RESERVED => MimeType::None,
+				RESERVED => None,
 				// GIF is deprecated
-				12 => MimeType::Gif,
-				JPEG => MimeType::Jpeg,
-				PNG => MimeType::Png,
-				BMP => MimeType::Bmp,
+				12 => Some(MimeType::Gif),
+				JPEG => Some(MimeType::Jpeg),
+				PNG => Some(MimeType::Png),
+				BMP => Some(MimeType::Bmp),
 				_ => err!(BadAtom("\"covr\" atom has an unknown type")),
 			};
 
