@@ -126,7 +126,7 @@ mod tests {
 	use crate::iff::aiff::{AiffFile, AiffProperties};
 	use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 	use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
-	use crate::mpeg::{ChannelMode, Emphasis, Layer, MpegFile, MpegProperties, MpegVersion};
+	use crate::mpeg::{ChannelMode, Layer, MpegFile, MpegProperties, MpegVersion};
 	use crate::musepack::sv4to6::MpcSv4to6Properties;
 	use crate::musepack::sv7::{Link, MpcSv7Properties, Profile};
 	use crate::musepack::sv8::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
@@ -199,7 +199,7 @@ mod tests {
 		audio_bitrate: 384,
 		sample_rate: 32000,
 		channels: 2,
-		emphasis: Emphasis::None,
+		emphasis: None,
 	};
 
 	const MP2_PROPERTIES: MpegProperties = MpegProperties {
@@ -214,7 +214,7 @@ mod tests {
 		audio_bitrate: 384,
 		sample_rate: 48000,
 		channels: 2,
-		emphasis: Emphasis::None,
+		emphasis: None,
 	};
 
 	const MP3_PROPERTIES: MpegProperties = MpegProperties {
@@ -229,7 +229,7 @@ mod tests {
 		audio_bitrate: 62,
 		sample_rate: 48000,
 		channels: 2,
-		emphasis: Emphasis::None,
+		emphasis: None,
 	};
 
 	const MP4_AAC_PROPERTIES: Mp4Properties = Mp4Properties {

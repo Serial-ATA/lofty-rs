@@ -152,11 +152,9 @@ pub enum ChannelMode {
 }
 
 /// A rarely-used decoder hint that the file must be de-emphasized
-#[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 #[allow(missing_docs, non_camel_case_types)]
 pub enum Emphasis {
-	#[default]
-	None,
 	/// 50/15 ms
 	MS5015,
 	Reserved,
@@ -177,24 +175,24 @@ pub(crate) struct Header {
 	pub(crate) mode_extension: Option<u8>,
 	pub(crate) copyright: bool,
 	pub(crate) original: bool,
-	pub(crate) emphasis: Emphasis,
+	pub(crate) emphasis: Option<Emphasis>,
 }
 
 impl Header {
 	pub(super) fn read(data: u32) -> Option<Self> {
 		let version = match (data >> 19) & 0b11 {
-			0 => MpegVersion::V2_5,
-			2 => MpegVersion::V2,
-			3 => MpegVersion::V1,
+			0b00 => MpegVersion::V2_5,
+			0b10 => MpegVersion::V2,
+			0b11 => MpegVersion::V1,
 			_ => return None,
 		};
 
 		let version_index = if version == MpegVersion::V1 { 0 } else { 1 };
 
 		let layer = match (data >> 17) & 0b11 {
-			1 => Layer::Layer3,
-			2 => Layer::Layer2,
-			3 => Layer::Layer1,
+			0b01 => Layer::Layer3,
+			0b10 => Layer::Layer2,
+			0b11 => Layer::Layer1,
 			_ => {
 				log::debug!("MPEG: Frame header uses a reserved layer");
 				return None;
@@ -213,7 +211,7 @@ impl Header {
 			mode_extension: None,
 			copyright: false,
 			original: false,
-			emphasis: Emphasis::default(),
+			emphasis: None,
 		};
 
 		let layer_index = (header.layer as usize).saturating_sub(1);
@@ -228,7 +226,7 @@ impl Header {
 		let sample_rate_index = (data >> 10) & 0b11;
 		header.sample_rate = match sample_rate_index {
 			// This is invalid
-			3 => return None,
+			0b11 => return None,
 			_ => SAMPLE_RATES[header.version as usize][sample_rate_index as usize],
 		};
 
@@ -239,11 +237,11 @@ impl Header {
 			padding = u32::from(PADDING_SIZES[layer_index]);
 		}
 
-		header.channel_mode = match (data >> 6) & 3 {
-			0 => ChannelMode::Stereo,
-			1 => ChannelMode::JointStereo,
-			2 => ChannelMode::DualChannel,
-			3 => ChannelMode::SingleChannel,
+		header.channel_mode = match (data >> 6) & 0b11 {
+			0b00 => ChannelMode::Stereo,
+			0b01 => ChannelMode::JointStereo,
+			0b10 => ChannelMode::DualChannel,
+			0b11 => ChannelMode::SingleChannel,
 			_ => unreachable!(),
 		};
 
@@ -256,11 +254,11 @@ impl Header {
 		header.copyright = ((data >> 3) & 1) == 1;
 		header.original = ((data >> 2) & 1) == 1;
 
-		header.emphasis = match data & 3 {
-			0 => Emphasis::None,
-			1 => Emphasis::MS5015,
-			2 => Emphasis::Reserved,
-			3 => Emphasis::CCIT_J17,
+		header.emphasis = match data & 0b11 {
+			0b00 => None,
+			0b01 => Some(Emphasis::MS5015),
+			0b10 => Some(Emphasis::Reserved),
+			0b11 => Some(Emphasis::CCIT_J17),
 			_ => unreachable!(),
 		};
 
