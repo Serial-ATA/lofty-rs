@@ -24,7 +24,7 @@ pub struct MpegProperties {
 	pub(crate) mode_extension: Option<u8>,
 	pub(crate) copyright: bool,
 	pub(crate) original: bool,
-	pub(crate) emphasis: Emphasis,
+	pub(crate) emphasis: Option<Emphasis>,
 }
 
 impl From<MpegProperties> for FileProperties {
@@ -117,7 +117,7 @@ impl MpegProperties {
 	}
 
 	/// See [`Emphasis`]
-	pub fn emphasis(&self) -> Emphasis {
+	pub fn emphasis(&self) -> Option<Emphasis> {
 		self.emphasis
 	}
 }
