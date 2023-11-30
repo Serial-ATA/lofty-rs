@@ -74,11 +74,11 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # use lofty::{Picture, PictureInformation, PictureType, MimeType};
 	///
 	/// # fn main() -> lofty::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
 	/// # let front_cover_info = PictureInformation::default();
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
 	/// # let back_cover_info = PictureInformation::default();
-	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add a front cover
@@ -122,7 +122,7 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
 	///
 	/// # fn main() -> lofty::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
 	/// # let front_cover_info = PictureInformation::default();
 	/// let mut tag = VorbisComments::default();
 	///
@@ -149,9 +149,9 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
 	///
 	/// # fn main() -> lofty::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
 	/// # let front_cover_info = PictureInformation::default();
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
 	/// # let back_cover_info = PictureInformation::default();
 	/// let mut tag = VorbisComments::default();
 	///

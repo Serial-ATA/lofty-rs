@@ -464,9 +464,9 @@ impl Tag {
 	/// use lofty::{Picture, Tag, TagType};
 	/// # use lofty::{PictureType, MimeType};
 	///
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, MimeType::Png, None, Vec::new());
-	/// # let another_picture = Picture::new_unchecked(PictureType::Band, MimeType::Png, None, Vec::new());
+	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
+	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
+	/// # let another_picture = Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	///
 	/// // Add a front cover
@@ -506,7 +506,7 @@ impl Tag {
 	/// use lofty::{Picture, Tag, TagType};
 	/// # use lofty::{PictureType, MimeType};
 	///
-	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, MimeType::Png, None, Vec::new());
+	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	/// tag.push_picture(picture);
 	///

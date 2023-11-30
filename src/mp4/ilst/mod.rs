@@ -257,7 +257,7 @@ impl Ilst {
 	/// // Insert pictures
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
-	/// 	MimeType::Png,
+	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	png_data,
 	/// ));
@@ -265,7 +265,7 @@ impl Ilst {
 	/// # let jpeg_data = b"bar".to_vec();
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
-	/// 	MimeType::Jpeg,
+	/// 	Some(MimeType::Jpeg),
 	/// 	None,
 	/// 	jpeg_data,
 	/// ));
@@ -302,7 +302,7 @@ impl Ilst {
 	/// // Insert a single picture
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
-	/// 	MimeType::Png,
+	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	png_data,
 	/// ));
@@ -312,7 +312,7 @@ impl Ilst {
 	/// // Insert another picture
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
-	/// 	MimeType::Jpeg,
+	/// 	Some(MimeType::Jpeg),
 	/// 	None,
 	/// 	jpeg_data,
 	/// ));
