@@ -47,7 +47,7 @@ fn bench_write(c: &mut Criterion) {
 
 				let picture = Picture::new_unchecked(
 					PictureType::CoverFront,
-					MimeType::Jpeg,
+					Some(MimeType::Jpeg),
 					None,
 					include_bytes!("../benches_assets/cover.jpg").to_vec(),
 				);
@@ -73,7 +73,7 @@ fn bench_write(c: &mut Criterion) {
 
 				let picture = Picture::new_unchecked(
 					PictureType::CoverFront,
-					MimeType::Jpeg,
+					Some(MimeType::Jpeg),
 					None,
 					include_bytes!("../benches_assets/cover.jpg").to_vec(),
 				);
@@ -97,7 +97,7 @@ fn bench_write(c: &mut Criterion) {
 
 				let picture = Picture::new_unchecked(
 					PictureType::CoverFront,
-					MimeType::Jpeg,
+					Some(MimeType::Jpeg),
 					None,
 					include_bytes!("../benches_assets/cover.jpg").to_vec(),
 				);
@@ -116,7 +116,7 @@ fn bench_write(c: &mut Criterion) {
 
 				let picture = Picture::new_unchecked(
 					PictureType::CoverFront,
-					MimeType::Jpeg,
+					Some(MimeType::Jpeg),
 					None,
 					include_bytes!("../benches_assets/cover.jpg").to_vec(),
 				);
