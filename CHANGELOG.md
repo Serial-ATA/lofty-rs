@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - **ItemKey**: `ItemKey::InvolvedPeople`
+- **MimeType**: `MimeType::None`, `Picture` now stores an `Option<MimeType>`.
+- **ID3v2**: `TextSizeRestrictions::None` and `ImageSizeRestrictions::None`
+	- `TagRestrictions` now stores an `Option<TextSizeRestrictions>` and `Option<ImageSizeRestrictions>`.
+- **MPEG**: `Emphasis::None`, `MpegProperties` now stores an `Option<Emphasis>`.
 
 ## [0.17.1] - 2023-11-26
 
