@@ -705,7 +705,7 @@ impl Picture {
 				if mime_type_str.is_empty() {
 					mime_type = None;
 				} else {
-					mime_type = Some(MimeType::from_str(&mime_type_str));
+					mime_type = Some(MimeType::from_str(mime_type_str));
 				}
 
 				return Ok((
