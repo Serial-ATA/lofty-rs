@@ -9,7 +9,8 @@ use lofty::id3::v2::{
 	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
 	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, OwnershipFrame,
 	Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType,
-	SynchronizedText, TimestampFormat, UniqueFileIdentifierFrame, UrlLinkFrame,
+	SynchronizedText, TextInformationFrame, TimestampFormat, UniqueFileIdentifierFrame,
+	UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
 use lofty::{
@@ -41,12 +42,69 @@ fn test_downgrade_utf8_for_id3v23_2() {}
 
 #[test]
 fn test_utf16be_delimiter() {
-	todo!("Need to think of a nice way to handle multiple UTF-16 values separated by null")
+	let mut f = TextInformationFrame {
+		encoding: TextEncoding::UTF16BE,
+		value: String::from("Foo\0Bar"),
+	};
+
+	let data = f.as_bytes();
+
+	let no_bom_be_data = b"\x02\
+	\0F\0o\0o\0\0\
+	\0B\0a\0r";
+
+	assert_eq!(data, no_bom_be_data);
+	f = TextInformationFrame::parse(&mut &data[..], Id3v2Version::V4)
+		.unwrap()
+		.unwrap();
+	assert_eq!(f.value, "Foo\0Bar");
 }
 
 #[test]
 fn test_utf16_delimiter() {
-	todo!("Need to think of a nice way to handle multiple UTF-16 values separated by null")
+	let mut f = TextInformationFrame {
+		encoding: TextEncoding::UTF16,
+		value: String::from("Foo\0Bar"),
+	};
+
+	let data = f.as_bytes();
+
+	// TODO: TagLib writes a BOM to every string, making the output identical to `mutli_bom_le_data`,
+	//       rather than `single_bom_le_data` in Lofty's case. Not sure if we should be writing the BOM
+	//       to every string?
+	let single_bom_le_data = b"\x01\xff\xfe\
+                              F\0o\0o\0\0\0\
+                              B\0a\0r\0";
+
+	assert_eq!(data, single_bom_le_data);
+	f = TextInformationFrame::parse(&mut &data[..], Id3v2Version::V4)
+		.unwrap()
+		.unwrap();
+	assert_eq!(f.value, "Foo\0Bar");
+
+	let multi_bom_le_data = b"\x01\xff\xfe\
+                              F\0o\0o\0\0\0\xff\xfe\
+                              B\0a\0r\0";
+	f = TextInformationFrame::parse(&mut &multi_bom_le_data[..], Id3v2Version::V4)
+		.unwrap()
+		.unwrap();
+	assert_eq!(f.value, "Foo\0Bar");
+
+	let multi_bom_be_data = b"\x01\xfe\xff\
+							  \0F\0o\0o\0\0\xfe\xff\
+                              \0B\0a\0r";
+	f = TextInformationFrame::parse(&mut &multi_bom_be_data[..], Id3v2Version::V4)
+		.unwrap()
+		.unwrap();
+	assert_eq!(f.value, "Foo\0Bar");
+
+	let single_bom_be_data = b"\x01\xfe\xff\
+							  \0F\0o\0o\0\0\
+							  \0B\0a\0r";
+	f = TextInformationFrame::parse(&mut &single_bom_be_data[..], Id3v2Version::V4)
+		.unwrap()
+		.unwrap();
+	assert_eq!(f.value, "Foo\0Bar");
 }
 
 #[test]
