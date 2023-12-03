@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **MP4**: Check if audio streams are DRM protected, exposed as `Mp4Properties::is_drm_protected()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/297))
+
 ### Changed
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
 

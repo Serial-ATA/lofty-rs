@@ -141,6 +141,7 @@ pub struct Mp4Properties {
 	pub(crate) sample_rate: u32,
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) channels: u8,
+	pub(crate) drm_protected: bool,
 }
 
 impl From<Mp4Properties> for FileProperties {
@@ -200,6 +201,11 @@ impl Mp4Properties {
 	/// more information.
 	pub fn audio_object_type(&self) -> Option<AudioObjectType> {
 		self.extended_audio_object_type
+	}
+
+	/// Whether or not the file is DRM protected
+	pub fn is_drm_protected(&self) -> bool {
+		self.drm_protected
 	}
 }
 
@@ -316,18 +322,21 @@ where
 
 				let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
 
-				// Skipping 8 bytes
+				// Skipping 4 bytes
 				// Version (1)
 				// Flags (3)
-				// Number of entries (4)
-				stsd_reader.seek(SeekFrom::Current(8))?;
+				stsd_reader.seek(SeekFrom::Current(4))?;
+				let num_sample_entries = stsd_reader.read_u32()?;
 
-				let Some(atom) = AtomInfo::read(&mut stsd_reader, stsd.len() as u64, parse_mode)?
-				else {
-					err!(BadAtom("Expected sample entry atom in `stsd` atom"))
-				};
+				for _ in 0..num_sample_entries {
+					let Some(atom) = stsd_reader.next()? else {
+						err!(BadAtom("Expected sample entry atom in `stsd` atom"))
+					};
 
-				if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
+					let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
+						err!(BadAtom("Expected fourcc atom in `stsd` atom"))
+					};
+
 					match fourcc {
 						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
 						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
@@ -335,7 +344,21 @@ where
 						// Maybe do these?
 						// TODO: dops (opus)
 						// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
-						_ => {},
+
+						// Special case to detect encrypted files
+						b"drms" => {
+							properties.drm_protected = true;
+							skip_unneeded(reader, atom.extended, atom.len)?;
+							continue;
+						},
+						_ => {
+							log::warn!(
+								"Found unsupported sample entry: {:?}",
+								fourcc.escape_ascii().to_string()
+							);
+							skip_unneeded(reader, atom.extended, atom.len)?;
+							continue;
+						},
 					}
 
 					// We do the mdat check up here, so we have access to the entire file
@@ -349,6 +372,10 @@ where
 								(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
 						}
 					}
+
+					// We only want to read the properties of the first stream
+					// that we can actually recognize
+					break;
 				}
 			}
 		}

@@ -241,6 +241,7 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: None,
 		channels: 2,
+		drm_protected: false,
 	};
 
 	const MP4_ALAC_PROPERTIES: Mp4Properties = Mp4Properties {
@@ -252,6 +253,7 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: Some(16),
 		channels: 2,
+		drm_protected: false,
 	};
 
 	const MP4_ALS_PROPERTIES: Mp4Properties = Mp4Properties {
@@ -263,6 +265,7 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: None,
 		channels: 2,
+		drm_protected: false,
 	};
 
 	const MP4_FLAC_PROPERTIES: Mp4Properties = Mp4Properties {
@@ -274,6 +277,7 @@ mod tests {
 		sample_rate: 48000,
 		bit_depth: Some(16),
 		channels: 2,
+		drm_protected: false,
 	};
 
 	const MPC_SV5_PROPERTIES: MpcSv4to6Properties = MpcSv4to6Properties {
