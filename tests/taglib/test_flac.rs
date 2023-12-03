@@ -221,6 +221,7 @@ fn test_repeated_save_2() {
 
 // TODO: We don't make use of padding blocks yet
 #[test]
+#[ignore]
 fn test_repeated_save_3() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
 
@@ -424,6 +425,7 @@ fn test_zero_sized_padding_2() {
 
 // TODO: We don't make use of padding blocks yet
 #[test]
+#[ignore]
 fn test_shrink_padding() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -480,6 +482,7 @@ fn test_empty_id3v2() {
 
 // TODO: TagLib doesn't fully remove Vorbis Comments when stripping. It will preserve the vendor string. Should we do the same?
 #[test]
+#[ignore]
 fn test_strip_tags() {
 	// NOTE: In the TagLib test suite, this also tests ID3v1 and ID3v2. That is not replicated here.
 

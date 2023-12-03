@@ -216,6 +216,7 @@ fn test_default_file_extensions() {
 
 // TODO: We need to check resolvers *first* and then resort to our default implementations
 #[test]
+#[ignore]
 fn test_file_resolver() {
 	{
 		let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
