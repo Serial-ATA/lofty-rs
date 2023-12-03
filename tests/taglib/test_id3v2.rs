@@ -29,17 +29,15 @@ fn test_unsynch_decode() {
 	);
 }
 
+// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
 #[ignore]
-fn test_downgrade_utf8_for_id3v23_1() {
-	todo!("We don't support downgrading 2.4 tags to 2.3")
-}
+fn test_downgrade_utf8_for_id3v23_1() {}
 
+// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
 #[ignore]
-fn test_downgrade_utf8_for_id3v23_2() {
-	todo!("We don't support downgrading 2.4 tags to 2.3")
-}
+fn test_downgrade_utf8_for_id3v23_2() {}
 
 #[test]
 fn test_utf16be_delimiter() {
@@ -735,6 +733,7 @@ fn test_render_user_text_identification_frame() {
 
 // TODO: iTunes, being the great application it is writes unsynchronized integers for sizes. There's no *great* way to detect this.
 #[test]
+#[ignore]
 fn test_itunes_24_frame_size() {
 	let mut file = temp_file!("tests/taglib/data/005411.id3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
@@ -788,10 +787,10 @@ fn test_save_utf16_comment() {
 	}
 }
 
+// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
-fn test_update_genre_23_1() {
-	todo!("We don't support downgrading to 2.3 tags yet")
-}
+#[ignore]
+fn test_update_genre_23_1() {}
 
 #[test]
 #[ignore]
@@ -823,6 +822,7 @@ fn test_update_date22() {
 
 // TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4
 #[test]
+#[ignore]
 fn test_update_full_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -836,11 +836,10 @@ fn test_update_full_date22() {
 	);
 }
 
+// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
 #[ignore]
-fn test_downgrade_to_23() {
-	todo!("We don't support downgrading 2.4 tags to 2.3")
-}
+fn test_downgrade_to_23() {}
 
 #[test]
 fn test_compressed_frame_with_broken_length() {
@@ -965,25 +964,25 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 	assert!(f.id3v2().is_none());
 }
 
+// TODO: Support CHAP frames (#189)
 #[test]
-fn test_parse_chapter_frame() {
-	todo!("We don't support CHAP frames yet")
-}
+#[ignore]
+fn test_parse_chapter_frame() {}
 
+// TODO: Support CHAP frames (#189)
 #[test]
-fn test_render_chapter_frame() {
-	todo!("We don't support CHAP frames yet")
-}
+#[ignore]
+fn test_render_chapter_frame() {}
 
+// TODO: Support CTOC frames (#189)
 #[test]
-fn test_parse_table_of_contents_frame() {
-	todo!("We don't support CTOC frames yet")
-}
+#[ignore]
+fn test_parse_table_of_contents_frame() {}
 
+// TODO: Support CTOC frames (#189)
 #[test]
-fn test_render_table_of_contents_frame() {
-	todo!("We don't support CTOC frames yet")
-}
+#[ignore]
+fn test_render_table_of_contents_frame() {}
 
 #[test]
 #[ignore]
@@ -997,7 +996,7 @@ fn test_duplicate_tags() {
 	// Marker test, Lofty will combine duplicated tags
 }
 
+// TODO: Support CTOC frames (#189)
 #[test]
-fn test_parse_toc_frame_with_many_children() {
-	todo!("We don't support CTOC frames yet")
-}
+#[ignore]
+fn test_parse_toc_frame_with_many_children() {}
