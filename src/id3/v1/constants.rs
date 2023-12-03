@@ -14,7 +14,7 @@ pub const GENRES: [&str; 192] = [
 	"Oldies",
 	"Other",
 	"Pop",
-	"Rhythm and Blues",
+	"R&B",
 	"Rap",
 	"Reggae",
 	"Rock",

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
+
 ## [0.17.1] - 2023-11-26
 
 ### Changed
