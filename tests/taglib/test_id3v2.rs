@@ -864,10 +864,18 @@ fn test_update_genre23_3() {
 
 #[test]
 fn test_update_genre_24() {
-	todo!(
-		"We currently just return the genre string as it is in the tag, need to think about \
-		 whether or not to convert numerical strings"
+	let frame_value = TextInformationFrame::parse(
+		&mut &b"\x00\
+	14\0Eurodisco"[..],
+		Id3v2Version::V4,
 	)
+	.unwrap()
+	.unwrap();
+
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::new("TCON", frame_value, FrameFlags::default()).unwrap());
+
+	assert_eq!(tag.genre().as_deref(), Some("R&B / Eurodisco"));
 }
 
 #[test]
