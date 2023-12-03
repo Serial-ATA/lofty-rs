@@ -16,8 +16,7 @@ fn test_properties_aac() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	// TODO: Check for encryption
-	// assert_eq!(f.properties().encrypted, false);
+	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
@@ -42,7 +41,7 @@ fn test_properties_aac_without_bitrate() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	// assert_eq!(f.properties().encrypted, false);
+	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
@@ -55,7 +54,7 @@ fn test_properties_alac() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	// assert_eq!(f.properties().encrypted, false);
+	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
@@ -80,7 +79,7 @@ fn test_properties_alac_without_bitrate() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	// assert_eq!(f.properties().encrypted, false);
+	assert_eq!(f.properties().is_drm_protected(), false);
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
@@ -93,7 +92,7 @@ fn test_properties_m4v() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	// assert_eq!(f.properties().encrypted, false);
+	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
