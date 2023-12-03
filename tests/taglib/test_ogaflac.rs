@@ -32,12 +32,13 @@ fn test_framing_bit() {
 	// }
 }
 
+// TODO: We don't support FLAC in OGA (#172)
 #[test]
+#[ignore]
 fn test_fuzzed_file() {
-	todo!("We don't support FLAC in OGA")
-	// let mut file = temp_file!("tests/taglib/data/segfault.oga");
-	// let f = FlacFile::read_from(&mut file, ParseOptions::new());
-	// assert!(f.is_err());
+	let mut file = temp_file!("tests/taglib/data/segfault.oga");
+	let f = FlacFile::read_from(&mut file, ParseOptions::new());
+	assert!(f.is_err());
 }
 
 #[test]
