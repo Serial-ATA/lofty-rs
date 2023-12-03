@@ -105,9 +105,10 @@ fn test_id3v2_tag() {
 	}
 }
 
+// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
+#[ignore]
 fn test_save_id3v23() {
-	todo!("Support writing ID3v2.3")
 	// let mut file = temp_file!("tests/taglib/data/empty.wav");
 	//
 	// let xxx = "X".repeat(254);
