@@ -160,6 +160,7 @@ pub mod flac;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
+mod math;
 pub mod mp4;
 pub mod mpeg;
 pub mod musepack;

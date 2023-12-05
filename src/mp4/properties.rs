@@ -2,6 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
+use crate::math::RoundedDivision;
 use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
@@ -302,7 +303,8 @@ where
 		(timescale, u64::from(duration))
 	};
 
-	let duration = Duration::from_millis(duration * 1000 / u64::from(timescale));
+	let duration_millis = (duration * 1000).div_round(u64::from(timescale));
+	let duration = Duration::from_millis(duration_millis);
 
 	// We create the properties here, since it is possible the other information isn't available
 	let mut properties = Mp4Properties {
