@@ -648,7 +648,7 @@ where
 		return Ok(());
 	};
 
-	if dfla.ident != AtomIdent::Fourcc(*b"dfla") {
+	if dfla.ident != AtomIdent::Fourcc(*b"dfLa") {
 		return Ok(());
 	}
 
@@ -670,6 +670,8 @@ where
 	properties.sample_rate = flac_properties.sample_rate;
 	properties.bit_depth = Some(flac_properties.bit_depth);
 	properties.channels = flac_properties.channels;
+
+	// Bitrate values are calculated later...
 
 	Ok(())
 }
