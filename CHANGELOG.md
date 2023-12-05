@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
+- **MP4**: Duration milliseconds are now rounded to the nearest whole number ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
+
+### Fixed
+- **MP4**: The `dfLa` atom for FLAC streams will now be found, providing better properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
 
 ## [0.17.1] - 2023-11-26
 
