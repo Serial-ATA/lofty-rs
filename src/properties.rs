@@ -272,7 +272,7 @@ mod tests {
 		codec: Mp4Codec::FLAC,
 		extended_audio_object_type: None,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 280, // TODO: FFmpeg reports 279
+		overall_bitrate: 280,
 		audio_bitrate: 275,
 		sample_rate: 48000,
 		bit_depth: Some(16),
