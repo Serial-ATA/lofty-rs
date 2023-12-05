@@ -312,75 +312,81 @@ where
 		..Mp4Properties::default()
 	};
 
-	if let Some(minf) = minf {
-		reader.seek(SeekFrom::Start(minf.start + 8))?;
+	let Some(minf) = minf else {
+		return Ok(properties);
+	};
 
-		if let Some(stbl) = nested_atom(reader, minf.len, b"stbl", parse_mode)? {
-			if let Some(stsd) = nested_atom(reader, stbl.len, b"stsd", parse_mode)? {
-				let mut stsd = try_vec![0; (stsd.len - 8) as usize];
-				reader.read_exact(&mut stsd)?;
+	reader.seek(SeekFrom::Start(minf.start + 8))?;
 
-				let mut cursor = Cursor::new(&*stsd);
+	let Some(stbl) = nested_atom(reader, minf.len, b"stbl", parse_mode)? else {
+		return Ok(properties);
+	};
 
-				let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
+	let Some(stsd) = nested_atom(reader, stbl.len, b"stsd", parse_mode)? else {
+		return Ok(properties);
+	};
 
-				// Skipping 4 bytes
-				// Version (1)
-				// Flags (3)
-				stsd_reader.seek(SeekFrom::Current(4))?;
-				let num_sample_entries = stsd_reader.read_u32()?;
+	let mut stsd = try_vec![0; (stsd.len - 8) as usize];
+	reader.read_exact(&mut stsd)?;
 
-				for _ in 0..num_sample_entries {
-					let Some(atom) = stsd_reader.next()? else {
-						err!(BadAtom("Expected sample entry atom in `stsd` atom"))
-					};
+	let mut cursor = Cursor::new(&*stsd);
 
-					let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
-						err!(BadAtom("Expected fourcc atom in `stsd` atom"))
-					};
+	let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
 
-					match fourcc {
-						b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
-						b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
-						b"fLaC" => flac_properties(&mut stsd_reader, &mut properties)?,
-						// Maybe do these?
-						// TODO: dops (opus)
-						// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
+	// Skipping 4 bytes
+	// Version (1)
+	// Flags (3)
+	stsd_reader.seek(SeekFrom::Current(4))?;
+	let num_sample_entries = stsd_reader.read_u32()?;
 
-						// Special case to detect encrypted files
-						b"drms" => {
-							properties.drm_protected = true;
-							skip_unneeded(reader, atom.extended, atom.len)?;
-							continue;
-						},
-						_ => {
-							log::warn!(
-								"Found unsupported sample entry: {:?}",
-								fourcc.escape_ascii().to_string()
-							);
-							skip_unneeded(reader, atom.extended, atom.len)?;
-							continue;
-						},
-					}
+	for _ in 0..num_sample_entries {
+		let Some(atom) = stsd_reader.next()? else {
+			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
+		};
 
-					// We do the mdat check up here, so we have access to the entire file
-					let duration_millis = properties.duration.as_millis();
-					if duration_millis > 0 {
-						let overall_bitrate = u128::from(file_length * 8) / duration_millis;
-						properties.overall_bitrate = overall_bitrate as u32;
+		let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
+			err!(BadAtom("Expected fourcc atom in `stsd` atom"))
+		};
 
-						if properties.audio_bitrate == 0 {
-							properties.audio_bitrate =
-								(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
-						}
-					}
+		match fourcc {
+			b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
+			b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
+			b"fLaC" => flac_properties(&mut stsd_reader, &mut properties)?,
+			// Maybe do these?
+			// TODO: dops (opus)
+			// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
 
-					// We only want to read the properties of the first stream
-					// that we can actually recognize
-					break;
-				}
+			// Special case to detect encrypted files
+			b"drms" => {
+				properties.drm_protected = true;
+				skip_unneeded(reader, atom.extended, atom.len)?;
+				continue;
+			},
+			_ => {
+				log::warn!(
+					"Found unsupported sample entry: {:?}",
+					fourcc.escape_ascii().to_string()
+				);
+				skip_unneeded(reader, atom.extended, atom.len)?;
+				continue;
+			},
+		}
+
+		// We do the mdat check up here, so we have access to the entire file
+		let duration_millis = properties.duration.as_millis();
+		if duration_millis > 0 {
+			let overall_bitrate = u128::from(file_length * 8) / duration_millis;
+			properties.overall_bitrate = overall_bitrate as u32;
+
+			if properties.audio_bitrate == 0 {
+				properties.audio_bitrate =
+					(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
 			}
 		}
+
+		// We only want to read the properties of the first stream
+		// that we can actually recognize
+		break;
 	}
 
 	Ok(properties)
