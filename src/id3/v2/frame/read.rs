@@ -53,6 +53,15 @@ impl<'a> ParsedFrame<'a> {
 			},
 		};
 
+		if size == 0 {
+			if parse_mode == ParsingMode::Strict {
+				return Err(Id3v2Error::new(Id3v2ErrorKind::EmptyFrame(id)).into());
+			}
+
+			log::debug!("Encountered a zero length frame, skipping");
+			return Ok(Self::Skip { size });
+		}
+
 		// Get the encryption method symbol
 		if let Some(enc) = flags.encryption.as_mut() {
 			if size < 1 {
