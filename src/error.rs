@@ -4,6 +4,7 @@
 //! which can be extended at any time.
 
 use crate::file::FileType;
+use crate::id3::v2::FrameId;
 use crate::tag::item::ItemKey;
 
 use std::collections::TryReserveError;
@@ -93,6 +94,8 @@ pub enum Id3v2ErrorKind {
 	UnsupportedFrameId(ItemKey),
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
+	/// Arises when a frame with no content is parsed with [ParsingMode::Strict](crate::probe::ParsingMode::Strict)
+	EmptyFrame(FrameId<'static>),
 	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
 	MissingDataLengthIndicator,
 	/// Arises when a frame or tag has its unsynchronisation flag set, but the content is not actually synchsafe
@@ -152,6 +155,7 @@ impl Display for Id3v2ErrorKind {
 				f,
 				"Frame isn't long enough to extract the necessary information"
 			),
+			Self::EmptyFrame(id) => write!(f, "Frame `{id}` is empty"),
 			Self::MissingDataLengthIndicator => write!(
 				f,
 				"Encountered an encrypted frame without a data length indicator"
