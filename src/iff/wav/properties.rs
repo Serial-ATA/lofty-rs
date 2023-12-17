@@ -172,7 +172,7 @@ pub(super) fn read_properties(
 			(Duration::ZERO, 0, 0)
 		} else {
 			let overall_bitrate = ((file_length * 8) / length) as u32;
-			let audio_bitrate = (u64::from(stream_len * 8) / length) as u32;
+			let audio_bitrate = ((u64::from(stream_len) * 8) / length) as u32;
 
 			(
 				Duration::from_millis(length),
