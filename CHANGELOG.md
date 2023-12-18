@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **MP4**: Check if audio streams are DRM protected, exposed as `Mp4Properties::is_drm_protected()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/297))
-- **ID3v2**: Add `Id3v2ErrorKind::EmptyFrame` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
+- **ID3v2**:
+  - Add `Id3v2ErrorKind::EmptyFrame` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
+  - Support converting some TIPL frame values into generic `TagItem`s ([PR](https://github.com/Serial-ATA/lofty-rs/pull/301))
+    - Supported TIPL keys are: "producer", "arranger", "engineer", "DJ-mix", "mix".
 
 ### Changed
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
@@ -17,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **MP4**: The `dfLa` atom for FLAC streams will now be found, providing better properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
+
+### Removed
+- **ItemKey**: `ItemKey::InvolvedPeople`
 
 ## [0.17.1] - 2023-11-26
 
