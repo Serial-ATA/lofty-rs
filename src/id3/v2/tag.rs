@@ -8,9 +8,11 @@ use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, TextInformationFrame,
 	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
+use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{
 	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
 };
+use crate::id3::v2::KeyValueFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
@@ -416,6 +418,13 @@ impl Id3v2Tag {
 		}
 
 		self.frames.drain(..split_idx)
+	}
+
+	fn take_first(&mut self, id: &FrameId<'_>) -> Option<Frame<'static>> {
+		self.frames
+			.iter()
+			.position(|f| &f.id == id)
+			.map(|pos| self.frames.remove(pos))
 	}
 
 	/// Retains [`Frame`]s by evaluating the predicate
@@ -1008,6 +1017,28 @@ impl SplitTag for Id3v2Tag {
 					}
 					false // Frame consumed
 				},
+				(
+					"TIPL",
+					FrameValue::KeyValue(KeyValueFrame {
+						key_value_pairs, ..
+					}),
+				) => {
+					key_value_pairs.retain_mut(|(key, value)| {
+						for (item_key, tipl_key) in TIPL_MAPPINGS.iter() {
+							if key == *tipl_key {
+								tag.items.push(TagItem::new(
+									item_key.clone(),
+									ItemValue::Text(core::mem::take(value)),
+								));
+								return false; // This key-value pair is consumed
+							}
+						}
+
+						true // Keep key-value pair
+					});
+
+					!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
+				},
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 				(
 					"TXXX",
@@ -1207,10 +1238,8 @@ impl MergeTag for SplitTagRemainder {
 			&ItemKey::Conductor,
 			&ItemKey::Writer,
 			&ItemKey::Director,
-			&ItemKey::InvolvedPeople,
 			&ItemKey::Lyricist,
 			&ItemKey::MusicianCredits,
-			&ItemKey::Producer,
 			&ItemKey::InternetRadioStationName,
 			&ItemKey::InternetRadioStationOwner,
 			&ItemKey::Remixer,
@@ -1264,6 +1293,45 @@ impl MergeTag for SplitTagRemainder {
 			debug_assert!(!merged.frames.contains(&frame));
 			merged.frames.push(frame);
 		};
+
+		// TIPL key-value mappings
+		'tipl: {
+			let mut key_value_pairs = Vec::new();
+			for (item_key, tipl_key) in TIPL_MAPPINGS {
+				for value in tag.take_strings(item_key) {
+					key_value_pairs.push(((*tipl_key).to_string(), value));
+				}
+			}
+
+			if key_value_pairs.is_empty() {
+				break 'tipl;
+			}
+
+			// Check for an existing TIPL frame, and simply extend the existing list
+			// to retain the current `TextEncoding` and `FrameFlags`.
+			let existing_tipl = merged.take_first(&FrameId::Valid(Cow::Borrowed("TIPL")));
+			if let Some(mut tipl_frame) = existing_tipl {
+				if let FrameValue::KeyValue(KeyValueFrame {
+					key_value_pairs: ref mut existing,
+					..
+				}) = &mut tipl_frame.value
+				{
+					existing.extend(key_value_pairs);
+				}
+
+				merged.frames.push(tipl_frame);
+				break 'tipl;
+			}
+
+			merged.frames.push(Frame {
+				id: FrameId::Valid(Cow::Borrowed("TIPL")),
+				value: FrameValue::KeyValue(KeyValueFrame {
+					key_value_pairs,
+					encoding: TextEncoding::UTF8,
+				}),
+				flags: FrameFlags::default(),
+			});
+		}
 
 		// Insert all remaining items as single frames and deduplicate as needed
 		for item in tag.items {
@@ -1376,10 +1444,11 @@ mod tests {
 	use crate::id3::v2::header::{Id3v2Header, Id3v2Version};
 	use crate::id3::v2::items::{ExtendedUrlFrame, Popularimeter, UniqueFileIdentifierFrame};
 	use crate::id3::v2::tag::{filter_comment_frame_by_description, new_text_frame};
+	use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::id3::v2::{
 		AttachedPictureFrame, CommentFrame, ExtendedTextFrame, Frame, FrameFlags, FrameId,
-		FrameValue, Id3v2Tag, TextInformationFrame, UrlLinkFrame,
+		FrameValue, Id3v2Tag, KeyValueFrame, TextInformationFrame, UrlLinkFrame,
 	};
 	use crate::tag::utils::test_utils::read_path;
 	use crate::util::text::TextEncoding;
@@ -2648,5 +2717,63 @@ mod tests {
 		assert_eq!(genres.next(), Some("Remix"));
 		assert_eq!(genres.next(), Some("Cover"));
 		assert_eq!(genres.next(), None);
+	}
+
+	#[test]
+	fn tipl_round_trip() {
+		let mut tag = Id3v2Tag::default();
+		let mut tipl = KeyValueFrame {
+			encoding: TextEncoding::UTF8,
+			key_value_pairs: Vec::new(),
+		};
+
+		// Add all supported keys
+		for (_, key) in TIPL_MAPPINGS {
+			tipl.key_value_pairs
+				.push((String::from(*key), String::from("Serial-ATA")));
+		}
+
+		// Add one unsupported key
+		tipl.key_value_pairs
+			.push((String::from("Foo"), String::from("Bar")));
+
+		tag.insert(
+			Frame::new(
+				"TIPL",
+				FrameValue::KeyValue(tipl.clone()),
+				FrameFlags::default(),
+			)
+			.unwrap(),
+		);
+
+		let (split_remainder, split_tag) = tag.split_tag();
+		assert_eq!(split_remainder.0.len(), 1); // "Foo" is not supported
+		assert_eq!(split_tag.len(), TIPL_MAPPINGS.len()); // All supported keys are present
+
+		for (item_key, _) in TIPL_MAPPINGS {
+			assert_eq!(
+				split_tag
+					.get(item_key)
+					.map(TagItem::value)
+					.and_then(ItemValue::text),
+				Some("Serial-ATA")
+			);
+		}
+
+		let mut id3v2 = split_remainder.merge_tag(split_tag);
+		assert_eq!(id3v2.frames.len(), 1);
+		match &mut id3v2.frames[..] {
+			[Frame {
+				id: _,
+				value: FrameValue::KeyValue(tipl2),
+				flags: _,
+			}] => {
+				// Order will not be the same, so we have to sort first
+				tipl.key_value_pairs.sort();
+				tipl2.key_value_pairs.sort();
+				assert_eq!(tipl, *tipl2);
+			},
+			_ => unreachable!(),
+		}
 	}
 }
