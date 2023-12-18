@@ -159,6 +159,7 @@ pub(crate) mod file;
 pub mod flac;
 pub mod id3;
 pub mod iff;
+pub(crate) mod io_traits;
 pub(crate) mod macros;
 mod math;
 pub mod mp4;
@@ -175,18 +176,19 @@ mod util;
 pub mod wavpack;
 
 pub use crate::error::{LoftyError, Result};
+pub use crate::io_traits::{FileLike, Length, Truncate};
 
 pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
 
 pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::properties::{ChannelMask, FileProperties};
+pub use crate::tag::item::{ItemKey, ItemValue, TagItem};
 pub use crate::tag::{Tag, TagType};
-pub use tag::item::{ItemKey, ItemValue, TagItem};
-pub use util::text::TextEncoding;
+pub use crate::util::text::TextEncoding;
 
 pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
-pub use picture::PictureInformation;
+pub use crate::picture::PictureInformation;
 
 pub use lofty_attr::LoftyFile;

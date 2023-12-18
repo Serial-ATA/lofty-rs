@@ -2,10 +2,10 @@
 // Reference Conversions
 // *********************
 
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
 
-use std::fs::File;
 use std::io::Write;
 
 impl Ilst {
@@ -24,7 +24,12 @@ impl<'a, I: 'a> IlstRef<'a, I>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		super::write::write_to(file, self)
 	}
 

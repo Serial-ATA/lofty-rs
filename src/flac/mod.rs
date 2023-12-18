@@ -9,21 +9,18 @@ pub(crate) mod properties;
 mod read;
 pub(crate) mod write;
 
-use crate::error::Result;
+use crate::error::{LoftyError, Result};
 use crate::file::{FileType, TaggedFile};
 use crate::id3::v2::tag::Id3v2Tag;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
 use crate::traits::TagExt;
 
-use std::fs::File;
-use std::io::Seek;
-
 use lofty_attr::LoftyFile;
 
 // Exports
-
 pub use properties::FlacProperties;
 
 /// A FLAC file
@@ -55,7 +52,12 @@ pub struct FlacFile {
 
 impl FlacFile {
 	// We need a special write fn to append our pictures into a `VorbisComments` tag
-	fn write_to(&self, file: &mut File) -> Result<()> {
+	fn write_to<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		if let Some(ref id3v2) = self.id3v2_tag {
 			id3v2.save_to(file)?;
 			file.rewind()?;

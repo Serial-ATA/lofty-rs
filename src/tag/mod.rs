@@ -3,6 +3,7 @@ pub(crate) mod utils;
 
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
@@ -10,7 +11,7 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 
@@ -525,6 +526,11 @@ impl TagExt for Tag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		self.tag_type
+	}
+
 	fn len(&self) -> usize {
 		self.items.len() + self.pictures.len()
 	}
@@ -537,13 +543,18 @@ impl TagExt for Tag {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Save the `Tag` to a [`File`](std::fs::File)
+	/// Save the `Tag` to a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
 	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
 	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 
 		match probe.file_type() {
@@ -571,12 +582,17 @@ impl TagExt for Tag {
 		self.tag_type.remove_from_path(path)
 	}
 
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
 	/// See [`TagType::remove_from`]
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		self.tag_type.remove_from(file)
 	}
 
@@ -637,14 +653,19 @@ impl TagType {
 	}
 
 	#[allow(clippy::shadow_unrelated)]
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`](crate::FileLike)
 	///
 	/// # Errors
 	///
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	pub fn remove_from(&self, file: &mut File) -> Result<()> {
+	pub fn remove_from<F>(&self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 		let file_type = match probe.file_type() {
 			Some(f_ty) => f_ty,

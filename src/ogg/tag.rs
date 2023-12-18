@@ -1,5 +1,6 @@
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
+use crate::io_traits::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
@@ -10,10 +11,8 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -432,6 +431,11 @@ impl TagExt for VorbisComments {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::VorbisComments
+	}
+
 	fn len(&self) -> usize {
 		self.items.len() + self.pictures.len()
 	}
@@ -454,7 +458,12 @@ impl TagExt for VorbisComments {
 	/// * The file does not contain valid packets
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
@@ -479,14 +488,6 @@ impl TagExt for VorbisComments {
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
 		.dump_to(writer)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::VorbisComments.remove_from_path(path)
-	}
-
-	fn remove_from(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		TagType::VorbisComments.remove_from(file)
 	}
 
 	fn clear(&mut self) {
@@ -626,7 +627,12 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	#[allow(clippy::shadow_unrelated)]
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to<F>(&mut self, file: &mut F) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		let probe = Probe::new(file).guess_file_type()?;
 		let f_ty = probe.file_type();
 

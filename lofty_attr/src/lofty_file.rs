@@ -343,7 +343,12 @@ fn generate_audiofile_impl(
 				#read_fn(reader, parse_options)
 			}
 
-			fn save_to(&self, file: &mut ::std::fs::File) -> ::lofty::error::Result<()> {
+			fn save_to<F>(&self, file: &mut F) -> ::lofty::error::Result<()>
+			where
+				F: ::lofty::FileLike,
+				::lofty::LoftyError: ::std::convert::From<<F as ::lofty::Truncate>::Error>,
+				::lofty::LoftyError: ::std::convert::From<<F as ::lofty::Length>::Error>,
+			{
 				use ::lofty::TagExt as _;
 				use ::std::io::Seek as _;
 				#save_to_body
