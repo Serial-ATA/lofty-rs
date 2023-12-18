@@ -609,20 +609,22 @@ impl MergeTag for SplitTagRemainder {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TagType {
+	/// Represents AIFF text chunks
+	AiffText,
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,
+	/// Represents an EBML tag element
+	Ebml,
 	/// Represents an ID3v1 tag
 	Id3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
 	/// Represents an MP4 ilst atom
 	Mp4Ilst,
-	/// Represents vorbis comments
-	VorbisComments,
 	/// Represents a RIFF INFO LIST
 	RiffInfo,
-	/// Represents AIFF text chunks
-	AiffText,
+	/// Represents vorbis comments
+	VorbisComments,
 }
 
 impl TagType {

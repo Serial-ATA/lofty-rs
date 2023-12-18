@@ -717,6 +717,7 @@ pub enum FileType {
 	Aac,
 	Aiff,
 	Ape,
+	Ebml,
 	Flac,
 	Mpeg,
 	Mp4,
@@ -755,6 +756,7 @@ impl FileType {
 		match self {
 			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
+			FileType::Ebml => TagType::Ebml,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
@@ -791,13 +793,14 @@ impl FileType {
 		}
 
 		match tag_type {
+			TagType::AiffText => crate::iff::aiff::AIFFTextChunks::SUPPORTED_FORMATS.contains(self),
 			TagType::Ape => crate::ape::ApeTag::SUPPORTED_FORMATS.contains(self),
+			TagType::Ebml => crate::ebml::EbmlTag::SUPPORTED_FORMATS.contains(self),
 			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::SUPPORTED_FORMATS.contains(self),
 			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::SUPPORTED_FORMATS.contains(self),
 			TagType::Mp4Ilst => crate::mp4::Ilst::SUPPORTED_FORMATS.contains(self),
-			TagType::VorbisComments => crate::ogg::VorbisComments::SUPPORTED_FORMATS.contains(self),
 			TagType::RiffInfo => crate::iff::wav::RIFFInfoList::SUPPORTED_FORMATS.contains(self),
-			TagType::AiffText => crate::iff::aiff::AIFFTextChunks::SUPPORTED_FORMATS.contains(self),
+			TagType::VorbisComments => crate::ogg::VorbisComments::SUPPORTED_FORMATS.contains(self),
 		}
 	}
 
@@ -827,6 +830,7 @@ impl FileType {
 			"opus" => Some(Self::Opus),
 			"flac" => Some(Self::Flac),
 			"ogg" => Some(Self::Vorbis),
+			"mka" | "mkv" | "webm" => Some(Self::Ebml),
 			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::Mp4),
 			"mpc" | "mp+" | "mpp" => Some(Self::Mpc),
 			"spx" => Some(Self::Speex),
@@ -1005,6 +1009,7 @@ impl FileType {
 				None
 			},
 			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
+			26 if buf.starts_with(&[0x1A, 0x45, 0xDF, 0xA3]) => Some(Self::Ebml),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::Mp4),
 			_ if buf.starts_with(b"MPCK") || buf.starts_with(b"MP+") => Some(Self::Mpc),
 			_ => None,
