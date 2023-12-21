@@ -29,15 +29,7 @@ macro_rules! gen_map {
 	($(#[$meta:meta])? $NAME:ident; $($($key:literal)|+ => $variant:ident),+) => {
 		paste::paste! {
 			$(#[$meta])?
-			static [<$NAME _INNER>]: once_cell::sync::Lazy<HashMap<&'static str, ItemKey>> = once_cell::sync::Lazy::new(|| {
-				let mut map = HashMap::new();
-				$(
-					$(
-						map.insert($key, ItemKey::$variant);
-					)+
-				)+
-				map
-			});
+			static [<$NAME _INNER>]: std::sync::OnceLock<HashMap<&'static str, ItemKey>> = std::sync::OnceLock::new();
 
 			$(#[$meta])?
 			#[allow(non_camel_case_types)]
@@ -46,7 +38,15 @@ macro_rules! gen_map {
 			$(#[$meta])?
 			impl $NAME {
 				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
-					[<$NAME _INNER>].iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
+					[<$NAME _INNER>].get_or_init(|| {
+						let mut map = HashMap::new();
+						$(
+							$(
+								map.insert($key, ItemKey::$variant);
+							)+
+						)+
+						map
+					}).iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
 				}
 
 				pub(crate) fn get_key(&self, item_key: &ItemKey) -> Option<&str> {
