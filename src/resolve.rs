@@ -35,10 +35,9 @@ pub trait FileResolver: Send + Sync + AudioFile {
 // Just broken out to its own type to make `CUSTOM_RESOLVER`'s type shorter :)
 type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
 
-static CUSTOM_RESOLVERS: OnceLock<Arc<Mutex<ResolverMap>>> = OnceLock::new();
-
 pub(crate) fn custom_resolvers() -> &'static Arc<Mutex<ResolverMap>> {
-	CUSTOM_RESOLVERS.get_or_init(Default::default)
+	static INSTANCE: OnceLock<Arc<Mutex<ResolverMap>>> = OnceLock::new();
+	INSTANCE.get_or_init(Default::default)
 }
 
 pub(crate) fn lookup_resolver(name: &'static str) -> &'static dyn ObjectSafeFileResolver {
@@ -115,10 +114,7 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 /// * Attempting to register an existing name or type
 /// * See [`Mutex::lock`]
 pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
-	let mut res = CUSTOM_RESOLVERS
-		.get_or_init(Default::default)
-		.lock()
-		.unwrap();
+	let mut res = custom_resolvers().lock().unwrap();
 	assert!(
 		res.iter().all(|(n, _)| *n != name),
 		"Resolver `{}` already exists!",

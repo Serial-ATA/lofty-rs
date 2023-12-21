@@ -38,10 +38,9 @@ macro_rules! gen_upgrades {
     (V2 => [$($($v2_key:literal)|* => $id3v24_from_v2:literal),+]; V3 => [$($($v3_key:literal)|* => $id3v24_from_v3:literal),+]) => {
 		use std::sync::OnceLock;
 
-		static V2KEYS: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-
 		fn v2keys() -> &'static HashMap<&'static str, &'static str> {
-			V2KEYS.get_or_init(|| {
+			static INSTANCE: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+			INSTANCE.get_or_init(|| {
 				let mut map = HashMap::new();
 				$(
 					$(
@@ -52,10 +51,9 @@ macro_rules! gen_upgrades {
 			})
 		}
 
-		static V3KEYS: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-
 		fn v3keys() -> &'static HashMap<&'static str, &'static str> {
-			V3KEYS.get_or_init(|| {
+			static INSTANCE: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+			INSTANCE.get_or_init(|| {
 				let mut map = HashMap::new();
 				$(
 					$(

@@ -29,16 +29,14 @@ macro_rules! gen_map {
 	($(#[$meta:meta])? $NAME:ident; $($($key:literal)|+ => $variant:ident),+) => {
 		paste::paste! {
 			$(#[$meta])?
-			static [<$NAME _INNER>]: std::sync::OnceLock<HashMap<&'static str, ItemKey>> = std::sync::OnceLock::new();
-
-			$(#[$meta])?
 			#[allow(non_camel_case_types)]
 			struct $NAME;
 
 			$(#[$meta])?
 			impl $NAME {
 				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
-					[<$NAME _INNER>].get_or_init(|| {
+					static INSTANCE: std::sync::OnceLock<HashMap<&'static str, ItemKey>> = std::sync::OnceLock::new();
+					INSTANCE.get_or_init(|| {
 						let mut map = HashMap::new();
 						$(
 							$(

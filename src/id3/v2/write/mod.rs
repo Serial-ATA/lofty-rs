@@ -19,11 +19,10 @@ use std::sync::OnceLock;
 
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
-static CRC_32_TABLE: OnceLock<[u32; 256]> = OnceLock::new();
-
 // In the very rare chance someone wants to write a CRC in their extended header
 fn crc_32_table() -> &'static [u32; 256] {
-	CRC_32_TABLE.get_or_init(|| {
+	static INSTANCE: OnceLock<[u32; 256]> = OnceLock::new();
+	INSTANCE.get_or_init(|| {
 		let mut crc32_table = [0; 256];
 
 		for n in 0..256 {
