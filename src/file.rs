@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
-use crate::resolve::CUSTOM_RESOLVERS;
+use crate::resolve::custom_resolvers;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
 
@@ -831,7 +831,7 @@ impl FileType {
 			"mpc" | "mp+" | "mpp" => Some(Self::Mpc),
 			"spx" => Some(Self::Speex),
 			e => {
-				if let Some((ty, _)) = CUSTOM_RESOLVERS
+				if let Some((ty, _)) = custom_resolvers()
 					.lock()
 					.ok()?
 					.iter()

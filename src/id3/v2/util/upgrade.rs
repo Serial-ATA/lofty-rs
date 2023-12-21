@@ -15,7 +15,7 @@ use std::collections::HashMap;
 /// assert_eq!(new_title, Some("TIT2"));
 /// ```
 pub fn upgrade_v2(key: &str) -> Option<&'static str> {
-	V2KEYS.get(key).copied()
+	v2keys().get(key).copied()
 }
 
 /// Upgrade an ID3v2.3 key to an ID3v2.4 key
@@ -31,33 +31,41 @@ pub fn upgrade_v2(key: &str) -> Option<&'static str> {
 /// assert_eq!(new_involved_people_list, Some("TIPL"));
 /// ```
 pub fn upgrade_v3(key: &str) -> Option<&'static str> {
-	V3KEYS.get(key).copied()
+	v3keys().get(key).copied()
 }
 
 macro_rules! gen_upgrades {
     (V2 => [$($($v2_key:literal)|* => $id3v24_from_v2:literal),+]; V3 => [$($($v3_key:literal)|* => $id3v24_from_v3:literal),+]) => {
-		use once_cell::sync::Lazy;
+		use std::sync::OnceLock;
 
-		static V2KEYS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
-			let mut map = HashMap::new();
-			$(
-				$(
-					map.insert($v2_key, $id3v24_from_v2);
-				)+
-			)+
-			map
-		});
+		static V2KEYS: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
 
-		static V3KEYS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
-			let mut map = HashMap::new();
-			$(
+		fn v2keys() -> &'static HashMap<&'static str, &'static str> {
+			V2KEYS.get_or_init(|| {
+				let mut map = HashMap::new();
 				$(
-					map.insert($v3_key, $id3v24_from_v3);
+					$(
+						map.insert($v2_key, $id3v24_from_v2);
+					)+
 				)+
-			)+
-			map
-		});
-    }
+				map
+			})
+		}
+
+		static V3KEYS: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+
+		fn v3keys() -> &'static HashMap<&'static str, &'static str> {
+			V3KEYS.get_or_init(|| {
+				let mut map = HashMap::new();
+				$(
+					$(
+						map.insert($v3_key, $id3v24_from_v3);
+					)+
+				)+
+				map
+			})
+		}
+	};
 }
 
 gen_upgrades!(
