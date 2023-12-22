@@ -13,18 +13,18 @@ include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_
 
 [dependencies]
 # Vorbis comments pictures
-base64     = "0.21.5"
-byteorder  = "1.5.0"
+data-encoding = "2.5.0"
+byteorder     = "1.5.0"
 # ID3 compressed frames
-flate2     = { version = "1.0.28", optional = true }
+flate2        = { version = "1.0.28", optional = true }
 # Proc macros
-lofty_attr = "0.9.0"
+lofty_attr    = "0.9.0"
 # Debug logging
-log        = "0.4.20"
+log           = "0.4.20"
 # OGG Vorbis/Opus
-ogg_pager  = "0.5.0"
+ogg_pager     = "0.5.0"
 # Key maps
-paste      = "1.0.14"
+paste         = "1.0.14"
 
 [features]
 default                   = ["id3v2_compression_support"]
