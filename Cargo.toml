@@ -10,7 +10,6 @@ keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
 categories  = ["multimedia", "multimedia::audio", "parser-implementations"]
 readme      = "README.md"
 include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_FORMATS.md"]
-rust        = "1.70.0"
 
 [dependencies]
 # Vorbis comments pictures
