@@ -60,6 +60,13 @@ const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
 	bom: [0, 0],
 };
 
+/// Specify how to decode the provided text
+///
+/// By default, this will:
+///
+/// * Use [`TextEncoding::UTF8`] as the encoding
+/// * Not expect the text to be null terminated
+/// * Have no byte order mark
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct TextDecodeOptions {
 	pub encoding: TextEncoding,
