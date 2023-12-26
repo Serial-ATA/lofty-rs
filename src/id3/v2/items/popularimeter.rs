@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -36,7 +36,12 @@ impl Popularimeter {
 	where
 		R: Read,
 	{
-		let email = decode_text(reader, TextEncoding::Latin1, true)?;
+		let email = decode_text(
+			reader,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?;
 		let rating = reader.read_u8()?;
 
 		let mut counter_content = Vec::new();

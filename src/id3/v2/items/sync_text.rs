@@ -1,7 +1,8 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::macros::err;
 use crate::util::text::{
-	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextEncoding,
+	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextDecodeOptions,
+	TextEncoding,
 };
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -106,9 +107,12 @@ impl SynchronizedText {
 			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
 		let mut cursor = Cursor::new(&data[6..]);
-		let description = crate::util::text::decode_text(&mut cursor, encoding, true)
-			.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
-			.text_or_none();
+		let description = crate::util::text::decode_text(
+			&mut cursor,
+			TextDecodeOptions::new().encoding(encoding).terminated(true),
+		)
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
+		.text_or_none();
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
 
@@ -154,8 +158,11 @@ impl SynchronizedText {
 					}
 				}
 
-				let decoded_text = decode_text(&mut cursor, encoding, true)
-					.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
+				let decoded_text = decode_text(
+					&mut cursor,
+					TextDecodeOptions::new().encoding(encoding).terminated(true),
+				)
+				.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 				pos += decoded_text.bytes_read as u64;
 
 				Ok(decoded_text.content)

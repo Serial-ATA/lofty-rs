@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 
@@ -96,11 +96,21 @@ impl AudioTextFrame {
 		let encoding = TextEncoding::from_u8(content.read_u8()?)
 			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
 
-		let mime_type = decode_text(content, TextEncoding::Latin1, true)?.content;
+		let mime_type = decode_text(
+			content,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?
+		.content;
 
 		let flags = AudioTextFrameFlags::from_u8(content.read_u8()?);
 
-		let equivalent_text = decode_text(content, encoding, true)?.content;
+		let equivalent_text = decode_text(
+			content,
+			TextDecodeOptions::new().encoding(encoding).terminated(true),
+		)?
+		.content;
 
 		Ok(Self {
 			encoding,

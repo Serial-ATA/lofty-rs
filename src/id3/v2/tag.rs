@@ -17,7 +17,7 @@ use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::util::text::{decode_text, TextEncoding};
+use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::convert::TryInto;
@@ -1084,9 +1084,10 @@ impl SplitTag for Id3v2Tag {
 				) => {
 					if owner == MUSICBRAINZ_UFID_OWNER {
 						let mut identifier = Cursor::new(identifier);
-						let Ok(recording_id) =
-							decode_text(&mut identifier, TextEncoding::Latin1, false)
-						else {
+						let Ok(recording_id) = decode_text(
+							&mut identifier,
+							TextDecodeOptions::new().encoding(TextEncoding::Latin1),
+						) else {
 							return true; // Keep frame
 						};
 						tag.items.push(TagItem::new(

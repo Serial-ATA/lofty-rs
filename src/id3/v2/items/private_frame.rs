@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::io::Read;
 
@@ -28,7 +28,12 @@ impl PrivateFrame {
 	where
 		R: Read,
 	{
-		let Ok(owner) = decode_text(reader, TextEncoding::Latin1, true) else {
+		let Ok(owner) = decode_text(
+			reader,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		) else {
 			return Ok(None);
 		};
 

@@ -2,7 +2,7 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::header::Id3v2Version;
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
-use crate::util::text::{encode_text, TextEncoding};
+use crate::util::text::{encode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
@@ -58,16 +58,24 @@ impl AttachedPictureFrame {
 				},
 			}
 		} else {
-			let mime_type_str =
-				crate::util::text::decode_text(reader, TextEncoding::UTF8, true)?.text_or_none();
+			let mime_type_str = crate::util::text::decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			)?
+			.text_or_none();
 			mime_type = mime_type_str.map(|mime_type_str| MimeType::from_str(&mime_type_str));
 		};
 
 		let pic_type = PictureType::from_u8(reader.read_u8()?);
 
-		let description = crate::util::text::decode_text(reader, encoding, true)?
-			.text_or_none()
-			.map(Cow::from);
+		let description = crate::util::text::decode_text(
+			reader,
+			TextDecodeOptions::new().encoding(encoding).terminated(true),
+		)?
+		.text_or_none()
+		.map(Cow::from);
 
 		let mut data = Vec::new();
 		reader.read_to_end(&mut data)?;

@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use byteorder::ReadBytesExt;
 
@@ -40,9 +40,28 @@ impl KeyValueFrame {
 
 		let mut values = Vec::new();
 
+		let mut text_decode_options = TextDecodeOptions::new().encoding(encoding).terminated(true);
+
+		// We have to read the first key/value pair separately because it may be the only string with a BOM
+
+		let first_key = decode_text(reader, text_decode_options)?;
+
+		if first_key.bytes_read == 0 {
+			return Ok(None);
+		}
+
+		if encoding == TextEncoding::UTF16 {
+			text_decode_options = text_decode_options.bom(first_key.bom);
+		}
+
+		values.push((
+			first_key.content,
+			decode_text(reader, text_decode_options)?.content,
+		));
+
 		loop {
-			let key = decode_text(reader, encoding, true)?;
-			let value = decode_text(reader, encoding, true)?;
+			let key = decode_text(reader, text_decode_options)?;
+			let value = decode_text(reader, text_decode_options)?;
 			if key.bytes_read == 0 || value.bytes_read == 0 {
 				break;
 			}

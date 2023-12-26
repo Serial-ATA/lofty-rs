@@ -1,5 +1,5 @@
 use crate::error::Result;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::io::Read;
 
@@ -19,7 +19,12 @@ impl UrlLinkFrame {
 	where
 		R: Read,
 	{
-		let url = decode_text(reader, TextEncoding::Latin1, true)?;
+		let url = decode_text(
+			reader,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?;
 		if url.bytes_read == 0 {
 			return Ok(None);
 		}
