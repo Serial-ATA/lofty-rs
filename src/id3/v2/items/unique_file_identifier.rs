@@ -1,7 +1,7 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::macros::parse_mode_choice;
 use crate::probe::ParsingMode;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::hash::{Hash, Hasher};
 use std::io::Read;
@@ -25,7 +25,12 @@ impl UniqueFileIdentifierFrame {
 	where
 		R: Read,
 	{
-		let owner_decode_result = decode_text(reader, TextEncoding::Latin1, true)?;
+		let owner_decode_result = decode_text(
+			reader,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?;
 
 		let owner;
 		match owner_decode_result.text_or_none() {

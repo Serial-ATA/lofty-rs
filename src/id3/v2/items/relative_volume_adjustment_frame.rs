@@ -1,7 +1,7 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::macros::try_vec;
 use crate::probe::ParsingMode;
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -110,7 +110,13 @@ impl RelativeVolumeAdjustmentFrame {
 	where
 		R: Read,
 	{
-		let identification = decode_text(reader, TextEncoding::Latin1, true)?.content;
+		let identification = decode_text(
+			reader,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?
+		.content;
 
 		let mut channels = HashMap::new();
 		while let Ok(channel_type_byte) = reader.read_u8() {

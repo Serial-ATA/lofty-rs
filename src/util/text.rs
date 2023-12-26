@@ -60,20 +60,54 @@ const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
 	bom: [0, 0],
 };
 
-pub(crate) fn decode_text<R>(
-	reader: &mut R,
-	encoding: TextEncoding,
-	terminated: bool,
-) -> Result<DecodeTextResult>
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct TextDecodeOptions {
+	pub encoding: TextEncoding,
+	pub terminated: bool,
+	pub bom: [u8; 2],
+}
+
+impl TextDecodeOptions {
+	pub(crate) fn new() -> Self {
+		Self::default()
+	}
+
+	pub(crate) fn encoding(mut self, encoding: TextEncoding) -> Self {
+		self.encoding = encoding;
+		self
+	}
+
+	pub(crate) fn terminated(mut self, terminated: bool) -> Self {
+		self.terminated = terminated;
+		self
+	}
+
+	pub(crate) fn bom(mut self, bom: [u8; 2]) -> Self {
+		self.bom = bom;
+		self
+	}
+}
+
+impl Default for TextDecodeOptions {
+	fn default() -> Self {
+		Self {
+			encoding: TextEncoding::UTF8,
+			terminated: false,
+			bom: [0, 0],
+		}
+	}
+}
+
+pub(crate) fn decode_text<R>(reader: &mut R, options: TextDecodeOptions) -> Result<DecodeTextResult>
 where
 	R: Read,
 {
 	let raw_bytes;
 	let bytes_read;
 
-	if terminated {
-		if let Some(bytes) = read_to_terminator(reader, encoding) {
-			let null_terminator_length = match encoding {
+	if options.terminated {
+		if let Some(bytes) = read_to_terminator(reader, options.encoding) {
+			let null_terminator_length = match options.encoding {
 				TextEncoding::Latin1 | TextEncoding::UTF8 => 1,
 				TextEncoding::UTF16 | TextEncoding::UTF16BE => 2,
 			};
@@ -96,7 +130,7 @@ where
 	}
 
 	let mut bom = [0, 0];
-	let read_string = match encoding {
+	let read_string = match options.encoding {
 		TextEncoding::Latin1 => latin1_decode(&raw_bytes),
 		TextEncoding::UTF16 => {
 			if raw_bytes.len() < 2 {
@@ -107,12 +141,19 @@ where
 				err!(TextDecode("UTF-16 string has an odd length"));
 			}
 
-			match (raw_bytes[0], raw_bytes[1]) {
-				(0xFE, 0xFF) => {
+			let bom_to_check;
+			if options.bom == [0, 0] {
+				bom_to_check = [raw_bytes[0], raw_bytes[1]];
+			} else {
+				bom_to_check = options.bom;
+			}
+
+			match bom_to_check {
+				[0xFE, 0xFF] => {
 					bom = [0xFE, 0xFF];
 					utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?
 				},
-				(0xFF, 0xFE) => {
+				[0xFF, 0xFE] => {
 					bom = [0xFF, 0xFE];
 					utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?
 				},
@@ -280,7 +321,7 @@ fn utf16_encode(
 
 #[cfg(test)]
 mod tests {
-	use crate::util::text::TextEncoding;
+	use crate::util::text::{TextDecodeOptions, TextEncoding};
 	use std::io::Cursor;
 
 	const TEST_STRING: &str = "l\u{00f8}ft\u{00a5}";
@@ -303,16 +344,14 @@ mod tests {
 			&mut Cursor::new(&[
 				0xFE, 0xFF, 0x00, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00,
 			]),
-			TextEncoding::UTF16,
-			false,
+			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
 		.unwrap();
 		let le_utf16_decode = super::decode_text(
 			&mut Cursor::new(&[
 				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00, 0x00,
 			]),
-			TextEncoding::UTF16,
-			false,
+			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
 		.unwrap();
 
@@ -320,8 +359,11 @@ mod tests {
 		assert_eq!(be_utf16_decode.bytes_read, le_utf16_decode.bytes_read);
 		assert_eq!(be_utf16_decode.content, TEST_STRING.to_string());
 
-		let utf8_decode =
-			super::decode_text(&mut TEST_STRING.as_bytes(), TextEncoding::UTF8, false).unwrap();
+		let utf8_decode = super::decode_text(
+			&mut TEST_STRING.as_bytes(),
+			TextDecodeOptions::new().encoding(TextEncoding::UTF8),
+		)
+		.unwrap();
 
 		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}

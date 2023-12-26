@@ -1,5 +1,5 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::util::text::{decode_text, encode_text, TextEncoding};
+use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::io::{Cursor, Read};
 
@@ -36,9 +36,17 @@ impl GeneralEncapsulatedObject {
 
 		let mut cursor = Cursor::new(&data[1..]);
 
-		let mime_type = decode_text(&mut cursor, TextEncoding::Latin1, true)?;
-		let file_name = decode_text(&mut cursor, encoding, true)?;
-		let descriptor = decode_text(&mut cursor, encoding, true)?;
+		let mime_type = decode_text(
+			&mut cursor,
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::Latin1)
+				.terminated(true),
+		)?;
+
+		let text_decode_options = TextDecodeOptions::new().encoding(encoding).terminated(true);
+
+		let file_name = decode_text(&mut cursor, text_decode_options)?;
+		let descriptor = decode_text(&mut cursor, text_decode_options)?;
 
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
