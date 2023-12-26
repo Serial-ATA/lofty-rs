@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **MP4**: The `dfLa` atom for FLAC streams will now be found, providing better properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
+- **ID3v2**: Support UTF-16 encoded TIPL frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/306)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/307))
 
 ### Removed
 - **ItemKey**: `ItemKey::InvolvedPeople`
