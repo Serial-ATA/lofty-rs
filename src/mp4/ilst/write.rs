@@ -70,6 +70,12 @@ where
 			b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
 		)?;
+
+		// Nothing to do
+		if remove_tag && meta.is_none() {
+			return Ok(());
+		}
+
 		match meta {
 			Some(meta) => {
 				// We may encounter a non-full `meta` atom
@@ -84,8 +90,6 @@ where
 					remove_tag,
 				)?
 			},
-			// Nothing to do
-			None if remove_tag => return Ok(()),
 			// We have to create the `meta` atom
 			None => {
 				existing_udta_size = udta.len;
@@ -298,29 +302,33 @@ fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
 }
 
 fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
-	if size > u64::from(u32::MAX) {
-		// 0001 (identifier) ????????
-		writer.write_u32::<BigEndian>(1)?;
-		// Skip identifier
-		writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
-
-		let extended_size = size.to_be_bytes();
-		let inner = writer.get_mut();
-
-		if extended {
-			// Overwrite existing extended size
-			writer.write_u64::<BigEndian>(size)?;
-		} else {
-			for i in extended_size {
-				inner.insert((start + 8 + u64::from(i)) as usize, i);
-			}
-
-			writer.seek(SeekFrom::Current(8))?;
-		}
-	} else {
+	if u32::try_from(size).is_ok() {
 		// ???? (identifier)
 		writer.write_u32::<BigEndian>(size as u32)?;
 		writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
+		return Ok(());
+	}
+
+	// 64-bit extended size
+	// 0001 (identifier) ????????
+
+	// Extended size indicator
+	writer.write_u32::<BigEndian>(1)?;
+	// Skip identifier
+	writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
+
+	let extended_size = size.to_be_bytes();
+	let inner = writer.get_mut();
+
+	if extended {
+		// Overwrite existing extended size
+		writer.write_u64::<BigEndian>(size)?;
+	} else {
+		for i in extended_size {
+			inner.insert((start + 8 + u64::from(i)) as usize, i);
+		}
+
+		writer.seek(SeekFrom::Current(8))?;
 	}
 
 	Ok(())
