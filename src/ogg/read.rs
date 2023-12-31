@@ -30,19 +30,22 @@ where
 		err!(SizeMismatch);
 	}
 
-	let mut vendor = try_vec![0; vendor_len as usize];
-	data.read_exact(&mut vendor)?;
+	let mut vendor_bytes = try_vec![0; vendor_len as usize];
+	data.read_exact(&mut vendor_bytes)?;
 
 	len -= u64::from(vendor_len);
 
-	let vendor = match utf8_decode(vendor) {
-		Ok(v) => v,
+	let vendor;
+	match utf8_decode(vendor_bytes) {
+		Ok(v) => vendor = v,
 		Err(e) => {
 			// The actions following this are not spec-compliant in the slightest, so
 			// we need to short circuit if strict.
 			if parse_mode == ParsingMode::Strict {
 				return Err(e);
 			}
+
+			log::warn!("Possibly corrupt vendor string, attempting to recover");
 
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
@@ -60,7 +63,10 @@ where
 				.collect::<Vec<_>>();
 
 			match utf16_decode(&s) {
-				Ok(vendor) => vendor,
+				Ok(v) => {
+					log::warn!("Vendor string recovered as: '{v}'");
+					vendor = v;
+				},
 				Err(_) => decode_err!(@BAIL "OGG: File has an invalid vendor string"),
 			}
 		},
@@ -95,7 +101,7 @@ where
 
 		// Make sure there was a separator present, otherwise just move on
 		let Some(value) = comment_split.next() else {
-			log::warn!("No separator found, discarding field");
+			log::warn!("No separator found in field, discarding");
 			continue;
 		};
 
@@ -118,6 +124,11 @@ where
 				// to a `METADATA_BLOCK_PICTURE` for it to be useful.
 				//
 				// <https://wiki.xiph.org/VorbisComment#Conversion_to_METADATA_BLOCK_PICTURE>
+				log::warn!(
+					"Found deprecated `COVERART` field, attempting to convert to \
+					 `METADATA_BLOCK_PICTURE`"
+				);
+
 				let picture_data = BASE64.decode(value);
 
 				match picture_data {
