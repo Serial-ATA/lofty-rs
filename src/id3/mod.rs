@@ -20,6 +20,8 @@ pub(crate) fn find_lyrics3v2<R>(data: &mut R) -> Result<ID3FindResults<(), u32>>
 where
 	R: Read + Seek,
 {
+	log::debug!("Searching for a Lyrics3v2 tag");
+
 	let mut header = None;
 	let mut size = 0_u32;
 
@@ -29,6 +31,8 @@ where
 	data.read_exact(&mut lyrics3v2)?;
 
 	if &lyrics3v2[7..] == b"LYRICS200" {
+		log::warn!("Encountered a Lyrics3v2 tag. This is an outdated format, and will be skipped.");
+
 		header = Some(());
 
 		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
@@ -54,6 +58,8 @@ pub(crate) fn find_id3v1<R>(
 where
 	R: Read + Seek,
 {
+	log::debug!("Searching for an ID3v1 tag");
+
 	let mut id3v1 = None;
 	let mut header = None;
 
@@ -73,6 +79,8 @@ where
 		data.seek(SeekFrom::End(0))?;
 		return Ok(ID3FindResults(header, id3v1));
 	}
+
+	log::debug!("Found an ID3v1 tag, parsing");
 
 	header = Some(());
 
@@ -95,10 +103,14 @@ pub(crate) fn find_id3v2<R>(
 where
 	R: Read + Seek,
 {
+	log::debug!("Searching for an ID3v2 tag");
+
 	let mut header = None;
 	let mut id3v2 = None;
 
 	if let Ok(id3v2_header) = Id3v2Header::parse(data) {
+		log::debug!("Found an ID3v2 tag, parsing");
+
 		if read {
 			let mut tag = try_vec![0; id3v2_header.size as usize];
 			data.read_exact(&mut tag)?;
