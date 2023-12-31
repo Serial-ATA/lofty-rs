@@ -50,6 +50,8 @@ where
 
 				let id3v2 = parse_id3v2(reader, header, parse_mode)?;
 				if let Some(existing_tag) = &mut file.id3v2_tag {
+					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
+
 					// https://github.com/Serial-ATA/lofty-rs/issues/87
 					// Duplicate tags should have their frames appended to the previous
 					for frame in id3v2.frames {
@@ -61,6 +63,8 @@ where
 
 				// Skip over the footer
 				if skip_footer {
+					log::debug!("Skipping ID3v2 footer");
+
 					stream_len -= 10;
 					reader.seek(SeekFrom::Current(10))?;
 				}
@@ -69,6 +73,8 @@ where
 			},
 			// Tags might be followed by junk bytes before the first ADTS frame begins
 			_ => {
+				log::debug!("Searching for first ADTS frame");
+
 				// Seek back the length of the temporary header buffer, to include them
 				// in the frame sync search
 				#[allow(clippy::neg_multiply)]
@@ -77,6 +83,8 @@ where
 				if let Some((first_frame_header_, first_frame_end_)) =
 					find_next_frame(reader, parse_mode)?
 				{
+					log::debug!("Found first ADTS frame");
+
 					first_frame_header = Some(first_frame_header_);
 					first_frame_end = first_frame_end_;
 					break;
@@ -111,7 +119,7 @@ where
 			parse_mode_choice!(parse_mode, STRICT: decode_err!(@BAIL Mpeg, "Bitrate is 0"),);
 		}
 
-		// Read as many frames as we can to try and fine the average bitrate
+		// Read as many frames as we can to try and find the average bitrate
 		reader.seek(SeekFrom::Start(first_frame_end))?;
 
 		let mut frame_count = 1;
