@@ -379,6 +379,8 @@ where
 			properties.overall_bitrate = overall_bitrate as u32;
 
 			if properties.audio_bitrate == 0 {
+				log::warn!("Estimating audio bitrate from 'mdat' size");
+
 				properties.audio_bitrate =
 					(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
 			}

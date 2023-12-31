@@ -45,6 +45,8 @@ where
 				},
 				// Upgrade this to a \xa9gen atom
 				b"gnre" => {
+					log::warn!("Encountered outdated 'gnre' atom, attempting to upgrade to '©gen'");
+
 					if let Some(atom_data) =
 						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
 					{
