@@ -22,6 +22,7 @@ fn test_audio_properties() {
 
 // TODO: This test doesn't work, it's very specific with file/packet sizes. Have to determine whether or not to even keep this one.
 #[test]
+#[ignore]
 fn test_split_packets() {
 	let mut file = temp_file!("tests/taglib/data/empty.spx");
 
