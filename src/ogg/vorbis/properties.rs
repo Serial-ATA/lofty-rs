@@ -128,12 +128,12 @@ where
 				length = (total_samples * 1000).div_round(u64::from(properties.sample_rate));
 				properties.duration = Duration::from_millis(length);
 			} else {
-				log::debug!(
+				log::warn!(
 					"Vorbis: The file contains invalid PCM values, unable to calculate length"
 				);
 			}
 		} else {
-			log::debug!("Vorbis: Sample rate = 0, unable to calculate length");
+			log::warn!("Vorbis: Sample rate = 0, unable to calculate length");
 		}
 	}
 

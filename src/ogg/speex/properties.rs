@@ -154,12 +154,12 @@ where
 				length = (total_samples * 1000).div_round(u64::from(properties.sample_rate));
 				properties.duration = Duration::from_millis(length);
 			} else {
-				log::debug!(
+				log::warn!(
 					"Speex: The file contains invalid PCM values, unable to calculate length"
 				);
 			}
 		} else {
-			log::debug!("Speex: Sample rate = 0, unable to calculate length");
+			log::warn!("Speex: Sample rate = 0, unable to calculate length");
 		}
 	}
 
