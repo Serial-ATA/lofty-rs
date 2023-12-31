@@ -107,6 +107,7 @@ impl TryFrom<ItemKey> for AtomIdent<'static> {
 	}
 }
 
+#[derive(Debug)]
 pub(crate) struct AtomInfo {
 	pub(crate) start: u64,
 	pub(crate) len: u64,
