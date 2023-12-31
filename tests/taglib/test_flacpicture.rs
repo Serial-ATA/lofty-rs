@@ -25,7 +25,7 @@ fn test_parse() {
 	assert_eq!(info.height, 1);
 	assert_eq!(info.color_depth, 24);
 	assert_eq!(info.num_colors, 0);
-	assert_eq!(picture.mime_type(), &MimeType::Png);
+	assert_eq!(picture.mime_type(), Some(&MimeType::Png));
 	assert_eq!(picture.description(), Some("A pixel."));
 	assert_eq!(picture.data().len(), 150);
 }
