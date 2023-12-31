@@ -6,12 +6,13 @@ use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN, ID
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
+use crate::mp4::write::AtomWriter;
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 use crate::probe::ParseOptions;
 
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -24,26 +25,26 @@ pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> 
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
+	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
 	let mut reader = AtomReader::new(data, ParseOptions::DEFAULT_PARSING_MODE)?;
-
 	verify_mp4(&mut reader)?;
 
-	let moov = Moov::find(&mut reader)?;
-	let pos = reader.stream_position()?;
+	// Now we can just read the entire file into memory
+	let data = reader.into_inner();
+	data.rewind()?;
 
-	reader.rewind()?;
+	let mut atom_writer = AtomWriter::new_from_file(data, ParseOptions::DEFAULT_PARSING_MODE)?;
 
-	let mut file_bytes = Vec::new();
-	reader.read_to_end(&mut file_bytes)?;
+	let moov = Moov::find(&mut atom_writer.as_reader())?;
+	let moov_data_start = atom_writer.stream_position()?;
 
-	let mut cursor = Cursor::new(file_bytes);
-	cursor.seek(SeekFrom::Start(pos))?;
+	atom_writer.seek(SeekFrom::Start(moov_data_start))?;
 
 	let ilst = build_ilst(&mut tag.atoms)?;
 	let remove_tag = ilst.is_empty();
 
 	let udta = nested_atom(
-		&mut cursor,
+		&mut atom_writer,
 		moov.len,
 		b"udta",
 		ParseOptions::DEFAULT_PARSING_MODE,
@@ -65,7 +66,7 @@ where
 		new_udta_size = existing_udta_size;
 
 		let meta = nested_atom(
-			&mut cursor,
+			&mut atom_writer,
 			udta.len,
 			b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
@@ -79,11 +80,11 @@ where
 		match meta {
 			Some(meta) => {
 				// We may encounter a non-full `meta` atom
-				meta_is_full(&mut cursor)?;
+				meta_is_full(&mut atom_writer)?;
 
 				// We can use the existing `udta` and `meta` atoms
 				save_to_existing(
-					&mut cursor,
+					&mut atom_writer,
 					(meta, udta),
 					&mut new_udta_size,
 					ilst,
@@ -98,21 +99,19 @@ where
 				let capacity = FULL_ATOM_SIZE as usize + ilst.len();
 				let buf = Vec::with_capacity(capacity);
 
-				let mut bytes = Cursor::new(buf);
-				create_meta(&mut bytes, &ilst)?;
+				let mut meta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+				create_meta(&mut meta_writer, &ilst)?;
 
-				let bytes = bytes.into_inner();
+				let bytes = meta_writer.into_contents();
 
 				new_udta_size = udta.len + bytes.len() as u64;
 
-				cursor.seek(SeekFrom::Start(udta.start))?;
-				write_size(udta.start, new_udta_size, udta.extended, &mut cursor)?;
+				atom_writer.seek(SeekFrom::Start(udta.start))?;
+				write_size(udta.start, new_udta_size, udta.extended, &mut atom_writer)?;
 
 				// We'll put the new `meta` atom right at the start of `udta`
 				let meta_start_pos = (udta.start + ATOM_HEADER_LEN) as usize;
-				cursor
-					.get_mut()
-					.splice(meta_start_pos..meta_start_pos, bytes);
+				atom_writer.splice(meta_start_pos..meta_start_pos, bytes);
 			},
 		}
 	} else {
@@ -122,31 +121,27 @@ where
 
 		// We'll put the new `udta` atom right at the start of `moov`
 		let udta_pos = (moov.start + ATOM_HEADER_LEN) as usize;
-		cursor.get_mut().splice(udta_pos..udta_pos, bytes);
+		atom_writer.splice(udta_pos..udta_pos, bytes);
 	}
 
-	cursor.seek(SeekFrom::Start(moov.start))?;
+	atom_writer.seek(SeekFrom::Start(moov.start))?;
 
 	// Change the size of the moov atom
 	write_size(
 		moov.start,
 		(moov.len - existing_udta_size) + new_udta_size,
 		moov.extended,
-		&mut cursor,
+		&mut atom_writer,
 	)?;
 
-	let data = reader.into_inner();
-
-	data.rewind()?;
-	data.set_len(0)?;
-	data.write_all(&cursor.into_inner())?;
+	atom_writer.save_to(data)?;
 
 	Ok(())
 }
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 fn save_to_existing(
-	cursor: &mut Cursor<Vec<u8>>,
+	writer: &mut AtomWriter,
 	(meta, udta): (AtomInfo, AtomInfo),
 	new_udta_size: &mut u64,
 	ilst: Vec<u8>,
@@ -156,7 +151,7 @@ fn save_to_existing(
 	let range;
 
 	let (ilst_idx, tree) = atom_tree(
-		cursor,
+		writer,
 		meta.len - ATOM_HEADER_LEN,
 		b"ilst",
 		ParseOptions::DEFAULT_PARSING_MODE,
@@ -220,13 +215,13 @@ fn save_to_existing(
 
 				let remaining_space = remaining_space as u32;
 
-				cursor.seek(SeekFrom::Start(range_start))?;
-				cursor.write_all(&ilst)?;
+				writer.seek(SeekFrom::Start(range_start))?;
+				writer.write_all(&ilst)?;
 
 				// Write the remaining padding
-				cursor.write_u32::<BigEndian>(remaining_space)?;
-				cursor.write_all(b"free")?;
-				cursor
+				writer.write_u32::<BigEndian>(remaining_space)?;
+				writer.write_all(b"free")?;
+				writer
 					.write_all(&try_vec![1; (remaining_space - ATOM_HEADER_LEN as u32) as usize])?;
 
 				return Ok(());
@@ -240,18 +235,18 @@ fn save_to_existing(
 	let new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
 
 	// Replace the `ilst` atom
-	cursor.get_mut().splice(range, replacement);
+	writer.splice(range, replacement);
 
 	if new_meta_size != meta.len {
 		// We need to change the `meta` and `udta` atom sizes
 
 		*new_udta_size = (udta.len - meta.len) + new_meta_size;
 
-		cursor.seek(SeekFrom::Start(meta.start))?;
-		write_size(meta.start, new_meta_size, meta.extended, cursor)?;
+		writer.seek(SeekFrom::Start(meta.start))?;
+		write_size(meta.start, new_meta_size, meta.extended, writer)?;
 
-		cursor.seek(SeekFrom::Start(udta.start))?;
-		write_size(udta.start, *new_udta_size, udta.extended, cursor)?;
+		writer.seek(SeekFrom::Start(udta.start))?;
+		write_size(udta.start, *new_udta_size, udta.extended, writer)?;
 	}
 
 	Ok(())
@@ -262,46 +257,46 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
 	let capacity = ATOM_HEADER_LEN + FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
 	let buf = Vec::with_capacity(capacity as usize);
 
-	let mut bytes = Cursor::new(buf);
-	bytes.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
+	let mut udta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+	udta_writer.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
 
-	create_meta(&mut bytes, ilst)?;
+	create_meta(&mut udta_writer, ilst)?;
 
 	// `udta` size
-	bytes.rewind()?;
-	write_size(0, bytes.get_ref().len() as u64, false, &mut bytes)?;
+	udta_writer.rewind()?;
+	write_size(0, udta_writer.len() as u64, false, &mut udta_writer)?;
 
-	Ok(bytes.into_inner())
+	Ok(udta_writer.into_contents())
 }
 
-fn create_meta(cursor: &mut Cursor<Vec<u8>>, ilst: &[u8]) -> Result<()> {
-	let start = cursor.stream_position()?;
+fn create_meta(writer: &mut AtomWriter, ilst: &[u8]) -> Result<()> {
+	let start = writer.stream_position()?;
 	// meta atom
-	cursor.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
+	writer.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
 
 	// hdlr atom
-	cursor.write_u32::<BigEndian>(0)?;
-	cursor.write_all(b"hdlr")?;
-	cursor.write_u64::<BigEndian>(0)?;
-	cursor.write_all(b"mdirappl")?;
-	cursor.write_all(&[0, 0, 0, 0, 0, 0, 0, 0, 0])?;
+	writer.write_u32::<BigEndian>(0)?;
+	writer.write_all(b"hdlr")?;
+	writer.write_u64::<BigEndian>(0)?;
+	writer.write_all(b"mdirappl")?;
+	writer.write_all(&[0, 0, 0, 0, 0, 0, 0, 0, 0])?;
 
-	cursor.seek(SeekFrom::Start(start))?;
+	writer.seek(SeekFrom::Start(start))?;
 
 	let meta_size = FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
-	write_size(start, meta_size, false, cursor)?;
+	write_size(start, meta_size, false, writer)?;
 
 	// Seek to `hdlr` size
-	let hdlr_size_pos = cursor.seek(SeekFrom::Current(4))?;
-	write_size(hdlr_size_pos, HDLR_SIZE, false, cursor)?;
+	let hdlr_size_pos = writer.seek(SeekFrom::Current(4))?;
+	write_size(hdlr_size_pos, HDLR_SIZE, false, writer)?;
 
-	cursor.seek(SeekFrom::End(0))?;
-	cursor.write_all(ilst)?;
+	writer.seek(SeekFrom::End(0))?;
+	writer.write_all(ilst)?;
 
 	Ok(())
 }
 
-fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_size(start: u64, size: u64, extended: bool, writer: &mut AtomWriter) -> Result<()> {
 	if u32::try_from(size).is_ok() {
 		// ???? (identifier)
 		writer.write_u32::<BigEndian>(size as u32)?;
@@ -318,14 +313,13 @@ fn write_size(start: u64, size: u64, extended: bool, writer: &mut Cursor<Vec<u8>
 	writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
 
 	let extended_size = size.to_be_bytes();
-	let inner = writer.get_mut();
 
 	if extended {
 		// Overwrite existing extended size
 		writer.write_u64::<BigEndian>(size)?;
 	} else {
 		for i in extended_size {
-			inner.insert((start + 8 + u64::from(i)) as usize, i);
+			writer.insert((start + 8 + u64::from(i)) as usize, i);
 		}
 
 		writer.seek(SeekFrom::Current(8))?;
@@ -346,43 +340,44 @@ where
 		return Ok(Vec::new());
 	}
 
-	let mut writer = Cursor::new(vec![0, 0, 0, 0, b'i', b'l', b's', b't']);
-	writer.seek(SeekFrom::End(0))?;
+	let ilst_header = vec![0, 0, 0, 0, b'i', b'l', b's', b't'];
+	let mut ilst_writer = AtomWriter::new(ilst_header, ParseOptions::DEFAULT_PARSING_MODE);
+	ilst_writer.seek(SeekFrom::End(0))?;
 
 	for atom in peek {
-		let start = writer.stream_position()?;
+		let start = ilst_writer.stream_position()?;
 
 		// Empty size, we get it later
-		writer.write_all(&[0; FOURCC_LEN as usize])?;
+		ilst_writer.write_all(&[0; FOURCC_LEN as usize])?;
 
 		match atom.ident {
-			AtomIdent::Fourcc(ref fourcc) => writer.write_all(fourcc)?,
-			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut writer)?,
+			AtomIdent::Fourcc(ref fourcc) => ilst_writer.write_all(fourcc)?,
+			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut ilst_writer)?,
 		}
 
-		write_atom_data(atom.data, &mut writer)?;
+		write_atom_data(atom.data, &mut ilst_writer)?;
 
-		let end = writer.stream_position()?;
+		let end = ilst_writer.stream_position()?;
 
 		let size = end - start;
 
-		writer.seek(SeekFrom::Start(start))?;
+		ilst_writer.seek(SeekFrom::Start(start))?;
 
-		write_size(start, size, false, &mut writer)?;
+		write_size(start, size, false, &mut ilst_writer)?;
 
-		writer.seek(SeekFrom::Start(end))?;
+		ilst_writer.seek(SeekFrom::Start(end))?;
 	}
 
-	let size = writer.get_ref().len();
+	let size = ilst_writer.len();
 
-	writer.rewind()?;
+	ilst_writer.rewind()?;
 
-	write_size(0, size as u64, false, &mut writer)?;
+	write_size(0, size as u64, false, &mut ilst_writer)?;
 
-	Ok(writer.into_inner())
+	Ok(ilst_writer.into_contents())
 }
 
-fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_freeform(mean: &str, name: &str, writer: &mut AtomWriter) -> Result<()> {
 	// ---- : ???? : ????
 
 	// ----
@@ -401,7 +396,7 @@ fn write_freeform(mean: &str, name: &str, writer: &mut Cursor<Vec<u8>>) -> Resul
 	Ok(())
 }
 
-fn write_atom_data<'a, I: 'a>(data: I, writer: &mut Cursor<Vec<u8>>) -> Result<()>
+fn write_atom_data<'a, I: 'a>(data: I, writer: &mut AtomWriter) -> Result<()>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
@@ -420,7 +415,7 @@ where
 	Ok(())
 }
 
-fn write_signed_int(int: i32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_signed_int(int: i32, writer: &mut AtomWriter) -> Result<()> {
 	write_int(21, int.to_be_bytes(), 4, writer)
 }
 
@@ -436,7 +431,7 @@ fn bytes_to_occupy_uint(uint: u32) -> usize {
 	ret
 }
 
-fn write_unsigned_int(uint: u32, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_unsigned_int(uint: u32, writer: &mut AtomWriter) -> Result<()> {
 	let bytes_needed = bytes_to_occupy_uint(uint);
 	write_int(22, uint.to_be_bytes(), bytes_needed, writer)
 }
@@ -445,13 +440,13 @@ fn write_int(
 	flags: u32,
 	bytes: [u8; 4],
 	bytes_needed: usize,
-	writer: &mut Cursor<Vec<u8>>,
+	writer: &mut AtomWriter,
 ) -> Result<()> {
 	debug_assert!(bytes_needed != 0);
 	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
-fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_picture(picture: &Picture, writer: &mut AtomWriter) -> Result<()> {
 	match picture.mime_type {
 		// GIF is deprecated
 		Some(MimeType::Gif) => write_data(12, &picture.data, writer),
@@ -468,7 +463,7 @@ fn write_picture(picture: &Picture, writer: &mut Cursor<Vec<u8>>) -> Result<()> 
 	}
 }
 
-fn write_data(flags: u32, data: &[u8], writer: &mut Cursor<Vec<u8>>) -> Result<()> {
+fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriter) -> Result<()> {
 	if flags > 16_777_215 {
 		return Err(FileEncodingError::new(
 			FileType::Mp4,

@@ -8,6 +8,7 @@ pub(crate) mod ilst;
 mod moov;
 mod properties;
 mod read;
+mod write;
 
 use lofty_attr::LoftyFile;
 
