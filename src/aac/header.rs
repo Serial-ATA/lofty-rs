@@ -104,6 +104,7 @@ impl ADTSHeader {
 		let bitrate = ((u32::from(len) * sample_rate / 1024) * 8) / 1024;
 
 		if needs_crc_skip {
+			log::debug!("Skipping CRC");
 			reader.seek(SeekFrom::Current(2))?;
 		}
 
