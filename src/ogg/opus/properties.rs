@@ -133,7 +133,7 @@ where
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
 			properties.audio_bitrate = ((stream_len * 8) / length) as u32;
 		} else {
-			log::debug!("Opus: The file contains invalid PCM values, unable to calculate length");
+			log::warn!("Opus: The file contains invalid PCM values, unable to calculate length");
 		}
 	}
 
