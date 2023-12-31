@@ -458,11 +458,15 @@ impl Probe<BufReader<File>> {
 		P: AsRef<Path>,
 	{
 		let path = path.as_ref();
+		log::debug!("Probe: Opening `{}` for reading", path.display());
+
+		let file_type = FileType::from_path(path);
+		log::debug!("Probe: Guessed file type `{:?}` from extension", file_type);
 
 		Ok(Self {
 			inner: BufReader::new(File::open(path)?),
 			options: None,
-			f_ty: FileType::from_path(path),
+			f_ty: file_type,
 		})
 	}
 }
@@ -507,6 +511,8 @@ impl<R: Read + Seek> Probe<R> {
 		let f_ty = self.guess_inner(max_junk_bytes)?;
 		self.f_ty = f_ty.or(self.f_ty);
 
+		log::debug!("Probe: Guessed file type: {:?}", self.f_ty);
+
 		Ok(self)
 	}
 
@@ -532,6 +538,7 @@ impl<R: Read + Seek> Probe<R> {
 			// The file starts with an ID3v2 tag; this means other data can follow (e.g. APE or MP3 frames)
 			FileTypeGuessResult::MaybePrecededById3(id3_len) => {
 				// `id3_len` is the size of the tag, not including the header (10 bytes)
+				log::debug!("Probe: ID3v2 tag detected, skipping {} bytes", 10 + id3_len);
 				let position_after_id3_block = self
 					.inner
 					.seek(SeekFrom::Current(i64::from(10 + id3_len)))?;
@@ -560,6 +567,11 @@ impl<R: Read + Seek> Probe<R> {
 			},
 			// TODO: Check more than MPEG/AAC
 			FileTypeGuessResult::MaybePrecededByJunk => {
+				log::debug!(
+					"Probe: Possible junk bytes detected, searching up to {} bytes",
+					max_junk_bytes
+				);
+
 				let ret = self.check_mpeg_or_aac(max_junk_bytes);
 
 				// before returning any result for a file type, seek back to the front
@@ -593,7 +605,8 @@ impl<R: Read + Seek> Probe<R> {
 
 		// Seek back to the start of the frame sync to check if we are dealing with
 		// an AAC or MPEG file. See `FileType::quick_type_guess` for explanation.
-		self.inner.seek(SeekFrom::Current(-2))?;
+		let sync_pos = self.inner.seek(SeekFrom::Current(-2))?;
+		log::debug!("Probe: Found possible frame sync at position {}", sync_pos);
 
 		let mut buf = [0; 2];
 		self.inner.read_exact(&mut buf)?;
