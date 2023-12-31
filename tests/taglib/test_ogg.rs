@@ -78,7 +78,7 @@ fn test_audio_properties() {
 	let f = get_file::<VorbisFile>("tests/taglib/data/empty.ogg");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3685);
-	assert_eq!(f.properties().audio_bitrate(), 1);
+	assert_eq!(f.properties().audio_bitrate(), 112); // TagLib reports 1? That is not correct.
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().version(), 0);
