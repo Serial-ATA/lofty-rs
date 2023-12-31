@@ -139,7 +139,10 @@ fn test_parse_apic() {
 		Id3v2Version::V4,
 	)
 	.unwrap();
-	assert_eq!(f.picture.mime_type(), &MimeType::Unknown(String::from("m")));
+	assert_eq!(
+		f.picture.mime_type(),
+		Some(&MimeType::Unknown(String::from("m")))
+	);
 	assert_eq!(f.picture.pic_type(), PictureType::Icon);
 	assert_eq!(f.picture.description(), Some("d"));
 }
@@ -155,7 +158,7 @@ fn test_parse_apic_utf16_bom() {
 	)
 	.unwrap();
 
-	assert_eq!(f.picture.mime_type(), &MimeType::Jpeg);
+	assert_eq!(f.picture.mime_type(), Some(&MimeType::Jpeg));
 	assert_eq!(f.picture.pic_type(), PictureType::Other);
 	assert_eq!(f.picture.description(), Some("cover.jpg"));
 	assert_eq!(f.picture.data(), b"\xff\xd8\xff");
@@ -174,7 +177,7 @@ fn test_parse_apicv22() {
 	)
 	.unwrap();
 
-	assert_eq!(frame.picture.mime_type(), &MimeType::Jpeg);
+	assert_eq!(frame.picture.mime_type(), Some(&MimeType::Jpeg));
 	assert_eq!(frame.picture.pic_type(), PictureType::Icon);
 	assert_eq!(frame.picture.description(), Some("d"));
 }
@@ -185,7 +188,7 @@ fn test_render_apic() {
 		encoding: TextEncoding::UTF8,
 		picture: Picture::new_unchecked(
 			PictureType::CoverBack,
-			MimeType::Png,
+			Some(MimeType::Png),
 			Some(String::from("Description")),
 			b"PNG data".to_vec(),
 		),
@@ -929,7 +932,7 @@ fn test_compressed_frame_with_broken_length() {
 		_ => unreachable!(),
 	};
 
-	assert_eq!(picture.mime_type(), &MimeType::Bmp);
+	assert_eq!(picture.mime_type(), Some(&MimeType::Bmp));
 	assert_eq!(picture.pic_type(), PictureType::Other);
 	assert!(picture.description().is_none());
 	assert_eq!(picture.data().len(), 86414);

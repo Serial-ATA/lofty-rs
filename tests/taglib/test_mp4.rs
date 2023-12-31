@@ -258,9 +258,9 @@ fn test_covr_read() {
 	};
 
 	assert!(covrs.next().is_none());
-	assert_eq!(picture1.mime_type(), &MimeType::Png);
+	assert_eq!(picture1.mime_type(), Some(&MimeType::Png));
 	assert_eq!(picture1.data().len(), 79);
-	assert_eq!(picture2.mime_type(), &MimeType::Jpeg);
+	assert_eq!(picture2.mime_type(), Some(&MimeType::Jpeg));
 	assert_eq!(picture2.data().len(), 287);
 }
 
@@ -276,7 +276,7 @@ fn test_covr_write() {
 		assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
 		tag.insert_picture(Picture::new_unchecked(
 			PictureType::Other,
-			MimeType::Png,
+			Some(MimeType::Png),
 			None,
 			b"foo".to_vec(),
 		));
@@ -300,11 +300,11 @@ fn test_covr_write() {
 		};
 
 		assert!(covrs.next().is_none());
-		assert_eq!(picture1.mime_type(), &MimeType::Png);
+		assert_eq!(picture1.mime_type(), Some(&MimeType::Png));
 		assert_eq!(picture1.data().len(), 79);
-		assert_eq!(picture2.mime_type(), &MimeType::Jpeg);
+		assert_eq!(picture2.mime_type(), Some(&MimeType::Jpeg));
 		assert_eq!(picture2.data().len(), 287);
-		assert_eq!(picture3.mime_type(), &MimeType::Png);
+		assert_eq!(picture3.mime_type(), Some(&MimeType::Png));
 		assert_eq!(picture3.data().len(), 3);
 	}
 }
@@ -323,9 +323,9 @@ fn test_covr_read2() {
 	};
 
 	assert!(covrs.next().is_none());
-	assert_eq!(picture1.mime_type(), &MimeType::Png);
+	assert_eq!(picture1.mime_type(), Some(&MimeType::Png));
 	assert_eq!(picture1.data().len(), 79);
-	assert_eq!(picture2.mime_type(), &MimeType::Jpeg);
+	assert_eq!(picture2.mime_type(), Some(&MimeType::Jpeg));
 	assert_eq!(picture2.data().len(), 287);
 }
 
@@ -458,9 +458,9 @@ fn test_non_full_meta_atom() {
 	};
 
 	assert!(covrs.next().is_none());
-	assert_eq!(picture1.mime_type(), &MimeType::Png);
+	assert_eq!(picture1.mime_type(), Some(&MimeType::Png));
 	assert_eq!(picture1.data().len(), 79);
-	assert_eq!(picture2.mime_type(), &MimeType::Jpeg);
+	assert_eq!(picture2.mime_type(), Some(&MimeType::Jpeg));
 	assert_eq!(picture2.data().len(), 287);
 
 	assert_eq!(tag.artist().as_deref(), Some("Test Artist!!!!"));

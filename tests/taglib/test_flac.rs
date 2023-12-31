@@ -40,7 +40,7 @@ fn test_read_picture() {
 	assert_eq!(info.height, 1);
 	assert_eq!(info.color_depth, 24);
 	assert_eq!(info.num_colors, 0);
-	assert_eq!(pic.mime_type(), &MimeType::Png);
+	assert_eq!(pic.mime_type(), Some(&MimeType::Png));
 	assert_eq!(pic.description(), Some("A pixel."));
 	assert_eq!(pic.data().len(), 150);
 }
@@ -57,7 +57,7 @@ fn test_add_picture() {
 
 		let new_pic = Picture::new_unchecked(
 			PictureType::CoverBack,
-			MimeType::Jpeg,
+			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			Vec::from("JPEG data"),
 		);
@@ -85,7 +85,7 @@ fn test_add_picture() {
 		assert_eq!(info.height, 1);
 		assert_eq!(info.color_depth, 24);
 		assert_eq!(info.num_colors, 0);
-		assert_eq!(pic.mime_type(), &MimeType::Png);
+		assert_eq!(pic.mime_type(), Some(&MimeType::Png));
 		assert_eq!(pic.description(), Some("A pixel."));
 		assert_eq!(pic.data().len(), 150);
 
@@ -95,7 +95,7 @@ fn test_add_picture() {
 		assert_eq!(info.height, 6);
 		assert_eq!(info.color_depth, 16);
 		assert_eq!(info.num_colors, 7);
-		assert_eq!(pic.mime_type(), &MimeType::Jpeg);
+		assert_eq!(pic.mime_type(), Some(&MimeType::Jpeg));
 		assert_eq!(pic.description(), Some("new image"));
 		assert_eq!(pic.data(), b"JPEG data");
 	}
@@ -113,7 +113,7 @@ fn test_replace_picture() {
 
 		let new_pic = Picture::new_unchecked(
 			PictureType::CoverBack,
-			MimeType::Jpeg,
+			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			Vec::from("JPEG data"),
 		);
@@ -142,7 +142,7 @@ fn test_replace_picture() {
 		assert_eq!(info.height, 6);
 		assert_eq!(info.color_depth, 16);
 		assert_eq!(info.num_colors, 7);
-		assert_eq!(pic.mime_type(), &MimeType::Jpeg);
+		assert_eq!(pic.mime_type(), Some(&MimeType::Jpeg));
 		assert_eq!(pic.description(), Some("new image"));
 		assert_eq!(pic.data(), b"JPEG data");
 	}
@@ -605,7 +605,7 @@ fn test_picture_stored_after_comment() {
 
 		let pic = Picture::new_unchecked(
 			PictureType::CoverFront,
-			MimeType::Png,
+			Some(MimeType::Png),
 			Some(String::from("blank.png")),
 			BLANK_PNG_DATA.to_vec(),
 		);
@@ -634,7 +634,7 @@ fn test_picture_stored_after_comment() {
 		assert_eq!(pictures.len(), 1);
 		assert_eq!(pictures[0].0.data(), BLANK_PNG_DATA);
 		assert_eq!(pictures[0].0.pic_type(), PictureType::CoverFront);
-		assert_eq!(pictures[0].0.mime_type(), &MimeType::Png);
+		assert_eq!(pictures[0].0.mime_type(), Some(&MimeType::Png));
 		assert_eq!(pictures[0].0.description(), Some("blank.png"));
 		assert_eq!(pictures[0].1.width, 3);
 		assert_eq!(pictures[0].1.height, 2);
