@@ -300,6 +300,27 @@ impl Packets {
 		true
 	}
 
+	/// Returns an iterator over the packets
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use ogg_pager::Packets;
+	///
+	/// # fn main() -> Result<(), ogg_pager::PageError> {
+	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// let mut file = std::fs::File::open(path)?;
+	///
+	/// let packets = Packets::read(&mut file)?;
+	///
+	/// for packet in packets.iter() {
+	/// 	println!("Packet size: {}", packet.len());
+	/// }
+	/// # Ok(()) }
+	pub fn iter(&self) -> PacketsIter<'_> {
+		<&Self as IntoIterator>::into_iter(self)
+	}
+
 	/// Convert the packets into a stream of pages
 	///
 	/// See [paginate()] for more information.
