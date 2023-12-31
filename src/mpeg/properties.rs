@@ -1,5 +1,6 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
 use crate::error::Result;
+use crate::math::RoundedDivision;
 use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult, HEADER_MASK};
 use crate::properties::FileProperties;
 use crate::ChannelMask;
@@ -150,68 +151,73 @@ where
 		2
 	};
 
-	match xing_header {
-		Some(xing_header) if first_frame_header.sample_rate > 0 && xing_header.is_valid() => {
-			let frame_time =
-				u32::from(first_frame_header.samples) * 1000 / first_frame_header.sample_rate;
+	if let Some(xing_header) = xing_header {
+		if first_frame_header.sample_rate > 0 && xing_header.is_valid() {
+			let frame_time = (u32::from(first_frame_header.samples) * 1000)
+				.div_round(first_frame_header.sample_rate);
 			let length = u64::from(frame_time) * u64::from(xing_header.frames);
 
 			properties.duration = Duration::from_millis(length);
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
 			properties.audio_bitrate = ((u64::from(xing_header.size) * 8) / length) as u32;
-		},
-		_ if first_frame_header.bitrate > 0 => {
-			properties.audio_bitrate = first_frame_header.bitrate;
 
-			// Search for the last frame, starting at the end of the frames
-			reader.seek(SeekFrom::Start(last_frame_offset))?;
+			return Ok(());
+		}
+	}
 
-			let mut last_frame = None;
-			let mut pos = reader.stream_position()?;
-			while pos > 0 {
-				match rev_search_for_frame_sync(reader, &mut pos) {
-					// Found a frame sync, attempt to read a header
-					Ok(Some(_)) => {
-						// Move `last_frame_offset` back to the actual position
-						last_frame_offset = reader.stream_position()?;
-						let last_frame_data = reader.read_u32::<BigEndian>()?;
+	// Nothing more we can do
+	if first_frame_header.bitrate == 0 {
+		return Ok(());
+	}
 
-						if let Some(last_frame_header) = Header::read(last_frame_data) {
-							match cmp_header(
-								reader,
-								4,
-								last_frame_header.len,
-								last_frame_data,
-								HEADER_MASK,
-							) {
-								HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
-									last_frame = Some(last_frame_header);
-									break;
-								},
-								HeaderCmpResult::NotEqual => {},
-							}
-						}
-					},
-					// Encountered some IO error, just break
-					Err(_) => break,
-					// No frame sync found, continue further back in the file
-					_ => {},
+	log::warn!("MPEG: Using bitrate to estimate duration");
+
+	properties.audio_bitrate = first_frame_header.bitrate;
+
+	// Search for the last frame, starting at the end of the frames
+	reader.seek(SeekFrom::Start(last_frame_offset))?;
+
+	let mut last_frame = None;
+	let mut pos = reader.stream_position()?;
+	while pos > 0 {
+		match rev_search_for_frame_sync(reader, &mut pos) {
+			// Found a frame sync, attempt to read a header
+			Ok(Some(_)) => {
+				// Move `last_frame_offset` back to the actual position
+				last_frame_offset = reader.stream_position()?;
+				let last_frame_data = reader.read_u32::<BigEndian>()?;
+
+				if let Some(last_frame_header) = Header::read(last_frame_data) {
+					match cmp_header(
+						reader,
+						4,
+						last_frame_header.len,
+						last_frame_data,
+						HEADER_MASK,
+					) {
+						HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
+							last_frame = Some(last_frame_header);
+							break;
+						},
+						HeaderCmpResult::NotEqual => {},
+					}
 				}
-			}
+			},
+			// Encountered some IO error, just break
+			Err(_) => break,
+			// No frame sync found, continue further back in the file
+			_ => {},
+		}
+	}
 
-			if let Some(last_frame_header) = last_frame {
-				let stream_len =
-					last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
-				let length =
-					((stream_len as f64) * 8.0) / f64::from(properties.audio_bitrate) + 0.5;
+	if let Some(last_frame_header) = last_frame {
+		let stream_len = last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
+		let length = ((stream_len as f64) * 8.0) / f64::from(properties.audio_bitrate) + 0.5;
 
-				if length > 0.0 {
-					properties.overall_bitrate = (((file_length as f64) * 8.0) / length) as u32;
-					properties.duration = Duration::from_millis(length as u64);
-				}
-			}
-		},
-		_ => {},
+		if length > 0.0 {
+			properties.overall_bitrate = (((file_length as f64) * 8.0) / length) as u32;
+			properties.duration = Duration::from_millis(length as u64);
+		}
 	}
 
 	Ok(())
