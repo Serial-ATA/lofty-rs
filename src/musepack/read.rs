@@ -14,6 +14,8 @@ pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Resul
 where
 	R: Read + Seek,
 {
+	log::debug!("Attempting to read MPC file");
+
 	// Sv4to6 is the default, as it doesn't have a marker like Sv8's b'MPCK' or Sv7's b'MP+'
 	let mut version = MpcStreamVersion::Sv4to6;
 	let mut file = MpcFile::default();
@@ -71,14 +73,19 @@ where
 
 	match &header {
 		b"MPCK" => {
+			log::debug!("MPC stream version determined to be 8");
 			version = MpcStreamVersion::Sv8;
 		},
 		[b'M', b'P', b'+', ..] => {
+			log::debug!("MPC stream version determined to be 7");
+
 			// Seek back the extra byte we read
 			reader.seek(SeekFrom::Current(-1))?;
 			version = MpcStreamVersion::Sv7;
 		},
 		_ => {
+			log::warn!("MPC stream version could not be determined, assuming 4-6");
+
 			// We should be reading into the actual content now, seek back
 			reader.seek(SeekFrom::Current(-4))?;
 		},
