@@ -227,6 +227,11 @@ pub(super) fn read_properties(
 			b"ALAW" => AiffCompressionType::ALAW,
 			b"FL32" => AiffCompressionType::FL32,
 			_ => {
+				log::debug!(
+					"Encountered unknown compression type: {:?}",
+					compression_type
+				);
+
 				// We have to read the compression name string
 				let mut compression_name = String::new();
 

@@ -67,6 +67,8 @@ where
 			data.read_exact(&mut list_type)?;
 
 			if &list_type == b"INFO" {
+				log::debug!("Found existing RIFF INFO list, size: {} bytes", chunks.size);
+
 				info = Some(chunks.size);
 				break;
 			}
@@ -87,6 +89,7 @@ pub(super) fn create_riff_info(
 	let mut items = items.peekable();
 
 	if items.peek().is_none() {
+		log::debug!("No items to write, removing RIFF INFO list");
 		return Ok(());
 	}
 
@@ -117,6 +120,7 @@ pub(super) fn create_riff_info(
 		err!(TooMuchData);
 	}
 
+	log::debug!("Created RIFF INFO list, size: {} bytes", packet_size);
 	let size = (packet_size as u32).to_le_bytes();
 
 	#[allow(clippy::needless_range_loop)]
