@@ -53,6 +53,8 @@ impl Id3v2Header {
 	where
 		R: Read,
 	{
+		log::debug!("Parsing ID3v2 header");
+
 		let mut header = [0; 10];
 		bytes.read_exact(&mut header)?;
 

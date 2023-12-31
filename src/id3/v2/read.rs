@@ -15,6 +15,12 @@ pub(crate) fn parse_id3v2<R>(
 where
 	R: Read,
 {
+	log::debug!(
+		"Parsing ID3v2 tag, size: {}, version: {:?}",
+		header.size,
+		header.version
+	);
+
 	let mut tag_bytes = bytes.take(u64::from(header.size - header.extended_size));
 
 	let ret;
@@ -35,6 +41,8 @@ where
 }
 
 fn skip_frame(reader: &mut impl Read, size: u32) -> Result<()> {
+	log::trace!("Skipping frame of size {}", size);
+
 	let size = u64::from(size);
 	let mut reader = reader.take(size);
 	let skipped = std::io::copy(&mut reader, &mut std::io::sink())?;
