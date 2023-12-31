@@ -12,7 +12,7 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// Whether we are dealing with an AIFC file
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub(in crate::iff) enum CompressionPresent {
 	Yes,
 	No,
@@ -29,11 +29,18 @@ where
 		err!(UnknownFormat);
 	}
 
+	let compression_present;
 	match &id[8..] {
-		b"AIFF" => Ok(CompressionPresent::No),
-		b"AIFC" => Ok(CompressionPresent::Yes),
+		b"AIFF" => compression_present = CompressionPresent::No,
+		b"AIFC" => compression_present = CompressionPresent::Yes,
 		_ => err!(UnknownFormat),
 	}
+
+	log::debug!(
+		"File verified to be AIFF, compression present: {:?}",
+		compression_present
+	);
+	Ok(compression_present)
 }
 
 pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<AiffFile>
@@ -65,6 +72,8 @@ where
 			b"ID3 " | b"id3 " => {
 				let tag = chunks.id3_chunk(data, parse_options.parsing_mode)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
+					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
+
 					// https://github.com/Serial-ATA/lofty-rs/issues/87
 					// Duplicate tags should have their frames appended to the previous
 					for frame in tag.frames {

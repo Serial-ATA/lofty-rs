@@ -397,6 +397,10 @@ where
 			}
 		}
 
+		log::debug!(
+			"Created AIFF text chunks, size: {} bytes",
+			text_chunks.len()
+		);
 		Ok(text_chunks)
 	}
 
