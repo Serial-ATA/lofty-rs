@@ -115,7 +115,7 @@ fn test_picture() {
 
 		let picture = Picture::new_unchecked(
 			PictureType::CoverBack,
-			MimeType::Jpeg,
+			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			b"JPEG data".to_vec(),
 		);
@@ -140,7 +140,7 @@ fn test_picture() {
 		assert_eq!(pictures[0].1.height, 6);
 		assert_eq!(pictures[0].1.color_depth, 16);
 		assert_eq!(pictures[0].1.num_colors, 7);
-		assert_eq!(pictures[0].0.mime_type(), &MimeType::Jpeg);
+		assert_eq!(pictures[0].0.mime_type(), Some(&MimeType::Jpeg));
 		assert_eq!(pictures[0].0.description(), Some("new image"));
 		assert_eq!(pictures[0].0.data(), b"JPEG data");
 	}
