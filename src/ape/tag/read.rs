@@ -50,7 +50,7 @@ where
 		let item_type = (flags >> 1) & 3;
 
 		if value_size == 0 || key.len() < 2 || key.len() > 255 {
-			log::debug!("APE: Encountered invalid item key ({})", key);
+			log::warn!("APE: Encountered invalid item key '{}'", key);
 			continue;
 		}
 
