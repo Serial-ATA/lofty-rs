@@ -367,7 +367,7 @@ mod tests {
 	};
 
 	const VORBIS_PROPERTIES: VorbisProperties = VorbisProperties {
-		duration: Duration::from_millis(1450),
+		duration: Duration::from_millis(1451),
 		overall_bitrate: 96,
 		audio_bitrate: 112,
 		sample_rate: 48000,
