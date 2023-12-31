@@ -58,6 +58,10 @@ where
 				continue;
 			},
 			[b'A', b'P', b'E', b'T'] => {
+				log::warn!(
+					"Encountered an APE tag at the beginning of the file, attempting to read"
+				);
+
 				let mut header_remaining = [0; 4];
 				reader.read_exact(&mut header_remaining)?;
 
