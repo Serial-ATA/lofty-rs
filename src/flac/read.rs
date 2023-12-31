@@ -32,6 +32,7 @@ where
 		decode_err!(@BAIL Flac, "File missing mandatory STREAMINFO block");
 	}
 
+	log::debug!("File verified to be FLAC");
 	Ok(block)
 }
 
@@ -48,6 +49,8 @@ where
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
+		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
+
 		let reader = &mut &*content;
 
 		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
@@ -74,6 +77,8 @@ where
 		}
 
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
+			log::debug!("Encountered a Vorbis Comments block, parsing");
+
 			// NOTE: According to the spec
 			//
 			// <https://xiph.org/flac/format.html#def_VORBIS_COMMENT>:
@@ -100,6 +105,8 @@ where
 		}
 
 		if block.ty == BLOCK_ID_PICTURE {
+			log::debug!("Encountered a FLAC picture block, parsing");
+
 			match Picture::from_flac_bytes(&block.content, false, parse_options.parsing_mode) {
 				Ok(picture) => flac_file.pictures.push(picture),
 				Err(e) => {

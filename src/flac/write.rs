@@ -82,6 +82,8 @@ where
 	let mut file_bytes = cursor.into_inner();
 
 	if !padding {
+		log::warn!("File is missing a PADDING block. Adding one");
+
 		let mut first_byte = 0_u8;
 		first_byte |= last_block_info.0 & 0x7F;
 
@@ -167,6 +169,12 @@ fn create_comment_block(
 		writer
 			.get_mut()
 			.splice(1..1, len.to_be_bytes()[1..].to_vec());
+
+		// size = block type + vendor length + vendor + item count + items
+		log::trace!(
+			"Wrote a comment block, size: {}",
+			1 + 4 + vendor.len() + 4 + (len as usize)
+		);
 	}
 
 	Ok(())
@@ -191,6 +199,9 @@ fn create_picture_blocks(
 
 		writer.write_all(&pic_len.to_be_bytes()[1..])?;
 		writer.write_all(pic_bytes.as_slice())?;
+
+		// size = block type + block length + data
+		log::trace!("Wrote a picture block, size: {}", 1 + 3 + pic_len);
 	}
 
 	Ok(())
