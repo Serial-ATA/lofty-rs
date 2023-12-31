@@ -169,9 +169,14 @@ where
 
 	reader.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
-	utf8_decode_str(&major_brand)
+	let major_brand = utf8_decode_str(&major_brand)
 		.map(ToOwned::to_owned)
-		.map_err(|_| LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand")))
+		.map_err(|_| {
+			LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"))
+		})?;
+
+	log::debug!("Verified to be an MP4 file. Major brand: {}", major_brand);
+	Ok(major_brand)
 }
 
 #[allow(unstable_name_collisions)]
@@ -212,20 +217,23 @@ where
 	})
 }
 
-pub(super) fn skip_unneeded<R>(reader: &mut R, ext: bool, len: u64) -> Result<()>
+pub(super) fn skip_unneeded<R>(reader: &mut R, extended: bool, len: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
-	if ext {
-		let pos = reader.stream_position()?;
+	log::trace!("Attempting to skip {} bytes", len - 8);
 
-		if let (pos, false) = pos.overflowing_add(len - 8) {
-			reader.seek(SeekFrom::Start(pos))?;
-		} else {
-			err!(TooMuchData);
-		}
-	} else {
+	if !extended {
 		reader.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;
+		return Ok(());
+	}
+
+	let pos = reader.stream_position()?;
+
+	if let (pos, false) = pos.overflowing_add(len - 8) {
+		reader.seek(SeekFrom::Start(pos))?;
+	} else {
+		err!(TooMuchData);
 	}
 
 	Ok(())
@@ -320,6 +328,8 @@ where
 
 	match &possible_ident {
 		b"hdlr" | b"ilst" | b"mhdr" | b"ctry" | b"lang" => {
+			log::warn!("File contains a non-full 'meta' atom");
+
 			reader.seek(SeekFrom::Current(-8))?;
 			Ok(false)
 		},
