@@ -1,5 +1,6 @@
 use super::find_last_page;
 use crate::error::Result;
+use crate::math::RoundedDivision;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -124,7 +125,7 @@ where
 
 			// Best case scenario
 			if total_samples > 0 {
-				length = total_samples * 1000 / u64::from(properties.sample_rate);
+				length = (total_samples * 1000).div_round(u64::from(properties.sample_rate));
 				properties.duration = Duration::from_millis(length);
 			} else {
 				log::debug!(

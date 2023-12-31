@@ -1,6 +1,7 @@
 use super::find_last_page;
 use crate::error::Result;
 use crate::macros::decode_err;
+use crate::math::RoundedDivision;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -118,7 +119,7 @@ where
 			.saturating_sub(u64::from(pre_skip));
 		if total_samples > 0 {
 			// Best case scenario
-			let length = total_samples as f64 * 1000.0 / 48000.0;
+			let length = (total_samples * 1000).div_round(48000);
 
 			// Get the stream length by subtracting the length of the header packets
 
@@ -128,9 +129,9 @@ where
 
 			let stream_len = file_length - header_size as u64;
 
-			properties.duration = Duration::from_millis(length as u64);
-			properties.overall_bitrate = ((file_length as f64) * 8.0 / length) as u32;
-			properties.audio_bitrate = ((stream_len as f64) * 8.0 / length) as u32;
+			properties.duration = Duration::from_millis(length);
+			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+			properties.audio_bitrate = ((stream_len * 8) / length) as u32;
 		} else {
 			log::debug!("Opus: The file contains invalid PCM values, unable to calculate length");
 		}
