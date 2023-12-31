@@ -32,6 +32,7 @@ impl Block {
 		let ty = byte & 0x7F;
 
 		let size = data.read_u24::<BigEndian>()?;
+		log::trace!("Reading FLAC block, type: {ty}, size: {size}");
 
 		let mut content = try_vec![0; size as usize];
 		data.read_exact(&mut content)?;
