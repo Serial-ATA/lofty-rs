@@ -103,6 +103,7 @@ where
 
 	if parse_options.read_properties {
 		let Some(mut first_frame_header) = first_frame_header else {
+			// The search for sync bits was unsuccessful
 			decode_err!(@BAIL Mpeg, "File contains an invalid frame");
 		};
 
