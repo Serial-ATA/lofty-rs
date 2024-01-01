@@ -857,7 +857,7 @@ mod tests {
 				items: vec![(key.to_owned(), "Cmaj".to_owned())],
 				..Default::default()
 			};
-			let mut tag = Tag::try_from(vorbis_comments).unwrap();
+			let mut tag = Tag::from(vorbis_comments);
 			assert_eq!(Some("Cmaj"), tag.get_string(&ItemKey::InitialKey));
 			tag.insert_text(ItemKey::InitialKey, "Cmin".to_owned());
 			vorbis_comments = tag.into();
