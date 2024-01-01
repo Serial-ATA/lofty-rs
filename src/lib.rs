@@ -133,7 +133,6 @@
 	clippy::return_self_not_must_use,
 	clippy::bool_to_int_with_if,
 	clippy::uninlined_format_args, /* This should be changed for any normal "{}", but I'm not a fan of it for any debug or width specific formatting */
-	clippy::manual_let_else,
 	clippy::let_underscore_untyped,
 	clippy::field_reassign_with_default,
 	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */

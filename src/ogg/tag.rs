@@ -565,9 +565,8 @@ impl MergeTag for SplitTagRemainder {
 			let item_value = item.item_value;
 
 			// Discard binary items, as they are not allowed in Vorbis comments
-			let val = match item_value {
-				ItemValue::Text(text) | ItemValue::Locator(text) => text,
-				_ => continue,
+			let (ItemValue::Text(val) | ItemValue::Locator(val)) = item_value else {
+				continue;
 			};
 
 			let key;

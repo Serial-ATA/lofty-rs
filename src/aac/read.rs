@@ -102,10 +102,8 @@ where
 	}
 
 	if parse_options.read_properties {
-		let mut first_frame_header = match first_frame_header {
-			Some(header) => header,
-			// The search for sync bits was unsuccessful
-			None => decode_err!(@BAIL Mpeg, "File contains an invalid frame"),
+		let Some(mut first_frame_header) = first_frame_header else {
+			decode_err!(@BAIL Mpeg, "File contains an invalid frame");
 		};
 
 		if first_frame_header.sample_rate == 0 {
