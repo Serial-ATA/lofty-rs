@@ -37,9 +37,8 @@ impl AttachedPictureFrame {
 	where
 		R: Read,
 	{
-		let encoding = match TextEncoding::from_u8(reader.read_u8()?) {
-			Some(encoding) => encoding,
-			None => err!(NotAPicture),
+		let Some(encoding) = TextEncoding::from_u8(reader.read_u8()?) else {
+			err!(NotAPicture);
 		};
 
 		let mime_type;

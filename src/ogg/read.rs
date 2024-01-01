@@ -94,9 +94,8 @@ where
 		// KEY=VALUE
 		let mut comment_split = comment_bytes.splitn(2, |b| *b == b'=');
 
-		let key = match comment_split.next() {
-			Some(k) => k,
-			None => continue,
+		let Some(key) = comment_split.next() else {
+			continue;
 		};
 
 		// Make sure there was a separator present, otherwise just move on

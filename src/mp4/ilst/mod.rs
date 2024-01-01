@@ -682,18 +682,17 @@ impl MergeTag for SplitTagRemainder {
 			let key = item.item_key;
 
 			if let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) {
-				let data = match item.item_value {
-					ItemValue::Text(text) => text,
-					_ => continue,
+				let ItemValue::Text(text) = item.item_value else {
+					continue;
 				};
 
 				match key {
-					ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, data.as_str()),
-					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, data.as_str()),
-					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, data.as_str()),
-					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, data.as_str()),
+					ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, text.as_str()),
+					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, text.as_str()),
+					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
+					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
 					ItemKey::FlagCompilation => {
-						if let Ok(num) = data.as_str().parse::<u8>() {
+						if let Ok(num) = text.as_str().parse::<u8>() {
 							let data = match num {
 								0 => false,
 								1 => true,
@@ -710,7 +709,7 @@ impl MergeTag for SplitTagRemainder {
 					},
 					_ => merged.atoms.push(Atom {
 						ident: ident.into_owned(),
-						data: AtomDataStorage::Single(AtomData::UTF8(data)),
+						data: AtomDataStorage::Single(AtomData::UTF8(text)),
 					}),
 				}
 			}

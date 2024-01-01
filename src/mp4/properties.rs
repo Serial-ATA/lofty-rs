@@ -274,9 +274,8 @@ where
 		decode_err!(@BAIL Mp4, "File contains no audio tracks");
 	}
 
-	let mdhd = match mdhd {
-		Some(mdhd) => mdhd,
-		None => err!(BadAtom("Expected atom \"trak.mdia.mdhd\"")),
+	let Some(mdhd) = mdhd else {
+		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
 	};
 
 	reader.seek(SeekFrom::Start(mdhd.start + 8))?;

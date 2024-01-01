@@ -646,9 +646,8 @@ impl TagType {
 	/// * It is unable to write to the file
 	pub fn remove_from(&self, file: &mut File) -> Result<()> {
 		let probe = Probe::new(file).guess_file_type()?;
-		let file_type = match probe.file_type() {
-			Some(f_ty) => f_ty,
-			None => err!(UnknownFormat),
+		let Some(file_type) = probe.file_type() else {
+			err!(UnknownFormat);
 		};
 
 		// TODO: This should not have to be manually updated
