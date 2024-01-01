@@ -1,16 +1,7 @@
 use std::fmt::Display;
 
 use proc_macro2::Span;
-use syn::{Attribute, Error, LitStr, Meta, MetaList, Type};
-
-macro_rules! bail {
-	($errors:ident, $span:expr, $msg:expr) => {
-		$errors.push(crate::util::err($span, $msg));
-		return proc_macro2::TokenStream::new();
-	};
-}
-
-pub(crate) use bail;
+use syn::{Attribute, LitStr, Meta, MetaList, Type};
 
 pub(crate) fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::TokenStream> {
 	let mut found = None;
@@ -34,22 +25,6 @@ pub(crate) fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::T
 	}
 
 	found
-}
-
-pub(crate) fn has_path_attr(attr: &Attribute, name: &str) -> bool {
-	if let Some(list) = get_attr_list("lofty", attr) {
-		let res = list.parse_nested_meta(|meta| {
-			if meta.path.is_ident(name) {
-				return Ok(());
-			}
-
-			Err(Error::new(Span::call_site(), ""))
-		});
-
-		return res.is_ok();
-	}
-
-	false
 }
 
 pub(crate) fn get_attr_list(path: &str, attr: &Attribute) -> Option<MetaList> {

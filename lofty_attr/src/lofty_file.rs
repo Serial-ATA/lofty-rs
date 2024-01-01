@@ -1,146 +1,251 @@
-use crate::internal;
-use crate::util::{self, bail};
+use crate::attribute::AttributeValue;
+use crate::{internal, util};
 
+use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
+use syn::parse::Parse;
 use syn::spanned::Spanned;
-use syn::{Attribute, DataStruct, DeriveInput, Field, Type};
+use syn::{Attribute, Data, DataStruct, DeriveInput, Field, Fields, Type};
 
-pub(crate) fn parse(
-	input: &DeriveInput,
-	data_struct: &DataStruct,
-	errors: &mut Vec<syn::Error>,
-) -> proc_macro2::TokenStream {
-	let impl_audiofile = should_impl_audiofile(&input.attrs);
-	let impl_into_taggedfile = should_impl_into_taggedfile(&input.attrs);
-	let struct_name = input.ident.clone();
+#[derive(Default)]
+pub struct InternalFileDetails {
+	pub(crate) has_internal_write_module: bool,
+	pub(crate) has_internal_file_type: bool,
+	pub(crate) id3v2_strippable: bool,
+}
 
-	let read_fn = match util::get_attr("read_fn", &input.attrs) {
-		Some(rfn) => rfn,
-		_ if impl_audiofile => {
-			bail!(
-				errors,
-				input.ident.span(),
-				"Expected a #[read_fn] attribute"
-			);
-		},
-		_ => proc_macro2::TokenStream::new(),
-	};
+#[derive(Default)]
+pub(crate) struct FileFields {
+	pub(crate) tags: Vec<FieldContents>,
+	pub(crate) properties: Option<Field>,
+}
 
-	let write_fn = match util::get_attr("write_fn", &input.attrs) {
-		Some(wfn) => wfn,
-		_ => proc_macro2::TokenStream::new(),
-	};
+pub struct FileStructInfo {
+	pub(crate) name: Ident,
+	pub(crate) span: Span,
+	pub(crate) fields: FileFields,
+}
 
-	// TODO: This is not readable in the slightest
+pub(crate) struct AudioFileImplFields {
+	pub(crate) should_impl_audiofile: bool,
+	pub(crate) read_fn: Option<proc_macro2::TokenStream>,
+	pub(crate) write_fn: Option<proc_macro2::TokenStream>,
+}
 
-	let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
-
-	let has_internal_file_type = opt_file_type.is_some();
-	let is_internal = input
-		.attrs
-		.iter()
-		.any(|attr| util::has_path_attr(attr, "internal_write_module_do_not_use_anywhere_else"));
-
-	if !has_internal_file_type && is_internal {
-		// TODO: This is the best check we can do for now I think?
-		//       Definitely needs some work when a better solution comes out.
-		bail!(
-			errors,
-			input.ident.span(),
-			"Attempted to use an internal attribute externally"
-		);
-	}
-
-	let mut id3v2_strippable = false;
-	let file_type = match opt_file_type {
-		Some((ft, id3v2_strip)) => {
-			id3v2_strippable = id3v2_strip;
-			ft
-		},
-		_ => match util::get_attr("file_type", &input.attrs) {
-			Some(rfn) => rfn,
-			_ => {
-				bail!(
-					errors,
-					input.ident.span(),
-					"Expected a #[file_type] attribute"
-				);
-			},
-		},
-	};
-
-	let (tag_fields, properties_field) = match get_fields(errors, data_struct) {
-		Some(fields) => fields,
-		None => return proc_macro2::TokenStream::new(),
-	};
-
-	if tag_fields.is_empty() {
-		errors.push(util::err(input.ident.span(), "Struct has no tag fields"));
-	}
-
-	let assert_tag_impl_into = tag_fields.iter().enumerate().map(|(i, f)| {
-		let name = format_ident!("_AssertTagExt{}", i);
-		let field_ty = &f.ty;
-		quote_spanned! {field_ty.span()=>
-			struct #name where #field_ty: lofty::TagExt;
+impl Default for AudioFileImplFields {
+	fn default() -> Self {
+		Self {
+			should_impl_audiofile: true,
+			read_fn: None,
+			write_fn: None,
 		}
-	});
+	}
+}
 
-	let mut audiofile_impl = proc_macro2::TokenStream::new();
-	if impl_audiofile {
-		let properties_field = if let Some(field) = properties_field {
-			field
-		} else {
-			bail!(errors, input.ident.span(), "Struct has no properties field");
+pub struct LoftyFile {
+	pub(crate) struct_info: FileStructInfo,
+	pub(crate) audiofile_impl: AudioFileImplFields,
+	pub(crate) internal_details: InternalFileDetails,
+	pub(crate) file_type: proc_macro2::TokenStream,
+	pub(crate) should_impl_into_taggedfile: bool,
+}
+
+impl Parse for LoftyFile {
+	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+		let input: DeriveInput = input.parse()?;
+
+		let data_struct = match input.data {
+			Data::Struct(
+				ref data_struct @ DataStruct {
+					fields: Fields::Named(_),
+					..
+				},
+			) => data_struct,
+			_ => {
+				return Err(util::err(
+					input.ident.span(),
+					"This macro can only be used on structs with named fields",
+				))
+			},
 		};
 
-		audiofile_impl = generate_audiofile_impl(
-			&struct_name,
-			&tag_fields,
-			properties_field,
-			read_fn,
-			write_fn,
-		);
-	}
+		let mut lofty_file = LoftyFile {
+			struct_info: FileStructInfo {
+				name: input.ident.clone(),
+				span: input.ident.span(),
+				fields: Default::default(),
+			},
+			audiofile_impl: Default::default(),
+			should_impl_into_taggedfile: true,
+			file_type: proc_macro2::TokenStream::new(),
+			internal_details: Default::default(),
+		};
 
-	let mut from_taggedfile_impl = proc_macro2::TokenStream::new();
-	if impl_into_taggedfile {
-		from_taggedfile_impl = generate_from_taggedfile_impl(
-			&struct_name,
-			&tag_fields,
-			file_type,
-			has_internal_file_type,
-		);
-	}
+		let mut errors = Vec::new();
 
-	let getters = get_getters(&tag_fields, &struct_name);
-
-	let mut ret = quote! {
-		#( #assert_tag_impl_into )*
-
-		#audiofile_impl
-
-		#from_taggedfile_impl
-
-		#( #getters )*
-	};
-
-	// Create `write` module if internal
-	if is_internal {
-		let lookup = internal::init_write_lookup(id3v2_strippable);
-		let write_mod = internal::write_module(&tag_fields, lookup);
-
-		ret = quote! {
-			#ret
-
-			use crate::_this_is_internal;
-
-			#write_mod
+		let mut has_internal_write_module = false;
+		for attr in &input.attrs {
+			if let Some(lofty_attr) = AttributeValue::from_attribute("lofty", attr)? {
+				match lofty_attr {
+					AttributeValue::Path(value) => match &*value.to_string() {
+						"no_audiofile_impl" => {
+							lofty_file.audiofile_impl.should_impl_audiofile = false
+						},
+						"no_into_taggedfile_impl" => lofty_file.should_impl_into_taggedfile = false,
+						"internal_write_module_do_not_use_anywhere_else" => {
+							has_internal_write_module = true
+						},
+						_ => errors.push(util::err(attr.span(), "Unknown attribute")),
+					},
+					AttributeValue::NameValue(lhs, rhs) => match &*lhs.to_string() {
+						"read_fn" => lofty_file.audiofile_impl.read_fn = Some(rhs.parse()?),
+						"write_fn" => lofty_file.audiofile_impl.write_fn = Some(rhs.parse()?),
+						"file_type" => lofty_file.file_type = rhs.parse()?,
+						_ => errors.push(util::err(attr.span(), "Unknown attribute")),
+					},
+					_ => errors.push(util::err(attr.span(), "Unknown attribute")),
+				}
+			}
 		}
-	}
 
-	ret
+		let struct_name = input.ident.clone();
+		let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
+
+		let has_internal_file_type = opt_file_type.is_some();
+		if !has_internal_file_type && has_internal_write_module {
+			// TODO: This is the best check we can do for now I think?
+			//       Definitely needs some work when a better solution comes out.
+			return Err(crate::util::err(
+				input.ident.span(),
+				"Attempted to use an internal attribute externally",
+			));
+		}
+
+		lofty_file.internal_details.has_internal_write_module = has_internal_write_module;
+		lofty_file.internal_details.has_internal_file_type = has_internal_file_type;
+
+		// Internal files do not specify a `#[lofty(file_type = "...")]`
+		if lofty_file.file_type.is_empty() && lofty_file.internal_details.has_internal_file_type {
+			let Some((ft, id3v2_strip)) = opt_file_type else {
+				return Err(util::err(
+					input.ident.span(),
+					"Unable to locate file type for internal file",
+				));
+			};
+
+			lofty_file.internal_details.id3v2_strippable = id3v2_strip;
+			lofty_file.file_type = ft;
+		}
+
+		let (tag_fields, properties_field) = match get_fields(&mut errors, data_struct) {
+			Some(fields) => fields,
+			None => return Err(errors.remove(0)),
+		};
+
+		if tag_fields.is_empty() {
+			errors.push(util::err(input.ident.span(), "Struct has no tag fields"));
+		}
+
+		// We do not need to check for a `properties` field yet.
+		lofty_file.struct_info.fields.tags = tag_fields;
+		lofty_file.struct_info.fields.properties = properties_field.cloned();
+
+		Ok(lofty_file)
+	}
+}
+
+impl LoftyFile {
+	pub(crate) fn emit(self) -> syn::Result<TokenStream> {
+		// When implementing `AudioFile`, the struct must have:
+		// * A `properties` field
+		// * A `#[read_fn]` attribute
+		//
+		// Otherwise, we can simply ignore their absence.
+		let mut audiofile_impl = proc_macro2::TokenStream::new();
+		if self.audiofile_impl.should_impl_audiofile {
+			let Some(properties_field) = &self.struct_info.fields.properties else {
+				return Err(util::err(
+					self.struct_info.span,
+					"Struct has no `properties` field, required for `AudioFile` impl",
+				));
+			};
+
+			let Some(read_fn) = &self.audiofile_impl.read_fn else {
+				return Err(util::err(
+					self.struct_info.span,
+					"Expected a `#[read_fn]` attribute",
+				));
+			};
+
+			// A write function can be specified, but in its absence, we generate one
+			let write_fn = match &self.audiofile_impl.write_fn {
+				Some(wfn) => wfn.clone(),
+				_ => proc_macro2::TokenStream::new(),
+			};
+
+			audiofile_impl = generate_audiofile_impl(
+				&self.struct_info.name,
+				&self.struct_info.fields.tags,
+				properties_field,
+				read_fn.clone(),
+				write_fn.clone(),
+			);
+		}
+
+		// Assert all tag fields implement `TagExt`
+		let assert_tag_impl_into = self
+			.struct_info
+			.fields
+			.tags
+			.iter()
+			.enumerate()
+			.map(|(i, f)| {
+				let name = format_ident!("_AssertTagExt{}", i);
+				let field_ty = &f.ty;
+				quote_spanned! {field_ty.span()=>
+					struct #name where #field_ty: lofty::TagExt;
+				}
+			});
+
+		let mut from_taggedfile_impl = proc_macro2::TokenStream::new();
+		if self.should_impl_into_taggedfile {
+			from_taggedfile_impl = generate_from_taggedfile_impl(
+				&self.struct_info.name,
+				&self.struct_info.fields.tags,
+				self.file_type,
+				self.internal_details.has_internal_file_type,
+			);
+		}
+
+		let getters = get_getters(&self.struct_info.fields.tags, &self.struct_info.name);
+
+		let mut ret = quote! {
+			#( #assert_tag_impl_into )*
+
+			#audiofile_impl
+
+			#from_taggedfile_impl
+
+			#( #getters )*
+		};
+
+		// Create `write` module if internal
+		if self.internal_details.has_internal_write_module {
+			let lookup = internal::init_write_lookup(self.internal_details.id3v2_strippable);
+			let write_mod = internal::write_module(&self.struct_info.fields.tags, lookup);
+
+			ret = quote! {
+				#ret
+
+				use crate::_this_is_internal;
+
+				#write_mod
+			}
+		}
+
+		Ok(TokenStream::from(ret))
+	}
 }
 
 pub(crate) struct FieldContents {
@@ -199,26 +304,6 @@ fn get_fields<'a>(
 	}
 
 	Some((tag_fields, properties_field))
-}
-
-fn should_impl_audiofile(attrs: &[Attribute]) -> bool {
-	for attr in attrs {
-		if util::has_path_attr(attr, "no_audiofile_impl") {
-			return false;
-		}
-	}
-
-	true
-}
-
-fn should_impl_into_taggedfile(attrs: &[Attribute]) -> bool {
-	for attr in attrs {
-		if util::has_path_attr(attr, "no_into_taggedfile_impl") {
-			return false;
-		}
-	}
-
-	true
 }
 
 fn get_getters<'a>(
