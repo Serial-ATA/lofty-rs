@@ -90,6 +90,7 @@ impl EventType {
 	/// let invalid_byte = 0x17;
 	/// assert_eq!(EventType::from_u8(invalid_byte), EventType::Reserved);
 	/// ```
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Self {
 		match byte {
 			0x00 => Self::Padding,
@@ -223,6 +224,7 @@ impl EventTimingCodesFrame {
 	/// Convert an [`EventTimingCodesFrame`] to a byte vec
 	///
 	/// NOTE: This will sort all events according to their timestamps
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = vec![self.timestamp_format as u8];
 

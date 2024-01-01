@@ -119,6 +119,7 @@ impl<'a> Atom<'a> {
 	/// Create a new [`Atom`] from a collection of [`AtomData`]s
 	///
 	/// This will return `None` if `data` is empty, as empty atoms are useless.
+	#[must_use]
 	pub fn from_collection(ident: AtomIdent<'a>, mut data: Vec<AtomData>) -> Option<Self> {
 		let data = match data.len() {
 			0 => return None,
@@ -130,6 +131,7 @@ impl<'a> Atom<'a> {
 	}
 
 	/// Returns the atom's [`AtomIdent`]
+	#[must_use]
 	pub fn ident(&self) -> &AtomIdent<'_> {
 		&self.ident
 	}
@@ -317,6 +319,7 @@ pub enum AdvisoryRating {
 
 impl AdvisoryRating {
 	/// Returns the rating as it appears in the `rtng` atom
+	#[must_use]
 	pub fn as_u8(&self) -> u8 {
 		match self {
 			AdvisoryRating::Inoffensive => 0,

@@ -56,6 +56,7 @@ impl Mp4File {
 	/// assert_eq!(m4a_file.ftyp(), "M4A ");
 	/// # Ok(()) }
 	/// ```
+	#[must_use]
 	pub fn ftyp(&self) -> &str {
 		self.ftyp.as_ref()
 	}

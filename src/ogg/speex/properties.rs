@@ -41,46 +41,55 @@ impl From<SpeexProperties> for FileProperties {
 
 impl SpeexProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Speex version
+	#[must_use]
 	pub fn version(&self) -> u32 {
 		self.version
 	}
 
 	/// Sample rate
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Speex encoding mode
+	#[must_use]
 	pub fn mode(&self) -> u32 {
 		self.mode
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Whether the file makes use of variable bitrate
+	#[must_use]
 	pub fn vbr(&self) -> bool {
 		self.vbr
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Audio bitrate (bps)
+	#[must_use]
 	pub fn nominal_bitrate(&self) -> i32 {
 		self.nominal_bitrate
 	}

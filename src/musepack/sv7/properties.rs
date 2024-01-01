@@ -47,7 +47,7 @@ impl Profile {
 	///
 	/// The mapping is available here: <http://trac.musepack.net/musepack/wiki/SV7Specification>
 	#[rustfmt::skip]
-	pub fn from_u8(value: u8) -> Option<Self> {
+	#[must_use]	pub fn from_u8(value: u8) -> Option<Self> {
 		match value {
 			0         => Some(Self::None),
 			1         => Some(Self::Unstable),
@@ -86,6 +86,7 @@ impl Link {
 	/// Get a `Link` from a u8
 	///
 	/// The mapping is available here: <http://trac.musepack.net/musepack/wiki/SV7Specification>
+	#[must_use]
 	pub fn from_u8(value: u8) -> Option<Self> {
 		match value {
 			0 => Some(Self::VeryLowStartOrEnd),
@@ -147,61 +148,73 @@ impl From<MpcSv7Properties> for FileProperties {
 
 impl MpcSv7Properties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_freq
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Total number of audio frames
+	#[must_use]
 	pub fn frame_count(&self) -> u32 {
 		self.frame_count
 	}
 
 	/// Whether intensity stereo coding (IS) is used
+	#[must_use]
 	pub fn intensity_stereo(&self) -> bool {
 		self.intensity_stereo
 	}
 
 	/// Whether MidSideStereo is used
+	#[must_use]
 	pub fn mid_side_stereo(&self) -> bool {
 		self.mid_side_stereo
 	}
 
 	/// Last subband used in the whole file
+	#[must_use]
 	pub fn max_band(&self) -> u8 {
 		self.max_band
 	}
 
 	/// Profile used
+	#[must_use]
 	pub fn profile(&self) -> Profile {
 		self.profile
 	}
 
 	/// Volume description of the start and end
+	#[must_use]
 	pub fn link(&self) -> Link {
 		self.link
 	}
 
 	/// Maximum level of the coded PCM input signal
+	#[must_use]
 	pub fn max_level(&self) -> u16 {
 		self.max_level
 	}
@@ -209,6 +222,7 @@ impl MpcSv7Properties {
 	/// Change in the replay level
 	///
 	/// The value is a signed 16 bit integer, with the level being attenuated by that many mB
+	#[must_use]
 	pub fn title_gain(&self) -> i16 {
 		self.title_gain
 	}
@@ -218,6 +232,7 @@ impl MpcSv7Properties {
 	/// * 16422: -6 dB
 	/// * 32767:  0 dB
 	/// * 65379: +6 dB
+	#[must_use]
 	pub fn title_peak(&self) -> u16 {
 		self.title_peak
 	}
@@ -225,6 +240,7 @@ impl MpcSv7Properties {
 	/// Change in the replay level if the whole CD is supposed to be played with the same level change
 	///
 	/// The value is a signed 16 bit integer, with the level being attenuated by that many mB
+	#[must_use]
 	pub fn album_gain(&self) -> i16 {
 		self.album_gain
 	}
@@ -234,11 +250,13 @@ impl MpcSv7Properties {
 	/// * 16422: -6 dB
 	/// * 32767:  0 dB
 	/// * 65379: +6 dB
+	#[must_use]
 	pub fn album_peak(&self) -> u16 {
 		self.album_peak
 	}
 
 	/// Whether true gapless is used
+	#[must_use]
 	pub fn true_gapless(&self) -> bool {
 		self.true_gapless
 	}
@@ -247,11 +265,13 @@ impl MpcSv7Properties {
 	///
 	/// * TrueGapless = 0: always 0
 	/// * TrueGapless = 1: 1...1152
+	#[must_use]
 	pub fn last_frame_length(&self) -> u16 {
 		self.last_frame_length
 	}
 
 	/// Whether fast seeking can be used safely
+	#[must_use]
 	pub fn fast_seeking_safe(&self) -> bool {
 		self.fast_seeking_safe
 	}
@@ -262,6 +282,7 @@ impl MpcSv7Properties {
 	/// * EncoderVersion % 10 == 0        Release (1.0)
 	/// * EncoderVersion %  2 == 0        Beta (1.06)
 	/// * EncoderVersion %  2 == 1        Alpha (1.05a...z)
+	#[must_use]
 	pub fn encoder_version(&self) -> u8 {
 		self.encoder_version
 	}

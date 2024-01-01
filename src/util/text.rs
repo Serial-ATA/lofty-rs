@@ -22,6 +22,7 @@ pub enum TextEncoding {
 
 impl TextEncoding {
 	/// Get a `TextEncoding` from a u8, must be 0-3 inclusive
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {
 			0 => Some(Self::Latin1),

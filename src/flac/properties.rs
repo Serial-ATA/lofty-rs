@@ -35,36 +35,43 @@ impl From<FlacProperties> for FileProperties {
 
 impl FlacProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Bits per sample (usually 16 or 24 bit)
+	#[must_use]
 	pub fn bit_depth(&self) -> u8 {
 		self.bit_depth
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// MD5 signature of the unencoded audio data
+	#[must_use]
 	pub fn signature(&self) -> u128 {
 		self.signature
 	}

@@ -49,6 +49,7 @@ impl PrivateFrame {
 	}
 
 	/// Convert an [`PrivateFrame`] to a byte vec
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let Self {
 			owner,

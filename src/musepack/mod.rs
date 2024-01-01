@@ -75,6 +75,7 @@ pub struct MpcFile {
 
 impl MpcFile {
 	/// The version of the MPC stream
+	#[must_use]
 	pub fn stream_version(&self) -> MpcStreamVersion {
 		self.stream_version
 	}

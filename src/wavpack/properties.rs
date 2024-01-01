@@ -39,21 +39,25 @@ impl From<WavPackProperties> for FileProperties {
 
 impl WavPackProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
@@ -61,26 +65,31 @@ impl WavPackProperties {
 	/// Channel count
 	///
 	/// This is a `u16` since WavPack supports "unlimited" streams
+	#[must_use]
 	pub fn channels(&self) -> u16 {
 		self.channels
 	}
 
 	/// Channel mask
+	#[must_use]
 	pub fn channel_mask(&self) -> ChannelMask {
 		self.channel_mask
 	}
 
 	/// WavPack version
+	#[must_use]
 	pub fn version(&self) -> u16 {
 		self.version
 	}
 
 	/// Bits per sample
+	#[must_use]
 	pub fn bit_depth(&self) -> u8 {
 		self.bit_depth
 	}
 
 	/// Whether the audio is lossless
+	#[must_use]
 	pub fn is_lossless(&self) -> bool {
 		self.lossless
 	}

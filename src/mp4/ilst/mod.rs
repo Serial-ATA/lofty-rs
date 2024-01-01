@@ -96,6 +96,7 @@ impl Ilst {
 	/// let ilst_tag = Ilst::new();
 	/// assert!(ilst_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -115,6 +116,7 @@ impl Ilst {
 	/// let title = ilst.get(&AtomIdent::Fourcc(*b"\xa9nam"));
 	/// assert!(title.is_some());
 	/// ```
+	#[must_use]
 	pub fn get(&self, ident: &AtomIdent<'_>) -> Option<&Atom<'static>> {
 		self.atoms.iter().find(|a| &a.ident == ident)
 	}
@@ -272,6 +274,7 @@ impl Ilst {
 	///
 	/// assert_eq!(ilst.pictures().unwrap().count(), 2);
 	/// ```
+	#[must_use]
 	pub fn pictures(&self) -> Option<impl Iterator<Item = &Picture>> {
 		let Some(covr) = self.get(&COVR) else {
 			return None;

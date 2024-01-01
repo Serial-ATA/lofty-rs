@@ -62,6 +62,7 @@ impl TagRestrictions {
 	/// Read a [`TagRestrictions`] from a byte
 	///
 	/// NOTE: See <https://id3.org/id3v2.4.0-structure> section 3.2, item d
+	#[must_use]
 	pub fn from_byte(byte: u8) -> Self {
 		let mut restrictions = TagRestrictions::default();
 
@@ -106,6 +107,7 @@ impl TagRestrictions {
 
 	/// Convert a [`TagRestrictions`] into a `u8`
 	#[allow(clippy::trivially_copy_pass_by_ref)]
+	#[must_use]
 	pub fn as_bytes(&self) -> u8 {
 		let mut byte = 0;
 

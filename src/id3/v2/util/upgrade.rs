@@ -14,6 +14,7 @@ use std::collections::HashMap;
 ///
 /// assert_eq!(new_title, Some("TIT2"));
 /// ```
+#[must_use]
 pub fn upgrade_v2(key: &str) -> Option<&'static str> {
 	v2keys().get(key).copied()
 }
@@ -30,6 +31,7 @@ pub fn upgrade_v2(key: &str) -> Option<&'static str> {
 ///
 /// assert_eq!(new_involved_people_list, Some("TIPL"));
 /// ```
+#[must_use]
 pub fn upgrade_v3(key: &str) -> Option<&'static str> {
 	v3keys().get(key).copied()
 }

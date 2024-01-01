@@ -50,6 +50,7 @@ impl<'a> FrameId<'a> {
 	}
 
 	/// Extracts the string from the ID
+	#[must_use]
 	pub fn as_str(&self) -> &str {
 		match self {
 			FrameId::Valid(v) | FrameId::Outdated(v) => v,
@@ -70,6 +71,7 @@ impl<'a> FrameId<'a> {
 	}
 
 	/// Obtains a borrowed instance
+	#[must_use]
 	pub fn as_borrowed(&'a self) -> Self {
 		match self {
 			Self::Valid(inner) => Self::Valid(Cow::Borrowed(inner)),
@@ -78,6 +80,7 @@ impl<'a> FrameId<'a> {
 	}
 
 	/// Obtains an owned instance
+	#[must_use]
 	pub fn into_owned(self) -> FrameId<'static> {
 		match self {
 			Self::Valid(inner) => FrameId::Valid(Cow::Owned(inner.into_owned())),
@@ -86,6 +89,7 @@ impl<'a> FrameId<'a> {
 	}
 
 	/// Consumes the [`FrameId`], returning the inner value
+	#[must_use]
 	pub fn into_inner(self) -> Cow<'a, str> {
 		match self {
 			FrameId::Valid(v) | FrameId::Outdated(v) => v,

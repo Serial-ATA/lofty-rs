@@ -51,36 +51,43 @@ impl FileProperties {
 	}
 
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> Option<u32> {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> Option<u32> {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> Option<u32> {
 		self.sample_rate
 	}
 
 	/// Bits per sample (usually 16 or 24 bit)
+	#[must_use]
 	pub fn bit_depth(&self) -> Option<u8> {
 		self.bit_depth
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> Option<u8> {
 		self.channels
 	}
 
 	/// Channel mask
+	#[must_use]
 	pub fn channel_mask(&self) -> Option<ChannelMask> {
 		self.channel_mask
 	}

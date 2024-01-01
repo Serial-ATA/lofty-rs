@@ -51,6 +51,7 @@ impl UniqueFileIdentifierFrame {
 	}
 
 	/// Encode the frame contents as bytes
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let Self { owner, identifier } = self;
 

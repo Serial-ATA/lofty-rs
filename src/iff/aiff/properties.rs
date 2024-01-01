@@ -65,6 +65,7 @@ impl AiffCompressionType {
 	/// let compression_type = AiffCompressionType::alaw;
 	/// assert_eq!(compression_type.compression_name(), "ALaw 2:1");
 	/// ```
+	#[must_use]
 	pub fn compression_name(&self) -> Cow<'_, str> {
 		match self {
 			AiffCompressionType::None => Cow::Borrowed("not compressed"),
@@ -116,36 +117,43 @@ impl From<AiffProperties> for FileProperties {
 
 impl AiffProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Bits per sample
+	#[must_use]
 	pub fn sample_size(&self) -> u16 {
 		self.sample_size
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u16 {
 		self.channels
 	}
 
 	/// AIFC compression type, if an AIFC file was read
+	#[must_use]
 	pub fn compression_type(&self) -> Option<&AiffCompressionType> {
 		self.compression_type.as_ref()
 	}

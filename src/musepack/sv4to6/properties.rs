@@ -40,41 +40,49 @@ impl From<MpcSv4to6Properties> for FileProperties {
 
 impl MpcSv4to6Properties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Whether MidSideStereo is used
+	#[must_use]
 	pub fn mid_side_stereo(&self) -> bool {
 		self.mid_side_stereo
 	}
 
 	/// The MPC stream version (4-6)
+	#[must_use]
 	pub fn stream_version(&self) -> u16 {
 		self.stream_version
 	}
 
 	/// Last subband used in the whole file
+	#[must_use]
 	pub fn max_band(&self) -> u8 {
 		self.max_band
 	}
 
 	/// Total number of audio frames
+	#[must_use]
 	pub fn frame_count(&self) -> u32 {
 		self.frame_count
 	}

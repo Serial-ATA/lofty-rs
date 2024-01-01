@@ -436,7 +436,7 @@ macro_rules! gen_item_keys {
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
-			pub fn from_key(tag_type: TagType, key: &str) -> Self {
+			#[must_use] pub fn from_key(tag_type: TagType, key: &str) -> Self {
 				match tag_type {
 					$(
 						$(#[$feat])?
@@ -449,7 +449,7 @@ macro_rules! gen_item_keys {
 			///
 			/// Use `allow_unknown` to include [`ItemKey::Unknown`]. It is up to the caller
 			/// to determine if the unknown key actually fits the format's specifications.
-			pub fn map_key(&self, tag_type: TagType, allow_unknown: bool) -> Option<&str> {
+			#[must_use] pub fn map_key(&self, tag_type: TagType, allow_unknown: bool) -> Option<&str> {
 				match tag_type {
 					$(
 						$(#[$feat])?
@@ -686,6 +686,7 @@ pub enum ItemValue {
 
 impl ItemValue {
 	/// Returns the value if the variant is `Text`
+	#[must_use]
 	pub fn text(&self) -> Option<&str> {
 		match self {
 			Self::Text(ref text) => Some(text),
@@ -694,6 +695,7 @@ impl ItemValue {
 	}
 
 	/// Returns the value if the variant is `Locator`
+	#[must_use]
 	pub fn locator(&self) -> Option<&str> {
 		match self {
 			Self::Locator(ref locator) => Some(locator),
@@ -702,6 +704,7 @@ impl ItemValue {
 	}
 
 	/// Returns the value if the variant is `Binary`
+	#[must_use]
 	pub fn binary(&self) -> Option<&[u8]> {
 		match self {
 			Self::Binary(ref bin) => Some(bin),
@@ -710,6 +713,7 @@ impl ItemValue {
 	}
 
 	/// Consumes the `ItemValue`, returning a `String` if the variant is `Text` or `Locator`
+	#[must_use]
 	pub fn into_string(self) -> Option<String> {
 		match self {
 			Self::Text(s) | Self::Locator(s) => Some(s),
@@ -718,6 +722,7 @@ impl ItemValue {
 	}
 
 	/// Consumes the `ItemValue`, returning a `Vec<u8>` if the variant is `Binary`
+	#[must_use]
 	pub fn into_binary(self) -> Option<Vec<u8>> {
 		match self {
 			Self::Binary(b) => Some(b),
@@ -726,6 +731,7 @@ impl ItemValue {
 	}
 
 	/// Check for emptiness
+	#[must_use]
 	pub fn is_empty(&self) -> bool {
 		match self {
 			Self::Binary(binary) => binary.is_empty(),
@@ -766,6 +772,7 @@ impl TagItem {
 	/// * This will check for validity based on the [`TagType`].
 	/// * If the [`ItemKey`] does not map to a key in the target format, `None` will be returned.
 	/// * This is unnecessary if you plan on using [`Tag::insert_item`](crate::Tag::insert), as it does validity checks itself.
+	#[must_use]
 	pub fn new_checked(
 		tag_type: TagType,
 		item_key: ItemKey,
@@ -787,26 +794,31 @@ impl TagItem {
 	}
 
 	/// Returns a reference to the [`ItemKey`]
+	#[must_use]
 	pub fn key(&self) -> &ItemKey {
 		&self.item_key
 	}
 
 	/// Consumes the `TagItem`, returning its [`ItemKey`]
+	#[must_use]
 	pub fn into_key(self) -> ItemKey {
 		self.item_key
 	}
 
 	/// Returns a reference to the [`ItemValue`]
+	#[must_use]
 	pub fn value(&self) -> &ItemValue {
 		&self.item_value
 	}
 
 	/// Consumes the `TagItem`, returning its [`ItemValue`]
+	#[must_use]
 	pub fn into_value(self) -> ItemValue {
 		self.item_value
 	}
 
 	/// Consumes the `TagItem`, returning its [`ItemKey`] and [`ItemValue`]
+	#[must_use]
 	pub fn consume(self) -> (ItemKey, ItemValue) {
 		(self.item_key, self.item_value)
 	}

@@ -83,6 +83,7 @@ impl VorbisComments {
 	/// let vorbis_comments_tag = VorbisComments::new();
 	/// assert!(vorbis_comments_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -98,6 +99,7 @@ impl VorbisComments {
 	/// vorbis_comments.set_vendor(String::from("FooBar"));
 	/// assert_eq!(vorbis_comments.vendor(), "FooBar");
 	/// ```
+	#[must_use]
 	pub fn vendor(&self) -> &str {
 		&self.vendor
 	}
@@ -133,6 +135,7 @@ impl VorbisComments {
 	/// assert_eq!(items.next(), Some(("ARTIST", "Foo artist")));
 	/// assert_eq!(items.next(), Some(("TITLE", "Bar title")));
 	/// ```
+	#[must_use]
 	pub fn items(&self) -> impl ExactSizeIterator<Item = (&str, &str)> + Clone {
 		self.items.iter().map(|(k, v)| (k.as_str(), v.as_str()))
 	}
@@ -181,6 +184,7 @@ impl VorbisComments {
 	/// let first_artist = vorbis_comments.get("ARTIST").unwrap();
 	/// assert_eq!(first_artist, "Foo artist");
 	/// ```
+	#[must_use]
 	pub fn get(&self, key: &str) -> Option<&str> {
 		if !verify_key(key) {
 			return None;

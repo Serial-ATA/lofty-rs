@@ -63,6 +63,7 @@ impl GeneralEncapsulatedObject {
 	/// Convert a [`GeneralEncapsulatedObject`] into an ID3v2 GEOB frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let encoding = self.encoding;
 

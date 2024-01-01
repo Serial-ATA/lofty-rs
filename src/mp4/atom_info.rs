@@ -42,6 +42,7 @@ pub enum AtomIdent<'a> {
 
 impl<'a> AtomIdent<'a> {
 	/// Obtains a borrowed instance
+	#[must_use]
 	pub fn as_borrowed(&'a self) -> Self {
 		match self {
 			Self::Fourcc(fourcc) => Self::Fourcc(*fourcc),
@@ -53,6 +54,7 @@ impl<'a> AtomIdent<'a> {
 	}
 
 	/// Obtains an owned instance
+	#[must_use]
 	pub fn into_owned(self) -> AtomIdent<'static> {
 		match self {
 			Self::Fourcc(fourcc) => AtomIdent::Fourcc(fourcc),

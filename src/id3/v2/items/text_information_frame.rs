@@ -43,6 +43,7 @@ impl TextInformationFrame {
 	}
 
 	/// Convert an [`TextInformationFrame`] to a byte vec
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = encode_text(&self.value, self.encoding, false);
 

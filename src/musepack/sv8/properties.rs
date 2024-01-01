@@ -39,31 +39,37 @@ impl From<MpcSv8Properties> for FileProperties {
 
 impl MpcSv8Properties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.stream_header.sample_rate
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.stream_header.channels
 	}
 
 	/// MusePack stream version
+	#[must_use]
 	pub fn version(&self) -> u8 {
 		self.stream_header.stream_version
 	}

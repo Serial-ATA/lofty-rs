@@ -94,6 +94,7 @@ impl ApeTag {
 	/// let ape_tag = ApeTag::new();
 	/// assert!(ape_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
@@ -116,6 +117,7 @@ impl ApeTag {
 	/// let title = ape_tag.get("Title");
 	/// assert!(title.is_some());
 	/// ```
+	#[must_use]
 	pub fn get(&self, key: &str) -> Option<&ApeItem> {
 		self.items
 			.iter()

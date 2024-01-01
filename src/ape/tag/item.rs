@@ -47,11 +47,13 @@ impl ApeItem {
 	}
 
 	/// Returns the item key
+	#[must_use]
 	pub fn key(&self) -> &str {
 		&self.key
 	}
 
 	/// Returns the item value
+	#[must_use]
 	pub fn value(&self) -> &ItemValue {
 		&self.value
 	}

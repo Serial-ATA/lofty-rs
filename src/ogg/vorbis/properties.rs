@@ -40,46 +40,55 @@ impl From<VorbisProperties> for FileProperties {
 
 impl VorbisProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Vorbis version
+	#[must_use]
 	pub fn version(&self) -> u32 {
 		self.version
 	}
 
 	/// Maximum bitrate (bps)
+	#[must_use]
 	pub fn bitrate_max(&self) -> i32 {
 		self.bitrate_maximum
 	}
 
 	/// Nominal bitrate (bps)
+	#[must_use]
 	pub fn bitrate_nominal(&self) -> i32 {
 		self.bitrate_nominal
 	}
 
 	/// Minimum bitrate (bps)
+	#[must_use]
 	pub fn bitrate_min(&self) -> i32 {
 		self.bitrate_minimum
 	}

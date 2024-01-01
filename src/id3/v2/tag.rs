@@ -140,11 +140,13 @@ impl Id3v2Tag {
 	/// let id3v2_tag = Id3v2Tag::new();
 	/// assert!(id3v2_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
 
 	/// Returns the [`Id3v2TagFlags`]
+	#[must_use]
 	pub fn flags(&self) -> &Id3v2TagFlags {
 		&self.flags
 	}
@@ -158,6 +160,7 @@ impl Id3v2Tag {
 	///
 	/// This is here, since the tag is upgraded to `ID3v2.4`, but a `v2.2` or `v2.3`
 	/// tag may have been read.
+	#[must_use]
 	pub fn original_version(&self) -> Id3v2Version {
 		self.original_version
 	}
@@ -165,6 +168,7 @@ impl Id3v2Tag {
 
 impl Id3v2Tag {
 	/// Gets a [`Frame`] from an id
+	#[must_use]
 	pub fn get(&self, id: &FrameId<'_>) -> Option<&Frame<'static>> {
 		self.frames.iter().find(|f| &f.id == id)
 	}
@@ -175,6 +179,7 @@ impl Id3v2Tag {
 	///
 	/// If the tag is [`Id3v2Version::V4`], this will allocate if the text contains any
 	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
+	#[must_use]
 	pub fn get_text(&self, id: &FrameId<'_>) -> Option<Cow<'_, str>> {
 		let frame = self.get(id);
 		if let Some(Frame {
@@ -217,6 +222,7 @@ impl Id3v2Tag {
 	/// assert_eq!(titles.next(), Some("Foo"));
 	/// assert_eq!(titles.next(), Some("Bar"));
 	/// ```
+	#[must_use]
 	pub fn get_texts(&self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &str>> {
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { value, .. }),
@@ -248,6 +254,7 @@ impl Id3v2Tag {
 	/// let value = tag.get_user_text("SOME_DESCRIPTION");
 	/// assert_eq!(value, Some("Some value"));
 	/// ```
+	#[must_use]
 	pub fn get_user_text(&self, description: &str) -> Option<&str> {
 		self.frames
 			.iter()
@@ -547,6 +554,7 @@ impl Id3v2Tag {
 	///
 	/// This will translate any numeric genre IDs to their textual equivalent.
 	/// ID3v2.4-style multi-value fields will be split as normal.
+	#[must_use]
 	pub fn genres(&self) -> Option<impl Iterator<Item = &str>> {
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { ref value, .. }),

@@ -127,16 +127,19 @@ impl<'a> Frame<'a> {
 	}
 
 	/// Extract the string from the [`FrameId`]
+	#[must_use]
 	pub fn id_str(&self) -> &str {
 		self.id.as_str()
 	}
 
 	/// Returns the frame's content
+	#[must_use]
 	pub fn content(&self) -> &FrameValue {
 		&self.value
 	}
 
 	/// Returns a reference to the [`FrameFlags`]
+	#[must_use]
 	pub fn flags(&self) -> &FrameFlags {
 		&self.flags
 	}

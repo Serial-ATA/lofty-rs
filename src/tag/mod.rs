@@ -241,16 +241,19 @@ impl Tag {
 	}
 
 	/// Returns the [`TagType`]
+	#[must_use]
 	pub fn tag_type(&self) -> TagType {
 		self.tag_type
 	}
 
 	/// Returns the number of [`TagItem`]s
+	#[must_use]
 	pub fn item_count(&self) -> u32 {
 		self.items.len() as u32
 	}
 
 	/// Returns the number of [`Picture`]s
+	#[must_use]
 	pub fn picture_count(&self) -> u32 {
 		self.pictures.len() as u32
 	}
@@ -261,6 +264,7 @@ impl Tag {
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
+	#[must_use]
 	pub fn get(&self, item_key: &ItemKey) -> Option<&TagItem> {
 		self.items.iter().find(|i| &i.item_key == item_key)
 	}
@@ -277,6 +281,7 @@ impl Tag {
 	/// Gets a byte slice from an [`ItemKey`]
 	///
 	/// Use `convert` to convert [`ItemValue::Text`] and [`ItemValue::Locator`] to byte slices
+	#[must_use]
 	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
 		if let Some(item) = self.get(item_key) {
 			match item.value() {
@@ -432,11 +437,13 @@ impl Tag {
 	}
 
 	/// Returns the stored [`Picture`]s as a slice
+	#[must_use]
 	pub fn pictures(&self) -> &[Picture] {
 		&self.pictures
 	}
 
 	/// Returns the first occurrence of the [`PictureType`]
+	#[must_use]
 	pub fn get_picture_type(&self, picture_type: PictureType) -> Option<&Picture> {
 		self.pictures
 			.iter()

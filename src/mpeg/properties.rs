@@ -63,61 +63,73 @@ impl From<MpegProperties> for FileProperties {
 
 impl MpegProperties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// MPEG version
+	#[must_use]
 	pub fn version(&self) -> &MpegVersion {
 		&self.version
 	}
 
 	/// MPEG layer
+	#[must_use]
 	pub fn layer(&self) -> &Layer {
 		&self.layer
 	}
 
 	/// MPEG channel mode
+	#[must_use]
 	pub fn channel_mode(&self) -> &ChannelMode {
 		&self.channel_mode
 	}
 
 	/// A channel mode extension specifically for [`ChannelMode::JointStereo`]
+	#[must_use]
 	pub fn mode_extension(&self) -> Option<u8> {
 		self.mode_extension
 	}
 
 	/// Whether the audio is copyrighted
+	#[must_use]
 	pub fn is_copyright(&self) -> bool {
 		self.copyright
 	}
 
 	/// Whether the media is original or a copy
+	#[must_use]
 	pub fn is_original(&self) -> bool {
 		self.original
 	}
 
 	/// See [`Emphasis`]
+	#[must_use]
 	pub fn emphasis(&self) -> Option<Emphasis> {
 		self.emphasis
 	}

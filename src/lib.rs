@@ -118,7 +118,6 @@
 	clippy::cast_possible_wrap,
 	clippy::cast_possible_truncation,
 	clippy::module_name_repetitions,
-	clippy::must_use_candidate,
 	clippy::doc_markdown,
 	clippy::match_wildcard_for_single_variants,
 	clippy::semicolon_if_nothing_returned,

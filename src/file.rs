@@ -751,6 +751,7 @@ impl FileType {
 	/// let file_type = FileType::Mpeg;
 	/// assert_eq!(file_type.primary_tag_type(), TagType::Id3v2);
 	/// ```
+	#[must_use]
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
 			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
@@ -784,6 +785,7 @@ impl FileType {
 	/// let file_type = FileType::Mpeg;
 	/// assert!(file_type.supports_tag_type(TagType::Id3v2));
 	/// ```
+	#[must_use]
 	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
 		if let FileType::Custom(c) = self {
 			let resolver = crate::resolve::lookup_resolver(c);
@@ -892,6 +894,7 @@ impl FileType {
 	/// assert_eq!(FileType::from_buffer(&buf), Some(FileType::Opus));
 	/// # Ok(()) }
 	/// ```
+	#[must_use]
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
 			FileTypeGuessResult::Determined(file_ty) => Some(file_ty),

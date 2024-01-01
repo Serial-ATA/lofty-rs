@@ -19,6 +19,7 @@ impl AudioTextFrameFlags {
 	/// Get ID3v2 ATXT frame flags from a byte
 	///
 	/// The flag byte layout is defined here: <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2-accessibility-1.0.html#proposed-audio-text-frame>
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Self {
 		Self {
 			scrambling: byte & 0x01 > 0,
@@ -28,6 +29,7 @@ impl AudioTextFrameFlags {
 	/// Convert an [`AudioTextFrameFlags`] to an ATXT frame flag byte
 	///
 	/// The flag byte layout is defined here: <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2-accessibility-1.0.html#proposed-audio-text-frame>
+	#[must_use]
 	pub fn as_u8(&self) -> u8 {
 		let mut byte = 0_u8;
 
@@ -124,6 +126,7 @@ impl AudioTextFrame {
 	/// Convert an [`AudioTextFrame`] to a ID3v2 A/PIC byte Vec
 	///
 	/// NOTE: This does not include the frame header
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = vec![self.encoding as u8];
 

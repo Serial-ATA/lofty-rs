@@ -214,6 +214,7 @@ impl Id3v2Error {
 	}
 
 	/// Returns the [`Id3v2ErrorKind`]
+	#[must_use]
 	pub fn kind(&self) -> &Id3v2ErrorKind {
 		&self.kind
 	}
@@ -248,6 +249,7 @@ impl FileDecodingError {
 	}
 
 	/// Create a `FileDecodingError` without binding it to a [`FileType`]
+	#[must_use]
 	pub fn from_description(description: &'static str) -> Self {
 		Self {
 			format: None,
@@ -256,11 +258,13 @@ impl FileDecodingError {
 	}
 
 	/// Returns the associated [`FileType`], if one exists
+	#[must_use]
 	pub fn format(&self) -> Option<FileType> {
 		self.format
 	}
 
 	/// Returns the error description
+	#[must_use]
 	pub fn description(&self) -> &str {
 		self.description
 	}
@@ -325,6 +329,7 @@ impl FileEncodingError {
 	/// // error is formatted
 	/// let mpeg_error = FileEncodingError::from_description("Something went wrong in the MPEG file!");
 	/// ```
+	#[must_use]
 	pub fn from_description(description: &'static str) -> Self {
 		Self {
 			format: None,
@@ -345,6 +350,7 @@ impl FileEncodingError {
 	///
 	/// assert_eq!(mpeg_error.format(), Some(FileType::Mpeg));
 	/// ```
+	#[must_use]
 	pub fn format(&self) -> Option<FileType> {
 		self.format
 	}
@@ -365,6 +371,7 @@ impl FileEncodingError {
 	/// 	"Something went wrong in the MPEG file!"
 	/// );
 	/// ```
+	#[must_use]
 	pub fn description(&self) -> &str {
 		self.description
 	}
@@ -424,6 +431,7 @@ impl LoftyError {
 	/// 	println!("What's the format?");
 	/// }
 	/// ```
+	#[must_use]
 	pub fn kind(&self) -> &ErrorKind {
 		&self.kind
 	}

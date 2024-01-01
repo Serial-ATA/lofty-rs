@@ -64,11 +64,13 @@ impl RIFFInfoList {
 	/// let riff_info_tag = RIFFInfoList::new();
 	/// assert!(riff_info_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
 
 	/// Get an item by key
+	#[must_use]
 	pub fn get(&self, key: &str) -> Option<&str> {
 		self.items
 			.iter()

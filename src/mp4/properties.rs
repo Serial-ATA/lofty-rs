@@ -161,36 +161,43 @@ impl From<Mp4Properties> for FileProperties {
 
 impl Mp4Properties {
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Bits per sample
+	#[must_use]
 	pub fn bit_depth(&self) -> Option<u8> {
 		self.bit_depth
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Audio codec
+	#[must_use]
 	pub fn codec(&self) -> &Mp4Codec {
 		&self.codec
 	}
@@ -200,11 +207,13 @@ impl Mp4Properties {
 	/// This is only applicable to MP4 files with an Elementary Stream Descriptor.
 	/// See [here](https://wiki.multimedia.cx/index.php?title=MPEG-4_Audio#Audio_Specific_Config) for
 	/// more information.
+	#[must_use]
 	pub fn audio_object_type(&self) -> Option<AudioObjectType> {
 		self.extended_audio_object_type
 	}
 
 	/// Whether or not the file is DRM protected
+	#[must_use]
 	pub fn is_drm_protected(&self) -> bool {
 		self.drm_protected
 	}

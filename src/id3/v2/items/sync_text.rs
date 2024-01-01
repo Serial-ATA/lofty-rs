@@ -21,6 +21,7 @@ pub enum TimestampFormat {
 
 impl TimestampFormat {
 	/// Get a `TimestampFormat` from a u8, must be 1-2 inclusive
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {
 			1 => Some(Self::MPEG),
@@ -48,6 +49,7 @@ pub enum SyncTextContentType {
 
 impl SyncTextContentType {
 	/// Get a `SyncTextContentType` from a u8, must be 0-8 inclusive
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {
 			0 => Some(Self::Other),

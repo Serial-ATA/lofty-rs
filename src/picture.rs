@@ -78,6 +78,7 @@ impl MimeType {
 	/// let jpeg_mimetype_str = "image/jpeg";
 	/// assert_eq!(MimeType::from_str(jpeg_mimetype_str), MimeType::Jpeg);
 	/// ```
+	#[must_use]
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
 			"image/jpeg" | "image/jpg" => Self::Jpeg,
@@ -99,6 +100,7 @@ impl MimeType {
 	/// let jpeg_mimetype = MimeType::Jpeg;
 	/// assert_eq!(jpeg_mimetype.as_str(), "image/jpeg")
 	/// ```
+	#[must_use]
 	pub fn as_str(&self) -> &str {
 		match self {
 			MimeType::Jpeg => "image/jpeg",
@@ -144,6 +146,7 @@ impl PictureType {
 	// ID3/OGG specific methods
 
 	/// Get a u8 from a `PictureType` according to ID3v2 APIC
+	#[must_use]
 	pub fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,
@@ -172,6 +175,7 @@ impl PictureType {
 	}
 
 	/// Get a `PictureType` from a u8 according to ID3v2 APIC
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Self {
 		match byte {
 			0 => Self::Other,
@@ -202,6 +206,7 @@ impl PictureType {
 	// APE specific methods
 
 	/// Get an APE item key from a `PictureType`
+	#[must_use]
 	pub fn as_ape_key(&self) -> Option<&str> {
 		match self {
 			Self::Other => Some("Cover Art (Other)"),
@@ -230,6 +235,7 @@ impl PictureType {
 	}
 
 	/// Get a `PictureType` from an APE item key
+	#[must_use]
 	pub fn from_ape_key(key: &str) -> Self {
 		match key {
 			"Cover Art (Other)" => Self::Other,
@@ -521,6 +527,7 @@ impl Picture {
 	}
 
 	/// Returns the [`PictureType`]
+	#[must_use]
 	pub fn pic_type(&self) -> PictureType {
 		self.pic_type
 	}
@@ -534,6 +541,7 @@ impl Picture {
 	///
 	/// The `mime_type` is determined from the `data`, and
 	/// is immutable.
+	#[must_use]
 	pub fn mime_type(&self) -> Option<&MimeType> {
 		self.mime_type.as_ref()
 	}
@@ -547,6 +555,7 @@ impl Picture {
 	}
 
 	/// Returns the description
+	#[must_use]
 	pub fn description(&self) -> Option<&str> {
 		self.description.as_deref()
 	}
@@ -557,11 +566,13 @@ impl Picture {
 	}
 
 	/// Returns the [`Picture`] data as borrowed bytes.
+	#[must_use]
 	pub fn data(&self) -> &[u8] {
 		&self.data
 	}
 
 	/// Consumes a [`Picture`], returning the data as [`Vec`] without clones or allocation.
+	#[must_use]
 	pub fn into_data(self) -> Vec<u8> {
 		self.data.into_owned()
 	}
@@ -575,6 +586,7 @@ impl Picture {
 	/// * This does not include a key (Vorbis comments) or METADATA_BLOCK_HEADER (FLAC blocks)
 	/// * FLAC blocks have different size requirements than OGG Vorbis/Opus, size is not checked here
 	/// * When writing to Vorbis comments, the data **must** be base64 encoded
+	#[must_use]
 	pub fn as_flac_bytes(&self, picture_information: PictureInformation, encode: bool) -> Vec<u8> {
 		let mut data = Vec::<u8>::new();
 
@@ -731,6 +743,7 @@ impl Picture {
 	/// NOTE: This is only the picture data and description, a
 	/// key and terminating null byte will not be prepended.
 	/// To map a [`PictureType`] to an APE key see [`PictureType::as_ape_key`]
+	#[must_use]
 	pub fn as_ape_bytes(&self) -> Vec<u8> {
 		let mut data: Vec<u8> = Vec::new();
 

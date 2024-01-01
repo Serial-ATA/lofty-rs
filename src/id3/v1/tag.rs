@@ -119,6 +119,7 @@ impl Id3v1Tag {
 	/// let id3v1_tag = Id3v1Tag::new();
 	/// assert!(id3v1_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}

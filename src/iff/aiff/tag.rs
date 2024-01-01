@@ -134,11 +134,13 @@ impl AIFFTextChunks {
 	/// let aiff_tag = AIFFTextChunks::new();
 	/// assert!(aiff_tag.is_empty());
 	/// ```
+	#[must_use]
 	pub fn new() -> Self {
 		Self::default()
 	}
 
 	/// Returns the copyright message
+	#[must_use]
 	pub fn copyright(&self) -> Option<&str> {
 		self.copyright.as_deref()
 	}

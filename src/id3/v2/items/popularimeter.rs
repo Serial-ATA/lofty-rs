@@ -69,6 +69,7 @@ impl Popularimeter {
 	/// Convert a [`Popularimeter`] into an ID3v2 POPM frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = Vec::with_capacity(self.email.len() + 9);
 		content.extend(encode_text(self.email.as_str(), TextEncoding::Latin1, true));

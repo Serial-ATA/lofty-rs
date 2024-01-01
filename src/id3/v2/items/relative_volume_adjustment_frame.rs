@@ -43,6 +43,7 @@ impl ChannelType {
 	/// let invalid_byte = 10;
 	/// assert_eq!(ChannelType::from_u8(invalid_byte), None);
 	/// ```
+	#[must_use]
 	pub fn from_u8(byte: u8) -> Option<Self> {
 		match byte {
 			0 => Some(Self::Other),
@@ -158,6 +159,7 @@ impl RelativeVolumeAdjustmentFrame {
 	}
 
 	/// Convert a [`RelativeVolumeAdjustmentFrame`] to a byte vec
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = Vec::new();
 

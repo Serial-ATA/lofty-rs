@@ -113,6 +113,7 @@ impl ExtendedTextFrame {
 	}
 
 	/// Convert an [`ExtendedTextFrame`] to a byte vec
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut bytes = vec![self.encoding as u8];
 

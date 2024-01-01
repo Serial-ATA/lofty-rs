@@ -33,11 +33,13 @@ impl UrlLinkFrame {
 	}
 
 	/// Convert an [`UrlLinkFrame`] to a byte vec
+	#[must_use]
 	pub fn as_bytes(&self) -> Vec<u8> {
 		encode_text(&self.0, TextEncoding::Latin1, false)
 	}
 
 	/// Get the URL of the frame
+	#[must_use]
 	pub fn url(&self) -> &str {
 		&self.0
 	}

@@ -26,6 +26,7 @@ impl AACProperties {
 	///
 	/// * [MpegVersion::V2]
 	/// * [MpegVersion::V4]
+	#[must_use]
 	pub fn version(&self) -> MpegVersion {
 		self.version
 	}
@@ -38,41 +39,49 @@ impl AACProperties {
 	/// * [AudioObjectType::AacLowComplexity]
 	/// * [AudioObjectType::AacScalableSampleRate]
 	/// * [AudioObjectType::AacLongTermPrediction]
+	#[must_use]
 	pub fn audio_object_type(&self) -> AudioObjectType {
 		self.audio_object_type
 	}
 
 	/// Duration of the audio
+	#[must_use]
 	pub fn duration(&self) -> Duration {
 		self.duration
 	}
 
 	/// Overall bitrate (kbps)
+	#[must_use]
 	pub fn overall_bitrate(&self) -> u32 {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
+	#[must_use]
 	pub fn audio_bitrate(&self) -> u32 {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
+	#[must_use]
 	pub fn sample_rate(&self) -> u32 {
 		self.sample_rate
 	}
 
 	/// Channel count
+	#[must_use]
 	pub fn channels(&self) -> u8 {
 		self.channels
 	}
 
 	/// Whether the audio is copyrighted
+	#[must_use]
 	pub fn copyright(&self) -> bool {
 		self.copyright
 	}
 
 	/// Whether the media is original or a copy
+	#[must_use]
 	pub fn original(&self) -> bool {
 		self.original
 	}
