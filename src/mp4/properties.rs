@@ -225,7 +225,7 @@ where
 	let mut minf = None;
 
 	// We have to search through the traks with a mdia atom to find the audio track
-	for mdia in traks.iter() {
+	for mdia in traks {
 		if audio_track {
 			break;
 		}

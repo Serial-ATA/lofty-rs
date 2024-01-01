@@ -1027,7 +1027,7 @@ impl SplitTag for Id3v2Tag {
 					}),
 				) => {
 					key_value_pairs.retain_mut(|(key, value)| {
-						for (item_key, tipl_key) in TIPL_MAPPINGS.iter() {
+						for (item_key, tipl_key) in TIPL_MAPPINGS {
 							if key == *tipl_key {
 								tag.items.push(TagItem::new(
 									item_key.clone(),

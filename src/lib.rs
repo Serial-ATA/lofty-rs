@@ -136,7 +136,6 @@
 	clippy::let_underscore_untyped,
 	clippy::field_reassign_with_default,
 	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */
-	clippy::explicit_iter_loop,
 	clippy::from_iter_instead_of_collect,
 	clippy::no_effect_underscore_binding,
 	clippy::used_underscore_binding,
