@@ -226,7 +226,7 @@ impl EventTimingCodesFrame {
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let mut content = vec![self.timestamp_format as u8];
 
-		let mut sorted_events = Vec::from_iter(self.events.iter());
+		let mut sorted_events = self.events.iter().collect::<Vec<_>>();
 		sorted_events.sort();
 
 		for event in sorted_events {
