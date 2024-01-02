@@ -542,7 +542,11 @@ impl<R: Read + Seek> Probe<R> {
 		}
 
 		// Guess the file type by using these 36 bytes
-		match FileType::from_buffer_inner(&buf[..buf_len]) {
+		let Some(file_type_guess) = FileType::from_buffer_inner(&buf[..buf_len]) else {
+			return Ok(None);
+		};
+
+		match file_type_guess {
 			// We were able to determine a file type
 			FileTypeGuessResult::Determined(file_ty) => Ok(Some(file_ty)),
 			// The file starts with an ID3v2 tag; this means other data can follow (e.g. APE or MP3 frames)

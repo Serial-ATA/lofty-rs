@@ -893,7 +893,7 @@ impl FileType {
 	/// ```
 	pub fn from_buffer(buf: &[u8]) -> Option<Self> {
 		match Self::from_buffer_inner(buf) {
-			FileTypeGuessResult::Determined(file_ty) => Some(file_ty),
+			Some(FileTypeGuessResult::Determined(file_ty)) => Some(file_ty),
 			// We make no attempt to search past an ID3v2 tag or junk here, since
 			// we only provided a fixed-sized buffer to search from.
 			//
@@ -903,33 +903,30 @@ impl FileType {
 	}
 
 	// TODO: APE tags in the beginning of the file
-	pub(crate) fn from_buffer_inner(buf: &[u8]) -> FileTypeGuessResult {
+	pub(crate) fn from_buffer_inner(buf: &[u8]) -> Option<FileTypeGuessResult> {
 		use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
 		// Start out with an empty return
-		let mut ret = FileTypeGuessResult::Undetermined;
+		let mut ret = None;
 
 		if buf.is_empty() {
 			return ret;
 		}
 
 		match Self::quick_type_guess(buf) {
-			Some(f_ty) => ret = FileTypeGuessResult::Determined(f_ty),
+			Some(f_ty) => ret = Some(FileTypeGuessResult::Determined(f_ty)),
 			// Special case for ID3, gets checked in `Probe::guess_file_type`
 			// The bare minimum size for an ID3v2 header is 10 bytes
 			None if buf.len() >= 10 && &buf[..3] == b"ID3" => {
 				// This is infallible, but preferable to an unwrap
 				if let Ok(arr) = buf[6..10].try_into() {
 					// Set the ID3v2 size
-					ret =
-						FileTypeGuessResult::MaybePrecededById3(u32::from_be_bytes(arr).unsynch());
+					ret = Some(FileTypeGuessResult::MaybePrecededById3(
+						u32::from_be_bytes(arr).unsynch(),
+					));
 				}
 			},
-			None if buf.first().copied() == Some(0) => {
-				ret = FileTypeGuessResult::MaybePrecededByJunk
-			},
-			// We aren't able to determine a format
-			_ => {},
+			None => ret = Some(FileTypeGuessResult::MaybePrecededByJunk),
 		}
 
 		ret
@@ -1020,8 +1017,6 @@ pub(crate) enum FileTypeGuessResult {
 	Determined(FileType),
 	/// The stream starts with an ID3v2 tag
 	MaybePrecededById3(u32),
-	/// The stream starts with junk zero bytes
+	/// The stream starts with potential junk data
 	MaybePrecededByJunk,
-	/// The `FileType` could not be guessed
-	Undetermined,
 }
