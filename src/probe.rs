@@ -531,6 +531,16 @@ impl<R: Read + Seek> Probe<R> {
 
 		self.inner.seek(SeekFrom::Start(starting_position))?;
 
+		// Give custom resolvers priority
+		if let Ok(lock) = custom_resolvers().lock() {
+			#[allow(clippy::significant_drop_in_scrutinee)]
+			for (_, resolve) in lock.iter() {
+				if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
+					return Ok(ret);
+				}
+			}
+		}
+
 		// Guess the file type by using these 36 bytes
 		match FileType::from_buffer_inner(&buf[..buf_len]) {
 			// We were able to determine a file type
