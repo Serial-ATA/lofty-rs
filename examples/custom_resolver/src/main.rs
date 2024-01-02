@@ -2,8 +2,9 @@ use lofty::ape::ApeTag;
 use lofty::error::Result as LoftyResult;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::resolve::FileResolver;
-use lofty::{FileProperties, FileType, ParseOptions, TagType};
+use lofty::{FileProperties, FileType, GlobalOptions, ParseOptions, TagType};
 use lofty_attr::LoftyFile;
+
 use std::fs::File;
 
 #[rustfmt::skip]
@@ -89,6 +90,11 @@ fn main() {
 	// The name will be used in the `FileType` variant (e.g. FileType::Custom("MyFile")).
 	// The name should preferably match the name of the file struct to avoid confusion.
 	lofty::resolve::register_custom_resolver::<MyFile>("MyFile");
+
+	// By default, lofty will not check for custom files.
+	// We can enable this by updating our `GlobalOptions`.
+	let global_options = GlobalOptions::new().use_custom_resolvers(true);
+	lofty::apply_global_options(global_options);
 
 	// Now when using the following functions, your custom file will be checked
 

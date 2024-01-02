@@ -1,4 +1,5 @@
 use crate::error::Result;
+use crate::global_options::global_options;
 use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 use crate::resolve::custom_resolvers;
@@ -818,13 +819,15 @@ impl FileType {
 		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
 
 		// Give custom resolvers priority
-		if let Some((ty, _)) = custom_resolvers()
-			.lock()
-			.ok()?
-			.iter()
-			.find(|(_, f)| f.extension() == Some(ext.as_str()))
-		{
-			return Some(Self::Custom(ty));
+		if unsafe { global_options().use_custom_resolvers } {
+			if let Some((ty, _)) = custom_resolvers()
+				.lock()
+				.ok()?
+				.iter()
+				.find(|(_, f)| f.extension() == Some(ext.as_str()))
+			{
+				return Some(Self::Custom(ty));
+			}
 		}
 
 		match ext.as_str() {

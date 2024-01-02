@@ -130,6 +130,7 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 #[cfg(test)]
 mod tests {
 	use crate::file::{FileType, TaggedFileExt};
+	use crate::global_options::GlobalOptions;
 	use crate::id3::v2::Id3v2Tag;
 	use crate::probe::ParseOptions;
 	use crate::properties::FileProperties;
@@ -193,6 +194,9 @@ mod tests {
 	#[test]
 	fn custom_resolver() {
 		register_custom_resolver::<MyFile>("MyFile");
+
+		let global_options = GlobalOptions::new().use_custom_resolvers(true);
+		crate::apply_global_options(global_options);
 
 		let path = "examples/custom_resolver/test_asset.myfile";
 		let read = crate::read_from_path(path).unwrap();
