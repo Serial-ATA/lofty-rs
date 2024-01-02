@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
 - **MP4**: Duration milliseconds are now rounded to the nearest whole number ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
 - **ID3v2**: Stop erroring on empty frames when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
+- **resolve**: Custom resolvers will now be checked before the default resolvers ([PR](https://github.com/Serial-ATA/lofty-rs/pull/319))
+- **MPEG**: Up to `max_junk_bytes` will now be searched for tags between the start of the file and the first MPEG frame ([PR](https://github.com/Serial-ATA/lofty-rs/pull/320))
+  - This allows us to read and write ID3v2 tags that are preceeded by junk
 
 ### Fixed
 - **MP4**:
