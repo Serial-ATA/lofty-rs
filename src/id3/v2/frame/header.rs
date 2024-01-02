@@ -70,6 +70,8 @@ where
 	let mut id_end = 4;
 	let mut invalid_v2_frame = false;
 	if header[3] == 0 && !synchsafe {
+		log::warn!("Found a v2 frame ID in a v3 tag, attempting to upgrade");
+
 		invalid_v2_frame = true;
 		id_end = 3;
 	}
