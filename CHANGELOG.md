@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Add `Id3v2ErrorKind::EmptyFrame` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
   - Support converting some TIPL frame values into generic `TagItem`s ([PR](https://github.com/Serial-ATA/lofty-rs/pull/301))
     - Supported TIPL keys are: "producer", "arranger", "engineer", "DJ-mix", "mix".
+- **GlobalOptions**: Options local to the thread that persist between reads and writes ([PR](https://github.com/Serial-ATA/lofty-rs/pull/321))
+  - See [the docs](https://docs.rs/lofty/latest/lofty/struct.GlobalOptions.html) for more information
 
 ### Changed
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))

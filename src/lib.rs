@@ -154,6 +154,7 @@ pub mod ape;
 pub mod error;
 pub(crate) mod file;
 pub mod flac;
+pub(crate) mod global_options;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
@@ -185,5 +186,7 @@ pub use util::text::TextEncoding;
 pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 pub use picture::PictureInformation;
+
+pub use global_options::{apply_global_options, GlobalOptions};
 
 pub use lofty_attr::LoftyFile;

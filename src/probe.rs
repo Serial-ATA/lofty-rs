@@ -3,6 +3,7 @@ use crate::ape::ApeFile;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
+use crate::global_options::global_options;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::macros::err;
@@ -25,10 +26,8 @@ use std::path::Path;
 #[non_exhaustive]
 pub struct ParseOptions {
 	pub(crate) read_properties: bool,
-	pub(crate) use_custom_resolvers: bool,
 	pub(crate) parsing_mode: ParsingMode,
 	pub(crate) max_junk_bytes: usize,
-	pub(crate) allocation_limit: usize,
 }
 
 impl Default for ParseOptions {
@@ -39,7 +38,6 @@ impl Default for ParseOptions {
 	/// ```rust,ignore
 	/// ParseOptions {
 	/// 	read_properties: true,
-	/// 	use_custom_resolvers: true,
 	/// 	parsing_mode: ParsingMode::BestAttempt,
 	///     max_junk_bytes: 1024
 	/// }
@@ -56,9 +54,6 @@ impl ParseOptions {
 	/// Default number of junk bytes to read
 	pub const DEFAULT_MAX_JUNK_BYTES: usize = 1024;
 
-	/// Default allocation limit for any single tag item
-	pub const DEFAULT_ALLOCATION_LIMIT: usize = 16 * 1024 * 1024;
-
 	/// Creates a new `ParseOptions`, alias for `Default` implementation
 	///
 	/// See also: [`ParseOptions::default`]
@@ -74,10 +69,8 @@ impl ParseOptions {
 	pub const fn new() -> Self {
 		Self {
 			read_properties: true,
-			use_custom_resolvers: true,
 			parsing_mode: Self::DEFAULT_PARSING_MODE,
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
-			allocation_limit: Self::DEFAULT_ALLOCATION_LIMIT,
 		}
 	}
 
@@ -93,23 +86,6 @@ impl ParseOptions {
 	/// ```
 	pub fn read_properties(&mut self, read_properties: bool) -> Self {
 		self.read_properties = read_properties;
-		*self
-	}
-
-	/// Whether or not to check registered custom resolvers
-	///
-	/// See also: [`crate::resolve`]
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ParseOptions;
-	///
-	/// // By default, `use_custom_resolvers` is enabled. Here, we don't want to use them.
-	/// let parsing_options = ParseOptions::new().use_custom_resolvers(false);
-	/// ```
-	pub fn use_custom_resolvers(&mut self, use_custom_resolvers: bool) -> Self {
-		self.use_custom_resolvers = use_custom_resolvers;
 		*self
 	}
 
@@ -144,35 +120,6 @@ impl ParseOptions {
 	pub fn max_junk_bytes(&mut self, max_junk_bytes: usize) -> Self {
 		self.max_junk_bytes = max_junk_bytes;
 		*self
-	}
-
-	/// The maximum number of bytes to allocate for any single tag item
-	///
-	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
-	/// exceeds this limit, the allocator will return [`crate::error::ErrorKind::TooMuchData`].
-	///
-	/// NOTE: This only needs to be set once per thread. The limit will be used for all subsequent
-	///       reads, until a new one is set.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ParseOptions;
-	///
-	/// // I have files with gigantic images, I'll double the allocation limit!
-	/// let parsing_options = ParseOptions::new().allocation_limit(32 * 1024 * 1024);
-	/// ```
-	pub fn allocation_limit(&mut self, allocation_limit: usize) -> Self {
-		self.allocation_limit = allocation_limit;
-		*self
-	}
-
-	fn finalize(self) -> Self {
-		unsafe {
-			crate::util::alloc::update_allocation_limit(self.allocation_limit);
-		}
-
-		self
 	}
 }
 
@@ -532,11 +479,13 @@ impl<R: Read + Seek> Probe<R> {
 		self.inner.seek(SeekFrom::Start(starting_position))?;
 
 		// Give custom resolvers priority
-		if let Ok(lock) = custom_resolvers().lock() {
-			#[allow(clippy::significant_drop_in_scrutinee)]
-			for (_, resolve) in lock.iter() {
-				if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
-					return Ok(ret);
+		if unsafe { global_options().use_custom_resolvers } {
+			if let Ok(lock) = custom_resolvers().lock() {
+				#[allow(clippy::significant_drop_in_scrutinee)]
+				for (_, resolve) in lock.iter() {
+					if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
+						return Ok(ret);
+					}
 				}
 			}
 		}
@@ -592,18 +541,6 @@ impl<R: Read + Seek> Probe<R> {
 				self.inner.seek(SeekFrom::Start(starting_position))?;
 
 				ret
-			},
-			_ => {
-				if let Ok(lock) = custom_resolvers().lock() {
-					#[allow(clippy::significant_drop_in_scrutinee)]
-					for (_, resolve) in lock.iter() {
-						if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
-							return Ok(ret);
-						}
-					}
-				}
-
-				Ok(None)
 			},
 		}
 	}
@@ -664,9 +601,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// ```
 	pub fn read(mut self) -> Result<TaggedFile> {
 		let reader = &mut self.inner;
-		let options = self
-			.options
-			.map_or_else(ParseOptions::default, ParseOptions::finalize);
+		let options = self.options.unwrap_or_default();
 
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
@@ -683,7 +618,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Speex => SpeexFile::read_from(reader, options)?.into(),
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
 				FileType::Custom(c) => {
-					if !options.use_custom_resolvers {
+					if !unsafe { global_options().use_custom_resolvers } {
 						err!(UnknownFormat)
 					}
 
@@ -752,7 +687,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::{FileType, Probe};
+	use crate::{FileType, GlobalOptions, Probe};
 
 	use lofty::ParseOptions;
 	use std::fs::File;
@@ -846,9 +781,10 @@ mod tests {
 			.collect::<Vec<u8>>()
 		}
 
-		let parse_options = ParseOptions::new()
-			.allocation_limit(50)
-			.read_properties(false);
+		let parse_options = ParseOptions::new().read_properties(false);
+
+		let mut global_options = GlobalOptions::new().allocation_limit(50);
+		crate::global_options::apply_global_options(global_options);
 
 		// An allocation with a size of 40 bytes should be ok
 		let within_limits = create_fake_mp3(40);
@@ -865,7 +801,9 @@ mod tests {
 		assert!(probe.read().is_err());
 
 		// Now test the default allocation limit (16MB), which should of course be ok with 60 bytes
-		let parse_options = ParseOptions::new().read_properties(false);
+		global_options.allocation_limit = GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
+		crate::global_options::apply_global_options(global_options);
+
 		let probe = Probe::new(std::io::Cursor::new(&too_big))
 			.set_file_type(FileType::Mpeg)
 			.options(parse_options);
