@@ -24,6 +24,8 @@ pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> 
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
+	log::debug!("Attempting to write `ilst` tag to file");
+
 	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
 	let mut reader = AtomReader::new(data, ParseOptions::DEFAULT_PARSING_MODE)?;
 	verify_mp4(&mut reader)?;
@@ -45,6 +47,12 @@ where
 	let moov_start = moov.info.start;
 	let moov_len = moov.info.len;
 	let moov_extended = moov.info.extended;
+
+	log::trace!(
+		"Found `moov` atom, offset: {}, size: {}",
+		moov_start,
+		moov_len
+	);
 
 	let mut moov_data_start = moov_start + ATOM_HEADER_LEN;
 	if moov_extended {
@@ -76,6 +84,12 @@ where
 
 	// ilst is nested in udta.meta, so we need to check what atoms actually exist
 	if let Some(udta) = udta {
+		log::trace!(
+			"Found `udta` atom, offset: {}, size: {}",
+			udta.start,
+			udta.len
+		);
+
 		existing_udta_size = udta.len;
 		new_udta_size = existing_udta_size;
 
@@ -93,6 +107,12 @@ where
 
 		match meta {
 			Some(meta) => {
+				log::trace!(
+					"Found `meta` atom, offset: {}, size: {}",
+					meta.start,
+					meta.len
+				);
+
 				// We may encounter a non-full `meta` atom
 				meta_is_full(&mut write_handle)?;
 				drop(write_handle);
@@ -109,6 +129,8 @@ where
 			},
 			// We have to create the `meta` atom
 			None => {
+				log::trace!("No `meta` atom found, creating one");
+
 				drop(write_handle);
 
 				existing_udta_size = udta.len;
@@ -142,6 +164,8 @@ where
 			},
 		}
 	} else {
+		log::trace!("No `udta` atom found, creating one");
+
 		// We have to create the `udta` atom
 		let bytes = create_udta(&ilst)?;
 		new_udta_size = bytes.len() as u64;
@@ -158,11 +182,14 @@ where
 	write_handle.seek(SeekFrom::Start(moov_start))?;
 
 	// Change the size of the moov atom
-	write_handle.write_atom_size(
-		moov_start,
-		(moov_len - existing_udta_size) + new_udta_size,
-		moov_extended,
-	)?;
+	let new_moov_length = (moov_len - existing_udta_size) + new_udta_size;
+
+	log::trace!(
+		"Updating `moov` atom size, old size: {}, new size: {}",
+		moov_len,
+		new_moov_length
+	);
+	write_handle.write_atom_size(moov_start, new_moov_length, moov_extended)?;
 
 	drop(write_handle);
 
@@ -242,6 +269,7 @@ fn save_to_existing(
 			// Check if we have enough padding to fit the `ilst` atom and a new `free` atom
 			if available_space > ilst_len && (available_space - ilst_len) > 8 {
 				// We have enough space to make use of the padding
+				log::trace!("Found enough padding to fit the tag, file size will not change");
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
@@ -453,6 +481,8 @@ pub(super) fn build_ilst<'a, I: 'a>(
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
+	log::debug!("Building `ilst` atom");
+
 	let mut peek = atoms.peekable();
 
 	if peek.peek().is_none() {
@@ -496,6 +526,8 @@ where
 	write_handle.write_atom_size(0, size as u64, false)?;
 
 	drop(write_handle);
+
+	log::trace!("Built `ilst` atom, size: {} bytes", size);
 
 	Ok(ilst_writer.into_contents())
 }
