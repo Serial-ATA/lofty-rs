@@ -1,12 +1,11 @@
 use super::r#ref::IlstRef;
 use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
-use crate::macros::{err, try_vec};
-use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN, IDENTIFIER_LEN};
+use crate::macros::{decode_err, err, try_vec};
+use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
-use crate::mp4::moov::Moov;
 use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
-use crate::mp4::write::AtomWriter;
+use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 use crate::probe::ParseOptions;
@@ -14,7 +13,7 @@ use crate::probe::ParseOptions;
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
 
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
@@ -35,17 +34,32 @@ where
 
 	let mut atom_writer = AtomWriter::new_from_file(data, ParseOptions::DEFAULT_PARSING_MODE)?;
 
-	let moov = Moov::find(&mut atom_writer.as_reader())?;
-	let moov_data_start = atom_writer.stream_position()?;
+	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
+		return Err(FileEncodingError::new(
+			FileType::Mp4,
+			"Could not find \"moov\" atom in target file",
+		)
+		.into());
+	};
 
-	atom_writer.seek(SeekFrom::Start(moov_data_start))?;
+	let moov_start = moov.info.start;
+	let moov_len = moov.info.len;
+	let moov_extended = moov.info.extended;
+
+	let mut moov_data_start = moov_start + ATOM_HEADER_LEN;
+	if moov_extended {
+		moov_data_start += 8;
+	}
+
+	let mut write_handle = atom_writer.start_write();
+	write_handle.seek(SeekFrom::Start(moov_data_start))?;
 
 	let ilst = build_ilst(&mut tag.atoms)?;
 	let remove_tag = ilst.is_empty();
 
 	let udta = nested_atom(
-		&mut atom_writer,
-		moov.len,
+		&mut write_handle,
+		moov_len,
 		b"udta",
 		ParseOptions::DEFAULT_PARSING_MODE,
 	)?;
@@ -66,7 +80,7 @@ where
 		new_udta_size = existing_udta_size;
 
 		let meta = nested_atom(
-			&mut atom_writer,
+			&mut write_handle,
 			udta.len,
 			b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
@@ -80,11 +94,13 @@ where
 		match meta {
 			Some(meta) => {
 				// We may encounter a non-full `meta` atom
-				meta_is_full(&mut atom_writer)?;
+				meta_is_full(&mut write_handle)?;
+				drop(write_handle);
 
 				// We can use the existing `udta` and `meta` atoms
 				save_to_existing(
-					&mut atom_writer,
+					&atom_writer,
+					moov,
 					(meta, udta),
 					&mut new_udta_size,
 					ilst,
@@ -93,25 +109,36 @@ where
 			},
 			// We have to create the `meta` atom
 			None => {
+				drop(write_handle);
+
 				existing_udta_size = udta.len;
 
 				// `meta` + `ilst`
 				let capacity = FULL_ATOM_SIZE as usize + ilst.len();
 				let buf = Vec::with_capacity(capacity);
 
-				let mut meta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
-				create_meta(&mut meta_writer, &ilst)?;
+				let bytes;
+				{
+					let meta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+					create_meta(&meta_writer, &ilst)?;
 
-				let bytes = meta_writer.into_contents();
+					bytes = meta_writer.into_contents();
+				}
+
+				write_handle = atom_writer.start_write();
 
 				new_udta_size = udta.len + bytes.len() as u64;
 
-				atom_writer.seek(SeekFrom::Start(udta.start))?;
-				write_size(udta.start, new_udta_size, udta.extended, &mut atom_writer)?;
+				write_handle.seek(SeekFrom::Start(udta.start))?;
+				write_handle.write_atom_size(udta.start, new_udta_size, udta.extended)?;
 
 				// We'll put the new `meta` atom right at the start of `udta`
 				let meta_start_pos = (udta.start + ATOM_HEADER_LEN) as usize;
-				atom_writer.splice(meta_start_pos..meta_start_pos, bytes);
+				write_handle.splice(meta_start_pos..meta_start_pos, bytes);
+
+				// TODO: We need to drop the handle at the end of each branch, which is annoying
+				//       This whole function needs to be refactored eventually.
+				drop(write_handle);
 			},
 		}
 	} else {
@@ -120,19 +147,24 @@ where
 		new_udta_size = bytes.len() as u64;
 
 		// We'll put the new `udta` atom right at the start of `moov`
-		let udta_pos = (moov.start + ATOM_HEADER_LEN) as usize;
-		atom_writer.splice(udta_pos..udta_pos, bytes);
+		let udta_pos = (moov_start + ATOM_HEADER_LEN) as usize;
+		write_handle.splice(udta_pos..udta_pos, bytes);
+
+		drop(write_handle);
 	}
 
-	atom_writer.seek(SeekFrom::Start(moov.start))?;
+	let mut write_handle = atom_writer.start_write();
+
+	write_handle.seek(SeekFrom::Start(moov_start))?;
 
 	// Change the size of the moov atom
-	write_size(
-		moov.start,
-		(moov.len - existing_udta_size) + new_udta_size,
-		moov.extended,
-		&mut atom_writer,
+	write_handle.write_atom_size(
+		moov_start,
+		(moov_len - existing_udta_size) + new_udta_size,
+		moov_extended,
 	)?;
+
+	drop(write_handle);
 
 	atom_writer.save_to(data)?;
 
@@ -141,7 +173,8 @@ where
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 fn save_to_existing(
-	writer: &mut AtomWriter,
+	writer: &AtomWriter,
+	moov: &ContextualAtom,
 	(meta, udta): (AtomInfo, AtomInfo),
 	new_udta_size: &mut u64,
 	ilst: Vec<u8>,
@@ -150,8 +183,10 @@ fn save_to_existing(
 	let replacement;
 	let range;
 
+	let mut write_handle = writer.start_write();
+
 	let (ilst_idx, tree) = atom_tree(
-		writer,
+		&mut write_handle,
 		meta.len - ATOM_HEADER_LEN,
 		b"ilst",
 		ParseOptions::DEFAULT_PARSING_MODE,
@@ -205,7 +240,7 @@ fn save_to_existing(
 			let ilst_len = ilst.len() as u64;
 
 			// Check if we have enough padding to fit the `ilst` atom and a new `free` atom
-			if available_space > ilst_len && available_space - ilst_len > 8 {
+			if available_space > ilst_len && (available_space - ilst_len) > 8 {
 				// We have enough space to make use of the padding
 
 				let remaining_space = available_space - ilst_len;
@@ -215,13 +250,13 @@ fn save_to_existing(
 
 				let remaining_space = remaining_space as u32;
 
-				writer.seek(SeekFrom::Start(range_start))?;
-				writer.write_all(&ilst)?;
+				write_handle.seek(SeekFrom::Start(range_start))?;
+				write_handle.write_all(&ilst)?;
 
 				// Write the remaining padding
-				writer.write_u32::<BigEndian>(remaining_space)?;
-				writer.write_all(b"free")?;
-				writer
+				write_handle.write_u32::<BigEndian>(remaining_space)?;
+				write_handle.write_all(b"free")?;
+				write_handle
 					.write_all(&try_vec![1; (remaining_space - ATOM_HEADER_LEN as u32) as usize])?;
 
 				return Ok(());
@@ -234,96 +269,180 @@ fn save_to_existing(
 
 	let new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
 
-	// Replace the `ilst` atom
-	writer.splice(range, replacement);
-
+	drop(write_handle);
 	if new_meta_size != meta.len {
 		// We need to change the `meta` and `udta` atom sizes
+		let mut write_handle = writer.start_write();
 
 		*new_udta_size = (udta.len - meta.len) + new_meta_size;
 
-		writer.seek(SeekFrom::Start(meta.start))?;
-		write_size(meta.start, new_meta_size, meta.extended, writer)?;
+		write_handle.seek(SeekFrom::Start(meta.start))?;
+		write_handle.write_atom_size(meta.start, new_meta_size, meta.extended)?;
 
-		writer.seek(SeekFrom::Start(udta.start))?;
-		write_size(udta.start, *new_udta_size, udta.extended, writer)?;
+		write_handle.seek(SeekFrom::Start(udta.start))?;
+		write_handle.write_atom_size(udta.start, *new_udta_size, udta.extended)?;
+
+		// Update offset atoms
+		drop(write_handle);
+
+		let difference = (new_meta_size as i64) - (meta.len as i64);
+		update_offsets(writer, moov, difference)?;
 	}
+
+	// Replace the `ilst` atom
+	let mut write_handle = writer.start_write();
+	write_handle.splice(range, replacement);
+	drop(write_handle);
+
+	Ok(())
+}
+
+fn update_offsets(writer: &AtomWriter, moov: &ContextualAtom, difference: i64) -> Result<()> {
+	log::debug!("Checking for offset atoms to update");
+
+	let mut write_handle = writer.start_write();
+
+	// 32-bit offsets
+	for stco in moov.find_all_children(*b"stco", true) {
+		log::trace!("Found `stco` atom");
+
+		let stco_start = stco.start;
+		if stco.extended {
+			decode_err!(@BAIL Mp4, "Found an extended `stco` atom");
+		}
+
+		write_handle.seek(SeekFrom::Start(stco_start + ATOM_HEADER_LEN + 4))?;
+
+		let count = write_handle.read_u32::<BigEndian>()?;
+		for _ in 0..count {
+			let offset = write_handle.read_u32::<BigEndian>()?;
+			write_handle.seek(SeekFrom::Current(-4))?;
+			write_handle.write_u32::<BigEndian>((i64::from(offset) + difference) as u32)?;
+
+			log::trace!(
+				"Updated offset from {} to {}",
+				offset,
+				(i64::from(offset) + difference) as u32
+			);
+		}
+	}
+
+	// 64-bit offsets
+	for co64 in moov.find_all_children(*b"co64", true) {
+		log::trace!("Found `co64` atom");
+
+		let co64_start = co64.start;
+		if !co64.extended {
+			decode_err!(@BAIL Mp4, "Expected `co64` atom to be extended");
+		}
+
+		write_handle.seek(SeekFrom::Start(co64_start + ATOM_HEADER_LEN + 8 + 4))?;
+
+		let count = write_handle.read_u32::<BigEndian>()?;
+		for _ in 0..count {
+			let offset = write_handle.read_u64::<BigEndian>()?;
+			write_handle.seek(SeekFrom::Current(-8))?;
+			write_handle.write_u64::<BigEndian>((offset as i64 + difference) as u64)?;
+
+			log::trace!(
+				"Updated offset from {} to {}",
+				offset,
+				((offset as i64) + difference) as u64
+			);
+		}
+	}
+
+	let Some(moof) = writer.find_contextual_atom(*b"moof") else {
+		return Ok(());
+	};
+
+	log::trace!("Found `moof` atom, checking for `tfhd` atoms to update");
+
+	// 64-bit offsets
+	for tfhd in moof.find_all_children(*b"tfhd", true) {
+		log::trace!("Found `tfhd` atom");
+
+		let tfhd_start = tfhd.start;
+		if tfhd.extended {
+			decode_err!(@BAIL Mp4, "Found an extended `tfhd` atom");
+		}
+
+		// Skip atom header + version (1)
+		write_handle.seek(SeekFrom::Start(tfhd_start + ATOM_HEADER_LEN + 1))?;
+
+		let flags = write_handle.read_u24::<BigEndian>()?;
+		let base_data_offset = (flags & 0b1) != 0;
+
+		if base_data_offset {
+			let offset = write_handle.read_u64::<BigEndian>()?;
+			write_handle.seek(SeekFrom::Current(-8))?;
+			write_handle.write_u64::<BigEndian>((offset as i64 + difference) as u64)?;
+
+			log::trace!(
+				"Updated offset from {} to {}",
+				offset,
+				((offset as i64) + difference) as u64
+			);
+		}
+	}
+
+	drop(write_handle);
 
 	Ok(())
 }
 
 fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
+	const UDTA_HEADER: [u8; 8] = [0, 0, 0, 0, b'u', b'd', b't', b'a'];
+
 	// `udta` + `meta` + `hdlr` + `ilst`
 	let capacity = ATOM_HEADER_LEN + FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
-	let buf = Vec::with_capacity(capacity as usize);
+	let mut buf = Vec::with_capacity(capacity as usize);
 
-	let mut udta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
-	udta_writer.write_all(&[0, 0, 0, 0, b'u', b'd', b't', b'a'])?;
+	buf.write_all(&UDTA_HEADER)?;
 
-	create_meta(&mut udta_writer, ilst)?;
+	let udta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+	let mut write_handle = udta_writer.start_write();
+
+	write_handle.seek(SeekFrom::Current(UDTA_HEADER.len() as i64))?; // Skip header
+	drop(write_handle);
+
+	create_meta(&udta_writer, ilst)?;
 
 	// `udta` size
-	udta_writer.rewind()?;
-	write_size(0, udta_writer.len() as u64, false, &mut udta_writer)?;
+	{
+		let mut write_handle = udta_writer.start_write();
+		write_handle.rewind()?;
+		write_handle.write_atom_size(0, write_handle.len() as u64, false)?;
+	}
 
 	Ok(udta_writer.into_contents())
 }
 
-fn create_meta(writer: &mut AtomWriter, ilst: &[u8]) -> Result<()> {
-	let start = writer.stream_position()?;
+fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
+	let mut write_handle = writer.start_write();
+
+	let start = write_handle.stream_position()?;
 	// meta atom
-	writer.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
+	write_handle.write_all(&[0, 0, 0, 0, b'm', b'e', b't', b'a', 0, 0, 0, 0])?;
 
 	// hdlr atom
-	writer.write_u32::<BigEndian>(0)?;
-	writer.write_all(b"hdlr")?;
-	writer.write_u64::<BigEndian>(0)?;
-	writer.write_all(b"mdirappl")?;
-	writer.write_all(&[0, 0, 0, 0, 0, 0, 0, 0, 0])?;
+	write_handle.write_u32::<BigEndian>(0)?;
+	write_handle.write_all(b"hdlr")?;
+	write_handle.write_u64::<BigEndian>(0)?;
+	write_handle.write_all(b"mdirappl")?;
+	write_handle.write_all(&[0, 0, 0, 0, 0, 0, 0, 0, 0])?;
 
-	writer.seek(SeekFrom::Start(start))?;
+	write_handle.seek(SeekFrom::Start(start))?;
 
 	let meta_size = FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
-	write_size(start, meta_size, false, writer)?;
+	write_handle.write_atom_size(start, meta_size, false)?;
 
 	// Seek to `hdlr` size
-	let hdlr_size_pos = writer.seek(SeekFrom::Current(4))?;
-	write_size(hdlr_size_pos, HDLR_SIZE, false, writer)?;
+	let hdlr_size_pos = write_handle.seek(SeekFrom::Current(4))?;
+	write_handle.write_atom_size(hdlr_size_pos, HDLR_SIZE, false)?;
 
-	writer.seek(SeekFrom::End(0))?;
-	writer.write_all(ilst)?;
-
-	Ok(())
-}
-
-fn write_size(start: u64, size: u64, extended: bool, writer: &mut AtomWriter) -> Result<()> {
-	if u32::try_from(size).is_ok() {
-		// ???? (identifier)
-		writer.write_u32::<BigEndian>(size as u32)?;
-		writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
-		return Ok(());
-	}
-
-	// 64-bit extended size
-	// 0001 (identifier) ????????
-
-	// Extended size indicator
-	writer.write_u32::<BigEndian>(1)?;
-	// Skip identifier
-	writer.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
-
-	let extended_size = size.to_be_bytes();
-
-	if extended {
-		// Overwrite existing extended size
-		writer.write_u64::<BigEndian>(size)?;
-	} else {
-		for i in extended_size {
-			writer.insert((start + 8 + u64::from(i)) as usize, i);
-		}
-
-		writer.seek(SeekFrom::Current(8))?;
-	}
+	write_handle.seek(SeekFrom::End(0))?;
+	write_handle.write_all(ilst)?;
 
 	Ok(())
 }
@@ -341,43 +460,50 @@ where
 	}
 
 	let ilst_header = vec![0, 0, 0, 0, b'i', b'l', b's', b't'];
-	let mut ilst_writer = AtomWriter::new(ilst_header, ParseOptions::DEFAULT_PARSING_MODE);
-	ilst_writer.seek(SeekFrom::End(0))?;
+	let ilst_writer = AtomWriter::new(ilst_header, ParseOptions::DEFAULT_PARSING_MODE);
+
+	let mut write_handle = ilst_writer.start_write();
+	write_handle.seek(SeekFrom::End(0))?;
 
 	for atom in peek {
-		let start = ilst_writer.stream_position()?;
+		let start = write_handle.stream_position()?;
 
 		// Empty size, we get it later
-		ilst_writer.write_all(&[0; FOURCC_LEN as usize])?;
+		write_handle.write_all(&[0; FOURCC_LEN as usize])?;
 
 		match atom.ident {
-			AtomIdent::Fourcc(ref fourcc) => ilst_writer.write_all(fourcc)?,
-			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut ilst_writer)?,
+			AtomIdent::Fourcc(ref fourcc) => write_handle.write_all(fourcc)?,
+			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut write_handle)?,
 		}
 
-		write_atom_data(atom.data, &mut ilst_writer)?;
+		write_atom_data(atom.data, &mut write_handle)?;
 
-		let end = ilst_writer.stream_position()?;
+		let end = write_handle.stream_position()?;
 
 		let size = end - start;
 
-		ilst_writer.seek(SeekFrom::Start(start))?;
+		write_handle.seek(SeekFrom::Start(start))?;
 
-		write_size(start, size, false, &mut ilst_writer)?;
+		write_handle.write_atom_size(start, size, false)?;
 
-		ilst_writer.seek(SeekFrom::Start(end))?;
+		write_handle.seek(SeekFrom::Start(end))?;
 	}
 
-	let size = ilst_writer.len();
+	let size = write_handle.len();
 
-	ilst_writer.rewind()?;
+	write_handle.rewind()?;
 
-	write_size(0, size as u64, false, &mut ilst_writer)?;
+	write_handle.write_atom_size(0, size as u64, false)?;
+
+	drop(write_handle);
 
 	Ok(ilst_writer.into_contents())
 }
 
-fn write_freeform(mean: &str, name: &str, writer: &mut AtomWriter) -> Result<()> {
+fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<()>
+where
+	W: Write,
+{
 	// ---- : ???? : ????
 
 	// ----
@@ -396,7 +522,7 @@ fn write_freeform(mean: &str, name: &str, writer: &mut AtomWriter) -> Result<()>
 	Ok(())
 }
 
-fn write_atom_data<'a, I: 'a>(data: I, writer: &mut AtomWriter) -> Result<()>
+fn write_atom_data<'a, I: 'a>(data: I, writer: &mut AtomWriterCompanion<'_>) -> Result<()>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
@@ -415,7 +541,7 @@ where
 	Ok(())
 }
 
-fn write_signed_int(int: i32, writer: &mut AtomWriter) -> Result<()> {
+fn write_signed_int(int: i32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	write_int(21, int.to_be_bytes(), 4, writer)
 }
 
@@ -431,7 +557,7 @@ fn bytes_to_occupy_uint(uint: u32) -> usize {
 	ret
 }
 
-fn write_unsigned_int(uint: u32, writer: &mut AtomWriter) -> Result<()> {
+fn write_unsigned_int(uint: u32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	let bytes_needed = bytes_to_occupy_uint(uint);
 	write_int(22, uint.to_be_bytes(), bytes_needed, writer)
 }
@@ -440,13 +566,13 @@ fn write_int(
 	flags: u32,
 	bytes: [u8; 4],
 	bytes_needed: usize,
-	writer: &mut AtomWriter,
+	writer: &mut AtomWriterCompanion<'_>,
 ) -> Result<()> {
 	debug_assert!(bytes_needed != 0);
 	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
-fn write_picture(picture: &Picture, writer: &mut AtomWriter) -> Result<()> {
+fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	match picture.mime_type {
 		// GIF is deprecated
 		Some(MimeType::Gif) => write_data(12, &picture.data, writer),
@@ -463,7 +589,7 @@ fn write_picture(picture: &Picture, writer: &mut AtomWriter) -> Result<()> {
 	}
 }
 
-fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriter) -> Result<()> {
+fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	if flags > 16_777_215 {
 		return Err(FileEncodingError::new(
 			FileType::Mp4,
@@ -476,7 +602,8 @@ fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriter) -> Result<()> {
 	let size = FULL_ATOM_SIZE + 4 + data.len() as u64;
 
 	writer.write_all(&[0, 0, 0, 0, b'd', b'a', b't', b'a'])?;
-	write_size(writer.seek(SeekFrom::Current(-8))?, size, false, writer)?;
+	let start = writer.seek(SeekFrom::Current(-8))?;
+	writer.write_atom_size(start, size, false)?;
 
 	// Version
 	writer.write_u8(0)?;

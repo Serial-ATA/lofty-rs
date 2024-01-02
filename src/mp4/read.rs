@@ -39,16 +39,6 @@ where
 		})
 	}
 
-	pub(super) fn new_with_len(reader: R, len: u64, parse_mode: ParsingMode) -> Self {
-		Self {
-			reader,
-			start: 0,
-			remaining_size: len,
-			len,
-			parse_mode,
-		}
-	}
-
 	pub(super) fn reset_bounds(&mut self, start_position: u64, len: u64) {
 		self.start = start_position;
 		self.remaining_size = len;
