@@ -1,59 +1,82 @@
 use crate::error::Result;
-use crate::mp4::atom_info::{AtomIdent, AtomInfo};
-use crate::mp4::read::AtomReader;
+use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
+use crate::mp4::read::skip_unneeded;
 use crate::probe::ParsingMode;
 
+use std::cell::{RefCell, RefMut};
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
+use byteorder::{BigEndian, WriteBytesExt};
+
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
+#[derive(Debug)]
 pub(super) struct ContextualAtom {
-	info: AtomInfo,
-	children: Vec<ContextualAtom>,
+	pub(crate) info: AtomInfo,
+	pub(crate) children: Vec<ContextualAtom>,
 }
 
-const IMPORTANT_CONTAINERS: [[u8; 4]; 4] = [*b"moov", *b"moof", *b"trak", *b"udta"];
+#[rustfmt::skip]
+const IMPORTANT_CONTAINERS: [[u8; 4]; 7] = [
+	*b"moov",
+		*b"udta",
+		*b"moof",
+		*b"trak",
+			*b"mdia",
+				*b"minf",
+					*b"stbl",
+];
 impl ContextualAtom {
 	pub(super) fn read<R>(
 		reader: &mut R,
-		reader_len: u64,
+		reader_len: &mut u64,
 		parse_mode: ParsingMode,
 	) -> Result<Option<ContextualAtom>>
 	where
 		R: Read + Seek,
 	{
-		let Some(info) = AtomInfo::read(reader, reader_len, parse_mode)? else {
+		if *reader_len == 0 {
+			return Ok(None);
+		}
+
+		let Some(info) = AtomInfo::read(reader, *reader_len, parse_mode)? else {
 			return Ok(None);
 		};
 
 		let mut children = Vec::new();
 
-		if let AtomIdent::Fourcc(fourcc) = info.ident {
-			if IMPORTANT_CONTAINERS.contains(&fourcc) {
-				let mut len = info.len;
-				while len > 8 {
-					let Some(child) = ContextualAtom::read(reader, len, parse_mode)? else {
-						break;
-					};
+		let AtomIdent::Fourcc(fourcc) = info.ident else {
+			*reader_len = reader_len.saturating_sub(info.len);
+			return Ok(Some(ContextualAtom { info, children }));
+		};
 
-					len = len.saturating_sub(child.info.len);
-					children.push(child);
-				}
-			}
+		if !IMPORTANT_CONTAINERS.contains(&fourcc) {
+			*reader_len = reader_len.saturating_sub(info.len);
+
+			// We don't care about the atom's contents
+			skip_unneeded(reader, info.extended, info.len)?;
+			return Ok(Some(ContextualAtom { info, children }));
 		}
 
+		let mut len = info.len - 8;
+		while let Some(child) = Self::read(reader, &mut len, parse_mode)? {
+			children.push(child);
+		}
+
+		*reader_len = reader_len.saturating_sub(info.len);
+		// reader.seek(SeekFrom::Current(*reader_len as i64))?; // Skip any remaining bytes
 		Ok(Some(ContextualAtom { info, children }))
 	}
 
 	/// This finds all instances of the `expected` fourcc within the atom's children
 	///
 	/// If `recurse` is `true`, then this will also search the children's children, and so on.
-	pub(super) fn find_all_children<'a>(
-		&'a self,
-		expected: &'a [u8],
+	pub(super) fn find_all_children(
+		&self,
+		expected: [u8; 4],
 		recurse: bool,
-	) -> AtomFindAll<'_, std::slice::Iter<'_, ContextualAtom>> {
+	) -> AtomFindAll<std::slice::Iter<'_, ContextualAtom>> {
 		AtomFindAll {
 			atoms: self.children.iter(),
 			expected_fourcc: expected,
@@ -70,20 +93,18 @@ impl ContextualAtom {
 ///
 /// Atoms that are not "important" containers are simply parsed at the top level, with all children being skipped.
 pub(super) struct AtomWriter {
-	contents: Cursor<Vec<u8>>,
+	contents: RefCell<Cursor<Vec<u8>>>,
 	atoms: Vec<ContextualAtom>,
-	parse_mode: ParsingMode,
 }
 
 impl AtomWriter {
 	/// Create a new [`AtomWriter`]
 	///
 	/// NOTE: This will not parse `content` for atoms. If you need to do that, use [`AtomWriter::new_from_file`]
-	pub(super) fn new(content: Vec<u8>, parse_mode: ParsingMode) -> Self {
+	pub(super) fn new(content: Vec<u8>, _parse_mode: ParsingMode) -> Self {
 		Self {
-			contents: Cursor::new(content),
+			contents: RefCell::new(Cursor::new(content)),
 			atoms: Vec::new(),
-			parse_mode,
 		}
 	}
 
@@ -94,21 +115,51 @@ impl AtomWriter {
 		let mut contents = Cursor::new(Vec::new());
 		file.read_to_end(contents.get_mut())?;
 
-		let len = contents.get_ref().len() as u64;
+		let mut len = contents.get_ref().len() as u64;
 		let mut atoms = Vec::new();
-		while let Some(atom) = ContextualAtom::read(&mut contents, len, parse_mode)? {
+		while let Some(atom) = ContextualAtom::read(&mut contents, &mut len, parse_mode)? {
 			atoms.push(atom);
 		}
 
 		contents.rewind()?;
 
 		Ok(Self {
-			contents,
+			contents: RefCell::new(contents),
 			atoms,
-			parse_mode,
 		})
 	}
 
+	pub(super) fn find_contextual_atom(&self, fourcc: [u8; 4]) -> Option<&ContextualAtom> {
+		self.atoms
+			.iter()
+			.find(|atom| matches!(atom.info.ident, AtomIdent::Fourcc(ident) if ident == fourcc))
+	}
+
+	pub(super) fn into_contents(self) -> Vec<u8> {
+		self.contents.into_inner().into_inner()
+	}
+
+	pub(super) fn start_write(&self) -> AtomWriterCompanion<'_> {
+		AtomWriterCompanion {
+			contents: self.contents.borrow_mut(),
+		}
+	}
+
+	pub(super) fn save_to(&mut self, file: &mut File) -> Result<()> {
+		file.rewind()?;
+		file.set_len(0)?;
+		file.write_all(self.contents.borrow().get_ref())?;
+
+		Ok(())
+	}
+}
+
+/// The actual handler of the writing operations
+pub(super) struct AtomWriterCompanion<'a> {
+	contents: RefMut<'a, Cursor<Vec<u8>>>,
+}
+
+impl AtomWriterCompanion<'_> {
 	/// Insert a byte at the given index
 	///
 	/// NOTE: This will not affect the position of the inner [`Cursor`]
@@ -125,47 +176,61 @@ impl AtomWriter {
 		self.contents.get_mut().splice(range, replacement);
 	}
 
-	pub(super) fn len(&self) -> usize {
-		self.contents.get_ref().len()
-	}
-
-	/// Convert this [`AtomWriter`] into an [`AtomReader`]
+	/// Write an atom's size
 	///
-	/// This is meant to be used for functions expecting an [`AtomReader`], with the reader
-	/// being disposed of soon after.
-	///
-	/// TODO: This is kind of a hack? Might be better expressed with a trait
-	pub(super) fn as_reader(&mut self) -> AtomReader<&mut Cursor<Vec<u8>>> {
-		let len = self.contents.get_ref().len() as u64;
-		AtomReader::new_with_len(&mut self.contents, len, self.parse_mode)
-	}
+	/// NOTES:
+	/// * This expects the cursor to be at the start of the atom size
+	/// * This will leave the cursor at the start of the atom's data
+	pub(super) fn write_atom_size(&mut self, start: u64, size: u64, extended: bool) -> Result<()> {
+		if u32::try_from(size).is_ok() {
+			// ???? (identifier)
+			self.write_u32::<BigEndian>(size as u32)?;
+			self.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
+			return Ok(());
+		}
 
-	pub(super) fn into_contents(self) -> Vec<u8> {
-		self.contents.into_inner()
-	}
+		// 64-bit extended size
+		// 0001 (identifier) ????????
 
-	pub(super) fn save_to(&mut self, file: &mut File) -> Result<()> {
-		file.rewind()?;
-		file.set_len(0)?;
-		file.write_all(self.contents.get_ref())?;
+		// Extended size indicator
+		self.write_u32::<BigEndian>(1)?;
+		// Skip identifier
+		self.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
+
+		let extended_size = size.to_be_bytes();
+
+		if extended {
+			// Overwrite existing extended size
+			self.write_u64::<BigEndian>(size)?;
+		} else {
+			for i in extended_size {
+				self.insert((start + 8 + u64::from(i)) as usize, i);
+			}
+
+			self.seek(SeekFrom::Current(8))?;
+		}
 
 		Ok(())
 	}
+
+	pub(super) fn len(&self) -> usize {
+		self.contents.get_ref().len()
+	}
 }
 
-impl Seek for AtomWriter {
+impl<'a> Seek for AtomWriterCompanion<'a> {
 	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
 		self.contents.seek(pos)
 	}
 }
 
-impl Read for AtomWriter {
+impl<'a> Read for AtomWriterCompanion<'a> {
 	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
 		self.contents.read(buf)
 	}
 }
 
-impl Write for AtomWriter {
+impl<'a> Write for AtomWriterCompanion<'a> {
 	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
 		self.contents.write(buf)
 	}
@@ -175,14 +240,14 @@ impl Write for AtomWriter {
 	}
 }
 
-pub struct AtomFindAll<'a, I> {
+pub struct AtomFindAll<I> {
 	atoms: I,
-	expected_fourcc: &'a [u8],
+	expected_fourcc: [u8; 4],
 	recurse: bool,
-	current_container: Option<Box<AtomFindAll<'a, I>>>,
+	current_container: Option<Box<AtomFindAll<I>>>,
 }
 
-impl<'a> Iterator for AtomFindAll<'a, std::slice::Iter<'a, ContextualAtom>> {
+impl<'a> Iterator for AtomFindAll<std::slice::Iter<'a, ContextualAtom>> {
 	type Item = &'a AtomInfo;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -199,7 +264,7 @@ impl<'a> Iterator for AtomFindAll<'a, std::slice::Iter<'a, ContextualAtom>> {
 
 		loop {
 			let atom = self.atoms.next()?;
-			let AtomIdent::Fourcc(ref fourcc) = atom.info.ident else {
+			let AtomIdent::Fourcc(fourcc) = atom.info.ident else {
 				continue;
 			};
 
@@ -208,9 +273,15 @@ impl<'a> Iterator for AtomFindAll<'a, std::slice::Iter<'a, ContextualAtom>> {
 			}
 
 			if self.recurse {
+				if atom.children.is_empty() {
+					continue;
+				}
+
 				self.current_container = Some(Box::new(
 					atom.find_all_children(self.expected_fourcc, self.recurse),
 				));
+
+				return self.next();
 			}
 		}
 	}
