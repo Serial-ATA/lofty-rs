@@ -28,7 +28,6 @@ where
 	let mut ape_tag: Option<ApeTag> = None;
 
 	// ID3v2 tags are unsupported in APE files, but still possible
-	#[allow(unused_variables)]
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the APE file!");
 

@@ -48,7 +48,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 
 	// Unable to determine a format
 	if file_type.is_none() {
-		err!(UnsupportedTag);
+		err!(UnknownFormat);
 	}
 
 	let file_type = file_type.unwrap();
