@@ -64,6 +64,8 @@ impl<'a> ParsedFrame<'a> {
 
 		// Get the encryption method symbol
 		if let Some(enc) = flags.encryption.as_mut() {
+			log::trace!("Reading encryption method symbol");
+
 			if size < 1 {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 			}
@@ -74,6 +76,8 @@ impl<'a> ParsedFrame<'a> {
 
 		// Get the group identifier
 		if let Some(group) = flags.grouping_identity.as_mut() {
+			log::trace!("Reading group identifier");
+
 			if size < 1 {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 			}
@@ -84,6 +88,8 @@ impl<'a> ParsedFrame<'a> {
 
 		// Get the real data length
 		if flags.data_length_indicator.is_some() || flags.compression {
+			log::trace!("Reading data length indicator");
+
 			if size < 4 {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 			}
