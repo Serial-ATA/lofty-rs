@@ -817,6 +817,16 @@ impl FileType {
 	{
 		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
 
+		// Give custom resolvers priority
+		if let Some((ty, _)) = custom_resolvers()
+			.lock()
+			.ok()?
+			.iter()
+			.find(|(_, f)| f.extension() == Some(ext.as_str()))
+		{
+			return Some(Self::Custom(ty));
+		}
+
 		match ext.as_str() {
 			"aac" => Some(Self::Aac),
 			"ape" => Some(Self::Ape),
@@ -830,18 +840,7 @@ impl FileType {
 			"mp4" | "m4a" | "m4b" | "m4p" | "m4r" | "m4v" | "3gp" => Some(Self::Mp4),
 			"mpc" | "mp+" | "mpp" => Some(Self::Mpc),
 			"spx" => Some(Self::Speex),
-			e => {
-				if let Some((ty, _)) = custom_resolvers()
-					.lock()
-					.ok()?
-					.iter()
-					.find(|(_, f)| f.extension() == Some(e))
-				{
-					Some(Self::Custom(ty))
-				} else {
-					None
-				}
-			},
+			_ => None,
 		}
 	}
 
