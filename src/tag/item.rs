@@ -262,6 +262,7 @@ gen_map!(
 	"rate"                                               => Popularimeter,
 	"rtng"                                               => ParentalAdvisory,
 	"\u{a9}day"                                          => RecordingDate,
+	"----:com.apple.iTunes:ORIGINALDATE"                 => OriginalReleaseDate,
 	"----:com.apple.iTunes:ISRC"                         => Isrc,
 	"----:com.apple.iTunes:BARCODE"                      => Barcode,
 	"----:com.apple.iTunes:CATALOGNUMBER"                => CatalogNumber,
