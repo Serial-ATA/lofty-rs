@@ -1,14 +1,14 @@
 [package]
 name = "ogg_pager"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
 description = "A simple OGG page reader"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 keywords = ["ogg", "xiph"]
-categories = ["accessibility", "multimedia::audio"]
-exclude = ["test_assets"]
+categories = ["multimedia", "multimedia::audio", "parser-implementations"]
+include = ["src", "Cargo.toml", "../LICENSE-*"]
 
 [dependencies]
 byteorder = "1.5.0"
