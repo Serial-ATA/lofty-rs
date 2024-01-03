@@ -94,6 +94,8 @@ pub(in crate::ogg) fn read_properties<R>(
 where
 	R: Read + Seek,
 {
+	log::debug!("Reading Speex properties");
+
 	// Safe to unwrap, it is impossible to get to this point without an
 	// identification header.
 	let identification_packet = packets.get(0).unwrap();
@@ -112,6 +114,9 @@ where
 	let identification_packet_reader = &mut &identification_packet[28..];
 
 	properties.version = identification_packet_reader.read_u32::<LittleEndian>()?;
+	if properties.version > 1 {
+		decode_err!(@BAIL Speex, "Unknown Speex stream version");
+	}
 
 	// Total size of the speex header
 	let _header_size = identification_packet_reader.read_u32::<LittleEndian>()?;
@@ -138,6 +143,10 @@ where
 
 	let last_page = find_last_page(data);
 	let file_length = data.seek(SeekFrom::End(0))?;
+
+	// The stream length is the entire file minus the two mandatory metadata packets
+	let metadata_packets_length = packets.iter().take(2).map(<[u8]>::len).sum::<usize>();
+	let stream_length = file_length.saturating_sub(metadata_packets_length as u64);
 
 	// This is used for bitrate calculation, it should be the length in
 	// milliseconds, but if we can't determine it then we'll just use 1000.
@@ -166,6 +175,11 @@ where
 	if properties.nominal_bitrate > 0 {
 		properties.overall_bitrate = (file_length.saturating_mul(8) / length) as u32;
 		properties.audio_bitrate = (properties.nominal_bitrate as u64 / 1000) as u32;
+	} else {
+		log::warn!("Nominal bitrate = 0, estimating bitrate from file length");
+
+		properties.overall_bitrate = file_length.saturating_mul(8).div_round(length) as u32;
+		properties.audio_bitrate = stream_length.saturating_mul(8).div_round(length) as u32;
 	}
 
 	Ok(properties)

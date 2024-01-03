@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The `dfLa` atom for FLAC streams will now be found, providing better properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
   - Offset atoms (`stco`, `co64`, and `tfhd`) will now be updated when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/308)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/318))
 - **ID3v2**: Support UTF-16 encoded TIPL frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/306)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/307))
+- **Speex**: Estimate bitrate when the nominal bitrate is not available ([PR](https://github.com/Serial-ATA/lofty-rs/pull/322))
+  - When no nominal bitrate was provided, the bitrate was previously set to 0. Now we will give an estimate based
+    on the stream length, which may or may not be entirely accurate.
 
 ### Removed
 - **ItemKey**: `ItemKey::InvolvedPeople`
