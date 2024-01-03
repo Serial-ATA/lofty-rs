@@ -6,10 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2024-01-03
+
 ### Added
 - `Packets::iter()`
 
-## [0.5.0] - 2022-1-29
+## [0.5.0] - 2023-01-29
 
 ### Added
 - `Packets::{len, is_empty}`
@@ -37,7 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed `Page::new`, now pages can only be created through `ogg_pager::paginate` or
   `Packets::paginate`. ([PR](https://github.com/Serial-ATA/lofty-rs/pull/79))
 
-## [0.3.1] - 2022-3-3
+## [0.3.1] - 2022-03-03
 
 ### Fixed
 - Segment tables are written correctly with data spanning multiple pages ([issue](https://github.com/Serial-ATA/lofty-rs/issues/37))
