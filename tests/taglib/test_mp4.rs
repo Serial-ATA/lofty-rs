@@ -137,8 +137,28 @@ fn test_is_empty() {
 }
 
 #[test]
+#[ignore] // TODO: The atom parsing internals are not exposed yet
 fn test_update_stco() {
-	todo!("We don't update stco atoms")
+	let mut file = temp_file!("no-tags.3g2");
+
+	{
+		let mut f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+		file.rewind().unwrap();
+
+		let mut tag = Ilst::default();
+		tag.set_artist("X".repeat(3000));
+		f.set_ilst(tag);
+
+		// Find and collect all `stco` offsets
+
+		f.save_to(&mut file).unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let _f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+
+		// Find and collect all `stco` offsets, compare with previous
+	}
 }
 
 #[test]
