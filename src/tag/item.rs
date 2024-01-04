@@ -105,6 +105,8 @@ gen_map!(
 	"Track"                        => TrackNumber,
 	"Track"                        => TrackTotal,
 	"Year"                         => Year,
+	"ORIGINALYEAR"                 => OriginalReleaseDate,
+	"RELEASEDATE"                  => PodcastReleaseDate,
 	"ISRC"                         => Isrc,
 	"Barcode"                      => Barcode,
 	"CatalogNumber"                => CatalogNumber,
@@ -262,7 +264,8 @@ gen_map!(
 	"rate"                                               => Popularimeter,
 	"rtng"                                               => ParentalAdvisory,
 	"\u{a9}day"                                          => RecordingDate,
-	"----:com.apple.iTunes:ORIGINALDATE"                 => OriginalReleaseDate,
+	"----:com.apple.iTunes:ORIGINALDATE"                 => OriginalReleaseDate, // TagLib v2.0
+	"----:com.apple.iTunes:RELEASEDATE"                  => PodcastReleaseDate,
 	"----:com.apple.iTunes:ISRC"                         => Isrc,
 	"----:com.apple.iTunes:BARCODE"                      => Barcode,
 	"----:com.apple.iTunes:CATALOGNUMBER"                => CatalogNumber,
@@ -365,6 +368,8 @@ gen_map!(
 	"DATE"                                    => RecordingDate,
 	"YEAR"                                    => Year,
 	"ORIGINALDATE"                            => OriginalReleaseDate,
+	"ORIGINALYEAR"                            => OriginalReleaseDate,
+	"RELEASEDATE"                             => PodcastReleaseDate,
 	"ISRC"                                    => Isrc,
 	"BARCODE"                                 => Barcode,
 	"CATALOGNUMBER"                           => CatalogNumber,
@@ -539,9 +544,18 @@ gen_item_keys!(
 		Popularimeter,
 		ParentalAdvisory,
 
-		// Dates
+		/// Recording date
+		///
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#date-10>
 		RecordingDate,
+
+		/// Year
 		Year,
+
+		/// Original release date/year
+		///
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#original-release-date-1>
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#original-release-year-1>
 		OriginalReleaseDate,
 
 		// Identifiers
@@ -654,6 +668,9 @@ gen_item_keys!(
 		PodcastDescription,
 		PodcastSeriesCategory,
 		PodcastURL,
+		/// Release date (of the podcast episode)
+		///
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#release-date-10>
 		PodcastReleaseDate,
 		PodcastGlobalUniqueID,
 		PodcastKeywords,
