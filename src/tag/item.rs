@@ -544,6 +544,7 @@ gen_item_keys!(
 		Popularimeter,
 		ParentalAdvisory,
 
+		// Dates
 		/// Recording date
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#date-10>
