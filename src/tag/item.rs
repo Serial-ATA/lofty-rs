@@ -106,7 +106,7 @@ gen_map!(
 	"Track"                        => TrackTotal,
 	"Year"                         => Year,
 	"ORIGINALYEAR"                 => OriginalReleaseDate,
-	"RELEASEDATE"                  => PodcastReleaseDate,
+	"RELEASEDATE"                  => ReleaseDate,
 	"ISRC"                         => Isrc,
 	"Barcode"                      => Barcode,
 	"CatalogNumber"                => CatalogNumber,
@@ -211,7 +211,7 @@ gen_map!(
 	"TDES"                         => PodcastDescription,
 	"TCAT"                         => PodcastSeriesCategory,
 	"WFED"                         => PodcastURL,
-	"TDRL"                         => PodcastReleaseDate,
+	"TDRL"                         => ReleaseDate,
 	"TGID"                         => PodcastGlobalUniqueID,
 	"TKWD"                         => PodcastKeywords,
 	"COMM"                         => Comment,
@@ -265,7 +265,7 @@ gen_map!(
 	"rtng"                                               => ParentalAdvisory,
 	"\u{a9}day"                                          => RecordingDate,
 	"----:com.apple.iTunes:ORIGINALDATE"                 => OriginalReleaseDate, // TagLib v2.0
-	"----:com.apple.iTunes:RELEASEDATE"                  => PodcastReleaseDate,
+	"----:com.apple.iTunes:RELEASEDATE"                  => ReleaseDate,
 	"----:com.apple.iTunes:ISRC"                         => Isrc,
 	"----:com.apple.iTunes:BARCODE"                      => Barcode,
 	"----:com.apple.iTunes:CATALOGNUMBER"                => CatalogNumber,
@@ -369,7 +369,7 @@ gen_map!(
 	"YEAR"                                    => Year,
 	"ORIGINALDATE"                            => OriginalReleaseDate,
 	"ORIGINALYEAR"                            => OriginalReleaseDate,
-	"RELEASEDATE"                             => PodcastReleaseDate,
+	"RELEASEDATE"                             => ReleaseDate,
 	"ISRC"                                    => Isrc,
 	"BARCODE"                                 => Barcode,
 	"CATALOGNUMBER"                           => CatalogNumber,
@@ -553,6 +553,13 @@ gen_item_keys!(
 		/// Year
 		Year,
 
+		/// Release date
+		///
+		/// The release date of a podcast episode or any other kind of release.
+		///
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#release-date-10>
+		ReleaseDate,
+
 		/// Original release date/year
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#original-release-date-1>
@@ -669,10 +676,6 @@ gen_item_keys!(
 		PodcastDescription,
 		PodcastSeriesCategory,
 		PodcastURL,
-		/// Release date (of the podcast episode)
-		///
-		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#release-date-10>
-		PodcastReleaseDate,
 		PodcastGlobalUniqueID,
 		PodcastKeywords,
 
