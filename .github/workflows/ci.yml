@@ -77,7 +77,7 @@ jobs:
           toolchain: stable
           components: clippy
       - run: |
-          cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic
+          cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic -Dwarnings
 
   style:
     strategy:
