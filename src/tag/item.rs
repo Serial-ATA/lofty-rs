@@ -210,9 +210,9 @@ gen_map!(
 	"TCOP"                         => CopyrightMessage,
 	"TDES"                         => PodcastDescription,
 	"TCAT"                         => PodcastSeriesCategory,
-	"WFED"                         => PodcastURL,
+	"WFED"                         => PodcastUrl,
 	"TDRL"                         => ReleaseDate,
-	"TGID"                         => PodcastGlobalUniqueID,
+	"TGID"                         => PodcastGlobalUniqueId,
 	"TKWD"                         => PodcastKeywords,
 	"COMM"                         => Comment,
 	"TLAN"                         => Language,
@@ -287,8 +287,8 @@ gen_map!(
 	"----:com.apple.iTunes:LICENSE"                      => License,
 	"ldes"                                               => PodcastDescription,
 	"catg"                                               => PodcastSeriesCategory,
-	"purl"                                               => PodcastURL,
-	"egid"                                               => PodcastGlobalUniqueID,
+	"purl"                                               => PodcastUrl,
+	"egid"                                               => PodcastGlobalUniqueId,
 	"keyw"                                               => PodcastKeywords,
 	"\u{a9}cmt"                                          => Comment,
 	"desc"                                               => Description,
@@ -675,8 +675,8 @@ gen_item_keys!(
 		// Podcast
 		PodcastDescription,
 		PodcastSeriesCategory,
-		PodcastURL,
-		PodcastGlobalUniqueID,
+		PodcastUrl,
+		PodcastGlobalUniqueId,
 		PodcastKeywords,
 
 		// Miscellaneous
