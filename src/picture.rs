@@ -4,10 +4,10 @@ use crate::probe::ParsingMode;
 use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use byteorder::{BigEndian, ReadBytesExt};
+use byteorder::{BigEndian, ReadBytesExt as _};
 use data_encoding::BASE64;
 
 /// Common picture item keys for APE
@@ -35,7 +35,7 @@ pub const APE_PICTURE_TYPES: [&str; 21] = [
 	"Cover Art (Publisher Logotype)",
 ];
 
-/// Mime types for pictures.
+/// MIME types for pictures.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum MimeType {
@@ -49,25 +49,11 @@ pub enum MimeType {
 	Bmp,
 	/// GIF image
 	Gif,
-	/// Some unknown mimetype
+	/// Some unknown MIME type
 	Unknown(String),
 }
 
-impl ToString for MimeType {
-	fn to_string(&self) -> String {
-		match self {
-			MimeType::Jpeg => "image/jpeg".to_string(),
-			MimeType::Png => "image/png".to_string(),
-			MimeType::Tiff => "image/tiff".to_string(),
-			MimeType::Bmp => "image/bmp".to_string(),
-			MimeType::Gif => "image/gif".to_string(),
-			MimeType::Unknown(unknown) => unknown.clone(),
-		}
-	}
-}
-
 impl MimeType {
-	#[allow(clippy::should_implement_trait)]
 	/// Get a `MimeType` from a string
 	///
 	/// # Examples
@@ -78,6 +64,8 @@ impl MimeType {
 	/// let jpeg_mimetype_str = "image/jpeg";
 	/// assert_eq!(MimeType::from_str(jpeg_mimetype_str), MimeType::Jpeg);
 	/// ```
+	#[must_use]
+	#[allow(clippy::should_implement_trait)] // Infallible in contrast to FromStr
 	pub fn from_str(mime_type: &str) -> Self {
 		match &*mime_type.to_lowercase() {
 			"image/jpeg" | "image/jpg" => Self::Jpeg,
@@ -85,7 +73,7 @@ impl MimeType {
 			"image/tiff" => Self::Tiff,
 			"image/bmp" => Self::Bmp,
 			"image/gif" => Self::Gif,
-			_ => Self::Unknown(mime_type.to_string()),
+			_ => Self::Unknown(mime_type.to_owned()),
 		}
 	}
 
@@ -99,6 +87,7 @@ impl MimeType {
 	/// let jpeg_mimetype = MimeType::Jpeg;
 	/// assert_eq!(jpeg_mimetype.as_str(), "image/jpeg")
 	/// ```
+	#[must_use]
 	pub fn as_str(&self) -> &str {
 		match self {
 			MimeType::Jpeg => "image/jpeg",
@@ -108,6 +97,12 @@ impl MimeType {
 			MimeType::Gif => "image/gif",
 			MimeType::Unknown(unknown) => unknown,
 		}
+	}
+}
+
+impl Display for MimeType {
+	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+		f.write_str(self.as_str())
 	}
 }
 
