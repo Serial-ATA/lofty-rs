@@ -206,7 +206,7 @@ gen_map!(
 	"TKEY"                         => InitialKey,
 	"COLOR"                        => Color,
 	"TMOO"                         => Mood,
-	"TBPM"                         => Bpm,
+	"TBPM"                         => IntegerBpm,
 	"TCOP"                         => CopyrightMessage,
 	"TDES"                         => PodcastDescription,
 	"TCAT"                         => PodcastSeriesCategory,
@@ -277,7 +277,8 @@ gen_map!(
 	"\u{a9}gen"                                          => Genre,
 	"----:com.apple.iTunes:COLOR"                        => Color,
 	"----:com.apple.iTunes:MOOD"                         => Mood,
-	"tmpo" | "----:com.apple.iTunes:BPM"                 => Bpm, // integer bpm (fourcc atom) vs. precise bpm (freeform atom)
+	"tmpo"                                               => IntegerBpm,
+	"----:com.apple.iTunes:BPM"                          => Bpm,
 	"----:com.apple.iTunes:initialkey"                   => InitialKey,
 	"----:com.apple.iTunes:replaygain_album_gain"        => ReplayGainAlbumGain,
 	"----:com.apple.iTunes:replaygain_album_peak"        => ReplayGainAlbumPeak,
@@ -665,7 +666,18 @@ gen_item_keys!(
 		InitialKey,
 		Color,
 		Mood,
+		/// Decimal BPM value with custom precision
+		///
+		/// Only read and written if the tag format supports a field for decimal BPM values
+		/// that are not restricted to integer values.
+		///
+		/// Not supported by ID3v2 that restricts BPM values to integers in `TBPM`.
 		Bpm,
+		/// Non-fractional BPM value with integer precision
+		///
+		/// Only read and written if the tag format has a field for integer BPM values,
+		/// e.g. ID3v2 (`TBPM`) and MP4 (`tmpo`).
+		IntegerBpm,
 
 		// Legal
 		CopyrightMessage,
