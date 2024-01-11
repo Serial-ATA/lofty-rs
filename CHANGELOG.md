@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**:
   - Stop erroring on empty frames when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
   - Verify contents of flag items (`ItemKey::FlagCompilation`, `ItemKey::FlagPodcast`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/336))
+  - `Id3v2Tag::get_text` will now return the raw, unedited string ([PR](https://github.com/Serial-ATA/lofty-rs/pull/336))
+    - Previously, all null separators were replaced with `"/"` to make the string easier to display.
+      Now, null separators are only replaced in [`Accessor`](https://docs.rs/lofty/latest/lofty/trait.Accessor.html) methods.
+      It is up to the caller to decide how to handle all other strings.
 - **resolve**: Custom resolvers will now be checked before the default resolvers ([PR](https://github.com/Serial-ATA/lofty-rs/pull/319))
 - **MPEG**: Up to `max_junk_bytes` will now be searched for tags between the start of the file and the first MPEG frame ([PR](https://github.com/Serial-ATA/lofty-rs/pull/320))
   - This allows us to read and write ID3v2 tags that are preceeded by junk
