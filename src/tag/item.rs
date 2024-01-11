@@ -666,7 +666,7 @@ gen_item_keys!(
 		InitialKey,
 		Color,
 		Mood,
-		/// Decimal BPM value with custom precision
+		/// Decimal BPM value with arbitrary precision
 		///
 		/// Only read and written if the tag format supports a field for decimal BPM values
 		/// that are not restricted to integer values.
@@ -676,7 +676,8 @@ gen_item_keys!(
 		/// Non-fractional BPM value with integer precision
 		///
 		/// Only read and written if the tag format has a field for integer BPM values,
-		/// e.g. ID3v2 (`TBPM`) and MP4 (`tmpo`).
+		/// e.g. ID3v2 ([`TBPM` frame](https://github.com/id3/ID3v2.4/blob/516075e38ff648a6390e48aff490abed987d3199/id3v2.4.0-frames.txt#L376))
+		/// and MP4 (`tmpo` integer atom).
 		IntegerBpm,
 
 		// Legal
