@@ -207,6 +207,7 @@ gen_map!(
 	"COLOR"                        => Color,
 	"TMOO"                         => Mood,
 	"TBPM"                         => IntegerBpm,
+	"BPM"                          => Bpm, // non-standard TXXX:BPM frame with fractional BPM value
 	"TCOP"                         => CopyrightMessage,
 	"TDES"                         => PodcastDescription,
 	"TCAT"                         => PodcastSeriesCategory,
