@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **ID3v1**: Renamed `GENRES[14]` to `"R&B"` (Previously `"Rhythm & Blues"`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/296))
 - **MP4**: Duration milliseconds are now rounded to the nearest whole number ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
-- **ID3v2**: Stop erroring on empty frames when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
+- **ID3v2**:
+  - Stop erroring on empty frames when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/299))
+  - Verify contents of flag items (`ItemKey::FlagCompilation`, `ItemKey::FlagPodcast`) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/336))
 - **resolve**: Custom resolvers will now be checked before the default resolvers ([PR](https://github.com/Serial-ATA/lofty-rs/pull/319))
 - **MPEG**: Up to `max_junk_bytes` will now be searched for tags between the start of the file and the first MPEG frame ([PR](https://github.com/Serial-ATA/lofty-rs/pull/320))
   - This allows us to read and write ID3v2 tags that are preceeded by junk
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - The `dfLa` atom for FLAC streams will now be found, providing better properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/298))
   - Offset atoms (`stco`, `co64`, and `tfhd`) will now be updated when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/308)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/318))
+  - `ItemKey::FlagPodcast` will be checked in `Tag` -> `Ilst` conversion ([PR](https://github.com/Serial-ATA/lofty-rs/pull/336))
 - **ID3v2**: Support UTF-16 encoded TIPL frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/306)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/307))
 - **Speex**: Estimate bitrate when the nominal bitrate is not available ([PR](https://github.com/Serial-ATA/lofty-rs/pull/322))
   - When no nominal bitrate was provided, the bitrate was previously set to 0. Now we will give an estimate based
