@@ -36,12 +36,25 @@ const COMMENT_FRAME_ID: &str = "COMM";
 
 const V4_MULTI_VALUE_SEPARATOR: char = '\0';
 
+// Used exclusively for `Accessor` convenience methods
+fn remove_separators_from_frame_text(value: &str, version: Id3v2Version) -> Cow<'_, str> {
+	if !value.contains(V4_MULTI_VALUE_SEPARATOR) || version != Id3v2Version::V4 {
+		return Cow::Borrowed(value);
+	}
+
+	return Cow::Owned(value.replace(V4_MULTI_VALUE_SEPARATOR, "/"));
+}
+
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
 		paste::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
-					self.get_text(&[<$name:upper _ID>])
+					if let Some(value) = self.get_text(&[<$name:upper _ID>]) {
+						return Some(remove_separators_from_frame_text(value, self.original_version));
+					}
+
+					None
 				}
 
 				fn [<set_ $name>](&mut self, value: String) {
@@ -60,6 +73,13 @@ macro_rules! impl_accessor {
 	}
 }
 
+/// ## [`Accessor`] Methods
+///
+/// As ID3v2.4 allows for multiple values to exist in a single frame, the raw strings, as provided by [`Id3v2Tag::get_text`]
+/// may contain null separators.
+///
+/// In the [`Accessor`] methods, these values have the separators (`\0`) replaced with `"/"` for convenience.
+///
 /// ## Conversions
 ///
 /// ⚠ **Warnings** ⚠
@@ -171,24 +191,42 @@ impl Id3v2Tag {
 
 	/// Gets the text for a frame
 	///
+	/// NOTE: If the tag is [`Id3v2Version::V4`], there could be multiple values separated by null characters (`'\0'`).
+	///       Use [`Id3v2Tag::get_texts`] to conveniently split all of the values.
+	///
 	/// NOTE: This will not work for `TXXX` frames, use [`Id3v2Tag::get_user_text`] for that.
 	///
-	/// If the tag is [`Id3v2Version::V4`], this will allocate if the text contains any
-	/// null (`'\0'`) text separators to replace them with a slash (`'/'`).
-	pub fn get_text(&self, id: &FrameId<'_>) -> Option<Cow<'_, str>> {
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
+	/// use lofty::Accessor;
+	/// use std::borrow::Cow;
+	///
+	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
+	///
+	/// let mut tag = Id3v2Tag::new();
+	///
+	/// tag.set_title(String::from("Foo"));
+	///
+	/// let title = tag.get_text(&TITLE_ID);
+	/// assert_eq!(title, Some("Foo"));
+	///
+	/// // Now we have a string with multiple values
+	/// tag.set_title(String::from("Foo\0Bar"));
+	///
+	/// // Null separator is retained! This case is better handled by `get_texts`.
+	/// let title = tag.get_text(&TITLE_ID);
+	/// assert_eq!(title, Some("Foo\0Bar"));
+	/// ```
+	pub fn get_text(&self, id: &FrameId<'_>) -> Option<&str> {
 		let frame = self.get(id);
 		if let Some(Frame {
 			value: FrameValue::Text(TextInformationFrame { value, .. }),
 			..
 		}) = frame
 		{
-			if !value.contains(V4_MULTI_VALUE_SEPARATOR)
-				|| self.original_version != Id3v2Version::V4
-			{
-				return Some(Cow::Borrowed(value.as_str()));
-			}
-
-			return Some(Cow::Owned(value.replace(V4_MULTI_VALUE_SEPARATOR, "/")));
+			return Some(value);
 		}
 
 		None
@@ -223,7 +261,7 @@ impl Id3v2Tag {
 			..
 		}) = self.get(id)
 		{
-			return Some(value.split('\0'));
+			return Some(value.split(V4_MULTI_VALUE_SEPARATOR));
 		}
 
 		None
