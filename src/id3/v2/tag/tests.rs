@@ -1321,3 +1321,22 @@ fn tipl_round_trip() {
 		_ => unreachable!(),
 	}
 }
+
+#[test]
+fn flag_item_conversion() {
+	let mut tag = Tag::new(TagType::Id3v2);
+	tag.insert_text(ItemKey::FlagCompilation, "1".to_owned());
+	tag.insert_text(ItemKey::FlagPodcast, "0".to_owned());
+
+	let tag: Id3v2Tag = tag.into();
+	assert_eq!(
+		tag.get_text(&FrameId::Valid(Cow::Borrowed("TCMP")))
+			.as_deref(),
+		Some("1")
+	);
+	assert_eq!(
+		tag.get_text(&FrameId::Valid(Cow::Borrowed("PCST")))
+			.as_deref(),
+		Some("0")
+	);
+}

@@ -1337,6 +1337,27 @@ impl MergeTag for SplitTagRemainder {
 			});
 		}
 
+		// Flag items
+		for item_key in [&ItemKey::FlagCompilation, &ItemKey::FlagPodcast] {
+			let Some(flag_value) = tag.take_strings(item_key).next() else {
+				continue;
+			};
+
+			if flag_value != "1" && flag_value != "0" {
+				continue;
+			}
+
+			let frame_id = item_key
+				.map_key(TagType::Id3v2, false)
+				.expect("valid frame id");
+
+			merged.frames.push(new_text_frame(
+				FrameId::Valid(Cow::Borrowed(frame_id)),
+				flag_value,
+				FrameFlags::default(),
+			));
+		}
+
 		// Insert all remaining items as single frames and deduplicate as needed
 		for item in tag.items {
 			merged.insert_item(item);

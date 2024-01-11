@@ -273,9 +273,7 @@ impl Ilst {
 	/// assert_eq!(ilst.pictures().unwrap().count(), 2);
 	/// ```
 	pub fn pictures(&self) -> Option<impl Iterator<Item = &Picture>> {
-		let Some(covr) = self.get(&COVR) else {
-			return None;
-		};
+		let covr = self.get(&COVR)?;
 
 		Some(covr.data().filter_map(|d| {
 			if let AtomData::Picture(pic) = d {
@@ -691,21 +689,23 @@ impl MergeTag for SplitTagRemainder {
 					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, text.as_str()),
 					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
 					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
-					ItemKey::FlagCompilation => {
-						if let Ok(num) = text.as_str().parse::<u8>() {
-							let data = match num {
-								0 => false,
-								1 => true,
-								_ => {
-									// Ignore all other, unexpected values
-									continue;
-								},
-							};
-							merged.atoms.push(Atom {
-								ident: ident.into_owned(),
-								data: AtomDataStorage::Single(AtomData::Bool(data)),
-							})
-						}
+					ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
+						let Ok(num) = text.as_str().parse::<u8>() else {
+							continue;
+						};
+
+						let data = match num {
+							0 => false,
+							1 => true,
+							_ => {
+								// Ignore all other, unexpected values
+								continue;
+							},
+						};
+						merged.atoms.push(Atom {
+							ident: ident.into_owned(),
+							data: AtomDataStorage::Single(AtomData::Bool(data)),
+						})
 					},
 					_ => merged.atoms.push(Atom {
 						ident: ident.into_owned(),
@@ -1216,5 +1216,30 @@ mod tests {
 		assert_eq!(ilst.comment().unwrap(), "Baz comment");
 
 		assert!(ilst.album().is_none());
+	}
+
+	#[test]
+	fn flag_item_conversion() {
+		let mut tag = Tag::new(TagType::Mp4Ilst);
+		tag.insert_text(ItemKey::FlagCompilation, "1".to_owned());
+		tag.insert_text(ItemKey::FlagPodcast, "0".to_owned());
+
+		let ilst: Ilst = tag.into();
+		assert_eq!(
+			ilst.get(&AtomIdent::Fourcc(*b"cpil"))
+				.unwrap()
+				.data()
+				.next()
+				.unwrap(),
+			&AtomData::Bool(true)
+		);
+		assert_eq!(
+			ilst.get(&AtomIdent::Fourcc(*b"pcst"))
+				.unwrap()
+				.data()
+				.next()
+				.unwrap(),
+			&AtomData::Bool(false)
+		);
 	}
 }
