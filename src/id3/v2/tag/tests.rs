@@ -1330,13 +1330,11 @@ fn flag_item_conversion() {
 
 	let tag: Id3v2Tag = tag.into();
 	assert_eq!(
-		tag.get_text(&FrameId::Valid(Cow::Borrowed("TCMP")))
-			.as_deref(),
+		tag.get_text(&FrameId::Valid(Cow::Borrowed("TCMP"))),
 		Some("1")
 	);
 	assert_eq!(
-		tag.get_text(&FrameId::Valid(Cow::Borrowed("PCST")))
-			.as_deref(),
+		tag.get_text(&FrameId::Valid(Cow::Borrowed("PCST"))),
 		Some("0")
 	);
 }
