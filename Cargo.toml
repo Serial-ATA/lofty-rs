@@ -22,7 +22,7 @@ lofty_attr    = "0.9.0"
 # Debug logging
 log           = "0.4.20"
 # OGG Vorbis/Opus
-ogg_pager     = { path = "ogg_pager" }
+ogg_pager     = "0.6.0"
 # Key maps
 paste         = "1.0.14"
 
@@ -35,7 +35,7 @@ id3v2_compression_support = ["dep:flate2"]
 hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683dd6acb92df792683ee46ad6a59" }
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
-tempfile  = "3.8.1"
+tempfile  = "3.9.0"
 
 # Pretty heavy dependency, we don't want this compiling for test/doc runs
 [target.'cfg(bench)'.dev-dependencies]
