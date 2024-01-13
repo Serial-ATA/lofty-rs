@@ -125,11 +125,7 @@ impl Accessor for Tag {
 	);
 
 	fn track(&self) -> Option<u32> {
-		if let Some(i) = self.get_string(&ItemKey::TrackNumber) {
-			return i.parse::<u32>().ok();
-		}
-
-		None
+		self.get_u32_from_string(&ItemKey::TrackNumber)
 	}
 
 	fn set_track(&mut self, value: u32) {
@@ -141,11 +137,7 @@ impl Accessor for Tag {
 	}
 
 	fn track_total(&self) -> Option<u32> {
-		if let Some(i) = self.get_string(&ItemKey::TrackTotal) {
-			return i.parse::<u32>().ok();
-		}
-
-		None
+		self.get_u32_from_string(&ItemKey::TrackTotal)
 	}
 
 	fn set_track_total(&mut self, value: u32) {
@@ -157,11 +149,7 @@ impl Accessor for Tag {
 	}
 
 	fn disk(&self) -> Option<u32> {
-		if let Some(i) = self.get_string(&ItemKey::DiscNumber) {
-			return i.parse::<u32>().ok();
-		}
-
-		None
+		self.get_u32_from_string(&ItemKey::DiscNumber)
 	}
 
 	fn set_disk(&mut self, value: u32) {
@@ -173,11 +161,7 @@ impl Accessor for Tag {
 	}
 
 	fn disk_total(&self) -> Option<u32> {
-		if let Some(i) = self.get_string(&ItemKey::DiscTotal) {
-			return i.parse::<u32>().ok();
-		}
-
-		None
+		self.get_u32_from_string(&ItemKey::DiscTotal)
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
@@ -272,6 +256,11 @@ impl Tag {
 		}
 
 		None
+	}
+
+	fn get_u32_from_string(&self, key: &ItemKey) -> Option<u32> {
+		let i = self.get_string(key)?;
+		i.parse::<u32>().ok()
 	}
 
 	/// Gets a byte slice from an [`ItemKey`]
