@@ -414,10 +414,10 @@ impl Accessor for Ilst {
 	}
 
 	fn set_track(&mut self, value: u32) {
-		let value = (value as u16).to_be_bytes();
-		let track_total = self.track_total().unwrap_or(0).to_be_bytes();
+		let track = (value as u16).to_be_bytes();
+		let track_total = (self.track_total().unwrap_or(0) as u16).to_be_bytes();
 
-		let data = vec![0, 0, value[0], value[1], track_total[0], track_total[1]];
+		let data = vec![0, 0, track[0], track[1], track_total[0], track_total[1]];
 		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
 	}
 
@@ -430,19 +430,19 @@ impl Accessor for Ilst {
 	}
 
 	fn set_track_total(&mut self, value: u32) {
-		let value = (value as u16).to_be_bytes();
-		let track = self.track().unwrap_or(1).to_be_bytes();
+		let track_total = (value as u16).to_be_bytes();
+		let track = (self.track().unwrap_or(0) as u16).to_be_bytes();
 
-		let data = vec![0, 0, track[0], track[1], value[0], value[1]];
+		let data = vec![0, 0, track[0], track[1], track_total[0], track_total[1]];
 		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
 	}
 
 	fn remove_track_total(&mut self) {
-		let track_num = self.track();
+		let track = self.track();
 		let _ = self.remove(&AtomIdent::Fourcc(*b"trkn"));
 
-		if let Some(track_num) = track_num {
-			let track_bytes = (track_num as u16).to_be_bytes();
+		if let Some(track) = track {
+			let track_bytes = (track as u16).to_be_bytes();
 			let data = vec![0, 0, track_bytes[0], track_bytes[1], 0, 0];
 
 			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
@@ -454,10 +454,10 @@ impl Accessor for Ilst {
 	}
 
 	fn set_disk(&mut self, value: u32) {
-		let value = (value as u16).to_be_bytes();
-		let disk_total = self.disk_total().unwrap_or(0).to_be_bytes();
+		let disk = (value as u16).to_be_bytes();
+		let disk_total = (self.disk_total().unwrap_or(0) as u16).to_be_bytes();
 
-		let data = vec![0, 0, value[0], value[1], disk_total[0], disk_total[1]];
+		let data = vec![0, 0, disk[0], disk[1], disk_total[0], disk_total[1]];
 		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
 	}
 
@@ -470,19 +470,19 @@ impl Accessor for Ilst {
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
-		let value = (value as u16).to_be_bytes();
-		let disk = self.disk().unwrap_or(1).to_be_bytes();
+		let disk_total = (value as u16).to_be_bytes();
+		let disk = (self.disk().unwrap_or(0) as u16).to_be_bytes();
 
-		let data = vec![0, 0, disk[0], disk[1], value[0], value[1]];
+		let data = vec![0, 0, disk[0], disk[1], disk_total[0], disk_total[1]];
 		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
 	}
 
 	fn remove_disk_total(&mut self) {
-		let disk_num = self.disk();
+		let disk = self.disk();
 		let _ = self.remove(&AtomIdent::Fourcc(*b"disk"));
 
-		if let Some(disk_num) = disk_num {
-			let disk_bytes = (disk_num as u16).to_be_bytes();
+		if let Some(disk) = disk {
+			let disk_bytes = (disk as u16).to_be_bytes();
 			let data = vec![0, 0, disk_bytes[0], disk_bytes[1], 0, 0];
 
 			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
