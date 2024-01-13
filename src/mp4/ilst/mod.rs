@@ -599,16 +599,24 @@ impl SplitTag for Ilst {
 								let current = u16::from_be_bytes([data[2], data[3]]);
 								let total = u16::from_be_bytes([data[4], data[5]]);
 
-								tag.insert_text(ItemKey::TrackNumber, current.to_string());
-								tag.insert_text(ItemKey::TrackTotal, total.to_string());
+								if current > 0 {
+									tag.insert_text(ItemKey::TrackNumber, current.to_string());
+								}
+								if total > 0 {
+									tag.insert_text(ItemKey::TrackTotal, total.to_string());
+								}
 								return false; // Atom consumed
 							},
 							b"disk" => {
 								let current = u16::from_be_bytes([data[2], data[3]]);
 								let total = u16::from_be_bytes([data[4], data[5]]);
 
-								tag.insert_text(ItemKey::DiscNumber, current.to_string());
-								tag.insert_text(ItemKey::DiscTotal, total.to_string());
+								if current > 0 {
+									tag.insert_text(ItemKey::DiscNumber, current.to_string());
+								}
+								if total > 0 {
+									tag.insert_text(ItemKey::DiscTotal, total.to_string());
+								}
 								return false; // Atom consumed
 							},
 							_ => {},
