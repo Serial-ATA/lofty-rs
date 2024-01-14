@@ -145,16 +145,9 @@ impl SynchronizedText {
 
 					// Encountered text that doesn't include a BOM
 					if bom != [0xFF, 0xFE] && bom != [0xFE, 0xFF] {
-						if let Some(raw_text) = read_to_terminator(&mut cursor, TextEncoding::UTF16)
-						{
-							// text + null terminator
-							pos += (raw_text.len() + 2) as u64;
-
-							return utf16_decode_bytes(&raw_text, endianness)
-								.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
-						}
-
-						return Ok(String::new());
+						let (raw_text, _) = read_to_terminator(&mut cursor, TextEncoding::UTF16);
+						return utf16_decode_bytes(&raw_text, endianness)
+							.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
 					}
 				}
 

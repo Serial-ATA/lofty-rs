@@ -1,6 +1,7 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
+use crate::macros::err;
 use crate::util::text::{
 	decode_text, encode_text, utf16_decode_bytes, TextDecodeOptions, TextEncoding,
 };
@@ -87,6 +88,8 @@ impl ExtendedTextFrame {
 				break 'utf16;
 			}
 
+			// Reuse the BOM from the description as a fallback if the text
+			// doesn't specify one.
 			let mut bom = description.bom;
 			if raw_text.starts_with(&[0xFF, 0xFE]) || raw_text.starts_with(&[0xFE, 0xFF]) {
 				// The text specifies a BOM
@@ -94,6 +97,16 @@ impl ExtendedTextFrame {
 			}
 
 			let endianness = match bom {
+				[0x00, 0x00] if raw_text.is_empty() => {
+					debug_assert!(description.content.is_empty());
+					// Empty string
+					frame_content = String::new();
+					break 'utf16;
+				},
+				[0x00, 0x00] => {
+					debug_assert!(description.content.is_empty());
+					err!(TextDecode("UTF-16 string has no BOM"));
+				},
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
 				// Handled in description decoding
