@@ -113,17 +113,14 @@ where
 	let bytes_read;
 
 	if options.terminated {
-		if let Some(bytes) = read_to_terminator(reader, options.encoding) {
-			let null_terminator_length = match options.encoding {
-				TextEncoding::Latin1 | TextEncoding::UTF8 => 1,
-				TextEncoding::UTF16 | TextEncoding::UTF16BE => 2,
-			};
+		let (bytes, terminator_len) = read_to_terminator(reader, options.encoding);
 
-			bytes_read = bytes.len() + null_terminator_length;
-			raw_bytes = bytes;
-		} else {
+		if bytes.is_empty() {
 			return Ok(EMPTY_DECODED_TEXT);
 		}
+
+		bytes_read = bytes.len() + terminator_len;
+		raw_bytes = bytes;
 	} else {
 		let mut bytes = Vec::new();
 		reader.read_to_end(&mut bytes)?;
@@ -183,16 +180,18 @@ where
 	})
 }
 
-pub(crate) fn read_to_terminator<R>(reader: &mut R, encoding: TextEncoding) -> Option<Vec<u8>>
+pub(crate) fn read_to_terminator<R>(reader: &mut R, encoding: TextEncoding) -> (Vec<u8>, usize)
 where
 	R: Read,
 {
 	let mut text_bytes = Vec::new();
+	let mut terminator_len = 0;
 
 	match encoding {
 		TextEncoding::Latin1 | TextEncoding::UTF8 => {
 			while let Ok(byte) = reader.read_u8() {
 				if byte == 0 {
+					terminator_len = 1;
 					break;
 				}
 
@@ -202,6 +201,7 @@ where
 		TextEncoding::UTF16 | TextEncoding::UTF16BE => {
 			while let (Ok(b1), Ok(b2)) = (reader.read_u8(), reader.read_u8()) {
 				if b1 == 0 && b2 == 0 {
+					terminator_len = 2;
 					break;
 				}
 
@@ -211,11 +211,7 @@ where
 		},
 	}
 
-	if text_bytes.is_empty() {
-		return None;
-	}
-
-	Some(text_bytes)
+	(text_bytes, terminator_len)
 }
 
 pub(crate) fn latin1_decode(bytes: &[u8]) -> String {
