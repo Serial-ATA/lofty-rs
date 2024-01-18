@@ -138,7 +138,7 @@ impl Parse for LoftyFile {
 			lofty_file.file_type = ft;
 		}
 
-		let (tag_fields, properties_field) = match get_fields(&mut errors, data_struct) {
+		let (tag_fields, properties_field) = match get_fields(&mut errors, data_struct)? {
 			Some(fields) => fields,
 			None => return Err(errors.remove(0)),
 		};
@@ -164,33 +164,7 @@ impl LoftyFile {
 		// Otherwise, we can simply ignore their absence.
 		let mut audiofile_impl = proc_macro2::TokenStream::new();
 		if self.audiofile_impl.should_impl_audiofile {
-			let Some(properties_field) = &self.struct_info.fields.properties else {
-				return Err(util::err(
-					self.struct_info.span,
-					"Struct has no `properties` field, required for `AudioFile` impl",
-				));
-			};
-
-			let Some(read_fn) = &self.audiofile_impl.read_fn else {
-				return Err(util::err(
-					self.struct_info.span,
-					"Expected a `#[read_fn]` attribute",
-				));
-			};
-
-			// A write function can be specified, but in its absence, we generate one
-			let write_fn = match &self.audiofile_impl.write_fn {
-				Some(wfn) => wfn.clone(),
-				_ => proc_macro2::TokenStream::new(),
-			};
-
-			audiofile_impl = generate_audiofile_impl(
-				&self.struct_info.name,
-				&self.struct_info.fields.tags,
-				properties_field,
-				read_fn.clone(),
-				write_fn.clone(),
-			);
+			audiofile_impl = generate_audiofile_impl(&self)?;
 		}
 
 		// Assert all tag fields implement `TagExt`
@@ -210,12 +184,7 @@ impl LoftyFile {
 
 		let mut from_taggedfile_impl = proc_macro2::TokenStream::new();
 		if self.should_impl_into_taggedfile {
-			from_taggedfile_impl = generate_from_taggedfile_impl(
-				&self.struct_info.name,
-				&self.struct_info.fields.tags,
-				self.file_type,
-				self.internal_details.has_internal_file_type,
-			);
+			from_taggedfile_impl = generate_from_taggedfile_impl(&self);
 		}
 
 		let getters = get_getters(&self.struct_info.fields.tags, &self.struct_info.name);
@@ -250,60 +219,84 @@ impl LoftyFile {
 
 pub(crate) struct FieldContents {
 	name: Ident,
-	pub(crate) cfg_features: Vec<Attribute>,
+	pub(crate) attrs: Vec<Attribute>,
 	needs_option: bool,
 	getter_name: Option<proc_macro2::TokenStream>,
 	ty: Type,
 	pub(crate) tag_type: proc_macro2::TokenStream,
 }
 
+impl FieldContents {
+	pub(crate) fn get_cfg_features(&self) -> impl Iterator<Item = &Attribute> {
+		self.attrs.iter().filter(|a| a.path().is_ident("cfg"))
+	}
+}
+
 fn get_fields<'a>(
 	errors: &mut Vec<syn::Error>,
 	data: &'a DataStruct,
-) -> Option<(Vec<FieldContents>, Option<&'a syn::Field>)> {
+) -> syn::Result<Option<(Vec<FieldContents>, Option<&'a syn::Field>)>> {
 	let mut tag_fields = Vec::new();
 	let mut properties_field = None;
 
 	for field in &data.fields {
 		let name = field.ident.clone().unwrap();
-		if name.to_string().ends_with("_tag") {
-			let tag_type = match util::get_attr("tag_type", &field.attrs) {
-				Some(tt) => tt,
-				_ => {
-					errors.push(util::err(field.span(), "Field has no `tag_type` attribute"));
-					return None;
-				},
-			};
-
-			let cfg = field
-				.attrs
-				.iter()
-				.cloned()
-				.filter_map(|a| util::get_attr_list("cfg", &a).map(|_| a))
-				.collect::<Vec<_>>();
-
-			let option_unwrapped = util::extract_type_from_option(&field.ty);
-			// `option_unwrapped` will be `Some` if the type was wrapped in an `Option`
-			let needs_option = option_unwrapped.is_some();
-
-			let contents = FieldContents {
-				name,
-				getter_name: util::get_attr("getter", &field.attrs),
-				ty: option_unwrapped.unwrap_or_else(|| field.ty.clone()),
-				tag_type,
-				needs_option,
-				cfg_features: cfg,
-			};
-			tag_fields.push(contents);
-			continue;
-		}
 
 		if name == "properties" {
 			properties_field = Some(field);
 		}
+
+		if !name.to_string().ends_with("_tag") {
+			continue;
+		}
+
+		let mut tag_type = None;
+		let mut getter_name = None;
+		for attr in &field.attrs {
+			if let Some(lofty_attr) = AttributeValue::from_attribute("lofty", attr)? {
+				match lofty_attr {
+					AttributeValue::NameValue(lhs, rhs) => match &*lhs.to_string() {
+						"tag_type" => tag_type = Some(rhs.parse::<proc_macro2::TokenStream>()?),
+						"getter" => getter_name = Some(rhs.parse::<proc_macro2::TokenStream>()?),
+						_ => errors.push(util::err(attr.span(), "Unknown attribute")),
+					},
+					_ => errors.push(util::err(attr.span(), "Unknown attribute")),
+				}
+			}
+		}
+
+		let Some(tag_type) = tag_type else {
+			errors.push(util::err(
+				field.ident.span(),
+				"Expected a `#[lofty(tag_type = \"...\")]` attribute",
+			));
+
+			return Ok(None);
+		};
+
+		let other_attrs = field
+			.attrs
+			.iter()
+			.cloned()
+			.filter(|a| !a.path().is_ident("lofty"))
+			.collect::<Vec<_>>();
+
+		let option_unwrapped = util::extract_type_from_option(&field.ty);
+		// `option_unwrapped` will be `Some` if the type was wrapped in an `Option`
+		let needs_option = option_unwrapped.is_some();
+
+		let contents = FieldContents {
+			name,
+			attrs: other_attrs,
+			getter_name,
+			ty: option_unwrapped.unwrap_or_else(|| field.ty.clone()),
+			tag_type,
+			needs_option,
+		};
+		tag_fields.push(contents);
 	}
 
-	Some((tag_fields, properties_field))
+	Ok(Some((tag_fields, properties_field)))
 }
 
 fn get_getters<'a>(
@@ -369,9 +362,9 @@ fn get_getters<'a>(
 			}
 		};
 
-		let cfg = &f.cfg_features;
+		let cfg_features = f.get_cfg_features();
 		quote! {
-			#( #cfg )*
+			#( #cfg_features )*
 			impl #struct_name {
 				/// Returns a reference to the tag
 				pub fn #name(&self) -> #ty_prefix &#field_ty #ty_suffix {
@@ -397,14 +390,37 @@ fn get_getters<'a>(
 	})
 }
 
-fn generate_audiofile_impl(
-	struct_name: &Ident,
-	tag_fields: &[FieldContents],
-	properties_field: &Field,
-	read_fn: proc_macro2::TokenStream,
-	write_fn: proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
-	let save_to_body = get_save_to_body(write_fn, tag_fields);
+fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenStream> {
+	fn tag_exists_iter(
+		tag_fields: &[FieldContents],
+	) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+		tag_fields.iter().map(|f| {
+			let name = &f.name;
+			if f.needs_option {
+				quote! { self.#name.is_some() }
+			} else {
+				quote! { true }
+			}
+		})
+	}
+
+	let Some(properties_field) = &file.struct_info.fields.properties else {
+		return Err(util::err(
+			file.struct_info.span,
+			"Struct has no `properties` field, required for `AudioFile` impl",
+		));
+	};
+
+	let Some(read_fn) = &file.audiofile_impl.read_fn else {
+		return Err(util::err(
+			file.struct_info.span,
+			"Expected a `#[read_fn]` attribute",
+		));
+	};
+
+	let tag_fields = &file.struct_info.fields.tags;
+
+	let save_to_body = get_save_to_body(file.audiofile_impl.write_fn.as_ref(), tag_fields);
 
 	let tag_exists = tag_exists_iter(tag_fields);
 	let tag_exists_2 = tag_exists_iter(tag_fields);
@@ -416,7 +432,8 @@ fn generate_audiofile_impl(
 		struct _AssertIntoFileProperties where #properties_field_ty: ::std::convert::Into<::lofty::FileProperties>;
 	};
 
-	quote! {
+	let struct_name = &file.struct_info.name;
+	let ret = quote! {
 		#assert_properties_impl
 		impl ::lofty::AudioFile for #struct_name {
 			type Properties = #properties_field_ty;
@@ -451,14 +468,17 @@ fn generate_audiofile_impl(
 				}
 			}
 		}
-	}
+	};
+
+	Ok(ret)
 }
 
 fn get_save_to_body(
-	write_fn: proc_macro2::TokenStream,
+	write_fn: Option<&proc_macro2::TokenStream>,
 	tag_fields: &[FieldContents],
 ) -> proc_macro2::TokenStream {
-	if !write_fn.is_empty() {
+	// Custom write fn
+	if let Some(write_fn) = write_fn {
 		return quote! {
 			#write_fn(&self, file)
 		};
@@ -468,8 +488,8 @@ fn get_save_to_body(
 		let name = &f.name;
 		if f.needs_option {
 			quote! {
-				file.rewind()?;
 				if let Some(ref tag) = self.#name {
+					file.rewind()?;
 					tag.save_to(file)?;
 				}
 			}
@@ -486,41 +506,30 @@ fn get_save_to_body(
 	}
 }
 
-fn tag_exists_iter(
-	tag_fields: &[FieldContents],
-) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
-	tag_fields.iter().map(|f| {
-		let name = &f.name;
-		if f.needs_option {
-			quote! { self.#name.is_some() }
-		} else {
-			quote! { true }
-		}
-	})
-}
-
-fn generate_from_taggedfile_impl(
-	struct_name: &Ident,
-	tag_fields: &[FieldContents],
-	file_type: proc_macro2::TokenStream,
-	has_internal_file_type: bool,
-) -> proc_macro2::TokenStream {
+fn generate_from_taggedfile_impl(file: &LoftyFile) -> proc_macro2::TokenStream {
+	let tag_fields = &file.struct_info.fields.tags;
 	let conditions = tag_fields.iter().map(|f| {
 		let name = &f.name;
 		if f.needs_option {
-			quote! { if let Some(t) = input.#name { tags.push(t.into()); } }
+			quote! {
+				if let Some(t) = input.#name {
+					tags.push(t.into());
+				}
+			}
 		} else {
 			quote! { tags.push(input.#name.into()); }
 		}
 	});
 
-	let file_type_variant = if has_internal_file_type {
+	let file_type = &file.file_type;
+	let file_type_variant = if file.internal_details.has_internal_file_type {
 		quote! { ::lofty::FileType::#file_type }
 	} else {
 		let file_ty_str = file_type.to_string();
 		quote! { ::lofty::FileType::Custom(#file_ty_str) }
 	};
 
+	let struct_name = &file.struct_info.name;
 	quote! {
 		impl ::std::convert::From<#struct_name> for ::lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {

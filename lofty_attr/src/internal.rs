@@ -98,12 +98,12 @@ pub(crate) fn write_module(
 		let tag_ty =
 			syn::parse_str::<syn::Path>(&format!("::lofty::TagType::{}", &f.tag_type)).unwrap();
 
-		let features = f.cfg_features.iter();
+		let cfg_features = f.get_cfg_features();
 
 		let block = lookup.get(&*tag_ty.segments[2].ident.to_string()).unwrap();
 
 		quote! {
-			#( #features )*
+			#( #cfg_features )*
 			#tag_ty => #block,
 		}
 	});
