@@ -1,4 +1,6 @@
-use syn::{token, Attribute, Ident, LitStr};
+use syn::parse::Parse;
+use syn::punctuated::Punctuated;
+use syn::{token, Attribute, Expr, Ident, LitStr, Token};
 
 pub(crate) enum AttributeValue {
 	/// `#[lofty(attribute_name)]`
@@ -6,7 +8,7 @@ pub(crate) enum AttributeValue {
 	/// `#[lofty(attribute_name = "value")]`
 	NameValue(Ident, LitStr),
 	/// `#[lofty(attribute_name(value1, value2, value3))]`
-	SingleList(Ident, syn::Expr),
+	SingleList(Ident, Punctuated<Expr, Token![,]>),
 }
 
 impl AttributeValue {
@@ -39,8 +41,17 @@ impl AttributeValue {
 			}
 
 			// `#[lofty(attribute_name(value1, value2, value3))]`
-			let _single_list: Option<AttributeValue> = None;
-			meta.parse_nested_meta(|_meta| todo!("Parse nested meta for single list"))?;
+			if meta.input.peek(token::Paren) {
+				return meta.parse_nested_meta(|meta| {
+					let list = meta.input.parse_terminated(syn::Expr::parse, Token![,])?;
+					value = Some(AttributeValue::SingleList(
+						meta.path.get_ident().unwrap().clone(),
+						list,
+					));
+
+					Ok(())
+				});
+			}
 
 			Err(meta.error("Unrecognized attribute format"))
 		})?;

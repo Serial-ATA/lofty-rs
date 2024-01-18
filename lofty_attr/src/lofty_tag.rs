@@ -1,3 +1,4 @@
+use proc_macro::TokenStream;
 use quote::quote;
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
@@ -10,6 +11,88 @@ use syn::{
 enum SupportedFormat {
 	Full(Path),
 	ReadOnly(Path),
+}
+
+impl SupportedFormat {
+	fn emit_doc_comment(&self) -> String {
+		match self {
+			SupportedFormat::Full(path) => format!(
+				"* [`FileType::{ft}`](crate::FileType::{ft})\n",
+				ft = path.get_ident().unwrap()
+			),
+			SupportedFormat::ReadOnly(path) => format!(
+				"* [`FileType::{ft}`](crate::FileType::{ft}) **(READ ONLY)**\n",
+				ft = path.get_ident().unwrap()
+			),
+		}
+	}
+
+	fn path(&self) -> &Path {
+		match self {
+			SupportedFormat::Full(path) | SupportedFormat::ReadOnly(path) => path,
+		}
+	}
+
+	fn read_only(&self) -> Option<&Path> {
+		match self {
+			SupportedFormat::ReadOnly(path) => Some(path),
+			_ => None,
+		}
+	}
+}
+
+pub(crate) struct LoftyTag {
+	attribute: LoftyTagAttribute,
+	input: ItemStruct,
+}
+
+impl LoftyTag {
+	pub(crate) fn new(attribute: LoftyTagAttribute, input: ItemStruct) -> Self {
+		LoftyTag { attribute, input }
+	}
+
+	pub(crate) fn emit(&self) -> TokenStream {
+		let ident = &self.input.ident;
+		let desc = &self.attribute.description;
+
+		let supported_types_iter = self
+			.attribute
+			.supported_formats
+			.iter()
+			.map(SupportedFormat::emit_doc_comment);
+		let flattened_file_types = self
+			.attribute
+			.supported_formats
+			.iter()
+			.map(SupportedFormat::path);
+		let read_only_file_types = self
+			.attribute
+			.supported_formats
+			.iter()
+			.filter_map(SupportedFormat::read_only);
+
+		let input = &self.input;
+		TokenStream::from(quote! {
+			use ::lofty::_this_is_internal;
+
+			#[doc = #desc]
+			#[doc = "\n"]
+			#[doc = "## Supported file types\n\n"]
+			#( #[doc = #supported_types_iter] )*
+			#[doc = "\n"]
+			#input
+
+			impl #ident {
+				pub(crate) const SUPPORTED_FORMATS: &'static [::lofty::FileType] = &[
+					#( ::lofty::FileType:: #flattened_file_types ),*
+				];
+
+				pub(crate) const READ_ONLY_FORMATS: &'static [::lofty::FileType] = &[
+					#( ::lofty::FileType:: #read_only_file_types ),*
+				];
+			}
+		})
+	}
 }
 
 pub(crate) struct LoftyTagAttribute {
@@ -54,64 +137,6 @@ impl Parse for LoftyTagAttribute {
 			description: description.unwrap(),
 			supported_formats,
 		})
-	}
-}
-
-pub(crate) fn create(
-	lofty_tag_attribute: LoftyTagAttribute,
-	input: ItemStruct,
-) -> proc_macro2::TokenStream {
-	let ident = &input.ident;
-	let desc = lofty_tag_attribute.description;
-
-	let supported_types_iter =
-		lofty_tag_attribute
-			.supported_formats
-			.iter()
-			.map(|format| match format {
-				SupportedFormat::Full(path) => format!(
-					"* [`FileType::{ft}`](crate::FileType::{ft})\n",
-					ft = path.get_ident().unwrap()
-				),
-				SupportedFormat::ReadOnly(path) => format!(
-					"* [`FileType::{ft}`](crate::FileType::{ft}) **(READ ONLY)**\n",
-					ft = path.get_ident().unwrap()
-				),
-			});
-	let flattened_file_types =
-		lofty_tag_attribute
-			.supported_formats
-			.iter()
-			.map(|format| match format {
-				SupportedFormat::Full(path) | SupportedFormat::ReadOnly(path) => path,
-			});
-	let read_only_file_types = lofty_tag_attribute
-		.supported_formats
-		.iter()
-		.filter_map(|format| match format {
-			SupportedFormat::ReadOnly(path) => Some(path),
-			_ => None,
-		});
-
-	quote! {
-		use crate::_this_is_internal;
-
-		#[doc = #desc]
-		#[doc = "\n"]
-		#[doc = "## Supported file types\n\n"]
-		#( #[doc = #supported_types_iter] )*
-		#[doc = "\n"]
-		#input
-
-		impl #ident {
-			pub(crate) const SUPPORTED_FORMATS: &'static [::lofty::FileType] = &[
-				#( ::lofty::FileType:: #flattened_file_types ),*
-			];
-
-			pub(crate) const READ_ONLY_FORMATS: &'static [::lofty::FileType] = &[
-				#( ::lofty::FileType:: #read_only_file_types ),*
-			];
-		}
 	}
 }
 
