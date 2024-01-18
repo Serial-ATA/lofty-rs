@@ -74,12 +74,12 @@ impl Parse for LoftyFile {
 			struct_info: FileStructInfo {
 				name: input.ident.clone(),
 				span: input.ident.span(),
-				fields: Default::default(),
+				fields: FileFields::default(),
 			},
-			audiofile_impl: Default::default(),
+			audiofile_impl: AudioFileImplFields::default(),
 			should_impl_into_taggedfile: true,
 			file_type: proc_macro2::TokenStream::new(),
-			internal_details: Default::default(),
+			internal_details: InternalFileDetails::default(),
 		};
 
 		let mut errors = Vec::new();
@@ -277,8 +277,8 @@ fn get_fields<'a>(
 		let other_attrs = field
 			.attrs
 			.iter()
-			.cloned()
 			.filter(|a| !a.path().is_ident("lofty"))
+			.cloned()
 			.collect::<Vec<_>>();
 
 		let option_unwrapped = util::extract_type_from_option(&field.ty);
