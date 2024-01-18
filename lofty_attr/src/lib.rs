@@ -39,11 +39,10 @@ mod lofty_file;
 mod lofty_tag;
 mod util;
 
-use lofty_file::LoftyFile;
-use lofty_tag::LoftyTagAttribute;
+use crate::lofty_file::LoftyFile;
+use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
 use proc_macro::TokenStream;
-use quote::quote;
 use syn::{parse_macro_input, ItemStruct};
 
 /// Creates a file usable by Lofty
@@ -61,19 +60,9 @@ pub fn lofty_file(input: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 #[doc(hidden)]
 pub fn tag(args_input: TokenStream, input: TokenStream) -> TokenStream {
-	let args = parse_macro_input!(args_input as LoftyTagAttribute);
+	let attribute = parse_macro_input!(args_input as LoftyTagAttribute);
 	let input = parse_macro_input!(input as ItemStruct);
 
-	let ret = lofty_tag::create(args, input);
-
-	finish(&ret, &[])
-}
-
-fn finish(ret: &proc_macro2::TokenStream, errors: &[syn::Error]) -> TokenStream {
-	let compile_errors = errors.iter().map(syn::Error::to_compile_error);
-
-	TokenStream::from(quote! {
-		#(#compile_errors)*
-		#ret
-	})
+	let lofty_tag = LoftyTag::new(attribute, input);
+	lofty_tag.emit()
 }
