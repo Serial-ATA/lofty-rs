@@ -1,41 +1,7 @@
 use std::fmt::Display;
 
 use proc_macro2::Span;
-use syn::{Attribute, LitStr, Meta, MetaList, Type};
-
-pub(crate) fn get_attr(name: &str, attrs: &[Attribute]) -> Option<proc_macro2::TokenStream> {
-	let mut found = None;
-	for attr in attrs {
-		if let Some(list) = get_attr_list("lofty", attr) {
-			let res = list.parse_nested_meta(|meta| {
-				if meta.path.is_ident(name) {
-					let value = meta.value()?;
-					let value_str: LitStr = value.parse()?;
-					found = Some(value_str.parse::<proc_macro2::TokenStream>().unwrap());
-					return Ok(());
-				}
-
-				Err(meta.error(""))
-			});
-
-			if res.is_ok() {
-				return found;
-			}
-		}
-	}
-
-	found
-}
-
-pub(crate) fn get_attr_list(path: &str, attr: &Attribute) -> Option<MetaList> {
-	if attr.path().is_ident(path) {
-		if let Meta::List(list) = &attr.meta {
-			return Some(list.clone());
-		}
-	}
-
-	None
-}
+use syn::Type;
 
 // https://stackoverflow.com/questions/55271857/how-can-i-get-the-t-from-an-optiont-when-using-syn
 pub(crate) fn extract_type_from_option(ty: &Type) -> Option<Type> {
