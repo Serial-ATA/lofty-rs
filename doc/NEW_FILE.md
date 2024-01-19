@@ -28,7 +28,7 @@ This document will cover the implementation of an audio file format named "Foo".
 To define a new file format, create a new directory under `src/`. In this case, it will be
 `src/foo`.
 
-There are some files that every file needs:
+There are some files that every file format needs:
 
 * `mod.rs` - Stores the file struct definition and any module exports
 * `read.rs` - Handles reading the format for tags and other relevant information
@@ -182,13 +182,17 @@ Some notes on file parsing:
 
 ### Tests
 
+#### Unit Tests
+
+The only mandatory unit tests are for property reading. These are stored in `src/properties.rs`.
+
 #### Integration Tests
 
 Before creating integration tests, make a version of your file that has all possible tags in it. For example, a Foo file with an ID3v2 tag and an APE tag.
 
 Put this file in `tests/files/assets/minimal/full_test.{ext}`
 
-Format integration tests are stored in `tests/files/{format}.rs`.
+Then we'll store our tests in `tests/files/{format}.rs`.
 
 There is a simple suite of tests to go in that file:
 
