@@ -410,14 +410,33 @@ TODO
 
 ### Tests
 
+#### Assets
+
+Test assets for tag formats are to be placed in [tests/tags/assets/](../tests/tags/assets).
+
+There should at least be one asset, which is a binary file containing the tag below:
+
+* Title: "Foo title"
+* Artist: "Bar artist"
+* Album: "Baz album"
+* Comment: "Qux comment"
+* Year: 1984
+* Track Number: 1
+* Genre: "Classical"
+
+Any of these fields can be omitted if the format does not support it.
+
+To create this file, you can simply add the tags to a file in a program such as [Kid3](https://kid3.kde.org/).
+You can then use your favorite hex editor to extract the tag, and paste them into a file in the assets directory.
+
+The file should be named `test.{ext}`, where `ext` is the tag name. So in this example, it would be `test.foo`.
+
+#### Unit Tests
+
 TODO
 
 #### Integration Tests
 
-TODO
-
-#### Fuzz Tests
-
-TODO
-
-
+Integration testing is not normally necessary for tag formats, as they are typically
+tested extensively through the module's unit tests. However, if one wants to create integration tests,
+they can be placed in [tests/tags/](../tests/tags).
