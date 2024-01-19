@@ -30,8 +30,8 @@ This document will cover the implementation of a tag file format named "Foo".
 
 ## Directory Layout
 
-To define a new tag format, first determine if it is supported by a single format. In this case it is,
-so we would place its definition in a subdirectory of the Foo directory, where we defined the Foo audio format.
+To define a new tag format, first determine if it is supported by a single format. In this example it is,
+so we would place its definition in a subdirectory of the `foo` directory, where we defined the Foo audio format.
 If this was a generic tag format supported by multiple audio formats, like ID3, you'd simply define it in its own
 folder inside [src/](../src).
 
@@ -109,7 +109,7 @@ If your tag happens to require read-only support for certain formats, the `FileT
 
 ```rust
 // Now we state we support *reading* the tag in MPEG files, but we will only allow the
-// user to **remove** the tag, not write a not new one.
+// user to **remove** the tag, not write a new one.
 #[tag(description = "A Foo tag", supported_formats(Foo, read_only(Mpeg)))]
 pub struct FooTag {
 	items: Vec<(String, String)>
@@ -280,7 +280,7 @@ The `SplitTag` trait provides a way to take every item that can be expressed in 
 and put them into a `Tag`. The remaining items that cannot easily be expressed in `Tag` will remain in the original
 tag, in an immutable wrapper.
 
-Implementing `SplitTag` in the case of `FooTag` will be quite simple, but this can easily become incredibly complicated.
+Implementing `SplitTag` in the case of `FooTag` will be quite simple, but this can easily become very complicated.
 
 The trait provides one method, so lets implement it:
 
