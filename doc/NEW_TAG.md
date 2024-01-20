@@ -13,6 +13,8 @@
         * [Split and Merge Tag](#split-and-merge-tag)
 4. [Writing](#writing)
 5. [Tests](#tests)
+    * [Assets](#assets)
+    * [Unit Tests](#unit-tests)
     * [Integration Tests](#integration-tests)
     * [Fuzz Tests](#fuzz-tests)
 
@@ -433,7 +435,21 @@ The file should be named `test.{ext}`, where `ext` is the tag name. So in this e
 
 #### Unit Tests
 
-TODO
+There are at least 4 unit tests that should be created for every tag format:
+
+* `parse_{tag}` - Tests reading the asset created above
+  * Simply reads the asset and compares it to a manually constructed tag with the same data
+* `{tag}_re_read` - Tests reading the asset, writing it back, and reading it again
+  * Read the tag, dump it with `TagExt::dump_to()`, and reread it
+* `{tag}_to_tag` - Tests converting the tag into a generic `Tag`
+  * Using `crate::tag::utils::test_utils::verify_tag()`, verify that the tag is correct
+* `tag_to_{tag}` - Tests converting the generic `Tag` into the concrete tag
+  * Using `crate::tag::utils::test_utils::create_tag()`, verify that the converted tag is correct
+
+These tests should be placed in the tag's `read` module. If there are many tests, feel free to break them out
+into their own module (ex. See the [ID3v2 `tests` module](../src/id3/v2/tag)).
+
+For an example of these tests, see the [ApeTag tests](https://github.com/Serial-ATA/lofty-rs/blob/9c0ea926c690bc6338ba95aceccc4d93e2ee9826/src/ape/tag/mod.rs#L540-L656).
 
 #### Integration Tests
 
