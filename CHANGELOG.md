@@ -9,7 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.18.1] - 2024-01-20
 
 ### Fixed
-- **MP4**: Atom offset updates will now be properly handled for shrinking tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/344))
+- **ID3v2**: Fix panic in UTF-16 parsing when BOM is missing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/343))
+- **MP4**:
+  - Properly handle track/disc numbers greater than 16 bits ([PR](https://github.com/Serial-ATA/lofty-rs/pull/341))
+  - Atom offset updates will now be properly handled for shrinking tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/344))
 
 ## [0.18.0] - 2024-01-12
 
