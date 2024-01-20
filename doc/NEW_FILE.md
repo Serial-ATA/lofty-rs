@@ -5,12 +5,13 @@
 1. [Intro](#intro)
 2. [Directory Layout](#directory-layout)
 3. [Defining the File](#defining-the-file)
-	* [Adding the FileType](#adding-the-filetype)
-	* [The File Struct](#the-file-struct)
-	* [Reading the File](#reading-the-file)
+    * [Adding the FileType](#adding-the-filetype)
+    * [The File Struct](#the-file-struct)
+    * [Reading the File](#reading-the-file)
     * [Tests](#tests)
-      * [Integration Tests](#integration-tests)
-      * [Fuzz Tests](#fuzz-tests)
+        * [Unit Tests](#unit-tests)
+        * [Integration Tests](#integration-tests)
+        * [Fuzz Tests](#fuzz-tests)
 
 ## Intro
 
