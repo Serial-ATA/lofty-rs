@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.1] - 2024-01-20
+
 ### Fixed
 - **MP4**: Atom offset updates will now be properly handled for shrinking tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/344))
 
@@ -646,7 +648,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.1...HEAD
+[0.18.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.0...0.18.1
 [0.18.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.1...0.18.0
 [0.17.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.0...0.17.1
 [0.17.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.16.1...0.17.0
