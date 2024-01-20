@@ -18,6 +18,7 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
+const DEFAULT_PADDING_SIZE: u32 = 1024;
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
@@ -282,10 +283,7 @@ fn save_to_existing(
 				write_handle.write_all(&ilst)?;
 
 				// Write the remaining padding
-				write_handle.write_u32::<BigEndian>(remaining_space)?;
-				write_handle.write_all(b"free")?;
-				write_handle
-					.write_all(&try_vec![1; (remaining_space - ATOM_HEADER_LEN as u32) as usize])?;
+				write_free_atom(&mut write_handle, remaining_space)?;
 
 				return Ok(());
 			}
@@ -311,10 +309,38 @@ fn save_to_existing(
 		write_handle.write_atom_size(udta.start, *new_udta_size, udta.extended)?;
 
 		// Update offset atoms
-		drop(write_handle);
 
-		let difference = (new_meta_size as i64) - (meta.len as i64);
-		update_offsets(writer, moov, difference)?;
+		let mut difference = (new_meta_size as i64) - (meta.len as i64);
+		if difference.is_negative() {
+			let diff_abs = difference.abs();
+			if diff_abs >= 8 {
+				log::trace!(
+					"Avoiding offset update, padding tag with {} bytes",
+					diff_abs
+				);
+
+				// If our difference is >= 8, we can make up the difference with
+				// a `free` atom and skip updating the offsets.
+				write_free_atom(&mut write_handle, diff_abs as u32)?;
+				difference = 0;
+			} else {
+				log::trace!(
+					"Cannot avoid offset update, padding tag with {} bytes",
+					DEFAULT_PADDING_SIZE
+				);
+
+				// Otherwise, we'll have to just pad the default amount,
+				// and update the offsets.
+				write_free_atom(&mut write_handle, DEFAULT_PADDING_SIZE)?;
+				difference += i64::from(DEFAULT_PADDING_SIZE);
+			}
+		}
+
+		drop(write_handle);
+		if difference != 0 {
+			let offset = range.start as u64;
+			update_offsets(writer, moov, difference, offset)?;
+		}
 	}
 
 	// Replace the `ilst` atom
@@ -325,7 +351,22 @@ fn save_to_existing(
 	Ok(())
 }
 
-fn update_offsets(writer: &AtomWriter, moov: &ContextualAtom, difference: i64) -> Result<()> {
+fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<()>
+where
+	W: Write,
+{
+	writer.write_u32::<BigEndian>(size)?;
+	writer.write_all(b"free")?;
+	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize])?;
+	Ok(())
+}
+
+fn update_offsets(
+	writer: &AtomWriter,
+	moov: &ContextualAtom,
+	difference: i64,
+	offset: u64,
+) -> Result<()> {
 	log::debug!("Checking for offset atoms to update");
 
 	let mut write_handle = writer.start_write();
@@ -343,14 +384,17 @@ fn update_offsets(writer: &AtomWriter, moov: &ContextualAtom, difference: i64) -
 
 		let count = write_handle.read_u32::<BigEndian>()?;
 		for _ in 0..count {
-			let offset = write_handle.read_u32::<BigEndian>()?;
+			let read_offset = write_handle.read_u32::<BigEndian>()?;
+			if u64::from(read_offset) < offset {
+				continue;
+			}
 			write_handle.seek(SeekFrom::Current(-4))?;
-			write_handle.write_u32::<BigEndian>((i64::from(offset) + difference) as u32)?;
+			write_handle.write_u32::<BigEndian>((i64::from(read_offset) + difference) as u32)?;
 
 			log::trace!(
 				"Updated offset from {} to {}",
 				offset,
-				(i64::from(offset) + difference) as u32
+				(i64::from(read_offset) + difference) as u32
 			);
 		}
 	}
@@ -368,14 +412,18 @@ fn update_offsets(writer: &AtomWriter, moov: &ContextualAtom, difference: i64) -
 
 		let count = write_handle.read_u32::<BigEndian>()?;
 		for _ in 0..count {
-			let offset = write_handle.read_u64::<BigEndian>()?;
+			let read_offset = write_handle.read_u64::<BigEndian>()?;
+			if read_offset < offset {
+				continue;
+			}
+
 			write_handle.seek(SeekFrom::Current(-8))?;
-			write_handle.write_u64::<BigEndian>((offset as i64 + difference) as u64)?;
+			write_handle.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
 
 			log::trace!(
 				"Updated offset from {} to {}",
 				offset,
-				((offset as i64) + difference) as u64
+				((read_offset as i64) + difference) as u64
 			);
 		}
 	}
@@ -402,9 +450,13 @@ fn update_offsets(writer: &AtomWriter, moov: &ContextualAtom, difference: i64) -
 		let base_data_offset = (flags & 0b1) != 0;
 
 		if base_data_offset {
-			let offset = write_handle.read_u64::<BigEndian>()?;
+			let read_offset = write_handle.read_u64::<BigEndian>()?;
+			if read_offset < offset {
+				continue;
+			}
+
 			write_handle.seek(SeekFrom::Current(-8))?;
-			write_handle.write_u64::<BigEndian>((offset as i64 + difference) as u64)?;
+			write_handle.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
 
 			log::trace!(
 				"Updated offset from {} to {}",
