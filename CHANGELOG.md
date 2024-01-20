@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **MP4**: Atom offset updates will now be properly handled for shrinking tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/344))
+
 ## [0.18.0] - 2024-01-12
 
 ### Added
