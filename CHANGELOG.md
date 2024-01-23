@@ -656,7 +656,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.1...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.2...HEAD
+[0.18.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.1...0.18.2
 [0.18.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.0...0.18.1
 [0.18.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.1...0.18.0
 [0.17.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.0...0.17.1
