@@ -40,11 +40,15 @@ pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Resu
 #[allow(unreachable_patterns)]
 pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 	match tag.tag_type() {
-		TagType::Ape => ApeTagRef {
-			read_only: false,
-			items: ape::tag::tagitems_into_ape(tag),
-		}
-		.dump_to(writer),
+		TagType::Ape => {
+			let (items, pictures) = ape::tag::tagitems_into_ape(tag);
+			ApeTagRef {
+				read_only: false,
+				items,
+				pictures,
+			}
+			.dump_to(writer)
+		},
 		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
 		TagType::Id3v2 => Id3v2TagRef {
 			flags: Id3v2TagFlags::default(),

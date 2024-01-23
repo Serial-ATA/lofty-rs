@@ -1,6 +1,7 @@
 use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
+use crate::picture::{APE_PICTURE_TYPES, Picture};
 use crate::ape::header::{self, ApeHeader};
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
@@ -56,6 +57,11 @@ where
 
 		let mut value = try_vec![0; value_size as usize];
 		data.read_exact(&mut value)?;
+
+		if APE_PICTURE_TYPES.contains(&&**&key) {
+			tag.pictures.push(Picture::from_ape_bytes(&key, &value)?);
+			continue;
+		}
 
 		let parsed_value = match item_type {
 			0 => ItemValue::Text(utf8_decode(value).map_err(|_| {

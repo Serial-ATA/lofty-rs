@@ -11,12 +11,14 @@ use crate::tag::item::ItemValueRef;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use crate::Picture;
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Result<()>
+pub(crate) fn write_to<'a, I, P>(data: &mut File, tag: &mut ApeTagRef<'a, I, P>) -> Result<()>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	P: Iterator<Item = &'a Picture>,
 {
 	let probe = Probe::new(data).guess_file_type()?;
 
@@ -93,6 +95,7 @@ where
 		create_ape_tag(&mut ApeTagRef {
 			read_only: read_only.read_only,
 			items: read_only.items.iter().map(Into::into),
+			pictures: read_only.pictures.iter(),
 		})?
 	} else {
 		create_ape_tag(tag)?
@@ -122,9 +125,10 @@ where
 	Ok(())
 }
 
-pub(super) fn create_ape_tag<'a, I>(tag: &mut ApeTagRef<'a, I>) -> Result<Vec<u8>>
+pub(super) fn create_ape_tag<'a, I, P>(tag: &mut ApeTagRef<'a, I, P>) -> Result<Vec<u8>>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	P: Iterator<Item = &'a Picture>,
 {
 	let items = &mut tag.items;
 	let mut peek = items.peekable();
@@ -165,6 +169,26 @@ where
 		tag_write.write_all(item.key.as_bytes())?;
 		tag_write.write_u8(0)?;
 		tag_write.write_all(value)?;
+
+		item_count += 1;
+	}
+
+	for picture in &mut tag.pictures {
+		let Some(ape_picture_key) = picture.pic_type.as_ape_key() else {
+			log::warn!(
+				"APE: Discarding unsupported picture type: `{:?}`",
+				picture.pic_type
+			);
+			continue;
+		};
+
+		let value = picture.as_ape_bytes();
+
+		tag_write.write_u32::<LittleEndian>(value.len() as u32)?;
+		tag_write.write_u32::<LittleEndian>(1_u32 << 1)?;
+		tag_write.write_all(ape_picture_key.as_bytes())?;
+		tag_write.write_u8(0)?;
+		tag_write.write_all(&value)?;
 
 		item_count += 1;
 	}

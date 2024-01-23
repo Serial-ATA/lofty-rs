@@ -5,6 +5,7 @@ mod write;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
+use crate::picture::{Picture, PictureType};
 use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
@@ -80,6 +81,7 @@ pub struct ApeTag {
 	/// Whether or not to mark the tag as read only
 	pub read_only: bool,
 	pub(super) items: Vec<ApeItem>,
+	pub(super) pictures: Vec<Picture>,
 }
 
 impl ApeTag {
@@ -169,6 +171,85 @@ impl ApeTag {
 				}
 			},
 		};
+	}
+
+	/// Inserts a [`Picture`]
+	///
+	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
+	/// When attempting to insert these types, if another is found it will be removed and returned.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::Picture;
+	/// use std::fs::File;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let picture_path: &str = "tests/files/assets/issue_37.jpg";
+	///
+	/// let mut tag = ApeTag::new();
+	///
+	/// let mut picture_file = File::open(picture_path)?;
+	/// tag.insert_picture(Picture::from_reader(&mut picture_file)?);
+	/// # Ok(()) }
+	pub fn insert_picture(&mut self, picture: Picture) -> Option<Picture> {
+		let ret = match picture.pic_type {
+			PictureType::Icon | PictureType::OtherIcon => self
+				.pictures
+				.iter()
+				.position(|p| p.pic_type == picture.pic_type)
+				.map(|pos| self.pictures.remove(pos)),
+			_ => None,
+		};
+
+		self.pictures.push(picture);
+		ret
+	}
+
+	/// Gets all [`Picture`]s
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::Picture;
+	/// use std::fs::File;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let picture_path: &str = "tests/files/assets/issue_37.jpg";
+	///
+	/// let mut tag = ApeTag::new();
+	///
+	/// let mut picture_file = File::open(picture_path)?;
+	/// tag.insert_picture(Picture::from_reader(&mut picture_file)?);
+	///
+	/// let pictures: Vec<&Picture> = tag.pictures().collect();
+	/// assert_eq!(pictures.len(), 1);
+	/// # Ok(()) }
+	pub fn pictures(&self) -> impl Iterator<Item = &Picture> {
+		self.pictures.iter()
+	}
+
+	/// Removes all [`Picture`]s of a certain [`PictureType`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::ApeTag;
+	/// use lofty::Picture;
+	/// use std::fs::File;
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// # let picture_path: &str = "tests/files/assets/issue_37.jpg";
+	///
+	/// let mut tag = ApeTag::new();
+	///
+	/// let mut picture_file = File::open(picture_path)?;
+	/// tag.insert_picture(Picture::from_reader(&mut picture_file)?);
+	/// # Ok(()) }
+	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
+		self.pictures.retain(|p| p.pic_type != picture_type)
 	}
 
 	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
@@ -325,6 +406,7 @@ impl TagExt for ApeTag {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
+			pictures: self.pictures.iter(),
 		}
 		.write_to(file)
 	}
@@ -338,6 +420,7 @@ impl TagExt for ApeTag {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
+			pictures: self.pictures.iter(),
 		}
 		.dump_to(writer)
 	}
@@ -471,17 +554,20 @@ impl From<Tag> for ApeTag {
 	}
 }
 
-pub(crate) struct ApeTagRef<'a, I>
+pub(crate) struct ApeTagRef<'a, I, P>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	P: Iterator<Item = &'a Picture>,
 {
 	pub(crate) read_only: bool,
 	pub(crate) items: I,
+	pub(crate) pictures: P,
 }
 
-impl<'a, I> ApeTagRef<'a, I>
+impl<'a, I, P> ApeTagRef<'a, I, P>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	P: Iterator<Item = &'a Picture>,
 {
 	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
 		write::write_to(file, self)
@@ -495,7 +581,12 @@ where
 	}
 }
 
-pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_>> {
+pub(crate) fn tagitems_into_ape(
+	tag: &Tag,
+) -> (
+	impl Iterator<Item = ApeItemRef<'_>>,
+	impl Iterator<Item = &Picture>,
+) {
 	fn create_apeitemref_for_number_pair<'a>(
 		number: Option<&str>,
 		total: Option<&str>,
@@ -508,7 +599,8 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 		})
 	}
 
-	tag.items()
+	let items = tag
+		.items()
 		.filter(|item| !NUMBER_PAIR_KEYS.contains(item.key()))
 		.filter_map(|i| {
 			i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
@@ -526,7 +618,12 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 			tag.get_string(&ItemKey::DiscNumber),
 			tag.get_string(&ItemKey::DiscTotal),
 			"Disk",
-		))
+		));
+	let pictures = tag
+		.pictures
+		.iter()
+		.filter(|p| p.pic_type.as_ape_key().is_some());
+	(items, pictures)
 }
 
 #[cfg(test)]

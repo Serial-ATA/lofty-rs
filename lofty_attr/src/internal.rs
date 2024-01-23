@@ -44,9 +44,11 @@ pub(crate) fn init_write_lookup(
 	}
 
 	insert!(map, Ape, {
+		let (items, pictures) = lofty::ape::tag::tagitems_into_ape(tag);
 		lofty::ape::tag::ApeTagRef {
 			read_only: false,
-			items: lofty::ape::tag::tagitems_into_ape(tag),
+			items,
+			pictures,
 		}
 		.write_to(data)
 	});
