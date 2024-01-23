@@ -11,7 +11,7 @@ use crate::picture::{MimeType, Picture};
 use crate::probe::ParseOptions;
 
 use std::fs::File;
-use std::io::{Seek, SeekFrom, Write};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -208,7 +208,7 @@ fn save_to_existing(
 	ilst: Vec<u8>,
 	remove_tag: bool,
 ) -> Result<()> {
-	let replacement;
+	let mut replacement;
 	let range;
 
 	let mut write_handle = writer.start_write();
@@ -293,9 +293,24 @@ fn save_to_existing(
 		}
 	}
 
-	let new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
-
 	drop(write_handle);
+
+	let mut new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
+
+	// Pad the `ilst` in the event of a shrink
+	let mut difference = (new_meta_size as i64) - (meta.len as i64);
+	if !replacement.is_empty() && difference != 0 {
+		log::trace!("Tag size changed, attempting to avoid offset update");
+
+		let mut ilst_writer = Cursor::new(replacement);
+		let (atom_size_difference, padding_size) = pad_atom(&mut ilst_writer, difference)?;
+
+		replacement = ilst_writer.into_inner();
+		new_meta_size += padding_size;
+		difference = atom_size_difference;
+	}
+
+	// Update the parent atom sizes
 	if new_meta_size != meta.len {
 		// We need to change the `meta` and `udta` atom sizes
 		let mut write_handle = writer.start_write();
@@ -307,40 +322,13 @@ fn save_to_existing(
 
 		write_handle.seek(SeekFrom::Start(udta.start))?;
 		write_handle.write_atom_size(udta.start, *new_udta_size, udta.extended)?;
-
-		// Update offset atoms
-
-		let mut difference = (new_meta_size as i64) - (meta.len as i64);
-		if difference.is_negative() {
-			let diff_abs = difference.abs();
-			if diff_abs >= 8 {
-				log::trace!(
-					"Avoiding offset update, padding tag with {} bytes",
-					diff_abs
-				);
-
-				// If our difference is >= 8, we can make up the difference with
-				// a `free` atom and skip updating the offsets.
-				write_free_atom(&mut write_handle, diff_abs as u32)?;
-				difference = 0;
-			} else {
-				log::trace!(
-					"Cannot avoid offset update, padding tag with {} bytes",
-					DEFAULT_PADDING_SIZE
-				);
-
-				// Otherwise, we'll have to just pad the default amount,
-				// and update the offsets.
-				write_free_atom(&mut write_handle, DEFAULT_PADDING_SIZE)?;
-				difference += i64::from(DEFAULT_PADDING_SIZE);
-			}
-		}
-
 		drop(write_handle);
-		if difference != 0 {
-			let offset = range.start as u64;
-			update_offsets(writer, moov, difference, offset)?;
-		}
+	}
+
+	// Update offset atoms
+	if difference != 0 {
+		let offset = range.start as u64;
+		update_offsets(writer, moov, difference, offset)?;
 	}
 
 	// Replace the `ilst` atom
@@ -349,6 +337,48 @@ fn save_to_existing(
 	drop(write_handle);
 
 	Ok(())
+}
+
+fn pad_atom<W>(writer: &mut W, mut atom_size_difference: i64) -> Result<(i64, u64)>
+where
+	W: Write + Seek,
+{
+	if atom_size_difference.is_positive() {
+		log::trace!("Atom has grown, cannot avoid offset update");
+		return Ok((atom_size_difference, 0));
+	}
+
+	// When the tag shrinks, we need to try and pad it out to avoid updating
+	// the offsets.
+	writer.seek(SeekFrom::End(0))?;
+
+	let padding_size: u64;
+	let diff_abs = atom_size_difference.abs();
+	if diff_abs >= 8 {
+		log::trace!(
+			"Avoiding offset update, padding atom with {} bytes",
+			diff_abs
+		);
+
+		// If our difference is >= 8, we can make up the difference with
+		// a `free` atom and skip updating the offsets.
+		write_free_atom(writer, diff_abs as u32)?;
+		atom_size_difference = 0;
+		padding_size = diff_abs as u64;
+	} else {
+		log::trace!(
+			"Cannot avoid offset update, padding atom with {} bytes",
+			DEFAULT_PADDING_SIZE
+		);
+
+		// Otherwise, we'll have to just pad the default amount,
+		// and update the offsets.
+		write_free_atom(writer, DEFAULT_PADDING_SIZE)?;
+		atom_size_difference += i64::from(DEFAULT_PADDING_SIZE);
+		padding_size = u64::from(DEFAULT_PADDING_SIZE);
+	}
+
+	Ok((atom_size_difference, padding_size))
 }
 
 fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<()>
@@ -365,7 +395,7 @@ fn update_offsets(
 	writer: &AtomWriter,
 	moov: &ContextualAtom,
 	difference: i64,
-	offset: u64,
+	ilst_offset: u64,
 ) -> Result<()> {
 	log::debug!("Checking for offset atoms to update");
 
@@ -385,7 +415,7 @@ fn update_offsets(
 		let count = write_handle.read_u32::<BigEndian>()?;
 		for _ in 0..count {
 			let read_offset = write_handle.read_u32::<BigEndian>()?;
-			if u64::from(read_offset) < offset {
+			if u64::from(read_offset) < ilst_offset {
 				continue;
 			}
 			write_handle.seek(SeekFrom::Current(-4))?;
@@ -393,7 +423,7 @@ fn update_offsets(
 
 			log::trace!(
 				"Updated offset from {} to {}",
-				offset,
+				read_offset,
 				(i64::from(read_offset) + difference) as u32
 			);
 		}
@@ -413,7 +443,7 @@ fn update_offsets(
 		let count = write_handle.read_u32::<BigEndian>()?;
 		for _ in 0..count {
 			let read_offset = write_handle.read_u64::<BigEndian>()?;
-			if read_offset < offset {
+			if read_offset < ilst_offset {
 				continue;
 			}
 
@@ -422,7 +452,7 @@ fn update_offsets(
 
 			log::trace!(
 				"Updated offset from {} to {}",
-				offset,
+				read_offset,
 				((read_offset as i64) + difference) as u64
 			);
 		}
@@ -451,7 +481,7 @@ fn update_offsets(
 
 		if base_data_offset {
 			let read_offset = write_handle.read_u64::<BigEndian>()?;
-			if read_offset < offset {
+			if read_offset < ilst_offset {
 				continue;
 			}
 
@@ -460,8 +490,8 @@ fn update_offsets(
 
 			log::trace!(
 				"Updated offset from {} to {}",
-				offset,
-				((offset as i64) + difference) as u64
+				read_offset,
+				((read_offset as i64) + difference) as u64
 			);
 		}
 	}

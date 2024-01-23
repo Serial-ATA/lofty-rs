@@ -6,7 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.18.1] - 2024-01-20
+## [0.18.2] - 2024-01-23
+
+### Fixed
+- **MP4**: Padding for shrinking tags will no longer overwrite unrelated data ([PR](https://github.com/Serial-ATA/lofty-rs/pull/346))
+
+## [0.18.1] - 2024-01-20 (YANKED)
 
 ### Fixed
 - **ID3v2**: Fix panic in UTF-16 parsing when BOM is missing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/343))
