@@ -1,10 +1,10 @@
 use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
-use crate::picture::{APE_PICTURE_TYPES, Picture};
 use crate::ape::header::{self, ApeHeader};
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
+use crate::picture::{Picture, APE_PICTURE_TYPES};
 use crate::tag::item::ItemValue;
 use crate::util::text::utf8_decode;
 
@@ -58,7 +58,7 @@ where
 		let mut value = try_vec![0; value_size as usize];
 		data.read_exact(&mut value)?;
 
-		if APE_PICTURE_TYPES.contains(&&**&key) {
+		if APE_PICTURE_TYPES.contains(&&*key) {
 			tag.pictures.push(Picture::from_ape_bytes(&key, &value)?);
 			continue;
 		}
