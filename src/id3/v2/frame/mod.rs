@@ -202,6 +202,35 @@ pub enum FrameValue {
 	Binary(Vec<u8>),
 }
 
+impl FrameValue {
+	/// Check for empty content
+	///
+	/// Returns `None` if the frame type is not supported.
+	pub(super) fn is_empty(&self) -> Option<bool> {
+		let is_empty = match self {
+			FrameValue::Text(text) => text.value.is_empty(),
+			FrameValue::UserText(extended_text) => extended_text.content.is_empty(),
+			FrameValue::Url(link) => link.0.is_empty(),
+			FrameValue::UserUrl(extended_url) => extended_url.content.is_empty(),
+			FrameValue::Comment(comment) => comment.content.is_empty(),
+			FrameValue::UnsynchronizedText(unsync_text) => unsync_text.content.is_empty(),
+			FrameValue::Picture(picture) => picture.picture.data.is_empty(),
+			FrameValue::KeyValue(key_value) => key_value.key_value_pairs.is_empty(),
+			FrameValue::UniqueFileIdentifier(ufid) => ufid.identifier.is_empty(),
+			FrameValue::EventTimingCodes(event_timing) => event_timing.events.is_empty(),
+			FrameValue::Private(private) => private.private_data.is_empty(),
+			FrameValue::Binary(binary) => binary.is_empty(),
+			FrameValue::Popularimeter(_)
+			| FrameValue::RelativeVolumeAdjustment(_)
+			| FrameValue::Ownership(_) => {
+				// Undefined.
+				return None;
+			},
+		};
+		Some(is_empty)
+	}
+}
+
 impl TryFrom<ItemValue> for FrameValue {
 	type Error = LoftyError;
 

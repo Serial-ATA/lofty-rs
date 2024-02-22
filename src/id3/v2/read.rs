@@ -67,7 +67,29 @@ where
 
 	loop {
 		match ParsedFrame::read(reader, header.version, parse_mode)? {
-			ParsedFrame::Next(frame) => drop(tag.insert(frame)),
+			ParsedFrame::Next(frame) => {
+				let frame_value_is_empty = frame.value.is_empty();
+				if let Some(replaced_frame) = tag.insert(frame) {
+					// Duplicate frames are not allowed. But if this occurs we try
+					// to keep the frame with the non-empty content. Superfluous,
+					// duplicate frames that follow the first frame are often empty.
+					if frame_value_is_empty == Some(true)
+						&& replaced_frame.value.is_empty() == Some(false)
+					{
+						log::warn!(
+							"Restoring non-empty frame with ID \"{id}\" that has been replaced by \
+							 an empty frame with the same ID",
+							id = replaced_frame.id
+						);
+						drop(tag.insert(replaced_frame));
+					} else {
+						log::warn!(
+							"Replaced frame with ID \"{id}\" by a frame with the same ID",
+							id = replaced_frame.id
+						);
+					}
+				}
+			},
 			// No frame content found or ignored due to errors, but we can expect more frames
 			ParsedFrame::Skip { size } => {
 				skip_frame(reader, size)?;
