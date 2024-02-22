@@ -496,12 +496,17 @@ gen_item_keys!(
 
 	KEYS => [
 		// Titles
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id1>
 		AlbumTitle,
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#disc-subtitle>
 		SetSubtitle,
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#show-name-4>
 		ShowName,
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#grouping-3>
 		ContentGroup,
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id34>
 		TrackTitle,
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#subtitle-4>
 		TrackSubtitle,
 
 		// Original names
