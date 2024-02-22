@@ -257,6 +257,7 @@ gen_map!(
 	"----:com.apple.iTunes:PRODUCER"                     => Producer,
 	"----:com.apple.iTunes:LABEL"                        => Label,
 	"----:com.apple.iTunes:REMIXER"                      => Remixer,
+	"----:com.apple.iTunes:DISCSUBTITLE"                 => SetSubtitle,
 	"disk"                                               => DiscNumber,
 	"disk"                                               => DiscTotal,
 	"trkn"                                               => TrackNumber,
@@ -496,6 +497,7 @@ gen_item_keys!(
 	KEYS => [
 		// Titles
 		AlbumTitle,
+		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#disc-subtitle>
 		SetSubtitle,
 		ShowName,
 		ContentGroup,
