@@ -144,6 +144,7 @@
 	clippy::into_iter_without_iter, /* This is only going to fire on some internal types, doesn't matter much */
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![doc(html_logo_url = "https://raw.githubusercontent.com/Serial-ATA/lofty-rs/main/doc/lofty.svg")]
 
 // proc macro hacks
 extern crate self as lofty;
