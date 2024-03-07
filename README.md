@@ -1,10 +1,13 @@
+<img align="right" width="200" height="200" src="doc/lofty.svg" alt="Lofty logo">
+
 # Lofty
+
+*Parse, convert, and write metadata to various audio formats.*
+
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Serial-ATA/lofty-rs/ci.yml?branch=main&logo=github&style=for-the-badge)](https://github.com/Serial-ATA/lofty-rs/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Documentation](https://img.shields.io/badge/docs.rs-lofty-informational?style=for-the-badge&logo=read-the-docs)](https://docs.rs/lofty/)
-
-Parse, convert, and write metadata to various audio formats.
 
 ⚠️ **LOOKING FOR HELP WITH DOCUMENTATION** ⚠️
 
