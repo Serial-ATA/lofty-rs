@@ -9,7 +9,7 @@ repository  = "https://github.com/Serial-ATA/lofty-rs"
 keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
 categories  = ["multimedia", "multimedia::audio", "parser-implementations"]
 readme      = "README.md"
-include     = ["src", "Cargo.toml", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_FORMATS.md"]
+include     = ["src", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_FORMATS.md"]
 
 [dependencies]
 # Vorbis comments pictures
