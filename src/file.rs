@@ -6,7 +6,6 @@ use crate::resolve::custom_resolvers;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
 
-use std::convert::TryInto;
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek};

@@ -3,7 +3,6 @@ use crate::macros::decode_err;
 use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
-use std::convert::TryInto;
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 

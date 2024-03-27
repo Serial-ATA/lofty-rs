@@ -23,7 +23,6 @@ use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::{Cursor, Write};
 use std::ops::Deref;

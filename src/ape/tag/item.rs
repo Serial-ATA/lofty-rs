@@ -4,8 +4,6 @@ use crate::macros::decode_err;
 use crate::tag::item::{ItemValue, ItemValueRef, TagItem};
 use crate::tag::TagType;
 
-use std::convert::TryFrom;
-
 /// Represents an `APE` tag item
 ///
 /// The restrictions for `APE` lie in the key rather than the value,

@@ -1,7 +1,6 @@
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
 
-use std::convert::TryInto;
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
