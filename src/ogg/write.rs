@@ -7,7 +7,6 @@ use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 
-use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 

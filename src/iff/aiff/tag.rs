@@ -6,7 +6,6 @@ use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::convert::TryFrom;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;

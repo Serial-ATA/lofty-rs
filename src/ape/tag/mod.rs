@@ -10,7 +10,6 @@ use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 use std::borrow::Cow;
-use std::convert::TryInto;
 use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;

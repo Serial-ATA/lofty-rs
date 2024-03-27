@@ -17,7 +17,6 @@ use crate::util::text::TextEncoding;
 use id::FrameId;
 
 use std::borrow::Cow;
-use std::convert::{TryFrom, TryInto};
 use std::hash::{Hash, Hasher};
 
 pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
