@@ -6,7 +6,7 @@ use crate::error::Result;
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
+use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::decode_err;
 use crate::probe::ParseOptions;
 
@@ -28,7 +28,9 @@ where
 	let mut ape_tag: Option<ApeTag> = None;
 
 	// ID3v2 tags are unsupported in APE files, but still possible
-	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
+	if let ID3FindResults(Some(header), Some(content)) =
+		find_id3v2(data, FindId3v2Config::READ_TAG)?
+	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the APE file!");
 
 		stream_len -= u64::from(header.size);

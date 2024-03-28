@@ -4,7 +4,7 @@ use crate::ape::header::read_ape_header;
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
+use crate::id3::{find_id3v1, find_lyrics3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::{decode_err, err};
 use crate::mpeg::header::HEADER_MASK;
 use crate::probe::{ParseOptions, ParsingMode};
@@ -89,53 +89,48 @@ where
 				#[allow(clippy::neg_multiply)]
 				reader.seek(SeekFrom::Current(-1 * header.len() as i64))?;
 
-				#[allow(clippy::used_underscore_binding)]
-				if let Some((_first_frame_header, _first_frame_offset)) = find_next_frame(reader)? {
-					// TODO: We are manually searching through junk here, this could potentially be moved into `find_id3v2()`
-					if file.id3v2_tag.is_none()
-						&& parse_options.parsing_mode != ParsingMode::Strict
-						&& _first_frame_offset > 0
-					{
-						reader.seek(SeekFrom::Start(0))?;
-
-						let search_window_size =
-							std::cmp::min(_first_frame_offset, parse_options.max_junk_bytes as u64);
-						let mut id3v2_search_window = reader.take(search_window_size);
-
-						// TODO: A whole lot of code duplication here, its nearly identical to what we did above
-						if let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? {
-							log::warn!(
-								"Found an ID3v2 tag preceded by junk data, offset: {}",
-								id3v2_offset
-							);
-
-							reader.seek(SeekFrom::Current(-3))?;
-
-							let header = Id3v2Header::parse(reader)?;
-							let skip_footer = header.flags.footer;
-
-							let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
-							if let Some(existing_tag) = &mut file.id3v2_tag {
-								// https://github.com/Serial-ATA/lofty-rs/issues/87
-								// Duplicate tags should have their frames appended to the previous
-								for frame in id3v2.frames {
-									existing_tag.insert(frame);
-								}
-								continue;
-							}
-
-							if skip_footer {
-								reader.seek(SeekFrom::Current(10))?;
-							}
-
-							file.id3v2_tag = Some(id3v2);
-						}
-					}
-
-					first_frame_offset = _first_frame_offset;
-					first_frame_header = Some(_first_frame_header);
+				let Some((_first_frame_header, _first_frame_offset)) = find_next_frame(reader)?
+				else {
 					break;
+				};
+
+				if file.id3v2_tag.is_none()
+					&& parse_options.parsing_mode != ParsingMode::Strict
+					&& _first_frame_offset > 0
+				{
+					reader.seek(SeekFrom::Start(0))?;
+
+					let search_window_size =
+						std::cmp::min(_first_frame_offset, parse_options.max_junk_bytes as u64);
+
+					let config = FindId3v2Config {
+						read: true,
+						allowed_junk_window: Some(search_window_size),
+					};
+
+					if let ID3FindResults(Some(header), Some(id3v2_bytes)) =
+						crate::id3::find_id3v2(reader, config)?
+					{
+						let reader = &mut &*id3v2_bytes;
+
+						let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+
+						if let Some(existing_tag) = &mut file.id3v2_tag {
+							// https://github.com/Serial-ATA/lofty-rs/issues/87
+							// Duplicate tags should have their frames appended to the previous
+							for frame in id3v2.frames {
+								existing_tag.insert(frame);
+							}
+							continue;
+						}
+
+						file.id3v2_tag = Some(id3v2);
+					}
 				}
+
+				first_frame_offset = _first_frame_offset;
+				first_frame_header = Some(_first_frame_header);
+				break;
 			},
 		}
 	}
@@ -229,28 +224,6 @@ where
 		}
 
 		pos = reader.stream_position()?;
-	}
-
-	Ok(None)
-}
-
-/// Searches for an ID3v2 tag in (potential) junk data between the start
-/// of the file and the first frame
-fn find_id3v2_in_junk<R>(reader: &mut R) -> Result<Option<u64>>
-where
-	R: Read,
-{
-	let bytes = reader.bytes();
-
-	let mut id3v2_header = [0; 3];
-
-	for (index, byte) in bytes.enumerate() {
-		id3v2_header[0] = id3v2_header[1];
-		id3v2_header[1] = id3v2_header[2];
-		id3v2_header[2] = byte?;
-		if id3v2_header == *b"ID3" {
-			return Ok(Some((index - 2) as u64));
-		}
 	}
 
 	Ok(None)

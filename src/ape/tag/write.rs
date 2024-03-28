@@ -3,7 +3,7 @@ use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::read;
 use crate::error::Result;
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
@@ -28,7 +28,7 @@ where
 	let data = probe.into_inner();
 
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(data, false)?;
+	find_id3v2(data, FindId3v2Config::NO_READ_TAG)?;
 
 	let mut ape_preamble = [0; 8];
 	data.read_exact(&mut ape_preamble)?;
