@@ -7,6 +7,7 @@ pub(crate) enum AttributeValue {
 	Path(Ident),
 	/// `#[lofty(attribute_name = "value")]`
 	NameValue(Ident, LitStr),
+	#[allow(dead_code)]
 	/// `#[lofty(attribute_name(value1, value2, value3))]`
 	SingleList(Ident, Punctuated<Expr, Token![,]>),
 }
