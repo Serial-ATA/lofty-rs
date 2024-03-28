@@ -4,11 +4,11 @@ mod frame;
 use super::Id3v2TagFlags;
 use crate::error::Result;
 use crate::file::FileType;
-use crate::id3::find_id3v2;
 use crate::id3::v2::frame::FrameRef;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::Id3v2Tag;
+use crate::id3::{find_id3v2, FindId3v2Config};
 use crate::macros::err;
 use crate::probe::Probe;
 
@@ -82,7 +82,8 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 	let id3v2 = create_tag(tag)?;
 
 	// find_id3v2 will seek us to the end of the tag
-	find_id3v2(data, false)?;
+	// TODO: Search through junk
+	find_id3v2(data, FindId3v2Config::NO_READ_TAG)?;
 
 	let mut file_bytes = Vec::new();
 	data.read_to_end(&mut file_bytes)?;
