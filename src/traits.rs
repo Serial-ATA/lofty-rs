@@ -60,7 +60,7 @@ macro_rules! accessor_trait {
 			/// use lofty::{Tag, Accessor};
 			///
 			/// # let tag_type = lofty::TagType::Id3v2;
-			/// let mut tag = Tag::new(tag_type);            ///
+			/// let mut tag = Tag::new(tag_type);
 			#[doc = "assert_eq!(tag." $name $(_ $other)* "(), None);"]
 			/// ```
 			fn [<
