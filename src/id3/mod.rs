@@ -96,22 +96,58 @@ where
 	Ok(ID3FindResults(header, id3v1))
 }
 
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct FindId3v2Config {
+	pub(crate) read: bool,
+	pub(crate) allowed_junk_window: Option<u64>,
+}
+
+impl FindId3v2Config {
+	pub(crate) const NO_READ_TAG: Self = Self {
+		read: false,
+		allowed_junk_window: None,
+	};
+
+	pub(crate) const READ_TAG: Self = Self {
+		read: true,
+		allowed_junk_window: None,
+	};
+}
+
 pub(crate) fn find_id3v2<R>(
 	data: &mut R,
-	read: bool,
+	config: FindId3v2Config,
 ) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>>
 where
 	R: Read + Seek,
 {
-	log::debug!("Searching for an ID3v2 tag");
+	log::debug!(
+		"Searching for an ID3v2 tag at offset: {}",
+		data.stream_position()?
+	);
 
 	let mut header = None;
 	let mut id3v2 = None;
 
+	if let Some(junk_window) = config.allowed_junk_window {
+		let mut id3v2_search_window = data.by_ref().take(junk_window);
+
+		let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? else {
+			return Ok(ID3FindResults(None, None));
+		};
+
+		log::warn!(
+			"Found an ID3v2 tag preceded by junk data, offset: {}",
+			id3v2_offset
+		);
+
+		data.seek(SeekFrom::Current(-3))?;
+	}
+
 	if let Ok(id3v2_header) = Id3v2Header::parse(data) {
 		log::debug!("Found an ID3v2 tag, parsing");
 
-		if read {
+		if config.read {
 			let mut tag = try_vec![0; id3v2_header.size as usize];
 			data.read_exact(&mut tag)?;
 
@@ -130,4 +166,26 @@ where
 	}
 
 	Ok(ID3FindResults(header, id3v2))
+}
+
+/// Searches for an ID3v2 tag in (potential) junk data between the start
+/// of the file and the first frame
+fn find_id3v2_in_junk<R>(reader: &mut R) -> Result<Option<u64>>
+where
+	R: Read,
+{
+	let bytes = reader.bytes();
+
+	let mut id3v2_header = [0; 3];
+
+	for (index, byte) in bytes.enumerate() {
+		id3v2_header[0] = id3v2_header[1];
+		id3v2_header[1] = id3v2_header[2];
+		id3v2_header[2] = byte?;
+		if id3v2_header == *b"ID3" {
+			return Ok(Some((index - 2) as u64));
+		}
+	}
+
+	Ok(None)
 }

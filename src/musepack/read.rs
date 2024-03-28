@@ -4,7 +4,7 @@ use super::sv8::MpcSv8Properties;
 use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, ID3FindResults};
+use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
 use crate::probe::ParseOptions;
 use crate::traits::SeekStreamLen;
 
@@ -25,7 +25,9 @@ where
 
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
-	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, true)? {
+	if let ID3FindResults(Some(header), Some(content)) =
+		find_id3v2(reader, FindId3v2Config::READ_TAG)?
+	{
 		let reader = &mut &*content;
 
 		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;

@@ -7,7 +7,7 @@ use crate::flac::block::{
 	BLOCK_ID_VORBIS_COMMENTS,
 };
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v2, ID3FindResults};
+use crate::id3::{find_id3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::decode_err;
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
@@ -48,7 +48,9 @@ where
 	};
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
-	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, true)? {
+	if let ID3FindResults(Some(header), Some(content)) =
+		find_id3v2(data, FindId3v2Config::READ_TAG)?
+	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
 
 		let reader = &mut &*content;
