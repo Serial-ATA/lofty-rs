@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1711648769410,
+  "lastUpdate": 1711728377245,
   "repoUrl": "https://github.com/Serial-ATA/lofty-rs",
   "entries": {
     "Benchmark": [
@@ -51251,6 +51251,144 @@ window.BENCHMARK_DATA = {
             "name": "File reading (Inferred from Content)/WAVPACK",
             "value": 10420,
             "range": "± 32",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Serial",
+            "username": "Serial-ATA"
+          },
+          "committer": {
+            "email": "69764315+Serial-ATA@users.noreply.github.com",
+            "name": "Alex",
+            "username": "Serial-ATA"
+          },
+          "distinct": true,
+          "id": "a54861b02c28c9c42d0864270eb0931f07aca53f",
+          "message": "ID3: Search through junk in `find_id3v2()`",
+          "timestamp": "2024-03-29T12:01:25-04:00",
+          "tree_id": "6399ebdf93d438749200b7f7e200d4f6d9057315",
+          "url": "https://github.com/Serial-ATA/lofty-rs/commit/a54861b02c28c9c42d0864270eb0931f07aca53f"
+        },
+        "date": 1711728375583,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "Tag writing/AIFF Text Chunks",
+            "value": 154,
+            "range": "± 7",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/APEv2",
+            "value": 30747,
+            "range": "± 220",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v2",
+            "value": 29123,
+            "range": "± 268",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/ID3v1",
+            "value": 310,
+            "range": "± 2",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/MP4 Ilst",
+            "value": 17903,
+            "range": "± 131",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/RIFF INFO",
+            "value": 745,
+            "range": "± 6",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "Tag writing/Vorbis Comments",
+            "value": 137342,
+            "range": "± 584",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AAC",
+            "value": 288120,
+            "range": "± 2981",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/AIFF",
+            "value": 20846,
+            "range": "± 112",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/APE",
+            "value": 12825,
+            "range": "± 414",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/FLAC",
+            "value": 19404,
+            "range": "± 136",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP4",
+            "value": 20925,
+            "range": "± 155",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MP3",
+            "value": 15855,
+            "range": "± 118",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/MPC",
+            "value": 162336,
+            "range": "± 775",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/OPUS",
+            "value": 189014,
+            "range": "± 1123",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/RIFF",
+            "value": 25224,
+            "range": "± 192",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/SPEEX",
+            "value": 190944,
+            "range": "± 1346",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/VORBIS",
+            "value": 212395,
+            "range": "± 1014",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "File reading (Inferred from Content)/WAVPACK",
+            "value": 12374,
+            "range": "± 121",
             "unit": "ns/iter"
           }
         ]
