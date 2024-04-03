@@ -1,4 +1,7 @@
 /// Options to control how Lofty writes to a file
+///
+/// This acts as a dumping ground for all sorts of format-specific settings. As such, this is best
+/// used as an application global config that gets set once.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct WriteOptions {
