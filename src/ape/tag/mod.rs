@@ -498,9 +498,9 @@ where
 	pub(crate) fn dump_to<W: Write>(
 		&mut self,
 		writer: &mut W,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<()> {
-		let temp = write::create_ape_tag(self)?;
+		let temp = write::create_ape_tag(self, std::iter::empty(), write_options)?;
 		writer.write_all(&temp)?;
 
 		Ok(())

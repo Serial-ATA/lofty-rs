@@ -17,8 +17,8 @@ use byteorder::{LittleEndian, WriteBytesExt};
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_to<'a, I>(
 	data: &mut File,
-	tag: &mut ApeTagRef<'a, I>,
-	_write_options: WriteOptions,
+	tag_ref: &mut ApeTagRef<'a, I>,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
@@ -45,15 +45,16 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_ape_tag = (false, (0, 0));
 
-	// TODO: Respect read only
 	let start = data.stream_position()?;
 	match read::read_ape_tag(data, false)? {
 		Some((mut existing_tag, header)) => {
-			// Only keep metadata around that's marked read only
-			existing_tag.items.retain(|i| i.read_only);
+			if write_options.respect_read_only {
+				// Only keep metadata around that's marked read only
+				existing_tag.items.retain(|i| i.read_only);
 
-			if !existing_tag.items.is_empty() {
-				read_only = Some(existing_tag)
+				if !existing_tag.items.is_empty() {
+					read_only = Some(existing_tag)
+				}
 			}
 
 			header_ape_tag = (true, (start, start + u64::from(header.size)))
@@ -78,15 +79,22 @@ where
 	// Also check this tag for any read only items
 	let start = data.stream_position()? as usize + 32;
 	if let Some((mut existing_tag, header)) = read::read_ape_tag(data, true)? {
-		let size = header.size;
+		if write_options.respect_read_only {
+			existing_tag.items.retain(|i| i.read_only);
 
-		existing_tag.items.retain(|i| i.read_only);
-
-		if !existing_tag.items.is_empty() {
-			read_only = Some(existing_tag)
+			if !existing_tag.items.is_empty() {
+				read_only = match read_only {
+					Some(mut read_only) => {
+						read_only.items.extend(existing_tag.items);
+						Some(read_only)
+					},
+					None => Some(existing_tag),
+				}
+			}
 		}
 
 		// Since the "start" was really at the end of the tag, this sanity check seems necessary
+		let size = header.size;
 		if let Some(start) = start.checked_sub(size as usize) {
 			ape_tag_location = Some(start..start + size as usize);
 		} else {
@@ -95,13 +103,15 @@ where
 	}
 
 	// Preserve any metadata marked as read only
-	let tag = if let Some(read_only) = read_only {
-		create_ape_tag(&mut ApeTagRef {
-			read_only: read_only.read_only,
-			items: read_only.items.iter().map(Into::into),
-		})?
+	let tag;
+	if let Some(read_only) = read_only {
+		tag = create_ape_tag(
+			tag_ref,
+			read_only.items.iter().map(Into::into),
+			write_options,
+		)?;
 	} else {
-		create_ape_tag(tag)?
+		tag = create_ape_tag(tag_ref, std::iter::empty(), write_options)?;
 	};
 
 	data.rewind()?;
@@ -128,9 +138,14 @@ where
 	Ok(())
 }
 
-pub(super) fn create_ape_tag<'a, I>(tag: &mut ApeTagRef<'a, I>) -> Result<Vec<u8>>
+pub(super) fn create_ape_tag<'a, 'b, I, R>(
+	tag: &mut ApeTagRef<'a, I>,
+	mut read_only: R,
+	write_options: WriteOptions,
+) -> Result<Vec<u8>>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
+	R: Iterator<Item = ApeItemRef<'b>>,
 {
 	let items = &mut tag.items;
 	let mut peek = items.peekable();
@@ -138,6 +153,12 @@ where
 	// Unnecessary to write anything if there's no metadata
 	if peek.peek().is_none() {
 		return Ok(Vec::<u8>::new());
+	}
+
+	if read_only.next().is_some() && write_options.respect_read_only {
+		// TODO: Implement retaining read only items
+		log::warn!("Retaining read only items is not supported yet");
+		drop(read_only);
 	}
 
 	let mut tag_write = Cursor::new(Vec::<u8>::new());
