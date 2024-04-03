@@ -9,8 +9,9 @@ use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::Id3v2Tag;
 use crate::id3::{find_id3v2, FindId3v2Config};
-use crate::macros::err;
+use crate::macros::{err, try_vec};
 use crate::probe::Probe;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -40,6 +41,7 @@ fn crc_32_table() -> &'static [u32; 256] {
 pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 	data: &mut File,
 	tag: &mut Id3v2TagRef<'a, I>,
+	write_options: WriteOptions,
 ) -> Result<()> {
 	let probe = Probe::new(data).guess_file_type()?;
 	let file_type = probe.file_type();
@@ -66,20 +68,20 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 		}
 	}
 
+	let id3v2 = create_tag(tag, write_options)?;
+
 	match file_type {
 		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
 		FileType::Wav => {
 			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &create_tag(tag)?);
+			return chunk_file::write_to_chunk_file::<LittleEndian>(data, &id3v2, write_options);
 		},
 		FileType::Aiff => {
 			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<BigEndian>(data, &create_tag(tag)?);
+			return chunk_file::write_to_chunk_file::<BigEndian>(data, &id3v2, write_options);
 		},
 		_ => {},
 	}
-
-	let id3v2 = create_tag(tag)?;
 
 	// find_id3v2 will seek us to the end of the tag
 	// TODO: Search through junk
@@ -99,6 +101,7 @@ pub(crate) fn write_id3v2<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a>(
 
 pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	tag: &mut Id3v2TagRef<'a, I>,
+	write_options: WriteOptions,
 ) -> Result<Vec<u8>> {
 	let frames = &mut tag.frames;
 	let mut peek = frames.peekable();
@@ -118,7 +121,15 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	// Write the items
 	frame::create_items(&mut id3v2, &mut peek)?;
 
-	let len = id3v2.get_ref().len() - header_len;
+	let mut len = id3v2.get_ref().len() - header_len;
+
+	// https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html#padding:
+	//
+	// "[A tag] MUST NOT have any padding when a tag footer is added to the tag"
+	let padding_len = write_options.preferred_padding.unwrap_or(0) as usize;
+	if !has_footer {
+		len += padding_len;
+	}
 
 	// Go back to the start and write the final size
 	id3v2.seek(SeekFrom::Start(6))?;
@@ -148,6 +159,8 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	}
 
 	if has_footer {
+		log::trace!("Footer requested, not padding tag");
+
 		id3v2.seek(SeekFrom::Start(3))?;
 
 		let mut header_without_identifier = [0; 7];
@@ -157,7 +170,19 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 		// The footer is the same as the header, but with the identifier reversed
 		id3v2.write_all(b"3DI")?;
 		id3v2.write_all(&header_without_identifier)?;
+
+		return Ok(id3v2.into_inner());
 	}
+
+	if padding_len == 0 {
+		log::trace!("No padding requested, writing tag as-is");
+		return Ok(id3v2.into_inner());
+	}
+
+	log::trace!("Padding tag with {} bytes", padding_len);
+
+	id3v2.seek(SeekFrom::End(0))?;
+	id3v2.write_all(&try_vec![0; padding_len])?;
 
 	Ok(id3v2.into_inner())
 }
@@ -259,7 +284,7 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{Id3v2Tag, Id3v2TagFlags};
-	use crate::{Accessor, TagExt};
+	use crate::{Accessor, TagExt, WriteOptions};
 
 	#[test]
 	fn id3v2_write_crc32() {
@@ -273,7 +298,7 @@ mod tests {
 		tag.set_flags(flags);
 
 		let mut writer = Vec::new();
-		tag.dump_to(&mut writer).unwrap();
+		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
 
 		let crc_content = &writer[16..22];
 		assert_eq!(crc_content, &[5, 0x06, 0x35, 0x69, 0x7D, 0x14]);

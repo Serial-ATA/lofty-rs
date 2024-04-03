@@ -5,6 +5,7 @@ use crate::properties::FileProperties;
 use crate::resolve::custom_resolvers;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
+use crate::write_options::WriteOptions;
 
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};
@@ -39,7 +40,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{AudioFile, TaggedFileExt};
+	/// use lofty::{AudioFile, TaggedFileExt, WriteOptions};
 	///
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
@@ -47,11 +48,14 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// // Edit the tags
 	///
-	/// tagged_file.save_to_path(path)?;
+	/// tagged_file.save_to_path(path, WriteOptions::new())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to_path(&self, path: impl AsRef<Path>) -> Result<()> {
-		self.save_to(&mut OpenOptions::new().read(true).write(true).open(path)?)
+	fn save_to_path(&self, path: impl AsRef<Path>, write_options: WriteOptions) -> Result<()> {
+		self.save_to(
+			&mut OpenOptions::new().read(true).write(true).open(path)?,
+			write_options,
+		)
 	}
 
 	/// Attempts to write all tags to a file
@@ -63,7 +67,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{AudioFile, TaggedFileExt};
+	/// use lofty::{AudioFile, TaggedFileExt, WriteOptions};
 	/// use std::fs::OpenOptions;
 	///
 	/// # fn main() -> lofty::Result<()> {
@@ -73,10 +77,10 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// // Edit the tags
 	///
 	/// let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-	/// tagged_file.save_to(&mut file)?;
+	/// tagged_file.save_to(&mut file, WriteOptions::new())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to(&self, file: &mut File) -> Result<()>;
+	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()>;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;
@@ -492,12 +496,12 @@ impl AudioFile for TaggedFile {
 			.read()
 	}
 
-	fn save_to(&self, file: &mut File) -> Result<()> {
+	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
 		for tag in &self.tags {
 			// TODO: This is a temporary solution. Ideally we should probe once and use
 			//       the format-specific writing to avoid these rewinds.
 			file.rewind()?;
-			tag.save_to(file)?;
+			tag.save_to(file, write_options)?;
 		}
 
 		Ok(())
@@ -528,7 +532,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// For example:
 ///
 /// ```rust,no_run
-/// use lofty::{AudioFile, Tag, TagType, TaggedFileExt};
+/// use lofty::{AudioFile, Tag, TagType, TaggedFileExt, WriteOptions};
 /// # fn main() -> lofty::Result<()> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
@@ -543,7 +547,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// // After saving, our file still "contains" the ID3v2 tag, but if we were to read
 /// // "foo.mp3", it would not have an ID3v2 tag. Lofty does not write empty tags, but this
 /// // change will not be reflected in `TaggedFile`.
-/// tagged_file.save_to_path("foo.mp3")?;
+/// tagged_file.save_to_path("foo.mp3", WriteOptions::new())?;
 /// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
@@ -551,7 +555,9 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// However, when using `BoundTaggedFile`:
 ///
 /// ```rust,no_run
-/// use lofty::{AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt};
+/// use lofty::{
+/// 	AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt, WriteOptions,
+/// };
 /// use std::fs::OpenOptions;
 /// # fn main() -> lofty::Result<()> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
@@ -570,7 +576,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 ///
 /// // Now when saving, we no longer have to specify a path, and the tags in the `BoundTaggedFile`
 /// // reflect those in the actual file on disk.
-/// bound_tagged_file.save()?;
+/// bound_tagged_file.save(WriteOptions::new())?;
 /// assert!(!bound_tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
@@ -620,7 +626,9 @@ impl BoundTaggedFile {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt};
+	/// use lofty::{
+	/// 	AudioFile, BoundTaggedFile, ParseOptions, Tag, TagType, TaggedFileExt, WriteOptions,
+	/// };
 	/// use std::fs::OpenOptions;
 	/// # fn main() -> lofty::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
@@ -634,11 +642,11 @@ impl BoundTaggedFile {
 	/// // Do some work to the tags...
 	///
 	/// // This will save the tags to the file we provided to `read_from`
-	/// bound_tagged_file.save()?;
+	/// bound_tagged_file.save(WriteOptions::new())?;
 	/// # Ok(()) }
 	/// ```
-	pub fn save(&mut self) -> Result<()> {
-		self.inner.save_to(&mut self.file_handle)?;
+	pub fn save(&mut self, write_options: WriteOptions) -> Result<()> {
+		self.inner.save_to(&mut self.file_handle, write_options)?;
 		self.inner.tags.retain(|tag| !tag.is_empty());
 
 		Ok(())
@@ -692,8 +700,8 @@ impl AudioFile for BoundTaggedFile {
 		)
 	}
 
-	fn save_to(&self, file: &mut File) -> Result<()> {
-		self.inner.save_to(file)
+	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		self.inner.save_to(file, write_options)
 	}
 
 	fn properties(&self) -> &Self::Properties {

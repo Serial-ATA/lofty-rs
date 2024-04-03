@@ -6,6 +6,7 @@ use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -39,7 +40,12 @@ impl OGGFormat {
 	}
 }
 
-pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Result<()> {
+pub(crate) fn write_to(
+	file: &mut File,
+	tag: &Tag,
+	file_type: FileType,
+	write_options: WriteOptions,
+) -> Result<()> {
 	if tag.tag_type() != TagType::VorbisComments {
 		err!(UnsupportedTag);
 	}
@@ -54,7 +60,13 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, file_type: FileType) -> Resul
 
 	let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
 
-	write(file, &mut comments_ref, format, header_packet_count)
+	write(
+		file,
+		&mut comments_ref,
+		format,
+		header_packet_count,
+		write_options,
+	)
 }
 
 pub(super) fn write<'a, II, IP>(
@@ -62,6 +74,7 @@ pub(super) fn write<'a, II, IP>(
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	format: OGGFormat,
 	header_packet_count: isize,
+	_write_options: WriteOptions,
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,

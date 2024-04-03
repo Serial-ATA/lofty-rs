@@ -21,6 +21,7 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -913,12 +914,16 @@ impl TagExt for Id3v2Tag {
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
 	/// * Attempting to write an invalid [`FrameId`]/[`FrameValue`] pairing
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
 		}
-		.write_to(file)
+		.write_to(file, write_options)
 	}
 
 	/// Dumps the tag to a writer
@@ -927,12 +932,16 @@ impl TagExt for Id3v2Tag {
 	///
 	/// * [`std::io::Error`]
 	/// * [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData)
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
 			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
 		}
-		.dump_to(writer)
+		.dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -1485,12 +1494,16 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 }
 
 impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
-		super::write::write_id3v2(file, self)
+	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		super::write::write_id3v2(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
-		let temp = super::write::create_tag(self)?;
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> Result<()> {
+		let temp = super::write::create_tag(self, write_options)?;
 		writer.write_all(&temp)?;
 
 		Ok(())

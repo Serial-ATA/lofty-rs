@@ -445,7 +445,7 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 				#read_fn(reader, parse_options)
 			}
 
-			fn save_to(&self, file: &mut ::std::fs::File) -> ::lofty::error::Result<()> {
+			fn save_to(&self, file: &mut ::std::fs::File, write_options: ::lofty::WriteOptions) -> ::lofty::error::Result<()> {
 				use ::lofty::TagExt as _;
 				use ::std::io::Seek as _;
 				#save_to_body
@@ -480,7 +480,7 @@ fn get_save_to_body(
 	// Custom write fn
 	if let Some(write_fn) = write_fn {
 		return quote! {
-			#write_fn(&self, file)
+			#write_fn(&self, file, write_options)
 		};
 	}
 
@@ -490,13 +490,13 @@ fn get_save_to_body(
 			quote! {
 				if let Some(ref tag) = self.#name {
 					file.rewind()?;
-					tag.save_to(file)?;
+					tag.save_to(file, write_options)?;
 				}
 			}
 		} else {
 			quote! {
 				file.rewind()?;
-				self.#name.save_to(file)?;
+				self.#name.save_to(file, write_options)?;
 			}
 		}
 	});

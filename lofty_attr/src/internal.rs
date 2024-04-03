@@ -48,16 +48,16 @@ pub(crate) fn init_write_lookup(
 			read_only: false,
 			items: lofty::ape::tag::tagitems_into_ape(tag),
 		}
-		.write_to(data)
+		.write_to(data, write_options)
 	});
 
 	insert!(map, Id3v1, {
-		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data)
+		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(data, write_options)
 	});
 
 	if id3v2_strippable {
 		insert!(map, Id3v2, {
-			lofty::id3::v2::tag::Id3v2TagRef::empty().write_to(data)
+			lofty::id3::v2::tag::Id3v2TagRef::empty().write_to(data, write_options)
 		});
 	} else {
 		insert!(map, Id3v2, {
@@ -65,7 +65,7 @@ pub(crate) fn init_write_lookup(
 				flags: lofty::id3::v2::Id3v2TagFlags::default(),
 				frames: lofty::id3::v2::tag::tag_frames(tag),
 			}
-			.write_to(data)
+			.write_to(data, write_options)
 		});
 	}
 
@@ -73,7 +73,7 @@ pub(crate) fn init_write_lookup(
 		lofty::iff::wav::tag::RIFFInfoListRef::new(lofty::iff::wav::tag::tagitems_into_riff(
 			tag.items(),
 		))
-		.write_to(data)
+		.write_to(data, write_options)
 	});
 
 	insert!(map, AiffText, {
@@ -84,7 +84,7 @@ pub(crate) fn init_write_lookup(
 			annotations: Some(tag.get_strings(&lofty::tag::item::ItemKey::Comment)),
 			comments: None,
 		}
-		.write_to(data)
+		.write_to(data, write_options)
 	});
 
 	map
@@ -111,7 +111,7 @@ pub(crate) fn write_module(
 	quote! {
 		pub(crate) mod write {
 			#[allow(unused_variables)]
-			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag) -> ::lofty::error::Result<()> {
+			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag, write_options: ::lofty::WriteOptions) -> ::lofty::error::Result<()> {
 				match tag.tag_type() {
 					#( #applicable_formats )*
 					_ => crate::macros::err!(UnsupportedTag),

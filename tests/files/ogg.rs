@@ -1,6 +1,7 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::{
 	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType, TaggedFileExt,
+	WriteOptions,
 };
 use std::io::{Seek, Write};
 
@@ -179,6 +180,9 @@ fn flac_try_write_non_empty_id3v2() {
 	tag.set_artist(String::from("Foo artist"));
 
 	assert!(tag
-		.save_to_path("tests/files/assets/flac_with_id3v2.flac")
+		.save_to_path(
+			"tests/files/assets/flac_with_id3v2.flac",
+			WriteOptions::new()
+		)
 		.is_err());
 }

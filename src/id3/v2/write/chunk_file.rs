@@ -1,12 +1,20 @@
 use crate::error::Result;
 use crate::iff::chunk::Chunks;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
 
 use byteorder::{ByteOrder, WriteBytesExt};
 
-pub(in crate::id3::v2) fn write_to_chunk_file<B>(data: &mut File, tag: &[u8]) -> Result<()>
+const CHUNK_NAME_UPPER: [u8; 4] = [b'I', b'D', b'3', b' '];
+const CHUNK_NAME_LOWER: [u8; 4] = [b'i', b'd', b'3', b' '];
+
+pub(in crate::id3::v2) fn write_to_chunk_file<B>(
+	data: &mut File,
+	tag: &[u8],
+	write_options: WriteOptions,
+) -> Result<()>
 where
 	B: ByteOrder,
 {
@@ -20,7 +28,7 @@ where
 	let mut chunks = Chunks::<B>::new(file_len);
 
 	while chunks.next(data).is_ok() {
-		if &chunks.fourcc == b"ID3 " || &chunks.fourcc == b"id3 " {
+		if chunks.fourcc == CHUNK_NAME_UPPER || chunks.fourcc == CHUNK_NAME_LOWER {
 			id3v2_chunk = (Some(data.stream_position()? - 8), Some(chunks.size));
 			break;
 		}
@@ -53,7 +61,13 @@ where
 
 	if !tag.is_empty() {
 		data.seek(SeekFrom::End(0))?;
-		data.write_all(b"ID3 ")?;
+
+		if write_options.uppercase_id3v2_chunk {
+			data.write_all(&CHUNK_NAME_UPPER)?;
+		} else {
+			data.write_all(&CHUNK_NAME_LOWER)?;
+		}
+
 		data.write_u32::<B>(tag.len() as u32)?;
 		data.write_all(tag)?;
 

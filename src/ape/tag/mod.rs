@@ -8,6 +8,7 @@ use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KE
 use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -320,12 +321,16 @@ impl TagExt for ApeTag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * An existing tag has an invalid size
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
 		}
-		.write_to(file)
+		.write_to(file, write_options)
 	}
 
 	/// Dumps the tag to a writer
@@ -333,12 +338,16 @@ impl TagExt for ApeTag {
 	/// # Errors
 	///
 	/// * [`std::io::Error`]
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
 		}
-		.dump_to(writer)
+		.dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -482,11 +491,15 @@ impl<'a, I> ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
-		write::write_to(file, self)
+	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		write::write_to(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let temp = write::create_ape_tag(self)?;
 		writer.write_all(&temp)?;
 
@@ -531,7 +544,7 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
-	use crate::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+	use crate::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType, WriteOptions};
 
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use std::io::Cursor;
@@ -608,7 +621,9 @@ mod tests {
 			.unwrap();
 
 		let mut writer = Vec::new();
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let mut temp_reader = Cursor::new(writer);
 

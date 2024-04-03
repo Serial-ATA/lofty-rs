@@ -1,4 +1,4 @@
-use lofty::{Accessor, Probe, Tag, TagExt, TaggedFileExt};
+use lofty::{Accessor, Probe, Tag, TagExt, TaggedFileExt, WriteOptions};
 
 use structopt::StructOpt;
 
@@ -75,7 +75,7 @@ fn main() {
 		tag.set_genre(genre)
 	}
 
-	tag.save_to_path(&opt.path)
+	tag.save_to_path(&opt.path, WriteOptions::new())
 		.expect("ERROR: Failed to write the tag!");
 
 	println!("INFO: Tag successfully updated!");

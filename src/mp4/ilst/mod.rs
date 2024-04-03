@@ -11,10 +11,11 @@ use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
 use std::path::Path;
@@ -527,17 +528,20 @@ impl TagExt for Ilst {
 		self.atoms.is_empty()
 	}
 
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		let mut f = OpenOptions::new().read(true).write(true).open(path)?;
-		self.save_to(&mut f)
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
+		self.as_ref().write_to(file, write_options)
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		self.as_ref().write_to(file)
-	}
-
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		self.as_ref().dump_to(writer)
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
+		self.as_ref().dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -763,7 +767,7 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::{
 		Accessor as _, AudioFile, ItemKey, ItemValue, ParseOptions, ParsingMode, SplitTag as _,
-		Tag, TagExt as _, TagItem, TagType,
+		Tag, TagExt as _, TagItem, TagType, WriteOptions,
 	};
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
@@ -861,7 +865,9 @@ mod tests {
 		let parsed_tag = read_ilst_strict("tests/tags/assets/ilst/test.ilst");
 
 		let mut writer = Vec::new();
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let cursor = Cursor::new(&writer[8..]);
 		let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
@@ -1018,7 +1024,7 @@ mod tests {
 		file.rewind().unwrap();
 
 		ilst.set_title(String::from("Exactly 21 Characters"));
-		ilst.save_to(&mut file).unwrap();
+		ilst.save_to(&mut file, WriteOptions::new()).unwrap();
 
 		// Now verify the free atom
 		file.rewind().unwrap();
@@ -1073,7 +1079,7 @@ mod tests {
 			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
 		});
 
-		tag.save_to(&mut file).unwrap();
+		tag.save_to(&mut file, WriteOptions::new()).unwrap();
 		file.rewind().unwrap();
 
 		let mp4_file = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();

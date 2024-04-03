@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `WriteOptions` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/228)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/361)):
+	- ⚠️ Important ⚠️: This update introduces `WriteOptions` to allow for finer grained control over how
+	  Lofty writes tags. These are best used as global user-configurable options, as most options will
+	  not apply to all files. The defaults are set to be as safe as possible,
+	  see [here](https://docs.rs/lofty/latest/lofty/struct.WriteOptions.html#impl-Default-for-WriteOptions).
+
 ### Fixed
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
 - **ID3v2**: Fix panic when reading an RVA2 frame with a peak larger than 248 bits ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/364))

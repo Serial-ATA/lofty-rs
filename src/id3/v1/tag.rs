@@ -3,6 +3,7 @@ use crate::id3::v1::constants::GENRES;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -243,8 +244,12 @@ impl TagExt for Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
-		Into::<Id3v1TagRef<'_>>::into(self).write_to(file)
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
+		Into::<Id3v1TagRef<'_>>::into(self).write_to(file, write_options)
 	}
 
 	/// Dumps the tag to a writer
@@ -252,8 +257,12 @@ impl TagExt for Id3v1Tag {
 	/// # Errors
 	///
 	/// * [`std::io::Error`]
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
-		Into::<Id3v1TagRef<'_>>::into(self).dump_to(writer)
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
+		Into::<Id3v1TagRef<'_>>::into(self).dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -413,11 +422,15 @@ impl<'a> Id3v1TagRef<'a> {
 			&& self.genre.is_none()
 	}
 
-	pub(crate) fn write_to(&self, file: &mut File) -> Result<()> {
-		super::write::write_id3v1(file, self)
+	pub(crate) fn write_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		super::write::write_id3v1(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let temp = super::write::encode(self)?;
 		writer.write_all(&temp)?;
 
@@ -428,7 +441,7 @@ impl<'a> Id3v1TagRef<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v1::Id3v1Tag;
-	use crate::{Tag, TagExt, TagType};
+	use crate::{Tag, TagExt, TagType, WriteOptions};
 
 	#[test]
 	fn parse_id3v1() {
@@ -454,7 +467,9 @@ mod tests {
 		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
 		let mut writer = Vec::new();
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let temp_parsed_tag = crate::id3::v1::read::parse_id3v1(writer.try_into().unwrap());
 

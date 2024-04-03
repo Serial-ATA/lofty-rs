@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
+use crate::write_options::WriteOptions;
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -17,41 +18,54 @@ use std::fs::File;
 use std::io::Write;
 
 #[allow(unreachable_patterns)]
-pub(crate) fn write_tag(tag: &Tag, file: &mut File, file_type: FileType) -> Result<()> {
+pub(crate) fn write_tag(
+	tag: &Tag,
+	file: &mut File,
+	file_type: FileType,
+	write_options: WriteOptions,
+) -> Result<()> {
 	match file_type {
-		FileType::Aac => aac::write::write_to(file, tag),
-		FileType::Aiff => iff::aiff::write::write_to(file, tag),
-		FileType::Ape => ape::write::write_to(file, tag),
-		FileType::Flac => flac::write::write_to(file, tag),
+		FileType::Aac => aac::write::write_to(file, tag, write_options),
+		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
+		FileType::Ape => ape::write::write_to(file, tag, write_options),
+		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
-			crate::ogg::write::write_to(file, tag, file_type)
+			crate::ogg::write::write_to(file, tag, file_type, write_options)
 		},
-		FileType::Mpc => musepack::write::write_to(file, tag),
-		FileType::Mpeg => mpeg::write::write_to(file, tag),
-		FileType::Mp4 => {
-			crate::mp4::ilst::write::write_to(file, &mut Into::<Ilst>::into(tag.clone()).as_ref())
-		},
-		FileType::Wav => iff::wav::write::write_to(file, tag),
-		FileType::WavPack => wavpack::write::write_to(file, tag),
+		FileType::Mpc => musepack::write::write_to(file, tag, write_options),
+		FileType::Mpeg => mpeg::write::write_to(file, tag, write_options),
+		FileType::Mp4 => crate::mp4::ilst::write::write_to(
+			file,
+			&mut Into::<Ilst>::into(tag.clone()).as_ref(),
+			write_options,
+		),
+		FileType::Wav => iff::wav::write::write_to(file, tag, write_options),
+		FileType::WavPack => wavpack::write::write_to(file, tag, write_options),
 		_ => err!(UnsupportedTag),
 	}
 }
 
 #[allow(unreachable_patterns)]
-pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
+pub(crate) fn dump_tag<W: Write>(
+	tag: &Tag,
+	writer: &mut W,
+	write_options: WriteOptions,
+) -> Result<()> {
 	match tag.tag_type() {
 		TagType::Ape => ApeTagRef {
 			read_only: false,
 			items: ape::tag::tagitems_into_ape(tag),
 		}
-		.dump_to(writer),
-		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer),
+		.dump_to(writer, write_options),
+		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer, write_options),
 		TagType::Id3v2 => Id3v2TagRef {
 			flags: Id3v2TagFlags::default(),
 			frames: v2::tag::tag_frames(tag),
 		}
-		.dump_to(writer),
-		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone()).as_ref().dump_to(writer),
+		.dump_to(writer, write_options),
+		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone())
+			.as_ref()
+			.dump_to(writer, write_options),
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
@@ -60,12 +74,12 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 				items,
 				pictures,
 			}
-			.dump_to(writer)
+			.dump_to(writer, write_options)
 		},
 		TagType::RiffInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
-		.dump_to(writer),
+		.dump_to(writer, write_options),
 		TagType::AiffText => {
 			use crate::tag::item::ItemKey;
 
@@ -77,7 +91,7 @@ pub(crate) fn dump_tag<W: Write>(tag: &Tag, writer: &mut W) -> Result<()> {
 				comments: None,
 			}
 		}
-		.dump_to(writer),
+		.dump_to(writer, write_options),
 		_ => Ok(()),
 	}
 }
