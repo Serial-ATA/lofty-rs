@@ -1,5 +1,5 @@
 /// Options to control how Lofty writes to a file
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct WriteOptions {
 	pub(crate) preferred_padding: Option<u16>,
