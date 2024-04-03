@@ -119,7 +119,9 @@ fn id3v2_re_read() {
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
 	let mut writer = Vec::new();
-	parsed_tag.dump_to(&mut writer).unwrap();
+	parsed_tag
+		.dump_to(&mut writer, WriteOptions::new())
+		.unwrap();
 
 	let temp_reader = &mut &*writer;
 
@@ -200,7 +202,7 @@ fn fail_write_bad_frame() {
 		flags: FrameFlags::default(),
 	});
 
-	let res = tag.dump_to(&mut Vec::<u8>::new());
+	let res = tag.dump_to(&mut Vec::<u8>::new(), WriteOptions::new());
 
 	assert!(res.is_err());
 	assert_eq!(
@@ -370,12 +372,12 @@ fn id3v24_footer() {
 	tag.flags.footer = true;
 
 	let mut writer = Vec::new();
-	tag.dump_to(&mut writer).unwrap();
+	tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
 
 	let mut reader = &mut &writer[..];
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	assert!(crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).is_ok());
+	let _ = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
 
 	assert_eq!(writer[3..10], writer[writer.len() - 7..])
 }
@@ -395,7 +397,7 @@ fn issue_36() {
 	tag.push_picture(picture.clone());
 
 	let mut writer = Vec::new();
-	tag.dump_to(&mut writer).unwrap();
+	tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
 
 	let mut reader = &mut &writer[..];
 
@@ -710,7 +712,7 @@ fn user_defined_frames_conversion() {
 	assert_eq!(tag.len(), 1);
 
 	let mut content = Vec::new();
-	tag.dump_to(&mut content).unwrap();
+	tag.dump_to(&mut content, WriteOptions::new()).unwrap();
 	assert!(!content.is_empty());
 
 	// And verify we can reread the tag

@@ -172,10 +172,12 @@ pub(crate) mod tag;
 mod traits;
 mod util;
 pub mod wavpack;
+mod write_options;
 
 pub use crate::error::{LoftyError, Result};
 
 pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
+pub use crate::write_options::WriteOptions;
 
 pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};

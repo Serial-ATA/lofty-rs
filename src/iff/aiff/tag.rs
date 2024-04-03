@@ -4,6 +4,7 @@ use crate::macros::err;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -188,7 +189,11 @@ impl TagExt for AIFFTextChunks {
 		)
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
 			author: self.author.as_deref(),
@@ -196,10 +201,14 @@ impl TagExt for AIFFTextChunks {
 			annotations: self.annotations.as_deref(),
 			comments: self.comments.as_deref(),
 		}
-		.write_to(file)
+		.write_to(file, write_options)
 	}
 
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
 			author: self.author.as_deref(),
@@ -207,7 +216,7 @@ impl TagExt for AIFFTextChunks {
 			annotations: self.annotations.as_deref(),
 			comments: self.comments.as_deref(),
 		}
-		.dump_to(writer)
+		.dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -308,11 +317,15 @@ where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(crate) fn write_to(self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to(self, file: &mut File, _write_options: WriteOptions) -> Result<()> {
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let temp = Self::create_text_chunks(self)?;
 		writer.write_all(&temp)?;
 
@@ -471,7 +484,7 @@ where
 #[cfg(test)]
 mod tests {
 	use crate::iff::aiff::{AIFFTextChunks, Comment};
-	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType, WriteOptions};
 
 	use crate::probe::ParseOptions;
 	use std::io::Cursor;
@@ -528,7 +541,9 @@ mod tests {
 		let mut writer = vec![
 			b'F', b'O', b'R', b'M', 0, 0, 0, 0xC6, b'A', b'I', b'F', b'F',
 		];
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let temp_parsed_tag = super::super::read::read_from(
 			&mut Cursor::new(writer),

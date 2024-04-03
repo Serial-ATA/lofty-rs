@@ -5,7 +5,7 @@ use lofty::id3::v2::{Frame, FrameFlags, FrameId, FrameValue, Id3v2Tag, KeyValueF
 use lofty::mpeg::MpegFile;
 use lofty::{
 	Accessor, AudioFile, FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagExt, TagItem,
-	TagType, TaggedFileExt,
+	TagType, TaggedFileExt, WriteOptions,
 };
 use std::io::{Seek, Write};
 
@@ -149,7 +149,7 @@ fn save_to_id3v2() {
 	tag.set_title("title".to_string());
 
 	file.rewind().unwrap();
-	tag.save_to(&mut file).unwrap();
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -190,7 +190,7 @@ fn save_number_of_track_and_disk_to_id3v2() {
 	tag.set_disk(disk);
 
 	file.rewind().unwrap();
-	tag.save_to(&mut file).unwrap();
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -231,7 +231,7 @@ fn save_total_of_track_and_disk_to_id3v2() {
 	tag.set_disk_total(disk_total);
 
 	file.rewind().unwrap();
-	tag.save_to(&mut file).unwrap();
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -277,7 +277,7 @@ fn save_number_pair_of_track_and_disk_to_id3v2() {
 	tag.set_disk_total(disk_total);
 
 	file.rewind().unwrap();
-	tag.save_to(&mut file).unwrap();
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -337,7 +337,7 @@ fn read_and_write_tpil_frame() {
 	);
 
 	file.rewind().unwrap();
-	tag.save_to(&mut file).unwrap();
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
 
 	// Now reread the file
 	file.rewind().unwrap();

@@ -6,6 +6,7 @@ use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -14,7 +15,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
-pub(crate) fn write_to(file: &mut File, tag: &Tag) -> Result<()> {
+pub(crate) fn write_to(file: &mut File, tag: &Tag, write_options: WriteOptions) -> Result<()> {
 	match tag.tag_type() {
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = crate::ogg::tag::create_vorbis_comments_ref(tag);
@@ -25,10 +26,10 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag) -> Result<()> {
 				pictures,
 			};
 
-			write_to_inner(file, &mut comments_ref)
+			write_to_inner(file, &mut comments_ref, write_options)
 		},
 		// This tag can *only* be removed in this format
-		TagType::Id3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file),
+		TagType::Id3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file, write_options),
 		_ => err!(UnsupportedTag),
 	}
 }
@@ -36,6 +37,7 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag) -> Result<()> {
 pub(crate) fn write_to_inner<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
+	_write_options: WriteOptions,
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -81,6 +83,7 @@ where
 
 	let mut file_bytes = cursor.into_inner();
 
+	// TODO: Respect preferred padding
 	if !padding {
 		log::warn!("File is missing a PADDING block. Adding one");
 

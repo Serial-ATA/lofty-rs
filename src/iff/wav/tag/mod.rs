@@ -5,6 +5,7 @@ use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -203,14 +204,22 @@ impl TagExt for RIFFInfoList {
 		self.items.is_empty()
 	}
 
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-			.write_to(file)
+			.write_to(file, write_options)
 	}
 
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-			.dump_to(writer)
+			.dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -302,11 +311,15 @@ where
 		RIFFInfoListRef { items }
 	}
 
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
-		write::write_riff_info(file, self)
+	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		write::write_riff_info(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let mut temp = Vec::new();
 		write::create_riff_info(&mut self.items, &mut temp)?;
 
@@ -336,7 +349,7 @@ pub(crate) fn tagitems_into_riff<'a>(
 #[cfg(test)]
 mod tests {
 	use crate::iff::wav::RIFFInfoList;
-	use crate::{Tag, TagExt, TagType};
+	use crate::{Tag, TagExt, TagType, WriteOptions};
 
 	use crate::iff::chunk::Chunks;
 	use byteorder::LittleEndian;
@@ -381,7 +394,9 @@ mod tests {
 		.unwrap();
 
 		let mut writer = Vec::new();
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let mut temp_parsed_tag = RIFFInfoList::default();
 

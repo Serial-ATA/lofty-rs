@@ -8,6 +8,7 @@ use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -454,13 +455,17 @@ impl TagExt for VorbisComments {
 	/// * The file does not contain valid packets
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
-		.write_to(file)
+		.write_to(file, write_options)
 	}
 
 	/// Dumps the tag to a writer
@@ -472,13 +477,17 @@ impl TagExt for VorbisComments {
 	///
 	/// * [`PictureInformation::from_picture`]
 	/// * [`std::io::Error`]
-	fn dump_to<W: Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		VorbisCommentsRef {
 			vendor: self.vendor.as_str(),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
-		.dump_to(writer)
+		.dump_to(writer, write_options)
 	}
 
 	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
@@ -625,7 +634,7 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	#[allow(clippy::shadow_unrelated)]
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
+	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
 		let probe = Probe::new(file).guess_file_type()?;
 		let f_ty = probe.file_type();
 
@@ -638,15 +647,19 @@ where
 
 		// FLAC has its own special writing needs :)
 		if file_type == FileType::Flac {
-			return crate::flac::write::write_to_inner(file, self);
+			return crate::flac::write::write_to_inner(file, self, write_options);
 		}
 
 		let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
 
-		super::write::write(file, self, format, header_packet_count)
+		super::write::write(file, self, format, header_packet_count, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let metadata_packet =
 			super::write::create_metadata_packet(self, &[], self.vendor.as_bytes(), false)?;
 		writer.write_all(&metadata_packet)?;
@@ -683,7 +696,7 @@ mod tests {
 	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::{
 		ItemKey, ItemValue, MergeTag as _, ParsingMode, SplitTag as _, Tag, TagExt as _, TagItem,
-		TagType,
+		TagType, WriteOptions,
 	};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
@@ -721,7 +734,9 @@ mod tests {
 		parsed_tag.vendor = String::new();
 
 		let mut writer = Vec::new();
-		parsed_tag.dump_to(&mut writer).unwrap();
+		parsed_tag
+			.dump_to(&mut writer, WriteOptions::new())
+			.unwrap();
 
 		let temp_parsed_tag = read_tag(&writer);
 

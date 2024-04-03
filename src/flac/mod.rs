@@ -16,6 +16,7 @@ use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
 use crate::traits::TagExt;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::Seek;
@@ -55,9 +56,9 @@ pub struct FlacFile {
 
 impl FlacFile {
 	// We need a special write fn to append our pictures into a `VorbisComments` tag
-	fn write_to(&self, file: &mut File) -> Result<()> {
+	fn write_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()> {
 		if let Some(ref id3v2) = self.id3v2_tag {
-			id3v2.save_to(file)?;
+			id3v2.save_to(file, write_options)?;
 			file.rewind()?;
 		}
 
@@ -75,7 +76,7 @@ impl FlacFile {
 					.map(|(p, i)| (p, *i))
 					.chain(self.pictures.iter().map(|(p, i)| (p, *i))),
 			}
-			.write_to(file);
+			.write_to(file, write_options);
 		}
 
 		// We have pictures, but no vorbis comments tag, we'll need to create a dummy one
@@ -85,7 +86,7 @@ impl FlacFile {
 				items: std::iter::empty(),
 				pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 			}
-			.write_to(file);
+			.write_to(file, write_options);
 		}
 
 		Ok(())

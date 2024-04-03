@@ -3,6 +3,7 @@ use crate::error::Result;
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -12,6 +13,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 pub(in crate::iff::wav) fn write_riff_info<'a, I>(
 	data: &mut File,
 	tag: &mut RIFFInfoListRef<'a, I>,
+	_write_options: WriteOptions,
 ) -> Result<()>
 where
 	I: Iterator<Item = (&'a str, &'a str)>,

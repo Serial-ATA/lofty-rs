@@ -9,6 +9,7 @@ use crate::probe::Probe;
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
+use crate::WriteOptions;
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -532,13 +533,17 @@ impl TagExt for Tag {
 	///
 	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
 	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		let probe = Probe::new(file).guess_file_type()?;
 
 		match probe.file_type() {
 			Some(file_type) => {
 				if file_type.supports_tag_type(self.tag_type()) {
-					utils::write_tag(self, probe.into_inner(), file_type)
+					utils::write_tag(self, probe.into_inner(), file_type, write_options)
 				} else {
 					err!(UnsupportedTag);
 				}
@@ -547,8 +552,8 @@ impl TagExt for Tag {
 		}
 	}
 
-	fn dump_to<W: Write>(&self, writer: &mut W) -> Result<()> {
-		utils::dump_tag(self, writer)
+	fn dump_to<W: Write>(&self, writer: &mut W, write_options: WriteOptions) -> Result<()> {
+		utils::dump_tag(self, writer, write_options)
 	}
 
 	/// Remove a tag from a [`Path`]
@@ -651,7 +656,7 @@ impl TagType {
 		}
 
 		let file = probe.into_inner();
-		utils::write_tag(&Tag::new(*self), file, file_type)
+		utils::write_tag(&Tag::new(*self), file, file_type, WriteOptions::new()) // TODO
 	}
 }
 
@@ -659,7 +664,7 @@ impl TagType {
 mod tests {
 	use super::try_parse_year;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType};
+	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType, WriteOptions};
 	use std::io::{Seek, Write};
 	use std::process::Command;
 
@@ -677,7 +682,8 @@ mod tests {
 		picture.set_pic_type(PictureType::CoverFront);
 
 		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut()).unwrap();
+		tag.save_to(temp_file.as_file_mut(), WriteOptions::new())
+			.unwrap();
 
 		let cmd_output = Command::new("ffprobe")
 			.arg(temp_file.path().to_str().unwrap())
@@ -719,7 +725,8 @@ mod tests {
 		picture.set_pic_type(PictureType::CoverFront);
 
 		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut()).unwrap();
+		tag.save_to(temp_file.as_file_mut(), WriteOptions::new())
+			.unwrap();
 
 		let cmd_output = Command::new("opusinfo")
 			.arg(temp_file.path().to_str().unwrap())

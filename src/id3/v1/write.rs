@@ -3,6 +3,7 @@ use crate::error::Result;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::err;
 use crate::probe::Probe;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Seek, Write};
@@ -10,7 +11,11 @@ use std::io::{Cursor, Seek, Write};
 use byteorder::WriteBytesExt;
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_id3v1(file: &mut File, tag: &Id3v1TagRef<'_>) -> Result<()> {
+pub(crate) fn write_id3v1(
+	file: &mut File,
+	tag: &Id3v1TagRef<'_>,
+	_write_options: WriteOptions,
+) -> Result<()> {
 	let probe = Probe::new(file).guess_file_type()?;
 
 	match probe.file_type() {

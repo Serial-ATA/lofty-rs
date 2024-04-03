@@ -7,6 +7,7 @@ use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -14,7 +15,11 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
-pub(crate) fn write_to<'a, I>(data: &mut File, tag: &mut ApeTagRef<'a, I>) -> Result<()>
+pub(crate) fn write_to<'a, I>(
+	data: &mut File,
+	tag: &mut ApeTagRef<'a, I>,
+	_write_options: WriteOptions,
+) -> Result<()>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
@@ -40,6 +45,7 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_ape_tag = (false, (0, 0));
 
+	// TODO: Respect read only
 	let start = data.stream_position()?;
 	match read::read_ape_tag(data, false)? {
 		Some((mut existing_tag, header)) => {

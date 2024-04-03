@@ -9,6 +9,7 @@ use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
 use crate::probe::ParseOptions;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};
@@ -18,10 +19,13 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
-const DEFAULT_PADDING_SIZE: u32 = 1024;
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
-pub(crate) fn write_to<'a, I: 'a>(data: &mut File, tag: &mut IlstRef<'a, I>) -> Result<()>
+pub(crate) fn write_to<'a, I: 'a>(
+	data: &mut File,
+	tag: &mut IlstRef<'a, I>,
+	write_options: WriteOptions,
+) -> Result<()>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
@@ -126,6 +130,7 @@ where
 					&mut new_udta_size,
 					ilst,
 					remove_tag,
+					write_options,
 				)?
 			},
 			// We have to create the `meta` atom
@@ -207,6 +212,7 @@ fn save_to_existing(
 	new_udta_size: &mut u64,
 	ilst: Vec<u8>,
 	remove_tag: bool,
+	write_options: WriteOptions,
 ) -> Result<()> {
 	let mut replacement;
 	let range;
@@ -303,7 +309,8 @@ fn save_to_existing(
 		log::trace!("Tag size changed, attempting to avoid offset update");
 
 		let mut ilst_writer = Cursor::new(replacement);
-		let (atom_size_difference, padding_size) = pad_atom(&mut ilst_writer, difference)?;
+		let (atom_size_difference, padding_size) =
+			pad_atom(&mut ilst_writer, difference, write_options)?;
 
 		replacement = ilst_writer.into_inner();
 		new_meta_size += padding_size;
@@ -339,7 +346,11 @@ fn save_to_existing(
 	Ok(())
 }
 
-fn pad_atom<W>(writer: &mut W, mut atom_size_difference: i64) -> Result<(i64, u64)>
+fn pad_atom<W>(
+	writer: &mut W,
+	mut atom_size_difference: i64,
+	write_options: WriteOptions,
+) -> Result<(i64, u64)>
 where
 	W: Write + Seek,
 {
@@ -354,7 +365,7 @@ where
 
 	let padding_size: u64;
 	let diff_abs = atom_size_difference.abs();
-	if diff_abs >= 8 {
+	if diff_abs >= ATOM_HEADER_LEN as i64 {
 		log::trace!(
 			"Avoiding offset update, padding atom with {} bytes",
 			diff_abs
@@ -365,18 +376,25 @@ where
 		write_free_atom(writer, diff_abs as u32)?;
 		atom_size_difference = 0;
 		padding_size = diff_abs as u64;
-	} else {
-		log::trace!(
-			"Cannot avoid offset update, padding atom with {} bytes",
-			DEFAULT_PADDING_SIZE
-		);
 
-		// Otherwise, we'll have to just pad the default amount,
-		// and update the offsets.
-		write_free_atom(writer, DEFAULT_PADDING_SIZE)?;
-		atom_size_difference += i64::from(DEFAULT_PADDING_SIZE);
-		padding_size = u64::from(DEFAULT_PADDING_SIZE);
+		return Ok((atom_size_difference, padding_size));
 	}
+
+	let Some(preferred_padding) = write_options.preferred_padding else {
+		log::trace!("Cannot avoid offset update, not padding atom");
+		return Ok((atom_size_difference, 0));
+	};
+
+	log::trace!(
+		"Cannot avoid offset update, padding atom with {} bytes",
+		preferred_padding
+	);
+
+	// Otherwise, we'll have to just pad the default amount,
+	// and update the offsets.
+	write_free_atom(writer, preferred_padding as u32)?;
+	atom_size_difference += i64::from(preferred_padding);
+	padding_size = u64::from(preferred_padding);
 
 	Ok((atom_size_difference, padding_size))
 }

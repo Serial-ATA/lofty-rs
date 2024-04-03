@@ -4,6 +4,7 @@
 
 use crate::error::Result;
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::Write;
@@ -24,11 +25,15 @@ impl<'a, I: 'a> IlstRef<'a, I>
 where
 	I: IntoIterator<Item = &'a AtomData>,
 {
-	pub(crate) fn write_to(&mut self, file: &mut File) -> Result<()> {
-		super::write::write_to(file, self)
+	pub(crate) fn write_to(&mut self, file: &mut File, write_options: WriteOptions) -> Result<()> {
+		super::write::write_to(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(&mut self, writer: &mut W) -> Result<()> {
+	pub(crate) fn dump_to<W: Write>(
+		&mut self,
+		writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
 		let temp = super::write::build_ilst(&mut self.atoms)?;
 		writer.write_all(&temp)?;
 

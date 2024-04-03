@@ -119,6 +119,7 @@ accessor_trait! {
 }
 
 use crate::tag::Tag;
+use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::path::Path;
@@ -194,12 +195,17 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// * Path doesn't exist
 	/// * Path is not writable
 	/// * See [`TagExt::save_to`]
-	fn save_to_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
+	fn save_to_path<P: AsRef<Path>>(
+		&self,
+		path: P,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		self.save_to(
 			&mut std::fs::OpenOptions::new()
 				.read(true)
 				.write(true)
 				.open(path)?,
+			write_options,
 		)
 	}
 
@@ -209,13 +215,21 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// * The file format could not be determined
 	/// * Attempting to write a tag to a format that does not support it.
-	fn save_to(&self, file: &mut File) -> std::result::Result<(), Self::Err>;
+	fn save_to(
+		&self,
+		file: &mut File,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err>;
 
 	#[allow(clippy::missing_errors_doc)]
 	/// Dump the tag to a writer
 	///
 	/// This will only write the tag, it will not produce a usable file.
-	fn dump_to<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<(), Self::Err>;
+	fn dump_to<W: std::io::Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err>;
 
 	/// Remove a tag from a [`Path`]
 	///
@@ -246,11 +260,12 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 ///
 /// # Example
 ///
-/// ```no_run
+/// ```rust,no_run
 /// use lofty::mpeg::MpegFile;
-/// use lofty::{AudioFile, ItemKey, MergeTag as _, SplitTag as _};
+/// use lofty::{AudioFile, ItemKey, MergeTag as _, SplitTag as _, WriteOptions};
 ///
 /// // Read the tag from a file
+/// # fn main() -> lofty::Result<()> {
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
 /// # let parse_options = lofty::ParseOptions::default();
 /// let mut mpeg_file = <MpegFile as AudioFile>::read_from(&mut file, parse_options)?;
@@ -272,9 +287,9 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 ///
 /// // Write the changes back into the file
 /// mpeg_file.set_id3v2(id3v2);
-/// mpeg_file.save_to(&mut file)?;
+/// mpeg_file.save_to(&mut file, WriteOptions::new())?;
 ///
-/// # Ok::<(), lofty::LoftyError>(())
+/// # Ok::<(), lofty::LoftyError>(()) }
 /// ```
 pub trait SplitTag {
 	/// The remainder of the split operation that is not represented
