@@ -1,7 +1,7 @@
 use super::block::Block;
 use super::read::verify_flac;
 use crate::error::Result;
-use crate::macros::err;
+use crate::macros::{err, try_vec};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
@@ -13,6 +13,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
+const BLOCK_HEADER_SIZE: usize = 4;
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
 
 pub(crate) fn write_to(file: &mut File, tag: &Tag, write_options: WriteOptions) -> Result<()> {
@@ -37,7 +38,7 @@ pub(crate) fn write_to(file: &mut File, tag: &Tag, write_options: WriteOptions) 
 pub(crate) fn write_to_inner<'a, II, IP>(
 	file: &mut File,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
-	_write_options: WriteOptions,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -83,26 +84,27 @@ where
 
 	let mut file_bytes = cursor.into_inner();
 
-	// TODO: Respect preferred padding
 	if !padding {
-		log::warn!("File is missing a PADDING block. Adding one");
+		if let Some(preferred_padding) = write_options.preferred_padding {
+			log::warn!("File is missing a PADDING block. Adding one");
 
-		let mut first_byte = 0_u8;
-		first_byte |= last_block_info.0 & 0x7F;
+			let mut first_byte = 0_u8;
+			first_byte |= last_block_info.0 & 0x7F;
 
-		file_bytes[last_block_info.1] = first_byte;
+			file_bytes[last_block_info.1] = first_byte;
 
-		let mut padding_block = [0; 1028];
-		let mut padding_byte = 0;
-		padding_byte |= 0x80;
-		padding_byte |= 1 & 0x7F;
+			let block_size = core::cmp::min(preferred_padding, MAX_BLOCK_SIZE);
+			let mut padding_block = try_vec![0; BLOCK_HEADER_SIZE + block_size as usize];
 
-		padding_block[0] = padding_byte;
+			let mut padding_byte = 0;
+			padding_byte |= 0x80;
+			padding_byte |= 1 & 0x7F;
 
-		// [0, 4, 0] = 1024
-		padding_block[2] = 4;
+			padding_block[0] = padding_byte;
+			padding_block[1..4].copy_from_slice(&block_size.to_be_bytes()[1..]);
 
-		file_bytes.splice(last_block_info.2..last_block_info.2, padding_block);
+			file_bytes.splice(last_block_info.2..last_block_info.2, padding_block);
+		}
 	}
 
 	let mut comment_blocks = Cursor::new(Vec::new());
