@@ -37,6 +37,11 @@ impl WriteOptions {
 	/// If the tag format being written supports padding, this will be the size of the padding
 	/// in bytes.
 	///
+	/// NOTES:
+	///
+	/// * Not all tag formats support padding
+	/// * The actual padding size may be different from this value, depending on tag size limitations
+	///
 	/// # Examples
 	///
 	/// ```rust
@@ -85,6 +90,9 @@ impl WriteOptions {
 	/// Some tag formats allow for items to be marked as read-only. If set to `true`, these items
 	/// will take priority over newly created tag items.
 	///
+	/// NOTE: In the case of APE tags, one can mark the entire tag as read-only. This will append
+	/// the existing tag items to the new tag.
+	///
 	/// # Examples
 	///
 	/// ```rust,no_run
@@ -110,7 +118,7 @@ impl WriteOptions {
 	/// When dealing with RIFF/AIFF files, some software may expect the ID3v2 chunk name to be
 	/// lowercase.
 	///
-	/// Do note that the vast majority of software will be able to read both upper and lowercase
+	/// NOTE: The vast majority of software will be able to read both upper and lowercase
 	/// chunk names.
 	///
 	/// # Examples
