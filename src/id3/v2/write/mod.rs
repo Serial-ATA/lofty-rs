@@ -298,7 +298,7 @@ mod tests {
 		tag.set_flags(flags);
 
 		let mut writer = Vec::new();
-		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+		tag.dump_to(&mut writer, WriteOptions::default()).unwrap();
 
 		let crc_content = &writer[16..22];
 		assert_eq!(crc_content, &[5, 0x06, 0x35, 0x69, 0x7D, 0x14]);

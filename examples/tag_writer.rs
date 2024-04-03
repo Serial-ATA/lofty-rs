@@ -75,7 +75,7 @@ fn main() {
 		tag.set_genre(genre)
 	}
 
-	tag.save_to_path(&opt.path, WriteOptions::new())
+	tag.save_to_path(&opt.path, WriteOptions::default())
 		.expect("ERROR: Failed to write the tag!");
 
 	println!("INFO: Tag successfully updated!");

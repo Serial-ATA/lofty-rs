@@ -287,7 +287,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 ///
 /// // Write the changes back into the file
 /// mpeg_file.set_id3v2(id3v2);
-/// mpeg_file.save_to(&mut file, WriteOptions::new())?;
+/// mpeg_file.save_to(&mut file, WriteOptions::default())?;
 ///
 /// # Ok::<(), lofty::LoftyError>(()) }
 /// ```

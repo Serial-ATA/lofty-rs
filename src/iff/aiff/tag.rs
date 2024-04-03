@@ -542,7 +542,7 @@ mod tests {
 			b'F', b'O', b'R', b'M', 0, 0, 0, 0xC6, b'A', b'I', b'F', b'F',
 		];
 		parsed_tag
-			.dump_to(&mut writer, WriteOptions::new())
+			.dump_to(&mut writer, WriteOptions::default())
 			.unwrap();
 
 		let temp_parsed_tag = super::super::read::read_from(
