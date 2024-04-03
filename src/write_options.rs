@@ -106,6 +106,27 @@ impl WriteOptions {
 	}
 
 	/// Whether to uppercase the ID3v2 chunk name
+	///
+	/// When dealing with RIFF/AIFF files, some software may expect the ID3v2 chunk name to be
+	/// lowercase.
+	///
+	/// Do note that the vast majority of software will be able to read both upper and lowercase
+	/// chunk names.
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::{Tag, TagExt, TagType, WriteOptions};
+	///
+	/// # fn main() -> lofty::Result<()> {
+	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
+	///
+	/// // ...
+	///
+	/// // I want to keep the ID3v2 chunk name lowercase
+	/// let options = WriteOptions::new().uppercase_id3v2_chunk(false);
+	/// id3v2_tag.save_to_path("test.mp3", options)?;
+	/// # Ok(()) }
 	pub fn uppercase_id3v2_chunk(mut self, uppercase_id3v2_chunk: bool) -> Self {
 		self.uppercase_id3v2_chunk = uppercase_id3v2_chunk;
 		self
