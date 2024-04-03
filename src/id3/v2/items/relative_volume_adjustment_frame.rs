@@ -133,7 +133,7 @@ impl RelativeVolumeAdjustmentFrame {
 
 			let mut peak_volume = None;
 			if bits_representing_peak > 0 {
-				let bytes_representing_peak = (bits_representing_peak + 7) >> 3;
+				let bytes_representing_peak = (u16::from(bits_representing_peak) + 7) >> 3;
 
 				let mut peak_volume_bytes = try_vec![0; bytes_representing_peak as usize];
 				reader.read_exact(&mut peak_volume_bytes)?;
@@ -169,7 +169,7 @@ impl RelativeVolumeAdjustmentFrame {
 
 		for (channel_type, info) in &self.channels {
 			let mut bits_representing_peak = info.bits_representing_peak;
-			let expected_peak_byte_length = (bits_representing_peak + 7) >> 3;
+			let expected_peak_byte_length = (u16::from(bits_representing_peak) + 7) >> 3;
 
 			content.push(*channel_type as u8);
 			content.extend(info.volume_adjustment.to_be_bytes());
@@ -186,13 +186,13 @@ impl RelativeVolumeAdjustmentFrame {
 					bits_representing_peak = 0;
 
 					// Max out at 255 bits
-					for b in peak.iter().copied().take(31) {
+					for b in peak.iter().copied().take(32) {
 						bits_representing_peak += b.leading_ones() as u8;
 					}
 				}
 
 				content.push(bits_representing_peak);
-				content.extend(peak.iter().take(31));
+				content.extend(peak.iter().take(32));
 			}
 		}
 

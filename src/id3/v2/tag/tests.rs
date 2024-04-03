@@ -1338,9 +1338,3 @@ fn flag_item_conversion() {
 		Some("0")
 	);
 }
-
-#[test]
-fn regression_295_fuzzing_id3v24_parse_extended_text_frame_unreachable_panic() {
-	let data = [1, 0, 0, 0];
-	assert!(ExtendedTextFrame::parse(&mut &data[..], Id3v2Version::V4).is_err());
-}

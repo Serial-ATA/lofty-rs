@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
+- **ID3v2**: Fix panic when reading an RVA2 frame with a peak larger than 248 bits ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/364))
 
 ## [0.18.2] - 2024-01-23
 
