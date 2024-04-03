@@ -866,7 +866,7 @@ mod tests {
 
 		let mut writer = Vec::new();
 		parsed_tag
-			.dump_to(&mut writer, WriteOptions::new())
+			.dump_to(&mut writer, WriteOptions::default())
 			.unwrap();
 
 		let cursor = Cursor::new(&writer[8..]);
@@ -1024,7 +1024,7 @@ mod tests {
 		file.rewind().unwrap();
 
 		ilst.set_title(String::from("Exactly 21 Characters"));
-		ilst.save_to(&mut file, WriteOptions::new()).unwrap();
+		ilst.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		// Now verify the free atom
 		file.rewind().unwrap();
@@ -1079,7 +1079,7 @@ mod tests {
 			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
 		});
 
-		tag.save_to(&mut file, WriteOptions::new()).unwrap();
+		tag.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
 		let mp4_file = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();

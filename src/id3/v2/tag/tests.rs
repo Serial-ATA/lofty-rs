@@ -120,7 +120,7 @@ fn id3v2_re_read() {
 
 	let mut writer = Vec::new();
 	parsed_tag
-		.dump_to(&mut writer, WriteOptions::new())
+		.dump_to(&mut writer, WriteOptions::default())
 		.unwrap();
 
 	let temp_reader = &mut &*writer;
@@ -202,7 +202,7 @@ fn fail_write_bad_frame() {
 		flags: FrameFlags::default(),
 	});
 
-	let res = tag.dump_to(&mut Vec::<u8>::new(), WriteOptions::new());
+	let res = tag.dump_to(&mut Vec::<u8>::new(), WriteOptions::default());
 
 	assert!(res.is_err());
 	assert_eq!(
@@ -372,7 +372,7 @@ fn id3v24_footer() {
 	tag.flags.footer = true;
 
 	let mut writer = Vec::new();
-	tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+	tag.dump_to(&mut writer, WriteOptions::default()).unwrap();
 
 	let mut reader = &mut &writer[..];
 
@@ -397,7 +397,7 @@ fn issue_36() {
 	tag.push_picture(picture.clone());
 
 	let mut writer = Vec::new();
-	tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+	tag.dump_to(&mut writer, WriteOptions::default()).unwrap();
 
 	let mut reader = &mut &writer[..];
 
@@ -712,7 +712,7 @@ fn user_defined_frames_conversion() {
 	assert_eq!(tag.len(), 1);
 
 	let mut content = Vec::new();
-	tag.dump_to(&mut content, WriteOptions::new()).unwrap();
+	tag.dump_to(&mut content, WriteOptions::default()).unwrap();
 	assert!(!content.is_empty());
 
 	// And verify we can reread the tag

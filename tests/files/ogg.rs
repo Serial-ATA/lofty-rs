@@ -182,7 +182,7 @@ fn flac_try_write_non_empty_id3v2() {
 	assert!(tag
 		.save_to_path(
 			"tests/files/assets/flac_with_id3v2.flac",
-			WriteOptions::new()
+			WriteOptions::default()
 		)
 		.is_err());
 }

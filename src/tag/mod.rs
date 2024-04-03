@@ -656,7 +656,7 @@ impl TagType {
 		}
 
 		let file = probe.into_inner();
-		utils::write_tag(&Tag::new(*self), file, file_type, WriteOptions::new()) // TODO
+		utils::write_tag(&Tag::new(*self), file, file_type, WriteOptions::default()) // TODO
 	}
 }
 
@@ -682,7 +682,7 @@ mod tests {
 		picture.set_pic_type(PictureType::CoverFront);
 
 		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut(), WriteOptions::new())
+		tag.save_to(temp_file.as_file_mut(), WriteOptions::default())
 			.unwrap();
 
 		let cmd_output = Command::new("ffprobe")
@@ -725,7 +725,7 @@ mod tests {
 		picture.set_pic_type(PictureType::CoverFront);
 
 		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut(), WriteOptions::new())
+		tag.save_to(temp_file.as_file_mut(), WriteOptions::default())
 			.unwrap();
 
 		let cmd_output = Command::new("opusinfo")

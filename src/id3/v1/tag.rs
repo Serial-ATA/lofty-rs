@@ -468,7 +468,7 @@ mod tests {
 
 		let mut writer = Vec::new();
 		parsed_tag
-			.dump_to(&mut writer, WriteOptions::new())
+			.dump_to(&mut writer, WriteOptions::default())
 			.unwrap();
 
 		let temp_parsed_tag = crate::id3::v1::read::parse_id3v1(writer.try_into().unwrap());

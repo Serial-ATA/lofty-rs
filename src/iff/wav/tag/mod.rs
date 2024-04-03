@@ -395,7 +395,7 @@ mod tests {
 
 		let mut writer = Vec::new();
 		parsed_tag
-			.dump_to(&mut writer, WriteOptions::new())
+			.dump_to(&mut writer, WriteOptions::default())
 			.unwrap();
 
 		let mut temp_parsed_tag = RIFFInfoList::default();

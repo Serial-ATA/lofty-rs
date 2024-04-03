@@ -69,7 +69,7 @@ macro_rules! set_artist {
 
 		$file_write.rewind().unwrap();
 
-		$tag.save_to(&mut $file_write, lofty::WriteOptions::new())
+		$tag.save_to(&mut $file_write, lofty::WriteOptions::default())
 			.unwrap();
 	};
 }

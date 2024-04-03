@@ -48,7 +48,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// // Edit the tags
 	///
-	/// tagged_file.save_to_path(path, WriteOptions::new())?;
+	/// tagged_file.save_to_path(path, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
 	fn save_to_path(&self, path: impl AsRef<Path>, write_options: WriteOptions) -> Result<()> {
@@ -77,7 +77,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// // Edit the tags
 	///
 	/// let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-	/// tagged_file.save_to(&mut file, WriteOptions::new())?;
+	/// tagged_file.save_to(&mut file, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
 	fn save_to(&self, file: &mut File, write_options: WriteOptions) -> Result<()>;
@@ -547,7 +547,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// // After saving, our file still "contains" the ID3v2 tag, but if we were to read
 /// // "foo.mp3", it would not have an ID3v2 tag. Lofty does not write empty tags, but this
 /// // change will not be reflected in `TaggedFile`.
-/// tagged_file.save_to_path("foo.mp3", WriteOptions::new())?;
+/// tagged_file.save_to_path("foo.mp3", WriteOptions::default())?;
 /// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
@@ -576,7 +576,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 ///
 /// // Now when saving, we no longer have to specify a path, and the tags in the `BoundTaggedFile`
 /// // reflect those in the actual file on disk.
-/// bound_tagged_file.save(WriteOptions::new())?;
+/// bound_tagged_file.save(WriteOptions::default())?;
 /// assert!(!bound_tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
@@ -642,7 +642,7 @@ impl BoundTaggedFile {
 	/// // Do some work to the tags...
 	///
 	/// // This will save the tags to the file we provided to `read_from`
-	/// bound_tagged_file.save(WriteOptions::new())?;
+	/// bound_tagged_file.save(WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
 	pub fn save(&mut self, write_options: WriteOptions) -> Result<()> {
