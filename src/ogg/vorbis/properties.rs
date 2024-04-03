@@ -137,8 +137,11 @@ where
 		}
 	}
 
-	if properties.bitrate_nominal > 0 {
+	if length > 0 {
 		properties.overall_bitrate = (file_length.saturating_mul(8) / length) as u32;
+	}
+
+	if properties.bitrate_nominal > 0 {
 		properties.audio_bitrate = (properties.bitrate_nominal as u64 / 1000) as u32;
 	}
 
