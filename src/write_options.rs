@@ -2,7 +2,7 @@
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct WriteOptions {
-	pub(crate) preferred_padding: Option<u16>,
+	pub(crate) preferred_padding: Option<u32>,
 	pub(crate) remove_others: bool,
 	pub(crate) respect_read_only: bool,
 	pub(crate) uppercase_id3v2_chunk: bool,
@@ -10,7 +10,7 @@ pub struct WriteOptions {
 
 impl WriteOptions {
 	/// Default preferred padding size in bytes
-	pub const DEFAULT_PREFERRED_PADDING: u16 = 1024;
+	pub const DEFAULT_PREFERRED_PADDING: u32 = 1024;
 
 	/// Creates a new `WriteOptions`, alias for `Default` implementation
 	///
@@ -53,7 +53,7 @@ impl WriteOptions {
 	/// // ...Or I don't want padding under any circumstances!
 	/// let options = WriteOptions::new().preferred_padding(0);
 	/// ```
-	pub fn preferred_padding(mut self, preferred_padding: u16) -> Self {
+	pub fn preferred_padding(mut self, preferred_padding: u32) -> Self {
 		match preferred_padding {
 			0 => self.preferred_padding = None,
 			_ => self.preferred_padding = Some(preferred_padding),

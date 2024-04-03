@@ -392,7 +392,7 @@ where
 
 	// Otherwise, we'll have to just pad the default amount,
 	// and update the offsets.
-	write_free_atom(writer, preferred_padding as u32)?;
+	write_free_atom(writer, preferred_padding)?;
 	atom_size_difference += i64::from(preferred_padding);
 	padding_size = u64::from(preferred_padding);
 
