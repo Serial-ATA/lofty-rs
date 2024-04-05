@@ -2,7 +2,7 @@ use crate::temp_file;
 use crate::util::get_file;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
-use lofty::{Accessor, AudioFile, ParseOptions, TagType};
+use lofty::{Accessor, AudioFile, ParseOptions, TagType, WriteOptions};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 #[test]
@@ -82,7 +82,7 @@ fn test_id3v2_tag() {
 		id3v2.set_title(String::from("Title"));
 		id3v2.set_artist(String::from("Artist"));
 		f.set_id3v2(id3v2);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		assert!(f.id3v2().is_some());
 	}
 	file.rewind().unwrap();
@@ -96,7 +96,7 @@ fn test_id3v2_tag() {
 
 		f.id3v2_mut().unwrap().remove_title();
 		f.id3v2_mut().unwrap().remove_artist();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -145,7 +145,7 @@ fn test_info_tag() {
 		riff_info.set_artist(String::from("Artist"));
 		f.set_riff_info(riff_info);
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -158,7 +158,7 @@ fn test_info_tag() {
 		f.riff_info_mut().unwrap().remove_title();
 		f.riff_info_mut().unwrap().remove_artist();
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -183,7 +183,7 @@ fn test_strip_tags() {
 		riff_info.set_title(String::from("test title"));
 		f.set_riff_info(riff_info);
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -205,7 +205,7 @@ fn test_strip_tags() {
 		riff_info.set_title(String::from("test title"));
 		f.set_riff_info(riff_info);
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -241,7 +241,7 @@ fn test_duplicate_tags() {
 	assert!(f.riff_info().is_some());
 	assert_eq!(f.riff_info().unwrap().title().as_deref(), Some("Title1"));
 
-	f.save_to(&mut file).unwrap();
+	f.save_to(&mut file, WriteOptions::default()).unwrap();
 	assert_eq!(file.seek(SeekFrom::End(0)).unwrap(), 15898);
 
 	let mut file_bytes = Vec::new();

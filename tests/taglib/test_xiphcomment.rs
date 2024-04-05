@@ -5,6 +5,7 @@ use std::io::Seek;
 use lofty::ogg::{OggPictureStorage, VorbisComments, VorbisFile};
 use lofty::{
 	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
+	WriteOptions,
 };
 
 #[test]
@@ -80,7 +81,7 @@ fn test_clear_comment() {
 
 		f.vorbis_comments_mut()
 			.push(String::from("COMMENT"), String::from("Comment1"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -129,7 +130,7 @@ fn test_picture() {
 		f.vorbis_comments_mut()
 			.insert_picture(picture, Some(info))
 			.unwrap();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -157,7 +158,7 @@ fn test_lowercase_fields() {
 		assert_eq!(f.vorbis_comments().title().as_deref(), Some("TEST TITLE"));
 		assert_eq!(f.vorbis_comments().artist().as_deref(), Some("TEST ARTIST"));
 		assert_eq!(f.vorbis_comments().pictures().len(), 1);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{

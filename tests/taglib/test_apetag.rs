@@ -4,7 +4,7 @@ use std::io::Seek;
 
 use lofty::ape::{ApeItem, ApeTag};
 use lofty::musepack::MpcFile;
-use lofty::{Accessor, AudioFile, ItemValue, ParseOptions, TagExt};
+use lofty::{Accessor, AudioFile, ItemValue, ParseOptions, TagExt, WriteOptions};
 
 #[test]
 fn test_is_empty() {
@@ -104,7 +104,9 @@ fn test_id3v1_collision() {
 		ape_tag.set_artist(String::from("Filltointersect    "));
 		ape_tag.set_title(String::from("Filltointersect    "));
 		mpc_file.set_ape(ape_tag);
-		mpc_file.save_to(&mut file).unwrap();
+		mpc_file
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	{
 		file.rewind().unwrap();

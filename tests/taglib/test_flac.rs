@@ -8,6 +8,7 @@ use lofty::id3::v2::Id3v2Tag;
 use lofty::ogg::{OggPictureStorage, VorbisComments};
 use lofty::{
 	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
+	WriteOptions,
 };
 
 #[test]
@@ -69,7 +70,7 @@ fn test_add_picture() {
 		};
 
 		f.insert_picture(new_pic, Some(new_pic_info)).unwrap();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -126,7 +127,7 @@ fn test_replace_picture() {
 
 		f.remove_pictures();
 		f.insert_picture(new_pic, Some(new_pic_info)).unwrap();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -159,7 +160,7 @@ fn test_remove_all_pictures() {
 		assert_eq!(lst.len(), 1);
 
 		f.remove_pictures();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -185,7 +186,7 @@ fn test_repeated_save_1() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("NEW TITLE"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.rewind().unwrap();
 		assert_eq!(
@@ -195,7 +196,7 @@ fn test_repeated_save_1() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("NEW TITLE 2"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		assert_eq!(
 			f.vorbis_comments().unwrap().title().as_deref(),
@@ -232,10 +233,10 @@ fn test_repeated_save_3() {
 	tag.set_title(String::from_utf8(vec![b'X'; 8 * 1024]).unwrap());
 	f.set_vorbis_comments(tag);
 
-	f.save_to(&mut file).unwrap();
+	f.save_to(&mut file, WriteOptions::default()).unwrap();
 	file.rewind().unwrap();
 	assert_eq!(file.metadata().unwrap().len(), 12862);
-	f.save_to(&mut file).unwrap();
+	f.save_to(&mut file, WriteOptions::default()).unwrap();
 	assert_eq!(file.metadata().unwrap().len(), 12862);
 }
 
@@ -252,7 +253,7 @@ fn test_save_multiple_values() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.push(String::from("ARTIST"), String::from("artist 2"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -347,7 +348,10 @@ fn test_properties() {
 		f.set_vorbis_comments(tag.clone());
 
 		file.rewind().unwrap();
-		f.vorbis_comments().unwrap().save_to(&mut file).unwrap();
+		f.vorbis_comments()
+			.unwrap()
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -405,7 +409,7 @@ fn test_zero_sized_padding_2() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("ABC"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -415,7 +419,7 @@ fn test_zero_sized_padding_2() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from_utf8(vec![b'X'; 3067]).unwrap());
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -435,7 +439,7 @@ fn test_shrink_padding() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from_utf8(vec![b'X'; 128 * 1024]).unwrap());
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		assert!(file.metadata().unwrap().len() > 128 * 1024);
 	}
 	file.rewind().unwrap();
@@ -446,7 +450,7 @@ fn test_shrink_padding() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("0123456789"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		assert!(file.metadata().unwrap().len() < 8 * 1024);
 	}
 }
@@ -471,7 +475,7 @@ fn test_empty_id3v2() {
 		file.rewind().unwrap();
 
 		f.set_id3v2(Id3v2Tag::default());
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -494,7 +498,7 @@ fn test_strip_tags() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("XiphComment Title"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -507,7 +511,7 @@ fn test_strip_tags() {
 			Some("XiphComment Title")
 		);
 		f.remove_vorbis_comments();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -533,7 +537,7 @@ fn test_remove_xiph_field() {
 		f.vorbis_comments_mut()
 			.unwrap()
 			.set_title(String::from("XiphComment Title"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -545,7 +549,7 @@ fn test_remove_xiph_field() {
 			Some("XiphComment Title")
 		);
 		let _ = f.vorbis_comments_mut().unwrap().remove("TITLE");
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -566,7 +570,7 @@ fn test_empty_seek_table() {
 		let mut tag = VorbisComments::default();
 		tag.set_title(String::from("XiphComment Title"));
 		f.set_vorbis_comments(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -620,7 +624,7 @@ fn test_picture_stored_after_comment() {
 		let mut tag = VorbisComments::default();
 		tag.set_title(String::from("Title"));
 		f.set_vorbis_comments(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
