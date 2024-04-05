@@ -4,7 +4,7 @@ use crate::util::get_file;
 use std::io::Seek;
 
 use lofty::ogg::OpusFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_audio_properties() {
@@ -38,7 +38,7 @@ fn test_write_comments() {
 		file.rewind().unwrap();
 		f.vorbis_comments_mut()
 			.set_artist(String::from("Your Tester"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
