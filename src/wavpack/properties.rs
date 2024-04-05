@@ -215,6 +215,12 @@ where
 		offset += u64::from(block_header.block_size + 8);
 	}
 
+	// TODO: Support unknown sample counts in WavPack
+	if total_samples == !0 {
+		log::warn!("Unable to calculate duration, unknown sample counts are not yet supported");
+		return Ok(properties);
+	}
+	
 	if total_samples == 0 || properties.sample_rate == 0 {
 		if parse_mode == ParsingMode::Strict {
 			decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)")
