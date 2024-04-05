@@ -6,8 +6,8 @@ use std::io::{Read, Seek};
 use lofty::error::ErrorKind;
 use lofty::resolve::FileResolver;
 use lofty::{
-	Accessor, AudioFile, FileProperties, FileType, ParseOptions, Tag, TagExt, TagType, TaggedFile,
-	TaggedFileExt,
+	Accessor, AudioFile, FileProperties, FileType, GlobalOptions, ParseOptions, Tag, TagExt,
+	TagType, TaggedFile, TaggedFileExt, WriteOptions,
 };
 
 fn file_ref_save(path: &str, expected_file_type: FileType) {
@@ -33,7 +33,7 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 		tag.set_comment(String::from("a comment"));
 		tag.set_track(5);
 		tag.set_year(2020);
-		tag.save_to(&mut file).unwrap();
+		tag.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -55,7 +55,7 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 		tag.set_comment(String::from("another comment"));
 		tag.set_track(7);
 		tag.set_year(2080);
-		tag.save_to(&mut file).unwrap();
+		tag.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -214,72 +214,76 @@ fn test_default_file_extensions() {
 	// Marker test, Lofty does not replicate this API
 }
 
-// TODO: We need to check resolvers *first* and then resort to our default implementations
-#[test]
-#[ignore]
-fn test_file_resolver() {
-	{
-		let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
-		assert_eq!(file.file_type(), FileType::Mpeg);
-	}
+use rusty_fork::rusty_fork_test;
 
-	struct DummyResolver;
-	impl Into<TaggedFile> for DummyResolver {
-		fn into(self) -> TaggedFile {
-			TaggedFile::new(FileType::Vorbis, FileProperties::default(), Vec::new())
-		}
-	}
+rusty_fork_test! {
+	#[test]
+	fn test_file_resolver() {
+		lofty::apply_global_options(GlobalOptions::new().use_custom_resolvers(true));
 
-	impl AudioFile for DummyResolver {
-		type Properties = ();
-
-		fn read_from<R>(_: &mut R, _: ParseOptions) -> lofty::Result<Self>
-		where
-			R: Read + Seek,
-			Self: Sized,
 		{
-			Ok(Self)
+			let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
+			assert_eq!(file.file_type(), FileType::Mpeg);
 		}
 
-		fn save_to(&self, _: &mut File) -> lofty::Result<()> {
-			unimplemented!()
+		struct DummyResolver;
+		impl Into<TaggedFile> for DummyResolver {
+			fn into(self) -> TaggedFile {
+				TaggedFile::new(FileType::Vorbis, FileProperties::default(), Vec::new())
+			}
 		}
 
-		fn properties(&self) -> &Self::Properties {
-			unimplemented!()
+		impl AudioFile for DummyResolver {
+			type Properties = ();
+
+			fn read_from<R>(_: &mut R, _: ParseOptions) -> lofty::Result<Self>
+			where
+				R: Read + Seek,
+				Self: Sized,
+			{
+				Ok(Self)
+			}
+
+			fn save_to(&self, _: &mut File, _: WriteOptions) -> lofty::Result<()> {
+				unimplemented!()
+			}
+
+			fn properties(&self) -> &Self::Properties {
+				unimplemented!()
+			}
+
+			fn contains_tag(&self) -> bool {
+				unimplemented!()
+			}
+
+			fn contains_tag_type(&self, _: TagType) -> bool {
+				unimplemented!()
+			}
 		}
 
-		fn contains_tag(&self) -> bool {
-			unimplemented!()
+		impl FileResolver for DummyResolver {
+			fn extension() -> Option<&'static str> {
+				Some("mp3")
+			}
+
+			fn primary_tag_type() -> TagType {
+				unimplemented!()
+			}
+
+			fn supported_tag_types() -> &'static [TagType] {
+				unimplemented!()
+			}
+
+			fn guess(_: &[u8]) -> Option<FileType> {
+				Some(FileType::Vorbis)
+			}
 		}
 
-		fn contains_tag_type(&self, _: TagType) -> bool {
-			unimplemented!()
+		lofty::resolve::register_custom_resolver::<DummyResolver>("Dummy");
+
+		{
+			let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
+			assert_eq!(file.file_type(), FileType::Vorbis);
 		}
-	}
-
-	impl FileResolver for DummyResolver {
-		fn extension() -> Option<&'static str> {
-			Some("mp3")
-		}
-
-		fn primary_tag_type() -> TagType {
-			unimplemented!()
-		}
-
-		fn supported_tag_types() -> &'static [TagType] {
-			unimplemented!()
-		}
-
-		fn guess(_: &[u8]) -> Option<FileType> {
-			Some(FileType::Vorbis)
-		}
-	}
-
-	lofty::resolve::register_custom_resolver::<DummyResolver>("Dummy");
-
-	{
-		let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
-		assert_eq!(file.file_type(), FileType::Vorbis);
 	}
 }

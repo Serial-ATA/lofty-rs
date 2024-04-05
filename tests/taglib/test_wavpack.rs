@@ -7,7 +7,7 @@ use std::io::Seek;
 use lofty::ape::ApeTag;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::wavpack::WavPackFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_no_length_properties() {
@@ -96,7 +96,7 @@ fn test_strip_and_properties() {
 		id3v1.set_title(String::from("ID3v1"));
 		f.set_id3v1(id3v1);
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -124,11 +124,11 @@ fn test_repeated_save() {
 		let mut ape = ApeTag::default();
 		ape.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 		f.set_ape(ape);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
 		f.ape_mut().unwrap().set_title(String::from("0"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
 		let mut id3v1 = Id3v1Tag::default();
@@ -137,7 +137,7 @@ fn test_repeated_save() {
 		f.ape_mut().unwrap().set_title(String::from(
 			"01234 56789 ABCDE FGHIJ 01234 56789 ABCDE FGHIJ 01234 56789",
 		));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{

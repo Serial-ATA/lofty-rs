@@ -5,7 +5,7 @@ use std::io::Seek;
 
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::{AiffCompressionType, AiffFile};
-use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe};
+use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe, WriteOptions};
 
 #[test]
 fn test_aiff_properties() {
@@ -65,7 +65,7 @@ fn test_save_id3v2() {
 		id3v2.set_title("TitleXXX".to_string());
 		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
-		tfile.save_to(&mut file).unwrap();
+		tfile.save_to(&mut file, WriteOptions::default()).unwrap();
 		assert!(tfile.contains_tag_type(lofty::TagType::Id3v2));
 	}
 
@@ -81,7 +81,7 @@ fn test_save_id3v2() {
 		id3v2.remove_title();
 		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
-		tfile.save_to(&mut file).unwrap();
+		tfile.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 
 	file.rewind().unwrap();

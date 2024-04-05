@@ -5,7 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use lofty::ogg::VorbisFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_simple() {
@@ -17,7 +17,7 @@ fn test_simple() {
 
 		f.vorbis_comments_mut()
 			.set_artist(String::from("The Artist"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -42,7 +42,7 @@ fn test_split_packets2() {
 		file.rewind().unwrap();
 
 		f.vorbis_comments_mut().set_title(text.clone());
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -52,7 +52,7 @@ fn test_split_packets2() {
 		assert_eq!(f.vorbis_comments().title().as_deref(), Some(&*text));
 
 		f.vorbis_comments_mut().set_title(String::from("ABCDE"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -99,7 +99,7 @@ fn test_page_checksum() {
 
 		f.vorbis_comments_mut()
 			.set_title(String::from("The Artist"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x50)).unwrap();
 		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0x3D3BD92D);
@@ -111,7 +111,7 @@ fn test_page_checksum() {
 
 		f.vorbis_comments_mut()
 			.set_title(String::from("The Artist 2"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x50)).unwrap();
 		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0xD985291C);
@@ -130,7 +130,7 @@ fn test_page_granule_position() {
 		// check if the granule position is -1 indicating that no packets
 		// finish on this page.
 		f.vorbis_comments_mut().set_comment("A".repeat(70000));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x3A)).unwrap();
 		let mut buf = [0; 6];
@@ -147,7 +147,7 @@ fn test_page_granule_position() {
 		// check if the granule position is zero.
 		f.vorbis_comments_mut()
 			.set_comment(String::from("A small comment"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x3A)).unwrap();
 		let mut buf = [0; 6];
