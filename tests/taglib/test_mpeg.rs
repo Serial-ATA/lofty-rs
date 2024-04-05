@@ -8,7 +8,7 @@ use lofty::ape::ApeTag;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::mpeg::MpegFile;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_audio_properties_xing_header_cbr() {
@@ -117,7 +117,7 @@ fn test_save_id3v24() {
 		tag.set_title(xxx.clone());
 		tag.set_artist(String::from("Artist A"));
 		f.set_id3v2(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -150,7 +150,7 @@ fn test_save_id3v23() {
 		tag.set_title(xxx.clone());
 		tag.set_artist(String::from("Artist A"));
 		f.set_id3v2(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -196,7 +196,7 @@ fn test_strip_and_properties() {
 		let mut id3v1 = Id3v1Tag::default();
 		id3v1.set_title(String::from("ID3v1"));
 		f.set_id3v1(id3v1);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -240,12 +240,12 @@ fn test_repeated_save_3() {
 			let mut ape = ApeTag::default();
 			ape.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 			f.set_ape(ape);
-			f.save_to(&mut file).unwrap();
+			f.save_to(&mut file, WriteOptions::default()).unwrap();
 		}
 		file.rewind().unwrap();
 		{
 			f.ape_mut().unwrap().set_title(String::from("0"));
-			f.save_to(&mut file).unwrap();
+			f.save_to(&mut file, WriteOptions::default()).unwrap();
 		}
 		{
 			let mut id3v1 = Id3v1Tag::default();
@@ -257,7 +257,7 @@ fn test_repeated_save_3() {
 			f.ape_mut().unwrap().set_title(String::from(
 				"01234 56789 ABCDE FGHIJ 01234 56789 ABCDE FGHIJ 01234 56789",
 			));
-			f.save_to(&mut file).unwrap();
+			f.save_to(&mut file, WriteOptions::default()).unwrap();
 		}
 	}
 	file.rewind().unwrap();
@@ -286,7 +286,6 @@ fn test_empty_ape() {
 	// Marker test, Lofty accepts empty strings as valid values
 }
 
-// TODO: We can't find an ID3v2 tag after saving with garbage
 #[test]
 fn test_ignore_garbage() {
 	let mut file = temp_file!("tests/taglib/data/garbage.mp3");
@@ -298,7 +297,7 @@ fn test_ignore_garbage() {
 
 		assert_eq!(f.id3v2().unwrap().title().as_deref(), Some("Title A"));
 		f.id3v2_mut().unwrap().set_title(String::from("Title B"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
