@@ -6,7 +6,7 @@ use std::time::Duration;
 
 use lofty::ape::{ApeFile, ApeItem, ApeTag};
 use lofty::id3::v1::Id3v1Tag;
-use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, Probe, TagExt};
+use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, Probe, TagExt, WriteOptions};
 
 fn test_399(path: &str) {
 	let f = get_file::<ApeFile>(path);
@@ -106,7 +106,9 @@ fn test_strip_and_properties() {
 		ape_file.set_id3v1(id3v1_tag);
 
 		file.rewind().unwrap();
-		ape_file.save_to(&mut file).unwrap();
+		ape_file
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	{
 		file.rewind().unwrap();
@@ -337,7 +339,11 @@ fn test_properties() {
 		ape_file.set_ape(tag.clone());
 
 		file.rewind().unwrap();
-		ape_file.ape().unwrap().save_to(&mut file).unwrap();
+		ape_file
+			.ape()
+			.unwrap()
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	{
 		file.rewind().unwrap();
@@ -358,11 +364,15 @@ fn test_repeated_save() {
 		let mut ape_tag = ApeTag::default();
 		ape_tag.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 		ape_file.set_ape(ape_tag);
-		ape_file.save_to(&mut file).unwrap();
+		ape_file
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 		file.rewind().unwrap();
 
 		ape_file.ape_mut().unwrap().set_title(String::from("0"));
-		ape_file.save_to(&mut file).unwrap();
+		ape_file
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 		file.rewind().unwrap();
 
 		let mut id3v1_tag = Id3v1Tag::default();
@@ -371,7 +381,9 @@ fn test_repeated_save() {
 		ape_file.ape_mut().unwrap().set_title(String::from(
 			"01234 56789 ABCDE FGHIJ 01234 56789 ABCDE FGHIJ 01234 56789",
 		));
-		ape_file.save_to(&mut file).unwrap();
+		ape_file
+			.save_to(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	{
 		file.rewind().unwrap();

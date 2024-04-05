@@ -5,7 +5,10 @@ use std::borrow::Cow;
 use std::io::{Read, Seek};
 
 use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst, Mp4Codec, Mp4File};
-use lofty::{Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureType, TagExt, TagType};
+use lofty::{
+	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureType, TagExt, TagType,
+	WriteOptions,
+};
 
 #[test]
 fn test_properties_aac() {
@@ -119,7 +122,7 @@ fn test_has_tag() {
 		let mut tag = Ilst::default();
 		tag.set_title(String::from("TITLE"));
 		f.set_ilst(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -151,7 +154,7 @@ fn test_update_stco() {
 
 		// Find and collect all `stco` offsets
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -181,7 +184,7 @@ fn test_freeform() {
 			},
 			AtomData::UTF8(String::from("Bar")),
 		));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -203,7 +206,7 @@ fn test_freeform() {
 				.next(),
 			Some(&AtomData::UTF8(String::from("Bar")))
 		);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 }
 
@@ -229,7 +232,7 @@ fn test_save_existing_when_ilst_is_last() {
 		);
 		assert_eq!(ilst.artist().as_deref(), Some("Pearl Jam"));
 		ilst.set_comment(String::from("foo"));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -300,7 +303,7 @@ fn test_covr_write() {
 			None,
 			b"foo".to_vec(),
 		));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -382,9 +385,9 @@ fn test_repeated_save() {
 	tag.set_title(String::from("0123456789"));
 	f.set_ilst(tag);
 
-	f.save_to(&mut file).unwrap();
+	f.save_to(&mut file, WriteOptions::default()).unwrap();
 	file.rewind().unwrap();
-	f.save_to(&mut file).unwrap();
+	f.save_to(&mut file, WriteOptions::default()).unwrap();
 	file.rewind().unwrap();
 
 	let mut file_bytes = Vec::new();
@@ -425,7 +428,7 @@ fn test_remove_metadata() {
 		assert!(tag.is_empty());
 		tag.set_title(String::from("TITLE"));
 		f.set_ilst(tag);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{

@@ -6,7 +6,7 @@ use std::io::Seek;
 use lofty::ape::ApeTag;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::musepack::{MpcFile, MpcProperties};
-use lofty::{Accessor, AudioFile, ParseOptions, Probe, TagExt};
+use lofty::{Accessor, AudioFile, ParseOptions, Probe, TagExt, WriteOptions};
 
 #[test]
 fn test_properties_sv8() {
@@ -131,7 +131,7 @@ fn test_strip_and_properties() {
 		let mut id3v1 = Id3v1Tag::new();
 		id3v1.set_title(String::from("ID3v1"));
 		f.set_id3v1(id3v1);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -142,7 +142,7 @@ fn test_strip_and_properties() {
 		f.ape_mut().unwrap().clear();
 		assert_eq!(f.id3v1().unwrap().title().as_deref(), Some("ID3v1"));
 		f.id3v1_mut().unwrap().clear();
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -168,12 +168,12 @@ fn test_repeated_save() {
 		ape.set_title(String::from("01234 56789 ABCDE FGHIJ"));
 		f.set_ape(ape);
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
 		f.ape_mut().unwrap().set_title(String::from("0"));
 
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
 		let mut id3v1 = Id3v1Tag::new();
@@ -182,7 +182,7 @@ fn test_repeated_save() {
 		f.ape_mut().unwrap().set_title(String::from(
 			"01234 56789 ABCDE FGHIJ 01234 56789 ABCDE FGHIJ 01234 56789",
 		));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{

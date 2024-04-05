@@ -4,7 +4,7 @@ use std::io::{Seek, SeekFrom};
 
 use lofty::flac::FlacFile;
 use lofty::ogg::VorbisComments;
-use lofty::{Accessor, AudioFile, ParseOptions};
+use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 // TODO: We don't support FLAC in OGA (#172)
 #[test]
@@ -19,7 +19,7 @@ fn test_framing_bit() {
 		let mut vorbis_comments = VorbisComments::new();
 		vorbis_comments.set_artist(String::from("The Artist"));
 		f.set_vorbis_comments(vorbis_comments);
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{

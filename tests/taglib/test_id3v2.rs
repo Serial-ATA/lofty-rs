@@ -15,7 +15,7 @@ use lofty::id3::v2::{
 use lofty::mpeg::MpegFile;
 use lofty::{
 	Accessor, AudioFile, MimeType, ParseOptions, ParsingMode, Picture, PictureType, TagExt,
-	TextEncoding,
+	TextEncoding, WriteOptions,
 };
 
 #[test]
@@ -317,7 +317,7 @@ fn test_popm_from_file() {
 			Frame::new("POPM", FrameValue::Popularimeter(f), FrameFlags::default()).unwrap(),
 		);
 		foo.set_id3v2(tag);
-		foo.save_to(&mut file).unwrap();
+		foo.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -839,7 +839,7 @@ fn test_save_utf16_comment() {
 			.unwrap(),
 		);
 		foo.set_id3v2(tag);
-		foo.save_to(&mut file).unwrap();
+		foo.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -995,7 +995,7 @@ fn test_delete_frame() {
 
 		let t = f.id3v2_mut().unwrap();
 		let _ = t.remove(&FrameId::Valid(Cow::Borrowed("TCON")));
-		f.save_to(&mut file).unwrap();
+		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -1016,7 +1016,7 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 		let mut tag = Id3v2Tag::new();
 		tag.set_artist(String::from("Artist"));
 		foo.set_id3v2(tag);
-		foo.save_to(&mut file).unwrap();
+		foo.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -1028,7 +1028,7 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 			.unwrap()
 			.remove(&FrameId::Valid(Cow::Borrowed("TPE1")));
 
-		bar.save_to(&mut file).unwrap();
+		bar.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
 
