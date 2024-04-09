@@ -36,13 +36,13 @@ hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683d
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.9.0"
-
-# Pretty heavy dependency, we don't want this compiling for test/doc runs
-[target.'cfg(bench)'.dev-dependencies]
-criterion = { version = "0.5.1", features = ["html_reports"] }
+iai-callgrind = "0.10.2"
 
 [lib]
 bench = false
+
+[profile.bench]
+debug = true
 
 [[bench]]
 name    = "read_file"
