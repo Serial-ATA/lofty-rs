@@ -2,8 +2,7 @@ use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeade
 use crate::error::Result;
 use crate::math::RoundedDivision;
 use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult, HEADER_MASK};
-use crate::properties::FileProperties;
-use crate::ChannelMask;
+use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

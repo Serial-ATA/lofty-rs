@@ -429,7 +429,7 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 
 	let properties_field_ty = &properties_field.ty;
 	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
-		struct _AssertIntoFileProperties where #properties_field_ty: ::std::convert::Into<::lofty::FileProperties>;
+		struct _AssertIntoFileProperties where #properties_field_ty: ::std::convert::Into<::lofty::properties::FileProperties>;
 	};
 
 	let struct_name = &file.struct_info.name;
@@ -537,7 +537,7 @@ fn generate_from_taggedfile_impl(file: &LoftyFile) -> proc_macro2::TokenStream {
 
 				::lofty::TaggedFile::new(
 					#file_type_variant,
-					::lofty::FileProperties::from(input.properties),
+					::lofty::properties::FileProperties::from(input.properties),
 					{
 						let mut tags: Vec<::lofty::Tag> = Vec::new();
 						#( #conditions )*

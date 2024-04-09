@@ -166,7 +166,7 @@ pub mod musepack;
 pub mod ogg;
 pub(crate) mod picture;
 mod probe;
-pub(crate) mod properties;
+pub mod properties;
 pub mod resolve;
 pub(crate) mod tag;
 mod traits;
@@ -181,7 +181,6 @@ pub use crate::write_options::WriteOptions;
 
 pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
-pub use crate::properties::{ChannelMask, FileProperties};
 pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;

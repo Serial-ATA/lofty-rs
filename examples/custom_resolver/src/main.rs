@@ -1,8 +1,9 @@
 use lofty::ape::ApeTag;
 use lofty::error::Result as LoftyResult;
 use lofty::id3::v2::Id3v2Tag;
+use lofty::properties::FileProperties;
 use lofty::resolve::FileResolver;
-use lofty::{FileProperties, FileType, GlobalOptions, ParseOptions, TagType};
+use lofty::{FileType, GlobalOptions, ParseOptions, TagType};
 use lofty_attr::LoftyFile;
 
 use std::fs::File;
