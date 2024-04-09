@@ -86,7 +86,7 @@ impl FileProperties {
 	}
 }
 
-use std::ops::{Add, BitAnd, BitOr};
+use std::ops::{BitAnd, BitOr};
 
 macro_rules! define_channels {
 	([
