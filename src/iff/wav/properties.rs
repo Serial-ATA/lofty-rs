@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::macros::decode_err;
+use crate::math::RoundedDivision;
 use crate::properties::FileProperties;
 use crate::ChannelMask;
 
@@ -166,36 +167,35 @@ pub(super) fn read_properties(
 		total_samples = 0
 	}
 
-	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && total_samples > 0 {
-		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
+	let duration;
+	let overall_bitrate;
+	let audio_bitrate;
+	if sample_rate > 0 && total_samples > 0 {
+		let length = (u64::from(total_samples) * 1000).div_round(u64::from(sample_rate));
 		if length == 0 {
-			(Duration::ZERO, 0, 0)
+			duration = Duration::ZERO;
+			overall_bitrate = 0;
+			audio_bitrate = 0;
 		} else {
-			let overall_bitrate = ((file_length * 8) / length) as u32;
-			let audio_bitrate = ((u64::from(stream_len) * 8) / length) as u32;
-
-			(
-				Duration::from_millis(length),
-				overall_bitrate,
-				audio_bitrate,
-			)
+			duration = Duration::from_millis(length);
+			overall_bitrate = (file_length * 8).div_round(length) as u32;
+			audio_bitrate = (u64::from(stream_len) * 8).div_round(length) as u32;
 		}
 	} else if stream_len > 0 && bytes_per_second > 0 {
-		let length = (u64::from(stream_len) * 1000) / u64::from(bytes_per_second);
+		let length = (u64::from(stream_len) * 1000).div_round(u64::from(bytes_per_second));
 		if length == 0 {
-			(Duration::ZERO, 0, 0)
+			duration = Duration::ZERO;
+			overall_bitrate = 0;
+			audio_bitrate = 0;
 		} else {
-			let overall_bitrate = ((file_length * 8) / length) as u32;
-			let audio_bitrate = (bytes_per_second * 8) / 1000;
-
-			(
-				Duration::from_millis(length),
-				overall_bitrate,
-				audio_bitrate,
-			)
+			duration = Duration::from_millis(length);
+			overall_bitrate = (file_length * 8).div_round(length) as u32;
+			audio_bitrate = (bytes_per_second * 8).div_round(1000);
 		}
 	} else {
-		(Duration::ZERO, 0, 0)
+		duration = Duration::ZERO;
+		overall_bitrate = 0;
+		audio_bitrate = 0;
 	};
 
 	Ok(WavProperties {
