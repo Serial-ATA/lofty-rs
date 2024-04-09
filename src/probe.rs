@@ -22,7 +22,7 @@ use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
 /// Options to control how Lofty parses a file
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct ParseOptions {
 	pub(crate) read_properties: bool,

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
 - **ID3v2**: Fix panic when reading an RVA2 frame with a peak larger than 248 bits ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/364))
 - **WAV**: Length and bitrate values are properly rounded ([PR](https://github.com/Serial-ATA/lofty-rs/pull/367))
+- **ParseOptions**: No longer derives `{PartialOrd, Ord}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/369))
 
 ## [0.18.2] - 2024-01-23
 
