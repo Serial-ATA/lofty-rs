@@ -5,7 +5,7 @@ use lofty::iff::aiff::AIFFTextChunks;
 use lofty::iff::wav::RIFFInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
-use lofty::{Accessor, MimeType, Picture, PictureType, TagExt};
+use lofty::{Accessor, MimeType, Picture, PictureType, TagExt, WriteOptions};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -29,7 +29,7 @@ macro_rules! bench_tag_write {
 					$tag_.set_track(1);
 					$tag_.set_genre(String::from("Electronic"));
 					$extra_block
-					$tag_.dump_to(&mut v).unwrap();
+					$tag_.dump_to(&mut v, WriteOptions::default()).unwrap();
 				})
 			);
 		)+
