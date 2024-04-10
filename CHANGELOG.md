@@ -12,9 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	  Lofty writes tags. These are best used as global user-configurable options, as most options will
 	  not apply to all files. The defaults are set to be as safe as possible,
 	  see [here](https://docs.rs/lofty/latest/lofty/struct.WriteOptions.html#impl-Default-for-WriteOptions).
-- **ChannelMask** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
-  - `BitAnd` and `BitOr` implementations
-  - Associated constants for common channels, ex. `ChannelMask::FRONT_LEFT`
+- **ChannelMask**
+  - `BitAnd` and `BitOr` implementations ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
+  - Associated constants for common channels, ex. `ChannelMask::FRONT_LEFT` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
+  - `ChannelMask::from_{mp4, opus}_channels` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/373))
 - **Opus**: `OpusProperties` now contains the channel mask ([PR](https://github.com/Serial-ATA/lofty-rs/pull/373))
 - **AAC**: `AacProperties` now contains the channel mask ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
 
