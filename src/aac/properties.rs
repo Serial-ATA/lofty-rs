@@ -1,7 +1,7 @@
 use crate::aac::header::ADTSHeader;
 use crate::mp4::AudioObjectType;
 use crate::mpeg::header::MpegVersion;
-use crate::properties::FileProperties;
+use crate::properties::{ChannelMask, FileProperties};
 
 use std::time::Duration;
 
@@ -15,6 +15,7 @@ pub struct AACProperties {
 	pub(crate) audio_bitrate: u32,
 	pub(crate) sample_rate: u32,
 	pub(crate) channels: u8,
+	pub(crate) channel_mask: Option<ChannelMask>,
 	pub(crate) copyright: bool,
 	pub(crate) original: bool,
 }
@@ -67,6 +68,11 @@ impl AACProperties {
 		self.channels
 	}
 
+	/// Channel mask
+	pub fn channel_mask(&self) -> Option<ChannelMask> {
+		self.channel_mask
+	}
+
 	/// Whether the audio is copyrighted
 	pub fn copyright(&self) -> bool {
 		self.copyright
@@ -87,7 +93,7 @@ impl From<AACProperties> for FileProperties {
 			sample_rate: Some(input.sample_rate),
 			bit_depth: None,
 			channels: Some(input.channels),
-			channel_mask: None,
+			channel_mask: input.channel_mask,
 		}
 	}
 }
@@ -101,6 +107,17 @@ pub(super) fn read_properties(
 	properties.audio_object_type = first_frame.audio_object_ty;
 	properties.sample_rate = first_frame.sample_rate;
 	properties.channels = first_frame.channels;
+
+	match ChannelMask::from_mp4_channels(properties.channels) {
+		Some(mask) => properties.channel_mask = Some(mask),
+		None => {
+			log::warn!(
+				"Unable to create channel mask, invalid channel count: {}",
+				properties.channels
+			);
+		},
+	}
+
 	properties.copyright = first_frame.copyright;
 	properties.original = first_frame.original;
 

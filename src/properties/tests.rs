@@ -32,6 +32,7 @@ const AAC_PROPERTIES: AACProperties = AACProperties {
 	audio_bitrate: 117,                    // 9 less than FFmpeg reports
 	sample_rate: 48000,
 	channels: 2,
+	channel_mask: Some(ChannelMask::stereo()),
 	copyright: false,
 	original: false,
 };

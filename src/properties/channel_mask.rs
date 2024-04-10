@@ -119,6 +119,41 @@ impl ChannelMask {
 			_ => None,
 		}
 	}
+
+	/// Create a channel mask from the number of channels in an MP4 file
+	///
+	/// See <https://wiki.multimedia.cx/index.php/MPEG-4_Audio#Channel_Configurations> for the mapping.
+	pub const fn from_mp4_channels(channels: u8) -> Option<Self> {
+		match channels {
+			1 => Some(Self::mono()),
+			2 => Some(Self::stereo()),
+			3 => Some(Self::linear_surround()),
+			4 => Some(Self(
+				Self::FRONT_LEFT.bits()
+					| Self::FRONT_RIGHT.bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits(),
+			)),
+			5 => Some(Self(
+				Self::linear_surround().bits() | Self::BACK_LEFT.bits() | Self::BACK_RIGHT.bits(),
+			)),
+			6 => Some(Self(
+				Self::linear_surround().bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits()
+					| Self::LOW_FREQUENCY.bits(),
+			)),
+			7 => {
+				Some(Self(
+					Self::linear_surround().bits()
+						| Self::SIDE_LEFT.bits() | Self::SIDE_RIGHT.bits()
+						| Self::BACK_LEFT.bits() | Self::BACK_RIGHT.bits()
+						| Self::LOW_FREQUENCY.bits(),
+				))
+			},
+			_ => None,
+		}
+	}
 }
 
 impl BitOr for ChannelMask {
