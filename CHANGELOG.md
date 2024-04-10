@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ChannelMask** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
   - `BitAnd` and `BitOr` implementations
   - Associated constants for common channels, ex. `ChannelMask::FRONT_LEFT`
+- **Opus**: `OpusProperties` now contains the channel mask ([PR](https://github.com/Serial-ATA/lofty-rs/pull/373))
+- **AAC**: `AacProperties` now contains the channel mask ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
 
 ### Changed
 - **Properties**: `FileProperties` and `ChannelMask` have been moved from the root to the new `lofty::properties`
