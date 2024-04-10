@@ -1,5 +1,6 @@
 use lofty::flac::FlacFile;
-use lofty::{Accessor, AudioFile, ParseOptions, ParsingMode};
+use lofty::prelude::*;
+use lofty::{ParseOptions, ParsingMode};
 
 use std::fs::File;
 use std::io::Seek;

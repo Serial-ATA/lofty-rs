@@ -1,5 +1,6 @@
 use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
+use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
 use crate::iff::aiff::{AiffFile, AiffProperties};
 use crate::iff::wav::{WavFile, WavFormat, WavProperties};
@@ -15,7 +16,6 @@ use crate::ogg::{
 use crate::probe::ParseOptions;
 use crate::properties::ChannelMask;
 use crate::wavpack::{WavPackFile, WavPackProperties};
-use crate::AudioFile;
 
 use std::fs::File;
 use std::time::Duration;

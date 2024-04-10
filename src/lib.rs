@@ -174,21 +174,32 @@ mod util;
 pub mod wavpack;
 mod write_options;
 
-pub use crate::error::{LoftyError, Result};
-
 pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
 pub use crate::write_options::WriteOptions;
 
-pub use crate::file::{AudioFile, BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
+pub use crate::file::{BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;
-
-pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 
 pub use picture::PictureInformation;
 
 pub use global_options::{apply_global_options, GlobalOptions};
 
 pub use lofty_attr::LoftyFile;
+
+pub mod prelude {
+	//! A prelude for commonly used items in the library.
+	//!
+	//! This module is intended to be glob imported.
+	//!
+	//! ```rust
+	//! use lofty::prelude::*;
+	//! ```
+
+	pub use crate::error::LoftyError;
+	pub use crate::file::{AudioFile, TaggedFileExt};
+	pub use crate::tag::item::ItemKey;
+	pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+}

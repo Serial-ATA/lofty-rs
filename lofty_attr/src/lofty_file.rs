@@ -178,7 +178,7 @@ impl LoftyFile {
 				let name = format_ident!("_AssertTagExt{}", i);
 				let field_ty = &f.ty;
 				quote_spanned! {field_ty.span()=>
-					struct #name where #field_ty: lofty::TagExt;
+					struct #name where #field_ty: ::lofty::prelude::TagExt;
 				}
 			});
 
@@ -435,7 +435,7 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 	let struct_name = &file.struct_info.name;
 	let ret = quote! {
 		#assert_properties_impl
-		impl ::lofty::AudioFile for #struct_name {
+		impl ::lofty::prelude::AudioFile for #struct_name {
 			type Properties = #properties_field_ty;
 
 			fn read_from<R>(reader: &mut R, parse_options: ::lofty::ParseOptions) -> ::lofty::error::Result<Self>
@@ -446,7 +446,7 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 			}
 
 			fn save_to(&self, file: &mut ::std::fs::File, write_options: ::lofty::WriteOptions) -> ::lofty::error::Result<()> {
-				use ::lofty::TagExt as _;
+				use ::lofty::prelude::TagExt as _;
 				use ::std::io::Seek as _;
 				#save_to_body
 			}
@@ -533,7 +533,7 @@ fn generate_from_taggedfile_impl(file: &LoftyFile) -> proc_macro2::TokenStream {
 	quote! {
 		impl ::std::convert::From<#struct_name> for ::lofty::TaggedFile {
 			fn from(input: #struct_name) -> Self {
-				use ::lofty::TaggedFileExt as _;
+				use ::lofty::prelude::TaggedFileExt as _;
 
 				::lofty::TaggedFile::new(
 					#file_type_variant,

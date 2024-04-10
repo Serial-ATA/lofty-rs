@@ -1,10 +1,13 @@
+use lofty::error::Result;
+use lofty::iff::wav::WavFile;
+use lofty::prelude::*;
+use lofty::ParseOptions;
+
+use hound::WavReader;
+
 use std::fs;
 use std::fs::File;
 use std::path::Path;
-
-use hound::WavReader;
-use lofty::iff::wav::WavFile;
-use lofty::{AudioFile, ParseOptions, Result};
 
 fn get_properties(path: &Path) -> Result<<WavFile as AudioFile>::Properties> {
 	let mut f = File::open(path).unwrap();

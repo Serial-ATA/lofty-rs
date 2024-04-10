@@ -1,4 +1,5 @@
-use lofty::{Accessor, Probe, Tag, TagExt, TaggedFileExt, WriteOptions};
+use lofty::prelude::*;
+use lofty::{Probe, Tag, TaggedFileExt, WriteOptions};
 
 use structopt::StructOpt;
 

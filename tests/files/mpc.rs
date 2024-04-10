@@ -1,9 +1,10 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::musepack::MpcFile;
+use lofty::prelude::*;
 use lofty::{
-	AudioFile, FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType,
-	TaggedFile, TaggedFileExt,
+	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagItem, TagType, TaggedFile, TaggedFileExt,
 };
+
 use std::io::{Seek, Write};
 
 // Marker test so IntelliJ Rust recognizes this as a test module

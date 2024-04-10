@@ -484,9 +484,10 @@ where
 #[cfg(test)]
 mod tests {
 	use crate::iff::aiff::{AIFFTextChunks, Comment};
-	use crate::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType, WriteOptions};
-
+	use crate::prelude::*;
 	use crate::probe::ParseOptions;
+	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType, WriteOptions};
+
 	use std::io::Cursor;
 
 	#[test]

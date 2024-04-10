@@ -348,11 +348,13 @@ pub(crate) fn tagitems_into_riff<'a>(
 
 #[cfg(test)]
 mod tests {
-	use crate::iff::wav::RIFFInfoList;
-	use crate::{Tag, TagExt, TagType, WriteOptions};
-
 	use crate::iff::chunk::Chunks;
+	use crate::iff::wav::RIFFInfoList;
+	use crate::prelude::*;
+	use crate::{Tag, TagType, WriteOptions};
+
 	use byteorder::LittleEndian;
+
 	use std::io::Cursor;
 
 	#[test]
