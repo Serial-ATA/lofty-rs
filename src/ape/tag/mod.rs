@@ -544,9 +544,10 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
-	use crate::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType, WriteOptions};
-
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
+	use crate::prelude::*;
+	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType, WriteOptions};
+
 	use std::io::Cursor;
 
 	#[test]

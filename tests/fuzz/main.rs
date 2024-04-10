@@ -1,4 +1,6 @@
-use lofty::{AudioFile, ParseOptions};
+use lofty::prelude::*;
+use lofty::ParseOptions;
+
 use std::io::Cursor;
 use std::path::Path;
 use std::thread;

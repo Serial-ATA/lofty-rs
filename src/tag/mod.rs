@@ -663,8 +663,10 @@ impl TagType {
 #[cfg(test)]
 mod tests {
 	use super::try_parse_year;
+	use crate::prelude::*;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Accessor, Picture, PictureType, Tag, TagExt, TagType, WriteOptions};
+	use crate::{Picture, PictureType, Tag, TagType, WriteOptions};
+
 	use std::io::{Seek, Write};
 	use std::process::Command;
 

@@ -1,8 +1,10 @@
 use crate::{set_artist, temp_file, verify_artist};
+use lofty::prelude::*;
 use lofty::{
-	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType, TaggedFileExt,
+	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagItem, TagType, TaggedFileExt,
 	WriteOptions,
 };
+
 use std::io::{Seek, Write};
 
 // The tests for OGG Opus/Vorbis are nearly identical
@@ -151,7 +153,6 @@ fn remove(path: &str, tag_type: TagType) {
 #[test]
 fn flac_with_id3v2() {
 	use lofty::flac::FlacFile;
-	use lofty::{Accessor, AudioFile};
 
 	let file = std::fs::read("tests/files/assets/flac_with_id3v2.flac").unwrap();
 	let flac_file =
@@ -174,7 +175,6 @@ fn flac_remove_id3v2() {
 #[test]
 fn flac_try_write_non_empty_id3v2() {
 	use lofty::id3::v2::Id3v2Tag;
-	use lofty::Accessor;
 
 	let mut tag = Id3v2Tag::default();
 	tag.set_artist(String::from("Foo artist"));

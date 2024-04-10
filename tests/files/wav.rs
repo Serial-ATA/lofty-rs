@@ -1,7 +1,7 @@
 use crate::{set_artist, temp_file, verify_artist};
-use lofty::{
-	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagExt, TagItem, TagType, TaggedFileExt,
-};
+use lofty::prelude::*;
+use lofty::{FileType, ItemKey, ItemValue, ParseOptions, Probe, TagItem, TagType, TaggedFileExt};
+
 use std::io::{Seek, Write};
 
 #[test]

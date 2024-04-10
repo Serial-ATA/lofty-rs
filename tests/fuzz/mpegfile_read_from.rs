@@ -1,6 +1,7 @@
 use crate::{get_reader, oom_test};
 use lofty::mpeg::MpegFile;
-use lofty::{AudioFile, ParseOptions};
+use lofty::prelude::*;
+use lofty::ParseOptions;
 
 #[test]
 fn crash1() {

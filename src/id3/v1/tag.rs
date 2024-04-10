@@ -441,7 +441,8 @@ impl<'a> Id3v1TagRef<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v1::Id3v1Tag;
-	use crate::{Tag, TagExt, TagType, WriteOptions};
+	use crate::prelude::*;
+	use crate::{Tag, TagType, WriteOptions};
 
 	#[test]
 	fn parse_id3v1() {

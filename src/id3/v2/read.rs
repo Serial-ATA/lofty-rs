@@ -116,7 +116,9 @@ fn zero_size_id3v2() {
 #[test]
 fn bad_frame_id_relaxed_id3v2() {
 	use crate::id3::v2::header::Id3v2Header;
-	use crate::{Accessor, ParsingMode, TagExt};
+	use crate::prelude::*;
+	use crate::ParsingMode;
+
 	use std::io::Cursor;
 
 	// Contains a frame with a "+" in the ID, which is invalid.

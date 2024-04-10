@@ -284,7 +284,8 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{Id3v2Tag, Id3v2TagFlags};
-	use crate::{Accessor, TagExt, WriteOptions};
+	use crate::prelude::*;
+	use crate::WriteOptions;
 
 	#[test]
 	fn id3v2_write_crc32() {
