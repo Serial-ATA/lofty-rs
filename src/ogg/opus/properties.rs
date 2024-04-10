@@ -2,7 +2,7 @@ use super::find_last_page;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::math::RoundedDivision;
-use crate::properties::FileProperties;
+use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -18,6 +18,7 @@ pub struct OpusProperties {
 	pub(crate) overall_bitrate: u32,
 	pub(crate) audio_bitrate: u32,
 	pub(crate) channels: u8,
+	pub(crate) channel_mask: ChannelMask,
 	pub(crate) version: u8,
 	pub(crate) input_sample_rate: u32,
 }
@@ -31,7 +32,7 @@ impl From<OpusProperties> for FileProperties {
 			sample_rate: Some(input.input_sample_rate),
 			bit_depth: None,
 			channels: Some(input.channels),
-			channel_mask: None,
+			channel_mask: Some(input.channel_mask),
 		}
 	}
 }
@@ -55,6 +56,11 @@ impl OpusProperties {
 	/// Channel count
 	pub fn channels(&self) -> u8 {
 		self.channels
+	}
+
+	/// Channel mask
+	pub fn channel_mask(&self) -> ChannelMask {
+		self.channel_mask
 	}
 
 	/// Opus version
@@ -102,6 +108,9 @@ where
 	{
 		decode_err!(@BAIL Opus, "Invalid channel count for mapping family");
 	}
+
+	properties.channel_mask =
+		ChannelMask::from_opus_channels(properties.channels).expect("Channel count is valid");
 
 	let last_page = find_last_page(data);
 	let file_length = data.seek(SeekFrom::End(0))?;

@@ -229,6 +229,7 @@ const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 	overall_bitrate: 120,
 	audio_bitrate: 120,
 	channels: 2,
+	channel_mask: ChannelMask::stereo(),
 	version: 1,
 	input_sample_rate: 48000,
 };
