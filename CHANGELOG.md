@@ -18,10 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ChannelMask::from_{mp4, opus}_channels`
 - **Opus**: `OpusProperties` now contains the channel mask
 - **AAC**: `AacProperties` now contains the channel mask
+- **Prelude**: `lofty::prelude` module to make trait imports easier ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 
 ### Changed
 - **Properties**: `FileProperties` and `ChannelMask` have been moved from the root to the new `lofty::properties`
                    module ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
+- **ParseOptions**/**WriteOptions**/**GlobalOptions**:
+  - ⚠️ Important ⚠️: Moved to `lofty::options` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
+- **AudioFile**/**TaggedFileExt**/**TaggedFile**/**BoundTaggedFile**:
+  - ⚠️ Important ⚠️: Moved to `lofty::file` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 
 ### Fixed
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
