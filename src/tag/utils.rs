@@ -99,7 +99,7 @@ pub(crate) fn dump_tag<W: Write>(
 #[cfg(test)]
 // Used for tag conversion tests
 pub(crate) mod test_utils {
-	use crate::{ItemKey, Tag, TagType};
+	use crate::tag::{ItemKey, Tag, TagType};
 	use std::fs::File;
 	use std::io::Read;
 

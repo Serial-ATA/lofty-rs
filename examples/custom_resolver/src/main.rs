@@ -5,7 +5,7 @@ use lofty::file::FileType;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::properties::FileProperties;
 use lofty::resolve::FileResolver;
-use lofty::TagType;
+use lofty::tag::TagType;
 use lofty_attr::LoftyFile;
 
 use std::fs::File;

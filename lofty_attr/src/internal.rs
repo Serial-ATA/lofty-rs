@@ -78,10 +78,10 @@ pub(crate) fn init_write_lookup(
 
 	insert!(map, AiffText, {
 		lofty::iff::aiff::tag::AiffTextChunksRef {
-			name: tag.get_string(&lofty::tag::item::ItemKey::TrackTitle),
-			author: tag.get_string(&lofty::tag::item::ItemKey::TrackArtist),
-			copyright: tag.get_string(&lofty::tag::item::ItemKey::CopyrightMessage),
-			annotations: Some(tag.get_strings(&lofty::tag::item::ItemKey::Comment)),
+			name: tag.get_string(&lofty::prelude::ItemKey::TrackTitle),
+			author: tag.get_string(&lofty::prelude::ItemKey::TrackArtist),
+			copyright: tag.get_string(&lofty::prelude::ItemKey::CopyrightMessage),
+			annotations: Some(tag.get_strings(&lofty::prelude::ItemKey::Comment)),
 			comments: None,
 		}
 		.write_to(data, write_options)
@@ -96,11 +96,12 @@ pub(crate) fn write_module(
 ) -> proc_macro2::TokenStream {
 	let applicable_formats = fields.iter().map(|f| {
 		let tag_ty =
-			syn::parse_str::<syn::Path>(&format!("::lofty::TagType::{}", &f.tag_type)).unwrap();
+			syn::parse_str::<syn::Path>(&format!("::lofty::tag::TagType::{}", &f.tag_type))
+				.unwrap();
 
 		let cfg_features = f.get_cfg_features();
 
-		let block = lookup.get(&*tag_ty.segments[2].ident.to_string()).unwrap();
+		let block = lookup.get(&*tag_ty.segments[3].ident.to_string()).unwrap();
 
 		quote! {
 			#( #cfg_features )*
@@ -111,7 +112,7 @@ pub(crate) fn write_module(
 	quote! {
 		pub(crate) mod write {
 			#[allow(unused_variables)]
-			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()> {
+			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::tag::Tag, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()> {
 				match tag.tag_type() {
 					#( #applicable_formats )*
 					_ => crate::macros::err!(UnsupportedTag),

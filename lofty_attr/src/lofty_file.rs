@@ -446,7 +446,7 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 			}
 
 			fn save_to(&self, file: &mut ::std::fs::File, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()> {
-				use ::lofty::prelude::TagExt as _;
+				use ::lofty::tag::TagExt as _;
 				use ::std::io::Seek as _;
 				#save_to_body
 			}
@@ -461,9 +461,9 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 			}
 
 			#[allow(unreachable_code, unused_variables)]
-			fn contains_tag_type(&self, tag_type: ::lofty::TagType) -> bool {
+			fn contains_tag_type(&self, tag_type: ::lofty::tag::TagType) -> bool {
 				match tag_type {
-					#( ::lofty::TagType::#tag_type => { #tag_exists_2 } ),*
+					#( ::lofty::tag::TagType::#tag_type => { #tag_exists_2 } ),*
 					_ => false
 				}
 			}
@@ -539,7 +539,7 @@ fn generate_from_taggedfile_impl(file: &LoftyFile) -> proc_macro2::TokenStream {
 					#file_type_variant,
 					::lofty::properties::FileProperties::from(input.properties),
 					{
-						let mut tags: Vec<::lofty::Tag> = Vec::new();
+						let mut tags: Vec<::lofty::tag::Tag> = Vec::new();
 						#( #conditions )*
 
 						tags

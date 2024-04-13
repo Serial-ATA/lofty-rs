@@ -2,9 +2,8 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::err;
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::tag::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{Accessor, MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -486,7 +485,7 @@ mod tests {
 	use crate::config::{ParseOptions, WriteOptions};
 	use crate::iff::aiff::{AIFFTextChunks, Comment};
 	use crate::prelude::*;
-	use crate::{ItemValue, Tag, TagItem, TagType};
+	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::Cursor;
 

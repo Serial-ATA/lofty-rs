@@ -3,9 +3,8 @@ mod write;
 
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{Accessor, MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -352,7 +351,7 @@ mod tests {
 	use crate::iff::chunk::Chunks;
 	use crate::iff::wav::RIFFInfoList;
 	use crate::prelude::*;
-	use crate::{Tag, TagType};
+	use crate::tag::{Tag, TagType};
 
 	use byteorder::LittleEndian;
 

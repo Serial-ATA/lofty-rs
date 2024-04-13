@@ -1,4 +1,4 @@
-use crate::tag::item::ItemKey;
+use crate::tag::ItemKey;
 
 pub(crate) const TIPL_MAPPINGS: &[(ItemKey, &str)] = &[
 	(ItemKey::Producer, "producer"),

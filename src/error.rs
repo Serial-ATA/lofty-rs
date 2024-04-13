@@ -5,7 +5,7 @@
 
 use crate::file::FileType;
 use crate::id3::v2::FrameId;
-use crate::tag::item::ItemKey;
+use crate::tag::ItemKey;
 
 use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};

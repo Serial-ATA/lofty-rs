@@ -6,9 +6,9 @@ use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
-use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
-use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::tag::item::ItemValueRef;
+use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{Accessor, MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -547,7 +547,7 @@ mod tests {
 	use crate::config::WriteOptions;
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::prelude::*;
-	use crate::{ItemValue, Tag, TagItem, TagType};
+	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::Cursor;
 

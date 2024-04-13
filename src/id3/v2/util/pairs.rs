@@ -1,6 +1,6 @@
 //! Contains utilities for ID3v2 style number pairs
 
-use crate::tag::item::{ItemKey, TagItem};
+use crate::tag::{ItemKey, TagItem};
 
 use std::fmt::Display;
 
@@ -58,7 +58,7 @@ pub(crate) fn set_number<F: FnMut(u32)>(item: &TagItem, mut setter: F) {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::util::pairs::set_number;
-	use crate::{ItemKey, ItemValue, TagItem};
+	use crate::tag::{ItemKey, ItemValue, TagItem};
 
 	#[test]
 	fn whitespace_in_number() {
