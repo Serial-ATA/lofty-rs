@@ -1,6 +1,6 @@
+use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
-use crate::probe::ParsingMode;
 use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;

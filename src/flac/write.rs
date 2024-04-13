@@ -1,12 +1,12 @@
 use super::block::Block;
 use super::read::verify_flac;
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::macros::{err, try_vec};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

@@ -1,8 +1,8 @@
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::mp4::{AudioObjectType, SAMPLE_RATES};
 use crate::mpeg::MpegVersion;
-use crate::probe::ParsingMode;
 
 use std::io::{Read, Seek, SeekFrom};
 

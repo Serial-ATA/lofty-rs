@@ -1,6 +1,6 @@
+use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::macros::parse_mode_choice;
-use crate::probe::ParsingMode;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::hash::{Hash, Hasher};
@@ -78,8 +78,8 @@ impl Hash for UniqueFileIdentifierFrame {
 mod tests {
 	#[test]
 	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
+		use crate::config::ParsingMode;
 		use crate::id3::v2::UniqueFileIdentifierFrame;
-		use crate::ParsingMode;
 
 		let ufid_no_owner = UniqueFileIdentifierFrame {
 			owner: String::new(),

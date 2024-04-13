@@ -1,11 +1,9 @@
+use crate::config::{global_options, ParseOptions, WriteOptions};
 use crate::error::Result;
-use crate::global_options::global_options;
-use crate::probe::ParseOptions;
 use crate::properties::FileProperties;
 use crate::resolve::custom_resolvers;
 use crate::tag::{Tag, TagType};
 use crate::traits::TagExt;
-use crate::write_options::WriteOptions;
 
 use std::ffi::OsStr;
 use std::fs::{File, OpenOptions};

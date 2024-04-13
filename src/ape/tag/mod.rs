@@ -3,12 +3,12 @@ pub(crate) mod read;
 mod write;
 
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
 use crate::tag::item::{ItemKey, ItemValue, ItemValueRef, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -544,9 +544,10 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
+	use crate::config::WriteOptions;
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::prelude::*;
-	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType, WriteOptions};
+	use crate::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::Cursor;
 

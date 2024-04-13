@@ -1,7 +1,7 @@
+use lofty::config::ParseOptions;
 use lofty::error::Result;
 use lofty::iff::wav::WavFile;
 use lofty::prelude::*;
-use lofty::ParseOptions;
 
 use hound::WavReader;
 

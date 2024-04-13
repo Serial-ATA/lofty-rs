@@ -1,6 +1,7 @@
 use super::block::Block;
 use super::properties::FlacProperties;
 use super::FlacFile;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::flac::block::{
 	BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_SEEKTABLE, BLOCK_ID_STREAMINFO,
@@ -11,7 +12,6 @@ use crate::id3::{find_id3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::decode_err;
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
-use crate::probe::{ParseOptions, ParsingMode};
 
 use std::io::{Read, Seek, SeekFrom};
 

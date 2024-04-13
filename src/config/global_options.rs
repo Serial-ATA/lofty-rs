@@ -13,11 +13,11 @@ pub(crate) unsafe fn global_options() -> &'static GlobalOptions {
 /// # Examples
 ///
 /// ```rust
-/// use lofty::GlobalOptions;
+/// use lofty::config::{apply_global_options, GlobalOptions};
 ///
 /// // I have a custom resolver that I need checked
 /// let global_options = GlobalOptions::new().use_custom_resolvers(true);
-/// lofty::apply_global_options(global_options);
+/// apply_global_options(global_options);
 /// ```
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 #[non_exhaustive]
@@ -37,7 +37,7 @@ impl GlobalOptions {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::GlobalOptions;
+	/// use lofty::config::GlobalOptions;
 	///
 	/// let global_options = GlobalOptions::new();
 	/// ```
@@ -56,11 +56,11 @@ impl GlobalOptions {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::GlobalOptions;
+	/// use lofty::config::{apply_global_options, GlobalOptions};
 	///
 	/// // By default, `use_custom_resolvers` is enabled. Here, we don't want to use them.
 	/// let global_options = GlobalOptions::new().use_custom_resolvers(false);
-	/// lofty::apply_global_options(global_options);
+	/// apply_global_options(global_options);
 	/// ```
 	pub fn use_custom_resolvers(&mut self, use_custom_resolvers: bool) -> Self {
 		self.use_custom_resolvers = use_custom_resolvers;
@@ -75,11 +75,11 @@ impl GlobalOptions {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::GlobalOptions;
+	/// use lofty::config::{apply_global_options, GlobalOptions};
 	///
 	/// // I have files with gigantic images, I'll double the allocation limit!
 	/// let global_options = GlobalOptions::new().allocation_limit(32 * 1024 * 1024);
-	/// lofty::apply_global_options(global_options);
+	/// apply_global_options(global_options);
 	/// ```
 	pub fn allocation_limit(&mut self, allocation_limit: usize) -> Self {
 		self.allocation_limit = allocation_limit;
@@ -108,11 +108,11 @@ impl Default for GlobalOptions {
 /// # Examples
 ///
 /// ```rust
-/// use lofty::GlobalOptions;
+/// use lofty::config::{apply_global_options, GlobalOptions};
 ///
 /// // I have a custom resolver that I need checked
 /// let global_options = GlobalOptions::new().use_custom_resolvers(true);
-/// lofty::apply_global_options(global_options);
+/// apply_global_options(global_options);
 /// ```
 pub fn apply_global_options(options: GlobalOptions) {
 	GLOBAL_OPTIONS.with(|global_options| unsafe {

@@ -73,9 +73,9 @@ macro_rules! parse_mode_choice {
 		DEFAULT: $default:expr
 	) => {
 		match $parse_mode {
-			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?
-			$(crate::probe::ParsingMode::BestAttempt => { $best_attempt_handler },)?
-			$(crate::probe::ParsingMode::Relaxed => { $relaxed_handler },)?
+			$(crate::config::ParsingMode::Strict => { $strict_handler },)?
+			$(crate::config::ParsingMode::BestAttempt => { $best_attempt_handler },)?
+			$(crate::config::ParsingMode::Relaxed => { $relaxed_handler },)?
 			_ => { $default }
 		}
 	};
@@ -86,9 +86,9 @@ macro_rules! parse_mode_choice {
 		$(RELAXED: $relaxed_handler:expr $(,)?)?
 	) => {
 		match $parse_mode {
-			$(crate::probe::ParsingMode::Strict => { $strict_handler },)?
-			$(crate::probe::ParsingMode::BestAttempt => { $best_attempt_handler },)?
-			$(crate::probe::ParsingMode::Relaxed => { $relaxed_handler },)?
+			$(crate::config::ParsingMode::Strict => { $strict_handler },)?
+			$(crate::config::ParsingMode::BestAttempt => { $best_attempt_handler },)?
+			$(crate::config::ParsingMode::Relaxed => { $relaxed_handler },)?
 			#[allow(unreachable_patterns)]
 			_ => {}
 		}

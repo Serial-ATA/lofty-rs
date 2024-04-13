@@ -2,6 +2,7 @@ use super::constants::{
 	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
+use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
@@ -10,7 +11,6 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{utf16_decode_bytes, utf8_decode};
-use crate::ParsingMode;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};

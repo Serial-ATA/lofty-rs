@@ -1,8 +1,8 @@
+use crate::config::ParsingMode;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::Popularimeter;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 use crate::picture::MimeType;
-use crate::probe::ParsingMode;
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;

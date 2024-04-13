@@ -1,5 +1,6 @@
+use lofty::config::ParsingMode;
 use lofty::id3::v2::{AttachedPictureFrame, Id3v2Version};
-use lofty::{ParsingMode, Picture, PictureInformation, PictureType, TextEncoding};
+use lofty::{Picture, PictureInformation, PictureType, TextEncoding};
 
 use std::fs::File;
 use std::io::Read;

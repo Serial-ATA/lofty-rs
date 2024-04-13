@@ -1,9 +1,8 @@
 use crate::{set_artist, temp_file, verify_artist};
+use lofty::config::ParseOptions;
 use lofty::musepack::MpcFile;
 use lofty::prelude::*;
-use lofty::{
-	FileType, ItemKey, ItemValue, ParseOptions, Probe, TagItem, TagType, TaggedFile, TaggedFileExt,
-};
+use lofty::{FileType, ItemValue, Probe, TagItem, TagType, TaggedFile};
 
 use std::io::{Seek, Write};
 

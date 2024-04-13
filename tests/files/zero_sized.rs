@@ -1,11 +1,11 @@
 use lofty::ape::ApeFile;
+use lofty::config::{ParseOptions, ParsingMode};
 use lofty::flac::FlacFile;
 use lofty::iff::aiff::AiffFile;
 use lofty::iff::wav::WavFile;
 use lofty::mp4::Mp4File;
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
-use lofty::{ParseOptions, ParsingMode};
 
 fn read_file_with_properties<A: AudioFile>(path: &str) -> bool {
 	let res = <A as AudioFile>::read_from(

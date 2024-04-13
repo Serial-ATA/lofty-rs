@@ -1,11 +1,9 @@
 use crate::{set_artist, temp_file, verify_artist};
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::id3::v2::{Frame, FrameFlags, FrameId, FrameValue, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
-use lofty::{
-	FileType, ItemKey, ItemValue, ParseOptions, Probe, Tag, TagItem, TagType, TaggedFileExt,
-	WriteOptions,
-};
+use lofty::{FileType, ItemValue, Probe, Tag, TagItem, TagType};
 
 use std::borrow::Cow;
 use std::io::{Seek, Write};

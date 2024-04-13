@@ -1,11 +1,11 @@
 use super::properties::AiffProperties;
 use super::tag::{AIFFTextChunks, Comment};
 use super::AiffFile;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::{decode_err, err};
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 

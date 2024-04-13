@@ -1,9 +1,10 @@
 use lofty::ape::ApeTag;
+use lofty::config::{GlobalOptions, ParseOptions};
 use lofty::error::Result as LoftyResult;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::properties::FileProperties;
 use lofty::resolve::FileResolver;
-use lofty::{FileType, GlobalOptions, ParseOptions, TagType};
+use lofty::{FileType, TagType};
 use lofty_attr::LoftyFile;
 
 use std::fs::File;
@@ -95,7 +96,7 @@ fn main() {
 	// By default, lofty will not check for custom files.
 	// We can enable this by updating our `GlobalOptions`.
 	let global_options = GlobalOptions::new().use_custom_resolvers(true);
-	lofty::apply_global_options(global_options);
+	lofty::config::apply_global_options(global_options);
 
 	// Now when using the following functions, your custom file will be checked
 

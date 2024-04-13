@@ -5,13 +5,13 @@ mod r#ref;
 pub(crate) mod write;
 
 use super::AtomIdent;
+use crate::config::WriteOptions;
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::write_options::WriteOptions;
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;
@@ -759,6 +759,7 @@ impl From<Tag> for Ilst {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::mp4::ilst::atom::AtomDataStorage;
 	use crate::mp4::ilst::TITLE;
 	use crate::mp4::read::AtomReader;
@@ -766,9 +767,7 @@ mod tests {
 	use crate::prelude::*;
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{
-		ItemKey, ItemValue, ParseOptions, ParsingMode, Tag, TagItem, TagType, WriteOptions,
-	};
+	use crate::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
@@ -853,10 +852,10 @@ mod tests {
 		let len = tag.len();
 
 		let cursor = Cursor::new(tag);
-		let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
+		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
 		let parsed_tag =
-			super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap();
+			super::read::parse_ilst(&mut reader, ParsingMode::Strict, len as u64).unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -871,15 +870,12 @@ mod tests {
 			.unwrap();
 
 		let cursor = Cursor::new(&writer[8..]);
-		let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
+		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
 		// Remove the ilst identifier and size
-		let temp_parsed_tag = super::read::parse_ilst(
-			&mut reader,
-			crate::ParsingMode::Strict,
-			(writer.len() - 8) as u64,
-		)
-		.unwrap();
+		let temp_parsed_tag =
+			super::read::parse_ilst(&mut reader, ParsingMode::Strict, (writer.len() - 8) as u64)
+				.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -890,10 +886,9 @@ mod tests {
 		let len = tag.len();
 
 		let cursor = Cursor::new(tag);
-		let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
+		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
-		let ilst =
-			super::read::parse_ilst(&mut reader, crate::ParsingMode::Strict, len as u64).unwrap();
+		let ilst = super::read::parse_ilst(&mut reader, ParsingMode::Strict, len as u64).unwrap();
 
 		let tag: Tag = ilst.into();
 
@@ -1010,14 +1005,11 @@ mod tests {
 			assert_eq!(old_free_size, PADDING_SIZE as u32);
 
 			let cursor = Cursor::new(ilst_bytes);
-			let mut reader = AtomReader::new(cursor, crate::ParsingMode::Strict).unwrap();
+			let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
-			ilst = super::read::parse_ilst(
-				&mut reader,
-				crate::ParsingMode::Strict,
-				ilst_bytes.len() as u64,
-			)
-			.unwrap();
+			ilst =
+				super::read::parse_ilst(&mut reader, ParsingMode::Strict, ilst_bytes.len() as u64)
+					.unwrap();
 		}
 
 		let mut file = tempfile::tempfile().unwrap();

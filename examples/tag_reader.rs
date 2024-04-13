@@ -1,5 +1,5 @@
 use lofty::prelude::*;
-use lofty::{Probe, TaggedFileExt};
+use lofty::Probe;
 
 use std::path::Path;
 

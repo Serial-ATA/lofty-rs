@@ -1,9 +1,9 @@
 use super::tag::Id3v1TagRef;
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::err;
 use crate::probe::Probe;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Seek, Write};

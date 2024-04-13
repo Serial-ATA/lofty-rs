@@ -1,11 +1,11 @@
 use super::properties::WavProperties;
 use super::tag::RIFFInfoList;
 use super::WavFile;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 

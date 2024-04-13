@@ -4,6 +4,7 @@ mod tests;
 use super::frame::id::FrameId;
 use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::header::{Id3v2TagFlags, Id3v2Version};
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::GENRES;
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
@@ -21,7 +22,6 @@ use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
-use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;

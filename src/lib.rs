@@ -152,10 +152,10 @@ pub(crate) mod _this_is_internal {}
 
 pub mod aac;
 pub mod ape;
+pub mod config;
 pub mod error;
 pub(crate) mod file;
 pub mod flac;
-pub(crate) mod global_options;
 pub mod id3;
 pub mod iff;
 pub(crate) mod macros;
@@ -172,10 +172,8 @@ pub(crate) mod tag;
 mod traits;
 mod util;
 pub mod wavpack;
-mod write_options;
 
-pub use crate::probe::{read_from, read_from_path, ParseOptions, ParsingMode, Probe};
-pub use crate::write_options::WriteOptions;
+pub use crate::probe::{read_from, read_from_path, Probe};
 
 pub use crate::file::{BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
@@ -184,8 +182,6 @@ pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;
 
 pub use picture::PictureInformation;
-
-pub use global_options::{apply_global_options, GlobalOptions};
 
 pub use lofty_attr::LoftyFile;
 

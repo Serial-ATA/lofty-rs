@@ -1,9 +1,9 @@
 pub(super) mod properties;
 
 use super::tag::VorbisComments;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::ogg::constants::SPEEXHEADER;
-use crate::probe::ParseOptions;
 use properties::SpeexProperties;
 
 use std::io::{Read, Seek};

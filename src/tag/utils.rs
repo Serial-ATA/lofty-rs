@@ -1,8 +1,8 @@
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
-use crate::write_options::WriteOptions;
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;

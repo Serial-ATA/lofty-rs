@@ -1,9 +1,9 @@
 use super::frame::read::ParsedFrame;
 use super::header::Id3v2Header;
 use super::tag::Id3v2Tag;
+use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
-use crate::probe::ParsingMode;
 
 use std::io::Read;
 
@@ -104,8 +104,9 @@ where
 
 #[test]
 fn zero_size_id3v2() {
+	use crate::config::ParsingMode;
 	use crate::id3::v2::header::Id3v2Header;
-	use crate::ParsingMode;
+
 	use std::io::Cursor;
 
 	let mut f = Cursor::new(std::fs::read("tests/tags/assets/id3v2/zero.id3v2").unwrap());
@@ -115,9 +116,9 @@ fn zero_size_id3v2() {
 
 #[test]
 fn bad_frame_id_relaxed_id3v2() {
+	use crate::config::ParsingMode;
 	use crate::id3::v2::header::Id3v2Header;
 	use crate::prelude::*;
-	use crate::ParsingMode;
 
 	use std::io::Cursor;
 

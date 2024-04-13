@@ -1,4 +1,5 @@
 use super::verify_signature;
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
@@ -6,7 +7,6 @@ use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

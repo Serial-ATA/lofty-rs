@@ -18,7 +18,7 @@ fn overflow1() {
 		50, 5, 5, 5, 26, 5, 5, 25, 6, 6, 25, 26, 246, 25, 25, 129, 6, 151, 3, 252, 56, 0, 53, 56,
 		55, 52,
 	];
-	let _local0 = <lofty::ParsingMode as std::default::Default>::default();
+	let _local0 = <lofty::config::ParsingMode as std::default::Default>::default();
 	let _local1_param0_helper1 = &mut (&data[..]);
 	let _: lofty::error::Result<
 		std::option::Option<lofty::id3::v2::RelativeVolumeAdjustmentFrame>,

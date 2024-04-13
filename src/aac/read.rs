@@ -1,12 +1,12 @@
 use super::header::{ADTSHeader, HEADER_MASK};
 use super::AacFile;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, ID3FindResults};
 use crate::macros::{decode_err, parse_mode_choice};
 use crate::mpeg::header::{cmp_header, search_for_frame_sync, HeaderCmpResult};
-use crate::probe::{ParseOptions, ParsingMode};
 
 use std::io::{Read, Seek, SeekFrom};
 

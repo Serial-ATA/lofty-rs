@@ -1,7 +1,7 @@
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::read::skip_unneeded;
-use crate::probe::ParsingMode;
 
 use std::cell::{RefCell, RefMut};
 use std::fs::File;
