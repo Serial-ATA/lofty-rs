@@ -114,7 +114,7 @@ impl Id3v1Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v1::Id3v1Tag;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let id3v1_tag = Id3v1Tag::new();
 	/// assert!(id3v1_tag.is_empty());

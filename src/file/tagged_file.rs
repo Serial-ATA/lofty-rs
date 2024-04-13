@@ -53,7 +53,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -72,7 +72,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -91,7 +91,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -113,7 +113,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -139,7 +139,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -165,7 +165,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -244,7 +244,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::{AudioFile, TaggedFileExt};
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -269,7 +269,7 @@ pub trait TaggedFileExt {
 	///
 	/// ```rust
 	/// use lofty::file::{AudioFile, TaggedFileExt};
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -340,7 +340,7 @@ impl TaggedFile {
 	///
 	/// ```rust
 	/// use lofty::file::{AudioFile, FileType, TaggedFileExt};
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
@@ -461,7 +461,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// ```rust,no_run
 /// use lofty::config::WriteOptions;
 /// use lofty::file::{AudioFile, TaggedFileExt};
-/// use lofty::{Tag, TagType};
+/// use lofty::tag::{Tag, TagType};
 /// # fn main() -> lofty::error::Result<()> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
@@ -486,7 +486,7 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// ```rust,no_run
 /// use lofty::config::{ParseOptions, WriteOptions};
 /// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
-/// use lofty::{Tag, TagType};
+/// use lofty::tag::{Tag, TagType};
 /// use std::fs::OpenOptions;
 /// # fn main() -> lofty::error::Result<()> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
@@ -526,7 +526,7 @@ impl BoundTaggedFile {
 	/// ```rust
 	/// use lofty::config::ParseOptions;
 	/// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	/// use std::fs::OpenOptions;
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
@@ -559,7 +559,7 @@ impl BoundTaggedFile {
 	/// ```rust,no_run
 	/// use lofty::config::{ParseOptions, WriteOptions};
 	/// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	/// use std::fs::OpenOptions;
 	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";

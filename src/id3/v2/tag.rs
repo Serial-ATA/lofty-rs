@@ -154,7 +154,7 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::Id3v2Tag;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let id3v2_tag = Id3v2Tag::new();
 	/// assert!(id3v2_tag.is_empty());
@@ -313,7 +313,7 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::Id3v2Tag;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let mut tag = Id3v2Tag::new();
 	///
@@ -375,7 +375,7 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::Id3v2Tag;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let mut tag = Id3v2Tag::new();
 	/// assert!(tag.is_empty());
@@ -412,7 +412,8 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::{Frame, FrameFlags, FrameId, Id3v2Tag, TextInformationFrame};
-	/// use lofty::{TagExt, TextEncoding};
+	/// use lofty::tag::TagExt;
+	/// use lofty::TextEncoding;
 	/// use std::borrow::Cow;
 	///
 	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));

@@ -73,7 +73,7 @@ impl WriteOptions {
 	/// ```rust,no_run
 	/// use lofty::config::WriteOptions;
 	/// use lofty::prelude::*;
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
@@ -103,7 +103,7 @@ impl WriteOptions {
 	/// ```rust,no_run
 	/// use lofty::config::WriteOptions;
 	/// use lofty::prelude::*;
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
@@ -133,7 +133,7 @@ impl WriteOptions {
 	/// ```rust,no_run
 	/// use lofty::config::WriteOptions;
 	/// use lofty::prelude::*;
-	/// use lofty::{Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
