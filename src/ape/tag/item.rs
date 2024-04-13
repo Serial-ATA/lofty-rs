@@ -1,8 +1,8 @@
 use crate::ape::constants::INVALID_KEYS;
 use crate::error::{LoftyError, Result};
 use crate::macros::decode_err;
-use crate::tag::item::{ItemValue, ItemValueRef, TagItem};
-use crate::tag::TagType;
+use crate::tag::item::ItemValueRef;
+use crate::tag::{ItemValue, TagItem, TagType};
 
 /// Represents an `APE` tag item
 ///

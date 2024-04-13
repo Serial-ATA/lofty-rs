@@ -16,7 +16,7 @@ use crate::id3::v2::tag::Id3v2Tag;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
-use crate::traits::TagExt;
+use crate::tag::TagExt;
 
 use std::fs::File;
 use std::io::Seek;

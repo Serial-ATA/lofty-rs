@@ -2,8 +2,7 @@ use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::tag::item::ItemKey;
-use crate::tag::TagType;
+use crate::tag::{ItemKey, TagType};
 
 /// An `ID3v2` frame ID
 ///

@@ -1,9 +1,8 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{Tag, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::tag::{ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{Accessor, MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -443,7 +442,7 @@ mod tests {
 	use crate::config::WriteOptions;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::prelude::*;
-	use crate::{Tag, TagType};
+	use crate::tag::{Tag, TagType};
 
 	#[test]
 	fn parse_id3v1() {

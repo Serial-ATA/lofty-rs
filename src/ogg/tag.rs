@@ -6,9 +6,8 @@ use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::{try_parse_year, Tag, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{Accessor, MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -696,7 +695,7 @@ mod tests {
 	use crate::config::{ParsingMode, WriteOptions};
 	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::prelude::*;
-	use crate::{ItemValue, Tag, TagItem, TagType};
+	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);

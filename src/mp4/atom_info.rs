@@ -1,8 +1,7 @@
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{err, try_vec};
-use crate::tag::item::ItemKey;
-use crate::tag::TagType;
+use crate::tag::{ItemKey, TagType};
 use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;

@@ -30,10 +30,10 @@ macro_rules! verify_artist {
 		assert_eq!(tag.item_count(), $item_count);
 
 		assert_eq!(
-			tag.get(&lofty::ItemKey::TrackArtist),
-			Some(&lofty::TagItem::new(
-				lofty::ItemKey::TrackArtist,
-				lofty::ItemValue::Text(String::from($expected_value))
+			tag.get(&lofty::prelude::ItemKey::TrackArtist),
+			Some(&lofty::tag::TagItem::new(
+				lofty::prelude::ItemKey::TrackArtist,
+				lofty::tag::ItemValue::Text(String::from($expected_value))
 			))
 		);
 
@@ -62,9 +62,9 @@ macro_rules! set_artist {
 		set_artist!($file_write, $new_value, tag)
 	};
 	($file_write:ident, $new_value:literal, $tag:ident) => {
-		$tag.insert_unchecked(lofty::TagItem::new(
-			lofty::ItemKey::TrackArtist,
-			lofty::ItemValue::Text(String::from($new_value)),
+		$tag.insert_unchecked(lofty::tag::TagItem::new(
+			lofty::prelude::ItemKey::TrackArtist,
+			lofty::tag::ItemValue::Text(String::from($new_value)),
 		));
 
 		$file_write.rewind().unwrap();

@@ -4,7 +4,7 @@ use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
-use crate::tag::item::ItemValue;
+use crate::tag::ItemValue;
 use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};

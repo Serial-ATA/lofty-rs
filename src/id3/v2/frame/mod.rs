@@ -11,8 +11,7 @@ use super::items::{
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::tag::item::{ItemKey, ItemValue, TagItem};
-use crate::tag::TagType;
+use crate::tag::{ItemKey, ItemValue, TagItem, TagType};
 use crate::util::text::TextEncoding;
 use id::FrameId;
 

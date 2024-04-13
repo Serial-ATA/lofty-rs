@@ -3,7 +3,8 @@ use lofty::config::ParseOptions;
 use lofty::file::{FileType, TaggedFile};
 use lofty::musepack::MpcFile;
 use lofty::prelude::*;
-use lofty::{Probe, TagType};
+use lofty::tag::TagType;
+use lofty::Probe;
 
 use std::io::{Seek, Write};
 

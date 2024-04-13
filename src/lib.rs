@@ -159,7 +159,7 @@ pub(crate) mod picture;
 mod probe;
 pub mod properties;
 pub mod resolve;
-pub(crate) mod tag;
+pub mod tag;
 mod traits;
 mod util;
 
@@ -177,8 +177,6 @@ pub mod wavpack;
 pub use crate::probe::{read_from, read_from_path, Probe};
 
 pub use crate::picture::{MimeType, Picture, PictureType};
-pub use crate::tag::{Tag, TagType};
-pub use tag::item::{ItemKey, ItemValue, TagItem};
 pub use util::text::TextEncoding;
 
 pub use picture::PictureInformation;
@@ -188,7 +186,7 @@ pub use lofty_attr::LoftyFile;
 pub mod prelude {
 	//! A prelude for commonly used items in the library.
 	//!
-	//! This module is intended to be glob imported.
+	//! This module is intended to be wildcard imported.
 	//!
 	//! ```rust
 	//! use lofty::prelude::*;
@@ -196,6 +194,6 @@ pub mod prelude {
 
 	pub use crate::error::LoftyError;
 	pub use crate::file::{AudioFile, TaggedFileExt};
-	pub use crate::tag::item::ItemKey;
-	pub use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+	pub use crate::tag::{ItemKey, TagExt};
+	pub use crate::traits::{Accessor, MergeTag, SplitTag};
 }

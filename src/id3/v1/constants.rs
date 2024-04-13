@@ -194,7 +194,7 @@ pub const GENRES: [&str; 192] = [
 	"Psybient",
 ];
 
-use crate::tag::item::ItemKey;
+use crate::tag::ItemKey;
 pub(crate) const VALID_ITEMKEYS: [ItemKey; 7] = [
 	ItemKey::TrackTitle,
 	ItemKey::TrackArtist,

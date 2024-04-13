@@ -3,8 +3,7 @@ use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::Result;
 use crate::properties::FileProperties;
-use crate::tag::{Tag, TagType};
-use crate::traits::TagExt;
+use crate::tag::{Tag, TagExt, TagType};
 
 use std::fs::File;
 use std::io::{Read, Seek};
