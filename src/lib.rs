@@ -150,20 +150,11 @@
 extern crate self as lofty;
 pub(crate) mod _this_is_internal {}
 
-pub mod aac;
-pub mod ape;
 pub mod config;
 pub mod error;
 pub(crate) mod file;
-pub mod flac;
-pub mod id3;
-pub mod iff;
 pub(crate) mod macros;
 mod math;
-pub mod mp4;
-pub mod mpeg;
-pub mod musepack;
-pub mod ogg;
 pub(crate) mod picture;
 mod probe;
 pub mod properties;
@@ -171,6 +162,16 @@ pub mod resolve;
 pub(crate) mod tag;
 mod traits;
 mod util;
+
+pub mod aac;
+pub mod ape;
+pub mod flac;
+pub mod id3;
+pub mod iff;
+pub mod mp4;
+pub mod mpeg;
+pub mod musepack;
+pub mod ogg;
 pub mod wavpack;
 
 pub use crate::probe::{read_from, read_from_path, Probe};
