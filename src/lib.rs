@@ -152,7 +152,7 @@ pub(crate) mod _this_is_internal {}
 
 pub mod config;
 pub mod error;
-pub(crate) mod file;
+pub mod file;
 pub(crate) mod macros;
 mod math;
 pub(crate) mod picture;
