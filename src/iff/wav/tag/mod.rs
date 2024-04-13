@@ -59,7 +59,7 @@ impl RIFFInfoList {
 	///
 	/// ```rust
 	/// use lofty::iff::wav::RIFFInfoList;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let riff_info_tag = RIFFInfoList::new();
 	/// assert!(riff_info_tag.is_empty());

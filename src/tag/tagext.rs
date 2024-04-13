@@ -26,7 +26,8 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// # Example
 	///
 	/// ```rust
-	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
+	/// use lofty::tag::{ItemKey, Tag, TagExt};
+	/// use lofty::Accessor;
 	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
@@ -42,7 +43,8 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// # Example
 	///
 	/// ```rust
-	/// use lofty::{Accessor, ItemKey, Tag, TagExt};
+	/// use lofty::tag::{ItemKey, Tag, TagExt};
+	/// use lofty::Accessor;
 	/// # let tag_type = lofty::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
@@ -58,8 +60,9 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	/// # Example
 	///
 	/// ```rust
-	/// use lofty::{Accessor, Tag, TagExt};
-	/// # let tag_type = lofty::TagType::Id3v2;
+	/// use lofty::tag::{Tag, TagExt};
+	/// use lofty::Accessor;
+	/// # let tag_type = lofty::tag::TagType::Id3v2;
 	///
 	/// let mut tag = Tag::new(tag_type);
 	/// assert!(tag.is_empty());

@@ -76,7 +76,7 @@
 //! use lofty::config::ParseOptions;
 //! use lofty::file::AudioFile;
 //! use lofty::mpeg::MpegFile;
-//! use lofty::TagType;
+//! use lofty::tag::TagType;
 //! use std::fs::File;
 //!
 //! # let path = "tests/files/assets/minimal/full_test.mp3";

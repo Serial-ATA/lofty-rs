@@ -128,13 +128,14 @@ use crate::tag::Tag;
 /// # Example
 ///
 /// ```rust,no_run
+/// use lofty::config::{ParseOptions, WriteOptions};
 /// use lofty::mpeg::MpegFile;
-/// use lofty::{AudioFile, ItemKey, MergeTag as _, SplitTag as _, WriteOptions};
+/// use lofty::prelude::*;
 ///
 /// // Read the tag from a file
-/// # fn main() -> lofty::Result<()> {
+/// # fn main() -> lofty::error::Result<()> {
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
-/// # let parse_options = lofty::ParseOptions::default();
+/// # let parse_options = ParseOptions::default();
 /// let mut mpeg_file = <MpegFile as AudioFile>::read_from(&mut file, parse_options)?;
 /// let mut id3v2 = mpeg_file
 /// 	.id3v2_mut()
@@ -156,7 +157,7 @@ use crate::tag::Tag;
 /// mpeg_file.set_id3v2(id3v2);
 /// mpeg_file.save_to(&mut file, WriteOptions::default())?;
 ///
-/// # Ok::<(), lofty::LoftyError>(()) }
+/// # Ok(()) }
 /// ```
 pub trait SplitTag {
 	/// The remainder of the split operation that is not represented

@@ -89,7 +89,7 @@ impl ApeTag {
 	///
 	/// ```rust
 	/// use lofty::ape::ApeTag;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let ape_tag = ApeTag::new();
 	/// assert!(ape_tag.is_empty());

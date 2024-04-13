@@ -43,7 +43,7 @@ impl FileType {
 	///
 	/// ```rust
 	/// use lofty::file::FileType;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// let file_type = FileType::Mpeg;
 	/// assert_eq!(file_type.primary_tag_type(), TagType::Id3v2);
@@ -77,7 +77,7 @@ impl FileType {
 	///
 	/// ```rust
 	/// use lofty::file::FileType;
-	/// use lofty::TagType;
+	/// use lofty::tag::TagType;
 	///
 	/// let file_type = FileType::Mpeg;
 	/// assert!(file_type.supports_tag_type(TagType::Id3v2));

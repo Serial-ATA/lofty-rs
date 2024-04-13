@@ -64,7 +64,8 @@ macro_rules! impl_accessor {
 /// Accessing common items
 ///
 /// ```rust
-/// use lofty::{Accessor, Tag, TagType};
+/// use lofty::tag::{Tag, TagType};
+/// use lofty::Accessor;
 ///
 /// let tag = Tag::new(TagType::Id3v2);
 ///
@@ -79,7 +80,7 @@ macro_rules! impl_accessor {
 /// Getting an item of a known type
 ///
 /// ```rust
-/// use lofty::{ItemKey, Tag, TagType};
+/// use lofty::tag::{ItemKey, Tag, TagType};
 ///
 /// let tag = Tag::new(TagType::Id3v2);
 ///
@@ -94,7 +95,7 @@ macro_rules! impl_accessor {
 ///
 /// ```rust
 /// use lofty::id3::v2::Id3v2Tag;
-/// use lofty::{Tag, TagType};
+/// use lofty::tag::{Tag, TagType};
 ///
 /// // Converting between formats is as simple as an `into` call.
 /// // However, such conversions can potentially be *very* lossy.
@@ -458,7 +459,8 @@ impl Tag {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{Picture, Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
+	/// use lofty::Picture;
 	/// # use lofty::{PictureType, MimeType};
 	///
 	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
@@ -500,7 +502,8 @@ impl Tag {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{Picture, Tag, TagType};
+	/// use lofty::tag::{Tag, TagType};
+	/// use lofty::Picture;
 	/// # use lofty::{PictureType, MimeType};
 	///
 	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());

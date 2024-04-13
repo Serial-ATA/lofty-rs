@@ -78,7 +78,7 @@ impl VorbisComments {
 	///
 	/// ```rust
 	/// use lofty::ogg::VorbisComments;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let vorbis_comments_tag = VorbisComments::new();
 	/// assert!(vorbis_comments_tag.is_empty());
@@ -143,7 +143,7 @@ impl VorbisComments {
 	///
 	/// ```rust
 	/// use lofty::ogg::VorbisComments;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	///

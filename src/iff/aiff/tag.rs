@@ -128,7 +128,7 @@ impl AIFFTextChunks {
 	///
 	/// ```rust
 	/// use lofty::iff::aiff::AIFFTextChunks;
-	/// use lofty::TagExt;
+	/// use lofty::tag::TagExt;
 	///
 	/// let aiff_tag = AIFFTextChunks::new();
 	/// assert!(aiff_tag.is_empty());
