@@ -42,7 +42,8 @@ impl FileType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{FileType, TagType};
+	/// use lofty::file::FileType;
+	/// use lofty::TagType;
 	///
 	/// let file_type = FileType::Mpeg;
 	/// assert_eq!(file_type.primary_tag_type(), TagType::Id3v2);
@@ -75,7 +76,8 @@ impl FileType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::{FileType, TagType};
+	/// use lofty::file::FileType;
+	/// use lofty::TagType;
 	///
 	/// let file_type = FileType::Mpeg;
 	/// assert!(file_type.supports_tag_type(TagType::Id3v2));
@@ -102,7 +104,7 @@ impl FileType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::FileType;
+	/// use lofty::file::FileType;
 	///
 	/// let extension = "mp3";
 	/// assert_eq!(FileType::from_ext(extension), Some(FileType::Mpeg));
@@ -147,7 +149,7 @@ impl FileType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::FileType;
+	/// use lofty::file::FileType;
 	/// use std::path::Path;
 	///
 	/// let path = Path::new("path/to/my.mp3");
@@ -175,11 +177,11 @@ impl FileType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::FileType;
+	/// use lofty::file::FileType;
 	/// use std::fs::File;
 	/// use std::io::Read;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path_to_opus = "tests/files/assets/minimal/full_test.opus";
 	/// let mut file = File::open(path_to_opus)?;
 	///

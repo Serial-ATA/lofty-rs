@@ -47,10 +47,11 @@ impl Mp4File {
 	/// # Examples
 	///
 	/// ```rust,no_run
+	/// use lofty::config::ParseOptions;
+	/// use lofty::file::AudioFile;
 	/// use lofty::mp4::Mp4File;
-	/// use lofty::{AudioFile, ParseOptions};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
 	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, ParseOptions::new())?;
 	///

@@ -179,7 +179,7 @@ impl<'a> Atom<'a> {
 	/// ```rust
 	/// use lofty::mp4::{Atom, AtomData, AtomIdent};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// // Create an artist atom
 	/// let mut atom = Atom::new(
 	/// 	AtomIdent::Fourcc(*b"\x49ART"),

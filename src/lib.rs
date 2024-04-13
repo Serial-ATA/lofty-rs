@@ -16,8 +16,7 @@
 //! ### Using a path
 //!
 //! ```rust,no_run
-//! # use lofty::LoftyError;
-//! # fn main() -> Result<(), LoftyError> {
+//! # fn main() -> lofty::error::Result<()> {
 //! use lofty::{read_from_path, Probe};
 //!
 //! // This will guess the format from the extension
@@ -35,9 +34,9 @@
 //! ### Using an existing reader
 //!
 //! ```rust,no_run
-//! # use lofty::LoftyError;
-//! # fn main() -> Result<(), LoftyError> {
-//! use lofty::{read_from, ParseOptions};
+//! # fn main() -> lofty::error::Result<()> {
+//! use lofty::config::ParseOptions;
+//! use lofty::read_from;
 //! use std::fs::File;
 //!
 //! // Let's read from an open file
@@ -53,9 +52,9 @@
 //! ### Accessing tags
 //!
 //! ```rust,no_run
-//! # use lofty::LoftyError;
-//! # fn main() -> Result<(), LoftyError> {
-//! use lofty::{read_from_path, ParseOptions, TaggedFileExt};
+//! # fn main() -> lofty::error::Result<()> {
+//! use lofty::file::TaggedFileExt;
+//! use lofty::read_from_path;
 //!
 //! let path = "test.mp3";
 //! let tagged_file = read_from_path(path)?;
@@ -73,10 +72,11 @@
 //! ## Using concrete file types
 //!
 //! ```rust
-//! # use lofty::LoftyError;
-//! # fn main() -> Result<(), LoftyError> {
+//! # fn main() -> lofty::error::Result<()> {
+//! use lofty::config::ParseOptions;
+//! use lofty::file::AudioFile;
 //! use lofty::mpeg::MpegFile;
-//! use lofty::{AudioFile, ParseOptions, TagType};
+//! use lofty::TagType;
 //! use std::fs::File;
 //!
 //! # let path = "tests/files/assets/minimal/full_test.mp3";
