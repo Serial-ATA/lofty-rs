@@ -35,9 +35,10 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{AudioFile, TaggedFileExt, WriteOptions};
+	/// use lofty::config::WriteOptions;
+	/// use lofty::file::{AudioFile, TaggedFileExt};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
@@ -63,7 +64,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// ```rust,no_run
 	/// use lofty::config::WriteOptions;
-	/// use lofty::{AudioFile, TaggedFileExt, WriteOptions};
+	/// use lofty::file::{AudioFile, TaggedFileExt};
 	/// use std::fs::OpenOptions;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
