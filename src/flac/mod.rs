@@ -9,6 +9,7 @@ pub(crate) mod properties;
 mod read;
 pub(crate) mod write;
 
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::file::{FileType, TaggedFile};
 use crate::id3::v2::tag::Id3v2Tag;
@@ -16,7 +17,6 @@ use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
 use crate::traits::TagExt;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::Seek;

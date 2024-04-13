@@ -2,13 +2,13 @@ use super::header::read_ape_header;
 use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
 use crate::ape::tag::read::{read_ape_tag, read_ape_tag_with_header};
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::decode_err;
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek, SeekFrom};
 

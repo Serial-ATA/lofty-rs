@@ -22,7 +22,7 @@ impl WriteOptions {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::WriteOptions;
+	/// use lofty::config::WriteOptions;
 	///
 	/// let write_options = WriteOptions::new();
 	/// ```
@@ -48,7 +48,7 @@ impl WriteOptions {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::WriteOptions;
+	/// use lofty::config::WriteOptions;
 	///
 	/// // I really don't want my files rewritten, so I'll double the padding size!
 	/// let options = WriteOptions::new().preferred_padding(2048);
@@ -71,9 +71,11 @@ impl WriteOptions {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{Tag, TagExt, TagType, WriteOptions};
+	/// use lofty::config::WriteOptions;
+	/// use lofty::prelude::*;
+	/// use lofty::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -99,9 +101,11 @@ impl WriteOptions {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{Tag, TagExt, TagType, WriteOptions};
+	/// use lofty::config::WriteOptions;
+	/// use lofty::prelude::*;
+	/// use lofty::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -127,9 +131,11 @@ impl WriteOptions {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::{Tag, TagExt, TagType, WriteOptions};
+	/// use lofty::config::WriteOptions;
+	/// use lofty::prelude::*;
+	/// use lofty::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...

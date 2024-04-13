@@ -111,7 +111,7 @@ pub(crate) fn write_module(
 	quote! {
 		pub(crate) mod write {
 			#[allow(unused_variables)]
-			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag, write_options: ::lofty::WriteOptions) -> ::lofty::error::Result<()> {
+			pub(crate) fn write_to(data: &mut ::std::fs::File, tag: &::lofty::Tag, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()> {
 				match tag.tag_type() {
 					#( #applicable_formats )*
 					_ => crate::macros::err!(UnsupportedTag),

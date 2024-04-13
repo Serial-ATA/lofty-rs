@@ -1,7 +1,7 @@
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::{decode_err, parse_mode_choice};
 use crate::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
-use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::io::Read;

@@ -1,6 +1,6 @@
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::iff::chunk::Chunks;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom, Write};

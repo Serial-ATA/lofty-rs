@@ -1,9 +1,9 @@
 //! Tools to create custom file resolvers
 //!
 //! For a full example of a custom resolver, see [this](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver).
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
-use crate::probe::ParseOptions;
 use crate::tag::TagType;
 
 use std::collections::HashMap;
@@ -129,10 +129,9 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::{GlobalOptions, ParseOptions};
 	use crate::file::{FileType, TaggedFileExt};
-	use crate::global_options::GlobalOptions;
 	use crate::id3::v2::Id3v2Tag;
-	use crate::probe::ParseOptions;
 	use crate::properties::FileProperties;
 	use crate::resolve::{register_custom_resolver, FileResolver};
 	use crate::tag::TagType;
@@ -196,7 +195,7 @@ mod tests {
 		register_custom_resolver::<MyFile>("MyFile");
 
 		let global_options = GlobalOptions::new().use_custom_resolvers(true);
-		crate::apply_global_options(global_options);
+		crate::config::apply_global_options(global_options);
 
 		let path = "examples/custom_resolver/test_asset.myfile";
 		let read = crate::read_from_path(path).unwrap();

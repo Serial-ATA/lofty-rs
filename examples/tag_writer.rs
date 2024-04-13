@@ -1,5 +1,6 @@
+use lofty::config::WriteOptions;
 use lofty::prelude::*;
-use lofty::{Probe, Tag, TaggedFileExt, WriteOptions};
+use lofty::{Probe, Tag};
 
 use structopt::StructOpt;
 

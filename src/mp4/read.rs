@@ -2,9 +2,9 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use super::Mp4File;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
-use crate::probe::{ParseOptions, ParsingMode};
 use crate::traits::SeekStreamLen;
 use crate::util::text::utf8_decode_str;
 

@@ -1,3 +1,4 @@
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
@@ -8,7 +9,6 @@ use crate::probe::Probe;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -693,9 +693,10 @@ pub(crate) fn create_vorbis_comments_ref(
 
 #[cfg(test)]
 mod tests {
+	use crate::config::{ParsingMode, WriteOptions};
 	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::prelude::*;
-	use crate::{ItemKey, ItemValue, ParsingMode, Tag, TagItem, TagType, WriteOptions};
+	use crate::{ItemValue, Tag, TagItem, TagType};
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);

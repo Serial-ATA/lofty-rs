@@ -1,10 +1,10 @@
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::err;
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -483,10 +483,10 @@ where
 
 #[cfg(test)]
 mod tests {
+	use crate::config::{ParseOptions, WriteOptions};
 	use crate::iff::aiff::{AIFFTextChunks, Comment};
 	use crate::prelude::*;
-	use crate::probe::ParseOptions;
-	use crate::{ItemKey, ItemValue, Tag, TagItem, TagType, WriteOptions};
+	use crate::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::Cursor;
 

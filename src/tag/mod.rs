@@ -1,6 +1,7 @@
 pub(crate) mod item;
 pub(crate) mod utils;
 
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
@@ -9,7 +10,6 @@ use crate::probe::Probe;
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
 use item::{ItemKey, ItemValue, TagItem};
 
-use crate::WriteOptions;
 use std::borrow::Cow;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
@@ -663,9 +663,10 @@ impl TagType {
 #[cfg(test)]
 mod tests {
 	use super::try_parse_year;
+	use crate::config::WriteOptions;
 	use crate::prelude::*;
 	use crate::tag::utils::test_utils::read_path;
-	use crate::{Picture, PictureType, Tag, TagType, WriteOptions};
+	use crate::{Picture, PictureType, Tag, TagType};
 
 	use std::io::{Seek, Write};
 	use std::process::Command;

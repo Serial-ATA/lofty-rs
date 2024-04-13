@@ -1,9 +1,9 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
+use crate::config::{global_options, ParseOptions};
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
-use crate::global_options::global_options;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::macros::err;
@@ -20,160 +20,6 @@ use crate::wavpack::WavPackFile;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
-
-/// Options to control how Lofty parses a file
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[non_exhaustive]
-pub struct ParseOptions {
-	pub(crate) read_properties: bool,
-	pub(crate) parsing_mode: ParsingMode,
-	pub(crate) max_junk_bytes: usize,
-}
-
-impl Default for ParseOptions {
-	/// The default implementation for `ParseOptions`
-	///
-	/// The defaults are as follows:
-	///
-	/// ```rust,ignore
-	/// ParseOptions {
-	/// 	read_properties: true,
-	/// 	parsing_mode: ParsingMode::BestAttempt,
-	///     max_junk_bytes: 1024
-	/// }
-	/// ```
-	fn default() -> Self {
-		Self::new()
-	}
-}
-
-impl ParseOptions {
-	/// Default parsing mode
-	pub const DEFAULT_PARSING_MODE: ParsingMode = ParsingMode::BestAttempt;
-
-	/// Default number of junk bytes to read
-	pub const DEFAULT_MAX_JUNK_BYTES: usize = 1024;
-
-	/// Creates a new `ParseOptions`, alias for `Default` implementation
-	///
-	/// See also: [`ParseOptions::default`]
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ParseOptions;
-	///
-	/// let parsing_options = ParseOptions::new();
-	/// ```
-	#[must_use]
-	pub const fn new() -> Self {
-		Self {
-			read_properties: true,
-			parsing_mode: Self::DEFAULT_PARSING_MODE,
-			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
-		}
-	}
-
-	/// Whether or not to read the audio properties
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ParseOptions;
-	///
-	/// // By default, `read_properties` is enabled. Here, we don't want to read them.
-	/// let parsing_options = ParseOptions::new().read_properties(false);
-	/// ```
-	pub fn read_properties(&mut self, read_properties: bool) -> Self {
-		self.read_properties = read_properties;
-		*self
-	}
-
-	/// The parsing mode to use, see [`ParsingMode`] for details
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::{ParseOptions, ParsingMode};
-	///
-	/// // By default, `parsing_mode` is ParsingMode::BestAttempt. Here, we need absolute correctness.
-	/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
-	/// ```
-	pub fn parsing_mode(&mut self, parsing_mode: ParsingMode) -> Self {
-		self.parsing_mode = parsing_mode;
-		*self
-	}
-
-	/// The maximum number of allowed junk bytes to search
-	///
-	/// Some information may be surrounded by junk bytes, such as tag padding remnants. This sets the maximum
-	/// number of junk/unrecognized bytes Lofty will search for required information before giving up.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::ParseOptions;
-	///
-	/// // I have files full of junk, I'll double the search window!
-	/// let parsing_options = ParseOptions::new().max_junk_bytes(2048);
-	/// ```
-	pub fn max_junk_bytes(&mut self, max_junk_bytes: usize) -> Self {
-		self.max_junk_bytes = max_junk_bytes;
-		*self
-	}
-}
-
-/// The parsing strictness mode
-///
-/// This can be set with [`Probe::options`].
-///
-/// # Examples
-///
-/// ```rust,no_run
-/// use lofty::{ParseOptions, ParsingMode, Probe};
-///
-/// # fn main() -> lofty::Result<()> {
-/// // We only want to read spec-compliant inputs
-/// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
-/// let tagged_file = Probe::open("foo.mp3")?.options(parsing_options).read()?;
-/// # Ok(()) }
-/// ```
-#[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Default)]
-#[non_exhaustive]
-pub enum ParsingMode {
-	/// Will eagerly error on invalid input
-	///
-	/// This mode will eagerly error on any non spec-compliant input.
-	///
-	/// ## Examples of behavior
-	///
-	/// * Unable to decode text - The parser will error and the entire input is discarded
-	/// * Unable to determine the sample rate - The parser will error and the entire input is discarded
-	Strict,
-	/// Default mode, less eager to error on recoverably malformed input
-	///
-	/// This mode will attempt to fill in any holes where possible in otherwise valid, spec-compliant input.
-	///
-	/// NOTE: A readable input does *not* necessarily make it writeable.
-	///
-	/// ## Examples of behavior
-	///
-	/// * Unable to decode text - If valid otherwise, the field will be replaced by an empty string and the parser moves on
-	/// * Unable to determine the sample rate - The sample rate will be 0
-	#[default]
-	BestAttempt,
-	/// Least eager to error, may produce invalid/partial output
-	///
-	/// This mode will discard any invalid fields, and ignore the majority of non-fatal errors.
-	///
-	/// If the input is malformed, the resulting tags may be incomplete, and the properties zeroed.
-	///
-	/// ## Examples of behavior
-	///
-	/// * Unable to decode text - The entire item is discarded and the parser moves on
-	/// * Unable to determine the sample rate - The sample rate will be 0
-	Relaxed,
-}
 
 /// A format agnostic reader
 ///
@@ -687,9 +533,9 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::{FileType, GlobalOptions, Probe};
+	use crate::config::{GlobalOptions, ParseOptions};
+	use crate::{FileType, Probe};
 
-	use lofty::ParseOptions;
 	use std::fs::File;
 
 	#[test]
@@ -784,7 +630,7 @@ mod tests {
 		let parse_options = ParseOptions::new().read_properties(false);
 
 		let mut global_options = GlobalOptions::new().allocation_limit(50);
-		crate::global_options::apply_global_options(global_options);
+		crate::config::apply_global_options(global_options);
 
 		// An allocation with a size of 40 bytes should be ok
 		let within_limits = create_fake_mp3(40);
@@ -802,7 +648,7 @@ mod tests {
 
 		// Now test the default allocation limit (16MB), which should of course be ok with 60 bytes
 		global_options.allocation_limit = GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
-		crate::global_options::apply_global_options(global_options);
+		crate::config::apply_global_options(global_options);
 
 		let probe = Probe::new(std::io::Cursor::new(&too_big))
 			.set_file_type(FileType::Mpeg)

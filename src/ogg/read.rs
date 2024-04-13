@@ -1,9 +1,9 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
+use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
-use crate::probe::ParsingMode;
 use crate::util::text::{utf16_decode, utf8_decode, utf8_decode_str};
 
 use std::borrow::Cow;

@@ -2,9 +2,9 @@
 // Reference Conversions
 // *********************
 
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::Write;

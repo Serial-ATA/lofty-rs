@@ -2,9 +2,9 @@ pub(super) mod properties;
 
 use super::find_last_page;
 use super::tag::VorbisComments;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
-use crate::probe::ParseOptions;
 use properties::OpusProperties;
 
 use std::io::{Read, Seek};

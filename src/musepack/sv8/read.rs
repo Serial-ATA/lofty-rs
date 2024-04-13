@@ -1,7 +1,7 @@
 use super::properties::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
+use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, parse_mode_choice};
-use crate::probe::ParsingMode;
 
 use std::io::Read;
 use std::time::Duration;

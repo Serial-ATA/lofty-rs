@@ -1,6 +1,6 @@
+use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::macros::try_vec;
-use crate::probe::ParsingMode;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::collections::HashMap;
@@ -202,8 +202,8 @@ impl RelativeVolumeAdjustmentFrame {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::ParsingMode;
 	use crate::id3::v2::{ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame};
-	use crate::ParsingMode;
 
 	use std::collections::HashMap;
 	use std::io::Read;

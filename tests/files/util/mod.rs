@@ -69,7 +69,7 @@ macro_rules! set_artist {
 
 		$file_write.rewind().unwrap();
 
-		$tag.save_to(&mut $file_write, lofty::WriteOptions::default())
+		$tag.save_to(&mut $file_write, lofty::config::WriteOptions::default())
 			.unwrap();
 	};
 }
@@ -80,7 +80,7 @@ macro_rules! remove_tag {
 		let mut file = temp_file!($path);
 
 		let tagged_file = lofty::Probe::new(&mut file)
-			.options(lofty::ParseOptions::new().read_properties(false))
+			.options(lofty::config::ParseOptions::new().read_properties(false))
 			.guess_file_type()
 			.unwrap()
 			.read()
@@ -94,7 +94,7 @@ macro_rules! remove_tag {
 		file.rewind().unwrap();
 
 		let tagged_file = lofty::Probe::new(&mut file)
-			.options(lofty::ParseOptions::new().read_properties(false))
+			.options(lofty::config::ParseOptions::new().read_properties(false))
 			.guess_file_type()
 			.unwrap()
 			.read()

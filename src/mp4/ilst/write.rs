@@ -1,4 +1,5 @@
 use super::r#ref::IlstRef;
+use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
@@ -8,8 +9,6 @@ use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomRea
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
-use crate::probe::ParseOptions;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Seek, SeekFrom, Write};

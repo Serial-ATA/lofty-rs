@@ -2,6 +2,7 @@ mod chunk_file;
 mod frame;
 
 use super::Id3v2TagFlags;
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::file::FileType;
 use crate::id3::v2::frame::FrameRef;
@@ -11,7 +12,6 @@ use crate::id3::v2::Id3v2Tag;
 use crate::id3::{find_id3v2, FindId3v2Config};
 use crate::macros::{err, try_vec};
 use crate::probe::Probe;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -283,9 +283,9 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{Id3v2Tag, Id3v2TagFlags};
 	use crate::prelude::*;
-	use crate::WriteOptions;
 
 	#[test]
 	fn id3v2_write_crc32() {

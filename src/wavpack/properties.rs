@@ -1,6 +1,6 @@
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
-use crate::probe::ParsingMode;
 use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};

@@ -1,9 +1,9 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{nested_atom, skip_unneeded, AtomReader};
+use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
 use crate::math::RoundedDivision;
-use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};

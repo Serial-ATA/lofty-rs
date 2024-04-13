@@ -1,7 +1,7 @@
 use super::read::PacketReader;
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::musepack::constants::FREQUENCY_TABLE;
-use crate::probe::ParsingMode;
 use crate::properties::FileProperties;
 
 use std::io::Read;

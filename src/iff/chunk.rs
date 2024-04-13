@@ -1,7 +1,7 @@
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::macros::{err, try_vec};
-use crate::probe::ParsingMode;
 use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};

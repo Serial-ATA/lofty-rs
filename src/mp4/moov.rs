@@ -2,9 +2,9 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
 use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::ParsingMode;
 
 use std::io::{Read, Seek};
 

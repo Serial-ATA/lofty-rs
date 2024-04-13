@@ -1,5 +1,6 @@
 use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
+use crate::config::ParseOptions;
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
 use crate::iff::aiff::{AiffFile, AiffProperties};
@@ -13,7 +14,6 @@ use crate::musepack::{MpcFile, MpcProperties};
 use crate::ogg::{
 	OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
 };
-use crate::probe::ParseOptions;
 use crate::properties::ChannelMask;
 use crate::wavpack::{WavPackFile, WavPackProperties};
 

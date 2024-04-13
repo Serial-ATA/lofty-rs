@@ -1,13 +1,13 @@
 use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
 use super::{MpegFile, MpegProperties};
 use crate::ape::header::read_ape_header;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, find_lyrics3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::{decode_err, err};
 use crate::mpeg::header::HEADER_MASK;
-use crate::probe::{ParseOptions, ParsingMode};
 
 use std::io::{Read, Seek, SeekFrom};
 

@@ -2,12 +2,12 @@ use super::item::ApeItemRef;
 use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::read;
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};

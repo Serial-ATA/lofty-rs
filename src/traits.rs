@@ -118,8 +118,8 @@ accessor_trait! {
 	[year  ]<u32>,                  [comment    ]<Cow<'_, str>, String>,
 }
 
+use crate::config::WriteOptions;
 use crate::tag::Tag;
-use crate::write_options::WriteOptions;
 
 use std::fs::File;
 use std::path::Path;

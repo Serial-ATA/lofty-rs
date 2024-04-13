@@ -1,5 +1,5 @@
+use lofty::config::ParseOptions;
 use lofty::prelude::*;
-use lofty::ParseOptions;
 
 use std::io::Cursor;
 use std::path::Path;

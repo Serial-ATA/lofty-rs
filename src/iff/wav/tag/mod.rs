@@ -1,11 +1,11 @@
 pub(super) mod read;
 mod write;
 
+use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
 use crate::tag::{try_parse_year, Tag, TagType};
 use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
-use crate::write_options::WriteOptions;
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -348,10 +348,11 @@ pub(crate) fn tagitems_into_riff<'a>(
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::iff::chunk::Chunks;
 	use crate::iff::wav::RIFFInfoList;
 	use crate::prelude::*;
-	use crate::{Tag, TagType, WriteOptions};
+	use crate::{Tag, TagType};
 
 	use byteorder::LittleEndian;
 
