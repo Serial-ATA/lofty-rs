@@ -176,7 +176,6 @@ pub mod wavpack;
 
 pub use crate::probe::{read_from, read_from_path, Probe};
 
-pub use crate::file::{BoundTaggedFile, FileType, TaggedFile, TaggedFileExt};
 pub use crate::picture::{MimeType, Picture, PictureType};
 pub use crate::tag::{Tag, TagType};
 pub use tag::item::{ItemKey, ItemValue, TagItem};

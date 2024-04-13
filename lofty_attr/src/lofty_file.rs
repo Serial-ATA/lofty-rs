@@ -523,19 +523,19 @@ fn generate_from_taggedfile_impl(file: &LoftyFile) -> proc_macro2::TokenStream {
 
 	let file_type = &file.file_type;
 	let file_type_variant = if file.internal_details.has_internal_file_type {
-		quote! { ::lofty::FileType::#file_type }
+		quote! { ::lofty::file::FileType::#file_type }
 	} else {
 		let file_ty_str = file_type.to_string();
-		quote! { ::lofty::FileType::Custom(#file_ty_str) }
+		quote! { ::lofty::file::FileType::Custom(#file_ty_str) }
 	};
 
 	let struct_name = &file.struct_info.name;
 	quote! {
-		impl ::std::convert::From<#struct_name> for ::lofty::TaggedFile {
+		impl ::std::convert::From<#struct_name> for ::lofty::file::TaggedFile {
 			fn from(input: #struct_name) -> Self {
 				use ::lofty::prelude::TaggedFileExt as _;
 
-				::lofty::TaggedFile::new(
+				::lofty::file::TaggedFile::new(
 					#file_type_variant,
 					::lofty::properties::FileProperties::from(input.properties),
 					{
