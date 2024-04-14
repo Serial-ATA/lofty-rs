@@ -134,8 +134,7 @@ mod tests {
 	use crate::id3::v2::Id3v2Tag;
 	use crate::properties::FileProperties;
 	use crate::resolve::{register_custom_resolver, FileResolver};
-	use crate::tag::TagType;
-	use crate::traits::Accessor;
+	use crate::tag::{Accessor, TagType};
 
 	use std::fs::File;
 	use std::io::{Read, Seek};

@@ -9,8 +9,8 @@ use crate::config::WriteOptions;
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
-use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag};
+use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{MergeTag, SplitTag};
 use atom::{AdvisoryRating, Atom, AtomData};
 
 use std::borrow::Cow;

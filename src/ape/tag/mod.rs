@@ -7,8 +7,8 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
 use crate::tag::item::ItemValueRef;
-use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag};
+use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -769,7 +769,6 @@ mod tests {
 
 	#[test]
 	fn track_number_tag_to_ape() {
-		use crate::traits::Accessor;
 		let track_number = 1;
 
 		let mut tag = Tag::new(TagType::Ape);
@@ -787,7 +786,6 @@ mod tests {
 
 	#[test]
 	fn track_total_tag_to_ape() {
-		use crate::traits::Accessor;
 		let track_total = 2;
 
 		let mut tag = Tag::new(TagType::Ape);
@@ -805,7 +803,6 @@ mod tests {
 
 	#[test]
 	fn track_number_and_track_total_tag_to_ape() {
-		use crate::traits::Accessor;
 		let track_number = 1;
 		let track_total = 2;
 
@@ -829,7 +826,6 @@ mod tests {
 
 	#[test]
 	fn disk_number_tag_to_ape() {
-		use crate::traits::Accessor;
 		let disk_number = 1;
 
 		let mut tag = Tag::new(TagType::Ape);
@@ -847,7 +843,6 @@ mod tests {
 
 	#[test]
 	fn disk_total_tag_to_ape() {
-		use crate::traits::Accessor;
 		let disk_total = 2;
 
 		let mut tag = Tag::new(TagType::Ape);
@@ -865,7 +860,6 @@ mod tests {
 
 	#[test]
 	fn disk_number_and_disk_total_tag_to_ape() {
-		use crate::traits::Accessor;
 		let disk_number = 1;
 		let disk_total = 2;
 
