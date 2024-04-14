@@ -1,4 +1,5 @@
-use lofty::{ParseOptions, Probe};
+use lofty::config::ParseOptions;
+use lofty::probe::Probe;
 
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 
