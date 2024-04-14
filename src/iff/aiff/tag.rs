@@ -2,8 +2,7 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::err;
-use crate::tag::{Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{MergeTag, SplitTag};
+use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 
 use std::borrow::Cow;
 use std::fs::File;

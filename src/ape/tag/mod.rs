@@ -7,8 +7,9 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
 use crate::tag::item::ItemValueRef;
-use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{MergeTag, SplitTag};
+use crate::tag::{
+	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+};
 
 use std::borrow::Cow;
 use std::fs::File;

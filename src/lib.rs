@@ -194,6 +194,5 @@ pub mod prelude {
 
 	pub use crate::error::LoftyError;
 	pub use crate::file::{AudioFile, TaggedFileExt};
-	pub use crate::tag::{Accessor, ItemKey, TagExt};
-	pub use crate::traits::{MergeTag, SplitTag};
+	pub use crate::tag::{Accessor, ItemKey, MergeTag, SplitTag, TagExt};
 }
