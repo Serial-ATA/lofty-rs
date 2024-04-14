@@ -438,7 +438,6 @@ fn popm_frame() {
 
 #[test]
 fn multi_value_frame_to_tag() {
-	use crate::traits::Accessor;
 	let mut tag = Id3v2Tag::default();
 
 	tag.set_artist(String::from("foo\0bar\0baz"));
@@ -450,7 +449,6 @@ fn multi_value_frame_to_tag() {
 
 #[test]
 fn multi_item_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let mut tag = Tag::new(TagType::Id3v2);
 
 	tag.push_unchecked(TagItem::new(
@@ -823,7 +821,6 @@ fn set_disk_total_and_disk() {
 
 #[test]
 fn track_number_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let track_number = 1;
 
 	let mut tag = Tag::new(TagType::Id3v2);
@@ -841,7 +838,6 @@ fn track_number_tag_to_id3v2() {
 
 #[test]
 fn track_total_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let track_total = 2;
 
 	let mut tag = Tag::new(TagType::Id3v2);
@@ -859,7 +855,6 @@ fn track_total_tag_to_id3v2() {
 
 #[test]
 fn track_number_and_track_total_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let track_number = 1;
 	let track_total = 2;
 
@@ -883,7 +878,6 @@ fn track_number_and_track_total_tag_to_id3v2() {
 
 #[test]
 fn disk_number_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let disk_number = 1;
 
 	let mut tag = Tag::new(TagType::Id3v2);
@@ -901,7 +895,6 @@ fn disk_number_tag_to_id3v2() {
 
 #[test]
 fn disk_total_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let disk_total = 2;
 
 	let mut tag = Tag::new(TagType::Id3v2);
@@ -919,7 +912,6 @@ fn disk_total_tag_to_id3v2() {
 
 #[test]
 fn disk_number_and_disk_total_tag_to_id3v2() {
-	use crate::traits::Accessor;
 	let disk_number = 1;
 	let disk_total = 2;
 

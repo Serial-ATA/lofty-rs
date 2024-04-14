@@ -1,5 +1,6 @@
 //! Utilities for generic tag handling
 
+mod accessor;
 pub(crate) mod item;
 mod tag_type;
 mod tagext;
@@ -10,7 +11,7 @@ use crate::error::{LoftyError, Result};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
-use crate::traits::{Accessor, MergeTag, SplitTag};
+use crate::traits::{MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -18,6 +19,7 @@ use std::io::Write;
 use std::path::Path;
 
 // Exports
+pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use tag_type::TagType;
 pub use tagext::TagExt;

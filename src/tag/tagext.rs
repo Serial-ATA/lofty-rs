@@ -1,6 +1,5 @@
 use crate::config::WriteOptions;
-use crate::tag::Tag;
-use crate::traits::Accessor;
+use crate::tag::{Accessor, Tag};
 
 use std::fs::File;
 use std::path::Path;

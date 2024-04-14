@@ -3,8 +3,8 @@ mod write;
 
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::tag::{try_parse_year, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{Accessor, MergeTag, SplitTag};
+use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
+use crate::traits::{MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
