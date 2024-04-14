@@ -5,7 +5,7 @@ use super::Mp4File;
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
-use crate::traits::SeekStreamLen;
+use crate::util::io::SeekStreamLen;
 use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek, SeekFrom};

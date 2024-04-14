@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::traits::SeekStreamLen;
+use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
