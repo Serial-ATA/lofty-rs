@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::math::RoundedDivision;
 use crate::properties::{ChannelMask, FileProperties};
+use crate::util::math::RoundedDivision;
 
 use std::time::Duration;
 
