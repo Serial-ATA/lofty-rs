@@ -57,9 +57,9 @@ macro_rules! accessor_trait {
 			/// # Example
 			///
 			/// ```rust
-			/// use lofty::{Tag, Accessor};
+			/// use lofty::tag::{Tag, Accessor};
 			///
-			/// # let tag_type = lofty::TagType::Id3v2;
+			/// # let tag_type = lofty::tag::TagType::Id3v2;
 			/// let mut tag = Tag::new(tag_type);
 			#[doc = "assert_eq!(tag." $name $(_ $other)* "(), None);"]
 			/// ```
@@ -74,7 +74,7 @@ macro_rules! accessor_trait {
 			/// # Example
 			///
 			/// ```rust,ignore
-			/// use lofty::{Tag, Accessor};
+			/// use lofty::tag::{Tag, Accessor};
 			///
 			/// let mut tag = Tag::new(tag_type);
 			#[doc = "tag.set_" $name $(_ $other)* "(value);"]
@@ -92,7 +92,7 @@ macro_rules! accessor_trait {
 			/// # Example
 			///
 			/// ```rust,ignore
-			/// use lofty::{Tag, Accessor};
+			/// use lofty::tag::{Tag, Accessor};
 			///
 			/// let mut tag = Tag::new(tag_type);
 			#[doc = "tag.set_" $name $(_ $other)* "(value);"]

@@ -199,7 +199,7 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	/// use std::borrow::Cow;
 	///
 	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
@@ -240,7 +240,7 @@ impl Id3v2Tag {
 	///
 	/// ```rust
 	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	/// use std::borrow::Cow;
 	///
 	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
@@ -418,7 +418,7 @@ impl Id3v2Tag {
 	///
 	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let mut tag = Id3v2Tag::new();
 	/// assert!(tag.is_empty());
 	///

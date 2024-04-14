@@ -107,7 +107,7 @@ impl ApeTag {
 	///
 	/// ```rust
 	/// use lofty::ape::ApeTag;
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	///
 	/// let mut ape_tag = ApeTag::new();
 	/// ape_tag.set_title(String::from("Foo title"));
@@ -138,7 +138,7 @@ impl ApeTag {
 	///
 	/// ```rust
 	/// use lofty::ape::ApeTag;
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	///
 	/// let mut ape_tag = ApeTag::new();
 	/// ape_tag.set_title(String::from("Foo title"));

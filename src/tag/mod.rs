@@ -66,8 +66,7 @@ macro_rules! impl_accessor {
 /// Accessing common items
 ///
 /// ```rust
-/// use lofty::tag::{Tag, TagType};
-/// use lofty::Accessor;
+/// use lofty::tag::{Accessor, Tag, TagType};
 ///
 /// let tag = Tag::new(TagType::Id3v2);
 ///
