@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **WriteOptions** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/228)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/361)):
+- **WriteOptions** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/228)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/363)):
 	- ⚠️ Important ⚠️: This update introduces `WriteOptions` to allow for finer grained control over how
 	  Lofty writes tags. These are best used as global user-configurable options, as most options will
 	  not apply to all files. The defaults are set to be as safe as possible,
