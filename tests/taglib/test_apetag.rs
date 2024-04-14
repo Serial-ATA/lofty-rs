@@ -3,8 +3,10 @@ use crate::temp_file;
 use std::io::Seek;
 
 use lofty::ape::{ApeItem, ApeTag};
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::musepack::MpcFile;
-use lofty::{Accessor, AudioFile, ItemValue, ParseOptions, TagExt, WriteOptions};
+use lofty::tag::{Accessor, ItemValue, TagExt};
 
 #[test]
 fn test_is_empty() {

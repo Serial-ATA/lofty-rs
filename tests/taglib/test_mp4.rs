@@ -4,11 +4,11 @@ use crate::util::get_file;
 use std::borrow::Cow;
 use std::io::{Read, Seek};
 
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst, Mp4Codec, Mp4File};
-use lofty::{
-	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureType, TagExt, TagType,
-	WriteOptions,
-};
+use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::tag::{Accessor, TagExt, TagType};
 
 #[test]
 fn test_properties_aac() {
