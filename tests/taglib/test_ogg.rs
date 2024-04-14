@@ -4,8 +4,10 @@ use crate::util::get_file;
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::ogg::VorbisFile;
-use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
+use lofty::tag::Accessor;
 
 #[test]
 fn test_simple() {

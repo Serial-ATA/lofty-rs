@@ -1,10 +1,11 @@
 use crate::temp_file;
 use crate::util::get_file;
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
+use lofty::ogg::{SpeexFile, VorbisComments};
+use lofty::tag::Accessor;
 
 use std::io::Seek;
-
-use lofty::ogg::{SpeexFile, VorbisComments};
-use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_audio_properties() {
