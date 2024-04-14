@@ -250,8 +250,8 @@ impl Ilst {
 	///
 	/// ```rust
 	/// use lofty::mp4::Ilst;
+	/// use lofty::picture::{MimeType, Picture, PictureType};
 	/// use lofty::tag::TagExt;
-	/// use lofty::{MimeType, Picture, PictureType};
 	///
 	/// let mut ilst = Ilst::new();
 	///
@@ -294,8 +294,8 @@ impl Ilst {
 	///
 	/// ```rust
 	/// use lofty::mp4::Ilst;
+	/// use lofty::picture::{MimeType, Picture, PictureType};
 	/// use lofty::tag::TagExt;
-	/// use lofty::{MimeType, Picture, PictureType};
 	///
 	/// let mut ilst = Ilst::new();
 	///

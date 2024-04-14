@@ -70,30 +70,41 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{VorbisComments, OggPictureStorage};
-	/// # use lofty::{Picture, PictureInformation, PictureType, MimeType};
+	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
-	/// # let front_cover_info = PictureInformation::default();
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
-	/// # let back_cover_info = PictureInformation::default();
-	/// # let another_picture = Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add a front cover
+	/// let front_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	/// let front_cover_info = PictureInformation::default();
 	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverFront);
 	///
 	/// // Replace the front cover with a back cover
+	/// let back_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverBack,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	/// let back_cover_info = PictureInformation::default();
 	/// tag.set_picture(0, back_cover, back_cover_info);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverBack);
 	///
 	/// // Use an out of bounds index
+	/// let another_picture =
+	/// 	Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// tag.set_picture(100, another_picture, PictureInformation::default());
 	///
 	/// assert_eq!(tag.pictures().len(), 2);
@@ -118,12 +129,18 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{VorbisComments, OggPictureStorage};
-	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
+	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
-	/// # let front_cover_info = PictureInformation::default();
+	/// let front_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	/// let front_cover_info = PictureInformation::default();
+	///
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add a front cover
@@ -145,18 +162,29 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{VorbisComments, OggPictureStorage};
-	/// # use lofty::{Picture, PictureType, MimeType, PictureInformation};
+	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
-	/// # let front_cover_info = PictureInformation::default();
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
-	/// # let back_cover_info = PictureInformation::default();
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add front and back covers
+	/// let front_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	/// let front_cover_info = PictureInformation::default();
 	/// tag.insert_picture(front_cover, Some(front_cover_info))?;
+	///
+	/// let back_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverBack,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	/// let back_cover_info = PictureInformation::default();
 	/// tag.insert_picture(back_cover, Some(front_cover_info))?;
 	///
 	/// assert_eq!(tag.pictures().len(), 2);

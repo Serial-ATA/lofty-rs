@@ -461,28 +461,38 @@ impl Tag {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::picture::{MimeType, Picture, PictureType};
 	/// use lofty::tag::{Tag, TagType};
-	/// use lofty::Picture;
-	/// # use lofty::{PictureType, MimeType};
 	///
-	/// # let front_cover = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
-	/// # let back_cover = Picture::new_unchecked(PictureType::CoverBack, Some(MimeType::Png), None, Vec::new());
-	/// # let another_picture = Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	///
 	/// // Add a front cover
+	/// let front_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
 	/// tag.push_picture(front_cover);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverFront);
 	///
 	/// // Replace the front cover with a back cover
+	/// let back_cover = Picture::new_unchecked(
+	/// 	PictureType::CoverBack,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
 	/// tag.set_picture(0, back_cover);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverBack);
 	///
 	/// // Use an out of bounds index
+	/// let another_picture =
+	/// 	Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
 	/// tag.set_picture(100, another_picture);
 	///
 	/// assert_eq!(tag.pictures().len(), 2);
@@ -504,12 +514,18 @@ impl Tag {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::picture::{MimeType, Picture, PictureType};
 	/// use lofty::tag::{Tag, TagType};
-	/// use lofty::Picture;
-	/// # use lofty::{PictureType, MimeType};
 	///
-	/// # let picture = Picture::new_unchecked(PictureType::CoverFront, Some(MimeType::Png), None, Vec::new());
 	/// let mut tag = Tag::new(TagType::Id3v2);
+	///
+	/// let picture = Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
+	///
 	/// tag.push_picture(picture);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
