@@ -44,8 +44,7 @@ where
 		size = size.saturating_add(32);
 	}
 
-	#[allow(unstable_name_collisions)]
-	if u64::from(size) > data.stream_len()? {
+	if u64::from(size) > data.stream_len_hack()? {
 		decode_err!(@BAIL Ape, "APE tag has an invalid size (> file size)");
 	}
 

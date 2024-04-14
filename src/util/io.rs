@@ -1,6 +1,6 @@
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: std::io::Seek {
-	fn stream_len(&mut self) -> crate::error::Result<u64> {
+	fn stream_len_hack(&mut self) -> crate::error::Result<u64> {
 		use std::io::SeekFrom;
 
 		let current_pos = self.stream_position()?;

@@ -28,8 +28,7 @@ where
 	R: Read + Seek,
 {
 	pub(super) fn new(mut reader: R, parse_mode: ParsingMode) -> Result<Self> {
-		#[allow(unstable_name_collisions)]
-		let len = reader.stream_len()?;
+		let len = reader.stream_len_hack()?;
 		Ok(Self {
 			reader,
 			start: 0,
@@ -185,7 +184,7 @@ where
 	R: Read + Seek,
 {
 	let mut reader = AtomReader::new(data, parse_options.parsing_mode)?;
-	let file_length = reader.stream_len()?;
+	let file_length = reader.stream_len_hack()?;
 
 	let ftyp = verify_mp4(&mut reader)?;
 

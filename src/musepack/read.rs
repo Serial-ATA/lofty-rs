@@ -20,8 +20,7 @@ where
 	let mut version = MpcStreamVersion::Sv4to6;
 	let mut file = MpcFile::default();
 
-	#[allow(unstable_name_collisions)]
-	let mut stream_length = reader.stream_len()?;
+	let mut stream_length = reader.stream_len_hack()?;
 
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
