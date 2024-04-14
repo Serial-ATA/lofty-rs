@@ -1,7 +1,7 @@
 use lofty::config::WriteOptions;
 use lofty::prelude::*;
+use lofty::probe::Probe;
 use lofty::tag::Tag;
-use lofty::Probe;
 
 use structopt::StructOpt;
 

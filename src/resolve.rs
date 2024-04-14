@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 ///
 /// This trait allows for the creation of custom [`FileType`]s, that can make use of
 /// lofty's API. Registering a `FileResolver` ([`register_custom_resolver`]) makes it possible
-/// to detect and read files using [`Probe`](crate::Probe).
+/// to detect and read files using [`Probe`](crate::probe::Probe).
 pub trait FileResolver: Send + Sync + AudioFile {
 	/// The extension associated with the [`FileType`] without the '.'
 	fn extension() -> Option<&'static str>;

@@ -172,7 +172,7 @@ impl FileType {
 	/// * This **will not** search past tags at the start of the buffer.
 	/// For this behavior, use [`Probe::guess_file_type`].
 	///
-	/// [`Probe::guess_file_type`]: crate::Probe::guess_file_type
+	/// [`Probe::guess_file_type`]: crate::probe::Probe::guess_file_type
 	///
 	/// # Examples
 	///

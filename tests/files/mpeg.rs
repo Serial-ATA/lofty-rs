@@ -4,8 +4,8 @@ use lofty::file::FileType;
 use lofty::id3::v2::{Frame, FrameFlags, FrameId, FrameValue, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
+use lofty::probe::Probe;
 use lofty::tag::{Tag, TagType};
-use lofty::Probe;
 
 use std::borrow::Cow;
 use std::io::{Seek, Write};

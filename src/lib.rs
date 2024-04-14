@@ -17,7 +17,8 @@
 //!
 //! ```rust,no_run
 //! # fn main() -> lofty::error::Result<()> {
-//! use lofty::{read_from_path, Probe};
+//! use lofty::probe::Probe;
+//! use lofty::read_from_path;
 //!
 //! // This will guess the format from the extension
 //! // ("mp3" in this case), but we can guess from the content if we want to.
@@ -155,7 +156,7 @@ pub mod error;
 pub mod file;
 pub(crate) mod macros;
 pub mod picture;
-mod probe;
+pub mod probe;
 pub mod properties;
 pub mod resolve;
 pub mod tag;
@@ -172,7 +173,7 @@ pub mod musepack;
 pub mod ogg;
 pub mod wavpack;
 
-pub use crate::probe::{read_from, read_from_path, Probe};
+pub use crate::probe::{read_from, read_from_path};
 
 pub use util::text::TextEncoding;
 
@@ -187,7 +188,6 @@ pub mod prelude {
 	//! use lofty::prelude::*;
 	//! ```
 
-	pub use crate::error::LoftyError;
 	pub use crate::file::{AudioFile, TaggedFileExt};
 	pub use crate::tag::{Accessor, ItemKey, MergeTag, SplitTag, TagExt};
 }
