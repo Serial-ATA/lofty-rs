@@ -3,9 +3,12 @@ use crate::{assert_delta, temp_file};
 
 use std::io::Seek;
 
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::{AudioFile, FileType};
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::{AiffCompressionType, AiffFile};
-use lofty::{Accessor, AudioFile, FileType, ParseOptions, Probe, WriteOptions};
+use lofty::probe::Probe;
+use lofty::tag::{Accessor, TagType};
 
 #[test]
 fn test_aiff_properties() {
@@ -66,7 +69,7 @@ fn test_save_id3v2() {
 		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file, WriteOptions::default()).unwrap();
-		assert!(tfile.contains_tag_type(lofty::TagType::Id3v2));
+		assert!(tfile.contains_tag_type(TagType::Id3v2));
 	}
 
 	file.rewind().unwrap();
@@ -88,7 +91,7 @@ fn test_save_id3v2() {
 
 	{
 		let tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(!tfile.contains_tag_type(lofty::TagType::Id3v2));
+		assert!(!tfile.contains_tag_type(TagType::Id3v2));
 	}
 }
 

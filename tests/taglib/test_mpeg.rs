@@ -5,10 +5,12 @@ use std::fs::File;
 use std::io::Seek;
 
 use lofty::ape::ApeTag;
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::mpeg::MpegFile;
-use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
+use lofty::tag::Accessor;
 
 #[test]
 fn test_audio_properties_xing_header_cbr() {

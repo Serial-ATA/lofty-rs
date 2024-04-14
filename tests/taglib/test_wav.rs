@@ -1,8 +1,11 @@
 use crate::temp_file;
 use crate::util::get_file;
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
-use lofty::{Accessor, AudioFile, ParseOptions, TagType, WriteOptions};
+use lofty::tag::{Accessor, TagType};
+
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 #[test]

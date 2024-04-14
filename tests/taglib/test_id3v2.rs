@@ -4,6 +4,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Seek;
 
+use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::id3::v2::{
 	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
 	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
@@ -13,10 +15,9 @@ use lofty::id3::v2::{
 	UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
-use lofty::{
-	Accessor, AudioFile, MimeType, ParseOptions, ParsingMode, Picture, PictureType, TagExt,
-	TextEncoding, WriteOptions,
-};
+use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::tag::{Accessor, TagExt};
+use lofty::TextEncoding;
 
 #[test]
 fn test_unsynch_decode() {

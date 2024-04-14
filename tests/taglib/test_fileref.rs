@@ -3,12 +3,11 @@ use crate::temp_file;
 use std::fs::File;
 use std::io::{Read, Seek};
 
+use lofty::config::{GlobalOptions, ParseOptions, WriteOptions};
 use lofty::error::ErrorKind;
+use lofty::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 use lofty::resolve::FileResolver;
-use lofty::{
-	Accessor, AudioFile, FileProperties, FileType, GlobalOptions, ParseOptions, Tag, TagExt,
-	TagType, TaggedFile, TaggedFileExt, WriteOptions,
-};
+use lofty::tag::{Accessor, Tag, TagExt, TagType};
 
 fn file_ref_save(path: &str, expected_file_type: FileType) {
 	let path = format!("tests/taglib/data/{path}");
@@ -214,12 +213,13 @@ fn test_default_file_extensions() {
 	// Marker test, Lofty does not replicate this API
 }
 
+use lofty::properties::FileProperties;
 use rusty_fork::rusty_fork_test;
 
 rusty_fork_test! {
 	#[test]
 	fn test_file_resolver() {
-		lofty::apply_global_options(GlobalOptions::new().use_custom_resolvers(true));
+		lofty::config::apply_global_options(GlobalOptions::new().use_custom_resolvers(true));
 
 		{
 			let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
@@ -236,7 +236,7 @@ rusty_fork_test! {
 		impl AudioFile for DummyResolver {
 			type Properties = ();
 
-			fn read_from<R>(_: &mut R, _: ParseOptions) -> lofty::Result<Self>
+			fn read_from<R>(_: &mut R, _: ParseOptions) -> lofty::error::Result<Self>
 			where
 				R: Read + Seek,
 				Self: Sized,
@@ -244,7 +244,7 @@ rusty_fork_test! {
 				Ok(Self)
 			}
 
-			fn save_to(&self, _: &mut File, _: WriteOptions) -> lofty::Result<()> {
+			fn save_to(&self, _: &mut File, _: WriteOptions) -> lofty::error::Result<()> {
 				unimplemented!()
 			}
 
