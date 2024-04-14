@@ -3,8 +3,10 @@ use crate::util::get_file;
 
 use std::io::Seek;
 
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::ogg::OpusFile;
-use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
+use lofty::tag::Accessor;
 
 #[test]
 fn test_audio_properties() {

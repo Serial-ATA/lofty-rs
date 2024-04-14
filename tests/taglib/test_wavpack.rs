@@ -5,9 +5,11 @@ use std::fs::File;
 use std::io::Seek;
 
 use lofty::ape::ApeTag;
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::id3::v1::Id3v1Tag;
+use lofty::tag::Accessor;
 use lofty::wavpack::WavPackFile;
-use lofty::{Accessor, AudioFile, ParseOptions, WriteOptions};
 
 #[test]
 fn test_no_length_properties() {

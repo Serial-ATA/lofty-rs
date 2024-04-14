@@ -4,9 +4,12 @@ use crate::util::get_file;
 use std::io::Seek;
 
 use lofty::ape::ApeTag;
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::musepack::{MpcFile, MpcProperties};
-use lofty::{Accessor, AudioFile, ParseOptions, Probe, TagExt, WriteOptions};
+use lofty::probe::Probe;
+use lofty::tag::{Accessor, TagExt};
 
 #[test]
 fn test_properties_sv8() {

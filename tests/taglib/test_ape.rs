@@ -5,8 +5,11 @@ use std::io::Seek;
 use std::time::Duration;
 
 use lofty::ape::{ApeFile, ApeItem, ApeTag};
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::{AudioFile, FileType};
 use lofty::id3::v1::Id3v1Tag;
-use lofty::{Accessor, AudioFile, FileType, ItemValue, ParseOptions, Probe, TagExt, WriteOptions};
+use lofty::probe::Probe;
+use lofty::tag::{Accessor, ItemValue, TagExt};
 
 fn test_399(path: &str) {
 	let f = get_file::<ApeFile>(path);
