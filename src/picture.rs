@@ -61,7 +61,7 @@ impl MimeType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::MimeType;
+	/// use lofty::picture::MimeType;
 	///
 	/// let jpeg_mimetype_str = "image/jpeg";
 	/// assert_eq!(MimeType::from_str(jpeg_mimetype_str), MimeType::Jpeg);
@@ -84,7 +84,7 @@ impl MimeType {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::MimeType;
+	/// use lofty::picture::MimeType;
 	///
 	/// let jpeg_mimetype = MimeType::Jpeg;
 	/// assert_eq!(jpeg_mimetype.as_str(), "image/jpeg")
