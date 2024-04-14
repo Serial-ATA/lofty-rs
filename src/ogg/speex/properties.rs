@@ -1,8 +1,8 @@
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::math::RoundedDivision;
 use crate::ogg::find_last_page;
 use crate::properties::FileProperties;
+use crate::util::math::RoundedDivision;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

@@ -1,7 +1,7 @@
 use super::find_last_page;
 use crate::error::Result;
-use crate::math::RoundedDivision;
 use crate::properties::FileProperties;
+use crate::util::math::RoundedDivision;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;

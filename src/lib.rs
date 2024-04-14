@@ -154,7 +154,6 @@ pub mod config;
 pub mod error;
 pub mod file;
 pub(crate) mod macros;
-mod math;
 pub(crate) mod picture;
 mod probe;
 pub mod properties;
