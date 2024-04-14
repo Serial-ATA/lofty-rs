@@ -174,7 +174,7 @@ pub trait OggPictureStorage: private::Sealed {
 }
 
 mod private {
-	use crate::{Picture, PictureInformation};
+	use crate::picture::{Picture, PictureInformation};
 
 	pub trait Sealed {
 		fn pictures_mut(&mut self) -> &mut Vec<(Picture, PictureInformation)>;

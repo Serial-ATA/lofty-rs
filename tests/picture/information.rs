@@ -1,4 +1,4 @@
-use lofty::PictureInformation;
+use lofty::picture::PictureInformation;
 
 use std::fs::File;
 use std::io::Read;

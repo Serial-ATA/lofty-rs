@@ -616,10 +616,10 @@ impl MergeTag for SplitTagRemainder {
 mod tests {
 	use super::try_parse_year;
 	use crate::config::WriteOptions;
+	use crate::picture::{Picture, PictureType};
 	use crate::prelude::*;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::tag::{Tag, TagType};
-	use crate::{Picture, PictureType};
 
 	use std::io::{Seek, Write};
 	use std::process::Command;
