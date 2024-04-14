@@ -106,7 +106,7 @@ impl Ilst {
 	///
 	/// ```rust
 	/// use lofty::mp4::{AtomIdent, Ilst};
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	///
 	/// let mut ilst = Ilst::new();
 	/// ilst.set_title(String::from("Foo title"));
@@ -174,7 +174,7 @@ impl Ilst {
 	///
 	/// ```rust
 	/// use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	///
 	/// const TITLE_IDENTIFIER: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
 	///
@@ -201,7 +201,7 @@ impl Ilst {
 	///
 	/// ```rust
 	/// use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst};
-	/// use lofty::Accessor;
+	/// use lofty::tag::Accessor;
 	///
 	/// const TITLE_IDENTIFIER: AtomIdent = AtomIdent::Fourcc(*b"\xa9nam");
 	///
