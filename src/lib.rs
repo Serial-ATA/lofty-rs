@@ -159,7 +159,6 @@ mod probe;
 pub mod properties;
 pub mod resolve;
 pub mod tag;
-mod traits;
 mod util;
 
 pub mod aac;
