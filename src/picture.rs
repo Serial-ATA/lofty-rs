@@ -1,3 +1,5 @@
+//! Format-agnostic picture handling
+
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
@@ -138,7 +140,7 @@ pub enum PictureType {
 impl PictureType {
 	// ID3/OGG specific methods
 
-	/// Get a u8 from a `PictureType` according to ID3v2 APIC
+	/// Get a `u8` from a `PictureType` according to ID3v2 APIC
 	pub fn as_u8(&self) -> u8 {
 		match self {
 			Self::Other => 0,

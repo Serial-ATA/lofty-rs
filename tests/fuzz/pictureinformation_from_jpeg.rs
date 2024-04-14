@@ -1,6 +1,6 @@
 use crate::get_reader;
 use lofty::error::ErrorKind;
-use lofty::PictureInformation;
+use lofty::picture::PictureInformation;
 
 #[test]
 fn crash1() {

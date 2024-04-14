@@ -154,7 +154,7 @@ pub mod config;
 pub mod error;
 pub mod file;
 pub(crate) mod macros;
-pub(crate) mod picture;
+pub mod picture;
 mod probe;
 pub mod properties;
 pub mod resolve;
@@ -174,10 +174,7 @@ pub mod wavpack;
 
 pub use crate::probe::{read_from, read_from_path, Probe};
 
-pub use crate::picture::{MimeType, Picture, PictureType};
 pub use util::text::TextEncoding;
-
-pub use picture::PictureInformation;
 
 pub use lofty_attr::LoftyFile;
 

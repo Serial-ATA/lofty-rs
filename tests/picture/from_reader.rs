@@ -1,4 +1,4 @@
-use lofty::{MimeType, Picture};
+use lofty::picture::{MimeType, Picture};
 
 use std::fs::File;
 use std::io::Read;
