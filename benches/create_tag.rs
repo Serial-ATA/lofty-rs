@@ -1,11 +1,13 @@
 use lofty::ape::ApeTag;
+use lofty::config::WriteOptions;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::iff::aiff::AIFFTextChunks;
 use lofty::iff::wav::RIFFInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
-use lofty::{Accessor, MimeType, Picture, PictureType, TagExt, WriteOptions};
+use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::tag::{Accessor, TagExt};
 
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 
@@ -36,7 +38,7 @@ bench_tag_write!([
 	(aiff_text_chunks, AIFFTextChunks, |tag| {}),
 	(apev2, ApeTag, |tag| {
 		use lofty::ape::ApeItem;
-		use lofty::ItemValue;
+		use lofty::tag::ItemValue;
 
 		let picture = Picture::new_unchecked(
 			PictureType::CoverFront,
