@@ -15,7 +15,7 @@ pub enum FrameId<'a> {
 	///
 	/// This **will not** be written. It is up to the user to upgrade and store the key as [`Id3v2Frame::Valid`](Self::Valid).
 	///
-	/// The entire frame is stored as [`ItemValue::Binary`](crate::ItemValue::Binary).
+	/// The entire frame is stored as [`ItemValue::Binary`](crate::tag::ItemValue::Binary).
 	Outdated(Cow<'a, str>),
 }
 

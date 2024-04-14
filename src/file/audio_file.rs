@@ -11,14 +11,14 @@ use std::path::Path;
 pub trait AudioFile: Into<TaggedFile> {
 	/// The struct the file uses for audio properties
 	///
-	/// Not all formats can use [`FileProperties`] since they may contain additional information
+	/// Not all formats can use [`FileProperties`](crate::properties::FileProperties) since they may contain additional information
 	type Properties;
 
 	/// Read a file from a reader
 	///
 	/// # Errors
 	///
-	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::LoftyError)
+	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::error::LoftyError)
 	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
@@ -58,7 +58,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// # Errors
 	///
-	/// See [`Tag::save_to`], however this is applicable to every tag in the file.
+	/// See [`TagExt::save_to`](crate::tag::TagExt::save_to), however this is applicable to every tag in the file.
 	///
 	/// # Examples
 	///

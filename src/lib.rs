@@ -10,7 +10,7 @@
 //!
 //! ## Reading a generic file
 //!
-//! It isn't always convenient to [use concrete file types](#using-concrete-file-types), which is where [`TaggedFile`]
+//! It isn't always convenient to [use concrete file types](#using-concrete-file-types), which is where [`TaggedFile`](file::TaggedFile)
 //! comes in.
 //!
 //! ### Using a path
