@@ -1,5 +1,5 @@
 use lofty::prelude::*;
-use lofty::Probe;
+use lofty::probe::Probe;
 
 use std::path::Path;
 

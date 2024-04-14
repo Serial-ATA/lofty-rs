@@ -102,13 +102,13 @@ impl ParseOptions {
 
 /// The parsing strictness mode
 ///
-/// This can be set with [`Probe::options`](crate::Probe).
+/// This can be set with [`Probe::options`](crate::probe::Probe).
 ///
 /// # Examples
 ///
 /// ```rust,no_run
 /// use lofty::config::{ParseOptions, ParsingMode};
-/// use lofty::Probe;
+/// use lofty::probe::Probe;
 ///
 /// # fn main() -> lofty::error::Result<()> {
 /// // We only want to read spec-compliant inputs

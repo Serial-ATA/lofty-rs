@@ -1,5 +1,5 @@
 use lofty::file::TaggedFileExt;
-use lofty::Probe;
+use lofty::probe::Probe;
 
 use std::io::Write;
 
