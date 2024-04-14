@@ -27,8 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ⚠️ Important ⚠️: Moved to `lofty::options` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 - **AudioFile**/**TaggedFileExt**/**TaggedFile**/**BoundTaggedFile**:
   - ⚠️ Important ⚠️: Moved to `lofty::file` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
-- **Tag**/**Accessor**/**TagType**/**TagExt**/**TagItem**/**ItemKey**/**ItemValue**:
-    - ⚠️ Important ⚠️: Moved to `lofty::tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
+- **Tag**:
+    - ⚠️ Important ⚠️- The following items have been moved to `lofty::tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374)):
+      - `Tag`
+      - `Accessor`
+      - `TagType`
+      - `TagItem`
+      - `ItemKey`
+      - `ItemValue`
 
 ### Fixed
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
