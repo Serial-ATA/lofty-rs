@@ -6,8 +6,9 @@ use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
-use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{MergeTag, SplitTag};
+use crate::tag::{
+	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+};
 
 use std::borrow::Cow;
 use std::fs::File;

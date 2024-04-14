@@ -2,8 +2,9 @@
 
 mod accessor;
 pub(crate) mod item;
+mod split_merge_tag;
+mod tag_ext;
 mod tag_type;
-mod tagext;
 pub(crate) mod utils;
 
 use crate::config::WriteOptions;
@@ -11,7 +12,6 @@ use crate::error::{LoftyError, Result};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
-use crate::traits::{MergeTag, SplitTag};
 
 use std::borrow::Cow;
 use std::fs::File;
@@ -21,8 +21,9 @@ use std::path::Path;
 // Exports
 pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
+pub use split_merge_tag::{MergeTag, SplitTag};
+pub use tag_ext::TagExt;
 pub use tag_type::TagType;
-pub use tagext::TagExt;
 
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {

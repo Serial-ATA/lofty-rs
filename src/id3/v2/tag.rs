@@ -18,8 +18,9 @@ use crate::id3::v2::util::pairs::{
 };
 use crate::id3::v2::KeyValueFrame;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
-use crate::tag::{try_parse_year, Accessor, ItemKey, ItemValue, Tag, TagExt, TagItem, TagType};
-use crate::traits::{MergeTag, SplitTag};
+use crate::tag::{
+	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
