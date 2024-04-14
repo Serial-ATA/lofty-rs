@@ -542,8 +542,8 @@ impl TagExt for Tag {
 	///
 	/// # Errors
 	///
-	/// * A [`FileType`](crate::FileType) couldn't be determined from the File
-	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::FileType::supports_tag_type)
+	/// * A [`FileType`](crate::file::FileType) couldn't be determined from the File
+	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::file::FileType::supports_tag_type)
 	fn save_to(
 		&self,
 		file: &mut File,

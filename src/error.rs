@@ -94,7 +94,7 @@ pub enum Id3v2ErrorKind {
 	UnsupportedFrameId(ItemKey),
 	/// Arises when a frame doesn't have enough data
 	BadFrameLength,
-	/// Arises when a frame with no content is parsed with [ParsingMode::Strict](crate::probe::ParsingMode::Strict)
+	/// Arises when a frame with no content is parsed with [ParsingMode::Strict](crate::config::ParsingMode::Strict)
 	EmptyFrame(FrameId<'static>),
 	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
 	MissingDataLengthIndicator,

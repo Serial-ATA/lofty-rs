@@ -102,7 +102,7 @@ impl ParseOptions {
 
 /// The parsing strictness mode
 ///
-/// This can be set with [`Probe::options`].
+/// This can be set with [`Probe::options`](crate::Probe).
 ///
 /// # Examples
 ///
