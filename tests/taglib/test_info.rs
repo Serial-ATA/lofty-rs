@@ -1,5 +1,5 @@
 use lofty::iff::wav::RIFFInfoList;
-use lofty::Accessor;
+use lofty::tag::Accessor;
 
 #[test]
 fn test_title() {

@@ -2,11 +2,11 @@ use crate::temp_file;
 
 use std::io::Seek;
 
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::ogg::{OggPictureStorage, VorbisComments, VorbisFile};
-use lofty::{
-	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
-	WriteOptions,
-};
+use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
+use lofty::tag::{Accessor, TagExt};
 
 #[test]
 fn test_year() {

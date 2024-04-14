@@ -3,13 +3,13 @@ use crate::util::get_file;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::flac::FlacFile;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::ogg::{OggPictureStorage, VorbisComments};
-use lofty::{
-	Accessor, AudioFile, MimeType, ParseOptions, Picture, PictureInformation, PictureType, TagExt,
-	WriteOptions,
-};
+use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
+use lofty::tag::{Accessor, TagExt};
 
 #[test]
 fn test_signature() {

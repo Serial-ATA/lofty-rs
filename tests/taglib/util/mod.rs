@@ -1,4 +1,5 @@
-use lofty::{AudioFile, ParseOptions};
+use lofty::config::ParseOptions;
+use lofty::file::AudioFile;
 use std::fs::File;
 
 pub fn get_file<F: AudioFile>(path: &str) -> F {
