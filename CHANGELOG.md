@@ -50,6 +50,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **WAV**: Length and bitrate values are properly rounded ([PR](https://github.com/Serial-ATA/lofty-rs/pull/367))
 - **ParseOptions**: No longer derives `{PartialOrd, Ord}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/369))
 
+### ogg_pager
+See [ogg_pager's changelog].
+
 ## [0.18.2] - 2024-01-23
 
 ### Fixed
@@ -351,7 +354,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OGG**: Writing of large packets would corrupt the stream ([issue](https://github.com/Serial-ATA/lofty-rs/issues/130)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/131))
 
 ### ogg_pager
-See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
+See [ogg_pager's changelog].
 
 ## [0.10.0] - 2022-12-27
 
@@ -732,3 +735,4 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...0.5.0
 
 [TagLib]: https://github.com/taglib/taglib
+[ogg_pager's changelog]: ogg_pager/CHANGELOG.md
