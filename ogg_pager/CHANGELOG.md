@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- When writing large packets, the size would slowly shift out of sync, causing the pages to be written incorrectly. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/350)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/375))
+
 ## [0.6.0] - 2024-01-03
 
 ### Added

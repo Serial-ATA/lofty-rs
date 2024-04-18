@@ -1,8 +1,7 @@
 use crate::error::Result;
 use crate::{
-	segment_table, Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM,
-	CONTAINS_LAST_PAGE_OF_BITSTREAM, CONTINUED_PACKET, MAX_WRITTEN_CONTENT_SIZE,
-	MAX_WRITTEN_SEGMENT_COUNT,
+	Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM,
+	CONTINUED_PACKET, MAX_WRITTEN_CONTENT_SIZE, MAX_WRITTEN_SEGMENT_COUNT,
 };
 
 use std::io::Read;
@@ -17,6 +16,7 @@ struct PaginateContext {
 	idx: usize,
 	remaining_page_size: usize,
 	current_packet_len: usize,
+	last_segment_size: u8,
 }
 
 impl PaginateContext {
@@ -36,10 +36,19 @@ impl PaginateContext {
 			idx: 0,
 			remaining_page_size: MAX_WRITTEN_CONTENT_SIZE,
 			current_packet_len: 0,
+			last_segment_size: 0,
 		}
 	}
 
-	fn flush(&mut self, content: &mut Vec<u8>, segment_table: &mut Vec<u8>) {
+	fn fresh_packet(&mut self, packet: &[u8]) {
+		self.flags.fresh_packet = true;
+		self.pos = 0;
+
+		self.current_packet_len = packet.len();
+		self.last_segment_size = (packet.len() % 255) as u8;
+	}
+
+	fn flush_page(&mut self, content: &mut Vec<u8>) {
 		let mut header = PageHeader {
 			start: self.pos,
 			header_type_flag: {
@@ -62,7 +71,7 @@ impl PaginateContext {
 			stream_serial: self.stream_serial,
 			sequence_number: self.idx as u32,
 			segments: Vec::new(),
-			// No need to calculate this yet
+			// Calculated later
 			checksum: 0,
 		};
 
@@ -71,7 +80,8 @@ impl PaginateContext {
 		self.pos += content_len as u64;
 
 		// Moving on to a new packet
-		if self.pos > self.current_packet_len as u64 {
+		debug_assert!(self.pos <= self.current_packet_len as u64);
+		if self.pos == self.current_packet_len as u64 {
 			self.flags.packet_spans_multiple_pages = false;
 		}
 
@@ -79,15 +89,17 @@ impl PaginateContext {
 		// If it takes up the remainder of the segment table for the entire packet,
 		// we'll just consume it as is.
 		let segments_occupied = if content_len >= 255 {
-			content_len / 255
+			content_len.div_ceil(255)
 		} else {
 			1
 		};
 
+		debug_assert!(segments_occupied <= MAX_WRITTEN_SEGMENT_COUNT);
 		if self.flags.packet_spans_multiple_pages {
-			header.segments = segment_table.drain(..segments_occupied).collect();
+			header.segments = vec![255; segments_occupied];
 		} else {
-			header.segments = core::mem::take(segment_table);
+			header.segments = vec![255; segments_occupied - 1];
+			header.segments.push(self.last_segment_size);
 		}
 
 		self.pages.push(Page {
@@ -137,71 +149,9 @@ where
 {
 	let mut ctx = PaginateContext::new(abgp, stream_serial, flags);
 
-	let mut packets_iter = packets.into_iter();
-	let mut packet = match packets_iter.next() {
-		Some(packet) => packet,
-		// We weren't given any content to paginate
-		None => return Ok(ctx.pages),
-	};
-	ctx.current_packet_len = packet.len();
-
-	let mut segments = segment_table(packet.len());
-	let mut page_content = Vec::new();
-
-	loop {
-		if !ctx.flags.packet_spans_multiple_pages && !ctx.flags.first_page {
-			match packets_iter.next() {
-				Some(packet_) => {
-					packet = packet_;
-					segments.append(&mut segment_table(packet.len()));
-					ctx.current_packet_len = packet.len();
-					ctx.flags.fresh_packet = true;
-				},
-				None => break,
-			};
-		}
-
-		// We read as much of the packet as we can, given the amount of space left in the page.
-		// The packet may need to span multiple pages.
-		let bytes_read = packet
-			.take(ctx.remaining_page_size as u64)
-			.read_to_end(&mut page_content)?;
-		ctx.remaining_page_size -= bytes_read;
-
-		packet = &packet[bytes_read..];
-		// We need to indicate whether or not any packet was finished on this page.
-		// This is used for the absolute granule position.
-		if packet.is_empty() {
-			ctx.flags.packet_finished_on_page = true;
-		}
-
-		// The first packet of the bitstream must have its own page, unlike any other packet.
-		let first_page_of_bitstream = ctx.header_flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM != 0;
-		let first_packet_finished_on_page =
-			ctx.flags.first_page && first_page_of_bitstream && ctx.flags.packet_finished_on_page;
-
-		// We have a maximum of `MAX_WRITTEN_SEGMENT_COUNT` segments available per page, if we require more than
-		// is left in the segment table, we'll have to split the packet into multiple pages.
-		let segments_required = (packet.len() / MAX_WRITTEN_SEGMENT_COUNT) + 1;
-		let remaining_segments = MAX_WRITTEN_SEGMENT_COUNT.saturating_sub(segments.len());
-		ctx.flags.packet_spans_multiple_pages = segments_required > remaining_segments;
-
-		if first_packet_finished_on_page
-			// We've completely filled this page, we need to flush before moving on
-			|| (ctx.remaining_page_size == 0 || remaining_segments == 0)
-			// We've read all this packet has to offer
-			|| packet.is_empty()
-		{
-			ctx.flush(&mut page_content, &mut segments);
-		}
-
-		ctx.flags.first_page = false;
-		ctx.flags.fresh_packet = false;
-	}
-
-	// Flush any content leftover
-	if !page_content.is_empty() {
-		ctx.flush(&mut page_content, &mut segments);
+	for packet in packets {
+		ctx.fresh_packet(packet);
+		paginate_packet(&mut ctx, packet)?;
 	}
 
 	if flags & CONTAINS_LAST_PAGE_OF_BITSTREAM == 0x04 {
@@ -211,4 +161,41 @@ where
 	}
 
 	Ok(ctx.pages)
+}
+
+fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
+	let mut page_content = Vec::with_capacity(MAX_WRITTEN_CONTENT_SIZE);
+	let mut packet = packet;
+	loop {
+		if packet.is_empty() {
+			break;
+		}
+
+		let bytes_read = packet
+			.take(ctx.remaining_page_size as u64)
+			.read_to_end(&mut page_content)?;
+		ctx.remaining_page_size -= bytes_read;
+
+		packet = &packet[bytes_read..];
+
+		if bytes_read <= MAX_WRITTEN_CONTENT_SIZE && packet.is_empty() {
+			ctx.flags.packet_finished_on_page = true;
+		} else {
+			ctx.flags.packet_spans_multiple_pages = true;
+		}
+
+		if ctx.remaining_page_size == 0 || packet.is_empty() {
+			ctx.flush_page(&mut page_content);
+		}
+
+		ctx.flags.first_page = false;
+		ctx.flags.fresh_packet = false;
+	}
+
+	// Flush any content leftover
+	if !page_content.is_empty() {
+		ctx.flush_page(&mut page_content);
+	}
+
+	Ok(())
 }

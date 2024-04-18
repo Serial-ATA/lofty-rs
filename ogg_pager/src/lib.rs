@@ -107,8 +107,6 @@ impl Page {
 
 	/// Attempts to get a Page from a reader
 	///
-	/// Use `skip_content` to only read the header, and skip over the content.
-	///
 	/// # Errors
 	///
 	/// * [`std::io::Error`]
