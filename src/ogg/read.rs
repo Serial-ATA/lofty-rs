@@ -72,15 +72,15 @@ where
 		},
 	};
 
-	let comments_total_len = data.read_u32::<LittleEndian>()?;
+	let number_of_items = data.read_u32::<LittleEndian>()?;
 
 	let mut tag = VorbisComments {
 		vendor,
-		items: Vec::with_capacity(comments_total_len as usize),
+		items: Vec::with_capacity(number_of_items as usize),
 		pictures: Vec::new(),
 	};
 
-	for _ in 0..comments_total_len {
+	for _ in 0..number_of_items {
 		let comment_len = data.read_u32::<LittleEndian>()?;
 		if u64::from(comment_len) > len {
 			err!(SizeMismatch);
