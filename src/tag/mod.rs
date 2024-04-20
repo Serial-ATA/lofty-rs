@@ -12,13 +12,13 @@ use crate::error::{LoftyError, Result};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::path::Path;
 
 // Exports
-use crate::util::io::{FileLike, Length, Truncate};
 pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use split_merge_tag::{MergeTag, SplitTag};

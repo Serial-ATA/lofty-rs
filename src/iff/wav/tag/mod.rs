@@ -6,11 +6,11 @@ use crate::error::{LoftyError, Result};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {

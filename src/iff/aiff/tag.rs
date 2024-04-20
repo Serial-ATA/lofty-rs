@@ -3,12 +3,12 @@ use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::err;
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::{SeekFrom, Write};
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::BigEndian;
 use lofty_attr::tag;
 

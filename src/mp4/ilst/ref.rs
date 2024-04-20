@@ -5,8 +5,8 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-
 use crate::util::io::{FileLike, Length, Truncate};
+
 use std::io::Write;
 
 impl Ilst {

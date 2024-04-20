@@ -12,12 +12,12 @@ use crate::id3::v2::Id3v2Tag;
 use crate::id3::{find_id3v2, FindId3v2Config};
 use crate::macros::{err, try_vec};
 use crate::probe::Probe;
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
 use std::sync::OnceLock;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header
