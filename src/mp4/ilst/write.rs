@@ -9,9 +9,10 @@ use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomRea
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
+use crate::util::io::{FileLike, Length, Truncate};
+
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)

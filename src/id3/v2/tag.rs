@@ -21,13 +21,13 @@ use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::io::{FileLike, Length, Truncate};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";

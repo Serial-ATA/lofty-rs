@@ -3,6 +3,7 @@ use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
+use crate::util::io::{FileLike, Length, Truncate};
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;
@@ -14,7 +15,6 @@ use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use std::io::Write;
 
 #[allow(unreachable_patterns)]

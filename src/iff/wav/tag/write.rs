@@ -4,10 +4,10 @@ use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(

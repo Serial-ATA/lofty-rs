@@ -1,9 +1,10 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
+use crate::util::io::{FileLike, Length, Truncate};
+
 use std::io::SeekFrom;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{ByteOrder, WriteBytesExt};
 
 const CHUNK_NAME_UPPER: [u8; 4] = [b'I', b'D', b'3', b' '];

@@ -1,11 +1,11 @@
 use super::{utils, Tag};
 use crate::config::WriteOptions;
+use crate::error::LoftyError;
 use crate::file::FileType;
+use crate::io::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::probe::Probe;
 
-use crate::error::LoftyError;
-use crate::io::{FileLike, Length, Truncate};
 use std::fs::OpenOptions;
 use std::path::Path;
 

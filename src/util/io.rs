@@ -1,6 +1,7 @@
 //! Various traits for reading and writing to file-like objects
 
 use crate::error::LoftyError;
+
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, Write};
