@@ -93,7 +93,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 		)
 	}
 
-	/// Save the tag to a [`File`]
+	/// Save the tag to a [`FileLike`]
 	///
 	/// # Errors
 	///
@@ -128,7 +128,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 		self.tag_type().remove_from_path(path).map_err(Into::into)
 	}
 
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`]
 	///
 	/// # Errors
 	///
