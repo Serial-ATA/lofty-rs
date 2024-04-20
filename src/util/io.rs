@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, Write};
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
-pub(crate) trait SeekStreamLen: std::io::Seek {
+pub(crate) trait SeekStreamLen: Seek {
 	fn stream_len_hack(&mut self) -> crate::error::Result<u64> {
 		use std::io::SeekFrom;
 
@@ -19,7 +19,7 @@ pub(crate) trait SeekStreamLen: std::io::Seek {
 	}
 }
 
-impl<T> SeekStreamLen for T where T: std::io::Seek {}
+impl<T> SeekStreamLen for T where T: Seek {}
 
 /// Provides a method to truncate an object to the specified length
 ///
@@ -37,13 +37,13 @@ pub trait Truncate {
 	/// # Errors
 	///
 	/// Errors depend on the object being truncated, which may not always be fallible.
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error>;
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error>;
 }
 
 impl Truncate for File {
 	type Error = std::io::Error;
 
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
 		self.set_len(new_len)
 	}
 }
@@ -51,7 +51,7 @@ impl Truncate for File {
 impl Truncate for Vec<u8> {
 	type Error = std::convert::Infallible;
 
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
@@ -60,7 +60,7 @@ impl Truncate for Vec<u8> {
 impl Truncate for VecDeque<u8> {
 	type Error = std::convert::Infallible;
 
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
@@ -72,7 +72,7 @@ where
 {
 	type Error = <T as Truncate>::Error;
 
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
 		self.get_mut().truncate(new_len)
 	}
 }
@@ -83,7 +83,7 @@ where
 {
 	type Error = <T as Truncate>::Error;
 
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
 		self.as_mut().truncate(new_len)
 	}
 }
@@ -104,13 +104,13 @@ pub trait Length {
 	/// # Errors
 	///
 	/// Errors depend on the object being read, which may not always be fallible.
-	fn len(&self) -> std::result::Result<u64, Self::Error>;
+	fn len(&self) -> Result<u64, Self::Error>;
 }
 
 impl Length for File {
 	type Error = std::io::Error;
 
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> Result<u64, Self::Error> {
 		self.metadata().map(|m| m.len())
 	}
 }
@@ -118,7 +118,7 @@ impl Length for File {
 impl Length for Vec<u8> {
 	type Error = std::convert::Infallible;
 
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> Result<u64, Self::Error> {
 		Ok(self.len() as u64)
 	}
 }
@@ -126,7 +126,7 @@ impl Length for Vec<u8> {
 impl Length for VecDeque<u8> {
 	type Error = std::convert::Infallible;
 
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> Result<u64, Self::Error> {
 		Ok(self.len() as u64)
 	}
 }
@@ -137,7 +137,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> Result<u64, Self::Error> {
 		Length::len(self.get_ref())
 	}
 }
@@ -148,7 +148,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> Result<u64, Self::Error> {
 		Length::len(self.as_ref())
 	}
 }
