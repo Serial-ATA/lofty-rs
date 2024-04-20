@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 	  Lofty writes tags. These are best used as global user-configurable options, as most options will
 	  not apply to all files. The defaults are set to be as safe as possible,
 	  see [here](https://docs.rs/lofty/latest/lofty/struct.WriteOptions.html#impl-Default-for-WriteOptions).
+- **Generic Writes** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/290)):
+  - ⚠️ Important ⚠️: This update introduces `FileLike`, which is a combination of the `Truncate` + `Length` traits
+    that allows one to write to more than just `File`s. In short, `Cursor<Vec<u8>>` can now be written to.
 - **ChannelMask**
   - `BitAnd` and `BitOr` implementations ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
   - Associated constants for common channels, ex. `ChannelMask::FRONT_LEFT` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/371))
