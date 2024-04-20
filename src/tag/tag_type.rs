@@ -41,7 +41,7 @@ impl TagType {
 	}
 
 	#[allow(clippy::shadow_unrelated)]
-	/// Remove a tag from a [`File`]
+	/// Remove a tag from a [`FileLike`]
 	///
 	/// # Errors
 	///

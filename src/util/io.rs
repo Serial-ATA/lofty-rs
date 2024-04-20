@@ -24,7 +24,7 @@ impl<T> SeekStreamLen for T where T: Seek {}
 /// Provides a method to truncate an object to the specified length
 ///
 /// This is one component of the [`FileLike`] trait, which is used to provide implementors access to any
-/// file saving methods such as [`crate::AudioFile::save_to`].
+/// file saving methods such as [`crate::file::AudioFile::save_to`].
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// container has the new length specified. If this assumption were to be broken, files **will** become corrupted.
@@ -91,7 +91,7 @@ where
 /// Provides a method to get the length of a storage object
 ///
 /// This is one component of the [`FileLike`] trait, which is used to provide implementors access to any
-/// file saving methods such as [`crate::AudioFile::save_to`].
+/// file saving methods such as [`crate::file::AudioFile::save_to`].
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// container has the exact length specified. If this assumption were to be broken, files **may** become corrupted.
@@ -156,7 +156,7 @@ where
 /// Provides a set of methods to read and write to a file-like object
 ///
 /// This is a combination of the [`Read`], [`Write`], [`Seek`], [`Truncate`], and [`Length`] traits.
-/// It is used to provide implementors access to any file saving methods such as [`crate::AudioFile::save_to`].
+/// It is used to provide implementors access to any file saving methods such as [`crate::file::AudioFile::save_to`].
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// trait implementations are correct. If this assumption were to be broken, files **may** become corrupted.
