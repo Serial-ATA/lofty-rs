@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Prelude**: `lofty::prelude` module to make trait imports easier ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 
 ### Changed
+- **ID3v2**: Ignore empty duplicate frames ([PR](https://github.com/Serial-ATA/lofty-rs/pull/351))
+  - Some software will apparently write an empty duplicate frame after the actual frame. As the latest frame
+    is the only one that gets preserved, we now check if the frame is empty before replacing.
 - **Properties**: `FileProperties` and `ChannelMask` have been moved from the root to the new `lofty::properties`
                    module ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
 - **ParseOptions**/**WriteOptions**/**GlobalOptions**:
@@ -49,7 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Vorbis**: Fix panic when reading properties of zero-length files ([issue](https://github.com/Serial-ATA/lofty-rs/issues/342)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/365))
-- **ID3v2**: Fix panic when reading an RVA2 frame with a peak larger than 248 bits ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/364))
+- **ID3v2**:
+  - Fix panic when reading a UTF-16 with no BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/343))
+  - Fix panic when reading an RVA2 frame with a peak larger than 248 bits ([issue](https://github.com/Serial-ATA/lofty-rs/issues/295)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/364))
 - **WAV**: Length and bitrate values are properly rounded ([PR](https://github.com/Serial-ATA/lofty-rs/pull/367))
 - **ParseOptions**: No longer derives `{PartialOrd, Ord}` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/369))
 
