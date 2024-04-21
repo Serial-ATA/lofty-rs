@@ -39,7 +39,7 @@ use super::Tag;
 ///
 /// # Ok(()) }
 /// ```
-pub trait SplitTag {
+pub trait SplitTag: private::Sealed {
 	/// The remainder of the split operation that is not represented
 	/// in the resulting `Tag`.
 	type Remainder: MergeTag;
@@ -53,7 +53,7 @@ pub trait SplitTag {
 }
 
 /// The counterpart of [`SplitTag`].
-pub trait MergeTag {
+pub trait MergeTag: private::Sealed {
 	/// The resulting tag.
 	type Merged: SplitTag;
 
@@ -65,4 +65,41 @@ pub trait MergeTag {
 	/// Multi-valued items in `tag` with identical keys might get lost
 	/// depending on the support for multi-valued fields in `self`.
 	fn merge_tag(self, tag: Tag) -> Self::Merged;
+}
+
+// https://rust-lang.github.io/api-guidelines/future-proofing.html#c-sealed
+mod private {
+	use crate::ape::ApeTag;
+	use crate::id3::v1::Id3v1Tag;
+	use crate::id3::v2::Id3v2Tag;
+	use crate::iff::aiff::AIFFTextChunks;
+	use crate::iff::wav::RIFFInfoList;
+	use crate::ogg::VorbisComments;
+	use crate::tag::Tag;
+
+	pub trait Sealed {}
+
+	impl Sealed for AIFFTextChunks {}
+	impl Sealed for crate::iff::aiff::tag::SplitTagRemainder {}
+
+	impl Sealed for ApeTag {}
+	impl Sealed for crate::ape::tag::SplitTagRemainder {}
+
+	impl Sealed for Id3v1Tag {}
+	impl Sealed for crate::id3::v1::tag::SplitTagRemainder {}
+
+	impl Sealed for Id3v2Tag {}
+	impl Sealed for crate::id3::v2::tag::SplitTagRemainder {}
+
+	impl Sealed for crate::mp4::Ilst {}
+	impl Sealed for crate::mp4::ilst::SplitTagRemainder {}
+
+	impl Sealed for RIFFInfoList {}
+	impl Sealed for crate::iff::wav::tag::SplitTagRemainder {}
+
+	impl Sealed for Tag {}
+	impl Sealed for crate::tag::SplitTagRemainder {}
+
+	impl Sealed for VorbisComments {}
+	impl Sealed for crate::ogg::tag::SplitTagRemainder {}
 }
