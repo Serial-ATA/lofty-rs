@@ -59,7 +59,7 @@ pub struct Comment {
 /// Every item with the key [`ItemKey::Comment`] will be stored as an annotation.
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 #[tag(description = "`AIFF` text chunks", supported_formats(Aiff))]
-pub struct AIFFTextChunks {
+pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,
 	/// The author of the piece
@@ -78,7 +78,7 @@ pub struct AIFFTextChunks {
 	pub comments: Option<Vec<Comment>>,
 }
 
-impl Accessor for AIFFTextChunks {
+impl Accessor for AiffTextChunks {
 	fn artist(&self) -> Option<Cow<'_, str>> {
 		self.author.as_deref().map(Cow::Borrowed)
 	}
@@ -120,16 +120,16 @@ impl Accessor for AIFFTextChunks {
 	}
 }
 
-impl AIFFTextChunks {
+impl AiffTextChunks {
 	/// Create a new empty `AIFFTextChunks`
 	///
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::iff::aiff::AIFFTextChunks;
+	/// use lofty::iff::aiff::AiffTextChunks;
 	/// use lofty::tag::TagExt;
 	///
-	/// let aiff_tag = AIFFTextChunks::new();
+	/// let aiff_tag = AiffTextChunks::new();
 	/// assert!(aiff_tag.is_empty());
 	/// ```
 	pub fn new() -> Self {
@@ -152,7 +152,7 @@ impl AIFFTextChunks {
 	}
 }
 
-impl TagExt for AIFFTextChunks {
+impl TagExt for AiffTextChunks {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
@@ -182,7 +182,7 @@ impl TagExt for AIFFTextChunks {
 	fn is_empty(&self) -> bool {
 		matches!(
 			self,
-			AIFFTextChunks {
+			AiffTextChunks {
 				name: None,
 				author: None,
 				copyright: None,
@@ -235,7 +235,7 @@ impl TagExt for AIFFTextChunks {
 #[derive(Debug, Clone, Default)]
 pub struct SplitTagRemainder;
 
-impl SplitTag for AIFFTextChunks {
+impl SplitTag for AiffTextChunks {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(self) -> (Self::Remainder, Tag) {
@@ -244,15 +244,15 @@ impl SplitTag for AIFFTextChunks {
 }
 
 impl MergeTag for SplitTagRemainder {
-	type Merged = AIFFTextChunks;
+	type Merged = AiffTextChunks;
 
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		tag.into()
 	}
 }
 
-impl From<AIFFTextChunks> for Tag {
-	fn from(input: AIFFTextChunks) -> Self {
+impl From<AiffTextChunks> for Tag {
+	fn from(input: AiffTextChunks) -> Self {
 		let mut tag = Self::new(TagType::AiffText);
 
 		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
@@ -284,7 +284,7 @@ impl From<AIFFTextChunks> for Tag {
 	}
 }
 
-impl From<Tag> for AIFFTextChunks {
+impl From<Tag> for AiffTextChunks {
 	fn from(mut input: Tag) -> Self {
 		let name = input.take_strings(&ItemKey::TrackTitle).next();
 		let author = input.take_strings(&ItemKey::TrackArtist).next();
@@ -494,7 +494,7 @@ where
 #[cfg(test)]
 mod tests {
 	use crate::config::{ParseOptions, WriteOptions};
-	use crate::iff::aiff::{AIFFTextChunks, Comment};
+	use crate::iff::aiff::{AiffTextChunks, Comment};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
@@ -502,7 +502,7 @@ mod tests {
 
 	#[test]
 	fn parse_aiff_text() {
-		let expected_tag = AIFFTextChunks {
+		let expected_tag = AiffTextChunks {
 			name: Some(String::from("Foo title")),
 			author: Some(String::from("Bar artist")),
 			copyright: Some(String::from("Baz copyright")),
@@ -612,7 +612,7 @@ mod tests {
 			ItemValue::Text(String::from("Quux annotation")),
 		));
 
-		let aiff_text: AIFFTextChunks = tag.into();
+		let aiff_text: AiffTextChunks = tag.into();
 
 		assert_eq!(aiff_text.name, Some(String::from("Foo title")));
 		assert_eq!(aiff_text.author, Some(String::from("Bar artist")));

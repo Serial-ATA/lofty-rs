@@ -94,8 +94,8 @@ impl FileType {
 			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::SUPPORTED_FORMATS.contains(self),
 			TagType::Mp4Ilst => crate::mp4::Ilst::SUPPORTED_FORMATS.contains(self),
 			TagType::VorbisComments => crate::ogg::VorbisComments::SUPPORTED_FORMATS.contains(self),
-			TagType::RiffInfo => crate::iff::wav::RIFFInfoList::SUPPORTED_FORMATS.contains(self),
-			TagType::AiffText => crate::iff::aiff::AIFFTextChunks::SUPPORTED_FORMATS.contains(self),
+			TagType::RiffInfo => crate::iff::wav::RiffInfoList::SUPPORTED_FORMATS.contains(self),
+			TagType::AiffText => crate::iff::aiff::AiffTextChunks::SUPPORTED_FORMATS.contains(self),
 		}
 	}
 

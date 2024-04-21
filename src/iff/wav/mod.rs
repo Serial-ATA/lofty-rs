@@ -10,7 +10,7 @@ use lofty_attr::LoftyFile;
 
 // Exports
 pub use crate::iff::wav::properties::{WavFormat, WavProperties};
-pub use tag::RIFFInfoList;
+pub use tag::RiffInfoList;
 
 /// A WAV file
 #[derive(LoftyFile)]
@@ -19,7 +19,7 @@ pub use tag::RIFFInfoList;
 pub struct WavFile {
 	/// A RIFF INFO LIST
 	#[lofty(tag_type = "RiffInfo")]
-	pub(crate) riff_info_tag: Option<RIFFInfoList>,
+	pub(crate) riff_info_tag: Option<RiffInfoList>,
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,

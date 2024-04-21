@@ -2,8 +2,8 @@ use lofty::ape::ApeTag;
 use lofty::config::WriteOptions;
 use lofty::id3::v1::Id3v1Tag;
 use lofty::id3::v2::Id3v2Tag;
-use lofty::iff::aiff::AIFFTextChunks;
-use lofty::iff::wav::RIFFInfoList;
+use lofty::iff::aiff::AiffTextChunks;
+use lofty::iff::wav::RiffInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
 use lofty::picture::{MimeType, Picture, PictureType};
@@ -35,7 +35,7 @@ macro_rules! bench_tag_write {
 }
 
 bench_tag_write!([
-	(aiff_text_chunks, AIFFTextChunks, |tag| {}),
+	(aiff_text_chunks, AiffTextChunks, |tag| {}),
 	(apev2, ApeTag, |tag| {
 		use lofty::ape::ApeItem;
 		use lofty::tag::ItemValue;
@@ -103,7 +103,7 @@ bench_tag_write!([
 			AtomData::UTF8(String::from(ENCODER)),
 		));
 	}),
-	(riff_info, RIFFInfoList, |tag| {
+	(riff_info, RiffInfoList, |tag| {
 		tag.insert(String::from("ISFT"), String::from(ENCODER));
 	}),
 	(vorbis_comments, VorbisComments, |tag| {

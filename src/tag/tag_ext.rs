@@ -155,20 +155,20 @@ mod private {
 	use crate::ape::ApeTag;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::id3::v2::Id3v2Tag;
-	use crate::iff::aiff::AIFFTextChunks;
-	use crate::iff::wav::RIFFInfoList;
+	use crate::iff::aiff::AiffTextChunks;
+	use crate::iff::wav::RiffInfoList;
 	use crate::mp4::Ilst;
 	use crate::ogg::VorbisComments;
 	use crate::tag::Tag;
 
 	pub trait Sealed {}
 
-	impl Sealed for AIFFTextChunks {}
+	impl Sealed for AiffTextChunks {}
 	impl Sealed for ApeTag {}
 	impl Sealed for Id3v1Tag {}
 	impl Sealed for Id3v2Tag {}
 	impl Sealed for Ilst {}
-	impl Sealed for RIFFInfoList {}
+	impl Sealed for RiffInfoList {}
 	impl Sealed for Tag {}
 	impl Sealed for VorbisComments {}
 }
