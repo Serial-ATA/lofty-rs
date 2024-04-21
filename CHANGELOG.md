@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
                    module ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
 - **ParseOptions**/**WriteOptions**/**GlobalOptions**:
   - ⚠️ Important ⚠️: Moved to `lofty::options` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
-- **AudioFile**/**TaggedFileExt**/**TaggedFile**/**BoundTaggedFile**:
+- **AudioFile**/**TaggedFileExt**/**TaggedFile**/**BoundTaggedFile**/**FileType**:
   - ⚠️ Important ⚠️: Moved to `lofty::file` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 - **Tag**:
     - ⚠️ Important ⚠️- The following items have been moved to `lofty::tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374)):
