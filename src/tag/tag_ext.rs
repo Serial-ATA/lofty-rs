@@ -150,6 +150,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 	fn clear(&mut self);
 }
 
+// https://rust-lang.github.io/api-guidelines/future-proofing.html#c-sealed
 mod private {
 	use crate::ape::ApeTag;
 	use crate::id3::v1::Id3v1Tag;
