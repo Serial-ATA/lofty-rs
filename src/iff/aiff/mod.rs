@@ -11,7 +11,7 @@ use lofty_attr::LoftyFile;
 // Exports
 
 pub use properties::{AiffCompressionType, AiffProperties};
-pub use tag::{AIFFTextChunks, Comment};
+pub use tag::{AiffTextChunks, Comment};
 
 /// An AIFF file
 #[derive(LoftyFile)]
@@ -20,7 +20,7 @@ pub use tag::{AIFFTextChunks, Comment};
 pub struct AiffFile {
 	/// Any text chunks included in the file
 	#[lofty(tag_type = "AiffText")]
-	pub(crate) text_chunks_tag: Option<AIFFTextChunks>,
+	pub(crate) text_chunks_tag: Option<AiffTextChunks>,
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,

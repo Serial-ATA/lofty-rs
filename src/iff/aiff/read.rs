@@ -1,5 +1,5 @@
 use super::properties::AiffProperties;
-use super::tag::{AIFFTextChunks, Comment};
+use super::tag::{AiffTextChunks, Comment};
 use super::AiffFile;
 use crate::config::ParseOptions;
 use crate::error::Result;
@@ -59,7 +59,7 @@ where
 	let mut comm = None;
 	let mut stream_len = 0;
 
-	let mut text_chunks = AIFFTextChunks::default();
+	let mut text_chunks = AiffTextChunks::default();
 	let mut annotations = Vec::new();
 	let mut comments = Vec::new();
 
@@ -168,7 +168,7 @@ where
 	Ok(AiffFile {
 		properties,
 		text_chunks_tag: match text_chunks {
-			AIFFTextChunks {
+			AiffTextChunks {
 				name: None,
 				author: None,
 				copyright: None,

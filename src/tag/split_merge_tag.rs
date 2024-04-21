@@ -72,14 +72,14 @@ mod private {
 	use crate::ape::ApeTag;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::id3::v2::Id3v2Tag;
-	use crate::iff::aiff::AIFFTextChunks;
-	use crate::iff::wav::RIFFInfoList;
+	use crate::iff::aiff::AiffTextChunks;
+	use crate::iff::wav::RiffInfoList;
 	use crate::ogg::VorbisComments;
 	use crate::tag::Tag;
 
 	pub trait Sealed {}
 
-	impl Sealed for AIFFTextChunks {}
+	impl Sealed for AiffTextChunks {}
 	impl Sealed for crate::iff::aiff::tag::SplitTagRemainder {}
 
 	impl Sealed for ApeTag {}
@@ -94,7 +94,7 @@ mod private {
 	impl Sealed for crate::mp4::Ilst {}
 	impl Sealed for crate::mp4::ilst::SplitTagRemainder {}
 
-	impl Sealed for RIFFInfoList {}
+	impl Sealed for RiffInfoList {}
 	impl Sealed for crate::iff::wav::tag::SplitTagRemainder {}
 
 	impl Sealed for Tag {}

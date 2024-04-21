@@ -1,4 +1,4 @@
-use super::RIFFInfoList;
+use super::RiffInfoList;
 use crate::error::Result;
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
@@ -12,7 +12,7 @@ pub(in crate::iff::wav) fn parse_riff_info<R>(
 	data: &mut R,
 	chunks: &mut Chunks<LittleEndian>,
 	end: u64,
-	tag: &mut RIFFInfoList,
+	tag: &mut RiffInfoList,
 ) -> Result<()>
 where
 	R: Read + Seek,

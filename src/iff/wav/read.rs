@@ -1,5 +1,5 @@
 use super::properties::WavProperties;
-use super::tag::RIFFInfoList;
+use super::tag::RiffInfoList;
 use super::WavFile;
 use crate::config::ParseOptions;
 use crate::error::Result;
@@ -45,7 +45,7 @@ where
 	let mut total_samples = 0_u32;
 	let mut fmt = Vec::new();
 
-	let mut riff_info = RIFFInfoList::default();
+	let mut riff_info = RiffInfoList::default();
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
 	let mut chunks = Chunks::<LittleEndian>::new(file_len);
