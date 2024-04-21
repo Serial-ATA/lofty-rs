@@ -11,7 +11,7 @@ use std::path::Path;
 /// experience.
 ///
 /// This can be implemented downstream to provide a familiar interface for custom tags.
-pub trait TagExt: Accessor + Into<Tag> + Sized {
+pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 	/// The associated error which can be returned from IO operations
 	type Err: From<std::io::Error> + From<LoftyError>;
 	/// The type of key used in the tag for non-mutating functions
@@ -148,4 +148,26 @@ pub trait TagExt: Accessor + Into<Tag> + Sized {
 	///
 	/// NOTE: This will **not** remove any format-specific extras, such as flags
 	fn clear(&mut self);
+}
+
+mod private {
+	use crate::ape::ApeTag;
+	use crate::id3::v1::Id3v1Tag;
+	use crate::id3::v2::Id3v2Tag;
+	use crate::iff::aiff::AIFFTextChunks;
+	use crate::iff::wav::RIFFInfoList;
+	use crate::mp4::Ilst;
+	use crate::ogg::VorbisComments;
+	use crate::tag::Tag;
+
+	pub trait Sealed {}
+
+	impl Sealed for AIFFTextChunks {}
+	impl Sealed for ApeTag {}
+	impl Sealed for Id3v1Tag {}
+	impl Sealed for Id3v2Tag {}
+	impl Sealed for Ilst {}
+	impl Sealed for RIFFInfoList {}
+	impl Sealed for Tag {}
+	impl Sealed for VorbisComments {}
 }
