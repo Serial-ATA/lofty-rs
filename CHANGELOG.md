@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Properties**: `FileProperties` and `ChannelMask` have been moved from the root to the new `lofty::properties`
                    module ([PR](https://github.com/Serial-ATA/lofty-rs/pull/372))
 - **ParseOptions**/**WriteOptions**/**GlobalOptions**:
-  - ⚠️ Important ⚠️: Moved to `lofty::options` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
+  - ⚠️ Important ⚠️: Moved to `lofty::config` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 - **AudioFile**/**TaggedFileExt**/**TaggedFile**/**BoundTaggedFile**/**FileType**:
   - ⚠️ Important ⚠️: Moved to `lofty::file` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/374))
 - **Tag**:
