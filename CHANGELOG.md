@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2024-04-21
+
 ### Added
 - **WriteOptions** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/228)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/363)):
 	- ⚠️ Important ⚠️: This update introduces `WriteOptions` to allow for finer grained control over how
@@ -714,7 +716,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.2...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.0...HEAD
+[0.19.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.2...0.19.0
 [0.18.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.1...0.18.2
 [0.18.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.0...0.18.1
 [0.18.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.17.1...0.18.0
