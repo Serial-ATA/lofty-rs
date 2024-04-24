@@ -20,7 +20,7 @@ const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
-pub(crate) fn write_to<'a, F, I: 'a>(
+pub(crate) fn write_to<'a, F, I>(
 	file: &mut F,
 	tag: &mut IlstRef<'a, I>,
 	write_options: WriteOptions,
@@ -29,7 +29,7 @@ where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
 	LoftyError: From<<F as Length>::Error>,
-	I: IntoIterator<Item = &'a AtomData>,
+	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	log::debug!("Attempting to write `ilst` tag to file");
 
@@ -577,11 +577,9 @@ fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
 	Ok(())
 }
 
-pub(super) fn build_ilst<'a, I: 'a>(
-	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
-) -> Result<Vec<u8>>
+pub(super) fn build_ilst<'a, I>(atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>) -> Result<Vec<u8>>
 where
-	I: IntoIterator<Item = &'a AtomData>,
+	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	log::debug!("Building `ilst` atom");
 
@@ -656,9 +654,9 @@ where
 	Ok(())
 }
 
-fn write_atom_data<'a, I: 'a>(data: I, writer: &mut AtomWriterCompanion<'_>) -> Result<()>
+fn write_atom_data<'a, I>(data: I, writer: &mut AtomWriterCompanion<'_>) -> Result<()>
 where
-	I: IntoIterator<Item = &'a AtomData>,
+	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	for value in data {
 		match value {

@@ -9,5 +9,53 @@ members = [
 [workspace.dependencies]
 byteorder = "1.5.0"
 
+[workspace.lints.rust]
+missing_docs                   = "deny"
+rust_2018_idioms               = "deny"
+trivial_casts                  = "deny"
+trivial_numeric_casts          = "deny"
+unused_import_braces           = "deny"
+explicit_outlives_requirements = "deny"
+unknown_lints                  = "allow"
+
+[workspace.lints.clippy]
+dbg_macro                          = "forbid"
+string_to_string                   = "forbid"
+pedantic                           = { level = "deny", priority = -1 }
+all                                = { level = "deny", priority = -1 }
+too_many_lines                     = "allow"
+cast_precision_loss                = "allow"
+cast_sign_loss                     = "allow"
+cast_possible_wrap                 = "allow"
+cast_possible_truncation           = "allow"
+module_name_repetitions            = "allow"
+must_use_candidate                 = "allow"
+doc_markdown                       = "allow"
+match_wildcard_for_single_variants = "allow"
+semicolon_if_nothing_returned      = "allow"
+from_over_into                     = "allow"
+upper_case_acronyms                = "allow"
+single_match_else                  = "allow"
+similar_names                      = "allow"
+tabs_in_doc_comments               = "allow"
+len_without_is_empty               = "allow"
+needless_late_init                 = "allow"
+type_complexity                    = "allow"
+return_self_not_must_use           = "allow"
+bool_to_int_with_if                = "allow"
+uninlined_format_args              = "allow" # This should be changed for any normal "{}", but I'm not a fan of it for any debug or width specific formatting
+let_underscore_untyped			   = "allow"
+field_reassign_with_default 	   = "allow"
+manual_range_patterns 			   = "allow" # This is not at all clearer as it suggests
+no_effect_underscore_binding 	   = "allow"
+used_underscore_binding 		   = "allow"
+ignored_unit_patterns 			   = "allow" # Not a fan of this lint, doesn't make anything clearer as it claims
+needless_return 				   = "allow" # Explicit returns are needed from time to time for clarity
+redundant_guards 				   = "allow" # Currently broken for some cases, might enable later
+into_iter_without_iter 		       = "allow" # This is only going to fire on some internal types, doesn't matter much
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
 [profile.bench]
 debug = true

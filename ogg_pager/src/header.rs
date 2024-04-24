@@ -4,6 +4,7 @@ use std::io::{Read, Seek};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+/// The size of an OGG page header
 pub const PAGE_HEADER_SIZE: usize = 27;
 
 /// An OGG page header

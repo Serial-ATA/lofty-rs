@@ -101,7 +101,7 @@ pub(crate) struct LoftyTagAttribute {
 }
 
 impl Parse for LoftyTagAttribute {
-	fn parse(input: ParseStream) -> Result<Self> {
+	fn parse(input: ParseStream<'_>) -> Result<Self> {
 		let mut description = None;
 		let mut supported_formats = Vec::new();
 
