@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::ape::ApeTag;
 use lofty::config::{GlobalOptions, ParseOptions};
 use lofty::error::Result as LoftyResult;
