@@ -3,7 +3,7 @@ use crate::util::get_file;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::id3::v2::Id3v2Tag;
-use lofty::iff::wav::{RIFFInfoList, WavFile, WavFormat};
+use lofty::iff::wav::{RiffInfoList, WavFile, WavFormat};
 use lofty::tag::{Accessor, TagType};
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -143,7 +143,7 @@ fn test_info_tag() {
 		file.rewind().unwrap();
 		assert!(f.riff_info().is_none());
 
-		let mut riff_info = RIFFInfoList::default();
+		let mut riff_info = RiffInfoList::default();
 		riff_info.set_title(String::from("Title"));
 		riff_info.set_artist(String::from("Artist"));
 		f.set_riff_info(riff_info);
@@ -182,7 +182,7 @@ fn test_strip_tags() {
 		id3v2.set_title(String::from("test title"));
 		f.set_id3v2(id3v2);
 
-		let mut riff_info = RIFFInfoList::default();
+		let mut riff_info = RiffInfoList::default();
 		riff_info.set_title(String::from("test title"));
 		f.set_riff_info(riff_info);
 
@@ -204,7 +204,7 @@ fn test_strip_tags() {
 		assert!(f.id3v2().is_some());
 		assert!(f.riff_info().is_none());
 
-		let mut riff_info = RIFFInfoList::default();
+		let mut riff_info = RiffInfoList::default();
 		riff_info.set_title(String::from("test title"));
 		f.set_riff_info(riff_info);
 
@@ -304,7 +304,7 @@ fn test_file_with_garbage_appended() {
 	// 	id3v2.set_title(String::from("ID3v2 Title"));
 	// 	f.set_id3v2(id3v2);
 	//
-	// 	let mut riff_info = RIFFInfoList::default();
+	// 	let mut riff_info = RiffInfoList::default();
 	// 	riff_info.set_title(String::from("INFO Title"));
 	// 	f.set_riff_info(riff_info);
 	//
