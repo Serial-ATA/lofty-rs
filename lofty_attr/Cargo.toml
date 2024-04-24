@@ -14,5 +14,8 @@ syn = { version = "2.0.25", features = ["full", "parsing"] }
 quote = "1.0.29"
 proc-macro2 = "1.0.64"
 
+[lints]
+workspace = true
+
 [lib]
 proc-macro = true

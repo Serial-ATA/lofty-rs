@@ -138,14 +138,9 @@ struct PaginateContextFlags {
 ///
 /// let pages = paginate(&comment_header_packet, stream_serial_number, 0, 0);
 /// ```
-pub fn paginate<'a, I: 'a>(
-	packets: I,
-	stream_serial: u32,
-	abgp: u64,
-	flags: u8,
-) -> Result<Vec<Page>>
+pub fn paginate<'a, I>(packets: I, stream_serial: u32, abgp: u64, flags: u8) -> Result<Vec<Page>>
 where
-	I: IntoIterator<Item = &'a [u8]>,
+	I: IntoIterator<Item = &'a [u8]> + 'a,
 {
 	let mut ctx = PaginateContext::new(abgp, stream_serial, flags);
 

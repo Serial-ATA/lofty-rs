@@ -52,7 +52,7 @@ pub struct LoftyFile {
 }
 
 impl Parse for LoftyFile {
-	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+	fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
 		let input: DeriveInput = input.parse()?;
 
 		let data_struct = match input.data {

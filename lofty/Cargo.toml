@@ -38,6 +38,9 @@ structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.10.1"
 iai-callgrind = "0.10.2"
 
+[lints]
+workspace = true
+
 [lib]
 bench = false
 

@@ -99,51 +99,6 @@
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
 //! Be sure to read the module documentation of each format to see important notes and warnings.
-#![forbid(clippy::dbg_macro, clippy::string_to_string)]
-#![deny(
-	clippy::pedantic,
-	clippy::all,
-	missing_docs,
-	rustdoc::broken_intra_doc_links,
-	rust_2018_idioms,
-	trivial_casts,
-	trivial_numeric_casts,
-	unused_import_braces,
-	explicit_outlives_requirements
-)]
-#![allow(
-	unknown_lints,
-	clippy::too_many_lines,
-	clippy::cast_precision_loss,
-	clippy::cast_sign_loss,
-	clippy::cast_possible_wrap,
-	clippy::cast_possible_truncation,
-	clippy::module_name_repetitions,
-	clippy::must_use_candidate,
-	clippy::doc_markdown,
-	clippy::match_wildcard_for_single_variants,
-	clippy::semicolon_if_nothing_returned,
-	clippy::from_over_into,
-	clippy::upper_case_acronyms,
-	clippy::single_match_else,
-	clippy::similar_names,
-	clippy::tabs_in_doc_comments,
-	clippy::len_without_is_empty,
-	clippy::needless_late_init,
-	clippy::type_complexity,
-	clippy::return_self_not_must_use,
-	clippy::bool_to_int_with_if,
-	clippy::uninlined_format_args, /* This should be changed for any normal "{}", but I'm not a fan of it for any debug or width specific formatting */
-	clippy::let_underscore_untyped,
-	clippy::field_reassign_with_default,
-	clippy::manual_range_patterns, /* This is not at all clearer as it suggests */
-	clippy::no_effect_underscore_binding,
-	clippy::used_underscore_binding,
-	clippy::ignored_unit_patterns, /* Not a fan of this lint, doesn't make anything clearer as it claims */
-	clippy::needless_return, /* Explicit returns are needed from time to time for clarity */
-	clippy::redundant_guards, /* Currently broken for some cases, might enable later*/
-	clippy::into_iter_without_iter, /* This is only going to fire on some internal types, doesn't matter much */
-)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/Serial-ATA/lofty-rs/main/doc/lofty.svg")]
 

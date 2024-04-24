@@ -12,3 +12,6 @@ include = ["src", "Cargo.toml", "../LICENSE-*"]
 
 [dependencies]
 byteorder = "1.5.0"
+
+[lints]
+workspace = true
