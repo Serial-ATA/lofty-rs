@@ -10,6 +10,9 @@ on:
     workflow_dispatch:
 jobs:
     benchmark_with_bencher:
+        defaults:
+            run:
+                working-directory: 'lofty'
         name: Benchmark with Bencher
         runs-on: ubuntu-latest
         env:

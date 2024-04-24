@@ -1,99 +1,75 @@
 name: CI
 
 on:
-  push:
-    paths-ignore:
-      - 'LICENSE-*'
-      - '**/*.md'
-      - '.gitignore'
-      - 'CHANGELOG.md'
-    branches:
-      - main
-  pull_request:
-  workflow_dispatch:
+    push:
+        paths-ignore:
+            - 'LICENSE-*'
+            - '**/*.md'
+            - '.gitignore'
+            - 'CHANGELOG.md'
+        branches:
+            - main
+    pull_request:
+    workflow_dispatch:
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 jobs:
-  test:
-    strategy:
-      matrix:
-        project: ['.', 'ogg_pager', 'lofty_attr']
-    defaults:
-      run:
-        working-directory: ${{ matrix.project }}
-    name: Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install test dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
-          sudo apt-get install -y opus-tools # Need opusinfo for issue #130
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-      - run: |
-          cargo test --all-features --tests
+    test:
+        name: Tests
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Install test dependencies
+                run: |
+                    sudo apt-get update
+                    sudo apt-get install -y ffmpeg # Need ffprobe for issue #37
+                    sudo apt-get install -y opus-tools # Need opusinfo for issue #130
+            -   name: Install Rust toolchain
+                uses: dtolnay/rust-toolchain@v1
+                with:
+                    toolchain: stable
+            -   run: |
+                    cargo test --all-features --tests
 
-  docs:
-    strategy:
-      matrix:
-        project: ['.', 'ogg_pager', 'lofty_attr']
-    defaults:
-      run:
-        working-directory: ${{ matrix.project }}
-    name: Docs
-    runs-on: ubuntu-latest
-    env:
-      RUSTDOCFLAGS: -Dwarnings
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-      - run: |
-          cargo doc --all-features --no-deps
-          cargo test --all-features --doc
+    docs:
+        name: Docs
+        runs-on: ubuntu-latest
+        env:
+            RUSTDOCFLAGS: -Dwarnings
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Install Rust toolchain
+                uses: dtolnay/rust-toolchain@v1
+                with:
+                    toolchain: stable
+            -   run: |
+                    cargo doc --all-features --no-deps
+                    cargo test --all-features --doc
 
-  clippy:
-    strategy:
-      matrix:
-        project: ['.', 'ogg_pager', 'lofty_attr']
-    defaults:
-      run:
-        working-directory: ${{ matrix.project }}
-    name: Clippy
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
-      - run: |
-          cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic -Dwarnings
+    clippy:
+        name: Clippy
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Install Rust toolchain
+                uses: dtolnay/rust-toolchain@v1
+                with:
+                    toolchain: stable
+                    components: clippy
+            -   run: |
+                    cargo clippy --all-features -- -Dclippy::all -Dclippy::pedantic -Dwarnings
 
-  style:
-    strategy:
-      matrix:
-        project: ['.', 'ogg_pager', 'lofty_attr']
-    defaults:
-      run:
-        working-directory: ${{ matrix.project }}
-    name: Style
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt
-      - run: |
-          cargo fmt -- --check
+    style:
+        name: Style
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v4
+            -   name: Install Rust toolchain
+                uses: dtolnay/rust-toolchain@v1
+                with:
+                    toolchain: stable
+                    components: rustfmt
+            -   run: |
+                    cargo fmt -- --check

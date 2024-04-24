@@ -196,7 +196,7 @@ mod tests {
 		let global_options = GlobalOptions::new().use_custom_resolvers(true);
 		crate::config::apply_global_options(global_options);
 
-		let path = "examples/custom_resolver/test_asset.myfile";
+		let path = "../examples/custom_resolver/test_asset.myfile";
 		let read = crate::read_from_path(path).unwrap();
 		assert_eq!(read.file_type(), FileType::Custom("MyFile"));
 
