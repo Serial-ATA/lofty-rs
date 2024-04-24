@@ -25,7 +25,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let packets = Packets::read(&mut file)?;
@@ -56,7 +56,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// // We know that the file has at least 2 packets in it
@@ -166,7 +166,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// // I want to read 2 packets
@@ -188,7 +188,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let packets = Packets::read(&mut file)?;
@@ -214,7 +214,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let packets = Packets::read(&mut file)?;
@@ -258,7 +258,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let mut packets = Packets::read(&mut file)?;
@@ -308,7 +308,7 @@ impl Packets {
 	/// use ogg_pager::Packets;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let packets = Packets::read(&mut file)?;
@@ -335,7 +335,7 @@ impl Packets {
 	/// use ogg_pager::{Packets, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM};
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
-	/// # let path = "../tests/files/assets/minimal/full_test.ogg";
+	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// let mut packets = Packets::read(&mut file)?;

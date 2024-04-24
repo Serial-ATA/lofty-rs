@@ -1,63 +1,13 @@
-[package]
-name        = "lofty"
-version     = "0.19.0"
-authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
-edition     = "2021"
-license     = "MIT OR Apache-2.0"
-description = "Audio metadata library"
-repository  = "https://github.com/Serial-ATA/lofty-rs"
-keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
-categories  = ["multimedia", "multimedia::audio", "parser-implementations"]
-readme      = "README.md"
-include     = ["src", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_FORMATS.md"]
+[workspace]
+resolver = "2"
+members = [
+	"lofty",
+	"lofty_attr",
+	"ogg_pager",
+]
 
-[dependencies]
-# Vorbis comments pictures
-data-encoding = "2.5.0"
-byteorder     = "1.5.0"
-# ID3 compressed frames
-flate2        = { version = "1.0.28", optional = true }
-# Proc macros
-lofty_attr = "0.10.0"
-# Debug logging
-log           = "0.4.21"
-# OGG Vorbis/Opus
-ogg_pager     = "0.6.1"
-# Key maps
-paste         = "1.0.14"
-
-[features]
-default                   = ["id3v2_compression_support"]
-id3v2_compression_support = ["dep:flate2"]
-
-[dev-dependencies]
-# WAV properties validity tests
-hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683dd6acb92df792683ee46ad6a59" }
-# tag_writer example
-structopt = { version = "0.3.26", default-features = false }
-tempfile  = "3.10.1"
-iai-callgrind = "0.10.2"
-
-[lib]
-bench = false
+[workspace.dependencies]
+byteorder = "1.5.0"
 
 [profile.bench]
 debug = true
-
-[[bench]]
-name    = "read_file"
-path    = "benches/read_file.rs"
-harness = false
-
-[[bench]]
-name    = "create_tag"
-path    = "benches/create_tag.rs"
-harness = false
-
-[[example]]
-name = "custom_resolver"
-path = "examples/custom_resolver/src/main.rs"
-
-[package.metadata.docs.rs]
-all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
