@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::ape::ApeTag;
 use lofty::config::WriteOptions;
 use lofty::id3::v1::Id3v1Tag;
