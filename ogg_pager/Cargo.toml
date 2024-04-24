@@ -11,7 +11,7 @@ categories = ["multimedia", "multimedia::audio", "parser-implementations"]
 include = ["src", "Cargo.toml", "../LICENSE-*"]
 
 [dependencies]
-byteorder = "1.5.0"
+byteorder = { workspace = true }
 
 [lints]
 workspace = true
