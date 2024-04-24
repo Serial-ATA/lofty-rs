@@ -1,9 +1,9 @@
-use lofty::iff::wav::RIFFInfoList;
+use lofty::iff::wav::RiffInfoList;
 use lofty::tag::Accessor;
 
 #[test]
 fn test_title() {
-	let mut tag = RIFFInfoList::default();
+	let mut tag = RiffInfoList::default();
 
 	assert!(tag.title().is_none());
 	tag.set_title(String::from("Test title 1"));
@@ -16,7 +16,7 @@ fn test_title() {
 
 #[test]
 fn test_numeric_fields() {
-	let mut tag = RIFFInfoList::default();
+	let mut tag = RiffInfoList::default();
 
 	assert!(tag.track().is_none());
 	tag.set_track(1234);

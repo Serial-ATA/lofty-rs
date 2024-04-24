@@ -1,10 +1,9 @@
 use crate::temp_file;
 
-use std::fs::File;
 use std::io::{Read, Seek};
 
 use lofty::config::{GlobalOptions, ParseOptions, WriteOptions};
-use lofty::error::ErrorKind;
+use lofty::error::{ErrorKind, LoftyError};
 use lofty::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 use lofty::resolve::FileResolver;
 use lofty::tag::{Accessor, Tag, TagExt, TagType};
@@ -213,6 +212,7 @@ fn test_default_file_extensions() {
 	// Marker test, Lofty does not replicate this API
 }
 
+use lofty::io::{FileLike, Length, Truncate};
 use lofty::properties::FileProperties;
 use rusty_fork::rusty_fork_test;
 
@@ -244,7 +244,12 @@ rusty_fork_test! {
 				Ok(Self)
 			}
 
-			fn save_to(&self, _: &mut File, _: WriteOptions) -> lofty::error::Result<()> {
+			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> lofty::error::Result<()>
+			where
+				F: FileLike,
+				LoftyError: From<<F as Truncate>::Error>,
+				LoftyError: From<<F as Length>::Error>
+			{
 				unimplemented!()
 			}
 
