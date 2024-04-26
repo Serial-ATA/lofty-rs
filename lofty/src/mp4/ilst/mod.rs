@@ -12,6 +12,7 @@ use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 use atom::{AdvisoryRating, Atom, AtomData};
 
@@ -705,18 +706,10 @@ impl MergeTag for SplitTagRemainder {
 					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
 					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
 					ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
-						let Ok(num) = text.as_str().parse::<u8>() else {
+						let Some(data) = flag_item(text.as_str()) else {
 							continue;
 						};
 
-						let data = match num {
-							0 => false,
-							1 => true,
-							_ => {
-								// Ignore all other, unexpected values
-								continue;
-							},
-						};
 						merged.atoms.push(Atom {
 							ident: ident.into_owned(),
 							data: AtomDataStorage::Single(AtomData::Bool(data)),
