@@ -9,12 +9,13 @@ use crate::probe::Probe;
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::flag_item;
+use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -575,9 +576,18 @@ impl MergeTag for SplitTagRemainder {
 			let item_value = item.item_value;
 
 			// Discard binary items, as they are not allowed in Vorbis comments
-			let (ItemValue::Text(val) | ItemValue::Locator(val)) = item_value else {
+			let (ItemValue::Text(mut val) | ItemValue::Locator(mut val)) = item_value else {
 				continue;
 			};
+
+			// Normalize flag items
+			if item_key == ItemKey::FlagCompilation {
+				let Some(flag) = flag_item(&val) else {
+					continue;
+				};
+
+				val = u8::from(flag).to_string();
+			}
 
 			let key;
 			match item_key {

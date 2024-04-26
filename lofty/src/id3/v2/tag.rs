@@ -21,6 +21,7 @@ use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
@@ -1387,13 +1388,13 @@ impl MergeTag for SplitTagRemainder {
 
 		// Flag items
 		for item_key in [&ItemKey::FlagCompilation, &ItemKey::FlagPodcast] {
-			let Some(flag_value) = tag.take_strings(item_key).next() else {
+			let Some(text) = tag.take_strings(item_key).next() else {
 				continue;
 			};
 
-			if flag_value != "1" && flag_value != "0" {
+			let Some(flag_value) = flag_item(&text) else {
 				continue;
-			}
+			};
 
 			let frame_id = item_key
 				.map_key(TagType::Id3v2, false)
@@ -1401,7 +1402,7 @@ impl MergeTag for SplitTagRemainder {
 
 			merged.frames.push(new_text_frame(
 				FrameId::Valid(Cow::Borrowed(frame_id)),
-				flag_value,
+				u8::from(flag_value).to_string(),
 				FrameFlags::default(),
 			));
 		}

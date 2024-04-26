@@ -10,12 +10,13 @@ use crate::tag::item::ItemValueRef;
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
+use crate::util::flag_item;
+use crate::util::io::{FileLike, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
-use crate::util::io::{FileLike, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -163,6 +164,20 @@ impl ApeTag {
 			ItemKey::TrackTotal => set_number(&item, |number| self.set_track_total(number)),
 			ItemKey::DiscNumber => set_number(&item, |number| self.set_disk(number)),
 			ItemKey::DiscTotal => set_number(&item, |number| self.set_disk_total(number)),
+
+			// Normalize flag items
+			ItemKey::FlagCompilation => {
+				let Some(text) = item.item_value.text() else {
+					return;
+				};
+
+				let Some(flag) = flag_item(text) else {
+					return;
+				};
+
+				let value = u8::from(flag).to_string();
+				self.insert(ApeItem::text("Compilation", value));
+			},
 			_ => {
 				if let Ok(item) = item.try_into() {
 					self.insert(item);
