@@ -6,10 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Length**: `impl<T: Length> Truncate for &mut T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
+## [0.19.2] - 2024-04-26
 
-## [0.19.1] - 2024-04-26
+### Added
+- **Length**: `impl<T: Length> Truncate for &mut T`
+
+## [0.19.1] - 2024-04-26 (YANKED)
 
 ### Added
 - **Truncate**: `impl<T: Truncate> Truncate for &mut T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/384))
