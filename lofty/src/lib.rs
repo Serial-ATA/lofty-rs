@@ -5,7 +5,7 @@
 //! Parse, convert, and write metadata to audio formats.
 //!
 //! # Supported Formats
-#![doc = include_str!("../../SUPPORTED_FORMATS.md")]
+#![doc = include_str!("../SUPPORTED_FORMATS.md")]
 //! # Examples
 //!
 //! ## Reading a generic file

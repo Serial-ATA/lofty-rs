@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2024-04-26
+
 ### Added
 - **Truncate**: `impl<T: Truncate> Truncate for &mut T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/384))
 - **Length**: `impl<T: Length> Truncate for &T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/384))
@@ -724,7 +726,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.1...HEAD
+[0.19.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.0...0.19.1
 [0.19.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.2...0.19.0
 [0.18.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.1...0.18.2
 [0.18.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.0...0.18.1
