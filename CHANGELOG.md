@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Truncate**: `impl<T: Truncate> Truncate for &mut T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/384))
 - **Length**: `impl<T: Length> Truncate for &T` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/384))
 
+### Changed
+- **MP4**: All surrounding `free` atoms will be used when writing `ilst` tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/346)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/386))
+  - Previously, only the `free` atoms immediately surrounding the `ilst` atom were used.
+
 ## [0.19.0] - 2024-04-21
 
 ### Added

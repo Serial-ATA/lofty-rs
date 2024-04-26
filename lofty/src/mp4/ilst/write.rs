@@ -256,21 +256,35 @@ fn save_to_existing(
 
 			// Check for one directly before the `ilst` atom
 			if ilst_idx > 0 {
-				let previous_atom = &tree[ilst_idx - 1];
+				let mut i = ilst_idx;
+				while i != 0 {
+					let atom = &tree[i - 1];
+					if atom.ident != AtomIdent::Fourcc(*b"free") {
+						break;
+					}
 
-				if previous_atom.ident == AtomIdent::Fourcc(*b"free") {
-					range_start = previous_atom.start;
-					available_space += previous_atom.len;
+					available_space += atom.len;
+					range_start = atom.start;
+					i -= 1;
 				}
+
+				log::trace!("Found {} preceding `free` atoms", ilst_idx - i)
 			}
 
 			// And after
 			if ilst_idx != tree.len() - 1 {
-				let next_atom = &tree[ilst_idx + 1];
+				let mut i = ilst_idx;
+				while i < tree.len() - 1 {
+					let atom = &tree[i + 1];
+					if atom.ident != AtomIdent::Fourcc(*b"free") {
+						break;
+					}
 
-				if next_atom.ident == AtomIdent::Fourcc(*b"free") {
-					available_space += next_atom.len;
+					available_space += atom.len;
+					i += 1;
 				}
+
+				log::trace!("Found {} succeeding `free` atoms", i - ilst_idx)
 			}
 
 			let ilst_len = ilst.len() as u64;
