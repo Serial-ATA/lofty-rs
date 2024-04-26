@@ -89,6 +89,17 @@ where
 	}
 }
 
+impl<T> Truncate for &mut T
+where
+	T: Truncate,
+{
+	type Error = <T as Truncate>::Error;
+
+	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+		(**self).truncate(new_len)
+	}
+}
+
 /// Provides a method to get the length of a storage object
 ///
 /// This is one component of the [`FileLike`] trait, which is used to provide implementors access to any
@@ -151,6 +162,17 @@ where
 
 	fn len(&self) -> Result<u64, Self::Error> {
 		Length::len(self.as_ref())
+	}
+}
+
+impl<T> Length for &T
+where
+	T: Length,
+{
+	type Error = <T as Length>::Error;
+
+	fn len(&self) -> Result<u64, Self::Error> {
+		Length::len(*self)
 	}
 }
 
