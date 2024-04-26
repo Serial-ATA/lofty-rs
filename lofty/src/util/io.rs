@@ -29,6 +29,17 @@ impl<T> SeekStreamLen for T where T: Seek {}
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// container has the new length specified. If this assumption were to be broken, files **will** become corrupted.
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::io::Truncate;
+///
+/// let mut data = vec![1, 2, 3, 4, 5];
+/// data.truncate(3);
+///
+/// assert_eq!(data, vec![1, 2, 3]);
+/// ```
 pub trait Truncate {
 	/// The error type of the truncation operation
 	type Error: Into<LoftyError>;
@@ -107,6 +118,15 @@ where
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// container has the exact length specified. If this assumption were to be broken, files **may** become corrupted.
+///
+/// # Examples
+///
+/// ```rust
+/// use lofty::io::Length;
+///
+/// let data = vec![1, 2, 3, 4, 5];
+/// assert_eq!(data.len(), 5);
+/// ```
 pub trait Length {
 	/// The error type of the length operation
 	type Error: Into<LoftyError>;
@@ -166,6 +186,17 @@ where
 }
 
 impl<T> Length for &T
+where
+	T: Length,
+{
+	type Error = <T as Length>::Error;
+
+	fn len(&self) -> Result<u64, Self::Error> {
+		Length::len(*self)
+	}
+}
+
+impl<T> Length for &mut T
 where
 	T: Length,
 {
@@ -282,6 +313,42 @@ mod tests {
 			.expect("Failed to save to vec");
 
 		let current_file_contents = reader.into_inner();
+		assert_eq!(current_file_contents, test_asset_contents());
+	}
+
+	#[test]
+	fn io_save_using_references() {
+		struct File {
+			buf: Vec<u8>,
+		}
+
+		let mut f = File {
+			buf: std::fs::read(TEST_ASSET).unwrap(),
+		};
+
+		// Same test as above, but using references instead of owned values
+		let mut file = file();
+		alter_tag(&mut file);
+
+		{
+			let mut reader = Cursor::new(&mut f.buf);
+			file.save_to(&mut reader, WriteOptions::new().preferred_padding(0))
+				.expect("Failed to save to vec");
+		}
+
+		{
+			let mut reader = Cursor::new(&f.buf[..]);
+			file = MpegFile::read_from(&mut reader, ParseOptions::new()).unwrap();
+			revert_tag(&mut file);
+		}
+
+		{
+			let mut reader = Cursor::new(&mut f.buf);
+			file.save_to(&mut reader, WriteOptions::new().preferred_padding(0))
+				.expect("Failed to save to vec");
+		}
+
+		let current_file_contents = f.buf;
 		assert_eq!(current_file_contents, test_asset_contents());
 	}
 }

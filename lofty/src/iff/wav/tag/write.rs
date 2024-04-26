@@ -124,7 +124,7 @@ pub(super) fn create_riff_info(
 		bytes.extend(terminator);
 	}
 
-	let packet_size = bytes.len() - 4;
+	let packet_size = Vec::len(bytes) - 4;
 
 	if packet_size > u32::MAX as usize {
 		err!(TooMuchData);

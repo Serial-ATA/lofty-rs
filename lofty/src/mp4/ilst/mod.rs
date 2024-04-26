@@ -599,7 +599,7 @@ impl SplitTag for Ilst {
 					ItemValue::Text(text)
 				},
 				// We have to special case track/disc numbers since they are stored together
-				AtomData::Unknown { code: 0, data } if data.len() >= 6 => {
+				AtomData::Unknown { code: 0, data } if Vec::len(data) >= 6 => {
 					if let AtomIdent::Fourcc(ref fourcc) = ident {
 						match fourcc {
 							b"trkn" => {
