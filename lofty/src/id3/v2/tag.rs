@@ -17,6 +17,7 @@ use crate::id3::v2::util::pairs::{
 	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
 };
 use crate::id3::v2::KeyValueFrame;
+use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
@@ -708,6 +709,18 @@ fn new_text_frame(id: FrameId<'_>, value: String, flags: FrameFlags) -> Frame<'_
 		value: FrameValue::Text(TextInformationFrame {
 			encoding: TextEncoding::UTF8,
 			value,
+		}),
+		flags,
+	}
+}
+
+fn new_user_text_frame(description: String, content: String, flags: FrameFlags) -> Frame<'static> {
+	Frame {
+		id: FrameId::Valid(Cow::Borrowed(USER_DEFINED_TEXT_FRAME_ID)),
+		value: FrameValue::UserText(ExtendedTextFrame {
+			encoding: TextEncoding::UTF8,
+			description,
+			content,
 		}),
 		flags,
 	}
@@ -1405,6 +1418,28 @@ impl MergeTag for SplitTagRemainder {
 				u8::from(flag_value).to_string(),
 				FrameFlags::default(),
 			));
+		}
+
+		'rate: {
+			if let Some(advisory_rating) = tag.take_strings(&ItemKey::ParentalAdvisory).next() {
+				let Ok(rating) = advisory_rating.parse::<u8>() else {
+					log::warn!(
+						"Parental advisory rating is not a number: {advisory_rating}, discarding"
+					);
+					break 'rate;
+				};
+
+				let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
+					log::warn!("Parental advisory rating is out of range: {rating}, discarding");
+					break 'rate;
+				};
+
+				merged.frames.push(new_user_text_frame(
+					"ITUNESADVISORY".to_string(),
+					parsed_rating.as_u8().to_string(),
+					FrameFlags::default(),
+				));
+			}
 		}
 
 		// Insert all remaining items as single frames and deduplicate as needed

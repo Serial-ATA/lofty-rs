@@ -169,6 +169,7 @@ gen_map!(
 	"TRCK"                         => TrackNumber,
 	"TRCK"                         => TrackTotal,
 	"POPM"                         => Popularimeter,
+	"ITUNESADVISORY"               => ParentalAdvisory,
 	"TDRC"                         => RecordingDate,
 	"TDOR"                         => OriginalReleaseDate,
 	"TSRC"                         => Isrc,

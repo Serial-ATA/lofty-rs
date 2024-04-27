@@ -654,6 +654,11 @@ impl SplitTag for Ilst {
 			false // Atom consumed
 		});
 
+		if let Some(rating) = self.advisory_rating() {
+			tag.insert_text(ItemKey::ParentalAdvisory, rating.as_u8().to_string());
+			let _ = self.remove(&ADVISORY_RATING);
+		}
+
 		(SplitTagRemainder(self), tag)
 	}
 }
@@ -713,6 +718,29 @@ impl MergeTag for SplitTagRemainder {
 						merged.atoms.push(Atom {
 							ident: ident.into_owned(),
 							data: AtomDataStorage::Single(AtomData::Bool(data)),
+						})
+					},
+					ItemKey::ParentalAdvisory => {
+						let Ok(rating) = text.parse::<u8>() else {
+							log::warn!(
+								"Parental advisory rating is not a number: {}, discarding",
+								text
+							);
+							continue;
+						};
+
+						let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
+							log::warn!(
+								"Parental advisory rating is out of range: {rating}, discarding"
+							);
+							continue;
+						};
+
+						merged.atoms.push(Atom {
+							ident: ident.into_owned(),
+							data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(
+								parsed_rating.as_u8(),
+							))),
 						})
 					},
 					_ => merged.atoms.push(Atom {
