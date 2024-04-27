@@ -1332,3 +1332,25 @@ fn flag_item_conversion() {
 		Some("0")
 	);
 }
+
+#[test]
+fn itunes_advisory_roundtrip() {
+	use crate::mp4::{AdvisoryRating, Ilst};
+
+	let mut tag = Ilst::new();
+	tag.set_advisory_rating(AdvisoryRating::Explicit);
+
+	let tag: Tag = tag.into();
+	let tag: Id3v2Tag = tag.into();
+
+	assert_eq!(tag.frames.len(), 1);
+
+	let frame = tag.get_user_text("ITUNESADVISORY");
+	assert!(frame.is_some());
+	assert_eq!(frame.unwrap(), "1");
+
+	let tag: Tag = tag.into();
+	let tag: Ilst = tag.into();
+
+	assert_eq!(tag.advisory_rating(), Some(AdvisoryRating::Explicit));
+}

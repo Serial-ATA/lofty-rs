@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Tag**: Support `ItemKey::ParentalAdvisory` for `Ilst` and `Id3v2Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/99)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/388))
+  - This will allow for generic edits to the iTunes-style parental advisory tag. Note that this will use the
+    numeric representation. For more information, see: https://docs.mp3tag.de/mapping/#itunesadvisory.
+
 ### Changed
 - **VorbisComments**/**ApeTag**: Verify contents of `ItemKey::FlagCompilation` during `Tag` merge ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
 
