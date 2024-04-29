@@ -49,6 +49,8 @@ pub enum ErrorKind {
 	FakeTag,
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
+	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
+	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(Id3v2Error),
 
@@ -66,6 +68,8 @@ pub enum ErrorKind {
 	StrFromUtf8(std::str::Utf8Error),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
+	/// Represents all cases of [`std::fmt::Error`].
+	Fmt(std::fmt::Error),
 	/// Failure to allocate enough memory
 	Alloc(TryReserveError),
 	/// This should **never** be encountered
@@ -477,6 +481,14 @@ impl From<std::io::Error> for LoftyError {
 	}
 }
 
+impl From<std::fmt::Error> for LoftyError {
+	fn from(input: std::fmt::Error) -> Self {
+		Self {
+			kind: ErrorKind::Fmt(input),
+		}
+	}
+}
+
 impl From<std::string::FromUtf8Error> for LoftyError {
 	fn from(input: std::string::FromUtf8Error) -> Self {
 		Self {
@@ -517,6 +529,7 @@ impl Display for LoftyError {
 			ErrorKind::StringFromUtf8(ref err) => write!(f, "{err}"),
 			ErrorKind::StrFromUtf8(ref err) => write!(f, "{err}"),
 			ErrorKind::Io(ref err) => write!(f, "{err}"),
+			ErrorKind::Fmt(ref err) => write!(f, "{err}"),
 			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
@@ -532,6 +545,9 @@ impl Display for LoftyError {
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			ErrorKind::BadTimestamp(message) => {
+				write!(f, "Encountered an invalid timestamp: {message}")
+			},
 			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(

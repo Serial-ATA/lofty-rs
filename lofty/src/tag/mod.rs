@@ -2,6 +2,7 @@
 
 mod accessor;
 pub(crate) mod item;
+pub mod items;
 mod split_merge_tag;
 mod tag_ext;
 mod tag_type;

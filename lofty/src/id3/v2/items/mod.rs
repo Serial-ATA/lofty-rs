@@ -12,6 +12,7 @@ mod private_frame;
 mod relative_volume_adjustment_frame;
 mod sync_text;
 mod text_information_frame;
+mod timestamp_frame;
 mod unique_file_identifier;
 mod url_link_frame;
 
@@ -31,5 +32,6 @@ pub use relative_volume_adjustment_frame::{
 };
 pub use sync_text::{SyncTextContentType, SynchronizedText, TimestampFormat};
 pub use text_information_frame::TextInformationFrame;
+pub use timestamp_frame::TimestampFrame;
 pub use unique_file_identifier::UniqueFileIdentifierFrame;
 pub use url_link_frame::UrlLinkFrame;
