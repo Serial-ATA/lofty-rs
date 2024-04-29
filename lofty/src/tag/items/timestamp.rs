@@ -1,11 +1,11 @@
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::macros::err;
 
 use std::fmt::Display;
 use std::io::Read;
 use std::str::FromStr;
 
-use crate::macros::err;
 use byteorder::ReadBytesExt;
 
 /// A subset of the ISO 8601 timestamp format

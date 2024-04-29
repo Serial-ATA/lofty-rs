@@ -19,6 +19,7 @@ use crate::id3::v2::util::pairs::{
 use crate::id3::v2::{KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
+use crate::tag::items::Timestamp;
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
@@ -31,7 +32,6 @@ use std::io::{Cursor, Write};
 use std::ops::Deref;
 use std::str::FromStr;
 
-use crate::tag::items::Timestamp;
 use lofty_attr::tag;
 
 const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";
