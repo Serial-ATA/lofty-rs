@@ -7,7 +7,8 @@ use super::header::Id3v2Version;
 use super::items::{
 	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
 	KeyValueFrame, OwnershipFrame, Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame,
-	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	TextInformationFrame, TimestampFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use super::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
@@ -189,6 +190,8 @@ pub enum FrameValue {
 	EventTimingCodes(EventTimingCodesFrame),
 	/// Represents a "PRIV" frame
 	Private(PrivateFrame),
+	/// Represents a timestamp for the "TDEN", "TDOR", "TDRC", "TDRL", and "TDTG" frames
+	Timestamp(TimestampFrame),
 	/// Binary data
 	///
 	/// NOTES:
@@ -220,7 +223,8 @@ impl FrameValue {
 			FrameValue::Binary(binary) => binary.is_empty(),
 			FrameValue::Popularimeter(_)
 			| FrameValue::RelativeVolumeAdjustment(_)
-			| FrameValue::Ownership(_) => {
+			| FrameValue::Ownership(_)
+			| FrameValue::Timestamp(_) => {
 				// Undefined.
 				return None;
 			},
@@ -336,6 +340,12 @@ impl From<PrivateFrame> for FrameValue {
 	}
 }
 
+impl From<TimestampFrame> for FrameValue {
+	fn from(value: TimestampFrame) -> Self {
+		Self::Timestamp(value)
+	}
+}
+
 impl FrameValue {
 	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
 		Ok(match self {
@@ -353,6 +363,7 @@ impl FrameValue {
 			FrameValue::Ownership(frame) => frame.as_bytes()?,
 			FrameValue::EventTimingCodes(frame) => frame.as_bytes(),
 			FrameValue::Private(frame) => frame.as_bytes(),
+			FrameValue::Timestamp(frame) => frame.as_bytes()?,
 			FrameValue::Binary(binary) => binary.clone(),
 		})
 	}
@@ -374,6 +385,7 @@ impl FrameValue {
 			FrameValue::Ownership(_) => "Ownership",
 			FrameValue::EventTimingCodes(_) => "EventTimingCodes",
 			FrameValue::Private(_) => "Private",
+			FrameValue::Timestamp(_) => "Timestamp",
 			FrameValue::Binary(_) => "Binary",
 		}
 	}

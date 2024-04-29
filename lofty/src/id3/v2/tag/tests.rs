@@ -2,7 +2,9 @@ use crate::config::ParsingMode;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::Popularimeter;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
+use crate::id3::v2::TimestampFrame;
 use crate::picture::MimeType;
+use crate::tag::items::Timestamp;
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;
@@ -1353,4 +1355,51 @@ fn itunes_advisory_roundtrip() {
 	let tag: Ilst = tag.into();
 
 	assert_eq!(tag.advisory_rating(), Some(AdvisoryRating::Explicit));
+}
+
+#[test]
+fn timestamp_roundtrip() {
+	let mut tag = Id3v2Tag::default();
+	tag.insert(
+		Frame::new(
+			"TDRC",
+			FrameValue::Timestamp(TimestampFrame {
+				encoding: TextEncoding::UTF8,
+				timestamp: Timestamp {
+					year: 2024,
+					month: Some(6),
+					day: Some(3),
+					hour: Some(14),
+					minute: Some(8),
+					second: Some(49),
+				},
+			}),
+			FrameFlags::default(),
+		)
+		.unwrap(),
+	);
+
+	let tag: Tag = tag.into();
+	assert_eq!(tag.len(), 1);
+	assert_eq!(
+		tag.get_string(&ItemKey::RecordingDate),
+		Some("2024-06-03T14:08:49")
+	);
+
+	let tag: Id3v2Tag = tag.into();
+	assert_eq!(tag.frames.len(), 1);
+
+	let frame = tag.frames.first().unwrap();
+	assert_eq!(frame.id, FrameId::Valid(Cow::Borrowed("TDRC")));
+	match &frame.value {
+		FrameValue::Timestamp(frame) => {
+			assert_eq!(frame.timestamp.year, 2024);
+			assert_eq!(frame.timestamp.month, Some(6));
+			assert_eq!(frame.timestamp.day, Some(3));
+			assert_eq!(frame.timestamp.hour, Some(14));
+			assert_eq!(frame.timestamp.minute, Some(8));
+			assert_eq!(frame.timestamp.second, Some(49));
+		},
+		_ => panic!("Expected a TimestampFrame"),
+	}
 }

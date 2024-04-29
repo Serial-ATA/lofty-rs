@@ -16,7 +16,7 @@ use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{
 	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
 };
-use crate::id3::v2::KeyValueFrame;
+use crate::id3::v2::{KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::{
@@ -29,7 +29,9 @@ use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
 use std::ops::Deref;
+use std::str::FromStr;
 
+use crate::tag::items::Timestamp;
 use lofty_attr::tag;
 
 const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";
@@ -1201,6 +1203,20 @@ impl SplitTag for Id3v2Tag {
 							// round trips?
 							return true; // Keep frame
 						},
+						FrameValue::Timestamp(frame)
+							if !matches!(item_key, ItemKey::Unknown(_)) =>
+						{
+							if frame.timestamp.verify().is_err() {
+								return true; // Keep frame
+							}
+
+							tag.items.push(TagItem::new(
+								item_key,
+								ItemValue::Text(frame.timestamp.to_string()),
+							));
+
+							return false; // Frame consumed
+						},
 						FrameValue::Text(TextInformationFrame { value: content, .. }) => {
 							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 								tag.items.push(TagItem::new(
@@ -1227,7 +1243,8 @@ impl SplitTag for Id3v2Tag {
 						| FrameValue::RelativeVolumeAdjustment(_)
 						| FrameValue::Ownership(_)
 						| FrameValue::EventTimingCodes(_)
-						| FrameValue::Private(_) => {
+						| FrameValue::Private(_)
+						| FrameValue::Timestamp(_) => {
 							return true; // Keep unsupported frame
 						},
 					};
@@ -1440,6 +1457,40 @@ impl MergeTag for SplitTagRemainder {
 					FrameFlags::default(),
 				));
 			}
+		}
+
+		// Timestamps
+		for item_key in [&ItemKey::RecordingDate, &ItemKey::OriginalReleaseDate] {
+			let Some(text) = tag.take_strings(item_key).next() else {
+				continue;
+			};
+
+			let frame_id = item_key
+				.map_key(TagType::Id3v2, false)
+				.expect("valid frame id");
+
+			let frame_value;
+			match Timestamp::from_str(&text) {
+				Ok(timestamp) => {
+					frame_value = FrameValue::Timestamp(TimestampFrame {
+						encoding: TextEncoding::UTF8,
+						timestamp,
+					})
+				},
+				Err(_) => {
+					// We can just preserve it as a text frame
+					frame_value = FrameValue::Text(TextInformationFrame {
+						encoding: TextEncoding::UTF8,
+						value: text,
+					});
+				},
+			}
+
+			merged.insert(Frame {
+				id: FrameId::Valid(Cow::Borrowed(frame_id)),
+				value: frame_value,
+				flags: FrameFlags::default(),
+			});
 		}
 
 		// Insert all remaining items as single frames and deduplicate as needed

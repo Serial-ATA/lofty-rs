@@ -5,7 +5,8 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
 	KeyValueFrame, OwnershipFrame, Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame,
-	TextInformationFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
+	TextInformationFrame, TimestampFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UrlLinkFrame,
 };
 use crate::macros::err;
 use crate::util::text::TextEncoding;
@@ -41,6 +42,7 @@ pub(super) fn parse_content<R: Read>(
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(reader, version)?.map(FrameValue::Text),
 		_ if id.starts_with('W') => UrlLinkFrame::parse(reader)?.map(FrameValue::Url),
 		"POPM" => Some(FrameValue::Popularimeter(Popularimeter::parse(reader)?)),
+		"TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG" => TimestampFrame::parse(reader, parse_mode)?.map(FrameValue::Timestamp),
 		// SYLT, GEOB, and any unknown frames
 		_ => {
 			let mut content = Vec::new();
