@@ -1,9 +1,11 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
-use crate::id3::v2::frame::{FrameFlags, FrameRef, FrameValue};
+use crate::id3::v2::frame::{FrameFlags, FrameRef};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
 use std::io::Write;
+use std::ops::Deref;
 
+use crate::id3::v2::Frame;
 use byteorder::{BigEndian, WriteBytesExt};
 
 pub(in crate::id3::v2) fn create_items<W>(
@@ -15,29 +17,29 @@ where
 {
 	for frame in frames {
 		verify_frame(&frame)?;
-		let value = frame.value.as_bytes()?;
+		let value = frame.as_bytes()?;
 
-		write_frame(writer, frame.id.as_str(), frame.flags, &value)?;
+		write_frame(writer, frame.id().as_str(), frame.flags(), &value)?;
 	}
 
 	Ok(())
 }
 
 fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
-	match (frame.id.as_str(), frame.value.as_ref()) {
-		("APIC", FrameValue::Picture { .. })
-		| ("USLT", FrameValue::UnsynchronizedText(_))
-		| ("COMM", FrameValue::Comment(_))
-		| ("TXXX", FrameValue::UserText(_))
-		| ("WXXX", FrameValue::UserUrl(_))
-		| (_, FrameValue::Binary(_))
-		| ("UFID", FrameValue::UniqueFileIdentifier(_))
-		| ("POPM", FrameValue::Popularimeter(_))
-		| ("TIPL" | "TMCL", FrameValue::KeyValue { .. })
-		| ("WFED" | "GRP1" | "MVNM" | "MVIN", FrameValue::Text { .. })
-		| ("TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG", FrameValue::Timestamp(_)) => Ok(()),
-		(id, FrameValue::Text { .. }) if id.starts_with('T') => Ok(()),
-		(id, FrameValue::Url(_)) if id.starts_with('W') => Ok(()),
+	match (frame.id().as_str(), frame.deref()) {
+		("APIC", Frame::Picture { .. })
+		| ("USLT", Frame::UnsynchronizedText(_))
+		| ("COMM", Frame::Comment(_))
+		| ("TXXX", Frame::UserText(_))
+		| ("WXXX", Frame::UserUrl(_))
+		| (_, Frame::Binary(_))
+		| ("UFID", Frame::UniqueFileIdentifier(_))
+		| ("POPM", Frame::Popularimeter(_))
+		| ("TIPL" | "TMCL", Frame::KeyValue { .. })
+		| ("WFED" | "GRP1" | "MVNM" | "MVIN", Frame::Text { .. })
+		| ("TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG", Frame::Timestamp(_)) => Ok(()),
+		(id, Frame::Text { .. }) if id.starts_with('T') => Ok(()),
+		(id, Frame::Url(_)) if id.starts_with('W') => Ok(()),
 		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
 			id.to_string(),
 			frame_value.name(),

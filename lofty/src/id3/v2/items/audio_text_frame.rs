@@ -1,9 +1,13 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use byteorder::ReadBytesExt as _;
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ATXT"));
 
 /// Flags for an ID3v2 audio-text flag
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
@@ -41,7 +45,8 @@ impl AudioTextFrameFlags {
 
 /// An `ID3v2` audio-text frame
 #[derive(Clone, Debug, Eq)]
-pub struct AudioTextFrame {
+pub struct AudioTextFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description
 	pub encoding: TextEncoding,
 	/// The MIME type of the audio data
@@ -66,19 +71,48 @@ pub struct AudioTextFrame {
 	pub audio_data: Vec<u8>,
 }
 
-impl PartialEq for AudioTextFrame {
+impl<'a> PartialEq for AudioTextFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.equivalent_text == other.equivalent_text
 	}
 }
 
-impl Hash for AudioTextFrame {
+impl<'a> Hash for AudioTextFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.equivalent_text.hash(state);
 	}
 }
 
-impl AudioTextFrame {
+impl<'a> AudioTextFrame<'a> {
+	/// Create a new [`AudioTextFrame`]
+	pub fn new(
+		encoding: TextEncoding,
+		mime_type: String,
+		flags: AudioTextFrameFlags,
+		equivalent_text: String,
+		audio_data: Vec<u8>,
+	) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			mime_type,
+			flags,
+			equivalent_text,
+			audio_data,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Get an [`AudioTextFrame`] from ID3v2 ATXT bytes:
 	///
 	/// NOTE: This expects *only* the frame content
@@ -87,7 +121,7 @@ impl AudioTextFrame {
 	///
 	/// * Not enough data
 	/// * Improperly encoded text
-	pub fn parse(bytes: &[u8]) -> Result<Self> {
+	pub fn parse(bytes: &[u8], frame_flags: FrameFlags) -> Result<Self> {
 		if bytes.len() < 4 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
@@ -112,7 +146,9 @@ impl AudioTextFrame {
 		)?
 		.content;
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Self {
+			header,
 			encoding,
 			mime_type,
 			flags,
@@ -193,12 +229,12 @@ pub fn scramble(audio_data: &mut [u8]) {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags};
+	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
 	use crate::TextEncoding;
 
-	#[test]
-	fn atxt_decode() {
-		let expected = AudioTextFrame {
+	fn expected() -> AudioTextFrame<'static> {
+		AudioTextFrame {
+			header: super::FrameHeader::new(super::FRAME_ID, Default::default()),
 			encoding: TextEncoding::Latin1,
 			mime_type: String::from("audio/mpeg"),
 			flags: AudioTextFrameFlags { scrambling: false },
@@ -206,26 +242,23 @@ mod tests {
 			audio_data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
-		};
+		}
+	}
+
+	#[test]
+	fn atxt_decode() {
+		let expected = expected();
 
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.atxt");
 
-		let parsed_atxt = AudioTextFrame::parse(&cont).unwrap();
+		let parsed_atxt = AudioTextFrame::parse(&cont, FrameFlags::default()).unwrap();
 
 		assert_eq!(parsed_atxt, expected);
 	}
 
 	#[test]
 	fn atxt_encode() {
-		let to_encode = AudioTextFrame {
-			encoding: TextEncoding::Latin1,
-			mime_type: String::from("audio/mpeg"),
-			flags: AudioTextFrameFlags { scrambling: false },
-			equivalent_text: String::from("foo bar baz"),
-			audio_data: crate::tag::utils::test_utils::read_path(
-				"tests/files/assets/minimal/full_test.mp3",
-			),
-		};
+		let to_encode = expected();
 
 		let encoded = to_encode.as_bytes();
 

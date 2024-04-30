@@ -1,7 +1,7 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::FileType;
-use lofty::id3::v2::{Frame, FrameFlags, FrameId, FrameValue, Id3v2Tag, KeyValueFrame};
+use lofty::id3::v2::{Frame, FrameId, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
 use lofty::probe::Probe;
@@ -325,17 +325,11 @@ fn read_and_write_tpil_frame() {
 
 	let tag: &mut Id3v2Tag = mpeg_file.id3v2_mut().unwrap();
 
-	tag.insert(
-		Frame::new(
-			"TIPL",
-			KeyValueFrame {
-				encoding: lofty::TextEncoding::UTF8,
-				key_value_pairs: key_value_pairs.clone(),
-			},
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	tag.insert(Frame::KeyValue(KeyValueFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIPL")),
+		lofty::TextEncoding::UTF8,
+		key_value_pairs.clone(),
+	)));
 
 	file.rewind().unwrap();
 	tag.save_to(&mut file, WriteOptions::default()).unwrap();
@@ -346,12 +340,8 @@ fn read_and_write_tpil_frame() {
 
 	let tag: &Id3v2Tag = mpeg_file.id3v2().unwrap();
 
-	let content = match tag
-		.get(&FrameId::Valid(Cow::Borrowed("TIPL")))
-		.unwrap()
-		.content()
-	{
-		FrameValue::KeyValue(content) => content,
+	let content = match tag.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).unwrap() {
+		Frame::KeyValue(content) => content,
 		_ => panic!("Wrong Frame Value Type for TIPL"),
 	};
 

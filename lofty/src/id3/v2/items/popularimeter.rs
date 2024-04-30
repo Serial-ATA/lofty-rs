@@ -1,17 +1,22 @@
 use crate::error::Result;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("POPM"));
 
 /// The contents of a popularimeter ("POPM") frame
 ///
 /// A tag can contain multiple "POPM" frames, but there must only be
 /// one with the same email address.
 #[derive(Clone, Debug, Eq)]
-pub struct Popularimeter {
+pub struct PopularimeterFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// An email address of the user performing the rating
 	pub email: String,
 	/// A rating of 1-255, where 1 is the worst and 255 is the best.
@@ -25,14 +30,47 @@ pub struct Popularimeter {
 	pub counter: u64,
 }
 
-impl Popularimeter {
-	/// Convert ID3v2 POPM frame bytes into a [`Popularimeter`].
+impl<'a> PartialEq for PopularimeterFrame<'a> {
+	fn eq(&self, other: &Self) -> bool {
+		self.email == other.email
+	}
+}
+
+impl<'a> Hash for PopularimeterFrame<'a> {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.email.hash(state);
+	}
+}
+
+impl<'a> PopularimeterFrame<'a> {
+	/// Create a new [`PopularimeterFrame`]
+	pub fn new(email: String, rating: u8, counter: u64) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			email,
+			rating,
+			counter,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
+	/// Convert ID3v2 POPM frame bytes into a [`PopularimeterFrame`].
 	///
 	/// # Errors
 	///
 	/// * Email is improperly encoded
 	/// * `bytes` doesn't contain enough data
-	pub fn parse<R>(reader: &mut R) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Self>
 	where
 		R: Read,
 	{
@@ -59,14 +97,16 @@ impl Popularimeter {
 			counter = u64::from_be_bytes(counter_bytes);
 		}
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Self {
+			header,
 			email: email.content,
 			rating,
 			counter,
 		})
 	}
 
-	/// Convert a [`Popularimeter`] into an ID3v2 POPM frame byte Vec
+	/// Convert a [`PopularimeterFrame`] into an ID3v2 POPM frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
 	pub fn as_bytes(&self) -> Vec<u8> {
@@ -91,23 +131,12 @@ impl Popularimeter {
 	}
 }
 
-impl PartialEq for Popularimeter {
-	fn eq(&self, other: &Self) -> bool {
-		self.email == other.email
-	}
-}
-
-impl Hash for Popularimeter {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.email.hash(state);
-	}
-}
-
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::items::popularimeter::Popularimeter;
+	use crate::id3::v2::items::popularimeter::PopularimeterFrame;
+	use crate::id3::v2::FrameHeader;
 
-	fn test_popm(popm: &Popularimeter) {
+	fn test_popm(popm: &PopularimeterFrame<'_>) {
 		let email = popm.email.clone();
 		let rating = popm.rating;
 		let counter = popm.counter;
@@ -130,13 +159,15 @@ mod tests {
 
 	#[test]
 	fn write_popm() {
-		let popm_u32_boundary = Popularimeter {
+		let popm_u32_boundary = PopularimeterFrame {
+			header: FrameHeader::new(super::FRAME_ID, Default::default()),
 			email: String::from("foo@bar.com"),
 			rating: 255,
 			counter: u64::from(u32::MAX),
 		};
 
-		let popm_u40 = Popularimeter {
+		let popm_u40 = PopularimeterFrame {
+			header: FrameHeader::new(super::FRAME_ID, Default::default()),
 			email: String::from("baz@qux.com"),
 			rating: 196,
 			counter: u64::from(u32::MAX) + 1,

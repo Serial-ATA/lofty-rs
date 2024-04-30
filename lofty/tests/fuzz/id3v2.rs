@@ -1,3 +1,5 @@
+use lofty::id3::v2::FrameFlags;
+
 #[test]
 fn unreachable1() {
 	// https://github.com/Serial-ATA/lofty-rs/issues/295
@@ -6,8 +8,12 @@ fn unreachable1() {
 	let _local1_param0_helper1 = &(_local0);
 	let _local1 = lofty::id3::v2::Id3v2Tag::original_version(_local1_param0_helper1);
 	let _local2_param0_helper1 = &mut (&data[..]);
-	let _: lofty::error::Result<std::option::Option<lofty::id3::v2::ExtendedTextFrame>> =
-		lofty::id3::v2::ExtendedTextFrame::parse(_local2_param0_helper1, _local1);
+	let _: lofty::error::Result<std::option::Option<lofty::id3::v2::ExtendedTextFrame<'_>>> =
+		lofty::id3::v2::ExtendedTextFrame::parse(
+			_local2_param0_helper1,
+			FrameFlags::default(),
+			_local1,
+		);
 }
 
 #[test]
@@ -21,6 +27,10 @@ fn overflow1() {
 	let _local0 = <lofty::config::ParsingMode as std::default::Default>::default();
 	let _local1_param0_helper1 = &mut (&data[..]);
 	let _: lofty::error::Result<
-		std::option::Option<lofty::id3::v2::RelativeVolumeAdjustmentFrame>,
-	> = lofty::id3::v2::RelativeVolumeAdjustmentFrame::parse(_local1_param0_helper1, _local0);
+		std::option::Option<lofty::id3::v2::RelativeVolumeAdjustmentFrame<'_>>,
+	> = lofty::id3::v2::RelativeVolumeAdjustmentFrame::parse(
+		_local1_param0_helper1,
+		FrameFlags::default(),
+		_local0,
+	);
 }

@@ -1,8 +1,38 @@
+pub(super) mod parse;
+
+use crate::error;
+use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError};
+use crate::id3::v2::FrameFlags;
+use crate::prelude::ItemKey;
+use crate::tag::TagType;
+
 use std::borrow::Cow;
 use std::fmt::{Display, Formatter};
 
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::tag::{ItemKey, TagType};
+/// An ID3v2 frame header
+///
+/// These are rarely constructed by hand. Usually they are created in the background
+/// when making a new [`Frame`](crate::id3::v2::Frame).
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[allow(missing_docs)]
+pub struct FrameHeader<'a> {
+	pub(crate) id: FrameId<'a>,
+	pub flags: FrameFlags,
+}
+
+impl<'a> FrameHeader<'a> {
+	/// Create a new [`FrameHeader`]
+	///
+	/// NOTE: Once the header is created, the ID becomes immutable.
+	pub const fn new(id: FrameId<'a>, flags: FrameFlags) -> Self {
+		Self { id, flags }
+	}
+
+	/// Get the ID of the frame
+	pub const fn id(&self) -> &FrameId<'a> {
+		&self.id
+	}
+}
 
 /// An `ID3v2` frame ID
 ///
@@ -22,13 +52,13 @@ pub enum FrameId<'a> {
 impl<'a> FrameId<'a> {
 	/// Attempts to create a `FrameId` from an ID string
 	///
-	/// NOTE: This will not upgrade IDs, for that behavior use [`Frame::new`](crate::id3::v2::Frame::new).
+	/// NOTE: This will not upgrade IDs.
 	///
 	/// # Errors
 	///
 	/// * `id` contains invalid characters (must be 'A'..='Z' and '0'..='9')
 	/// * `id` is an invalid length (must be 3 or 4)
-	pub fn new<I>(id: I) -> Result<Self>
+	pub fn new<I>(id: I) -> error::Result<Self>
 	where
 		I: Into<Cow<'a, str>>,
 	{
@@ -36,7 +66,7 @@ impl<'a> FrameId<'a> {
 	}
 
 	// Split from generic, public method to avoid code bloat by monomorphization.
-	pub(super) fn new_cow(id: Cow<'a, str>) -> Result<Self> {
+	pub(in crate::id3::v2::frame) fn new_cow(id: Cow<'a, str>) -> error::Result<Self> {
 		Self::verify_id(&id)?;
 
 		match id.len() {
@@ -55,7 +85,7 @@ impl<'a> FrameId<'a> {
 		}
 	}
 
-	pub(super) fn verify_id(id_str: &str) -> Result<()> {
+	pub(in crate::id3::v2::frame) fn verify_id(id_str: &str) -> error::Result<()> {
 		for c in id_str.chars() {
 			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId(

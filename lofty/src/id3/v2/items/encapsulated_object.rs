@@ -1,11 +1,15 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::io::{Cursor, Read};
 
+const FRAME_ID: FrameId<'static> = FrameId::Valid(std::borrow::Cow::Borrowed("GEOB"));
+
 /// Allows for encapsulation of any file type inside an ID3v2 tag
 #[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct GeneralEncapsulatedObject {
+pub struct GeneralEncapsulatedObject<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The text encoding of `file_name` and `description`
 	pub encoding: TextEncoding,
 	/// The file's mimetype
@@ -18,7 +22,36 @@ pub struct GeneralEncapsulatedObject {
 	pub data: Vec<u8>,
 }
 
-impl GeneralEncapsulatedObject {
+impl<'a> GeneralEncapsulatedObject<'a> {
+	/// Create a new [`GeneralEncapsulatedObject`]
+	pub fn new(
+		encoding: TextEncoding,
+		mime_type: Option<String>,
+		file_name: Option<String>,
+		descriptor: Option<String>,
+		data: Vec<u8>,
+	) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			mime_type,
+			file_name,
+			descriptor,
+			data,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read a [`GeneralEncapsulatedObject`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -26,7 +59,7 @@ impl GeneralEncapsulatedObject {
 	/// # Errors
 	///
 	/// This function will return an error if at any point it's unable to parse the data
-	pub fn parse(data: &[u8]) -> Result<Self> {
+	pub fn parse(data: &[u8], frame_flags: FrameFlags) -> Result<Self> {
 		if data.len() < 4 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
@@ -51,7 +84,9 @@ impl GeneralEncapsulatedObject {
 		let mut data = Vec::new();
 		cursor.read_to_end(&mut data)?;
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Self {
+			header,
 			encoding,
 			mime_type: mime_type.text_or_none(),
 			file_name: file_name.text_or_none(),
@@ -88,12 +123,12 @@ impl GeneralEncapsulatedObject {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::GeneralEncapsulatedObject;
+	use crate::id3::v2::{FrameFlags, FrameHeader, GeneralEncapsulatedObject};
 	use crate::util::text::TextEncoding;
 
-	#[test]
-	fn geob_decode() {
-		let expected = GeneralEncapsulatedObject {
+	fn expected() -> GeneralEncapsulatedObject<'static> {
+		GeneralEncapsulatedObject {
+			header: FrameHeader::new(super::FRAME_ID, Default::default()),
 			encoding: TextEncoding::Latin1,
 			mime_type: Some(String::from("audio/mpeg")),
 			file_name: Some(String::from("a.mp3")),
@@ -101,26 +136,23 @@ mod tests {
 			data: crate::tag::utils::test_utils::read_path(
 				"tests/files/assets/minimal/full_test.mp3",
 			),
-		};
+		}
+	}
+
+	#[test]
+	fn geob_decode() {
+		let expected = expected();
 
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");
 
-		let parsed_geob = GeneralEncapsulatedObject::parse(&cont).unwrap();
+		let parsed_geob = GeneralEncapsulatedObject::parse(&cont, FrameFlags::default()).unwrap();
 
 		assert_eq!(parsed_geob, expected);
 	}
 
 	#[test]
 	fn geob_encode() {
-		let to_encode = GeneralEncapsulatedObject {
-			encoding: TextEncoding::Latin1,
-			mime_type: Some(String::from("audio/mpeg")),
-			file_name: Some(String::from("a.mp3")),
-			descriptor: Some(String::from("Test Asset")),
-			data: crate::tag::utils::test_utils::read_path(
-				"tests/files/assets/minimal/full_test.mp3",
-			),
-		};
+		let to_encode = expected();
 
 		let encoded = to_encode.as_bytes();
 

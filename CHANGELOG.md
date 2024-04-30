@@ -17,6 +17,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **VorbisComments**/**ApeTag**: Verify contents of `ItemKey::FlagCompilation` during `Tag` merge ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
+- **ID3v2**:
+  - ⚠️ Important ⚠️: `Frame` has been converted to an `enum`:
+    - This makes it easier to validate frame contents, as one can no longer make an `AttachedPictureFrame` with the ID `"TALB"`, for example.
+    ```rust
+    // Old:
+    let frame = Frame::new(
+        "TALB",
+        FrameType::Text(TextInformationFrame {
+            TextEncoding::UTF8,
+            value: String::from("Foo album"),
+        }),
+        FrameFlags::default(),
+    ).unwrap();
+    
+    // New:
+    let frame = Frame::Text(TextInformationFrame::new(
+        FrameId::new("TALB").unwrap(),
+        FrameFlags::default(),
+        TextEncoding::UTF8,
+        String::from("Foo album"),
+    ));
+    ```
+  - Renamed `Popularimeter` -> `PopularimeterFrame`
+  - Renamed `SynchronizedText` -> `SynchronizedTextFrame`
 
 ## [0.19.2] - 2024-04-26
 

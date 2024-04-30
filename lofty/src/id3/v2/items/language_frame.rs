@@ -1,8 +1,10 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
@@ -71,7 +73,8 @@ impl LanguageFrame {
 ///
 /// Similar to `TXXX` and `WXXX` frames, comments are told apart by their descriptions.
 #[derive(Clone, Debug, Eq)]
-pub struct CommentFrame {
+pub struct CommentFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
@@ -82,30 +85,48 @@ pub struct CommentFrame {
 	pub content: String,
 }
 
-impl PartialEq for CommentFrame {
+impl<'a> PartialEq for CommentFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl Hash for CommentFrame {
+impl<'a> Hash for CommentFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl From<LanguageFrame> for CommentFrame {
-	fn from(value: LanguageFrame) -> Self {
+impl<'a> CommentFrame<'a> {
+	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("COMM"));
+
+	/// Create a new [`CommentFrame`]
+	pub fn new(
+		encoding: TextEncoding,
+		language: [u8; 3],
+		description: String,
+		content: String,
+	) -> Self {
+		let header = FrameHeader::new(Self::FRAME_ID, FrameFlags::default());
 		Self {
-			encoding: value.encoding,
-			language: value.language,
-			description: value.description,
-			content: value.content,
+			header,
+			encoding,
+			language,
+			description,
+			content,
 		}
 	}
-}
 
-impl CommentFrame {
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read a [`CommentFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -117,11 +138,26 @@ impl CommentFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
-		Ok(LanguageFrame::parse(reader, version)?.map(Into::into))
+		let Some(language_frame) = LanguageFrame::parse(reader, version)? else {
+			return Ok(None);
+		};
+
+		let header = FrameHeader::new(Self::FRAME_ID, frame_flags);
+		Ok(Some(Self {
+			header,
+			encoding: language_frame.encoding,
+			language: language_frame.language,
+			description: language_frame.description,
+			content: language_frame.content,
+		}))
 	}
 
 	/// Convert a [`CommentFrame`] to a byte vec
@@ -146,7 +182,8 @@ impl CommentFrame {
 ///
 /// Similar to `TXXX` and `WXXX` frames, USLT frames are told apart by their descriptions.
 #[derive(Clone, Debug, Eq)]
-pub struct UnsynchronizedTextFrame {
+pub struct UnsynchronizedTextFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description and content
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
@@ -157,30 +194,48 @@ pub struct UnsynchronizedTextFrame {
 	pub content: String,
 }
 
-impl PartialEq for UnsynchronizedTextFrame {
+impl<'a> PartialEq for UnsynchronizedTextFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl Hash for UnsynchronizedTextFrame {
+impl<'a> Hash for UnsynchronizedTextFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl From<LanguageFrame> for UnsynchronizedTextFrame {
-	fn from(value: LanguageFrame) -> Self {
+impl<'a> UnsynchronizedTextFrame<'a> {
+	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("USLT"));
+
+	/// Create a new [`UnsynchronizedTextFrame`]
+	pub fn new(
+		encoding: TextEncoding,
+		language: [u8; 3],
+		description: String,
+		content: String,
+	) -> Self {
+		let header = FrameHeader::new(Self::FRAME_ID, FrameFlags::default());
 		Self {
-			encoding: value.encoding,
-			language: value.language,
-			description: value.description,
-			content: value.content,
+			header,
+			encoding,
+			language,
+			description,
+			content,
 		}
 	}
-}
 
-impl UnsynchronizedTextFrame {
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read a [`UnsynchronizedTextFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -192,11 +247,26 @@ impl UnsynchronizedTextFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
-		Ok(LanguageFrame::parse(reader, version)?.map(Into::into))
+		let Some(language_frame) = LanguageFrame::parse(reader, version)? else {
+			return Ok(None);
+		};
+
+		let header = FrameHeader::new(Self::FRAME_ID, frame_flags);
+		Ok(Some(Self {
+			header,
+			encoding: language_frame.encoding,
+			language: language_frame.language,
+			description: language_frame.description,
+			content: language_frame.content,
+		}))
 	}
 
 	/// Convert a [`UnsynchronizedTextFrame`] to a byte vec

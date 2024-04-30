@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use byteorder::ReadBytesExt;
@@ -9,14 +10,39 @@ use std::io::Read;
 
 /// An `ID3v2` key-value frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct KeyValueFrame {
+pub struct KeyValueFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the text
 	pub encoding: TextEncoding,
 	/// The key value pairs. Keys can be specified multiple times
 	pub key_value_pairs: Vec<(String, String)>,
 }
 
-impl KeyValueFrame {
+impl<'a> KeyValueFrame<'a> {
+	/// Create a new [`KeyValueFrame`]
+	pub fn new(
+		id: FrameId<'a>,
+		encoding: TextEncoding,
+		key_value_pairs: Vec<(String, String)>,
+	) -> Self {
+		let header = FrameHeader::new(id, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			key_value_pairs,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`KeyValueFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -28,7 +54,12 @@ impl KeyValueFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		id: FrameId<'a>,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -69,7 +100,9 @@ impl KeyValueFrame {
 			values.push((key.content, value.content));
 		}
 
+		let header = FrameHeader::new(id, frame_flags);
 		Ok(Some(Self {
+			header,
 			encoding,
 			key_value_pairs: values,
 		}))

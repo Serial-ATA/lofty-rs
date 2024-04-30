@@ -1,19 +1,24 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{
 	decode_text, encode_text, utf8_decode_str, TextDecodeOptions, TextEncoding,
 };
 
+use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("OWNE"));
 
 /// An `ID3v2` ownership frame
 ///
 /// This is used to mark a transaction, and is recommended to be used
 /// in addition to the USER and TOWN frames.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct OwnershipFrame {
+pub struct OwnershipFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the seller string
 	pub encoding: TextEncoding,
 	/// The price paid
@@ -28,7 +33,34 @@ pub struct OwnershipFrame {
 	pub seller: String,
 }
 
-impl OwnershipFrame {
+impl<'a> OwnershipFrame<'a> {
+	/// Create a new [`OwnershipFrame`]
+	pub fn new(
+		encoding: TextEncoding,
+		price_paid: String,
+		date_of_purchase: String,
+		seller: String,
+	) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			price_paid,
+			date_of_purchase,
+			seller,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`OwnershipFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -37,7 +69,7 @@ impl OwnershipFrame {
 	///
 	/// * Invalid text encoding
 	/// * Not enough data
-	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
+	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -62,7 +94,9 @@ impl OwnershipFrame {
 
 		let seller = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(OwnershipFrame {
+			header,
 			encoding,
 			price_paid,
 			date_of_purchase,
@@ -94,11 +128,14 @@ impl OwnershipFrame {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::OwnershipFrame;
+	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, OwnershipFrame};
 	use crate::TextEncoding;
 
-	fn expected() -> OwnershipFrame {
+	use std::borrow::Cow;
+
+	fn expected() -> OwnershipFrame<'static> {
 		OwnershipFrame {
+			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("OWNE")), FrameFlags::default()),
 			encoding: TextEncoding::Latin1,
 			price_paid: String::from("USD1000"),
 			date_of_purchase: String::from("19840407"),
@@ -110,7 +147,9 @@ mod tests {
 	fn owne_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");
 
-		let parsed_owne = OwnershipFrame::parse(&mut &cont[..]).unwrap().unwrap();
+		let parsed_owne = OwnershipFrame::parse(&mut &cont[..], FrameFlags::default())
+			.unwrap()
+			.unwrap();
 
 		assert_eq!(parsed_owne, expected());
 	}

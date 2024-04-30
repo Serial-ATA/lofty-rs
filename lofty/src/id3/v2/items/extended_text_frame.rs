@@ -1,15 +1,19 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
 	decode_text, encode_text, utf16_decode_bytes, TextDecodeOptions, TextEncoding,
 };
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TXXX"));
 
 /// An extended `ID3v2` text frame
 ///
@@ -18,7 +22,8 @@ use byteorder::ReadBytesExt;
 /// This means for each `ExtendedTextFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]
-pub struct ExtendedTextFrame {
+pub struct ExtendedTextFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// Unique content description
@@ -27,19 +32,40 @@ pub struct ExtendedTextFrame {
 	pub content: String,
 }
 
-impl PartialEq for ExtendedTextFrame {
+impl<'a> PartialEq for ExtendedTextFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl Hash for ExtendedTextFrame {
+impl<'a> Hash for ExtendedTextFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl ExtendedTextFrame {
+impl<'a> ExtendedTextFrame<'a> {
+	/// Create a new [`ExtendedTextFrame`]
+	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			description,
+			content,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`ExtendedTextFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -51,7 +77,11 @@ impl ExtendedTextFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -70,7 +100,9 @@ impl ExtendedTextFrame {
 			frame_content =
 				decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
 
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
 			return Ok(Some(ExtendedTextFrame {
+				header,
 				encoding,
 				description: description.content,
 				content: frame_content,
@@ -118,7 +150,9 @@ impl ExtendedTextFrame {
 			})?;
 		}
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(ExtendedTextFrame {
+			header,
 			encoding,
 			description: description.content,
 			content: frame_content,

@@ -1,5 +1,5 @@
 use lofty::config::ParsingMode;
-use lofty::id3::v2::{AttachedPictureFrame, Id3v2Version};
+use lofty::id3::v2::{AttachedPictureFrame, FrameFlags, Id3v2Version};
 use lofty::picture::{Picture, PictureInformation, PictureType};
 use lofty::TextEncoding;
 
@@ -30,7 +30,8 @@ fn create_original_picture() -> Picture {
 fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
-	let apic = AttachedPictureFrame::parse(&mut &buf[..], Id3v2Version::V4).unwrap();
+	let apic = AttachedPictureFrame::parse(&mut &buf[..], FrameFlags::default(), Id3v2Version::V4)
+		.unwrap();
 
 	assert_eq!(create_original_picture(), apic.picture);
 }
@@ -40,10 +41,7 @@ fn as_apic_bytes() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
 	let original_picture = create_original_picture();
-	let apic = AttachedPictureFrame {
-		encoding: TextEncoding::Latin1,
-		picture: original_picture,
-	};
+	let apic = AttachedPictureFrame::new(TextEncoding::Latin1, original_picture);
 
 	let original_as_apic = apic.as_bytes(Id3v2Version::V4).unwrap();
 
@@ -54,7 +52,8 @@ fn as_apic_bytes() {
 fn id3v22_pic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
-	let pic = AttachedPictureFrame::parse(&mut &buf[..], Id3v2Version::V2).unwrap();
+	let pic = AttachedPictureFrame::parse(&mut &buf[..], FrameFlags::default(), Id3v2Version::V2)
+		.unwrap();
 
 	assert_eq!(create_original_picture(), pic.picture);
 }
@@ -64,10 +63,7 @@ fn as_apic_bytes_v2() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
 	let original_picture = create_original_picture();
-	let pic = AttachedPictureFrame {
-		encoding: TextEncoding::Latin1,
-		picture: original_picture,
-	};
+	let pic = AttachedPictureFrame::new(TextEncoding::Latin1, original_picture);
 
 	let original_as_pic = pic.as_bytes(Id3v2Version::V2).unwrap();
 

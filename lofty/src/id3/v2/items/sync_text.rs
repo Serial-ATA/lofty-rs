@@ -1,15 +1,19 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
 	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextDecodeOptions,
 	TextEncoding,
 };
 
+use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
-/// The unit used for [`SynchronizedText`] timestamps
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("SYLT"));
+
+/// The unit used for [`SynchronizedTextFrame`] timestamps
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 #[repr(u8)]
 pub enum TimestampFormat {
@@ -30,7 +34,7 @@ impl TimestampFormat {
 	}
 }
 
-/// The type of text stored in a [`SynchronizedText`]
+/// The type of text stored in a [`SynchronizedTextFrame`]
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 #[repr(u8)]
 #[allow(missing_docs)]
@@ -65,8 +69,9 @@ impl SyncTextContentType {
 }
 
 /// Represents an ID3v2 synchronized text frame
-#[derive(PartialEq, Clone, Debug, Eq, Hash)]
-pub struct SynchronizedText {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SynchronizedTextFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The text encoding (description/text)
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
@@ -81,8 +86,39 @@ pub struct SynchronizedText {
 	pub content: Vec<(u32, String)>,
 }
 
-impl SynchronizedText {
-	/// Read a [`SynchronizedText`] from a slice
+impl<'a> SynchronizedTextFrame<'a> {
+	/// Create a new [`SynchronizedTextFrame`]
+	pub fn new(
+		encoding: TextEncoding,
+		language: [u8; 3],
+		timestamp_format: TimestampFormat,
+		content_type: SyncTextContentType,
+		description: Option<String>,
+		content: Vec<(u32, String)>,
+	) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			language,
+			timestamp_format,
+			content_type,
+			description,
+			content,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
+	/// Read a [`SynchronizedTextFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
 	///
@@ -90,7 +126,7 @@ impl SynchronizedText {
 	///
 	/// This function will return [`BadSyncText`][Id3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
 	#[allow(clippy::missing_panics_doc)] // Infallible
-	pub fn parse(data: &[u8]) -> Result<Self> {
+	pub fn parse(data: &[u8], frame_flags: FrameFlags) -> Result<Self> {
 		if data.len() < 7 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
@@ -169,7 +205,9 @@ impl SynchronizedText {
 			content.push((time, text));
 		}
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Self {
+			header,
 			encoding,
 			language,
 			timestamp_format,
@@ -179,7 +217,7 @@ impl SynchronizedText {
 		})
 	}
 
-	/// Convert a [`SynchronizedText`] to an ID3v2 SYLT frame byte Vec
+	/// Convert a [`SynchronizedTextFrame`] to an ID3v2 SYLT frame byte Vec
 	///
 	/// NOTE: This does not include the frame header
 	///
@@ -220,11 +258,14 @@ impl SynchronizedText {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{SyncTextContentType, SynchronizedText, TimestampFormat};
+	use crate::id3::v2::{
+		FrameFlags, FrameHeader, SyncTextContentType, SynchronizedTextFrame, TimestampFormat,
+	};
 	use crate::util::text::TextEncoding;
 
-	fn expected(encoding: TextEncoding) -> SynchronizedText {
-		SynchronizedText {
+	fn expected(encoding: TextEncoding) -> SynchronizedTextFrame<'static> {
+		SynchronizedTextFrame {
+			header: FrameHeader::new(super::FRAME_ID, Default::default()),
 			encoding,
 			language: *b"eng",
 			timestamp_format: TimestampFormat::MS,
@@ -244,7 +285,7 @@ mod tests {
 	fn sylt_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
-		let parsed_sylt = SynchronizedText::parse(&cont).unwrap();
+		let parsed_sylt = SynchronizedTextFrame::parse(&cont, FrameFlags::default()).unwrap();
 
 		assert_eq!(parsed_sylt, expected(TextEncoding::Latin1));
 	}
@@ -264,7 +305,7 @@ mod tests {
 		let cont =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.sylt");
 
-		let parsed_sylt = SynchronizedText::parse(&cont).unwrap();
+		let parsed_sylt = SynchronizedTextFrame::parse(&cont, FrameFlags::default()).unwrap();
 
 		assert_eq!(parsed_sylt, expected(TextEncoding::UTF16));
 	}

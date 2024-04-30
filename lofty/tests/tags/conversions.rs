@@ -1,8 +1,9 @@
 // Tests for special case conversions
 
-use lofty::id3::v2::{CommentFrame, Frame, FrameFlags, FrameId, Id3v2Tag, UnsynchronizedTextFrame};
+use lofty::id3::v2::{CommentFrame, Frame, FrameId, Id3v2Tag, UnsynchronizedTextFrame};
 use lofty::tag::{ItemKey, Tag, TagType};
 use lofty::TextEncoding;
+
 use std::borrow::Cow;
 
 #[test]
@@ -15,33 +16,21 @@ fn tag_to_id3v2_lang_frame() {
 
 	assert_eq!(
 		id3.get(&FrameId::Valid(Cow::Borrowed("USLT"))),
-		Frame::new(
-			"USLT",
-			UnsynchronizedTextFrame {
-				encoding: TextEncoding::UTF8,
-				language: *b"eng",
-				description: String::new(),
-				content: String::from("Test lyrics")
-			},
-			FrameFlags::default()
-		)
-		.ok()
-		.as_ref()
+		Some(&Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
+			TextEncoding::UTF8,
+			*b"eng",
+			String::new(),
+			String::from("Test lyrics")
+		)))
 	);
 
 	assert_eq!(
 		id3.get(&FrameId::Valid(Cow::Borrowed("COMM"))),
-		Frame::new(
-			"COMM",
-			CommentFrame {
-				encoding: TextEncoding::UTF8,
-				language: *b"eng",
-				description: String::new(),
-				content: String::from("Test comment")
-			},
-			FrameFlags::default()
-		)
-		.ok()
-		.as_ref()
+		Some(&Frame::Comment(CommentFrame::new(
+			TextEncoding::UTF8,
+			*b"eng",
+			String::new(),
+			String::from("Test comment")
+		)))
 	);
 }
