@@ -1,27 +1,68 @@
 use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::parse_mode_choice;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("UFID"));
+
 /// An `ID3v2` unique file identifier frame (UFID).
 #[derive(Clone, Debug, Eq)]
-pub struct UniqueFileIdentifierFrame {
+pub struct UniqueFileIdentifierFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The non-empty owner of the identifier.
 	pub owner: String,
 	/// The binary payload with up to 64 bytes of data.
 	pub identifier: Vec<u8>,
 }
 
-impl UniqueFileIdentifierFrame {
+impl<'a> PartialEq for UniqueFileIdentifierFrame<'a> {
+	fn eq(&self, other: &Self) -> bool {
+		self.owner == other.owner
+	}
+}
+
+impl<'a> Hash for UniqueFileIdentifierFrame<'a> {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.owner.hash(state);
+	}
+}
+
+impl<'a> UniqueFileIdentifierFrame<'a> {
+	/// Create a new [`UniqueFileIdentifierFrame`]
+	pub fn new(owner: String, identifier: Vec<u8>) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			owner,
+			identifier,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Decode the frame contents from bytes
 	///
 	/// # Errors
 	///
 	/// Owner is missing or improperly encoded
-	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -47,12 +88,19 @@ impl UniqueFileIdentifierFrame {
 		let mut identifier = Vec::new();
 		reader.read_to_end(&mut identifier)?;
 
-		Ok(Some(Self { owner, identifier }))
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
+		Ok(Some(Self {
+			header,
+			owner,
+			identifier,
+		}))
 	}
 
 	/// Encode the frame contents as bytes
 	pub fn as_bytes(&self) -> Vec<u8> {
-		let Self { owner, identifier } = self;
+		let Self {
+			owner, identifier, ..
+		} = self;
 
 		let mut content = Vec::with_capacity(owner.len() + 1 + identifier.len());
 		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
@@ -62,35 +110,36 @@ impl UniqueFileIdentifierFrame {
 	}
 }
 
-impl PartialEq for UniqueFileIdentifierFrame {
-	fn eq(&self, other: &Self) -> bool {
-		self.owner == other.owner
-	}
-}
-
-impl Hash for UniqueFileIdentifierFrame {
-	fn hash<H: Hasher>(&self, state: &mut H) {
-		self.owner.hash(state);
-	}
-}
-
 #[cfg(test)]
 mod tests {
+	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+
+	use std::borrow::Cow;
+
 	#[test]
 	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
 		use crate::config::ParsingMode;
 		use crate::id3::v2::UniqueFileIdentifierFrame;
 
 		let ufid_no_owner = UniqueFileIdentifierFrame {
+			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("UFID")), Default::default()),
 			owner: String::new(),
 			identifier: vec![0],
 		};
 
 		let bytes = ufid_no_owner.as_bytes();
 
-		assert!(UniqueFileIdentifierFrame::parse(&mut &bytes[..], ParsingMode::Strict).is_err());
-		assert!(
-			UniqueFileIdentifierFrame::parse(&mut &bytes[..], ParsingMode::BestAttempt).is_ok()
-		);
+		assert!(UniqueFileIdentifierFrame::parse(
+			&mut &bytes[..],
+			FrameFlags::default(),
+			ParsingMode::Strict
+		)
+		.is_err());
+		assert!(UniqueFileIdentifierFrame::parse(
+			&mut &bytes[..],
+			FrameFlags::default(),
+			ParsingMode::BestAttempt
+		)
+		.is_ok());
 	}
 }

@@ -1,6 +1,6 @@
 use crate::config::ParsingMode;
 use crate::id3::v2::header::Id3v2Header;
-use crate::id3::v2::items::Popularimeter;
+use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 use crate::id3::v2::TimestampFrame;
 use crate::picture::MimeType;
@@ -8,6 +8,8 @@ use crate::tag::items::Timestamp;
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;
+
+const COMMENT_FRAME_ID: &str = "COMM";
 
 fn read_tag(path: &str) -> Id3v2Tag {
 	let tag_bytes = read_path(path);
@@ -23,93 +25,49 @@ fn parse_id3v2() {
 	let mut expected_tag = Id3v2Tag::default();
 
 	let encoding = TextEncoding::Latin1;
-	let flags = FrameFlags::default();
 
-	expected_tag.insert(
-		Frame::new(
-			"TPE1",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("Bar artist"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TPE1")),
+		encoding,
+		String::from("Bar artist"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			"TIT2",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("Foo title"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		encoding,
+		String::from("Foo title"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			"TALB",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("Baz album"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TALB")),
+		encoding,
+		String::from("Baz album"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			COMMENT_FRAME_ID,
-			FrameValue::Comment(CommentFrame {
-				encoding,
-				language: *b"eng",
-				description: EMPTY_CONTENT_DESCRIPTOR,
-				content: String::from("Qux comment"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Comment(CommentFrame::new(
+		encoding,
+		*b"eng",
+		EMPTY_CONTENT_DESCRIPTOR,
+		String::from("Qux comment"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			"TDRC",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("1984"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDRC")),
+		encoding,
+		String::from("1984"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			"TRCK",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("1"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TRCK")),
+		encoding,
+		String::from("1"),
+	)));
 
-	expected_tag.insert(
-		Frame::new(
-			"TCON",
-			FrameValue::Text(TextInformationFrame {
-				encoding,
-				value: String::from("Classical"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		encoding,
+		String::from("Classical"),
+	)));
 
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
@@ -171,22 +129,18 @@ fn tag_to_id3v2_popm() {
 		]),
 	));
 
-	let expected = Popularimeter {
-		email: String::from("foo@bar.com"),
-		rating: 196,
-		counter: 65535,
-	};
+	let expected = PopularimeterFrame::new(String::from("foo@bar.com"), 196, 65535);
 
 	let converted_tag: Id3v2Tag = tag.into();
 
 	assert_eq!(converted_tag.frames.len(), 1);
 	let actual_frame = converted_tag.frames.first().unwrap();
 
-	assert_eq!(actual_frame.id, FrameId::Valid(Cow::Borrowed("POPM")));
+	assert_eq!(actual_frame.id(), &FrameId::Valid(Cow::Borrowed("POPM")));
 	// Note: as POPM frames are considered equal by email alone, each field must
 	// be separately validated
-	match actual_frame.content() {
-		FrameValue::Popularimeter(pop) => {
+	match actual_frame {
+		Frame::Popularimeter(pop) => {
 			assert_eq!(pop.email, expected.email);
 			assert_eq!(pop.rating, expected.rating);
 			assert_eq!(pop.counter, expected.counter);
@@ -198,11 +152,11 @@ fn tag_to_id3v2_popm() {
 #[test]
 fn fail_write_bad_frame() {
 	let mut tag = Id3v2Tag::default();
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("ABCD")),
-		value: FrameValue::Url(UrlLinkFrame(String::from("FOO URL"))),
-		flags: FrameFlags::default(),
-	});
+
+	tag.insert(Frame::Url(UrlLinkFrame::new(
+		FrameId::Valid(Cow::Borrowed("ABCD")),
+		String::from("FOO URL"),
+	)));
 
 	let res = tag.dump_to(&mut Vec::<u8>::new(), WriteOptions::default());
 
@@ -223,11 +177,12 @@ fn tag_to_id3v2() {
 		let frame = frame.unwrap();
 
 		assert_eq!(
-			frame.content(),
-			&FrameValue::Text(TextInformationFrame {
-				encoding: TextEncoding::UTF8,
-				value: String::from(value)
-			})
+			frame,
+			&Frame::Text(TextInformationFrame::new(
+				FrameId::Valid(Cow::Borrowed(id)),
+				TextEncoding::UTF8,
+				String::from(value)
+			)),
 		);
 	}
 
@@ -243,13 +198,13 @@ fn tag_to_id3v2() {
 		.get(&FrameId::Valid(Cow::Borrowed(COMMENT_FRAME_ID)))
 		.unwrap();
 	assert_eq!(
-		frame.content(),
-		&FrameValue::Comment(CommentFrame {
-			encoding: TextEncoding::Latin1,
-			language: *b"eng",
-			description: EMPTY_CONTENT_DESCRIPTOR,
-			content: String::from("Qux comment")
-		})
+		frame,
+		&Frame::Comment(CommentFrame::new(
+			TextEncoding::Latin1,
+			*b"eng",
+			EMPTY_CONTENT_DESCRIPTOR,
+			String::from("Qux comment"),
+		))
 	);
 
 	verify_frame(&id3v2_tag, "TRCK", "1");
@@ -262,84 +217,58 @@ fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 	tag.original_version = version;
 
 	let encoding = TextEncoding::UTF16;
-	let flags = FrameFlags::default();
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TIT2")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding,
-			value: String::from("TempleOS Hymn Risen (Remix)"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		encoding,
+		String::from("TempleOS Hymn Risen (Remix)"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TPE1")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding,
-			value: String::from("Dave Eddy"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TPE1")),
+		encoding,
+		String::from("Dave Eddy"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TRCK")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding: TextEncoding::Latin1,
-			value: String::from("1"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TRCK")),
+		encoding,
+		String::from("1"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TALB")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding,
-			value: String::from("Summer"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TALB")),
+		encoding,
+		String::from("Summer"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TDRC")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding,
-			value: String::from("2017"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDRC")),
+		encoding,
+		String::from("2017"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TCON")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding,
-			value: String::from("Electronic"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		encoding,
+		String::from("Electronic"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("TLEN")),
-		value: FrameValue::Text(TextInformationFrame {
-			encoding: TextEncoding::UTF16,
-			value: String::from("213017"),
-		}),
-		flags,
-	});
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TLEN")),
+		encoding,
+		String::from("213017"),
+	)));
 
-	tag.insert(Frame {
-		id: FrameId::Valid(Cow::Borrowed("APIC")),
-		value: FrameValue::Picture(AttachedPictureFrame {
-			encoding: TextEncoding::Latin1,
-			picture: Picture {
-				pic_type: PictureType::CoverFront,
-				mime_type: Some(MimeType::Png),
-				description: None,
-				data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
-			},
-		}),
-		flags,
-	});
+	tag.insert(Frame::Picture(AttachedPictureFrame::new(
+		TextEncoding::Latin1,
+		Picture {
+			pic_type: PictureType::CoverFront,
+			mime_type: Some(MimeType::Png),
+			description: None,
+			data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
+		},
+	)));
 
 	tag
 }
@@ -409,14 +338,10 @@ fn issue_36() {
 	assert_eq!(tag.len(), 1);
 	assert_eq!(
 		tag.frames.first(),
-		Some(&Frame {
-			id: FrameId::Valid(Cow::Borrowed("APIC")),
-			value: FrameValue::Picture(AttachedPictureFrame {
-				encoding: TextEncoding::UTF8,
-				picture
-			}),
-			flags: FrameFlags::default()
-		})
+		Some(&Frame::Picture(AttachedPictureFrame::new(
+			TextEncoding::UTF8,
+			picture
+		)))
 	);
 }
 
@@ -427,14 +352,14 @@ fn popm_frame() {
 	assert_eq!(parsed_tag.frames.len(), 1);
 	let popm_frame = parsed_tag.frames.first().unwrap();
 
-	assert_eq!(popm_frame.id, FrameId::Valid(Cow::Borrowed("POPM")));
+	assert_eq!(popm_frame.id(), &FrameId::Valid(Cow::Borrowed("POPM")));
 	assert_eq!(
-		popm_frame.value,
-		FrameValue::Popularimeter(Popularimeter {
-			email: String::from("foo@bar.com"),
-			rating: 196,
-			counter: 65535
-		})
+		popm_frame,
+		&Frame::Popularimeter(PopularimeterFrame::new(
+			String::from("foo@bar.com"),
+			196,
+			65535
+		))
 	)
 }
 
@@ -478,18 +403,11 @@ fn utf16_txxx_with_single_bom() {
 #[test]
 fn replaygain_tag_conversion() {
 	let mut tag = Id3v2Tag::default();
-	tag.insert(
-		Frame::new(
-			"TXXX",
-			FrameValue::UserText(ExtendedTextFrame {
-				encoding: TextEncoding::UTF8,
-				description: String::from("REPLAYGAIN_ALBUM_GAIN"),
-				content: String::from("-10.43 dB"),
-			}),
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	tag.insert(Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		String::from("REPLAYGAIN_ALBUM_GAIN"),
+		String::from("-10.43 dB"),
+	)));
 
 	let tag: Tag = tag.into();
 
@@ -574,7 +492,6 @@ fn multi_value_roundtrip() {
 fn comments() {
 	let mut tag = Id3v2Tag::default();
 	let encoding = TextEncoding::Latin1;
-	let flags = FrameFlags::default();
 	let custom_descriptor = "lofty-rs";
 
 	assert!(tag.comment().is_none());
@@ -589,19 +506,12 @@ fn comments() {
 		.iter()
 		.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
 		.is_none());
-	tag.insert(
-		Frame::new(
-			COMMENT_FRAME_ID,
-			FrameValue::Comment(CommentFrame {
-				encoding,
-				language: *b"eng",
-				description: custom_descriptor.to_owned(),
-				content: String::from("Qux comment"),
-			}),
-			flags,
-		)
-		.unwrap(),
-	);
+	tag.insert(Frame::Comment(CommentFrame::new(
+		encoding,
+		*b"eng",
+		custom_descriptor.to_owned(),
+		String::from("Qux comment"),
+	)));
 	// Verify that the regular comment still exists
 	assert_eq!(Some(Cow::Borrowed("")), tag.comment());
 	assert_eq!(1, tag.comments().count());
@@ -619,27 +529,17 @@ fn comments() {
 
 #[test]
 fn txxx_wxxx_tag_conversion() {
-	let txxx_frame = Frame::new(
-		"TXXX",
-		FrameValue::UserText(ExtendedTextFrame {
-			encoding: TextEncoding::UTF8,
-			description: String::from("FOO_TEXT_FRAME"),
-			content: String::from("foo content"),
-		}),
-		FrameFlags::default(),
-	)
-	.unwrap();
+	let txxx_frame = Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		String::from("FOO_TEXT_FRAME"),
+		String::from("foo content"),
+	));
 
-	let wxxx_frame = Frame::new(
-		"WXXX",
-		FrameValue::UserUrl(ExtendedUrlFrame {
-			encoding: TextEncoding::UTF8,
-			description: String::from("BAR_URL_FRAME"),
-			content: String::from("bar url"),
-		}),
-		FrameFlags::default(),
-	)
-	.unwrap();
+	let wxxx_frame = Frame::UserUrl(ExtendedUrlFrame::new(
+		TextEncoding::UTF8,
+		String::from("BAR_URL_FRAME"),
+		String::from("bar url"),
+	));
 
 	let mut tag = Id3v2Tag::default();
 
@@ -673,18 +573,11 @@ fn txxx_wxxx_tag_conversion() {
 #[test]
 fn user_defined_frames_conversion() {
 	let mut id3v2 = Id3v2Tag::default();
-	id3v2.insert(
-		Frame::new(
-			"TXXX",
-			FrameValue::UserText(ExtendedTextFrame {
-				encoding: TextEncoding::UTF8,
-				description: String::from("FOO_BAR"),
-				content: String::from("foo content"),
-			}),
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	id3v2.insert(Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		String::from("FOO_BAR"),
+		String::from("foo content"),
+	)));
 
 	let (split_remainder, split_tag) = id3v2.split_tag();
 	assert_eq!(split_remainder.0.len(), 0);
@@ -695,15 +588,11 @@ fn user_defined_frames_conversion() {
 	// Verify we properly convert user defined frames between Tag <-> ID3v2Tag round trips
 	assert_eq!(
 		id3v2.frames.first(),
-		Some(&Frame {
-			id: FrameId::Valid(Cow::Borrowed("TXXX")),
-			value: FrameValue::UserText(ExtendedTextFrame {
-				description: String::from("FOO_BAR"),
-				encoding: TextEncoding::UTF8, // Not considered by PartialEq!
-				content: String::new(),       // Not considered by PartialEq!
-			}),
-			flags: FrameFlags::default(),
-		})
+		Some(&Frame::UserText(ExtendedTextFrame::new(
+			TextEncoding::UTF8, // Not considered by PartialEq!
+			String::from("FOO_BAR"),
+			String::new(), // Not considered by PartialEq!
+		),))
 	);
 
 	// Verify we properly convert user defined frames when writing a Tag, which has to convert
@@ -940,7 +829,6 @@ fn create_tag_with_trck_and_tpos_frame(content: &'static str) -> Tag {
 		tag.insert(new_text_frame(
 			FrameId::Valid(Cow::Borrowed(id)),
 			content.to_string(),
-			FrameFlags::default(),
 		));
 	}
 
@@ -997,31 +885,17 @@ fn invalid_trck_and_tpos_frame() {
 #[test]
 fn ufid_frame_with_musicbrainz_record_id() {
 	let mut id3v2 = Id3v2Tag::default();
-	let unknown_ufid_frame = UniqueFileIdentifierFrame {
-		owner: "other".to_owned(),
-		identifier: b"0123456789".to_vec(),
-	};
-	id3v2.insert(
-		Frame::new(
-			"UFID",
-			FrameValue::UniqueFileIdentifier(unknown_ufid_frame.clone()),
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	let unknown_ufid_frame =
+		UniqueFileIdentifierFrame::new("other".to_owned(), b"0123456789".to_vec());
+	id3v2.insert(Frame::UniqueFileIdentifier(unknown_ufid_frame.clone()));
 	let musicbrainz_recording_id = b"189002e7-3285-4e2e-92a3-7f6c30d407a2";
-	let musicbrainz_recording_id_frame = UniqueFileIdentifierFrame {
-		owner: MUSICBRAINZ_UFID_OWNER.to_owned(),
-		identifier: musicbrainz_recording_id.to_vec(),
-	};
-	id3v2.insert(
-		Frame::new(
-			"UFID",
-			FrameValue::UniqueFileIdentifier(musicbrainz_recording_id_frame.clone()),
-			FrameFlags::default(),
-		)
-		.unwrap(),
+	let musicbrainz_recording_id_frame = UniqueFileIdentifierFrame::new(
+		MUSICBRAINZ_UFID_OWNER.to_owned(),
+		musicbrainz_recording_id.to_vec(),
 	);
+	id3v2.insert(Frame::UniqueFileIdentifier(
+		musicbrainz_recording_id_frame.clone(),
+	));
 	assert_eq!(2, id3v2.len());
 
 	let (split_remainder, split_tag) = id3v2.split_tag();
@@ -1039,23 +913,15 @@ fn ufid_frame_with_musicbrainz_record_id() {
 	let id3v2 = split_remainder.merge_tag(split_tag);
 	assert_eq!(2, id3v2.len());
 	match &id3v2.frames[..] {
-		[Frame {
-			id: _,
-			value:
-				FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-					owner: first_owner,
-					identifier: first_identifier,
-				}),
-			flags: _,
-		}, Frame {
-			id: _,
-			value:
-				FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-					owner: second_owner,
-					identifier: second_identifier,
-				}),
-			flags: _,
-		}] => {
+		[Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+			owner: first_owner,
+			identifier: first_identifier,
+			..
+		}), Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+			owner: second_owner,
+			identifier: second_identifier,
+			..
+		})] => {
 			assert_eq!(&unknown_ufid_frame.owner, first_owner);
 			assert_eq!(&unknown_ufid_frame.identifier, first_identifier);
 			assert_eq!(&musicbrainz_recording_id_frame.owner, second_owner);
@@ -1076,30 +942,20 @@ fn get_set_user_defined_text() {
 	let content2 = String::new();
 
 	let mut id3v2 = Id3v2Tag::default();
-	let txxx_frame = Frame::new(
-		"TXXX",
-		ExtendedTextFrame {
-			encoding: TextEncoding::UTF8,
-			description: description.clone(),
-			content: content.clone(),
-		},
-		FrameFlags::default(),
-	)
-	.unwrap();
+	let txxx_frame = Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		description.clone(),
+		content.clone(),
+	));
 
 	id3v2.insert(txxx_frame.clone());
 
 	// Insert another to verify we can search through multiple
-	let txxx_frame2 = Frame::new(
-		"TXXX",
-		ExtendedTextFrame {
-			encoding: TextEncoding::UTF8,
-			description: description2.clone(),
-			content: content2.clone(),
-		},
-		FrameFlags::default(),
-	)
-	.unwrap();
+	let txxx_frame2 = Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		description2.clone(),
+		content2.clone(),
+	));
 	id3v2.insert(txxx_frame2);
 
 	// We cannot get user defined texts through `get_text`
@@ -1163,7 +1019,7 @@ fn trim_end_nulls_when_reading_frame_content() {
 	assert_eq!(comment, "Comment");
 
 	let url_frame = tag.get(&FrameId::Valid(Cow::Borrowed("WXXX"))).unwrap();
-	let FrameValue::UserUrl(url) = &url_frame.value else {
+	let Frame::UserUrl(url) = &url_frame else {
 		panic!("Expected a UserUrl")
 	};
 	assert_eq!(url.content, "https://www.myfanpage.com");
@@ -1171,7 +1027,7 @@ fn trim_end_nulls_when_reading_frame_content() {
 
 fn id3v2_tag_with_genre(value: &str) -> Id3v2Tag {
 	let mut tag = Id3v2Tag::default();
-	let frame = new_text_frame(GENRE_ID, String::from(value), FrameFlags::default());
+	let frame = new_text_frame(GENRE_ID, String::from(value));
 	tag.insert(frame);
 	tag
 }
@@ -1263,10 +1119,11 @@ fn genres_id_remix_cover() {
 #[test]
 fn tipl_round_trip() {
 	let mut tag = Id3v2Tag::default();
-	let mut tipl = KeyValueFrame {
-		encoding: TextEncoding::UTF8,
-		key_value_pairs: Vec::new(),
-	};
+	let mut tipl = KeyValueFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIPL")),
+		TextEncoding::UTF8,
+		Vec::new(),
+	);
 
 	// Add all supported keys
 	for (_, key) in TIPL_MAPPINGS {
@@ -1278,14 +1135,7 @@ fn tipl_round_trip() {
 	tipl.key_value_pairs
 		.push((String::from("Foo"), String::from("Bar")));
 
-	tag.insert(
-		Frame::new(
-			"TIPL",
-			FrameValue::KeyValue(tipl.clone()),
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	tag.insert(Frame::KeyValue(tipl.clone()));
 
 	let (split_remainder, split_tag) = tag.split_tag();
 	assert_eq!(split_remainder.0.len(), 1); // "Foo" is not supported
@@ -1304,11 +1154,7 @@ fn tipl_round_trip() {
 	let mut id3v2 = split_remainder.merge_tag(split_tag);
 	assert_eq!(id3v2.frames.len(), 1);
 	match &mut id3v2.frames[..] {
-		[Frame {
-			id: _,
-			value: FrameValue::KeyValue(tipl2),
-			flags: _,
-		}] => {
+		[Frame::KeyValue(tipl2)] => {
 			// Order will not be the same, so we have to sort first
 			tipl.key_value_pairs.sort();
 			tipl2.key_value_pairs.sort();
@@ -1360,24 +1206,18 @@ fn itunes_advisory_roundtrip() {
 #[test]
 fn timestamp_roundtrip() {
 	let mut tag = Id3v2Tag::default();
-	tag.insert(
-		Frame::new(
-			"TDRC",
-			FrameValue::Timestamp(TimestampFrame {
-				encoding: TextEncoding::UTF8,
-				timestamp: Timestamp {
-					year: 2024,
-					month: Some(6),
-					day: Some(3),
-					hour: Some(14),
-					minute: Some(8),
-					second: Some(49),
-				},
-			}),
-			FrameFlags::default(),
-		)
-		.unwrap(),
-	);
+	tag.insert(Frame::Timestamp(TimestampFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDRC")),
+		TextEncoding::UTF8,
+		Timestamp {
+			year: 2024,
+			month: Some(6),
+			day: Some(3),
+			hour: Some(14),
+			minute: Some(8),
+			second: Some(49),
+		},
+	)));
 
 	let tag: Tag = tag.into();
 	assert_eq!(tag.len(), 1);
@@ -1390,9 +1230,9 @@ fn timestamp_roundtrip() {
 	assert_eq!(tag.frames.len(), 1);
 
 	let frame = tag.frames.first().unwrap();
-	assert_eq!(frame.id, FrameId::Valid(Cow::Borrowed("TDRC")));
-	match &frame.value {
-		FrameValue::Timestamp(frame) => {
+	assert_eq!(frame.id(), &FrameId::Valid(Cow::Borrowed("TDRC")));
+	match &frame {
+		Frame::Timestamp(frame) => {
 			assert_eq!(frame.timestamp.year, 2024);
 			assert_eq!(frame.timestamp.month, Some(6));
 			assert_eq!(frame.timestamp.day, Some(3));

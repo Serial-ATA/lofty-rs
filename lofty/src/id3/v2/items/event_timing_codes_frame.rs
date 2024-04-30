@@ -1,11 +1,14 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
-use crate::id3::v2::TimestampFormat;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, TimestampFormat};
 
+use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::hash::Hash;
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ETCO"));
 
 /// The type of events that can occur in an [`EventTimingCodesFrame`]
 ///
@@ -171,7 +174,8 @@ impl Ord for Event {
 ///
 /// This frame defines a list of different types of events and the timestamps at which they occur.
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct EventTimingCodesFrame {
+pub struct EventTimingCodesFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The format of the timestamps
 	pub timestamp_format: TimestampFormat,
 	/// The events
@@ -181,7 +185,27 @@ pub struct EventTimingCodesFrame {
 	pub events: Vec<Event>,
 }
 
-impl EventTimingCodesFrame {
+impl<'a> EventTimingCodesFrame<'a> {
+	/// Create a new [`EventTimingCodesFrame`]
+	pub fn new(timestamp_format: TimestampFormat, events: Vec<Event>) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			timestamp_format,
+			events,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`EventTimingCodesFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -189,7 +213,7 @@ impl EventTimingCodesFrame {
 	/// # Errors
 	///
 	/// * Invalid timestamp format
-	pub fn parse<R>(reader: &mut R) -> Result<Option<Self>>
+	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -214,7 +238,9 @@ impl EventTimingCodesFrame {
 		// Order is important, can't use sort_unstable
 		events.sort();
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(EventTimingCodesFrame {
+			header,
 			timestamp_format,
 			events,
 		}))
@@ -240,10 +266,16 @@ impl EventTimingCodesFrame {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{Event, EventTimingCodesFrame, EventType, TimestampFormat};
+	use crate::id3::v2::{
+		Event, EventTimingCodesFrame, EventType, FrameFlags, FrameHeader, FrameId, TimestampFormat,
+	};
 
-	fn expected() -> EventTimingCodesFrame {
+	fn expected() -> EventTimingCodesFrame<'static> {
 		EventTimingCodesFrame {
+			header: FrameHeader {
+				id: FrameId::Valid(std::borrow::Cow::Borrowed("ETCO")),
+				flags: FrameFlags::default(),
+			},
 			timestamp_format: TimestampFormat::MS,
 			events: vec![
 				Event {
@@ -274,7 +306,7 @@ mod tests {
 	fn etco_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.etco");
 
-		let parsed_etco = EventTimingCodesFrame::parse(&mut &cont[..])
+		let parsed_etco = EventTimingCodesFrame::parse(&mut &cont[..], FrameFlags::default())
 			.unwrap()
 			.unwrap();
 

@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use super::frame::id::FrameId;
-use super::frame::{Frame, FrameFlags, FrameValue, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
+use super::frame::{Frame, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
@@ -16,7 +15,7 @@ use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{
 	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
 };
-use crate::id3::v2::{KeyValueFrame, TimestampFrame};
+use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::items::Timestamp;
@@ -34,8 +33,7 @@ use std::str::FromStr;
 
 use lofty_attr::tag;
 
-const USER_DEFINED_TEXT_FRAME_ID: &str = "TXXX";
-const COMMENT_FRAME_ID: &str = "COMM";
+const INVOLVED_PEOPLE_LIST_ID: &str = "TIPL";
 
 const V4_MULTI_VALUE_SEPARATOR: char = '\0';
 
@@ -64,7 +62,6 @@ macro_rules! impl_accessor {
 					self.insert(new_text_frame(
 						[<$name:upper _ID>],
 						value,
-						FrameFlags::default(),
 					));
 				}
 
@@ -107,11 +104,11 @@ macro_rules! impl_accessor {
 ///
 /// ## Special Frames
 ///
-/// ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameValue::Binary`].
+/// ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameType::Binary`].
 /// They can easily be parsed with [`GeneralEncapsulatedObject::parse`](crate::id3::v2::GeneralEncapsulatedObject::parse)
-/// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedText::parse) respectively, and converted back to binary with
+/// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedTextFrame::parse) respectively, and converted back to binary with
 /// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
-/// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedText::as_bytes) for writing.
+/// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedTextFrame::as_bytes) for writing.
 #[derive(PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "An `ID3v2` tag",
@@ -189,7 +186,7 @@ impl Id3v2Tag {
 impl Id3v2Tag {
 	/// Gets a [`Frame`] from an id
 	pub fn get(&self, id: &FrameId<'_>) -> Option<&Frame<'static>> {
-		self.frames.iter().find(|f| &f.id == id)
+		self.frames.iter().find(|f| f.id() == id)
 	}
 
 	/// Gets the text for a frame
@@ -224,11 +221,7 @@ impl Id3v2Tag {
 	/// ```
 	pub fn get_text(&self, id: &FrameId<'_>) -> Option<&str> {
 		let frame = self.get(id);
-		if let Some(Frame {
-			value: FrameValue::Text(TextInformationFrame { value, .. }),
-			..
-		}) = frame
-		{
+		if let Some(Frame::Text(TextInformationFrame { value, .. })) = frame {
 			return Some(value);
 		}
 
@@ -259,11 +252,7 @@ impl Id3v2Tag {
 	/// assert_eq!(titles.next(), Some("Bar"));
 	/// ```
 	pub fn get_texts(&self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &str>> {
-		if let Some(Frame {
-			value: FrameValue::Text(TextInformationFrame { value, .. }),
-			..
-		}) = self.get(id)
-		{
+		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(id) {
 			return Some(value.split(V4_MULTI_VALUE_SEPARATOR));
 		}
 
@@ -292,17 +281,13 @@ impl Id3v2Tag {
 	pub fn get_user_text(&self, description: &str) -> Option<&str> {
 		self.frames
 			.iter()
-			.filter(|frame| frame.id.as_str() == "TXXX")
+			.filter(|frame| frame.id().as_str() == "TXXX")
 			.find_map(|frame| match frame {
-				Frame {
-					value:
-						FrameValue::UserText(ExtendedTextFrame {
-							description: desc,
-							content,
-							..
-						}),
+				Frame::UserText(ExtendedTextFrame {
+					description: desc,
+					content,
 					..
-				} if desc == description => Some(content.as_str()),
+				}) if desc == description => Some(content.as_str()),
 				_ => None,
 			})
 	}
@@ -335,15 +320,11 @@ impl Id3v2Tag {
 		description: String,
 		content: String,
 	) -> Option<Frame<'static>> {
-		self.insert(Frame {
-			id: FrameId::Valid(Cow::Borrowed(USER_DEFINED_TEXT_FRAME_ID)),
-			value: FrameValue::UserText(ExtendedTextFrame {
-				encoding: TextEncoding::UTF8,
-				description,
-				content,
-			}),
-			flags: FrameFlags::default(),
-		})
+		self.insert(Frame::UserText(ExtendedTextFrame::new(
+			TextEncoding::UTF8,
+			description,
+			content,
+		)))
 	}
 
 	/// Inserts a [`Frame`]
@@ -356,7 +337,7 @@ impl Id3v2Tag {
 		];
 
 		if ONE_PER_TAG.contains(&frame.id_str()) {
-			let ret = self.remove(&frame.id).next();
+			let ret = self.remove(frame.id()).next();
 			self.frames.push(frame);
 			return ret;
 		}
@@ -396,13 +377,9 @@ impl Id3v2Tag {
 		self.frames
 			.iter()
 			.position(|frame| {
-				matches!(frame, Frame {
-                     value:
-                         FrameValue::UserText(ExtendedTextFrame {
+				matches!(frame, Frame::UserText(ExtendedTextFrame {
                              description: desc, ..
-                         }),
-                     ..
-                 } if desc == description)
+                         }) if desc == description)
 			})
 			.map(|pos| self.frames.remove(pos))
 	}
@@ -427,14 +404,11 @@ impl Id3v2Tag {
 	/// assert!(tag.is_empty());
 	///
 	/// // Add a new "TMOO" frame
-	/// let tmoo_frame = Frame::new(
+	/// let tmoo_frame = Frame::Text(TextInformationFrame::new(
 	/// 	MOOD_FRAME_ID,
-	/// 	TextInformationFrame {
-	/// 		encoding: TextEncoding::Latin1,
-	/// 		value: String::from("Classical"),
-	/// 	},
-	/// 	FrameFlags::default(),
-	/// )?;
+	/// 	TextEncoding::Latin1,
+	/// 	String::from("Classical"),
+	/// ));
 	///
 	/// let _ = tag.insert(tmoo_frame.clone());
 	/// assert!(!tag.is_empty());
@@ -456,7 +430,7 @@ impl Id3v2Tag {
 		let mut split_idx = 0_usize;
 
 		for read_idx in 0..self.frames.len() {
-			if &self.frames[read_idx].id == id {
+			if self.frames[read_idx].id() == id {
 				self.frames.swap(split_idx, read_idx);
 				split_idx += 1;
 			}
@@ -468,7 +442,7 @@ impl Id3v2Tag {
 	fn take_first(&mut self, id: &FrameId<'_>) -> Option<Frame<'static>> {
 		self.frames
 			.iter()
-			.position(|f| &f.id == id)
+			.position(|f| f.id() == id)
 			.map(|pos| self.frames.remove(pos))
 	}
 
@@ -492,15 +466,10 @@ impl Id3v2Tag {
 
 			for (i, frame) in self.frames.iter().enumerate() {
 				match frame {
-					Frame {
-						id: FrameId::Valid(id),
-						value:
-							FrameValue::Picture(AttachedPictureFrame {
-								picture: Picture { pic_type, .. },
-								..
-							}),
+					Frame::Picture(AttachedPictureFrame {
+						picture: Picture { pic_type, .. },
 						..
-					} if id == "APIC" && pic_type == &picture.pic_type => {
+					}) if pic_type == &picture.pic_type => {
 						pos = Some(i);
 						break;
 					},
@@ -513,8 +482,7 @@ impl Id3v2Tag {
 			None
 		};
 
-		self.frames
-			.push(new_picture_frame(picture, FrameFlags::default()));
+		self.frames.push(new_picture_frame(picture));
 
 		ret
 	}
@@ -522,44 +490,32 @@ impl Id3v2Tag {
 	/// Removes a certain [`PictureType`]
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.frames.retain(|f| {
-			!matches!(f, Frame {
-					id: FrameId::Valid(id),
-					value: FrameValue::Picture(AttachedPictureFrame {
+			!matches!(f, Frame::Picture(AttachedPictureFrame {
 						picture: Picture {
 							pic_type: p_ty,
 							..
 						}, ..
-					}),
-					..
-				} if id == "APIC" && p_ty == &picture_type)
+					}) if p_ty == &picture_type)
 		})
 	}
 
 	/// Returns all `USLT` frames
-	pub fn unsync_text(&self) -> impl Iterator<Item = &UnsynchronizedTextFrame> + Clone {
+	pub fn unsync_text(&self) -> impl Iterator<Item = &UnsynchronizedTextFrame<'_>> + Clone {
 		self.frames.iter().filter_map(|f| match f {
-			Frame {
-				id: FrameId::Valid(id),
-				value: FrameValue::UnsynchronizedText(val),
-				..
-			} if id == "USLT" => Some(val),
+			Frame::UnsynchronizedText(val) => Some(val),
 			_ => None,
 		})
 	}
 
 	/// Returns all `COMM` frames with an empty content descriptor
-	pub fn comments(&self) -> impl Iterator<Item = &CommentFrame> {
+	pub fn comments(&self) -> impl Iterator<Item = &CommentFrame<'_>> {
 		self.frames.iter().filter_map(|frame| {
 			filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR)
 		})
 	}
 
 	fn split_num_pair(&self, id: &FrameId<'_>) -> (Option<u32>, Option<u32>) {
-		if let Some(Frame {
-			value: FrameValue::Text(TextInformationFrame { ref value, .. }),
-			..
-		}) = self.get(id)
-		{
+		if let Some(Frame::Text(TextInformationFrame { ref value, .. })) = self.get(id) {
 			let mut split = value
 				.split(&[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..])
 				.flat_map(str::parse::<u32>);
@@ -590,11 +546,7 @@ impl Id3v2Tag {
 	/// This will translate any numeric genre IDs to their textual equivalent.
 	/// ID3v2.4-style multi-value fields will be split as normal.
 	pub fn genres(&self) -> Option<impl Iterator<Item = &str>> {
-		if let Some(Frame {
-			value: FrameValue::Text(TextInformationFrame { ref value, .. }),
-			..
-		}) = self.get(&GENRE_ID)
-		{
+		if let Some(Frame::Text(TextInformationFrame { ref value, .. })) = self.get(&GENRE_ID) {
 			return Some(GenresIter::new(value));
 		}
 
@@ -681,75 +633,86 @@ fn parse_genre(genre: &str) -> &str {
 fn filter_comment_frame_by_description<'a>(
 	frame: &'a Frame<'_>,
 	description: &str,
-) -> Option<&'a CommentFrame> {
-	match &frame.value {
-		FrameValue::Comment(comment_frame) if frame.id_str() == COMMENT_FRAME_ID => {
+) -> Option<&'a CommentFrame<'a>> {
+	match &frame {
+		Frame::Comment(comment_frame) => {
 			(comment_frame.description == description).then_some(comment_frame)
 		},
 		_ => None,
 	}
 }
 
-fn filter_comment_frame_by_description_mut<'a>(
-	frame: &'a mut Frame<'_>,
+fn filter_comment_frame_by_description_mut<'a, 'f: 'a>(
+	frame: &'a mut Frame<'f>,
 	description: &str,
-) -> Option<&'a mut CommentFrame> {
-	if frame.id_str() != COMMENT_FRAME_ID {
-		return None;
-	}
-	match &mut frame.value {
-		FrameValue::Comment(comment_frame) => {
+) -> Option<&'a mut CommentFrame<'f>> {
+	match frame {
+		Frame::Comment(comment_frame) => {
 			(comment_frame.description == description).then_some(comment_frame)
 		},
 		_ => None,
 	}
 }
 
-fn new_text_frame(id: FrameId<'_>, value: String, flags: FrameFlags) -> Frame<'_> {
-	Frame {
-		id,
-		value: FrameValue::Text(TextInformationFrame {
-			encoding: TextEncoding::UTF8,
-			value,
-		}),
-		flags,
-	}
+pub(super) fn new_text_frame(id: FrameId<'_>, value: String) -> Frame<'_> {
+	Frame::Text(TextInformationFrame::new(id, TextEncoding::UTF8, value))
 }
 
-fn new_user_text_frame(description: String, content: String, flags: FrameFlags) -> Frame<'static> {
-	Frame {
-		id: FrameId::Valid(Cow::Borrowed(USER_DEFINED_TEXT_FRAME_ID)),
-		value: FrameValue::UserText(ExtendedTextFrame {
-			encoding: TextEncoding::UTF8,
-			description,
-			content,
-		}),
-		flags,
-	}
+pub(super) fn new_url_frame(id: FrameId<'_>, value: String) -> Frame<'_> {
+	Frame::Url(UrlLinkFrame::new(id, value))
 }
 
-fn new_comment_frame(content: String, flags: FrameFlags) -> Frame<'static> {
-	Frame {
-		id: FrameId::Valid(Cow::Borrowed(COMMENT_FRAME_ID)),
-		value: FrameValue::Comment(CommentFrame {
-			encoding: TextEncoding::UTF8,
-			language: UNKNOWN_LANGUAGE,
-			description: EMPTY_CONTENT_DESCRIPTOR,
-			content,
-		}),
-		flags,
-	}
+pub(super) fn new_user_text_frame(description: String, content: String) -> Frame<'static> {
+	Frame::UserText(ExtendedTextFrame::new(
+		TextEncoding::UTF8,
+		description,
+		content,
+	))
 }
 
-fn new_picture_frame(picture: Picture, flags: FrameFlags) -> Frame<'static> {
-	Frame {
-		id: FrameId::Valid(Cow::Borrowed("APIC")),
-		value: FrameValue::Picture(AttachedPictureFrame {
-			encoding: TextEncoding::UTF8,
-			picture,
-		}),
-		flags,
-	}
+pub(super) fn new_user_url_frame(description: String, content: String) -> Frame<'static> {
+	Frame::UserUrl(ExtendedUrlFrame::new(
+		TextEncoding::UTF8,
+		description,
+		content,
+	))
+}
+
+pub(super) fn new_comment_frame(content: String) -> Frame<'static> {
+	Frame::Comment(CommentFrame::new(
+		TextEncoding::UTF8,
+		UNKNOWN_LANGUAGE,
+		EMPTY_CONTENT_DESCRIPTOR,
+		content,
+	))
+}
+
+pub(super) fn new_picture_frame(picture: Picture) -> Frame<'static> {
+	Frame::Picture(AttachedPictureFrame::new(TextEncoding::UTF8, picture))
+}
+
+pub(super) fn new_key_value_frame(
+	id: FrameId<'_>,
+	key_value_pairs: Vec<(String, String)>,
+) -> Frame<'_> {
+	Frame::KeyValue(KeyValueFrame::new(id, TextEncoding::UTF8, key_value_pairs))
+}
+
+pub(super) fn new_timestamp_frame(id: FrameId<'_>, timestamp: Timestamp) -> Frame<'_> {
+	Frame::Timestamp(TimestampFrame::new(id, TextEncoding::UTF8, timestamp))
+}
+
+pub(super) fn new_unsync_text_frame(content: String) -> Frame<'static> {
+	Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
+		TextEncoding::UTF8,
+		UNKNOWN_LANGUAGE,
+		EMPTY_CONTENT_DESCRIPTOR,
+		content,
+	))
+}
+
+pub(super) fn new_binary_frame(id: FrameId<'_>, data: Vec<u8>) -> Frame<'_> {
+	Frame::Binary(BinaryFrame::new(id, data))
 }
 
 const TITLE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIT2"));
@@ -843,7 +806,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn set_genre(&mut self, value: String) {
-		self.insert(new_text_frame(GENRE_ID, value, FrameFlags::default()));
+		self.insert(new_text_frame(GENRE_ID, value));
 	}
 
 	fn remove_genre(&mut self) {
@@ -851,10 +814,7 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn year(&self) -> Option<u32> {
-		if let Some(Frame {
-			value: FrameValue::Text(TextInformationFrame { value, .. }),
-			..
-		}) = self.get(&RECORDING_TIME_ID)
+		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(&RECORDING_TIME_ID)
 		{
 			return try_parse_year(value);
 		}
@@ -895,8 +855,7 @@ impl Accessor for Id3v2Tag {
 			}
 		});
 		if let Some(value) = value {
-			self.frames
-				.push(new_comment_frame(value, FrameFlags::default()));
+			self.frames.push(new_comment_frame(value));
 		}
 	}
 
@@ -921,7 +880,7 @@ impl TagExt for Id3v2Tag {
 	}
 
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
-		self.frames.iter().any(|frame| &frame.id == key)
+		self.frames.iter().any(|frame| frame.id() == key)
 	}
 
 	fn is_empty(&self) -> bool {
@@ -934,7 +893,7 @@ impl TagExt for Id3v2Tag {
 	///
 	/// * Attempting to write the tag to a format that does not support it
 	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
-	/// * Attempting to write an invalid [`FrameId`]/[`FrameValue`] pairing
+	/// * Attempting to write an invalid [`FrameId`]/[`Frame`] pairing
 	fn save_to<F>(
 		&self,
 		file: &mut F,
@@ -1046,24 +1005,39 @@ impl SplitTag for Id3v2Tag {
 		let mut tag = Tag::new(TagType::Id3v2);
 
 		self.frames.retain_mut(|frame| {
-			let id = &frame.id;
+			/// A frame we are able to split off into the tag
+			const FRAME_CONSUMED: bool = false;
+			/// A frame that must be held back
+			const FRAME_RETAINED: bool = true;
 
-			// The text pairs need some special treatment
-			match (id.as_str(), &mut frame.value) {
-				("TRCK", FrameValue::Text(TextInformationFrame { value: content, .. }))
-					if split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
+			match frame {
+				// The text pairs need some special treatment
+				Frame::Text(TextInformationFrame {
+					header: FrameHeader { id, .. },
+					value: content,
+					..
+				}) if id.as_str() == "TRCK"
+					&& split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
 						.is_some() =>
 				{
-					false // Frame consumed
+					return FRAME_CONSUMED
 				},
-				("TPOS", FrameValue::Text(TextInformationFrame { value: content, .. }))
-					if split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
+				Frame::Text(TextInformationFrame {
+					header: FrameHeader { id, .. },
+					value: content,
+					..
+				}) if id.as_str() == "TPOS"
+					&& split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
-					false // Frame consumed
+					return FRAME_CONSUMED
 				},
-				("MVIN", FrameValue::Text(TextInformationFrame { value: content, .. }))
-					if split_pair(
+				Frame::Text(TextInformationFrame {
+					header: FrameHeader { id, .. },
+					value: content,
+					..
+				}) if id.as_str() == "MVIN"
+					&& split_pair(
 						content,
 						&mut tag,
 						ItemKey::MovementNumber,
@@ -1071,10 +1045,15 @@ impl SplitTag for Id3v2Tag {
 					)
 					.is_some() =>
 				{
-					false // Frame consumed
+					return FRAME_CONSUMED
 				},
+
 				// TCON needs special treatment to translate genre IDs
-				("TCON", FrameValue::Text(TextInformationFrame { value: content, .. })) => {
+				Frame::Text(TextInformationFrame {
+					header: FrameHeader { id, .. },
+					value: content,
+					..
+				}) if id.as_str() == "TCON" => {
 					let genres = GenresIter::new(content);
 					for genre in genres {
 						tag.items.push(TagItem::new(
@@ -1082,14 +1061,16 @@ impl SplitTag for Id3v2Tag {
 							ItemValue::Text(genre.to_string()),
 						));
 					}
-					false // Frame consumed
+
+					return FRAME_CONSUMED;
 				},
-				(
-					"TIPL",
-					FrameValue::KeyValue(KeyValueFrame {
-						key_value_pairs, ..
-					}),
-				) => {
+
+				// TIPL needs special treatment, as we may not be able to consume all of its items
+				Frame::KeyValue(KeyValueFrame {
+					header: FrameHeader { id, .. },
+					key_value_pairs,
+					..
+				}) if id.as_str() == "TIPL" => {
 					key_value_pairs.retain_mut(|(key, value)| {
 						for (item_key, tipl_key) in TIPL_MAPPINGS {
 							if key == *tipl_key {
@@ -1106,15 +1087,13 @@ impl SplitTag for Id3v2Tag {
 
 					!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
 				},
+
 				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
-				(
-					"TXXX",
-					FrameValue::UserText(ExtendedTextFrame {
-						ref description,
-						ref content,
-						..
-					}),
-				) => {
+				Frame::UserText(ExtendedTextFrame {
+					ref description,
+					ref content,
+					..
+				}) => {
 					let item_key = ItemKey::from_key(TagType::Id3v2, description);
 					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
@@ -1122,16 +1101,14 @@ impl SplitTag for Id3v2Tag {
 							ItemValue::Text(c.to_string()),
 						));
 					}
-					false // Frame consumed
+
+					return FRAME_CONSUMED;
 				},
-				(
-					"WXXX",
-					FrameValue::UserUrl(ExtendedUrlFrame {
-						ref description,
-						ref content,
-						..
-					}),
-				) => {
+				Frame::UserUrl(ExtendedUrlFrame {
+					ref description,
+					ref content,
+					..
+				}) => {
 					let item_key = ItemKey::from_key(TagType::Id3v2, description);
 					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 						tag.items.push(TagItem::new(
@@ -1139,49 +1116,45 @@ impl SplitTag for Id3v2Tag {
 							ItemValue::Locator(c.to_string()),
 						));
 					}
-					false // Frame consumed
-				},
-				(
-					"UFID",
-					FrameValue::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-						ref owner,
-						ref identifier,
-						..
-					}),
-				) => {
-					if owner == MUSICBRAINZ_UFID_OWNER {
-						let mut identifier = Cursor::new(identifier);
-						let Ok(recording_id) = decode_text(
-							&mut identifier,
-							TextDecodeOptions::new().encoding(TextEncoding::Latin1),
-						) else {
-							return true; // Keep frame
-						};
-						tag.items.push(TagItem::new(
-							ItemKey::MusicBrainzRecordingId,
-							ItemValue::Text(recording_id.content),
-						));
-						false // Frame consumed
-					} else {
-						// Unsupported owner
-						true // Keep frame
-					}
-				},
-				(id, value) => {
-					let item_key = ItemKey::from_key(TagType::Id3v2, id);
 
-					let item_value = match value {
-						FrameValue::Comment(CommentFrame {
+					return FRAME_CONSUMED;
+				},
+
+				Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+					ref owner,
+					ref identifier,
+					..
+				}) => {
+					if owner != MUSICBRAINZ_UFID_OWNER {
+						// Unsupported owner
+						return FRAME_RETAINED;
+					}
+
+					let mut identifier = Cursor::new(identifier);
+					let Ok(recording_id) = decode_text(
+						&mut identifier,
+						TextDecodeOptions::new().encoding(TextEncoding::Latin1),
+					) else {
+						return FRAME_RETAINED;
+					};
+					tag.items.push(TagItem::new(
+						ItemKey::MusicBrainzRecordingId,
+						ItemValue::Text(recording_id.content),
+					));
+
+					return FRAME_CONSUMED;
+				},
+				_ => {
+					let item_key = ItemKey::from_key(TagType::Id3v2, frame.id_str());
+
+					let item_value;
+					match frame {
+						Frame::Comment(CommentFrame {
 							content,
 							description,
 							..
 						})
-						| FrameValue::UnsynchronizedText(UnsynchronizedTextFrame {
-							content,
-							description,
-							..
-						})
-						| FrameValue::UserText(ExtendedTextFrame {
+						| Frame::UnsynchronizedText(UnsynchronizedTextFrame {
 							content,
 							description,
 							..
@@ -1193,7 +1166,7 @@ impl SplitTag for Id3v2Tag {
 										ItemValue::Text(c.to_string()),
 									));
 								}
-								return false; // Frame consumed
+								return FRAME_CONSUMED;
 							}
 							// ...else do not convert text frames with a non-empty content
 							// descriptor that would otherwise unintentionally be modified
@@ -1201,13 +1174,11 @@ impl SplitTag for Id3v2Tag {
 							// TODO: How to convert these frames consistently and safely
 							// such that the content descriptor is preserved during read/write
 							// round trips?
-							return true; // Keep frame
+							return FRAME_RETAINED;
 						},
-						FrameValue::Timestamp(frame)
-							if !matches!(item_key, ItemKey::Unknown(_)) =>
-						{
+						Frame::Timestamp(frame) if !matches!(item_key, ItemKey::Unknown(_)) => {
 							if frame.timestamp.verify().is_err() {
-								return true; // Keep frame
+								return FRAME_RETAINED;
 							}
 
 							tag.items.push(TagItem::new(
@@ -1215,42 +1186,45 @@ impl SplitTag for Id3v2Tag {
 								ItemValue::Text(frame.timestamp.to_string()),
 							));
 
-							return false; // Frame consumed
+							return FRAME_CONSUMED;
 						},
-						FrameValue::Text(TextInformationFrame { value: content, .. }) => {
+						Frame::Text(TextInformationFrame { value: content, .. }) => {
 							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 								tag.items.push(TagItem::new(
 									item_key.clone(),
 									ItemValue::Text(c.to_string()),
 								));
 							}
-							return false; // Frame consumed
+							return FRAME_CONSUMED;
 						},
-						FrameValue::Url(UrlLinkFrame(content))
-						| FrameValue::UserUrl(ExtendedUrlFrame { content, .. }) => {
-							ItemValue::Locator(std::mem::take(content))
-						},
-						FrameValue::Picture(AttachedPictureFrame { picture, .. }) => {
+						Frame::Url(UrlLinkFrame {
+							ref mut content, ..
+						}) => item_value = ItemValue::Locator(std::mem::take(content)),
+						Frame::Picture(AttachedPictureFrame {
+							ref mut picture, ..
+						}) => {
 							tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
-							return false; // Frame consumed
+							return FRAME_CONSUMED;
 						},
-						FrameValue::Popularimeter(popularimeter) => {
-							ItemValue::Binary(popularimeter.as_bytes())
+						Frame::Popularimeter(popularimeter) => {
+							item_value = ItemValue::Binary(popularimeter.as_bytes())
 						},
-						FrameValue::Binary(binary) => ItemValue::Binary(std::mem::take(binary)),
-						FrameValue::KeyValue(_)
-						| FrameValue::UniqueFileIdentifier(_)
-						| FrameValue::RelativeVolumeAdjustment(_)
-						| FrameValue::Ownership(_)
-						| FrameValue::EventTimingCodes(_)
-						| FrameValue::Private(_)
-						| FrameValue::Timestamp(_) => {
-							return true; // Keep unsupported frame
+						Frame::Binary(_)
+						| Frame::UserText(_)
+						| Frame::UserUrl(_) // Bare extended text/URL frames make no sense to support.
+						| Frame::KeyValue(_)
+						| Frame::UniqueFileIdentifier(_)
+						| Frame::RelativeVolumeAdjustment(_)
+						| Frame::Ownership(_)
+						| Frame::EventTimingCodes(_)
+						| Frame::Private(_)
+						| Frame::Timestamp(_) => {
+							return FRAME_RETAINED; // Keep unsupported frame
 						},
 					};
 
 					tag.items.push(TagItem::new(item_key, item_value));
-					false // Frame consumed
+					return FRAME_CONSUMED;
 				},
 			}
 		});
@@ -1331,17 +1305,12 @@ impl MergeTag for SplitTagRemainder {
 			&ItemKey::FileOwner,
 			&ItemKey::CopyrightMessage,
 			&ItemKey::Language,
-			&ItemKey::Lyrics,
 		] {
 			let frame_id = item_key
 				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key]) {
-				let frame = new_text_frame(
-					FrameId::Valid(Cow::Borrowed(frame_id)),
-					text,
-					FrameFlags::default(),
-				);
+				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
 				// Optimization: No duplicate checking according to the preconditions
 				debug_assert!(!merged.frames.contains(&frame));
 				merged.frames.push(frame);
@@ -1358,11 +1327,7 @@ impl MergeTag for SplitTagRemainder {
 				ItemKey::Publisher.map_key(TagType::Id3v2, false)
 			);
 			if let Some(text) = join_text_items(&mut tag, &[ItemKey::Label, ItemKey::Publisher]) {
-				let frame = new_text_frame(
-					FrameId::Valid(Cow::Borrowed(frame_id)),
-					text,
-					FrameFlags::default(),
-				);
+				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
 				// Optimization: No duplicate checking according to the preconditions
 				debug_assert!(!merged.frames.contains(&frame));
 				merged.frames.push(frame);
@@ -1371,7 +1336,14 @@ impl MergeTag for SplitTagRemainder {
 
 		// Multi-valued Comment key-to-frame mapping
 		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Comment]) {
-			let frame = new_comment_frame(text, FrameFlags::default());
+			let frame = new_comment_frame(text);
+			// Optimization: No duplicate checking according to the preconditions
+			debug_assert!(!merged.frames.contains(&frame));
+			merged.frames.push(frame);
+		};
+
+		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Lyrics]) {
+			let frame = new_unsync_text_frame(text);
 			// Optimization: No duplicate checking according to the preconditions
 			debug_assert!(!merged.frames.contains(&frame));
 			merged.frames.push(frame);
@@ -1394,10 +1366,10 @@ impl MergeTag for SplitTagRemainder {
 			// to retain the current `TextEncoding` and `FrameFlags`.
 			let existing_tipl = merged.take_first(&FrameId::Valid(Cow::Borrowed("TIPL")));
 			if let Some(mut tipl_frame) = existing_tipl {
-				if let FrameValue::KeyValue(KeyValueFrame {
+				if let Frame::KeyValue(KeyValueFrame {
 					key_value_pairs: ref mut existing,
 					..
-				}) = &mut tipl_frame.value
+				}) = &mut tipl_frame
 				{
 					existing.extend(key_value_pairs);
 				}
@@ -1406,14 +1378,10 @@ impl MergeTag for SplitTagRemainder {
 				break 'tipl;
 			}
 
-			merged.frames.push(Frame {
-				id: FrameId::Valid(Cow::Borrowed("TIPL")),
-				value: FrameValue::KeyValue(KeyValueFrame {
-					key_value_pairs,
-					encoding: TextEncoding::UTF8,
-				}),
-				flags: FrameFlags::default(),
-			});
+			merged.frames.push(new_key_value_frame(
+				FrameId::Valid(Cow::Borrowed(INVOLVED_PEOPLE_LIST_ID)),
+				key_value_pairs,
+			));
 		}
 
 		// Flag items
@@ -1433,7 +1401,6 @@ impl MergeTag for SplitTagRemainder {
 			merged.frames.push(new_text_frame(
 				FrameId::Valid(Cow::Borrowed(frame_id)),
 				u8::from(flag_value).to_string(),
-				FrameFlags::default(),
 			));
 		}
 
@@ -1454,7 +1421,6 @@ impl MergeTag for SplitTagRemainder {
 				merged.frames.push(new_user_text_frame(
 					"ITUNESADVISORY".to_string(),
 					parsed_rating.as_u8().to_string(),
-					FrameFlags::default(),
 				));
 			}
 		}
@@ -1469,28 +1435,18 @@ impl MergeTag for SplitTagRemainder {
 				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
 
-			let frame_value;
+			let frame;
 			match Timestamp::from_str(&text) {
 				Ok(timestamp) => {
-					frame_value = FrameValue::Timestamp(TimestampFrame {
-						encoding: TextEncoding::UTF8,
-						timestamp,
-					})
+					frame = new_timestamp_frame(FrameId::Valid(Cow::Borrowed(frame_id)), timestamp);
 				},
 				Err(_) => {
 					// We can just preserve it as a text frame
-					frame_value = FrameValue::Text(TextInformationFrame {
-						encoding: TextEncoding::UTF8,
-						value: text,
-					});
+					frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
 				},
 			}
 
-			merged.insert(Frame {
-				id: FrameId::Valid(Cow::Borrowed(frame_id)),
-				value: frame_value,
-				flags: FrameFlags::default(),
-			});
+			merged.insert(frame);
 		}
 
 		// Insert all remaining items as single frames and deduplicate as needed
@@ -1500,7 +1456,7 @@ impl MergeTag for SplitTagRemainder {
 
 		// Insert all pictures as single frames and deduplicate as needed
 		for picture in tag.pictures {
-			let frame = new_picture_frame(picture, FrameFlags::default());
+			let frame = new_picture_frame(picture);
 			if let Some(replaced) = merged.insert(frame) {
 				log::warn!("Replaced picture frame: {replaced:?}");
 			}
@@ -1543,15 +1499,8 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 		total: Option<&str>,
 		id: &'a str,
 	) -> Option<FrameRef<'a>> {
-		format_number_pair(number, total).map(|value| {
-			let frame = Frame::text(Cow::Borrowed(id), value);
-
-			FrameRef {
-				id: frame.id,
-				value: Cow::Owned(frame.value),
-				flags: frame.flags,
-			}
-		})
+		format_number_pair(number, total)
+			.map(|value| FrameRef(Cow::Owned(Frame::text(Cow::Borrowed(id), value))))
 	}
 
 	let items = tag
@@ -1570,13 +1519,11 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 			"TPOS",
 		));
 
-	let pictures = tag.pictures().iter().map(|p| FrameRef {
-		id: FrameId::Valid(Cow::Borrowed("APIC")),
-		value: Cow::Owned(FrameValue::Picture(AttachedPictureFrame {
-			encoding: TextEncoding::UTF8,
-			picture: p.clone(),
-		})),
-		flags: FrameFlags::default(),
+	let pictures = tag.pictures().iter().map(|p| {
+		FrameRef(Cow::Owned(Frame::Picture(AttachedPictureFrame::new(
+			TextEncoding::UTF8,
+			p.clone(),
+		))))
 	});
 
 	items.chain(pictures)

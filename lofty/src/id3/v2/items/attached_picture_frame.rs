@@ -1,5 +1,6 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{encode_text, TextDecodeOptions, TextEncoding};
@@ -9,18 +10,41 @@ use std::io::{Read, Write as _};
 
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
+
 /// An `ID3v2` attached picture frame
 ///
 /// This is simply a wrapper around [`Picture`] to include a [`TextEncoding`]
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct AttachedPictureFrame {
+pub struct AttachedPictureFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description
 	pub encoding: TextEncoding,
 	/// The picture itself
 	pub picture: Picture,
 }
 
-impl AttachedPictureFrame {
+impl<'a> AttachedPictureFrame<'a> {
+	/// Create a new [`AttachedPictureFrame`]
+	pub fn new(encoding: TextEncoding, picture: Picture) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			picture,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Get an [`AttachedPictureFrame`] from ID3v2 A/PIC bytes:
 	///
 	/// NOTE: This expects *only* the frame content
@@ -33,7 +57,7 @@ impl AttachedPictureFrame {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags, version: Id3v2Version) -> Result<Self>
 	where
 		R: Read,
 	{
@@ -86,7 +110,12 @@ impl AttachedPictureFrame {
 			data: Cow::from(data),
 		};
 
-		Ok(Self { encoding, picture })
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
+		Ok(Self {
+			header,
+			encoding,
+			picture,
+		})
 	}
 
 	/// Convert an [`AttachedPictureFrame`] to a ID3v2 A/PIC byte Vec

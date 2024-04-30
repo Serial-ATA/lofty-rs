@@ -1,5 +1,6 @@
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::tag::items::Timestamp;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
@@ -9,35 +10,47 @@ use std::io::Read;
 use byteorder::ReadBytesExt;
 
 /// An `ID3v2` timestamp frame
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[allow(missing_docs)]
-pub struct TimestampFrame {
+pub struct TimestampFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	pub encoding: TextEncoding,
 	pub timestamp: Timestamp,
 }
 
-impl PartialOrd for TimestampFrame {
+impl<'a> PartialOrd for TimestampFrame<'a> {
 	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
 		Some(self.cmp(other))
 	}
 }
 
-impl Ord for TimestampFrame {
+impl<'a> Ord for TimestampFrame<'a> {
 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
 		self.timestamp.cmp(&other.timestamp)
 	}
 }
 
-impl Default for TimestampFrame {
-	fn default() -> Self {
+impl<'a> TimestampFrame<'a> {
+	/// Create a new [`TimestampFrame`]
+	pub fn new(id: FrameId<'a>, encoding: TextEncoding, timestamp: Timestamp) -> Self {
+		let header = FrameHeader::new(id, FrameFlags::default());
 		Self {
-			encoding: TextEncoding::UTF8,
-			timestamp: Timestamp::default(),
+			header,
+			encoding,
+			timestamp,
 		}
 	}
-}
 
-impl TimestampFrame {
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read a [`TimestampFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -46,7 +59,12 @@ impl TimestampFrame {
 	///
 	/// * Failure to read from `reader`
 	#[allow(clippy::never_loop)]
-	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		id: FrameId<'a>,
+		frame_flags: FrameFlags,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -64,7 +82,9 @@ impl TimestampFrame {
 			err!(BadTimestamp("Timestamp contains non-ASCII characters"))
 		}
 
+		let header = FrameHeader::new(id, frame_flags);
 		let mut frame = TimestampFrame {
+			header,
 			encoding,
 			timestamp: Timestamp::default(),
 		};

@@ -1,21 +1,26 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("WXXX"));
+
 /// An extended `ID3v2` URL frame
 ///
 /// This is used in the `WXXX` frame, where the frames
-/// are told apart by descriptions, rather than their [`FrameId`](crate::id3::v2::FrameId)s.
+/// are told apart by descriptions, rather than their [`FrameId`]s.
 /// This means for each `ExtendedUrlFrame` in the tag, the description
 /// must be unique.
 #[derive(Clone, Debug, Eq)]
-pub struct ExtendedUrlFrame {
+pub struct ExtendedUrlFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// Unique content description
@@ -24,19 +29,40 @@ pub struct ExtendedUrlFrame {
 	pub content: String,
 }
 
-impl PartialEq for ExtendedUrlFrame {
+impl<'a> PartialEq for ExtendedUrlFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl Hash for ExtendedUrlFrame {
+impl<'a> Hash for ExtendedUrlFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl ExtendedUrlFrame {
+impl<'a> ExtendedUrlFrame<'a> {
+	/// Create a new [`ExtendedUrlFrame`]
+	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			encoding,
+			description,
+			content,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`ExtendedUrlFrame`] from a slice
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -48,7 +74,11 @@ impl ExtendedUrlFrame {
 	/// ID3v2.2:
 	///
 	/// * The encoding is not [`TextEncoding::Latin1`] or [`TextEncoding::UTF16`]
-	pub fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -68,7 +98,9 @@ impl ExtendedUrlFrame {
 		)?
 		.content;
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(ExtendedUrlFrame {
+			header,
 			encoding,
 			description,
 			content,

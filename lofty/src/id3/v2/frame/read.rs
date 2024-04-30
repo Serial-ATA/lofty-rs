@@ -1,11 +1,11 @@
-use super::header::{parse_header, parse_v2_header};
+use super::header::parse::{parse_header, parse_v2_header};
 use super::Frame;
 use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
-use crate::id3::v2::{FrameFlags, FrameId, FrameValue};
+use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
 
 use std::io::Read;
@@ -221,11 +221,10 @@ fn handle_encryption<R: Read>(
 	let mut content = try_vec![0; size as usize];
 	reader.read_exact(&mut content)?;
 
-	let encrypted_frame = Frame {
-		id,
-		value: FrameValue::Binary(content),
-		flags,
-	};
+	let encrypted_frame = Frame::Binary(BinaryFrame {
+		header: FrameHeader::new(id, flags),
+		data: content,
+	});
 
 	// Nothing further we can do with encrypted frames
 	Ok(ParsedFrame::Next(encrypted_frame))
@@ -239,8 +238,8 @@ fn parse_frame<R: Read>(
 	version: Id3v2Version,
 	parse_mode: ParsingMode,
 ) -> Result<ParsedFrame<'static>> {
-	match parse_content(reader, id.as_str(), version, parse_mode)? {
-		Some(value) => Ok(ParsedFrame::Next(Frame { id, value, flags })),
+	match parse_content(reader, id, flags, version, parse_mode)? {
+		Some(frame) => Ok(ParsedFrame::Next(frame)),
 		None => Ok(ParsedFrame::Skip { size }),
 	}
 }

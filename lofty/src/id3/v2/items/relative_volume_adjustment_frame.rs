@@ -1,13 +1,17 @@
 use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
+
+const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("RVA2"));
 
 /// A channel identifier used in the RVA2 frame
 #[repr(u8)]
@@ -78,26 +82,47 @@ pub struct ChannelInformation {
 ///
 /// NOTE: The `Eq` and `Hash` implementations depend solely on the `identification` field.
 #[derive(Clone, Debug, Eq)]
-pub struct RelativeVolumeAdjustmentFrame {
+pub struct RelativeVolumeAdjustmentFrame<'a> {
+	pub(crate) header: FrameHeader<'a>,
 	/// The identifier used to identify the situation and/or device where this adjustment should apply
 	pub identification: String,
 	/// The information for each channel described in the frame
 	pub channels: HashMap<ChannelType, ChannelInformation>,
 }
 
-impl PartialEq for RelativeVolumeAdjustmentFrame {
+impl<'a> PartialEq for RelativeVolumeAdjustmentFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
 		self.identification == other.identification
 	}
 }
 
-impl Hash for RelativeVolumeAdjustmentFrame {
+impl<'a> Hash for RelativeVolumeAdjustmentFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.identification.hash(state)
 	}
 }
 
-impl RelativeVolumeAdjustmentFrame {
+impl<'a> RelativeVolumeAdjustmentFrame<'a> {
+	/// Create a new [`RelativeVolumeAdjustmentFrame`]
+	pub fn new(identification: String, channels: HashMap<ChannelType, ChannelInformation>) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
+		Self {
+			header,
+			identification,
+			channels,
+		}
+	}
+
+	/// Get the flags for the frame
+	pub fn flags(&self) -> FrameFlags {
+		self.header.flags
+	}
+
+	/// Set the flags for the frame
+	pub fn set_flags(&mut self, flags: FrameFlags) {
+		self.header.flags = flags;
+	}
+
 	/// Read an [`RelativeVolumeAdjustmentFrame`]
 	///
 	/// NOTE: This expects the frame header to have already been skipped
@@ -106,7 +131,11 @@ impl RelativeVolumeAdjustmentFrame {
 	///
 	/// * Bad channel type (See [Id3v2ErrorKind::BadRva2ChannelType])
 	/// * Not enough data
-	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -151,7 +180,9 @@ impl RelativeVolumeAdjustmentFrame {
 			);
 		}
 
+		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(Self {
+			header,
 			identification,
 			channels,
 		}))
@@ -203,12 +234,14 @@ impl RelativeVolumeAdjustmentFrame {
 #[cfg(test)]
 mod tests {
 	use crate::config::ParsingMode;
-	use crate::id3::v2::{ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame};
+	use crate::id3::v2::{
+		ChannelInformation, ChannelType, FrameFlags, FrameHeader, RelativeVolumeAdjustmentFrame,
+	};
 
 	use std::collections::HashMap;
 	use std::io::Read;
 
-	fn expected() -> RelativeVolumeAdjustmentFrame {
+	fn expected() -> RelativeVolumeAdjustmentFrame<'static> {
 		let mut channels = HashMap::new();
 
 		channels.insert(
@@ -242,6 +275,7 @@ mod tests {
 		);
 
 		RelativeVolumeAdjustmentFrame {
+			header: FrameHeader::new(super::FRAME_ID, Default::default()),
 			identification: String::from("Surround sound"),
 			channels,
 		}
@@ -251,9 +285,13 @@ mod tests {
 	fn rva2_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.rva2");
 
-		let parsed_rva2 = RelativeVolumeAdjustmentFrame::parse(&mut &cont[..], ParsingMode::Strict)
-			.unwrap()
-			.unwrap();
+		let parsed_rva2 = RelativeVolumeAdjustmentFrame::parse(
+			&mut &cont[..],
+			FrameFlags::default(),
+			ParsingMode::Strict,
+		)
+		.unwrap()
+		.unwrap();
 
 		assert_eq!(parsed_rva2, expected());
 	}
