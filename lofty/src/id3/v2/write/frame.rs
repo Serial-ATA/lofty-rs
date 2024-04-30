@@ -3,7 +3,6 @@ use crate::id3::v2::frame::{FrameFlags, FrameRef};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 
 use std::io::Write;
-use std::ops::Deref;
 
 use crate::id3::v2::Frame;
 use byteorder::{BigEndian, WriteBytesExt};
@@ -26,7 +25,7 @@ where
 }
 
 fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
-	match (frame.id().as_str(), frame.deref()) {
+	match (frame.id().as_str(), &**frame) {
 		("APIC", Frame::Picture { .. })
 		| ("USLT", Frame::UnsynchronizedText(_))
 		| ("COMM", Frame::Comment(_))
