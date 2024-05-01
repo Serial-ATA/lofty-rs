@@ -1276,7 +1276,7 @@ fn special_items_roundtrip() {
 	assert_eq!(tag.len(), 1);
 	assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
 
-	let tag: Id3v2Tag = tag.into();
+	let mut tag: Id3v2Tag = tag.into();
 
 	assert_eq!(tag.frames.len(), 2);
 	assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
@@ -1286,7 +1286,13 @@ fn special_items_roundtrip() {
 	tag.dump_to(&mut tag_bytes, WriteOptions::default())
 		.unwrap();
 
-	let tag_re_read = read_tag_raw(&tag_bytes[..]);
+	let mut tag_re_read = read_tag_raw(&tag_bytes[..]);
+
+	// Ensure ordered comparison
+	tag.frames.sort_by_key(|frame| frame.id().to_string());
+	tag_re_read
+		.frames
+		.sort_by_key(|frame| frame.id().to_string());
 	assert_eq!(tag, tag_re_read);
 
 	// Now write from `Tag`
@@ -1296,6 +1302,10 @@ fn special_items_roundtrip() {
 	tag.dump_to(&mut tag_bytes, WriteOptions::default())
 		.unwrap();
 
-	let generic_tag_re_read = read_tag_raw(&tag_bytes[..]);
+	let mut generic_tag_re_read = read_tag_raw(&tag_bytes[..]);
+
+	generic_tag_re_read
+		.frames
+		.sort_by_key(|frame| frame.id().to_string());
 	assert_eq!(tag_re_read, generic_tag_re_read);
 }
