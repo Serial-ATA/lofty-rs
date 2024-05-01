@@ -5,10 +5,11 @@ mod r#ref;
 pub(crate) mod write;
 
 use super::AtomIdent;
-use crate::config::WriteOptions;
+use crate::config::{global_options, WriteOptions};
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
+use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
@@ -771,12 +772,24 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<Ilst> for Tag {
 	fn from(input: Ilst) -> Self {
-		input.split_tag().1
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && remainder.0.len() > 0 {
+			tag.companion_tag = Some(CompanionTag::Ilst(remainder.0));
+		}
+
+		tag
 	}
 }
 
 impl From<Tag> for Ilst {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items } {
+			if let Some(companion) = input.companion_tag.take().and_then(CompanionTag::ilst) {
+				return SplitTagRemainder(companion).merge_tag(input);
+			}
+		}
+
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }
@@ -797,9 +810,13 @@ mod tests {
 
 	fn read_ilst(path: &str, parse_mode: ParsingMode) -> Ilst {
 		let tag = std::fs::read(path).unwrap();
-		let len = tag.len();
+		read_ilst_raw(&tag, parse_mode)
+	}
 
-		let cursor = Cursor::new(tag);
+	fn read_ilst_raw(bytes: &[u8], parse_mode: ParsingMode) -> Ilst {
+		let len = bytes.len();
+
+		let cursor = Cursor::new(bytes);
 		let mut reader = AtomReader::new(cursor, parse_mode).unwrap();
 
 		super::read::parse_ilst(&mut reader, parse_mode, len as u64).unwrap()
@@ -1272,5 +1289,53 @@ mod tests {
 				.unwrap(),
 			&AtomData::Bool(false)
 		);
+	}
+
+	#[test]
+	fn special_items_roundtrip() {
+		let mut tag = Ilst::new();
+
+		let atom = Atom::new(
+			AtomIdent::Fourcc(*b"SMTH"),
+			AtomData::Unknown {
+				code: 0,
+				data: b"Meaningless Data".to_vec(),
+			},
+		);
+
+		tag.insert(atom.clone());
+		tag.set_artist(String::from("Foo Artist")); // Some value that we *can* represent generically
+
+		let tag: Tag = tag.into();
+
+		assert_eq!(tag.len(), 1);
+		assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
+
+		let tag: Ilst = tag.into();
+
+		assert_eq!(tag.atoms.len(), 2);
+		assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
+		assert_eq!(tag.get(&AtomIdent::Fourcc(*b"SMTH")), Some(&atom));
+
+		let mut tag_bytes = Vec::new();
+		tag.dump_to(&mut tag_bytes, WriteOptions::default())
+			.unwrap();
+
+		tag_bytes.drain(..8); // Remove the ilst identifier and size for `read_ilst`
+
+		let tag_re_read = read_ilst_raw(&tag_bytes[..], ParsingMode::Strict);
+		assert_eq!(tag, tag_re_read);
+
+		// Now write from `Tag`
+		let tag: Tag = tag.into();
+
+		let mut tag_bytes = Vec::new();
+		tag.dump_to(&mut tag_bytes, WriteOptions::default())
+			.unwrap();
+
+		tag_bytes.drain(..8); // Remove the ilst identifier and size for `read_ilst`
+
+		let generic_tag_re_read = read_ilst_raw(&tag_bytes[..], ParsingMode::Strict);
+		assert_eq!(tag_re_read, generic_tag_re_read);
 	}
 }
