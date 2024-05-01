@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `tag::items` module for generic representations of complex tag items
   - New `Timestamp` item for ISO 8601 timestamps ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
 - **ID3v2**: Special handling for frames with timestamps with `Frame::Timestamp` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
+- **GlobalOptions**: `preserve_format_specific_items()`
 
 ### Changed
 - **VorbisComments**/**ApeTag**: Verify contents of `ItemKey::FlagCompilation` during `Tag` merge ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
