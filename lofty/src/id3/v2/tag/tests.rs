@@ -1288,4 +1288,14 @@ fn special_items_roundtrip() {
 
 	let tag_re_read = read_tag_raw(&tag_bytes[..]);
 	assert_eq!(tag, tag_re_read);
+
+	// Now write from `Tag`
+	let tag: Tag = tag.into();
+
+	let mut tag_bytes = Vec::new();
+	tag.dump_to(&mut tag_bytes, WriteOptions::default())
+		.unwrap();
+
+	let generic_tag_re_read = read_tag_raw(&tag_bytes[..]);
+	assert_eq!(tag_re_read, generic_tag_re_read);
 }

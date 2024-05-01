@@ -253,7 +253,11 @@ impl Tag {
 	/// tag.re_map(TagType::AiffText);
 	/// assert!(tag.is_empty());
 	pub fn re_map(&mut self, tag_type: TagType) {
-		self.companion_tag = None;
+		if let Some(companion_tag) = self.companion_tag.take() {
+			log::warn!("Discarding format-specific items due to remap");
+			drop(companion_tag);
+		}
+
 		self.retain(|i| i.re_map(tag_type));
 		self.tag_type = tag_type
 	}
