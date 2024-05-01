@@ -3,7 +3,7 @@ mod tests;
 
 use super::frame::{Frame, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
 use super::header::{Id3v2TagFlags, Id3v2Version};
-use crate::config::WriteOptions;
+use crate::config::{global_options, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::GENRES;
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
@@ -18,6 +18,7 @@ use crate::id3::v2::util::pairs::{
 use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
+use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::Timestamp;
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
@@ -28,6 +29,7 @@ use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
+use std::iter::Peekable;
 use std::ops::Deref;
 use std::str::FromStr;
 
@@ -906,7 +908,7 @@ impl TagExt for Id3v2Tag {
 	{
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
+			frames: self.frames.iter().filter_map(Frame::as_opt_ref).peekable(),
 		}
 		.write_to(file, write_options)
 	}
@@ -924,7 +926,7 @@ impl TagExt for Id3v2Tag {
 	) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().filter_map(Frame::as_opt_ref),
+			frames: self.frames.iter().filter_map(Frame::as_opt_ref).peekable(),
 		}
 		.dump_to(writer, write_options)
 	}
@@ -1468,32 +1470,64 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<Id3v2Tag> for Tag {
 	fn from(input: Id3v2Tag) -> Self {
-		input.split_tag().1
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && remainder.0.len() > 0 {
+			tag.companion_tag = Some(CompanionTag::Id3v2(remainder.0));
+		}
+
+		tag
 	}
 }
 
 impl From<Tag> for Id3v2Tag {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items } {
+			if let Some(companion) = input.companion_tag.take().and_then(CompanionTag::id3v2) {
+				return SplitTagRemainder(companion).merge_tag(input);
+			}
+		}
+
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
 pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
 	pub(crate) flags: Id3v2TagFlags,
-	pub(crate) frames: I,
+	pub(crate) frames: Peekable<I>,
 }
 
 impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
 	pub(crate) fn empty() -> Self {
 		Self {
 			flags: Id3v2TagFlags::default(),
-			frames: std::iter::empty(),
+			frames: std::iter::empty().peekable(),
 		}
 	}
 }
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
-pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clone {
+pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> {
+	#[derive(Clone)]
+	enum CompanionTagIter<F, E> {
+		Filled(F),
+		Empty(E),
+	}
+
+	impl<'a, I> Iterator for CompanionTagIter<I, std::iter::Empty<Frame<'_>>>
+	where
+		I: Iterator<Item = FrameRef<'a>>,
+	{
+		type Item = FrameRef<'a>;
+
+		fn next(&mut self) -> Option<Self::Item> {
+			match self {
+				CompanionTagIter::Filled(iter) => iter.next(),
+				CompanionTagIter::Empty(_) => None,
+			}
+		}
+	}
+
 	fn create_frameref_for_number_pair<'a>(
 		number: Option<&str>,
 		total: Option<&str>,
@@ -1501,6 +1535,17 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 	) -> Option<FrameRef<'a>> {
 		format_number_pair(number, total)
 			.map(|value| FrameRef(Cow::Owned(Frame::text(Cow::Borrowed(id), value))))
+	}
+
+	fn create_framerefs_for_companion_tag(
+		companion: Option<&CompanionTag>,
+	) -> impl IntoIterator<Item = FrameRef<'_>> + Clone {
+		match companion {
+			Some(CompanionTag::Id3v2(companion)) => {
+				CompanionTagIter::Filled(companion.frames.iter().filter_map(Frame::as_opt_ref))
+			},
+			_ => CompanionTagIter::Empty(std::iter::empty()),
+		}
 	}
 
 	let items = tag
@@ -1517,6 +1562,9 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 			tag.get_string(&ItemKey::DiscNumber),
 			tag.get_string(&ItemKey::DiscTotal),
 			"TPOS",
+		))
+		.chain(create_framerefs_for_companion_tag(
+			tag.companion_tag.as_ref(),
 		));
 
 	let pictures = tag.pictures().iter().map(|p| {
@@ -1529,7 +1577,7 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> + Clon
 	items.chain(pictures)
 }
 
-impl<'a, I: Iterator<Item = FrameRef<'a>> + Clone + 'a> Id3v2TagRef<'a, I> {
+impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
 	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
 	where
 		F: FileLike,
