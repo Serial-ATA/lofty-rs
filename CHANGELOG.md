@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - New `tag::items` module for generic representations of complex tag items
   - New `Timestamp` item for ISO 8601 timestamps ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
 - **ID3v2**: Special handling for frames with timestamps with `Frame::Timestamp` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
-- **GlobalOptions**: `preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/391))
+- **GlobalOptions**: `preserve_format_specific_items()` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/302)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/391))
   - This will allow for the preservation of format-specific items when converting between tag types.
   - Previously, these items would be discarded when converting to the generic `Tag`. Now they are stored
     in an immutable container, and silently rejoined with the tag when converting back to the original format
