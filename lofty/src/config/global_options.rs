@@ -90,7 +90,7 @@ impl GlobalOptions {
 
 	/// Whether or not to preserve format-specific items
 	///
-	/// When converting a tag from its concrete format (ex. [`Id3v2`](crate::id3::v2::Id3v2Tag)) to
+	/// When converting a tag from its concrete format (ex. [`Id3v2Tag`](crate::id3::v2::Id3v2Tag)) to
 	/// a [`Tag`], this options controls whether to preserve any special items that
 	/// are unique to the concrete tag.
 	///
@@ -107,7 +107,7 @@ impl GlobalOptions {
 	/// apply_global_options(global_options);
 	/// ```
 	///
-	/// [Tag]: crate::tag::Tag
+	/// [`Tag`]: crate::tag::Tag
 	pub fn preserve_format_specific_items(&mut self, preserve_format_specific_items: bool) -> Self {
 		self.preserve_format_specific_items = preserve_format_specific_items;
 		*self

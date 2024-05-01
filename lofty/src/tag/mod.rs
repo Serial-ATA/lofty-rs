@@ -241,7 +241,7 @@ impl Tag {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::tag::{Tag, TagType, Accessor, TagExt};
+	/// use lofty::tag::{Accessor, Tag, TagExt, TagType};
 	///
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	/// tag.set_album(String::from("Album"));
@@ -252,6 +252,9 @@ impl Tag {
 	/// // But AIFF text chunks do not, the item will be lost
 	/// tag.re_map(TagType::AiffText);
 	/// assert!(tag.is_empty());
+	/// ```
+	///
+	/// [`GlobalOptions::preserve_format_specific_items`]: crate::config::GlobalOptions::preserve_format_specific_items
 	pub fn re_map(&mut self, tag_type: TagType) {
 		if let Some(companion_tag) = self.companion_tag.take() {
 			log::warn!("Discarding format-specific items due to remap");
@@ -278,6 +281,8 @@ impl Tag {
 	/// // This must come from a conversion, such as `Id3v2Tag` -> `Tag`
 	/// assert!(!tag.has_format_specific_items());
 	/// ```
+	///
+	/// [`GlobalOptions::preserve_format_specific_items`]: crate::config::GlobalOptions::preserve_format_specific_items
 	pub fn has_format_specific_items(&self) -> bool {
 		self.companion_tag.is_some()
 	}
