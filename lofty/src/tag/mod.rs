@@ -1,6 +1,7 @@
 //! Utilities for generic tag handling
 
 mod accessor;
+pub(crate) mod companion_tag;
 pub(crate) mod item;
 pub mod items;
 mod split_merge_tag;
@@ -111,6 +112,7 @@ pub struct Tag {
 	tag_type: TagType,
 	pub(crate) pictures: Vec<Picture>,
 	pub(crate) items: Vec<TagItem>,
+	pub(crate) companion_tag: Option<companion_tag::CompanionTag>,
 }
 
 #[must_use]
@@ -227,13 +229,53 @@ impl Tag {
 			tag_type,
 			pictures: Vec::new(),
 			items: Vec::new(),
+			companion_tag: None,
 		}
 	}
 
 	/// Change the [`TagType`], remapping all items
+	///
+	/// NOTE: If any format-specific items are present, they will be removed.
+	///       See [`GlobalOptions::preserve_format_specific_items`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::tag::{Tag, TagType, Accessor, TagExt};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	/// tag.set_album(String::from("Album"));
+	///
+	/// // ID3v2 supports the album tag
+	/// assert_eq!(tag.len(), 1);
+	///
+	/// // But AIFF text chunks do not, the item will be lost
+	/// tag.re_map(TagType::AiffText);
+	/// assert!(tag.is_empty());
 	pub fn re_map(&mut self, tag_type: TagType) {
+		self.companion_tag = None;
 		self.retain(|i| i.re_map(tag_type));
 		self.tag_type = tag_type
+	}
+
+	/// Check if the tag contains any format-specific items
+	///
+	/// See [`GlobalOptions::preserve_format_specific_items`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::tag::{Accessor, Tag, TagExt, TagType};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	/// tag.set_album(String::from("Album"));
+	///
+	/// // We cannot create a tag with format-specific items.
+	/// // This must come from a conversion, such as `Id3v2Tag` -> `Tag`
+	/// assert!(!tag.has_format_specific_items());
+	/// ```
+	pub fn has_format_specific_items(&self) -> bool {
+		self.companion_tag.is_some()
 	}
 
 	/// Returns the [`TagType`]

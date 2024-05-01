@@ -2,19 +2,26 @@ use crate::config::ParsingMode;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
-use crate::id3::v2::TimestampFrame;
+use crate::id3::v2::{
+	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame, TimestampFrame,
+};
 use crate::picture::MimeType;
 use crate::tag::items::Timestamp;
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;
 
+use std::collections::HashMap;
+
 const COMMENT_FRAME_ID: &str = "COMM";
 
 fn read_tag(path: &str) -> Id3v2Tag {
 	let tag_bytes = read_path(path);
+	read_tag_raw(&tag_bytes)
+}
 
-	let mut reader = Cursor::new(&tag_bytes[..]);
+fn read_tag_raw(bytes: &[u8]) -> Id3v2Tag {
+	let mut reader = Cursor::new(&bytes[..]);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
 	crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()
@@ -1242,4 +1249,43 @@ fn timestamp_roundtrip() {
 		},
 		_ => panic!("Expected a TimestampFrame"),
 	}
+}
+
+#[test]
+fn special_items_roundtrip() {
+	let mut tag = Id3v2Tag::new();
+
+	let rva2 = Frame::RelativeVolumeAdjustment(RelativeVolumeAdjustmentFrame::new(
+		String::from("Foo RVA"),
+		HashMap::from([(
+			ChannelType::MasterVolume,
+			ChannelInformation {
+				channel_type: ChannelType::MasterVolume,
+				volume_adjustment: 30,
+				bits_representing_peak: 0,
+				peak_volume: None,
+			},
+		)]),
+	));
+
+	tag.insert(rva2.clone());
+	tag.set_artist(String::from("Foo Artist")); // Some value that we *can* represent generically
+
+	let tag: Tag = tag.into();
+
+	assert_eq!(tag.len(), 1);
+	assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
+
+	let tag: Id3v2Tag = tag.into();
+
+	assert_eq!(tag.frames.len(), 2);
+	assert_eq!(tag.artist().as_deref(), Some("Foo Artist"));
+	assert_eq!(tag.get(&FrameId::Valid(Cow::Borrowed("RVA2"))), Some(&rva2));
+
+	let mut tag_bytes = Vec::new();
+	tag.dump_to(&mut tag_bytes, WriteOptions::default())
+		.unwrap();
+
+	let tag_re_read = read_tag_raw(&tag_bytes[..]);
+	assert_eq!(tag, tag_re_read);
 }

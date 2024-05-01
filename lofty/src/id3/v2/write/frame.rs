@@ -36,7 +36,9 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 		| ("POPM", Frame::Popularimeter(_))
 		| ("TIPL" | "TMCL", Frame::KeyValue { .. })
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", Frame::Text { .. })
-		| ("TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG", Frame::Timestamp(_)) => Ok(()),
+		| ("TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG", Frame::Timestamp(_))
+		| ("RVA2", Frame::RelativeVolumeAdjustment(_))
+		| ("PRIV", Frame::Private(_)) => Ok(()),
 		(id, Frame::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, Frame::Url(_)) if id.starts_with('W') => Ok(()),
 		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(

@@ -47,7 +47,7 @@ where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
 	LoftyError: From<<F as Length>::Error>,
-	I: Iterator<Item = FrameRef<'a>> + Clone + 'a,
+	I: Iterator<Item = FrameRef<'a>> + 'a,
 {
 	let probe = Probe::new(file).guess_file_type()?;
 	let file_type = probe.file_type();
@@ -67,11 +67,8 @@ where
 
 	// Attempting to write a non-empty tag to a read only format
 	// An empty tag implies the tag should be stripped.
-	if Id3v2Tag::READ_ONLY_FORMATS.contains(&file_type) {
-		let mut peek = tag.frames.clone().peekable();
-		if peek.peek().is_some() {
-			err!(UnsupportedTag);
-		}
+	if Id3v2Tag::READ_ONLY_FORMATS.contains(&file_type) && tag.frames.peek().is_some() {
+		err!(UnsupportedTag);
 	}
 
 	let id3v2 = create_tag(tag, write_options)?;

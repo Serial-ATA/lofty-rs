@@ -65,7 +65,7 @@ pub(crate) fn dump_tag<W: Write>(
 		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer, write_options),
 		TagType::Id3v2 => Id3v2TagRef {
 			flags: Id3v2TagFlags::default(),
-			frames: v2::tag::tag_frames(tag),
+			frames: v2::tag::tag_frames(tag).peekable(),
 		}
 		.dump_to(writer, write_options),
 		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone())
