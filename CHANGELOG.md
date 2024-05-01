@@ -12,14 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - This will allow for generic edits to the iTunes-style parental advisory tag. Note that this will use the
       numeric representation. For more information, see: https://docs.mp3tag.de/mapping/#itunesadvisory.
   - New `tag::items` module for generic representations of complex tag items
-  - New **Timestamp** item for ISO 8601 timestamps ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
-- **ID3v2**: Special handling for frames with timestamps with `FrameValue::Timestamp` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
+  - New `Timestamp` item for ISO 8601 timestamps ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
+- **ID3v2**: Special handling for frames with timestamps with `Frame::Timestamp` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/389))
 
 ### Changed
 - **VorbisComments**/**ApeTag**: Verify contents of `ItemKey::FlagCompilation` during `Tag` merge ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
 - **ID3v2**:
-  - ⚠️ Important ⚠️: `Frame` has been converted to an `enum`:
+  - ⚠️ Important ⚠️: `Frame` has been converted to an `enum` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/390)):
     - This makes it easier to validate frame contents, as one can no longer make an `AttachedPictureFrame` with the ID `"TALB"`, for example.
+      See the PR for a full description of the changes.
     ```rust
     // Old:
     let frame = Frame::new(
