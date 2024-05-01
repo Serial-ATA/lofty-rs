@@ -24,6 +24,7 @@ pub(crate) unsafe fn global_options() -> &'static GlobalOptions {
 pub struct GlobalOptions {
 	pub(crate) use_custom_resolvers: bool,
 	pub(crate) allocation_limit: usize,
+	pub(crate) preserve_format_specific_items: bool,
 }
 
 impl GlobalOptions {
@@ -46,6 +47,7 @@ impl GlobalOptions {
 		Self {
 			use_custom_resolvers: true,
 			allocation_limit: Self::DEFAULT_ALLOCATION_LIMIT,
+			preserve_format_specific_items: true,
 		}
 	}
 
@@ -85,6 +87,31 @@ impl GlobalOptions {
 		self.allocation_limit = allocation_limit;
 		*self
 	}
+
+	/// Whether or not to preserve format-specific items
+	///
+	/// When converting a tag from its concrete format (ex. [`Id3v2`](crate::id3::v2::Id3v2Tag)) to
+	/// a [`Tag`], this options controls whether to preserve any special items that
+	/// are unique to the concrete tag.
+	///
+	/// This will store an extra immutable tag alongside the generic [`Tag`], which will be merged
+	/// back into the concrete tag when converting back.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::config::{apply_global_options, GlobalOptions};
+	///
+	/// // I'm just reading tags, I don't need to preserve format-specific items
+	/// let global_options = GlobalOptions::new().preserve_format_specific_items(false);
+	/// apply_global_options(global_options);
+	/// ```
+	///
+	/// [Tag]: crate::tag::Tag
+	pub fn preserve_format_specific_items(&mut self, preserve_format_specific_items: bool) -> Self {
+		self.preserve_format_specific_items = preserve_format_specific_items;
+		*self
+	}
 }
 
 impl Default for GlobalOptions {
@@ -96,6 +123,7 @@ impl Default for GlobalOptions {
 	/// GlobalOptions {
 	/// 	use_custom_resolvers: true,
 	/// 	allocation_limit: Self::DEFAULT_ALLOCATION_LIMIT,
+	/// 	preserve_format_specific_items: true,
 	/// }
 	/// ```
 	fn default() -> Self {
