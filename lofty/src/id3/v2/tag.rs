@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use super::frame::{Frame, EMPTY_CONTENT_DESCRIPTOR, UNKNOWN_LANGUAGE};
+use super::frame::{Frame, EMPTY_CONTENT_DESCRIPTOR};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::config::{global_options, WriteOptions};
 use crate::error::{LoftyError, Result};
@@ -19,7 +19,7 @@ use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, Timestamp
 use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::companion_tag::CompanionTag;
-use crate::tag::items::Timestamp;
+use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{
 	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 };
@@ -1154,29 +1154,29 @@ impl SplitTag for Id3v2Tag {
 						Frame::Comment(CommentFrame {
 							content,
 							description,
+							language,
 							..
 						})
 						| Frame::UnsynchronizedText(UnsynchronizedTextFrame {
 							content,
 							description,
-							..
-						}) => {
-							if *description == EMPTY_CONTENT_DESCRIPTOR {
-								for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-									tag.items.push(TagItem::new(
-										item_key.clone(),
-										ItemValue::Text(c.to_string()),
-									));
+							language, ..
+													}) => {
+							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+								let mut item = TagItem::new(
+									item_key.clone(),
+									ItemValue::Text(c.to_string()),
+								);
+								
+								item.set_lang(*language);
+								
+								if *description != EMPTY_CONTENT_DESCRIPTOR {
+									item.set_description(std::mem::take(description));
 								}
-								return FRAME_CONSUMED;
+								
+								tag.items.push(item);
 							}
-							// ...else do not convert text frames with a non-empty content
-							// descriptor that would otherwise unintentionally be modified
-							// and corrupted by the incomplete conversion into a [`TagItem`].
-							// TODO: How to convert these frames consistently and safely
-							// such that the content descriptor is preserved during read/write
-							// round trips?
-							return FRAME_RETAINED;
+							return FRAME_CONSUMED;
 						},
 						Frame::Timestamp(frame) if !matches!(item_key, ItemKey::Unknown(_)) => {
 							if frame.timestamp.verify().is_err() {
@@ -1274,6 +1274,70 @@ impl MergeTag for SplitTagRemainder {
 			concatenated
 		}
 
+		struct JoinedLanguageItem {
+			lang: Lang,
+			description: String,
+			content: String,
+		}
+
+		fn join_language_items(
+			tag: &mut Tag,
+			key: &ItemKey,
+		) -> Option<impl Iterator<Item = JoinedLanguageItem>> {
+			let mut items = tag.take(key).collect::<Vec<_>>();
+			if items.is_empty() {
+				return None;
+			}
+
+			items.sort_by(|a, b| a.lang.cmp(&b.lang).then(a.description.cmp(&b.description)));
+
+			let TagItem {
+				lang: mut current_lang,
+				description: mut current_description,
+				item_value: ItemValue::Text(mut current_content),
+				..
+			} = items.remove(0)
+			else {
+				log::warn!("Expected a text item for {key:?}");
+				return None;
+			};
+
+			let mut joined_items = Vec::<JoinedLanguageItem>::new();
+			for item in items {
+				let TagItem {
+					lang,
+					description,
+					item_value: ItemValue::Text(content),
+					..
+				} = item
+				else {
+					continue;
+				};
+
+				if lang != current_lang || description != current_description {
+					joined_items.push(JoinedLanguageItem {
+						lang: current_lang,
+						description: std::mem::take(&mut current_description),
+						content: std::mem::take(&mut current_content),
+					});
+					current_lang = lang;
+					current_description = description;
+					current_content = content;
+				} else {
+					current_content.push(V4_MULTI_VALUE_SEPARATOR);
+					current_content.push_str(&content);
+				}
+			}
+
+			joined_items.push(JoinedLanguageItem {
+				lang: current_lang,
+				description: current_description,
+				content: current_content,
+			});
+
+			Some(joined_items.into_iter())
+		}
+
 		let Self(mut merged) = self;
 		merged.frames.reserve(tag.item_count() as usize);
 
@@ -1336,20 +1400,38 @@ impl MergeTag for SplitTagRemainder {
 			}
 		}
 
-		// Multi-valued Comment key-to-frame mapping
-		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Comment]) {
-			let frame = new_comment_frame(text);
-			// Optimization: No duplicate checking according to the preconditions
-			debug_assert!(!merged.frames.contains(&frame));
-			merged.frames.push(frame);
-		};
+		// Comment/Unsync text
+		for key in [ItemKey::Comment, ItemKey::Lyrics] {
+			let Some(items) = join_language_items(&mut tag, &key) else {
+				continue;
+			};
 
-		if let Some(text) = join_text_items(&mut tag, &[ItemKey::Lyrics]) {
-			let frame = new_unsync_text_frame(text);
-			// Optimization: No duplicate checking according to the preconditions
-			debug_assert!(!merged.frames.contains(&frame));
-			merged.frames.push(frame);
-		};
+			for JoinedLanguageItem {
+				lang,
+				description,
+				content,
+			} in items
+			{
+				let frame = match key {
+					ItemKey::Comment => Frame::Comment(CommentFrame::new(
+						TextEncoding::UTF8,
+						lang,
+						description,
+						content,
+					)),
+					ItemKey::Lyrics => Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
+						TextEncoding::UTF8,
+						lang,
+						description,
+						content,
+					)),
+					_ => continue,
+				};
+				// Optimization: No duplicate checking according to the preconditions
+				debug_assert!(!merged.frames.contains(&frame));
+				merged.frames.push(frame);
+			}
+		}
 
 		// TIPL key-value mappings
 		'tipl: {

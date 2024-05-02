@@ -6,7 +6,7 @@ use crate::id3::v2::{
 	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame, TimestampFrame,
 };
 use crate::picture::MimeType;
-use crate::tag::items::Timestamp;
+use crate::tag::items::{Timestamp, ENGLISH};
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;
@@ -421,10 +421,10 @@ fn replaygain_tag_conversion() {
 	assert_eq!(tag.item_count(), 1);
 	assert_eq!(
 		tag.items[0],
-		TagItem {
-			item_key: ItemKey::ReplayGainAlbumGain,
-			item_value: ItemValue::Text(String::from("-10.43 dB"))
-		}
+		TagItem::new(
+			ItemKey::ReplayGainAlbumGain,
+			ItemValue::Text(String::from("-10.43 dB"))
+		)
 	);
 }
 
@@ -1308,4 +1308,34 @@ fn special_items_roundtrip() {
 		.frames
 		.sort_by_key(|frame| frame.id().to_string());
 	assert_eq!(tag_re_read, generic_tag_re_read);
+}
+
+#[test]
+fn preserve_comment_lang_description_on_conversion() {
+	let mut tag = Id3v2Tag::new();
+
+	let comment_frame = Frame::Comment(CommentFrame::new(
+		TextEncoding::UTF8,
+		ENGLISH,
+		String::from("Some description"),
+		String::from("Foo comment"),
+	));
+
+	tag.insert(comment_frame.clone());
+
+	let tag: Tag = tag.into();
+	assert_eq!(tag.len(), 1);
+
+	let tag: Id3v2Tag = tag.into();
+	assert_eq!(tag.len(), 1);
+
+	let frame = tag.get(&FrameId::Valid(Cow::Borrowed("COMM"))).unwrap();
+	match frame {
+		Frame::Comment(comm) => {
+			assert_eq!(comm.language, ENGLISH);
+			assert_eq!(comm.description, "Some description");
+			assert_eq!(comm.content, "Foo comment");
+		},
+		_ => panic!("Expected a CommentFrame"),
+	}
 }

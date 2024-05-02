@@ -2,6 +2,7 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::tag::items::Lang;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
@@ -15,7 +16,7 @@ use byteorder::ReadBytesExt;
 // This exists to deduplicate some code between `CommentFrame` and `UnsynchronizedTextFrame`
 struct LanguageFrame {
 	pub encoding: TextEncoding,
-	pub language: [u8; 3],
+	pub language: Lang,
 	pub description: String,
 	pub content: String,
 }
@@ -78,7 +79,7 @@ pub struct CommentFrame<'a> {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
-	pub language: [u8; 3],
+	pub language: Lang,
 	/// Unique content description
 	pub description: String,
 	/// The actual frame content
@@ -87,12 +88,13 @@ pub struct CommentFrame<'a> {
 
 impl<'a> PartialEq for CommentFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
+		self.language == other.language && self.description == other.description
 	}
 }
 
 impl<'a> Hash for CommentFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.language.hash(state);
 		self.description.hash(state);
 	}
 }
@@ -103,7 +105,7 @@ impl<'a> CommentFrame<'a> {
 	/// Create a new [`CommentFrame`]
 	pub fn new(
 		encoding: TextEncoding,
-		language: [u8; 3],
+		language: Lang,
 		description: String,
 		content: String,
 	) -> Self {
@@ -187,7 +189,7 @@ pub struct UnsynchronizedTextFrame<'a> {
 	/// The encoding of the description and content
 	pub encoding: TextEncoding,
 	/// ISO-639-2 language code (3 bytes)
-	pub language: [u8; 3],
+	pub language: Lang,
 	/// Unique content description
 	pub description: String,
 	/// The actual frame content
@@ -196,12 +198,13 @@ pub struct UnsynchronizedTextFrame<'a> {
 
 impl<'a> PartialEq for UnsynchronizedTextFrame<'a> {
 	fn eq(&self, other: &Self) -> bool {
-		self.description == other.description
+		self.language == other.language && self.description == other.description
 	}
 }
 
 impl<'a> Hash for UnsynchronizedTextFrame<'a> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.language.hash(state);
 		self.description.hash(state);
 	}
 }
@@ -212,7 +215,7 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 	/// Create a new [`UnsynchronizedTextFrame`]
 	pub fn new(
 		encoding: TextEncoding,
-		language: [u8; 3],
+		language: Lang,
 		description: String,
 		content: String,
 	) -> Self {
