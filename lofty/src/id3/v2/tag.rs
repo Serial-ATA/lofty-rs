@@ -1167,13 +1167,13 @@ impl SplitTag for Id3v2Tag {
 									item_key.clone(),
 									ItemValue::Text(c.to_string()),
 								);
-								
+
 								item.set_lang(*language);
-								
+
 								if *description != EMPTY_CONTENT_DESCRIPTOR {
 									item.set_description(std::mem::take(description));
 								}
-								
+
 								tag.items.push(item);
 							}
 							return FRAME_CONSUMED;
