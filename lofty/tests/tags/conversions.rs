@@ -18,7 +18,7 @@ fn tag_to_id3v2_lang_frame() {
 		id3.get(&FrameId::Valid(Cow::Borrowed("USLT"))),
 		Some(&Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
 			TextEncoding::UTF8,
-			*b"eng",
+			*b"XXX",
 			String::new(),
 			String::from("Test lyrics")
 		)))
@@ -28,7 +28,7 @@ fn tag_to_id3v2_lang_frame() {
 		id3.get(&FrameId::Valid(Cow::Borrowed("COMM"))),
 		Some(&Frame::Comment(CommentFrame::new(
 			TextEncoding::UTF8,
-			*b"eng",
+			*b"XXX",
 			String::new(),
 			String::from("Test comment")
 		)))
