@@ -207,8 +207,8 @@ fn tag_to_id3v2() {
 	assert_eq!(
 		frame,
 		&Frame::Comment(CommentFrame::new(
-			TextEncoding::Latin1,
-			*b"eng",
+			TextEncoding::UTF8,
+			*b"XXX",
 			EMPTY_CONTENT_DESCRIPTOR,
 			String::from("Qux comment"),
 		))
