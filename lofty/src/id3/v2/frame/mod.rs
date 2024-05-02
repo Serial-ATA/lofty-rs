@@ -29,16 +29,6 @@ pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 /// and to prevent inconsistencies when writing them.
 pub(super) const EMPTY_CONTENT_DESCRIPTOR: String = String::new();
 
-/// Unknown language-aware text frame
-///
-/// <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html>
-///
-/// > The three byte language field, present in several frames, is used to describe
-/// > the language of the frame’s content, according to ISO-639-2 [ISO-639-2].
-/// > The language should be represented in lower case. If the language is not known
-/// > the string “XXX” should be used.
-pub(super) const UNKNOWN_LANGUAGE: [u8; 3] = *b"XXX";
-
 // TODO: Messy module, rough conversions
 
 macro_rules! define_frames {

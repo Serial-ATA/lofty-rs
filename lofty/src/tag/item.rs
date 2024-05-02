@@ -9,6 +9,7 @@ macro_rules! first_key {
 	};
 }
 
+use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 pub(crate) use first_key;
 
 // This is used to create the key/ItemKey maps
@@ -789,6 +790,8 @@ impl<'a> Into<ItemValueRef<'a>> for &'a ItemValue {
 /// Represents a tag item (key/value)
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TagItem {
+	pub(crate) lang: Lang,
+	pub(crate) description: String,
 	pub(crate) item_key: ItemKey,
 	pub(crate) item_value: ItemValue,
 }
@@ -806,19 +809,35 @@ impl TagItem {
 		item_key: ItemKey,
 		item_value: ItemValue,
 	) -> Option<Self> {
-		item_key.map_key(tag_type, false).is_some().then_some(Self {
-			item_key,
-			item_value,
-		})
+		item_key
+			.map_key(tag_type, false)
+			.is_some()
+			.then_some(Self::new(item_key, item_value))
 	}
 
 	/// Create a new [`TagItem`]
 	#[must_use]
 	pub const fn new(item_key: ItemKey, item_value: ItemValue) -> Self {
 		Self {
+			lang: UNKNOWN_LANGUAGE,
+			description: String::new(),
 			item_key,
 			item_value,
 		}
+	}
+
+	/// Set a language for the [`TagItem`]
+	///
+	/// NOTE: This will not be reflected in most tag formats.
+	pub fn set_lang(&mut self, lang: Lang) {
+		self.lang = lang;
+	}
+
+	/// Set a description for the [`TagItem`]
+	///
+	/// NOTE: This will not be reflected in most tag formats.
+	pub fn set_description(&mut self, description: String) {
+		self.description = description;
 	}
 
 	/// Returns a reference to the [`ItemKey`]
