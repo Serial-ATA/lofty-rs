@@ -6,10 +6,9 @@ use crate::id3::v2::tag::{
 };
 use crate::id3::v2::{
 	ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags, FrameId, PopularimeterFrame,
-	UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
+	UniqueFileIdentifierFrame,
 };
 use crate::macros::err;
-use crate::tag::items::UNKNOWN_LANGUAGE;
 use crate::tag::{ItemKey, ItemValue, TagItem, TagType};
 use crate::TextEncoding;
 
@@ -32,73 +31,41 @@ fn frame_from_unknown_item(id: FrameId<'_>, item_value: ItemValue) -> Result<Fra
 impl From<TagItem> for Option<Frame<'static>> {
 	fn from(input: TagItem) -> Self {
 		let value;
-		match input.key().try_into().map(FrameId::into_owned) {
-			Ok(id) => {
-				match (&id, input.item_value) {
-					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "COMM" => {
-						value = new_comment_frame(text);
-					},
-					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "USLT" => {
-						value = Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
-							TextEncoding::UTF8,
-							UNKNOWN_LANGUAGE,
-							EMPTY_CONTENT_DESCRIPTOR,
-							text,
-						));
-					},
-					(FrameId::Valid(ref s), ItemValue::Locator(text) | ItemValue::Text(text))
-						if s == "WXXX" =>
-					{
-						value = Frame::UserUrl(ExtendedUrlFrame::new(
-							TextEncoding::UTF8,
-							EMPTY_CONTENT_DESCRIPTOR,
-							text,
-						));
-					},
-					(FrameId::Valid(ref s), ItemValue::Text(text)) if s == "TXXX" => {
-						value = new_user_text_frame(EMPTY_CONTENT_DESCRIPTOR, text);
-					},
-					(FrameId::Valid(ref s), ItemValue::Binary(text)) if s == "POPM" => {
-						value = Frame::Popularimeter(
-							PopularimeterFrame::parse(&mut &text[..], FrameFlags::default())
-								.ok()?,
-						);
-					},
-					(_, item_value) => value = frame_from_unknown_item(id, item_value).ok()?,
-				};
-			},
-			Err(_) => match input.item_key.map_key(TagType::Id3v2, true) {
-				Some(desc) => match input.item_value {
-					ItemValue::Text(text) => {
-						value = Frame::UserText(ExtendedTextFrame::new(
-							TextEncoding::UTF8,
-							String::from(desc),
-							text,
-						))
-					},
-					ItemValue::Locator(locator) => {
-						value = Frame::UserUrl(ExtendedUrlFrame::new(
-							TextEncoding::UTF8,
-							String::from(desc),
-							locator,
-						))
-					},
-					ItemValue::Binary(_) => return None,
+		if let Ok(id) = input.key().try_into().map(FrameId::into_owned) {
+			return frame_from_unknown_item(id, input.item_value).ok();
+		}
+
+		match input.item_key.map_key(TagType::Id3v2, true) {
+			Some(desc) => match input.item_value {
+				ItemValue::Text(text) => {
+					value = Frame::UserText(ExtendedTextFrame::new(
+						TextEncoding::UTF8,
+						String::from(desc),
+						text,
+					))
 				},
-				None => match (input.item_key, input.item_value) {
-					(ItemKey::MusicBrainzRecordingId, ItemValue::Text(recording_id)) => {
-						if !recording_id.is_ascii() {
-							return None;
-						}
-						let frame = UniqueFileIdentifierFrame::new(
-							MUSICBRAINZ_UFID_OWNER.to_owned(),
-							recording_id.into_bytes(),
-						);
-						value = Frame::UniqueFileIdentifier(frame);
-					},
-					_ => {
+				ItemValue::Locator(locator) => {
+					value = Frame::UserUrl(ExtendedUrlFrame::new(
+						TextEncoding::UTF8,
+						String::from(desc),
+						locator,
+					))
+				},
+				ItemValue::Binary(_) => return None,
+			},
+			None => match (input.item_key, input.item_value) {
+				(ItemKey::MusicBrainzRecordingId, ItemValue::Text(recording_id)) => {
+					if !recording_id.is_ascii() {
 						return None;
-					},
+					}
+					let frame = UniqueFileIdentifierFrame::new(
+						MUSICBRAINZ_UFID_OWNER.to_owned(),
+						recording_id.into_bytes(),
+					);
+					value = Frame::UniqueFileIdentifier(frame);
+				},
+				_ => {
+					return None;
 				},
 			},
 		}
