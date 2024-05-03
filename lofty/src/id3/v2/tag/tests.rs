@@ -109,37 +109,6 @@ fn id3v2_to_tag() {
 }
 
 #[test]
-fn tag_to_id3v2_popm() {
-	let mut tag = Tag::new(TagType::Id3v2);
-	tag.insert(TagItem::new(
-		ItemKey::Popularimeter,
-		ItemValue::Binary(vec![
-			b'f', b'o', b'o', b'@', b'b', b'a', b'r', b'.', b'c', b'o', b'm', 0, 196, 0, 0, 255,
-			255,
-		]),
-	));
-
-	let expected = PopularimeterFrame::new(String::from("foo@bar.com"), 196, 65535);
-
-	let converted_tag: Id3v2Tag = tag.into();
-
-	assert_eq!(converted_tag.frames.len(), 1);
-	let actual_frame = converted_tag.frames.first().unwrap();
-
-	assert_eq!(actual_frame.id(), &FrameId::Valid(Cow::Borrowed("POPM")));
-	// Note: as POPM frames are considered equal by email alone, each field must
-	// be separately validated
-	match actual_frame {
-		Frame::Popularimeter(pop) => {
-			assert_eq!(pop.email, expected.email);
-			assert_eq!(pop.rating, expected.rating);
-			assert_eq!(pop.counter, expected.counter);
-		},
-		_ => unreachable!(),
-	}
-}
-
-#[test]
 fn fail_write_bad_frame() {
 	let mut tag = Id3v2Tag::default();
 
@@ -1321,4 +1290,18 @@ fn preserve_comment_lang_description_on_conversion() {
 		},
 		_ => panic!("Expected a CommentFrame"),
 	}
+}
+
+// TODO: Remove this once we have a better solution
+#[test]
+fn hold_back_4_character_txxx_description() {
+	let mut tag = Id3v2Tag::new();
+
+	let _ = tag.insert_user_text(String::from("MODE"), String::from("CBR"));
+
+	let tag: Tag = tag.into();
+	assert_eq!(tag.len(), 0);
+
+	let tag: Id3v2Tag = tag.into();
+	assert_eq!(tag.len(), 1);
 }

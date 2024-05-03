@@ -1081,12 +1081,16 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
 		},
 
+		// TODO: HACK!! We are specifically disallowing descriptions with a length of 4.
+		//       This is due to use storing 4 character IDs as Frame::Text on tag merge.
+		//       Maybe ItemKey could use a "TXXX:" prefix eventually, so we would store
+		//       "TXXX:MusicBrainz Album Id" instead of "MusicBrainz Album Id".
 		// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 		Frame::UserText(ExtendedTextFrame {
 			ref description,
 			ref content,
 			..
-		}) if !description.is_empty() => {
+		}) if !description.is_empty() && description.len() != 4 => {
 			let item_key = ItemKey::from_key(TagType::Id3v2, description);
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 				tag.items.push(TagItem::new(
@@ -1101,7 +1105,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			ref description,
 			ref content,
 			..
-		}) if !description.is_empty() => {
+		}) if !description.is_empty() && description.len() != 4 => {
 			let item_key = ItemKey::from_key(TagType::Id3v2, description);
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 				tag.items.push(TagItem::new(

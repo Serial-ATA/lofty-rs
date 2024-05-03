@@ -1,3 +1,4 @@
+use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 use crate::tag::TagType;
 
 use std::borrow::Cow;
@@ -9,7 +10,6 @@ macro_rules! first_key {
 	};
 }
 
-use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 pub(crate) use first_key;
 
 // This is used to create the key/ItemKey maps
