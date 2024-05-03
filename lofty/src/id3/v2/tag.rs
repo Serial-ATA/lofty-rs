@@ -953,283 +953,293 @@ impl Deref for SplitTagRemainder {
 	}
 }
 
+fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
+	/// A frame we are able to split off into the tag
+	const FRAME_CONSUMED: bool = false;
+	/// A frame that must be held back
+	const FRAME_RETAINED: bool = true;
+
+	fn split_pair(
+		content: &str,
+		tag: &mut Tag,
+		number_key: ItemKey,
+		total_key: ItemKey,
+	) -> Option<()> {
+		fn parse_number(source: &str) -> Option<&str> {
+			let number = source.trim();
+
+			if number.is_empty() {
+				return None;
+			}
+
+			if str::parse::<u32>(number).is_ok() {
+				Some(number)
+			} else {
+				log::warn!("{number:?} could not be parsed as a number.");
+
+				None
+			}
+		}
+
+		let mut split = content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
+
+		let number = parse_number(split.next()?)?;
+		let total = if let Some(total_source) = split.next() {
+			Some(parse_number(total_source)?)
+		} else {
+			None
+		};
+		debug_assert!(split.next().is_none());
+
+		debug_assert!(!number.is_empty());
+		tag.items.push(TagItem::new(
+			number_key,
+			ItemValue::Text(number.to_string()),
+		));
+		if let Some(total) = total {
+			debug_assert!(!total.is_empty());
+			tag.items
+				.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
+		}
+
+		Some(())
+	}
+
+	match frame {
+		// The text pairs need some special treatment
+		Frame::Text(TextInformationFrame {
+			header: FrameHeader { id, .. },
+			value: content,
+			..
+		}) if id.as_str() == "TRCK"
+			&& split_pair(content, tag, ItemKey::TrackNumber, ItemKey::TrackTotal).is_some() =>
+		{
+			return FRAME_CONSUMED
+		},
+		Frame::Text(TextInformationFrame {
+			header: FrameHeader { id, .. },
+			value: content,
+			..
+		}) if id.as_str() == "TPOS"
+			&& split_pair(content, tag, ItemKey::DiscNumber, ItemKey::DiscTotal).is_some() =>
+		{
+			return FRAME_CONSUMED
+		},
+		Frame::Text(TextInformationFrame {
+			header: FrameHeader { id, .. },
+			value: content,
+			..
+		}) if id.as_str() == "MVIN"
+			&& split_pair(
+				content,
+				tag,
+				ItemKey::MovementNumber,
+				ItemKey::MovementTotal,
+			)
+			.is_some() =>
+		{
+			return FRAME_CONSUMED
+		},
+
+		// TCON needs special treatment to translate genre IDs
+		Frame::Text(TextInformationFrame {
+			header: FrameHeader { id, .. },
+			value: content,
+			..
+		}) if id.as_str() == "TCON" => {
+			let genres = GenresIter::new(content);
+			for genre in genres {
+				tag.items.push(TagItem::new(
+					ItemKey::Genre,
+					ItemValue::Text(genre.to_string()),
+				));
+			}
+
+			return FRAME_CONSUMED;
+		},
+
+		// TIPL needs special treatment, as we may not be able to consume all of its items
+		Frame::KeyValue(KeyValueFrame {
+			header: FrameHeader { id, .. },
+			key_value_pairs,
+			..
+		}) if id.as_str() == "TIPL" => {
+			key_value_pairs.retain_mut(|(key, value)| {
+				for (item_key, tipl_key) in TIPL_MAPPINGS {
+					if key == *tipl_key {
+						tag.items.push(TagItem::new(
+							item_key.clone(),
+							ItemValue::Text(core::mem::take(value)),
+						));
+						return false; // This key-value pair is consumed
+					}
+				}
+
+				true // Keep key-value pair
+			});
+
+			!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
+		},
+
+		// Store TXXX/WXXX frames by their descriptions, rather than their IDs
+		Frame::UserText(ExtendedTextFrame {
+			ref description,
+			ref content,
+			..
+		}) if !description.is_empty() => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, description);
+			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+				tag.items.push(TagItem::new(
+					item_key.clone(),
+					ItemValue::Text(c.to_string()),
+				));
+			}
+
+			return FRAME_CONSUMED;
+		},
+		Frame::UserUrl(ExtendedUrlFrame {
+			ref description,
+			ref content,
+			..
+		}) if !description.is_empty() => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, description);
+			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+				tag.items.push(TagItem::new(
+					item_key.clone(),
+					ItemValue::Locator(c.to_string()),
+				));
+			}
+
+			return FRAME_CONSUMED;
+		},
+
+		Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+			ref owner,
+			ref identifier,
+			..
+		}) => {
+			if owner != MUSICBRAINZ_UFID_OWNER {
+				// Unsupported owner
+				return FRAME_RETAINED;
+			}
+
+			let mut identifier = Cursor::new(identifier);
+			let Ok(recording_id) = decode_text(
+				&mut identifier,
+				TextDecodeOptions::new().encoding(TextEncoding::Latin1),
+			) else {
+				return FRAME_RETAINED;
+			};
+			tag.items.push(TagItem::new(
+				ItemKey::MusicBrainzRecordingId,
+				ItemValue::Text(recording_id.content),
+			));
+
+			return FRAME_CONSUMED;
+		},
+
+		// COMM/USLT are identical frames, outside of their ID
+		Frame::Comment(CommentFrame {
+			header: FrameHeader{ id, .. },
+			content,
+			description,
+			language,
+			..
+		})
+		| Frame::UnsynchronizedText(UnsynchronizedTextFrame {
+										header: FrameHeader{ id, .. },
+			content,
+			description,
+			language,
+			..
+		}) => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+
+			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+				let mut item = TagItem::new(item_key.clone(), ItemValue::Text(c.to_string()));
+
+				item.set_lang(*language);
+
+				if *description != EMPTY_CONTENT_DESCRIPTOR {
+					item.set_description(std::mem::take(description));
+				}
+
+				tag.items.push(item);
+			}
+			return FRAME_CONSUMED;
+		},
+
+		Frame::Picture(AttachedPictureFrame {
+			ref mut picture, ..
+		}) => {
+			tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
+			return FRAME_CONSUMED;
+		},
+
+		Frame::Timestamp(TimestampFrame { header: FrameHeader {id, ..} , timestamp, .. }) => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+			if matches!(item_key, ItemKey::Unknown(_)) {
+				return FRAME_RETAINED;
+			}
+
+			if timestamp.verify().is_err() {
+				return FRAME_RETAINED;
+			}
+
+			tag.items.push(TagItem::new(
+				item_key,
+				ItemValue::Text(timestamp.to_string()),
+			));
+
+			return FRAME_CONSUMED;
+		},
+
+		Frame::Text(TextInformationFrame { header: FrameHeader {id, .. }, value: content, .. }) => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+
+			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
+				tag.items.push(TagItem::new(
+					item_key.clone(),
+					ItemValue::Text(c.to_string()),
+				));
+			}
+			return FRAME_CONSUMED;
+		},
+		Frame::Url(UrlLinkFrame {
+			header: FrameHeader {id, .. },
+			ref mut content, ..
+		}) => {
+			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+			tag.items.push(TagItem::new(
+				item_key,
+				ItemValue::Locator(std::mem::take(content)),
+			));
+
+			return FRAME_CONSUMED;
+		},
+
+		Frame::Binary(_)
+		| Frame::UserText(_)
+		| Frame::UserUrl(_) // Bare extended text/URL frames make no sense to support.
+		| Frame::KeyValue(_)
+		| Frame::RelativeVolumeAdjustment(_)
+		| Frame::Ownership(_)
+		| Frame::EventTimingCodes(_)
+		| Frame::Popularimeter(_)
+		| Frame::Private(_) => {
+			return FRAME_RETAINED; // Keep unsupported frame
+		},
+	}
+}
+
 impl SplitTag for Id3v2Tag {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
-		fn split_pair(
-			content: &str,
-			tag: &mut Tag,
-			number_key: ItemKey,
-			total_key: ItemKey,
-		) -> Option<()> {
-			fn parse_number(source: &str) -> Option<&str> {
-				let number = source.trim();
-
-				if number.is_empty() {
-					return None;
-				}
-
-				if str::parse::<u32>(number).is_ok() {
-					Some(number)
-				} else {
-					log::warn!("{number:?} could not be parsed as a number.");
-
-					None
-				}
-			}
-
-			let mut split =
-				content.splitn(2, &[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..]);
-
-			let number = parse_number(split.next()?)?;
-			let total = if let Some(total_source) = split.next() {
-				Some(parse_number(total_source)?)
-			} else {
-				None
-			};
-			debug_assert!(split.next().is_none());
-
-			debug_assert!(!number.is_empty());
-			tag.items.push(TagItem::new(
-				number_key,
-				ItemValue::Text(number.to_string()),
-			));
-			if let Some(total) = total {
-				debug_assert!(!total.is_empty());
-				tag.items
-					.push(TagItem::new(total_key, ItemValue::Text(total.to_string())))
-			}
-
-			Some(())
-		}
-
 		let mut tag = Tag::new(TagType::Id3v2);
 
-		self.frames.retain_mut(|frame| {
-			/// A frame we are able to split off into the tag
-			const FRAME_CONSUMED: bool = false;
-			/// A frame that must be held back
-			const FRAME_RETAINED: bool = true;
-
-			match frame {
-				// The text pairs need some special treatment
-				Frame::Text(TextInformationFrame {
-					header: FrameHeader { id, .. },
-					value: content,
-					..
-				}) if id.as_str() == "TRCK"
-					&& split_pair(content, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
-						.is_some() =>
-				{
-					return FRAME_CONSUMED
-				},
-				Frame::Text(TextInformationFrame {
-					header: FrameHeader { id, .. },
-					value: content,
-					..
-				}) if id.as_str() == "TPOS"
-					&& split_pair(content, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
-						.is_some() =>
-				{
-					return FRAME_CONSUMED
-				},
-				Frame::Text(TextInformationFrame {
-					header: FrameHeader { id, .. },
-					value: content,
-					..
-				}) if id.as_str() == "MVIN"
-					&& split_pair(
-						content,
-						&mut tag,
-						ItemKey::MovementNumber,
-						ItemKey::MovementTotal,
-					)
-					.is_some() =>
-				{
-					return FRAME_CONSUMED
-				},
-
-				// TCON needs special treatment to translate genre IDs
-				Frame::Text(TextInformationFrame {
-					header: FrameHeader { id, .. },
-					value: content,
-					..
-				}) if id.as_str() == "TCON" => {
-					let genres = GenresIter::new(content);
-					for genre in genres {
-						tag.items.push(TagItem::new(
-							ItemKey::Genre,
-							ItemValue::Text(genre.to_string()),
-						));
-					}
-
-					return FRAME_CONSUMED;
-				},
-
-				// TIPL needs special treatment, as we may not be able to consume all of its items
-				Frame::KeyValue(KeyValueFrame {
-					header: FrameHeader { id, .. },
-					key_value_pairs,
-					..
-				}) if id.as_str() == "TIPL" => {
-					key_value_pairs.retain_mut(|(key, value)| {
-						for (item_key, tipl_key) in TIPL_MAPPINGS {
-							if key == *tipl_key {
-								tag.items.push(TagItem::new(
-									item_key.clone(),
-									ItemValue::Text(core::mem::take(value)),
-								));
-								return false; // This key-value pair is consumed
-							}
-						}
-
-						true // Keep key-value pair
-					});
-
-					!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
-				},
-
-				// Store TXXX/WXXX frames by their descriptions, rather than their IDs
-				Frame::UserText(ExtendedTextFrame {
-					ref description,
-					ref content,
-					..
-				}) => {
-					let item_key = ItemKey::from_key(TagType::Id3v2, description);
-					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-						tag.items.push(TagItem::new(
-							item_key.clone(),
-							ItemValue::Text(c.to_string()),
-						));
-					}
-
-					return FRAME_CONSUMED;
-				},
-				Frame::UserUrl(ExtendedUrlFrame {
-					ref description,
-					ref content,
-					..
-				}) => {
-					let item_key = ItemKey::from_key(TagType::Id3v2, description);
-					for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-						tag.items.push(TagItem::new(
-							item_key.clone(),
-							ItemValue::Locator(c.to_string()),
-						));
-					}
-
-					return FRAME_CONSUMED;
-				},
-
-				Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-					ref owner,
-					ref identifier,
-					..
-				}) => {
-					if owner != MUSICBRAINZ_UFID_OWNER {
-						// Unsupported owner
-						return FRAME_RETAINED;
-					}
-
-					let mut identifier = Cursor::new(identifier);
-					let Ok(recording_id) = decode_text(
-						&mut identifier,
-						TextDecodeOptions::new().encoding(TextEncoding::Latin1),
-					) else {
-						return FRAME_RETAINED;
-					};
-					tag.items.push(TagItem::new(
-						ItemKey::MusicBrainzRecordingId,
-						ItemValue::Text(recording_id.content),
-					));
-
-					return FRAME_CONSUMED;
-				},
-				_ => {
-					let item_key = ItemKey::from_key(TagType::Id3v2, frame.id_str());
-
-					let item_value;
-					match frame {
-						Frame::Comment(CommentFrame {
-							content,
-							description,
-							language,
-							..
-						})
-						| Frame::UnsynchronizedText(UnsynchronizedTextFrame {
-							content,
-							description,
-							language, ..
-													}) => {
-							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-								let mut item = TagItem::new(
-									item_key.clone(),
-									ItemValue::Text(c.to_string()),
-								);
-
-								item.set_lang(*language);
-
-								if *description != EMPTY_CONTENT_DESCRIPTOR {
-									item.set_description(std::mem::take(description));
-								}
-
-								tag.items.push(item);
-							}
-							return FRAME_CONSUMED;
-						},
-						Frame::Timestamp(frame) if !matches!(item_key, ItemKey::Unknown(_)) => {
-							if frame.timestamp.verify().is_err() {
-								return FRAME_RETAINED;
-							}
-
-							tag.items.push(TagItem::new(
-								item_key,
-								ItemValue::Text(frame.timestamp.to_string()),
-							));
-
-							return FRAME_CONSUMED;
-						},
-						Frame::Text(TextInformationFrame { value: content, .. }) => {
-							for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-								tag.items.push(TagItem::new(
-									item_key.clone(),
-									ItemValue::Text(c.to_string()),
-								));
-							}
-							return FRAME_CONSUMED;
-						},
-						Frame::Url(UrlLinkFrame {
-							ref mut content, ..
-						}) => item_value = ItemValue::Locator(std::mem::take(content)),
-						Frame::Picture(AttachedPictureFrame {
-							ref mut picture, ..
-						}) => {
-							tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
-							return FRAME_CONSUMED;
-						},
-						Frame::Popularimeter(popularimeter) => {
-							item_value = ItemValue::Binary(popularimeter.as_bytes())
-						},
-						Frame::Binary(_)
-						| Frame::UserText(_)
-						| Frame::UserUrl(_) // Bare extended text/URL frames make no sense to support.
-						| Frame::KeyValue(_)
-						| Frame::UniqueFileIdentifier(_)
-						| Frame::RelativeVolumeAdjustment(_)
-						| Frame::Ownership(_)
-						| Frame::EventTimingCodes(_)
-						| Frame::Private(_)
-						| Frame::Timestamp(_) => {
-							return FRAME_RETAINED; // Keep unsupported frame
-						},
-					};
-
-					tag.items.push(TagItem::new(item_key, item_value));
-					return FRAME_CONSUMED;
-				},
-			}
-		});
+		self.frames
+			.retain_mut(|frame| handle_tag_split(&mut tag, frame));
 
 		(SplitTagRemainder(self), tag)
 	}

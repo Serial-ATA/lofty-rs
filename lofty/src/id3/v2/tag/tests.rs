@@ -109,23 +109,6 @@ fn id3v2_to_tag() {
 }
 
 #[test]
-fn id3v2_to_tag_popm() {
-	let id3v2 = read_tag("tests/tags/assets/id3v2/test_popm.id3v24");
-
-	let tag: Tag = id3v2.into();
-
-	assert_eq!(
-		tag.get_binary(&ItemKey::Popularimeter, false),
-		Some(
-			&[
-				b'f', b'o', b'o', b'@', b'b', b'a', b'r', b'.', b'c', b'o', b'm', 0, 196, 0, 0,
-				255, 255,
-			][..]
-		),
-	);
-}
-
-#[test]
 fn tag_to_id3v2_popm() {
 	let mut tag = Tag::new(TagType::Id3v2);
 	tag.insert(TagItem::new(

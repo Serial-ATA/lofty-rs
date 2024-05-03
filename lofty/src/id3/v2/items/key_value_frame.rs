@@ -33,6 +33,11 @@ impl<'a> KeyValueFrame<'a> {
 		}
 	}
 
+	/// Get the ID for the frame
+	pub fn id(&self) -> &FrameId<'_> {
+		&self.header.id
+	}
+
 	/// Get the flags for the frame
 	pub fn flags(&self) -> FrameFlags {
 		self.header.flags
