@@ -85,7 +85,7 @@ fn test_audio_properties() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().version(), 0);
 	assert_eq!(f.properties().bitrate_max(), 0);
-	assert_eq!(f.properties().bitrate_nominal(), 112000);
+	assert_eq!(f.properties().bitrate_nominal(), 112_000);
 	assert_eq!(f.properties().bitrate_min(), 0);
 }
 
@@ -104,7 +104,7 @@ fn test_page_checksum() {
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x50)).unwrap();
-		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0x3D3BD92D);
+		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0x3D3B_D92D);
 	}
 	file.rewind().unwrap();
 	{
@@ -116,7 +116,7 @@ fn test_page_checksum() {
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 
 		file.seek(SeekFrom::Start(0x50)).unwrap();
-		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0xD985291C);
+		assert_eq!(file.read_u32::<LittleEndian>().unwrap(), 0xD985_291C);
 	}
 }
 
