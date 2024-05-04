@@ -139,7 +139,7 @@ impl<'a> PopularimeterFrame<'a> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::items::popularimeter::PopularimeterFrame;
-	use crate::id3::v2::FrameHeader;
+	use crate::id3::v2::{FrameFlags, FrameHeader};
 
 	fn test_popm(popm: &PopularimeterFrame<'_>) {
 		let email = popm.email.clone();
@@ -165,14 +165,14 @@ mod tests {
 	#[test]
 	fn write_popm() {
 		let popm_u32_boundary = PopularimeterFrame {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			email: String::from("foo@bar.com"),
 			rating: 255,
 			counter: u64::from(u32::MAX),
 		};
 
 		let popm_u40 = PopularimeterFrame {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			email: String::from("baz@qux.com"),
 			rating: 196,
 			counter: u64::from(u32::MAX) + 1,

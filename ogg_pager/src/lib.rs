@@ -238,10 +238,10 @@ mod tests {
 				start: 0,
 				header_type_flag: 2,
 				abgp: 0,
-				stream_serial: 1759377061,
+				stream_serial: 1_759_377_061,
 				sequence_number: 0,
 				segments: vec![19],
-				checksum: 3579522525,
+				checksum: 3_579_522_525,
 			},
 			end: 47,
 		};

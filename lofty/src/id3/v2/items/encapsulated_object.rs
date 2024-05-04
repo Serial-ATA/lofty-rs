@@ -133,7 +133,7 @@ mod tests {
 
 	fn expected() -> GeneralEncapsulatedObject<'static> {
 		GeneralEncapsulatedObject {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			encoding: TextEncoding::Latin1,
 			mime_type: Some(String::from("audio/mpeg")),
 			file_name: Some(String::from("a.mp3")),

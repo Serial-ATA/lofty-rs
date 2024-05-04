@@ -239,7 +239,7 @@ mod tests {
 
 	fn expected() -> AudioTextFrame<'static> {
 		AudioTextFrame {
-			header: super::FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: super::FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			encoding: TextEncoding::Latin1,
 			mime_type: String::from("audio/mpeg"),
 			flags: AudioTextFrameFlags { scrambling: false },

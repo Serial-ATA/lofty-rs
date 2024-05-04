@@ -127,7 +127,7 @@ mod tests {
 		use crate::id3::v2::UniqueFileIdentifierFrame;
 
 		let ufid_no_owner = UniqueFileIdentifierFrame {
-			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("UFID")), Default::default()),
+			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("UFID")), FrameFlags::default()),
 			owner: String::new(),
 			identifier: vec![0],
 		};

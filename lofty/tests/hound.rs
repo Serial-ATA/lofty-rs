@@ -25,9 +25,12 @@ fn hound() {
 			println!("Name: {}", path.display());
 			let wav_reader = WavReader::open(&path).unwrap();
 			let lofty = get_properties(&path).unwrap();
-			assert_eq!(lofty.channels() as u16, wav_reader.spec().channels);
+			assert_eq!(u16::from(lofty.channels()), wav_reader.spec().channels);
 			assert_eq!(lofty.sample_rate(), wav_reader.spec().sample_rate);
-			assert_eq!(lofty.bit_depth() as u16, wav_reader.spec().bits_per_sample);
+			assert_eq!(
+				u16::from(lofty.bit_depth()),
+				wav_reader.spec().bits_per_sample
+			);
 		}
 	}
 }
@@ -43,9 +46,12 @@ fn hound_fuzz() {
 			if let Ok(wav_reader) = WavReader::open(&path) {
 				let lofty = get_properties(&path).unwrap();
 				println!("{lofty:#?}");
-				assert_eq!(lofty.channels() as u16, wav_reader.spec().channels);
+				assert_eq!(u16::from(lofty.channels()), wav_reader.spec().channels);
 				assert_eq!(lofty.sample_rate(), wav_reader.spec().sample_rate);
-				assert_eq!(lofty.bit_depth() as u16, wav_reader.spec().bits_per_sample);
+				assert_eq!(
+					u16::from(lofty.bit_depth()),
+					wav_reader.spec().bits_per_sample
+				);
 			} else if get_properties(&path).is_ok() {
 				println!("We are even better for this file!");
 			}
