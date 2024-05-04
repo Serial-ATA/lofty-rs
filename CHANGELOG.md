@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **ID3v2**: Disallow 4 character TXXX/WXXX frame descriptions from being converted to `ItemKey` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/309)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/394))
+- **MPEG**: Durations estimated by bitrate are more accurate ([PR](https://github.com/Serial-ATA/lofty-rs/pull/395))
 
 ## [0.19.2] - 2024-04-26
 
