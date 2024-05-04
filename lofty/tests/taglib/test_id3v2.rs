@@ -9,10 +9,9 @@ use lofty::file::AudioFile;
 use lofty::id3::v2::{
 	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
 	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
-	FrameId, FrameValue, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, OwnershipFrame,
-	Popularimeter, PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType,
-	SynchronizedText, TextInformationFrame, TimestampFormat, UniqueFileIdentifierFrame,
-	UrlLinkFrame,
+	FrameId, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, OwnershipFrame, PopularimeterFrame,
+	PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType, SynchronizedTextFrame,
+	TextInformationFrame, TimestampFormat, UniqueFileIdentifierFrame, UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
 use lofty::picture::{MimeType, Picture, PictureType};
@@ -43,10 +42,11 @@ fn test_downgrade_utf8_for_id3v23_2() {}
 
 #[test]
 fn test_utf16be_delimiter() {
-	let mut f = TextInformationFrame {
-		encoding: TextEncoding::UTF16BE,
-		value: String::from("Foo\0Bar"),
-	};
+	let mut f = TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		TextEncoding::UTF16BE,
+		String::from("Foo\0Bar"),
+	);
 
 	let data = f.as_bytes();
 
@@ -55,18 +55,24 @@ fn test_utf16be_delimiter() {
 	\0B\0a\0r";
 
 	assert_eq!(data, no_bom_be_data);
-	f = TextInformationFrame::parse(&mut &data[..], Id3v2Version::V4)
-		.unwrap()
-		.unwrap();
+	f = TextInformationFrame::parse(
+		&mut &data[..],
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.value, "Foo\0Bar");
 }
 
 #[test]
 fn test_utf16_delimiter() {
-	let mut f = TextInformationFrame {
-		encoding: TextEncoding::UTF16,
-		value: String::from("Foo\0Bar"),
-	};
+	let mut f = TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		TextEncoding::UTF16,
+		String::from("Foo\0Bar"),
+	);
 
 	let data = f.as_bytes();
 
@@ -78,33 +84,53 @@ fn test_utf16_delimiter() {
                               B\0a\0r\0";
 
 	assert_eq!(data, single_bom_le_data);
-	f = TextInformationFrame::parse(&mut &data[..], Id3v2Version::V4)
-		.unwrap()
-		.unwrap();
+	f = TextInformationFrame::parse(
+		&mut &data[..],
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.value, "Foo\0Bar");
 
 	let multi_bom_le_data = b"\x01\xff\xfe\
                               F\0o\0o\0\0\0\xff\xfe\
                               B\0a\0r\0";
-	f = TextInformationFrame::parse(&mut &multi_bom_le_data[..], Id3v2Version::V4)
-		.unwrap()
-		.unwrap();
+	f = TextInformationFrame::parse(
+		&mut &multi_bom_le_data[..],
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.value, "Foo\0Bar");
 
 	let multi_bom_be_data = b"\x01\xfe\xff\
 							  \0F\0o\0o\0\0\xfe\xff\
                               \0B\0a\0r";
-	f = TextInformationFrame::parse(&mut &multi_bom_be_data[..], Id3v2Version::V4)
-		.unwrap()
-		.unwrap();
+	f = TextInformationFrame::parse(
+		&mut &multi_bom_be_data[..],
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.value, "Foo\0Bar");
 
 	let single_bom_be_data = b"\x01\xfe\xff\
 							  \0F\0o\0o\0\0\
 							  \0B\0a\0r";
-	f = TextInformationFrame::parse(&mut &single_bom_be_data[..], Id3v2Version::V4)
-		.unwrap()
-		.unwrap();
+	f = TextInformationFrame::parse(
+		&mut &single_bom_be_data[..],
+		FrameId::Valid(Cow::Borrowed("TIT2")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.value, "Foo\0Bar");
 }
 
@@ -137,6 +163,7 @@ fn test_parse_apic() {
 	\x01\
 	d\x00\
 	\x00"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap();
@@ -155,6 +182,7 @@ fn test_parse_apic_utf16_bom() {
 	\x01\x69\x6d\x61\x67\x65\
 	\x2f\x6a\x70\x65\x67\x00\x00\xfe\xff\x00\x63\x00\x6f\x00\x76\x00\
 	\x65\x00\x72\x00\x2e\x00\x6a\x00\x70\x00\x67\x00\x00\xff\xd8\xff"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap();
@@ -174,6 +202,7 @@ fn test_parse_apicv22() {
 	\x01\
 	d\x00\
 	\x00"[..],
+		FrameFlags::default(),
 		Id3v2Version::V2,
 	)
 	.unwrap();
@@ -185,15 +214,15 @@ fn test_parse_apicv22() {
 
 #[test]
 fn test_render_apic() {
-	let f = AttachedPictureFrame {
-		encoding: TextEncoding::UTF8,
-		picture: Picture::new_unchecked(
+	let f = AttachedPictureFrame::new(
+		TextEncoding::UTF8,
+		Picture::new_unchecked(
 			PictureType::CoverBack,
 			Some(MimeType::Png),
 			Some(String::from("Description")),
 			b"PNG data".to_vec(),
 		),
-	};
+	);
 
 	assert_eq!(
 		f.as_bytes(Id3v2Version::V4).unwrap(),
@@ -221,6 +250,7 @@ fn test_parse_geob() {
 	f\x00\
 	d\x00\
 	\x00",
+		FrameFlags::default(),
 	)
 	.unwrap();
 	assert_eq!(f.mime_type.as_deref(), Some("m"));
@@ -230,13 +260,13 @@ fn test_parse_geob() {
 
 #[test]
 fn test_render_geob() {
-	let f = GeneralEncapsulatedObject {
-		encoding: TextEncoding::Latin1,
-		mime_type: Some(String::from("application/octet-stream")),
-		file_name: Some(String::from("test.bin")),
-		descriptor: Some(String::from("Description")),
-		data: vec![0x01; 3],
-	};
+	let f = GeneralEncapsulatedObject::new(
+		TextEncoding::Latin1,
+		Some(String::from("application/octet-stream")),
+		Some(String::from("test.bin")),
+		Some(String::from("Description")),
+		vec![0x01; 3],
+	);
 
 	assert_eq!(
 		f.as_bytes(),
@@ -251,11 +281,12 @@ fn test_render_geob() {
 
 #[test]
 fn test_parse_popm() {
-	let f = Popularimeter::parse(
+	let f = PopularimeterFrame::parse(
 		&mut &b"\
 	email@example.com\x00\
 	\x02\
 	\x00\x00\x00\x03"[..],
+		FrameFlags::default(),
 	)
 	.unwrap();
 	assert_eq!(f.email, "email@example.com");
@@ -265,10 +296,11 @@ fn test_parse_popm() {
 
 #[test]
 fn test_parse_popm_without_counter() {
-	let f = Popularimeter::parse(
+	let f = PopularimeterFrame::parse(
 		&mut &b"\
 	email@example.com\x00\
 	\x02"[..],
+		FrameFlags::default(),
 	)
 	.unwrap();
 	assert_eq!(f.email, "email@example.com");
@@ -278,11 +310,7 @@ fn test_parse_popm_without_counter() {
 
 #[test]
 fn test_render_popm() {
-	let f = Popularimeter {
-		email: String::from("email@example.com"),
-		rating: 2,
-		counter: 3,
-	};
+	let f = PopularimeterFrame::new(String::from("email@example.com"), 2, 3);
 
 	assert_eq!(
 		f.as_bytes(),
@@ -303,20 +331,14 @@ fn test_popm_to_string() {
 fn test_popm_from_file() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
-	let f = Popularimeter {
-		email: String::from("email@example.com"),
-		rating: 200,
-		counter: 3,
-	};
+	let f = PopularimeterFrame::new(String::from("email@example.com"), 200, 3);
 
 	{
 		let mut foo = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
 		let mut tag = Id3v2Tag::new();
-		tag.insert(
-			Frame::new("POPM", FrameValue::Popularimeter(f), FrameFlags::default()).unwrap(),
-		);
+		tag.insert(Frame::Popularimeter(f));
 		foo.set_id3v2(tag);
 		foo.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
@@ -328,9 +350,8 @@ fn test_popm_from_file() {
 			.unwrap()
 			.get(&FrameId::Valid(Cow::Borrowed("POPM")))
 			.unwrap();
-		let popularimeter = match popm_frame.content() {
-			FrameValue::Popularimeter(popm) => popm,
-			_ => unreachable!(),
+		let Frame::Popularimeter(popularimeter) = popm_frame else {
+			unreachable!()
 		};
 
 		assert_eq!(popularimeter.email, "email@example.com");
@@ -339,6 +360,7 @@ fn test_popm_from_file() {
 }
 
 #[test]
+#[allow(clippy::float_cmp)]
 fn test_parse_relative_volume_frame() {
 	let f = RelativeVolumeAdjustmentFrame::parse(
 		&mut &b"\
@@ -347,6 +369,7 @@ fn test_parse_relative_volume_frame() {
     \x00\x0F\
     \x08\
     \x45"[..],
+		FrameFlags::default(),
 		ParsingMode::Strict,
 	)
 	.unwrap()
@@ -355,7 +378,7 @@ fn test_parse_relative_volume_frame() {
 	assert_eq!(f.identification, "ident");
 	let front_right = f.channels.get(&ChannelType::FrontRight).unwrap();
 	assert_eq!(
-		front_right.volume_adjustment as f32 / 512.0f32,
+		f32::from(front_right.volume_adjustment) / 512.0f32,
 		15.0f32 / 512.0f32
 	);
 	assert_eq!(front_right.volume_adjustment, 15);
@@ -367,22 +390,19 @@ fn test_parse_relative_volume_frame() {
 
 #[test]
 fn test_render_relative_volume_frame() {
-	let f = RelativeVolumeAdjustmentFrame {
-		identification: String::from("ident"),
-		channels: {
-			let mut m = HashMap::new();
-			m.insert(
-				ChannelType::FrontRight,
-				ChannelInformation {
-					channel_type: ChannelType::FrontRight,
-					volume_adjustment: 15,
-					bits_representing_peak: 8,
-					peak_volume: Some(vec![0x45]),
-				},
-			);
-			m
-		},
-	};
+	let f = RelativeVolumeAdjustmentFrame::new(String::from("ident"), {
+		let mut m = HashMap::new();
+		m.insert(
+			ChannelType::FrontRight,
+			ChannelInformation {
+				channel_type: ChannelType::FrontRight,
+				volume_adjustment: 15,
+				bits_representing_peak: 8,
+				peak_volume: Some(vec![0x45]),
+			},
+		);
+		m
+	});
 
 	assert_eq!(
 		f.as_bytes(),
@@ -401,6 +421,7 @@ fn test_parse_unique_file_identifier_frame() {
 		&mut &b"\
 	owner\x00\
 	\x00\x01\x02"[..],
+		FrameFlags::default(),
 		ParsingMode::Strict,
 	)
 	.unwrap()
@@ -416,6 +437,7 @@ fn test_parse_empty_unique_file_identifier_frame() {
 		&mut &b"\
 	\x00\
 	"[..],
+		FrameFlags::default(),
 		ParsingMode::Strict,
 	);
 
@@ -425,10 +447,7 @@ fn test_parse_empty_unique_file_identifier_frame() {
 
 #[test]
 fn test_render_unique_file_identifier_frame() {
-	let f = UniqueFileIdentifierFrame {
-		owner: String::from("owner"),
-		identifier: b"\x01\x02\x03".to_vec(),
-	};
+	let f = UniqueFileIdentifierFrame::new(String::from("owner"), b"\x01\x02\x03".to_vec());
 
 	assert_eq!(
 		f.as_bytes(),
@@ -440,17 +459,25 @@ owner\x00\
 
 #[test]
 fn test_parse_url_link_frame() {
-	let f = UrlLinkFrame::parse(&mut &b"http://example.com"[..])
-		.unwrap()
-		.unwrap();
+	let f = UrlLinkFrame::parse(
+		&mut &b"http://example.com"[..],
+		FrameId::Valid(Cow::Borrowed("WPUB")),
+		FrameFlags::default(),
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.url(), "http://example.com");
 }
 
 #[test]
 fn test_render_url_link_frame() {
-	let f = UrlLinkFrame::parse(&mut &b"http://example.com"[..])
-		.unwrap()
-		.unwrap();
+	let f = UrlLinkFrame::parse(
+		&mut &b"http://example.com"[..],
+		FrameId::Valid(Cow::Borrowed("WPUB")),
+		FrameFlags::default(),
+	)
+	.unwrap()
+	.unwrap();
 	assert_eq!(f.as_bytes(), b"http://example.com");
 }
 
@@ -461,6 +488,7 @@ fn test_parse_user_url_link_frame() {
 	\x00\
 	foo\x00\
 	http://example.com"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap()
@@ -472,11 +500,11 @@ fn test_parse_user_url_link_frame() {
 
 #[test]
 fn test_render_user_url_link_frame() {
-	let f = ExtendedUrlFrame {
-		encoding: TextEncoding::Latin1,
-		description: String::from("foo"),
-		content: String::from("http://example.com"),
-	};
+	let f = ExtendedUrlFrame::new(
+		TextEncoding::Latin1,
+		String::from("foo"),
+		String::from("http://example.com"),
+	);
 
 	assert_eq!(
 		f.as_bytes(),
@@ -495,6 +523,7 @@ fn test_parse_ownership_frame() {
         GBP1.99\x00\
 		20120905\
 		Beatport"[..],
+		FrameFlags::default(),
 	)
 	.unwrap()
 	.unwrap();
@@ -506,12 +535,12 @@ fn test_parse_ownership_frame() {
 
 #[test]
 fn test_render_ownership_frame() {
-	let f = OwnershipFrame {
-		encoding: TextEncoding::Latin1,
-		price_paid: String::from("GBP1.99"),
-		date_of_purchase: String::from("20120905"),
-		seller: String::from("Beatport"),
-	};
+	let f = OwnershipFrame::new(
+		TextEncoding::Latin1,
+		String::from("GBP1.99"),
+		String::from("20120905"),
+		String::from("Beatport"),
+	);
 
 	assert_eq!(
 		f.as_bytes().unwrap(),
@@ -525,7 +554,7 @@ fn test_render_ownership_frame() {
 
 #[test]
 fn test_parse_synchronized_lyrics_frame() {
-	let f = SynchronizedText::parse(
+	let f = SynchronizedTextFrame::parse(
 		b"\
 	\x00\
 eng\
@@ -536,6 +565,7 @@ Example\x00\
 \x00\x00\x04\xd2\
 Lyrics\x00\
 \x00\x00\x11\xd7",
+		FrameFlags::default(),
 	)
 	.unwrap();
 
@@ -554,7 +584,7 @@ Lyrics\x00\
 
 #[test]
 fn test_parse_synchronized_lyrics_frame_with_empty_description() {
-	let f = SynchronizedText::parse(
+	let f = SynchronizedTextFrame::parse(
 		b"\
 	\x00\
 	eng\
@@ -565,6 +595,7 @@ fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 	\x00\x00\x04\xd2\
 	Lyrics\x00\
 	\x00\x00\x11\xd7",
+		FrameFlags::default(),
 	)
 	.unwrap();
 
@@ -583,17 +614,17 @@ fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 
 #[test]
 fn test_render_synchronized_lyrics_frame() {
-	let f = SynchronizedText {
-		encoding: TextEncoding::Latin1,
-		language: *b"eng",
-		timestamp_format: TimestampFormat::MS,
-		content_type: SyncTextContentType::Lyrics,
-		description: Some(String::from("foo")),
-		content: vec![
+	let f = SynchronizedTextFrame::new(
+		TextEncoding::Latin1,
+		*b"eng",
+		TimestampFormat::MS,
+		SyncTextContentType::Lyrics,
+		Some(String::from("foo")),
+		vec![
 			(1234, String::from("Example")),
 			(4567, String::from("Lyrics")),
 		],
-	};
+	);
 
 	assert_eq!(
 		f.as_bytes().unwrap(),
@@ -619,6 +650,7 @@ fn test_parse_event_timing_codes_frame() {
 	\x00\x00\xf3\x5c\
 	\xfe\
 	\x00\x36\xee\x80"[..],
+		FrameFlags::default(),
 	)
 	.unwrap()
 	.unwrap();
@@ -630,24 +662,24 @@ fn test_parse_event_timing_codes_frame() {
 	assert_eq!(sel[0].event_type, EventType::IntroStart);
 	assert_eq!(sel[0].timestamp, 62300);
 	assert_eq!(sel[1].event_type, EventType::AudioFileEnds);
-	assert_eq!(sel[1].timestamp, 3600000);
+	assert_eq!(sel[1].timestamp, 3_600_000);
 }
 
 #[test]
 fn test_render_event_timing_codes_frame() {
-	let f = EventTimingCodesFrame {
-		timestamp_format: TimestampFormat::MS,
-		events: vec![
+	let f = EventTimingCodesFrame::new(
+		TimestampFormat::MS,
+		vec![
 			Event {
 				event_type: EventType::IntroStart,
 				timestamp: 62300,
 			},
 			Event {
 				event_type: EventType::AudioFileEnds,
-				timestamp: 3600000,
+				timestamp: 3_600_000,
 			},
 		],
-	};
+	);
 
 	assert_eq!(
 		f.as_bytes(),
@@ -667,6 +699,7 @@ fn test_parse_comments_frame() {
 								deu\
 								Description\x00\
 								Text"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap()
@@ -680,12 +713,12 @@ fn test_parse_comments_frame() {
 
 #[test]
 fn test_render_comments_frame() {
-	let f = CommentFrame {
-		encoding: TextEncoding::UTF16,
-		language: *b"eng",
-		description: String::from("Description"),
-		content: String::from("Text"),
-	};
+	let f = CommentFrame::new(
+		TextEncoding::UTF16,
+		*b"eng",
+		String::from("Description"),
+		String::from("Text"),
+	);
 
 	assert_eq!(
 		f.as_bytes().unwrap(),
@@ -715,6 +748,7 @@ fn test_parse_private_frame() {
 		&mut &b"\
 	WM/Provider\x00\
 	TL"[..],
+		FrameFlags::default(),
 	)
 	.unwrap()
 	.unwrap();
@@ -725,10 +759,7 @@ fn test_parse_private_frame() {
 
 #[test]
 fn test_render_private_frame() {
-	let f = PrivateFrame {
-		owner: String::from("WM/Provider"),
-		private_data: b"TL".to_vec(),
-	};
+	let f = PrivateFrame::new(String::from("WM/Provider"), b"TL".to_vec());
 
 	assert_eq!(
 		f.as_bytes(),
@@ -745,6 +776,7 @@ fn test_parse_user_text_identification_frame() {
 	\x00\
 	\x00\
 	Text"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap()
@@ -758,6 +790,7 @@ fn test_parse_user_text_identification_frame() {
 	\x00\
 	Description\x00\
 	Text"[..],
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap()
@@ -771,11 +804,7 @@ fn test_parse_user_text_identification_frame() {
 
 #[test]
 fn test_render_user_text_identification_frame() {
-	let mut f = ExtendedTextFrame {
-		encoding: TextEncoding::Latin1,
-		description: String::new(),
-		content: String::from("Text"),
-	};
+	let mut f = ExtendedTextFrame::new(TextEncoding::Latin1, String::new(), String::from("Text"));
 
 	assert_eq!(
 		f.as_bytes(),
@@ -826,19 +855,12 @@ fn test_save_utf16_comment() {
 		file.rewind().unwrap();
 
 		let mut tag = Id3v2Tag::new();
-		tag.insert(
-			Frame::new(
-				"COMM",
-				CommentFrame {
-					encoding: TextEncoding::UTF16,
-					language: *b"eng",
-					description: String::new(),
-					content: String::from("Test comment!"),
-				},
-				FrameFlags::default(),
-			)
-			.unwrap(),
-		);
+		tag.insert(Frame::Comment(CommentFrame::new(
+			TextEncoding::UTF16,
+			*b"eng",
+			String::new(),
+			String::from("Test comment!"),
+		)));
 		foo.set_id3v2(tag);
 		foo.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
@@ -874,13 +896,15 @@ fn test_update_genre_24() {
 	let frame_value = TextInformationFrame::parse(
 		&mut &b"\x00\
 	14\0Eurodisco"[..],
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		FrameFlags::default(),
 		Id3v2Version::V4,
 	)
 	.unwrap()
 	.unwrap();
 
 	let mut tag = Id3v2Tag::new();
-	tag.insert(Frame::new("TCON", frame_value, FrameFlags::default()).unwrap());
+	tag.insert(Frame::Text(frame_value));
 
 	assert_eq!(tag.genre().as_deref(), Some("R&B / Eurodisco"));
 }
@@ -928,9 +952,8 @@ fn test_compressed_frame_with_broken_length() {
 		.unwrap()
 		.get(&FrameId::Valid(Cow::Borrowed("APIC")))
 		.unwrap();
-	let picture = match frame.content() {
-		FrameValue::Picture(AttachedPictureFrame { picture, .. }) => picture,
-		_ => unreachable!(),
+	let Frame::Picture(AttachedPictureFrame { picture, .. }) = frame else {
+		unreachable!()
 	};
 
 	assert_eq!(picture.mime_type(), Some(&MimeType::Bmp));
@@ -953,9 +976,8 @@ fn test_w000() {
 		.unwrap()
 		.get(&FrameId::Valid(Cow::Borrowed("W000")))
 		.unwrap();
-	let url_frame = match frame.content() {
-		FrameValue::Url(url_frame) => url_frame,
-		_ => unreachable!(),
+	let Frame::Url(url_frame) = frame else {
+		unreachable!()
 	};
 	assert_eq!(url_frame.url(), "lukas.lalinsky@example.com____");
 }
