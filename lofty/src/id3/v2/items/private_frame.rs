@@ -23,8 +23,8 @@ pub struct PrivateFrame<'a> {
 
 impl<'a> PrivateFrame<'a> {
 	/// Create a new [`PrivateFrame`]
-	pub fn new(owner: String, private_data: Vec<u8>, frame_flags: FrameFlags) -> Self {
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
+	pub fn new(owner: String, private_data: Vec<u8>) -> Self {
+		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			owner,
