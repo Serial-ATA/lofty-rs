@@ -1,13 +1,12 @@
-use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, XingHeader};
+use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader};
+use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::mpeg::header::{cmp_header, rev_search_for_frame_sync, HeaderCmpResult, HEADER_MASK};
+use crate::mpeg::header::rev_search_for_frame_header;
 use crate::properties::{ChannelMask, FileProperties};
 use crate::util::math::RoundedDivision;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
-
-use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MPEG file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -127,8 +126,9 @@ pub(super) fn read_properties<R>(
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,
-	xing_header: Option<XingHeader>,
+	xing_header: Option<VbrHeader>,
 	file_length: u64,
+	parse_mode: ParsingMode,
 ) -> Result<()>
 where
 	R: Read + Seek,
@@ -177,29 +177,17 @@ where
 	reader.seek(SeekFrom::Start(last_frame_offset))?;
 
 	let mut last_frame = None;
-	let mut pos = reader.stream_position()?;
+	let mut pos = last_frame_offset;
 	while pos > 0 {
-		match rev_search_for_frame_sync(reader, &mut pos) {
-			// Found a frame sync, attempt to read a header
-			Ok(Some(_)) => {
+		match rev_search_for_frame_header(reader, &mut pos, parse_mode) {
+			// Found a frame header
+			Ok(Some(header)) => {
 				// Move `last_frame_offset` back to the actual position
-				last_frame_offset = reader.stream_position()?;
-				let last_frame_data = reader.read_u32::<BigEndian>()?;
+				last_frame_offset = pos;
 
-				if let Some(last_frame_header) = Header::read(last_frame_data) {
-					match cmp_header(
-						reader,
-						4,
-						last_frame_header.len,
-						last_frame_data,
-						HEADER_MASK,
-					) {
-						HeaderCmpResult::Equal | HeaderCmpResult::Undetermined => {
-							last_frame = Some(last_frame_header);
-							break;
-						},
-						HeaderCmpResult::NotEqual => {},
-					}
+				if header.cmp(&first_frame_header) {
+					last_frame = Some(header);
+					break;
 				}
 			},
 			// Encountered some IO error, just break
@@ -211,11 +199,11 @@ where
 
 	if let Some(last_frame_header) = last_frame {
 		let stream_len = last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
-		let length = ((stream_len as f64) * 8.0) / f64::from(properties.audio_bitrate) + 0.5;
+		let length = (stream_len * 8).div_round(u64::from(properties.audio_bitrate));
 
-		if length > 0.0 {
-			properties.overall_bitrate = (((file_length as f64) * 8.0) / length) as u32;
-			properties.duration = Duration::from_millis(length as u64);
+		if length > 0 {
+			properties.overall_bitrate = ((file_length * 8) / length) as u32;
+			properties.duration = Duration::from_millis(length);
 		}
 	}
 

@@ -75,7 +75,7 @@ const MP1_PROPERTIES: MpegProperties = MpegProperties {
 	copyright: false,
 	original: true,
 	duration: Duration::from_millis(588), // FFmpeg reports 576, possibly an issue
-	overall_bitrate: 383,                 // TODO: FFmpeg reports 392
+	overall_bitrate: 384,                 // TODO: FFmpeg reports 392
 	audio_bitrate: 384,
 	sample_rate: 32000,
 	channels: 2,
@@ -89,8 +89,8 @@ const MP2_PROPERTIES: MpegProperties = MpegProperties {
 	mode_extension: None,
 	copyright: false,
 	original: true,
-	duration: Duration::from_millis(1344), // TODO: FFmpeg reports 1440 here
-	overall_bitrate: 411,                  // FFmpeg reports 384, related to above issue
+	duration: Duration::from_millis(1440),
+	overall_bitrate: 384,
 	audio_bitrate: 384,
 	sample_rate: 48000,
 	channels: 2,
