@@ -1,10 +1,13 @@
 name: Continuous Benchmarking with Bencher
 on:
     push:
-        paths:
-            - 'src/**'
-            - 'benches/**'
-            - 'ogg_pager/**'
+        paths-ignore:
+            - 'LICENSE-*'
+            - '**/*.md'
+            - '.gitignore'
+            - './examples'
+            - './fuzz'
+            - 'CHANGELOG.md'
         branches:
             - main
     workflow_dispatch:

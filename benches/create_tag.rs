@@ -3,13 +3,15 @@
 use lofty::ape::ApeTag;
 use lofty::config::WriteOptions;
 use lofty::id3::v1::Id3v1Tag;
-use lofty::id3::v2::Id3v2Tag;
+use lofty::id3::v2::{FrameId, Id3v2Tag};
 use lofty::iff::aiff::AiffTextChunks;
 use lofty::iff::wav::RiffInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::{Accessor, TagExt};
+
+use std::borrow::Cow;
 
 use iai_callgrind::{library_benchmark, library_benchmark_group, main};
 
@@ -76,17 +78,11 @@ bench_tag_write!([
 		);
 
 		tag.insert_picture(picture);
-		tag.insert(
-			Frame::new(
-				"TSSE",
-				TextInformationFrame {
-					encoding: TextEncoding::Latin1,
-					value: String::from(ENCODER),
-				},
-				FrameFlags::default(),
-			)
-			.unwrap(),
-		);
+		tag.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TSSE")),
+			TextEncoding::Latin1,
+			String::from(ENCODER),
+		)));
 	}),
 	(id3v1, Id3v1Tag, |tag| {}),
 	(ilst, Ilst, |tag| {
