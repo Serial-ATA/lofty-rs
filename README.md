@@ -8,6 +8,7 @@
 [![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Documentation](https://img.shields.io/badge/docs.rs-lofty-informational?style=for-the-badge&logo=read-the-docs)](https://docs.rs/lofty/)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/Serial-ATA?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/Serial-ATA)
 
 ⚠️ **LOOKING FOR HELP WITH DOCUMENTATION** ⚠️
 
