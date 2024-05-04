@@ -42,14 +42,14 @@ fn test_split_packets() {
 		let mut f = SpeexFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		assert_eq!(file.metadata().unwrap().len(), 156330);
+		assert_eq!(file.metadata().unwrap().len(), 156_330);
 		assert_eq!(f.vorbis_comments().title().as_deref(), Some(text.as_str()));
 
 		// NOTE: TagLib exposes the packets and page headers through `Speex::File`.
 		//       Lofty does not keep this information around, so we just double check with `ogg_pager`.
 		let packets = ogg_pager::Packets::read(&mut file).unwrap();
 		assert_eq!(packets.get(0).unwrap().len(), 80);
-		assert_eq!(packets.get(1).unwrap().len(), 131116);
+		assert_eq!(packets.get(1).unwrap().len(), 131_116);
 		assert_eq!(packets.get(2).unwrap().len(), 93);
 		assert_eq!(packets.get(3).unwrap().len(), 93);
 

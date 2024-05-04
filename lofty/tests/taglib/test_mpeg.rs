@@ -17,7 +17,7 @@ fn test_audio_properties_xing_header_cbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_cbr.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 1887); // TODO: Off by 9
-	assert_eq!(f.properties().duration().as_millis(), 1887164);
+	assert_eq!(f.properties().duration().as_millis(), 1_887_164);
 	assert_eq!(f.properties().audio_bitrate(), 64);
 	assert_eq!(f.properties().channels(), 1);
 	assert_eq!(f.properties().sample_rate(), 44100);
@@ -30,7 +30,7 @@ fn test_audio_properties_xing_header_vbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_vbr.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 1887); // TODO: Off by 9
-	assert_eq!(f.properties().duration().as_millis(), 1887164);
+	assert_eq!(f.properties().duration().as_millis(), 1_887_164);
 	assert_eq!(f.properties().audio_bitrate(), 70);
 	assert_eq!(f.properties().channels(), 1);
 	assert_eq!(f.properties().sample_rate(), 44100);
@@ -43,7 +43,7 @@ fn test_audio_properties_vbri_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/rare_frames.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 222); // TODO: Off by 1
-	assert_eq!(f.properties().duration().as_millis(), 222198);
+	assert_eq!(f.properties().duration().as_millis(), 222_198);
 	assert_eq!(f.properties().audio_bitrate(), 233);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
@@ -55,7 +55,7 @@ fn test_audio_properties_vbri_header() {
 fn test_audio_properties_no_vbr_headers() {
 	let f = get_file::<MpegFile>("tests/taglib/data/bladeenc.mp3");
 
-	assert_eq!(f.properties().duration().as_secs(), 3); // Off by 1
+	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3553);
 	assert_eq!(f.properties().audio_bitrate(), 64);
 	assert_eq!(f.properties().channels(), 1);
@@ -102,7 +102,7 @@ fn test_skip_invalid_frames_3() {
 fn test_version_2_duration_with_xing_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/mpeg2.mp3");
 	assert_eq!(f.properties().duration().as_secs(), 5387); // TODO: Off by 15
-	assert_eq!(f.properties().duration().as_millis(), 5387285);
+	assert_eq!(f.properties().duration().as_millis(), 5_387_285);
 }
 
 #[test]

@@ -19,7 +19,7 @@ fn test_no_length_properties() {
 	assert_eq!(f.properties().audio_bitrate(), 1);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().bit_depth(), 16);
-	assert_eq!(f.properties().is_lossless(), true);
+	assert!(f.properties().is_lossless());
 	assert_eq!(f.properties().sample_rate(), 44100);
 	// TODO: CPPUNIT_ASSERT_EQUAL(163392U, f.audioProperties()->sampleFrames());
 	assert_eq!(f.properties().version(), 1031);
@@ -42,8 +42,8 @@ fn test_dsd_stereo_properties() {
 	assert_eq!(f.properties().audio_bitrate(), 2096);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().bit_depth(), 8);
-	assert_eq!(f.properties().is_lossless(), true);
-	assert_eq!(f.properties().sample_rate(), 352800);
+	assert!(f.properties().is_lossless());
+	assert_eq!(f.properties().sample_rate(), 352_800);
 	// TODO: CPPUNIT_ASSERT_EQUAL(70560U, f.audioProperties()->sampleFrames());
 	assert_eq!(f.properties().version(), 1040);
 }
@@ -56,7 +56,7 @@ fn test_non_standard_rate_properties() {
 	assert_eq!(f.properties().audio_bitrate(), 0);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().bit_depth(), 16);
-	assert_eq!(f.properties().is_lossless(), true);
+	assert!(f.properties().is_lossless());
 	assert_eq!(f.properties().sample_rate(), 1000);
 	// TODO: CPPUNIT_ASSERT_EQUAL(3675U, f.audioProperties()->sampleFrames());
 	assert_eq!(f.properties().version(), 1040);
@@ -70,7 +70,7 @@ fn test_tagged_properties() {
 	assert_eq!(f.properties().audio_bitrate(), 172);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().bit_depth(), 16);
-	assert_eq!(f.properties().is_lossless(), false);
+	assert!(!f.properties().is_lossless());
 	assert_eq!(f.properties().sample_rate(), 44100);
 	// TODO: CPPUNIT_ASSERT_EQUAL(156556U, f.audioProperties()->sampleFrames());
 	assert_eq!(f.properties().version(), 1031);
