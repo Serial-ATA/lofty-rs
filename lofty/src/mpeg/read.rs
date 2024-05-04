@@ -1,4 +1,4 @@
-use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, XingHeader};
+use super::header::{cmp_header, search_for_frame_sync, Header, HeaderCmpResult, VbrHeader};
 use super::{MpegFile, MpegProperties};
 use crate::ape::header::read_ape_header;
 use crate::config::{ParseOptions, ParsingMode};
@@ -6,6 +6,7 @@ use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, find_lyrics3v2, FindId3v2Config, ID3FindResults};
+use crate::io::SeekStreamLen;
 use crate::macros::{decode_err, err};
 use crate::mpeg::header::HEADER_MASK;
 
@@ -182,9 +183,9 @@ where
 		let mut xing_reader = [0; 32];
 		reader.read_exact(&mut xing_reader)?;
 
-		let xing_header = XingHeader::read(&mut &xing_reader[..])?;
+		let xing_header = VbrHeader::read(&mut &xing_reader[..])?;
 
-		let file_length = reader.seek(SeekFrom::End(0))?;
+		let file_length = reader.stream_len_hack()?;
 
 		super::properties::read_properties(
 			&mut file.properties,
@@ -193,6 +194,7 @@ where
 			last_frame_offset,
 			xing_header,
 			file_length,
+			parse_options.parsing_mode,
 		)?;
 	}
 

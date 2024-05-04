@@ -1,4 +1,5 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
+use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -49,10 +50,11 @@ where
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
 const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
-pub(super) fn rev_search_for_frame_sync<R>(
+pub(super) fn rev_search_for_frame_header<R>(
 	input: &mut R,
 	pos: &mut u64,
-) -> std::io::Result<Option<u64>>
+	parse_mode: ParsingMode,
+) -> Result<Option<Header>>
 where
 	R: Read + Seek,
 {
@@ -61,15 +63,49 @@ where
 	*pos -= search_bounds;
 	input.seek(SeekFrom::Start(*pos))?;
 
-	let ret = search_for_frame_sync(&mut input.take(search_bounds));
-	if let Ok(Some(_)) = ret {
-		// Seek to the start of the frame sync
-		input.seek(SeekFrom::Current(-2))?;
+	let mut buf = Vec::with_capacity(search_bounds as usize);
+	input.take(search_bounds).read_to_end(&mut buf)?;
+
+	let mut frame_sync = [0u8; 2];
+	for (i, byte) in buf.iter().rev().enumerate() {
+		frame_sync[1] = frame_sync[0];
+		frame_sync[0] = *byte;
+		if verify_frame_sync(frame_sync) {
+			let relative_frame_start = (search_bounds as usize) - (i + 1);
+			if relative_frame_start + 4 > buf.len() {
+				if parse_mode == ParsingMode::Strict {
+					decode_err!(@BAIL Mpeg, "Expected full frame header (incomplete stream?)")
+				}
+
+				log::warn!("MPEG: Incomplete frame header, giving up");
+				break;
+			}
+
+			let header = Header::read(u32::from_be_bytes([
+				frame_sync[0],
+				frame_sync[1],
+				buf[relative_frame_start + 2],
+				buf[relative_frame_start + 3],
+			]));
+
+			// We need to check if the header is actually valid. For
+			// all we know, we could be in some junk (ex. 0xFF_FF_FF_FF).
+			if header.is_none() {
+				continue;
+			}
+
+			// Seek to the start of the frame sync
+			*pos += relative_frame_start as u64;
+			input.seek(SeekFrom::Start(*pos))?;
+
+			return Ok(header);
+		}
 	}
 
-	ret
+	Ok(None)
 }
 
+/// See [`cmp_header()`].
 pub(crate) enum HeaderCmpResult {
 	Equal,
 	Undetermined,
@@ -80,6 +116,18 @@ pub(crate) enum HeaderCmpResult {
 // If they aren't equal, something is broken.
 pub(super) const HEADER_MASK: u32 = 0xFFFE_0C00;
 
+/// Compares the versions, layers, and sample rates of two frame headers.
+///
+/// It is safe to assume that the reader will no longer produce valid headers if [`HeaderCmpResult::Undetermined`]
+/// is returned.
+///
+/// To compare two already constructed [`Header`]s, use [`Header::cmp()`].
+///
+/// ## Returns
+///
+/// - [`HeaderCmpResult::Equal`] if the headers are equal.
+/// - [`HeaderCmpResult::NotEqual`] if the headers are not equal.
+/// - [`HeaderCmpResult::Undetermined`] if the comparison could not be made (Some IO error occurred).
 pub(crate) fn cmp_header<R>(
 	reader: &mut R,
 	header_size: u32,
@@ -162,7 +210,7 @@ pub enum Emphasis {
 	CCIT_J17,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct Header {
 	pub(crate) sample_rate: u32,
 	pub(crate) len: u32,
@@ -269,14 +317,21 @@ impl Header {
 
 		Some(header)
 	}
+
+	/// Equivalent of [`cmp_header()`], but for an already constructed `Header`.
+	pub(super) fn cmp(self, other: &Self) -> bool {
+		self.version == other.version
+			&& self.layer == other.layer
+			&& self.sample_rate == other.sample_rate
+	}
 }
 
-pub(super) struct XingHeader {
+pub(super) struct VbrHeader {
 	pub frames: u32,
 	pub size: u32,
 }
 
-impl XingHeader {
+impl VbrHeader {
 	pub(super) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
 		let reader_len = reader.len();
 
@@ -331,7 +386,9 @@ impl XingHeader {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::ParsingMode;
 	use crate::tag::utils::test_utils::read_path;
+
 	use std::io::{Cursor, Read, Seek, SeekFrom};
 
 	#[test]
@@ -347,21 +404,30 @@ mod tests {
 	}
 
 	#[test]
-	fn rev_search_for_frame_sync() {
-		fn test<R: Read + Seek>(reader: &mut R, expected_result: Option<u64>) {
+	#[rustfmt::skip]
+	fn rev_search_for_frame_header() {
+		fn test<R: Read + Seek>(reader: &mut R, expected_reader_position: Option<u64>) {
 			// We have to start these at the end to do a reverse search, of course :)
 			let mut pos = reader.seek(SeekFrom::End(0)).unwrap();
 
-			let ret = super::rev_search_for_frame_sync(reader, &mut pos).unwrap();
-			assert_eq!(ret, expected_result);
+			let ret = super::rev_search_for_frame_header(reader, &mut pos, ParsingMode::Strict);
+
+			if expected_reader_position.is_some() {
+				assert!(ret.is_ok());
+				assert!(ret.unwrap().is_some());
+				assert_eq!(Some(pos), expected_reader_position);
+				return;
+			}
+
+			assert!(ret.unwrap().is_none());
 		}
 
-		test(&mut Cursor::new([0xFF, 0xFB, 0x00]), Some(0));
-		test(&mut Cursor::new([0x00, 0x00, 0x01, 0xFF, 0xFB]), Some(3));
+		test(&mut Cursor::new([0xFF, 0xFB, 0x52, 0xC4]), Some(0));
+		test(&mut Cursor::new([0x00, 0x00, 0x01, 0xFF, 0xFB, 0x52, 0xC4]), Some(3));
 		test(&mut Cursor::new([0x01, 0xFF]), None);
 
 		let bytes = read_path("tests/files/assets/rev_frame_sync_search.mp3");
 		let mut reader = Cursor::new(bytes);
-		test(&mut reader, Some(283));
+		test(&mut reader, Some(595));
 	}
 }
