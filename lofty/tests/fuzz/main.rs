@@ -19,6 +19,7 @@ mod vorbisfile_read_from;
 mod wavfile_read_from;
 mod wavpackfile_read_from;
 
+#[allow(clippy::missing_panics_doc)]
 pub fn get_reader(path: &str) -> Cursor<Vec<u8>> {
 	let path = Path::new("tests/fuzz/assets").join(path);
 
@@ -26,6 +27,7 @@ pub fn get_reader(path: &str) -> Cursor<Vec<u8>> {
 	Cursor::new(b)
 }
 
+#[allow(clippy::missing_panics_doc)]
 pub fn oom_test<A: AudioFile>(path: &'static str) {
 	let instant = Instant::now();
 	let thread = thread::spawn(|| {

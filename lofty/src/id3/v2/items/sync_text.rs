@@ -270,7 +270,7 @@ mod tests {
 
 	fn expected(encoding: TextEncoding) -> SynchronizedTextFrame<'static> {
 		SynchronizedTextFrame {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			encoding,
 			language: *b"eng",
 			timestamp_format: TimestampFormat::MS,

@@ -280,7 +280,7 @@ mod tests {
 		);
 
 		RelativeVolumeAdjustmentFrame {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			identification: String::from("Surround sound"),
 			channels,
 		}

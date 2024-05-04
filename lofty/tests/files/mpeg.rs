@@ -340,9 +340,8 @@ fn read_and_write_tpil_frame() {
 
 	let tag: &Id3v2Tag = mpeg_file.id3v2().unwrap();
 
-	let content = match tag.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).unwrap() {
-		Frame::KeyValue(content) => content,
-		_ => panic!("Wrong Frame Value Type for TIPL"),
+	let Frame::KeyValue(content) = tag.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).unwrap() else {
+		panic!("Wrong Frame Value Type for TIPL")
 	};
 
 	assert_eq!(key_value_pairs, content.key_value_pairs);

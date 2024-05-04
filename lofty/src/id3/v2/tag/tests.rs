@@ -21,7 +21,7 @@ fn read_tag(path: &str) -> Id3v2Tag {
 }
 
 fn read_tag_raw(bytes: &[u8]) -> Id3v2Tag {
-	let mut reader = Cursor::new(&bytes[..]);
+	let mut reader = Cursor::new(bytes);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
 	crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()

@@ -102,7 +102,7 @@ mod tests {
 
 	fn expected() -> PrivateFrame<'static> {
 		PrivateFrame {
-			header: FrameHeader::new(super::FRAME_ID, Default::default()),
+			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
 			owner: String::from("foo@bar.com"),
 			private_data: String::from("some data").into_bytes(),
 		}
