@@ -129,7 +129,7 @@ const MP4_ALAC_PROPERTIES: Mp4Properties = Mp4Properties {
 	extended_audio_object_type: None,
 	duration: Duration::from_millis(1428),
 	overall_bitrate: 331,
-	audio_bitrate: 1536,
+	audio_bitrate: 326,
 	sample_rate: 48000,
 	bit_depth: Some(16),
 	channels: 2,
