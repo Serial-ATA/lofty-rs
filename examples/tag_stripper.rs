@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::file::TaggedFileExt;
 use lofty::probe::Probe;
 
