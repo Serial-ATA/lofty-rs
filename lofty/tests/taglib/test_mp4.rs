@@ -18,7 +18,8 @@ fn test_properties_aac() {
 	assert_eq!(f.properties().audio_bitrate(), 3);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
-	assert_eq!(f.properties().bit_depth(), Some(16));
+	// NOTE: TagLib reports 16, but the stream is a lossy codec. We ignore it in this case.
+	assert!(f.properties().bit_depth().is_none());
 	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
@@ -82,7 +83,7 @@ fn test_properties_alac_without_bitrate() {
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 	assert_eq!(f.properties().bit_depth(), Some(16));
-	assert_eq!(f.properties().is_drm_protected(), false);
+	assert!(!f.properties().is_drm_protected());
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
