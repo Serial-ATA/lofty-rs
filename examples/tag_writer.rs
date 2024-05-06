@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::config::WriteOptions;
 use lofty::prelude::*;
 use lofty::probe::Probe;
