@@ -210,16 +210,15 @@ impl Mp4Properties {
 	}
 }
 
-pub(super) fn read_properties<R>(
-	reader: &mut AtomReader<R>,
-	traks: &[AtomInfo],
-	file_length: u64,
-	parse_mode: ParsingMode,
-) -> Result<Mp4Properties>
+struct TrakChildren {
+	mdhd: AtomInfo,
+	minf: Option<AtomInfo>,
+}
+
+fn get_trak_children<R>(reader: &mut AtomReader<R>, traks: &[AtomInfo]) -> Result<TrakChildren>
 where
 	R: Read + Seek,
 {
-	// We need the mdhd and minf atoms from the audio track
 	let mut audio_track = false;
 	let mut mdhd = None;
 	let mut minf = None;
@@ -278,8 +277,18 @@ where
 		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
 	};
 
-	reader.seek(SeekFrom::Start(mdhd.start + 8))?;
+	Ok(TrakChildren { mdhd, minf })
+}
 
+struct Mdhd {
+	timescale: u32,
+	duration: u64,
+}
+
+fn read_mdhd<R>(reader: &mut AtomReader<R>) -> Result<Mdhd>
+where
+	R: Read + Seek,
+{
 	let version = reader.read_u8()?;
 	let _flags = reader.read_uint(3)?;
 
@@ -302,44 +311,106 @@ where
 		(timescale, u64::from(duration))
 	};
 
-	let duration_millis = (duration * 1000).div_round(u64::from(timescale));
-	let duration = Duration::from_millis(duration_millis);
-
-	// We create the properties here, since it is possible the other information isn't available
-	let mut properties = Mp4Properties {
+	Ok(Mdhd {
+		timescale,
 		duration,
-		..Mp4Properties::default()
+	})
+}
+
+// TODO: Estimate duration from stts?
+//       Since this has the number of samples and the duration of each sample,
+//       it would be pretty simple to do, and would help in the case that we have
+//       no timescale available.
+#[derive(Debug)]
+struct SttsEntry {
+	_sample_count: u32,
+	sample_duration: u32,
+}
+
+fn read_stts<R>(reader: &mut R) -> Result<Vec<SttsEntry>>
+where
+	R: Read,
+{
+	let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
+
+	let entry_count = reader.read_u32::<BigEndian>()?;
+	let mut entries = Vec::with_capacity(entry_count as usize);
+
+	for _ in 0..entry_count {
+		let sample_count = reader.read_u32::<BigEndian>()?;
+		let sample_duration = reader.read_u32::<BigEndian>()?;
+
+		entries.push(SttsEntry {
+			_sample_count: sample_count,
+			sample_duration,
+		});
+	}
+
+	Ok(entries)
+}
+
+struct Minf {
+	stsd_data: Vec<u8>,
+	stts: Option<Vec<SttsEntry>>,
+}
+
+fn read_minf<R>(
+	reader: &mut AtomReader<R>,
+	len: u64,
+	parse_mode: ParsingMode,
+) -> Result<Option<Minf>>
+where
+	R: Read + Seek,
+{
+	let Some(stbl) = nested_atom(reader, len, b"stbl", parse_mode)? else {
+		return Ok(None);
 	};
 
-	let Some(minf) = minf else {
-		return Ok(properties);
+	let mut stsd_data = None;
+	let mut stts = None;
+
+	let mut read = 8;
+	while read < stbl.len {
+		let Some(atom) = reader.next()? else { break };
+
+		read += atom.len;
+
+		if let AtomIdent::Fourcc(fourcc) = atom.ident {
+			match &fourcc {
+				b"stsd" => {
+					let mut stsd = try_vec![0; (atom.len - 8) as usize];
+					reader.read_exact(&mut stsd)?;
+					stsd_data = Some(stsd);
+				},
+				b"stts" => stts = Some(read_stts(reader)?),
+				_ => {
+					skip_unneeded(reader, atom.extended, atom.len)?;
+				},
+			}
+
+			continue;
+		}
+	}
+
+	let Some(stsd_data) = stsd_data else {
+		return Ok(None);
 	};
 
-	reader.seek(SeekFrom::Start(minf.start + 8))?;
+	Ok(Some(Minf { stsd_data, stts }))
+}
 
-	let Some(stbl) = nested_atom(reader, minf.len, b"stbl", parse_mode)? else {
-		return Ok(properties);
-	};
-
-	let Some(stsd) = nested_atom(reader, stbl.len, b"stsd", parse_mode)? else {
-		return Ok(properties);
-	};
-
-	let mut stsd = try_vec![0; (stsd.len - 8) as usize];
-	reader.read_exact(&mut stsd)?;
-
-	let mut cursor = Cursor::new(&*stsd);
-
-	let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
-
+fn read_stsd<R>(reader: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+where
+	R: Read + Seek,
+{
 	// Skipping 4 bytes
 	// Version (1)
 	// Flags (3)
-	stsd_reader.seek(SeekFrom::Current(4))?;
-	let num_sample_entries = stsd_reader.read_u32()?;
+	reader.seek(SeekFrom::Current(4))?;
+	let num_sample_entries = reader.read_u32()?;
 
 	for _ in 0..num_sample_entries {
-		let Some(atom) = stsd_reader.next()? else {
+		let Some(atom) = reader.next()? else {
 			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
 		};
 
@@ -348,9 +419,9 @@ where
 		};
 
 		match fourcc {
-			b"mp4a" => mp4a_properties(&mut stsd_reader, &mut properties)?,
-			b"alac" => alac_properties(&mut stsd_reader, &mut properties)?,
-			b"fLaC" => flac_properties(&mut stsd_reader, &mut properties)?,
+			b"mp4a" => mp4a_properties(reader, properties)?,
+			b"alac" => alac_properties(reader, properties)?,
+			b"fLaC" => flac_properties(reader, properties)?,
 			// Maybe do these?
 			// TODO: dops (opus)
 			// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
@@ -371,23 +442,85 @@ where
 			},
 		}
 
-		// We do the mdat check up here, so we have access to the entire file
-		let duration_millis = properties.duration.as_millis();
-		if duration_millis > 0 {
-			let overall_bitrate = u128::from(file_length * 8) / duration_millis;
-			properties.overall_bitrate = overall_bitrate as u32;
-
-			if properties.audio_bitrate == 0 {
-				log::warn!("Estimating audio bitrate from 'mdat' size");
-
-				properties.audio_bitrate =
-					(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
-			}
-		}
-
 		// We only want to read the properties of the first stream
 		// that we can actually recognize
 		break;
+	}
+
+	Ok(())
+}
+
+pub(super) fn read_properties<R>(
+	reader: &mut AtomReader<R>,
+	traks: &[AtomInfo],
+	file_length: u64,
+	parse_mode: ParsingMode,
+) -> Result<Mp4Properties>
+where
+	R: Read + Seek,
+{
+	// We need the mdhd and minf atoms from the audio track
+	let TrakChildren { mdhd, minf } = get_trak_children(reader, traks)?;
+
+	reader.seek(SeekFrom::Start(mdhd.start + 8))?;
+	let Mdhd {
+		timescale,
+		duration,
+	} = read_mdhd(reader)?;
+
+	// We create the properties here, since it is possible the other information isn't available
+	let mut properties = Mp4Properties::default();
+
+	if timescale > 0 {
+		let duration_millis = (duration * 1000).div_round(u64::from(timescale));
+		properties.duration = Duration::from_millis(duration_millis);
+	}
+
+	// We need an `mdhd` atom at the bare minimum, everything else can be optional.
+	let Some(minf_info) = minf else {
+		return Ok(properties);
+	};
+
+	reader.seek(SeekFrom::Start(minf_info.start + 8))?;
+	let Some(Minf { stsd_data, stts }) = read_minf(reader, minf_info.len, parse_mode)? else {
+		return Ok(properties);
+	};
+
+	// `stsd` contains the majority of the audio properties
+	let mut cursor = Cursor::new(&*stsd_data);
+	let mut stsd_reader = AtomReader::new(&mut cursor, parse_mode)?;
+	read_stsd(&mut stsd_reader, &mut properties)?;
+
+	// We do the mdat check up here, so we have access to the entire file
+	if duration > 0 {
+		// TODO: We should keep track of the `mdat` length when first reading the file.
+		//       This extra read is unnecessary.
+		let mdat_len = mdat_length(reader)?;
+
+		if let Some(stts) = stts {
+			let stts_specifies_duration = !(stts.len() == 1 && stts[0].sample_duration == 1);
+			if stts_specifies_duration {
+				// We do a basic audio bitrate calculation below for each stream type.
+				// Up here, we can do a more accurate calculation if the duration is available.
+				let audio_bitrate_bps = (((u128::from(mdat_len) * 8) * u128::from(timescale))
+					/ u128::from(duration)) as u32;
+
+				// kb/s
+				properties.audio_bitrate = audio_bitrate_bps / 1000;
+			}
+		}
+
+		let duration_millis = properties.duration.as_millis();
+
+		let overall_bitrate = u128::from(file_length * 8) / duration_millis;
+		properties.overall_bitrate = overall_bitrate as u32;
+
+		if properties.audio_bitrate == 0 {
+			log::warn!("Estimating audio bitrate from 'mdat' size");
+
+			properties.audio_bitrate =
+				(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
+		}
 	}
 
 	Ok(properties)
@@ -576,7 +709,7 @@ where
 		return Ok(());
 	}
 
-	// Unlike the mp4a atom, we cannot read the data that immediately follows it
+	// Unlike the "mp4a" atom, we cannot read the data that immediately follows it
 	// For ALAC, we have to skip the first "alac" atom entirely, and read the one that
 	// immediately follows it.
 	//
@@ -694,7 +827,7 @@ where
 
 	while let Ok(Some(atom)) = reader.next() {
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
-			return Ok(atom.len);
+			return Ok(atom.len - 8);
 		}
 
 		skip_unneeded(reader, atom.extended, atom.len)?;
