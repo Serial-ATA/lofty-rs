@@ -107,14 +107,6 @@ where
 	}
 
 	let properties = if parse_options.read_properties {
-		if fmt.len() < 16 {
-			decode_err!(@BAIL Wav, "File does not contain a valid \"fmt \" chunk");
-		}
-
-		if stream_len == 0 {
-			decode_err!(@BAIL Wav, "File does not contain a \"data\" chunk");
-		}
-
 		let file_length = data.stream_position()?;
 
 		super::properties::read_properties(&mut &*fmt, total_samples, stream_len, file_length)?
