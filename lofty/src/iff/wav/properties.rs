@@ -214,7 +214,7 @@ pub(super) fn read_properties(
 		decode_err!(@BAIL Wav, "Non-PCM format identified, no \"fact\" chunk found");
 	}
 
-	if bits_per_sample > 0 && (total_samples == 0 || !pcm) {
+	if bits_per_sample > 0 && (total_samples == 0 || pcm) {
 		total_samples = stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
 	}
 
