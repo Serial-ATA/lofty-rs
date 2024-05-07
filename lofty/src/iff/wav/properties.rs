@@ -106,95 +106,147 @@ impl WavProperties {
 	}
 }
 
+#[derive(Copy, Clone, Debug)]
+struct ExtensibleFmtChunk {
+	valid_bits_per_sample: u16,
+	channel_mask: ChannelMask,
+}
+
+#[derive(Copy, Clone, Debug)]
+struct FmtChunk {
+	format_tag: u16,
+	channels: u8,
+	sample_rate: u32,
+	bytes_per_second: u32,
+	block_align: u16,
+	bits_per_sample: u16,
+	extensible_info: Option<ExtensibleFmtChunk>,
+}
+
+fn read_fmt_chunk<R>(reader: &mut R, len: usize) -> Result<FmtChunk>
+where
+	R: ReadBytesExt,
+{
+	let format_tag = reader.read_u16::<LittleEndian>()?;
+	let channels = reader.read_u16::<LittleEndian>()?;
+	let sample_rate = reader.read_u32::<LittleEndian>()?;
+	let bytes_per_second = reader.read_u32::<LittleEndian>()?;
+	let block_align = reader.read_u16::<LittleEndian>()?;
+	let bits_per_sample = reader.read_u16::<LittleEndian>()?;
+
+	let mut fmt_chunk = FmtChunk {
+		format_tag,
+		channels: channels as u8,
+		sample_rate,
+		bytes_per_second,
+		block_align,
+		bits_per_sample,
+		extensible_info: None,
+	};
+
+	if format_tag == EXTENSIBLE {
+		if len < 40 {
+			decode_err!(@BAIL Wav, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
+		}
+
+		// cbSize (Size of extra format information) (2)
+		let _cb_size = reader.read_u16::<LittleEndian>()?;
+
+		// Valid bits per sample (2)
+		let valid_bits_per_sample = reader.read_u16::<LittleEndian>()?;
+
+		// Channel mask (4)
+		let channel_mask = ChannelMask(reader.read_u32::<LittleEndian>()?);
+
+		fmt_chunk.format_tag = reader.read_u16::<LittleEndian>()?;
+		fmt_chunk.extensible_info = Some(ExtensibleFmtChunk {
+			valid_bits_per_sample,
+			channel_mask,
+		});
+	}
+
+	Ok(fmt_chunk)
+}
+
 pub(super) fn read_properties(
 	fmt: &mut &[u8],
 	mut total_samples: u32,
 	stream_len: u32,
 	file_length: u64,
 ) -> Result<WavProperties> {
-	let mut format_tag = fmt.read_u16::<LittleEndian>()?;
-	let channels = fmt.read_u16::<LittleEndian>()? as u8;
+	if fmt.len() < 16 {
+		decode_err!(@BAIL Wav, "File does not contain a valid \"fmt \" chunk");
+	}
+
+	if stream_len == 0 {
+		decode_err!(@BAIL Wav, "File does not contain a \"data\" chunk");
+	}
+
+	let FmtChunk {
+		format_tag,
+		channels,
+		sample_rate,
+		bytes_per_second,
+		block_align,
+		bits_per_sample,
+		extensible_info,
+	} = read_fmt_chunk(fmt, fmt.len())?;
 
 	if channels == 0 {
 		decode_err!(@BAIL Wav, "File contains 0 channels");
 	}
 
-	let sample_rate = fmt.read_u32::<LittleEndian>()?;
-	let bytes_per_second = fmt.read_u32::<LittleEndian>()?;
-
-	let block_align = fmt.read_u16::<LittleEndian>()?;
-
-	let bits_per_sample = fmt.read_u16::<LittleEndian>()?;
 	let bytes_per_sample = block_align / u16::from(channels);
-
-	let mut bit_depth = if bits_per_sample > 0 {
-		bits_per_sample as u8
-	} else {
-		(bytes_per_sample * 8) as u8
+	let bit_depth;
+	match extensible_info {
+		Some(ExtensibleFmtChunk {
+			valid_bits_per_sample,
+			..
+		}) if valid_bits_per_sample > 0 => bit_depth = valid_bits_per_sample as u8,
+		_ if bits_per_sample > 0 => bit_depth = bits_per_sample as u8,
+		_ => bit_depth = (bytes_per_sample * 8) as u8,
 	};
 
-	let channel_mask;
-	if format_tag == EXTENSIBLE {
-		if fmt.len() + 16 < 40 {
-			decode_err!(@BAIL Wav, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
-		}
+	let channel_mask = extensible_info.map(|info| info.channel_mask);
 
-		// cbSize (Size of extra format information) (2)
-		let _cb_size = fmt.read_u16::<LittleEndian>()?;
-		// Valid bits per sample (2)
-		let valid_bits_per_sample = fmt.read_u16::<LittleEndian>()?;
-		// Channel mask (4)
-		channel_mask = Some(ChannelMask(fmt.read_u32::<LittleEndian>()?));
-
-		if valid_bits_per_sample > 0 {
-			bit_depth = valid_bits_per_sample as u8;
-		}
-		format_tag = fmt.read_u16::<LittleEndian>()?;
-	} else {
-		channel_mask = None;
-	}
-
-	let non_pcm = format_tag != PCM && format_tag != IEEE_FLOAT;
-
-	if non_pcm && total_samples == 0 {
+	let pcm = format_tag == PCM || format_tag == IEEE_FLOAT;
+	if !pcm && total_samples == 0 {
 		decode_err!(@BAIL Wav, "Non-PCM format identified, no \"fact\" chunk found");
 	}
 
-	if bits_per_sample > 0 {
+	if bits_per_sample > 0 && (total_samples == 0 || !pcm) {
 		total_samples = stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
-	} else if !non_pcm {
-		total_samples = 0
 	}
 
-	let duration;
-	let overall_bitrate;
-	let audio_bitrate;
+	let mut duration = Duration::ZERO;
+	let mut overall_bitrate = 0;
+	let mut audio_bitrate = 0;
+	if bytes_per_second > 0 {
+		audio_bitrate = (bytes_per_second * 8).div_round(1000);
+	}
+
 	if sample_rate > 0 && total_samples > 0 {
+		log::debug!("Calculating duration and bitrate from total samples");
+
 		let length = (u64::from(total_samples) * 1000).div_round(u64::from(sample_rate));
-		if length == 0 {
-			duration = Duration::ZERO;
-			overall_bitrate = 0;
-			audio_bitrate = 0;
-		} else {
-			duration = Duration::from_millis(length);
+		duration = Duration::from_millis(length);
+		if length > 0 {
 			overall_bitrate = (file_length * 8).div_round(length) as u32;
-			audio_bitrate = (u64::from(stream_len) * 8).div_round(length) as u32;
+			if audio_bitrate == 0 {
+				log::warn!("Estimating audio bitrate from stream length");
+				audio_bitrate = (u64::from(stream_len) * 8).div_round(length) as u32;
+			}
 		}
 	} else if stream_len > 0 && bytes_per_second > 0 {
+		log::debug!("Calculating duration and bitrate from stream length/byte rate");
+
 		let length = (u64::from(stream_len) * 1000).div_round(u64::from(bytes_per_second));
-		if length == 0 {
-			duration = Duration::ZERO;
-			overall_bitrate = 0;
-			audio_bitrate = 0;
-		} else {
-			duration = Duration::from_millis(length);
+		duration = Duration::from_millis(length);
+		if length > 0 {
 			overall_bitrate = (file_length * 8).div_round(length) as u32;
-			audio_bitrate = (bytes_per_second * 8).div_round(1000);
 		}
 	} else {
-		duration = Duration::ZERO;
-		overall_bitrate = 0;
-		audio_bitrate = 0;
+		log::warn!("Unable to calculate duration and bitrate");
 	};
 
 	Ok(WavProperties {
