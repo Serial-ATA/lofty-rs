@@ -1,12 +1,14 @@
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::musepack::constants::{FREQUENCY_TABLE, MPC_OLD_GAIN_REF};
+use crate::musepack::constants::{
+	FREQUENCY_TABLE, MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH, MPC_OLD_GAIN_REF,
+};
 use crate::properties::FileProperties;
 
 use std::io::Read;
 use std::time::Duration;
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Used profile
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -104,8 +106,7 @@ impl Link {
 #[allow(clippy::struct_excessive_bools)]
 pub struct MpcSv7Properties {
 	pub(crate) duration: Duration,
-	pub(crate) overall_bitrate: u32,
-	pub(crate) audio_bitrate: u32,
+	pub(crate) average_bitrate: u32,
 	pub(crate) channels: u8, // NOTE: always 2
 	// -- Section 1 --
 	pub(crate) frame_count: u32,
@@ -135,8 +136,8 @@ impl From<MpcSv7Properties> for FileProperties {
 	fn from(input: MpcSv7Properties) -> Self {
 		Self {
 			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
+			overall_bitrate: Some(input.average_bitrate),
+			audio_bitrate: Some(input.average_bitrate),
 			sample_rate: Some(input.sample_freq),
 			bit_depth: None,
 			channels: Some(input.channels),
@@ -151,14 +152,9 @@ impl MpcSv7Properties {
 		self.duration
 	}
 
-	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
-		self.overall_bitrate
-	}
-
-	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
-		self.audio_bitrate
+	/// Average bitrate (kbps)
+	pub fn average_bitrate(&self) -> u32 {
+		self.average_bitrate
 	}
 
 	/// Sample rate (Hz)
@@ -208,7 +204,7 @@ impl MpcSv7Properties {
 
 	/// Change in the replay level
 	///
-	/// The value is a signed 16 bit integer, with the level being attenuated by that many mB
+	/// The value is a signed 16-bit integer, with the level being attenuated by that many mB
 	pub fn title_gain(&self) -> i16 {
 		self.title_gain
 	}
@@ -224,7 +220,7 @@ impl MpcSv7Properties {
 
 	/// Change in the replay level if the whole CD is supposed to be played with the same level change
 	///
-	/// The value is a signed 16 bit integer, with the level being attenuated by that many mB
+	/// The value is a signed 16-bit integer, with the level being attenuated by that many mB
 	pub fn album_gain(&self) -> i16 {
 		self.album_gain
 	}
@@ -280,6 +276,9 @@ impl MpcSv7Properties {
 			..Self::default()
 		};
 
+		// TODO: Make a Bitreader, would be nice crate-wide but especially here
+		// The SV7 header is split into 6 32-bit sections
+
 		// -- Section 1 --
 		properties.frame_count = reader.read_u32::<LittleEndian>()?;
 
@@ -294,11 +293,8 @@ impl MpcSv7Properties {
 
 		let byte2 = ((chunk & 0xFF_0000) >> 16) as u8;
 
-		let profile_index = (byte2 & 0xF0) >> 4;
-		properties.profile = Profile::from_u8(profile_index).unwrap(); // Infallible
-
-		let link_index = (byte2 & 0x0C) >> 2;
-		properties.link = Link::from_u8(link_index).unwrap(); // Infallible
+		properties.profile = Profile::from_u8((byte2 & 0xF0) >> 4).unwrap(); // Infallible
+		properties.link = Link::from_u8((byte2 & 0x0C) >> 2).unwrap(); // Infallible
 
 		let sample_freq_index = byte2 & 0x03;
 		properties.sample_freq = FREQUENCY_TABLE[sample_freq_index as usize];
@@ -307,26 +303,23 @@ impl MpcSv7Properties {
 		properties.max_level = remaining_bytes;
 
 		// -- Section 3 --
-		let title_gain = reader.read_i16::<BigEndian>()?;
-		let title_peak = reader.read_u16::<BigEndian>()?;
+		let title_peak = reader.read_u16::<LittleEndian>()?;
+		let title_gain = reader.read_u16::<LittleEndian>()?;
 
 		// -- Section 4 --
-		let album_gain = reader.read_i16::<BigEndian>()?;
-		let album_peak = reader.read_u16::<BigEndian>()?;
+		let album_peak = reader.read_u16::<LittleEndian>()?;
+		let album_gain = reader.read_u16::<LittleEndian>()?;
 
 		// -- Section 5 --
 		let chunk = reader.read_u32::<LittleEndian>()?;
 
-		let byte1 = ((chunk & 0xFF00_0000) >> 24) as u8;
-
-		properties.true_gapless = ((byte1 & 0x80) >> 7) == 1;
-
-		let byte2 = ((chunk & 0xFF_0000) >> 16) as u8;
+		properties.true_gapless = (chunk >> 31) == 1;
 
 		if properties.true_gapless {
-			properties.last_frame_length =
-				(u16::from(byte1 & 0x7F) << 4) | u16::from((byte2 & 0xF0) >> 4);
+			properties.last_frame_length = ((chunk >> 20) & 0x7FF) as u16;
 		}
+
+		properties.fast_seeking_safe = (chunk >> 19) & 1 == 1;
 
 		// NOTE: Rest of the chunk is zeroed and unused
 
@@ -336,19 +329,23 @@ impl MpcSv7Properties {
 		// -- End of parsing --
 
 		// Convert ReplayGain values
-		let set_replay_gain = |gain: i16| -> i16 {
-			let mut gain = (MPC_OLD_GAIN_REF - f32::from(gain) / 100.0) * 256.0 + 0.5;
-			if gain >= ((1 << 16) as f32) || gain < 0.0 {
-				gain = 0.0
+		let set_replay_gain = |gain: u16| -> i16 {
+			if gain == 0 {
+				return 0;
 			}
-			gain as i16
+
+			let gain = ((MPC_OLD_GAIN_REF - f32::from(gain) / 100.0) * 256.0 + 0.5) as i16;
+			if !(0..i16::MAX).contains(&gain) {
+				return 0;
+			}
+			gain
 		};
 		let set_replay_peak = |peak: u16| -> u16 {
 			if peak == 0 {
 				return 0;
 			}
 
-			((peak.ilog10() * 20 * 256) as f32 + 0.5) as u16
+			((f64::from(peak).log10() * 20.0 * 256.0) + 0.5) as u16
 		};
 
 		properties.title_gain = set_replay_gain(title_gain);
@@ -356,21 +353,35 @@ impl MpcSv7Properties {
 		properties.album_gain = set_replay_gain(album_gain);
 		properties.album_peak = set_replay_peak(album_peak);
 
-		let total_samples;
-		if properties.true_gapless {
-			total_samples =
-				(properties.frame_count * 1152) - u32::from(properties.last_frame_length);
-		} else {
-			total_samples = (properties.frame_count * 1152) - 576;
+		if properties.last_frame_length > MPC_FRAME_LENGTH as u16 {
+			decode_err!(@BAIL Mpc, "Invalid last frame length");
 		}
 
-		if total_samples > 0 && properties.sample_freq > 0 {
-			let length =
-				(f64::from(total_samples) * 1000.0 / f64::from(properties.sample_freq)).ceil();
-			properties.duration = Duration::from_millis(length as u64);
-			properties.audio_bitrate = (stream_length * 8 / length as u64) as u32;
-			properties.overall_bitrate = properties.audio_bitrate;
+		if properties.sample_freq == 0 {
+			log::warn!("Sample rate is 0, unable to calculate duration and bitrate");
+			return Ok(properties);
 		}
+
+		if properties.frame_count == 0 {
+			log::warn!("Frame count is 0, unable to calculate duration and bitrate");
+			return Ok(properties);
+		}
+
+		let time_per_frame = (MPC_FRAME_LENGTH as f64) / f64::from(properties.sample_freq);
+		let length = (f64::from(properties.frame_count) * time_per_frame) * 1000.0;
+		properties.duration = Duration::from_millis(length as u64);
+
+		let total_samples;
+		if properties.true_gapless {
+			total_samples = (u64::from(properties.frame_count) * MPC_FRAME_LENGTH)
+				- (MPC_FRAME_LENGTH - u64::from(properties.last_frame_length));
+		} else {
+			total_samples =
+				(u64::from(properties.frame_count) * MPC_FRAME_LENGTH) - MPC_DECODER_SYNTH_DELAY;
+		}
+
+		properties.average_bitrate = ((stream_length * 8 * u64::from(properties.sample_freq))
+			/ (total_samples * 1000)) as u32;
 
 		Ok(properties)
 	}

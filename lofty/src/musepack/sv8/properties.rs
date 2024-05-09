@@ -1,8 +1,10 @@
 use super::read::PacketReader;
 use crate::config::ParsingMode;
 use crate::error::Result;
+use crate::macros::decode_err;
 use crate::musepack::constants::FREQUENCY_TABLE;
 use crate::properties::FileProperties;
+use crate::util::math::RoundedDivision;
 
 use std::io::Read;
 use std::time::Duration;
@@ -13,8 +15,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct MpcSv8Properties {
 	pub(crate) duration: Duration,
-	pub(crate) overall_bitrate: u32,
-	pub(crate) audio_bitrate: u32,
+	pub(crate) average_bitrate: u32,
 	/// Mandatory Stream Header packet
 	pub stream_header: StreamHeader,
 	/// Mandatory ReplayGain packet
@@ -27,8 +28,8 @@ impl From<MpcSv8Properties> for FileProperties {
 	fn from(input: MpcSv8Properties) -> Self {
 		Self {
 			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
+			overall_bitrate: Some(input.average_bitrate),
+			audio_bitrate: Some(input.average_bitrate),
 			sample_rate: Some(input.stream_header.sample_rate),
 			bit_depth: None,
 			channels: Some(input.stream_header.channels),
@@ -43,14 +44,9 @@ impl MpcSv8Properties {
 		self.duration
 	}
 
-	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
-		self.overall_bitrate
-	}
-
-	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
-		self.audio_bitrate
+	/// Average bitrate (kbps)
+	pub fn average_bitrate(&self) -> u32 {
+		self.average_bitrate
 	}
 
 	/// Sample rate (Hz)
@@ -247,4 +243,46 @@ impl EncoderInfo {
 			build,
 		})
 	}
+}
+
+pub(super) fn read(
+	stream_length: u64,
+	stream_header: StreamHeader,
+	replay_gain: ReplayGain,
+	encoder_info: Option<EncoderInfo>,
+) -> Result<MpcSv8Properties> {
+	let mut properties = MpcSv8Properties {
+		duration: Duration::ZERO,
+		average_bitrate: 0,
+		stream_header,
+		replay_gain,
+		encoder_info,
+	};
+
+	let sample_count = stream_header.sample_count;
+	let beginning_silence = stream_header.beginning_silence;
+	let sample_rate = stream_header.sample_rate;
+
+	if beginning_silence > sample_count {
+		decode_err!(@BAIL Mpc, "Beginning silence is greater than the total sample count");
+	}
+
+	if sample_rate == 0 {
+		log::warn!("Sample rate is 0, unable to calculate duration and bitrate");
+		return Ok(properties);
+	}
+
+	if sample_count == 0 {
+		log::warn!("Sample count is 0, unable to calculate duration and bitrate");
+		return Ok(properties);
+	}
+
+	let total_samples = sample_count - beginning_silence;
+	let length = (total_samples * 1000).div_round(u64::from(sample_rate));
+
+	properties.duration = Duration::from_millis(length);
+	properties.average_bitrate =
+		((stream_length * 8 * u64::from(sample_rate)) / (total_samples * 1000)) as u32;
+
+	Ok(properties)
 }

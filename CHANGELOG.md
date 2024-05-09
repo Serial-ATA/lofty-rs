@@ -54,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MPEG**: Durations estimated by bitrate are more accurate ([PR](https://github.com/Serial-ATA/lofty-rs/pull/395))
 - **MP4**: Bitrate calculation is now more accurate ([PR](https://github.com/Serial-ATA/lofty-rs/pull/398))
 - **WAV**: Bitrate calculation is now more accurate ([PR](https://github.com/Serial-ATA/lofty-rs/pull/399))
+- **MusePack**: Overall improved audio properties  ([PR](https://github.com/Serial-ATA/lofty-rs/pull/402))
 
 ## [0.19.2] - 2024-04-26
 

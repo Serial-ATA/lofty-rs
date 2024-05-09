@@ -44,6 +44,7 @@ pub struct Id3v2TagFlags {
 pub(crate) struct Id3v2Header {
 	pub version: Id3v2Version,
 	pub flags: Id3v2TagFlags,
+	/// The size of the tag contents (**DOES NOT INCLUDE THE HEADER/FOOTER**)
 	pub size: u32,
 	pub extended_size: u32,
 }
@@ -139,5 +140,10 @@ impl Id3v2Header {
 			size,
 			extended_size,
 		})
+	}
+
+	/// The total size of the tag, including the header, footer, and extended header
+	pub(crate) fn full_tag_size(&self) -> u32 {
+		self.size + 10 + self.extended_size + if self.flags.footer { 10 } else { 0 }
 	}
 }
