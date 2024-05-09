@@ -1,8 +1,9 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::{decode_err, parse_mode_choice};
+use crate::macros::decode_err;
 use crate::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
 use crate::properties::FileProperties;
+use crate::util::math::RoundedDivision;
 
 use std::io::Read;
 use std::time::Duration;
@@ -17,7 +18,7 @@ pub struct MpcSv4to6Properties {
 	pub(crate) sample_rate: u32, // NOTE: always 44100
 
 	// Fields actually contained in the header
-	pub(crate) audio_bitrate: u32,
+	pub(crate) average_bitrate: u32,
 	pub(crate) mid_side_stereo: bool,
 	pub(crate) stream_version: u16,
 	pub(crate) max_band: u8,
@@ -28,8 +29,8 @@ impl From<MpcSv4to6Properties> for FileProperties {
 	fn from(input: MpcSv4to6Properties) -> Self {
 		Self {
 			duration: input.duration,
-			overall_bitrate: Some(input.audio_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
+			overall_bitrate: Some(input.average_bitrate),
+			audio_bitrate: Some(input.average_bitrate),
 			sample_rate: Some(input.sample_rate),
 			bit_depth: None,
 			channels: Some(input.channels),
@@ -54,9 +55,9 @@ impl MpcSv4to6Properties {
 		self.sample_rate
 	}
 
-	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
-		self.audio_bitrate
+	/// Average bitrate (kbps)
+	pub fn average_bitrate(&self) -> u32 {
+		self.average_bitrate
 	}
 
 	/// Whether MidSideStereo is used
@@ -92,7 +93,7 @@ impl MpcSv4to6Properties {
 
 		let mut properties = Self::default();
 
-		properties.audio_bitrate = (header_data[0] >> 23) & 0x1FF;
+		properties.average_bitrate = (header_data[0] >> 23) & 0x1FF;
 		let intensity_stereo = (header_data[0] >> 22) & 0x1 == 1;
 		properties.mid_side_stereo = (header_data[0] >> 21) & 0x1 == 1;
 
@@ -110,22 +111,19 @@ impl MpcSv4to6Properties {
 			properties.frame_count = header_data[1] >> 16; // 16 bit
 		}
 
-		parse_mode_choice!(
-			parse_mode,
-			STRICT: {
-				if properties.audio_bitrate != 0 {
-					decode_err!(@BAIL Mpc, "Encountered CBR stream")
-				}
+		if parse_mode == ParsingMode::Strict {
+			if properties.average_bitrate != 0 {
+				decode_err!(@BAIL Mpc, "Encountered CBR stream")
+			}
 
-				if intensity_stereo {
-					decode_err!(@BAIL Mpc, "Stream uses intensity stereo coding")
-				}
+			if intensity_stereo {
+				decode_err!(@BAIL Mpc, "Stream uses intensity stereo coding")
+			}
 
-				if block_size != 1 {
-					decode_err!(@BAIL Mpc, "Stream has an invalid block size (must be 1)")
-				}
-			},
-		);
+			if block_size != 1 {
+				decode_err!(@BAIL Mpc, "Stream has an invalid block size (must be 1)")
+			}
+		}
 
 		if properties.stream_version < 6 {
 			// Versions before 6 had an invalid last frame
@@ -135,17 +133,27 @@ impl MpcSv4to6Properties {
 		properties.sample_rate = 44100;
 		properties.channels = 2;
 
-		if properties.frame_count > 0 {
-			let samples =
-				(properties.frame_count * MPC_FRAME_LENGTH).saturating_sub(MPC_DECODER_SYNTH_DELAY);
-			let length = f64::from(samples) / f64::from(properties.sample_rate);
-			properties.duration = Duration::from_millis(length.ceil() as u64);
-
-			let pcm_frames = 1152 * u64::from(properties.frame_count) - 576;
-			properties.audio_bitrate = ((stream_length as f64
-				* 8.0 * f64::from(properties.sample_rate))
-				/ pcm_frames as f64) as u32;
+		// Nothing more we can do
+		if properties.frame_count == 0 {
+			return Ok(properties);
 		}
+
+		let samples = (u64::from(properties.frame_count) * MPC_FRAME_LENGTH)
+			.saturating_sub(MPC_DECODER_SYNTH_DELAY);
+		let length = (samples * 1000).div_round(u64::from(properties.sample_rate));
+		properties.duration = Duration::from_millis(length);
+
+		// 576 is a magic number from the reference decoder
+		//
+		// Quote from the reference source (libmpcdec/trunk/src/streaminfo.c:248 @rev 153):
+		// "estimation, exact value needs too much time"
+		let pcm_frames = (MPC_FRAME_LENGTH * u64::from(properties.frame_count)).saturating_sub(576);
+
+		// Is this accurate? If not, it really doesn't matter.
+		properties.average_bitrate = ((stream_length as f64
+			* 8.0 * f64::from(properties.sample_rate))
+			/ (pcm_frames as f64)
+			/ (MPC_FRAME_LENGTH as f64)) as u32;
 
 		Ok(properties)
 	}

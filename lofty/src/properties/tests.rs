@@ -160,9 +160,10 @@ const MP4_FLAC_PROPERTIES: Mp4Properties = Mp4Properties {
 	drm_protected: false,
 };
 
+// Properties verified with libmpcdec 1.2.2
 const MPC_SV5_PROPERTIES: MpcSv4to6Properties = MpcSv4to6Properties {
-	duration: Duration::from_millis(27),
-	audio_bitrate: 41,
+	duration: Duration::from_millis(26347),
+	average_bitrate: 119,
 	channels: 2,
 	frame_count: 1009,
 	mid_side_stereo: true,
@@ -172,9 +173,8 @@ const MPC_SV5_PROPERTIES: MpcSv4to6Properties = MpcSv4to6Properties {
 };
 
 const MPC_SV7_PROPERTIES: MpcSv7Properties = MpcSv7Properties {
-	duration: Duration::from_millis(1428),
-	overall_bitrate: 86,
-	audio_bitrate: 86,
+	duration: Duration::from_millis(1440),
+	average_bitrate: 86,
 	channels: 2,
 	frame_count: 60,
 	intensity_stereo: false,
@@ -184,9 +184,9 @@ const MPC_SV7_PROPERTIES: MpcSv7Properties = MpcSv7Properties {
 	link: Link::VeryLowStartOrEnd,
 	sample_freq: 48000,
 	max_level: 0,
-	title_gain: 16594,
+	title_gain: 0,
 	title_peak: 0,
-	album_gain: 16594,
+	album_gain: 0,
 	album_peak: 0,
 	true_gapless: true,
 	last_frame_length: 578,
@@ -196,8 +196,7 @@ const MPC_SV7_PROPERTIES: MpcSv7Properties = MpcSv7Properties {
 
 const MPC_SV8_PROPERTIES: MpcSv8Properties = MpcSv8Properties {
 	duration: Duration::from_millis(1428),
-	overall_bitrate: 82,
-	audio_bitrate: 82,
+	average_bitrate: 82,
 	stream_header: StreamHeader {
 		crc: 4_252_559_415,
 		stream_version: 8,

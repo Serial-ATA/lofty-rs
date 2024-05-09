@@ -4,7 +4,6 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, parse_mode_choice};
 
 use std::io::Read;
-use std::time::Duration;
 
 use byteorder::ReadBytesExt;
 
@@ -12,6 +11,7 @@ use byteorder::ReadBytesExt;
 const STREAM_HEADER_KEY: [u8; 2] = *b"SH";
 const REPLAYGAIN_KEY: [u8; 2] = *b"RG";
 const ENCODER_INFO_KEY: [u8; 2] = *b"EI";
+#[allow(dead_code)]
 const AUDIO_PACKET_KEY: [u8; 2] = *b"AP";
 const STREAM_END_KEY: [u8; 2] = *b"SE";
 
@@ -29,13 +29,12 @@ where
 	let mut found_stream_end = false;
 
 	while let Ok((packet_id, packet_length)) = packet_reader.next() {
+		stream_length += packet_length;
+
 		match packet_id {
 			STREAM_HEADER_KEY => stream_header = Some(StreamHeader::read(&mut packet_reader)?),
 			REPLAYGAIN_KEY => replay_gain = Some(ReplayGain::read(&mut packet_reader)?),
 			ENCODER_INFO_KEY => encoder_info = Some(EncoderInfo::read(&mut packet_reader)?),
-			AUDIO_PACKET_KEY => {
-				stream_length += packet_length;
-			},
 			STREAM_END_KEY => {
 				found_stream_end = true;
 				break;
@@ -68,41 +67,16 @@ where
 		},
 	};
 
-	if stream_length == 0 {
-		parse_mode_choice!(
-			parse_mode,
-			STRICT: decode_err!(@BAIL Mpc, "File is missing an Audio packet"),
-		)
+	if stream_length == 0 && parse_mode == ParsingMode::Strict {
+		decode_err!(@BAIL Mpc, "File is missing an Audio packet");
 	}
 
-	if !found_stream_end {
-		parse_mode_choice!(
-			parse_mode,
-			STRICT: decode_err!(@BAIL Mpc, "File is missing a Stream End packet"),
-		)
+	if !found_stream_end && parse_mode == ParsingMode::Strict {
+		decode_err!(@BAIL Mpc, "File is missing a Stream End packet");
 	}
 
-	let mut properties = MpcSv8Properties {
-		duration: Duration::ZERO,
-		overall_bitrate: 0,
-		audio_bitrate: 0,
-		stream_header,
-		replay_gain,
-		encoder_info,
-	};
-
-	let sample_count = stream_header.sample_count;
-	let beginning_silence = stream_header.beginning_silence;
-	let sample_rate = stream_header.sample_rate;
-
-	if sample_count > 0 && beginning_silence <= sample_count && sample_rate > 0 {
-		let total_samples = sample_count - beginning_silence;
-		let length = (total_samples as f64 * 1000.0) / f64::from(sample_rate);
-
-		properties.duration = Duration::from_millis(length as u64);
-		properties.audio_bitrate = ((stream_length * 8) / length as u64) as u32;
-		properties.overall_bitrate = properties.audio_bitrate;
-	}
+	let properties =
+		super::properties::read(stream_length, stream_header, replay_gain, encoder_info)?;
 
 	Ok(properties)
 }

@@ -32,12 +32,7 @@ where
 		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
 		file.id3v2_tag = Some(id3v2);
 
-		let mut size = header.size;
-		if header.flags.footer {
-			size += 10;
-		}
-
-		stream_length -= u64::from(size);
+		stream_length -= u64::from(header.full_tag_size());
 	}
 
 	// Save the current position, so we can go back and read the properties after the tags
