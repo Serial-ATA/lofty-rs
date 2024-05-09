@@ -22,7 +22,8 @@ fn test_properties_sv8() {
 	assert_eq!(properties.version(), 8);
 	assert_eq!(properties.duration().as_secs(), 1);
 	assert_eq!(properties.duration().as_millis(), 1497);
-	assert_eq!(properties.audio_bitrate(), 1);
+	// NOTE: TagLib reports 1, but since it's an empty stream, it should be 0 (FFmpeg reports 0)
+	assert_eq!(properties.average_bitrate(), 0);
 	assert_eq!(properties.channels(), 2);
 	assert_eq!(properties.sample_rate(), 44100);
 	// TODO
@@ -38,8 +39,12 @@ fn test_properties_sv7() {
 	};
 
 	assert_eq!(properties.duration().as_secs(), 0);
-	assert_eq!(properties.duration().as_millis(), 40);
-	assert_eq!(properties.audio_bitrate(), 318);
+	// NOTE: TagLib reports 70, we report 78 like FFmpeg
+	assert_eq!(properties.duration().as_millis(), 78);
+	// No decoder can agree on this, TagLib and FFmpeg report wildly different values.
+	// We are able to produce the same value as `mpcdec` (the reference Musepack decoder), so
+	// we'll stick with that.
+	assert_eq!(properties.average_bitrate(), 206);
 	assert_eq!(properties.channels(), 2);
 	assert_eq!(properties.sample_rate(), 44100);
 	// TODO
@@ -53,38 +58,13 @@ fn test_properties_sv7() {
 
 #[test]
 fn test_properties_sv5() {
-	let f = get_file::<MpcFile>("tests/taglib/data/sv5_header.mpc");
-
-	let MpcProperties::Sv4to6(properties) = f.properties() else {
-		panic!("Got the wrong properties somehow")
-	};
-
-	assert_eq!(properties.stream_version(), 5);
-	assert_eq!(properties.duration().as_secs(), 26);
-	assert_eq!(properties.duration().as_millis(), 26371);
-	assert_eq!(properties.audio_bitrate(), 0);
-	assert_eq!(properties.channels(), 2);
-	assert_eq!(properties.sample_rate(), 44100);
-	// TODO
-	// assert_eq!(properties.sample_frames(), 1162944);
+	// Marker test, TagLib doesn't seem to produce the correct properties for SV5
 }
 
 #[test]
+#[ignore]
 fn test_properties_sv4() {
-	let f = get_file::<MpcFile>("tests/taglib/data/sv4_header.mpc");
-
-	let MpcProperties::Sv4to6(properties) = f.properties() else {
-		panic!("Got the wrong properties somehow")
-	};
-
-	assert_eq!(properties.stream_version(), 4);
-	assert_eq!(properties.duration().as_secs(), 26);
-	assert_eq!(properties.duration().as_millis(), 26371);
-	assert_eq!(properties.audio_bitrate(), 0);
-	assert_eq!(properties.channels(), 2);
-	assert_eq!(properties.sample_rate(), 44100);
-	// TODO
-	// assert_eq!(properties.sample_frames(), 1162944);
+	// Marker test, TagLib doesn't seem to produce the correct properties for SV4
 }
 
 #[test]
