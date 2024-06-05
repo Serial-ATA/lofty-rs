@@ -588,6 +588,15 @@ impl BoundTaggedFile {
 
 		Ok(())
 	}
+
+	/// Consume this tagged file and return the internal file "buffer".
+	/// This allows you to reuse the internal file.
+	///
+	/// Any changes that haven't been commited will be discarded once you
+	/// call this function.
+	pub fn into_inner(self) -> File {
+		self.file_handle
+	}
 }
 
 impl TaggedFileExt for BoundTaggedFile {

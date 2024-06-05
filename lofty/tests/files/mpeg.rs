@@ -1,6 +1,6 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::config::{ParseOptions, WriteOptions};
-use lofty::file::FileType;
+use lofty::file::{BoundTaggedFile, FileType};
 use lofty::id3::v2::{Frame, FrameId, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
@@ -8,6 +8,7 @@ use lofty::probe::Probe;
 use lofty::tag::{Tag, TagType};
 
 use std::borrow::Cow;
+use std::fs::OpenOptions;
 use std::io::{Seek, Write};
 
 #[test]
@@ -208,6 +209,43 @@ fn save_number_of_track_and_disk_to_id3v2() {
 	assert!(tag.track_total().is_none());
 	assert_eq!(tag.disk().unwrap(), disk);
 	assert!(tag.disk_total().is_none());
+}
+
+#[test]
+fn test_bound_tagged_into_inner() {
+	let file = OpenOptions::new()
+		.read(true)
+		.write(true)
+		.open("tests/files/assets/minimal/full_test.mp3")
+		.expect("Cannot open file");
+	let mut bounded =
+		BoundTaggedFile::read_from(file, Default::default()).expect("Couldn't parse file");
+	let tag = bounded
+		.tag_mut(TagType::Id3v2)
+		.expect("Couldn't get ref to tag");
+	let original_disk = tag.disk();
+	tag.set_disk(123);
+	bounded
+		.save(WriteOptions::default())
+		.expect("Couldn't save tags");
+	// Reread the file
+	let mut original_file = bounded.into_inner();
+	original_file.rewind().expect("Couldn't rewind");
+	let mut bounded = BoundTaggedFile::read_from(original_file, Default::default())
+		.expect("Couldn't reparse file");
+	let tag = bounded
+		.tag_mut(TagType::Id3v2)
+		.expect("Cannot get ref to tag");
+
+	assert_eq!(tag.disk(), Some(123));
+
+	// Revert the file to whatever it was after this test.
+	if let Some(disk) = original_disk {
+		tag.set_disk(disk);
+	}
+	bounded
+		.save(WriteOptions::default())
+		.expect("Couldn't save tags");
 }
 
 #[test]
