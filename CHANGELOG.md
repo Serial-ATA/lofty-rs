@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2024-06-06
+
 ### Added
 - **Tag**:
   - Support `ItemKey::ParentalAdvisory` for `Ilst` and `Id3v2Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/99)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/388))
@@ -784,7 +786,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.2...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.0...HEAD
+[0.20.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.2...0.20.0
 [0.19.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.1...0.19.2
 [0.19.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.0...0.19.1
 [0.19.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.18.2...0.19.0
