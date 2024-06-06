@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     in an immutable container, and silently rejoined with the tag when converting back to the original format
     or when writing.
 - **TagItem**: `set_lang` and `set_description` to allow for generic conversions of additional ID3v2 frames (such as comments) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/383)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/392))
+- **BoundTaggedFile**: `BoundTaggedFile::into_inner` to get the original file handle ([PR](https://github.com/Serial-ATA/lofty-rs/pull/404))
 
 ### Changed
 - **VorbisComments**/**ApeTag**: Verify contents of `ItemKey::FlagCompilation` during `Tag` merge ([PR](https://github.com/Serial-ATA/lofty-rs/pull/387))
