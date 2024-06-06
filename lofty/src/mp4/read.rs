@@ -200,7 +200,7 @@ where
 
 	Ok(Mp4File {
 		ftyp,
-		ilst_tag: moov.meta,
+		ilst_tag: moov.ilst,
 		properties: if parse_options.read_properties {
 			// Remove the length restriction
 			reader.reset_bounds(0, file_length);

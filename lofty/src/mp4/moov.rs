@@ -12,7 +12,7 @@ pub(crate) struct Moov {
 	// Represents the trak.mdia atom
 	pub(crate) traks: Vec<AtomInfo>,
 	// Represents a parsed moov.udta.meta.ilst
-	pub(crate) meta: Option<Ilst>,
+	pub(crate) ilst: Option<Ilst>,
 }
 
 impl Moov {
@@ -43,7 +43,7 @@ impl Moov {
 		R: Read + Seek,
 	{
 		let mut traks = Vec::new();
-		let mut meta = None;
+		let mut ilst = None;
 
 		while let Ok(Some(atom)) = reader.next() {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
@@ -56,7 +56,20 @@ impl Moov {
 						}
 					},
 					b"udta" => {
-						meta = meta_from_udta(reader, parse_mode, atom.len - 8)?;
+						let ilst_parsed = ilst_from_udta(reader, parse_mode, atom.len - 8)?;
+						if let Some(ilst_parsed) = ilst_parsed {
+							let Some(mut existing_ilst) = ilst else {
+								ilst = Some(ilst_parsed);
+								continue;
+							};
+
+							log::warn!("Multiple `ilst` atoms found, combining them");
+							for atom in ilst_parsed.atoms {
+								existing_ilst.insert(atom);
+							}
+
+							ilst = Some(existing_ilst);
+						}
 					},
 					_ => skip_unneeded(reader, atom.extended, atom.len)?,
 				}
@@ -67,11 +80,11 @@ impl Moov {
 			skip_unneeded(reader, atom.extended, atom.len)?
 		}
 
-		Ok(Self { traks, meta })
+		Ok(Self { traks, ilst })
 	}
 }
 
-fn meta_from_udta<R>(
+fn ilst_from_udta<R>(
 	reader: &mut AtomReader<R>,
 	parsing_mode: ParsingMode,
 	len: u64,
