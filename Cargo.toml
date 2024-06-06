@@ -11,7 +11,7 @@ byteorder = "1.5.0"
 
 [workspace.lints.rust]
 missing_docs                   = "deny"
-rust_2018_idioms               = "deny"
+rust_2018_idioms               = { level = "deny", priority = -1 }
 trivial_casts                  = "deny"
 trivial_numeric_casts          = "deny"
 unused_import_braces           = "deny"
