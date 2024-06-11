@@ -17,9 +17,9 @@ const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ETCO"));
 /// Note from [the spec](https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-frames.html#event-timing-codes):
 ///
 /// >>> Terminating the start events such as “intro start” is OPTIONAL.
-///     The ‘Not predefined synch’s ($E0-EF) are for user events.
-///     You might want to synchronise your music to something,
-///     like setting off an explosion on-stage, activating a screensaver etc.
+/// >>> The ‘Not predefined synch’s ($E0-EF) are for user events.
+/// >>> You might want to synchronise your music to something,
+/// >>> like setting off an explosion on-stage, activating a screensaver etc.
 #[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 #[allow(missing_docs)]
