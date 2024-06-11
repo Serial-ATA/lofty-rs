@@ -17,7 +17,7 @@ where
 	let mut id3v1_tag = None;
 	let mut ape_tag = None;
 
-	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(reader, true)?;
+	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
 
 	if id3v1_header.is_some() {
 		stream_length -= 128;
@@ -38,9 +38,11 @@ where
 	// Strongly recommended to be at the end of the file
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let Some((tag, header)) = crate::ape::tag::read::read_ape_tag(reader, true)? {
+	if let (tag, Some(header)) =
+		crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)?
+	{
 		stream_length -= u64::from(header.size);
-		ape_tag = Some(tag);
+		ape_tag = tag;
 	}
 
 	Ok(WavPackFile {

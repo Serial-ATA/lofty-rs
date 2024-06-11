@@ -86,16 +86,20 @@ where
 pub(crate) fn read_ape_tag<R: Read + Seek>(
 	reader: &mut R,
 	footer: bool,
-) -> Result<Option<(ApeTag, ApeHeader)>> {
+	read_tag: bool,
+) -> Result<(Option<ApeTag>, Option<ApeHeader>)> {
 	let mut ape_preamble = [0; 8];
 	reader.read_exact(&mut ape_preamble)?;
 
+	let mut ape_tag = None;
 	if &ape_preamble == APE_PREAMBLE {
 		let ape_header = header::read_ape_header(reader, footer)?;
+		if read_tag {
+			ape_tag = Some(read_ape_tag_with_header(reader, ape_header)?);
+		}
 
-		let ape = read_ape_tag_with_header(reader, ape_header)?;
-		return Ok(Some((ape, ape_header)));
+		return Ok((ape_tag, Some(ape_header)));
 	}
 
-	Ok(None)
+	Ok((None, None))
 }

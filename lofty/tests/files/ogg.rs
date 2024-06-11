@@ -5,9 +5,9 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::{Seek, Write};
+use std::io::Seek;
 
-// The tests for OGG Opus/Vorbis are nearly identical
+// The tests for OGG Opus/Vorbis/Speex are nearly identical
 // We have the vendor string and a title stored in the tag
 
 #[test]
@@ -185,4 +185,34 @@ fn flac_try_write_non_empty_id3v2() {
 			WriteOptions::default()
 		)
 		.is_err());
+}
+
+#[test]
+fn read_no_properties_opus() {
+	crate::no_properties_test!("tests/files/assets/minimal/full_test.opus");
+}
+
+#[test]
+fn read_no_tags_opus() {
+	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.opus", expected_len: 1);
+}
+
+#[test]
+fn read_no_properties_vorbis() {
+	crate::no_properties_test!("tests/files/assets/minimal/full_test.ogg");
+}
+
+#[test]
+fn read_no_tags_vorbis() {
+	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.ogg", expected_len: 1);
+}
+
+#[test]
+fn read_no_properties_speex() {
+	crate::no_properties_test!("tests/files/assets/minimal/full_test.spx");
+}
+
+#[test]
+fn read_no_tags_speex() {
+	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.spx", expected_len: 1);
 }

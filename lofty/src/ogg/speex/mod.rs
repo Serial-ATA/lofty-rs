@@ -28,8 +28,7 @@ impl SpeexFile {
 	where
 		R: Read + Seek,
 	{
-		let file_information =
-			super::read::read_from(reader, SPEEXHEADER, &[], 2, parse_options.parsing_mode)?;
+		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2, parse_options)?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {
@@ -37,8 +36,8 @@ impl SpeexFile {
 			} else {
 				SpeexProperties::default()
 			},
-			// Safe to unwrap, a metadata packet is mandatory in Speex
-			vorbis_comments_tag: file_information.0.unwrap(),
+			// A metadata packet is mandatory in Speex
+			vorbis_comments_tag: file_information.0.unwrap_or_default(),
 		})
 	}
 }

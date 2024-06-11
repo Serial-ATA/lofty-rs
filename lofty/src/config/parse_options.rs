@@ -3,6 +3,7 @@
 #[non_exhaustive]
 pub struct ParseOptions {
 	pub(crate) read_properties: bool,
+	pub(crate) read_tags: bool,
 	pub(crate) parsing_mode: ParsingMode,
 	pub(crate) max_junk_bytes: usize,
 }
@@ -15,6 +16,7 @@ impl Default for ParseOptions {
 	/// ```rust,ignore
 	/// ParseOptions {
 	/// 	read_properties: true,
+	///     read_tags: true,
 	/// 	parsing_mode: ParsingMode::BestAttempt,
 	///     max_junk_bytes: 1024
 	/// }
@@ -46,6 +48,7 @@ impl ParseOptions {
 	pub const fn new() -> Self {
 		Self {
 			read_properties: true,
+			read_tags: true,
 			parsing_mode: Self::DEFAULT_PARSING_MODE,
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
 		}
@@ -63,6 +66,21 @@ impl ParseOptions {
 	/// ```
 	pub fn read_properties(&mut self, read_properties: bool) -> Self {
 		self.read_properties = read_properties;
+		*self
+	}
+
+	/// Whether or not to read the tags
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::config::ParseOptions;
+	///
+	/// // By default, `read_tags` is enabled. Here, we don't want to read them.
+	/// let parsing_options = ParseOptions::new().read_tags(false);
+	/// ```
+	pub fn read_tags(&mut self, read_tags: bool) -> Self {
+		self.read_tags = read_tags;
 		*self
 	}
 

@@ -5,7 +5,7 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::{Seek, Write};
+use std::io::Seek;
 
 #[test]
 fn read() {
@@ -57,4 +57,14 @@ fn remove() {
 		"tests/files/assets/minimal/m4a_codec_aac.m4a",
 		TagType::Mp4Ilst
 	);
+}
+
+#[test]
+fn read_no_properties() {
+	crate::no_properties_test!("tests/files/assets/minimal/m4a_codec_aac.m4a");
+}
+
+#[test]
+fn read_no_tags() {
+	crate::no_tag_test!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 }

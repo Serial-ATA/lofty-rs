@@ -22,11 +22,15 @@ where
 
 	let mut stream_length = reader.stream_len_hack()?;
 
+	let find_id3v2_config = if parse_options.read_tags {
+		FindId3v2Config::READ_TAG
+	} else {
+		FindId3v2Config::NO_READ_TAG
+	};
+
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
-	if let ID3FindResults(Some(header), Some(content)) =
-		find_id3v2(reader, FindId3v2Config::READ_TAG)?
-	{
+	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, find_id3v2_config)? {
 		let reader = &mut &*content;
 
 		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
@@ -39,7 +43,7 @@ where
 	let pos_past_id3v2 = reader.stream_position()?;
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) = find_id3v1(reader, true)?;
+	let ID3FindResults(header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
@@ -51,8 +55,10 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let Some((tag, header)) = crate::ape::tag::read::read_ape_tag(reader, true)? {
-		file.ape_tag = Some(tag);
+	if let (tag, Some(header)) =
+		crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)?
+	{
+		file.ape_tag = tag;
 
 		// Seek back to the start of the tag
 		let pos = reader.stream_position()?;

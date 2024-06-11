@@ -2,7 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
 use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -34,11 +34,7 @@ impl Moov {
 		moov.ok_or_else(|| decode_err!(Mp4, "No \"moov\" atom found"))
 	}
 
-	pub(super) fn parse<R>(
-		reader: &mut AtomReader<R>,
-		parse_mode: ParsingMode,
-		read_properties: bool,
-	) -> Result<Self>
+	pub(super) fn parse<R>(reader: &mut AtomReader<R>, parse_options: ParseOptions) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
@@ -48,15 +44,18 @@ impl Moov {
 		while let Ok(Some(atom)) = reader.next() {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
-					b"trak" if read_properties => {
+					b"trak" if parse_options.read_properties => {
 						// All we need from here is trak.mdia
-						if let Some(mdia) = nested_atom(reader, atom.len, b"mdia", parse_mode)? {
+						if let Some(mdia) =
+							nested_atom(reader, atom.len, b"mdia", parse_options.parsing_mode)?
+						{
 							skip_unneeded(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
 						}
 					},
-					b"udta" => {
-						let ilst_parsed = ilst_from_udta(reader, parse_mode, atom.len - 8)?;
+					b"udta" if parse_options.read_tags => {
+						let ilst_parsed =
+							ilst_from_udta(reader, parse_options.parsing_mode, atom.len - 8)?;
 						if let Some(ilst_parsed) = ilst_parsed {
 							let Some(mut existing_ilst) = ilst else {
 								ilst = Some(ilst_parsed);

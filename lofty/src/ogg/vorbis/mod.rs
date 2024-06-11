@@ -34,7 +34,7 @@ impl VorbisFile {
 			VORBIS_IDENT_HEAD,
 			VORBIS_COMMENT_HEAD,
 			3,
-			parse_options.parsing_mode,
+			parse_options,
 		)?;
 
 		Ok(Self {
@@ -43,8 +43,8 @@ impl VorbisFile {
 			} else {
 				VorbisProperties::default()
 			},
-			// Safe to unwrap, a metadata packet is mandatory in OGG Vorbis
-			vorbis_comments_tag: file_information.0.unwrap(),
+			// A metadata packet is mandatory in OGG Vorbis
+			vorbis_comments_tag: file_information.0.unwrap_or_default(),
 		})
 	}
 }
