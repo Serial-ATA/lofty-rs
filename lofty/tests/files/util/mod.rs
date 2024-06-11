@@ -1,12 +1,56 @@
 #[macro_export]
 macro_rules! temp_file {
 	($path:tt) => {{
+		use std::io::Write as _;
+
 		let mut file = tempfile::tempfile().unwrap();
 		file.write_all(&std::fs::read($path).unwrap()).unwrap();
 
 		file.rewind().unwrap();
 
 		file
+	}};
+}
+
+#[macro_export]
+macro_rules! no_tag_test {
+	($path:literal) => {{
+		let mut file = crate::temp_file!($path);
+		let tagged_file = lofty::probe::Probe::new(&mut file)
+			.options(lofty::config::ParseOptions::new().read_tags(false))
+			.guess_file_type()
+			.unwrap()
+			.read()
+			.unwrap();
+		assert!(!tagged_file.contains_tag());
+	}};
+	(@MANDATORY_TAG $path:literal, expected_len: $expected_len:literal) => {{
+		use lofty::tag::TagExt as _;
+
+		let mut file = crate::temp_file!($path);
+		let tagged_file = lofty::probe::Probe::new(&mut file)
+			.options(lofty::config::ParseOptions::new().read_tags(false))
+			.guess_file_type()
+			.unwrap()
+			.read()
+			.unwrap();
+		for tag in tagged_file.tags() {
+			assert_eq!(tag.len(), $expected_len);
+		}
+	}};
+}
+
+#[macro_export]
+macro_rules! no_properties_test {
+	($path:literal) => {{
+		let mut file = crate::temp_file!($path);
+		let tagged_file = lofty::probe::Probe::new(&mut file)
+			.options(lofty::config::ParseOptions::new().read_properties(false))
+			.guess_file_type()
+			.unwrap()
+			.read()
+			.unwrap();
+		assert!(tagged_file.properties().is_empty());
 	}};
 }
 

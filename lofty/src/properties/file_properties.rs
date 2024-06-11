@@ -85,4 +85,21 @@ impl FileProperties {
 	pub fn channel_mask(&self) -> Option<ChannelMask> {
 		self.channel_mask
 	}
+
+	/// Used for tests
+	#[doc(hidden)]
+	pub fn is_empty(&self) -> bool {
+		matches!(
+			self,
+			Self {
+				duration: Duration::ZERO,
+				overall_bitrate: None | Some(0),
+				audio_bitrate: None | Some(0),
+				sample_rate: None | Some(0),
+				bit_depth: None | Some(0),
+				channels: None | Some(0),
+				channel_mask: None,
+			}
+		)
+	}
 }

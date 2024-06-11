@@ -459,6 +459,10 @@ impl<R: Read + Seek> Probe<R> {
 		let reader = &mut self.inner;
 		let options = self.options.unwrap_or_default();
 
+		if !options.read_tags && !options.read_properties {
+			log::warn!("Skipping both tag and property reading, file will be empty");
+		}
+
 		match self.f_ty {
 			Some(f_type) => Ok(match f_type {
 				FileType::Aac => AacFile::read_from(reader, options)?.into(),

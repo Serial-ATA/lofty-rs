@@ -43,16 +43,20 @@ where
 				let header = Id3v2Header::parse(reader)?;
 				let skip_footer = header.flags.footer;
 
-				let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
-				if let Some(existing_tag) = &mut file.id3v2_tag {
-					// https://github.com/Serial-ATA/lofty-rs/issues/87
-					// Duplicate tags should have their frames appended to the previous
-					for frame in id3v2.frames {
-						existing_tag.insert(frame);
+				if parse_options.read_tags {
+					let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+					if let Some(existing_tag) = &mut file.id3v2_tag {
+						// https://github.com/Serial-ATA/lofty-rs/issues/87
+						// Duplicate tags should have their frames appended to the previous
+						for frame in id3v2.frames {
+							existing_tag.insert(frame);
+						}
+						continue;
 					}
-					continue;
+					file.id3v2_tag = Some(id3v2);
+				} else {
+					reader.seek(SeekFrom::Current(i64::from(header.size)))?;
 				}
-				file.id3v2_tag = Some(id3v2);
 
 				// Skip over the footer
 				if skip_footer {
@@ -74,9 +78,13 @@ where
 				if &header_remaining == b"AGEX" {
 					let ape_header = read_ape_header(reader, false)?;
 
-					file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
-						reader, ape_header,
-					)?);
+					if parse_options.read_tags {
+						file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
+							reader, ape_header,
+						)?);
+					} else {
+						reader.seek(SeekFrom::Current(i64::from(ape_header.size)))?;
+					}
 
 					continue;
 				}
@@ -105,7 +113,7 @@ where
 						std::cmp::min(_first_frame_offset, parse_options.max_junk_bytes as u64);
 
 					let config = FindId3v2Config {
-						read: true,
+						read: parse_options.read_tags,
 						allowed_junk_window: Some(search_window_size),
 					};
 
@@ -137,7 +145,7 @@ where
 	}
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) = find_id3v1(reader, true)?;
+	let ID3FindResults(header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
@@ -147,15 +155,15 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	match crate::ape::tag::read::read_ape_tag(reader, true)? {
-		Some((tag, header)) => {
-			file.ape_tag = Some(tag);
+	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)? {
+		(tag, Some(header)) => {
+			file.ape_tag = tag;
 
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
 			reader.seek(SeekFrom::Start(pos - u64::from(header.size)))?;
 		},
-		None => {
+		_ => {
 			// Correct the position (APE header - Preamble)
 			reader.seek(SeekFrom::Current(24))?;
 		},
