@@ -622,9 +622,11 @@ mod tests {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag);
 
-		let (parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
-			.unwrap()
-			.unwrap();
+		let (Some(parsed_tag), _) =
+			crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+		else {
+			unreachable!();
+		};
 
 		assert_eq!(expected_tag.len(), parsed_tag.len());
 
@@ -638,9 +640,11 @@ mod tests {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
-		let (parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
-			.unwrap()
-			.unwrap();
+		let (Some(parsed_tag), _) =
+			crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+		else {
+			unreachable!();
+		};
 
 		let mut writer = Vec::new();
 		parsed_tag
@@ -649,9 +653,11 @@ mod tests {
 
 		let mut temp_reader = Cursor::new(writer);
 
-		let (temp_parsed_tag, _) = crate::ape::tag::read::read_ape_tag(&mut temp_reader, false)
-			.unwrap()
-			.unwrap();
+		let (Some(temp_parsed_tag), _) =
+			crate::ape::tag::read::read_ape_tag(&mut temp_reader, false, true).unwrap()
+		else {
+			unreachable!()
+		};
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -661,9 +667,10 @@ mod tests {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
-		let (ape, _) = crate::ape::tag::read::read_ape_tag(&mut reader, false)
-			.unwrap()
-			.unwrap();
+		let (Some(ape), _) = crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+		else {
+			unreachable!()
+		};
 
 		let tag: Tag = ape.into();
 

@@ -8,7 +8,7 @@ use lofty::probe::Probe;
 use lofty::tag::{Tag, TagType};
 
 use std::borrow::Cow;
-use std::io::{Seek, Write};
+use std::io::Seek;
 
 #[test]
 fn read() {
@@ -368,4 +368,27 @@ fn read_and_write_tpil_frame() {
 	};
 
 	assert_eq!(key_value_pairs, content.key_value_pairs);
+}
+
+#[test]
+fn read_no_properties() {
+	let mut file = crate::temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+	let properties = tagged_file.properties();
+	assert!(properties.duration().is_zero());
+	assert_eq!(properties.overall_bitrate(), Some(0));
+	assert_eq!(properties.audio_bitrate(), Some(0));
+	assert_eq!(properties.sample_rate(), Some(0));
+	assert!(properties.bit_depth().is_none());
+	assert_eq!(properties.channels(), Some(0));
+}
+
+#[test]
+fn read_no_tags() {
+	crate::no_tag_test!("tests/files/assets/minimal/full_test.mp3");
 }

@@ -32,7 +32,11 @@ impl From<WavPackProperties> for FileProperties {
 			sample_rate: Some(input.sample_rate),
 			bit_depth: Some(input.bit_depth),
 			channels: Some(input.channels as u8),
-			channel_mask: Some(input.channel_mask),
+			channel_mask: if input.channel_mask == ChannelMask(0) {
+				None
+			} else {
+				Some(input.channel_mask)
+			},
 		}
 	}
 }

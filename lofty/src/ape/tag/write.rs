@@ -48,8 +48,8 @@ where
 	let mut header_ape_tag = (false, (0, 0));
 
 	let start = file.stream_position()?;
-	match read::read_ape_tag(file, false)? {
-		Some((mut existing_tag, header)) => {
+	match read::read_ape_tag(file, false, true)? {
+		(Some(mut existing_tag), Some(header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
 				existing_tag.items.retain(|i| i.read_only);
@@ -61,7 +61,7 @@ where
 
 			header_ape_tag = (true, (start, start + u64::from(header.size)))
 		},
-		None => {
+		_ => {
 			file.seek(SeekFrom::Current(-8))?;
 		},
 	}
@@ -80,7 +80,7 @@ where
 
 	// Also check this tag for any read only items
 	let start = file.stream_position()? as usize + 32;
-	if let Some((mut existing_tag, header)) = read::read_ape_tag(file, true)? {
+	if let (Some(mut existing_tag), Some(header)) = read::read_ape_tag(file, true, true)? {
 		if write_options.respect_read_only {
 			existing_tag.items.retain(|i| i.read_only);
 

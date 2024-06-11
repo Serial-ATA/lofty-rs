@@ -5,7 +5,7 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::{Seek, Write};
+use std::io::Seek;
 
 #[test]
 fn read() {
@@ -84,4 +84,14 @@ fn issue_174_divide_by_zero() {
 	.unwrap();
 
 	assert_eq!(file.file_type(), FileType::Wav);
+}
+
+#[test]
+fn read_no_properties() {
+	crate::no_properties_test!("tests/files/assets/minimal/wav_format_pcm.wav");
+}
+
+#[test]
+fn read_no_tags() {
+	crate::no_tag_test!("tests/files/assets/minimal/wav_format_pcm.wav");
 }

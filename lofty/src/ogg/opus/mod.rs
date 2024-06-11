@@ -30,7 +30,7 @@ impl OpusFile {
 		R: Read + Seek,
 	{
 		let file_information =
-			super::read::read_from(reader, OPUSHEAD, OPUSTAGS, 2, parse_options.parsing_mode)?;
+			super::read::read_from(reader, OPUSHEAD, OPUSTAGS, 2, parse_options)?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {
@@ -38,8 +38,8 @@ impl OpusFile {
 			} else {
 				OpusProperties::default()
 			},
-			// Safe to unwrap, a metadata packet is mandatory in Opus
-			vorbis_comments_tag: file_information.0.unwrap(),
+			// A metadata packet is mandatory in Opus
+			vorbis_comments_tag: file_information.0.unwrap_or_default(),
 		})
 	}
 }

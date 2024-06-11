@@ -47,10 +47,14 @@ where
 		properties: FlacProperties::default(),
 	};
 
+	let find_id3v2_config = if parse_options.read_tags {
+		FindId3v2Config::READ_TAG
+	} else {
+		FindId3v2Config::NO_READ_TAG
+	};
+
 	// It is possible for a FLAC file to contain an ID3v2 tag
-	if let ID3FindResults(Some(header), Some(content)) =
-		find_id3v2(data, FindId3v2Config::READ_TAG)?
-	{
+	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, find_id3v2_config)? {
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
 
 		let reader = &mut &*content;
@@ -78,7 +82,7 @@ where
 			decode_err!(@BAIL Flac, "Encountered a zero-sized metadata block");
 		}
 
-		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
+		if block.ty == BLOCK_ID_VORBIS_COMMENTS && parse_options.read_tags {
 			log::debug!("Encountered a Vorbis Comments block, parsing");
 
 			// NOTE: According to the spec
@@ -106,7 +110,7 @@ where
 			continue;
 		}
 
-		if block.ty == BLOCK_ID_PICTURE {
+		if block.ty == BLOCK_ID_PICTURE && parse_options.read_tags {
 			log::debug!("Encountered a FLAC picture block, parsing");
 
 			match Picture::from_flac_bytes(&block.content, false, parse_options.parsing_mode) {
