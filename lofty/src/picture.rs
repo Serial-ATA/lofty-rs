@@ -467,16 +467,14 @@ impl Picture {
 	///
 	/// NOTES:
 	///
-	/// * This is for reading picture data only, from
-	/// a [`File`](std::fs::File) for example.
-	/// * `pic_type` will always be [`PictureType::Other`],
-	/// be sure to change it accordingly if writing.
+	/// * This is for reading picture data only, from a [`File`](std::fs::File) for example.
+	/// * `pic_type` will always be [`PictureType::Other`], be sure to change it accordingly if
+	///    writing.
 	///
 	/// # Errors
 	///
 	/// * `reader` contains less than 8 bytes
-	/// * `reader` does not contain a supported format.
-	/// See [`MimeType`] for valid formats
+	/// * `reader` does not contain a supported format. See [`MimeType`] for valid formats
 	pub fn from_reader<R>(reader: &mut R) -> Result<Self>
 	where
 		R: Read,

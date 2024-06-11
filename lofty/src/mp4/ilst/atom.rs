@@ -247,12 +247,12 @@ impl Debug for Atom<'_> {
 /// NOTES:
 ///
 /// * This only covers the most common data types.
-/// See the list of [well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
-/// for codes.
+///   See the list of [well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
+///   for codes.
 /// * There are only two variants for integers, which
-/// will come from codes `21` and `22`. All other integer
-/// types will be stored as [`AtomData::Unknown`], refer
-/// to the link above for codes.
+///   will come from codes `21` and `22`. All other integer
+///   types will be stored as [`AtomData::Unknown`], refer
+///   to the link above for codes.
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum AtomData {
 	/// A UTF-8 encoded string

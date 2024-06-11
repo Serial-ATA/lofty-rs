@@ -167,10 +167,9 @@ impl FileType {
 	///
 	/// NOTES:
 	///
-	/// * This is for use in [`Probe::guess_file_type`], it
-	/// is recommended to use it that way
+	/// * This is for use in [`Probe::guess_file_type`], it is recommended to use it that way
 	/// * This **will not** search past tags at the start of the buffer.
-	/// For this behavior, use [`Probe::guess_file_type`].
+	///   For this behavior, use [`Probe::guess_file_type`].
 	///
 	/// [`Probe::guess_file_type`]: crate::probe::Probe::guess_file_type
 	///
