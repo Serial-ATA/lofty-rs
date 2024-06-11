@@ -69,7 +69,7 @@ where
 
 	while chunks.next(data).is_ok() {
 		match &chunks.fourcc {
-			b"ID3 " | b"id3 " => {
+			b"ID3 " | b"id3 " if parse_options.read_tags => {
 				let tag = chunks.id3_chunk(data, parse_options.parsing_mode)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
 					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
@@ -95,12 +95,12 @@ where
 				stream_len = chunks.size;
 				chunks.skip(data)?;
 			},
-			b"ANNO" => {
+			b"ANNO" if parse_options.read_tags => {
 				annotations.push(chunks.read_pstring(data, None)?);
 			},
 			// These four chunks are expected to appear at most once per file,
 			// so there's no need to replace anything we already read
-			b"COMT" if comments.is_empty() => {
+			b"COMT" if comments.is_empty() && parse_options.read_tags => {
 				if chunks.size < 2 {
 					continue;
 				}
@@ -123,13 +123,13 @@ where
 
 				chunks.correct_position(data)?;
 			},
-			b"NAME" if text_chunks.name.is_none() => {
+			b"NAME" if text_chunks.name.is_none() && parse_options.read_tags => {
 				text_chunks.name = Some(chunks.read_pstring(data, None)?);
 			},
-			b"AUTH" if text_chunks.author.is_none() => {
+			b"AUTH" if text_chunks.author.is_none() && parse_options.read_tags => {
 				text_chunks.author = Some(chunks.read_pstring(data, None)?);
 			},
-			b"(c) " if text_chunks.copyright.is_none() => {
+			b"(c) " if text_chunks.copyright.is_none() && parse_options.read_tags => {
 				text_chunks.copyright = Some(chunks.read_pstring(data, None)?);
 			},
 			_ => chunks.skip(data)?,

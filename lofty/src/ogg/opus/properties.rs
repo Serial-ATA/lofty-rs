@@ -32,7 +32,11 @@ impl From<OpusProperties> for FileProperties {
 			sample_rate: Some(input.input_sample_rate),
 			bit_depth: None,
 			channels: Some(input.channels),
-			channel_mask: Some(input.channel_mask),
+			channel_mask: if input.channel_mask == ChannelMask(0) {
+				None
+			} else {
+				Some(input.channel_mask)
+			},
 		}
 	}
 }

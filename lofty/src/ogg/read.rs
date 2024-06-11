@@ -1,6 +1,6 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
@@ -189,7 +189,7 @@ pub(crate) fn read_from<T>(
 	header_sig: &[u8],
 	comment_sig: &[u8],
 	packets_to_read: isize,
-	parse_mode: ParsingMode,
+	parse_options: ParseOptions,
 ) -> Result<OGGTags>
 where
 	T: Read + Seek,
@@ -210,6 +210,10 @@ where
 		.ok_or_else(|| decode_err!("OGG: Expected identification packet"))?;
 	verify_signature(identification_packet, header_sig)?;
 
+	if !parse_options.read_tags {
+		return Ok((None, first_page_header, packets));
+	}
+
 	let mut metadata_packet = packets
 		.get(1)
 		.ok_or_else(|| decode_err!("OGG: Expected comment packet"))?;
@@ -219,7 +223,7 @@ where
 	metadata_packet = &metadata_packet[comment_sig.len()..];
 
 	let reader = &mut metadata_packet;
-	let tag = read_comments(reader, reader.len() as u64, parse_mode)?;
+	let tag = read_comments(reader, reader.len() as u64, parse_options.parsing_mode)?;
 
 	Ok((Some(tag), first_page_header, packets))
 }

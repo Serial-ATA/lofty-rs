@@ -48,18 +48,20 @@ where
 
 				stream_len -= u64::from(header.size);
 
-				let id3v2 = parse_id3v2(reader, header, parse_mode)?;
-				if let Some(existing_tag) = &mut file.id3v2_tag {
-					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
+				if parse_options.read_tags {
+					let id3v2 = parse_id3v2(reader, header, parse_mode)?;
+					if let Some(existing_tag) = &mut file.id3v2_tag {
+						log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
 
-					// https://github.com/Serial-ATA/lofty-rs/issues/87
-					// Duplicate tags should have their frames appended to the previous
-					for frame in id3v2.frames {
-						existing_tag.insert(frame);
+						// https://github.com/Serial-ATA/lofty-rs/issues/87
+						// Duplicate tags should have their frames appended to the previous
+						for frame in id3v2.frames {
+							existing_tag.insert(frame);
+						}
+						continue;
 					}
-					continue;
+					file.id3v2_tag = Some(id3v2);
 				}
-				file.id3v2_tag = Some(id3v2);
 
 				// Skip over the footer
 				if skip_footer {
@@ -94,7 +96,7 @@ where
 	}
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) = find_id3v1(reader, true)?;
+	let ID3FindResults(header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
 
 	if header.is_some() {
 		stream_len -= 128;

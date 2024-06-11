@@ -5,7 +5,7 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::{Seek, Write};
+use std::io::Seek;
 
 #[test]
 fn read() {
@@ -69,4 +69,14 @@ fn remove_text_chunks() {
 #[test]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aiff", TagType::Id3v2);
+}
+
+#[test]
+fn read_no_properties() {
+	crate::no_properties_test!("tests/files/assets/minimal/full_test.aiff");
+}
+
+#[test]
+fn read_no_tags() {
+	crate::no_tag_test!("tests/files/assets/minimal/full_test.aiff");
 }

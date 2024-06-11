@@ -78,7 +78,7 @@ where
 				data.read_exact(&mut list_type)?;
 
 				match &list_type {
-					b"INFO" => {
+					b"INFO" if parse_options.read_tags => {
 						let end = data.stream_position()? + u64::from(chunks.size - 4);
 						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
 					},
@@ -88,7 +88,7 @@ where
 					},
 				}
 			},
-			b"ID3 " | b"id3 " => {
+			b"ID3 " | b"id3 " if parse_options.read_tags => {
 				let tag = chunks.id3_chunk(data, parse_options.parsing_mode)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
 					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");

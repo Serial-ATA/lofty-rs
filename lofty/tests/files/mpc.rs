@@ -6,7 +6,7 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::{Seek, Write};
+use std::io::Seek;
 
 // Marker test so IntelliJ Rust recognizes this as a test module
 #[test]
@@ -78,6 +78,16 @@ macro_rules! generate_tests {
 			#[test]
 			fn [<remove_ape_ $stream_version>]() {
 				crate::remove_tag!($path, TagType::Ape);
+			}
+
+			#[test]
+			fn [<read_no_properties_ $stream_version>]() {
+				crate::no_properties_test!($path);
+			}
+
+			#[test]
+			fn [<read_no_tags_ $stream_version>]() {
+				crate::no_tag_test!($path);
 			}
 		}
 	};

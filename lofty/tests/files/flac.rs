@@ -30,3 +30,13 @@ fn multiple_vorbis_comments() {
 		Some("Artist 2")
 	);
 }
+
+#[test]
+fn read_no_properties() {
+	crate::no_properties_test!("tests/files/assets/minimal/full_test.flac");
+}
+
+#[test]
+fn read_no_tags() {
+	crate::no_tag_test!("tests/files/assets/minimal/full_test.flac");
+}
