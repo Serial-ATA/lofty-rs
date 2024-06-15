@@ -7,6 +7,7 @@ pub struct ParseOptions {
 	pub(crate) parsing_mode: ParsingMode,
 	pub(crate) max_junk_bytes: usize,
 	pub(crate) read_cover_art: bool,
+	pub(crate) implicit_conversions: bool,
 }
 
 impl Default for ParseOptions {
@@ -21,6 +22,7 @@ impl Default for ParseOptions {
 	/// 	parsing_mode: ParsingMode::BestAttempt,
 	///     max_junk_bytes: 1024,
 	///     read_cover_art: true,
+	///     implicit_conversions: true,
 	/// }
 	/// ```
 	fn default() -> Self {
@@ -54,6 +56,7 @@ impl ParseOptions {
 			parsing_mode: Self::DEFAULT_PARSING_MODE,
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
 			read_cover_art: true,
+			implicit_conversions: true,
 		}
 	}
 
@@ -132,6 +135,31 @@ impl ParseOptions {
 	/// ```
 	pub fn read_cover_art(&mut self, read_cover_art: bool) -> Self {
 		self.read_cover_art = read_cover_art;
+		*self
+	}
+
+	/// Whether or not to perform implicit conversions
+	///
+	/// Implicit conversions are conversions that are not explicitly defined by the spec, but are commonly used.
+	///
+	/// ⚠ **Warning** ⚠
+	///
+	/// Turning this off may cause some [`Accessor`](crate::tag::Accessor) methods to return nothing.
+	/// Lofty makes some assumptions about the data, if they are broken, the caller will have more
+	/// responsibility.
+	///
+	/// Examples include:
+	///
+	/// * Converting the outdated MP4 `gnre` atom to a `©gen` atom
+	/// * Combining the ID3v2.3 `TYER`, `TDAT`, and `TIME` frames into a single `TDRC` frame
+	///
+	/// Examples of what this does *not* include:
+	///
+	/// * Converting a Vorbis `COVERART` field to `METADATA_BLOCK_PICTURE`
+	///   * This is a non-standard field, with a well-defined conversion. Lofty will not support
+	///     the non-standard `COVERART` for [`Picture`](crate::picture::Picture)s.
+	pub fn implicit_conversions(&mut self, implicit_conversions: bool) -> Self {
+		self.implicit_conversions = implicit_conversions;
 		*self
 	}
 }
