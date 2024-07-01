@@ -165,11 +165,16 @@ impl<'a> ExtendedTextFrame<'a> {
 	}
 
 	/// Convert an [`ExtendedTextFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut bytes = vec![self.encoding as u8];
+	pub fn as_bytes(&self, is_id3v23: bool) -> Vec<u8> {
+		let mut encoding = self.encoding;
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
 
-		bytes.extend(encode_text(&self.description, self.encoding, true).iter());
-		bytes.extend(encode_text(&self.content, self.encoding, false));
+		let mut bytes = vec![encoding as u8];
+
+		bytes.extend(encode_text(&self.description, encoding, true).iter());
+		bytes.extend(encode_text(&self.content, encoding, false));
 
 		bytes
 	}

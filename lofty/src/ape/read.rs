@@ -8,7 +8,7 @@ use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
-use crate::macros::{decode_err, err};
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -82,7 +82,7 @@ where
 				})?;
 
 				if &remaining[..4] != b"AGEX" {
-					err!(FakeTag)
+					decode_err!(@BAIL Ape, "Found incomplete APE tag");
 				}
 
 				let ape_header = read_ape_header(data, false)?;
