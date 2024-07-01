@@ -116,8 +116,13 @@ impl<'a> OwnershipFrame<'a> {
 	/// # Errors
 	///
 	/// * `date_of_purchase` is not at least 8 characters (it will be truncated if greater)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
-		let mut bytes = vec![self.encoding as u8];
+	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+		let mut encoding = self.encoding;
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
+
+		let mut bytes = vec![encoding as u8];
 
 		bytes.extend(encode_text(&self.price_paid, TextEncoding::Latin1, true));
 		if self.date_of_purchase.len() < 8 {
@@ -125,7 +130,7 @@ impl<'a> OwnershipFrame<'a> {
 		}
 
 		bytes.extend(self.date_of_purchase.as_bytes().iter().take(8));
-		bytes.extend(encode_text(&self.seller, self.encoding, false));
+		bytes.extend(encode_text(&self.seller, encoding, false));
 
 		Ok(bytes)
 	}
@@ -161,7 +166,7 @@ mod tests {
 
 	#[test]
 	fn owne_encode() {
-		let encoded = expected().as_bytes().unwrap();
+		let encoded = expected().as_bytes(false).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");

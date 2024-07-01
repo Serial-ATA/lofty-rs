@@ -34,6 +34,22 @@ impl TextEncoding {
 	pub(crate) fn verify_latin1(text: &str) -> bool {
 		text.chars().all(|c| c as u32 <= 255)
 	}
+
+	/// ID3v2.4 introduced two new text encodings.
+	///
+	/// When writing ID3v2.3, we just substitute with UTF-16.
+	pub(crate) fn to_id3v23(self) -> Self {
+		match self {
+			Self::UTF8 | Self::UTF16BE => {
+				log::warn!(
+					"Text encoding {:?} is not supported in ID3v2.3, substituting with UTF-16",
+					self
+				);
+				Self::UTF16
+			},
+			_ => self,
+		}
+	}
 }
 
 #[derive(Eq, PartialEq, Debug)]

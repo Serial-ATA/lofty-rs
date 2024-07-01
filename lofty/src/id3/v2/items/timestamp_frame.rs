@@ -106,11 +106,16 @@ impl<'a> TimestampFrame<'a> {
 	///
 	/// * The timestamp is invalid
 	/// * Failure to write to the buffer
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+		let mut encoding = self.encoding;
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
+
 		self.timestamp.verify()?;
 
-		let mut encoded_text = encode_text(&self.timestamp.to_string(), self.encoding, false);
-		encoded_text.insert(0, self.encoding as u8);
+		let mut encoded_text = encode_text(&self.timestamp.to_string(), encoding, false);
+		encoded_text.insert(0, encoding as u8);
 
 		Ok(encoded_text)
 	}

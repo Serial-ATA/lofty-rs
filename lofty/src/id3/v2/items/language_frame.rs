@@ -51,11 +51,16 @@ impl LanguageFrame {
 	}
 
 	fn create_bytes(
-		encoding: TextEncoding,
+		mut encoding: TextEncoding,
 		language: [u8; 3],
 		description: &str,
 		content: &str,
+		is_id3v23: bool,
 	) -> Result<Vec<u8>> {
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
+
 		let mut bytes = vec![encoding as u8];
 
 		if language.len() != 3 || language.iter().any(|c| !c.is_ascii_alphabetic()) {
@@ -175,12 +180,13 @@ impl<'a> CommentFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,
 			&self.description,
 			&self.content,
+			is_id3v23,
 		)
 	}
 }
@@ -290,12 +296,13 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,
 			&self.description,
 			&self.content,
+			is_id3v23,
 		)
 	}
 }

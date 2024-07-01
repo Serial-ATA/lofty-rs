@@ -1,4 +1,4 @@
-use crate::config::ParsingMode;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::macros::{err, try_vec};
@@ -91,7 +91,7 @@ impl<B: ByteOrder> Chunks<B> {
 		Ok(content)
 	}
 
-	pub fn id3_chunk<R>(&mut self, data: &mut R, parse_mode: ParsingMode) -> Result<Id3v2Tag>
+	pub fn id3_chunk<R>(&mut self, data: &mut R, parse_options: ParseOptions) -> Result<Id3v2Tag>
 	where
 		R: Read + Seek,
 	{
@@ -103,7 +103,7 @@ impl<B: ByteOrder> Chunks<B> {
 		let reader = &mut &*content;
 
 		let header = Id3v2Header::parse(reader)?;
-		let id3v2 = parse_id3v2(reader, header, parse_mode)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 
 		// Skip over the footer
 		if id3v2.flags().footer {

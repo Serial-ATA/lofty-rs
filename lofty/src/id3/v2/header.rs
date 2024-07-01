@@ -40,6 +40,46 @@ pub struct Id3v2TagFlags {
 	pub restrictions: Option<TagRestrictions>,
 }
 
+impl Id3v2TagFlags {
+	/// Get the **ID3v2.4** byte representation of the flags
+	///
+	/// NOTE: This does not include the extended header flags
+	pub fn as_id3v24_byte(&self) -> u8 {
+		let mut byte = 0;
+
+		if self.unsynchronisation {
+			byte |= 0x80;
+		}
+
+		if self.experimental {
+			byte |= 0x20;
+		}
+
+		if self.footer {
+			byte |= 0x10;
+		}
+
+		byte
+	}
+
+	/// Get the **ID3v2.3** byte representation of the flags
+	///
+	/// NOTE: This does not include the extended header flags
+	pub fn as_id3v23_byte(&self) -> u8 {
+		let mut byte = 0;
+
+		if self.experimental {
+			byte |= 0x40;
+		}
+
+		if self.footer {
+			byte |= 0x10;
+		}
+
+		byte
+	}
+}
+
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct Id3v2Header {
 	pub version: Id3v2Version,

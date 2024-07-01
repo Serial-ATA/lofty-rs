@@ -1,4 +1,4 @@
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
@@ -17,14 +17,28 @@ const COMMENT_FRAME_ID: &str = "COMM";
 
 fn read_tag(path: &str) -> Id3v2Tag {
 	let tag_bytes = read_path(path);
-	read_tag_raw(&tag_bytes)
+	read_tag_raw(
+		&tag_bytes,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
 }
 
-fn read_tag_raw(bytes: &[u8]) -> Id3v2Tag {
+fn read_tag_raw(bytes: &[u8], parse_options: ParseOptions) -> Id3v2Tag {
 	let mut reader = Cursor::new(bytes);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()
+	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options).unwrap()
+}
+
+fn dump_and_re_read(tag: &Id3v2Tag, write_options: WriteOptions) -> Id3v2Tag {
+	let mut tag_bytes = Vec::new();
+	let mut writer = Cursor::new(&mut tag_bytes);
+	tag.dump_to(&mut writer, write_options).unwrap();
+
+	read_tag_raw(
+		&tag_bytes[..],
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
 }
 
 #[test]
@@ -58,10 +72,13 @@ fn parse_id3v2() {
 		String::from("Qux comment"),
 	)));
 
-	expected_tag.insert(Frame::Text(TextInformationFrame::new(
+	expected_tag.insert(Frame::Timestamp(TimestampFrame::new(
 		FrameId::Valid(Cow::Borrowed("TDRC")),
 		encoding,
-		String::from("1984"),
+		Timestamp {
+			year: 1984,
+			..Timestamp::default()
+		},
 	)));
 
 	expected_tag.insert(Frame::Text(TextInformationFrame::new(
@@ -93,8 +110,12 @@ fn id3v2_re_read() {
 	let temp_reader = &mut &*writer;
 
 	let temp_header = Id3v2Header::parse(temp_reader).unwrap();
-	let temp_parsed_tag =
-		crate::id3::v2::read::parse_id3v2(temp_reader, temp_header, ParsingMode::Strict).unwrap();
+	let temp_parsed_tag = crate::id3::v2::read::parse_id3v2(
+		temp_reader,
+		temp_header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(parsed_tag, temp_parsed_tag);
 }
@@ -201,10 +222,13 @@ fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 		String::from("Summer"),
 	)));
 
-	tag.insert(Frame::Text(TextInformationFrame::new(
+	tag.insert(Frame::Timestamp(TimestampFrame::new(
 		FrameId::Valid(Cow::Borrowed("TDRC")),
 		encoding,
-		String::from("2017"),
+		Timestamp {
+			year: 2017,
+			..Timestamp::default()
+		},
 	)));
 
 	tag.insert(Frame::Text(TextInformationFrame::new(
@@ -242,9 +266,14 @@ fn id3v24_full() {
 
 #[test]
 fn id3v23_full() {
-	let tag = create_full_test_tag(Id3v2Version::V3);
-	let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
+	let mut tag = create_full_test_tag(Id3v2Version::V3);
+	let mut parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
 
+	// Tags may change order after being read, due to the TDRC conversion
+	tag.frames.sort_by_key(|frame| frame.id_str().to_string());
+	parsed_tag
+		.frames
+		.sort_by_key(|frame| frame.id_str().to_string());
 	assert_eq!(tag, parsed_tag);
 }
 
@@ -267,7 +296,12 @@ fn id3v24_footer() {
 	let mut reader = &mut &writer[..];
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let _ = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
+	let _ = crate::id3::v2::read::parse_id3v2(
+		reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(writer[3..10], writer[writer.len() - 7..])
 }
@@ -292,7 +326,12 @@ fn issue_36() {
 	let mut reader = &mut &writer[..];
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let tag = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
+	let tag = crate::id3::v2::read::parse_id3v2(
+		reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(tag.len(), 1);
 	assert_eq!(
@@ -567,8 +606,12 @@ fn user_defined_frames_conversion() {
 	let mut reader = std::io::Cursor::new(&content[..]);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let reparsed =
-		crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap();
+	let reparsed = crate::id3::v2::read::parse_id3v2(
+		&mut reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(id3v2, reparsed);
 }
@@ -1238,7 +1281,10 @@ fn special_items_roundtrip() {
 	tag.dump_to(&mut tag_bytes, WriteOptions::default())
 		.unwrap();
 
-	let mut tag_re_read = read_tag_raw(&tag_bytes[..]);
+	let mut tag_re_read = read_tag_raw(
+		&tag_bytes[..],
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	);
 
 	// Ensure ordered comparison
 	tag.frames.sort_by_key(|frame| frame.id().to_string());
@@ -1254,7 +1300,10 @@ fn special_items_roundtrip() {
 	tag.dump_to(&mut tag_bytes, WriteOptions::default())
 		.unwrap();
 
-	let mut generic_tag_re_read = read_tag_raw(&tag_bytes[..]);
+	let mut generic_tag_re_read = read_tag_raw(
+		&tag_bytes[..],
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	);
 
 	generic_tag_re_read
 		.frames
@@ -1304,4 +1353,162 @@ fn hold_back_4_character_txxx_description() {
 
 	let tag: Id3v2Tag = tag.into();
 	assert_eq!(tag.len(), 1);
+}
+
+#[test]
+fn remove_id3v24_frames_on_id3v23_save() {
+	let mut tag = Id3v2Tag::new();
+
+	tag.insert(Frame::RelativeVolumeAdjustment(
+		RelativeVolumeAdjustmentFrame::new(
+			String::from("Foo RVA"),
+			HashMap::from([(
+				ChannelType::MasterVolume,
+				ChannelInformation {
+					channel_type: ChannelType::MasterVolume,
+					volume_adjustment: 30,
+					bits_representing_peak: 0,
+					peak_volume: None,
+				},
+			)]),
+		),
+	));
+
+	let tag_re_read = dump_and_re_read(&tag, WriteOptions::default().use_id3v23(true));
+
+	assert_eq!(tag_re_read.frames.len(), 0);
+}
+
+#[test]
+fn change_text_encoding_on_id3v23_save() {
+	let mut tag = Id3v2Tag::new();
+
+	// UTF-16 BE is not supported in ID3v2.3
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::from("TFOO")),
+		TextEncoding::UTF16BE,
+		String::from("Foo"),
+	)));
+
+	let tag_re_read = dump_and_re_read(&tag, WriteOptions::default().use_id3v23(true));
+
+	let frame = tag_re_read
+		.get(&FrameId::Valid(Cow::Borrowed("TFOO")))
+		.unwrap();
+	match frame {
+		Frame::Text(frame) => {
+			assert_eq!(frame.encoding, TextEncoding::UTF16);
+			assert_eq!(frame.value, "Foo");
+		},
+		_ => panic!("Expected a TextInformationFrame"),
+	}
+}
+
+#[test]
+fn split_tdor_on_id3v23_save() {
+	let mut tag = Id3v2Tag::new();
+
+	// ID3v2.3 ONLY supports the original release year.
+	// This will be written as a TORY frame. Lofty just automatically upgrades it to a TDOR
+	// when reading it back.
+	tag.insert(Frame::Timestamp(TimestampFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDOR")),
+		TextEncoding::UTF8,
+		Timestamp {
+			year: 2024,
+			month: Some(6),
+			day: Some(3),
+			hour: Some(14),
+			minute: Some(8),
+			second: Some(49),
+		},
+	)));
+
+	let tag_re_read = dump_and_re_read(&tag, WriteOptions::default().use_id3v23(true));
+
+	let frame = tag_re_read
+		.get(&FrameId::Valid(Cow::Borrowed("TDOR")))
+		.unwrap();
+	match frame {
+		Frame::Timestamp(frame) => {
+			assert_eq!(frame.encoding, TextEncoding::UTF16);
+			assert_eq!(frame.timestamp.year, 2024);
+			assert_eq!(frame.timestamp.month, None);
+			assert_eq!(frame.timestamp.day, None);
+			assert_eq!(frame.timestamp.hour, None);
+			assert_eq!(frame.timestamp.minute, None);
+			assert_eq!(frame.timestamp.second, None);
+		},
+		_ => panic!("Expected a TimestampFrame"),
+	}
+}
+
+#[test]
+fn split_tdrc_on_id3v23_save() {
+	let mut tag = Id3v2Tag::new();
+
+	// TDRC gets split into 3 frames in ID3v2.3:
+	//
+	// TYER: YYYY
+	// TDAT: DDMM
+	// TIME: HHMM
+	tag.insert(Frame::Timestamp(TimestampFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDRC")),
+		TextEncoding::UTF8,
+		Timestamp {
+			year: 2024,
+			month: Some(6),
+			day: Some(3),
+			hour: Some(14),
+			minute: Some(8),
+			second: None, // Seconds are not supported in ID3v2.3 TIME
+		},
+	)));
+
+	let tag_re_read = dump_and_re_read(&tag, WriteOptions::default().use_id3v23(true));
+
+	// First, check the default behavior which should return the same TDRC frame
+	let frame = tag_re_read
+		.get(&FrameId::Valid(Cow::Borrowed("TDRC")))
+		.unwrap();
+
+	match frame {
+		Frame::Timestamp(frame) => {
+			assert_eq!(frame.encoding, TextEncoding::UTF16);
+			assert_eq!(frame.timestamp.year, 2024);
+			assert_eq!(frame.timestamp.month, Some(6));
+			assert_eq!(frame.timestamp.day, Some(3));
+			assert_eq!(frame.timestamp.hour, Some(14));
+			assert_eq!(frame.timestamp.minute, Some(8));
+		},
+		_ => panic!("Expected a TimestampFrame"),
+	}
+
+	// Now, re-read with implicit_conversions off, which retains the split frames
+	let mut bytes = Cursor::new(Vec::new());
+	tag_re_read
+		.dump_to(&mut bytes, WriteOptions::default().use_id3v23(true))
+		.unwrap();
+
+	let tag_re_read = read_tag_raw(
+		&bytes.into_inner(),
+		ParseOptions::new()
+			.parsing_mode(ParsingMode::Strict)
+			.implicit_conversions(false),
+	);
+
+	let year = tag_re_read
+		.get_text(&FrameId::Valid(Cow::Borrowed("TYER")))
+		.expect("Expected TYER frame");
+	assert_eq!(year, "2024");
+
+	let date = tag_re_read
+		.get_text(&FrameId::Valid(Cow::Borrowed("TDAT")))
+		.expect("Expected TDAT frame");
+	assert_eq!(date, "0603");
+
+	let time = tag_re_read
+		.get_text(&FrameId::Valid(Cow::Borrowed("TIME")))
+		.expect("Expected TIME frame");
+	assert_eq!(time, "1408");
 }

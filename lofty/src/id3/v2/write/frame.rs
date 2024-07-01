@@ -1,10 +1,12 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef};
+use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
+use crate::id3::v2::{Frame, FrameId, TextInformationFrame};
+use crate::tag::items::Timestamp;
 
 use std::io::Write;
 
-use crate::id3::v2::Frame;
 use byteorder::{BigEndian, WriteBytesExt};
 
 pub(in crate::id3::v2) fn create_items<W>(
@@ -14,11 +16,157 @@ pub(in crate::id3::v2) fn create_items<W>(
 where
 	W: Write,
 {
+	let is_id3v23 = false;
+
 	for frame in frames {
 		verify_frame(&frame)?;
-		let value = frame.as_bytes()?;
+		let value = frame.as_bytes(is_id3v23)?;
 
-		write_frame(writer, frame.id().as_str(), frame.flags(), &value)?;
+		write_frame(
+			writer,
+			frame.id().as_str(),
+			frame.flags(),
+			&value,
+			is_id3v23,
+		)?;
+	}
+
+	Ok(())
+}
+
+pub(in crate::id3::v2) fn create_items_v3<W>(
+	writer: &mut W,
+	frames: &mut dyn Iterator<Item = FrameRef<'_>>,
+) -> Result<()>
+where
+	W: Write,
+{
+	// These are all frames from ID3v2.4
+	const FRAMES_TO_DISCARD: &[&str] = &[
+		"ASPI", "EQU2", "RVA2", "SEEK", "SIGN", "TDEN", "TDRL", "TDTG", "TIPL", "TMCL", "TMOO",
+		"TPRO", "TSOA", "TSOP", "TSOT", "TSST",
+	];
+
+	let is_id3v23 = true;
+
+	for mut frame in frames {
+		let id = frame.id_str();
+
+		if FRAMES_TO_DISCARD.contains(&id) {
+			log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+			continue;
+		}
+
+		verify_frame(&frame)?;
+
+		match id {
+			// TORY (Original release year) is the only component of TDOR
+			// that is supported in ID3v2.3
+			//
+			// TDRC (Recording time) gets split into three frames: TYER, TDAT, and TIME
+			"TDOR" | "TDRC" => {
+				let mut value = frame.0.clone();
+				let Frame::Timestamp(ref mut f) = value.to_mut() else {
+					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+					continue;
+				};
+
+				if f.timestamp.verify().is_err() {
+					log::warn!("Discarding frame: {}, invalid timestamp", id);
+					continue;
+				}
+
+				if id == "TDOR" {
+					let year = f.timestamp.year;
+					f.timestamp = Timestamp {
+						year,
+						..Timestamp::default()
+					};
+
+					f.header.id = FrameId::Valid("TORY".into());
+
+					frame.0 = value;
+				} else {
+					let mut new_frames = Vec::with_capacity(3);
+
+					let timestamp = f.timestamp;
+
+					let year = timestamp.year;
+					new_frames.push(Frame::Text(TextInformationFrame::new(
+						FrameId::Valid("TYER".into()),
+						f.encoding.to_id3v23(),
+						year.to_string(),
+					)));
+
+					if let (Some(month), Some(day)) = (timestamp.month, timestamp.day) {
+						let date = format!("{:02}{:02}", month, day);
+						new_frames.push(Frame::Text(TextInformationFrame::new(
+							FrameId::Valid("TDAT".into()),
+							f.encoding.to_id3v23(),
+							date,
+						)));
+					}
+
+					if let (Some(hour), Some(minute)) = (timestamp.hour, timestamp.minute) {
+						let time = format!("{:02}{:02}", hour, minute);
+						new_frames.push(Frame::Text(TextInformationFrame::new(
+							FrameId::Valid("TIME".into()),
+							f.encoding.to_id3v23(),
+							time,
+						)));
+					}
+
+					for mut frame in new_frames {
+						frame.set_flags(f.header.flags);
+						let value = frame.as_bytes(is_id3v23)?;
+
+						write_frame(
+							writer,
+							frame.id().as_str(),
+							frame.flags(),
+							&value,
+							is_id3v23,
+						)?;
+					}
+
+					continue;
+				}
+			},
+			// TCON (Content type) cannot be separated by nulls, so we have to wrap its
+			// components in parentheses
+			"TCON" => {
+				let mut value = frame.0.clone();
+				let Frame::Text(ref mut f) = value.to_mut() else {
+					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+					continue;
+				};
+
+				let mut new_genre_string = String::new();
+				for genre in GenresIter::new(&f.value) {
+					match genre {
+						"Remix" => new_genre_string.push_str("(RX)"),
+						"Cover" => new_genre_string.push_str("(CR)"),
+						_ => {
+							new_genre_string.push_str(genre);
+						},
+					}
+				}
+
+				f.value = new_genre_string;
+				frame.0 = value;
+			},
+			_ => {},
+		}
+
+		let value = frame.as_bytes(is_id3v23)?;
+
+		write_frame(
+			writer,
+			frame.id().as_str(),
+			frame.flags(),
+			&value,
+			is_id3v23,
+		)?;
 	}
 
 	Ok(())
@@ -49,12 +197,18 @@ fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
 	}
 }
 
-fn write_frame<W>(writer: &mut W, name: &str, flags: FrameFlags, value: &[u8]) -> Result<()>
+fn write_frame<W>(
+	writer: &mut W,
+	name: &str,
+	flags: FrameFlags,
+	value: &[u8],
+	is_id3v23: bool,
+) -> Result<()>
 where
 	W: Write,
 {
 	if flags.encryption.is_some() {
-		write_encrypted(writer, name, value, flags)?;
+		write_encrypted(writer, name, value, flags, is_id3v23)?;
 		return Ok(());
 	}
 
@@ -66,6 +220,7 @@ where
 		name,
 		if is_grouping_identity { len + 1 } else { len },
 		flags,
+		is_id3v23,
 	)?;
 
 	if is_grouping_identity {
@@ -78,7 +233,13 @@ where
 	Ok(())
 }
 
-fn write_encrypted<W>(writer: &mut W, name: &str, value: &[u8], flags: FrameFlags) -> Result<()>
+fn write_encrypted<W>(
+	writer: &mut W,
+	name: &str,
+	value: &[u8],
+	flags: FrameFlags,
+	is_id3v23: bool,
+) -> Result<()>
 where
 	W: Write,
 {
@@ -93,7 +254,7 @@ where
 
 	if let Some(len) = flags.data_length_indicator {
 		if len > 0 {
-			write_frame_header(writer, name, (value.len() + 1) as u32, flags)?;
+			write_frame_header(writer, name, (value.len() + 1) as u32, flags, is_id3v23)?;
 			writer.write_u32::<BigEndian>(len.synch()?)?;
 			writer.write_u8(method_symbol)?;
 			writer.write_all(value)?;
@@ -105,55 +266,25 @@ where
 	Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into())
 }
 
-fn write_frame_header<W>(writer: &mut W, name: &str, len: u32, flags: FrameFlags) -> Result<()>
+fn write_frame_header<W>(
+	writer: &mut W,
+	name: &str,
+	len: u32,
+	flags: FrameFlags,
+	is_id3v23: bool,
+) -> Result<()>
 where
 	W: Write,
 {
+	let flags = if is_id3v23 {
+		flags.as_id3v23_bytes()
+	} else {
+		flags.as_id3v24_bytes()
+	};
+
 	writer.write_all(name.as_bytes())?;
 	writer.write_u32::<BigEndian>(len.synch()?)?;
-	writer.write_u16::<BigEndian>(get_flags(flags))?;
+	writer.write_u16::<BigEndian>(flags)?;
 
 	Ok(())
-}
-
-fn get_flags(tag_flags: FrameFlags) -> u16 {
-	let mut flags = 0;
-
-	if tag_flags == FrameFlags::default() {
-		return flags;
-	}
-
-	if tag_flags.tag_alter_preservation {
-		flags |= 0x4000
-	}
-
-	if tag_flags.file_alter_preservation {
-		flags |= 0x2000
-	}
-
-	if tag_flags.read_only {
-		flags |= 0x1000
-	}
-
-	if tag_flags.grouping_identity.is_some() {
-		flags |= 0x0040
-	}
-
-	if tag_flags.compression {
-		flags |= 0x0008
-	}
-
-	if tag_flags.encryption.is_some() {
-		flags |= 0x0004
-	}
-
-	if tag_flags.unsynchronisation {
-		flags |= 0x0002
-	}
-
-	if tag_flags.data_length_indicator.is_some() {
-		flags |= 0x0001
-	}
-
-	flags
 }

@@ -29,7 +29,7 @@ impl<'a> FrameHeader<'a> {
 	}
 
 	/// Get the ID of the frame
-	pub const fn id(&self) -> &FrameId<'a> {
+	pub const fn id(&'a self) -> &'a FrameId<'a> {
 		&self.id
 	}
 }
