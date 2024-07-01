@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ID3v2**: Support writing ID3v2.3 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/62)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/411))
+  - This can be done by setting `WriteOptions::use_id3v23` to `true`.
+
 ## [0.20.0] - 2024-06-06
 
 ### Added
