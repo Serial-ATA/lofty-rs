@@ -29,7 +29,7 @@ where
 	{
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 		file.id3v2_tag = Some(id3v2);
 
 		stream_length -= u64::from(header.full_tag_size());

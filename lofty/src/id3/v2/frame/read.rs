@@ -1,6 +1,6 @@
 use super::header::parse::{parse_header, parse_v2_header};
 use super::Frame;
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
@@ -22,7 +22,7 @@ impl<'a> ParsedFrame<'a> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
-		parse_mode: ParsingMode,
+		parse_options: ParseOptions,
 	) -> Result<Self>
 	where
 		R: Read,
@@ -32,8 +32,8 @@ impl<'a> ParsedFrame<'a> {
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
 		let parse_header_result = match version {
 			Id3v2Version::V2 => parse_v2_header(reader, &mut size),
-			Id3v2Version::V3 => parse_header(reader, &mut size, false),
-			Id3v2Version::V4 => parse_header(reader, &mut size, true),
+			Id3v2Version::V3 => parse_header(reader, &mut size, false, parse_options),
+			Id3v2Version::V4 => parse_header(reader, &mut size, true, parse_options),
 		};
 		let (id, mut flags) = match parse_header_result {
 			Ok(None) => {
@@ -42,7 +42,7 @@ impl<'a> ParsedFrame<'a> {
 			},
 			Ok(Some(some)) => some,
 			Err(err) => {
-				match parse_mode {
+				match parse_options.parsing_mode {
 					ParsingMode::Strict => return Err(err),
 					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
 						// Skip this frame and continue reading
@@ -54,7 +54,7 @@ impl<'a> ParsedFrame<'a> {
 		};
 
 		if size == 0 {
-			if parse_mode == ParsingMode::Strict {
+			if parse_options.parsing_mode == ParsingMode::Strict {
 				return Err(Id3v2Error::new(Id3v2ErrorKind::EmptyFrame(id)).into());
 			}
 
@@ -140,7 +140,7 @@ impl<'a> ParsedFrame<'a> {
 						id,
 						flags,
 						version,
-						parse_mode,
+						parse_options.parsing_mode,
 					);
 				}
 
@@ -154,7 +154,7 @@ impl<'a> ParsedFrame<'a> {
 					id,
 					flags,
 					version,
-					parse_mode,
+					parse_options.parsing_mode,
 				);
 			},
 			// Possible combinations:
@@ -176,7 +176,7 @@ impl<'a> ParsedFrame<'a> {
 					id,
 					flags,
 					version,
-					parse_mode,
+					parse_options.parsing_mode,
 				);
 			},
 			// Possible combinations:
@@ -190,7 +190,14 @@ impl<'a> ParsedFrame<'a> {
 			},
 			// Everything else that doesn't have special flags
 			_ => {
-				return parse_frame(&mut reader, size, id, flags, version, parse_mode);
+				return parse_frame(
+					&mut reader,
+					size,
+					id,
+					flags,
+					version,
+					parse_options.parsing_mode,
+				);
 			},
 		}
 	}

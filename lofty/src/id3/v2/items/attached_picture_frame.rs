@@ -135,7 +135,12 @@ impl<'a> AttachedPictureFrame<'a> {
 	///
 	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
 	pub fn as_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
-		let mut data = vec![self.encoding as u8];
+		let mut encoding = self.encoding;
+		if version != Id3v2Version::V4 {
+			encoding = encoding.to_id3v23();
+		}
+
+		let mut data = vec![encoding as u8];
 
 		let max_size = match version {
 			// ID3v2.2 uses a 24-bit number for sizes
@@ -168,7 +173,7 @@ impl<'a> AttachedPictureFrame<'a> {
 		data.write_u8(self.picture.pic_type.as_u8())?;
 
 		match &self.picture.description {
-			Some(description) => data.write_all(&encode_text(description, self.encoding, true))?,
+			Some(description) => data.write_all(&encode_text(description, encoding, true))?,
 			None => data.write_u8(0)?,
 		}
 

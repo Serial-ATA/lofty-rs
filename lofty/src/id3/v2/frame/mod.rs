@@ -195,23 +195,31 @@ impl<'a> Frame<'a> {
 }
 
 impl<'a> Frame<'a> {
-	pub(super) fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub(super) fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
 		Ok(match self {
-			Frame::Comment(comment) => comment.as_bytes()?,
-			Frame::UnsynchronizedText(lf) => lf.as_bytes()?,
-			Frame::Text(tif) => tif.as_bytes(),
-			Frame::UserText(content) => content.as_bytes(),
-			Frame::UserUrl(content) => content.as_bytes(),
+			Frame::Comment(comment) => comment.as_bytes(is_id3v23)?,
+			Frame::UnsynchronizedText(lf) => lf.as_bytes(is_id3v23)?,
+			Frame::Text(tif) => tif.as_bytes(is_id3v23),
+			Frame::UserText(content) => content.as_bytes(is_id3v23),
+			Frame::UserUrl(content) => content.as_bytes(is_id3v23),
 			Frame::Url(link) => link.as_bytes(),
-			Frame::Picture(attached_picture) => attached_picture.as_bytes(Id3v2Version::V4)?,
+			Frame::Picture(attached_picture) => {
+				let version = if is_id3v23 {
+					Id3v2Version::V3
+				} else {
+					Id3v2Version::V4
+				};
+
+				attached_picture.as_bytes(version)?
+			},
 			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(),
-			Frame::KeyValue(content) => content.as_bytes(),
+			Frame::KeyValue(content) => content.as_bytes(is_id3v23),
 			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(),
-			Frame::Ownership(frame) => frame.as_bytes()?,
+			Frame::Ownership(frame) => frame.as_bytes(is_id3v23)?,
 			Frame::EventTimingCodes(frame) => frame.as_bytes(),
 			Frame::Private(frame) => frame.as_bytes(),
-			Frame::Timestamp(frame) => frame.as_bytes()?,
+			Frame::Timestamp(frame) => frame.as_bytes(is_id3v23)?,
 			Frame::Binary(frame) => frame.as_bytes(),
 		})
 	}
@@ -279,6 +287,123 @@ pub struct FrameFlags {
 	///
 	/// If using `encryption`, the final size must be added.
 	pub data_length_indicator: Option<u32>,
+}
+
+impl FrameFlags {
+	/// Parse the flags from an ID3v2.4 frame
+	///
+	/// NOTE: If any of the following flags are set, they will be set to `Some(0)`:
+	/// * `grouping_identity`
+	/// * `encryption`
+	/// * `data_length_indicator`
+	pub fn parse_id3v24(flags: u16) -> Self {
+		FrameFlags {
+			tag_alter_preservation: flags & 0x4000 == 0x4000,
+			file_alter_preservation: flags & 0x2000 == 0x2000,
+			read_only: flags & 0x1000 == 0x1000,
+			grouping_identity: (flags & 0x0040 == 0x0040).then_some(0),
+			compression: flags & 0x0008 == 0x0008,
+			encryption: (flags & 0x0004 == 0x0004).then_some(0),
+			unsynchronisation: flags & 0x0002 == 0x0002,
+			data_length_indicator: (flags & 0x0001 == 0x0001).then_some(0),
+		}
+	}
+
+	/// Parse the flags from an ID3v2.3 frame
+	///
+	/// NOTE: If any of the following flags are set, they will be set to `Some(0)`:
+	/// * `grouping_identity`
+	/// * `encryption`
+	pub fn parse_id3v23(flags: u16) -> Self {
+		FrameFlags {
+			tag_alter_preservation: flags & 0x8000 == 0x8000,
+			file_alter_preservation: flags & 0x4000 == 0x4000,
+			read_only: flags & 0x2000 == 0x2000,
+			grouping_identity: (flags & 0x0020 == 0x0020).then_some(0),
+			compression: flags & 0x0080 == 0x0080,
+			encryption: (flags & 0x0040 == 0x0040).then_some(0),
+			unsynchronisation: false,
+			data_length_indicator: None,
+		}
+	}
+
+	/// Get the ID3v2.4 byte representation of the flags
+	pub fn as_id3v24_bytes(&self) -> u16 {
+		let mut flags = 0;
+
+		if *self == FrameFlags::default() {
+			return flags;
+		}
+
+		if self.tag_alter_preservation {
+			flags |= 0x4000
+		}
+
+		if self.file_alter_preservation {
+			flags |= 0x2000
+		}
+
+		if self.read_only {
+			flags |= 0x1000
+		}
+
+		if self.grouping_identity.is_some() {
+			flags |= 0x0040
+		}
+
+		if self.compression {
+			flags |= 0x0008
+		}
+
+		if self.encryption.is_some() {
+			flags |= 0x0004
+		}
+
+		if self.unsynchronisation {
+			flags |= 0x0002
+		}
+
+		if self.data_length_indicator.is_some() {
+			flags |= 0x0001
+		}
+
+		flags
+	}
+
+	/// Get the ID3v2.3 byte representation of the flags
+	pub fn as_id3v23_bytes(&self) -> u16 {
+		let mut flags = 0;
+
+		if *self == FrameFlags::default() {
+			return flags;
+		}
+
+		if self.tag_alter_preservation {
+			flags |= 0x8000
+		}
+
+		if self.file_alter_preservation {
+			flags |= 0x4000
+		}
+
+		if self.read_only {
+			flags |= 0x2000
+		}
+
+		if self.grouping_identity.is_some() {
+			flags |= 0x0020
+		}
+
+		if self.compression {
+			flags |= 0x0080
+		}
+
+		if self.encryption.is_some() {
+			flags |= 0x0040
+		}
+
+		flags
+	}
 }
 
 #[derive(Clone)]

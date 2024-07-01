@@ -114,12 +114,17 @@ impl<'a> KeyValueFrame<'a> {
 	}
 
 	/// Convert a [`KeyValueFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = vec![self.encoding as u8];
+	pub fn as_bytes(&self, is_id3v23: bool) -> Vec<u8> {
+		let mut encoding = self.encoding;
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
+
+		let mut content = vec![encoding as u8];
 
 		for (key, value) in &self.key_value_pairs {
-			content.append(&mut encode_text(key, self.encoding, true));
-			content.append(&mut encode_text(value, self.encoding, true));
+			content.append(&mut encode_text(key, encoding, true));
+			content.append(&mut encode_text(value, encoding, true));
 		}
 		content
 	}

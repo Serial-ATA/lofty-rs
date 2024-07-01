@@ -5,6 +5,7 @@ use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::id3::v2::FrameId;
 use crate::util::text::utf8_decode_str;
 
+use crate::config::ParseOptions;
 use std::borrow::Cow;
 use std::io::Read;
 
@@ -44,6 +45,7 @@ pub(crate) fn parse_header<R>(
 	reader: &mut R,
 	size: &mut u32,
 	synchsafe: bool,
+	parse_options: ParseOptions,
 ) -> Result<Option<(FrameId<'static>, FrameFlags)>>
 where
 	R: Read,
@@ -87,7 +89,7 @@ where
 		} else {
 			Cow::Owned(id_str.to_owned())
 		}
-	} else if !synchsafe {
+	} else if !synchsafe && parse_options.implicit_conversions {
 		upgrade_v3(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed)
 	} else {
 		Cow::Owned(id_str.to_owned())
@@ -95,37 +97,11 @@ where
 	let frame_id = FrameId::new_cow(id)?;
 
 	let flags = u16::from_be_bytes([header[8], header[9]]);
-	let flags = parse_flags(flags, synchsafe);
+	let flags = if synchsafe {
+		FrameFlags::parse_id3v24(flags)
+	} else {
+		FrameFlags::parse_id3v23(flags)
+	};
 
 	Ok(Some((frame_id, flags)))
-}
-
-pub(crate) fn parse_flags(flags: u16, v4: bool) -> FrameFlags {
-	FrameFlags {
-		tag_alter_preservation: if v4 {
-			flags & 0x4000 == 0x4000
-		} else {
-			flags & 0x8000 == 0x8000
-		},
-		file_alter_preservation: if v4 {
-			flags & 0x2000 == 0x2000
-		} else {
-			flags & 0x4000 == 0x4000
-		},
-		read_only: if v4 {
-			flags & 0x1000 == 0x1000
-		} else {
-			flags & 0x2000 == 0x2000
-		},
-		grouping_identity: ((v4 && flags & 0x0040 == 0x0040) || (flags & 0x0020 == 0x0020))
-			.then_some(0),
-		compression: if v4 {
-			flags & 0x0008 == 0x0008
-		} else {
-			flags & 0x0080 == 0x0080
-		},
-		encryption: ((v4 && flags & 0x0004 == 0x0004) || flags & 0x0040 == 0x0040).then_some(0),
-		unsynchronisation: if v4 { flags & 0x0002 == 0x0002 } else { false },
-		data_length_indicator: (v4 && flags & 0x0001 == 0x0001).then_some(0),
-	}
 }
