@@ -36,13 +36,13 @@ pub(super) fn parse_content<R: Read>(
 		"OWNE" => OwnershipFrame::parse(reader, flags)?.map(Frame::Ownership),
 		"ETCO" => EventTimingCodesFrame::parse(reader, flags)?.map(Frame::EventTimingCodes),
 		"PRIV" => PrivateFrame::parse(reader, flags)?.map(Frame::Private),
+		"TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG" => TimestampFrame::parse(reader, id, flags, parse_mode)?.map(Frame::Timestamp),
 		i if i.starts_with('T') => TextInformationFrame::parse(reader, id, flags, version)?.map(Frame::Text),
 		// Apple proprietary frames
 		// WFED (Podcast URL), GRP1 (Grouping), MVNM (Movement Name), MVIN (Movement Number)
 		"WFED" | "GRP1" | "MVNM" | "MVIN" => TextInformationFrame::parse(reader, id, flags, version)?.map(Frame::Text),
 		i if i.starts_with('W') => UrlLinkFrame::parse(reader, id, flags)?.map(Frame::Url),
 		"POPM" => Some(Frame::Popularimeter(PopularimeterFrame::parse(reader, flags)?)),
-		"TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG" => TimestampFrame::parse(reader, id, flags, parse_mode)?.map(Frame::Timestamp),
 		// SYLT, GEOB, and any unknown frames
 		_ => {
 			Some(Frame::Binary(BinaryFrame::parse(reader, id, flags)?))

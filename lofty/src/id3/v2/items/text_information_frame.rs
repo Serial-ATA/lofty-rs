@@ -93,10 +93,15 @@ impl<'a> TextInformationFrame<'a> {
 	}
 
 	/// Convert an [`TextInformationFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = encode_text(&self.value, self.encoding, false);
+	pub fn as_bytes(&self, is_id3v23: bool) -> Vec<u8> {
+		let mut encoding = self.encoding;
+		if is_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
 
-		content.insert(0, self.encoding as u8);
+		let mut content = encode_text(&self.value, encoding, false);
+
+		content.insert(0, encoding as u8);
 		content
 	}
 }

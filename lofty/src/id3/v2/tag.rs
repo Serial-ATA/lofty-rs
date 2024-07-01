@@ -20,9 +20,7 @@ use crate::mp4::AdvisoryRating;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
-use crate::tag::{
-	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-};
+use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
@@ -569,7 +567,7 @@ impl Id3v2Tag {
 	}
 }
 
-struct GenresIter<'a> {
+pub(crate) struct GenresIter<'a> {
 	value: &'a str,
 	pos: usize,
 }
@@ -817,9 +815,10 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn year(&self) -> Option<u32> {
-		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(&RECORDING_TIME_ID)
+		if let Some(Frame::Timestamp(TimestampFrame { timestamp, .. })) =
+			self.get(&RECORDING_TIME_ID)
 		{
-			return try_parse_year(value);
+			return Some(u32::from(timestamp.year));
 		}
 
 		None

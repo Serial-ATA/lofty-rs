@@ -9,6 +9,7 @@ pub struct WriteOptions {
 	pub(crate) remove_others: bool,
 	pub(crate) respect_read_only: bool,
 	pub(crate) uppercase_id3v2_chunk: bool,
+	pub(crate) use_id3v23: bool,
 }
 
 impl WriteOptions {
@@ -32,6 +33,7 @@ impl WriteOptions {
 			remove_others: false,
 			respect_read_only: true,
 			uppercase_id3v2_chunk: true,
+			use_id3v23: false,
 		}
 	}
 
@@ -148,6 +150,33 @@ impl WriteOptions {
 		self.uppercase_id3v2_chunk = uppercase_id3v2_chunk;
 		self
 	}
+
+	/// Whether or not to use ID3v2.3 when saving [`TagType::Id3v2`](crate::tag::TagType::Id3v2)
+	/// or [`Id3v2Tag`](crate::id3::v2::Id3v2Tag)
+	///
+	/// By default, Lofty will save ID3v2.4 tags. This option allows you to save ID3v2.3 tags instead.
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::config::WriteOptions;
+	/// use lofty::prelude::*;
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
+	///
+	/// // ...
+	///
+	/// // I need to save ID3v2.3 tags to support older software
+	/// let options = WriteOptions::new().use_id3v23(true);
+	/// id3v2_tag.save_to_path("test.mp3", options)?;
+	/// # Ok(()) }
+	/// ```
+	pub fn use_id3v23(&mut self, use_id3v23: bool) -> Self {
+		self.use_id3v23 = use_id3v23;
+		*self
+	}
 }
 
 impl Default for WriteOptions {
@@ -161,6 +190,7 @@ impl Default for WriteOptions {
 	///     remove_others: false,
 	///     respect_read_only: true,
 	///     uppercase_id3v2_chunk: true,
+	///     use_id3v23: false,
 	/// }
 	/// ```
 	fn default() -> Self {

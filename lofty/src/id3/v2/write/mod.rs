@@ -114,15 +114,24 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 		return Ok(Vec::new());
 	}
 
+	let is_id3v23 = write_options.use_id3v23;
+	if is_id3v23 {
+		log::debug!("Using ID3v2.3");
+	}
+
 	let has_footer = tag.flags.footer;
 	let needs_crc = tag.flags.crc;
 	let has_restrictions = tag.flags.restrictions.is_some();
 
-	let (mut id3v2, extended_header_len) = create_tag_header(tag.flags)?;
+	let (mut id3v2, extended_header_len) = create_tag_header(tag.flags, is_id3v23)?;
 	let header_len = id3v2.get_ref().len();
 
 	// Write the items
-	frame::create_items(&mut id3v2, &mut peek)?;
+	if is_id3v23 {
+		frame::create_items_v3(&mut id3v2, &mut peek)?;
+	} else {
+		frame::create_items(&mut id3v2, &mut peek)?;
+	}
 
 	let mut len = id3v2.get_ref().len() - header_len;
 
@@ -190,29 +199,26 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 	Ok(id3v2.into_inner())
 }
 
-fn create_tag_header(flags: Id3v2TagFlags) -> Result<(Cursor<Vec<u8>>, u32)> {
+fn create_tag_header(flags: Id3v2TagFlags, is_id3v23: bool) -> Result<(Cursor<Vec<u8>>, u32)> {
 	let mut header = Cursor::new(Vec::new());
 
 	header.write_all(&[b'I', b'D', b'3'])?;
 
-	let mut tag_flags = 0;
-
-	// Version 4, rev 0
-	header.write_all(&[4, 0])?;
+	if is_id3v23 {
+		// Version 3, rev 0
+		header.write_all(&[3, 0])?;
+	} else {
+		// Version 4, rev 0
+		header.write_all(&[4, 0])?;
+	}
 
 	let extended_header = flags.crc || flags.restrictions.is_some();
 
-	if flags.footer {
-		tag_flags |= 0x10
-	}
-
-	if flags.experimental {
-		tag_flags |= 0x20
-	}
-
-	if extended_header {
-		tag_flags |= 0x40
-	}
+	let tag_flags = if is_id3v23 {
+		flags.as_id3v23_byte()
+	} else {
+		flags.as_id3v24_byte()
+	};
 
 	header.write_u8(tag_flags)?;
 	header.write_u32::<BigEndian>(0)?;
