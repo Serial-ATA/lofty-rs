@@ -1,5 +1,4 @@
-use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader};
-use crate::config::ParsingMode;
+use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader, VbrHeaderType};
 use crate::error::Result;
 use crate::mpeg::header::rev_search_for_frame_header;
 use crate::properties::{ChannelMask, FileProperties};
@@ -126,9 +125,8 @@ pub(super) fn read_properties<R>(
 	reader: &mut R,
 	first_frame: (Header, u64),
 	mut last_frame_offset: u64,
-	xing_header: Option<VbrHeader>,
+	vbr_header: Option<VbrHeader>,
 	file_length: u64,
-	parse_mode: ParsingMode,
 ) -> Result<()>
 where
 	R: Read + Seek,
@@ -150,15 +148,20 @@ where
 		2
 	};
 
-	if let Some(xing_header) = xing_header {
-		if first_frame_header.sample_rate > 0 && xing_header.is_valid() {
-			let frame_time = (u32::from(first_frame_header.samples) * 1000)
-				.div_round(first_frame_header.sample_rate);
-			let length = u64::from(frame_time) * u64::from(xing_header.frames);
+	if let Some(vbr_header) = vbr_header {
+		if first_frame_header.sample_rate > 0 && vbr_header.is_valid() {
+			log::debug!("MPEG: Valid VBR header; using it to calculate duration");
+
+			let sample_rate = u64::from(first_frame_header.sample_rate);
+			let samples_per_frame = u64::from(first_frame_header.samples);
+
+			let total_frames = u64::from(vbr_header.frames);
+
+			let length = (samples_per_frame * 1000 * total_frames).div_round(sample_rate);
 
 			properties.duration = Duration::from_millis(length);
 			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.audio_bitrate = ((u64::from(xing_header.size) * 8) / length) as u32;
+			properties.audio_bitrate = ((u64::from(vbr_header.size) * 8) / length) as u32;
 
 			return Ok(());
 		}
@@ -171,7 +174,14 @@ where
 
 	log::warn!("MPEG: Using bitrate to estimate duration");
 
-	properties.audio_bitrate = first_frame_header.bitrate;
+	// http://gabriel.mp3-tech.org/mp3infotag.html:
+	//
+	// "In the Info Tag, the "Xing" identification string (mostly at 0x24) of the header is replaced by "Info" in case of a CBR file."
+	let is_cbr = matches!(vbr_header.map(|h| h.ty), Some(VbrHeaderType::Info));
+	if is_cbr {
+		log::debug!("MPEG: CBR detected");
+		properties.audio_bitrate = first_frame_header.bitrate;
+	}
 
 	// Search for the last frame, starting at the end of the frames
 	reader.seek(SeekFrom::Start(last_frame_offset))?;
@@ -179,7 +189,7 @@ where
 	let mut last_frame = None;
 	let mut pos = last_frame_offset;
 	while pos > 0 {
-		match rev_search_for_frame_header(reader, &mut pos, parse_mode) {
+		match rev_search_for_frame_header(reader, &mut pos) {
 			// Found a frame header
 			Ok(Some(header)) => {
 				// Move `last_frame_offset` back to the actual position
@@ -197,14 +207,23 @@ where
 		}
 	}
 
-	if let Some(last_frame_header) = last_frame {
-		let stream_len = last_frame_offset - first_frame_offset + u64::from(last_frame_header.len);
-		let length = (stream_len * 8).div_round(u64::from(properties.audio_bitrate));
+	let Some(last_frame_header) = last_frame else {
+		log::warn!("MPEG: Could not find last frame, properties will be incomplete");
+		return Ok(());
+	};
 
-		if length > 0 {
-			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.duration = Duration::from_millis(length);
-		}
+	let stream_len = (last_frame_offset + u64::from(last_frame_header.len)) - first_frame_offset;
+	if !is_cbr {
+		log::debug!("MPEG: VBR detected");
+
+		// TODO: Actually handle VBR streams, this still assumes CBR
+		properties.audio_bitrate = first_frame_header.bitrate;
+	}
+
+	let length = (stream_len * 8).div_round(u64::from(properties.audio_bitrate));
+	if length > 0 {
+		properties.overall_bitrate = ((file_length * 8) / length) as u32;
+		properties.duration = Duration::from_millis(length);
 	}
 
 	Ok(())

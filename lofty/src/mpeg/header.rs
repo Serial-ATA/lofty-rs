@@ -1,5 +1,4 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
-use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -50,11 +49,7 @@ where
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
 const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
-pub(super) fn rev_search_for_frame_header<R>(
-	input: &mut R,
-	pos: &mut u64,
-	parse_mode: ParsingMode,
-) -> Result<Option<Header>>
+pub(super) fn rev_search_for_frame_header<R>(input: &mut R, pos: &mut u64) -> Result<Option<Header>>
 where
 	R: Read + Seek,
 {
@@ -70,36 +65,33 @@ where
 	for (i, byte) in buf.iter().rev().enumerate() {
 		frame_sync[1] = frame_sync[0];
 		frame_sync[0] = *byte;
-		if verify_frame_sync(frame_sync) {
-			let relative_frame_start = (search_bounds as usize) - (i + 1);
-			if relative_frame_start + 4 > buf.len() {
-				if parse_mode == ParsingMode::Strict {
-					decode_err!(@BAIL Mpeg, "Expected full frame header (incomplete stream?)")
-				}
-
-				log::warn!("MPEG: Incomplete frame header, giving up");
-				break;
-			}
-
-			let header = Header::read(u32::from_be_bytes([
-				frame_sync[0],
-				frame_sync[1],
-				buf[relative_frame_start + 2],
-				buf[relative_frame_start + 3],
-			]));
-
-			// We need to check if the header is actually valid. For
-			// all we know, we could be in some junk (ex. 0xFF_FF_FF_FF).
-			if header.is_none() {
-				continue;
-			}
-
-			// Seek to the start of the frame sync
-			*pos += relative_frame_start as u64;
-			input.seek(SeekFrom::Start(*pos))?;
-
-			return Ok(header);
+		if !verify_frame_sync(frame_sync) {
+			continue;
 		}
+
+		let relative_frame_start = (search_bounds as usize) - (i + 1);
+		if relative_frame_start + 4 > buf.len() {
+			continue;
+		}
+
+		let header = Header::read(u32::from_be_bytes([
+			frame_sync[0],
+			frame_sync[1],
+			buf[relative_frame_start + 2],
+			buf[relative_frame_start + 3],
+		]));
+
+		// We need to check if the header is actually valid. For
+		// all we know, we could be in some junk (ex. 0xFF_FF_FF_FF).
+		if header.is_none() {
+			continue;
+		}
+
+		// Seek to the start of the frame sync
+		*pos += relative_frame_start as u64;
+		input.seek(SeekFrom::Start(*pos))?;
+
+		return Ok(header);
 	}
 
 	Ok(None)
@@ -326,7 +318,16 @@ impl Header {
 	}
 }
 
+#[derive(Copy, Clone)]
+pub(super) enum VbrHeaderType {
+	Xing,
+	Info,
+	Vbri,
+}
+
+#[derive(Copy, Clone)]
 pub(super) struct VbrHeader {
+	pub ty: VbrHeaderType,
 	pub frames: u32,
 	pub size: u32,
 }
@@ -357,7 +358,13 @@ impl VbrHeader {
 				let frames = reader.read_u32::<BigEndian>()?;
 				let size = reader.read_u32::<BigEndian>()?;
 
-				Ok(Some(Self { frames, size }))
+				let ty = match &header {
+					b"Xing" => VbrHeaderType::Xing,
+					b"Info" => VbrHeaderType::Info,
+					_ => unreachable!(),
+				};
+
+				Ok(Some(Self { ty, frames, size }))
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
@@ -373,7 +380,11 @@ impl VbrHeader {
 				let size = reader.read_u32::<BigEndian>()?;
 				let frames = reader.read_u32::<BigEndian>()?;
 
-				Ok(Some(Self { frames, size }))
+				Ok(Some(Self {
+					ty: VbrHeaderType::Vbri,
+					frames,
+					size,
+				}))
 			},
 			_ => Ok(None),
 		}
@@ -386,7 +397,6 @@ impl VbrHeader {
 
 #[cfg(test)]
 mod tests {
-	use crate::config::ParsingMode;
 	use crate::tag::utils::test_utils::read_path;
 
 	use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -410,7 +420,7 @@ mod tests {
 			// We have to start these at the end to do a reverse search, of course :)
 			let mut pos = reader.seek(SeekFrom::End(0)).unwrap();
 
-			let ret = super::rev_search_for_frame_header(reader, &mut pos, ParsingMode::Strict);
+			let ret = super::rev_search_for_frame_header(reader, &mut pos);
 
 			if expected_reader_position.is_some() {
 				assert!(ret.is_ok());
