@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **MPEG**: Fix durations being slightly off ([issue](https://github.com/Serial-ATA/lofty-rs/issues/412)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/413))
+
 ## [0.20.0] - 2024-06-06
 
 ### Added
