@@ -194,7 +194,6 @@ where
 			last_frame_offset,
 			xing_header,
 			file_length,
-			parse_options.parsing_mode,
 		)?;
 	}
 
