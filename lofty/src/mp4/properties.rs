@@ -805,7 +805,7 @@ where
 		return Ok(());
 	}
 
-	let stream_info_block = crate::flac::block::Block::read(stsd)?;
+	let stream_info_block = crate::flac::block::Block::read(stsd, |_| true)?;
 	let flac_properties =
 		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
 

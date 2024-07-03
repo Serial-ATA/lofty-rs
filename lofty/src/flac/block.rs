@@ -1,7 +1,9 @@
+#![allow(dead_code)]
+
 use crate::error::Result;
 use crate::macros::try_vec;
 
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -21,9 +23,10 @@ pub(crate) struct Block {
 }
 
 impl Block {
-	pub(crate) fn read<R>(data: &mut R) -> Result<Self>
+	pub(crate) fn read<R, P>(data: &mut R, mut predicate: P) -> Result<Self>
 	where
 		R: Read + Seek,
+		P: FnMut(u8) -> bool,
 	{
 		let start = data.stream_position()?;
 
@@ -34,8 +37,14 @@ impl Block {
 		let size = data.read_u24::<BigEndian>()?;
 		log::trace!("Reading FLAC block, type: {ty}, size: {size}");
 
-		let mut content = try_vec![0; size as usize];
-		data.read_exact(&mut content)?;
+		let mut content;
+		if predicate(ty) {
+			content = try_vec![0; size as usize];
+			data.read_exact(&mut content)?;
+		} else {
+			content = Vec::new();
+			data.seek(SeekFrom::Current(i64::from(size)))?;
+		}
 
 		let end = data.stream_position()?;
 
