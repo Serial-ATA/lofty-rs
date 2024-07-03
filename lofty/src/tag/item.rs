@@ -828,16 +828,34 @@ impl TagItem {
 
 	/// Set a language for the [`TagItem`]
 	///
+	/// The default language is empty.
+	///
 	/// NOTE: This will not be reflected in most tag formats.
 	pub fn set_lang(&mut self, lang: Lang) {
 		self.lang = lang;
 	}
 
+	/// Returns a reference to the language of the [`TagItem`]
+	///
+	/// NOTE: This will not be reflected in most tag formats.
+	pub fn lang(&self) -> &Lang {
+		&self.lang
+	}
+
 	/// Set a description for the [`TagItem`]
+	///
+	/// The default description is empty.
 	///
 	/// NOTE: This will not be reflected in most tag formats.
 	pub fn set_description(&mut self, description: String) {
 		self.description = description;
+	}
+
+	/// Returns a reference to the description of the [`TagItem`]
+	///
+	/// NOTE: This will not be reflected in most tag formats.
+	pub fn description(&self) -> &str {
+		&self.description
 	}
 
 	/// Returns a reference to the [`ItemKey`]
