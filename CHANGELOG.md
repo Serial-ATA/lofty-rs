@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ParseOptions::read_tags` to skip the parsing of tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/251)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/406))
   - `ParseOptions::read_cover_art` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/186)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/415))
     - As cover art can be large, it is now possible to disable reading it when parsing a file.
+  - `ParseOptions::implicit_conversions` to prevent automatic data conversions ([PR](https://github.com/Serial-ATA/lofty-rs/pull/411))
+    - Be sure to read the warnings in the docs to understand what this means.
+- **ID3v2**: Support writing ID3v2.3 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/62)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/411))
+    - This can be done by setting `WriteOptions::use_id3v23` to `true`.
 
 ## [0.20.1] - 2024-07-02
 
