@@ -3,10 +3,7 @@ use super::properties::FlacProperties;
 use super::FlacFile;
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
-use crate::flac::block::{
-	BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_SEEKTABLE, BLOCK_ID_STREAMINFO,
-	BLOCK_ID_VORBIS_COMMENTS,
-};
+use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, FindId3v2Config, ID3FindResults};
 use crate::macros::decode_err;
@@ -26,7 +23,7 @@ where
 		decode_err!(@BAIL Flac, "File missing \"fLaC\" stream marker");
 	}
 
-	let block = Block::read(data)?;
+	let block = Block::read(data, |_| true)?;
 
 	if block.ty != BLOCK_ID_STREAMINFO {
 		decode_err!(@BAIL Flac, "File missing mandatory STREAMINFO block");
@@ -73,13 +70,15 @@ where
 	let mut last_block = stream_info.last;
 
 	while !last_block {
-		let block = Block::read(data)?;
+		let block = Block::read(data, |block_type| {
+			block_type == BLOCK_ID_VORBIS_COMMENTS
+				|| (block_type == BLOCK_ID_PICTURE && parse_options.read_cover_art)
+		})?;
+
 		last_block = block.last;
 
-		if block.content.is_empty()
-			&& (block.ty != BLOCK_ID_PADDING && block.ty != BLOCK_ID_SEEKTABLE)
-		{
-			decode_err!(@BAIL Flac, "Encountered a zero-sized metadata block");
+		if block.content.is_empty() {
+			continue;
 		}
 
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS && parse_options.read_tags {
