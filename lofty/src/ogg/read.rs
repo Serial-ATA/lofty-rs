@@ -18,12 +18,14 @@ pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 pub(crate) fn read_comments<R>(
 	data: &mut R,
 	mut len: u64,
-	parse_mode: ParsingMode,
+	parse_options: ParseOptions,
 ) -> Result<VorbisComments>
 where
 	R: Read,
 {
 	use crate::macros::try_vec;
+
+	let parse_mode = parse_options.parsing_mode;
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 	if u64::from(vendor_len) > len {
@@ -106,6 +108,10 @@ where
 
 		match key {
 			k if k.eq_ignore_ascii_case(b"METADATA_BLOCK_PICTURE") => {
+				if !parse_options.read_cover_art {
+					continue;
+				}
+
 				match Picture::from_flac_bytes(value, true, parse_mode) {
 					Ok(picture) => tag.pictures.push(picture),
 					Err(e) => {
@@ -119,6 +125,10 @@ where
 				}
 			},
 			k if k.eq_ignore_ascii_case(b"COVERART") => {
+				if !parse_options.read_cover_art {
+					continue;
+				}
+
 				// `COVERART` is an old deprecated image storage format. We have to convert it
 				// to a `METADATA_BLOCK_PICTURE` for it to be useful.
 				//
@@ -223,7 +233,7 @@ where
 	metadata_packet = &metadata_packet[comment_sig.len()..];
 
 	let reader = &mut metadata_packet;
-	let tag = read_comments(reader, reader.len() as u64, parse_options.parsing_mode)?;
+	let tag = read_comments(reader, reader.len() as u64, parse_options)?;
 
 	Ok((Some(tag), first_page_header, packets))
 }

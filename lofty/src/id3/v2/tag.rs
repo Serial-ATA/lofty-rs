@@ -724,6 +724,7 @@ const GENRE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TCON"));
 const TRACK_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TRCK"));
 const DISC_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TPOS"));
 const RECORDING_TIME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TDRC"));
+pub(super) const ATTACHED_PICTURE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
 
 impl Accessor for Id3v2Tag {
 	impl_accessor!(

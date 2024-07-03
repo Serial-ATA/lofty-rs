@@ -709,15 +709,22 @@ pub(crate) fn create_vorbis_comments_ref(
 
 #[cfg(test)]
 mod tests {
-	use crate::config::{ParsingMode, WriteOptions};
+	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::ogg::{OggPictureStorage, VorbisComments};
+	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
+	use std::io::Cursor;
 
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
 
-		crate::ogg::read::read_comments(&mut reader, tag.len() as u64, ParsingMode::Strict).unwrap()
+		crate::ogg::read::read_comments(
+			&mut reader,
+			tag.len() as u64,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		)
+		.unwrap()
 	}
 
 	#[test]
@@ -893,5 +900,36 @@ mod tests {
 			vorbis_comments = tag.into();
 			assert_eq!(Some("Cmin"), vorbis_comments.get("INITIALKEY"));
 		}
+	}
+
+	#[test]
+	fn skip_reading_cover_art() {
+		let p = Picture::new_unchecked(
+			PictureType::CoverFront,
+			Some(MimeType::Jpeg),
+			None,
+			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
+		);
+
+		let mut tag = Tag::new(TagType::VorbisComments);
+		tag.push_picture(p);
+
+		tag.set_artist(String::from("Foo artist"));
+
+		let mut writer = Vec::new();
+		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+
+		let mut reader = Cursor::new(&writer);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			writer.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.pictures().len(), 0); // Artist, no picture
+		assert!(tag.artist().is_some());
 	}
 }

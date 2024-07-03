@@ -33,7 +33,7 @@ where
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, find_id3v2_config)? {
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 		file.id3v2_tag = Some(id3v2);
 
 		stream_length -= u64::from(header.full_tag_size());
@@ -55,9 +55,7 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) =
-		crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)?
-	{
+	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
 		file.ape_tag = tag;
 
 		// Seek back to the start of the tag

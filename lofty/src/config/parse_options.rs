@@ -6,6 +6,7 @@ pub struct ParseOptions {
 	pub(crate) read_tags: bool,
 	pub(crate) parsing_mode: ParsingMode,
 	pub(crate) max_junk_bytes: usize,
+	pub(crate) read_cover_art: bool,
 }
 
 impl Default for ParseOptions {
@@ -18,7 +19,8 @@ impl Default for ParseOptions {
 	/// 	read_properties: true,
 	///     read_tags: true,
 	/// 	parsing_mode: ParsingMode::BestAttempt,
-	///     max_junk_bytes: 1024
+	///     max_junk_bytes: 1024,
+	///     read_cover_art: true,
 	/// }
 	/// ```
 	fn default() -> Self {
@@ -51,6 +53,7 @@ impl ParseOptions {
 			read_tags: true,
 			parsing_mode: Self::DEFAULT_PARSING_MODE,
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
+			read_cover_art: true,
 		}
 	}
 
@@ -114,6 +117,21 @@ impl ParseOptions {
 	/// ```
 	pub fn max_junk_bytes(&mut self, max_junk_bytes: usize) -> Self {
 		self.max_junk_bytes = max_junk_bytes;
+		*self
+	}
+
+	/// Whether or not to read cover art
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::config::ParseOptions;
+	///
+	/// // Reading cover art is expensive, and I do not need it!
+	/// let parsing_options = ParseOptions::new().read_cover_art(false);
+	/// ```
+	pub fn read_cover_art(&mut self, read_cover_art: bool) -> Self {
+		self.read_cover_art = read_cover_art;
 		*self
 	}
 }

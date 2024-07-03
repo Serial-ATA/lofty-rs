@@ -806,6 +806,7 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
+	use crate::picture::{MimeType, Picture, PictureType};
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
 	fn read_ilst(path: &str, parse_mode: ParsingMode) -> Ilst {
@@ -814,12 +815,8 @@ mod tests {
 	}
 
 	fn read_ilst_raw(bytes: &[u8], parse_mode: ParsingMode) -> Ilst {
-		let len = bytes.len();
-
-		let cursor = Cursor::new(bytes);
-		let mut reader = AtomReader::new(cursor, parse_mode).unwrap();
-
-		super::read::parse_ilst(&mut reader, parse_mode, len as u64).unwrap()
+		let options = ParseOptions::new().parsing_mode(parse_mode);
+		read_ilst_with_options(bytes, options)
 	}
 
 	fn read_ilst_strict(path: &str) -> Ilst {
@@ -828,6 +825,15 @@ mod tests {
 
 	fn read_ilst_bestattempt(path: &str) -> Ilst {
 		read_ilst(path, ParsingMode::BestAttempt)
+	}
+
+	fn read_ilst_with_options(bytes: &[u8], parse_options: ParseOptions) -> Ilst {
+		let len = bytes.len();
+
+		let cursor = Cursor::new(bytes);
+		let mut reader = AtomReader::new(cursor, parse_options.parsing_mode).unwrap();
+
+		super::read::parse_ilst(&mut reader, parse_options, len as u64).unwrap()
 	}
 
 	fn verify_atom(ilst: &Ilst, ident: [u8; 4], data: &AtomData) {
@@ -895,8 +901,12 @@ mod tests {
 		let cursor = Cursor::new(tag);
 		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
-		let parsed_tag =
-			super::read::parse_ilst(&mut reader, ParsingMode::Strict, len as u64).unwrap();
+		let parsed_tag = super::read::parse_ilst(
+			&mut reader,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+			len as u64,
+		)
+		.unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -914,9 +924,12 @@ mod tests {
 		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
 		// Remove the ilst identifier and size
-		let temp_parsed_tag =
-			super::read::parse_ilst(&mut reader, ParsingMode::Strict, (writer.len() - 8) as u64)
-				.unwrap();
+		let temp_parsed_tag = super::read::parse_ilst(
+			&mut reader,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+			(writer.len() - 8) as u64,
+		)
+		.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -929,7 +942,12 @@ mod tests {
 		let cursor = Cursor::new(tag);
 		let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
-		let ilst = super::read::parse_ilst(&mut reader, ParsingMode::Strict, len as u64).unwrap();
+		let ilst = super::read::parse_ilst(
+			&mut reader,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+			len as u64,
+		)
+		.unwrap();
 
 		let tag: Tag = ilst.into();
 
@@ -1048,9 +1066,12 @@ mod tests {
 			let cursor = Cursor::new(ilst_bytes);
 			let mut reader = AtomReader::new(cursor, ParsingMode::Strict).unwrap();
 
-			ilst =
-				super::read::parse_ilst(&mut reader, ParsingMode::Strict, ilst_bytes.len() as u64)
-					.unwrap();
+			ilst = super::read::parse_ilst(
+				&mut reader,
+				ParseOptions::new().parsing_mode(ParsingMode::Strict),
+				ilst_bytes.len() as u64,
+			)
+			.unwrap();
 		}
 
 		let mut file = tempfile::tempfile().unwrap();
@@ -1337,5 +1358,28 @@ mod tests {
 
 		let generic_tag_re_read = read_ilst_raw(&tag_bytes[..], ParsingMode::Strict);
 		assert_eq!(tag_re_read, generic_tag_re_read);
+	}
+
+	#[test]
+	fn skip_reading_cover_art() {
+		let p = Picture::new_unchecked(
+			PictureType::CoverFront,
+			Some(MimeType::Jpeg),
+			None,
+			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
+		);
+
+		let mut tag = Tag::new(TagType::Mp4Ilst);
+		tag.push_picture(p);
+
+		tag.set_artist(String::from("Foo artist"));
+
+		let mut writer = Vec::new();
+		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+
+		// Skip `ilst` header
+		let ilst = read_ilst_with_options(&writer[8..], ParseOptions::new().read_cover_art(false));
+		assert_eq!(ilst.len(), 1); // Artist, no picture
+		assert!(ilst.artist().is_some());
 	}
 }

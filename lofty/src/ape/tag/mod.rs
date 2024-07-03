@@ -564,11 +564,12 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 #[cfg(test)]
 mod tests {
 	use crate::ape::{ApeItem, ApeTag};
-	use crate::config::WriteOptions;
+	use crate::config::{ParseOptions, WriteOptions};
 	use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
+	use crate::picture::{MimeType, Picture, PictureType};
 	use std::io::Cursor;
 
 	#[test]
@@ -623,7 +624,7 @@ mod tests {
 		let mut reader = Cursor::new(tag);
 
 		let (Some(parsed_tag), _) =
-			crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+			crate::ape::tag::read::read_ape_tag(&mut reader, false, ParseOptions::new()).unwrap()
 		else {
 			unreachable!();
 		};
@@ -641,7 +642,7 @@ mod tests {
 		let mut reader = Cursor::new(tag_bytes);
 
 		let (Some(parsed_tag), _) =
-			crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+			crate::ape::tag::read::read_ape_tag(&mut reader, false, ParseOptions::new()).unwrap()
 		else {
 			unreachable!();
 		};
@@ -654,9 +655,10 @@ mod tests {
 		let mut temp_reader = Cursor::new(writer);
 
 		let (Some(temp_parsed_tag), _) =
-			crate::ape::tag::read::read_ape_tag(&mut temp_reader, false, true).unwrap()
+			crate::ape::tag::read::read_ape_tag(&mut temp_reader, false, ParseOptions::new())
+				.unwrap()
 		else {
-			unreachable!()
+			unreachable!();
 		};
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
@@ -667,9 +669,10 @@ mod tests {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
 
-		let (Some(ape), _) = crate::ape::tag::read::read_ape_tag(&mut reader, false, true).unwrap()
+		let (Some(ape), _) =
+			crate::ape::tag::read::read_ape_tag(&mut reader, false, ParseOptions::new()).unwrap()
 		else {
-			unreachable!()
+			unreachable!();
 		};
 
 		let tag: Tag = ape.into();
@@ -906,5 +909,35 @@ mod tests {
 
 		assert_eq!(tag.disk().unwrap(), disk_number);
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
+	}
+
+	#[test]
+	fn skip_reading_cover_art() {
+		let p = Picture::new_unchecked(
+			PictureType::CoverFront,
+			Some(MimeType::Jpeg),
+			None,
+			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
+		);
+
+		let mut tag = Tag::new(TagType::Ape);
+		tag.push_picture(p);
+
+		tag.set_artist(String::from("Foo artist"));
+
+		let mut writer = Vec::new();
+		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+
+		let mut reader = Cursor::new(writer);
+		let (Some(ape), _) = crate::ape::tag::read::read_ape_tag(
+			&mut reader,
+			false,
+			ParseOptions::new().read_cover_art(false),
+		)
+		.unwrap() else {
+			unreachable!()
+		};
+
+		assert_eq!(ape.len(), 1);
 	}
 }

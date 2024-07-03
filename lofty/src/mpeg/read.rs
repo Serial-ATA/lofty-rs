@@ -44,7 +44,7 @@ where
 				let skip_footer = header.flags.footer;
 
 				if parse_options.read_tags {
-					let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+					let id3v2 = parse_id3v2(reader, header, parse_options)?;
 					if let Some(existing_tag) = &mut file.id3v2_tag {
 						// https://github.com/Serial-ATA/lofty-rs/issues/87
 						// Duplicate tags should have their frames appended to the previous
@@ -80,7 +80,9 @@ where
 
 					if parse_options.read_tags {
 						file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
-							reader, ape_header,
+							reader,
+							ape_header,
+							parse_options,
 						)?);
 					} else {
 						reader.seek(SeekFrom::Current(i64::from(ape_header.size)))?;
@@ -122,7 +124,7 @@ where
 					{
 						let reader = &mut &*id3v2_bytes;
 
-						let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+						let id3v2 = parse_id3v2(reader, header, parse_options)?;
 
 						if let Some(existing_tag) = &mut file.id3v2_tag {
 							// https://github.com/Serial-ATA/lofty-rs/issues/87
@@ -155,7 +157,7 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)? {
+	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
 		(tag, Some(header)) => {
 			file.ape_tag = tag;
 

@@ -2,7 +2,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
 use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
-use crate::config::{ParseOptions, ParsingMode};
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -54,8 +54,7 @@ impl Moov {
 						}
 					},
 					b"udta" if parse_options.read_tags => {
-						let ilst_parsed =
-							ilst_from_udta(reader, parse_options.parsing_mode, atom.len - 8)?;
+						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)?;
 						if let Some(ilst_parsed) = ilst_parsed {
 							let Some(mut existing_ilst) = ilst else {
 								ilst = Some(ilst_parsed);
@@ -85,7 +84,7 @@ impl Moov {
 
 fn ilst_from_udta<R>(
 	reader: &mut AtomReader<R>,
-	parsing_mode: ParsingMode,
+	parse_options: ParseOptions,
 	len: u64,
 ) -> Result<Option<Ilst>>
 where
@@ -143,7 +142,7 @@ where
 	}
 
 	if found_ilst {
-		return parse_ilst(reader, parsing_mode, ilst_atom_size - 8).map(Some);
+		return parse_ilst(reader, parse_options, ilst_atom_size - 8).map(Some);
 	}
 
 	Ok(None)
