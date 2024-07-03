@@ -404,6 +404,8 @@ impl Tag {
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and returns them
+	///
+	/// See also: [take_filter()](Self::take_filter)
 	pub fn take(&mut self, key: &ItemKey) -> impl Iterator<Item = TagItem> + '_ {
 		self.take_filter(key, |_| true)
 	}
@@ -411,6 +413,8 @@ impl Tag {
 	/// Removes selected items with the specified [`ItemKey`], and returns them
 	///
 	/// Only takes items for which `filter()` returns `true`. All other items are retained.
+	///
+	/// Returns the selected items in order and preserves the ordering of the remaining items.
 	///
 	/// # Examples
 	///
