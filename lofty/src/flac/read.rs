@@ -59,7 +59,7 @@ where
 
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 		flac_file.id3v2_tag = Some(id3v2);
 	}
 
@@ -103,7 +103,7 @@ where
 			let vorbis_comments = read_comments(
 				&mut &*block.content,
 				block.content.len() as u64,
-				parse_options.parsing_mode,
+				parse_options,
 			)?;
 
 			flac_file.vorbis_comments_tag = Some(vorbis_comments);

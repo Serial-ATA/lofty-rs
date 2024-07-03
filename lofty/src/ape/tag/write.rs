@@ -2,7 +2,7 @@ use super::item::ApeItemRef;
 use super::ApeTagRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::read;
-use crate::config::WriteOptions;
+use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
 use crate::macros::{decode_err, err};
@@ -48,7 +48,8 @@ where
 	let mut header_ape_tag = (false, (0, 0));
 
 	let start = file.stream_position()?;
-	match read::read_ape_tag(file, false, true)? {
+	// TODO: Forcing the use of ParseOptions::default()
+	match read::read_ape_tag(file, false, ParseOptions::new())? {
 		(Some(mut existing_tag), Some(header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
@@ -80,7 +81,10 @@ where
 
 	// Also check this tag for any read only items
 	let start = file.stream_position()? as usize + 32;
-	if let (Some(mut existing_tag), Some(header)) = read::read_ape_tag(file, true, true)? {
+	// TODO: Forcing the use of ParseOptions::default()
+	if let (Some(mut existing_tag), Some(header)) =
+		read::read_ape_tag(file, true, ParseOptions::new())?
+	{
 		if write_options.respect_read_only {
 			existing_tag.items.retain(|i| i.read_only);
 

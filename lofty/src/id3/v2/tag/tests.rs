@@ -1,4 +1,4 @@
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
@@ -21,10 +21,15 @@ fn read_tag(path: &str) -> Id3v2Tag {
 }
 
 fn read_tag_raw(bytes: &[u8]) -> Id3v2Tag {
+	let options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
+	read_tag_with_options(bytes, options)
+}
+
+fn read_tag_with_options(bytes: &[u8], parse_options: ParseOptions) -> Id3v2Tag {
 	let mut reader = Cursor::new(bytes);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap()
+	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options).unwrap()
 }
 
 #[test]
@@ -93,8 +98,12 @@ fn id3v2_re_read() {
 	let temp_reader = &mut &*writer;
 
 	let temp_header = Id3v2Header::parse(temp_reader).unwrap();
-	let temp_parsed_tag =
-		crate::id3::v2::read::parse_id3v2(temp_reader, temp_header, ParsingMode::Strict).unwrap();
+	let temp_parsed_tag = crate::id3::v2::read::parse_id3v2(
+		temp_reader,
+		temp_header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(parsed_tag, temp_parsed_tag);
 }
@@ -267,7 +276,12 @@ fn id3v24_footer() {
 	let mut reader = &mut &writer[..];
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let _ = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
+	let _ = crate::id3::v2::read::parse_id3v2(
+		reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(writer[3..10], writer[writer.len() - 7..])
 }
@@ -292,7 +306,12 @@ fn issue_36() {
 	let mut reader = &mut &writer[..];
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let tag = crate::id3::v2::read::parse_id3v2(reader, header, ParsingMode::Strict).unwrap();
+	let tag = crate::id3::v2::read::parse_id3v2(
+		reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(tag.len(), 1);
 	assert_eq!(
@@ -567,8 +586,12 @@ fn user_defined_frames_conversion() {
 	let mut reader = std::io::Cursor::new(&content[..]);
 
 	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let reparsed =
-		crate::id3::v2::read::parse_id3v2(&mut reader, header, ParsingMode::Strict).unwrap();
+	let reparsed = crate::id3::v2::read::parse_id3v2(
+		&mut reader,
+		header,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap();
 
 	assert_eq!(id3v2, reparsed);
 }
@@ -1304,4 +1327,26 @@ fn hold_back_4_character_txxx_description() {
 
 	let tag: Id3v2Tag = tag.into();
 	assert_eq!(tag.len(), 1);
+}
+
+#[test]
+fn skip_reading_cover_art() {
+	let p = Picture::new_unchecked(
+		PictureType::CoverFront,
+		Some(MimeType::Jpeg),
+		None,
+		std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
+	);
+
+	let mut tag = Tag::new(TagType::Id3v2);
+	tag.push_picture(p);
+
+	tag.set_artist(String::from("Foo artist"));
+
+	let mut writer = Vec::new();
+	tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
+
+	let id3v2 = read_tag_with_options(&writer[..], ParseOptions::new().read_cover_art(false));
+	assert_eq!(id3v2.len(), 1); // Artist, no picture
+	assert!(id3v2.artist().is_some());
 }

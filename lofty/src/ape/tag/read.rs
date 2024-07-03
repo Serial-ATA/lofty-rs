@@ -2,6 +2,8 @@ use super::item::ApeItem;
 use super::ApeTag;
 use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
+use crate::ape::APE_PICTURE_TYPES;
+use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
 use crate::tag::ItemValue;
@@ -11,7 +13,11 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(crate) fn read_ape_tag_with_header<R>(data: &mut R, header: ApeHeader) -> Result<ApeTag>
+pub(crate) fn read_ape_tag_with_header<R>(
+	data: &mut R,
+	header: ApeHeader,
+	parse_options: ParseOptions,
+) -> Result<ApeTag>
 where
 	R: Read + Seek,
 {
@@ -46,11 +52,17 @@ where
 			decode_err!(@BAIL Ape, "APE tag item contains an illegal key");
 		}
 
+		if APE_PICTURE_TYPES.contains(&&*key) && !parse_options.read_cover_art {
+			data.seek(SeekFrom::Current(i64::from(value_size)))?;
+			continue;
+		}
+
 		let read_only = (flags & 1) == 1;
 		let item_type = (flags >> 1) & 3;
 
 		if value_size == 0 || key.len() < 2 || key.len() > 255 {
 			log::warn!("APE: Encountered invalid item key '{}'", key);
+			data.seek(SeekFrom::Current(i64::from(value_size)))?;
 			continue;
 		}
 
@@ -86,7 +98,7 @@ where
 pub(crate) fn read_ape_tag<R: Read + Seek>(
 	reader: &mut R,
 	footer: bool,
-	read_tag: bool,
+	parse_options: ParseOptions,
 ) -> Result<(Option<ApeTag>, Option<ApeHeader>)> {
 	let mut ape_preamble = [0; 8];
 	reader.read_exact(&mut ape_preamble)?;
@@ -94,8 +106,8 @@ pub(crate) fn read_ape_tag<R: Read + Seek>(
 	let mut ape_tag = None;
 	if &ape_preamble == APE_PREAMBLE {
 		let ape_header = header::read_ape_header(reader, footer)?;
-		if read_tag {
-			ape_tag = Some(read_ape_tag_with_header(reader, ape_header)?);
+		if parse_options.read_tags {
+			ape_tag = Some(read_ape_tag_with_header(reader, ape_header, parse_options)?);
 		}
 
 		return Ok((ape_tag, Some(ape_header)));

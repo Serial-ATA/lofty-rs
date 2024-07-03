@@ -38,9 +38,7 @@ where
 	// Strongly recommended to be at the end of the file
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) =
-		crate::ape::tag::read::read_ape_tag(reader, true, parse_options.read_tags)?
-	{
+	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
 		stream_length -= u64::from(header.size);
 		ape_tag = tag;
 	}

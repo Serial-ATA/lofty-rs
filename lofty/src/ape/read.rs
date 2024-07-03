@@ -47,7 +47,7 @@ where
 		if let Some(content) = content {
 			let reader = &mut &*content;
 
-			let id3v2 = parse_id3v2(reader, header, parse_options.parsing_mode)?;
+			let id3v2 = parse_id3v2(reader, header, parse_options)?;
 			id3v2_tag = Some(id3v2);
 		}
 	}
@@ -89,7 +89,7 @@ where
 				stream_len -= u64::from(ape_header.size);
 
 				if parse_options.read_tags {
-					let ape = read_ape_tag_with_header(data, ape_header)?;
+					let ape = read_ape_tag_with_header(data, ape_header, parse_options)?;
 					ape_tag = Some(ape);
 				}
 			},
@@ -125,7 +125,7 @@ where
 	// Strongly recommended to be at the end of the file
 	data.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) = read_ape_tag(data, true, parse_options.read_tags)? {
+	if let (tag, Some(header)) = read_ape_tag(data, true, parse_options)? {
 		stream_len -= u64::from(header.size);
 		ape_tag = tag;
 	}

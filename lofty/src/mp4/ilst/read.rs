@@ -2,7 +2,7 @@ use super::constants::{
 	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
 };
 use super::{Atom, AtomData, AtomIdent, Ilst};
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
@@ -17,12 +17,14 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 
 pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,
-	parsing_mode: ParsingMode,
+	parse_options: ParseOptions,
 	len: u64,
 ) -> Result<Ilst>
 where
 	R: Read + Seek,
 {
+	let parsing_mode = parse_options.parsing_mode;
+
 	let mut contents = try_vec![0; len as usize];
 	reader.read_exact(&mut contents)?;
 
@@ -40,7 +42,12 @@ where
 					continue;
 				},
 				b"covr" => {
-					handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)?;
+					if parse_options.read_cover_art {
+						handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)?;
+					} else {
+						skip_unneeded(&mut ilst_reader, atom.extended, atom.len)?;
+					}
+
 					continue;
 				},
 				// Upgrade this to a \xa9gen atom

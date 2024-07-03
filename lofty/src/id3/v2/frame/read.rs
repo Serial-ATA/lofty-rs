@@ -1,6 +1,6 @@
 use super::header::parse::{parse_header, parse_v2_header};
 use super::Frame;
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
@@ -10,6 +10,7 @@ use crate::macros::try_vec;
 
 use std::io::Read;
 
+use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) enum ParsedFrame<'a> {
@@ -22,12 +23,13 @@ impl<'a> ParsedFrame<'a> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
-		parse_mode: ParsingMode,
+		parse_options: ParseOptions,
 	) -> Result<Self>
 	where
 		R: Read,
 	{
 		let mut size = 0u32;
+		let parse_mode = parse_options.parsing_mode;
 
 		// The header will be upgraded to ID3v2.4 past this point, so they can all be treated the same
 		let parse_header_result = match version {
@@ -52,6 +54,10 @@ impl<'a> ParsedFrame<'a> {
 				}
 			},
 		};
+
+		if !parse_options.read_cover_art && id == ATTACHED_PICTURE_ID {
+			return Ok(Self::Skip { size });
+		}
 
 		if size == 0 {
 			if parse_mode == ParsingMode::Strict {
