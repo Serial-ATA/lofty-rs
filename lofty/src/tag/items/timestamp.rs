@@ -70,7 +70,8 @@ impl FromStr for Timestamp {
 	type Err = LoftyError;
 
 	fn from_str(s: &str) -> Result<Self> {
-		Timestamp::parse(&mut s.as_bytes(), ParsingMode::BestAttempt)
+		Timestamp::parse(&mut s.as_bytes(), ParsingMode::BestAttempt)?
+			.ok_or_else(|| LoftyError::new(ErrorKind::BadTimestamp("Timestamp frame is empty")))
 	}
 }
 
@@ -86,7 +87,7 @@ impl Timestamp {
 	///
 	/// * Failure to read from `reader`
 	/// * The timestamp is invalid
-	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
 	where
 		R: Read,
 	{
@@ -108,6 +109,14 @@ impl Timestamp {
 		reader
 			.take(Self::MAX_LENGTH as u64)
 			.read_to_end(&mut content)?;
+
+		if content.is_empty() {
+			if parse_mode == ParsingMode::Strict {
+				err!(BadTimestamp("Timestamp frame is empty"))
+			}
+
+			return Ok(None);
+		}
 
 		let reader = &mut &content[..];
 
@@ -131,7 +140,7 @@ impl Timestamp {
 			break;
 		}
 
-		Ok(timestamp)
+		Ok(Some(timestamp))
 	}
 
 	fn segment<const SIZE: usize>(
@@ -237,7 +246,7 @@ mod tests {
 		let parsed_timestamp =
 			Timestamp::parse(&mut content.as_bytes(), ParsingMode::Strict).unwrap();
 
-		assert_eq!(parsed_timestamp, expected());
+		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
 	#[test]
@@ -248,7 +257,7 @@ mod tests {
 		let parsed_timestamp =
 			Timestamp::parse(&mut content.as_bytes(), ParsingMode::BestAttempt).unwrap();
 
-		assert_eq!(parsed_timestamp, expected());
+		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
 	#[test]
@@ -259,7 +268,7 @@ mod tests {
 		let parsed_timestamp =
 			Timestamp::parse(&mut content.as_bytes(), ParsingMode::BestAttempt).unwrap();
 
-		assert_eq!(parsed_timestamp, expected());
+		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
 	#[test]
@@ -348,7 +357,17 @@ mod tests {
 
 		for (data, expected) in partial_timestamps {
 			let parsed_timestamp = Timestamp::parse(&mut &data[..], ParsingMode::Strict).unwrap();
-			assert_eq!(parsed_timestamp, expected);
+			assert_eq!(parsed_timestamp, Some(expected));
 		}
+	}
+
+	#[test]
+	fn empty_timestamp() {
+		let empty_timestamp =
+			Timestamp::parse(&mut "".as_bytes(), ParsingMode::BestAttempt).unwrap();
+		assert!(empty_timestamp.is_none());
+
+		let empty_timestamp_strict = Timestamp::parse(&mut "".as_bytes(), ParsingMode::Strict);
+		assert!(empty_timestamp_strict.is_err());
 	}
 }

@@ -96,7 +96,12 @@ impl<'a> TimestampFrame<'a> {
 
 		let reader = &mut value.as_bytes();
 
-		frame.timestamp = Timestamp::parse(reader, parse_mode)?;
+		let Some(timestamp) = Timestamp::parse(reader, parse_mode)? else {
+			// Timestamp is empty
+			return Ok(None);
+		};
+
+		frame.timestamp = timestamp;
 		Ok(Some(frame))
 	}
 
