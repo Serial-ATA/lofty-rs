@@ -48,7 +48,7 @@ fn test_utf16be_delimiter() {
 		String::from("Foo\0Bar"),
 	);
 
-	let data = f.as_bytes();
+	let data = f.as_bytes(false);
 
 	let no_bom_be_data = b"\x02\
 	\0F\0o\0o\0\0\
@@ -74,7 +74,7 @@ fn test_utf16_delimiter() {
 		String::from("Foo\0Bar"),
 	);
 
-	let data = f.as_bytes();
+	let data = f.as_bytes(false);
 
 	// TODO: TagLib writes a BOM to every string, making the output identical to `mutli_bom_le_data`,
 	//       rather than `single_bom_le_data` in Lofty's case. Not sure if we should be writing the BOM
@@ -507,7 +507,7 @@ fn test_render_user_url_link_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(false),
 		b"\
 	\x00\
 	foo\x00\
@@ -543,7 +543,7 @@ fn test_render_ownership_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes().unwrap(),
+		f.as_bytes(false).unwrap(),
 		b"\
 		\x00\
         GBP1.99\x00\
@@ -721,7 +721,7 @@ fn test_render_comments_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes().unwrap(),
+		f.as_bytes(false).unwrap(),
 		b"\
 	\x01\
 	eng\
@@ -807,7 +807,7 @@ fn test_render_user_text_identification_frame() {
 	let mut f = ExtendedTextFrame::new(TextEncoding::Latin1, String::new(), String::from("Text"));
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(false),
 		b"\
 	\x00\
 	\x00\
@@ -817,7 +817,7 @@ fn test_render_user_text_identification_frame() {
 	f.description = String::from("Description");
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(false),
 		b"\
 	\x00\
 	Description\x00\
