@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Be sure to read the warnings in the docs to understand what this means.
 - **ID3v2**: Support writing ID3v2.3 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/62)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/411))
     - This can be done by setting `WriteOptions::use_id3v23` to `true`.
+- **Tag**: `Tag::take_filter` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/414))
+  - This is like `Tag::take`, but allows for per-`TagItem` filtering.
+  - This is useful for `TagType::Id3v2`, as it allows specifying descriptions and languages for frames.
+    See the docs and PR description for more details.
+
+### Changed
+- **Timestamp**: `Timestamp::parse` with empty inputs will return `None` when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/416))
 
 ## [0.20.1] - 2024-07-02
 
