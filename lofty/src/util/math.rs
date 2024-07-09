@@ -23,7 +23,7 @@ macro_rules! unsigned_rounded_division {
 	};
 }
 
-unsigned_rounded_division!(u8, u16, u32, u64, usize);
+unsigned_rounded_division!(u8, u16, u32, u64, u128, usize);
 
 #[cfg(test)]
 mod tests {

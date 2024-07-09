@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/TODO)):
+  - **Vorbis**: Fix panic when reading properties of a file with large absolute granule positions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/421))
   - **FLAC**: Fix panic when reading properties of a file with incorrect block sizes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/422))
 
 ## [0.20.1] - 2024-07-02

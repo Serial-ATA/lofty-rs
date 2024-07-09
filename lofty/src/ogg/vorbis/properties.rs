@@ -96,7 +96,7 @@ where
 	let mut properties = VorbisProperties::default();
 
 	// It's impossible to get this far without the identification packet, safe to unwrap
-	let first_packet = packets.get(0).unwrap();
+	let first_packet = packets.get(0).expect("Identification packet expected");
 
 	// Skip identification header
 	let first_page_content = &mut &first_packet[7..];
@@ -121,11 +121,12 @@ where
 		let last_page_abgp = last_page.header().abgp;
 
 		if properties.sample_rate > 0 {
-			let total_samples = last_page_abgp.saturating_sub(first_page_abgp);
+			let total_samples = last_page_abgp.saturating_sub(first_page_abgp) as u128;
 
 			// Best case scenario
 			if total_samples > 0 {
-				length = (total_samples * 1000).div_round(u64::from(properties.sample_rate));
+				length =
+					(total_samples * 1000).div_round(u128::from(properties.sample_rate)) as u64;
 				properties.duration = Duration::from_millis(length);
 			} else {
 				log::warn!(
