@@ -6,7 +6,7 @@ use crate::error::Result;
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v2, FindId3v2Config, ID3FindResults};
-use crate::macros::decode_err;
+use crate::macros::{decode_err, err};
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
 
@@ -71,7 +71,7 @@ where
 
 	while !last_block {
 		let block = Block::read(data, |block_type| {
-			block_type == BLOCK_ID_VORBIS_COMMENTS
+			(block_type == BLOCK_ID_VORBIS_COMMENTS && parse_options.read_tags)
 				|| (block_type == BLOCK_ID_PICTURE && parse_options.read_cover_art)
 		})?;
 
@@ -109,7 +109,7 @@ where
 			continue;
 		}
 
-		if block.ty == BLOCK_ID_PICTURE && parse_options.read_tags {
+		if block.ty == BLOCK_ID_PICTURE && parse_options.read_cover_art {
 			log::debug!("Encountered a FLAC picture block, parsing");
 
 			match Picture::from_flac_bytes(&block.content, false, parse_options.parsing_mode) {
@@ -133,6 +133,12 @@ where
 	let (stream_length, file_length) = {
 		let current = data.stream_position()?;
 		let end = data.seek(SeekFrom::End(0))?;
+
+		// In the event that a block lies about its size, the current position could be
+		// completely wrong.
+		if current > end {
+			err!(SizeMismatch);
+		}
 
 		(end - current, end)
 	};

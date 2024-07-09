@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Timestamp**: `Timestamp::parse` with empty inputs will return `None` when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/416))
 
+### Fixed
+- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/TODO)):
+  - **FLAC**: Fix panic when reading properties of a file with incorrect block sizes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/422))
+
 ## [0.20.1] - 2024-07-02
 
 ### Fixed
