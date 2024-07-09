@@ -222,7 +222,7 @@ pub(super) fn read_properties(
 	let mut overall_bitrate = 0;
 	let mut audio_bitrate = 0;
 	if bytes_per_second > 0 {
-		audio_bitrate = (bytes_per_second * 8).div_round(1000);
+		audio_bitrate = (u64::from(bytes_per_second) * 8).div_round(1000) as u32;
 	}
 
 	if sample_rate > 0 && total_samples > 0 {
