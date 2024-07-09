@@ -30,6 +30,7 @@ pub enum ErrorKind {
 	///
 	/// This occurs when the size of an item is written as one value, but that size is either too
 	/// big or small to be valid within the bounds of that item.
+	// TODO: Should probably have context
 	SizeMismatch,
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
