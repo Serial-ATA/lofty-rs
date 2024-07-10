@@ -510,7 +510,13 @@ where
 			}
 		}
 
+		// TODO: We need to eventually calculate the duration from the stts atom
+		//       if there is no timescale available.
 		let duration_millis = properties.duration.as_millis();
+		if duration_millis == 0 {
+			log::warn!("Duration is 0, unable to calculate bitrate");
+			return Ok(properties);
+		}
 
 		let overall_bitrate = u128::from(file_length * 8) / duration_millis;
 		properties.overall_bitrate = overall_bitrate as u32;
