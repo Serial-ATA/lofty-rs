@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/TODO)):
+  - **MP4**: Fix panic when reading properties of a file with no timescale specified ([issue](https://github.com/Serial-ATA/lofty-rs/issues/418))
   - **WAV**: Fix panic when reading properties with large written bytes per second ([issue](https://github.com/Serial-ATA/lofty-rs/issues/420))
   - **Vorbis**: Fix panic when reading properties of a file with large absolute granule positions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/421))
   - **FLAC**: Fix panic when reading properties of a file with incorrect block sizes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/422))
