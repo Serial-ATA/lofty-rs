@@ -1,6 +1,7 @@
 //! Various traits for reading and writing to file-like objects
 
-use crate::error::LoftyError;
+use crate::error::{LoftyError, Result};
+use crate::util::math::F80;
 
 use std::collections::VecDeque;
 use std::fs::File;
@@ -49,13 +50,13 @@ pub trait Truncate {
 	/// # Errors
 	///
 	/// Errors depend on the object being truncated, which may not always be fallible.
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error>;
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error>;
 }
 
 impl Truncate for File {
 	type Error = std::io::Error;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		self.set_len(new_len)
 	}
 }
@@ -63,7 +64,7 @@ impl Truncate for File {
 impl Truncate for Vec<u8> {
 	type Error = std::convert::Infallible;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
@@ -72,7 +73,7 @@ impl Truncate for Vec<u8> {
 impl Truncate for VecDeque<u8> {
 	type Error = std::convert::Infallible;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
@@ -84,7 +85,7 @@ where
 {
 	type Error = <T as Truncate>::Error;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		self.get_mut().truncate(new_len)
 	}
 }
@@ -95,7 +96,7 @@ where
 {
 	type Error = <T as Truncate>::Error;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		self.as_mut().truncate(new_len)
 	}
 }
@@ -106,7 +107,7 @@ where
 {
 	type Error = <T as Truncate>::Error;
 
-	fn truncate(&mut self, new_len: u64) -> Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
 		(**self).truncate(new_len)
 	}
 }
@@ -136,13 +137,13 @@ pub trait Length {
 	/// # Errors
 	///
 	/// Errors depend on the object being read, which may not always be fallible.
-	fn len(&self) -> Result<u64, Self::Error>;
+	fn len(&self) -> std::result::Result<u64, Self::Error>;
 }
 
 impl Length for File {
 	type Error = std::io::Error;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		self.metadata().map(|m| m.len())
 	}
 }
@@ -150,7 +151,7 @@ impl Length for File {
 impl Length for Vec<u8> {
 	type Error = std::convert::Infallible;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Ok(self.len() as u64)
 	}
 }
@@ -158,7 +159,7 @@ impl Length for Vec<u8> {
 impl Length for VecDeque<u8> {
 	type Error = std::convert::Infallible;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Ok(self.len() as u64)
 	}
 }
@@ -169,7 +170,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Length::len(self.get_ref())
 	}
 }
@@ -180,7 +181,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Length::len(self.as_ref())
 	}
 }
@@ -191,7 +192,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Length::len(*self)
 	}
 }
@@ -202,7 +203,7 @@ where
 {
 	type Error = <T as Length>::Error;
 
-	fn len(&self) -> Result<u64, Self::Error> {
+	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Length::len(*self)
 	}
 }
@@ -227,6 +228,22 @@ where
 	<T as Truncate>::Error: Into<LoftyError>,
 	<T as Length>::Error: Into<LoftyError>,
 {
+}
+
+pub(crate) trait ReadExt: Read {
+	fn read_f80(&mut self) -> Result<F80>;
+}
+
+impl<R> ReadExt for R
+where
+	R: Read,
+{
+	fn read_f80(&mut self) -> Result<F80> {
+		let mut bytes = [0; 10];
+		self.read_exact(&mut bytes)?;
+
+		Ok(F80::from_be_bytes(bytes))
+	}
 }
 
 #[cfg(test)]
