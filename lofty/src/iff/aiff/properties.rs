@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use std::io::Read;
 use std::time::Duration;
 
+use crate::io::ReadExt;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// The AIFC compression type
@@ -166,34 +167,13 @@ pub(super) fn read_properties(
 	let sample_frames = comm.read_u32::<BigEndian>()?;
 	let sample_size = comm.read_u16::<BigEndian>()?;
 
-	let mut sample_rate_bytes = [0; 10];
-	comm.read_exact(&mut sample_rate_bytes)?;
+	let sample_rate_extended = comm.read_f80()?;
+	let sample_rate_64 = sample_rate_extended.as_f64();
+	if !sample_rate_64.is_finite() || !sample_rate_64.is_sign_positive() {
+		decode_err!(@BAIL Aiff, "Invalid sample rate");
+	}
 
-	let sign = u64::from(sample_rate_bytes[0] & 0x80);
-
-	sample_rate_bytes[0] &= 0x7F;
-
-	let mut exponent = u16::from(sample_rate_bytes[0]) << 8 | u16::from(sample_rate_bytes[1]);
-	exponent = exponent - 16383 + 1023;
-
-	let fraction = &mut sample_rate_bytes[2..];
-	fraction[0] &= 0x7F;
-
-	let fraction: Vec<u64> = fraction.iter_mut().map(|v| u64::from(*v)).collect();
-
-	let fraction = fraction[0] << 56
-		| fraction[1] << 48
-		| fraction[2] << 40
-		| fraction[3] << 32
-		| fraction[4] << 24
-		| fraction[5] << 16
-		| fraction[6] << 8
-		| fraction[7];
-
-	let f64_bytes = sign << 56 | u64::from(exponent) << 52 | fraction >> 11;
-	let float = f64::from_be_bytes(f64_bytes.to_be_bytes());
-
-	let sample_rate = float.round() as u32;
+	let sample_rate = sample_rate_64.round() as u32;
 
 	let (duration, overall_bitrate, audio_bitrate) = if sample_rate > 0 && sample_frames > 0 {
 		let length = (f64::from(sample_frames) * 1000.0) / f64::from(sample_rate);
@@ -207,49 +187,59 @@ pub(super) fn read_properties(
 		(Duration::ZERO, 0, 0)
 	};
 
-	let mut compression = None;
-	if comm.len() >= 5 && compression_present == CompressionPresent::Yes {
-		let mut compression_type = [0u8; 4];
-		comm.read_exact(&mut compression_type)?;
-
-		compression = Some(match &compression_type {
-			b"NONE" => AiffCompressionType::None,
-			b"ACE2" => AiffCompressionType::ACE2,
-			b"ACE8" => AiffCompressionType::ACE8,
-			b"MAC3" => AiffCompressionType::MAC3,
-			b"MAC6" => AiffCompressionType::MAC6,
-			b"sowt" => AiffCompressionType::sowt,
-			b"fl32" => AiffCompressionType::fl32,
-			b"fl64" => AiffCompressionType::fl64,
-			b"alaw" => AiffCompressionType::alaw,
-			b"ulaw" => AiffCompressionType::ulaw,
-			b"ULAW" => AiffCompressionType::ULAW,
-			b"ALAW" => AiffCompressionType::ALAW,
-			b"FL32" => AiffCompressionType::FL32,
-			_ => {
-				log::debug!(
-					"Encountered unknown compression type: {:?}",
-					compression_type
-				);
-
-				// We have to read the compression name string
-				let mut compression_name = String::new();
-
-				let compression_name_size = comm.read_u8()?;
-				if compression_name_size > 0 {
-					let mut compression_name_bytes = try_vec![0u8; compression_name_size as usize];
-					comm.read_exact(&mut compression_name_bytes)?;
-
-					compression_name = utf8_decode(compression_name_bytes)?;
-				}
-
-				AiffCompressionType::Other {
-					compression_type,
-					compression_name,
-				}
-			},
+	let is_compressed = comm.len() >= 5 && compression_present == CompressionPresent::Yes;
+	if !is_compressed {
+		return Ok(AiffProperties {
+			duration,
+			overall_bitrate,
+			audio_bitrate,
+			sample_rate,
+			sample_size,
+			channels,
+			compression_type: None,
 		});
 	}
+
+	let mut compression_type = [0u8; 4];
+	comm.read_exact(&mut compression_type)?;
+
+	let compression = Some(match &compression_type {
+		b"NONE" => AiffCompressionType::None,
+		b"ACE2" => AiffCompressionType::ACE2,
+		b"ACE8" => AiffCompressionType::ACE8,
+		b"MAC3" => AiffCompressionType::MAC3,
+		b"MAC6" => AiffCompressionType::MAC6,
+		b"sowt" => AiffCompressionType::sowt,
+		b"fl32" => AiffCompressionType::fl32,
+		b"fl64" => AiffCompressionType::fl64,
+		b"alaw" => AiffCompressionType::alaw,
+		b"ulaw" => AiffCompressionType::ulaw,
+		b"ULAW" => AiffCompressionType::ULAW,
+		b"ALAW" => AiffCompressionType::ALAW,
+		b"FL32" => AiffCompressionType::FL32,
+		_ => {
+			log::debug!(
+				"Encountered unknown compression type: {:?}",
+				compression_type
+			);
+
+			// We have to read the compression name string
+			let mut compression_name = String::new();
+
+			let compression_name_size = comm.read_u8()?;
+			if compression_name_size > 0 {
+				let mut compression_name_bytes = try_vec![0u8; compression_name_size as usize];
+				comm.read_exact(&mut compression_name_bytes)?;
+
+				compression_name = utf8_decode(compression_name_bytes)?;
+			}
+
+			AiffCompressionType::Other {
+				compression_type,
+				compression_name,
+			}
+		},
+	});
 
 	Ok(AiffProperties {
 		duration,
