@@ -192,7 +192,7 @@ impl AtomInfo {
 				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
 
-			atom_ident = parse_freeform(data, reader_size, parse_mode)?;
+			atom_ident = parse_freeform(data, len, reader_size, parse_mode)?;
 		} else {
 			atom_ident = AtomIdent::Fourcc(identifier);
 		}
@@ -208,12 +208,20 @@ impl AtomInfo {
 
 fn parse_freeform<R>(
 	data: &mut R,
+	atom_len: u64,
 	reader_size: u64,
 	parse_mode: ParsingMode,
 ) -> Result<AtomIdent<'static>>
 where
 	R: Read + Seek,
 {
+	// ---- header + mean header + name header = 24
+	const MINIMUM_FREEFORM_LEN: u64 = ATOM_HEADER_LEN * 3;
+
+	if atom_len < MINIMUM_FREEFORM_LEN {
+		err!(BadAtom("Found an incomplete freeform identifier"));
+	}
+
 	let mean = freeform_chunk(data, b"mean", reader_size, parse_mode)?;
 	let name = freeform_chunk(data, b"name", reader_size - 4, parse_mode)?;
 
@@ -240,11 +248,15 @@ where
 			len,
 			..
 		}) if fourcc == name => {
+			if len < 12 {
+				err!(BadAtom("Found an incomplete freeform identifier chunk"));
+			}
+
 			// Version (1)
 			// Flags (3)
 			data.seek(SeekFrom::Current(4))?;
 
-			// Already read the size, identifier, and version/flags (12 bytes)
+			// Already read the size (4) + identifier (4) + version/flags (4)
 			let mut content = try_vec![0; (len - 12) as usize];
 			data.read_exact(&mut content)?;
 

@@ -212,7 +212,14 @@ where
 	// An atom can contain multiple data atoms
 	let mut ret = Vec::new();
 
-	let to_read = (atom_info.start + atom_info.len) - reader.stream_position()?;
+	let atom_end = atom_info.start + atom_info.len;
+	let position = reader.stream_position()?;
+	assert!(
+		atom_end >= position,
+		"uncaught size mismatch, reader position: {position} (expected <= {atom_end})",
+	);
+
+	let to_read = atom_end - position;
 	let mut pos = 0;
 	while pos < to_read {
 		let Some(next_atom) = reader.next()? else {
