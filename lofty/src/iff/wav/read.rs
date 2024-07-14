@@ -5,7 +5,7 @@ use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::macros::decode_err;
+use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -74,12 +74,25 @@ where
 				chunks.skip(data)?;
 			},
 			b"LIST" => {
+				let mut size = chunks.size;
+				if size < 4 {
+					decode_err!(@BAIL Wav, "Invalid LIST chunk size");
+				}
+
 				let mut list_type = [0; 4];
 				data.read_exact(&mut list_type)?;
 
+				size -= 4;
+
 				match &list_type {
 					b"INFO" if parse_options.read_tags => {
-						let end = data.stream_position()? + u64::from(chunks.size - 4);
+						// TODO: We already get the current position above, just keep it up to date and use it here
+						//       to avoid the seeks.
+						let end = data.stream_position()? + u64::from(size);
+						if end > file_len {
+							err!(SizeMismatch);
+						}
+
 						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
 					},
 					_ => {
