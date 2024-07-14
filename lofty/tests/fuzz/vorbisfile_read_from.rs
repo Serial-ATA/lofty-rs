@@ -9,6 +9,13 @@ fn oom1() {
 }
 
 #[test]
+fn large_allocation() {
+	let mut reader =
+		crate::get_reader("vorbisfile_read_from/move01d_IDX_13_RAND_35154275996070165946691.ogg");
+	let _ = VorbisFile::read_from(&mut reader, ParseOptions::new());
+}
+
+#[test]
 fn panic1() {
 	let mut reader =
 		crate::get_reader("vorbisfile_read_from/order01d_IDX_32_RAND_22064097693866277502540.ogg");

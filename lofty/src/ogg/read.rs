@@ -75,6 +75,9 @@ where
 	};
 
 	let number_of_items = data.read_u32::<LittleEndian>()?;
+	if number_of_items > (len >> 2) as u32 {
+		err!(SizeMismatch);
+	}
 
 	let mut tag = VorbisComments {
 		vendor,
