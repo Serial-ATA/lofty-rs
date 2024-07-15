@@ -269,7 +269,7 @@ where
 fn write_frame_header<W>(
 	writer: &mut W,
 	name: &str,
-	len: u32,
+	mut len: u32,
 	flags: FrameFlags,
 	is_id3v23: bool,
 ) -> Result<()>
@@ -282,8 +282,12 @@ where
 		flags.as_id3v24_bytes()
 	};
 
+	if !is_id3v23 {
+		len = len.synch()?;
+	}
+
 	writer.write_all(name.as_bytes())?;
-	writer.write_u32::<BigEndian>(len.synch()?)?;
+	writer.write_u32::<BigEndian>(len)?;
 	writer.write_u16::<BigEndian>(flags)?;
 
 	Ok(())
