@@ -2,7 +2,7 @@ use crate::temp_file;
 use crate::util::get_file;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
-use lofty::id3::v2::Id3v2Tag;
+use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::iff::wav::{RiffInfoList, WavFile, WavFormat};
 use lofty::tag::{Accessor, TagType};
 
@@ -108,30 +108,32 @@ fn test_id3v2_tag() {
 	}
 }
 
-// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
-#[ignore]
 fn test_save_id3v23() {
-	// let mut file = temp_file!("tests/taglib/data/empty.wav");
-	//
-	// let xxx = "X".repeat(254);
-	// {
-	// 	let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	// 	assert!(f.id3v2().is_none());
-	//
-	// 	f.id3v2_mut().unwrap().set_title(xxx.clone());
-	// 	f.id3v2_mut().unwrap().set_artist(String::from("Artist A"));
-	//
-	// 	// f.save(RIFF::WAV::File::AllTags, File::StripOthers, ID3v2::v3);
-	// 	// assert!(f.id3v2().is_some());
-	// }
-	// {
-	// 	let f2 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	// 	let tag = f2.id3v2().unwrap();
-	// 	assert_eq!(tag.original_version(), Id3v2Version::V3);
-	// 	assert_eq!(tag.artist().as_deref(), Some("Artist A"));
-	// 	assert_eq!(tag.title().as_deref(), Some(&*xxx));
-	// }
+	let mut file = temp_file!("tests/taglib/data/empty.wav");
+
+	let xxx = "X".repeat(254);
+	{
+		let mut f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		assert!(f.id3v2().is_none());
+
+		let mut id3v2 = Id3v2Tag::new();
+		id3v2.set_title(xxx.clone());
+		id3v2.set_artist(String::from("Artist A"));
+		f.set_id3v2(id3v2);
+
+		f.save_to(&mut file, WriteOptions::new().use_id3v23(true))
+			.unwrap();
+		assert!(f.id3v2().is_some());
+	}
+	file.rewind().unwrap();
+	{
+		let f2 = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let tag = f2.id3v2().unwrap();
+		assert_eq!(tag.original_version(), Id3v2Version::V3);
+		assert_eq!(tag.artist().as_deref(), Some("Artist A"));
+		assert_eq!(tag.title().as_deref(), Some(&*xxx));
+	}
 }
 
 #[test]
