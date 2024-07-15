@@ -138,8 +138,16 @@ impl Accessor for Tag {
 		Comment     => comment
 	);
 
+	// Some specifications, like IDv2, allow for the track value to be in the
+	// format of x/y, where x is the track position and y is the total number of
+	// tracks. This function only returns the track position and ignores the
+	// total number of tracks.
 	fn track(&self) -> Option<u32> {
-		self.get_u32_from_string(&ItemKey::TrackNumber)
+		let mut i = self.get_string(&ItemKey::TrackNumber)?;
+		if let Some(idx) = i.find('/') {
+			i = &i[..idx];
+		};
+		i.parse::<u32>().ok()
 	}
 
 	fn set_track(&mut self, value: u32) {

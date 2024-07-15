@@ -211,6 +211,40 @@ fn save_number_of_track_and_disk_to_id3v2() {
 }
 
 #[test]
+fn track_edge_case_id3v2() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
+
+	let mut tag = Tag::new(TagType::Id3v2);
+
+	tag.insert_text(ItemKey::TrackNumber, "22/33".to_string());
+
+	file.rewind().unwrap();
+	tag.save_to(&mut file, WriteOptions::default()).unwrap();
+
+	// Now reread the file
+	file.rewind().unwrap();
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+
+	let tag = tagged_file.tag(TagType::Id3v2).unwrap();
+
+	assert_eq!(tag.track().unwrap(), 22);
+}
+
+#[test]
 fn test_bound_tagged_into_inner() {
 	let file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
