@@ -87,7 +87,7 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 				break 'build;
 			}
 
-			let (Ok(month), Ok(day)) = (date[..2].parse::<u8>(), date[2..].parse::<u8>()) else {
+			let (Ok(day), Ok(month)) = (date[..2].parse::<u8>(), date[2..].parse::<u8>()) else {
 				log::warn!("Invalid TDAT frame, retaining.");
 				break 'build;
 			};

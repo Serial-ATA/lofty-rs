@@ -547,7 +547,7 @@ impl Id3v2Tag {
 	/// ID3v2.4-style multi-value fields will be split as normal.
 	pub fn genres(&self) -> Option<impl Iterator<Item = &str>> {
 		if let Some(Frame::Text(TextInformationFrame { ref value, .. })) = self.get(&GENRE_ID) {
-			return Some(GenresIter::new(value));
+			return Some(GenresIter::new(value, false));
 		}
 
 		None
@@ -570,11 +570,16 @@ impl Id3v2Tag {
 pub(crate) struct GenresIter<'a> {
 	value: &'a str,
 	pos: usize,
+	preserve_indexes: bool,
 }
 
 impl<'a> GenresIter<'a> {
-	pub fn new(value: &'a str) -> GenresIter<'_> {
-		GenresIter { value, pos: 0 }
+	pub fn new(value: &'a str, preserve_indexes: bool) -> GenresIter<'_> {
+		GenresIter {
+			value,
+			pos: 0,
+			preserve_indexes,
+		}
 	}
 }
 
@@ -592,7 +597,7 @@ impl<'a> Iterator for GenresIter<'a> {
 			let start = self.pos;
 			let end = self.pos + idx;
 			self.pos = end + 1;
-			return Some(parse_genre(&self.value[start..end]));
+			return Some(parse_genre(&self.value[start..end], self.preserve_indexes));
 		}
 
 		if remainder.starts_with('(') && remainder.contains(')') {
@@ -603,20 +608,20 @@ impl<'a> Iterator for GenresIter<'a> {
 			if remainder.starts_with("((") {
 				end += 1;
 			}
-			return Some(parse_genre(&self.value[start..end]));
+			return Some(parse_genre(&self.value[start..end], self.preserve_indexes));
 		}
 
 		self.pos = self.value.len();
-		Some(parse_genre(remainder))
+		Some(parse_genre(remainder, self.preserve_indexes))
 	}
 }
 
-fn parse_genre(genre: &str) -> &str {
+fn parse_genre(genre: &str, preserve_indexes: bool) -> &str {
 	if genre.len() > 3 {
 		return genre;
 	}
 	if let Ok(id) = genre.parse::<usize>() {
-		if id < GENRES.len() {
+		if id < GENRES.len() && !preserve_indexes {
 			GENRES[id]
 		} else {
 			genre
@@ -1047,7 +1052,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			value: content,
 			..
 		}) if id.as_str() == "TCON" => {
-			let genres = GenresIter::new(content);
+			let genres = GenresIter::new(content, false);
 			for genre in genres {
 				tag.items.push(TagItem::new(
 					ItemKey::Genre,
