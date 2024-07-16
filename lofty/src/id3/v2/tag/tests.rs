@@ -1527,7 +1527,7 @@ fn split_tdrc_on_id3v23_save() {
 	let date = tag_re_read
 		.get_text(&FrameId::Valid(Cow::Borrowed("TDAT")))
 		.expect("Expected TDAT frame");
-	assert_eq!(date, "0603");
+	assert_eq!(date, "0306");
 
 	let time = tag_re_read
 		.get_text(&FrameId::Valid(Cow::Borrowed("TIME")))

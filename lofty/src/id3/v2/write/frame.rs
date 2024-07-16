@@ -1,12 +1,12 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef};
-use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
-use crate::id3::v2::{Frame, FrameId, TextInformationFrame};
+use crate::id3::v2::{Frame, FrameId, KeyValueFrame, TextInformationFrame};
 use crate::tag::items::Timestamp;
 
 use std::io::Write;
 
+use crate::id3::v2::tag::GenresIter;
 use byteorder::{BigEndian, WriteBytesExt};
 
 pub(in crate::id3::v2) fn create_items<W>(
@@ -43,12 +43,15 @@ where
 {
 	// These are all frames from ID3v2.4
 	const FRAMES_TO_DISCARD: &[&str] = &[
-		"ASPI", "EQU2", "RVA2", "SEEK", "SIGN", "TDEN", "TDRL", "TDTG", "TIPL", "TMCL", "TMOO",
-		"TPRO", "TSOA", "TSOP", "TSOT", "TSST",
+		"ASPI", "EQU2", "RVA2", "SEEK", "SIGN", "TDEN", "TDRL", "TDTG", "TMOO", "TPRO", "TSOA",
+		"TSOP", "TSOT", "TSST",
 	];
+
+	const IPLS_ID: &str = "IPLS";
 
 	let is_id3v23 = true;
 
+	let mut ipls = None;
 	for mut frame in frames {
 		let id = frame.id_str();
 
@@ -99,7 +102,7 @@ where
 					)));
 
 					if let (Some(month), Some(day)) = (timestamp.month, timestamp.day) {
-						let date = format!("{:02}{:02}", month, day);
+						let date = format!("{:02}{:02}", day, month);
 						new_frames.push(Frame::Text(TextInformationFrame::new(
 							FrameId::Valid("TDAT".into()),
 							f.encoding.to_id3v23(),
@@ -142,18 +145,62 @@ where
 				};
 
 				let mut new_genre_string = String::new();
-				for genre in GenresIter::new(&f.value) {
-					match genre {
+				let genres = GenresIter::new(&f.value, true).collect::<Vec<_>>();
+				for (i, genre) in genres.iter().enumerate() {
+					match *genre {
 						"Remix" => new_genre_string.push_str("(RX)"),
 						"Cover" => new_genre_string.push_str("(CR)"),
-						_ => {
+						_ if i == genres.len() - 1 && genre.parse::<u8>().is_err() => {
 							new_genre_string.push_str(genre);
+						},
+						_ => {
+							new_genre_string.push_str(&format!("({genre})"));
 						},
 					}
 				}
 
 				f.value = new_genre_string;
 				frame.0 = value;
+			},
+			// TIPL (Involved people list) and TMCL (Musician credits list) are
+			// both key-value pairs. ID3v2.3 does not distinguish between the two,
+			// so we must merge them into a single IPLS frame.
+			"TIPL" | "TMCL" => {
+				let mut value = frame.0.clone();
+				let Frame::KeyValue(KeyValueFrame {
+					ref mut key_value_pairs,
+					encoding,
+					..
+				}) = value.to_mut()
+				else {
+					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+					continue;
+				};
+
+				let ipls_frame;
+				match ipls {
+					Some(ref mut frame) => {
+						ipls_frame = frame;
+					},
+					None => {
+						ipls = Some(TextInformationFrame::new(
+							FrameId::Valid("IPLS".into()),
+							encoding.to_id3v23(),
+							String::new(),
+						));
+						ipls_frame = ipls.as_mut().unwrap();
+					},
+				}
+
+				for (key, value) in key_value_pairs.drain(..) {
+					if !ipls_frame.value.is_empty() {
+						ipls_frame.value.push('\0');
+					}
+
+					ipls_frame.value.push_str(&format!("{}\0{}", key, value));
+				}
+
+				continue;
 			},
 			_ => {},
 		}
@@ -167,6 +214,12 @@ where
 			&value,
 			is_id3v23,
 		)?;
+	}
+
+	if let Some(ipls) = ipls {
+		let frame = Frame::Text(ipls);
+		let value = frame.as_bytes(is_id3v23)?;
+		write_frame(writer, IPLS_ID, frame.flags(), &value, is_id3v23)?;
 	}
 
 	Ok(())
@@ -252,10 +305,14 @@ where
 		);
 	}
 
-	if let Some(len) = flags.data_length_indicator {
+	if let Some(mut len) = flags.data_length_indicator {
 		if len > 0 {
 			write_frame_header(writer, name, (value.len() + 1) as u32, flags, is_id3v23)?;
-			writer.write_u32::<BigEndian>(len.synch()?)?;
+			if !is_id3v23 {
+				len = len.synch()?;
+			}
+
+			writer.write_u32::<BigEndian>(len)?;
 			writer.write_u8(method_symbol)?;
 			writer.write_all(value)?;
 
@@ -282,11 +339,11 @@ where
 		flags.as_id3v24_bytes()
 	};
 
+	writer.write_all(name.as_bytes())?;
 	if !is_id3v23 {
 		len = len.synch()?;
 	}
 
-	writer.write_all(name.as_bytes())?;
 	writer.write_u32::<BigEndian>(len)?;
 	writer.write_u16::<BigEndian>(flags)?;
 
