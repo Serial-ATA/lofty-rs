@@ -2,19 +2,21 @@ use crate::temp_file;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::id3::v2::{
 	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
 	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
-	FrameId, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, OwnershipFrame, PopularimeterFrame,
-	PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType, SynchronizedTextFrame,
-	TextInformationFrame, TimestampFormat, UniqueFileIdentifierFrame, UrlLinkFrame,
+	FrameId, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, KeyValueFrame, OwnershipFrame,
+	PopularimeterFrame, PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType,
+	SynchronizedTextFrame, TextInformationFrame, TimestampFormat, TimestampFrame,
+	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use lofty::mpeg::MpegFile;
 use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
 use lofty::TextEncoding;
 
@@ -30,15 +32,66 @@ fn test_unsynch_decode() {
 	);
 }
 
-// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
-#[ignore]
-fn test_downgrade_utf8_for_id3v23_1() {}
+fn test_downgrade_utf8_for_id3v23_1() {
+	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
-// TODO: Support downgrading to ID3v2.3 (#62)
+	let f = TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TPE1")),
+		TextEncoding::UTF8,
+		String::from("Foo"),
+	);
+
+	let mut id3v2 = Id3v2Tag::new();
+	id3v2.insert(Frame::Text(f.clone()));
+	id3v2
+		.save_to(&mut file, WriteOptions::new().use_id3v23(true))
+		.unwrap();
+
+	let data = f.as_bytes(true);
+	assert_eq!(data.len(), 1 + 6 + 2); // NOTE: This does not include frame headers like TagLib does
+
+	let f2 = TextInformationFrame::parse(
+		&mut &data[..],
+		FrameId::Valid(Cow::Borrowed("TPE1")),
+		FrameFlags::default(),
+		Id3v2Version::V3,
+	)
+	.unwrap()
+	.unwrap();
+
+	assert_eq!(f.value, f2.value);
+	assert_eq!(f2.encoding, TextEncoding::UTF16);
+}
+
 #[test]
-#[ignore]
-fn test_downgrade_utf8_for_id3v23_2() {}
+fn test_downgrade_utf8_for_id3v23_2() {
+	let mut file = temp_file!("tests/taglib/data/xing.mp3");
+
+	let f = UnsynchronizedTextFrame::new(
+		TextEncoding::UTF8,
+		*b"XXX",
+		String::new(),
+		String::from("Foo"),
+	);
+
+	let mut id3v2 = Id3v2Tag::new();
+	id3v2.insert(Frame::UnsynchronizedText(f.clone()));
+	id3v2
+		.save_to(&mut file, WriteOptions::new().use_id3v23(true))
+		.unwrap();
+
+	let data = f.as_bytes(true).unwrap();
+	assert_eq!(data.len(), 1 + 3 + 2 + 2 + 6 + 2); // NOTE: This does not include frame headers like TagLib does
+
+	let f2 =
+		UnsynchronizedTextFrame::parse(&mut &data[..], FrameFlags::default(), Id3v2Version::V3)
+			.unwrap()
+			.unwrap();
+
+	assert_eq!(f2.content, String::from("Foo"));
+	assert_eq!(f2.encoding, TextEncoding::UTF16);
+}
 
 #[test]
 fn test_utf16be_delimiter() {
@@ -874,21 +927,82 @@ fn test_save_utf16_comment() {
 	}
 }
 
-// TODO: Support downgrading to ID3v2.3 (#62)
+// TODO: Probably won't ever support this, it's a weird edge case with
+//       duplicate genres. That can be up to the caller to figure out.
 #[test]
 #[ignore]
-fn test_update_genre_23_1() {}
+fn test_update_genre_23_1() {
+	// "Refinement" is the same as the ID3v1 genre - duplicate
+	let frame_value = TextInformationFrame::parse(
+		&mut &b"\x00\
+	(22)Death Metal"[..],
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
 
-#[test]
-#[ignore]
-fn test_update_genre23_2() {
-	// Marker test, Lofty doesn't do additional work with the genre string
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::Text(frame_value));
+
+	let mut genres = tag.genres().unwrap();
+	assert_eq!(genres.next(), Some("Death Metal"));
+	assert!(genres.next().is_none());
+
+	assert_eq!(tag.genre().as_deref(), Some("Death Metal"));
 }
 
 #[test]
-#[ignore]
+fn test_update_genre23_2() {
+	// "Refinement" is different from the ID3v1 genre
+	let frame_value = TextInformationFrame::parse(
+		&mut &b"\x00\
+	(4)Eurodisco"[..],
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
+
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::Text(frame_value));
+
+	let mut genres = tag.genres().unwrap();
+	assert_eq!(genres.next(), Some("Disco"));
+	assert_eq!(genres.next(), Some("Eurodisco"));
+	assert!(genres.next().is_none());
+
+	assert_eq!(tag.genre().as_deref(), Some("Disco / Eurodisco"));
+}
+
+#[test]
 fn test_update_genre23_3() {
-	// Marker test, Lofty doesn't do additional work with the genre string
+	// Multiple references and a refinement
+	let frame_value = TextInformationFrame::parse(
+		&mut &b"\x00\
+	(9)(138)Viking Metal"[..],
+		FrameId::Valid(Cow::Borrowed("TCON")),
+		FrameFlags::default(),
+		Id3v2Version::V4,
+	)
+	.unwrap()
+	.unwrap();
+
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::Text(frame_value));
+
+	let mut genres = tag.genres().unwrap();
+	assert_eq!(genres.next(), Some("Metal"));
+	assert_eq!(genres.next(), Some("Black Metal"));
+	assert_eq!(genres.next(), Some("Viking Metal"));
+	assert!(genres.next().is_none());
+
+	assert_eq!(
+		tag.genre().as_deref(),
+		Some("Metal / Black Metal / Viking Metal")
+	);
 }
 
 #[test]
@@ -933,10 +1047,196 @@ fn test_update_full_date22() {
 	);
 }
 
-// TODO: Support downgrading to ID3v2.3 (#62)
 #[test]
-#[ignore]
-fn test_downgrade_to_23() {}
+fn test_downgrade_to_23() {
+	let mut file = temp_file!("tests/taglib/data/xing.mp3");
+
+	{
+		let mut id3v2 = Id3v2Tag::new();
+
+		id3v2.insert(Frame::Timestamp(TimestampFrame::new(
+			FrameId::Valid(Cow::Borrowed("TDOR")),
+			TextEncoding::Latin1,
+			Timestamp::parse(&mut &b"2011-03-16"[..], ParsingMode::Strict)
+				.unwrap()
+				.unwrap(),
+		)));
+
+		id3v2.insert(Frame::Timestamp(TimestampFrame::new(
+			FrameId::Valid(Cow::Borrowed("TDRC")),
+			TextEncoding::Latin1,
+			Timestamp::parse(&mut &b"2012-04-17T12:01"[..], ParsingMode::Strict)
+				.unwrap()
+				.unwrap(),
+		)));
+
+		id3v2.insert(Frame::KeyValue(KeyValueFrame::new(
+			FrameId::Valid(Cow::Borrowed("TMCL")),
+			TextEncoding::Latin1,
+			vec![
+				(String::from("Guitar"), String::from("Artist 1")),
+				(String::from("Drums"), String::from("Artist 2")),
+			],
+		)));
+
+		id3v2.insert(Frame::KeyValue(KeyValueFrame::new(
+			FrameId::Valid(Cow::Borrowed("TIPL")),
+			TextEncoding::Latin1,
+			vec![
+				(String::from("Producer"), String::from("Artist 3")),
+				(String::from("Mastering"), String::from("Artist 4")),
+			],
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TCON")),
+			TextEncoding::Latin1,
+			String::from("51\039\0Power Noise"),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TDRL")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TDTG")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TMOO")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TPRO")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TSOA")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TSOT")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TSST")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TSOP")),
+			TextEncoding::Latin1,
+			String::new(),
+		)));
+
+		id3v2
+			.save_to(&mut file, WriteOptions::new().use_id3v23(true))
+			.unwrap();
+	}
+	file.rewind().unwrap();
+	{
+		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		assert!(f.id3v2().is_some());
+
+		let id3v2 = f.id3v2().unwrap();
+		let tf = id3v2.get(&FrameId::Valid(Cow::Borrowed("TDOR"))).unwrap();
+		let Frame::Timestamp(TimestampFrame { timestamp, .. }) = tf else {
+			unreachable!()
+		};
+		assert_eq!(timestamp.to_string(), "2011");
+
+		let tf = id3v2.get(&FrameId::Valid(Cow::Borrowed("TDRC"))).unwrap();
+		let Frame::Timestamp(TimestampFrame { timestamp, .. }) = tf else {
+			unreachable!()
+		};
+		assert_eq!(timestamp.to_string(), "2012-04-17T12:01");
+
+		let tf = id3v2.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).unwrap();
+		let Frame::KeyValue(KeyValueFrame {
+			key_value_pairs, ..
+		}) = tf
+		else {
+			unreachable!()
+		};
+		assert_eq!(key_value_pairs.len(), 4);
+		assert_eq!(
+			key_value_pairs[0],
+			(String::from("Guitar"), String::from("Artist 1"))
+		);
+		assert_eq!(
+			key_value_pairs[1],
+			(String::from("Drums"), String::from("Artist 2"))
+		);
+		assert_eq!(
+			key_value_pairs[2],
+			(String::from("Producer"), String::from("Artist 3"))
+		);
+		assert_eq!(
+			key_value_pairs[3],
+			(String::from("Mastering"), String::from("Artist 4"))
+		);
+
+		// NOTE: Lofty upgrades the first genre (originally 51) to "Techno-Industrial"
+		//       TagLib retains the original genre index.
+		let tf = id3v2.genres().unwrap().collect::<Vec<_>>();
+		assert_eq!(tf.join("\0"), "Techno-Industrial\0Noise\0Power Noise");
+
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TDRL"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TDTG"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TMOO"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TPRO"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TSOA"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TSOT"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TSST"))));
+		assert!(!id3v2.contains(&FrameId::Valid(Cow::Borrowed("TSOP"))));
+	}
+	file.rewind().unwrap();
+	{
+		#[allow(clippy::items_after_statements)]
+		const EXPECTED_ID3V23_DATA: &[u8] = b"ID3\x03\x00\x00\x00\x00\x09\x28\
+	TORY\x00\x00\x00\x05\x00\x00\x002011\
+	TYER\x00\x00\x00\x05\x00\x00\x002012\
+	TDAT\x00\x00\x00\x05\x00\x00\x001704\
+	TIME\x00\x00\x00\x05\x00\x00\x001201\
+	TCON\x00\x00\x00\x14\x00\x00\x00(51)(39)Power Noise\
+	IPLS\x00\x00\x00\x44\x00\x00\x00Guitar\x00\
+	Artist 1\x00Drums\x00Artist 2\x00Producer\x00\
+	Artist 3\x00Mastering\x00Artist 4";
+
+		let mut file_id3v2 = vec![0; EXPECTED_ID3V23_DATA.len()];
+		file.read_exact(&mut file_id3v2).unwrap();
+		assert_eq!(file_id3v2.as_slice(), EXPECTED_ID3V23_DATA);
+	}
+	{
+		let mut file = temp_file!("tests/taglib/data/rare_frames.mp3");
+		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		assert!(f.id3v2().is_some());
+		file.rewind().unwrap();
+		f.save_to(&mut file, WriteOptions::new().use_id3v23(true))
+			.unwrap();
+
+		file.rewind().unwrap();
+		let mut file_content = Vec::new();
+		file.read_to_end(&mut file_content).unwrap();
+
+		let tcon_pos = file_content.windows(4).position(|w| w == b"TCON").unwrap();
+		let tcon = &file_content[tcon_pos + 11..];
+		assert_eq!(&tcon[..4], &b"(13)"[..]);
+	}
+}
 
 #[test]
 fn test_compressed_frame_with_broken_length() {
