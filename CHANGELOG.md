@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Timestamp**: `Timestamp::parse` with empty inputs will return `None` when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/416))
+- **MP4**: Atoms with sizes greater than the remaining file size will be ignored with `ParsingMode::Relaxed` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/433))
 
 ### Fixed
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/TODO)):
