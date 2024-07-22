@@ -216,7 +216,8 @@ fn test_save_existing_when_ilst_is_last() {
 	let mut file = temp_file!("tests/taglib/data/ilst-is-last.m4a");
 
 	{
-		let mut f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+		let mut f =
+			Mp4File::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 		file.rewind().unwrap();
 
 		let ilst = f.ilst_mut().unwrap();
@@ -237,7 +238,7 @@ fn test_save_existing_when_ilst_is_last() {
 	}
 	file.rewind().unwrap();
 	{
-		let f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
+		let f = Mp4File::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 		let ilst = f.ilst().unwrap();
 
 		assert_eq!(
