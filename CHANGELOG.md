@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **MP4**:
     - Fix panic when reading properties of a file with no timescale specified ([issue](https://github.com/Serial-ATA/lofty-rs/issues/418))
     - Fix panics when reading improperly sized freeform atom identifiers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/425)) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/426))
+    - Fix panic when `data` atom length is less than 16 bytes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/429))
   - **WAV**:
     - Fix panic when reading properties with large written bytes per second ([issue](https://github.com/Serial-ATA/lofty-rs/issues/420))
     - Fix panic when reading an improperly sized INFO LIST ([issue](https://github.com/Serial-ATA/lofty-rs/issues/427))

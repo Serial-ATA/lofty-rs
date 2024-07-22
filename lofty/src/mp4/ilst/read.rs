@@ -226,6 +226,18 @@ where
 			break;
 		};
 
+		if next_atom.len < 16 {
+			log::warn!(
+				"Expected data atom to be at least 16 bytes, got {}. Stopping",
+				next_atom.len
+			);
+			if parsing_mode == ParsingMode::Strict {
+				err!(BadAtom("Data atom is too small"))
+			}
+
+			break;
+		}
+
 		// We don't care about the version
 		let _version = reader.read_u8()?;
 
@@ -239,7 +251,6 @@ where
 
 		match next_atom.ident {
 			DATA_ATOM_IDENT => {
-				debug_assert!(next_atom.len >= 16);
 				let content_len = (next_atom.len - 16) as usize;
 				if content_len > 0 {
 					let mut content = try_vec![0; content_len];
