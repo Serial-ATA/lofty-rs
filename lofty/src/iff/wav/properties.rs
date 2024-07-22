@@ -196,7 +196,12 @@ pub(super) fn read_properties(
 		decode_err!(@BAIL Wav, "File contains 0 channels");
 	}
 
+	if bits_per_sample % 8 != 0 {
+		decode_err!(@BAIL Wav, "Bits per sample is not a multiple of 8");
+	}
+
 	let bytes_per_sample = block_align / u16::from(channels);
+
 	let bit_depth;
 	match extensible_info {
 		Some(ExtensibleFmtChunk {
@@ -215,7 +220,7 @@ pub(super) fn read_properties(
 	}
 
 	if bits_per_sample > 0 && (total_samples == 0 || pcm) {
-		total_samples = stream_len / u32::from(u16::from(channels) * ((bits_per_sample + 7) / 8))
+		total_samples = stream_len / (u32::from(channels) * u32::from(bits_per_sample / 8));
 	}
 
 	let mut duration = Duration::ZERO;
