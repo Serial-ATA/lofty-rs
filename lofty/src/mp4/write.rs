@@ -1,13 +1,14 @@
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
+use crate::io::{FileLike, Length, Truncate};
+use crate::macros::err;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
-use crate::mp4::read::skip_unneeded;
+use crate::mp4::read::{meta_is_full, skip_unneeded};
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
-use crate::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
@@ -17,8 +18,10 @@ pub(super) struct ContextualAtom {
 	pub(crate) children: Vec<ContextualAtom>,
 }
 
+const META_ATOM_IDENT: AtomIdent<'_> = AtomIdent::Fourcc(*b"meta");
+
 #[rustfmt::skip]
-const IMPORTANT_CONTAINERS: [[u8; 4]; 7] = [
+const IMPORTANT_CONTAINERS: &[[u8; 4]] = &[
 	*b"moov",
 		*b"udta",
 		*b"moof",
@@ -44,24 +47,35 @@ impl ContextualAtom {
 			return Ok(None);
 		};
 
-		let mut children = Vec::new();
+		match info.ident {
+			AtomIdent::Fourcc(ident) if IMPORTANT_CONTAINERS.contains(&ident) => {},
+			_ => {
+				*reader_len = reader_len.saturating_sub(info.len);
 
-		let AtomIdent::Fourcc(fourcc) = info.ident else {
-			*reader_len = reader_len.saturating_sub(info.len);
-			return Ok(Some(ContextualAtom { info, children }));
-		};
-
-		if !IMPORTANT_CONTAINERS.contains(&fourcc) {
-			*reader_len = reader_len.saturating_sub(info.len);
-
-			// We don't care about the atom's contents
-			skip_unneeded(reader, info.extended, info.len)?;
-			return Ok(Some(ContextualAtom { info, children }));
+				// We don't care about the atom's contents
+				skip_unneeded(reader, info.extended, info.len)?;
+				return Ok(Some(ContextualAtom {
+					info,
+					children: Vec::new(),
+				}));
+			},
 		}
 
-		let mut len = info.len - 8;
+		let mut len = info.len - info.header_size();
+		let mut children = Vec::new();
+
+		// See meta_is_full for details
+		if info.ident == META_ATOM_IDENT && meta_is_full(reader)? {
+			len -= 4;
+		}
+
 		while let Some(child) = Self::read(reader, &mut len, parse_mode)? {
 			children.push(child);
+		}
+
+		if len != 0 {
+			// TODO: Print the container ident
+			err!(BadAtom("Unable to read entire container"));
 		}
 
 		*reader_len = reader_len.saturating_sub(info.len);

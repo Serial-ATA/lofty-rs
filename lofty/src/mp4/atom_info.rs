@@ -180,7 +180,14 @@ impl AtomInfo {
 
 		// `len` includes itself and the identifier
 		if (len - ATOM_HEADER_LEN) > reader_size {
-			data.seek(SeekFrom::Current(-4))?;
+			log::warn!("Encountered an atom with an invalid length, stopping");
+
+			if parse_mode == ParsingMode::Relaxed {
+				// Seek to the end, as we cannot gather anything else from the file
+				data.seek(SeekFrom::End(0))?;
+				return Ok(None);
+			}
+
 			err!(SizeMismatch);
 		}
 
@@ -203,6 +210,14 @@ impl AtomInfo {
 			extended,
 			ident: atom_ident,
 		}))
+	}
+
+	pub(crate) fn header_size(&self) -> u64 {
+		if !self.extended {
+			return ATOM_HEADER_LEN;
+		}
+
+		ATOM_HEADER_LEN + 8
 	}
 }
 
