@@ -25,13 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: Atoms with sizes greater than the remaining file size will be ignored with `ParsingMode::Relaxed` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/433))
 
 ### Fixed
-- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/TODO)):
+- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/423)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/434)):
   - **MP4**:
     - Fix panic when reading properties of a file with no timescale specified ([issue](https://github.com/Serial-ATA/lofty-rs/issues/418))
     - Fix panics when reading improperly sized freeform atom identifiers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/425)) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/426))
   - **WAV**:
     - Fix panic when reading properties with large written bytes per second ([issue](https://github.com/Serial-ATA/lofty-rs/issues/420))
     - Fix panic when reading an improperly sized INFO LIST ([issue](https://github.com/Serial-ATA/lofty-rs/issues/427))
+    - Fix panic when reading a fmt chunk with an invalid bits_per_sample field ([issue](https://github.com/Serial-ATA/lofty-rs/issues/428))
   - **Vorbis**:
     - Fix panic when reading properties of a file with large absolute granule positions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/421))
     - Fix attempted large allocations with invalid comment counts ([issue](https://github.com/Serial-ATA/lofty-rs/issues/419))

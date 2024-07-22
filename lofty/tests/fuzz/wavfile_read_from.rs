@@ -21,3 +21,10 @@ fn panic2() {
 		crate::get_reader("wavfile_read_from/2_IDX_63_RAND_104275228651573584855676.wav");
 	let _ = WavFile::read_from(&mut reader, ParseOptions::new());
 }
+
+#[test]
+fn panic3() {
+	let mut reader =
+		crate::get_reader("wavfile_read_from/2_IDX_34_RAND_128635499166458268533001.wav");
+	let _ = WavFile::read_from(&mut reader, ParseOptions::new());
+}
