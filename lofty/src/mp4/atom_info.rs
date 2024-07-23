@@ -199,7 +199,7 @@ impl AtomInfo {
 				err!(BadAtom("Found an incomplete freeform identifier"));
 			}
 
-			atom_ident = parse_freeform(data, len, reader_size, parse_mode)?;
+			atom_ident = parse_freeform(data, len - ATOM_HEADER_LEN, parse_mode)?;
 		} else {
 			atom_ident = AtomIdent::Fourcc(identifier);
 		}
@@ -224,7 +224,6 @@ impl AtomInfo {
 fn parse_freeform<R>(
 	data: &mut R,
 	atom_len: u64,
-	reader_size: u64,
 	parse_mode: ParsingMode,
 ) -> Result<AtomIdent<'static>>
 where
@@ -237,8 +236,9 @@ where
 		err!(BadAtom("Found an incomplete freeform identifier"));
 	}
 
-	let mean = freeform_chunk(data, b"mean", reader_size, parse_mode)?;
-	let name = freeform_chunk(data, b"name", reader_size - 4, parse_mode)?;
+	let mut atom_len = atom_len;
+	let mean = freeform_chunk(data, b"mean", &mut atom_len, parse_mode)?;
+	let name = freeform_chunk(data, b"name", &mut atom_len, parse_mode)?;
 
 	Ok(AtomIdent::Freeform {
 		mean: mean.into(),
@@ -249,13 +249,13 @@ where
 fn freeform_chunk<R>(
 	data: &mut R,
 	name: &[u8],
-	reader_size: u64,
+	reader_size: &mut u64,
 	parse_mode: ParsingMode,
 ) -> Result<String>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data, reader_size, parse_mode)?;
+	let atom = AtomInfo::read(data, *reader_size, parse_mode)?;
 
 	match atom {
 		Some(AtomInfo {
@@ -267,6 +267,10 @@ where
 				err!(BadAtom("Found an incomplete freeform identifier chunk"));
 			}
 
+			if len >= *reader_size {
+				err!(SizeMismatch);
+			}
+
 			// Version (1)
 			// Flags (3)
 			data.seek(SeekFrom::Current(4))?;
@@ -274,6 +278,8 @@ where
 			// Already read the size (4) + identifier (4) + version/flags (4)
 			let mut content = try_vec![0; (len - 12) as usize];
 			data.read_exact(&mut content)?;
+
+			*reader_size -= len;
 
 			utf8_decode(content).map_err(|_| {
 				LoftyError::new(ErrorKind::BadAtom(
