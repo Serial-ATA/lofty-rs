@@ -31,3 +31,11 @@ fn panic3() {
 	);
 	let _ = Mp4File::read_from(&mut reader, ParseOptions::new());
 }
+
+#[test]
+fn panic4() {
+	let mut reader = crate::get_reader(
+		"mp4file_read_from/steam_at_mention_IDX_83_RAND_107070306175668418039559.m4a",
+	);
+	let _ = Mp4File::read_from(&mut reader, ParseOptions::new());
+}

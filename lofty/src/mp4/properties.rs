@@ -244,6 +244,12 @@ where
 						mdhd = Some(atom)
 					},
 					b"hdlr" => {
+						if atom.len < 20 {
+							log::warn!("Incomplete 'hdlr' atom, skipping");
+							skip_unneeded(reader, atom.extended, atom.len)?;
+							continue;
+						}
+
 						// The hdlr atom is followed by 8 zeros
 						reader.seek(SeekFrom::Current(8))?;
 
