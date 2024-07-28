@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::util::alloc::VecFallibleCapacity;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
@@ -81,18 +82,22 @@ impl<'a> PrivateFrame<'a> {
 	}
 
 	/// Convert an [`PrivateFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
+	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let Self {
 			owner,
 			private_data,
 			..
 		} = self;
 
-		let mut content = Vec::with_capacity(owner.len() + private_data.len());
+		let mut content = Vec::try_with_capacity_stable(owner.len() + private_data.len())?;
 		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
 		content.extend_from_slice(private_data);
 
-		content
+		Ok(content)
 	}
 }
 
@@ -121,7 +126,7 @@ mod tests {
 
 	#[test]
 	fn priv_encode() {
-		let encoded = expected().as_bytes();
+		let encoded = expected().as_bytes().unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.priv");
