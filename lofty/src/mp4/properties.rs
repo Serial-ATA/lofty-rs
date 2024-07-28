@@ -4,6 +4,7 @@ use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
 use crate::properties::FileProperties;
+use crate::util::alloc::VecFallibleCapacity;
 use crate::util::math::RoundedDivision;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -340,7 +341,7 @@ where
 	let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
 
 	let entry_count = reader.read_u32::<BigEndian>()?;
-	let mut entries = Vec::with_capacity(entry_count as usize);
+	let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
 
 	for _ in 0..entry_count {
 		let sample_count = reader.read_u32::<BigEndian>()?;
