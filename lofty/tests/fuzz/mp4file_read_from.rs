@@ -47,3 +47,11 @@ fn panic5() {
 	);
 	let _ = Mp4File::read_from(&mut reader, ParseOptions::new());
 }
+
+#[test]
+fn panic6() {
+	let mut reader = crate::get_reader(
+		"mp4file_read_from/ui_steam_smoother_friend_join_IDX_53_RAND_83672409887817275057956.m4a",
+	);
+	let _ = Mp4File::read_from(&mut reader, ParseOptions::new());
+}
