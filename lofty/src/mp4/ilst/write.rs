@@ -9,6 +9,7 @@ use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomRea
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
+use crate::util::alloc::VecFallibleCapacity;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
@@ -540,7 +541,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
 
 	// `udta` + `meta` + `hdlr` + `ilst`
 	let capacity = ATOM_HEADER_LEN + FULL_ATOM_SIZE + HDLR_SIZE + ilst.len() as u64;
-	let mut buf = Vec::with_capacity(capacity as usize);
+	let mut buf = Vec::try_with_capacity_stable(capacity as usize)?;
 
 	buf.write_all(&UDTA_HEADER)?;
 

@@ -212,13 +212,13 @@ impl<'a> Frame<'a> {
 
 				attached_picture.as_bytes(version)?
 			},
-			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(),
+			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes()?,
 			Frame::KeyValue(content) => content.as_bytes(is_id3v23),
 			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
 			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(),
 			Frame::Ownership(frame) => frame.as_bytes(is_id3v23)?,
 			Frame::EventTimingCodes(frame) => frame.as_bytes(),
-			Frame::Private(frame) => frame.as_bytes(),
+			Frame::Private(frame) => frame.as_bytes()?,
 			Frame::Timestamp(frame) => frame.as_bytes(is_id3v23)?,
 			Frame::Binary(frame) => frame.as_bytes(),
 		})

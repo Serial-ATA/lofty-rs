@@ -56,6 +56,29 @@ where
 	Vec::new().fallible_repeat(element, expected_size)
 }
 
+/// Provides the `try_with_capacity` method on `Vec`
+///
+/// This can be used directly.
+pub(crate) trait VecFallibleCapacity<T>: Sized {
+	/// Same as `Vec::with_capacity`, but takes `GlobalOptions::allocation_limit` into account.
+	///
+	/// Named `try_with_capacity_stable` to avoid conflicts with the nightly `Vec::try_with_capacity`.
+	fn try_with_capacity_stable(capacity: usize) -> Result<Self>;
+}
+
+impl<T> VecFallibleCapacity<T> for Vec<T> {
+	fn try_with_capacity_stable(capacity: usize) -> Result<Self> {
+		if capacity > unsafe { global_options().allocation_limit } {
+			err!(TooMuchData);
+		}
+
+		let mut v = Vec::new();
+		v.try_reserve(capacity)?;
+
+		Ok(v)
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::util::alloc::fallible_vec_from_element;

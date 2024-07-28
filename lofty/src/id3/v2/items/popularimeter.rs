@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::util::alloc::VecFallibleCapacity;
 use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
@@ -114,8 +115,12 @@ impl<'a> PopularimeterFrame<'a> {
 	/// Convert a [`PopularimeterFrame`] into an ID3v2 POPM frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = Vec::with_capacity(self.email.len() + 9);
+	///
+	/// # Errors
+	///
+	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
+	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+		let mut content = Vec::try_with_capacity_stable(self.email.len() + 9)?;
 		content.extend(encode_text(self.email.as_str(), TextEncoding::Latin1, true));
 		content.push(self.rating);
 
@@ -132,7 +137,7 @@ impl<'a> PopularimeterFrame<'a> {
 			content.extend(&counter_bytes[i..]);
 		}
 
-		content
+		Ok(content)
 	}
 }
 
@@ -146,7 +151,7 @@ mod tests {
 		let rating = popm.rating;
 		let counter = popm.counter;
 
-		let popm_bytes = popm.as_bytes();
+		let popm_bytes = popm.as_bytes().unwrap();
 		assert_eq!(&popm_bytes[..email.len()], email.as_bytes());
 		assert_eq!(popm_bytes[email.len()], 0);
 		assert_eq!(popm_bytes[email.len() + 1], rating);
