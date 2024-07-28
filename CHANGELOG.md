@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Timestamp**: `Timestamp::parse` with empty inputs will return `None` when not using `ParsingMode::Strict` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/416))
 - **MP4**: Atoms with sizes greater than the remaining file size will be ignored with `ParsingMode::Relaxed` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/433))
+- **ID3v2** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/437)):
+  - `PopularimeterFrame::as_bytes()` is now fallible
+  - `PrivateFrame::as_bytes()` is now fallible
 
 ### Fixed
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/423)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/434)):
@@ -32,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Fix panic when `data` atom length is less than 16 bytes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/429))
     - Fix panic with improperly sized freeform identifiers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/430))
     - Fix panic when `hdlr` atom is an unexpected length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/435))
+    - Fix panic when `stts` atom has an unrealistically large entry count ([issue](https://github.com/Serial-ATA/lofty-rs/issues/436)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/437))
   - **WAV**:
     - Fix panic when reading properties with large written bytes per second ([issue](https://github.com/Serial-ATA/lofty-rs/issues/420))
     - Fix panic when reading an improperly sized INFO LIST ([issue](https://github.com/Serial-ATA/lofty-rs/issues/427))
