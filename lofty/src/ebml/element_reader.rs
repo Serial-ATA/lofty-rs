@@ -50,6 +50,37 @@ pub(crate) struct ChildElementDescriptor {
 	pub(crate) data_type: ElementDataType,
 }
 
+// This macro helps us define the EBML master elements and their children.
+//
+// It will generate the `ElementIdent` enum, and the `master_elements` function.
+//
+// The `ElementIdent` enum is used to represent **ONLY** the elements that we care about.
+// When one of these elements is encountered, `ElementReader::next()` will return an
+// `ElementReaderYield::Master` or `ElementReaderYield::Child`. Otherwise, it will return
+// `ElementReaderYield::Unknown`.
+//
+// The `master_elements` function is used to map the element IDs to their respective
+// `MasterElement` struct, which contains the element's identifier and its children.
+// This is used to determine the children of a master element when it is encountered.
+//
+// If a master element is a child to another master element, it will be defined BOTH as a
+// child element in the parent master element, and as a top level master element.
+//
+// To define a master element, use the following syntax:
+//
+// ELEMENT_IDENT_VARIANT: {
+//     id: 0x1234_5678,
+//     children: [
+//         CHILD_ELEMENT_VARIANT: { 0x1234_5679, DataType },
+//         CHILD_ELEMENT_VARIANT2: { 0x1234_567A, DataType },
+//     ],
+// },
+//
+// If `CHILD_ELEMENT_VARIANT2` is a master element, it should ALSO be defined at the top level with
+// its own children.
+//
+// Then when parsing, `ELEMENT_IDENT_VARIANT`, `CHILD_ELEMENT_VARIANT`, and `CHILD_ELEMENT_VARIANT2`
+// will be available as `ElementIdent` variants.
 ebml_master_elements! {
 	EBML: {
 		id: 0x1A45_DFA3,
