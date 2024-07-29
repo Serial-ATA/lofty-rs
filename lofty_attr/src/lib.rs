@@ -79,7 +79,6 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 	}
 
 	let (identifiers, elements) = ret.unwrap();
-	let identifiers_iter = identifiers.iter();
 	let elements_map_inserts = elements.iter().map(|element| {
 		let readable_ident = &element.readable_ident;
 		let id = element.info.id;
@@ -106,10 +105,18 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 		}
 	});
 
+	let mut ident_variants = Vec::new();
+	for (ident, id) in &identifiers {
+		ident_variants.push(quote! {
+			#ident = #id,
+		});
+	}
+
 	TokenStream::from(quote! {
 		#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+		#[repr(u64)]
 		pub(crate) enum ElementIdent {
-			#( #identifiers_iter ),*
+			#( #ident_variants )*
 		}
 
 		fn master_elements() -> &'static ::std::collections::HashMap<VInt, MasterElement> {

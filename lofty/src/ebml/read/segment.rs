@@ -34,17 +34,11 @@ where
 				ElementIdent::Tracks if parse_options.read_properties => {
 					segment_tracks::read_from(children_reader.inner(), parse_options, properties)?
 				},
-				ElementIdent::Tags | ElementIdent::Attachments | ElementIdent::Chapters => {
+				ElementIdent::Tags | ElementIdent::Chapters if parse_options.read_tags => {
 					let mut tag = tags.unwrap_or_default();
 
 					if id == ElementIdent::Tags {
 						segment_tags::read_from(children_reader.inner(), parse_options, &mut tag)?
-					} else if id == ElementIdent::Attachments {
-						segment_attachments::read_from(
-							children_reader.inner(),
-							parse_options,
-							&mut tag,
-						)?
 					} else {
 						segment_chapters::read_from(
 							children_reader.inner(),
@@ -55,12 +49,23 @@ where
 
 					tags = Some(tag);
 				},
+				ElementIdent::Attachments if parse_options.read_cover_art => {
+					let mut tag = tags.unwrap_or_default();
+
+					segment_attachments::read_from(
+						children_reader.inner(),
+						parse_options,
+						&mut tag,
+					)?;
+
+					tags = Some(tag);
+				},
 				_ => {
 					// We do not end up using information from all of the segment
 					// elements, so we can just skip any useless ones.
 
 					log::debug!("Skipping EBML master element: {:?}", id);
-					children_reader.skip(size)?;
+					children_reader.skip(size.value())?;
 					children_reader.goto_previous_master()?;
 					continue;
 				},
