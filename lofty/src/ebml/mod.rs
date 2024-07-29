@@ -2,7 +2,7 @@
 mod element_reader;
 mod properties;
 mod read;
-mod tag;
+pub(crate) mod tag;
 mod vint;
 
 use lofty_attr::LoftyFile;

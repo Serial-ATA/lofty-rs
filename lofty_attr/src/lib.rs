@@ -44,7 +44,8 @@ use crate::lofty_file::LoftyFile;
 use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
 use proc_macro::TokenStream;
-use syn::{ItemStruct, parse_macro_input};
+use quote::quote;
+use syn::{parse_macro_input, ItemStruct};
 
 /// Creates a file usable by Lofty
 ///
@@ -111,10 +112,13 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 			#( #identifiers_iter ),*
 		}
 
-		static MASTER_ELEMENTS: once_cell::sync::Lazy<std::collections::HashMap<VInt, MasterElement>> = once_cell::sync::Lazy::new(|| {
-			let mut m = std::collections::HashMap::new();
-			#( #elements_map_inserts )*
-			m
-		});
+		fn master_elements() -> &'static ::std::collections::HashMap<VInt, MasterElement> {
+			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<VInt, MasterElement>> = ::std::sync::OnceLock::new();
+			INSTANCE.get_or_init(|| {
+				let mut m = ::std::collections::HashMap::new();
+				#( #elements_map_inserts )*
+				m
+			})
+		}
 	})
 }
