@@ -8,6 +8,7 @@ use std::ops::{Deref, DerefMut};
 use byteorder::{BigEndian, ReadBytesExt};
 use lofty_attr::ebml_master_elements;
 
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct ElementHeader {
 	pub(crate) id: VInt,
 	pub(crate) size: VInt,
@@ -25,7 +26,7 @@ impl ElementHeader {
 	}
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub enum ElementDataType {
 	SignedInt,
 	UnsignedInt,
@@ -37,13 +38,13 @@ pub enum ElementDataType {
 	Binary,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct MasterElement {
 	id: ElementIdent,
 	children: &'static [(VInt, ChildElementDescriptor)],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct ChildElementDescriptor {
 	pub(crate) ident: ElementIdent,
 	pub(crate) data_type: ElementDataType,
@@ -121,6 +122,23 @@ ebml_master_elements! {
 			Audio: { 0xE1, Master },
 			TrackOperation: { 0xE2, Master },
 			ContentEncodings: { 0x6D80, Master },
+		],
+	},
+
+	// segment.tags
+	Tags: {
+		id: 0x1254_C367,
+		children: [
+			Tag: { 0x7373, Master },
+		],
+	},
+
+	// segment.tags.tag
+	Tag: {
+		id: 0x7373,
+		children: [
+			Targets: { 0x63C0, Master },
+			SimpleTag: { 0x67C8, Master },
 		],
 	},
 

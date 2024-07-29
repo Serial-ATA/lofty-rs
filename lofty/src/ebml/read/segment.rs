@@ -1,4 +1,7 @@
-use super::{segment_info, segment_tracks};
+use super::{
+	segment_attachments, segment_chapters, segment_cluster, segment_info, segment_tags,
+	segment_tracks,
+};
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
@@ -22,16 +25,36 @@ where
 	while let Some(child) = children_reader.next()? {
 		match child {
 			ElementReaderYield::Master((id, size)) => match id {
-				ElementIdent::Info => {
+				ElementIdent::Info if parse_options.read_properties => {
 					segment_info::read_from(children_reader.inner(), parse_options, properties)?
 				},
-				ElementIdent::Cluster => todo!("Support segment.Cluster"),
-				ElementIdent::Tracks => {
+				ElementIdent::Cluster if parse_options.read_properties => {
+					segment_cluster::read_from(children_reader.inner(), parse_options, properties)?
+				},
+				ElementIdent::Tracks if parse_options.read_properties => {
 					segment_tracks::read_from(children_reader.inner(), parse_options, properties)?
 				},
-				ElementIdent::Tags => todo!("Support segment.Tags"),
-				ElementIdent::Attachments => todo!("Support segment.Attachments"),
-				ElementIdent::Chapters => todo!("Support segment.Chapters"),
+				ElementIdent::Tags | ElementIdent::Attachments | ElementIdent::Chapters => {
+					let mut tag = tags.unwrap_or_default();
+
+					if id == ElementIdent::Tags {
+						segment_tags::read_from(children_reader.inner(), parse_options, &mut tag)?
+					} else if id == ElementIdent::Attachments {
+						segment_attachments::read_from(
+							children_reader.inner(),
+							parse_options,
+							&mut tag,
+						)?
+					} else {
+						segment_chapters::read_from(
+							children_reader.inner(),
+							parse_options,
+							&mut tag,
+						)?
+					}
+
+					tags = Some(tag);
+				},
 				_ => {
 					// We do not end up using information from all of the segment
 					// elements, so we can just skip any useless ones.
