@@ -92,13 +92,13 @@ where
 		}
 
 		if ident == ElementIdent::EBMLMaxIDLength {
-			properties.header.max_id_length = child_reader.read_unsigned_int(size)? as u8;
+			properties.header.max_id_length = child_reader.read_unsigned_int(size.value())? as u8;
 			child_reader.set_max_id_length(properties.header.max_id_length);
 			continue;
 		}
 
 		if ident == ElementIdent::EBMLMaxSizeLength {
-			properties.header.max_size_length = child_reader.read_unsigned_int(size)? as u8;
+			properties.header.max_size_length = child_reader.read_unsigned_int(size.value())? as u8;
 			child_reader.set_max_size_length(properties.header.max_size_length);
 			continue;
 		}
@@ -106,22 +106,24 @@ where
 		// Anything else in the header is unnecessary, and only read for the properties
 		// struct
 		if !parse_options.read_properties {
-			child_reader.skip(size)?;
+			child_reader.skip(size.value())?;
 			continue;
 		}
 
 		match ident {
 			ElementIdent::EBMLVersion => {
-				properties.header.version = child_reader.read_unsigned_int(size)?
+				properties.header.version = child_reader.read_unsigned_int(size.value())?
 			},
 			ElementIdent::EBMLReadVersion => {
-				properties.header.read_version = child_reader.read_unsigned_int(size)?
+				properties.header.read_version = child_reader.read_unsigned_int(size.value())?
 			},
-			ElementIdent::DocType => properties.header.doc_type = child_reader.read_string(size)?,
+			ElementIdent::DocType => {
+				properties.header.doc_type = child_reader.read_string(size.value())?
+			},
 			ElementIdent::DocTypeVersion => {
-				properties.header.doc_type_version = child_reader.read_unsigned_int(size)?
+				properties.header.doc_type_version = child_reader.read_unsigned_int(size.value())?
 			},
-			_ => child_reader.skip(size)?,
+			_ => child_reader.skip(size.value())?,
 		}
 	}
 

@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::macros::err;
 
 use std::io::Read;
+use std::ops::{Add, Sub};
 
 use byteorder::{ReadBytesExt, WriteBytesExt};
 
@@ -20,7 +21,12 @@ impl VInt {
 	const MAX_OCTET_LENGTH: u64 = 8;
 	const USABLE_BITS: u64 = Self::MAX_OCTET_LENGTH * Self::USABLE_BITS_PER_BYTE;
 
-	const MAX_VALUE: u64 = u64::MAX >> (u64::BITS as u64 - Self::USABLE_BITS);
+	/// The maximum value that can be represented by a `VInt`
+	pub const MAX: u64 = u64::MAX >> (u64::BITS as u64 - Self::USABLE_BITS);
+	/// The minimum value that can be represented by a `VInt`
+	pub const MIN: u64 = 0;
+	/// A `VInt` with a value of 0
+	pub const ZERO: Self = Self(0);
 
 	/// Create a signed `VInt` from a `u64`
 	///
@@ -43,7 +49,7 @@ impl VInt {
 	/// # Ok(()) }
 	/// ```
 	pub fn from_u64(uint: u64) -> Result<Self> {
-		if uint > Self::MAX_VALUE {
+		if uint > Self::MAX {
 			err!(BadVintSize);
 		}
 
@@ -248,6 +254,35 @@ impl VInt {
 		}
 
 		Ok(ret)
+	}
+
+	pub(crate) fn saturating_sub(&self, other: u64) -> Self {
+		Self(self.0.saturating_sub(other))
+	}
+}
+
+impl Sub for VInt {
+	type Output = Self;
+
+	fn sub(self, other: Self) -> Self::Output {
+		Self(self.0 - other.0)
+	}
+}
+
+impl Add for VInt {
+	type Output = Self;
+
+	fn add(self, other: Self) -> Self::Output {
+		let val = self.0 + other.0;
+		assert!(val <= Self::MAX, "VInt overflow");
+
+		Self(val)
+	}
+}
+
+impl PartialEq<u64> for VInt {
+	fn eq(&self, other: &u64) -> bool {
+		self.0 == *other
 	}
 }
 
