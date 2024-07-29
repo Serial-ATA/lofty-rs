@@ -1,8 +1,8 @@
+use crate::config::WriteOptions;
 use crate::error::LoftyError;
-use crate::tag::Tag;
-use crate::traits::{Accessor, MergeTag, SplitTag, TagExt};
+use crate::io::{FileLike, Length, Truncate};
+use crate::tag::{Accessor, MergeTag, SplitTag, Tag, TagExt, TagType};
 
-use std::fs::File;
 use std::io::Write;
 use std::ops::Deref;
 use std::path::Path;
@@ -20,6 +20,11 @@ impl TagExt for EbmlTag {
 	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
+	#[inline]
+	fn tag_type(&self) -> TagType {
+		TagType::Ebml
+	}
+
 	fn len(&self) -> usize {
 		todo!()
 	}
@@ -32,11 +37,24 @@ impl TagExt for EbmlTag {
 		todo!()
 	}
 
-	fn save_to(&self, _file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn save_to<F>(
+		&self,
+		_file: &mut F,
+		_write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		todo!()
 	}
 
-	fn dump_to<W: Write>(&self, _writer: &mut W) -> std::result::Result<(), Self::Err> {
+	fn dump_to<W: Write>(
+		&self,
+		_writer: &mut W,
+		_write_options: WriteOptions,
+	) -> std::result::Result<(), Self::Err> {
 		todo!()
 	}
 
@@ -44,7 +62,12 @@ impl TagExt for EbmlTag {
 		todo!()
 	}
 
-	fn remove_from(&self, _file: &mut File) -> std::result::Result<(), Self::Err> {
+	fn remove_from<F>(&self, _file: &mut F) -> std::result::Result<(), Self::Err>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
 		todo!()
 	}
 

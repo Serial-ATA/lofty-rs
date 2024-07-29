@@ -1,8 +1,8 @@
+use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek};
 

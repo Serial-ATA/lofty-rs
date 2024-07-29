@@ -33,7 +33,7 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// // This value is too large to represent
 	/// let invalid_vint = VInt::from_u64(u64::MAX);
 	/// assert!(invalid_vint.is_err());
@@ -57,7 +57,7 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let vint = VInt::from_u64(2)?;
 	/// assert_eq!(vint.value(), 2);
 	/// # Ok(()) }
@@ -80,7 +80,7 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// // This octet count (9) is too large to represent
 	/// let mut invalid_vint_reader = &[0b0000_0000_1];
 	/// let invalid_vint = VInt::parse(&mut &invalid_vint_reader[..], 8);
@@ -128,9 +128,9 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// // Parse the EBML header element ID
-	/// let mut reader = &[0x1A, 0x45, 0xDF, 0xA3];
+	/// let mut reader = &[0x1A, 0x45, 0xDF, 0xA3][..];
 	/// let vint = VInt::parse_from_element_id(&mut reader, 8)?;
 	/// assert_eq!(vint.value(), 0x1A45DFA3);
 	/// # Ok(()) }
@@ -175,7 +175,7 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// // Anything <= 254 will fit into a single octet
 	/// let vint = VInt::from_u64(100)?;
 	/// assert_eq!(vint.octet_length(), 1);
@@ -215,7 +215,7 @@ impl VInt {
 	/// ```rust
 	/// use lofty::ebml::VInt;
 	///
-	/// # fn main() -> lofty::Result<()> {
+	/// # fn main() -> lofty::error::Result<()> {
 	/// let vint = VInt::from_u64(10)?;
 	/// let bytes = vint.as_bytes(None)?;
 	///

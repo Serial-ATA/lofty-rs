@@ -3,12 +3,12 @@ mod segment_info;
 mod segment_tracks;
 
 use super::EbmlFile;
+use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::vint::VInt;
 use crate::ebml::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek};
 

@@ -240,7 +240,7 @@ where
 			self.ctx.max_id_length,
 			self.ctx.max_size_length,
 		)?;
-		let Some(master) = MASTER_ELEMENTS.get(&header.id) else {
+		let Some(master) = master_elements().get(&header.id) else {
 			// We encountered an unknown master element
 			return Ok(ElementReaderYield::Unknown(header));
 		};
@@ -290,7 +290,7 @@ where
 		if child.data_type == ElementDataType::Master {
 			self.store_previous_master();
 			self.ctx.current_master = Some(
-				*MASTER_ELEMENTS
+				*master_elements()
 					.get(&header.id)
 					.expect("Nested master elements should be defined at this level."),
 			);
