@@ -34,6 +34,7 @@
 )]
 
 mod attribute;
+mod ebml;
 mod internal;
 mod lofty_file;
 mod lofty_tag;
@@ -43,6 +44,7 @@ use crate::lofty_file::LoftyFile;
 use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
 use proc_macro::TokenStream;
+use quote::quote;
 use syn::{parse_macro_input, ItemStruct};
 
 /// Creates a file usable by Lofty
@@ -65,4 +67,58 @@ pub fn tag(args_input: TokenStream, input: TokenStream) -> TokenStream {
 
 	let lofty_tag = LoftyTag::new(attribute, input);
 	lofty_tag.emit()
+}
+
+#[proc_macro]
+#[doc(hidden)]
+pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
+	let ret = ebml::parse_ebml_master_elements(input);
+
+	if let Err(err) = ret {
+		return TokenStream::from(err.to_compile_error());
+	}
+
+	let (identifiers, elements) = ret.unwrap();
+	let identifiers_iter = identifiers.iter();
+	let elements_map_inserts = elements.iter().map(|element| {
+		let readable_ident = &element.readable_ident;
+		let id = element.info.id;
+		let children = element.info.children.iter().map(|child| {
+			let readable_ident = &child.readable_ident;
+			let id = child.info.id;
+			let data_type = &child.info.data_type;
+			quote! {
+				(VInt(#id), ChildElementDescriptor {
+					ident: ElementIdent::#readable_ident,
+					data_type: ElementDataType::#data_type,
+				})
+			}
+		});
+
+		quote! {
+			m.insert(
+				VInt(#id),
+				MasterElement {
+					id: ElementIdent::#readable_ident,
+					children: &[#( #children ),*][..]
+				}
+			);
+		}
+	});
+
+	TokenStream::from(quote! {
+		#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+		pub(crate) enum ElementIdent {
+			#( #identifiers_iter ),*
+		}
+
+		fn master_elements() -> &'static ::std::collections::HashMap<VInt, MasterElement> {
+			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<VInt, MasterElement>> = ::std::sync::OnceLock::new();
+			INSTANCE.get_or_init(|| {
+				let mut m = ::std::collections::HashMap::new();
+				#( #elements_map_inserts )*
+				m
+			})
+		}
+	})
 }
