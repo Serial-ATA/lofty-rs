@@ -20,7 +20,7 @@ flate2        = { version = "1.0.30", optional = true }
 # Proc macros
 lofty_attr = "0.11.0"
 # Debug logging
-log           = "0.4.21"
+log           = "0.4.22"
 # OGG Vorbis/Opus
 ogg_pager     = "0.6.1"
 # Key maps
@@ -36,7 +36,7 @@ hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683d
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.10.1"
-iai-callgrind = "0.11.0"
+iai-callgrind = "0.12.0"
 
 [lints]
 workspace = true

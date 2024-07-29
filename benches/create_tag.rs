@@ -67,7 +67,7 @@ bench_tag_write!([
 		);
 	}),
 	(id3v2, Id3v2Tag, |tag| {
-		use lofty::id3::v2::{Frame, FrameFlags, TextInformationFrame};
+		use lofty::id3::v2::{Frame, TextInformationFrame};
 		use lofty::TextEncoding;
 
 		let picture = Picture::new_unchecked(
