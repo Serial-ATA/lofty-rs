@@ -23,7 +23,7 @@ where
 				// elements, so we can just skip them.
 
 				log::debug!("Skipping EBML master element: {:?}", id);
-				children_reader.skip(size)?;
+				children_reader.skip(size.value())?;
 				children_reader.goto_previous_master()?;
 				continue;
 			},
@@ -31,7 +31,7 @@ where
 				match child.ident {
 					ElementIdent::TimecodeScale => {
 						properties.segment_info.timestamp_scale =
-							children_reader.read_unsigned_int(size)?;
+							children_reader.read_unsigned_int(size.value())?;
 
 						if properties.segment_info.timestamp_scale == 0 {
 							log::warn!("Segment.Info.TimecodeScale is 0, which is invalid");
@@ -41,17 +41,19 @@ where
 						}
 					},
 					ElementIdent::MuxingApp => {
-						properties.segment_info.muxing_app = children_reader.read_utf8(size)?
+						properties.segment_info.muxing_app =
+							children_reader.read_utf8(size.value())?
 					},
 					ElementIdent::WritingApp => {
-						properties.segment_info.writing_app = children_reader.read_utf8(size)?
+						properties.segment_info.writing_app =
+							children_reader.read_utf8(size.value())?
 					},
 					_ => {
 						// We do not end up using information from all of the segment
 						// elements, so we can just skip any useless ones.
 
 						log::debug!("Skipping EBML child element: {:?}", child.ident);
-						children_reader.skip(size)?;
+						children_reader.skip(size.value())?;
 						continue;
 					},
 				}

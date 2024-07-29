@@ -1,9 +1,10 @@
 use proc_macro::TokenStream;
-use std::collections::HashSet;
+use std::collections::HashMap;
 use syn::parse::{Parse, Parser};
 use syn::punctuated::Punctuated;
 use syn::{braced, bracketed, Ident, Token};
 
+#[derive(Debug)]
 pub(crate) struct EbmlMasterElement {
 	pub(crate) readable_ident: Ident,
 	pub(crate) info: EbmlMasterInfo,
@@ -24,6 +25,7 @@ impl Parse for EbmlMasterElement {
 	}
 }
 
+#[derive(Debug)]
 pub(crate) struct EbmlMasterInfo {
 	pub(crate) id: u64,
 	pub(crate) children: Vec<EbmlChildElement>,
@@ -54,6 +56,7 @@ impl Parse for EbmlMasterInfo {
 	}
 }
 
+#[derive(Debug)]
 pub(crate) struct EbmlChildElement {
 	pub(crate) readable_ident: Ident,
 	pub(crate) info: EbmlChildInfo,
@@ -74,6 +77,7 @@ impl Parse for EbmlChildElement {
 	}
 }
 
+#[derive(Debug)]
 pub(crate) struct EbmlChildInfo {
 	pub(crate) id: u64,
 	pub(crate) data_type: Ident,
@@ -90,17 +94,17 @@ impl Parse for EbmlChildInfo {
 	}
 }
 
-fn insert_element_identifiers(identifiers: &mut HashSet<Ident>, element: &EbmlMasterElement) {
-	identifiers.insert(element.readable_ident.clone());
+fn insert_element_identifiers(identifiers: &mut HashMap<Ident, u64>, element: &EbmlMasterElement) {
+	identifiers.insert(element.readable_ident.clone(), element.info.id);
 	for child in &element.info.children {
-		identifiers.insert(child.readable_ident.clone());
+		identifiers.insert(child.readable_ident.clone(), child.info.id);
 	}
 }
 
 pub(crate) fn parse_ebml_master_elements(
 	input: TokenStream,
-) -> syn::Result<(HashSet<Ident>, Vec<EbmlMasterElement>)> {
-	let mut element_identifiers = HashSet::new();
+) -> syn::Result<(HashMap<Ident, u64>, Vec<EbmlMasterElement>)> {
+	let mut element_identifiers = HashMap::new();
 
 	let parser = Punctuated::<EbmlMasterElement, Token![,]>::parse_terminated;
 	let elements = parser.parse(input)?;

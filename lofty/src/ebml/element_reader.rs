@@ -169,11 +169,11 @@ ebml_master_elements! {
 struct ElementReaderContext {
 	/// Previous master element
 	previous_master: Option<MasterElement>,
-	previous_master_length: u64,
+	previous_master_length: VInt,
 	/// Current master element
 	current_master: Option<MasterElement>,
 	/// Remaining length of the master element
-	master_length: u64,
+	master_length: VInt,
 	/// Maximum size in octets of all element IDs
 	max_id_length: u8,
 	/// Maximum size in octets of all element data sizes
@@ -189,9 +189,9 @@ impl Default for ElementReaderContext {
 	fn default() -> Self {
 		Self {
 			previous_master: None,
-			previous_master_length: 0,
+			previous_master_length: VInt::ZERO,
 			current_master: None,
-			master_length: 0,
+			master_length: VInt::ZERO,
 			// https://www.rfc-editor.org/rfc/rfc8794.html#name-ebmlmaxidlength-element
 			max_id_length: 4,
 			// https://www.rfc-editor.org/rfc/rfc8794.html#name-ebmlmaxsizelength-element
@@ -202,10 +202,30 @@ impl Default for ElementReaderContext {
 }
 
 pub(crate) enum ElementReaderYield {
-	Master((ElementIdent, u64)),
-	Child((ChildElementDescriptor, u64)),
+	Master((ElementIdent, VInt)),
+	Child((ChildElementDescriptor, VInt)),
 	Unknown(ElementHeader),
 	Eof,
+}
+
+impl ElementReaderYield {
+	pub fn ident(&self) -> Option<u64> {
+		match self {
+			ElementReaderYield::Master((ident, _)) => Some(*ident as u64),
+			ElementReaderYield::Child((child, _)) => Some(child.ident as u64),
+			ElementReaderYield::Unknown(header) => Some(header.id.value()),
+			_ => None,
+		}
+	}
+
+	pub fn size(&self) -> Option<u64> {
+		match self {
+			ElementReaderYield::Master((_, size)) => Some(size.value()),
+			ElementReaderYield::Child((_, size)) => Some(size.value()),
+			ElementReaderYield::Unknown(header) => Some(header.size.value()),
+			_ => None,
+		}
+	}
 }
 
 pub struct ElementReader<R> {
@@ -250,7 +270,7 @@ where
 
 	fn goto_next_master(&mut self) -> Result<ElementReaderYield> {
 		if self.ctx.master_length != 0 {
-			self.skip(self.ctx.master_length)?;
+			self.skip(self.ctx.master_length.value())?;
 		}
 
 		let header = ElementHeader::read(
@@ -265,7 +285,7 @@ where
 
 		self.store_previous_master();
 		self.ctx.current_master = Some(*master);
-		self.ctx.master_length = header.size.value();
+		self.ctx.master_length = header.size;
 		Ok(ElementReaderYield::Master((
 			master.id,
 			self.ctx.master_length,
@@ -312,16 +332,13 @@ where
 					.get(&header.id)
 					.expect("Nested master elements should be defined at this level."),
 			);
-			self.ctx.master_length = header.size.value();
+			self.ctx.master_length = header.size;
 
 			// We encountered a nested master element
-			return Ok(ElementReaderYield::Master((
-				child.ident,
-				header.size.value(),
-			)));
+			return Ok(ElementReaderYield::Master((child.ident, header.size)));
 		}
 
-		Ok(ElementReaderYield::Child((*child, header.size.value())))
+		Ok(ElementReaderYield::Child((*child, header.size)))
 	}
 
 	fn lock(&mut self) {
