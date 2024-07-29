@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2024-07-29
+
 ### Added
 - **ParseOptions**:
   - `ParseOptions::read_tags` to skip the parsing of tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/251)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/406))
@@ -831,7 +833,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.1...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...HEAD
+[0.21.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.1...0.21.0
 [0.20.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.0...0.20.1
 [0.20.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.2...0.20.0
 [0.19.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.1...0.19.2
