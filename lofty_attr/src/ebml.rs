@@ -10,7 +10,7 @@ pub(crate) struct EbmlMasterElement {
 }
 
 impl Parse for EbmlMasterElement {
-	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+	fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
 		let readable_ident = input.parse::<Ident>()?;
 		let _: syn::Token![:] = input.parse()?;
 
@@ -30,7 +30,7 @@ pub(crate) struct EbmlMasterInfo {
 }
 
 impl Parse for EbmlMasterInfo {
-	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+	fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
 		let _id_field = input.parse::<Ident>()?;
 		let _: syn::Token![:] = input.parse()?;
 
@@ -60,7 +60,7 @@ pub(crate) struct EbmlChildElement {
 }
 
 impl Parse for EbmlChildElement {
-	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+	fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
 		let readable_ident = input.parse::<Ident>()?;
 		let _: syn::Token![:] = input.parse()?;
 
@@ -80,7 +80,7 @@ pub(crate) struct EbmlChildInfo {
 }
 
 impl Parse for EbmlChildInfo {
-	fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+	fn parse(input: syn::parse::ParseStream<'_>) -> syn::Result<Self> {
 		let id = input.parse::<syn::LitInt>()?.base10_parse()?;
 		let _: syn::Token![,] = input.parse()?;
 
