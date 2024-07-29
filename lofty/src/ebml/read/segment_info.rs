@@ -1,8 +1,8 @@
+use crate::config::{ParseOptions, ParsingMode};
 use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::probe::ParseOptions;
 
 use std::io::{Read, Seek};
 
@@ -35,7 +35,7 @@ where
 
 						if properties.segment_info.timestamp_scale == 0 {
 							log::warn!("Segment.Info.TimecodeScale is 0, which is invalid");
-							if parse_options.parsing_mode == crate::probe::ParsingMode::Strict {
+							if parse_options.parsing_mode == ParsingMode::Strict {
 								decode_err!(@BAIL Ebml, "Segment.Info.TimecodeScale must be nonzero");
 							}
 						}
