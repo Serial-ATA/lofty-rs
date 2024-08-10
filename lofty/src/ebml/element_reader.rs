@@ -90,6 +90,7 @@ ebml_master_elements! {
 			EBMLMaxIDLength: { 0x42F2, UnsignedInt },
 			EBMLMaxSizeLength: { 0x42F3, UnsignedInt },
 			DocType: { 0x4282, String },
+			DocTypeExtension: { 0x4281, Master },
 			DocTypeVersion: { 0x4287, UnsignedInt },
 			DocTypeReadVersion: { 0x4285, UnsignedInt },
 		],
@@ -106,12 +107,21 @@ ebml_master_elements! {
 	Segment: {
 		id: 0x1853_8067,
 		children: [
+			SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
 			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
 			Tags: { 0x1254_C367, Master },
 			Attachments: { 0x1941_A469, Master },
 			Chapters: { 0x1043_A770, Master },
+		],
+	},
+
+	// segment.seekHead
+	SeekHead: {
+		id: 0x114D_9B74,
+		children: [
+			Seek: { 0x4DBB, Master },
 		],
 	},
 
@@ -140,21 +150,28 @@ ebml_master_elements! {
 			TrackType: { 0x83, UnsignedInt },
 			FlagEnabled: { 0xB9, UnsignedInt },
 			FlagDefault: { 0x88, UnsignedInt },
-			FlagLacing: { 0x9C, UnsignedInt },
 			DefaultDuration: { 0x23E3_83, UnsignedInt },
 			TrackTimecodeScale: { 0x2331_59, Float },
-			MaxBlockAdditionID: { 0x55EE, UnsignedInt },
 			Language: { 0x22B5_9C, String },
 			CodecID: { 0x86, String },
+			CodecName: { 0x258688, Utf8 },
 			CodecDelay: { 0x56AA, UnsignedInt },
 			SeekPreRoll: { 0x56BB, UnsignedInt },
-			TrackTranslate: { 0x6624, Master },
-			Video: { 0xE0, Master },
 			Audio: { 0xE1, Master },
-			TrackOperation: { 0xE2, Master },
-			ContentEncodings: { 0x6D80, Master },
 		],
 	},
+
+	// segment.tracks.trackEntry.audio
+	Audio: {
+		id: 0xE1,
+		children: [
+			SamplingFrequency: { 0xB5, Float },
+			OutputSamplingFrequency: { 0x78B5, Float },
+			Channels: { 0x9F, UnsignedInt },
+			BitDepth: { 0x6264, UnsignedInt },
+		],
+	},
+
 
 	// segment.tags
 	Tags: {
