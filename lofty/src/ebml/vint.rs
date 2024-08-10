@@ -12,7 +12,7 @@ use byteorder::{ReadBytesExt, WriteBytesExt};
 ///
 /// To ensure safe construction of `VInt`s, users must create them through [`VInt::parse`] or [`VInt::from_u64`].
 #[repr(transparent)]
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
 pub struct VInt(pub(crate) u64);
 
 impl VInt {
@@ -256,7 +256,8 @@ impl VInt {
 		Ok(ret)
 	}
 
-	pub(crate) fn saturating_sub(&self, other: u64) -> Self {
+	#[inline]
+	pub(crate) fn saturating_sub(self, other: u64) -> Self {
 		Self(self.0.saturating_sub(other))
 	}
 }
