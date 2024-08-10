@@ -77,18 +77,29 @@ where
 	let mut child_reader = element_reader.children();
 	while let Some(child) = child_reader.next()? {
 		let ident;
-		let data_ty;
 		let size;
 
 		match child {
 			// The only expected master element in the header is `DocTypeExtension`
-			ElementReaderYield::Master((ElementIdent::DocTypeExtension, _)) => continue,
+			ElementReaderYield::Master((ElementIdent::DocTypeExtension, size)) => {
+				child_reader.skip(size.value())?;
+				continue;
+			},
+			ElementReaderYield::Master(_) => {
+				decode_err!(
+					@BAIL Ebml,
+					"Unexpected master element in the EBML header"
+				);
+			},
 			ElementReaderYield::Child((child, size_)) => {
 				ident = child.ident;
-				data_ty = child.data_type;
 				size = size_;
 			},
-			_ => break,
+			ElementReaderYield::Unknown(header) => {
+				child_reader.skip_element(header)?;
+				continue;
+			},
+			ElementReaderYield::Eof => break,
 		}
 
 		if ident == ElementIdent::EBMLMaxIDLength {

@@ -24,7 +24,6 @@ where
 
 				log::debug!("Skipping EBML master element: {:?}", id);
 				children_reader.skip(size.value())?;
-				children_reader.goto_previous_master()?;
 				continue;
 			},
 			ElementReaderYield::Child((child, size)) => {
@@ -58,11 +57,13 @@ where
 					},
 				}
 			},
+			ElementReaderYield::Unknown(header) => {
+				children_reader.skip_element(header)?;
+				continue;
+			},
 			_ => break,
 		}
 	}
 
-	drop(children_reader);
-	element_reader.goto_previous_master()?;
 	Ok(())
 }
