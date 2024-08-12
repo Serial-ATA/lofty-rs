@@ -16,6 +16,8 @@ use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
+const SUPPORTED_DOC_TYPES: &[&str] = &["matroska", "webm"];
+
 pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<EbmlFile>
 where
 	R: Read + Seek,
@@ -114,6 +116,18 @@ where
 			continue;
 		}
 
+		if ident == ElementIdent::DocType {
+			properties.header.doc_type = child_reader.read_string(size.value())?;
+			if !SUPPORTED_DOC_TYPES.contains(&properties.header.doc_type.as_str()) {
+				decode_err!(
+					@BAIL Ebml,
+					"Unsupported EBML DocType"
+				);
+			}
+
+			continue;
+		}
+
 		// Anything else in the header is unnecessary, and only read for the properties
 		// struct
 		if !parse_options.read_properties {
@@ -128,9 +142,6 @@ where
 			ElementIdent::EBMLReadVersion => {
 				properties.header.read_version = child_reader.read_unsigned_int(size.value())?
 			},
-			ElementIdent::DocType => {
-				properties.header.doc_type = child_reader.read_string(size.value())?
-			},
 			ElementIdent::DocTypeVersion => {
 				properties.header.doc_type_version = child_reader.read_unsigned_int(size.value())?
 			},
@@ -142,5 +153,10 @@ where
 		child_reader.master_exhausted(),
 		"There should be no remaining elements in the header"
 	);
+
+	if properties.header.doc_type.is_empty() {
+		decode_err!(@BAIL Ebml, "Unable to determine EBML DocType");
+	}
+
 	Ok(())
 }
