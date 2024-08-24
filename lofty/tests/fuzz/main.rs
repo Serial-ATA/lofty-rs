@@ -6,6 +6,7 @@ use std::path::Path;
 use std::thread;
 use std::time::Instant;
 
+mod aacfile_read_from;
 mod aifffile_read_from;
 mod flacfile_read_from;
 mod id3v2;

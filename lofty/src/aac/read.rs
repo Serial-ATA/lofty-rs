@@ -5,7 +5,7 @@ use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, ID3FindResults};
-use crate::macros::{decode_err, parse_mode_choice};
+use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::mpeg::header::{cmp_header, search_for_frame_sync, HeaderCmpResult};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -46,7 +46,11 @@ where
 				let header = Id3v2Header::parse(reader)?;
 				let skip_footer = header.flags.footer;
 
-				stream_len -= u64::from(header.size);
+				let Some(new_stream_len) = stream_len.checked_sub(u64::from(header.size)) else {
+					err!(SizeMismatch);
+				};
+
+				stream_len = new_stream_len;
 
 				if parse_options.read_tags {
 					let id3v2 = parse_id3v2(reader, header, parse_options)?;
@@ -67,7 +71,11 @@ where
 				if skip_footer {
 					log::debug!("Skipping ID3v2 footer");
 
-					stream_len -= 10;
+					let Some(new_stream_len) = stream_len.checked_sub(10) else {
+						err!(SizeMismatch);
+					};
+
+					stream_len = new_stream_len;
 					reader.seek(SeekFrom::Current(10))?;
 				}
 
@@ -99,7 +107,11 @@ where
 	let ID3FindResults(header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
 
 	if header.is_some() {
-		stream_len -= 128;
+		let Some(new_stream_len) = stream_len.checked_sub(128) else {
+			err!(SizeMismatch);
+		};
+
+		stream_len = new_stream_len;
 		file.id3v1_tag = id3v1;
 	}
 
