@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FLAC**: Vendor strings are now retained when writing tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/443))
   - This behavior already exists for OGG formats.
 
+### Fixed
+- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/444)):
+  - **MusePack**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/440))
+  - **AAC**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/439))
+
 ## [0.21.0] - 2024-07-29
 
 ### Added
