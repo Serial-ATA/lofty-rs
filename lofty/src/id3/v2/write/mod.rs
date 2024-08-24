@@ -202,7 +202,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
 fn create_tag_header(flags: Id3v2TagFlags, is_id3v23: bool) -> Result<(Cursor<Vec<u8>>, u32)> {
 	let mut header = Cursor::new(Vec::new());
 
-	header.write_all(&[b'I', b'D', b'3'])?;
+	header.write_all(b"ID3")?;
 
 	if is_id3v23 {
 		// Version 3, rev 0
