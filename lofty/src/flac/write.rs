@@ -135,7 +135,7 @@ where
 
 	let mut comment_blocks = Cursor::new(Vec::new());
 
-	create_comment_block(&mut comment_blocks, &*tag.vendor, &mut tag.items)?;
+	create_comment_block(&mut comment_blocks, &tag.vendor, &mut tag.items)?;
 
 	let mut comment_blocks = comment_blocks.into_inner();
 

@@ -67,7 +67,7 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 
 	let mut writer = Vec::with_capacity(128);
 
-	writer.write_all(&[b'T', b'A', b'G'])?;
+	writer.write_all(b"TAG")?;
 
 	let title = resize_string(tag.title, 30)?;
 	writer.write_all(&title)?;
