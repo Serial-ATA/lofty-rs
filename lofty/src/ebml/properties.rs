@@ -66,7 +66,7 @@ impl EbmlExtension {
 	}
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SegmentInfo {
 	pub(crate) timestamp_scale: u64,
 	pub(crate) muxing_app: String,
@@ -93,6 +93,17 @@ impl SegmentInfo {
 	/// Includes the full name of the application followed by the version number.
 	pub fn writing_app(&self) -> &str {
 		&self.writing_app
+	}
+}
+
+impl Default for SegmentInfo {
+	fn default() -> Self {
+		Self {
+			// https://matroska.org/technical/elements.html
+			timestamp_scale: 1_000_000,
+			muxing_app: String::new(),
+			writing_app: String::new(),
+		}
 	}
 }
 
@@ -211,7 +222,7 @@ pub struct EbmlProperties {
 	pub(crate) header: EbmlHeaderProperties,
 	pub(crate) extensions: Vec<EbmlExtension>,
 	pub(crate) segment_info: SegmentInfo,
-	pub(crate) default_audio_track: AudioTrackDescriptor,
+	pub(crate) audio_tracks: Vec<AudioTrackDescriptor>,
 }
 
 impl EbmlProperties {
@@ -228,29 +239,44 @@ impl EbmlProperties {
 		&self.extensions
 	}
 
-	/// Information from the Matroska `\EBML\Segment\Info` element
+	/// Information from the `\EBML\Segment\Info` element
 	pub fn segment_info(&self) -> &SegmentInfo {
 		&self.segment_info
+	}
+
+	/// All audio tracks in the file
+	///
+	/// This includes all audio tracks in the Matroska `\EBML\Segment\Tracks` element.
+	///
+	/// NOTE: The first audio track is **always** the default audio track.
+	pub fn audio_tracks(&self) -> &[AudioTrackDescriptor] {
+		&self.audio_tracks
 	}
 
 	/// Information about the default audio track
 	///
 	/// The information is extracted from the first audio track with its default flag set
-	/// in the Matroska `\EBML\Segment\Tracks` element.
-	pub fn default_audio_track(&self) -> &AudioTrackDescriptor {
-		&self.default_audio_track
+	/// in the `\EBML\Segment\Tracks` element.
+	///
+	/// NOTE: This will always return `Some` unless [`ParseOptions::read_properties`](crate::config::ParseOptions::read_properties) is set to `false`.
+	pub fn default_audio_track(&self) -> Option<&AudioTrackDescriptor> {
+		self.audio_tracks.first()
 	}
 }
 
 impl From<EbmlProperties> for FileProperties {
 	fn from(input: EbmlProperties) -> Self {
+		let Some(default_audio_track) = input.default_audio_track() else {
+			return FileProperties::default();
+		};
+
 		Self {
 			duration: todo!("Support duration"),
 			overall_bitrate: todo!("Support bitrate"),
 			audio_bitrate: todo!("Support bitrate"),
-			sample_rate: Some(input.default_audio_track.settings.sampling_frequency),
-			bit_depth: input.default_audio_track.settings.bit_depth,
-			channels: Some(input.default_audio_track.settings.channels),
+			sample_rate: Some(default_audio_track.settings.sampling_frequency),
+			bit_depth: default_audio_track.settings.bit_depth,
+			channels: Some(default_audio_track.settings.channels),
 			channel_mask: todo!("Channel mask"),
 		}
 	}
