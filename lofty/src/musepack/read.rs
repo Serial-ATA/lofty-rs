@@ -6,6 +6,7 @@ use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
+use crate::macros::err;
 use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -47,11 +48,19 @@ where
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
-		stream_length -= 128;
+		let Some(new_stream_length) = stream_length.checked_sub(128) else {
+			err!(SizeMismatch);
+		};
+
+		stream_length = new_stream_length;
 	}
 
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
-	stream_length -= u64::from(lyrics3v2_size);
+	let Some(new_stream_length) = stream_length.checked_sub(u64::from(lyrics3v2_size)) else {
+		err!(SizeMismatch);
+	};
+
+	stream_length = new_stream_length;
 
 	reader.seek(SeekFrom::Current(-32))?;
 
@@ -60,9 +69,18 @@ where
 
 		// Seek back to the start of the tag
 		let pos = reader.stream_position()?;
-		reader.seek(SeekFrom::Start(pos - u64::from(header.size)))?;
 
-		stream_length -= u64::from(header.size);
+		let tag_size = u64::from(header.size);
+		let Some(tag_start) = pos.checked_sub(tag_size) else {
+			err!(SizeMismatch);
+		};
+
+		reader.seek(SeekFrom::Start(tag_start))?;
+
+		let Some(new_stream_length) = stream_length.checked_sub(tag_size) else {
+			err!(SizeMismatch);
+		};
+		stream_length = new_stream_length;
 	}
 
 	// Restore the position of the magic signature

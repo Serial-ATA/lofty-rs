@@ -10,6 +10,7 @@ mod aifffile_read_from;
 mod flacfile_read_from;
 mod id3v2;
 mod mp4file_read_from;
+mod mpcfile_read_from;
 mod mpegfile_read_from;
 mod opusfile_read_from;
 mod pictureinformation_from_jpeg;
