@@ -1,4 +1,4 @@
-use super::block::Block;
+use super::block::{Block, BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS};
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
@@ -9,9 +9,10 @@ use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
-use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::borrow::Cow;
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use byteorder::{LittleEndian, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 const BLOCK_HEADER_SIZE: usize = 4;
 const MAX_BLOCK_SIZE: u32 = 16_777_215;
@@ -27,7 +28,7 @@ where
 			let (vendor, items, pictures) = crate::ogg::tag::create_vorbis_comments_ref(tag);
 
 			let mut comments_ref = VorbisCommentsRef {
-				vendor,
+				vendor: Cow::from(vendor),
 				items,
 				pictures,
 			};
@@ -52,7 +53,6 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	let stream_info = verify_flac(file)?;
-	let stream_info_end = stream_info.end as usize;
 
 	let mut last_block = stream_info.last;
 
@@ -64,14 +64,14 @@ where
 	let mut padding = false;
 	let mut last_block_info = (
 		stream_info.byte,
-		stream_info_end - ((stream_info.end - stream_info.start) as u32 + 4) as usize,
-		stream_info_end,
+		stream_info.start as usize,
+		stream_info.end as usize,
 	);
 
-	let mut blocks_remove = Vec::new();
+	let mut blocks_to_remove = Vec::new();
 
 	while !last_block {
-		let block = Block::read(&mut cursor, |_| true)?;
+		let block = Block::read(&mut cursor, |block_ty| block_ty == BLOCK_ID_VORBIS_COMMENTS)?;
 		let start = block.start;
 		let end = block.end;
 
@@ -83,8 +83,27 @@ where
 		}
 
 		match block_type {
-			4 | 6 => blocks_remove.push((start, end)),
-			1 => padding = true,
+			BLOCK_ID_VORBIS_COMMENTS => {
+				blocks_to_remove.push((start, end));
+
+				// Retain the original vendor string
+				let reader = &mut &block.content[..];
+
+				let vendor_len = reader.read_u32::<LittleEndian>()?;
+				let mut vendor = try_vec![0; vendor_len as usize];
+				reader.read_exact(&mut vendor)?;
+
+				// TODO: Error on strict?
+				let Ok(vendor_str) = String::from_utf8(vendor) else {
+					log::warn!("FLAC vendor string is not valid UTF-8, not re-using");
+					tag.vendor = Cow::Borrowed("");
+					continue;
+				};
+
+				tag.vendor = Cow::Owned(vendor_str);
+			},
+			BLOCK_ID_PICTURE => blocks_to_remove.push((start, end)),
+			BLOCK_ID_PADDING => padding = true,
 			_ => {},
 		}
 	}
@@ -116,29 +135,29 @@ where
 
 	let mut comment_blocks = Cursor::new(Vec::new());
 
-	create_comment_block(&mut comment_blocks, tag.vendor, &mut tag.items)?;
+	create_comment_block(&mut comment_blocks, &*tag.vendor, &mut tag.items)?;
 
 	let mut comment_blocks = comment_blocks.into_inner();
 
 	create_picture_blocks(&mut comment_blocks, &mut tag.pictures)?;
 
-	if blocks_remove.is_empty() {
+	if blocks_to_remove.is_empty() {
 		file_bytes.splice(0..0, comment_blocks);
 	} else {
-		blocks_remove.sort_unstable();
-		blocks_remove.reverse();
+		blocks_to_remove.sort_unstable();
+		blocks_to_remove.reverse();
 
-		let first = blocks_remove.pop().unwrap(); // Infallible
+		let first = blocks_to_remove.pop().unwrap(); // Infallible
 
-		for (s, e) in &blocks_remove {
+		for (s, e) in &blocks_to_remove {
 			file_bytes.drain(*s as usize..*e as usize);
 		}
 
 		file_bytes.splice(first.0 as usize..first.1 as usize, comment_blocks);
 	}
 
-	file.seek(SeekFrom::Start(stream_info_end as u64))?;
-	file.truncate(stream_info_end as u64)?;
+	file.seek(SeekFrom::Start(stream_info.end))?;
+	file.truncate(stream_info.end)?;
 	file.write_all(&file_bytes)?;
 
 	Ok(())

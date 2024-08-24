@@ -471,7 +471,7 @@ impl TagExt for VorbisComments {
 		LoftyError: From<<F as Length>::Error>,
 	{
 		VorbisCommentsRef {
-			vendor: self.vendor.as_str(),
+			vendor: Cow::from(self.vendor.as_str()),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
@@ -493,7 +493,7 @@ impl TagExt for VorbisComments {
 		write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err> {
 		VorbisCommentsRef {
-			vendor: self.vendor.as_str(),
+			vendor: Cow::from(self.vendor.as_str()),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
@@ -634,7 +634,7 @@ where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
-	pub vendor: &'a str,
+	pub vendor: Cow<'a, str>,
 	pub items: II,
 	pub pictures: IP,
 }
@@ -676,8 +676,7 @@ where
 		writer: &mut W,
 		_write_options: WriteOptions,
 	) -> Result<()> {
-		let metadata_packet =
-			super::write::create_metadata_packet(self, &[], self.vendor.as_bytes(), false)?;
+		let metadata_packet = super::write::create_metadata_packet(self, &[], false)?;
 		writer.write_all(&metadata_packet)?;
 		Ok(())
 	}

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **FLAC**: Vendor strings are now retained when writing tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/443))
+  - This behavior already exists for OGG formats.
+
 ## [0.21.0] - 2024-07-29
 
 ### Added

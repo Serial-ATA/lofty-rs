@@ -1,9 +1,12 @@
-use lofty::config::{ParseOptions, ParsingMode};
-use lofty::flac::FlacFile;
-use lofty::prelude::*;
+use crate::temp_file;
 
 use std::fs::File;
 use std::io::Seek;
+
+use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
+use lofty::flac::FlacFile;
+use lofty::ogg::VorbisComments;
+use lofty::prelude::*;
 
 #[test]
 fn multiple_vorbis_comments() {
@@ -39,4 +42,25 @@ fn read_no_properties() {
 #[test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.flac");
+}
+
+#[test]
+fn retain_vendor_string() {
+	let mut file = temp_file!("tests/files/assets/minimal/full_test.flac");
+
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	assert_eq!(f.vorbis_comments().unwrap().vendor(), "Lavf58.76.100");
+
+	let mut tag = VorbisComments::new();
+	tag.set_artist(String::from("Foo Artist"));
+	tag.set_vendor(String::from("Bar Vendor"));
+	tag.save_to(&mut file, WriteOptions::new()).unwrap();
+
+	file.rewind().unwrap();
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+	// The vendor string should be retained
+	assert_eq!(f.vorbis_comments().unwrap().vendor(), "Lavf58.76.100");
 }

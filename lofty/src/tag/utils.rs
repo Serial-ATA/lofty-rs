@@ -15,6 +15,7 @@ use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
 
+use std::borrow::Cow;
 use std::io::Write;
 
 #[allow(unreachable_patterns)]
@@ -75,7 +76,7 @@ pub(crate) fn dump_tag<W: Write>(
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
 			VorbisCommentsRef {
-				vendor,
+				vendor: Cow::from(vendor),
 				items,
 				pictures,
 			}
