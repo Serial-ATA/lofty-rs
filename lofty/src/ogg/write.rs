@@ -7,10 +7,11 @@ use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
+use crate::util::io::{FileLike, Length, Truncate};
 
+use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use crate::util::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{Packets, Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
 
@@ -58,7 +59,7 @@ where
 	let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
 	let mut comments_ref = VorbisCommentsRef {
-		vendor,
+		vendor: Cow::from(vendor),
 		items,
 		pictures,
 	};
@@ -120,9 +121,20 @@ where
 	let mut vendor = try_vec![0; vendor_len as usize];
 	md_reader.read_exact(&mut vendor)?;
 
+	let vendor_str;
+	match String::from_utf8(vendor) {
+		Ok(s) => vendor_str = Cow::Owned(s),
+		Err(_) => {
+			// TODO: Error on strict?
+			log::warn!("OGG vendor string is not valid UTF-8, not re-using");
+			vendor_str = Cow::Borrowed("");
+		},
+	}
+
+	tag.vendor = vendor_str;
+
 	let add_framing_bit = format == OGGFormat::Vorbis;
-	let new_metadata_packet =
-		create_metadata_packet(tag, comment_signature, &vendor, add_framing_bit)?;
+	let new_metadata_packet = create_metadata_packet(tag, comment_signature, add_framing_bit)?;
 
 	// Replace the old comment packet
 	packets.set(1, new_metadata_packet);
@@ -151,7 +163,6 @@ where
 pub(super) fn create_metadata_packet<'a, II, IP>(
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	comment_signature: &[u8],
-	vendor: &[u8],
 	add_framing_bit: bool,
 ) -> Result<Vec<u8>>
 where
@@ -160,9 +171,10 @@ where
 {
 	let mut new_comment_packet = Cursor::new(Vec::new());
 
+	let vendor_bytes = tag.vendor.as_bytes();
 	new_comment_packet.write_all(comment_signature)?;
-	new_comment_packet.write_u32::<LittleEndian>(vendor.len() as u32)?;
-	new_comment_packet.write_all(vendor)?;
+	new_comment_packet.write_u32::<LittleEndian>(vendor_bytes.len() as u32)?;
+	new_comment_packet.write_all(vendor_bytes)?;
 
 	// Zero out the item count for later
 	let item_count_pos = new_comment_packet.stream_position()?;

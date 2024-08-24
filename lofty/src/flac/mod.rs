@@ -19,6 +19,8 @@ use crate::picture::{Picture, PictureInformation};
 use crate::tag::TagExt;
 use crate::util::io::{FileLike, Length, Truncate};
 
+use std::borrow::Cow;
+
 use lofty_attr::LoftyFile;
 
 // Exports
@@ -67,7 +69,7 @@ impl FlacFile {
 		// We have an existing vorbis comments tag, we can just append our pictures to it
 		if let Some(ref vorbis_comments) = self.vorbis_comments_tag {
 			return VorbisCommentsRef {
-				vendor: vorbis_comments.vendor.as_str(),
+				vendor: Cow::from(vorbis_comments.vendor.as_str()),
 				items: vorbis_comments
 					.items
 					.iter()
@@ -84,7 +86,7 @@ impl FlacFile {
 		// We have pictures, but no vorbis comments tag, we'll need to create a dummy one
 		if !self.pictures.is_empty() {
 			return VorbisCommentsRef {
-				vendor: "",
+				vendor: Cow::from(""),
 				items: std::iter::empty(),
 				pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 			}

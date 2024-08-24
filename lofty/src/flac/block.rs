@@ -13,6 +13,8 @@ pub(in crate::flac) const BLOCK_ID_SEEKTABLE: u8 = 3;
 pub(in crate::flac) const BLOCK_ID_VORBIS_COMMENTS: u8 = 4;
 pub(in crate::flac) const BLOCK_ID_PICTURE: u8 = 6;
 
+const BLOCK_HEADER_SIZE: u64 = 4;
+
 pub(crate) struct Block {
 	pub(super) byte: u8,
 	pub(super) ty: u8,
@@ -46,7 +48,7 @@ impl Block {
 			data.seek(SeekFrom::Current(i64::from(size)))?;
 		}
 
-		let end = data.stream_position()?;
+		let end = start + u64::from(size) + BLOCK_HEADER_SIZE;
 
 		Ok(Self {
 			byte,
