@@ -61,7 +61,8 @@ where
 
 	let mut cursor = Cursor::new(file_bytes);
 
-	let mut padding = false;
+	// TODO: We need to actually use padding (https://github.com/Serial-ATA/lofty-rs/issues/445)
+	let mut end_padding_exists = false;
 	let mut last_block_info = (
 		stream_info.byte,
 		stream_info.start as usize,
@@ -103,14 +104,20 @@ where
 				tag.vendor = Cow::Owned(vendor_str);
 			},
 			BLOCK_ID_PICTURE => blocks_to_remove.push((start, end)),
-			BLOCK_ID_PADDING => padding = true,
+			BLOCK_ID_PADDING => {
+				if last_block {
+					end_padding_exists = true
+				} else {
+					blocks_to_remove.push((start, end))
+				}
+			},
 			_ => {},
 		}
 	}
 
 	let mut file_bytes = cursor.into_inner();
 
-	if !padding {
+	if !end_padding_exists {
 		if let Some(preferred_padding) = write_options.preferred_padding {
 			log::warn!("File is missing a PADDING block. Adding one");
 
