@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - This behavior already exists for OGG formats.
 
 ### Fixed
+- **FLAC**: Stop writing invalid `PADDING` blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/442)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/446))
+  - If a `PADDING` block existed in the original file, and it wasn't placed at the end of the header, it would
+    moved without setting the `Last-metadata-block` flag. This would cause decoders to believe that the file was missing
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/444)):
   - **MusePack**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/440))
   - **AAC**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/439))
