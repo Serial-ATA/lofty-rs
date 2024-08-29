@@ -108,14 +108,14 @@ impl ChannelMask {
 					| Self::BACK_CENTER.bits()
 					| Self::LOW_FREQUENCY.bits(),
 			)),
-			8 => {
-				Some(Self(
-					Self::linear_surround().bits()
-						| Self::SIDE_LEFT.bits() | Self::SIDE_RIGHT.bits()
-						| Self::BACK_LEFT.bits() | Self::BACK_RIGHT.bits()
-						| Self::LOW_FREQUENCY.bits(),
-				))
-			},
+			8 => Some(Self(
+				Self::linear_surround().bits()
+					| Self::SIDE_LEFT.bits()
+					| Self::SIDE_RIGHT.bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits()
+					| Self::LOW_FREQUENCY.bits(),
+			)),
 			_ => None,
 		}
 	}
@@ -143,14 +143,14 @@ impl ChannelMask {
 					| Self::BACK_RIGHT.bits()
 					| Self::LOW_FREQUENCY.bits(),
 			)),
-			7 => {
-				Some(Self(
-					Self::linear_surround().bits()
-						| Self::SIDE_LEFT.bits() | Self::SIDE_RIGHT.bits()
-						| Self::BACK_LEFT.bits() | Self::BACK_RIGHT.bits()
-						| Self::LOW_FREQUENCY.bits(),
-				))
-			},
+			7 => Some(Self(
+				Self::linear_surround().bits()
+					| Self::SIDE_LEFT.bits()
+					| Self::SIDE_RIGHT.bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits()
+					| Self::LOW_FREQUENCY.bits(),
+			)),
 			_ => None,
 		}
 	}
