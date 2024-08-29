@@ -6,14 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.1] - 2024-08-28
+
 ### Changed
 - **FLAC**: Vendor strings are now retained when writing tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/443))
   - This behavior already exists for OGG formats.
 
 ### Fixed
 - **FLAC**: Stop writing invalid `PADDING` blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/442)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/446))
-  - If a `PADDING` block existed in the original file, and it wasn't placed at the end of the header, it would
-    moved without setting the `Last-metadata-block` flag. This would cause decoders to believe that the file was missing
+  - If a `PADDING` block existed in the original file, and it wasn't placed at the end of the header, it would be
+    moved without setting the `Last-metadata-block` flag. This would cause decoders to believe that the file was corrupted.
 - **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/444)):
   - **MusePack**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/440))
   - **AAC**: Fix panic when tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/439))
@@ -845,7 +847,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...HEAD
+[0.21.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...0.21.1
 [0.21.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.1...0.21.0
 [0.20.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.0...0.20.1
 [0.20.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.19.2...0.20.0
