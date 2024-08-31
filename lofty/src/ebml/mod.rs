@@ -10,7 +10,7 @@ use lofty_attr::LoftyFile;
 // Exports
 
 pub use properties::EbmlProperties;
-pub use tag::EbmlTag;
+pub use tag::*;
 pub use vint::VInt;
 
 /// An EBML file
