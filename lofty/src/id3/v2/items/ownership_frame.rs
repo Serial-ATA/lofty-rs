@@ -153,7 +153,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn owne_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");
 
@@ -164,7 +164,7 @@ mod tests {
 		assert_eq!(parsed_owne, expected());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn owne_encode() {
 		let encoded = expected().as_bytes(false).unwrap();
 

@@ -36,6 +36,7 @@ hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683d
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.10.1"
+test-log = "0.2.16"
 iai-callgrind = "0.12.0"
 
 [lints]

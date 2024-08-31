@@ -726,7 +726,7 @@ mod tests {
 		.unwrap()
 	}
 
-	#[test]
+	#[test_log::test]
 	fn parse_vorbis_comments() {
 		let mut expected_tag = VorbisComments::default();
 
@@ -746,7 +746,7 @@ mod tests {
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn vorbis_comments_re_read() {
 		let file_cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.vorbis");
 		let mut parsed_tag = read_tag(&file_cont);
@@ -764,7 +764,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn vorbis_comments_to_tag() {
 		let tag_bytes = std::fs::read("tests/tags/assets/test.vorbis").unwrap();
 		let vorbis_comments = read_tag(&tag_bytes);
@@ -774,7 +774,7 @@ mod tests {
 		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_vorbis_comments() {
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::VorbisComments);
 
@@ -788,7 +788,7 @@ mod tests {
 		assert_eq!(vorbis_comments.get("GENRE"), Some("Classical"));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn multi_value_roundtrip() {
 		let mut tag = Tag::new(TagType::VorbisComments);
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
@@ -868,13 +868,13 @@ mod tests {
 		assert_eq!(vorbis_comments1.items, vorbis_comments2.items);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn zero_sized_vorbis_comments() {
 		let tag_bytes = std::fs::read("tests/tags/assets/zero.vorbis").unwrap();
 		let _ = read_tag(&tag_bytes);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn issue_60() {
 		let tag_bytes = std::fs::read("tests/tags/assets/issue_60.vorbis").unwrap();
 		let tag = read_tag(&tag_bytes);
@@ -883,7 +883,7 @@ mod tests {
 		assert!(tag.items.is_empty());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn initial_key_roundtrip() {
 		// Both the primary and alternate key should be mapped to the primary
 		// key if stored again. Note: The outcome is undefined if both the
@@ -901,7 +901,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn skip_reading_cover_art() {
 		let p = Picture::new_unchecked(
 			PictureType::CoverFront,

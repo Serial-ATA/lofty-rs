@@ -250,7 +250,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn atxt_decode() {
 		let expected = expected();
 
@@ -261,7 +261,7 @@ mod tests {
 		assert_eq!(parsed_atxt, expected);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn atxt_encode() {
 		let to_encode = expected();
 

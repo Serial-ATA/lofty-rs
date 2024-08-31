@@ -752,7 +752,7 @@ mod tests {
 	use std::io::{Seek, Write};
 	use std::process::Command;
 
-	#[test]
+	#[test_log::test]
 	fn issue_37() {
 		let file_contents = read_path("tests/files/assets/issue_37.ogg");
 		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
@@ -784,7 +784,7 @@ mod tests {
 		);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn issue_130_huge_picture() {
 		// Verify we have opus-tools available, otherwise skip
 		match Command::new("opusinfo").output() {
@@ -824,7 +824,7 @@ mod tests {
 		assert!(!stderr.contains("WARNING:"));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn should_preserve_empty_title() {
 		let mut tag = Tag::new(TagType::Id3v2);
 		tag.set_title(String::from("Foo title"));
@@ -838,7 +838,7 @@ mod tests {
 		assert_eq!(tag.title(), None);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn try_parse_year_with_leading_trailing_whitespace_and_various_formats() {
 		assert_eq!(Some(1983), try_parse_year("\t 1983\n"));
 		assert_eq!(Some(1983), try_parse_year("1983-1"));
@@ -850,7 +850,7 @@ mod tests {
 		assert_eq!(Some(1983), try_parse_year("1983-01-02T10:24:08.001Z"));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn should_not_parse_year_from_less_than_4_digits() {
 		assert!(try_parse_year("198").is_none());
 		assert!(try_parse_year("19").is_none());

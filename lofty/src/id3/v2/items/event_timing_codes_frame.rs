@@ -307,7 +307,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn etco_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.etco");
 
@@ -318,7 +318,7 @@ mod tests {
 		assert_eq!(parsed_etco, expected());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn etco_encode() {
 		let encoded = expected().as_bytes();
 

@@ -240,7 +240,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_decode() {
 		let content = "2024-06-03T14:08:49";
 		let parsed_timestamp =
@@ -249,7 +249,7 @@ mod tests {
 		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_decode_no_zero() {
 		// Zeroes are not used
 		let content = "2024-6-3T14:8:49";
@@ -260,7 +260,7 @@ mod tests {
 		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_decode_zero_substitution() {
 		// Zeros are replaced by spaces
 		let content = "2024- 6- 3T14: 8:49";
@@ -271,13 +271,13 @@ mod tests {
 		assert_eq!(parsed_timestamp, Some(expected()));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_encode() {
 		let encoded = expected().to_string();
 		assert_eq!(encoded, "2024-06-03T14:08:49");
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_encode_invalid() {
 		let mut timestamp = expected();
 
@@ -286,7 +286,7 @@ mod tests {
 		assert_eq!(timestamp.to_string().len(), 7);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn reject_broken_timestamps() {
 		let broken_timestamps: &[&[u8]] = &[
 			b"2024-",
@@ -304,7 +304,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn timestamp_decode_partial() {
 		let partial_timestamps: [(&[u8], Timestamp); 6] = [
 			(
@@ -361,7 +361,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn empty_timestamp() {
 		let empty_timestamp =
 			Timestamp::parse(&mut "".as_bytes(), ParsingMode::BestAttempt).unwrap();

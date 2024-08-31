@@ -12,14 +12,14 @@ fn get_buf(path: &str) -> Vec<u8> {
 	buf
 }
 
-#[test]
+#[test_log::test]
 fn picture_from_reader_png() {
 	let pic = Picture::from_reader(&mut &*get_buf("tests/picture/assets/png_640x628.png")).unwrap();
 
 	assert_eq!(pic.mime_type(), Some(&MimeType::Png));
 }
 
-#[test]
+#[test_log::test]
 fn picture_from_reader_jpeg() {
 	let pic =
 		Picture::from_reader(&mut &*get_buf("tests/picture/assets/jpeg_640x628.jpg")).unwrap();
@@ -27,21 +27,21 @@ fn picture_from_reader_jpeg() {
 	assert_eq!(pic.mime_type(), Some(&MimeType::Jpeg));
 }
 
-#[test]
+#[test_log::test]
 fn picture_from_reader_bmp() {
 	let pic = Picture::from_reader(&mut &*get_buf("tests/picture/assets/bmp_640x628.bmp")).unwrap();
 
 	assert_eq!(pic.mime_type(), Some(&MimeType::Bmp));
 }
 
-#[test]
+#[test_log::test]
 fn picture_from_reader_gif() {
 	let pic = Picture::from_reader(&mut &*get_buf("tests/picture/assets/gif_640x628.gif")).unwrap();
 
 	assert_eq!(pic.mime_type(), Some(&MimeType::Gif));
 }
 
-#[test]
+#[test_log::test]
 fn picture_from_reader_tiff() {
 	let pic =
 		Picture::from_reader(&mut &*get_buf("tests/picture/assets/tiff_640x628.tiff")).unwrap();

@@ -364,7 +364,7 @@ mod tests {
 
 	use std::io::Cursor;
 
-	#[test]
+	#[test_log::test]
 	fn parse_riff_info() {
 		let mut expected_tag = RiffInfoList::default();
 
@@ -389,7 +389,7 @@ mod tests {
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn riff_info_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 		let mut parsed_tag = RiffInfoList::default();
@@ -421,7 +421,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn riff_info_to_tag() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.riff");
 
@@ -441,7 +441,7 @@ mod tests {
 		crate::tag::utils::test_utils::verify_tag(&tag, true, false);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_riff_info() {
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::RiffInfo);
 

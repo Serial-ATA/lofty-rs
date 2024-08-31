@@ -302,7 +302,7 @@ mod tests {
 		&[0xFF, 0x00, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00, 0x00];
 	const EXPECTED: &[u8] = &[0xFF, 0x00, 0xFF, 0x12, 0xB0, 0x05, 0xFF, 0x00];
 
-	#[test]
+	#[test_log::test]
 	fn unsynchronized_stream() {
 		let reader = Cursor::new(UNSYNCHRONIZED_CONTENT);
 		let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
@@ -315,7 +315,7 @@ mod tests {
 		assert_eq!(final_content, EXPECTED);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn unsynchronized_stream_large() {
 		// Create a buffer >10k to force a buffer reset
 		let reader = Cursor::new(UNSYNCHRONIZED_CONTENT.repeat(1000));
@@ -330,7 +330,7 @@ mod tests {
 		assert_eq!(final_content, EXPECTED.repeat(1000));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn unsynchronized_stream_should_not_replace_unrelated() {
 		const ORIGINAL_CONTENT: &[u8] = &[0xFF, 0x1A, 0xFF, 0xC0, 0x10, 0x01];
 
@@ -357,17 +357,17 @@ mod tests {
 		) => {
 			$(
 				paste::paste! {
-					#[test]
+					#[test_log::test]
 					fn [<$int _synch>]() {
 						assert_eq!($original.synch().unwrap(), $new);
 					}
 
-					#[test]
+					#[test_log::test]
 					fn [<$int _unsynch>]() {
 						assert_eq!($original_unsync.unsynch(), $new_unsynch);
 					}
 
-					#[test]
+					#[test_log::test]
 					fn [<$int _widen>]() {
 						assert_eq!($original_widen.widening_synch(), $new_widen);
 					}

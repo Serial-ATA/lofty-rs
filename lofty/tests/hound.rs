@@ -15,7 +15,7 @@ fn get_properties(path: &Path) -> Result<<WavFile as AudioFile>::Properties> {
 	Ok(*wav_file.properties())
 }
 
-#[test]
+#[test_log::test]
 fn hound() {
 	let paths = fs::read_dir("tests/files/assets/hound").unwrap();
 
@@ -35,7 +35,7 @@ fn hound() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn hound_fuzz() {
 	let paths = fs::read_dir("tests/files/assets/hound/fuzz").unwrap();
 

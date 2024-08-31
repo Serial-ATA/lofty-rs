@@ -167,7 +167,7 @@ mod tests {
 		assert_eq!(popm_bytes[email.len() + 2..].len(), counter_len);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn write_popm() {
 		let popm_u32_boundary = PopularimeterFrame {
 			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),

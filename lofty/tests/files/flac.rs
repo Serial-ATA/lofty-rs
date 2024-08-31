@@ -8,7 +8,7 @@ use lofty::flac::FlacFile;
 use lofty::ogg::VorbisComments;
 use lofty::prelude::*;
 
-#[test]
+#[test_log::test]
 fn multiple_vorbis_comments() {
 	let mut file = File::open("tests/files/assets/two_vorbis_comments.flac").unwrap();
 
@@ -34,17 +34,17 @@ fn multiple_vorbis_comments() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.flac");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.flac");
 }
 
-#[test]
+#[test_log::test]
 fn retain_vendor_string() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.flac");
 

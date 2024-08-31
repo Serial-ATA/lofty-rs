@@ -500,7 +500,7 @@ mod tests {
 
 	use std::io::Cursor;
 
-	#[test]
+	#[test_log::test]
 	fn parse_aiff_text() {
 		let expected_tag = AiffTextChunks {
 			name: Some(String::from("Foo title")),
@@ -537,7 +537,7 @@ mod tests {
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn aiff_text_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
 		let parsed_tag = super::super::read::read_from(
@@ -567,7 +567,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn aiff_text_to_tag() {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/test.aiff_text");
@@ -597,7 +597,7 @@ mod tests {
 		assert!(comments.next().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_aiff_text() {
 		let mut tag = Tag::new(TagType::AiffText);
 		tag.insert_text(ItemKey::TrackTitle, String::from("Foo title"));
@@ -627,7 +627,7 @@ mod tests {
 		assert!(aiff_text.comments.is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn zero_sized_text_chunks() {
 		let tag_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/zero.aiff_text");

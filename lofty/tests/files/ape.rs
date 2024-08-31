@@ -7,7 +7,7 @@ use lofty::tag::TagType;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.ape")
@@ -28,7 +28,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::Id3v2, "Baz artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	// We don't write an ID3v2 tag here since it's against the spec
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.ape");
@@ -62,27 +62,27 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
 }
 
-#[test]
+#[test_log::test]
 fn remove_ape() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.ape", TagType::Ape);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.ape", TagType::Id3v1);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.ape", TagType::Id3v2);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.ape");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.ape");
 }

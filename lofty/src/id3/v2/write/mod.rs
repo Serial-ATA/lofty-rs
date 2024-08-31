@@ -296,7 +296,7 @@ mod tests {
 	use crate::id3::v2::{Id3v2Tag, Id3v2TagFlags};
 	use crate::prelude::*;
 
-	#[test]
+	#[test_log::test]
 	fn id3v2_write_crc32() {
 		let mut tag = Id3v2Tag::default();
 		tag.set_artist(String::from("Foo artist"));

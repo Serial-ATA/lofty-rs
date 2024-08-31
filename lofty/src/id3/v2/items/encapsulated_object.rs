@@ -144,7 +144,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn geob_decode() {
 		let expected = expected();
 
@@ -155,7 +155,7 @@ mod tests {
 		assert_eq!(parsed_geob, expected);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn geob_encode() {
 		let to_encode = expected();
 

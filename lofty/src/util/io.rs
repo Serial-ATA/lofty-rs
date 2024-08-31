@@ -277,7 +277,7 @@ mod tests {
 		tag.set_artist(String::from("Foo artist"));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn io_save_to_file() {
 		// Read the file and change the artist
 		let mut file = file();
@@ -309,7 +309,7 @@ mod tests {
 		assert_eq!(current_file_contents, test_asset_contents());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn io_save_to_vec() {
 		// Same test as above, but using a Cursor<Vec<u8>> instead of a file
 		let mut file = file();
@@ -333,7 +333,7 @@ mod tests {
 		assert_eq!(current_file_contents, test_asset_contents());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn io_save_using_references() {
 		struct File {
 			buf: Vec<u8>,

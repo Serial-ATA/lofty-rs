@@ -553,7 +553,7 @@ mod tests {
 
 	use std::fs::File;
 
-	#[test]
+	#[test_log::test]
 	fn mp3_id3v2_trailing_junk() {
 		// test data that contains 4 bytes of junk (0x20) between the ID3 portion and the first MP3 frame
 		let data: [&[u8]; 4] = [
@@ -579,7 +579,7 @@ mod tests {
 		assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn parse_options_allocation_limit() {
 		// In this test, we read a partial MP3 file that has an ID3v2 tag containing a frame outside
 		// of the allocation limit. We'll be testing with an encrypted frame, since we immediately read those into memory.
@@ -689,62 +689,62 @@ mod tests {
 		assert_eq!(probe.file_type(), Some(expected_file_type_guess));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_aac() {
 		test_probe("tests/files/assets/minimal/untagged.aac", FileType::Aac);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_aac_with_id3v2() {
 		test_probe("tests/files/assets/minimal/full_test.aac", FileType::Aac);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_aiff() {
 		test_probe("tests/files/assets/minimal/full_test.aiff", FileType::Aiff);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_ape_with_id3v2() {
 		test_probe("tests/files/assets/minimal/full_test.ape", FileType::Ape);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_flac() {
 		test_probe("tests/files/assets/minimal/full_test.flac", FileType::Flac);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_flac_with_id3v2() {
 		test_probe("tests/files/assets/flac_with_id3v2.flac", FileType::Flac);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_mp3_with_id3v2() {
 		test_probe("tests/files/assets/minimal/full_test.mp3", FileType::Mpeg);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_mp3_with_lots_of_junk() {
 		test_probe("tests/files/assets/junk.mp3", FileType::Mpeg);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_vorbis() {
 		test_probe("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_opus() {
 		test_probe("tests/files/assets/minimal/full_test.opus", FileType::Opus);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_speex() {
 		test_probe("tests/files/assets/minimal/full_test.spx", FileType::Speex);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_mp4() {
 		test_probe(
 			"tests/files/assets/minimal/m4a_codec_aac.m4a",
@@ -752,7 +752,7 @@ mod tests {
 		);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn probe_wav() {
 		test_probe(
 			"tests/files/assets/minimal/wav_format_pcm.wav",

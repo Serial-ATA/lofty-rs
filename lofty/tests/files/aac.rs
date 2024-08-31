@@ -7,7 +7,7 @@ use lofty::tag::TagType;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// Here we have an AAC file with an ID3v2, and an ID3v1 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.aac")
@@ -25,7 +25,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn read_with_junk_bytes_between_frames() {
 	// Read a file that includes an ID3v2.3 data block followed by four bytes of junk data (0x20)
 
@@ -54,7 +54,7 @@ fn read_with_junk_bytes_between_frames() {
 	assert_eq!(id3v1_tag.title().as_deref(), Some("title test"));
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.aac");
 
@@ -87,22 +87,22 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aac", TagType::Id3v2);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aac", TagType::Id3v1);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.aac");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.aac");
 }

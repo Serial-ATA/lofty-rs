@@ -83,7 +83,7 @@ impl<T> VecFallibleCapacity<T> for Vec<T> {
 mod tests {
 	use crate::util::alloc::fallible_vec_from_element;
 
-	#[test]
+	#[test_log::test]
 	fn vec_fallible_repeat() {
 		let u8_vec_len_20 = fallible_vec_from_element(0u8, 20).unwrap();
 		assert_eq!(u8_vec_len_20.len(), 20);

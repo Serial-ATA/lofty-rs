@@ -10,17 +10,17 @@ use std::io::Seek;
 // The tests for OGG Opus/Vorbis/Speex are nearly identical
 // We have the vendor string and a title stored in the tag
 
-#[test]
+#[test_log::test]
 fn opus_read() {
 	read("tests/files/assets/minimal/full_test.opus", FileType::Opus)
 }
 
-#[test]
+#[test_log::test]
 fn opus_write() {
 	write("tests/files/assets/minimal/full_test.opus", FileType::Opus)
 }
 
-#[test]
+#[test_log::test]
 fn opus_remove() {
 	remove(
 		"tests/files/assets/minimal/full_test.opus",
@@ -28,18 +28,18 @@ fn opus_remove() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn flac_read() {
 	// FLAC does **not** require a Vorbis comment block be present, this file has one
 	read("tests/files/assets/minimal/full_test.flac", FileType::Flac)
 }
 
-#[test]
+#[test_log::test]
 fn flac_write() {
 	write("tests/files/assets/minimal/full_test.flac", FileType::Flac)
 }
 
-#[test]
+#[test_log::test]
 fn flac_remove_vorbis_comments() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/full_test.flac",
@@ -47,17 +47,17 @@ fn flac_remove_vorbis_comments() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn vorbis_read() {
 	read("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis)
 }
 
-#[test]
+#[test_log::test]
 fn vorbis_write() {
 	write("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis)
 }
 
-#[test]
+#[test_log::test]
 fn vorbis_remove() {
 	remove(
 		"tests/files/assets/minimal/full_test.ogg",
@@ -65,17 +65,17 @@ fn vorbis_remove() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn speex_read() {
 	read("tests/files/assets/minimal/full_test.spx", FileType::Speex)
 }
 
-#[test]
+#[test_log::test]
 fn speex_write() {
 	write("tests/files/assets/minimal/full_test.spx", FileType::Speex)
 }
 
-#[test]
+#[test_log::test]
 fn speex_remove() {
 	remove(
 		"tests/files/assets/minimal/full_test.spx",
@@ -150,7 +150,7 @@ fn remove(path: &str, tag_type: TagType) {
 	assert_eq!(tagged_file.tag(tag_type).unwrap().item_count(), 1);
 }
 
-#[test]
+#[test_log::test]
 fn flac_with_id3v2() {
 	use lofty::flac::FlacFile;
 
@@ -167,12 +167,12 @@ fn flac_with_id3v2() {
 	assert!(flac_file.vorbis_comments().is_some());
 }
 
-#[test]
+#[test_log::test]
 fn flac_remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
 }
 
-#[test]
+#[test_log::test]
 fn flac_try_write_non_empty_id3v2() {
 	use lofty::id3::v2::Id3v2Tag;
 
@@ -187,32 +187,32 @@ fn flac_try_write_non_empty_id3v2() {
 		.is_err());
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties_opus() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.opus");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags_opus() {
 	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.opus", expected_len: 1);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties_vorbis() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.ogg");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags_vorbis() {
 	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.ogg", expected_len: 1);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties_speex() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.spx");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags_speex() {
 	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.spx", expected_len: 1);
 }

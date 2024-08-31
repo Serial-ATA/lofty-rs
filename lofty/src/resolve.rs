@@ -189,7 +189,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn custom_resolver() {
 		register_custom_resolver::<MyFile>("MyFile");
 

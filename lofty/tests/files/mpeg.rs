@@ -10,7 +10,7 @@ use lofty::tag::{Tag, TagType};
 use std::borrow::Cow;
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// Here we have an MP3 file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.mp3")
@@ -31,7 +31,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::Ape, "Baz artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn read_with_junk_bytes_between_frames() {
 	// Read a file that includes an ID3v2.3 data block followed by four bytes of junk data (0x20)
 	let file = Probe::open("tests/files/assets/junk_between_id3_and_mp3.mp3")
@@ -57,7 +57,7 @@ fn read_with_junk_bytes_between_frames() {
 	assert_eq!(id3v1_tag.title().as_deref(), Some("title test"));
 }
 
-#[test]
+#[test_log::test]
 fn issue_82_solidus_in_tag() {
 	let file = Probe::open("tests/files/assets/issue_82_solidus_in_tag.mp3")
 		.unwrap()
@@ -70,7 +70,7 @@ fn issue_82_solidus_in_tag() {
 	assert_eq!(id3v2_tag.title().as_deref(), Some("Foo / title"));
 }
 
-#[test]
+#[test_log::test]
 fn issue_87_duplicate_id3v2() {
 	// The first tag has a bunch of information: An album, artist, encoder, and a title.
 	// This tag is immediately followed by another the contains an artist.
@@ -93,7 +93,7 @@ fn issue_87_duplicate_id3v2() {
 	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -131,7 +131,7 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Qux artist", 1 => file, "Baz artist");
 }
 
-#[test]
+#[test_log::test]
 fn save_to_id3v2() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -169,7 +169,7 @@ fn save_to_id3v2() {
 	assert!(tag.disk_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn save_number_of_track_and_disk_to_id3v2() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -210,7 +210,7 @@ fn save_number_of_track_and_disk_to_id3v2() {
 	assert!(tag.disk_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn test_bound_tagged_into_inner() {
 	let file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -233,7 +233,7 @@ fn test_bound_tagged_into_inner() {
 	assert_eq!(tag.disk(), Some(123));
 }
 
-#[test]
+#[test_log::test]
 fn save_total_of_track_and_disk_to_id3v2() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -274,7 +274,7 @@ fn save_total_of_track_and_disk_to_id3v2() {
 	assert_eq!(tag.disk_total().unwrap(), disk_total);
 }
 
-#[test]
+#[test_log::test]
 fn save_number_pair_of_track_and_disk_to_id3v2() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
 
@@ -320,22 +320,22 @@ fn save_number_pair_of_track_and_disk_to_id3v2() {
 	assert_eq!(tag.disk_total().unwrap(), disk_total);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v1() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v1);
 }
 
-#[test]
+#[test_log::test]
 fn remove_ape() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
 }
 
-#[test]
+#[test_log::test]
 fn read_and_write_tpil_frame() {
 	let key_value_pairs = vec![
 		("engineer".to_string(), "testperson".to_string()),
@@ -370,7 +370,7 @@ fn read_and_write_tpil_frame() {
 	assert_eq!(key_value_pairs, content.key_value_pairs);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	let mut file = crate::temp_file!("tests/files/assets/minimal/full_test.mp3");
 	let tagged_file = Probe::new(&mut file)
@@ -388,7 +388,7 @@ fn read_no_properties() {
 	assert_eq!(properties.channels(), Some(0));
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.mp3");
 }
