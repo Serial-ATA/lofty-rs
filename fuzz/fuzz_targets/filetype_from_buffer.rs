@@ -2,5 +2,5 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = lofty::FileType::from_buffer(data);
+	let _ = lofty::file::FileType::from_buffer(data);
 });

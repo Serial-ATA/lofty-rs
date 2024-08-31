@@ -12,7 +12,7 @@ cargo-fuzz = true
 libfuzzer-sys = "0.4"
 
 [dependencies.lofty]
-path = ".."
+path = "../lofty"
 
 # Prevent this from interfering with workspaces
 [workspace]
