@@ -581,8 +581,17 @@ where
 		todo!()
 	}
 
-	pub(crate) fn read_binary(&mut self) -> Result<Vec<u8>> {
-		todo!()
+	pub(crate) fn read_binary(&mut self, element_length: u64) -> Result<Vec<u8>> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.8
+		// A Binary Element MUST declare a length in octets from zero to VINTMAX.
+
+		if element_length > VInt::MAX {
+			decode_err!(@BAIL Ebml, "Binary element length is too large")
+		}
+
+		let mut content = try_vec![0; element_length as usize];
+		self.read_exact(&mut content)?;
+		Ok(content)
 	}
 }
 
