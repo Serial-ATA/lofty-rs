@@ -2,5 +2,5 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &[u8]| {
-    let _ = lofty::PictureInformation::from_jpeg(data);
+	let _ = lofty::picture::PictureInformation::from_jpeg(data);
 });
