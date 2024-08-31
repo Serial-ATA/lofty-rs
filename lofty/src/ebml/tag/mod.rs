@@ -1,3 +1,6 @@
+pub(crate) mod attached_file;
+pub use attached_file::*;
+
 use crate::config::WriteOptions;
 use crate::error::LoftyError;
 use crate::io::{FileLike, Length, Truncate};
@@ -12,7 +15,9 @@ use lofty_attr::tag;
 /// TODO
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(description = "An `EBML` tag", supported_formats(Ebml))]
-pub struct EbmlTag {}
+pub struct EbmlTag {
+	pub(crate) attached_files: Vec<AttachedFile>,
+}
 
 impl Accessor for EbmlTag {}
 
@@ -76,6 +81,7 @@ impl TagExt for EbmlTag {
 	}
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Default)]
 pub struct SplitTagRemainder(EbmlTag);
 

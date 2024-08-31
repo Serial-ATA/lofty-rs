@@ -48,6 +48,34 @@ macro_rules! decode_err {
 	};
 }
 
+// Shorthand for FileEncodingError::new(FileType::Foo, "Message")
+//
+// Usage:
+//
+// - encode_err!(Variant, Message)
+// - encode_err!(Message)
+//
+// or bail:
+//
+// - encode_err!(@BAIL Variant, Message)
+// - encode_err!(@BAIL Message)
+macro_rules! encode_err {
+	($file_ty:ident, $reason:literal) => {
+		Into::<crate::error::LoftyError>::into(crate::error::FileEncodingError::new(
+			crate::file::FileType::$file_ty,
+			$reason,
+		))
+	};
+	($reason:literal) => {
+		Into::<crate::error::LoftyError>::into(crate::error::FileEncodingError::from_description(
+			$reason,
+		))
+	};
+	(@BAIL $($file_ty:ident,)? $reason:literal) => {
+		return Err(encode_err!($($file_ty,)? $reason))
+	};
+}
+
 // A macro for handling the different `ParsingMode`s
 //
 // NOTE: All fields are optional, if `STRICT` or `RELAXED` are missing, it will
@@ -93,4 +121,4 @@ macro_rules! parse_mode_choice {
 	};
 }
 
-pub(crate) use {decode_err, err, parse_mode_choice, try_vec};
+pub(crate) use {decode_err, encode_err, err, parse_mode_choice, try_vec};
