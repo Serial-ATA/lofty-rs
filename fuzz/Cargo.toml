@@ -17,75 +17,113 @@ path = "../lofty"
 [[bin]]
 name = "filetype_from_buffer"
 path = "fuzz_targets/filetype_from_buffer.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "mpcfile_read_from"
 path = "fuzz_targets/mpcfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "mpegfile_read_from"
 path = "fuzz_targets/mpegfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "aacfile_read_from"
 path = "fuzz_targets/aacfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "aifffile_read_from"
 path = "fuzz_targets/aifffile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "apefile_read_from"
 path = "fuzz_targets/apefile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "flacfile_read_from"
 path = "fuzz_targets/flacfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "mp4file_read_from"
 path = "fuzz_targets/mp4file_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "opusfile_read_from"
 path = "fuzz_targets/opusfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "vorbisfile_read_from"
 path = "fuzz_targets/vorbisfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "speexfile_read_from"
 path = "fuzz_targets/speexfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "wavfile_read_from"
 path = "fuzz_targets/wavfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "wavpackfile_read_from"
 path = "fuzz_targets/wavpackfile_read_from.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "pictureinformation_from_jpeg"
 path = "fuzz_targets/pictureinformation_from_jpeg.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "pictureinformation_from_png"
 path = "fuzz_targets/pictureinformation_from_png.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "picture_from_reader"
 path = "fuzz_targets/picture_from_reader.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "picture_from_flac_bytes"
 path = "fuzz_targets/picture_from_flac_bytes.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "picture_from_ape_bytes"
 path = "fuzz_targets/picture_from_ape_bytes.rs"
+test = false
+doc = false
 
 [[bin]]
 name = "probe_read"
 path = "fuzz_targets/probe_read.rs"
+test = false
+doc = false
