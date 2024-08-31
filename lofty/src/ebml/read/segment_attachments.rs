@@ -1,5 +1,7 @@
 use crate::config::ParseOptions;
-use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::element_reader::{
+	ElementChildIterator, ElementIdent, ElementReader, ElementReaderYield,
+};
 use crate::ebml::{AttachedFile, EbmlTag};
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -8,19 +10,17 @@ use crate::picture::MimeType;
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
-	element_reader: &mut ElementReader<R>,
+	children_reader: &mut ElementChildIterator<'_, R>,
 	_parse_options: ParseOptions,
 	tag: &mut EbmlTag,
 ) -> Result<()>
 where
 	R: Read + Seek,
 {
-	let mut children_reader = element_reader.children();
-
 	while let Some(child) = children_reader.next()? {
 		match child {
 			ElementReaderYield::Master((ElementIdent::AttachedFile, size)) => {
-				let attached_file = read_attachment(&mut children_reader)?;
+				let attached_file = read_attachment(children_reader)?;
 				tag.attached_files.push(attached_file);
 			},
 			ElementReaderYield::Eof => break,
