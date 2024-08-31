@@ -38,14 +38,11 @@ where
 				ElementIdent::Tracks if parse_options.read_properties => {
 					segment_tracks::read_from(element_reader, parse_options, properties)?
 				},
-				ElementIdent::Tags | ElementIdent::Chapters if parse_options.read_tags => {
+				// TODO: ElementIdent::Chapters
+				ElementIdent::Tags if parse_options.read_tags => {
 					let mut tag = tags.unwrap_or_default();
 
-					if id == ElementIdent::Tags {
-						segment_tags::read_from(element_reader, parse_options, &mut tag)?
-					} else {
-						segment_chapters::read_from(element_reader, parse_options, &mut tag)?
-					}
+					segment_tags::read_from(element_reader, parse_options, &mut tag)?;
 
 					tags = Some(tag);
 				},

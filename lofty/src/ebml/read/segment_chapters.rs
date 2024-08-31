@@ -5,6 +5,7 @@ use crate::error::Result;
 
 use std::io::{Read, Seek};
 
+#[allow(dead_code)]
 pub(super) fn read_from<R>(
 	_element_reader: &mut ElementReader<R>,
 	_parse_options: ParseOptions,
