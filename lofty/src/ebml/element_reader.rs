@@ -107,7 +107,7 @@ ebml_master_elements! {
 	Segment: {
 		id: 0x1853_8067,
 		children: [
-			SeekHead: { 0x114D_9B74, Master },
+			// SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
 			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
@@ -118,12 +118,12 @@ ebml_master_elements! {
 	},
 
 	// segment.seekHead
-	SeekHead: {
-		id: 0x114D_9B74,
-		children: [
-			Seek: { 0x4DBB, Master },
-		],
-	},
+	// SeekHead: {
+	// 	id: 0x114D_9B74,
+	// 	children: [
+	// 		Seek: { 0x4DBB, Master },
+	// 	],
+	// },
 
 	// segment.info
 	Info: {
@@ -190,6 +190,33 @@ ebml_master_elements! {
 		],
 	},
 
+	// segment.tags.tag.targets
+	Targets: {
+		id: 0x63C0,
+		children: [
+			TargetTypeValue: { 0x68CA, UnsignedInt },
+			TargetType: { 0x63CA, String },
+			TagTrackUID: { 0x63C5, UnsignedInt },
+			TagEditionUID: { 0x63C9, UnsignedInt },
+			TagChapterUID: { 0x63C4, UnsignedInt },
+			TagAttachmentUID: { 0x63C6, UnsignedInt },
+		],
+	},
+
+	// segment.tags.tag.simpleTag
+	SimpleTag: {
+		id: 0x67C8,
+		children: [
+			TagName: { 0x45A3, Utf8 },
+			TagLanguage: { 0x447A, String },
+			TagLanguageBCP47: { 0x447B, String },
+			TagDefault: { 0x4484, UnsignedInt },
+			TagDefaultBogus: { 0x44B4, UnsignedInt },
+			TagString: { 0x4487, Utf8 },
+			TagBinary: { 0x4485, Binary },
+		],
+	},
+
 	// segment.attachments
 	Attachments: {
 		id: 0x1941_A469,
@@ -235,8 +262,13 @@ struct ElementReaderContext {
 	/// This is set with [`ElementReader::lock`], and is used to prevent
 	/// the reader from reading past the end of the current master element.
 	locked: bool,
-	/// The depth at which we are locked to
-	lock_depth: u8,
+	/// The depths at which we are locked
+	///
+	/// When we reach the end of one lock and unlock the reader, we need
+	/// to know which depth to lock the reader at again (if any).
+	///
+	/// This will **always** be sorted, so the current lock will be at the end.
+	lock_depths: Vec<u8>,
 	lock_len: VInt,
 }
 
@@ -250,7 +282,7 @@ impl Default for ElementReaderContext {
 			// https://www.rfc-editor.org/rfc/rfc8794.html#name-ebmlmaxsizelength-element
 			max_size_length: 8,
 			locked: false,
-			lock_depth: 0,
+			lock_depths: Vec::with_capacity(MAX_DEPTH as usize),
 			lock_len: VInt::ZERO,
 		}
 	}
@@ -285,6 +317,7 @@ impl ElementReaderYield {
 	}
 }
 
+/// An EBML element reader.
 pub struct ElementReader<R> {
 	reader: R,
 	ctx: ElementReaderContext,
@@ -308,6 +341,11 @@ where
 		let ret = self.reader.read(buf)?;
 		let len = self.current_master_length();
 		self.set_current_master_length(len.saturating_sub(ret as u64));
+
+		if self.ctx.locked {
+			self.ctx.lock_len = self.ctx.lock_len.saturating_sub(ret as u64);
+		}
+
 		Ok(ret)
 	}
 }
@@ -353,10 +391,6 @@ where
 		if self.ctx.depth == 0 {
 			assert!(self.ctx.masters.is_empty());
 			return;
-		}
-
-		if self.ctx.locked {
-			self.ctx.lock_len = length;
 		}
 
 		self.ctx.masters[(self.ctx.depth - 1) as usize].remaining_length = length;
@@ -405,7 +439,7 @@ where
 	}
 
 	fn goto_previous_master(&mut self) -> Result<()> {
-		if self.ctx.depth == 0 || self.ctx.depth == self.ctx.lock_depth {
+		if self.ctx.depth == 0 || self.ctx.lock_depths.last() == Some(&self.ctx.depth) {
 			decode_err!(@BAIL Ebml, "Cannot go to previous master element, already at root")
 		}
 
@@ -468,10 +502,22 @@ where
 	pub(crate) fn lock(&mut self) {
 		self.ctx.locked = true;
 		self.ctx.lock_len = self.current_master_length();
+		self.ctx.lock_depths.push(self.ctx.depth);
 	}
 
 	pub(crate) fn unlock(&mut self) {
-		self.ctx.locked = false;
+		let _ = self.ctx.lock_depths.pop();
+
+		let [.., last] = &*self.ctx.lock_depths else {
+			// We can only ever *truly* unlock if we are at the root level.
+			log::trace!("Lock freed");
+
+			self.ctx.locked = false;
+			return;
+		};
+
+		log::trace!("Moving lock to depth: {}", last);
+		self.ctx.lock_len = self.ctx.masters[(*last - 1) as usize].remaining_length;
 	}
 
 	pub(crate) fn children(&mut self) -> ElementChildIterator<'_, R> {
@@ -595,6 +641,17 @@ where
 	}
 }
 
+/// An iterator over the children of an EBML master element.
+///
+/// This is created by calling [`ElementReader::children`].
+///
+/// This is essentially a fancy wrapper around `ElementReader` that:
+///
+/// * Automatically skips unknown elements ([`ElementReaderYield::Unknown`]).
+/// * [`Deref`]s to `ElementReader` so you can access the reader's methods.
+/// * Unlocks the reader when dropped.
+///   * If the reader is locked at multiple depths (meaning [`ElementReader::children`] was called
+///     multiple times), it will move the lock to the previously locked depth.
 pub(crate) struct ElementChildIterator<'a, R>
 where
 	R: Read,
@@ -622,10 +679,15 @@ where
 	}
 
 	pub(crate) fn master_exhausted(&self) -> bool {
-		let lock_depth = self.reader.ctx.lock_depth;
-		assert!(lock_depth < self.reader.ctx.depth);
+		let lock_depth = *self
+			.reader
+			.ctx
+			.lock_depths
+			.last()
+			.expect("a child iterator should always have a lock depth");
+		assert!(lock_depth <= self.reader.ctx.depth);
 
-		self.reader.ctx.masters[lock_depth as usize].remaining_length == 0
+		self.reader.ctx.masters[(lock_depth - 1) as usize].remaining_length == 0
 	}
 }
 

@@ -1,5 +1,5 @@
 use crate::config::{ParseOptions, ParsingMode};
-use crate::ebml::element_reader::{ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -7,15 +7,13 @@ use crate::macros::decode_err;
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
-	element_reader: &mut ElementReader<R>,
+	children_reader: &mut ElementChildIterator<'_, R>,
 	parse_options: ParseOptions,
 	properties: &mut EbmlProperties,
 ) -> Result<()>
 where
 	R: Read + Seek,
 {
-	let mut children_reader = element_reader.children();
-
 	while let Some(child) = children_reader.next()? {
 		match child {
 			ElementReaderYield::Master((id, size)) => {

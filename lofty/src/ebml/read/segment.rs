@@ -1,14 +1,10 @@
-use super::{
-	segment_attachments, segment_chapters, segment_cluster, segment_info, segment_tags,
-	segment_tracks,
-};
+use super::{segment_attachments, segment_cluster, segment_info, segment_tags, segment_tracks};
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::tag::EbmlTag;
 use crate::ebml::VInt;
 use crate::error::Result;
-use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
@@ -21,60 +17,69 @@ where
 	R: Read + Seek,
 {
 	let mut tags = None;
+	let mut children_reader = element_reader.children();
 
-	element_reader.lock();
-
-	loop {
-		let child = element_reader.next()?;
-
+	while let Some(child) = children_reader.next()? {
 		match child {
-			ElementReaderYield::Master((id, size)) => match id {
-				ElementIdent::Info if parse_options.read_properties => {
-					segment_info::read_from(element_reader, parse_options, properties)?
-				},
-				ElementIdent::Cluster if parse_options.read_properties => {
-					segment_cluster::read_from(element_reader, parse_options, properties)?
-				},
-				ElementIdent::Tracks if parse_options.read_properties => {
-					segment_tracks::read_from(element_reader, parse_options, properties)?
-				},
-				// TODO: ElementIdent::Chapters
-				ElementIdent::Tags if parse_options.read_tags => {
-					let mut tag = tags.unwrap_or_default();
+			ElementReaderYield::Master((id, size)) => {
+				match id {
+					ElementIdent::Info if parse_options.read_properties => {
+						segment_info::read_from(
+							&mut children_reader.children(),
+							parse_options,
+							properties,
+						)?;
+					},
+					ElementIdent::Cluster if parse_options.read_properties => {
+						segment_cluster::read_from(
+							&mut children_reader.children(),
+							parse_options,
+							properties,
+						)?;
+					},
+					ElementIdent::Tracks if parse_options.read_properties => {
+						segment_tracks::read_from(
+							&mut children_reader.children(),
+							parse_options,
+							properties,
+						)?;
+					},
+					// TODO: ElementIdent::Chapters
+					ElementIdent::Tags if parse_options.read_tags => {
+						let mut tag = tags.unwrap_or_default();
 
-					segment_tags::read_from(element_reader, parse_options, &mut tag)?;
+						segment_tags::read_from(
+							&mut children_reader.children(),
+							parse_options,
+							&mut tag,
+						)?;
 
-					tags = Some(tag);
-				},
-				ElementIdent::Attachments if parse_options.read_cover_art => {
-					let mut tag = tags.unwrap_or_default();
+						tags = Some(tag);
+					},
+					ElementIdent::Attachments if parse_options.read_cover_art => {
+						let mut tag = tags.unwrap_or_default();
 
-					segment_attachments::read_from(element_reader, parse_options, &mut tag)?;
+						segment_attachments::read_from(
+							&mut children_reader.children(),
+							parse_options,
+							&mut tag,
+						)?;
 
-					tags = Some(tag);
-				},
-				_ => {
-					// We do not end up using information from all of the segment
-					// elements, so we can just skip any useless ones.
+						tags = Some(tag);
+					},
+					_ => {
+						// We do not end up using information from all of the segment
+						// elements, so we can just skip any useless ones.
 
-					element_reader.skip_element(ElementHeader {
-						id: VInt(id as u64),
-						size,
-					})?;
-					continue;
-				},
+						children_reader.skip_element(ElementHeader {
+							id: VInt(id as u64),
+							size,
+						})?;
+					},
+				}
 			},
-			ElementReaderYield::Unknown(header) => {
-				element_reader.skip_element(header)?;
-				continue;
-			},
-			ElementReaderYield::Child(_) => {
-				decode_err!(@BAIL Ebml, "Segment element should only contain master elements")
-			},
-			ElementReaderYield::Eof => {
-				element_reader.unlock();
-				break;
-			},
+			ElementReaderYield::Eof => break,
+			_ => unreachable!("Unhandled child element in \\Ebml\\Segment: {child:?}"),
 		}
 	}
 
