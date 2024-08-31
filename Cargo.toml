@@ -4,6 +4,7 @@ members = [
 	"lofty",
 	"lofty_attr",
 	"ogg_pager",
+	"fuzz",
 ]
 
 [workspace.dependencies]
