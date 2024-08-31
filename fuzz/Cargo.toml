@@ -14,10 +14,6 @@ libfuzzer-sys = "0.4"
 [dependencies.lofty]
 path = "../lofty"
 
-# Prevent this from interfering with workspaces
-[workspace]
-members = ["."]
-
 [[bin]]
 name = "filetype_from_buffer"
 path = "fuzz_targets/filetype_from_buffer.rs"
