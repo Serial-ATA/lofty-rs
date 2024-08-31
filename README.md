@@ -39,6 +39,15 @@ cargo run --example custom_resolver
 
 Available [here](https://docs.rs/lofty)
 
+## Testing
+
+As some formats are complex, Lofty makes use of [test-log](https://crates.io/crates/test-log) to get
+the detailed debug/trace logging for failures. To run the tests, do:
+
+```shell
+RUST_LOG=trace cargo test
+```
+
 ## Benchmarking
 
 There are benchmarks available [here](./benches). To run them, do:
