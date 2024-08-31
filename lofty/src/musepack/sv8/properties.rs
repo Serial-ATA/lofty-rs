@@ -278,6 +278,14 @@ pub(super) fn read(
 	}
 
 	let total_samples = sample_count - beginning_silence;
+	if total_samples == 0 {
+		log::warn!(
+			"Sample count (after removing beginning silence) is 0, unable to calculate duration \
+			 and bitrate"
+		);
+		return Ok(properties);
+	}
+
 	let length = (total_samples * 1000).div_round(u64::from(sample_rate));
 
 	properties.duration = Duration::from_millis(length);
