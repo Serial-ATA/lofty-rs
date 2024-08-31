@@ -23,7 +23,7 @@ fn read_file_no_properties<A: AudioFile>(path: &str) -> bool {
 	res.is_ok()
 }
 
-#[test]
+#[test_log::test]
 fn zero_audio_aiff() {
 	let path = "tests/files/assets/zero/zero.aiff";
 
@@ -33,7 +33,7 @@ fn zero_audio_aiff() {
 	assert!(read_file_no_properties::<AiffFile>(path));
 }
 
-#[test]
+#[test_log::test]
 fn zero_audio_ape() {
 	let path = "tests/files/assets/zero/zero.ape";
 
@@ -43,14 +43,14 @@ fn zero_audio_ape() {
 	assert!(read_file_no_properties::<ApeFile>(path))
 }
 
-#[test]
+#[test_log::test]
 fn zero_audio_flac() {
 	let path = "tests/files/assets/zero/zero.flac";
 	assert!(read_file_with_properties::<FlacFile>(path));
 	assert!(read_file_no_properties::<FlacFile>(path));
 }
 
-#[test]
+#[test_log::test]
 fn zero_audio_mp3() {
 	let path = "tests/files/assets/zero/zero.mp3";
 	// A zero-size MP3 will error, since we need MPEG frames to extract audio properties
@@ -59,7 +59,7 @@ fn zero_audio_mp3() {
 	assert!(read_file_no_properties::<MpegFile>(path))
 }
 
-#[test]
+#[test_log::test]
 fn zero_audio_mp4() {
 	let path = "tests/files/assets/zero/zero.mp4";
 
@@ -71,7 +71,7 @@ fn zero_audio_mp4() {
 
 // zero-size Vorbis, Opus, and Speex files are invalid
 
-#[test]
+#[test_log::test]
 fn zero_audio_wav() {
 	let path = "tests/files/assets/zero/zero.wav";
 	// An empty "data" chunk is an error

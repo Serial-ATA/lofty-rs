@@ -3,7 +3,7 @@ use lofty::picture::PictureInformation;
 use std::fs::File;
 use std::io::Read;
 
-#[test]
+#[test_log::test]
 fn read_png() {
 	// 640x628
 	let mut f = File::open("tests/picture/assets/png_640x628.png").unwrap();
@@ -21,7 +21,7 @@ fn read_png() {
 	assert_eq!(information.num_colors, 0);
 }
 
-#[test]
+#[test_log::test]
 fn read_png_plte() {
 	// PNG image with a PLTE chunk (indexed color)
 	let mut f = File::open("tests/picture/assets/png_640x628_plte.png").unwrap();
@@ -40,7 +40,7 @@ fn read_png_plte() {
 	assert_eq!(information.num_colors, 118);
 }
 
-#[test]
+#[test_log::test]
 fn read_jpeg() {
 	let mut f = File::open("tests/picture/assets/jpeg_640x628.jpg").unwrap();
 

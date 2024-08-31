@@ -9,13 +9,13 @@ use lofty::tag::TagType;
 use std::io::Seek;
 
 // Marker test so IntelliJ Rust recognizes this as a test module
-#[test]
+#[test_log::test]
 fn fake() {}
 
 macro_rules! generate_tests {
 	($stream_version:ident, $path:literal) => {
 		paste::paste! {
-			#[test]
+			#[test_log::test]
 			fn [<read_ $stream_version>]() {
 				// Here we have an MPC file with an ID3v2, ID3v1, and an APEv2 tag
 				let file = Probe::open($path)
@@ -37,7 +37,7 @@ macro_rules! generate_tests {
 			}
 
 
-			#[test]
+			#[test_log::test]
 			fn [<write_ $stream_version>]() {
 				let mut file = temp_file!($path);
 
@@ -65,27 +65,27 @@ macro_rules! generate_tests {
 				crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
 			}
 
-			#[test]
+			#[test_log::test]
 			fn [<remove_id3v2_ $stream_version>]() {
 				crate::remove_tag!($path, TagType::Id3v2);
 			}
 
-			#[test]
+			#[test_log::test]
 			fn [<remove_id3v1_ $stream_version>]() {
 				crate::remove_tag!($path, TagType::Id3v1);
 			}
 
-			#[test]
+			#[test_log::test]
 			fn [<remove_ape_ $stream_version>]() {
 				crate::remove_tag!($path, TagType::Ape);
 			}
 
-			#[test]
+			#[test_log::test]
 			fn [<read_no_properties_ $stream_version>]() {
 				crate::no_properties_test!($path);
 			}
 
-			#[test]
+			#[test_log::test]
 			fn [<read_no_tags_ $stream_version>]() {
 				crate::no_tag_test!($path);
 			}
@@ -98,7 +98,7 @@ generate_tests!(sv7, "tests/files/assets/minimal/mpc_sv7.mpc");
 
 // We have to use `MpcFile::read_from` for stream versions <= 6
 
-#[test]
+#[test_log::test]
 fn read_sv5() {
 	let mut file = temp_file!("tests/files/assets/minimal/mpc_sv5.mpc");
 

@@ -7,7 +7,7 @@ use lofty::tag::TagType;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
 	let file = Probe::open("tests/files/assets/minimal/full_test.aiff")
@@ -25,7 +25,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::AiffText, "Bar artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/full_test.aiff");
 
@@ -58,7 +58,7 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
 }
 
-#[test]
+#[test_log::test]
 fn remove_text_chunks() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/full_test.aiff",
@@ -66,17 +66,17 @@ fn remove_text_chunks() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/minimal/full_test.aiff", TagType::Id3v2);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/full_test.aiff");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.aiff");
 }

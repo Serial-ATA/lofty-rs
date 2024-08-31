@@ -7,7 +7,7 @@ use lofty::tag::TagType;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
 	let file = Probe::open("tests/files/assets/minimal/wav_format_pcm.wav")
@@ -25,7 +25,7 @@ fn read() {
 	crate::verify_artist!(file, tag, TagType::RiffInfo, "Bar artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/wav_format_pcm.wav");
 
@@ -58,7 +58,7 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::RiffInfo, "Baz artist", 1 => file, "Bar artist");
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v2() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/wav_format_pcm.wav",
@@ -66,7 +66,7 @@ fn remove_id3v2() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn remove_riff_info() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/wav_format_pcm.wav",
@@ -74,7 +74,7 @@ fn remove_riff_info() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn issue_174_divide_by_zero() {
 	let file = Probe::open(
 		"tests/files/assets/issue_174_waveformatextensible-ieeefloat-44100Hz-mono95060.wav",
@@ -86,12 +86,12 @@ fn issue_174_divide_by_zero() {
 	assert_eq!(file.file_type(), FileType::Wav);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/wav_format_pcm.wav");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/wav_format_pcm.wav");
 }

@@ -286,7 +286,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn sylt_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
 
@@ -295,7 +295,7 @@ mod tests {
 		assert_eq!(parsed_sylt, expected(TextEncoding::Latin1));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn sylt_encode() {
 		let encoded = expected(TextEncoding::Latin1).as_bytes().unwrap();
 
@@ -305,7 +305,7 @@ mod tests {
 		assert_eq!(encoded, expected_bytes);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn sylt_decode_utf16() {
 		let cont =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.sylt");
@@ -315,7 +315,7 @@ mod tests {
 		assert_eq!(parsed_sylt, expected(TextEncoding::UTF16));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn sylt_encode_utf_16() {
 		let encoded = expected(TextEncoding::UTF16).as_bytes().unwrap();
 

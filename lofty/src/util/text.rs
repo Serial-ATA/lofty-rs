@@ -344,7 +344,7 @@ mod tests {
 
 	const TEST_STRING: &str = "l\u{00f8}ft\u{00a5}";
 
-	#[test]
+	#[test_log::test]
 	fn text_decode() {
 		// No BOM
 		let utf16_decode = super::utf16_decode_bytes(
@@ -386,7 +386,7 @@ mod tests {
 		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn text_encode() {
 		// No BOM
 		let utf16_encode = super::utf16_encode(TEST_STRING, u16::to_be_bytes, true, false);

@@ -572,7 +572,7 @@ mod tests {
 	use crate::picture::{MimeType, Picture, PictureType};
 	use std::io::Cursor;
 
-	#[test]
+	#[test_log::test]
 	fn parse_ape() {
 		let mut expected_tag = ApeTag::default();
 
@@ -636,7 +636,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn ape_re_read() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
@@ -664,7 +664,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn ape_to_tag() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.apev2");
 		let mut reader = Cursor::new(tag_bytes);
@@ -680,7 +680,7 @@ mod tests {
 		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_ape() {
 		fn verify_key(tag: &ApeTag, key: &str, expected_val: &str) {
 			assert_eq!(
@@ -701,7 +701,7 @@ mod tests {
 		verify_key(&ape_tag, "Genre", "Classical");
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_track() {
 		let mut ape = ApeTag::default();
 		let track = 1;
@@ -712,7 +712,7 @@ mod tests {
 		assert!(ape.track_total().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_track_total() {
 		let mut ape = ApeTag::default();
 		let track_total = 2;
@@ -723,7 +723,7 @@ mod tests {
 		assert_eq!(ape.track_total().unwrap(), track_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_track_and_track_total() {
 		let mut ape = ApeTag::default();
 		let track = 1;
@@ -736,7 +736,7 @@ mod tests {
 		assert_eq!(ape.track_total().unwrap(), track_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_track_total_and_track() {
 		let mut ape = ApeTag::default();
 		let track_total = 2;
@@ -749,7 +749,7 @@ mod tests {
 		assert_eq!(ape.track().unwrap(), track);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_disk() {
 		let mut ape = ApeTag::default();
 		let disk = 1;
@@ -760,7 +760,7 @@ mod tests {
 		assert!(ape.disk_total().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_disk_total() {
 		let mut ape = ApeTag::default();
 		let disk_total = 2;
@@ -771,7 +771,7 @@ mod tests {
 		assert_eq!(ape.disk_total().unwrap(), disk_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_disk_and_disk_total() {
 		let mut ape = ApeTag::default();
 		let disk = 1;
@@ -784,7 +784,7 @@ mod tests {
 		assert_eq!(ape.disk_total().unwrap(), disk_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn set_disk_total_and_disk() {
 		let mut ape = ApeTag::default();
 		let disk_total = 2;
@@ -797,7 +797,7 @@ mod tests {
 		assert_eq!(ape.disk().unwrap(), disk);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn track_number_tag_to_ape() {
 		let track_number = 1;
 
@@ -814,7 +814,7 @@ mod tests {
 		assert!(tag.track_total().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn track_total_tag_to_ape() {
 		let track_total = 2;
 
@@ -831,7 +831,7 @@ mod tests {
 		assert_eq!(tag.track_total().unwrap(), track_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn track_number_and_track_total_tag_to_ape() {
 		let track_number = 1;
 		let track_total = 2;
@@ -854,7 +854,7 @@ mod tests {
 		assert_eq!(tag.track_total().unwrap(), track_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn disk_number_tag_to_ape() {
 		let disk_number = 1;
 
@@ -871,7 +871,7 @@ mod tests {
 		assert!(tag.disk_total().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn disk_total_tag_to_ape() {
 		let disk_total = 2;
 
@@ -888,7 +888,7 @@ mod tests {
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn disk_number_and_disk_total_tag_to_ape() {
 		let disk_number = 1;
 		let disk_total = 2;
@@ -911,7 +911,7 @@ mod tests {
 		assert_eq!(tag.disk_total().unwrap(), disk_total);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn skip_reading_cover_art() {
 		let p = Picture::new_unchecked(
 			PictureType::CoverFront,

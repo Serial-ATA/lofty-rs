@@ -293,7 +293,7 @@ where
 	audio_file.properties().clone()
 }
 
-#[test]
+#[test_log::test]
 fn aac_properties() {
 	assert_eq!(
 		get_properties::<AacFile>("tests/files/assets/minimal/full_test.aac"),
@@ -301,7 +301,7 @@ fn aac_properties() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn aiff_properties() {
 	assert_eq!(
 		get_properties::<AiffFile>("tests/files/assets/minimal/full_test.aiff"),
@@ -309,7 +309,7 @@ fn aiff_properties() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn ape_properties() {
 	assert_eq!(
 		get_properties::<ApeFile>("tests/files/assets/minimal/full_test.ape"),
@@ -317,7 +317,7 @@ fn ape_properties() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn flac_properties() {
 	assert_eq!(
 		get_properties::<FlacFile>("tests/files/assets/minimal/full_test.flac"),
@@ -325,7 +325,7 @@ fn flac_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp1_properties() {
 	assert_eq!(
 		get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp1"),
@@ -333,7 +333,7 @@ fn mp1_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp2_properties() {
 	assert_eq!(
 		get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp2"),
@@ -341,7 +341,7 @@ fn mp2_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp3_properties() {
 	assert_eq!(
 		get_properties::<MpegFile>("tests/files/assets/minimal/full_test.mp3"),
@@ -349,7 +349,7 @@ fn mp3_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp4_aac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_aac.m4a"),
@@ -357,7 +357,7 @@ fn mp4_aac_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp4_alac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_alac.m4a"),
@@ -365,7 +365,7 @@ fn mp4_alac_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp4_als_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_als.mp4"),
@@ -373,7 +373,7 @@ fn mp4_als_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mp4_flac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
@@ -381,7 +381,7 @@ fn mp4_flac_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mpc_sv5_properties() {
 	assert_eq!(
 		get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv5.mpc"),
@@ -389,7 +389,7 @@ fn mpc_sv5_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mpc_sv7_properties() {
 	assert_eq!(
 		get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv7.mpc"),
@@ -397,7 +397,7 @@ fn mpc_sv7_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn mpc_sv8_properties() {
 	assert_eq!(
 		get_properties::<MpcFile>("tests/files/assets/minimal/mpc_sv8.mpc"),
@@ -405,7 +405,7 @@ fn mpc_sv8_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn opus_properties() {
 	assert_eq!(
 		get_properties::<OpusFile>("tests/files/assets/minimal/full_test.opus"),
@@ -413,7 +413,7 @@ fn opus_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn speex_properties() {
 	assert_eq!(
 		get_properties::<SpeexFile>("tests/files/assets/minimal/full_test.spx"),
@@ -421,7 +421,7 @@ fn speex_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn vorbis_properties() {
 	assert_eq!(
 		get_properties::<VorbisFile>("tests/files/assets/minimal/full_test.ogg"),
@@ -429,7 +429,7 @@ fn vorbis_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn wav_properties() {
 	assert_eq!(
 		get_properties::<WavFile>("tests/files/assets/minimal/wav_format_pcm.wav"),
@@ -437,7 +437,7 @@ fn wav_properties() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn wavpack_properties() {
 	assert_eq!(
 		get_properties::<WavPackFile>("tests/files/assets/minimal/full_test.wv"),

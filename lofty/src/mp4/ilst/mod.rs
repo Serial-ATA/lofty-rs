@@ -841,7 +841,7 @@ mod tests {
 		assert_eq!(atom.data().next().unwrap(), data);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn parse_ilst() {
 		let mut expected_tag = Ilst::default();
 
@@ -911,7 +911,7 @@ mod tests {
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn ilst_re_read() {
 		let parsed_tag = read_ilst_strict("tests/tags/assets/ilst/test.ilst");
 
@@ -934,7 +934,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn ilst_to_tag() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/ilst/test.ilst");
 		let len = tag.len();
@@ -957,7 +957,7 @@ mod tests {
 		assert_eq!(tag.get_string(&ItemKey::DiscTotal), Some("2"));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_ilst() {
 		let mut tag = crate::tag::utils::test_utils::create_tag(TagType::Mp4Ilst);
 
@@ -1009,7 +1009,7 @@ mod tests {
 		)
 	}
 
-	#[test]
+	#[test_log::test]
 	fn issue_34() {
 		let ilst = read_ilst_strict("tests/tags/assets/ilst/issue_34.ilst");
 
@@ -1028,7 +1028,7 @@ mod tests {
 		)
 	}
 
-	#[test]
+	#[test_log::test]
 	fn advisory_rating() {
 		let ilst = read_ilst_strict("tests/tags/assets/ilst/advisory_rating.ilst");
 
@@ -1041,7 +1041,7 @@ mod tests {
 		assert_eq!(ilst.advisory_rating(), Some(AdvisoryRating::Explicit));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn trailing_padding() {
 		const ILST_START: usize = 97;
 		const ILST_END: usize = 131;
@@ -1106,7 +1106,7 @@ mod tests {
 		assert!(Mp4File::read_from(&mut file, ParseOptions::new().read_properties(false)).is_ok());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn read_non_full_meta_atom() {
 		let file_bytes = read_path("tests/files/assets/non_full_meta_atom.m4a");
 		let file = Mp4File::read_from(
@@ -1118,7 +1118,7 @@ mod tests {
 		assert!(file.ilst_tag.is_some());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn write_non_full_meta_atom() {
 		// This is testing writing to a file with a non-full meta atom
 		// We will *not* write a non-full meta atom
@@ -1147,7 +1147,7 @@ mod tests {
 		);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn multi_value_atom() {
 		let ilst = read_ilst_strict("tests/tags/assets/ilst/multi_value_atom.ilst");
 		let artist_atom = ilst.get(&AtomIdent::Fourcc(*b"\xa9ART")).unwrap();
@@ -1168,7 +1168,7 @@ mod tests {
 		);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn multi_value_roundtrip() {
 		let mut tag = Tag::new(TagType::Mp4Ilst);
 		tag.insert_text(ItemKey::TrackArtist, "TrackArtist 1".to_owned());
@@ -1231,7 +1231,7 @@ mod tests {
 		assert_eq!(tag.items, split_tag.items);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn zero_sized_ilst() {
 		let file = Mp4File::read_from(
 			&mut Cursor::new(test_utils::read_path("tests/files/assets/zero/zero.ilst")),
@@ -1242,7 +1242,7 @@ mod tests {
 		assert_eq!(file.ilst(), Some(&Ilst::default()));
 	}
 
-	#[test]
+	#[test_log::test]
 	fn merge_insert() {
 		let mut ilst = Ilst::new();
 
@@ -1258,7 +1258,7 @@ mod tests {
 		assert_eq!(ilst.len(), 1);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn invalid_atom_type() {
 		let ilst = read_ilst_strict("tests/tags/assets/ilst/invalid_atom_type.ilst");
 
@@ -1272,7 +1272,7 @@ mod tests {
 		assert_eq!(ilst.disk_total().unwrap(), 2);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn invalid_string_encoding() {
 		let ilst = read_ilst_bestattempt("tests/tags/assets/ilst/invalid_string_encoding.ilst");
 
@@ -1287,7 +1287,7 @@ mod tests {
 		assert!(ilst.album().is_none());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn flag_item_conversion() {
 		let mut tag = Tag::new(TagType::Mp4Ilst);
 		tag.insert_text(ItemKey::FlagCompilation, "1".to_owned());
@@ -1312,7 +1312,7 @@ mod tests {
 		);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn special_items_roundtrip() {
 		let mut tag = Ilst::new();
 
@@ -1360,7 +1360,7 @@ mod tests {
 		assert_eq!(tag_re_read, generic_tag_re_read);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn skip_reading_cover_art() {
 		let p = Picture::new_unchecked(
 			PictureType::CoverFront,

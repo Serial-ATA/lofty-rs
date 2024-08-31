@@ -463,7 +463,7 @@ mod tests {
 	use crate::prelude::*;
 	use crate::tag::{Tag, TagType};
 
-	#[test]
+	#[test_log::test]
 	fn parse_id3v1() {
 		let expected_tag = Id3v1Tag {
 			title: Some(String::from("Foo title")),
@@ -481,7 +481,7 @@ mod tests {
 		assert_eq!(expected_tag, parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn id3v2_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
@@ -496,7 +496,7 @@ mod tests {
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn id3v1_to_tag() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let id3v1 = crate::id3::v1::read::parse_id3v1(tag_bytes.try_into().unwrap());
@@ -506,7 +506,7 @@ mod tests {
 		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 	}
 
-	#[test]
+	#[test_log::test]
 	fn tag_to_id3v1() {
 		let tag = crate::tag::utils::test_utils::create_tag(TagType::Id3v1);
 

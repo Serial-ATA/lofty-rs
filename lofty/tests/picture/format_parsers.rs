@@ -26,7 +26,7 @@ fn create_original_picture() -> Picture {
 	original_pic
 }
 
-#[test]
+#[test_log::test]
 fn id3v24_apic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
@@ -36,7 +36,7 @@ fn id3v24_apic() {
 	assert_eq!(create_original_picture(), apic.picture);
 }
 
-#[test]
+#[test_log::test]
 fn as_apic_bytes() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apic");
 
@@ -48,7 +48,7 @@ fn as_apic_bytes() {
 	assert_eq!(buf, original_as_apic);
 }
 
-#[test]
+#[test_log::test]
 fn id3v22_pic() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
@@ -58,7 +58,7 @@ fn id3v22_pic() {
 	assert_eq!(create_original_picture(), pic.picture);
 }
 
-#[test]
+#[test_log::test]
 fn as_apic_bytes_v2() {
 	let buf = get_buf("tests/picture/assets/png_640x628.pic");
 
@@ -70,7 +70,7 @@ fn as_apic_bytes_v2() {
 	assert_eq!(buf, original_as_pic);
 }
 
-#[test]
+#[test_log::test]
 fn ape_binary_item() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apev2");
 
@@ -79,7 +79,7 @@ fn ape_binary_item() {
 	assert_eq!(create_original_picture(), pic);
 }
 
-#[test]
+#[test_log::test]
 fn as_ape_bytes() {
 	let buf = get_buf("tests/picture/assets/png_640x628.apev2");
 
@@ -90,7 +90,7 @@ fn as_ape_bytes() {
 	assert_eq!(buf, original_as_ape);
 }
 
-#[test]
+#[test_log::test]
 fn flac_metadata_block_picture() {
 	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
 
@@ -99,7 +99,7 @@ fn flac_metadata_block_picture() {
 	assert_eq!(create_original_picture(), pic);
 }
 
-#[test]
+#[test_log::test]
 fn as_flac_bytes() {
 	let buf = get_buf("tests/picture/assets/png_640x628.vorbis");
 

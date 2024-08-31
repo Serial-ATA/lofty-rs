@@ -96,7 +96,7 @@ impl F80 {
 mod tests {
 	use super::*;
 
-	#[test]
+	#[test_log::test]
 	fn test_div_round() {
 		#[derive(Debug)]
 		struct TestEntry {
@@ -129,7 +129,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn test_f80() {
 		fn cmp_float_nearly_equal(a: f64, b: f64) -> bool {
 			if a.is_infinite() && b.is_infinite() {

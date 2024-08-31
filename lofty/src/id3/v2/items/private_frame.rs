@@ -113,7 +113,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn priv_decode() {
 		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.priv");
 
@@ -124,7 +124,7 @@ mod tests {
 		assert_eq!(parsed_priv, expected());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn priv_encode() {
 		let encoded = expected().as_bytes().unwrap();
 

@@ -787,7 +787,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn integer_shrinking_unsigned() {
 		int_test! {
 			func: bytes_to_occupy_uint,

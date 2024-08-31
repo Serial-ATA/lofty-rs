@@ -41,7 +41,7 @@ fn dump_and_re_read(tag: &Id3v2Tag, write_options: WriteOptions) -> Id3v2Tag {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn parse_id3v2() {
 	let mut expected_tag = Id3v2Tag::default();
 
@@ -98,7 +98,7 @@ fn parse_id3v2() {
 	assert_eq!(expected_tag, parsed_tag);
 }
 
-#[test]
+#[test_log::test]
 fn id3v2_re_read() {
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
@@ -120,7 +120,7 @@ fn id3v2_re_read() {
 	assert_eq!(parsed_tag, temp_parsed_tag);
 }
 
-#[test]
+#[test_log::test]
 fn id3v2_to_tag() {
 	let id3v2 = read_tag("tests/tags/assets/id3v2/test.id3v24");
 
@@ -129,7 +129,7 @@ fn id3v2_to_tag() {
 	crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 }
 
-#[test]
+#[test_log::test]
 fn fail_write_bad_frame() {
 	let mut tag = Id3v2Tag::default();
 
@@ -147,7 +147,7 @@ fn fail_write_bad_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn tag_to_id3v2() {
 	fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
 		let frame = tag.get(&FrameId::Valid(Cow::Borrowed(id)));
@@ -256,7 +256,7 @@ fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 	tag
 }
 
-#[test]
+#[test_log::test]
 fn id3v24_full() {
 	let tag = create_full_test_tag(Id3v2Version::V4);
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v24");
@@ -264,7 +264,7 @@ fn id3v24_full() {
 	assert_eq!(tag, parsed_tag);
 }
 
-#[test]
+#[test_log::test]
 fn id3v23_full() {
 	let mut tag = create_full_test_tag(Id3v2Version::V3);
 	let mut parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v23");
@@ -277,7 +277,7 @@ fn id3v23_full() {
 	assert_eq!(tag, parsed_tag);
 }
 
-#[test]
+#[test_log::test]
 fn id3v22_full() {
 	let tag = create_full_test_tag(Id3v2Version::V2);
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test_full.id3v22");
@@ -285,7 +285,7 @@ fn id3v22_full() {
 	assert_eq!(tag, parsed_tag);
 }
 
-#[test]
+#[test_log::test]
 fn id3v24_footer() {
 	let mut tag = create_full_test_tag(Id3v2Version::V4);
 	tag.flags.footer = true;
@@ -306,7 +306,7 @@ fn id3v24_footer() {
 	assert_eq!(writer[3..10], writer[writer.len() - 7..])
 }
 
-#[test]
+#[test_log::test]
 fn issue_36() {
 	let picture_data = vec![0; 200];
 
@@ -343,7 +343,7 @@ fn issue_36() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn popm_frame() {
 	let parsed_tag = read_tag("tests/tags/assets/id3v2/test_popm.id3v24");
 
@@ -361,7 +361,7 @@ fn popm_frame() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn multi_value_frame_to_tag() {
 	let mut tag = Id3v2Tag::default();
 
@@ -372,7 +372,7 @@ fn multi_value_frame_to_tag() {
 	assert_eq!(&collected_artists, &["foo", "bar", "baz"])
 }
 
-#[test]
+#[test_log::test]
 fn multi_item_tag_to_id3v2() {
 	let mut tag = Tag::new(TagType::Id3v2);
 
@@ -393,12 +393,12 @@ fn multi_item_tag_to_id3v2() {
 	assert_eq!(tag.artist().as_deref(), Some("foo/bar/baz"))
 }
 
-#[test]
+#[test_log::test]
 fn utf16_txxx_with_single_bom() {
 	let _ = read_tag("tests/tags/assets/id3v2/issue_53.id3v24");
 }
 
-#[test]
+#[test_log::test]
 fn replaygain_tag_conversion() {
 	let mut tag = Id3v2Tag::default();
 	tag.insert(Frame::UserText(ExtendedTextFrame::new(
@@ -419,7 +419,7 @@ fn replaygain_tag_conversion() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn multi_value_roundtrip() {
 	let mut tag = Tag::new(TagType::Id3v2);
 	// 1st: Multi-valued text frames
@@ -486,7 +486,7 @@ fn multi_value_roundtrip() {
 	assert_eq!(tag.items, split_tag.items);
 }
 
-#[test]
+#[test_log::test]
 fn comments() {
 	let mut tag = Id3v2Tag::default();
 	let encoding = TextEncoding::Latin1;
@@ -525,7 +525,7 @@ fn comments() {
 		.is_some());
 }
 
-#[test]
+#[test_log::test]
 fn txxx_wxxx_tag_conversion() {
 	let txxx_frame = Frame::UserText(ExtendedTextFrame::new(
 		TextEncoding::UTF8,
@@ -568,7 +568,7 @@ fn txxx_wxxx_tag_conversion() {
 	assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
 }
 
-#[test]
+#[test_log::test]
 fn user_defined_frames_conversion() {
 	let mut id3v2 = Id3v2Tag::default();
 	id3v2.insert(Frame::UserText(ExtendedTextFrame::new(
@@ -616,7 +616,7 @@ fn user_defined_frames_conversion() {
 	assert_eq!(id3v2, reparsed);
 }
 
-#[test]
+#[test_log::test]
 fn set_track() {
 	let mut id3v2 = Id3v2Tag::default();
 	let track = 1;
@@ -627,7 +627,7 @@ fn set_track() {
 	assert!(id3v2.track_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn set_track_total() {
 	let mut id3v2 = Id3v2Tag::default();
 	let track_total = 2;
@@ -638,7 +638,7 @@ fn set_track_total() {
 	assert_eq!(id3v2.track_total().unwrap(), track_total);
 }
 
-#[test]
+#[test_log::test]
 fn set_track_and_track_total() {
 	let mut id3v2 = Id3v2Tag::default();
 	let track = 1;
@@ -651,7 +651,7 @@ fn set_track_and_track_total() {
 	assert_eq!(id3v2.track_total().unwrap(), track_total);
 }
 
-#[test]
+#[test_log::test]
 fn set_track_total_and_track() {
 	let mut id3v2 = Id3v2Tag::default();
 	let track_total = 2;
@@ -664,7 +664,7 @@ fn set_track_total_and_track() {
 	assert_eq!(id3v2.track().unwrap(), track);
 }
 
-#[test]
+#[test_log::test]
 fn set_disk() {
 	let mut id3v2 = Id3v2Tag::default();
 	let disk = 1;
@@ -675,7 +675,7 @@ fn set_disk() {
 	assert!(id3v2.disk_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn set_disk_total() {
 	let mut id3v2 = Id3v2Tag::default();
 	let disk_total = 2;
@@ -686,7 +686,7 @@ fn set_disk_total() {
 	assert_eq!(id3v2.disk_total().unwrap(), disk_total);
 }
 
-#[test]
+#[test_log::test]
 fn set_disk_and_disk_total() {
 	let mut id3v2 = Id3v2Tag::default();
 	let disk = 1;
@@ -699,7 +699,7 @@ fn set_disk_and_disk_total() {
 	assert_eq!(id3v2.disk_total().unwrap(), disk_total);
 }
 
-#[test]
+#[test_log::test]
 fn set_disk_total_and_disk() {
 	let mut id3v2 = Id3v2Tag::default();
 	let disk_total = 2;
@@ -712,7 +712,7 @@ fn set_disk_total_and_disk() {
 	assert_eq!(id3v2.disk().unwrap(), disk);
 }
 
-#[test]
+#[test_log::test]
 fn track_number_tag_to_id3v2() {
 	let track_number = 1;
 
@@ -729,7 +729,7 @@ fn track_number_tag_to_id3v2() {
 	assert!(tag.track_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn track_total_tag_to_id3v2() {
 	let track_total = 2;
 
@@ -746,7 +746,7 @@ fn track_total_tag_to_id3v2() {
 	assert_eq!(tag.track_total().unwrap(), track_total);
 }
 
-#[test]
+#[test_log::test]
 fn track_number_and_track_total_tag_to_id3v2() {
 	let track_number = 1;
 	let track_total = 2;
@@ -769,7 +769,7 @@ fn track_number_and_track_total_tag_to_id3v2() {
 	assert_eq!(tag.track_total().unwrap(), track_total);
 }
 
-#[test]
+#[test_log::test]
 fn disk_number_tag_to_id3v2() {
 	let disk_number = 1;
 
@@ -786,7 +786,7 @@ fn disk_number_tag_to_id3v2() {
 	assert!(tag.disk_total().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn disk_total_tag_to_id3v2() {
 	let disk_total = 2;
 
@@ -803,7 +803,7 @@ fn disk_total_tag_to_id3v2() {
 	assert_eq!(tag.disk_total().unwrap(), disk_total);
 }
 
-#[test]
+#[test_log::test]
 fn disk_number_and_disk_total_tag_to_id3v2() {
 	let disk_number = 1;
 	let disk_total = 2;
@@ -842,7 +842,7 @@ fn create_tag_with_trck_and_tpos_frame(content: &'static str) -> Tag {
 	tag.into()
 }
 
-#[test]
+#[test_log::test]
 fn valid_trck_and_tpos_frame() {
 	fn assert_valid(content: &'static str, number: Option<u32>, total: Option<u32>) {
 		let tag = create_tag_with_trck_and_tpos_frame(content);
@@ -862,7 +862,7 @@ fn valid_trck_and_tpos_frame() {
 	assert_valid("1 / 2", Some(1), Some(2));
 }
 
-#[test]
+#[test_log::test]
 fn invalid_trck_and_tpos_frame() {
 	fn assert_invalid(content: &'static str) {
 		let tag = create_tag_with_trck_and_tpos_frame(content);
@@ -884,7 +884,7 @@ fn invalid_trck_and_tpos_frame() {
 	assert_invalid("0x1/0x2");
 }
 
-#[test]
+#[test_log::test]
 fn ufid_frame_with_musicbrainz_record_id() {
 	let mut id3v2 = Id3v2Tag::default();
 	let unknown_ufid_frame =
@@ -936,7 +936,7 @@ fn ufid_frame_with_musicbrainz_record_id() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn get_set_user_defined_text() {
 	let description = String::from("FOO_BAR");
 	let content = String::from("Baz!\0Qux!");
@@ -988,7 +988,7 @@ fn get_set_user_defined_text() {
 	assert!(id3v2.is_empty());
 }
 
-#[test]
+#[test_log::test]
 fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
 	// Issue #255
 	let tag = read_tag("tests/tags/assets/id3v2/multiple_composers.id3v24");
@@ -1001,7 +1001,7 @@ fn read_multiple_composers_should_not_fail_with_bad_frame_length() {
 	assert_eq!(composers.next(), None)
 }
 
-#[test]
+#[test_log::test]
 fn trim_end_nulls_when_reading_frame_content() {
 	// Issue #273
 	// Tag written by mid3v2. All frames contain null-terminated UTF-8 text
@@ -1034,24 +1034,24 @@ fn id3v2_tag_with_genre(value: &str) -> Id3v2Tag {
 	tag
 }
 
-#[test]
+#[test_log::test]
 fn genre_text() {
 	let tag = id3v2_tag_with_genre("Dream Pop");
 	assert_eq!(tag.genre(), Some(Cow::Borrowed("Dream Pop")));
 }
-#[test]
+#[test_log::test]
 fn genre_id_brackets() {
 	let tag = id3v2_tag_with_genre("(21)");
 	assert_eq!(tag.genre(), Some(Cow::Borrowed("Ska")));
 }
 
-#[test]
+#[test_log::test]
 fn genre_id_numeric() {
 	let tag = id3v2_tag_with_genre("21");
 	assert_eq!(tag.genre(), Some(Cow::Borrowed("Ska")));
 }
 
-#[test]
+#[test_log::test]
 fn genre_id_multiple_joined() {
 	let tag = id3v2_tag_with_genre("(51)(39)");
 	assert_eq!(
@@ -1060,7 +1060,7 @@ fn genre_id_multiple_joined() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn genres_id_multiple() {
 	let tag = id3v2_tag_with_genre("(51)(39)");
 	let mut genres = tag.genres().unwrap();
@@ -1069,7 +1069,7 @@ fn genres_id_multiple() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn genres_id_multiple_into_tag() {
 	let id3v2 = id3v2_tag_with_genre("(51)(39)");
 	let tag: Tag = id3v2.into();
@@ -1079,7 +1079,7 @@ fn genres_id_multiple_into_tag() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn genres_null_separated() {
 	let tag = id3v2_tag_with_genre("Samba-rock\0MPB\0Funk");
 	let mut genres = tag.genres().unwrap();
@@ -1089,7 +1089,7 @@ fn genres_null_separated() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn genres_id_textual_refinement() {
 	let tag = id3v2_tag_with_genre("(4)Eurodisco");
 	let mut genres = tag.genres().unwrap();
@@ -1098,7 +1098,7 @@ fn genres_id_textual_refinement() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn genres_id_bracketed_refinement() {
 	let tag = id3v2_tag_with_genre("(26)(55)((I think...)");
 	let mut genres = tag.genres().unwrap();
@@ -1108,7 +1108,7 @@ fn genres_id_bracketed_refinement() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn genres_id_remix_cover() {
 	let tag = id3v2_tag_with_genre("(0)(RX)(CR)");
 	let mut genres = tag.genres().unwrap();
@@ -1118,7 +1118,7 @@ fn genres_id_remix_cover() {
 	assert_eq!(genres.next(), None);
 }
 
-#[test]
+#[test_log::test]
 fn tipl_round_trip() {
 	let mut tag = Id3v2Tag::default();
 	let mut tipl = KeyValueFrame::new(
@@ -1166,7 +1166,7 @@ fn tipl_round_trip() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn flag_item_conversion() {
 	let mut tag = Tag::new(TagType::Id3v2);
 	tag.insert_text(ItemKey::FlagCompilation, "1".to_owned());
@@ -1183,7 +1183,7 @@ fn flag_item_conversion() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn itunes_advisory_roundtrip() {
 	use crate::mp4::{AdvisoryRating, Ilst};
 
@@ -1205,7 +1205,7 @@ fn itunes_advisory_roundtrip() {
 	assert_eq!(tag.advisory_rating(), Some(AdvisoryRating::Explicit));
 }
 
-#[test]
+#[test_log::test]
 fn timestamp_roundtrip() {
 	let mut tag = Id3v2Tag::default();
 	tag.insert(Frame::Timestamp(TimestampFrame::new(
@@ -1246,7 +1246,7 @@ fn timestamp_roundtrip() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn special_items_roundtrip() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1311,7 +1311,7 @@ fn special_items_roundtrip() {
 	assert_eq!(tag_re_read, generic_tag_re_read);
 }
 
-#[test]
+#[test_log::test]
 fn preserve_comment_lang_description_on_conversion() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1342,7 +1342,7 @@ fn preserve_comment_lang_description_on_conversion() {
 }
 
 // TODO: Remove this once we have a better solution
-#[test]
+#[test_log::test]
 fn hold_back_4_character_txxx_description() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1355,7 +1355,7 @@ fn hold_back_4_character_txxx_description() {
 	assert_eq!(tag.len(), 1);
 }
 
-#[test]
+#[test_log::test]
 fn skip_reading_cover_art() {
 	let p = Picture::new_unchecked(
 		PictureType::CoverFront,
@@ -1377,7 +1377,7 @@ fn skip_reading_cover_art() {
 	assert!(id3v2.artist().is_some());
 }
 
-#[test]
+#[test_log::test]
 fn remove_id3v24_frames_on_id3v23_save() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1401,7 +1401,7 @@ fn remove_id3v24_frames_on_id3v23_save() {
 	assert_eq!(tag_re_read.frames.len(), 0);
 }
 
-#[test]
+#[test_log::test]
 fn change_text_encoding_on_id3v23_save() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1426,7 +1426,7 @@ fn change_text_encoding_on_id3v23_save() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn split_tdor_on_id3v23_save() {
 	let mut tag = Id3v2Tag::new();
 
@@ -1465,7 +1465,7 @@ fn split_tdor_on_id3v23_save() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn split_tdrc_on_id3v23_save() {
 	let mut tag = Id3v2Tag::new();
 

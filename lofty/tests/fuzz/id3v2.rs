@@ -1,6 +1,6 @@
 use lofty::id3::v2::FrameFlags;
 
-#[test]
+#[test_log::test]
 fn unreachable1() {
 	// https://github.com/Serial-ATA/lofty-rs/issues/295
 	let data = [1, 0, 0, 0];
@@ -16,7 +16,7 @@ fn unreachable1() {
 		);
 }
 
-#[test]
+#[test_log::test]
 fn overflow1() {
 	// https://github.com/Serial-ATA/lofty-rs/issues/295
 	let data = [

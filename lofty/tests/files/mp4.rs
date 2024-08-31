@@ -7,7 +7,7 @@ use lofty::tag::TagType;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn read() {
 	// This file contains an ilst atom
 	let file = Probe::open("tests/files/assets/minimal/m4a_codec_aac.m4a")
@@ -22,7 +22,7 @@ fn read() {
 	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
 }
 
-#[test]
+#[test_log::test]
 fn write() {
 	let mut file = temp_file!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 
@@ -51,7 +51,7 @@ fn write() {
 	crate::set_artist!(tagged_file, tag_mut, TagType::Mp4Ilst, "Bar artist", 1 => file, "Foo artist");
 }
 
-#[test]
+#[test_log::test]
 fn remove() {
 	crate::remove_tag!(
 		"tests/files/assets/minimal/m4a_codec_aac.m4a",
@@ -59,12 +59,12 @@ fn remove() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn read_no_properties() {
 	crate::no_properties_test!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 }
 
-#[test]
+#[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/m4a_codec_aac.m4a");
 }

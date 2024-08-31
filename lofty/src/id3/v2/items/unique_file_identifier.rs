@@ -121,7 +121,7 @@ mod tests {
 
 	use std::borrow::Cow;
 
-	#[test]
+	#[test_log::test]
 	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
 		use crate::config::ParsingMode;
 		use crate::id3::v2::UniqueFileIdentifierFrame;

@@ -401,7 +401,7 @@ mod tests {
 
 	use std::io::{Cursor, Read, Seek, SeekFrom};
 
-	#[test]
+	#[test_log::test]
 	fn search_for_frame_sync() {
 		fn test(data: &[u8], expected_result: Option<u64>) {
 			use super::search_for_frame_sync;
@@ -413,7 +413,7 @@ mod tests {
 		test(&[0x01, 0xFF], None);
 	}
 
-	#[test]
+	#[test_log::test]
 	#[rustfmt::skip]
 	fn rev_search_for_frame_header() {
 		fn test<R: Read + Seek>(reader: &mut R, expected_reader_position: Option<u64>) {
