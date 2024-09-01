@@ -327,7 +327,7 @@ mod tests {
 		],
 	];
 
-	#[test]
+	#[test_log::test]
 	fn bytes_to_vint() {
 		for representation in VALID_REPRESENTATIONS_OF_2 {
 			assert_eq!(
@@ -339,7 +339,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn vint_to_bytes() {
 		for representation in VALID_REPRESENTATIONS_OF_2 {
 			let vint = VInt::parse(&mut Cursor::new(representation), 8).unwrap();
@@ -350,7 +350,7 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn large_integers_should_fail() {
 		assert!(VInt::from_u64(u64::MAX).is_err());
 
@@ -361,12 +361,12 @@ mod tests {
 		}
 	}
 
-	#[test]
+	#[test_log::test]
 	fn maximum_possible_representable_vint() {
 		assert!(VInt::from_u64(u64::MAX >> 8).is_ok());
 	}
 
-	#[test]
+	#[test_log::test]
 	fn octet_lengths() {
 		let n = u64::MAX >> 8;
 		for i in 1u8..=7 {
