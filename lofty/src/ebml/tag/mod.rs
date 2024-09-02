@@ -1,5 +1,10 @@
 pub(crate) mod attached_file;
+pub(crate) mod simple_tag;
+pub(crate) mod target_type;
+
 pub use attached_file::*;
+pub use simple_tag::*;
+pub use target_type::*;
 
 use crate::config::WriteOptions;
 use crate::error::LoftyError;
