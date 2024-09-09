@@ -1402,6 +1402,20 @@ impl MergeTag for SplitTagRemainder {
 			}
 		}
 
+		// Multi-valued TXXX key-to-frame mappings
+		#[allow(clippy::single_element_loop)]
+		for item_key in [&ItemKey::TrackArtists] {
+			let frame_id = item_key
+				.map_key(TagType::Id3v2, false)
+				.expect("valid frame id");
+			if let Some(text) = join_text_items(&mut tag, [item_key]) {
+				let frame = new_user_text_frame(String::from(frame_id), text);
+				// Optimization: No duplicate checking according to the preconditions
+				debug_assert!(!merged.frames.contains(&frame));
+				merged.frames.push(frame);
+			}
+		}
+
 		// Multi-valued Label/Publisher key-to-frame mapping
 		{
 			let frame_id = ItemKey::Label

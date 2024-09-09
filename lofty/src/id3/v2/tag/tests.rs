@@ -1534,3 +1534,23 @@ fn split_tdrc_on_id3v23_save() {
 		.expect("Expected TIME frame");
 	assert_eq!(time, "1408");
 }
+
+#[test_log::test]
+fn artists_tag_conversion() {
+	const ARTISTS: &[&str] = &["Foo", "Bar", "Baz"];
+
+	let mut tag = Tag::new(TagType::Id3v2);
+
+	for artist in ARTISTS {
+		tag.push(TagItem::new(
+			ItemKey::TrackArtists,
+			ItemValue::Text((*artist).to_string()),
+		));
+	}
+
+	let tag: Id3v2Tag = tag.into();
+	let txxx_artists = tag.get_user_text("ARTISTS").unwrap();
+	let id3v2_artists = txxx_artists.split('\0').collect::<Vec<_>>();
+
+	assert_eq!(id3v2_artists, ARTISTS);
+}
