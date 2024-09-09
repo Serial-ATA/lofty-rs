@@ -250,6 +250,7 @@ struct MasterElementContext {
 const MAX_DEPTH: u8 = 16;
 const ROOT_DEPTH: u8 = 1;
 
+#[derive(Debug)]
 struct ElementReaderContext {
 	depth: u8,
 	masters: Vec<MasterElementContext>,
@@ -439,7 +440,7 @@ where
 	}
 
 	fn goto_previous_master(&mut self) -> Result<()> {
-		if self.ctx.depth == 0 || self.ctx.lock_depths.last() == Some(&self.ctx.depth) {
+		if self.ctx.depth == ROOT_DEPTH || self.ctx.lock_depths.last() == Some(&self.ctx.depth) {
 			decode_err!(@BAIL Ebml, "Cannot go to previous master element, already at root")
 		}
 
@@ -500,6 +501,8 @@ where
 	}
 
 	pub(crate) fn lock(&mut self) {
+		log::trace!("New lock at depth: {}", self.ctx.depth);
+
 		self.ctx.locked = true;
 		self.ctx.lock_len = self.current_master_length();
 		self.ctx.lock_depths.push(self.ctx.depth);
