@@ -1,6 +1,6 @@
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
-use crate::ebml::{EbmlTag, TargetType};
+use crate::ebml::{EbmlTag, Language, SimpleTag, TagValue, TargetType};
 use crate::error::Result;
 
 use crate::macros::decode_err;
@@ -19,6 +19,7 @@ where
 			ElementReaderYield::Master((ElementIdent::Tag, _size)) => {
 				read_tag(&mut children_reader.children(), tag)?
 			},
+			ElementReaderYield::Eof => break,
 			_ => unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tags: {child:?}"),
 		}
 	}
@@ -31,14 +32,25 @@ where
 	R: Read + Seek,
 {
 	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((ElementIdent::Targets, _size)) => {
+		let ElementReaderYield::Master((master, _size)) = child else {
+			match child {
+				ElementReaderYield::Eof => break,
+				_ => {
+					unreachable!("Unhandled child element in \\Ebml\\Segment\\Tags\\Tag: {child:?}")
+				},
+			}
+		};
+
+		match master {
+			ElementIdent::Targets => {
 				let _ = read_targets(&mut children_reader.children())?;
 			},
-			ElementReaderYield::Master((ElementIdent::SimpleTag, _size)) => {
-				read_simple_tag(&mut children_reader.children())?
+			ElementIdent::SimpleTag => {
+				let _ = read_simple_tag(&mut children_reader.children())?;
 			},
-			_ => unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tags: {child:?}"),
+			_ => {
+				unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tags\\Tag: {master:?}");
+			},
 		}
 	}
 
@@ -66,33 +78,38 @@ where
 	let mut attachment_uid = Vec::new();
 
 	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Child((child, size)) => match child.ident {
-				ElementIdent::TargetTypeValue => {
-					target_type_value = Some(children_reader.read_unsigned_int(size.value())?);
-				},
-				ElementIdent::TargetType => {
-					target_type = Some(children_reader.read_string(size.value())?);
-				},
-				ElementIdent::TagTrackUID => {
-					track_uid.push(children_reader.read_unsigned_int(size.value())?);
-				},
-				ElementIdent::TagEditionUID => {
-					edition_uid.push(children_reader.read_unsigned_int(size.value())?);
-				},
-				ElementIdent::TagChapterUID => {
-					chapter_uid.push(children_reader.read_unsigned_int(size.value())?);
-				},
-				ElementIdent::TagAttachmentUID => {
-					attachment_uid.push(children_reader.read_unsigned_int(size.value())?);
-				},
+		let ElementReaderYield::Child((child, size)) = child else {
+			match child {
+				ElementReaderYield::Eof => break,
 				_ => unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Tags\\Targets: {child:?}"
+					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\Targets: {child:?}"
 				),
+			}
+		};
+
+		match child.ident {
+			ElementIdent::TargetTypeValue => {
+				target_type_value = Some(children_reader.read_unsigned_int(size.value())?);
 			},
-			ElementReaderYield::Eof => break,
+			ElementIdent::TargetType => {
+				target_type = Some(children_reader.read_string(size.value())?);
+			},
+			ElementIdent::TagTrackUID => {
+				track_uid.push(children_reader.read_unsigned_int(size.value())?);
+			},
+			ElementIdent::TagEditionUID => {
+				edition_uid.push(children_reader.read_unsigned_int(size.value())?);
+			},
+			ElementIdent::TagChapterUID => {
+				chapter_uid.push(children_reader.read_unsigned_int(size.value())?);
+			},
+			ElementIdent::TagAttachmentUID => {
+				attachment_uid.push(children_reader.read_unsigned_int(size.value())?);
+			},
 			_ => {
-				unreachable!("Unhandled child element in \\Ebml\\Segment\\Tags\\Targets: {child:?}")
+				unreachable!(
+					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\Targets: {child:?}"
+				)
 			},
 		}
 	}
@@ -116,9 +133,89 @@ where
 	})
 }
 
-fn read_simple_tag<R>(_children_reader: &mut ElementChildIterator<'_, R>) -> Result<()>
+fn read_simple_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<SimpleTag>
 where
 	R: Read + Seek,
 {
-	unimplemented!("\\Ebml\\Segment\\Tags\\SimpleTag")
+	let mut name = None;
+	let mut language = None;
+	let mut default = false;
+	let mut value = None;
+
+	while let Some(child) = children_reader.next()? {
+		let ElementReaderYield::Child((child, size)) = child else {
+			match child {
+				ElementReaderYield::Eof => break,
+				_ => unreachable!(
+					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
+				),
+			}
+		};
+
+		match child.ident {
+			ElementIdent::TagName => {
+				name = Some(children_reader.read_string(size.value())?);
+			},
+			ElementIdent::TagLanguage => {
+				if language.is_some() {
+					log::warn!("Duplicate language found in SimpleTag, ignoring");
+					children_reader.skip(size.value())?;
+					continue;
+				}
+
+				language = Some(Language::Iso639_2(
+					children_reader.read_string(size.value())?,
+				));
+			},
+			ElementIdent::TagLanguageBCP47 => {
+				if language.is_some() {
+					log::warn!("Duplicate language found in SimpleTag, ignoring");
+					children_reader.skip(size.value())?;
+					continue;
+				}
+
+				language = Some(Language::Bcp47(children_reader.read_string(size.value())?));
+			},
+			ElementIdent::TagDefault => {
+				default = children_reader.read_flag(size.value())?;
+			},
+			ElementIdent::TagString => {
+				if value.is_some() {
+					log::warn!("Duplicate value found in SimpleTag, ignoring");
+					children_reader.skip(size.value())?;
+					continue;
+				}
+
+				value = Some(TagValue::String(children_reader.read_string(size.value())?));
+			},
+			ElementIdent::TagBinary => {
+				if value.is_some() {
+					log::warn!("Duplicate value found in SimpleTag, ignoring");
+					children_reader.skip(size.value())?;
+					continue;
+				}
+
+				value = Some(TagValue::Binary(children_reader.read_binary(size.value())?));
+			},
+			_ => {
+				unreachable!(
+					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
+				);
+			},
+		}
+	}
+
+	let Some(name) = name else {
+		decode_err!(
+			@BAIL Ebml,
+			"SimpleTag is missing the required TagName element"
+		);
+	};
+
+	Ok(SimpleTag {
+		name,
+		language,
+		default,
+		value,
+	})
 }
