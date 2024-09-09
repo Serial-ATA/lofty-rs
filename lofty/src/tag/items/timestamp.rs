@@ -79,6 +79,8 @@ impl Timestamp {
 	/// The maximum length of a timestamp in bytes
 	pub const MAX_LENGTH: usize = 19;
 
+	const SEPARATORS: [u8; 3] = [b'-', b'T', b':'];
+
 	/// Read a [`Timestamp`]
 	///
 	/// NOTE: This will take [`Self::MAX_LENGTH`] bytes from the reader. Ensure that it only contains the timestamp
@@ -94,10 +96,8 @@ impl Timestamp {
 		macro_rules! read_segment {
 			($expr:expr) => {
 				match $expr {
+					Ok((_, 0)) => break,
 					Ok((val, _)) => Some(val as u8),
-					Err(LoftyError {
-						kind: ErrorKind::Io(io),
-					}) if matches!(io.kind(), std::io::ErrorKind::UnexpectedEof) => break,
 					Err(e) => return Err(e.into()),
 				}
 			};
@@ -118,6 +118,12 @@ impl Timestamp {
 			return Ok(None);
 		}
 
+		// It is valid for a timestamp to contain no separators, but this will lower our tolerance
+		// for common mistakes. We ignore the "T" separator here because it is **ALWAYS** required.
+		let timestamp_contains_separators = content
+			.iter()
+			.any(|&b| b != b'T' && Self::SEPARATORS.contains(&b));
+
 		let reader = &mut &content[..];
 
 		// We need to very that the year is exactly 4 bytes long. This doesn't matter for other segments.
@@ -129,14 +135,33 @@ impl Timestamp {
 		}
 
 		timestamp.year = year;
+		if reader.is_empty() {
+			return Ok(Some(timestamp));
+		}
 
 		#[allow(clippy::never_loop)]
 		loop {
-			timestamp.month = read_segment!(Self::segment::<2>(reader, Some(b'-'), parse_mode));
-			timestamp.day = read_segment!(Self::segment::<2>(reader, Some(b'-'), parse_mode));
+			timestamp.month = read_segment!(Self::segment::<2>(
+				reader,
+				timestamp_contains_separators.then_some(b'-'),
+				parse_mode
+			));
+			timestamp.day = read_segment!(Self::segment::<2>(
+				reader,
+				timestamp_contains_separators.then_some(b'-'),
+				parse_mode
+			));
 			timestamp.hour = read_segment!(Self::segment::<2>(reader, Some(b'T'), parse_mode));
-			timestamp.minute = read_segment!(Self::segment::<2>(reader, Some(b':'), parse_mode));
-			timestamp.second = read_segment!(Self::segment::<2>(reader, Some(b':'), parse_mode));
+			timestamp.minute = read_segment!(Self::segment::<2>(
+				reader,
+				timestamp_contains_separators.then_some(b':'),
+				parse_mode
+			));
+			timestamp.second = read_segment!(Self::segment::<2>(
+				reader,
+				timestamp_contains_separators.then_some(b':'),
+				parse_mode
+			));
 			break;
 		}
 
@@ -148,7 +173,9 @@ impl Timestamp {
 		sep: Option<u8>,
 		parse_mode: ParsingMode,
 	) -> Result<(u16, usize)> {
-		const SEPARATORS: [u8; 3] = [b'-', b'T', b':'];
+		if content.is_empty() {
+			return Ok((0, 0));
+		}
 
 		if let Some(sep) = sep {
 			let byte = content.read_u8()?;
@@ -181,7 +208,10 @@ impl Timestamp {
 				//
 				// The easiest way to check for a missing digit is to see if we're just eating into
 				// the next segment's separator.
-				if sep.is_some() && SEPARATORS.contains(&i) && parse_mode != ParsingMode::Strict {
+				if sep.is_some()
+					&& Self::SEPARATORS.contains(&i)
+					&& parse_mode != ParsingMode::Strict
+				{
 					break;
 				}
 
@@ -369,5 +399,71 @@ mod tests {
 
 		let empty_timestamp_strict = Timestamp::parse(&mut "".as_bytes(), ParsingMode::Strict);
 		assert!(empty_timestamp_strict.is_err());
+	}
+
+	#[test_log::test]
+	fn timestamp_no_separators() {
+		let timestamp = "20240603T140849";
+		let parsed_timestamp =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::BestAttempt).unwrap();
+		assert_eq!(parsed_timestamp, Some(expected()));
+	}
+
+	#[test_log::test]
+	fn timestamp_decode_partial_no_separators() {
+		let partial_timestamps: [(&[u8], Timestamp); 6] = [
+			(
+				b"2024",
+				Timestamp {
+					year: 2024,
+					..Timestamp::default()
+				},
+			),
+			(
+				b"202406",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					..Timestamp::default()
+				},
+			),
+			(
+				b"20240603",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					day: Some(3),
+					..Timestamp::default()
+				},
+			),
+			(
+				b"20240603T14",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					day: Some(3),
+					hour: Some(14),
+					..Timestamp::default()
+				},
+			),
+			(
+				b"20240603T1408",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					day: Some(3),
+					hour: Some(14),
+					minute: Some(8),
+					..Timestamp::default()
+				},
+			),
+			(b"20240603T140849", expected()),
+		];
+
+		for (data, expected) in partial_timestamps {
+			let parsed_timestamp = Timestamp::parse(&mut &data[..], ParsingMode::Strict)
+				.unwrap_or_else(|e| panic!("{e}: {}", std::str::from_utf8(data).unwrap()));
+			assert_eq!(parsed_timestamp, Some(expected));
+		}
 	}
 }
