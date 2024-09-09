@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))
+- **Timestamp**: Support timestamps without separators (ex. "20240906" vs "2024-09-06") ([issue](https://github.com/Serial-ATA/lofty-rs/issues/452)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/453))
 
 ## [0.21.1] - 2024-08-28
 
