@@ -88,6 +88,7 @@ gen_map!(
 	"ARTISTSORT"                   => TrackArtistSortOrder,
 	"Album Artist" | "ALBUMARTIST" => AlbumArtist,
 	"Artist"                       => TrackArtist,
+	"Artists"                      => TrackArtists,
 	"Arranger"                     => Arranger,
 	"Writer"                       => Writer,
 	"Composer"                     => Composer,
@@ -154,6 +155,7 @@ gen_map!(
 	"TSOC"                         => ComposerSortOrder,
 	"TPE2"                         => AlbumArtist,
 	"TPE1"                         => TrackArtist,
+	"ARTISTS"                      => TrackArtists,
 	"TEXT"                         => Writer,
 	"TCOM"                         => Composer,
 	"TPE3"                         => Conductor,
@@ -249,6 +251,7 @@ gen_map!(
 	"soco"                                               => ComposerSortOrder,
 	"aART"                                               => AlbumArtist,
 	"\u{a9}ART"                                          => TrackArtist,
+	"----:com.apple.iTunes:ARTISTS"                      => TrackArtists,
 	"\u{a9}wrt"                                          => Composer,
 	"\u{a9}dir"                                          => Director,
 	"----:com.apple.iTunes:CONDUCTOR"                    => Conductor,
@@ -349,6 +352,7 @@ gen_map!(
 	"ARTISTSORT"                              => TrackArtistSortOrder,
 	"ALBUMARTIST"                             => AlbumArtist,
 	"ARTIST"                                  => TrackArtist,
+	"ARTISTS"                                 => TrackArtists,
 	"ARRANGER"                                => Arranger,
 	"AUTHOR" | "WRITER"                       => Writer,
 	"COMPOSER"                                => Composer,
@@ -520,6 +524,11 @@ gen_item_keys!(
 		// People & Organizations
 		AlbumArtist,
 		TrackArtist,
+		/// The name of each credited artist
+		///
+		/// This tag is meant to appear multiple times in a tag, so it should be retrieved with
+		/// [`Tag::get_strings`] or [`Tag::take_strings`].
+		TrackArtists,
 		Arranger,
 		Writer,
 		Composer,
