@@ -1379,7 +1379,6 @@ impl MergeTag for SplitTagRemainder {
 			&ItemKey::Composer,
 			&ItemKey::Conductor,
 			&ItemKey::Writer,
-			&ItemKey::Director,
 			&ItemKey::Lyricist,
 			&ItemKey::MusicianCredits,
 			&ItemKey::InternetRadioStationName,
@@ -1403,8 +1402,11 @@ impl MergeTag for SplitTagRemainder {
 		}
 
 		// Multi-valued TXXX key-to-frame mappings
-		#[allow(clippy::single_element_loop)]
-		for item_key in [&ItemKey::TrackArtists] {
+		for item_key in [
+			&ItemKey::TrackArtists,
+			&ItemKey::Director,
+			&ItemKey::CatalogNumber,
+		] {
 			let frame_id = item_key
 				.map_key(TagType::Id3v2, false)
 				.expect("valid frame id");
@@ -1521,6 +1523,7 @@ impl MergeTag for SplitTagRemainder {
 			));
 		}
 
+		// iTunes advisory rating
 		'rate: {
 			if let Some(advisory_rating) = tag.take_strings(&ItemKey::ParentalAdvisory).next() {
 				let Ok(rating) = advisory_rating.parse::<u8>() else {
