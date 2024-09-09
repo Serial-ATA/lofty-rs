@@ -528,6 +528,9 @@ gen_item_keys!(
 		///
 		/// This tag is meant to appear multiple times in a tag, so it should be retrieved with
 		/// [`Tag::get_strings`] or [`Tag::take_strings`].
+		///
+		/// [`Tag::get_strings`]: crate::tag::Tag::get_strings
+		/// [`Tag::take_strings`]: crate::tag::Tag::take_strings
 		TrackArtists,
 		Arranger,
 		Writer,
