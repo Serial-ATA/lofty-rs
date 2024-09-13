@@ -574,7 +574,7 @@ pub(crate) struct GenresIter<'a> {
 }
 
 impl<'a> GenresIter<'a> {
-	pub fn new(value: &'a str, preserve_indexes: bool) -> GenresIter<'_> {
+	pub fn new(value: &'a str, preserve_indexes: bool) -> GenresIter<'a> {
 		GenresIter {
 			value,
 			pos: 0,

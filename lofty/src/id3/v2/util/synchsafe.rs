@@ -78,6 +78,25 @@ impl<R> UnsynchronizedStream<R> {
 	pub fn into_inner(self) -> R {
 		self.reader
 	}
+
+	/// Get a reference to the inner reader
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
+	/// use std::io::Cursor;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let reader = Cursor::new([0xFF, 0x00, 0x1A]);
+	/// let unsynchronized_reader = UnsynchronizedStream::new(reader);
+	///
+	/// let reader = unsynchronized_reader.get_ref();
+	/// assert_eq!(reader.position(), 0);
+	/// # Ok(()) }
+	pub fn get_ref(&self) -> &R {
+		&self.reader
+	}
 }
 
 impl<R: Read> Read for UnsynchronizedStream<R> {

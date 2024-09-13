@@ -21,6 +21,8 @@ pub(super) fn parse_content<R: Read>(
     version: Id3v2Version,
 	parse_mode: ParsingMode,
 ) -> Result<Option<Frame<'static>>> {
+	log::trace!("Parsing frame content for ID: {}", id);
+	
 	Ok(match id.as_str() {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
