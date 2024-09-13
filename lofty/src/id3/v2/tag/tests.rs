@@ -1554,3 +1554,32 @@ fn artists_tag_conversion() {
 
 	assert_eq!(id3v2_artists, ARTISTS);
 }
+
+#[test_log::test]
+fn ensure_frame_skipping_within_bounds() {
+	// This tag has an invalid `TDEN` frame, but it is skippable in BestAttempt/Relaxed parsing mode.
+	// We should be able to continue reading the tag as normal, reaching the other `TDTG` frame.
+
+	let path = "tests/tags/assets/id3v2/skippable_frame_otherwise_valid.id3v24";
+	let tag = read_tag_with_options(
+		&read_path(path),
+		ParseOptions::new().parsing_mode(ParsingMode::BestAttempt),
+	);
+
+	assert_eq!(tag.len(), 1);
+	assert_eq!(
+		tag.get(&FrameId::Valid(Cow::Borrowed("TDTG"))),
+		Some(&Frame::Timestamp(TimestampFrame::new(
+			FrameId::Valid(Cow::Borrowed("TDTG")),
+			TextEncoding::Latin1,
+			Timestamp {
+				year: 2014,
+				month: Some(6),
+				day: Some(10),
+				hour: Some(2),
+				minute: Some(16),
+				second: Some(10),
+			},
+		)))
+	);
+}

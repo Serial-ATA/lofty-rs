@@ -4,18 +4,18 @@ use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
+use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
 
 use std::io::Read;
 
-use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) enum ParsedFrame<'a> {
 	Next(Frame<'a>),
-	Skip { size: u32 },
+	Skip,
 	Eof,
 }
 
@@ -46,16 +46,19 @@ impl<'a> ParsedFrame<'a> {
 				match parse_options.parsing_mode {
 					ParsingMode::Strict => return Err(err),
 					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
+						log::warn!("Failed to read frame header, skipping: {}", err);
+
 						// Skip this frame and continue reading
-						// TODO: Log error?
-						return Ok(Self::Skip { size });
+						skip_frame(reader, size)?;
+						return Ok(Self::Skip);
 					},
 				}
 			},
 		};
 
 		if !parse_options.read_cover_art && id == ATTACHED_PICTURE_ID {
-			return Ok(Self::Skip { size });
+			skip_frame(reader, size)?;
+			return Ok(Self::Skip);
 		}
 
 		if size == 0 {
@@ -64,7 +67,9 @@ impl<'a> ParsedFrame<'a> {
 			}
 
 			log::debug!("Encountered a zero length frame, skipping");
-			return Ok(Self::Skip { size });
+
+			skip_frame(reader, size)?;
+			return Ok(Self::Skip);
 		}
 
 		// Get the encryption method symbol
@@ -252,6 +257,26 @@ fn parse_frame<R: Read>(
 ) -> Result<ParsedFrame<'static>> {
 	match parse_content(reader, id, flags, version, parse_mode)? {
 		Some(frame) => Ok(ParsedFrame::Next(frame)),
-		None => Ok(ParsedFrame::Skip { size }),
+		None => {
+			skip_frame(reader, size)?;
+			Ok(ParsedFrame::Skip)
+		},
 	}
+}
+
+// Note that this is only ever given the full frame size.
+//
+// In the context of `ParsedFrame::read`, the reader is restricted to the frame content, so this
+// is a safe operation, regardless of where we are in parsing the frame.
+//
+// This assumption *CANNOT* be made in other contexts.
+fn skip_frame(reader: &mut impl Read, size: u32) -> Result<()> {
+	log::trace!("Skipping frame of size {}", size);
+
+	let size = u64::from(size);
+	let mut reader = reader.take(size);
+	let skipped = std::io::copy(&mut reader, &mut std::io::sink())?;
+	debug_assert!(skipped <= size);
+
+	Ok(())
 }

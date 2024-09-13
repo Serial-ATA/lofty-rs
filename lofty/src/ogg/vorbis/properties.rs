@@ -121,7 +121,7 @@ where
 		let last_page_abgp = last_page.header().abgp;
 
 		if properties.sample_rate > 0 {
-			let total_samples = last_page_abgp.saturating_sub(first_page_abgp) as u128;
+			let total_samples = u128::from(last_page_abgp.saturating_sub(first_page_abgp));
 
 			// Best case scenario
 			if total_samples > 0 {

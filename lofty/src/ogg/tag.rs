@@ -210,7 +210,7 @@ impl VorbisComments {
 	/// let all_artists = vorbis_comments.get_all("ARTIST").collect::<Vec<&str>>();
 	/// assert_eq!(all_artists, vec!["Foo artist", "Bar artist", "Baz artist"]);
 	/// ```
-	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + Clone + '_ {
+	pub fn get_all<'a>(&'a self, key: &'a str) -> impl Iterator<Item = &'a str> + Clone + 'a {
 		self.items
 			.iter()
 			.filter_map(move |(k, v)| (k.eq_ignore_ascii_case(key)).then_some(v.as_str()))

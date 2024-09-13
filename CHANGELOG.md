@@ -7,15 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **ItemKey**: `ItemKey::TrackArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/issues/454))
+- **ItemKey**: `ItemKey::TrackArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/454))
   - This is a multi-value item that stores each artist for a track. It should be retrieved with `Tag::get_strings` or `Tag::take_strings`.
   - For example, a track has `ItemKey::TrackArtist` = "Foo & Bar", then `ItemKey::TrackArtists` = ["Foo", "Bar"].
   - See <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#artists>
+- **UnsynchronizedStream**: `UnsynchronizedStream::get_ref()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
 
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))
 - **Timestamp**: Support timestamps without separators (ex. "20240906" vs "2024-09-06") ([issue](https://github.com/Serial-ATA/lofty-rs/issues/452)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/453))
-- **ID3v2**: `ItemKey::Director` will now be written correctly as a TXXX frame ([PR](https://github.com/Serial-ATA/lofty-rs/issues/454))
+- **ID3v2**:
+  - `ItemKey::Director` will now be written correctly as a TXXX frame ([PR](https://github.com/Serial-ATA/lofty-rs/issues/454))
+  - When skipping invalid frames in `ParsingMode::{BestAttempt, Relaxed}`, the parser will no longer be able to go out of the bounds
+    of the frame content ([issue](https://github.com/Serial-ATA/lofty-rs/issues/458)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
 
 ## [0.21.1] - 2024-08-28
 
