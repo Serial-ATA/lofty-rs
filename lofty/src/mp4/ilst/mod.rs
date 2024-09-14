@@ -1,3 +1,4 @@
+pub(super) mod advisory_rating;
 pub(super) mod atom;
 pub(super) mod constants;
 pub(super) mod read;
@@ -16,6 +17,7 @@ use crate::tag::{
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 use atom::{AdvisoryRating, Atom, AtomData};
+use advisory_rating::AdvisoryRating;
 
 use std::borrow::Cow;
 use std::io::Write;
