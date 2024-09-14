@@ -1,5 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::{nested_atom, skip_atom, AtomReader};
+use super::read::{find_child_atom, skip_atom, AtomReader};
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
@@ -369,7 +369,7 @@ fn read_minf<R>(
 where
 	R: Read + Seek,
 {
-	let Some(stbl) = nested_atom(reader, len, b"stbl", parse_mode)? else {
+	let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
 		return Ok(None);
 	};
 

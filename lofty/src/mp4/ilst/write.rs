@@ -6,7 +6,7 @@ use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, ATOM_HEADER_LEN, FOURCC_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
-use crate::mp4::read::{atom_tree, meta_is_full, nested_atom, verify_mp4, AtomReader};
+use crate::mp4::read::{atom_tree, find_child_atom, meta_is_full, verify_mp4, AtomReader};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::mp4::AtomData;
 use crate::picture::{MimeType, Picture};
@@ -74,10 +74,10 @@ where
 	let ilst = build_ilst(&mut tag.atoms)?;
 	let remove_tag = ilst.is_empty();
 
-	let udta = nested_atom(
+	let udta = find_child_atom(
 		&mut write_handle,
 		moov_len,
-		b"udta",
+		*b"udta",
 		ParseOptions::DEFAULT_PARSING_MODE,
 	)?;
 
@@ -102,10 +102,10 @@ where
 		existing_udta_size = udta.len;
 		new_udta_size = existing_udta_size;
 
-		let meta = nested_atom(
+		let meta = find_child_atom(
 			&mut write_handle,
 			udta.len,
-			b"meta",
+			*b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
 		)?;
 

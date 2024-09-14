@@ -113,10 +113,14 @@ where
 	Ok(())
 }
 
-pub(super) fn nested_atom<R>(
+/// Finds the first child atom with the given fourcc
+///
+/// * `len` is the length of the parent atom
+/// * `expected` is the fourcc of the child atom to find
+pub(super) fn find_child_atom<R>(
 	reader: &mut R,
 	mut len: u64,
-	expected: &[u8],
+	expected: [u8; 4],
 	parse_mode: ParsingMode,
 ) -> Result<Option<AtomInfo>>
 where
@@ -130,7 +134,7 @@ where
 		};
 
 		match atom.ident {
-			AtomIdent::Fourcc(ref fourcc) if fourcc == expected => {
+			AtomIdent::Fourcc(fourcc) if fourcc == expected => {
 				ret = Some(atom);
 				break;
 			},
