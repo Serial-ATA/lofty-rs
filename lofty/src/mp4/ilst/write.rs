@@ -767,7 +767,7 @@ fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriterCompanion<'_>) -> 
 	// Version
 	writer.write_u8(0)?;
 
-	writer.write_uint::<BigEndian>(u64::from(flags), 3)?;
+	writer.write_u24::<BigEndian>(u32::from(flags))?;
 
 	// Locale
 	writer.write_all(&[0; 4])?;

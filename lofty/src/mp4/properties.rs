@@ -652,7 +652,7 @@ where
 					// 15 means the sample rate is stored in the next 24 bits
 					0x0F => {
 						let sample_rate;
-						let explicit_sample_rate = stsd.read_u24::<BigEndian>()?;
+						let explicit_sample_rate = stsd.read_u24()?;
 						if extended_object_type {
 							sample_rate = explicit_sample_rate >> 1;
 							channel_conf = ((explicit_sample_rate >> 4) & 0x0F) as u8;
