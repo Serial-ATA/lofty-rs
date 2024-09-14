@@ -284,13 +284,13 @@ pub enum AtomData {
 	///
 	/// NOTE: This isn't an official data type, but multiple flag atoms exist,
 	///       so this makes them easier to represent. The *real* underlying type
-	///       is `SignedInteger`.
+	///       is [`Self::SignedInteger`].
 	Bool(bool),
 	/// Unknown data
 	///
 	/// Due to the number of possible types, there are many
 	/// **specified** types that are going to fall into this
-	/// variant.
+	/// variant. See [`DataType`] for a list of known types.
 	Unknown {
 		/// The code, or type of the item
 		code: DataType,
