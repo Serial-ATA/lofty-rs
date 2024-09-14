@@ -1,12 +1,11 @@
-use super::constants::{
-	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
-};
+use super::constants::WELL_KNOWN_TYPE_SET;
+use super::data_type::DataType;
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
-use crate::mp4::atom_info::AtomInfo;
+use crate::mp4::atom_info::{AtomInfo, ATOM_HEADER_LEN};
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_unneeded, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
@@ -204,7 +203,7 @@ fn parse_data_inner<R>(
 	reader: &mut AtomReader<R>,
 	parsing_mode: ParsingMode,
 	atom_info: &AtomInfo,
-) -> Result<Option<Vec<(u32, Vec<u8>)>>>
+) -> Result<Option<Vec<(DataType, Vec<u8>)>>>
 where
 	R: Read + Seek,
 {
@@ -237,13 +236,14 @@ where
 			break;
 		}
 
-		// We don't care about the version
-		let _version = reader.read_u8()?;
+		let Some(data_type) = parse_type_indicator(reader, parsing_mode)? else {
+			log::warn!("Skipping atom with unknown type set");
+			let remaining_atom_len = next_atom.len - (ATOM_HEADER_LEN + 1);
 
-		let mut flags = [0; 3];
-		reader.read_exact(&mut flags)?;
-
-		let flags = u32::from_be_bytes([0, flags[0], flags[1], flags[2]]);
+			reader.seek(SeekFrom::Current(remaining_atom_len as i64))?;
+			pos += remaining_atom_len;
+			continue;
+		};
 
 		// We don't care about the locale
 		reader.seek(SeekFrom::Current(4))?;
@@ -254,7 +254,7 @@ where
 				if content_len > 0 {
 					let mut content = try_vec![0; content_len];
 					reader.read_exact(&mut content)?;
-					ret.push((flags, content));
+					ret.push((data_type, content));
 				} else {
 					log::warn!("Skipping empty \"data\" atom");
 				}
@@ -268,7 +268,9 @@ where
 						"Skipping unexpected atom {actual_ident:?}, expected {expected_ident:?}",
 						actual_ident = next_atom.ident,
 						expected_ident = DATA_ATOM_IDENT
-					)
+					);
+
+					reader.seek(SeekFrom::Current((next_atom.len - 16) as i64))?;
 				},
 			},
 		}
@@ -278,6 +280,29 @@ where
 
 	let ret = if ret.is_empty() { None } else { Some(ret) };
 	Ok(ret)
+}
+
+fn parse_type_indicator<R>(
+	reader: &mut AtomReader<R>,
+	parsing_mode: ParsingMode,
+) -> Result<Option<DataType>>
+where
+	R: Read + Seek,
+{
+	// The type indicator is formed of four bytes split between two fields. The first byte indicates
+	// the set of types from which the type is drawn. The second through fourth byte forms the second
+	// field and its interpretation depends upon the value in the first field.
+
+	let type_set = reader.read_u8()?;
+	if type_set != WELL_KNOWN_TYPE_SET {
+		if parsing_mode == ParsingMode::Strict {
+			err!(BadAtom("Unknown type set in data atom"))
+		}
+
+		return Ok(None);
+	}
+
+	Ok(Some(DataType::from(reader.read_u24()?)))
 }
 
 fn parse_uint(bytes: &[u8]) -> Result<u32> {
@@ -317,15 +342,15 @@ where
 		let mut data = Vec::new();
 
 		let len = atom_data.len();
-		for (flags, value) in atom_data {
-			let mime_type = match flags {
+		for (data_type, value) in atom_data {
+			let mime_type = match data_type {
 				// Type 0 is implicit
-				RESERVED => None,
+				DataType::Reserved => None,
 				// GIF is deprecated
-				12 => Some(MimeType::Gif),
-				JPEG => Some(MimeType::Jpeg),
-				PNG => Some(MimeType::Png),
-				BMP => Some(MimeType::Bmp),
+				DataType::Gif => Some(MimeType::Gif),
+				DataType::Jpeg => Some(MimeType::Jpeg),
+				DataType::Png => Some(MimeType::Png),
+				DataType::Bmp => Some(MimeType::Bmp),
 				_ => err!(BadAtom("\"covr\" atom has an unknown type")),
 			};
 
@@ -357,13 +382,13 @@ where
 	Ok(())
 }
 
-fn interpret_atom_content(flags: u32, content: Vec<u8>) -> Result<AtomData> {
+fn interpret_atom_content(flags: DataType, content: Vec<u8>) -> Result<AtomData> {
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	Ok(match flags {
-		UTF8 => AtomData::UTF8(utf8_decode(content)?),
-		UTF16 => AtomData::UTF16(utf16_decode_bytes(&content, u16::from_be_bytes)?),
-		BE_SIGNED_INTEGER => AtomData::SignedInteger(parse_int(&content)?),
-		BE_UNSIGNED_INTEGER => AtomData::UnsignedInteger(parse_uint(&content)?),
+		DataType::Utf8 => AtomData::UTF8(utf8_decode(content)?),
+		DataType::Utf16 => AtomData::UTF16(utf16_decode_bytes(&content, u16::from_be_bytes)?),
+		DataType::BeSignedInteger => AtomData::SignedInteger(parse_int(&content)?),
+		DataType::BeUnsignedInteger => AtomData::UnsignedInteger(parse_uint(&content)?),
 		code => AtomData::Unknown {
 			code,
 			data: content,

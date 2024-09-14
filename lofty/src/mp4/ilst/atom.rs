@@ -1,5 +1,6 @@
 use crate::error::Result;
 use crate::macros::err;
+use crate::mp4::ilst::data_type::DataType;
 use crate::mp4::AtomIdent;
 use crate::picture::Picture;
 
@@ -213,7 +214,10 @@ impl<'a> Atom<'a> {
 	pub(crate) fn unknown_implicit(ident: AtomIdent<'_>, data: Vec<u8>) -> Self {
 		Self {
 			ident: ident.into_owned(),
-			data: AtomDataStorage::Single(AtomData::Unknown { code: 0, data }),
+			data: AtomDataStorage::Single(AtomData::Unknown {
+				code: DataType::Reserved,
+				data,
+			}),
 		}
 	}
 
@@ -247,8 +251,7 @@ impl Debug for Atom<'_> {
 /// NOTES:
 ///
 /// * This only covers the most common data types.
-///   See the list of [well-known data types](https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW34)
-///   for codes.
+///   See the list of [DataType] for all known types.
 /// * There are only two variants for integers, which
 ///   will come from codes `21` and `22`. All other integer
 ///   types will be stored as [`AtomData::Unknown`], refer
@@ -290,51 +293,52 @@ pub enum AtomData {
 	/// variant.
 	Unknown {
 		/// The code, or type of the item
-		code: u32,
+		code: DataType,
 		/// The binary data of the atom
 		data: Vec<u8>,
 	},
 }
 
-/// The parental advisory rating
-///
-/// See also:
-/// <https://docs.mp3tag.de/mapping/#itunesadvisory>
-/// <https://exiftool.org/TagNames/QuickTime.html>
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum AdvisoryRating {
-	/// *Inoffensive*/*None* (0)
-	Inoffensive,
-	/// *Explicit* (1 or 4)
+impl AtomData {
+	/// Get the [`DataType`] of the atom
 	///
-	/// In the past Apple used the value 4 for explicit content
-	/// that has later been replaced by 1. Both values are considered
-	/// as valid when reading but only the newer value 1 is written.
-	Explicit,
-	/// *Clean*/*Edited* (2)
-	Clean,
-}
-
-impl AdvisoryRating {
-	/// Returns the rating as it appears in the `rtng` atom
-	pub fn as_u8(&self) -> u8 {
+	/// Note that for [`AtomData::Picture`], the type is determined by the picture's MIME type.
+	/// If the MIME type is unknown (or unset), the data type will be [`DataType::Reserved`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::{AtomData, DataType};
+	/// use lofty::picture::{MimeType, Picture, PictureType};
+	///
+	/// let data = AtomData::UTF8(String::from("foo"));
+	/// assert_eq!(data.data_type(), DataType::Utf8);
+	///
+	/// let data = AtomData::SignedInteger(42);
+	/// assert_eq!(data.data_type(), DataType::BeSignedInteger);
+	///
+	/// let data = AtomData::Picture(Picture::new_unchecked(
+	/// 	PictureType::CoverFront,
+	/// 	Some(MimeType::Jpeg),
+	/// 	None,
+	/// 	Vec::new(),
+	/// ));
+	/// assert_eq!(data.data_type(), DataType::Jpeg);
+	/// ```
+	pub fn data_type(&self) -> DataType {
 		match self {
-			AdvisoryRating::Inoffensive => 0,
-			AdvisoryRating::Explicit => 1,
-			AdvisoryRating::Clean => 2,
-		}
-	}
-}
+			AtomData::UTF8(_) => DataType::Utf8,
+			AtomData::UTF16(_) => DataType::Utf16,
+			AtomData::SignedInteger(_) | AtomData::Bool(_) => DataType::BeSignedInteger,
+			AtomData::UnsignedInteger(_) => DataType::BeUnsignedInteger,
+			AtomData::Picture(p) => {
+				let Some(mime) = p.mime_type() else {
+					return DataType::Reserved;
+				};
 
-impl TryFrom<u8> for AdvisoryRating {
-	type Error = u8;
-
-	fn try_from(input: u8) -> std::result::Result<Self, Self::Error> {
-		match input {
-			0 => Ok(Self::Inoffensive),
-			1 | 4 => Ok(Self::Explicit),
-			2 => Ok(Self::Clean),
-			value => Err(value),
+				DataType::from(mime)
+			},
+			AtomData::Unknown { code, .. } => *code,
 		}
 	}
 }

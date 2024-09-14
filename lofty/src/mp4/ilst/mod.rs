@@ -1,6 +1,7 @@
 pub(super) mod advisory_rating;
 pub(super) mod atom;
 pub(super) mod constants;
+pub(super) mod data_type;
 pub(super) mod read;
 mod r#ref;
 pub(crate) mod write;
@@ -16,8 +17,9 @@ use crate::tag::{
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
-use atom::{AdvisoryRating, Atom, AtomData};
 use advisory_rating::AdvisoryRating;
+use atom::{Atom, AtomData};
+use data_type::DataType;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -374,7 +376,10 @@ impl Ilst {
 	fn extract_number(&self, fourcc: [u8; 4], expected_size: usize) -> Option<u16> {
 		if let Some(atom) = self.get(&AtomIdent::Fourcc(fourcc)) {
 			match atom.data().next() {
-				Some(AtomData::Unknown { code: 0, data }) if data.len() >= expected_size => {
+				Some(AtomData::Unknown {
+					code: DataType::Reserved,
+					data,
+				}) if data.len() >= expected_size => {
 					return Some(u16::from_be_bytes([
 						data[expected_size - 2],
 						data[expected_size - 1],
@@ -603,7 +608,10 @@ impl SplitTag for Ilst {
 					ItemValue::Text(text)
 				},
 				// We have to special case track/disc numbers since they are stored together
-				AtomData::Unknown { code: 0, data } if Vec::len(data) >= 6 => {
+				AtomData::Unknown {
+					code: DataType::Reserved,
+					data,
+				} if Vec::len(data) >= 6 => {
 					if let AtomIdent::Fourcc(ref fourcc) = ident {
 						match fourcc {
 							b"trkn" => {
@@ -686,7 +694,7 @@ impl MergeTag for SplitTagRemainder {
 					tag.atoms.push(Atom {
 						ident: AtomIdent::Fourcc(ident),
 						data: AtomDataStorage::Single(AtomData::Unknown {
-							code: 0,
+							code: DataType::Reserved,
 							data: vec![0, 0, current[0], current[1], total[0], total[1], 0, 0],
 						}),
 					})
@@ -802,13 +810,13 @@ mod tests {
 	use crate::mp4::ilst::atom::AtomDataStorage;
 	use crate::mp4::ilst::TITLE;
 	use crate::mp4::read::AtomReader;
-	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, Ilst, Mp4File};
+	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, DataType, Ilst, Mp4File};
+	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
 	use crate::tag::utils::test_utils;
 	use crate::tag::utils::test_utils::read_path;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
-	use crate::picture::{MimeType, Picture, PictureType};
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
 	fn read_ilst(path: &str, parse_mode: ParsingMode) -> Ilst {
@@ -853,7 +861,7 @@ mod tests {
 		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"trkn"),
 			AtomData::Unknown {
-				code: 0,
+				code: DataType::Reserved,
 				data: vec![0, 0, 0, 1, 0, 0, 0, 0],
 			},
 		));
@@ -862,7 +870,7 @@ mod tests {
 		expected_tag.insert(Atom::new(
 			AtomIdent::Fourcc(*b"disk"),
 			AtomData::Unknown {
-				code: 0,
+				code: DataType::Reserved,
 				data: vec![0, 0, 0, 1, 0, 2],
 			},
 		));
@@ -997,7 +1005,7 @@ mod tests {
 			&ilst,
 			*b"trkn",
 			&AtomData::Unknown {
-				code: 0,
+				code: DataType::Reserved,
 				data: vec![0, 0, 0, 1, 0, 0, 0, 0],
 			},
 		);
@@ -1005,7 +1013,7 @@ mod tests {
 			&ilst,
 			*b"disk",
 			&AtomData::Unknown {
-				code: 0,
+				code: DataType::Reserved,
 				data: vec![0, 0, 0, 1, 0, 2, 0, 0],
 			},
 		)
@@ -1024,7 +1032,7 @@ mod tests {
 			&ilst,
 			*b"plID",
 			&AtomData::Unknown {
-				code: 21,
+				code: DataType::BeSignedInteger,
 				data: 88888_u64.to_be_bytes().to_vec(),
 			},
 		)
@@ -1321,7 +1329,7 @@ mod tests {
 		let atom = Atom::new(
 			AtomIdent::Fourcc(*b"SMTH"),
 			AtomData::Unknown {
-				code: 0,
+				code: DataType::Reserved,
 				data: b"Meaningless Data".to_vec(),
 			},
 		);
