@@ -1,7 +1,7 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
-use super::read::{meta_is_full, nested_atom, skip_atom, AtomReader};
+use super::read::{find_child_atom, meta_is_full, skip_atom, AtomReader};
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -47,7 +47,7 @@ impl Moov {
 					b"trak" if parse_options.read_properties => {
 						// All we need from here is trak.mdia
 						if let Some(mdia) =
-							nested_atom(reader, atom.len, b"mdia", parse_options.parsing_mode)?
+							find_child_atom(reader, atom.len, *b"mdia", parse_options.parsing_mode)?
 						{
 							skip_atom(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
