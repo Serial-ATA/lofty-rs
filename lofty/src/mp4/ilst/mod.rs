@@ -841,7 +841,7 @@ impl MergeTag for SplitTagRemainder {
 			picture.pic_type = PictureType::Other;
 
 			merged.atoms.push(Atom {
-				ident: AtomIdent::Fourcc([b'c', b'o', b'v', b'r']),
+				ident: COVR,
 				data: AtomDataStorage::Single(AtomData::Picture(picture)),
 			})
 		}
