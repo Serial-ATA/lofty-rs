@@ -1,7 +1,7 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
-use super::read::{meta_is_full, nested_atom, skip_unneeded, AtomReader};
+use super::read::{meta_is_full, nested_atom, skip_atom, AtomReader};
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -28,7 +28,7 @@ impl Moov {
 				break;
 			}
 
-			skip_unneeded(reader, atom.extended, atom.len)?;
+			skip_atom(reader, atom.extended, atom.len)?;
 		}
 
 		moov.ok_or_else(|| decode_err!(Mp4, "No \"moov\" atom found"))
@@ -49,7 +49,7 @@ impl Moov {
 						if let Some(mdia) =
 							nested_atom(reader, atom.len, b"mdia", parse_options.parsing_mode)?
 						{
-							skip_unneeded(reader, mdia.extended, mdia.len)?;
+							skip_atom(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
 						}
 					},
@@ -69,13 +69,13 @@ impl Moov {
 							ilst = Some(existing_ilst);
 						}
 					},
-					_ => skip_unneeded(reader, atom.extended, atom.len)?,
+					_ => skip_atom(reader, atom.extended, atom.len)?,
 				}
 
 				continue;
 			}
 
-			skip_unneeded(reader, atom.extended, atom.len)?
+			skip_atom(reader, atom.extended, atom.len)?
 		}
 
 		Ok(Self { traks, ilst })
@@ -106,7 +106,7 @@ where
 		}
 
 		read += atom.len;
-		skip_unneeded(reader, atom.extended, atom.len)?;
+		skip_atom(reader, atom.extended, atom.len)?;
 	}
 
 	if !found_meta {
@@ -138,7 +138,7 @@ where
 		}
 
 		read += atom.len;
-		skip_unneeded(reader, atom.extended, atom.len)?;
+		skip_atom(reader, atom.extended, atom.len)?;
 	}
 
 	if found_ilst {
