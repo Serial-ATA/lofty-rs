@@ -211,12 +211,13 @@ impl Mp4Properties {
 	}
 }
 
-struct TrakChildren {
+struct AudioTrak {
 	mdhd: AtomInfo,
 	minf: Option<AtomInfo>,
 }
 
-fn get_trak_children<R>(reader: &mut AtomReader<R>, traks: &[AtomInfo]) -> Result<TrakChildren>
+/// Search through all the traks to find the first one with audio
+fn find_audio_trak<R>(reader: &mut AtomReader<R>, traks: &[AtomInfo]) -> Result<AudioTrak>
 where
 	R: Read + Seek,
 {
@@ -229,6 +230,9 @@ where
 		if audio_track {
 			break;
 		}
+
+		mdhd = None;
+		minf = None;
 
 		reader.seek(SeekFrom::Start(mdia.start + 8))?;
 
@@ -284,7 +288,7 @@ where
 		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
 	};
 
-	Ok(TrakChildren { mdhd, minf })
+	Ok(AudioTrak { mdhd, minf })
 }
 
 struct Mdhd {
@@ -292,36 +296,38 @@ struct Mdhd {
 	duration: u64,
 }
 
-fn read_mdhd<R>(reader: &mut AtomReader<R>) -> Result<Mdhd>
-where
-	R: Read + Seek,
-{
-	let version = reader.read_u8()?;
-	let _flags = reader.read_uint(3)?;
+impl Mdhd {
+	fn parse<R>(reader: &mut AtomReader<R>) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		let version = reader.read_u8()?;
+		let _flags = reader.read_uint(3)?;
 
-	let (timescale, duration) = if version == 1 {
-		// We don't care about these two values
-		let _creation_time = reader.read_u64()?;
-		let _modification_time = reader.read_u64()?;
+		let (timescale, duration) = if version == 1 {
+			// We don't care about these two values
+			let _creation_time = reader.read_u64()?;
+			let _modification_time = reader.read_u64()?;
 
-		let timescale = reader.read_u32()?;
-		let duration = reader.read_u64()?;
+			let timescale = reader.read_u32()?;
+			let duration = reader.read_u64()?;
 
-		(timescale, duration)
-	} else {
-		let _creation_time = reader.read_u32()?;
-		let _modification_time = reader.read_u32()?;
+			(timescale, duration)
+		} else {
+			let _creation_time = reader.read_u32()?;
+			let _modification_time = reader.read_u32()?;
 
-		let timescale = reader.read_u32()?;
-		let duration = reader.read_u32()?;
+			let timescale = reader.read_u32()?;
+			let duration = reader.read_u32()?;
 
-		(timescale, u64::from(duration))
-	};
+			(timescale, u64::from(duration))
+		};
 
-	Ok(Mdhd {
-		timescale,
-		duration,
-	})
+		Ok(Mdhd {
+			timescale,
+			duration,
+		})
+	}
 }
 
 // TODO: Estimate duration from stts?
@@ -334,76 +340,85 @@ struct SttsEntry {
 	sample_duration: u32,
 }
 
-fn read_stts<R>(reader: &mut R) -> Result<Vec<SttsEntry>>
-where
-	R: Read,
-{
-	let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
+#[derive(Debug)]
+struct Stts {
+	entries: Vec<SttsEntry>,
+}
 
-	let entry_count = reader.read_u32::<BigEndian>()?;
-	let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
+impl Stts {
+	fn parse<R>(reader: &mut R) -> Result<Self>
+	where
+		R: Read,
+	{
+		let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
 
-	for _ in 0..entry_count {
-		let sample_count = reader.read_u32::<BigEndian>()?;
-		let sample_duration = reader.read_u32::<BigEndian>()?;
+		let entry_count = reader.read_u32::<BigEndian>()?;
+		let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
 
-		entries.push(SttsEntry {
-			_sample_count: sample_count,
-			sample_duration,
-		});
+		for _ in 0..entry_count {
+			let sample_count = reader.read_u32::<BigEndian>()?;
+			let sample_duration = reader.read_u32::<BigEndian>()?;
+
+			entries.push(SttsEntry {
+				_sample_count: sample_count,
+				sample_duration,
+			});
+		}
+
+		Ok(Self { entries })
 	}
-
-	Ok(entries)
 }
 
 struct Minf {
 	stsd_data: Vec<u8>,
-	stts: Option<Vec<SttsEntry>>,
+	stts: Option<Stts>,
 }
 
-fn read_minf<R>(
-	reader: &mut AtomReader<R>,
-	len: u64,
-	parse_mode: ParsingMode,
-) -> Result<Option<Minf>>
-where
-	R: Read + Seek,
-{
-	let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
-		return Ok(None);
-	};
+impl Minf {
+	fn parse<R>(
+		reader: &mut AtomReader<R>,
+		len: u64,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>>
+	where
+		R: Read + Seek,
+	{
+		let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
+			return Ok(None);
+		};
 
-	let mut stsd_data = None;
-	let mut stts = None;
+		let mut stsd_data = None;
+		let mut stts = None;
 
-	let mut read = 8;
-	while read < stbl.len {
-		let Some(atom) = reader.next()? else { break };
+		let mut read = 8;
+		while read < stbl.len {
+			let Some(atom) = reader.next()? else { break };
 
-		read += atom.len;
+			read += atom.len;
 
-		if let AtomIdent::Fourcc(fourcc) = atom.ident {
-			match &fourcc {
-				b"stsd" => {
-					let mut stsd = try_vec![0; (atom.len - 8) as usize];
-					reader.read_exact(&mut stsd)?;
-					stsd_data = Some(stsd);
-				},
-				b"stts" => stts = Some(read_stts(reader)?),
-				_ => {
-					skip_atom(reader, atom.extended, atom.len)?;
-				},
+			if let AtomIdent::Fourcc(fourcc) = atom.ident {
+				match &fourcc {
+					b"stsd" => {
+						let mut stsd = try_vec![0; (atom.len - 8) as usize];
+						reader.read_exact(&mut stsd)?;
+						stsd_data = Some(stsd);
+					},
+					b"stts" => stts = Some(Stts::parse(reader)?),
+					_ => {
+						skip_atom(reader, atom.extended, atom.len)?;
+					},
+				}
+
+				continue;
 			}
-
-			continue;
 		}
+
+		let Some(stsd_data) = stsd_data else {
+			return Ok(None);
+		};
+
+		Ok(Some(Minf { stsd_data, stts }))
 	}
-
-	let Some(stsd_data) = stsd_data else {
-		return Ok(None);
-	};
-
-	Ok(Some(Minf { stsd_data, stts }))
 }
 
 fn read_stsd<R>(reader: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
@@ -467,13 +482,13 @@ where
 	R: Read + Seek,
 {
 	// We need the mdhd and minf atoms from the audio track
-	let TrakChildren { mdhd, minf } = get_trak_children(reader, traks)?;
+	let AudioTrak { mdhd, minf } = find_audio_trak(reader, traks)?;
 
 	reader.seek(SeekFrom::Start(mdhd.start + 8))?;
 	let Mdhd {
 		timescale,
 		duration,
-	} = read_mdhd(reader)?;
+	} = Mdhd::parse(reader)?;
 
 	// We create the properties here, since it is possible the other information isn't available
 	let mut properties = Mp4Properties::default();
@@ -489,7 +504,7 @@ where
 	};
 
 	reader.seek(SeekFrom::Start(minf_info.start + 8))?;
-	let Some(Minf { stsd_data, stts }) = read_minf(reader, minf_info.len, parse_mode)? else {
+	let Some(Minf { stsd_data, stts }) = Minf::parse(reader, minf_info.len, parse_mode)? else {
 		return Ok(properties);
 	};
 
@@ -505,7 +520,8 @@ where
 		let mdat_len = mdat_length(reader)?;
 
 		if let Some(stts) = stts {
-			let stts_specifies_duration = !(stts.len() == 1 && stts[0].sample_duration == 1);
+			let stts_specifies_duration =
+				!(stts.entries.len() == 1 && stts.entries[0].sample_duration == 1);
 			if stts_specifies_duration {
 				// We do a basic audio bitrate calculation below for each stream type.
 				// Up here, we can do a more accurate calculation if the duration is available.
