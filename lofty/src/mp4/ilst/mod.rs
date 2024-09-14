@@ -64,6 +64,32 @@ macro_rules! impl_accessor {
 	}
 }
 
+macro_rules! impl_flag_accessors {
+	($($name:ident ($ident:ident)),+ $(,)?) => {
+		$(
+			paste::paste! {
+				#[doc = "Whether the `" $ident "` flag atom is set"]
+				///
+				/// # Examples
+				///
+				/// ```rust
+				#[doc = "use lofty::mp4::constants::flags::" $name ";"]
+				/// use lofty::mp4::{AtomIdent, Ilst};
+				///
+				/// let mut ilst = Ilst::new();
+				///
+				/// // I want to toggle this flag!
+				#[doc = "ilst.set_flag(" $name ", true);"]
+				///
+				#[doc = "assert!(ilst.is_" $name:lower "());"]
+				pub fn [<is_ $name:lower>](&self) -> bool {
+					self.get_flag(&constants::flags::$name).unwrap_or(false)
+				}
+			}
+		)+
+	};
+}
+
 /// ## Pictures
 ///
 /// Unlike other formats, ilst does not store a [`PictureType`]. All pictures will have
@@ -348,6 +374,53 @@ impl Ilst {
 		self.atoms
 			.retain(|a| !matches!(a.data().next(), Some(AtomData::Picture(_))))
 	}
+
+	/// Sets the value of a flag ([`AtomData::Bool`]) atom
+	///
+	/// For identifiers, see [`constants::flags`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::mp4::constants::flags::COMPILATION;
+	/// use lofty::mp4::{AtomIdent, Ilst};
+	///
+	/// // This file part of a compilation!
+	/// let mut ilst = Ilst::new();
+	/// ilst.set_flag(COMPILATION, true);
+	///
+	/// assert!(ilst.is_compilation());
+	/// ```
+	pub fn set_flag(&mut self, ident: AtomIdent<'_>, value: bool) {
+		if !value {
+			// A flag with a value of `false` is equivalent to removing it.
+			let _ = self.remove(&ident);
+			return;
+		}
+
+		let data = AtomData::Bool(value);
+		self.replace_atom(Atom {
+			ident,
+			data: AtomDataStorage::Single(data),
+		});
+	}
+
+	fn get_flag(&self, ident: &AtomIdent<'_>) -> Option<bool> {
+		self.get(ident)
+			.and_then(|atom| atom.data().next())
+			.and_then(|data| match data {
+				AtomData::Bool(b) => Some(*b),
+				_ => None,
+			})
+	}
+
+	impl_flag_accessors!(
+		PODCAST(pcst),
+		GAPLESS(pgap),
+		SHOW_WORK(shwm),
+		HD_VIDEO(hdvd),
+		COMPILATION(cpil)
+	);
 
 	/// Returns the parental advisory rating according to the `rtng` atom
 	pub fn advisory_rating(&self) -> Option<AdvisoryRating> {
