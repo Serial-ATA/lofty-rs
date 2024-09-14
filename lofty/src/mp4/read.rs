@@ -54,6 +54,11 @@ where
 		self.reader.read_u16::<BigEndian>()
 	}
 
+	pub(super) fn read_u24(&mut self) -> std::io::Result<u32> {
+		self.remaining_size = self.remaining_size.saturating_sub(3);
+		self.reader.read_u24::<BigEndian>()
+	}
+
 	pub(super) fn read_u32(&mut self) -> std::io::Result<u32> {
 		self.remaining_size = self.remaining_size.saturating_sub(4);
 		self.reader.read_u32::<BigEndian>()
