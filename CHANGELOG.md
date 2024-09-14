@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ItemKey::Director` will now be written correctly as a TXXX frame ([PR](https://github.com/Serial-ATA/lofty-rs/issues/454))
   - When skipping invalid frames in `ParsingMode::{BestAttempt, Relaxed}`, the parser will no longer be able to go out of the bounds
     of the frame content ([issue](https://github.com/Serial-ATA/lofty-rs/issues/458)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
+- **MP4**: Support for flag items (ex. `cpil`) of any size (not just 1 byte) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/457)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/460))
 
 ## [0.21.1] - 2024-08-28
 
