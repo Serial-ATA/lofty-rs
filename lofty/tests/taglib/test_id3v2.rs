@@ -366,7 +366,7 @@ fn test_render_popm() {
 	let f = PopularimeterFrame::new(String::from("email@example.com"), 2, 3);
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes().unwrap(),
 		b"\
 	email@example.com\x00\
 	\x02\
@@ -815,7 +815,7 @@ fn test_render_private_frame() {
 	let f = PrivateFrame::new(String::from("WM/Provider"), b"TL".to_vec());
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes().unwrap(),
 		b"\
 	WM/Provider\x00\
 	TL"
