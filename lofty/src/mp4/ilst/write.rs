@@ -14,6 +14,9 @@ use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use crate::mp4::constants::{
+	BE_SIGNED_INTEGER, BE_UNSIGNED_INTEGER, BMP, JPEG, PNG, RESERVED, UTF16, UTF8,
+};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
@@ -675,12 +678,12 @@ where
 {
 	for value in data {
 		match value {
-			AtomData::UTF8(text) => write_data(1, text.as_bytes(), writer)?,
-			AtomData::UTF16(text) => write_data(2, text.as_bytes(), writer)?,
+			AtomData::UTF8(text) => write_data(UTF8, text.as_bytes(), writer)?,
+			AtomData::UTF16(text) => write_data(UTF16, text.as_bytes(), writer)?,
 			AtomData::Picture(ref pic) => write_picture(pic, writer)?,
 			AtomData::SignedInteger(int) => write_signed_int(*int, writer)?,
 			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
-			AtomData::Bool(b) => write_signed_int(i32::from(*b), writer)?,
+			AtomData::Bool(b) => write_bool(*b, writer)?,
 			AtomData::Unknown { code, ref data } => write_data(*code, data, writer)?,
 		};
 	}
@@ -689,7 +692,7 @@ where
 }
 
 fn write_signed_int(int: i32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
-	write_int(21, int.to_be_bytes(), 4, writer)
+	write_int(BE_SIGNED_INTEGER, int.to_be_bytes(), 4, writer)
 }
 
 fn bytes_to_occupy_uint(uint: u32) -> usize {
@@ -706,7 +709,12 @@ fn bytes_to_occupy_uint(uint: u32) -> usize {
 
 fn write_unsigned_int(uint: u32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	let bytes_needed = bytes_to_occupy_uint(uint);
-	write_int(22, uint.to_be_bytes(), bytes_needed, writer)
+	write_int(
+		BE_UNSIGNED_INTEGER,
+		uint.to_be_bytes(),
+		bytes_needed,
+		writer,
+	)
 }
 
 fn write_int(
@@ -719,15 +727,19 @@ fn write_int(
 	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
+fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+	write_int(BE_SIGNED_INTEGER, i32::from(b).to_be_bytes(), 1, writer)
+}
+
 fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	match picture.mime_type {
 		// GIF is deprecated
 		Some(MimeType::Gif) => write_data(12, &picture.data, writer),
-		Some(MimeType::Jpeg) => write_data(13, &picture.data, writer),
-		Some(MimeType::Png) => write_data(14, &picture.data, writer),
-		Some(MimeType::Bmp) => write_data(27, &picture.data, writer),
+		Some(MimeType::Jpeg) => write_data(JPEG, &picture.data, writer),
+		Some(MimeType::Png) => write_data(PNG, &picture.data, writer),
+		Some(MimeType::Bmp) => write_data(BMP, &picture.data, writer),
 		// We'll assume implicit (0) was the intended type
-		None => write_data(0, &picture.data, writer),
+		None => write_data(RESERVED, &picture.data, writer),
 		_ => Err(FileEncodingError::new(
 			FileType::Mp4,
 			"Attempted to write an unsupported picture format",
@@ -766,7 +778,7 @@ fn write_data(flags: u32, data: &[u8], writer: &mut AtomWriterCompanion<'_>) -> 
 
 #[cfg(test)]
 mod tests {
-	use crate::mp4::ilst::write::bytes_to_occupy_uint;
+	use super::bytes_to_occupy_uint;
 
 	macro_rules! int_test {
 		(

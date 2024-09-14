@@ -120,10 +120,9 @@ where
 						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
 					{
 						if let Some((_, content)) = atom_data.first() {
-							let data = match content[..] {
-								[0, ..] => AtomData::Bool(false),
-								_ => AtomData::Bool(true),
-							};
+							// Any size integer is technically valid, we'll correct it on write.
+							let is_true = content.iter().any(|&b| b != 0);
+							let data = AtomData::Bool(is_true);
 
 							tag.atoms.push(Atom {
 								ident: AtomIdent::Fourcc(*fourcc),
