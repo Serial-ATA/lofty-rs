@@ -12,6 +12,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - For example, a track has `ItemKey::TrackArtist` = "Foo & Bar", then `ItemKey::TrackArtists` = ["Foo", "Bar"].
   - See <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#artists>
 - **UnsynchronizedStream**: `UnsynchronizedStream::get_ref()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
+- **Ilst** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/461)):
+  - Methods to quickly set/check boolean flags:
+    - `Ilst::set_flag`
+    - `Ilst::is_podcast`
+    - `Ilst::is_compilation`
+    - `Ilst::is_gapless`
+    - `Ilst::is_show_work`
+    - `Ilst::is_hd_video`
+  - `DataType` enum
+    - Previously, atom data types were stored as a `u32`, with their names being available in `mp4::constants`.
+      Now, instead of `mp4::constants::BE_SIGNED_INTEGER`, you can use `DataType::BeSignedInteger`, for example.
+    - It can be converted to and from a `u32`
+  - `AtomData::data_type()` to get the data type code of the atom content.
 
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))
