@@ -217,7 +217,15 @@ where
 	})
 }
 
-pub(super) fn skip_unneeded<R>(reader: &mut R, extended: bool, len: u64) -> Result<()>
+/// Seeks the reader to the end of the atom
+///
+/// This should be used immediately after [`AtomInfo::read`] to skip an unwanted atom.
+///
+/// NOTES:
+///
+/// * This makes the assumption that the reader is at the end of the atom's header.
+/// * This makes the assumption that the `len` is the *full atom length*, not just that of the content.
+pub(super) fn skip_atom<R>(reader: &mut R, extended: bool, len: u64) -> Result<()>
 where
 	R: Read + Seek,
 {
@@ -261,7 +269,7 @@ where
 				break;
 			},
 			_ => {
-				skip_unneeded(reader, atom.extended, atom.len)?;
+				skip_atom(reader, atom.extended, atom.len)?;
 				len = len.saturating_sub(atom.len);
 			},
 		}
@@ -290,7 +298,7 @@ where
 			break;
 		};
 
-		skip_unneeded(reader, atom.extended, atom.len)?;
+		skip_atom(reader, atom.extended, atom.len)?;
 		len = len.saturating_sub(atom.len);
 
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {

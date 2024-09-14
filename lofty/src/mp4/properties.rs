@@ -1,5 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::{nested_atom, skip_unneeded, AtomReader};
+use super::read::{nested_atom, skip_atom, AtomReader};
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
@@ -241,13 +241,13 @@ where
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
 					b"mdhd" => {
-						skip_unneeded(reader, atom.extended, atom.len)?;
+						skip_atom(reader, atom.extended, atom.len)?;
 						mdhd = Some(atom)
 					},
 					b"hdlr" => {
 						if atom.len < 20 {
 							log::warn!("Incomplete 'hdlr' atom, skipping");
-							skip_unneeded(reader, atom.extended, atom.len)?;
+							skip_atom(reader, atom.extended, atom.len)?;
 							continue;
 						}
 
@@ -261,18 +261,18 @@ where
 							audio_track = true
 						}
 
-						skip_unneeded(reader, atom.extended, atom.len - 12)?;
+						skip_atom(reader, atom.extended, atom.len - 12)?;
 					},
 					b"minf" => minf = Some(atom),
 					_ => {
-						skip_unneeded(reader, atom.extended, atom.len)?;
+						skip_atom(reader, atom.extended, atom.len)?;
 					},
 				}
 
 				continue;
 			}
 
-			skip_unneeded(reader, atom.extended, atom.len)?;
+			skip_atom(reader, atom.extended, atom.len)?;
 		}
 	}
 
@@ -391,7 +391,7 @@ where
 				},
 				b"stts" => stts = Some(read_stts(reader)?),
 				_ => {
-					skip_unneeded(reader, atom.extended, atom.len)?;
+					skip_atom(reader, atom.extended, atom.len)?;
 				},
 			}
 
@@ -436,7 +436,7 @@ where
 			// Special case to detect encrypted files
 			b"drms" => {
 				properties.drm_protected = true;
-				skip_unneeded(reader, atom.extended, atom.len)?;
+				skip_atom(reader, atom.extended, atom.len)?;
 				continue;
 			},
 			_ => {
@@ -444,7 +444,7 @@ where
 					"Found unsupported sample entry: {:?}",
 					fourcc.escape_ascii().to_string()
 				);
-				skip_unneeded(reader, atom.extended, atom.len)?;
+				skip_atom(reader, atom.extended, atom.len)?;
 				continue;
 			},
 		}
@@ -843,7 +843,7 @@ where
 			return Ok(atom.len - 8);
 		}
 
-		skip_unneeded(reader, atom.extended, atom.len)?;
+		skip_atom(reader, atom.extended, atom.len)?;
 	}
 
 	decode_err!(@BAIL Mp4, "Failed to find \"mdat\" atom");

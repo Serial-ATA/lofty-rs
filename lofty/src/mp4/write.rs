@@ -3,7 +3,7 @@ use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::macros::err;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
-use crate::mp4::read::{meta_is_full, skip_unneeded};
+use crate::mp4::read::{meta_is_full, skip_atom};
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -53,7 +53,7 @@ impl ContextualAtom {
 				*reader_len = reader_len.saturating_sub(info.len);
 
 				// We don't care about the atom's contents
-				skip_unneeded(reader, info.extended, info.len)?;
+				skip_atom(reader, info.extended, info.len)?;
 				return Ok(Some(ContextualAtom {
 					info,
 					children: Vec::new(),

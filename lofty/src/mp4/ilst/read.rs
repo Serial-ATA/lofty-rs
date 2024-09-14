@@ -7,7 +7,7 @@ use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
 use crate::mp4::atom_info::{AtomInfo, ATOM_HEADER_LEN};
 use crate::mp4::ilst::atom::AtomDataStorage;
-use crate::mp4::read::{skip_unneeded, AtomReader};
+use crate::mp4::read::{skip_atom, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{utf16_decode_bytes, utf8_decode};
 
@@ -37,14 +37,14 @@ where
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 			match fourcc {
 				b"free" | b"skip" => {
-					skip_unneeded(&mut ilst_reader, atom.extended, atom.len)?;
+					skip_atom(&mut ilst_reader, atom.extended, atom.len)?;
 					continue;
 				},
 				b"covr" => {
 					if parse_options.read_cover_art {
 						handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)?;
 					} else {
-						skip_unneeded(&mut ilst_reader, atom.extended, atom.len)?;
+						skip_atom(&mut ilst_reader, atom.extended, atom.len)?;
 					}
 
 					continue;
@@ -248,7 +248,7 @@ where
 			);
 
 			pos += next_atom.len;
-			skip_unneeded(reader, next_atom.extended, next_atom.len)?;
+			skip_atom(reader, next_atom.extended, next_atom.len)?;
 			continue;
 		}
 
