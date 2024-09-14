@@ -236,6 +236,22 @@ where
 			break;
 		}
 
+		if next_atom.ident != DATA_ATOM_IDENT {
+			if parsing_mode == ParsingMode::Strict {
+				err!(BadAtom("Expected atom \"data\" to follow name"))
+			}
+
+			log::warn!(
+				"Skipping unexpected atom {actual_ident:?}, expected {expected_ident:?}",
+				actual_ident = next_atom.ident,
+				expected_ident = DATA_ATOM_IDENT
+			);
+
+			pos += next_atom.len;
+			skip_unneeded(reader, next_atom.extended, next_atom.len)?;
+			continue;
+		}
+
 		let Some(data_type) = parse_type_indicator(reader, parsing_mode)? else {
 			log::warn!("Skipping atom with unknown type set");
 			let remaining_atom_len = next_atom.len - (ATOM_HEADER_LEN + 1);
@@ -248,31 +264,13 @@ where
 		// We don't care about the locale
 		reader.seek(SeekFrom::Current(4))?;
 
-		match next_atom.ident {
-			DATA_ATOM_IDENT => {
-				let content_len = (next_atom.len - 16) as usize;
-				if content_len > 0 {
-					let mut content = try_vec![0; content_len];
-					reader.read_exact(&mut content)?;
-					ret.push((data_type, content));
-				} else {
-					log::warn!("Skipping empty \"data\" atom");
-				}
-			},
-			_ => match parsing_mode {
-				ParsingMode::Strict => {
-					err!(BadAtom("Expected atom \"data\" to follow name"))
-				},
-				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-					log::warn!(
-						"Skipping unexpected atom {actual_ident:?}, expected {expected_ident:?}",
-						actual_ident = next_atom.ident,
-						expected_ident = DATA_ATOM_IDENT
-					);
-
-					reader.seek(SeekFrom::Current((next_atom.len - 16) as i64))?;
-				},
-			},
+		let content_len = (next_atom.len - 16) as usize;
+		if content_len > 0 {
+			let mut content = try_vec![0; content_len];
+			reader.read_exact(&mut content)?;
+			ret.push((data_type, content));
+		} else {
+			log::warn!("Skipping empty \"data\" atom");
 		}
 
 		pos += next_atom.len;
