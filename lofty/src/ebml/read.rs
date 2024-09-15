@@ -26,7 +26,7 @@ where
 	// new ones all scattered throughout the file
 	let mut properties = EbmlProperties::default();
 
-	let mut ebml_tag = None;
+	let ebml_tag;
 
 	let mut element_reader = ElementReader::new(reader);
 

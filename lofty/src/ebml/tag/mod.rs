@@ -1,15 +1,17 @@
-pub(crate) mod attached_file;
-pub(crate) mod simple_tag;
-pub(crate) mod target_type;
+mod attached_file;
+mod simple_tag;
+mod tag;
+mod target;
 
 pub use attached_file::*;
 pub use simple_tag::*;
-pub use target_type::*;
+pub use tag::*;
+pub use target::*;
 
 use crate::config::WriteOptions;
 use crate::error::LoftyError;
 use crate::io::{FileLike, Length, Truncate};
-use crate::tag::{Accessor, MergeTag, SplitTag, Tag, TagExt, TagType};
+use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 
 use std::io::Write;
 use std::ops::Deref;
@@ -21,6 +23,7 @@ use lofty_attr::tag;
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(description = "An `EBML` tag", supported_formats(Ebml))]
 pub struct EbmlTag {
+	pub(crate) tags: Vec<Tag>,
 	pub(crate) attached_files: Vec<AttachedFile>,
 }
 
@@ -107,7 +110,7 @@ impl Deref for SplitTagRemainder {
 impl SplitTag for EbmlTag {
 	type Remainder = SplitTagRemainder;
 
-	fn split_tag(mut self) -> (Self::Remainder, Tag) {
+	fn split_tag(mut self) -> (Self::Remainder, crate::tag::Tag) {
 		todo!()
 	}
 }
@@ -115,19 +118,19 @@ impl SplitTag for EbmlTag {
 impl MergeTag for SplitTagRemainder {
 	type Merged = EbmlTag;
 
-	fn merge_tag(self, _tag: Tag) -> Self::Merged {
+	fn merge_tag(self, _tag: crate::tag::Tag) -> Self::Merged {
 		todo!()
 	}
 }
 
-impl From<EbmlTag> for Tag {
+impl From<EbmlTag> for crate::tag::Tag {
 	fn from(input: EbmlTag) -> Self {
 		input.split_tag().1
 	}
 }
 
-impl From<Tag> for EbmlTag {
-	fn from(input: Tag) -> Self {
+impl From<crate::tag::Tag> for EbmlTag {
+	fn from(input: crate::tag::Tag) -> Self {
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }

@@ -9,6 +9,7 @@ use crate::tag::ItemValue;
 /// - The ISO-639-2 language code allows for an optional country code, so the [Lang] type cannot be used.
 ///
 /// [Lang]: crate::tag::items::Lang
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Language {
 	/// An ISO-639-2 language code
 	Iso639_2(String),
@@ -33,6 +34,7 @@ pub enum Language {
 ///
 /// - [`ItemValue::Text`] | [`ItemValue::Locator`] -> [`TagValue::String`]
 /// - [`ItemValue::Binary`] -> [`TagValue::Binary`]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TagValue {
 	/// A UTF-8 string tag value
 	String(String),
@@ -66,6 +68,7 @@ impl From<ItemValue> for TagValue {
 /// - They each describe a single [`Target`].
 ///   - This also means that multiple tags can describe the same target.
 /// - They **do not** need to have a value.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SimpleTag {
 	/// The name of the tag as it is stored
 	///
