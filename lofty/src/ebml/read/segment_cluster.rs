@@ -13,5 +13,5 @@ pub(super) fn read_from<R>(
 where
 	R: Read + Seek,
 {
-	unimplemented!("\\Ebml\\Segment\\Cluster")
+	unimplemented!("\\Segment\\Cluster")
 }

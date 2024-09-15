@@ -33,6 +33,8 @@ where
 	// First we need to go through the elements in the EBML master element
 	read_ebml_header(&mut element_reader, parse_options, &mut properties)?;
 
+	log::debug!("File verified to be EBML");
+
 	loop {
 		let res = element_reader.next()?;
 		match res {
@@ -70,6 +72,8 @@ fn read_ebml_header<R>(
 where
 	R: Read + Seek,
 {
+	log::trace!("Reading EBML header");
+
 	match element_reader.next() {
 		Ok(ElementReaderYield::Master((ElementIdent::EBML, _))) => {},
 		Ok(_) => decode_err!(@BAIL Ebml, "File does not start with an EBML master element"),
