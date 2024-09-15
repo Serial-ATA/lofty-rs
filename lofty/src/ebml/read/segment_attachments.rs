@@ -24,7 +24,7 @@ where
 				tag.attached_files.push(attached_file);
 			},
 			ElementReaderYield::Eof => break,
-			_ => unreachable!("Unhandled child element in \\Ebml\\Segment\\Attachments: {child:?}"),
+			_ => unreachable!("Unhandled child element in \\Segment\\Attachments: {child:?}"),
 		}
 	}
 
@@ -50,8 +50,7 @@ where
 			match child {
 				ElementReaderYield::Eof => break,
 				_ => unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Attachments\\AttachedFile: \
-					 {child:?}"
+					"Unhandled child element in \\Segment\\Attachments\\AttachedFile: {child:?}"
 				),
 			}
 		};
@@ -84,7 +83,7 @@ where
 				used_end_time = Some(children_reader.read_unsigned_int(size)?);
 			},
 			_ => unreachable!(
-				"Unhandled child element in \\Ebml\\Segment\\Attachments\\AttachedFile: {child:?}"
+				"Unhandled child element in \\Segment\\Attachments\\AttachedFile: {child:?}"
 			),
 		}
 	}

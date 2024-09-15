@@ -20,7 +20,7 @@ where
 				read_tag(&mut children_reader.children(), tag)?
 			},
 			ElementReaderYield::Eof => break,
-			_ => unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tags: {child:?}"),
+			_ => unimplemented!("Unhandled child element in \\Segment\\Tags: {child:?}"),
 		}
 	}
 
@@ -36,7 +36,7 @@ where
 			match child {
 				ElementReaderYield::Eof => break,
 				_ => {
-					unreachable!("Unhandled child element in \\Ebml\\Segment\\Tags\\Tag: {child:?}")
+					unreachable!("Unhandled child element in \\Segment\\Tags\\Tag: {child:?}")
 				},
 			}
 		};
@@ -49,7 +49,7 @@ where
 				let _ = read_simple_tag(&mut children_reader.children())?;
 			},
 			_ => {
-				unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tags\\Tag: {master:?}");
+				unimplemented!("Unhandled child element in \\Segment\\Tags\\Tag: {master:?}");
 			},
 		}
 	}
@@ -82,7 +82,7 @@ where
 			match child {
 				ElementReaderYield::Eof => break,
 				_ => unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\Targets: {child:?}"
+					"Unhandled child element in \\Segment\\Tags\\Tag\\Targets: {child:?}"
 				),
 			}
 		};
@@ -107,9 +107,7 @@ where
 				attachment_uid.push(children_reader.read_unsigned_int(size.value())?);
 			},
 			_ => {
-				unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\Targets: {child:?}"
-				)
+				unreachable!("Unhandled child element in \\Segment\\Tags\\Tag\\Targets: {child:?}")
 			},
 		}
 	}
@@ -147,7 +145,7 @@ where
 			match child {
 				ElementReaderYield::Eof => break,
 				_ => unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
+					"Unhandled child element in \\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
 				),
 			}
 		};
@@ -199,7 +197,7 @@ where
 			},
 			_ => {
 				unreachable!(
-					"Unhandled child element in \\Ebml\\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
+					"Unhandled child element in \\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
 				);
 			},
 		}

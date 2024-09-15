@@ -2,7 +2,7 @@ use crate::ebml::vint::VInt;
 use crate::error::Result;
 use crate::macros::{decode_err, try_vec};
 
-use std::io::Read;
+use std::io::{self, Read};
 use std::ops::{Deref, DerefMut};
 
 use byteorder::{BigEndian, ReadBytesExt};
@@ -241,14 +241,20 @@ ebml_master_elements! {
 	},
 }
 
-#[derive(Debug)]
-struct MasterElementContext {
-	element: MasterElement,
-	remaining_length: VInt,
-}
-
 const MAX_DEPTH: u8 = 16;
 const ROOT_DEPTH: u8 = 1;
+
+#[derive(Copy, Clone, Debug)]
+struct Depth {
+	level: u8,
+	length: VInt,
+}
+
+#[derive(Copy, Clone, Debug)]
+struct MasterElementContext {
+	element: MasterElement,
+	depth: Depth,
+}
 
 #[derive(Debug)]
 struct ElementReaderContext {
@@ -269,8 +275,7 @@ struct ElementReaderContext {
 	/// to know which depth to lock the reader at again (if any).
 	///
 	/// This will **always** be sorted, so the current lock will be at the end.
-	lock_depths: Vec<u8>,
-	lock_len: VInt,
+	lock_depths: Vec<usize>,
 }
 
 impl Default for ElementReaderContext {
@@ -284,8 +289,38 @@ impl Default for ElementReaderContext {
 			max_size_length: 8,
 			locked: false,
 			lock_depths: Vec::with_capacity(MAX_DEPTH as usize),
-			lock_len: VInt::ZERO,
 		}
+	}
+}
+
+impl ElementReaderContext {
+	fn current_master(&self) -> Option<MasterElementContext> {
+		if self.depth == 0 {
+			return None;
+		}
+
+		self.masters.get((self.depth - 1) as usize).copied()
+	}
+
+	fn current_master_length(&self) -> VInt {
+		assert!(self.depth > 0);
+		self.current_master()
+			.expect("should have current master element")
+			.depth
+			.length
+	}
+
+	fn propagate_length_change(&mut self, length: u64) {
+		for master in &mut self.masters {
+			master.depth.length = master.depth.length.saturating_sub(length);
+		}
+	}
+
+	fn remaining_lock_length(&self) -> VInt {
+		assert!(self.locked && !self.lock_depths.is_empty());
+
+		let lock_depth = *self.lock_depths.last().unwrap();
+		self.masters[lock_depth - 1].depth.length
 	}
 }
 
@@ -321,30 +356,37 @@ impl ElementReaderYield {
 /// An EBML element reader.
 pub struct ElementReader<R> {
 	reader: R,
-	ctx: ElementReaderContext,
+	pub(self) ctx: ElementReaderContext,
 }
 
 impl<R> Read for ElementReader<R>
 where
 	R: Read,
 {
-	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+	fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
 		if self.ctx.locked {
-			let lock_len = self.ctx.lock_len.value();
+			let lock_len = self.ctx.remaining_lock_length().value();
 			if buf.len() > lock_len as usize {
-				return Err(std::io::Error::new(
-					std::io::ErrorKind::UnexpectedEof,
+				return Err(io::Error::new(
+					io::ErrorKind::UnexpectedEof,
 					"Cannot read past the end of the current master element",
 				));
 			}
 		}
 
 		let ret = self.reader.read(buf)?;
-		let len = self.current_master_length();
-		self.set_current_master_length(len.saturating_sub(ret as u64));
+		if self.ctx.current_master().is_none() {
+			return Ok(ret);
+		}
 
-		if self.ctx.locked {
-			self.ctx.lock_len = self.ctx.lock_len.saturating_sub(ret as u64);
+		self.ctx.propagate_length_change(ret as u64);
+
+		let current_master = self
+			.ctx
+			.current_master()
+			.expect("should have current master element");
+		if current_master.depth.length == 0 {
+			self.goto_previous_master()?;
 		}
 
 		Ok(ret)
@@ -370,34 +412,9 @@ where
 		self.ctx.max_size_length = len
 	}
 
-	fn current_master(&self) -> Option<MasterElement> {
-		if self.ctx.depth == 0 {
-			assert!(self.ctx.masters.is_empty());
-			return None;
-		}
-
-		Some(self.ctx.masters[(self.ctx.depth - 1) as usize].element)
-	}
-
-	fn current_master_length(&self) -> VInt {
-		if self.ctx.depth == 0 {
-			assert!(self.ctx.masters.is_empty());
-			return VInt::ZERO;
-		}
-
-		self.ctx.masters[(self.ctx.depth - 1) as usize].remaining_length
-	}
-
-	fn set_current_master_length(&mut self, length: VInt) {
-		if self.ctx.depth == 0 {
-			assert!(self.ctx.masters.is_empty());
-			return;
-		}
-
-		self.ctx.masters[(self.ctx.depth - 1) as usize].remaining_length = length;
-	}
-
 	fn push_new_master(&mut self, master: MasterElement, size: VInt) -> Result<()> {
+		log::debug!("New master element: {:?}", master.id);
+
 		if self.ctx.depth == MAX_DEPTH {
 			decode_err!(@BAIL Ebml, "Maximum depth reached");
 		}
@@ -405,7 +422,7 @@ where
 		// If we are at the root level, we do not increment the depth
 		// since we are not actually inside a master element.
 		// For example, we are moving from \EBML to \Segment.
-		let at_root_level = self.ctx.depth == ROOT_DEPTH && self.current_master_length() == 0;
+		let at_root_level = self.ctx.depth == ROOT_DEPTH && self.ctx.current_master_length() == 0;
 		if at_root_level {
 			assert_eq!(self.ctx.masters.len(), 1);
 			self.ctx.masters.clear();
@@ -415,8 +432,39 @@ where
 
 		self.ctx.masters.push(MasterElementContext {
 			element: master,
-			remaining_length: size,
+			depth: Depth {
+				level: self.ctx.depth,
+				length: size,
+			},
 		});
+
+		Ok(())
+	}
+
+	fn goto_previous_master(&mut self) -> io::Result<()> {
+		let lock_depth = self
+			.ctx
+			.lock_depths
+			.last()
+			.copied()
+			.unwrap_or(ROOT_DEPTH as usize);
+		if lock_depth == self.ctx.depth as usize || self.ctx.depth == 0 {
+			return Ok(());
+		}
+
+		if self.ctx.depth == ROOT_DEPTH {
+			return Err(io::Error::new(
+				io::ErrorKind::Other,
+				"Cannot go to previous master element, already at root",
+			));
+		}
+
+		while self.ctx.current_master_length() == 0
+			&& (self.ctx.depth as usize != lock_depth && self.ctx.depth != ROOT_DEPTH)
+		{
+			self.ctx.depth -= 1;
+			let _ = self.ctx.masters.pop();
+		}
 
 		Ok(())
 	}
@@ -424,11 +472,7 @@ where
 	fn goto_next_master(&mut self) -> Result<ElementReaderYield> {
 		self.exhaust_current_master()?;
 
-		let header = ElementHeader::read(
-			&mut self.reader,
-			self.ctx.max_id_length,
-			self.ctx.max_size_length,
-		)?;
+		let header = ElementHeader::read(self, self.ctx.max_id_length, self.ctx.max_size_length)?;
 		let Some(master) = master_elements().get(&header.id) else {
 			// We encountered an unknown master element
 			return Ok(ElementReaderYield::Unknown(header));
@@ -439,35 +483,23 @@ where
 		Ok(ElementReaderYield::Master((master.id, header.size)))
 	}
 
-	fn goto_previous_master(&mut self) -> Result<()> {
-		if self.ctx.depth == ROOT_DEPTH || self.ctx.lock_depths.last() == Some(&self.ctx.depth) {
-			decode_err!(@BAIL Ebml, "Cannot go to previous master element, already at root")
-		}
-
-		self.exhaust_current_master()?;
-
-		self.ctx.depth -= 1;
-		let _ = self.ctx.masters.pop();
-
-		Ok(())
-	}
-
 	pub(crate) fn next(&mut self) -> Result<ElementReaderYield> {
-		let Some(current_master) = self.current_master() else {
+		let Some(current_master) = self.ctx.current_master() else {
 			return self.goto_next_master();
 		};
 
-		if self.ctx.locked && self.ctx.lock_len == 0 {
+		if self.ctx.locked && self.ctx.remaining_lock_length() == 0 {
 			return Ok(ElementReaderYield::Eof);
 		}
 
-		if self.current_master_length() == 0 {
+		if current_master.depth.length == 0 {
 			return self.goto_next_master();
 		}
 
 		let header = ElementHeader::read(self, self.ctx.max_id_length, self.ctx.max_size_length)?;
 
 		let Some((_, child)) = current_master
+			.element
 			.children
 			.iter()
 			.find(|(id, _)| *id == header.id)
@@ -476,12 +508,11 @@ where
 		};
 
 		if child.data_type == ElementDataType::Master {
-			self.push_new_master(
-				*master_elements()
-					.get(&header.id)
-					.expect("Nested master elements should be defined at this level."),
-				header.size,
-			)?;
+			let master = *master_elements()
+				.get(&header.id)
+				.expect("Nested master elements should be defined at this level.");
+
+			self.push_new_master(master, header.size)?;
 
 			// We encountered a nested master element
 			return Ok(ElementReaderYield::Master((child.ident, header.size)));
@@ -491,12 +522,11 @@ where
 	}
 
 	pub(crate) fn exhaust_current_master(&mut self) -> Result<()> {
-		let master_length = self.current_master_length().value();
-		if master_length == 0 {
+		let Some(current_master) = self.ctx.current_master() else {
 			return Ok(());
-		}
+		};
 
-		self.skip(master_length)?;
+		self.skip(current_master.depth.length.value())?;
 		Ok(())
 	}
 
@@ -504,8 +534,7 @@ where
 		log::trace!("New lock at depth: {}", self.ctx.depth);
 
 		self.ctx.locked = true;
-		self.ctx.lock_len = self.current_master_length();
-		self.ctx.lock_depths.push(self.ctx.depth);
+		self.ctx.lock_depths.push(self.ctx.depth as usize);
 	}
 
 	pub(crate) fn unlock(&mut self) {
@@ -520,7 +549,6 @@ where
 		};
 
 		log::trace!("Moving lock to depth: {}", last);
-		self.ctx.lock_len = self.ctx.masters[(*last - 1) as usize].remaining_length;
 	}
 
 	pub(crate) fn children(&mut self) -> ElementChildIterator<'_, R> {
@@ -531,12 +559,12 @@ where
 	pub(crate) fn skip(&mut self, length: u64) -> Result<()> {
 		log::trace!("Skipping {} bytes", length);
 
-		let current_master_length = self.current_master_length();
+		let current_master_length = self.ctx.current_master_length();
 		if length > current_master_length.value() {
 			decode_err!(@BAIL Ebml, "Cannot skip past the end of the current master element")
 		}
 
-		std::io::copy(&mut self.by_ref().take(length), &mut std::io::sink())?;
+		std::io::copy(&mut self.by_ref().take(length), &mut io::sink())?;
 		Ok(())
 	}
 
@@ -688,9 +716,9 @@ where
 			.lock_depths
 			.last()
 			.expect("a child iterator should always have a lock depth");
-		assert!(lock_depth <= self.reader.ctx.depth);
+		assert!(lock_depth <= self.reader.ctx.depth as usize);
 
-		self.reader.ctx.masters[(lock_depth - 1) as usize].remaining_length == 0
+		self.reader.ctx.remaining_lock_length() == 0
 	}
 }
 

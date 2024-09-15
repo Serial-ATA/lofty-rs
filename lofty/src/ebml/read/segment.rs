@@ -79,7 +79,7 @@ where
 				}
 			},
 			ElementReaderYield::Eof => break,
-			_ => unreachable!("Unhandled child element in \\Ebml\\Segment: {child:?}"),
+			_ => unreachable!("Unhandled child element in \\Segment: {child:?}"),
 		}
 	}
 
