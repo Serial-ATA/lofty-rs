@@ -21,10 +21,10 @@ grammar, punctuation, or missing examples is highly appreciated!
 
 ## Examples
 
-* [Tag reader](examples/tag_reader.rs)
-* [Tag stripper](examples/tag_stripper.rs)
-* [Tag writer](examples/tag_writer.rs)
-* [Custom resolver](examples/custom_resolver)
+* [Tag reader](https://github.com/Serial-ATA/lofty-rs/blob/main/examples/tag_reader.rs)
+* [Tag stripper](https://github.com/Serial-ATA/lofty-rs/blob/main/examples/tag_stripper.rs)
+* [Tag writer](https://github.com/Serial-ATA/lofty-rs/blob/main/examples/tag_writer.rs)
+* [Custom resolver](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver)
 
 To try them out, run:
 
