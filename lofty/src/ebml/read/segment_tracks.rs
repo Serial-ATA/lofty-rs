@@ -24,7 +24,7 @@ where
 			},
 			ElementReaderYield::Eof => break,
 			_ => {
-				unimplemented!("Unhandled child element in \\Ebml\\Segment\\Tracks: {child:?}");
+				unimplemented!("Unhandled child element in \\Segment\\Tracks: {child:?}");
 			},
 		}
 	}
