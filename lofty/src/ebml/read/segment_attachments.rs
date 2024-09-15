@@ -19,7 +19,7 @@ where
 {
 	while let Some(child) = children_reader.next()? {
 		match child {
-			ElementReaderYield::Master((ElementIdent::AttachedFile, size)) => {
+			ElementReaderYield::Master((ElementIdent::AttachedFile, _size)) => {
 				let attached_file = read_attachment(children_reader)?;
 				tag.attached_files.push(attached_file);
 			},
