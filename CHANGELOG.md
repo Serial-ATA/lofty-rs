@@ -28,7 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))
-- **Timestamp**: Support timestamps without separators (ex. "20240906" vs "2024-09-06") ([issue](https://github.com/Serial-ATA/lofty-rs/issues/452)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/453))
+- **Timestamp**:
+  - Support timestamps without separators (ex. "20240906" vs "2024-09-06") ([issue](https://github.com/Serial-ATA/lofty-rs/issues/452)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/453))
+  - `Timestamp::parse` will now short-circuit when possible in `ParsingMode::{BestAttempt, Relaxed}` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/462)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/463))
+    - For example, the timestamp "2024-06-03 14:08:49" contains a space instead of the required "T" marker.
+      In `ParsingMode::Strict`, this would be an error. Otherwise, the parser will just stop once it hits the space
+      and return the timestamp up to that point.
 - **ID3v2**:
   - `ItemKey::Director` will now be written correctly as a TXXX frame ([PR](https://github.com/Serial-ATA/lofty-rs/issues/454))
   - When skipping invalid frames in `ParsingMode::{BestAttempt, Relaxed}`, the parser will no longer be able to go out of the bounds

@@ -1,5 +1,5 @@
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::tag::items::Timestamp;
@@ -77,14 +77,18 @@ impl<'a> TimestampFrame<'a> {
 			return Ok(None);
 		};
 		let Some(encoding) = TextEncoding::from_u8(encoding_byte) else {
-			return Err(LoftyError::new(ErrorKind::TextDecode(
-				"Found invalid encoding",
-			)));
+			if parse_mode != ParsingMode::Relaxed {
+				err!(TextDecode("Found invalid encoding"))
+			}
+			return Ok(None);
 		};
 
 		let value = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
 		if !value.is_ascii() {
-			err!(BadTimestamp("Timestamp contains non-ASCII characters"))
+			if parse_mode == ParsingMode::Strict {
+				err!(BadTimestamp("Timestamp contains non-ASCII characters"))
+			}
+			return Ok(None);
 		}
 
 		let header = FrameHeader::new(id, frame_flags);
@@ -96,7 +100,18 @@ impl<'a> TimestampFrame<'a> {
 
 		let reader = &mut value.as_bytes();
 
-		let Some(timestamp) = Timestamp::parse(reader, parse_mode)? else {
+		let result;
+		match Timestamp::parse(reader, parse_mode) {
+			Ok(timestamp) => result = timestamp,
+			Err(e) => {
+				if parse_mode != ParsingMode::Relaxed {
+					return Err(e);
+				}
+				return Ok(None);
+			},
+		}
+
+		let Some(timestamp) = result else {
 			// Timestamp is empty
 			return Ok(None);
 		};
@@ -105,7 +120,7 @@ impl<'a> TimestampFrame<'a> {
 		Ok(Some(frame))
 	}
 
-	/// Convert an [`TimestampFrame`] to a byte vec
+	/// Convert a [`TimestampFrame`] to a byte vec
 	///
 	/// # Errors
 	///
