@@ -98,7 +98,7 @@ impl Timestamp {
 				match $expr {
 					Ok((_, 0)) => break,
 					Ok((val, _)) => Some(val as u8),
-					Err(e) => return Err(e.into()),
+					Err(e) => return Err(e),
 				}
 			};
 		}
@@ -126,7 +126,7 @@ impl Timestamp {
 
 		let reader = &mut &content[..];
 
-		// We need to very that the year is exactly 4 bytes long. This doesn't matter for other segments.
+		// We need to verify that the year is exactly 4 bytes long. This doesn't matter for other segments.
 		let (year, bytes_read) = Self::segment::<4>(reader, None, parse_mode)?;
 		if bytes_read != 4 {
 			err!(BadTimestamp(
@@ -173,22 +173,31 @@ impl Timestamp {
 		sep: Option<u8>,
 		parse_mode: ParsingMode,
 	) -> Result<(u16, usize)> {
+		const STOP_PARSING: (u16, usize) = (0, 0);
+
 		if content.is_empty() {
-			return Ok((0, 0));
+			return Ok(STOP_PARSING);
 		}
 
 		if let Some(sep) = sep {
 			let byte = content.read_u8()?;
 			if byte != sep {
-				err!(BadTimestamp("Expected a separator"))
+				if parse_mode == ParsingMode::Strict {
+					err!(BadTimestamp("Expected a separator"))
+				}
+				return Ok(STOP_PARSING);
 			}
 		}
 
 		if content.len() < SIZE {
-			err!(BadTimestamp("Timestamp segment is too short"))
+			if parse_mode == ParsingMode::Strict {
+				err!(BadTimestamp("Timestamp segment is too short"))
+			}
+
+			return Ok(STOP_PARSING);
 		}
 
-		let mut num = 0;
+		let mut num = None;
 		let mut byte_count = 0;
 		for i in content[..SIZE].iter().copied() {
 			// Common spec violation: Timestamps may use spaces instead of zeros, so the month of June
@@ -202,6 +211,8 @@ impl Timestamp {
 				continue;
 			}
 
+			// TODO: This is a spec violation for ID3v2, but not for ISO 8601 in general. Maybe consider
+			//       making this a warning and allow it for all parsing modes?
 			if !i.is_ascii_digit() {
 				// Another spec violation, timestamps in the wild may not use a zero or a space, so
 				// we would have to treat "06", "6", and " 6" as valid.
@@ -220,13 +231,23 @@ impl Timestamp {
 				))
 			}
 
-			num = num * 10 + u16::from(i - b'0');
+			num = Some(num.unwrap_or(0) * 10 + u16::from(i - b'0'));
 			byte_count += 1;
 		}
 
+		let Some(parsed_num) = num else {
+			assert_ne!(
+				parse_mode,
+				ParsingMode::Strict,
+				"The timestamp segment is empty, the parser should've failed before this point."
+			);
+
+			return Ok(STOP_PARSING);
+		};
+
 		*content = &content[byte_count..];
 
-		Ok((num, byte_count))
+		Ok((parsed_num, byte_count))
 	}
 
 	pub(crate) fn verify(&self) -> Result<()> {
@@ -316,21 +337,83 @@ mod tests {
 		assert_eq!(timestamp.to_string().len(), 7);
 	}
 
-	#[test_log::test]
-	fn reject_broken_timestamps() {
-		let broken_timestamps: &[&[u8]] = &[
-			b"2024-",
-			b"2024-06-",
-			b"2024--",
-			b"2024-  -",
-			b"2024-06-03T",
-			b"2024:06",
-			b"2024-0-",
-		];
+	fn broken_timestamps() -> [(&'static [u8], Timestamp); 7] {
+		[
+			(
+				b"2024-",
+				Timestamp {
+					year: 2024,
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024-06-",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024--",
+				Timestamp {
+					year: 2024,
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024-  -",
+				Timestamp {
+					year: 2024,
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024-06-03T",
+				Timestamp {
+					year: 2024,
+					month: Some(6),
+					day: Some(3),
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024:06",
+				Timestamp {
+					year: 2024,
+					..Timestamp::default()
+				},
+			),
+			(
+				b"2024-0-",
+				Timestamp {
+					year: 2024,
+					month: Some(0),
+					..Timestamp::default()
+				},
+			),
+		]
+	}
 
-		for timestamp in broken_timestamps {
-			let parsed_timestamp = Timestamp::parse(&mut &timestamp[..], ParsingMode::BestAttempt);
+	#[test_log::test]
+	fn reject_broken_timestamps_strict() {
+		for (timestamp, _) in broken_timestamps() {
+			let parsed_timestamp = Timestamp::parse(&mut &timestamp[..], ParsingMode::Strict);
 			assert!(parsed_timestamp.is_err());
+		}
+	}
+
+	#[test_log::test]
+	fn accept_broken_timestamps_best_attempt() {
+		for (timestamp, partial_result) in broken_timestamps() {
+			let parsed_timestamp = Timestamp::parse(&mut &timestamp[..], ParsingMode::BestAttempt);
+			assert!(parsed_timestamp.is_ok());
+			assert_eq!(
+				parsed_timestamp.unwrap(),
+				Some(partial_result),
+				"{}",
+				timestamp.escape_ascii()
+			);
 		}
 	}
 
@@ -465,5 +548,26 @@ mod tests {
 				.unwrap_or_else(|e| panic!("{e}: {}", std::str::from_utf8(data).unwrap()));
 			assert_eq!(parsed_timestamp, Some(expected));
 		}
+	}
+
+	#[test_log::test]
+	fn timestamp_no_time_marker() {
+		let timestamp = "2024-06-03 14:08:49";
+
+		let parsed_timestamp_strict =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::Strict);
+		assert!(parsed_timestamp_strict.is_err());
+
+		let parsed_timestamp_best_attempt =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::BestAttempt).unwrap();
+		assert_eq!(
+			parsed_timestamp_best_attempt,
+			Some(Timestamp {
+				year: 2024,
+				month: Some(6),
+				day: Some(3),
+				..Timestamp::default()
+			})
+		);
 	}
 }
