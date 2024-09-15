@@ -1,6 +1,6 @@
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
-use crate::ebml::{EbmlTag, Language, SimpleTag, TagValue, TargetType};
+use crate::ebml::{EbmlTag, Language, SimpleTag, Tag, TagValue, Target, TargetType};
 use crate::error::Result;
 
 use crate::macros::decode_err;
@@ -17,7 +17,8 @@ where
 	while let Some(child) = children_reader.next()? {
 		match child {
 			ElementReaderYield::Master((ElementIdent::Tag, _size)) => {
-				read_tag(&mut children_reader.children(), tag)?
+				let tag_element = read_tag(&mut children_reader.children())?;
+				tag.tags.push(tag_element);
 			},
 			ElementReaderYield::Eof => break,
 			_ => unimplemented!("Unhandled child element in \\Segment\\Tags: {child:?}"),
@@ -27,10 +28,13 @@ where
 	Ok(())
 }
 
-fn read_tag<R>(children_reader: &mut ElementChildIterator<'_, R>, _tag: &mut EbmlTag) -> Result<()>
+fn read_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<Tag>
 where
 	R: Read + Seek,
 {
+	let mut target = None;
+	let mut simple_tags = Vec::new();
+
 	while let Some(child) = children_reader.next()? {
 		let ElementReaderYield::Master((master, _size)) = child else {
 			match child {
@@ -43,10 +47,17 @@ where
 
 		match master {
 			ElementIdent::Targets => {
-				let _ = read_targets(&mut children_reader.children())?;
+				if target.is_some() {
+					decode_err!(
+						@BAIL Ebml,
+						"Duplicate Targets element found in \\Segment\\Tags\\Tag"
+					);
+				}
+
+				target = Some(read_targets(&mut children_reader.children())?);
 			},
 			ElementIdent::SimpleTag => {
-				let _ = read_simple_tag(&mut children_reader.children())?;
+				simple_tags.push(read_simple_tag(&mut children_reader.children())?);
 			},
 			_ => {
 				unimplemented!("Unhandled child element in \\Segment\\Tags\\Tag: {master:?}");
@@ -54,28 +65,21 @@ where
 		}
 	}
 
-	Ok(())
-}
+	let Some(target) = target else {
+		decode_err!(@BAIL Ebml, "\\Segment\\Tags\\Tag is missing the required `Targets` element");
+	};
 
-struct Target {
-	target_type_value: TargetType,
-	target_type: Option<String>,
-	track_uid: Vec<u64>,
-	edition_uid: Vec<u64>,
-	chapter_uid: Vec<u64>,
-	attachment_uid: Vec<u64>,
+	Ok(Tag {
+		target,
+		simple_tags,
+	})
 }
 
 fn read_targets<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<Target>
 where
 	R: Read + Seek,
 {
-	let mut target_type_value = None;
-	let mut target_type = None;
-	let mut track_uid = Vec::new();
-	let mut edition_uid = Vec::new();
-	let mut chapter_uid = Vec::new();
-	let mut attachment_uid = Vec::new();
+	let mut target = Target::default();
 
 	while let Some(child) = children_reader.next()? {
 		let ElementReaderYield::Child((child, size)) = child else {
@@ -89,22 +93,35 @@ where
 
 		match child.ident {
 			ElementIdent::TargetTypeValue => {
-				target_type_value = Some(children_reader.read_unsigned_int(size.value())?);
+				let value = children_reader.read_unsigned_int(size.value())?;
+
+				// Casting the `u64` to `u8` is safe because the value is checked to be within
+				// the range of `TargetType` anyway.
+				let target_type = TargetType::try_from(value as u8)?;
+				target.target_type = target_type;
 			},
 			ElementIdent::TargetType => {
-				target_type = Some(children_reader.read_string(size.value())?);
+				target.name = Some(children_reader.read_string(size.value())?);
 			},
 			ElementIdent::TagTrackUID => {
-				track_uid.push(children_reader.read_unsigned_int(size.value())?);
+				let mut track_uids = target.track_uids.unwrap_or_default();
+				track_uids.push(children_reader.read_unsigned_int(size.value())?);
+				target.track_uids = Some(track_uids);
 			},
 			ElementIdent::TagEditionUID => {
-				edition_uid.push(children_reader.read_unsigned_int(size.value())?);
+				let mut edition_uids = target.edition_uids.unwrap_or_default();
+				edition_uids.push(children_reader.read_unsigned_int(size.value())?);
+				target.edition_uids = Some(edition_uids);
 			},
 			ElementIdent::TagChapterUID => {
-				chapter_uid.push(children_reader.read_unsigned_int(size.value())?);
+				let mut chapter_uids = target.chapter_uids.unwrap_or_default();
+				chapter_uids.push(children_reader.read_unsigned_int(size.value())?);
+				target.chapter_uids = Some(chapter_uids);
 			},
 			ElementIdent::TagAttachmentUID => {
-				attachment_uid.push(children_reader.read_unsigned_int(size.value())?);
+				let mut attachment_uids = target.attachment_uids.unwrap_or_default();
+				attachment_uids.push(children_reader.read_unsigned_int(size.value())?);
+				target.attachment_uids = Some(attachment_uids);
 			},
 			_ => {
 				unreachable!("Unhandled child element in \\Segment\\Tags\\Tag\\Targets: {child:?}")
@@ -112,23 +129,7 @@ where
 		}
 	}
 
-	let target_type_value = match target_type_value {
-		// Casting the `u64` to `u8` is safe because the value is checked to be within
-		// the range of `TargetType` anyway.
-		Some(value) => TargetType::try_from(value as u8)?,
-		// The spec defines TargetType 50 (Album) as the default value, as it is the most
-		// common grouping level.
-		None => TargetType::Album,
-	};
-
-	Ok(Target {
-		target_type_value,
-		target_type,
-		track_uid,
-		edition_uid,
-		chapter_uid,
-		attachment_uid,
-	})
+	Ok(target)
 }
 
 fn read_simple_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<SimpleTag>
