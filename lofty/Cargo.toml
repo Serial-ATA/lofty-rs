@@ -37,7 +37,7 @@ hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683d
 structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.10.1"
 test-log = "0.2.16"
-iai-callgrind = "0.12.0"
+iai-callgrind = "0.13.4"
 
 [lints]
 workspace = true
