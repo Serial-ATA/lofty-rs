@@ -51,6 +51,8 @@ pub(crate) fn init_write_lookup(
 		.write_to(file, write_options)
 	});
 
+	insert!(map, Ebml, { todo!() });
+
 	insert!(map, Id3v1, {
 		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(file, write_options)
 	});
