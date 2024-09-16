@@ -24,7 +24,7 @@ use lofty_attr::tag;
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(description = "An `EBML` tag", supported_formats(Ebml))]
 pub struct EbmlTag {
-	pub(crate) tags: Vec<Tag>,
+	pub(crate) tags: Vec<Tag<'static>>,
 	pub(crate) attached_files: Vec<AttachedFile>,
 }
 
@@ -40,11 +40,7 @@ impl TagExt for EbmlTag {
 	}
 
 	fn len(&self) -> usize {
-		self.tags
-			.iter()
-			.map(|tag| tag.simple_tags.len())
-			.sum::<usize>()
-			+ self.attached_files.len()
+		self.tags.iter().map(Tag::len).sum::<usize>() + self.attached_files.len()
 	}
 
 	fn contains<'a>(&'a self, _key: Self::RefKey<'a>) -> bool {

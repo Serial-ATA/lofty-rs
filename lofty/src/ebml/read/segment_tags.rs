@@ -28,7 +28,7 @@ where
 	Ok(())
 }
 
-fn read_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<Tag>
+fn read_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<Tag<'static>>
 where
 	R: Read + Seek,
 {
@@ -132,7 +132,9 @@ where
 	Ok(target)
 }
 
-fn read_simple_tag<R>(children_reader: &mut ElementChildIterator<'_, R>) -> Result<SimpleTag>
+fn read_simple_tag<R>(
+	children_reader: &mut ElementChildIterator<'_, R>,
+) -> Result<SimpleTag<'static>>
 where
 	R: Read + Seek,
 {
@@ -185,7 +187,7 @@ where
 					continue;
 				}
 
-				value = Some(TagValue::String(children_reader.read_string(size.value())?));
+				value = Some(TagValue::from(children_reader.read_string(size.value())?));
 			},
 			ElementIdent::TagBinary => {
 				if value.is_some() {
@@ -194,7 +196,7 @@ where
 					continue;
 				}
 
-				value = Some(TagValue::Binary(children_reader.read_binary(size.value())?));
+				value = Some(TagValue::from(children_reader.read_binary(size.value())?));
 			},
 			_ => {
 				unreachable!(
@@ -212,7 +214,7 @@ where
 	};
 
 	Ok(SimpleTag {
-		name,
+		name: name.into(),
 		language,
 		default,
 		value,
