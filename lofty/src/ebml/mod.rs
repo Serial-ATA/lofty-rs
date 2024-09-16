@@ -16,7 +16,7 @@ pub use vint::VInt;
 /// An EBML file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-// TODO: #[lofty(internal_write_module_do_not_use_anywhere_else)]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct EbmlFile {
 	/// An EBML tag
 	#[lofty(tag_type = "Ebml")]

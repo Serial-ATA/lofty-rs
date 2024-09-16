@@ -2,6 +2,7 @@ mod attached_file;
 mod simple_tag;
 mod tag;
 mod target;
+mod write;
 
 pub use attached_file::*;
 pub use simple_tag::*;
@@ -39,7 +40,11 @@ impl TagExt for EbmlTag {
 	}
 
 	fn len(&self) -> usize {
-		todo!()
+		self.tags
+			.iter()
+			.map(|tag| tag.simple_tags.len())
+			.sum::<usize>()
+			+ self.attached_files.len()
 	}
 
 	fn contains<'a>(&'a self, _key: Self::RefKey<'a>) -> bool {
@@ -47,7 +52,7 @@ impl TagExt for EbmlTag {
 	}
 
 	fn is_empty(&self) -> bool {
-		todo!()
+		self.tags.is_empty() && self.attached_files.is_empty()
 	}
 
 	fn save_to<F>(
@@ -85,7 +90,8 @@ impl TagExt for EbmlTag {
 	}
 
 	fn clear(&mut self) {
-		todo!()
+		self.tags.clear();
+		self.attached_files.clear();
 	}
 }
 
