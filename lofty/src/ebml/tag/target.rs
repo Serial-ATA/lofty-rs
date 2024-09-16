@@ -93,3 +93,12 @@ pub struct Target {
 	/// [`AttachedFile::uid`]: crate::ebml::AttachedFile::uid
 	pub attachment_uids: Option<Vec<u64>>,
 }
+
+impl From<TargetType> for Target {
+	fn from(target_type: TargetType) -> Self {
+		Self {
+			target_type,
+			..Default::default()
+		}
+	}
+}
