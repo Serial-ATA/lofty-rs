@@ -11,7 +11,7 @@ use lofty_attr::LoftyFile;
 
 pub use properties::EbmlProperties;
 pub use tag::*;
-pub use vint::VInt;
+pub use vint::*;
 
 /// An EBML file
 #[derive(LoftyFile, Default)]

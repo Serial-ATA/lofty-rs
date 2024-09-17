@@ -25,7 +25,7 @@ pub struct AttachedFile {
 	/// Unique ID representing the file, as random as possible.
 	pub uid: u64,
 	/// A binary value that a track/codec can refer to when the attachment is needed.
-	pub referral: Option<String>,
+	pub referral: Option<Vec<u8>>,
 	/// The timestamp at which this optimized font attachment comes into context.
 	///
 	/// This is expressed in Segment Ticks which is based on `TimestampScale`. This element is

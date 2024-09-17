@@ -102,3 +102,16 @@ impl From<TargetType> for Target {
 		}
 	}
 }
+
+impl Target {
+	// TargetType::Album is the default value. If nothing else is set, it is valid to write
+	// a zero-sized Targets element.
+	pub(super) fn is_empty_candidate(&self) -> bool {
+		self.target_type == TargetType::Album
+			&& self.name.is_none()
+			&& self.track_uids.is_none()
+			&& self.edition_uids.is_none()
+			&& self.chapter_uids.is_none()
+			&& self.attachment_uids.is_none()
+	}
+}
