@@ -87,7 +87,7 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 			let id = child.info.id;
 			let data_type = &child.info.data_type;
 			quote! {
-				(VInt(#id), ChildElementDescriptor {
+				(ElementId(#id), ChildElementDescriptor {
 					ident: ElementIdent::#readable_ident,
 					data_type: ElementDataType::#data_type,
 				})
@@ -96,7 +96,7 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 
 		quote! {
 			m.insert(
-				VInt(#id),
+				ElementId(#id),
 				MasterElement {
 					id: ElementIdent::#readable_ident,
 					children: &[#( #children ),*][..]
@@ -119,8 +119,8 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 			#( #ident_variants )*
 		}
 
-		fn master_elements() -> &'static ::std::collections::HashMap<VInt, MasterElement> {
-			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<VInt, MasterElement>> = ::std::sync::OnceLock::new();
+		fn master_elements() -> &'static ::std::collections::HashMap<ElementId, MasterElement> {
+			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<ElementId, MasterElement>> = ::std::sync::OnceLock::new();
 			INSTANCE.get_or_init(|| {
 				let mut m = ::std::collections::HashMap::new();
 				#( #elements_map_inserts )*

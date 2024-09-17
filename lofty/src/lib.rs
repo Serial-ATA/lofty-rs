@@ -104,6 +104,7 @@
 
 // proc macro hacks
 extern crate self as lofty;
+
 pub(crate) mod _this_is_internal {}
 
 pub mod config;
