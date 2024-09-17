@@ -74,7 +74,7 @@ where
 				uid = Some(children_reader.read_unsigned_int(size)?);
 			},
 			ElementIdent::FileReferral => {
-				referral = Some(children_reader.read_string(size)?);
+				referral = Some(children_reader.read_binary(size)?);
 			},
 			ElementIdent::FileUsedStartTime => {
 				used_start_time = Some(children_reader.read_unsigned_int(size)?);

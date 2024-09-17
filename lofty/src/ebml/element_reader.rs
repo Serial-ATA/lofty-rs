@@ -1,4 +1,4 @@
-use crate::ebml::vint::VInt;
+use crate::ebml::vint::{ElementId, VInt};
 use crate::error::Result;
 use crate::macros::{decode_err, try_vec};
 
@@ -10,8 +10,8 @@ use lofty_attr::ebml_master_elements;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct ElementHeader {
-	pub(crate) id: VInt,
-	pub(crate) size: VInt,
+	pub(crate) id: ElementId,
+	pub(crate) size: VInt<u64>,
 }
 
 impl ElementHeader {
@@ -20,8 +20,8 @@ impl ElementHeader {
 		R: Read,
 	{
 		Ok(Self {
-			id: VInt::parse_from_element_id(reader, max_id_length)?,
-			size: VInt::parse(reader, max_vint_length)?,
+			id: ElementId::parse(reader, max_id_length)?,
+			size: VInt::<u64>::parse(reader, max_vint_length)?,
 		})
 	}
 }
@@ -41,7 +41,7 @@ pub enum ElementDataType {
 #[derive(Copy, Clone, Debug)]
 struct MasterElement {
 	id: ElementIdent,
-	children: &'static [(VInt, ChildElementDescriptor)],
+	children: &'static [(ElementId, ChildElementDescriptor)],
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -247,7 +247,7 @@ const ROOT_DEPTH: u8 = 1;
 #[derive(Copy, Clone, Debug)]
 struct Depth {
 	level: u8,
-	length: VInt,
+	length: VInt<u64>,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -302,7 +302,7 @@ impl ElementReaderContext {
 		self.masters.get((self.depth - 1) as usize).copied()
 	}
 
-	fn current_master_length(&self) -> VInt {
+	fn current_master_length(&self) -> VInt<u64> {
 		assert!(self.depth > 0);
 		self.current_master()
 			.expect("should have current master element")
@@ -316,7 +316,7 @@ impl ElementReaderContext {
 		}
 	}
 
-	fn remaining_lock_length(&self) -> VInt {
+	fn remaining_lock_length(&self) -> VInt<u64> {
 		assert!(self.locked && !self.lock_depths.is_empty());
 
 		let lock_depth = *self.lock_depths.last().unwrap();
@@ -326,8 +326,8 @@ impl ElementReaderContext {
 
 #[derive(Debug)]
 pub(crate) enum ElementReaderYield {
-	Master((ElementIdent, VInt)),
-	Child((ChildElementDescriptor, VInt)),
+	Master((ElementIdent, VInt<u64>)),
+	Child((ChildElementDescriptor, VInt<u64>)),
 	Unknown(ElementHeader),
 	Eof,
 }
@@ -412,7 +412,7 @@ where
 		self.ctx.max_size_length = len
 	}
 
-	fn push_new_master(&mut self, master: MasterElement, size: VInt) -> Result<()> {
+	fn push_new_master(&mut self, master: MasterElement, size: VInt<u64>) -> Result<()> {
 		log::debug!("New master element: {:?}", master.id);
 
 		if self.ctx.depth == MAX_DEPTH {
@@ -662,7 +662,7 @@ where
 		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.8
 		// A Binary Element MUST declare a length in octets from zero to VINTMAX.
 
-		if element_length > VInt::MAX {
+		if element_length > VInt::<u64>::MAX {
 			decode_err!(@BAIL Ebml, "Binary element length is too large")
 		}
 

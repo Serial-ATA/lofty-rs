@@ -10,7 +10,7 @@ use std::io::{Read, Seek};
 pub(super) fn read_from<R>(
 	children_reader: &mut ElementChildIterator<'_, R>,
 	parse_options: ParseOptions,
-	properties: &mut EbmlProperties,
+	_properties: &mut EbmlProperties,
 ) -> Result<()>
 where
 	R: Read + Seek,
@@ -44,7 +44,7 @@ const AUDIO_TRACK_TYPE: u64 = 2;
 
 fn read_track_entry<R>(
 	children_reader: &mut ElementChildIterator<'_, R>,
-	parse_options: ParseOptions,
+	_parse_options: ParseOptions,
 	audio_tracks: &mut Vec<AudioTrack>,
 ) -> Result<()>
 where

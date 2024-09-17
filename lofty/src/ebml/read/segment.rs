@@ -3,7 +3,7 @@ use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::tag::EbmlTag;
-use crate::ebml::VInt;
+use crate::ebml::ElementId;
 use crate::error::Result;
 
 use std::io::{Read, Seek};
@@ -72,7 +72,7 @@ where
 						// elements, so we can just skip any useless ones.
 
 						children_reader.skip_element(ElementHeader {
-							id: VInt(id as u64),
+							id: ElementId(id as u64),
 							size,
 						})?;
 					},

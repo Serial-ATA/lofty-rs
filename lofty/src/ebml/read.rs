@@ -9,7 +9,7 @@ mod segment_tracks;
 use super::EbmlFile;
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
-use crate::ebml::vint::VInt;
+use crate::ebml::vint::ElementId;
 use crate::ebml::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -17,6 +17,9 @@ use crate::macros::decode_err;
 use std::io::{Read, Seek};
 
 const SUPPORTED_DOC_TYPES: &[&str] = &["matroska", "webm"];
+
+const CRC32_ID: ElementId = ElementId(0xBF);
+const VOID_ID: ElementId = ElementId(0xEC);
 
 pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<EbmlFile>
 where
@@ -45,7 +48,7 @@ where
 			// CRC-32 (0xBF) and Void (0xEC) elements can occur at the top level.
 			// This is valid, and we can just skip them.
 			ElementReaderYield::Unknown(ElementHeader {
-				id: VInt(id @ (0xBF | 0xEC)),
+				id: id @ (CRC32_ID | VOID_ID),
 				size,
 			}) => {
 				log::debug!("Skipping global element: {:X}", id);
