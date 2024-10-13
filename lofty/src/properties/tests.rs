@@ -1,6 +1,10 @@
 use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
 use crate::config::ParseOptions;
+use crate::ebml::{
+	AudioTrackDescriptor, AudioTrackSettings, EbmlFile, EbmlHeaderProperties, EbmlProperties,
+	SegmentInfo,
+};
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
 use crate::iff::aiff::{AiffFile, AiffProperties};
@@ -66,6 +70,42 @@ const FLAC_PROPERTIES: FlacProperties = FlacProperties {
 	channels: 2,
 	signature: 164_506_065_180_489_231_127_156_351_872_182_799_315,
 };
+
+#[allow(non_snake_case)]
+fn MKA_PROPERTIES() -> EbmlProperties {
+	EbmlProperties {
+		header: EbmlHeaderProperties {
+			version: 1,
+			read_version: 1,
+			max_id_length: 4,
+			max_size_length: 8,
+			doc_type: String::from("matroska"),
+			doc_type_version: 4,
+			doc_type_read_version: 0,
+		},
+		extensions: Vec::new(),
+		segment_info: SegmentInfo {
+			timestamp_scale: 1000000,
+			muxing_app: String::from("Lavf60.3.100"),
+			writing_app: String::from("Lavf60.3.100"),
+		},
+		audio_tracks: vec![AudioTrackDescriptor {
+			number: 0,
+			uid: 0,
+			language: String::new(),
+			default_duration: 0,
+			codec_id: String::new(),
+			codec_private: vec![],
+			settings: AudioTrackSettings {
+				sampling_frequency: 0,
+				output_sampling_frequency: 0,
+				channels: 0,
+				bit_depth: None,
+				emphasis: None,
+			},
+		}],
+	}
+}
 
 const MP1_PROPERTIES: MpegProperties = MpegProperties {
 	version: MpegVersion::V1,
@@ -323,6 +363,14 @@ fn flac_properties() {
 		get_properties::<FlacFile>("tests/files/assets/minimal/full_test.flac"),
 		FLAC_PROPERTIES
 	)
+}
+
+#[test_log::test]
+fn mka_properties() {
+	assert_eq!(
+		get_properties::<EbmlFile>("tests/files/assets/minimal/full_test.mka"),
+		MKA_PROPERTIES()
+	);
 }
 
 #[test_log::test]
