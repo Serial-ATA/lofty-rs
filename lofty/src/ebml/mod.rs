@@ -9,7 +9,7 @@ use lofty_attr::LoftyFile;
 
 // Exports
 
-pub use properties::EbmlProperties;
+pub use properties::*;
 pub use tag::*;
 pub use vint::*;
 

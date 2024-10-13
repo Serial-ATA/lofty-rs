@@ -1,5 +1,8 @@
 use crate::properties::FileProperties;
 
+/// Properties from the EBML header
+///
+/// These are present for all EBML formats.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EbmlHeaderProperties {
 	pub(crate) version: u64,
@@ -48,6 +51,7 @@ impl EbmlHeaderProperties {
 	}
 }
 
+/// An EBML DocType extension
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct EbmlExtension {
 	pub(crate) name: String,
@@ -66,6 +70,7 @@ impl EbmlExtension {
 	}
 }
 
+/// Information about a segment
 #[derive(Debug, Clone, PartialEq)]
 pub struct SegmentInfo {
 	pub(crate) timestamp_scale: u64,
@@ -107,6 +112,7 @@ impl Default for SegmentInfo {
 	}
 }
 
+/// A full descriptor for an audio track
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct AudioTrackDescriptor {
 	pub(crate) number: u64,
@@ -161,6 +167,7 @@ impl AudioTrackDescriptor {
 	}
 }
 
+/// Settings for an audio track
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct AudioTrackSettings {
 	pub(crate) sampling_frequency: u32,
@@ -199,6 +206,8 @@ impl AudioTrackSettings {
 	}
 }
 
+/// A rarely-used decoder hint that the file must be de-emphasized
+#[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum EbmlAudioTrackEmphasis {
 	None = 0,
