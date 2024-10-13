@@ -14,6 +14,7 @@ TAGNAME_ENUM = """/// A list of all specified Matroska tag names
 /// descriptions and expected data types of each tag.
 #[rustfmt::skip]
 #[allow(missing_docs)]
+#[non_exhaustive]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub enum TagName {
 """
