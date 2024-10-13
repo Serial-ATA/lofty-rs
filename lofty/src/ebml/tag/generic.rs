@@ -26,8 +26,8 @@ macro_rules! matroska_mapping_tables {
 		pub(crate) const SUPPORTED_ITEMKEYS: &[ItemKey] = &[
 			$(
 				$(
-					ItemKey::$item_key
-				),*
+					ItemKey::$item_key,
+				)*
 			)+
 		];
 
@@ -53,16 +53,81 @@ macro_rules! matroska_mapping_tables {
 	};
 }
 
-// TODO: Actually define all the mappings
 matroska_mapping_tables!(
 	Shot => [];
 	Scene => [];
 	Track => [
-		"TITLE" <=> TrackTitle,
-		"ARTIST" <=> TrackArtist,
+		// Organization Information
+		"PART_NUMBER"         <=> TrackNumber,
+
+		// Titles
+		"TITLE"               <=> TrackTitle,
+
+		// Nested Information
+		"SORT_WITH"           <=> TrackTitleSortOrder,
+
+		// Entities
+		"ARTIST"              <=> TrackArtist,
+		"LYRICS"              <=> Lyrics,
+		"COMPOSER"            <=> Composer,
+		"ARRANGER"            <=> Arranger,
+		"LYRICIST"            <=> Lyricist,
+		"CONDUCTOR"           <=> Conductor,
+		"DIRECTOR"            <=> Director,
+		"PRODUCER"            <=> Producer,
+		"ENCODED_BY"          <=> EncodedBy,
+		"MIXED_BY"            <=> MixDj,
+		"REMIXED_BY"          <=> Remixer,
+		"PUBLISHER"           <=> Publisher,
+		"LABEL"               <=> Label,
+
+		// Search and Classification
+		"GENRE"               <=> Genre,
+		"MOOD"                <=> Mood,
+		"INITIAL_KEY"         <=> InitialKey,
+		"ORIGINAL_MEDIA_TYPE" <=> OriginalMediaType,
+
+		// Technical Information
+		"ENCODER"             <=> EncoderSoftware,
+		"ENCODER_SETTINGS"    <=> EncoderSettings,
+		"BPM"                 <=> Bpm,
+		// TODO: ReplayGain? The values are binary in Matroska
+
+		// Identifiers
+		"ISRC"                <=> Isrc,
+		"BARCODE"             <=> Barcode,
+		"CATALOG_NUMBER"      <=> CatalogNumber,
 	];
 	Part => [];
-	Album => [];
+	Album => [
+		// Organization Information
+		"TOTAL_PARTS"    <=> TrackTotal,
+
+		// Titles
+		"TITLE"          <=> AlbumTitle,
+
+		// Nested Information
+		"SORT_WITH"      <=> AlbumTitleSortOrder,
+
+		// Entities
+		"ARTIST"         <=> AlbumArtist,
+
+		// Temporal Information
+		"DATE_RELEASED"  <=> ReleaseDate,
+		"DATE_RECORDED"  <=> RecordingDate,
+
+		// Technical Information
+		// TODO: ReplayGain? The values are binary in Matroska
+
+		// Commercial
+		"PURCHASE_ITEM"  <=> PaymentUrl,
+		"PURCHASE_INFO"  <=> CommercialInformationUrl,
+		"PURCHASE_OWNER" <=> FileOwner,
+
+		// Legal
+		"COPYRIGHT"      <=> CopyrightMessage,
+		"LICENSE"        <=> License,
+	];
 	Edition => [];
 	Collection => [];
 );
