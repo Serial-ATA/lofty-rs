@@ -7,6 +7,7 @@ use crate::error::Result;
 use crate::macros::decode_err;
 use crate::picture::MimeType;
 
+use std::borrow::Cow;
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
@@ -31,7 +32,7 @@ where
 	Ok(())
 }
 
-fn read_attachment<R>(element_reader: &mut ElementReader<R>) -> Result<AttachedFile>
+fn read_attachment<R>(element_reader: &mut ElementReader<R>) -> Result<AttachedFile<'static>>
 where
 	R: Read + Seek,
 {
@@ -105,12 +106,12 @@ where
 	};
 
 	Ok(AttachedFile {
-		description,
-		file_name,
+		description: description.map(Cow::Owned),
+		file_name: Cow::Owned(file_name),
 		mime_type,
-		file_data,
+		file_data: Cow::Owned(file_data),
 		uid,
-		referral,
+		referral: referral.map(Cow::Owned),
 		used_start_time,
 		used_end_time,
 	})

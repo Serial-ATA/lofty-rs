@@ -72,16 +72,22 @@ pub struct Target {
 	///
 	/// If the value is 0 at this level, the tags apply to all tracks in the Segment. If set to any
 	/// other value, it **MUST** match the [`TrackUID`] value of a track found in this Segment.
+	///
+	/// **Unsupported in WebM**
 	pub track_uids: Option<Vec<u64>>,
 	/// A unique ID to identify the [EditionEntry](s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all editions in the Segment. If set to
 	/// any other value, it **MUST** match the [`EditionUID`] value of an edition found in this Segment.
+	///
+	/// **Unsupported in WebM**
 	pub edition_uids: Option<Vec<u64>>,
 	/// A unique ID to identify the [Chapter](s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all chapters in the Segment. If set to
 	/// any other value, it **MUST** match the [`ChapterUID`] value of a chapter found in this Segment.
+	///
+	/// **Unsupported in WebM**
 	pub chapter_uids: Option<Vec<u64>>,
 	/// A unique ID to identify the [`AttachedFile`]\(s) the tags belong to.
 	///
@@ -91,6 +97,8 @@ pub struct Target {
 	///
 	/// [`AttachedFile`]: crate::ebml::AttachedFile
 	/// [`AttachedFile::uid`]: crate::ebml::AttachedFile::uid
+	///
+	/// **Unsupported in WebM**
 	pub attachment_uids: Option<Vec<u64>>,
 }
 
@@ -104,14 +112,22 @@ impl From<TargetType> for Target {
 }
 
 impl Target {
+	/// Used by [`EbmlTag::get`] to find eligible tags to search and edit
+	/// given a specific target type
+	pub(super) fn is_candidate_for_type(&self, target_type: TargetType) -> bool {
+		self.target_type == target_type && !self.has_uids()
+	}
+
 	// TargetType::Album is the default value. If nothing else is set, it is valid to write
 	// a zero-sized Targets element.
 	pub(super) fn is_empty_candidate(&self) -> bool {
-		self.target_type == TargetType::Album
-			&& self.name.is_none()
-			&& self.track_uids.is_none()
-			&& self.edition_uids.is_none()
-			&& self.chapter_uids.is_none()
-			&& self.attachment_uids.is_none()
+		self.target_type == TargetType::Album && self.name.is_none() && !self.has_uids()
+	}
+
+	pub(super) fn has_uids(&self) -> bool {
+		self.track_uids.is_some()
+			|| self.edition_uids.is_some()
+			|| self.chapter_uids.is_some()
+			|| self.attachment_uids.is_some()
 	}
 }

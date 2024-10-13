@@ -2,8 +2,8 @@ use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
 use crate::ebml::{EbmlTag, Language, SimpleTag, Tag, TagValue, Target, TargetType};
 use crate::error::Result;
-
 use crate::macros::decode_err;
+
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
@@ -57,7 +57,7 @@ where
 				target = Some(read_targets(&mut children_reader.children())?);
 			},
 			ElementIdent::SimpleTag => {
-				simple_tags.push(read_simple_tag(&mut children_reader.children())?);
+				simple_tags.push(read_simple_tag(&mut children_reader.children())?)
 			},
 			_ => {
 				unimplemented!("Unhandled child element in \\Segment\\Tags\\Tag: {master:?}");
@@ -70,7 +70,7 @@ where
 	};
 
 	Ok(Tag {
-		target,
+		target: Some(target),
 		simple_tags,
 	})
 }

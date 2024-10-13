@@ -465,6 +465,7 @@ impl PictureInformation {
 /// This is created through [`Picture::unchecked()`].
 pub struct PictureBuilder {
 	pic_type: PictureType,
+	file_name: Option<Cow<'static, str>>,
 	mime_type: Option<MimeType>,
 	description: Option<Cow<'static, str>>,
 	data: Cow<'static, [u8]>,
@@ -474,6 +475,7 @@ impl PictureBuilder {
 	fn new(data: Cow<'static, [u8]>) -> Self {
 		Self {
 			pic_type: PictureType::Other,
+			file_name: None,
 			mime_type: None,
 			description: None,
 			data,
@@ -499,6 +501,28 @@ impl PictureBuilder {
 	/// ```
 	pub fn pic_type(mut self, pic_type: PictureType) -> Self {
 		self.pic_type = pic_type;
+		self
+	}
+
+	/// Set the file name for this picture
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::{Picture, PictureType};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let picture_path = "cover.jpg";
+	/// # let picture_path = "tests/files/assets/issue_37.jpg";
+	/// let picture_data = std::fs::read(picture_path)?;
+	///
+	/// let picture = Picture::unchecked(picture_data)
+	/// 	.file_name("cover.jpg")
+	/// 	.build();
+	/// # Ok(()) }
+	/// ```
+	pub fn file_name(mut self, file_name: impl Into<Cow<'static, str>>) -> Self {
+		self.file_name = file_name.into();
 		self
 	}
 
@@ -556,6 +580,7 @@ impl From<PictureBuilder> for Picture {
 	fn from(builder: PictureBuilder) -> Self {
 		Self {
 			pic_type: builder.pic_type,
+			file_name: builder.file_name,
 			mime_type: builder.mime_type,
 			description: builder.description,
 			data: builder.data,
@@ -568,6 +593,8 @@ impl From<PictureBuilder> for Picture {
 pub struct Picture {
 	/// The picture type according to ID3v2 APIC
 	pub(crate) pic_type: PictureType,
+	/// A file name for the picture, only used in Matroska
+	pub(crate) file_name: Option<Cow<'static, str>>,
 	/// The picture's mimetype
 	pub(crate) mime_type: Option<MimeType>,
 	/// The picture's description
@@ -580,6 +607,7 @@ impl Debug for Picture {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("Picture")
 			.field("pic_type", &self.pic_type)
+			.field("file_name", &self.file_name)
 			.field("mime_type", &self.mime_type)
 			.field("description", &self.description)
 			.field("data", &format!("<{} bytes>", self.data.len()))
@@ -591,6 +619,7 @@ impl Picture {
 	/// Placeholder for conversions
 	pub(crate) const EMPTY: Self = Picture {
 		pic_type: PictureType::Other,
+		file_name: None,
 		mime_type: None,
 		description: None,
 		data: Cow::Owned(Vec::new()),
@@ -623,6 +652,7 @@ impl Picture {
 
 		Ok(Self {
 			pic_type: PictureType::Other,
+			file_name: None,
 			mime_type: Some(mime_type),
 			description: None,
 			data: data.into(),
@@ -845,6 +875,7 @@ impl Picture {
 				return Ok((
 					Self {
 						pic_type: PictureType::from_u8(pic_ty as u8),
+						file_name: None,
 						mime_type,
 						description,
 						data: Cow::from(data),
@@ -926,6 +957,7 @@ impl Picture {
 
 		Ok(Picture {
 			pic_type,
+			file_name: None,
 			mime_type: Some(mime_type),
 			description,
 			data,

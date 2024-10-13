@@ -109,7 +109,6 @@ ebml_master_elements! {
 		children: [
 			// SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
-			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
 			Tags: { 0x1254_C367, Master },
 			Attachments: { 0x1941_A469, Master },

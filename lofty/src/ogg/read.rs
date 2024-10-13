@@ -151,6 +151,7 @@ where
 
 						let picture = Picture {
 							pic_type: PictureType::Other,
+							file_name: None,
 							mime_type: Some(mime_type),
 							description: None,
 							data: Cow::from(picture_data),

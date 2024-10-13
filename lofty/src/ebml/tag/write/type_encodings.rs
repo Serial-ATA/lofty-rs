@@ -69,6 +69,19 @@ impl ElementEncodable for f64 {
 	}
 }
 
+impl ElementEncodable for bool {
+	fn len(&self) -> Result<VInt<u64>> {
+		Ok(VInt(size_of::<bool>() as u64))
+	}
+
+	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
+		match *self {
+			true => VInt::<u64>(1).write_to(ctx, writer),
+			false => VInt::<i64>::ZERO.write_to(ctx, writer),
+		}
+	}
+}
+
 impl ElementEncodable for &[u8] {
 	fn len(&self) -> Result<VInt<u64>> {
 		VInt::try_from(<[u8]>::len(self) as u64)

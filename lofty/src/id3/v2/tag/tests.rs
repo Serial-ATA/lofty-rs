@@ -247,6 +247,7 @@ fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 		TextEncoding::Latin1,
 		Picture {
 			pic_type: PictureType::CoverFront,
+			file_name: None,
 			mime_type: Some(MimeType::Png),
 			description: None,
 			data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
