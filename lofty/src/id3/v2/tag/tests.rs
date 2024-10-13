@@ -247,6 +247,7 @@ fn create_full_test_tag(version: Id3v2Version) -> Id3v2Tag {
 		TextEncoding::Latin1,
 		Picture {
 			pic_type: PictureType::CoverFront,
+			file_name: None,
 			mime_type: Some(MimeType::Png),
 			description: None,
 			data: read_path("tests/tags/assets/id3v2/test_full_cover.png").into(),
@@ -312,6 +313,7 @@ fn issue_36() {
 
 	let picture = Picture::new_unchecked(
 		PictureType::CoverFront,
+		None,
 		Some(MimeType::Jpeg),
 		Some(String::from("cover")),
 		picture_data,
@@ -1359,6 +1361,7 @@ fn hold_back_4_character_txxx_description() {
 fn skip_reading_cover_art() {
 	let p = Picture::new_unchecked(
 		PictureType::CoverFront,
+		None,
 		Some(MimeType::Jpeg),
 		None,
 		std::iter::repeat(0).take(50).collect::<Vec<u8>>(),

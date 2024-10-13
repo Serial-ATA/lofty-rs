@@ -6,6 +6,7 @@ use crate::tag::ItemValue;
 ///
 /// Notes:
 ///
+/// - The default language is `Iso639_2("und")`
 /// - ISO-639-2 was the original language code used in Matroska.
 /// - BCP-47 is the newer, **recommended** language option.
 /// - The ISO-639-2 language code allows for an optional country code, so the [Lang] type cannot be used.
@@ -17,6 +18,31 @@ pub enum Language {
 	Iso639_2(String),
 	/// A BCP-47 language code (recommended)
 	Bcp47(String),
+}
+
+impl Default for Language {
+	fn default() -> Self {
+		Self::Iso639_2(String::from("und"))
+	}
+}
+
+impl Language {
+	/// Get the string value of the [`Language`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ebml::Language;
+	///
+	/// let lang = Language::Iso639_2(String::from("eng"));
+	/// assert_eq!(lang.as_str(), "eng");
+	/// ```
+	pub fn as_str(&self) -> &str {
+		match self {
+			Self::Iso639_2(value) => value.as_str(),
+			Self::Bcp47(value) => value.as_str(),
+		}
+	}
 }
 
 /// The type of content stored in a [`SimpleTag`]
@@ -110,11 +136,13 @@ impl TagValue<'_> {
 /// General information about the target
 ///
 /// Notes on how `SimpleTag`s work:
-///
-/// - Multiple [`SimpleTag`]s can exist in a file.
-/// - They each describe a single [`Target`].
-///   - This also means that multiple tags can describe the same target.
+/// - Their meaning depends on the [`Target`] of their parent [`Tag`]
 /// - They **do not** need to have a value.
+///
+/// For more information, see [`Language`] and [`TagValue`]
+///
+/// [`Tag`]: crate::ebml::Tag
+/// [`Target`]: crate::ebml::Target
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SimpleTag<'a> {
 	/// The name of the tag as it is stored
@@ -132,8 +160,8 @@ pub struct SimpleTag<'a> {
 	pub language: Option<Language>,
 	/// Whether [`language`] is the default/original language to use
 	///
-	/// This is used when multiple languages are present in a file. This field will be ignored
-	/// if [`language`] is `None`.
+	/// This is used when multiple languages are present in a file. Otherwise, this
+	/// will always be `true`.
 	///
 	/// [`language`]: #structfield.language
 	pub default: bool,
@@ -149,9 +177,9 @@ impl<'a> SimpleTag<'a> {
 	/// # Example
 	///
 	/// ```
-	/// use lofty::ebml::{SimpleTag, TagValue};
+	/// use lofty::ebml::{SimpleTag, TagName, TagValue};
 	///
-	/// let tag = SimpleTag::new("TITLE", "My Title");
+	/// let tag = SimpleTag::new(TagName::Title, "My Title");
 	/// ```
 	pub fn new<N, V>(name: N, value: V) -> Self
 	where
@@ -166,6 +194,40 @@ impl<'a> SimpleTag<'a> {
 		}
 	}
 
+	/// Get the value of the `SimpleTag` if it is [`TagValue::String`]
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lofty::ebml::{SimpleTag, TagName, TagValue};
+	///
+	/// let tag = SimpleTag::new(TagName::Title, "My Title");
+	/// assert_eq!(tag.get_str(), Some("My Title"));
+	/// ```
+	pub fn get_str(&'a self) -> Option<&'a str> {
+		match &self.value {
+			Some(TagValue::String(s)) => Some(s),
+			_ => None,
+		}
+	}
+
+	/// Get the value of the `SimpleTag` if it is [`TagValue::Binary`]
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use lofty::ebml::{SimpleTag, TagName, TagValue};
+	///
+	/// let tag = SimpleTag::new(TagName::Title, vec![1, 2, 3]);
+	/// assert_eq!(tag.get_binary(), Some(&[1, 2, 3][..]));
+	/// ```
+	pub fn get_binary(&'a self) -> Option<&'a [u8]> {
+		match &self.value {
+			Some(TagValue::Binary(b)) => Some(b),
+			_ => None,
+		}
+	}
+
 	pub(crate) fn into_owned(self) -> SimpleTag<'static> {
 		SimpleTag {
 			name: Cow::Owned(self.name.into_owned()),
@@ -175,3 +237,11 @@ impl<'a> SimpleTag<'a> {
 		}
 	}
 }
+
+// Used in conversions
+pub(super) const TOMBSTONE_SIMPLE_TAG: SimpleTag<'static> = SimpleTag {
+	name: Cow::Borrowed(""),
+	language: None,
+	default: false,
+	value: None,
+};

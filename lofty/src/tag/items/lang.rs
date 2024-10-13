@@ -1,6 +1,6 @@
 /// A three character language code, as specified by [ISO-639-2].
 ///
-/// For now, this is used exclusively in ID3v2.
+/// For now, this is only used in ID3v2 and Matroska (when available).
 ///
 /// Excerpt from <https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html>:
 ///

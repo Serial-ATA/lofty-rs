@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 mod aac;
 mod aiff;
 mod ape;

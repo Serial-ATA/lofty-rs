@@ -443,6 +443,8 @@ impl PictureInformation {
 pub struct Picture {
 	/// The picture type according to ID3v2 APIC
 	pub(crate) pic_type: PictureType,
+	/// A file name for the picture, only used in Matroska
+	pub(crate) file_name: Option<Cow<'static, str>>,
 	/// The picture's mimetype
 	pub(crate) mime_type: Option<MimeType>,
 	/// The picture's description
@@ -455,6 +457,7 @@ impl Debug for Picture {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("Picture")
 			.field("pic_type", &self.pic_type)
+			.field("file_name", &self.file_name)
 			.field("mime_type", &self.mime_type)
 			.field("description", &self.description)
 			.field("data", &format!("<{} bytes>", self.data.len()))
@@ -490,6 +493,7 @@ impl Picture {
 
 		Ok(Self {
 			pic_type: PictureType::Other,
+			file_name: None,
 			mime_type: Some(mime_type),
 			description: None,
 			data: data.into(),
@@ -498,17 +502,22 @@ impl Picture {
 
 	/// Create a new `Picture`
 	///
-	/// NOTE: This will **not** verify `data`'s signature.
+	/// NOTES:
+	///
+	/// * This will **not** verify `data`'s signature.
 	/// This should only be used if all data has been verified
 	/// beforehand.
+	/// * `file_name` is only used in Matroska
 	pub fn new_unchecked(
 		pic_type: PictureType,
+		file_name: Option<String>,
 		mime_type: Option<MimeType>,
 		description: Option<String>,
 		data: Vec<u8>,
 	) -> Self {
 		Self {
 			pic_type,
+			file_name: file_name.map(Cow::Owned),
 			mime_type,
 			description: description.map(Cow::Owned),
 			data: Cow::Owned(data),
@@ -704,6 +713,7 @@ impl Picture {
 				return Ok((
 					Self {
 						pic_type: PictureType::from_u8(pic_ty as u8),
+						file_name: None,
 						mime_type,
 						description,
 						data: Cow::from(data),
@@ -785,6 +795,7 @@ impl Picture {
 
 		Ok(Picture {
 			pic_type,
+			file_name: None,
 			mime_type: Some(mime_type),
 			description,
 			data,
@@ -806,6 +817,7 @@ impl Picture {
 // A placeholder that is needed during conversions.
 pub(crate) const TOMBSTONE_PICTURE: Picture = Picture {
 	pic_type: PictureType::Other,
+	file_name: None,
 	mime_type: None,
 	description: None,
 	data: Cow::Owned(Vec::new()),
