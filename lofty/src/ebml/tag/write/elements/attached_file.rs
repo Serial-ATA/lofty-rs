@@ -11,7 +11,7 @@ const FileReferral_ID: ElementId = ElementId(0x4675);
 const FileUsedStartTime_ID: ElementId = ElementId(0x4661);
 const FileUsedEndTime_ID: ElementId = ElementId(0x4662);
 
-impl WriteableElement for AttachedFile {
+impl WriteableElement for AttachedFile<'_> {
 	const ID: ElementId = ElementId(0x61A7);
 
 	fn write_element<F: FileLike>(
@@ -26,7 +26,7 @@ impl WriteableElement for AttachedFile {
 			write_element(
 				ctx,
 				FileDescription_ID,
-				&description.as_str(),
+				&description.as_ref(),
 				&mut element_children,
 			)?;
 		}
@@ -34,7 +34,7 @@ impl WriteableElement for AttachedFile {
 		write_element(
 			ctx,
 			FileName_ID,
-			&self.file_name.as_str(),
+			&self.file_name.as_ref(),
 			&mut element_children,
 		)?;
 
@@ -48,7 +48,7 @@ impl WriteableElement for AttachedFile {
 		write_element(
 			ctx,
 			FileData_ID,
-			&self.file_data.as_slice(),
+			&self.file_data.as_ref(),
 			&mut element_children,
 		)?;
 
@@ -59,7 +59,7 @@ impl WriteableElement for AttachedFile {
 			write_element(
 				ctx,
 				FileReferral_ID,
-				&referral.as_slice(),
+				&referral.as_ref(),
 				&mut element_children,
 			)?;
 		}

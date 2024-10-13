@@ -1,4 +1,4 @@
-use super::{segment_attachments, segment_cluster, segment_info, segment_tags, segment_tracks};
+use super::{segment_attachments, segment_info, segment_tags, segment_tracks};
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
@@ -25,13 +25,6 @@ where
 				match id {
 					ElementIdent::Info if parse_options.read_properties => {
 						segment_info::read_from(
-							&mut children_reader.children(),
-							parse_options,
-							properties,
-						)?;
-					},
-					ElementIdent::Cluster if parse_options.read_properties => {
-						segment_cluster::read_from(
 							&mut children_reader.children(),
 							parse_options,
 							properties,
