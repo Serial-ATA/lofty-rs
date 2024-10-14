@@ -31,7 +31,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $method(&self) -> Option<Cow<'_, str>> {
-					self.get_str(EbmlTagKey(TargetType::$target, Cow::Borrowed($name)))
+					self.get_str(MatroskaTagKey(TargetType::$target, Cow::Borrowed($name)))
 				}
 
 				fn [<set_ $method>](&mut self, value: String) {
@@ -57,18 +57,18 @@ macro_rules! impl_accessor {
 /// * [`Target`]
 /// * [`AttachedFile`]
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "An `EBML` \"tag\"", supported_formats(Ebml))]
-pub struct EbmlTag {
+#[tag(description = "A Matroska/WebM \"tag\"", supported_formats(Ebml))]
+pub struct MatroskaTag {
 	pub(crate) tags: Vec<Tag<'static>>,
 	pub(crate) attached_files: Vec<AttachedFile<'static>>,
 }
 
 // TODO
 #[allow(missing_docs)]
-pub struct EbmlTagKey<'a>(TargetType, Cow<'a, str>);
+pub struct MatroskaTagKey<'a>(TargetType, Cow<'a, str>);
 
-impl EbmlTag {
-	fn get(&self, key: EbmlTagKey<'_>) -> Option<&SimpleTag<'_>> {
+impl MatroskaTag {
+	fn get(&self, key: MatroskaTagKey<'_>) -> Option<&SimpleTag<'_>> {
 		fn tag_matches_target(tag: &Tag<'_>, target_type: TargetType) -> bool {
 			let Some(target) = &tag.target else {
 				// An empty target is implicitly `Album`
@@ -78,7 +78,7 @@ impl EbmlTag {
 			target.is_candidate_for_type(target_type)
 		}
 
-		let EbmlTagKey(target, key) = key;
+		let MatroskaTagKey(target, key) = key;
 
 		let applicable_tags = self
 			.tags
@@ -98,7 +98,7 @@ impl EbmlTag {
 		None
 	}
 
-	fn get_str(&self, key: EbmlTagKey<'_>) -> Option<Cow<'_, str>> {
+	fn get_str(&self, key: MatroskaTagKey<'_>) -> Option<Cow<'_, str>> {
 		let simple_tag = self.get(key)?;
 		simple_tag.get_str().map(Cow::from)
 	}
@@ -131,11 +131,11 @@ impl EbmlTag {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use lofty::ebml::EbmlTag;
+	/// use lofty::ebml::MatroskaTag;
 	/// use lofty::picture::Picture;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// let mut tag = EbmlTag::default();
+	/// let mut tag = MatroskaTag::default();
 	///
 	/// let mut picture = std::fs::read("something.png")?;
 	/// let mut picture2 = std::fs::read("something_else.png")?;
@@ -153,14 +153,14 @@ impl EbmlTag {
 
 	/// Inserts a new [`Picture`]
 	///
-	/// Note: See [`EbmlTag::insert_attached_file`]
+	/// Note: See [`MatroskaTag::insert_attached_file`]
 	///
 	/// ```rust,no_run
-	/// use lofty::ebml::EbmlTag;
+	/// use lofty::ebml::MatroskaTag;
 	/// use lofty::picture::Picture;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// let mut tag = EbmlTag::default();
+	/// let mut tag = MatroskaTag::default();
 	///
 	/// let mut picture_file = std::fs::read("something.png")?;
 	/// tag.insert_picture(Picture::from_reader(&mut &picture_file[..])?);
@@ -219,7 +219,7 @@ impl EbmlTag {
 	}
 }
 
-impl Accessor for EbmlTag {
+impl Accessor for MatroskaTag {
 	impl_accessor!(
 		artist => (Track, "ARTIST"),
 		title => (Track, "TITLE"),
@@ -267,13 +267,13 @@ impl Accessor for EbmlTag {
 	}
 }
 
-impl TagExt for EbmlTag {
+impl TagExt for MatroskaTag {
 	type Err = LoftyError;
-	type RefKey<'a> = EbmlTagKey<'a>;
+	type RefKey<'a> = MatroskaTagKey<'a>;
 
 	#[inline]
 	fn tag_type(&self) -> TagType {
-		TagType::Ebml
+		TagType::Matroska
 	}
 
 	fn len(&self) -> usize {
@@ -281,7 +281,7 @@ impl TagExt for EbmlTag {
 	}
 
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool {
-		let EbmlTagKey(target_type, key) = key;
+		let MatroskaTagKey(target_type, key) = key;
 		self.tags.iter().any(|tag| {
 			if let Some(target) = &tag.target {
 				return target.target_type == target_type
@@ -338,23 +338,23 @@ impl TagExt for EbmlTag {
 
 #[doc(hidden)]
 #[derive(Debug, Clone, Default)]
-pub struct SplitTagRemainder(EbmlTag);
+pub struct SplitTagRemainder(MatroskaTag);
 
-impl From<SplitTagRemainder> for EbmlTag {
+impl From<SplitTagRemainder> for MatroskaTag {
 	fn from(from: SplitTagRemainder) -> Self {
 		from.0
 	}
 }
 
 impl Deref for SplitTagRemainder {
-	type Target = EbmlTag;
+	type Target = MatroskaTag;
 
 	fn deref(&self) -> &Self::Target {
 		&self.0
 	}
 }
 
-impl SplitTag for EbmlTag {
+impl SplitTag for MatroskaTag {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, crate::tag::Tag) {
@@ -364,20 +364,20 @@ impl SplitTag for EbmlTag {
 }
 
 impl MergeTag for SplitTagRemainder {
-	type Merged = EbmlTag;
+	type Merged = MatroskaTag;
 
 	fn merge_tag(self, _tag: crate::tag::Tag) -> Self::Merged {
 		todo!()
 	}
 }
 
-impl From<EbmlTag> for crate::tag::Tag {
-	fn from(input: EbmlTag) -> Self {
+impl From<MatroskaTag> for crate::tag::Tag {
+	fn from(input: MatroskaTag) -> Self {
 		input.split_tag().1
 	}
 }
 
-impl From<crate::tag::Tag> for EbmlTag {
+impl From<crate::tag::Tag> for MatroskaTag {
 	fn from(input: crate::tag::Tag) -> Self {
 		SplitTagRemainder::default().merge_tag(input)
 	}

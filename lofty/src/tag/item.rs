@@ -902,7 +902,7 @@ impl TagItem {
 			return VALID_ITEMKEYS.contains(&self.item_key);
 		}
 
-		if tag_type == TagType::Ebml {
+		if tag_type == TagType::Matroska {
 			use crate::ebml::tag::SUPPORTED_ITEMKEYS;
 
 			return SUPPORTED_ITEMKEYS.contains(&self.item_key);

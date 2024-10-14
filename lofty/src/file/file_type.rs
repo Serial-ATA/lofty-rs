@@ -35,6 +35,7 @@ impl FileType {
 	/// | `Ape` , `Mpc`, `WavPack`          | `Ape`            |
 	/// | `Flac`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
 	/// | `Mp4`                             | `Mp4Ilst`        |
+	/// | `Ebml`                            | `Matroska`       |
 	///
 	/// # Panics
 	///
@@ -53,7 +54,7 @@ impl FileType {
 		match self {
 			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
-			FileType::Ebml => TagType::Ebml,
+			FileType::Ebml => TagType::Matroska,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
@@ -92,7 +93,7 @@ impl FileType {
 
 		match tag_type {
 			TagType::Ape => crate::ape::ApeTag::SUPPORTED_FORMATS.contains(self),
-			TagType::Ebml => crate::ebml::EbmlTag::SUPPORTED_FORMATS.contains(self),
+			TagType::Matroska => crate::ebml::MatroskaTag::SUPPORTED_FORMATS.contains(self),
 			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::SUPPORTED_FORMATS.contains(self),
 			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::SUPPORTED_FORMATS.contains(self),
 			TagType::Mp4Ilst => crate::mp4::Ilst::SUPPORTED_FORMATS.contains(self),
