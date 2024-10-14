@@ -2,7 +2,7 @@
 //!
 //! NOTE: We can **ONLY** convert `SimpleTags` that come from a target with **NO** uids
 
-use super::{EbmlTag, Language, SimpleTag, TargetType, TOMBSTONE_SIMPLE_TAG};
+use super::{Language, MatroskaTag, SimpleTag, TargetType, TOMBSTONE_SIMPLE_TAG};
 use crate::tag::items::Lang;
 use crate::tag::{ItemKey, Tag, TagItem, TagType};
 
@@ -135,8 +135,8 @@ matroska_mapping_tables!(
 const TAG_RETAINED: bool = true;
 const TAG_CONSUMED: bool = false;
 
-pub(super) fn split_tag(mut ebml_tag: EbmlTag) -> (EbmlTag, Tag) {
-	let mut tag = Tag::new(TagType::Ebml);
+pub(super) fn split_tag(mut ebml_tag: MatroskaTag) -> (MatroskaTag, Tag) {
+	let mut tag = Tag::new(TagType::Matroska);
 
 	// TODO: Pictures, can they be handled in a generic way?
 	//       What about the uid and referral?

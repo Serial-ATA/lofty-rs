@@ -36,7 +36,7 @@ fn write() {
 	assert_eq!(tagged_file.file_type(), FileType::Ebml);
 
 	// Tags
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ebml, "Foo artist", 1 => file, "Bar artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Matroska, "Foo artist", 1 => file, "Bar artist");
 
 	// Now reread the file
 	file.rewind().unwrap();
@@ -48,12 +48,15 @@ fn write() {
 		.read()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ebml, "Bar artist", 1 => file, "Foo artist");
+	crate::set_artist!(tagged_file, tag_mut, TagType::Matroska, "Bar artist", 1 => file, "Foo artist");
 }
 
 #[test_log::test]
 fn remove() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mka", TagType::Ebml);
+	crate::remove_tag!(
+		"tests/files/assets/minimal/full_test.mka",
+		TagType::Matroska
+	);
 }
 
 #[test_log::test]

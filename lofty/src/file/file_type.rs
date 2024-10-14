@@ -75,6 +75,7 @@ impl FileType {
 	/// | `Ape` , `Mpc`, `WavPack`          | `Ape`            |
 	/// | `Flac`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
 	/// | `Mp4`                             | `Mp4Ilst`        |
+	/// | `Ebml`                            | `Matroska`       |
 	///
 	/// # Panics
 	///
@@ -93,7 +94,7 @@ impl FileType {
 		match self {
 			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
-			FileType::Ebml => TagType::Ebml,
+			FileType::Ebml => TagType::Matroska,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
 			},
@@ -152,7 +153,7 @@ impl FileType {
 		tag_support!(
 			tag_type,
 			(Ape, crate::ape::ApeTag),
-			(Ebml, crate::ebml::EbmlTag),
+			(Matroska, crate::ebml::MatroskaTag),
 			(Id3v1, crate::id3::v1::Id3v1Tag),
 			(Id3v2, crate::id3::v2::Id3v2Tag),
 			(Mp4Ilst, crate::mp4::Ilst),
