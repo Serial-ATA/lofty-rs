@@ -34,6 +34,7 @@ where
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
+		FileType::Ebml => todo!("write EBML tags"),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type, write_options)
@@ -98,6 +99,9 @@ pub(crate) fn dump_tag<W: Write>(
 			}
 		}
 		.dump_to(writer, write_options),
+		TagType::Matroska => {
+			todo!("Dump EBML tags")
+		},
 		_ => Ok(()),
 	}
 }

@@ -1,6 +1,6 @@
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
-use crate::ebml::{EbmlTag, Language, SimpleTag, Tag, TagValue, Target, TargetType};
+use crate::ebml::{Language, MatroskaTag, SimpleTag, Tag, TagValue, Target, TargetType};
 use crate::error::Result;
 use crate::macros::decode_err;
 
@@ -9,7 +9,7 @@ use std::io::{Read, Seek};
 pub(super) fn read_from<R>(
 	children_reader: &mut ElementChildIterator<'_, R>,
 	_parse_options: ParseOptions,
-	tag: &mut EbmlTag,
+	tag: &mut MatroskaTag,
 ) -> Result<()>
 where
 	R: Read + Seek,

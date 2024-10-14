@@ -2,7 +2,7 @@ use super::{segment_attachments, segment_info, segment_tags, segment_tracks};
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::properties::EbmlProperties;
-use crate::ebml::tag::EbmlTag;
+use crate::ebml::tag::MatroskaTag;
 use crate::ebml::ElementId;
 use crate::error::Result;
 
@@ -12,7 +12,7 @@ pub(super) fn read_from<R>(
 	element_reader: &mut ElementReader<R>,
 	parse_options: ParseOptions,
 	properties: &mut EbmlProperties,
-) -> Result<Option<EbmlTag>>
+) -> Result<Option<MatroskaTag>>
 where
 	R: Read + Seek,
 {

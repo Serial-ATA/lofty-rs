@@ -70,7 +70,7 @@ pub trait MergeTag: private::Sealed {
 // https://rust-lang.github.io/api-guidelines/future-proofing.html#c-sealed
 mod private {
 	use crate::ape::ApeTag;
-	use crate::ebml::EbmlTag;
+	use crate::ebml::MatroskaTag;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::id3::v2::Id3v2Tag;
 	use crate::iff::aiff::AiffTextChunks;
@@ -86,7 +86,7 @@ mod private {
 	impl Sealed for ApeTag {}
 	impl Sealed for crate::ape::tag::SplitTagRemainder {}
 
-	impl Sealed for EbmlTag {}
+	impl Sealed for MatroskaTag {}
 	impl Sealed for crate::ebml::tag::SplitTagRemainder {}
 
 	impl Sealed for Id3v1Tag {}

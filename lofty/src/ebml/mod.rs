@@ -19,8 +19,8 @@ pub use vint::*;
 #[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct EbmlFile {
 	/// An EBML tag
-	#[lofty(tag_type = "Ebml")]
-	pub(crate) ebml_tag: Option<EbmlTag>,
+	#[lofty(tag_type = "Matroska")]
+	pub(crate) ebml_tag: Option<MatroskaTag>,
 	/// The file's audio properties
 	pub(crate) properties: EbmlProperties,
 }
