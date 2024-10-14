@@ -1,3 +1,4 @@
+use super::Language;
 use crate::properties::FileProperties;
 
 /// Properties from the EBML header
@@ -113,15 +114,39 @@ impl Default for SegmentInfo {
 }
 
 /// A full descriptor for an audio track
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct AudioTrackDescriptor {
 	pub(crate) number: u64,
 	pub(crate) uid: u64,
-	pub(crate) language: String,
+	pub(crate) enabled: bool,
+	pub(crate) default: bool,
+	pub(crate) language: Language,
 	pub(crate) default_duration: u64,
 	pub(crate) codec_id: String,
-	pub(crate) codec_private: Vec<u8>,
+	pub(crate) codec_private: Option<Vec<u8>>,
+	pub(crate) codec_name: Option<String>,
 	pub(crate) settings: AudioTrackSettings,
+}
+
+impl Default for AudioTrackDescriptor {
+	fn default() -> Self {
+		AudioTrackDescriptor {
+			// Note, these values are not spec compliant and will hopefully be overwritten when
+			// parsing. It doesn't really matter though, since we aren't an encoder.
+			number: 0,
+			uid: 0,
+			default_duration: 0,
+			codec_id: String::new(),
+
+			// Spec-compliant defaults
+			enabled: true,
+			default: true,
+			language: Language::Iso639_2(String::from("eng")),
+			codec_private: None,
+			codec_name: None,
+			settings: AudioTrackSettings::default(),
+		}
+	}
 }
 
 impl AudioTrackDescriptor {
@@ -135,10 +160,20 @@ impl AudioTrackDescriptor {
 		self.uid
 	}
 
+	/// Whether the track is usable
+	pub fn is_enabled(&self) -> bool {
+		self.enabled
+	}
+
+	/// Whether the track is eligible for automatic selection
+	pub fn is_default(&self) -> bool {
+		self.default
+	}
+
 	/// The language of the track, in the Matroska languages form
 	///
 	/// NOTE: See [basics](https://matroska.org/technical/basics.html#language-codes) on language codes.
-	pub fn language(&self) -> &str {
+	pub fn language(&self) -> &Language {
 		&self.language
 	}
 
@@ -157,8 +192,13 @@ impl AudioTrackDescriptor {
 	}
 
 	/// Private data only known to the codec
-	pub fn codec_private(&self) -> &[u8] {
-		&self.codec_private
+	pub fn codec_private(&self) -> Option<&[u8]> {
+		self.codec_private.as_deref()
+	}
+
+	/// A human-readable string for the [codec_id](AudioTrackDescriptor::codec_id)
+	pub fn codec_name(&self) -> Option<&str> {
+		self.codec_name.as_deref()
 	}
 
 	/// The audio settings of the track
@@ -170,8 +210,8 @@ impl AudioTrackDescriptor {
 /// Settings for an audio track
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct AudioTrackSettings {
-	pub(crate) sampling_frequency: u32,
-	pub(crate) output_sampling_frequency: u32,
+	pub(crate) sampling_frequency: f64,
+	pub(crate) output_sampling_frequency: f64,
 	pub(crate) channels: u8,
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) emphasis: Option<EbmlAudioTrackEmphasis>,
@@ -179,14 +219,14 @@ pub struct AudioTrackSettings {
 
 impl AudioTrackSettings {
 	/// The sampling frequency of the track
-	pub fn sampling_frequency(&self) -> u32 {
+	pub fn sampling_frequency(&self) -> f64 {
 		self.sampling_frequency
 	}
 
 	/// Real output sampling frequency in Hz (used for SBR techniques).
 	///
 	/// The default value for `output_sampling_frequency` of the same TrackEntry is equal to the [`Self::sampling_frequency`].
-	pub fn output_sampling_frequency(&self) -> u32 {
+	pub fn output_sampling_frequency(&self) -> f64 {
 		self.output_sampling_frequency
 	}
 
@@ -210,7 +250,6 @@ impl AudioTrackSettings {
 #[allow(missing_docs)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum EbmlAudioTrackEmphasis {
-	None = 0,
 	CdAudio = 1,
 	Reserved = 2,
 	CcitJ17 = 3,
@@ -223,6 +262,27 @@ pub enum EbmlAudioTrackEmphasis {
 	PhonoColumbiaLp = 14,
 	PhonoLondon = 15,
 	PhonoNartb = 16,
+}
+
+impl EbmlAudioTrackEmphasis {
+	/// Get the audio emphasis from a `u8`
+	pub fn from_u8(value: u8) -> Option<Self> {
+		match value {
+			1 => Some(Self::CdAudio),
+			2 => Some(Self::Reserved),
+			3 => Some(Self::CcitJ17),
+			4 => Some(Self::Fm50),
+			5 => Some(Self::Fm75),
+			10 => Some(Self::PhonoRiaa),
+			11 => Some(Self::PhonoIecN78),
+			12 => Some(Self::PhonoTeldec),
+			13 => Some(Self::PhonoEmi),
+			14 => Some(Self::PhonoColumbiaLp),
+			15 => Some(Self::PhonoLondon),
+			16 => Some(Self::PhonoNartb),
+			_ => None,
+		}
+	}
 }
 
 /// EBML audio properties
@@ -248,16 +308,14 @@ impl EbmlProperties {
 		&self.extensions
 	}
 
-	/// Information from the `\EBML\Segment\Info` element
+	/// Information from the `\Segment\Info` element
 	pub fn segment_info(&self) -> &SegmentInfo {
 		&self.segment_info
 	}
 
 	/// All audio tracks in the file
 	///
-	/// This includes all audio tracks in the Matroska `\EBML\Segment\Tracks` element.
-	///
-	/// NOTE: The first audio track is **always** the default audio track.
+	/// This includes all audio tracks in the Matroska `\Segment\Tracks` element.
 	pub fn audio_tracks(&self) -> &[AudioTrackDescriptor] {
 		&self.audio_tracks
 	}
@@ -265,11 +323,9 @@ impl EbmlProperties {
 	/// Information about the default audio track
 	///
 	/// The information is extracted from the first audio track with its default flag set
-	/// in the `\EBML\Segment\Tracks` element.
-	///
-	/// NOTE: This will always return `Some` unless [`ParseOptions::read_properties`](crate::config::ParseOptions::read_properties) is set to `false`.
+	/// in the `\Segment\Tracks` element.
 	pub fn default_audio_track(&self) -> Option<&AudioTrackDescriptor> {
-		self.audio_tracks.first()
+		self.audio_tracks.iter().find(|track| track.default)
 	}
 }
 
@@ -283,7 +339,7 @@ impl From<EbmlProperties> for FileProperties {
 			duration: todo!("Support duration"),
 			overall_bitrate: todo!("Support bitrate"),
 			audio_bitrate: todo!("Support bitrate"),
-			sample_rate: Some(default_audio_track.settings.sampling_frequency),
+			sample_rate: Some(default_audio_track.settings.sampling_frequency as u32),
 			bit_depth: default_audio_track.settings.bit_depth,
 			channels: Some(default_audio_track.settings.channels),
 			channel_mask: todo!("Channel mask"),
