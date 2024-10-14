@@ -146,13 +146,17 @@ ebml_master_elements! {
 	TrackEntry: {
 		id: 0xAE,
 		children: [
+			TrackNumber: { 0xD7, UnsignedInt },
+			TrackUid: { 0x73C5, UnsignedInt },
 			TrackType: { 0x83, UnsignedInt },
 			FlagEnabled: { 0xB9, UnsignedInt },
 			FlagDefault: { 0x88, UnsignedInt },
 			DefaultDuration: { 0x23E3_83, UnsignedInt },
 			TrackTimecodeScale: { 0x2331_59, Float },
 			Language: { 0x22B5_9C, String },
+			LanguageBCP47: { 0x22B59D, String },
 			CodecID: { 0x86, String },
+			CodecPrivate: { 0x63A2, Binary },
 			CodecName: { 0x258688, Utf8 },
 			CodecDelay: { 0x56AA, UnsignedInt },
 			SeekPreRoll: { 0x56BB, UnsignedInt },
@@ -168,6 +172,7 @@ ebml_master_elements! {
 			OutputSamplingFrequency: { 0x78B5, Float },
 			Channels: { 0x9F, UnsignedInt },
 			BitDepth: { 0x6264, UnsignedInt },
+			Emphasis: { 0x52F1, UnsignedInt },
 		],
 	},
 
