@@ -62,6 +62,7 @@ matroska_mapping_tables!(
 
 		// Titles
 		"TITLE"               <=> TrackTitle,
+		"SUBTITLE"            <=> TrackSubtitle,
 
 		// Nested Information
 		"SORT_WITH"           <=> TrackTitleSortOrder,
