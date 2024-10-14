@@ -3,7 +3,7 @@ use crate::ape::{ApeFile, ApeProperties};
 use crate::config::ParseOptions;
 use crate::ebml::{
 	AudioTrackDescriptor, AudioTrackSettings, EbmlFile, EbmlHeaderProperties, EbmlProperties,
-	SegmentInfo,
+	Language, SegmentInfo,
 };
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
@@ -90,17 +90,20 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 			writing_app: String::from("Lavf60.3.100"),
 		},
 		audio_tracks: vec![AudioTrackDescriptor {
-			number: 0,
-			uid: 0,
-			language: String::new(),
+			number: 1,
+			uid: 18181673715630629642,
+			enabled: true,
+			default: false,
+			language: Language::Iso639_2(String::from("und")),
 			default_duration: 0,
-			codec_id: String::new(),
-			codec_private: vec![],
+			codec_id: String::from("A_VORBIS"),
+			codec_private: None,
+			codec_name: None,
 			settings: AudioTrackSettings {
-				sampling_frequency: 0,
-				output_sampling_frequency: 0,
-				channels: 0,
-				bit_depth: None,
+				sampling_frequency: 48000.0,
+				output_sampling_frequency: 0.0,
+				channels: 2,
+				bit_depth: Some(32),
 				emphasis: None,
 			},
 		}],
