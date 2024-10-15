@@ -367,8 +367,8 @@ impl SplitTag for MatroskaTag {
 impl MergeTag for SplitTagRemainder {
 	type Merged = MatroskaTag;
 
-	fn merge_tag(self, _tag: crate::tag::Tag) -> Self::Merged {
-		todo!()
+	fn merge_tag(self, tag: crate::tag::Tag) -> Self::Merged {
+		generic::merge_tag(tag, self.0)
 	}
 }
 
@@ -385,7 +385,13 @@ impl From<MatroskaTag> for crate::tag::Tag {
 }
 
 impl From<crate::tag::Tag> for MatroskaTag {
-	fn from(input: crate::tag::Tag) -> Self {
+	fn from(mut input: crate::tag::Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items } {
+			if let Some(companion) = input.companion_tag.take().and_then(CompanionTag::matroska) {
+				return SplitTagRemainder(companion).merge_tag(input);
+			}
+		}
+
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }
