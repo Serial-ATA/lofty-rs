@@ -86,7 +86,7 @@ fn speex_remove() {
 fn read(path: &str, file_type: FileType) {
 	let file = Probe::open(path)
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 
