@@ -85,14 +85,14 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 		},
 		extensions: Vec::new(),
 		segment_info: SegmentInfo {
-			timestamp_scale: 1000000,
+			timestamp_scale: 1_000_000,
 			muxing_app: String::from("Lavf60.3.100"),
 			writing_app: String::from("Lavf60.3.100"),
 			duration: Some(Duration::from_millis(1431)),
 		},
 		audio_tracks: vec![AudioTrackDescriptor {
 			number: 1,
-			uid: 18181673715630629642,
+			uid: 18_181_673_715_630_629_642,
 			enabled: true,
 			default: false,
 			language: Language::Iso639_2(String::from("und")),
