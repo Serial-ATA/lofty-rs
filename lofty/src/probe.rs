@@ -19,6 +19,7 @@ use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::custom_resolvers;
 use crate::wavpack::WavPackFile;
 
+use crate::ebml::EbmlFile;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -468,6 +469,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Aac => AacFile::read_from(reader, options)?.into(),
 				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
 				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
+				FileType::Ebml => EbmlFile::read_from(reader, options)?.into(),
 				FileType::Flac => FlacFile::read_from(reader, options)?.into(),
 				FileType::Mpeg => MpegFile::read_from(reader, options)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, options)?.into(),

@@ -1,7 +1,10 @@
+#![allow(missing_docs)]
+
 mod aac;
 mod aiff;
 mod ape;
 mod flac;
+mod matroska;
 mod mp4;
 mod mpc;
 mod mpeg;

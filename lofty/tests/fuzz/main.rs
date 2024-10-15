@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::config::ParseOptions;
 use lofty::prelude::*;
 
@@ -8,6 +10,7 @@ use std::time::Instant;
 
 mod aacfile_read_from;
 mod aifffile_read_from;
+mod ebmlfile_read_from;
 mod flacfile_read_from;
 mod id3v2;
 mod mp4file_read_from;
