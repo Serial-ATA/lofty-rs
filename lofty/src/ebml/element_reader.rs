@@ -746,7 +746,7 @@ where
 	}
 }
 
-impl<'a, R> Read for ElementChildIterator<'a, R>
+impl<R> Read for ElementChildIterator<'_, R>
 where
 	R: Read,
 {
@@ -755,7 +755,7 @@ where
 	}
 }
 
-impl<'a, R> Deref for ElementChildIterator<'a, R>
+impl<R> Deref for ElementChildIterator<'_, R>
 where
 	R: Read,
 {
@@ -766,7 +766,7 @@ where
 	}
 }
 
-impl<'a, R> DerefMut for ElementChildIterator<'a, R>
+impl<R> DerefMut for ElementChildIterator<'_, R>
 where
 	R: Read,
 {
@@ -775,7 +775,7 @@ where
 	}
 }
 
-impl<'a, R> Drop for ElementChildIterator<'a, R>
+impl<R> Drop for ElementChildIterator<'_, R>
 where
 	R: Read,
 {

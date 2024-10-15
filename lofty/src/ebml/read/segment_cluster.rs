@@ -3,7 +3,7 @@ use crate::ebml::element_reader::{
 	ChildElementDescriptor, ElementChildIterator, ElementIdent, ElementReaderYield,
 };
 use crate::ebml::properties::EbmlProperties;
-use crate::ebml::{AudioTrackDescriptor, VInt};
+use crate::ebml::VInt;
 use crate::error::Result;
 
 use std::io::{Read, Seek};
@@ -69,7 +69,7 @@ where
 					continue;
 				}
 
-				total_audio_data_size += (size.value() - header_size as u64);
+				total_audio_data_size += (size.value() - u64::from(header_size));
 			},
 			ElementIdent::BlockGroup => read_block_group(
 				&mut children_reader.children(),
@@ -87,7 +87,7 @@ where
 		return Ok(());
 	}
 
-	let duration_millis = properties.duration().as_secs() as u128;
+	let duration_millis = u128::from(properties.duration().as_secs());
 	if duration_millis == 0 {
 		log::warn!("Duration is zero, cannot calculate bitrate");
 		return Ok(());
@@ -95,7 +95,7 @@ where
 
 	let default_audio_track = &mut properties.audio_tracks[default_audio_track_position]; // TODO
 
-	let bitrate_bps = (((total_audio_data_size as u128) * 8) / duration_millis) as u32;
+	let bitrate_bps = ((u128::from(total_audio_data_size) * 8) / duration_millis) as u32;
 	default_audio_track.settings.bitrate = Some(bitrate_bps / 1000);
 
 	Ok(())
@@ -144,7 +144,7 @@ where
 			continue;
 		}
 
-		*total_audio_data_size += (size.value() - header_size as u64);
+		*total_audio_data_size += (size.value() - u64::from(header_size));
 	}
 
 	Ok(())
@@ -166,7 +166,7 @@ where
 	let track_number = VInt::<u64>::parse(children_reader, max_size_length)?;
 	let track_number_octets = track_number.octet_length();
 
-	children_reader.skip(block_size - track_number_octets as u64)?;
+	children_reader.skip(block_size - u64::from(track_number_octets))?;
 	if track_number != target_track_number {
 		return Ok((false, track_number_octets + NON_VARIABLE_BLOCK_HEADER_SIZE));
 	}
