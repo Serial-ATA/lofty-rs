@@ -1,6 +1,7 @@
 mod segment;
 mod segment_attachments;
 mod segment_chapters;
+mod segment_cluster;
 mod segment_info;
 mod segment_tags;
 mod segment_tracks;

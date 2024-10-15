@@ -1,6 +1,8 @@
 use super::Language;
 use crate::properties::FileProperties;
 
+use std::time::Duration;
+
 /// Properties from the EBML header
 ///
 /// These are present for all EBML formats.
@@ -77,6 +79,7 @@ pub struct SegmentInfo {
 	pub(crate) timestamp_scale: u64,
 	pub(crate) muxing_app: String,
 	pub(crate) writing_app: String,
+	pub(crate) duration: Option<Duration>,
 }
 
 impl SegmentInfo {
@@ -100,6 +103,14 @@ impl SegmentInfo {
 	pub fn writing_app(&self) -> &str {
 		&self.writing_app
 	}
+
+	/// The duration of the segment
+	///
+	/// NOTE: This information is not always present in the segment, in which case
+	///       [`EbmlProperties::duration`] should be used.
+	pub fn duration(&self) -> Option<Duration> {
+		self.duration
+	}
 }
 
 impl Default for SegmentInfo {
@@ -109,6 +120,7 @@ impl Default for SegmentInfo {
 			timestamp_scale: 1_000_000,
 			muxing_app: String::new(),
 			writing_app: String::new(),
+			duration: None,
 		}
 	}
 }
@@ -210,11 +222,15 @@ impl AudioTrackDescriptor {
 /// Settings for an audio track
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct AudioTrackSettings {
+	// Provided to us for free
 	pub(crate) sampling_frequency: f64,
 	pub(crate) output_sampling_frequency: f64,
 	pub(crate) channels: u8,
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) emphasis: Option<EbmlAudioTrackEmphasis>,
+
+	// Need to be calculated
+	pub(crate) bitrate: Option<u32>,
 }
 
 impl AudioTrackSettings {
@@ -322,27 +338,67 @@ impl EbmlProperties {
 
 	/// Information about the default audio track
 	///
-	/// The information is extracted from the first audio track with its default flag set
-	/// in the `\Segment\Tracks` element.
+	/// The "default" track is selected as:
+	/// 1. The first audio track with its `default` flag set
+	/// 2. If 1 fails, just grab the first audio track with its `enabled` flag set
 	pub fn default_audio_track(&self) -> Option<&AudioTrackDescriptor> {
-		self.audio_tracks.iter().find(|track| track.default)
+		if let Some(position) = self.default_audio_track_position() {
+			return self.audio_tracks.get(position);
+		}
+
+		None
+	}
+
+	// TODO: Actually calculate from cluster
+	/// The duration of the default audio track
+	///
+	/// NOTE: see [`EbmlProperties::default_audio_track`]
+	///
+	/// This will always use the duration written in `\Segment\Info` if present. Otherwise, it will
+	/// be manually calculated using `\Segment\Cluster` data.
+	pub fn duration(&self) -> Duration {
+		self.segment_info.duration().unwrap()
+	}
+
+	/// Audio bitrate (kbps)
+	///
+	/// NOTE: This is the bitrate of the default audio track see [`EbmlProperties::default_audio_track`]
+	///       for what this means.
+	pub fn bitrate(&self) -> Option<u32> {
+		self.default_audio_track()
+			.and_then(|track| track.settings.bitrate)
+	}
+
+	pub(crate) fn default_audio_track_position(&self) -> Option<usize> {
+		self.audio_tracks
+			.iter()
+			.position(|track| track.default)
+			.or_else(|| {
+				// Otherwise, it's normal to just pick the first enabled track
+				self.audio_tracks.iter().position(|track| track.enabled)
+			})
 	}
 }
 
 impl From<EbmlProperties> for FileProperties {
 	fn from(input: EbmlProperties) -> Self {
 		let Some(default_audio_track) = input.default_audio_track() else {
-			return FileProperties::default();
+			let mut properties = FileProperties::default();
+			if let Some(duration) = input.segment_info.duration {
+				properties.duration = duration;
+			}
+
+			return properties;
 		};
 
 		Self {
-			duration: todo!("Support duration"),
-			overall_bitrate: todo!("Support bitrate"),
-			audio_bitrate: todo!("Support bitrate"),
+			duration: input.duration(),
+			overall_bitrate: input.bitrate(),
+			audio_bitrate: input.bitrate(),
 			sample_rate: Some(default_audio_track.settings.sampling_frequency as u32),
 			bit_depth: default_audio_track.settings.bit_depth,
 			channels: Some(default_audio_track.settings.channels),
-			channel_mask: todo!("Channel mask"),
+			channel_mask: None, // TODO: Will require reading into track data
 		}
 	}
 }

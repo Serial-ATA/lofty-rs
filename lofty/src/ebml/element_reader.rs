@@ -109,6 +109,7 @@ ebml_master_elements! {
 		children: [
 			// SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
+			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
 			Tags: { 0x1254_C367, Master },
 			Attachments: { 0x1941_A469, Master },
@@ -131,7 +132,26 @@ ebml_master_elements! {
 			TimecodeScale: { 0x2AD7_B1, UnsignedInt },
 			MuxingApp: { 0x4D80, Utf8 },
 			WritingApp: { 0x5741, Utf8 },
+			Duration: { 0x4489, Float },
 		],
+	},
+
+	// segment.cluster
+	Cluster: {
+		id: 0x1F43_B675,
+		children: [
+			Timestamp: { 0xE7, UnsignedInt },
+			SimpleBlock: { 0xA3, Binary },
+			BlockGroup: { 0xA0, Master },
+		],
+	},
+
+	// segment.cluster.blockGroup
+	BlockGroup: {
+		id: 0xA0,
+		children: [
+			Block: { 0xA1, Binary },
+		]
 	},
 
 	// segment.tracks
@@ -723,6 +743,15 @@ where
 		assert!(lock_depth <= self.reader.ctx.depth as usize);
 
 		self.reader.ctx.remaining_lock_length() == 0
+	}
+}
+
+impl<'a, R> Read for ElementChildIterator<'a, R>
+where
+	R: Read,
+{
+	fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+		self.reader.read(buf)
 	}
 }
 
