@@ -13,10 +13,11 @@ pub use tag::*;
 pub use tag_name::*;
 pub use target::*;
 
-use crate::config::WriteOptions;
+use crate::config::{global_options, WriteOptions};
 use crate::error::LoftyError;
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
+use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 
 use std::borrow::Cow;
@@ -373,7 +374,13 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<MatroskaTag> for crate::tag::Tag {
 	fn from(input: MatroskaTag) -> Self {
-		input.split_tag().1
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && remainder.0.len() > 0 {
+			tag.companion_tag = Some(CompanionTag::Matroska(remainder.0));
+		}
+
+		tag
 	}
 }
 
