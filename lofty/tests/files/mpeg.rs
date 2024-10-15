@@ -15,7 +15,7 @@ fn read() {
 	// Here we have an MP3 file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.mp3")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

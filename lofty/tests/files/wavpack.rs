@@ -13,7 +13,7 @@ fn read() {
 	// Here we have a WacPack file with both an ID3v1 tag and an APE tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.wv")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

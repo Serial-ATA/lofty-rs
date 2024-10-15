@@ -12,7 +12,7 @@ fn read() {
 	// This file contains a tags element
 	let file = Probe::open("tests/files/assets/minimal/full_test.mka")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 
