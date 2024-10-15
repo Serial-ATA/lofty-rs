@@ -88,6 +88,7 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 			timestamp_scale: 1000000,
 			muxing_app: String::from("Lavf60.3.100"),
 			writing_app: String::from("Lavf60.3.100"),
+			duration: Some(Duration::from_millis(1431)),
 		},
 		audio_tracks: vec![AudioTrackDescriptor {
 			number: 1,
@@ -105,6 +106,7 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 				channels: 2,
 				bit_depth: Some(32),
 				emphasis: None,
+				bitrate: Some(99), // TODO: FFmpeg reports 97, not bad
 			},
 		}],
 	}
