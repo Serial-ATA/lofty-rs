@@ -136,13 +136,13 @@ matroska_mapping_tables!(
 const TAG_RETAINED: bool = true;
 const TAG_CONSUMED: bool = false;
 
-pub(super) fn split_tag(mut ebml_tag: MatroskaTag) -> (MatroskaTag, Tag) {
+pub(super) fn split_tag(mut matroska_tag: MatroskaTag) -> (MatroskaTag, Tag) {
 	let mut tag = Tag::new(TagType::Matroska);
 
 	// TODO: Pictures, can they be handled in a generic way?
 	//       What about the uid and referral?
 
-	ebml_tag.tags.retain_mut(|t| {
+	matroska_tag.tags.retain_mut(|t| {
 		let target_type = match &t.target {
 			Some(t) if !t.has_uids() => t.target_type,
 			// We cannot use any tags bound to uids
@@ -159,7 +159,7 @@ pub(super) fn split_tag(mut ebml_tag: MatroskaTag) -> (MatroskaTag, Tag) {
 		return TAG_RETAINED;
 	});
 
-	(ebml_tag, tag)
+	(matroska_tag, tag)
 }
 
 fn split_simple_tags(
@@ -195,4 +195,8 @@ fn split_simple_tags(
 	});
 
 	return TAG_CONSUMED;
+}
+
+pub(super) fn merge_tag(tag: Tag, matroska_tag: MatroskaTag) -> MatroskaTag {
+	todo!()
 }
