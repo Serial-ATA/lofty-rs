@@ -55,7 +55,7 @@ def main():
 		match value {"""
 	for tag in tags:
 		file_content += f"\n\t\t\tTagName::{camel_case(tag['name'])} => Cow::Borrowed(\"{tag['name']}\"),"
-	file_content += "\n\t\t}\n\t}\n}"
+	file_content += "\n\t\t}\n\t}\n}\n"
 
 	with open(TAGNAME_RS, 'w+') as f:
 		f.write(file_content)
