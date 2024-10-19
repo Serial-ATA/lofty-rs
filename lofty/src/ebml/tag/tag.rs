@@ -1,4 +1,5 @@
-use super::{Language, SimpleTag, Target};
+use super::simple_tag::SimpleTag;
+use super::target::{Target, TargetDescriptor, TargetType};
 
 /// A single metadata descriptor.
 ///
@@ -24,7 +25,7 @@ pub struct Tag<'a> {
 }
 
 impl<'a> Tag<'a> {
-	/// Get all [`SimpleTag`]s with `name` and `language`
+	/// Get all [`SimpleTag`]s with `name`
 	///
 	/// # Example
 	///
@@ -40,18 +41,12 @@ impl<'a> Tag<'a> {
 	/// 	],
 	/// };
 	///
-	/// assert_eq!(tag.get("TITLE", None).count(), 1);
-	/// assert_eq!(tag.get("ARTIST", None).count(), 1);
-	/// assert_eq!(tag.get("SOMETHING_ELSE", None).count(), 0);
+	/// assert_eq!(tag.get("TITLE").count(), 1);
+	/// assert_eq!(tag.get("ARTIST").count(), 1);
+	/// assert_eq!(tag.get("SOMETHING_ELSE").count(), 0);
 	/// ```
-	pub fn get(
-		&'a self,
-		name: &'a str,
-		language: Option<Language>,
-	) -> impl Iterator<Item = &'a SimpleTag<'a>> {
-		self.simple_tags
-			.iter()
-			.filter(move |tag| tag.name == name && tag.language == language)
+	pub fn get(&'a self, name: &'a str) -> impl Iterator<Item = &'a SimpleTag<'a>> {
+		self.simple_tags.iter().filter(move |tag| tag.name == name)
 	}
 
 	/// Get the number of simple tags in this tag.
@@ -90,6 +85,18 @@ impl<'a> Tag<'a> {
 	/// ```
 	pub fn is_empty(&self) -> bool {
 		self.simple_tags.is_empty()
+	}
+
+	/// Whether the tag can be used solely by the TargetType (its target is not bound to any uids)
+	///
+	/// This is used by `MatroskaTag::get` to find applicable tags for `Accessor` methods
+	pub(crate) fn matches_target(&self, target_type: TargetType) -> bool {
+		let Some(target) = &self.target else {
+			// An empty target is implicitly `Album`
+			return target_type == TargetType::Album;
+		};
+
+		target.is_candidate_for_type(target_type)
 	}
 
 	pub(crate) fn into_owned(self) -> Tag<'static> {

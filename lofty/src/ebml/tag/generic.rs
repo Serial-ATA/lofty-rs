@@ -4,7 +4,7 @@
 
 use super::{Language, MatroskaTag, SimpleTag, TargetType, TOMBSTONE_SIMPLE_TAG};
 use crate::tag::items::Lang;
-use crate::tag::{ItemKey, Tag, TagItem, TagType};
+use crate::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
 use std::collections::HashMap;
 use std::sync::LazyLock;
@@ -140,7 +140,9 @@ pub(super) fn split_tag(mut matroska_tag: MatroskaTag) -> (MatroskaTag, Tag) {
 	let mut tag = Tag::new(TagType::Matroska);
 
 	// TODO: Pictures, can they be handled in a generic way?
-	//       What about the uid and referral?
+	//       - What about the uid and referral?
+	//       - It seems like the "standard" way of adding cover art is to name it "cover.{ext}"
+	//       - Maybe only support front covers? who knows.
 
 	matroska_tag.tags.retain_mut(|t| {
 		let target_type = match &t.target {
@@ -168,14 +170,16 @@ fn split_simple_tags(
 	tag: &mut Tag,
 ) -> bool {
 	let lang: Lang;
-	match &simple_tag.language {
-		Some(Language::Iso639_2(l)) if l.len() == 3 => {
-			lang = l.as_bytes().try_into().unwrap(); // Infallible
-		},
-		None => lang = *b"und",
-		// `Lang` doesn't support anything outside of a 3 character ISO-639-2 code.
-		_ => return TAG_RETAINED,
+	let Language::Iso639_2(l) = &simple_tag.language else {
+		return TAG_RETAINED;
+	};
+
+	// `Lang` doesn't support anything outside of a 3 character ISO-639-2 code.
+	if l.len() != 3 {
+		return TAG_CONSUMED;
 	}
+
+	lang = l.as_bytes().try_into().unwrap(); // Infallible
 
 	let Some(item_key) = MAPPINGS.get(&(target_type, &*simple_tag.name)).cloned() else {
 		return TAG_RETAINED;
@@ -197,6 +201,44 @@ fn split_simple_tags(
 	return TAG_CONSUMED;
 }
 
-pub(super) fn merge_tag(tag: Tag, matroska_tag: MatroskaTag) -> MatroskaTag {
-	todo!()
+pub(super) fn merge_tag(tag: Tag, mut matroska_tag: MatroskaTag) -> MatroskaTag {
+	for item in tag.items {
+		let Some((simple_tag, target_type)) = simple_tag_for_item(item) else {
+			continue;
+		};
+
+		let tag = matroska_tag.get_or_insert_tag_for_type(target_type);
+
+		tag.simple_tags.push(simple_tag);
+	}
+
+	matroska_tag
+}
+
+fn simple_tag_for_item(item: TagItem) -> Option<(SimpleTag<'static>, TargetType)> {
+	let TagItem {
+		mut lang,
+		item_key,
+		item_value: ItemValue::Text(text) | ItemValue::Locator(text),
+		..
+	} = item
+	else {
+		return None;
+	};
+
+	let Some((target_type, simple_tag_name)) = REVERSE_MAPPINGS.get(&item_key) else {
+		return None;
+	};
+
+	// Matroska uses "und" for unknown languages
+	if lang == *b"XXX" {
+		lang = *b"und";
+	}
+
+	let lang_str = std::str::from_utf8(lang.as_slice()).unwrap_or("und");
+
+	let mut simple_tag = SimpleTag::new(simple_tag_name.to_string(), text);
+	simple_tag.language = Language::Iso639_2(lang_str.to_string());
+
+	Some((simple_tag, *target_type))
 }

@@ -131,3 +131,37 @@ impl Target {
 			|| self.attachment_uids.is_some()
 	}
 }
+
+/// Used to simplify conversions when writing a generic `Tag`, where extra Target information
+/// will, of course, not be available.
+pub(crate) enum TargetDescriptor<'a> {
+	Basic(TargetType),
+	Full(&'a Target),
+}
+
+impl TargetDescriptor<'_> {
+	pub(crate) fn target_type(&self) -> TargetType {
+		match self {
+			Self::Basic(ty) => *ty,
+			Self::Full(target) => target.target_type,
+		}
+	}
+
+	pub(crate) fn is_empty_candidate(&self) -> bool {
+		match self {
+			Self::Basic(ty) if *ty == TargetType::Album => true,
+			Self::Full(target) => target.is_empty_candidate(),
+			_ => false,
+		}
+	}
+}
+
+impl<'a> From<&'a Target> for TargetDescriptor<'a> {
+	fn from(target: &'a Target) -> Self {
+		if !target.has_uids() {
+			return TargetDescriptor::Basic(target.target_type);
+		}
+
+		TargetDescriptor::Full(target)
+	}
+}
