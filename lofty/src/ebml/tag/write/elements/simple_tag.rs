@@ -20,23 +20,19 @@ impl WriteableElement for SimpleTag<'_> {
 		let mut element_children = Vec::new();
 		write_element(ctx, TagName_ID, &self.name.as_ref(), &mut element_children)?;
 
-		if let Some(lang) = &self.language {
-			match lang {
-				Language::Iso639_2(iso_639_2) => write_element(
-					ctx,
-					TagLanguage_ID,
-					&iso_639_2.as_str(),
-					&mut element_children,
-				)?,
-				Language::Bcp47(bcp47) => write_element(
-					ctx,
-					TagLanguageBcp47_ID,
-					&bcp47.as_str(),
-					&mut element_children,
-				)?,
-			}
-		} else {
-			write_element(ctx, TagLanguage_ID, &"und", &mut element_children)?;
+		match &self.language {
+			Language::Iso639_2(iso_639_2) => write_element(
+				ctx,
+				TagLanguage_ID,
+				&iso_639_2.as_str(),
+				&mut element_children,
+			)?,
+			Language::Bcp47(bcp47) => write_element(
+				ctx,
+				TagLanguageBcp47_ID,
+				&bcp47.as_str(),
+				&mut element_children,
+			)?,
 		}
 
 		write_element(ctx, TagDefault_ID, &self.default, &mut element_children)?;

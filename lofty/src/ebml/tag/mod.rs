@@ -4,6 +4,8 @@ mod simple_tag;
 mod tag;
 mod tag_name;
 mod target;
+#[cfg(test)]
+mod tests;
 mod write;
 
 pub use attached_file::*;
@@ -70,26 +72,12 @@ pub struct MatroskaTagKey<'a>(TargetType, Cow<'a, str>);
 
 impl MatroskaTag {
 	fn get(&self, key: MatroskaTagKey<'_>) -> Option<&SimpleTag<'_>> {
-		fn tag_matches_target(tag: &Tag<'_>, target_type: TargetType) -> bool {
-			let Some(target) = &tag.target else {
-				// An empty target is implicitly `Album`
-				return target_type == TargetType::Album;
-			};
-
-			target.is_candidate_for_type(target_type)
-		}
-
 		let MatroskaTagKey(target, key) = key;
 
-		let applicable_tags = self
-			.tags
-			.iter()
-			.filter(|tag| tag_matches_target(tag, target));
+		let applicable_tags = self.tags.iter().filter(|tag| tag.matches_target(target));
 		for applicable_tag in applicable_tags {
 			for item in applicable_tag.simple_tags.iter() {
-				if item.name == key
-					&& (item.language.is_none()
-						|| matches!(&item.language, Some(Language::Iso639_2(l)) if l == "und"))
+				if item.name == key && matches!(&item.language, Language::Iso639_2(l) if l == "und")
 				{
 					return Some(item);
 				}
@@ -97,6 +85,33 @@ impl MatroskaTag {
 		}
 
 		None
+	}
+
+	fn get_or_insert_tag_for_type<'a>(
+		&'a mut self,
+		target_type: TargetType,
+	) -> &'a mut Tag<'static> {
+		let mut pos = None;
+		if let Some(applicable_tag_pos) = self
+			.tags
+			.iter()
+			.position(|tag| tag.matches_target(target_type))
+		{
+			pos = Some(applicable_tag_pos);
+		}
+
+		if pos.is_none() {
+			pos = Some(self.tags.len());
+
+			let mut new_tag = Tag::default();
+			if target_type != TargetType::Album {
+				new_tag.target = Some(Target::from(target_type));
+			}
+
+			self.tags.push(new_tag);
+		}
+
+		self.tags.get_mut(pos.unwrap()).unwrap()
 	}
 
 	fn get_str(&self, key: MatroskaTagKey<'_>) -> Option<Cow<'_, str>> {
@@ -229,8 +244,12 @@ impl Accessor for MatroskaTag {
 	);
 
 	fn track(&self) -> Option<u32> {
-		// `PART_NUMBER` at level Track
-		todo!()
+		self.get(MatroskaTagKey(
+			TargetType::Track,
+			Cow::Borrowed("PART_NUMBER"),
+		))
+		.and_then(SimpleTag::get_str)
+		.and_then(|val| val.parse::<u32>().ok())
 	}
 
 	fn set_track(&mut self, _value: u32) {
@@ -242,8 +261,12 @@ impl Accessor for MatroskaTag {
 	}
 
 	fn track_total(&self) -> Option<u32> {
-		// `TOTAL_PARTS` at level album
-		todo!()
+		self.get(MatroskaTagKey(
+			TargetType::Album,
+			Cow::Borrowed("TOTAL_PARTS"),
+		))
+		.and_then(SimpleTag::get_str)
+		.and_then(|val| val.parse::<u32>().ok())
 	}
 
 	fn set_track_total(&mut self, _value: u32) {
@@ -315,19 +338,6 @@ impl TagExt for MatroskaTag {
 		_writer: &mut W,
 		_write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err> {
-		todo!()
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, _path: P) -> std::result::Result<(), Self::Err> {
-		todo!()
-	}
-
-	fn remove_from<F>(&self, _file: &mut F) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
 		todo!()
 	}
 

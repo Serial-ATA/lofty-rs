@@ -1,6 +1,6 @@
-use std::borrow::Cow;
-
 use crate::tag::ItemValue;
+
+use std::borrow::Cow;
 
 /// The language of a [`SimpleTag`] or chapter
 ///
@@ -157,7 +157,7 @@ pub struct SimpleTag<'a> {
 	/// The language of the tag
 	///
 	/// See [`Language`] for more information.
-	pub language: Option<Language>,
+	pub language: Language,
 	/// Whether [`language`] is the default/original language to use
 	///
 	/// This is used when multiple languages are present in a file. Otherwise, this
@@ -188,7 +188,7 @@ impl<'a> SimpleTag<'a> {
 	{
 		Self {
 			name: name.into(),
-			language: None,
+			language: Language::default(),
 			default: false,
 			value: Some(value.into()),
 		}
@@ -241,7 +241,7 @@ impl<'a> SimpleTag<'a> {
 // Used in conversions
 pub(super) const TOMBSTONE_SIMPLE_TAG: SimpleTag<'static> = SimpleTag {
 	name: Cow::Borrowed(""),
-	language: None,
+	language: Language::Iso639_2(String::new()),
 	default: false,
 	value: None,
 };
