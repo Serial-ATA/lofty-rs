@@ -136,51 +136,6 @@ impl Page {
 		self.header.checksum = crc::crc32(&self.as_bytes());
 	}
 
-	/// Extends the Page's content, returning another Page if too much data was provided
-	///
-	/// This will do nothing if `content` is greater than the max page size. In this case,
-	/// [`paginate()`] should be used.
-	pub fn extend(&mut self, content: &[u8]) -> Option<Page> {
-		let self_len = self.content.len();
-		let content_len = content.len();
-
-		if self_len + content_len <= MAX_CONTENT_SIZE {
-			self.content.extend(content.iter());
-			self.end += content_len as u64;
-
-			return None;
-		}
-
-		if content_len <= MAX_CONTENT_SIZE {
-			let remaining = 65025 - self_len;
-
-			self.content.extend(content[0..remaining].iter());
-			self.header.header_type_flag = 0;
-			self.header.abgp = 1_u64.wrapping_neg(); // -1 in two's complement indicates that no packets finish on this page
-			self.end += remaining as u64;
-
-			let mut p = Page {
-				content: content[remaining..].to_vec(),
-				header: PageHeader {
-					start: self.end,
-					header_type_flag: 1,
-					abgp: 0,
-					stream_serial: self.header.stream_serial,
-					sequence_number: self.header.sequence_number + 1,
-					segments: segment_table(remaining),
-					checksum: 0,
-				},
-				end: self.header().start + content.len() as u64,
-			};
-
-			p.gen_crc();
-
-			return Some(p);
-		}
-
-		None
-	}
-
 	/// Returns the page's content
 	pub fn content(&self) -> &[u8] {
 		self.content.as_slice()
