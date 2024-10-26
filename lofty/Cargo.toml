@@ -22,7 +22,7 @@ lofty_attr = "0.11.0"
 # Debug logging
 log           = "0.4.22"
 # OGG Vorbis/Opus
-ogg_pager     = "0.6.1"
+ogg_pager     = { path = "../ogg_pager" }
 # Key maps
 paste         = "1.0.15"
 
