@@ -16,7 +16,7 @@ struct PaginateContext {
 	idx: usize,
 	remaining_page_size: usize,
 	current_packet_len: usize,
-	last_segment_size: u8,
+	last_segment_size: Option<u8>,
 }
 
 impl PaginateContext {
@@ -29,14 +29,14 @@ impl PaginateContext {
 			flags: PaginateContextFlags {
 				first_page: true,
 				fresh_packet: true,
-				packet_spans_multiple_pages: false,
 				packet_finished_on_page: false,
+				need_nil_page: false,
 			},
 			pos: 0,
 			idx: 0,
 			remaining_page_size: MAX_WRITTEN_CONTENT_SIZE,
 			current_packet_len: 0,
-			last_segment_size: 0,
+			last_segment_size: None,
 		}
 	}
 
@@ -45,7 +45,7 @@ impl PaginateContext {
 		self.pos = 0;
 
 		self.current_packet_len = packet.len();
-		self.last_segment_size = (packet.len() % 255) as u8;
+		self.last_segment_size = Some((packet.len() % 255) as u8);
 	}
 
 	fn flush_page(&mut self, content: &mut Vec<u8>) {
@@ -61,13 +61,7 @@ impl PaginateContext {
 					_ => 0,
 				}
 			},
-			abgp: if self.flags.packet_finished_on_page {
-				self.abgp
-			} else {
-				// A special value of '-1' (in two's complement) indicates that no packets
-				// finish on this page.
-				1_u64.wrapping_neg()
-			},
+			abgp: 0,
 			stream_serial: self.stream_serial,
 			sequence_number: self.idx as u32,
 			segments: Vec::new(),
@@ -79,27 +73,36 @@ impl PaginateContext {
 		let content_len = content.len();
 		self.pos += content_len as u64;
 
+		// Determine how many *full* segments our page content takes up.
+		// Anything < 255 will be covered by `last_segment_size`
+		let full_segments_occupied = content_len / 255;
+
 		// Moving on to a new packet
 		debug_assert!(self.pos <= self.current_packet_len as u64);
-		if self.pos == self.current_packet_len as u64 {
-			self.flags.packet_spans_multiple_pages = false;
+		let at_packet_end = self.pos == self.current_packet_len as u64;
+		if at_packet_end && full_segments_occupied == MAX_WRITTEN_SEGMENT_COUNT {
+			// See comment on `PaginateContextFlags.need_nil_page`
+			self.flags.need_nil_page = true;
+			self.flags.packet_finished_on_page = false;
 		}
 
-		// We need to determine how many segments our page content takes up.
-		// If it takes up the remainder of the segment table for the entire packet,
-		// we'll just consume it as is.
-		let segments_occupied = if content_len >= 255 {
-			content_len.div_ceil(255)
+		if self.flags.packet_finished_on_page {
+			header.abgp = self.abgp;
 		} else {
-			1
-		};
+			// A special value of '-1' (in two's complement) indicates that no packets
+			// finish on this page.
+			header.abgp = 1_u64.wrapping_neg()
+		}
 
-		debug_assert!(segments_occupied <= MAX_WRITTEN_SEGMENT_COUNT);
-		if self.flags.packet_spans_multiple_pages {
-			header.segments = vec![255; segments_occupied];
-		} else {
-			header.segments = vec![255; segments_occupied - 1];
-			header.segments.push(self.last_segment_size);
+		debug_assert!(full_segments_occupied <= MAX_WRITTEN_SEGMENT_COUNT);
+		header.segments = vec![255; full_segments_occupied];
+
+		if full_segments_occupied != MAX_WRITTEN_SEGMENT_COUNT {
+			// End of the packet
+			let last_segment_size = self
+				.last_segment_size
+				.expect("fresh packet should be indicated at this point");
+			header.segments.push(last_segment_size);
 		}
 
 		self.pages.push(Page {
@@ -117,8 +120,16 @@ impl PaginateContext {
 struct PaginateContextFlags {
 	first_page: bool,
 	fresh_packet: bool,
-	packet_spans_multiple_pages: bool,
 	packet_finished_on_page: bool,
+	// A 'nil' page just means it is zero-length. This is used when our packet is perfectly
+	// divisible by `255 * MAX_SEGMENT_COUNT`. We need a zero-sized segment to mark the end of our
+	// packet across page boundaries.
+	//
+	// Very rare circumstance, but still possible.
+	//
+	// From <https://xiph.org/ogg/doc/framing.html>:
+	// "Note also that a 'nil' (zero length) packet is not an error; it consists of nothing more than a lacing value of zero in the header."
+	need_nil_page: bool,
 }
 
 /// Create pages from a list of packets
@@ -162,6 +173,13 @@ fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
 	let mut page_content = Vec::with_capacity(MAX_WRITTEN_CONTENT_SIZE);
 	let mut packet = packet;
 	loop {
+		// See comment on `PaginateContextFlags.need_nil_page`
+		if ctx.flags.need_nil_page {
+			assert!(packet.is_empty());
+			ctx.flags.packet_finished_on_page = true;
+			ctx.flush_page(&mut page_content);
+		}
+
 		if packet.is_empty() {
 			break;
 		}
@@ -175,8 +193,6 @@ fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
 
 		if bytes_read <= MAX_WRITTEN_CONTENT_SIZE && packet.is_empty() {
 			ctx.flags.packet_finished_on_page = true;
-		} else {
-			ctx.flags.packet_spans_multiple_pages = true;
 		}
 
 		if ctx.remaining_page_size == 0 || packet.is_empty() {
