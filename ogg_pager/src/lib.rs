@@ -146,41 +146,33 @@ impl Page {
 	pub fn take_content(self) -> Vec<u8> {
 		self.content
 	}
-
-	/// Returns the page's segment table
-	#[must_use]
-	pub fn segment_table(&self) -> Vec<u8> {
-		segment_table(self.content.len())
-	}
-}
-
-/// Creates a segment table based on the length
-#[must_use]
-pub fn segment_table(length: usize) -> Vec<u8> {
-	if length == 0 {
-		return vec![1, 0];
-	}
-
-	let last_len = (length % 255) as u8;
-	let needed = (length / 255) + 1;
-
-	let mut segments = Vec::with_capacity(needed);
-
-	for i in 0..needed {
-		if i + 1 < needed {
-			segments.push(255);
-		} else {
-			segments.push(last_len);
-		}
-	}
-
-	segments
 }
 
 #[cfg(test)]
 mod tests {
-	use crate::{paginate, segment_table, Page, PageHeader};
+	use crate::{paginate, Page, PageHeader};
 	use std::io::Cursor;
+
+	pub fn segment_table(length: usize) -> Vec<u8> {
+		if length == 0 {
+			return vec![1, 0];
+		}
+
+		let last_len = (length % 255) as u8;
+		let needed = (length / 255) + 1;
+
+		let mut segments = Vec::with_capacity(needed);
+
+		for i in 0..needed {
+			if i + 1 < needed {
+				segments.push(255);
+			} else {
+				segments.push(last_len);
+			}
+		}
+
+		segments
+	}
 
 	#[test]
 	fn opus_ident_header() {
@@ -243,6 +235,86 @@ mod tests {
 			} else {
 				assert_eq!(header.header_type_flag, 1);
 			}
+
+			if i + 1 == len {
+				let segments = &header.segments[..header.segments.len()];
+				for s in &segments[..segments.len() - 1] {
+					assert_eq!(*s, 255);
+				}
+
+				assert_eq!(segments.last(), Some(&171));
+			} else {
+				assert_eq!(header.segments, vec![255; super::MAX_WRITTEN_SEGMENT_COUNT]);
+			}
 		}
+	}
+
+	#[test]
+	fn paginate_large_perfectly_divisible() {
+		// Create 20 max-size pages.
+		// This means we will need to make another page with a single zero segment table.
+		const PAGES_TO_WRITE: usize = 20;
+		const PACKET_SIZE: usize = (super::MAX_WRITTEN_SEGMENT_COUNT * 255) * PAGES_TO_WRITE;
+
+		let packet = vec![0; PACKET_SIZE];
+
+		let pages = paginate([packet.as_slice()], 1234, 0, 0).unwrap();
+
+		let len = pages.len();
+		assert_eq!(len, PAGES_TO_WRITE + 1);
+
+		for (i, page) in pages.iter().enumerate() {
+			if i + 1 == len {
+				break;
+			}
+
+			assert!(page.header.segments.iter().all(|c| *c == 255));
+		}
+
+		let last = pages.last().unwrap();
+		assert_eq!(last.header.segments.len(), 1);
+		assert_eq!(*last.header.segments.first().unwrap(), 0);
+
+		let mut total_size = 0;
+		for page in pages {
+			total_size += page
+				.header
+				.segments
+				.iter()
+				.map(|&b| usize::from(b))
+				.sum::<usize>();
+		}
+
+		assert_eq!(total_size, PACKET_SIZE);
+	}
+
+	#[test]
+	fn paginate_perfectly_divisible_terminate() {
+		// Our segment table will have 17 max-size segments, it should be terminated with a 0 to
+		// indicate the end of our packet.
+		const SEGMENTS: usize = 17;
+		const PACKET_SIZE: usize = SEGMENTS * 255;
+
+		let packet = vec![0; PACKET_SIZE];
+
+		let pages = paginate([packet.as_slice()], 1234, 0, 0).unwrap();
+
+		let len = pages.len();
+		assert_eq!(len, 1);
+
+		let page = &pages[0];
+
+		// + 1 for the terminating 0
+		assert_eq!(page.header.segments.len(), SEGMENTS + 1);
+
+		let correct_number_of_segments = page
+			.header
+			.segments
+			.iter()
+			.take(SEGMENTS)
+			.all(|&b| b == 255);
+		assert!(correct_number_of_segments);
+
+		assert_eq!(*page.header.segments.last().unwrap(), 0);
 	}
 }
