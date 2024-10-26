@@ -776,11 +776,11 @@ mod tests {
 
 		assert!(cmd_output.status.success());
 
-		let stderr = String::from_utf8(cmd_output.stderr).unwrap();
+		let stdout = String::from_utf8(cmd_output.stdout).unwrap();
 
-		assert!(!stderr.contains("CRC mismatch!"));
+		assert!(!stdout.contains("CRC mismatch!"));
 		assert!(
-			!stderr.contains("Header processing failed: Invalid data found when processing input")
+			!stdout.contains("Header processing failed: Invalid data found when processing input")
 		);
 	}
 
@@ -817,11 +817,10 @@ mod tests {
 			.output()
 			.unwrap();
 
-		assert!(cmd_output.status.success());
+		let stdout = String::from_utf8(cmd_output.stdout).unwrap();
 
-		let stderr = String::from_utf8(cmd_output.stderr).unwrap();
-
-		assert!(!stderr.contains("WARNING:"));
+		assert!(cmd_output.status.success(), "{stdout}");
+		assert!(!stdout.contains("WARNING:"));
 	}
 
 	#[test_log::test]
