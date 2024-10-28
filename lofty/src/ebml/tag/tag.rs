@@ -1,6 +1,8 @@
 use super::simple_tag::SimpleTag;
 use super::target::{Target, TargetDescriptor, TargetType};
 
+use std::borrow::Cow;
+
 /// A single metadata descriptor.
 ///
 /// This represents a `\Segment\Tags\Tag` element in the EBML tree. It contains a single [`Target`] and
@@ -118,4 +120,12 @@ impl Tag<'static> {
 		let other = other.into_owned();
 		self.simple_tags.extend(other.simple_tags);
 	}
+}
+
+pub(crate) struct TagRef<'a, I>
+where
+	I: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
+{
+	pub(crate) targets: TargetDescriptor<'a>,
+	pub(crate) simple_tags: &'a mut I,
 }

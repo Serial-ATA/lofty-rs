@@ -107,7 +107,7 @@ where
 					_ => unreachable!("Unhandled child element in TrackEntry: {:?}", ident),
 				}
 			},
-			ElementReaderYield::Master((id, size)) => match id {
+			ElementReaderYield::Master((id, _size)) => match id {
 				ElementIdent::Audio => {
 					read_audio_settings(&mut children_reader.children(), parse_options, &mut track)?
 				},

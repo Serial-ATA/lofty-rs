@@ -16,7 +16,7 @@ pub use tag_name::*;
 pub use target::*;
 
 use crate::config::{global_options, WriteOptions};
-use crate::error::LoftyError;
+use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
 use crate::tag::companion_tag::CompanionTag;
@@ -25,7 +25,6 @@ use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -403,5 +402,42 @@ impl From<crate::tag::Tag> for MatroskaTag {
 		}
 
 		SplitTagRemainder::default().merge_tag(input)
+	}
+}
+
+pub(crate) struct MatroskaTagRef<'a, I, S>
+where
+	I: Iterator<Item = TagRef<'a, S>>,
+	S: Iterator<Item = Cow<'a, SimpleTag<'a>>> + 'a,
+{
+	tags: I,
+}
+
+impl<'a, I, S> From<&'a crate::tag::Tag> for MatroskaTagRef<'a, I, S>
+where
+	I: Iterator<Item = TagRef<'a, S>>,
+	S: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
+{
+	fn from(_tag: &'a crate::tag::Tag) -> Self {
+		todo!()
+	}
+}
+
+impl<'a, I, S> MatroskaTagRef<'a, I, S>
+where
+	I: Iterator<Item = TagRef<'a, S>>,
+	S: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
+{
+	pub(crate) fn write_to<F>(&mut self, _file: &mut F, _write_options: WriteOptions) -> Result<()>
+	where
+		F: FileLike,
+		LoftyError: From<<F as Truncate>::Error>,
+		LoftyError: From<<F as Length>::Error>,
+	{
+		todo!()
+	}
+
+	fn dump_to<W: Write>(&self, _writer: &mut W, _write_options: WriteOptions) -> Result<()> {
+		todo!()
 	}
 }

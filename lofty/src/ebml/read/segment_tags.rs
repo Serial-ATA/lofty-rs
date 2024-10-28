@@ -215,7 +215,7 @@ where
 
 	Ok(SimpleTag {
 		name: name.into(),
-		language,
+		language: language.unwrap_or_default(),
 		default,
 		value,
 	})
