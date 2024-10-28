@@ -69,7 +69,7 @@ where
 					continue;
 				}
 
-				total_audio_data_size += (size.value() - u64::from(header_size));
+				total_audio_data_size += size.value() - u64::from(header_size);
 			},
 			ElementIdent::BlockGroup => read_block_group(
 				&mut children_reader.children(),
@@ -144,7 +144,7 @@ where
 			continue;
 		}
 
-		*total_audio_data_size += (size.value() - u64::from(header_size));
+		*total_audio_data_size += size.value() - u64::from(header_size);
 	}
 
 	Ok(())
