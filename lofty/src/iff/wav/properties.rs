@@ -209,7 +209,7 @@ pub(super) fn read_properties(
 			..
 		}) if valid_bits_per_sample > 0 => bit_depth = valid_bits_per_sample as u8,
 		_ if bits_per_sample > 0 => bit_depth = bits_per_sample as u8,
-		_ => bit_depth = (bytes_per_sample * 8) as u8,
+		_ => bit_depth = bytes_per_sample.saturating_mul(8) as u8,
 	};
 
 	let channel_mask = extensible_info.map(|info| info.channel_mask);
