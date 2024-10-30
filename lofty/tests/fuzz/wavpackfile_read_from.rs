@@ -1,4 +1,6 @@
 use crate::oom_test;
+use lofty::config::ParseOptions;
+use lofty::file::AudioFile;
 use lofty::wavpack::WavPackFile;
 
 #[test_log::test]
@@ -81,4 +83,10 @@ fn oom11() {
 #[test_log::test]
 fn oom12() {
 	oom_test::<WavPackFile>("wavpackfile_read_from/oom-94867b6fefcd32cd5bc3bc298468cd3d65d93ff1");
+}
+
+#[test_log::test]
+fn panic1() {
+	let mut reader = crate::get_reader("wavpackfile_read_from/output");
+	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
 }

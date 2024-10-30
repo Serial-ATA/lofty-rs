@@ -305,6 +305,10 @@ fn get_extended_meta_info(
 	let mut index = 0;
 	let block_size = block_content.len();
 	while index < block_size {
+		if block_size - index < 2 {
+			break;
+		}
+
 		let id = block_content[index];
 		index += 1;
 
@@ -326,6 +330,7 @@ fn get_extended_meta_info(
 			ID_NON_STANDARD_SAMPLE_RATE => {
 				properties.sample_rate =
 					(&mut &block_content[index..]).read_u24::<LittleEndian>()?;
+				index += 3;
 			},
 			ID_DSD => {
 				if size <= 1 {
@@ -364,32 +369,46 @@ fn get_extended_meta_info(
 				match s {
 					0 => {
 						let channel_mask = reader.read_u8()?;
+						index += 1;
+
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					1 => {
 						let channel_mask = reader.read_u16::<LittleEndian>()?;
+						index += 2;
+
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					2 => {
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						index += 3;
+
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					3 => {
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						index += 4;
+
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					4 => {
 						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
+						index += 1;
 
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						index += 3;
+
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					5 => {
 						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
+						index += 1;
 
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						index += 4;
+
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
