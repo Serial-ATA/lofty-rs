@@ -163,7 +163,11 @@ where
 
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
-			reader.seek(SeekFrom::Start(pos - u64::from(header.size)))?;
+			let Some(start_of_tag) = pos.checked_sub(u64::from(header.size)) else {
+				err!(SizeMismatch);
+			};
+
+			reader.seek(SeekFrom::Start(start_of_tag))?;
 		},
 		_ => {
 			// Correct the position (APE header - Preamble)
