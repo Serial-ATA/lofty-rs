@@ -322,6 +322,10 @@ fn get_extended_meta_info(
 			index += 2;
 		}
 
+		if size == 0 {
+			decode_err!(@BAIL WavPack, "Encountered a zero-sized block");
+		}
+
 		if id & ID_FLAG_ODD_SIZE > 0 {
 			size -= 1;
 		}
