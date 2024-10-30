@@ -90,3 +90,9 @@ fn panic1() {
 	let mut reader = crate::get_reader("wavpackfile_read_from/output");
 	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
 }
+
+#[test_log::test]
+fn panic2() {
+	let mut reader = crate::get_reader("wavpackfile_read_from/bb");
+	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
+}
