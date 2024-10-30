@@ -32,12 +32,17 @@ where
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, find_id3v2_config)? {
+		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
+		else {
+			err!(SizeMismatch);
+		};
+
+		stream_length = new_stream_length;
+
 		let reader = &mut &*content;
 
 		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 		file.id3v2_tag = Some(id3v2);
-
-		stream_length -= u64::from(header.full_tag_size());
 	}
 
 	// Save the current position, so we can go back and read the properties after the tags

@@ -8,7 +8,7 @@ use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
-use crate::macros::decode_err;
+use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -37,12 +37,12 @@ where
 	if let ID3FindResults(Some(header), content) = find_id3v2(data, find_id3v2_config)? {
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the APE file!");
 
-		stream_len -= u64::from(header.size);
+		let Some(new_stream_length) = stream_len.checked_sub(u64::from(header.full_tag_size()))
+		else {
+			err!(SizeMismatch);
+		};
 
-		// Exclude the footer
-		if header.flags.footer {
-			stream_len -= 10;
-		}
+		stream_len = new_stream_length;
 
 		if let Some(content) = content {
 			let reader = &mut &*content;
@@ -107,16 +107,21 @@ where
 	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(data, parse_options.read_tags)?;
 
 	if id3v1_header.is_some() {
-		stream_len -= 128;
 		id3v1_tag = id3v1;
+		let Some(new_stream_length) = stream_len.checked_sub(128) else {
+			err!(SizeMismatch);
+		};
+
+		stream_len = new_stream_length;
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
-	let ID3FindResults(lyrics3_header, lyrics3v2_size) = find_lyrics3v2(data)?;
+	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(data)?;
+	let Some(new_stream_length) = stream_len.checked_sub(u64::from(lyrics3v2_size)) else {
+		err!(SizeMismatch);
+	};
 
-	if lyrics3_header.is_some() {
-		stream_len -= u64::from(lyrics3v2_size)
-	}
+	stream_len = new_stream_length;
 
 	// Next, search for an APE tag footer
 	//
