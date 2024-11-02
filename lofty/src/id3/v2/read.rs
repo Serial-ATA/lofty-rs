@@ -70,49 +70,49 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 		return;
 	}
 
-	let date = tag.get_text(&TDAT);
-	let mut date_used = false;
-
-	let time = tag.get_text(&TIME);
-	let mut time_used = false;
-
 	let mut tdrc = Timestamp {
 		year: year_frame.timestamp.year,
 		..Timestamp::default()
 	};
+
+	let mut date_used = false;
+	let mut time_used = false;
 	'build: {
-		if let Some(date) = date {
-			if date.len() != 4 {
-				log::warn!("Invalid TDAT frame, retaining.");
-				break 'build;
-			}
+		let Some(date) = tag.get_text(&TDAT) else {
+			break 'build;
+		};
 
-			let (Ok(day), Ok(month)) = (date[..2].parse::<u8>(), date[2..].parse::<u8>()) else {
-				log::warn!("Invalid TDAT frame, retaining.");
-				break 'build;
-			};
-
-			tdrc.month = Some(month);
-			tdrc.day = Some(day);
-			date_used = true;
-
-			if let Some(time) = time {
-				if time.len() != 4 {
-					log::warn!("Invalid TIME frame, retaining.");
-					break 'build;
-				}
-
-				let (Ok(hour), Ok(minute)) = (time[..2].parse::<u8>(), time[2..].parse::<u8>())
-				else {
-					log::warn!("Invalid TIME frame, retaining.");
-					break 'build;
-				};
-
-				tdrc.hour = Some(hour);
-				tdrc.minute = Some(minute);
-				time_used = true;
-			}
+		if date.len() != 4 || !date.is_ascii() {
+			log::warn!("Invalid TDAT frame, retaining.");
+			break 'build;
 		}
+
+		let (Ok(day), Ok(month)) = (date[..2].parse::<u8>(), date[2..].parse::<u8>()) else {
+			log::warn!("Invalid TDAT frame, retaining.");
+			break 'build;
+		};
+
+		tdrc.month = Some(month);
+		tdrc.day = Some(day);
+		date_used = true;
+
+		let Some(time) = tag.get_text(&TIME) else {
+			break 'build;
+		};
+
+		if time.len() != 4 || !time.is_ascii() {
+			log::warn!("Invalid TIME frame, retaining.");
+			break 'build;
+		}
+
+		let (Ok(hour), Ok(minute)) = (time[..2].parse::<u8>(), time[2..].parse::<u8>()) else {
+			log::warn!("Invalid TIME frame, retaining.");
+			break 'build;
+		};
+
+		tdrc.hour = Some(hour);
+		tdrc.minute = Some(minute);
+		time_used = true;
 	}
 
 	tag.insert(Frame::Timestamp(TimestampFrame::new(
