@@ -6,6 +6,7 @@ use super::{Language, MatroskaTag, SimpleTag, TargetType, TOMBSTONE_SIMPLE_TAG};
 use crate::tag::items::Lang;
 use crate::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
@@ -203,7 +204,7 @@ fn split_simple_tags(
 
 pub(super) fn merge_tag(tag: Tag, mut matroska_tag: MatroskaTag) -> MatroskaTag {
 	for item in tag.items {
-		let Some((simple_tag, target_type)) = simple_tag_for_item(item) else {
+		let Some((simple_tag, target_type)) = simple_tag_for_item(Cow::Owned(item)) else {
 			continue;
 		};
 
@@ -215,18 +216,21 @@ pub(super) fn merge_tag(tag: Tag, mut matroska_tag: MatroskaTag) -> MatroskaTag 
 	matroska_tag
 }
 
-fn simple_tag_for_item(item: TagItem) -> Option<(SimpleTag<'static>, TargetType)> {
+pub(super) fn simple_tag_for_item(
+	item: Cow<'_, TagItem>,
+) -> Option<(SimpleTag<'static>, TargetType)> {
+	if !matches!(item.item_value, ItemValue::Text(_) | ItemValue::Locator(_)) {
+		return None;
+	}
+
+	let (target_type, simple_tag_name) = REVERSE_MAPPINGS.get(&item.item_key).copied()?;
+
 	let TagItem {
 		mut lang,
-		item_key,
 		item_value: ItemValue::Text(text) | ItemValue::Locator(text),
 		..
-	} = item
+	} = item.into_owned()
 	else {
-		return None;
-	};
-
-	let Some((target_type, simple_tag_name)) = REVERSE_MAPPINGS.get(&item_key) else {
 		return None;
 	};
 
@@ -237,8 +241,8 @@ fn simple_tag_for_item(item: TagItem) -> Option<(SimpleTag<'static>, TargetType)
 
 	let lang_str = std::str::from_utf8(lang.as_slice()).unwrap_or("und");
 
-	let mut simple_tag = SimpleTag::new(simple_tag_name.to_string(), text);
+	let mut simple_tag = SimpleTag::new((*simple_tag_name).to_string(), text);
 	simple_tag.language = Language::Iso639_2(lang_str.to_string());
 
-	Some((simple_tag, *target_type))
+	Some((simple_tag, target_type))
 }

@@ -1,14 +1,10 @@
 use crate::ebml::tag::write::{write_element, ElementWriterCtx, WriteableElement};
-use crate::ebml::{ElementId, SimpleTag, TagRef};
+use crate::ebml::{ElementId, TagRef};
 use crate::io::FileLike;
 
-use std::borrow::Cow;
 use std::io::Cursor;
 
-impl<'a, I> WriteableElement for TagRef<'a, I>
-where
-	I: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
-{
+impl WriteableElement for TagRef<'_> {
 	const ID: ElementId = ElementId(0x7373);
 
 	fn write_element<F: FileLike>(

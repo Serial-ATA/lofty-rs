@@ -51,7 +51,12 @@ pub(crate) fn init_write_lookup(
 		.write_to(file, write_options)
 	});
 
-	insert!(map, Matroska, { todo!("Generated Matroska tag writer") });
+	insert!(map, Matroska, {
+		lofty::ebml::tag::MatroskaTagRef {
+			tags: lofty::ebml::tag::simple_tags_for_tag(tag),
+		}
+		.write_to(file, write_options)
+	});
 
 	insert!(map, Id3v1, {
 		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(file, write_options)
