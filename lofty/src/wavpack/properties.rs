@@ -224,7 +224,7 @@ where
 		log::warn!("Unable to calculate duration, unknown sample counts are not yet supported");
 		return Ok(properties);
 	}
-	
+
 	if total_samples == 0 || properties.sample_rate == 0 {
 		if parse_mode == ParsingMode::Strict {
 			decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)")
@@ -317,6 +317,10 @@ fn get_extended_meta_info(
 
 		let is_large = id & ID_FLAG_LARGE_SIZE > 0;
 		if is_large {
+			if block_size - index < 2 {
+				break;
+			}
+
 			size += u32::from(block_content[index]) << 9;
 			size += u32::from(block_content[index + 1]) << 17;
 			index += 2;
