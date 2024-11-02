@@ -23,6 +23,7 @@ use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io::Write;
 use std::ops::Deref;
 
@@ -405,28 +406,36 @@ impl From<crate::tag::Tag> for MatroskaTag {
 	}
 }
 
-pub(crate) struct MatroskaTagRef<'a, I, S>
+pub(crate) struct MatroskaTagRef<'a, I>
 where
-	I: Iterator<Item = TagRef<'a, S>>,
-	S: Iterator<Item = Cow<'a, SimpleTag<'a>>> + 'a,
+	I: Iterator<Item = TagRef<'a>>,
 {
-	tags: I,
+	pub(crate) tags: I,
 }
 
-impl<'a, I, S> From<&'a crate::tag::Tag> for MatroskaTagRef<'a, I, S>
-where
-	I: Iterator<Item = TagRef<'a, S>>,
-	S: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
-{
-	fn from(_tag: &'a crate::tag::Tag) -> Self {
-		todo!()
+pub(crate) fn simple_tags_for_tag(tag: &crate::tag::Tag) -> impl Iterator<Item = TagRef<'static>> {
+	let mut mapped_tags: HashMap<TargetType, Vec<Cow<'static, SimpleTag<'static>>>> =
+		HashMap::new();
+	for item in &tag.items {
+		if let Some((simple_tag, target_type)) = generic::simple_tag_for_item(Cow::Borrowed(item)) {
+			mapped_tags
+				.entry(target_type)
+				.or_default()
+				.push(Cow::Owned(simple_tag))
+		}
 	}
+
+	mapped_tags
+		.into_iter()
+		.map(|(target_type, simple_tags)| TagRef {
+			targets: TargetDescriptor::Basic(target_type),
+			simple_tags: Box::new(simple_tags.into_iter()),
+		})
 }
 
-impl<'a, I, S> MatroskaTagRef<'a, I, S>
+impl<'a, I> MatroskaTagRef<'a, I>
 where
-	I: Iterator<Item = TagRef<'a, S>>,
-	S: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
+	I: Iterator<Item = TagRef<'a>>,
 {
 	pub(crate) fn write_to<F>(&mut self, _file: &mut F, _write_options: WriteOptions) -> Result<()>
 	where
@@ -434,10 +443,14 @@ where
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
-		todo!()
+		todo!("Writing matroska tags")
 	}
 
-	fn dump_to<W: Write>(&self, _writer: &mut W, _write_options: WriteOptions) -> Result<()> {
-		todo!()
+	pub(crate) fn dump_to<W: Write>(
+		&self,
+		_writer: &mut W,
+		_write_options: WriteOptions,
+	) -> Result<()> {
+		todo!("Dumping matroska tags")
 	}
 }

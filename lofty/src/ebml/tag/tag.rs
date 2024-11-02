@@ -122,10 +122,7 @@ impl Tag<'static> {
 	}
 }
 
-pub(crate) struct TagRef<'a, I>
-where
-	I: Iterator<Item = Cow<'a, SimpleTag<'a>>>,
-{
+pub(crate) struct TagRef<'a> {
 	pub(crate) targets: TargetDescriptor<'a>,
-	pub(crate) simple_tags: &'a mut I,
+	pub(crate) simple_tags: Box<dyn Iterator<Item = Cow<'a, SimpleTag<'a>>>>,
 }
