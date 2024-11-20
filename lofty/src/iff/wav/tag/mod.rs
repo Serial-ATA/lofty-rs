@@ -354,7 +354,7 @@ pub(crate) fn tagitems_into_riff<'a>(
 
 #[cfg(test)]
 mod tests {
-	use crate::config::WriteOptions;
+	use crate::config::{ParsingMode, WriteOptions};
 	use crate::iff::chunk::Chunks;
 	use crate::iff::wav::RiffInfoList;
 	use crate::prelude::*;
@@ -383,6 +383,7 @@ mod tests {
 			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
+			ParsingMode::Strict,
 		)
 		.unwrap();
 
@@ -399,6 +400,7 @@ mod tests {
 			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 1) as u64,
 			&mut parsed_tag,
+			ParsingMode::Strict,
 		)
 		.unwrap();
 
@@ -415,6 +417,7 @@ mod tests {
 			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
 			(tag.len() - 13) as u64,
 			&mut temp_parsed_tag,
+			ParsingMode::Strict,
 		)
 		.unwrap();
 
@@ -433,6 +436,7 @@ mod tests {
 			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u64),
 			(tag_bytes.len() - 1) as u64,
 			&mut riff_info,
+			ParsingMode::Strict,
 		)
 		.unwrap();
 

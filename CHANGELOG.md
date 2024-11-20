@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `gnre` present + `©gen` present, `©gen` takes precedence and `gnre` is discarded
       - With [ParsingOptions::implicit_conversions](https://docs.rs/lofty/latest/lofty/config/struct.ParseOptions.html#method.implicit_conversions)
         set to `false`, `gnre` will be retained as an atom of type `Unknown`.
+- **RIFF INFO**: Ignore text decoding errors when not using `ParsingMode::Strict` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/373))
+  - RIFF INFO tags may be encoded with a non UTF-8 system encoding, that we have no way of knowing. It's no longer an error to read these files,
+    it's just unlikely that anything useful come out of the RIFF INFO tags.
 
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))

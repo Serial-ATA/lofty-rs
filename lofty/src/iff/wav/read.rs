@@ -93,7 +93,13 @@ where
 							err!(SizeMismatch);
 						}
 
-						super::tag::read::parse_riff_info(data, &mut chunks, end, &mut riff_info)?;
+						super::tag::read::parse_riff_info(
+							data,
+							&mut chunks,
+							end,
+							&mut riff_info,
+							parse_options.parsing_mode,
+						)?;
 					},
 					_ => {
 						data.seek(SeekFrom::Current(-4))?;
