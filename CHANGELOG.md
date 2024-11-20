@@ -46,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **WavPack***: Fix panic when encountering zero-sized blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/473))
     - **MPEG**: Fix panic when APE tags are incorrectly sized ([issue](https://github.com/Serial-ATA/lofty-rs/issues/474))
     - **ID3v2**: Fix panic when parsing non-ASCII `TDAT` and `TIME` frames in `TDRC` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/477))
+    - **APE**: Fix panic when parsing incorrectly sized header APE tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/481))
 
 ## [0.21.1] - 2024-08-28
 

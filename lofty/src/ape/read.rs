@@ -86,7 +86,11 @@ where
 				}
 
 				let ape_header = read_ape_header(data, false)?;
-				stream_len -= u64::from(ape_header.size);
+				let Some(new_stream_length) = stream_len.checked_sub(u64::from(ape_header.size))
+				else {
+					err!(SizeMismatch);
+				};
+				stream_len = new_stream_length;
 
 				if parse_options.read_tags {
 					let ape = read_ape_tag_with_header(data, ape_header, parse_options)?;
