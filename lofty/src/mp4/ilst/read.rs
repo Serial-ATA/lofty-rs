@@ -378,7 +378,17 @@ where
 				DataType::Jpeg => Some(MimeType::Jpeg),
 				DataType::Png => Some(MimeType::Png),
 				DataType::Bmp => Some(MimeType::Bmp),
-				_ => err!(BadAtom("\"covr\" atom has an unknown type")),
+				_ => {
+					if parsing_mode == ParsingMode::Strict {
+						err!(BadAtom("\"covr\" atom has an unknown type"))
+					}
+
+					log::warn!(
+						"Encountered \"covr\" atom with an unknown type of `{}`, discarding",
+						Into::<u32>::into(data_type)
+					);
+					return Ok(());
+				},
 			};
 
 			let picture_data = AtomData::Picture(Picture {
