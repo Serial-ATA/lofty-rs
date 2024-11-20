@@ -26,6 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - It can be converted to and from a `u32`
   - `AtomData::data_type()` to get the data type code of the atom content.
 
+### Changed
+- **Ilst**: Add new rules for `gnre` atom upgrades ([issue](https://github.com/Serial-ATA/lofty-rs/issues/409)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/485))
+  - In the case that a `©gen` and `gnre` atom are present in a file, there was no way to tell which `©gen` atoms were upgraded.
+    the new rules are:
+    - `gnre` present + no `©gen` present, `gnre` gets upgraded as normal
+    - `gnre` present + `©gen` present, `©gen` takes precedence and `gnre` is discarded
+      - With [ParsingOptions::implicit_conversions](https://docs.rs/lofty/latest/lofty/config/struct.ParseOptions.html#method.implicit_conversions)
+        set to `false`, `gnre` will be retained as an atom of type `Unknown`.
+
 ### Fixed
 - **MusePack**: Fix potential panic when the beginning silence makes up the entire sample count ([PR](https://github.com/Serial-ATA/lofty-rs/pull/449))
 - **Timestamp**:

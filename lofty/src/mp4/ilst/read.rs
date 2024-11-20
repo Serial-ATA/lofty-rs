@@ -9,6 +9,7 @@ use crate::mp4::atom_info::{AtomInfo, ATOM_HEADER_LEN};
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{skip_atom, AtomReader};
 use crate::picture::{MimeType, Picture, PictureType};
+use crate::tag::TagExt;
 use crate::util::text::{utf16_decode_bytes, utf8_decode};
 
 use std::borrow::Cow;
@@ -33,6 +34,7 @@ where
 
 	let mut tag = Ilst::default();
 
+	let mut upgraded_gnres = Vec::new();
 	while let Ok(Some(atom)) = ilst_reader.next() {
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
 			match fourcc {
@@ -50,31 +52,44 @@ where
 					continue;
 				},
 				// Upgrade this to a \xa9gen atom
-				b"gnre" => {
+				b"gnre" if parse_options.implicit_conversions => {
 					log::warn!("Encountered outdated 'gnre' atom, attempting to upgrade to '©gen'");
+
+					if let Some(atom_data) =
+						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					{
+						for (_, content) in atom_data {
+							if content.len() >= 2 {
+								let index = content[1] as usize;
+								if index > 0 && index <= GENRES.len() {
+									upgraded_gnres
+										.push(AtomData::UTF8(String::from(GENRES[index - 1])));
+								}
+							}
+						}
+					}
+
+					continue;
+				},
+				// Just insert these normally, the caller will deal with them (hopefully)
+				b"gnre" => {
+					log::warn!("Encountered outdated 'gnre' atom");
 
 					if let Some(atom_data) =
 						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
 					{
 						let mut data = Vec::new();
 
-						for (_, content) in atom_data {
-							if content.len() >= 2 {
-								let index = content[1] as usize;
-								if index > 0 && index <= GENRES.len() {
-									data.push(AtomData::UTF8(String::from(GENRES[index - 1])));
-								}
-							}
+						for (code, content) in atom_data {
+							data.push(AtomData::Unknown {
+								code,
+								data: content,
+							});
 						}
 
-						if !data.is_empty() {
-							let storage = match data.len() {
-								1 => AtomDataStorage::Single(data.remove(0)),
-								_ => AtomDataStorage::Multiple(data),
-							};
-
+						if let Some(storage) = AtomDataStorage::from_vec(data) {
 							tag.atoms.push(Atom {
-								ident: AtomIdent::Fourcc(*b"\xa9gen"),
+								ident: AtomIdent::Fourcc(*b"gnre"),
 								data: storage,
 							})
 						}
@@ -137,6 +152,20 @@ where
 		}
 
 		parse_data(&mut ilst_reader, parsing_mode, &mut tag, atom)?;
+	}
+
+	if parse_options.implicit_conversions && !upgraded_gnres.is_empty() {
+		if tag.contains(&AtomIdent::Fourcc(*b"\xa9gen")) {
+			log::warn!("Encountered '©gen' atom, discarding upgraded 'gnre' atom(s)");
+			return Ok(tag);
+		}
+
+		if let Some(storage) = AtomDataStorage::from_vec(upgraded_gnres) {
+			tag.atoms.push(Atom {
+				ident: AtomIdent::Fourcc(*b"\xa9gen"),
+				data: storage,
+			})
+		}
 	}
 
 	Ok(tag)
