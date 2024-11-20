@@ -318,20 +318,23 @@ fn get_extended_meta_info(
 		}
 
 		if size == 0 {
-			decode_err!(@BAIL WavPack, "Encountered a zero-sized block");
+			// Empty blocks may not *always* be valid, but we only care about the validity
+			// of a few blocks.
+			continue;
+		}
+
+		if (size as usize) > reader.len() {
+			err!(SizeMismatch);
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
 			size -= 1;
 		}
 
-		if (size as usize) >= reader.len() {
-			err!(SizeMismatch);
-		}
-
 		match id & 0x3F {
 			ID_NON_STANDARD_SAMPLE_RATE => {
 				properties.sample_rate = reader.read_u24::<LittleEndian>()?;
+				size -= 3;
 			},
 			ID_DSD => {
 				if size <= 1 {
@@ -339,6 +342,7 @@ fn get_extended_meta_info(
 				}
 
 				let mut rate_multiplier = u32::from(reader.read_u8()?);
+				size -= 1;
 
 				if rate_multiplier > 30 {
 					parse_mode_choice!(
@@ -350,9 +354,6 @@ fn get_extended_meta_info(
 
 				rate_multiplier = 1 << rate_multiplier;
 				properties.sample_rate = properties.sample_rate.wrapping_mul(rate_multiplier);
-
-				// Skip DSD mode
-				let _ = reader.read_u8()?;
 			},
 			ID_MULTICHANNEL => {
 				if size <= 1 {
@@ -366,18 +367,22 @@ fn get_extended_meta_info(
 				match s {
 					0 => {
 						let channel_mask = reader.read_u8()?;
+						size -= 1;
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					1 => {
 						let channel_mask = reader.read_u16::<LittleEndian>()?;
+						size -= 2;
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					2 => {
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						size -= 3;
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					3 => {
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						size -= 4;
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					4 => {
@@ -385,6 +390,7 @@ fn get_extended_meta_info(
 						properties.channels += 1;
 
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
+						size -= 4;
 
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
@@ -393,17 +399,19 @@ fn get_extended_meta_info(
 						properties.channels += 1;
 
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
+						size -= 5;
 
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
 				}
 			},
-			_ => {
-				let (_, rem) = reader.split_at(size as usize);
-				*reader = rem;
-			},
+			_ => {},
 		}
+
+		// Skip over any remaining block size
+		let (_, rem) = reader.split_at(size as usize);
+		*reader = rem;
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
 			let _ = reader.read_u8()?;
