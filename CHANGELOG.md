@@ -27,14 +27,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AtomData::data_type()` to get the data type code of the atom content.
 
 ### Changed
-- **Ilst**: Add new rules for `gnre` atom upgrades ([issue](https://github.com/Serial-ATA/lofty-rs/issues/409)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/485))
-  - In the case that a `©gen` and `gnre` atom are present in a file, there was no way to tell which `©gen` atoms were upgraded.
-    the new rules are:
-    - `gnre` present + no `©gen` present, `gnre` gets upgraded as normal
-    - `gnre` present + `©gen` present, `©gen` takes precedence and `gnre` is discarded
-      - With [ParsingOptions::implicit_conversions](https://docs.rs/lofty/latest/lofty/config/struct.ParseOptions.html#method.implicit_conversions)
-        set to `false`, `gnre` will be retained as an atom of type `Unknown`.
-- **RIFF INFO**: Ignore text decoding errors when not using `ParsingMode::Strict` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/373))
+- **Ilst**:
+  - Add new rules for `gnre` atom upgrades ([issue](https://github.com/Serial-ATA/lofty-rs/issues/409)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/485))
+    - In the case that a `©gen` and `gnre` atom are present in a file, there was no way to tell which `©gen` atoms were upgraded.
+      the new rules are:
+      - `gnre` present + no `©gen` present, `gnre` gets upgraded as normal
+      - `gnre` present + `©gen` present, `©gen` takes precedence and `gnre` is discarded
+        - With [ParsingOptions::implicit_conversions](https://docs.rs/lofty/latest/lofty/config/struct.ParseOptions.html#method.implicit_conversions)
+          set to `false`, `gnre` will be retained as an atom of type `Unknown`.
+  - Ignore invalid `covr` data types when not using `ParsingMode::Strict` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/482)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/486))
+- **RIFF INFO**: Ignore text decoding errors when not using `ParsingMode::Strict` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/373)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/486))
   - RIFF INFO tags may be encoded with a non UTF-8 system encoding, that we have no way of knowing. It's no longer an error to read these files,
     it's just unlikely that anything useful come out of the RIFF INFO tags.
 
