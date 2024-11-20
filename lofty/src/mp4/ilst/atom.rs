@@ -28,6 +28,14 @@ impl AtomDataStorage {
 			AtomDataStorage::Multiple(v) => v.iter().all(|p| matches!(p, AtomData::Picture(_))),
 		}
 	}
+
+	pub(super) fn from_vec(mut v: Vec<AtomData>) -> Option<Self> {
+		match v.len() {
+			0 => None,
+			1 => Some(AtomDataStorage::Single(v.remove(0))),
+			_ => Some(AtomDataStorage::Multiple(v)),
+		}
+	}
 }
 
 impl Debug for AtomDataStorage {

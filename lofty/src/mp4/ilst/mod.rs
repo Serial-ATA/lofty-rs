@@ -892,22 +892,24 @@ mod tests {
 
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
-	fn read_ilst(path: &str, parse_mode: ParsingMode) -> Ilst {
+	fn read_ilst(path: &str, parse_options: ParseOptions) -> Ilst {
 		let tag = std::fs::read(path).unwrap();
-		read_ilst_raw(&tag, parse_mode)
+		read_ilst_raw(&tag, parse_options)
 	}
 
-	fn read_ilst_raw(bytes: &[u8], parse_mode: ParsingMode) -> Ilst {
-		let options = ParseOptions::new().parsing_mode(parse_mode);
-		read_ilst_with_options(bytes, options)
+	fn read_ilst_raw(bytes: &[u8], parse_options: ParseOptions) -> Ilst {
+		read_ilst_with_options(bytes, parse_options)
 	}
 
 	fn read_ilst_strict(path: &str) -> Ilst {
-		read_ilst(path, ParsingMode::Strict)
+		read_ilst(path, ParseOptions::new().parsing_mode(ParsingMode::Strict))
 	}
 
 	fn read_ilst_bestattempt(path: &str) -> Ilst {
-		read_ilst(path, ParsingMode::BestAttempt)
+		read_ilst(
+			path,
+			ParseOptions::new().parsing_mode(ParsingMode::BestAttempt),
+		)
 	}
 
 	fn read_ilst_with_options(bytes: &[u8], parse_options: ParseOptions) -> Ilst {
@@ -1427,7 +1429,10 @@ mod tests {
 
 		tag_bytes.drain(..8); // Remove the ilst identifier and size for `read_ilst`
 
-		let tag_re_read = read_ilst_raw(&tag_bytes[..], ParsingMode::Strict);
+		let tag_re_read = read_ilst_raw(
+			&tag_bytes[..],
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		);
 		assert_eq!(tag, tag_re_read);
 
 		// Now write from `Tag`
@@ -1439,7 +1444,10 @@ mod tests {
 
 		tag_bytes.drain(..8); // Remove the ilst identifier and size for `read_ilst`
 
-		let generic_tag_re_read = read_ilst_raw(&tag_bytes[..], ParsingMode::Strict);
+		let generic_tag_re_read = read_ilst_raw(
+			&tag_bytes[..],
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		);
 		assert_eq!(tag_re_read, generic_tag_re_read);
 	}
 
@@ -1464,5 +1472,50 @@ mod tests {
 		let ilst = read_ilst_with_options(&writer[8..], ParseOptions::new().read_cover_art(false));
 		assert_eq!(ilst.len(), 1); // Artist, no picture
 		assert!(ilst.artist().is_some());
+	}
+
+	#[test_log::test]
+	fn gnre_conversion_case_1() {
+		// Case 1: 1 `gnre` atom present, no `©gen` present. `gnre` gets converted without issue.
+		let ilst = read_ilst_bestattempt("tests/tags/assets/ilst/gnre_conversion_case_1.ilst");
+
+		assert_eq!(ilst.len(), 2);
+		assert_eq!(ilst.artist().unwrap(), "Foo artist"); // Sanity check
+		assert_eq!(ilst.genre().unwrap(), "Funk");
+	}
+
+	#[test_log::test]
+	fn gnre_conversion_case_2() {
+		// Case 2: 1 `gnre` atom present, 1 `©gen` present. `gnre` gets discarded.
+		let ilst = read_ilst_bestattempt("tests/tags/assets/ilst/gnre_conversion_case_2.ilst");
+
+		assert_eq!(ilst.len(), 2);
+		assert_eq!(ilst.artist().unwrap(), "Foo artist"); // Sanity check
+		assert_eq!(ilst.genre().unwrap(), "My Custom Genre");
+	}
+
+	#[test_log::test]
+	fn gnre_conversion_case_3() {
+		// Case 2: 1 `gnre` atom present, 1 `©gen` present. implicit conversion are disabled, `gnre` is retained
+		//         as an unknown atom.
+		let ilst = read_ilst(
+			"tests/tags/assets/ilst/gnre_conversion_case_2.ilst",
+			ParseOptions::new().implicit_conversions(false),
+		);
+
+		assert_eq!(ilst.len(), 3);
+		assert_eq!(ilst.artist().unwrap(), "Foo artist"); // Sanity check
+		assert_eq!(ilst.genre().unwrap(), "My Custom Genre");
+		assert_eq!(
+			ilst.get(&AtomIdent::Fourcc(*b"gnre"))
+				.unwrap()
+				.data()
+				.next()
+				.unwrap(),
+			&AtomData::Unknown {
+				code: DataType::BeSignedInteger,
+				data: vec![0, 6]
+			}
+		);
 	}
 }
