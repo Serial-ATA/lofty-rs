@@ -302,28 +302,19 @@ fn get_extended_meta_info(
 	block_content: &[u8],
 	properties: &mut WavPackProperties,
 ) -> Result<()> {
-	let mut index = 0;
-	let block_size = block_content.len();
-	while index < block_size {
-		if block_size - index < 2 {
+	let reader = &mut &block_content[..];
+	loop {
+		if reader.len() < 2 {
 			break;
 		}
 
-		let id = block_content[index];
-		index += 1;
-
-		let mut size = u32::from(block_content[index]) << 1;
-		index += 1;
+		let id = reader.read_u8()?;
+		let mut size = u32::from(reader.read_u8()?) << 1;
 
 		let is_large = id & ID_FLAG_LARGE_SIZE > 0;
 		if is_large {
-			if block_size - index < 2 {
-				break;
-			}
-
-			size += u32::from(block_content[index]) << 9;
-			size += u32::from(block_content[index + 1]) << 17;
-			index += 2;
+			size += u32::from(reader.read_u8()?) << 9;
+			size += u32::from(reader.read_u8()?) << 17;
 		}
 
 		if size == 0 {
@@ -334,19 +325,20 @@ fn get_extended_meta_info(
 			size -= 1;
 		}
 
+		if (size as usize) >= reader.len() {
+			err!(SizeMismatch);
+		}
+
 		match id & 0x3F {
 			ID_NON_STANDARD_SAMPLE_RATE => {
-				properties.sample_rate =
-					(&mut &block_content[index..]).read_u24::<LittleEndian>()?;
-				index += 3;
+				properties.sample_rate = reader.read_u24::<LittleEndian>()?;
 			},
 			ID_DSD => {
 				if size <= 1 {
 					decode_err!(@BAIL WavPack, "Encountered an invalid DSD block size");
 				}
 
-				let mut rate_multiplier = u32::from(block_content[index]);
-				index += 1;
+				let mut rate_multiplier = u32::from(reader.read_u8()?);
 
 				if rate_multiplier > 30 {
 					parse_mode_choice!(
@@ -360,62 +352,47 @@ fn get_extended_meta_info(
 				properties.sample_rate = properties.sample_rate.wrapping_mul(rate_multiplier);
 
 				// Skip DSD mode
-				index += 1;
+				let _ = reader.read_u8()?;
 			},
 			ID_MULTICHANNEL => {
 				if size <= 1 {
 					decode_err!(@BAIL WavPack, "Unable to extract channel information");
 				}
 
-				properties.channels = u16::from(block_content[index]);
-				index += 1;
-
-				let reader = &mut &block_content[index..];
+				properties.channels = u16::from(reader.read_u8()?);
 
 				// size - (id length + channel length)
 				let s = size - 2;
 				match s {
 					0 => {
 						let channel_mask = reader.read_u8()?;
-						index += 1;
-
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					1 => {
 						let channel_mask = reader.read_u16::<LittleEndian>()?;
-						index += 2;
-
 						properties.channel_mask = ChannelMask(u32::from(channel_mask));
 					},
 					2 => {
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
-						index += 3;
-
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					3 => {
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
-						index += 4;
-
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					4 => {
 						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
-						index += 1;
 
 						let channel_mask = reader.read_u24::<LittleEndian>()?;
-						index += 3;
 
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
 					5 => {
 						properties.channels |= u16::from(reader.read_u8()? & 0xF) << 8;
 						properties.channels += 1;
-						index += 1;
 
 						let channel_mask = reader.read_u32::<LittleEndian>()?;
-						index += 4;
 
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
@@ -423,12 +400,13 @@ fn get_extended_meta_info(
 				}
 			},
 			_ => {
-				index += size as usize;
+				let (_, rem) = reader.split_at(size as usize);
+				*reader = rem;
 			},
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
-			index += 1;
+			let _ = reader.read_u8()?;
 		}
 	}
 
