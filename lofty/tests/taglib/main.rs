@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 pub(crate) mod util;
 
 mod test_aiff;
