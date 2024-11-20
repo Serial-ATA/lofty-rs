@@ -1,3 +1,5 @@
+#![allow(missing_docs)]
+
 use lofty::config::ParseOptions;
 use lofty::prelude::*;
 
