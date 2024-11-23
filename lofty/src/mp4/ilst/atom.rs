@@ -327,6 +327,7 @@ impl AtomData {
 	///
 	/// let data = AtomData::Picture(Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Jpeg),
 	/// 	None,
 	/// 	Vec::new(),

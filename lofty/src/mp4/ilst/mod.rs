@@ -290,6 +290,7 @@ impl Ilst {
 	/// // Insert pictures
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	png_data,
@@ -298,6 +299,7 @@ impl Ilst {
 	/// # let jpeg_data = b"bar".to_vec();
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
+	/// 	None,
 	/// 	Some(MimeType::Jpeg),
 	/// 	None,
 	/// 	jpeg_data,
@@ -334,6 +336,7 @@ impl Ilst {
 	/// // Insert a single picture
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	png_data,
@@ -344,6 +347,7 @@ impl Ilst {
 	/// // Insert another picture
 	/// ilst.insert_picture(Picture::new_unchecked(
 	/// 	PictureType::Other,
+	/// 	None,
 	/// 	Some(MimeType::Jpeg),
 	/// 	None,
 	/// 	jpeg_data,
@@ -1455,6 +1459,7 @@ mod tests {
 	fn skip_reading_cover_art() {
 		let p = Picture::new_unchecked(
 			PictureType::CoverFront,
+			None,
 			Some(MimeType::Jpeg),
 			None,
 			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),

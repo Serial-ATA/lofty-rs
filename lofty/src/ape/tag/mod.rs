@@ -915,6 +915,7 @@ mod tests {
 	fn skip_reading_cover_art() {
 		let p = Picture::new_unchecked(
 			PictureType::CoverFront,
+			None,
 			Some(MimeType::Jpeg),
 			None,
 			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
