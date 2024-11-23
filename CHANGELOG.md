@@ -53,11 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When skipping invalid frames in `ParsingMode::{BestAttempt, Relaxed}`, the parser will no longer be able to go out of the bounds
     of the frame content ([issue](https://github.com/Serial-ATA/lofty-rs/issues/458)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
 - **MP4**: Support for flag items (ex. `cpil`) of any size (not just 1 byte) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/457)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/460))
-- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/476)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/479)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/483)):
+- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/476)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/479)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/483)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/489)):
     - **MusePack**: Fix panic when ID3v2 tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/470))
     - **WAV**: Fix panic when calculating bit depth with abnormally large `bytes_per_sample` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/471))
     - **WavPack***: Fix panic when encountering wrongly sized blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/472)) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/480))
     - **WavPack***: Fix panic when encountering zero-sized blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/473))
+    - **WavPack**: Verify the size of non-standard sample rate blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/488))
     - **MPEG**: Fix panic when APE tags are incorrectly sized ([issue](https://github.com/Serial-ATA/lofty-rs/issues/474))
     - **MPEG**: Fix panic when calculating the stream length for files with improperly sized frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/487))
     - **ID3v2**: Fix panic when parsing non-ASCII `TDAT` and `TIME` frames in `TDRC` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/477))
