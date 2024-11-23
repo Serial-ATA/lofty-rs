@@ -62,37 +62,39 @@ impl TryFrom<u8> for TargetType {
 /// tag, but rather a "TITLE" tag that is applied to a [`TargetType::Track`] target.
 ///
 /// See [`TargetType`] for more information on the types of targets.
+///
+/// [`SimpleTag`]: crate::ebml::SimpleTag
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Target {
 	/// The type of the target.
 	pub target_type: TargetType,
 	/// An informational string that can be used to display the logical level of the target.
 	pub name: Option<String>,
-	/// A unique ID to identify the [Track](s) the tags belong to.
+	/// A unique ID to identify the track(s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all tracks in the Segment. If set to any
-	/// other value, it **MUST** match the [`TrackUID`] value of a track found in this Segment.
+	/// other value, it **MUST** match the `TrackUID` value of a track found in this Segment.
 	///
 	/// **Unsupported in WebM**
 	pub track_uids: Option<Vec<u64>>,
-	/// A unique ID to identify the [EditionEntry](s) the tags belong to.
+	/// A unique ID to identify the `EditionEntry`(s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all editions in the Segment. If set to
-	/// any other value, it **MUST** match the [`EditionUID`] value of an edition found in this Segment.
+	/// any other value, it **MUST** match the `EditionUID` value of an edition found in this Segment.
 	///
 	/// **Unsupported in WebM**
 	pub edition_uids: Option<Vec<u64>>,
-	/// A unique ID to identify the [Chapter](s) the tags belong to.
+	/// A unique ID to identify the Chapter(s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all chapters in the Segment. If set to
-	/// any other value, it **MUST** match the [`ChapterUID`] value of a chapter found in this Segment.
+	/// any other value, it **MUST** match the `ChapterUID` value of a chapter found in this Segment.
 	///
 	/// **Unsupported in WebM**
 	pub chapter_uids: Option<Vec<u64>>,
 	/// A unique ID to identify the [`AttachedFile`]\(s) the tags belong to.
 	///
 	/// If the value is 0 at this level, the tags apply to all the attachments in the Segment. If
-	/// set to any other value, it **MUST** match the [`AttachedFile::uid`]) value of an attachment
+	/// set to any other value, it **MUST** match the [`AttachedFile::uid`] value of an attachment
 	/// found in this Segment.
 	///
 	/// [`AttachedFile`]: crate::ebml::AttachedFile

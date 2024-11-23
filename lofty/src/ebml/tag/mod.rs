@@ -76,7 +76,7 @@ impl MatroskaTag {
 
 		let applicable_tags = self.tags.iter().filter(|tag| tag.matches_target(target));
 		for applicable_tag in applicable_tags {
-			for item in applicable_tag.simple_tags.iter() {
+			for item in &applicable_tag.simple_tags {
 				if item.name == key && matches!(&item.language, Language::Iso639_2(l) if l == "und")
 				{
 					return Some(item);
@@ -87,10 +87,7 @@ impl MatroskaTag {
 		None
 	}
 
-	fn get_or_insert_tag_for_type<'a>(
-		&'a mut self,
-		target_type: TargetType,
-	) -> &'a mut Tag<'static> {
+	fn get_or_insert_tag_for_type(&mut self, target_type: TargetType) -> &mut Tag<'static> {
 		let mut pos = None;
 		if let Some(applicable_tag_pos) = self
 			.tags
@@ -368,7 +365,7 @@ impl Deref for SplitTagRemainder {
 impl SplitTag for MatroskaTag {
 	type Remainder = SplitTagRemainder;
 
-	fn split_tag(mut self) -> (Self::Remainder, crate::tag::Tag) {
+	fn split_tag(self) -> (Self::Remainder, crate::tag::Tag) {
 		let (remainder, tag) = generic::split_tag(self);
 		(SplitTagRemainder(remainder), tag)
 	}

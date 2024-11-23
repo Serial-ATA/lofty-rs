@@ -39,8 +39,7 @@ impl Language {
 	/// ```
 	pub fn as_str(&self) -> &str {
 		match self {
-			Self::Iso639_2(value) => value.as_str(),
-			Self::Bcp47(value) => value.as_str(),
+			Self::Iso639_2(value) | Self::Bcp47(value) => value.as_str(),
 		}
 	}
 }
@@ -153,6 +152,8 @@ pub struct SimpleTag<'a> {
 	/// - It **SHOULD NOT** contain any space.
 	///
 	/// When in doubt, the [`TagName`] enum can be used, which covers all specified tags.
+	///
+	/// [`TagName`]: crate::ebml::TagName
 	pub name: Cow<'a, str>,
 	/// The language of the tag
 	///
