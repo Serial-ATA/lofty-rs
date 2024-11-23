@@ -333,6 +333,10 @@ fn get_extended_meta_info(
 
 		match id & 0x3F {
 			ID_NON_STANDARD_SAMPLE_RATE => {
+				if size < 3 {
+					decode_err!(@BAIL WavPack, "Encountered an invalid block size for non-standard sample rate");
+				}
+
 				properties.sample_rate = reader.read_u24::<LittleEndian>()?;
 				size -= 3;
 			},

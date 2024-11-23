@@ -112,3 +112,11 @@ fn panic4() {
 	);
 	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
 }
+
+#[test_log::test]
+fn panic5() {
+	let mut reader = crate::get_reader(
+		"wavpackfile_read_from/crash-5f9ecf40152ed0dcb39eb66003ecca7d42d56bf3_minimized",
+	);
+	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
+}
