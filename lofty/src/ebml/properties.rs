@@ -23,7 +23,7 @@ impl EbmlHeaderProperties {
 		self.version
 	}
 
-	/// The minimum EBML version required to read the file, <= [`version`]
+	/// The minimum EBML version required to read the file, <= [`Self::version()`]
 	pub fn read_version(&self) -> u64 {
 		self.read_version
 	}

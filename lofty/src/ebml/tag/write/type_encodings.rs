@@ -75,9 +75,10 @@ impl ElementEncodable for bool {
 	}
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
-		match *self {
-			true => VInt::<u64>(1).write_to(ctx, writer),
-			false => VInt::<i64>::ZERO.write_to(ctx, writer),
+		if *self {
+			VInt::<u64>(1).write_to(ctx, writer)
+		} else {
+			VInt::<i64>::ZERO.write_to(ctx, writer)
 		}
 	}
 }
