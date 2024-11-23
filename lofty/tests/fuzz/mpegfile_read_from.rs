@@ -34,6 +34,13 @@ fn crash4() {
 }
 
 #[test_log::test]
+fn crash5() {
+	let mut reader =
+		get_reader("mpegfile_read_from/crash-625fdf469a07ca27b291122f8f95f6fce4458ad5_minimized");
+	let _ = MpegFile::read_from(&mut reader, ParseOptions::new());
+}
+
+#[test_log::test]
 fn oom1() {
 	oom_test::<MpegFile>("mpegfile_read_from/oom-f8730cbfa5682ab12343ccb70de9b71a061ef4d0");
 }

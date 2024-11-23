@@ -212,7 +212,13 @@ where
 		return Ok(());
 	};
 
-	let stream_len = (last_frame_offset + u64::from(last_frame_header.len)) - first_frame_offset;
+	let stream_end = last_frame_offset + u64::from(last_frame_header.len);
+	if stream_end < first_frame_offset {
+		// Something is incredibly wrong with this file, just give up
+		return Ok(());
+	}
+
+	let stream_len = stream_end - first_frame_offset;
 	if !is_cbr {
 		log::debug!("MPEG: VBR detected");
 
