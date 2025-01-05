@@ -22,7 +22,7 @@ pub struct GeneralEncapsulatedObject<'a> {
 	pub data: Vec<u8>,
 }
 
-impl<'a> GeneralEncapsulatedObject<'a> {
+impl GeneralEncapsulatedObject<'_> {
 	/// Create a new [`GeneralEncapsulatedObject`]
 	pub fn new(
 		encoding: TextEncoding,

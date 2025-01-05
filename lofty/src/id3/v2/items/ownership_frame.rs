@@ -33,7 +33,7 @@ pub struct OwnershipFrame<'a> {
 	pub seller: String,
 }
 
-impl<'a> OwnershipFrame<'a> {
+impl OwnershipFrame<'_> {
 	/// Create a new [`OwnershipFrame`]
 	pub fn new(
 		encoding: TextEncoding,

@@ -90,19 +90,19 @@ pub struct RelativeVolumeAdjustmentFrame<'a> {
 	pub channels: HashMap<ChannelType, ChannelInformation>,
 }
 
-impl<'a> PartialEq for RelativeVolumeAdjustmentFrame<'a> {
+impl PartialEq for RelativeVolumeAdjustmentFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.identification == other.identification
 	}
 }
 
-impl<'a> Hash for RelativeVolumeAdjustmentFrame<'a> {
+impl Hash for RelativeVolumeAdjustmentFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.identification.hash(state)
 	}
 }
 
-impl<'a> RelativeVolumeAdjustmentFrame<'a> {
+impl RelativeVolumeAdjustmentFrame<'_> {
 	/// Create a new [`RelativeVolumeAdjustmentFrame`]
 	pub fn new(identification: String, channels: HashMap<ChannelType, ChannelInformation>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

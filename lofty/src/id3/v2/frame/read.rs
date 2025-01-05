@@ -19,7 +19,7 @@ pub(crate) enum ParsedFrame<'a> {
 	Eof,
 }
 
-impl<'a> ParsedFrame<'a> {
+impl ParsedFrame<'_> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,

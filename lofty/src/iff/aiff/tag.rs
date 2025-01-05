@@ -312,7 +312,7 @@ where
 	pub comments: Option<&'a [Comment]>,
 }
 
-impl<'a, T, AI> AiffTextChunksRef<'a, T, AI>
+impl<T, AI> AiffTextChunksRef<'_, T, AI>
 where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,

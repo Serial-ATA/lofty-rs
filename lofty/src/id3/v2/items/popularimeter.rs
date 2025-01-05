@@ -31,19 +31,19 @@ pub struct PopularimeterFrame<'a> {
 	pub counter: u64,
 }
 
-impl<'a> PartialEq for PopularimeterFrame<'a> {
+impl PartialEq for PopularimeterFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.email == other.email
 	}
 }
 
-impl<'a> Hash for PopularimeterFrame<'a> {
+impl Hash for PopularimeterFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.email.hash(state);
 	}
 }
 
-impl<'a> PopularimeterFrame<'a> {
+impl PopularimeterFrame<'_> {
 	/// Create a new [`PopularimeterFrame`]
 	pub fn new(email: String, rating: u8, counter: u64) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

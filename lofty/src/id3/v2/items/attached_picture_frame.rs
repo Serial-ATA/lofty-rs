@@ -24,7 +24,7 @@ pub struct AttachedPictureFrame<'a> {
 	pub picture: Picture,
 }
 
-impl<'a> AttachedPictureFrame<'a> {
+impl AttachedPictureFrame<'_> {
 	/// Create a new [`AttachedPictureFrame`]
 	pub fn new(encoding: TextEncoding, picture: Picture) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
