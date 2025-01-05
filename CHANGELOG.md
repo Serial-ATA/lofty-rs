@@ -53,7 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When skipping invalid frames in `ParsingMode::{BestAttempt, Relaxed}`, the parser will no longer be able to go out of the bounds
     of the frame content ([issue](https://github.com/Serial-ATA/lofty-rs/issues/458)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/459))
 - **MP4**: Support for flag items (ex. `cpil`) of any size (not just 1 byte) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/457)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/460))
-- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/476)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/479)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/483)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/489)):
+- **Fuzzing** (Thanks [@qarmin](https://github.com/qarmin)!) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/476)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/479)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/483)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/489)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/496)):
     - **MusePack**: Fix panic when ID3v2 tag sizes exceed the stream length ([issue](https://github.com/Serial-ATA/lofty-rs/issues/470))
     - **WAV**: Fix panic when calculating bit depth with abnormally large `bytes_per_sample` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/471))
     - **WavPack***: Fix panic when encountering wrongly sized blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/472)) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/480))
