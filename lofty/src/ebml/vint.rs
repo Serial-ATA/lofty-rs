@@ -127,6 +127,17 @@ macro_rules! impl_vint {
 						VInt::<$t>::write_to(self.0 as u64, min_length, max_length, &mut ret)?;
 						Ok(ret)
 					}
+
+					#[inline]
+					#[allow(dead_code)]
+					pub(crate) fn saturating_sub(self, other: $t) -> Self {
+						let v = self.0.saturating_sub(other);
+						if v < Self::MIN {
+							return Self(Self::MIN);
+						}
+
+						Self(v)
+					}
 				}
 
 				impl Add for VInt<$t> {
