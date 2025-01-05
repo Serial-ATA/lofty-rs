@@ -120,3 +120,19 @@ fn panic5() {
 	);
 	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
 }
+
+#[test_log::test]
+fn panic6() {
+	let mut reader = crate::get_reader(
+		"wavpackfile_read_from/crash-68a2215c732ecb202998d3bd8b0de932e5e0301d_minimized",
+	);
+	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
+}
+
+#[test_log::test]
+fn panic7() {
+	let mut reader = crate::get_reader(
+		"wavpackfile_read_from/crash-b583ce7029fc17100e2aabfa4679865a2a5fd9a4_minimized",
+	);
+	let _ = WavPackFile::read_from(&mut reader, ParseOptions::default());
+}

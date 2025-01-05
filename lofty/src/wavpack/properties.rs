@@ -187,7 +187,7 @@ where
 			}
 
 			total_samples = block_header.total_samples;
-			properties.bit_depth = ((((flags & BYTES_PER_SAMPLE_MASK) + 1) * 8) - ((flags & BIT_DEPTH_SHIFT_MASK) >> BIT_DEPTH_SHL)) as u8;
+			properties.bit_depth = (((flags & BYTES_PER_SAMPLE_MASK) + 1) * 8).saturating_sub((flags & BIT_DEPTH_SHIFT_MASK) >> BIT_DEPTH_SHL) as u8;
 
 			properties.version = block_header.version;
 			properties.lossless = flags & FLAG_HYBRID_COMPRESSION == 0;
@@ -414,6 +414,10 @@ fn get_extended_meta_info(
 		}
 
 		// Skip over any remaining block size
+		if (size as usize) > reader.len() {
+			err!(SizeMismatch);
+		}
+
 		let (_, rem) = reader.split_at(size as usize);
 		*reader = rem;
 
