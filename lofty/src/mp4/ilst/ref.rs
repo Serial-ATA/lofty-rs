@@ -46,7 +46,7 @@ where
 	}
 }
 
-impl<'a> Atom<'a> {
+impl Atom<'_> {
 	pub(super) fn as_ref(&self) -> AtomRef<'_, impl IntoIterator<Item = &AtomData>> {
 		AtomRef {
 			ident: self.ident.as_borrowed(),

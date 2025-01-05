@@ -32,19 +32,19 @@ pub struct ExtendedTextFrame<'a> {
 	pub content: String,
 }
 
-impl<'a> PartialEq for ExtendedTextFrame<'a> {
+impl PartialEq for ExtendedTextFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl<'a> Hash for ExtendedTextFrame<'a> {
+impl Hash for ExtendedTextFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl<'a> ExtendedTextFrame<'a> {
+impl ExtendedTextFrame<'_> {
 	/// Create a new [`ExtendedTextFrame`]
 	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

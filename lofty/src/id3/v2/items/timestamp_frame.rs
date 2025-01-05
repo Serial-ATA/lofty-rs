@@ -18,13 +18,13 @@ pub struct TimestampFrame<'a> {
 	pub timestamp: Timestamp,
 }
 
-impl<'a> PartialOrd for TimestampFrame<'a> {
+impl PartialOrd for TimestampFrame<'_> {
 	fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
 		Some(self.cmp(other))
 	}
 }
 
-impl<'a> Ord for TimestampFrame<'a> {
+impl Ord for TimestampFrame<'_> {
 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
 		self.timestamp.cmp(&other.timestamp)
 	}

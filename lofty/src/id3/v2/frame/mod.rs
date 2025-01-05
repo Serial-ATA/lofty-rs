@@ -164,7 +164,7 @@ impl<'a> Frame<'a> {
 	}
 }
 
-impl<'a> Frame<'a> {
+impl Frame<'_> {
 	/// Check for empty content
 	///
 	/// Returns `None` if the frame type is not supported.
@@ -194,7 +194,7 @@ impl<'a> Frame<'a> {
 	}
 }
 
-impl<'a> Frame<'a> {
+impl Frame<'_> {
 	pub(super) fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
 		Ok(match self {
 			Frame::Comment(comment) => comment.as_bytes(is_id3v23)?,

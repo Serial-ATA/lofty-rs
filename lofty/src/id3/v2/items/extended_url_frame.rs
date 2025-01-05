@@ -29,19 +29,19 @@ pub struct ExtendedUrlFrame<'a> {
 	pub content: String,
 }
 
-impl<'a> PartialEq for ExtendedUrlFrame<'a> {
+impl PartialEq for ExtendedUrlFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.description == other.description
 	}
 }
 
-impl<'a> Hash for ExtendedUrlFrame<'a> {
+impl Hash for ExtendedUrlFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
 }
 
-impl<'a> ExtendedUrlFrame<'a> {
+impl ExtendedUrlFrame<'_> {
 	/// Create a new [`ExtendedUrlFrame`]
 	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

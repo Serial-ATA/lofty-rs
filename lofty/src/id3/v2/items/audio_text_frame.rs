@@ -71,19 +71,19 @@ pub struct AudioTextFrame<'a> {
 	pub audio_data: Vec<u8>,
 }
 
-impl<'a> PartialEq for AudioTextFrame<'a> {
+impl PartialEq for AudioTextFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.equivalent_text == other.equivalent_text
 	}
 }
 
-impl<'a> Hash for AudioTextFrame<'a> {
+impl Hash for AudioTextFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.equivalent_text.hash(state);
 	}
 }
 
-impl<'a> AudioTextFrame<'a> {
+impl AudioTextFrame<'_> {
 	/// Create a new [`AudioTextFrame`]
 	pub fn new(
 		encoding: TextEncoding,

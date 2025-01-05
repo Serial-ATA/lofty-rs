@@ -91,20 +91,20 @@ pub struct CommentFrame<'a> {
 	pub content: String,
 }
 
-impl<'a> PartialEq for CommentFrame<'a> {
+impl PartialEq for CommentFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.language == other.language && self.description == other.description
 	}
 }
 
-impl<'a> Hash for CommentFrame<'a> {
+impl Hash for CommentFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.language.hash(state);
 		self.description.hash(state);
 	}
 }
 
-impl<'a> CommentFrame<'a> {
+impl CommentFrame<'_> {
 	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("COMM"));
 
 	/// Create a new [`CommentFrame`]
@@ -207,20 +207,20 @@ pub struct UnsynchronizedTextFrame<'a> {
 	pub content: String,
 }
 
-impl<'a> PartialEq for UnsynchronizedTextFrame<'a> {
+impl PartialEq for UnsynchronizedTextFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.language == other.language && self.description == other.description
 	}
 }
 
-impl<'a> Hash for UnsynchronizedTextFrame<'a> {
+impl Hash for UnsynchronizedTextFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.language.hash(state);
 		self.description.hash(state);
 	}
 }
 
-impl<'a> UnsynchronizedTextFrame<'a> {
+impl UnsynchronizedTextFrame<'_> {
 	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("USLT"));
 
 	/// Create a new [`UnsynchronizedTextFrame`]

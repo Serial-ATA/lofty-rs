@@ -242,19 +242,19 @@ impl AtomWriterCompanion<'_> {
 	}
 }
 
-impl<'a> Seek for AtomWriterCompanion<'a> {
+impl Seek for AtomWriterCompanion<'_> {
 	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
 		self.contents.seek(pos)
 	}
 }
 
-impl<'a> Read for AtomWriterCompanion<'a> {
+impl Read for AtomWriterCompanion<'_> {
 	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
 		self.contents.read(buf)
 	}
 }
 
-impl<'a> Write for AtomWriterCompanion<'a> {
+impl Write for AtomWriterCompanion<'_> {
 	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
 		self.contents.write(buf)
 	}

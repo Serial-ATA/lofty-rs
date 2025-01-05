@@ -424,7 +424,7 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 	}
 }
 
-impl<'a> Id3v1TagRef<'a> {
+impl Id3v1TagRef<'_> {
 	pub(super) fn is_empty(&self) -> bool {
 		self.title.is_none()
 			&& self.artist.is_none()

@@ -86,7 +86,7 @@ pub struct SynchronizedTextFrame<'a> {
 	pub content: Vec<(u32, String)>,
 }
 
-impl<'a> SynchronizedTextFrame<'a> {
+impl SynchronizedTextFrame<'_> {
 	/// Create a new [`SynchronizedTextFrame`]
 	pub fn new(
 		encoding: TextEncoding,

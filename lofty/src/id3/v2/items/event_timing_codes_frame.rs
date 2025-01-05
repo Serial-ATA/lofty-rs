@@ -185,7 +185,7 @@ pub struct EventTimingCodesFrame<'a> {
 	pub events: Vec<Event>,
 }
 
-impl<'a> EventTimingCodesFrame<'a> {
+impl EventTimingCodesFrame<'_> {
 	/// Create a new [`EventTimingCodesFrame`]
 	pub fn new(timestamp_format: TimestampFormat, events: Vec<Event>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

@@ -22,7 +22,7 @@ pub struct PrivateFrame<'a> {
 	pub private_data: Vec<u8>,
 }
 
-impl<'a> PrivateFrame<'a> {
+impl PrivateFrame<'_> {
 	/// Create a new [`PrivateFrame`]
 	pub fn new(owner: String, private_data: Vec<u8>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());

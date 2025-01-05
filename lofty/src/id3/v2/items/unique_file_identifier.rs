@@ -20,19 +20,19 @@ pub struct UniqueFileIdentifierFrame<'a> {
 	pub identifier: Vec<u8>,
 }
 
-impl<'a> PartialEq for UniqueFileIdentifierFrame<'a> {
+impl PartialEq for UniqueFileIdentifierFrame<'_> {
 	fn eq(&self, other: &Self) -> bool {
 		self.owner == other.owner
 	}
 }
 
-impl<'a> Hash for UniqueFileIdentifierFrame<'a> {
+impl Hash for UniqueFileIdentifierFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.owner.hash(state);
 	}
 }
 
-impl<'a> UniqueFileIdentifierFrame<'a> {
+impl UniqueFileIdentifierFrame<'_> {
 	/// Create a new [`UniqueFileIdentifierFrame`]
 	pub fn new(owner: String, identifier: Vec<u8>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
