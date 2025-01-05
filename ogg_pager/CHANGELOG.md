@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.7.0] - 2024-10-26
+## [0.7.0] - 2025-01-05
 
 ### Fixed
 - Writing a packet whose size is perfectly divisible by 255 would make the second to last segment have a size of 0, rather than 255 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/469)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/475))

@@ -52,13 +52,15 @@ impl PaginateContext {
 		let mut header = PageHeader {
 			start: self.pos,
 			header_type_flag: {
-				match self.flags.first_page {
-					true if self.header_flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM != 0 => {
-						CONTAINS_FIRST_PAGE_OF_BITSTREAM
-					},
+				if self.flags.first_page
+					&& self.header_flags & CONTAINS_FIRST_PAGE_OF_BITSTREAM != 0
+				{
+					CONTAINS_FIRST_PAGE_OF_BITSTREAM
+				} else if !self.flags.fresh_packet {
 					// A packet from the previous page continues onto this page
-					false if !self.flags.fresh_packet => CONTINUED_PACKET,
-					_ => 0,
+					CONTINUED_PACKET
+				} else {
+					0
 				}
 			},
 			abgp: 0,
