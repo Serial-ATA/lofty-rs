@@ -1,6 +1,6 @@
 [package]
 name        = "lofty"
-version     = "0.21.1"
+version     = "0.22.0"
 authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition     = "2021"
 license     = "MIT OR Apache-2.0"
@@ -35,7 +35,7 @@ id3v2_compression_support = ["dep:flate2"]
 hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683dd6acb92df792683ee46ad6a59" }
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
-tempfile  = "3.10.1"
+tempfile  = "3.15.0"
 test-log = "0.2.16"
 iai-callgrind = "0.14.0"
 

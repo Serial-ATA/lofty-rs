@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2024-01-05
+
 ### Added
 - **ItemKey**: `ItemKey::TrackArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/454))
   - This is a multi-value item that stores each artist for a track. It should be retrieved with `Tag::get_strings` or `Tag::take_strings`.
@@ -906,7 +908,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.0...HEAD
+[0.22.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...0.22.0
 [0.21.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...0.21.1
 [0.21.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.1...0.21.0
 [0.20.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.0...0.20.1
