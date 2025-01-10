@@ -167,6 +167,34 @@ fn flac_with_id3v2() {
 	assert!(flac_file.vorbis_comments().is_some());
 }
 
+// case TRACKNUMBER=11/22 (<current>/<total>)
+#[test_log::test]
+fn opus_issue_499() {
+	use lofty::ogg::OpusFile;
+
+	let file = std::fs::read("tests/files/assets/issue_499.opus").unwrap();
+	let opus_file =
+		OpusFile::read_from(&mut std::io::Cursor::new(file), ParseOptions::new()).unwrap();
+
+	let comments = opus_file.vorbis_comments();
+	assert_eq!(comments.track(), Some(11));
+	assert_eq!(comments.track_total(), Some(22));
+}
+
+// case TRACKNUMBER=a5 (<disc><number>)
+#[test_log::test]
+fn opus_issue_499_2() {
+	use lofty::ogg::OpusFile;
+
+	let file = std::fs::read("tests/files/assets/issue_499_2.opus").unwrap();
+	let opus_file =
+		OpusFile::read_from(&mut std::io::Cursor::new(file), ParseOptions::new()).unwrap();
+
+	let comments = opus_file.vorbis_comments();
+	assert_eq!(comments.track(), Some(5));
+	assert_eq!(comments.disk(), Some(1));
+}
+
 #[test_log::test]
 fn flac_remove_id3v2() {
 	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
