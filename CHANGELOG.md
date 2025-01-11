@@ -6,14 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.22.1] - 2024-01-11
+## [0.22.1] - 2025-01-11
 
 ### Changed
 - **VorbisComments**: Support `TRACKNUMBER` fields with the `current/total` format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/493)) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/499)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/500))
   - These fields will now properly be split into `TRACKNUMBER` and `TRACKTOTAL`, making it possible to use them with 
     [Accessor::track()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.track) and [Accessor::track_total()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.track_total).
 
-## [0.22.0] - 2024-01-05
+## [0.22.0] - 2025-01-05
 
 ### Added
 - **ItemKey**: `ItemKey::TrackArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/454))
@@ -915,7 +915,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.1...HEAD
+[0.22.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.0...0.22.1
 [0.22.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...0.22.0
 [0.21.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...0.21.1
 [0.21.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.20.1...0.21.0
