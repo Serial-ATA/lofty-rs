@@ -169,57 +169,26 @@ where
 				}
 			},
 			// Support the case of TRACKNUMBER being equal to current/total
-			// or vinyl track numbers (a3, B5, etc)
 			k if k.eq_ignore_ascii_case(b"TRACKNUMBER") => {
-				// SAFETY: We just compared these bytes with a valid ASCII string
-				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
-
 				match utf8_decode_str(value) {
 					Ok(value) => {
-						let mut value_chars = value.chars();
-						let first = value_chars.next();
-						if first.is_none() {
-							// short-circuit if value is empty
-							// to avoid too much nesting
-							tag.items.push(
-								(key, value.to_owned())
-							);
-							break;
-						}
-						let first = first.unwrap().to_ascii_lowercase();
-						if first.is_ascii_alphabetic() {
-							// try to parse as vinyl tracknumber
-							let disk: u8 = first as u8 - b'a' + 1;
-							let track: &str = value_chars.as_str();
-							let track: Option<u32> = track.parse().ok();
+						// try to parse as current/total
+						let mut value_split = value.splitn(2, '/');
+						let track_number: Option<u32> =
+							value_split.next().and_then(|b| b.parse().ok());
+						let track_total: Option<u32> =
+							value_split.next().and_then(|b| b.parse().ok());
 
-							if let Some(n) = track {
-								tag.set_track(n);
-							} else {
-								tag.items.push(
-									(key, value.to_owned())
-								);
-							}
-							tag.set_disk(u32::from(disk));
-
+						if let Some(n) = track_number {
+							tag.set_track(n);
 						} else {
-							// try to parse as current/total
-							let mut value_split = value.splitn(2, '/');
-							let track_number: Option<u32> =
-								value_split.next().and_then(|b| b.parse().ok());
-							let track_total: Option<u32> =
-								value_split.next().and_then(|b| b.parse().ok());
-
-							if let Some(n) = track_number {
-								tag.set_track(n);
-							} else {
-								tag.items.push(
-									(key, value.to_owned())
-								);
-							}
-							if let Some(n) = track_total {
-								tag.set_track_total(n);
-							}
+							// Probably some other format, like a vinyl track number (A1, B1, etc.).
+							// Just leave it up to the caller to deal with.
+							tag.items
+								.push((String::from("TRACKNUMBER"), value.to_owned()));
+						}
+						if let Some(n) = track_total {
+							tag.set_track_total(n);
 						}
 					},
 					Err(e) => {
