@@ -181,18 +181,18 @@ fn opus_issue_499() {
 	assert_eq!(comments.track_total(), Some(22));
 }
 
-// case TRACKNUMBER=a5 (<disc><number>)
+// case TRACKNUMBER=a5 (vinyl format)
 #[test_log::test]
-fn opus_issue_499_2() {
+fn opus_issue_499_vinyl_track_number() {
 	use lofty::ogg::OpusFile;
 
-	let file = std::fs::read("tests/files/assets/issue_499_2.opus").unwrap();
+	let file = std::fs::read("tests/files/assets/issue_499_vinyl_track_number.opus").unwrap();
 	let opus_file =
 		OpusFile::read_from(&mut std::io::Cursor::new(file), ParseOptions::new()).unwrap();
 
 	let comments = opus_file.vorbis_comments();
-	assert_eq!(comments.track(), Some(5));
-	assert_eq!(comments.disk(), Some(1));
+	assert_eq!(comments.track(), None);
+	assert_eq!(comments.get("TRACKNUMBER"), Some("a5"));
 }
 
 #[test_log::test]
