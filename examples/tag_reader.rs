@@ -32,7 +32,7 @@ fn main() {
 	println!("Album: {}", tag.album().as_deref().unwrap_or("None"));
 	println!("Genre: {}", tag.genre().as_deref().unwrap_or("None"));
 
-	// import keys from https://docs.rs/lofty/latest/lofty/enum.ItemKey.html
+	// import keys from https://docs.rs/lofty/latest/lofty/tag/enum.ItemKey.html
 	println!(
 		"Album Artist: {}",
 		tag.get_string(&ItemKey::AlbumArtist).unwrap_or("None")
