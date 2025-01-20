@@ -566,6 +566,7 @@ impl Tag {
 	/// // Add a front cover
 	/// let front_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -578,6 +579,7 @@ impl Tag {
 	/// // Replace the front cover with a back cover
 	/// let back_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverBack,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -588,8 +590,13 @@ impl Tag {
 	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverBack);
 	///
 	/// // Use an out of bounds index
-	/// let another_picture =
-	/// 	Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
+	/// let another_picture = Picture::new_unchecked(
+	/// 	PictureType::Band,
+	/// 	None,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
 	/// tag.set_picture(100, another_picture);
 	///
 	/// assert_eq!(tag.pictures().len(), 2);
@@ -618,6 +625,7 @@ impl Tag {
 	///
 	/// let picture = Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
