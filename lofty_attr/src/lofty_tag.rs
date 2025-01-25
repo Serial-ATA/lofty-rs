@@ -17,11 +17,11 @@ impl SupportedFormat {
 	fn emit_doc_comment(&self) -> String {
 		match self {
 			SupportedFormat::Full(path) => format!(
-				"* [`FileType::{ft}`](crate::FileType::{ft})\n",
+				"* [`FileType::{ft}`](crate::file::FileType::{ft})\n",
 				ft = path.get_ident().unwrap()
 			),
 			SupportedFormat::ReadOnly(path) => format!(
-				"* [`FileType::{ft}`](crate::FileType::{ft}) **(READ ONLY)**\n",
+				"* [`FileType::{ft}`](crate::file::FileType::{ft}) **(READ ONLY)**\n",
 				ft = path.get_ident().unwrap()
 			),
 		}
