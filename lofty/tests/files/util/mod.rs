@@ -73,13 +73,9 @@ macro_rules! verify_artist {
 
 		assert_eq!(tag.item_count(), $item_count);
 
-		assert_eq!(
-			tag.get(&lofty::prelude::ItemKey::TrackArtist),
-			Some(&lofty::tag::TagItem::new(
-				lofty::prelude::ItemKey::TrackArtist,
-				lofty::tag::ItemValue::Text(String::from($expected_value))
-			))
-		);
+		let item = tag.get(&lofty::prelude::ItemKey::TrackArtist).expect("tag should contain artist");
+		assert_eq!(item.key(), &lofty::prelude::ItemKey::TrackArtist);
+		assert_eq!(item.value(), &lofty::tag::ItemValue::Text(String::from($expected_value)));
 
 		tag
 	}};

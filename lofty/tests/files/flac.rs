@@ -16,16 +16,14 @@ fn multiple_vorbis_comments() {
 	// not allowed by spec.
 	assert!(FlacFile::read_from(
 		&mut file,
-		ParseOptions::new()
-			.read_properties(false)
-			.parsing_mode(ParsingMode::Strict)
+		ParseOptions::new().parsing_mode(ParsingMode::Strict)
 	)
 	.is_err());
 
 	file.rewind().unwrap();
 
 	// But by default, we should just take the last tag in the stream
-	let f = FlacFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
+	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
 	// The first tag has the artist "Artist 1", the second has "Artist 2".
 	assert_eq!(
