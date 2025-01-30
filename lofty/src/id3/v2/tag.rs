@@ -1406,6 +1406,9 @@ impl MergeTag for SplitTagRemainder {
 			&ItemKey::TrackArtists,
 			&ItemKey::Director,
 			&ItemKey::CatalogNumber,
+			&ItemKey::MusicBrainzArtistId,
+			&ItemKey::MusicBrainzReleaseArtistId,
+			&ItemKey::MusicBrainzWorkId,
 		] {
 			let frame_id = item_key
 				.map_key(TagType::Id3v2, false)
