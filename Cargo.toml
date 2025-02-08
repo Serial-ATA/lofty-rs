@@ -55,6 +55,7 @@ needless_return 				   = "allow" # Explicit returns are needed from time to time
 redundant_guards 				   = "allow" # Currently broken for some cases, might enable later
 into_iter_without_iter 		       = "allow" # This is only going to fire on some internal types, doesn't matter much
 struct_excessive_bools 		       = "allow" # I have yet to find one case of this being useful
+needless_continue                  = "allow" # All occurences of this lint are just for clarity in large loops
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"

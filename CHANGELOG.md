@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.2] - 2025-02-08
+
+Thanks, [@Lepidopteran](https://github.com/Lepidopteran) for this release!
+
+### Fixed
+
+* **Docs** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/504)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/506)): Updated old (invalid) links
+* **ID3v2** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/507)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/508)): Preserve all values of `ItemKey::MusicBrainz{ArtistId, ReleaseArtistId, WorkId}`
+  * Previously, the fields would be written with only the *last* value in the list.
+
 ## [0.22.1] - 2025-01-11
 
 ### Changed
@@ -915,7 +925,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.1...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.2...HEAD
+[0.22.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.1...0.22.2
 [0.22.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.0...0.22.1
 [0.22.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...0.22.0
 [0.21.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.0...0.21.1
