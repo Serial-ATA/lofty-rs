@@ -100,7 +100,8 @@ impl ADTSHeader {
 		// MMMOOOOO
 		let byte6 = header[5];
 
-		let len = (u16::from(byte4 & 0b11) << 11) | (u16::from(byte5) << 3) | (u16::from(byte6) >> 5);
+		let len =
+			(u16::from(byte4 & 0b11) << 11) | (u16::from(byte5) << 3) | (u16::from(byte6) >> 5);
 		let bitrate = ((u32::from(len) * sample_rate / 1024) * 8) / 1024;
 
 		if needs_crc_skip {
