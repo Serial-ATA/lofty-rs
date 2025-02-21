@@ -100,6 +100,26 @@ impl MimeType {
 			MimeType::Unknown(unknown) => unknown,
 		}
 	}
+
+	/// Returns the extension for the `MimeType` if it is known
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::MimeType;
+	///
+	/// assert_eq!(MimeType::Jpeg.ext(), Some("jpg"));
+	/// ```
+	pub fn ext(&self) -> Option<&str> {
+		match self {
+			MimeType::Jpeg => Some("jpg"),
+			MimeType::Png => Some("png"),
+			MimeType::Tiff => Some("tif"),
+			MimeType::Bmp => Some("bmp"),
+			MimeType::Gif => Some("gif"),
+			MimeType::Unknown(_) => None,
+		}
+	}
 }
 
 impl Display for MimeType {
