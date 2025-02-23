@@ -99,33 +99,6 @@ impl FileType {
 		}
 	}
 
-	/// Returns the extension for the `FileType` if it is known
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::file::FileType;
-	///
-	/// assert_eq!(FileType::Mpeg.ext(), Some("mp3"));
-	/// ```
-	pub fn ext(&self) -> Option<&str> {
-		match self {
-			FileType::Aac => Some("aac"),
-			FileType::Aiff => Some("aiff"),
-			FileType::Ape => Some("ape"),
-			FileType::Flac => Some("flac"),
-			FileType::Mpeg => Some("mp3"),
-			FileType::Mp4 => Some("mp4"),
-			FileType::Mpc => Some("mpc"),
-			FileType::Opus => Some("opus"),
-			FileType::Vorbis => Some("ogg"),
-			FileType::Speex => Some("spx"),
-			FileType::Wav => Some("wav"),
-			FileType::WavPack => Some("wv"),
-			FileType::Custom(_) => None,
-		}
-	}
-
 	/// Attempts to extract a [`FileType`] from an extension
 	///
 	/// # Examples
