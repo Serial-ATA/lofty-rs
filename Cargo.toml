@@ -1,11 +1,15 @@
 [workspace]
 resolver = "2"
+
 members = [
 	"lofty",
 	"lofty_attr",
 	"ogg_pager",
 	"fuzz",
 ]
+
+[workspace.package]
+rust-version = "1.82"
 
 [workspace.dependencies]
 byteorder = "1.5.0"
