@@ -13,11 +13,21 @@ byteorder = "1.5.0"
 [workspace.lints.rust]
 missing_docs                   = "deny"
 rust_2018_idioms               = { level = "deny", priority = -1 }
+rust_2021_compatibility        = { level = "deny", priority = -1 }
+rust_2024_compatibility        = { level = "deny", priority = -1 }
 trivial_casts                  = "deny"
 trivial_numeric_casts          = "deny"
 unused_import_braces           = "deny"
 explicit_outlives_requirements = "deny"
 unknown_lints                  = "allow"
+
+# Opt-in to new drop order of Edition 2024.
+# TODO: Remove if no longer needed.
+tail_expr_drop_order           = "allow"
+if_let_rescope                 = "allow"
+
+# TODO: Remove after switching to Edition 2024.
+edition_2024_expr_fragment_specifier = "allow"
 
 [workspace.lints.clippy]
 dbg_macro                          = "forbid"

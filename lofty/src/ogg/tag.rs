@@ -158,7 +158,7 @@ impl VorbisComments {
 	/// // We've taken all the items
 	/// assert!(vorbis_comments.is_empty());
 	/// ```
-	pub fn take_items(&mut self) -> impl ExactSizeIterator<Item = (String, String)> {
+	pub fn take_items(&mut self) -> impl ExactSizeIterator<Item = (String, String)> + use<> {
 		let items = std::mem::take(&mut self.items);
 		items.into_iter()
 	}
@@ -287,7 +287,7 @@ impl VorbisComments {
 	/// 	println!("We removed the title: {title}");
 	/// }
 	/// ```
-	pub fn remove(&mut self, key: &str) -> impl Iterator<Item = String> + '_ {
+	pub fn remove<'a>(&'a mut self, key: &str) -> impl Iterator<Item = String> + use<'a> {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 

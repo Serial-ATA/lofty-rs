@@ -69,7 +69,7 @@ where
 			// TDRC (Recording time) gets split into three frames: TYER, TDAT, and TIME
 			"TDOR" | "TDRC" => {
 				let mut value = frame.0.clone();
-				let Frame::Timestamp(ref mut f) = value.to_mut() else {
+				let Frame::Timestamp(f) = value.to_mut() else {
 					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
 					continue;
 				};
@@ -139,7 +139,7 @@ where
 			// components in parentheses
 			"TCON" => {
 				let mut value = frame.0.clone();
-				let Frame::Text(ref mut f) = value.to_mut() else {
+				let Frame::Text(f) = value.to_mut() else {
 					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
 					continue;
 				};
@@ -168,7 +168,7 @@ where
 			"TIPL" | "TMCL" => {
 				let mut value = frame.0.clone();
 				let Frame::KeyValue(KeyValueFrame {
-					ref mut key_value_pairs,
+					key_value_pairs,
 					encoding,
 					..
 				}) = value.to_mut()

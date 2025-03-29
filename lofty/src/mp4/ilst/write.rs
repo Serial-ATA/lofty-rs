@@ -678,11 +678,11 @@ where
 		match value {
 			AtomData::UTF8(text) => write_data(DataType::Utf8, text.as_bytes(), writer)?,
 			AtomData::UTF16(text) => write_data(DataType::Utf16, text.as_bytes(), writer)?,
-			AtomData::Picture(ref pic) => write_picture(pic, writer)?,
+			AtomData::Picture(pic) => write_picture(pic, writer)?,
 			AtomData::SignedInteger(int) => write_signed_int(*int, writer)?,
 			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
 			AtomData::Bool(b) => write_bool(*b, writer)?,
-			AtomData::Unknown { code, ref data } => write_data(*code, data, writer)?,
+			AtomData::Unknown { code, data } => write_data(*code, data, writer)?,
 		};
 	}
 

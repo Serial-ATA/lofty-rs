@@ -393,7 +393,7 @@ fn get_getters<'a>(
 fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenStream> {
 	fn tag_exists_iter(
 		tag_fields: &[FieldContents],
-	) -> impl Iterator<Item = proc_macro2::TokenStream> + '_ {
+	) -> impl Iterator<Item = proc_macro2::TokenStream> + use<'_> {
 		tag_fields.iter().map(|f| {
 			let name = &f.name;
 			if f.needs_option {

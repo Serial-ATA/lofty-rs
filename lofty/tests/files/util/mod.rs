@@ -15,7 +15,7 @@ macro_rules! temp_file {
 #[macro_export]
 macro_rules! no_tag_test {
 	($path:literal) => {{
-		let mut file = crate::temp_file!($path);
+		let mut file = $crate::temp_file!($path);
 		let tagged_file = lofty::probe::Probe::new(&mut file)
 			.options(lofty::config::ParseOptions::new().read_tags(false))
 			.guess_file_type()
@@ -27,7 +27,7 @@ macro_rules! no_tag_test {
 	(@MANDATORY_TAG $path:literal, expected_len: $expected_len:literal) => {{
 		use lofty::tag::TagExt as _;
 
-		let mut file = crate::temp_file!($path);
+		let mut file = $crate::temp_file!($path);
 		let tagged_file = lofty::probe::Probe::new(&mut file)
 			.options(lofty::config::ParseOptions::new().read_tags(false))
 			.guess_file_type()
@@ -43,7 +43,7 @@ macro_rules! no_tag_test {
 #[macro_export]
 macro_rules! no_properties_test {
 	($path:literal) => {{
-		let mut file = crate::temp_file!($path);
+		let mut file = $crate::temp_file!($path);
 		let tagged_file = lofty::probe::Probe::new(&mut file)
 			.options(lofty::config::ParseOptions::new().read_properties(false))
 			.guess_file_type()
