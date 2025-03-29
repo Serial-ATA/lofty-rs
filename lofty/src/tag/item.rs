@@ -472,7 +472,7 @@ macro_rules! gen_item_keys {
 					_ => {}
 				}
 
-				if let ItemKey::Unknown(ref unknown) = self {
+				if let ItemKey::Unknown(unknown) = self {
 					if allow_unknown {
 						return Some(unknown)
 					}
@@ -736,7 +736,7 @@ impl ItemValue {
 	/// Returns the value if the variant is `Text`
 	pub fn text(&self) -> Option<&str> {
 		match self {
-			Self::Text(ref text) => Some(text),
+			Self::Text(text) => Some(text),
 			_ => None,
 		}
 	}
@@ -744,7 +744,7 @@ impl ItemValue {
 	/// Returns the value if the variant is `Locator`
 	pub fn locator(&self) -> Option<&str> {
 		match self {
-			Self::Locator(ref locator) => Some(locator),
+			Self::Locator(locator) => Some(locator),
 			_ => None,
 		}
 	}
@@ -752,7 +752,7 @@ impl ItemValue {
 	/// Returns the value if the variant is `Binary`
 	pub fn binary(&self) -> Option<&[u8]> {
 		match self {
-			Self::Binary(ref bin) => Some(bin),
+			Self::Binary(bin) => Some(bin),
 			_ => None,
 		}
 	}

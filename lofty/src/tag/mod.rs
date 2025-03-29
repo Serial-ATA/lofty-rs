@@ -406,7 +406,7 @@ impl Tag {
 	/// Removes all items with the specified [`ItemKey`], and returns them
 	///
 	/// See also: [take_filter()](Self::take_filter)
-	pub fn take(&mut self, key: &ItemKey) -> impl Iterator<Item = TagItem> + '_ {
+	pub fn take<'a>(&'a mut self, key: &ItemKey) -> impl Iterator<Item = TagItem> + use<'a> {
 		self.take_filter(key, |_| true)
 	}
 
@@ -444,11 +444,14 @@ impl Tag {
 	/// // The comments that didn't match the filter are still present.
 	/// assert_eq!(tag.get_strings(&ItemKey::Comment).count(), 1);
 	/// ```
-	pub fn take_filter(
-		&mut self,
+	pub fn take_filter<'a, F>(
+		&'a mut self,
 		key: &ItemKey,
-		mut filter: impl FnMut(&TagItem) -> bool,
-	) -> impl Iterator<Item = TagItem> + '_ {
+		mut filter: F,
+	) -> impl Iterator<Item = TagItem> + use<'a, F>
+	where
+		F: FnMut(&TagItem) -> bool,
+	{
 		// TODO: drain_filter
 		let mut split_idx = 0;
 
@@ -464,7 +467,7 @@ impl Tag {
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
-	pub fn take_strings(&mut self, key: &ItemKey) -> impl Iterator<Item = String> + '_ {
+	pub fn take_strings<'a>(&'a mut self, key: &ItemKey) -> impl Iterator<Item = String> + use<'a> {
 		self.take(key).filter_map(|i| i.item_value.into_string())
 	}
 

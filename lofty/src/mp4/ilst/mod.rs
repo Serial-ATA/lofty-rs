@@ -251,7 +251,7 @@ impl Ilst {
 	/// let title = ilst.get(&TITLE_IDENTIFIER);
 	/// assert!(title.is_none());
 	/// ```
-	pub fn remove(&mut self, ident: &AtomIdent<'_>) -> impl Iterator<Item = Atom<'static>> + '_ {
+	pub fn remove<'a>(&'a mut self, ident: &AtomIdent<'_>) -> impl Iterator<Item = Atom<'static>> + use<'a> {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
@@ -685,7 +685,7 @@ impl SplitTag for Ilst {
 					code: DataType::Reserved,
 					data,
 				} if Vec::len(data) >= 6 => {
-					if let AtomIdent::Fourcc(ref fourcc) = ident {
+					if let &mut AtomIdent::Fourcc(ref fourcc) = ident {
 						match fourcc {
 							b"trkn" => {
 								let current = u16::from_be_bytes([data[2], data[3]]);

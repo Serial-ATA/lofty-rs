@@ -9,9 +9,7 @@ fn main() {
 	let path_str = std::env::args().nth(1).expect("ERROR: No path specified!");
 	let path = Path::new(&path_str);
 
-	if !path.is_file() {
-		panic!("ERROR: Path is not a file!");
-	}
+	assert!(path.is_file(), "ERROR: Path is not a file!");
 
 	let tagged_file = Probe::open(path)
 		.expect("ERROR: Bad path provided!")

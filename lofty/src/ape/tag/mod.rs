@@ -188,7 +188,7 @@ impl ApeTag {
 
 	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {
 		if let Some(ApeItem {
-			value: ItemValue::Text(ref text),
+			value: ItemValue::Text(text),
 			..
 		}) = self.get(key)
 		{
@@ -295,7 +295,7 @@ impl Accessor for ApeTag {
 
 	fn year(&self) -> Option<u32> {
 		if let Some(ApeItem {
-			value: ItemValue::Text(ref text),
+			value: ItemValue::Text(text),
 			..
 		}) = self.get("Year")
 		{

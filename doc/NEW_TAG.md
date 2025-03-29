@@ -187,7 +187,7 @@ impl FooTag {
         self.items.push((key, value))
     }
 
-    pub fn remove(&mut self, key: &str) -> impl Iterator<Item=String> + '_ {
+    pub fn remove<'a>(&'a mut self, key: &str) -> impl Iterator<Item=String> + use<'a> {
         self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
     }
 }
@@ -200,7 +200,7 @@ impl Accessor for FooTag {
     fn title(&self) -> Option<Cow<'_, str>> {
         self.get("TITLE")
     }
-    fn set_title(&mut self, value: String) { 
+    fn set_title(&mut self, value: String) {
         self.insert(String::from("TITLE"), value)
     }
     fn remove_title(&mut self) {
@@ -263,10 +263,10 @@ Afterwards, we just need to add it into the list of maps in the `gen_item_keys!`
 gen_item_keys!(
     MAPS => [
         // ...
-        
+
         [TagType::Foo, FOO_MAP]
     ];
-    
+
     // ...
 );
 ```

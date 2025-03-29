@@ -245,7 +245,7 @@ impl SynchronizedTextFrame<'_> {
 				data.write_u8(0)?;
 			}
 
-			for (time, ref text) in &self.content {
+			for (time, text) in &self.content {
 				data.write_all(&encode_text(text, self.encoding, true))?;
 				data.write_u32::<BigEndian>(*time)?;
 			}

@@ -251,7 +251,7 @@ impl Id3v2Tag {
 	/// assert_eq!(titles.next(), Some("Foo"));
 	/// assert_eq!(titles.next(), Some("Bar"));
 	/// ```
-	pub fn get_texts(&self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &str>> {
+	pub fn get_texts<'a>(&'a self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
 		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(id) {
 			return Some(value.split(V4_MULTI_VALUE_SEPARATOR));
 		}
@@ -425,7 +425,7 @@ impl Id3v2Tag {
 	/// assert!(tag.is_empty());
 	/// # Ok(()) }
 	/// ```
-	pub fn remove(&mut self, id: &FrameId<'_>) -> impl Iterator<Item = Frame<'static>> + '_ {
+	pub fn remove<'a>(&'a mut self, id: &FrameId<'_>) -> impl Iterator<Item = Frame<'static>> + use<'a> {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
@@ -515,7 +515,7 @@ impl Id3v2Tag {
 	}
 
 	fn split_num_pair(&self, id: &FrameId<'_>) -> (Option<u32>, Option<u32>) {
-		if let Some(Frame::Text(TextInformationFrame { ref value, .. })) = self.get(id) {
+		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(id) {
 			let mut split = value
 				.split(&[V4_MULTI_VALUE_SEPARATOR, NUMBER_PAIR_SEPARATOR][..])
 				.flat_map(str::parse::<u32>);
@@ -546,7 +546,7 @@ impl Id3v2Tag {
 	/// This will translate any numeric genre IDs to their textual equivalent.
 	/// ID3v2.4-style multi-value fields will be split as normal.
 	pub fn genres(&self) -> Option<impl Iterator<Item = &str>> {
-		if let Some(Frame::Text(TextInformationFrame { ref value, .. })) = self.get(&GENRE_ID) {
+		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(&GENRE_ID) {
 			return Some(GenresIter::new(value, false));
 		}
 
@@ -1091,7 +1091,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		//       Maybe ItemKey could use a "TXXX:" prefix eventually, so we would store
 		//       "TXXX:MusicBrainz Album Id" instead of "MusicBrainz Album Id".
 		// Store TXXX/WXXX frames by their descriptions, rather than their IDs
-		Frame::UserText(ExtendedTextFrame {
+		&mut Frame::UserText(ExtendedTextFrame {
 			ref description,
 			ref content,
 			..
@@ -1106,7 +1106,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 
 			return FRAME_CONSUMED;
 		},
-		Frame::UserUrl(ExtendedUrlFrame {
+		&mut Frame::UserUrl(ExtendedUrlFrame {
 			ref description,
 			ref content,
 			..
@@ -1122,7 +1122,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			return FRAME_CONSUMED;
 		},
 
-		Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+		&mut Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
 			ref owner,
 			ref identifier,
 			..
@@ -1179,7 +1179,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		},
 
 		Frame::Picture(AttachedPictureFrame {
-			ref mut picture, ..
+			picture, ..
 		}) => {
 			tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
 			return FRAME_CONSUMED;
@@ -1216,7 +1216,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		},
 		Frame::Url(UrlLinkFrame {
 			header: FrameHeader {id, .. },
-			ref mut content, ..
+			content, ..
 		}) => {
 			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
 			tag.items.push(TagItem::new(
@@ -1299,10 +1299,10 @@ impl MergeTag for SplitTagRemainder {
 			content: String,
 		}
 
-		fn join_language_items(
-			tag: &mut Tag,
+		fn join_language_items<'a>(
+			tag: &'a mut Tag,
 			key: &ItemKey,
-		) -> Option<impl Iterator<Item = JoinedLanguageItem>> {
+		) -> Option<impl Iterator<Item = JoinedLanguageItem> + use<'a>> {
 			let mut items = tag.take(key).collect::<Vec<_>>();
 			if items.is_empty() {
 				return None;
@@ -1489,7 +1489,7 @@ impl MergeTag for SplitTagRemainder {
 			let existing_tipl = merged.take_first(&FrameId::Valid(Cow::Borrowed("TIPL")));
 			if let Some(mut tipl_frame) = existing_tipl {
 				if let Frame::KeyValue(KeyValueFrame {
-					key_value_pairs: ref mut existing,
+					key_value_pairs: existing,
 					..
 				}) = &mut tipl_frame
 				{

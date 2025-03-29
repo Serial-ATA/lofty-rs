@@ -196,7 +196,7 @@ impl Display for Id3v2ErrorKind {
 				f,
 				"Attempted to write an encrypted frame with an invalid method symbol ({symbol})"
 			),
-			Self::BadFrame(ref frame_id, frame_value) => write!(
+			Self::BadFrame(frame_id, frame_value) => write!(
 				f,
 				"Attempted to write an invalid frame. ID: \"{frame_id}\", Value: \"{frame_value}\"",
 			),
