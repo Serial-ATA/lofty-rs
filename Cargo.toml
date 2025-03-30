@@ -6,12 +6,20 @@ members = [
 	"lofty_attr",
 	"ogg_pager",
 	"fuzz",
+	"examples/custom_resolver",
 ]
 
 [workspace.package]
+edition = "2021"
 rust-version = "1.82"
+repository = "https://github.com/Serial-ATA/lofty-rs"
+license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+lofty = { path = "lofty" }
+lofty_attr = { path = "lofty_attr" }
+ogg_pager = { path = "ogg_pager" }
+
 byteorder = "1.5.0"
 
 [workspace.lints.rust]

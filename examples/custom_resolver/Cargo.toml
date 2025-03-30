@@ -1,10 +1,11 @@
 [package]
 name = "custom_resolver"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
+rust-version.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-lofty = { path = "../.." }
-lofty_attr = { path = "../../lofty_attr" }
+lofty.workspace = true
+lofty_attr.workspace = true

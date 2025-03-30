@@ -2,12 +2,13 @@
 name = "lofty_attr"
 version = "0.11.1"
 authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
-edition = "2021"
-license = "MIT OR Apache-2.0"
 description = "Macros for Lofty"
-repository = "https://github.com/Serial-ATA/lofty-rs"
 readme = "README.md"
 include = ["src", "Cargo.toml", "../LICENSE-*"]
+edition.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+license.workspace = true
 
 [dependencies]
 syn = { version = "2.0.72", features = ["full", "parsing"] }
