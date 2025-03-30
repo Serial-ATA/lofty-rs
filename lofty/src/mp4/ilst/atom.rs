@@ -161,7 +161,7 @@ impl<'a> Atom<'a> {
 	/// );
 	/// assert_eq!(atom.into_data().count(), 1);
 	/// ```
-	pub fn into_data(self) -> impl Iterator<Item = AtomData> + use <> {
+	pub fn into_data(self) -> impl Iterator<Item = AtomData> + use<> {
 		self.data.into_iter()
 	}
 

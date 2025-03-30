@@ -251,7 +251,10 @@ impl Id3v2Tag {
 	/// assert_eq!(titles.next(), Some("Foo"));
 	/// assert_eq!(titles.next(), Some("Bar"));
 	/// ```
-	pub fn get_texts<'a>(&'a self, id: &FrameId<'_>) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
+	pub fn get_texts<'a>(
+		&'a self,
+		id: &FrameId<'_>,
+	) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
 		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(id) {
 			return Some(value.split(V4_MULTI_VALUE_SEPARATOR));
 		}
@@ -425,7 +428,10 @@ impl Id3v2Tag {
 	/// assert!(tag.is_empty());
 	/// # Ok(()) }
 	/// ```
-	pub fn remove<'a>(&'a mut self, id: &FrameId<'_>) -> impl Iterator<Item = Frame<'static>> + use<'a> {
+	pub fn remove<'a>(
+		&'a mut self,
+		id: &FrameId<'_>,
+	) -> impl Iterator<Item = Frame<'static>> + use<'a> {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
