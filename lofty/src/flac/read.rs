@@ -1,11 +1,11 @@
+use super::FlacFile;
 use super::block::Block;
 use super::properties::FlacProperties;
-use super::FlacFile;
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v2, FindId3v2Config, ID3FindResults};
+use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v2};
 use crate::macros::{decode_err, err};
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;

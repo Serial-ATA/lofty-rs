@@ -1,6 +1,6 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -234,8 +234,8 @@ pub fn scramble(audio_data: &mut [u8]) {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
 	use crate::TextEncoding;
+	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
 
 	fn expected() -> AudioTextFrame<'static> {
 		AudioTextFrame {

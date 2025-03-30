@@ -3,7 +3,7 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
-use crate::util::text::{encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, encode_text};
 
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
@@ -82,7 +82,7 @@ impl AttachedPictureFrame<'_> {
 					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
 						String::from_utf8_lossy(&format).into_owned(),
 					))
-					.into())
+					.into());
 				},
 			}
 		} else {

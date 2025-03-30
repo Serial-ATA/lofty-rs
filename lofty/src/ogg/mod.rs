@@ -21,14 +21,14 @@ use ogg_pager::{Page, PageHeader};
 
 // Exports
 
-pub use opus::properties::OpusProperties;
 pub use opus::OpusFile;
+pub use opus::properties::OpusProperties;
 pub use picture_storage::OggPictureStorage;
-pub use speex::properties::SpeexProperties;
 pub use speex::SpeexFile;
+pub use speex::properties::SpeexProperties;
 pub use tag::VorbisComments;
-pub use vorbis::properties::VorbisProperties;
 pub use vorbis::VorbisFile;
+pub use vorbis::properties::VorbisProperties;
 
 fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 	let sig_len = sig.len();

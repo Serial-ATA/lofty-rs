@@ -133,7 +133,7 @@ mod tests {
 	use crate::file::{FileType, TaggedFileExt};
 	use crate::id3::v2::Id3v2Tag;
 	use crate::properties::FileProperties;
-	use crate::resolve::{register_custom_resolver, FileResolver};
+	use crate::resolve::{FileResolver, register_custom_resolver};
 	use crate::tag::{Accessor, TagType};
 
 	use std::fs::File;

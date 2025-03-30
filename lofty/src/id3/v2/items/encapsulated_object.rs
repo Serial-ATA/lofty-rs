@@ -1,6 +1,6 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::io::{Cursor, Read};
 

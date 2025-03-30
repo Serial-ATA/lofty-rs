@@ -3,7 +3,7 @@ use crate::{internal, util};
 
 use proc_macro::TokenStream;
 use proc_macro2::{Ident, Span};
-use quote::{format_ident, quote, quote_spanned, ToTokens};
+use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::parse::Parse;
 use syn::spanned::Spanned;
 use syn::{Attribute, Data, DataStruct, DeriveInput, Field, Fields, Type};
@@ -66,7 +66,7 @@ impl Parse for LoftyFile {
 				return Err(util::err(
 					input.ident.span(),
 					"This macro can only be used on structs with named fields",
-				))
+				));
 			},
 		};
 

@@ -2,7 +2,7 @@ use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::collections::HashMap;

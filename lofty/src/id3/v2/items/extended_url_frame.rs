@@ -2,7 +2,7 @@ use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};

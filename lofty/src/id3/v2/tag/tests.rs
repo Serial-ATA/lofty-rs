@@ -6,7 +6,7 @@ use crate::id3::v2::{
 	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame, TimestampFrame,
 };
 use crate::picture::MimeType;
-use crate::tag::items::{Timestamp, ENGLISH};
+use crate::tag::items::{ENGLISH, Timestamp};
 use crate::tag::utils::test_utils::read_path;
 
 use super::*;
@@ -499,11 +499,12 @@ fn comments() {
 	assert_eq!(Some(Cow::Borrowed("")), tag.comment());
 
 	// Insert a custom comment frame
-	assert!(tag
-		.frames
-		.iter()
-		.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
-		.is_none());
+	assert!(
+		tag.frames
+			.iter()
+			.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
+			.is_none()
+	);
 	tag.insert(Frame::Comment(CommentFrame::new(
 		encoding,
 		*b"eng",
@@ -518,11 +519,12 @@ fn comments() {
 	assert!(tag.comment().is_none());
 
 	// Verify that the comment with the custom descriptor still exists
-	assert!(tag
-		.frames
-		.iter()
-		.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
-		.is_some());
+	assert!(
+		tag.frames
+			.iter()
+			.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
+			.is_some()
+	);
 }
 
 #[test_log::test]
@@ -557,10 +559,12 @@ fn txxx_wxxx_tag_conversion() {
 			ItemValue::Locator(String::from("bar url")),
 		),
 	];
-	assert!(expected_items
-		.iter()
-		.zip(tag.items())
-		.all(|(expected, actual)| expected == actual));
+	assert!(
+		expected_items
+			.iter()
+			.zip(tag.items())
+			.all(|(expected, actual)| expected == actual)
+	);
 
 	let tag: Id3v2Tag = tag.into();
 
@@ -915,15 +919,18 @@ fn ufid_frame_with_musicbrainz_record_id() {
 	let id3v2 = split_remainder.merge_tag(split_tag);
 	assert_eq!(2, id3v2.len());
 	match &id3v2.frames[..] {
-		[Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-			owner: first_owner,
-			identifier: first_identifier,
-			..
-		}), Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
-			owner: second_owner,
-			identifier: second_identifier,
-			..
-		})] => {
+		[
+			Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+				owner: first_owner,
+				identifier: first_identifier,
+				..
+			}),
+			Frame::UniqueFileIdentifier(UniqueFileIdentifierFrame {
+				owner: second_owner,
+				identifier: second_identifier,
+				..
+			}),
+		] => {
 			assert_eq!(&unknown_ufid_frame.owner, first_owner);
 			assert_eq!(&unknown_ufid_frame.identifier, first_identifier);
 			assert_eq!(&musicbrainz_recording_id_frame.owner, second_owner);
@@ -961,9 +968,11 @@ fn get_set_user_defined_text() {
 	id3v2.insert(txxx_frame2);
 
 	// We cannot get user defined texts through `get_text`
-	assert!(id3v2
-		.get_text(&FrameId::Valid(Cow::Borrowed("TXXX")))
-		.is_none());
+	assert!(
+		id3v2
+			.get_text(&FrameId::Valid(Cow::Borrowed("TXXX")))
+			.is_none()
+	);
 
 	assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
 
@@ -971,12 +980,16 @@ fn get_set_user_defined_text() {
 	id3v2.clear();
 
 	// Same thing process as above, using simplified setter
-	assert!(id3v2
-		.insert_user_text(description.clone(), content.clone())
-		.is_none());
-	assert!(id3v2
-		.insert_user_text(description2.clone(), content2.clone())
-		.is_none());
+	assert!(
+		id3v2
+			.insert_user_text(description.clone(), content.clone())
+			.is_none()
+	);
+	assert!(
+		id3v2
+			.insert_user_text(description2.clone(), content2.clone())
+			.is_none()
+	);
 	assert_eq!(id3v2.get_user_text(description.as_str()), Some(&*content));
 
 	// Remove one frame

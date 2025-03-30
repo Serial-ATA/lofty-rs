@@ -14,13 +14,15 @@ fn multiple_vorbis_comments() {
 
 	// Reading a file with multiple VORBIS_COMMENT blocks should error when using `Strict`, as it is
 	// not allowed by spec.
-	assert!(FlacFile::read_from(
-		&mut file,
-		ParseOptions::new()
-			.read_properties(false)
-			.parsing_mode(ParsingMode::Strict)
-	)
-	.is_err());
+	assert!(
+		FlacFile::read_from(
+			&mut file,
+			ParseOptions::new()
+				.read_properties(false)
+				.parsing_mode(ParsingMode::Strict)
+		)
+		.is_err()
+	);
 
 	file.rewind().unwrap();
 

@@ -5,10 +5,10 @@ mod write;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::id3::v2::util::pairs::{format_number_pair, set_number, NUMBER_PAIR_KEYS};
+use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_number};
 use crate::tag::item::ItemValueRef;
 use crate::tag::{
-	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Truncate};

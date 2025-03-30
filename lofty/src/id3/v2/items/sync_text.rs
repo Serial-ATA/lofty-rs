@@ -2,8 +2,8 @@ use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
-	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextDecodeOptions,
-	TextEncoding,
+	TextDecodeOptions, TextEncoding, decode_text, encode_text, read_to_terminator,
+	utf16_decode_bytes,
 };
 
 use std::borrow::Cow;

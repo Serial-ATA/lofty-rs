@@ -1,5 +1,5 @@
-use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 use crate::tag::TagType;
+use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 
 use std::borrow::Cow;
 use std::collections::HashMap;

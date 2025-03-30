@@ -10,7 +10,7 @@ use std::io::{Read, Seek};
 
 pub use crc::crc32;
 pub use error::{PageError, Result};
-pub use header::{PageHeader, PAGE_HEADER_SIZE};
+pub use header::{PAGE_HEADER_SIZE, PageHeader};
 pub use packets::{Packets, PacketsIter};
 pub use paginate::paginate;
 
@@ -118,7 +118,7 @@ impl Page {
 
 #[cfg(test)]
 mod tests {
-	use crate::{paginate, Page, PageHeader};
+	use crate::{Page, PageHeader, paginate};
 	use std::io::Cursor;
 
 	pub fn segment_table(length: usize) -> Vec<u8> {

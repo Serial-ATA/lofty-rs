@@ -46,9 +46,5 @@ fn decode_text(data: &[u8]) -> Option<String> {
 		.map(|c| *c as char)
 		.collect::<String>();
 
-	if read.is_empty() {
-		None
-	} else {
-		Some(read)
-	}
+	if read.is_empty() { None } else { Some(read) }
 }

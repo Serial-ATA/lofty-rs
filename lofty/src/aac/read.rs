@@ -1,12 +1,12 @@
-use super::header::{ADTSHeader, HEADER_MASK};
 use super::AacFile;
+use super::header::{ADTSHeader, HEADER_MASK};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v1, ID3FindResults};
+use crate::id3::{ID3FindResults, find_id3v1};
 use crate::macros::{decode_err, err, parse_mode_choice};
-use crate::mpeg::header::{cmp_header, search_for_frame_sync, HeaderCmpResult};
+use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -180,7 +180,7 @@ where
 					return Ok(Some((
 						first_header,
 						first_adts_frame_start_absolute + u64::from(header_len),
-					)))
+					)));
 				},
 				HeaderCmpResult::Undetermined => return Ok(None),
 				HeaderCmpResult::NotEqual => {},

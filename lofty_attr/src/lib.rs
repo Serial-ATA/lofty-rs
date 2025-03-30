@@ -43,7 +43,7 @@ use crate::lofty_file::LoftyFile;
 use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, ItemStruct};
+use syn::{ItemStruct, parse_macro_input};
 
 /// Creates a file usable by Lofty
 ///

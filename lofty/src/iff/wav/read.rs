@@ -1,6 +1,6 @@
+use super::WavFile;
 use super::properties::WavProperties;
 use super::tag::RiffInfoList;
-use super::WavFile;
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;

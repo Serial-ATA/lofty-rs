@@ -1,8 +1,8 @@
 // Tests for special case conversions
 
+use lofty::TextEncoding;
 use lofty::id3::v2::{CommentFrame, Frame, FrameId, Id3v2Tag, UnsynchronizedTextFrame};
 use lofty::tag::{ItemKey, Tag, TagType};
-use lofty::TextEncoding;
 
 use std::borrow::Cow;
 

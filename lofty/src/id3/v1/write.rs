@@ -1,7 +1,7 @@
 use super::tag::Id3v1TagRef;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::id3::{find_id3v1, ID3FindResults};
+use crate::id3::{ID3FindResults, find_id3v1};
 use crate::macros::err;
 use crate::probe::Probe;
 use crate::util::io::{FileLike, Length, Truncate};

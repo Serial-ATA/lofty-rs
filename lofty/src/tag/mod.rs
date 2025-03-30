@@ -333,7 +333,7 @@ impl Tag {
 		if let Some(item) = self.get(item_key) {
 			match item.value() {
 				ItemValue::Text(text) | ItemValue::Locator(text) if convert => {
-					return Some(text.as_bytes())
+					return Some(text.as_bytes());
 				},
 				ItemValue::Binary(binary) => return Some(binary),
 				_ => {},

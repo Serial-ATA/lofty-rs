@@ -1,8 +1,8 @@
-use super::properties::WavPackProperties;
 use super::WavPackFile;
+use super::properties::WavPackProperties;
 use crate::config::ParseOptions;
 use crate::error::Result;
-use crate::id3::{find_id3v1, find_lyrics3v2, ID3FindResults};
+use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3v2};
 
 use crate::macros::err;
 use std::io::{Read, Seek, SeekFrom};

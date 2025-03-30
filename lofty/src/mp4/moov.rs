@@ -1,7 +1,7 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::ilst::read::parse_ilst;
 use super::ilst::Ilst;
-use super::read::{find_child_atom, meta_is_full, skip_atom, AtomReader};
+use super::ilst::read::parse_ilst;
+use super::read::{AtomReader, find_child_atom, meta_is_full, skip_atom};
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::decode_err;

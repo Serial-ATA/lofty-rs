@@ -1,5 +1,5 @@
 use super::atom_info::{AtomIdent, AtomInfo};
-use super::read::{find_child_atom, skip_atom, AtomReader};
+use super::read::{AtomReader, find_child_atom, skip_atom};
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};

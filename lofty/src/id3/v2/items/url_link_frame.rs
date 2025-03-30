@@ -1,6 +1,6 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::hash::Hash;
 use std::io::Read;

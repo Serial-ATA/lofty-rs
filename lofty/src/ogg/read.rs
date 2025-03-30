@@ -5,7 +5,7 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::tag::Accessor;
-use crate::util::text::{utf16_decode, utf8_decode, utf8_decode_str};
+use crate::util::text::{utf8_decode, utf8_decode_str, utf16_decode};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};

@@ -207,12 +207,13 @@ fn flac_try_write_non_empty_id3v2() {
 	let mut tag = Id3v2Tag::default();
 	tag.set_artist(String::from("Foo artist"));
 
-	assert!(tag
-		.save_to_path(
+	assert!(
+		tag.save_to_path(
 			"tests/files/assets/flac_with_id3v2.flac",
 			WriteOptions::default()
 		)
-		.is_err());
+		.is_err()
+	);
 }
 
 #[test_log::test]

@@ -7,7 +7,7 @@ use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::{
-	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
