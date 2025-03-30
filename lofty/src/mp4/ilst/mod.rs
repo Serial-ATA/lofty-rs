@@ -251,7 +251,10 @@ impl Ilst {
 	/// let title = ilst.get(&TITLE_IDENTIFIER);
 	/// assert!(title.is_none());
 	/// ```
-	pub fn remove<'a>(&'a mut self, ident: &AtomIdent<'_>) -> impl Iterator<Item = Atom<'static>> + use<'a> {
+	pub fn remove<'a>(
+		&'a mut self,
+		ident: &AtomIdent<'_>,
+	) -> impl Iterator<Item = Atom<'static>> + use<'a> {
 		// TODO: drain_filter
 		let mut split_idx = 0_usize;
 
