@@ -1,6 +1,5 @@
 [workspace]
-# TODO: Switch to MSRV-aware resolver version "3" (Rust 1.84)
-resolver = "2"
+resolver = "3"
 
 members = [
 	"lofty",
@@ -11,8 +10,8 @@ members = [
 ]
 
 [workspace.package]
-edition = "2021"
-rust-version = "1.82"
+edition = "2024"
+rust-version = "1.85"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 license = "MIT OR Apache-2.0"
 
@@ -33,14 +32,6 @@ trivial_numeric_casts          = "deny"
 unused_import_braces           = "deny"
 explicit_outlives_requirements = "deny"
 unknown_lints                  = "allow"
-
-# Opt-in to new drop order of Edition 2024.
-# TODO: Remove if no longer needed.
-tail_expr_drop_order           = "allow"
-if_let_rescope                 = "allow"
-
-# TODO: Remove after switching to Edition 2024.
-edition_2024_expr_fragment_specifier = "allow"
 
 [workspace.lints.clippy]
 dbg_macro                          = "forbid"
