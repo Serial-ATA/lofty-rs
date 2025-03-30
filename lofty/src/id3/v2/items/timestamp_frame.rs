@@ -3,7 +3,7 @@ use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::tag::items::Timestamp;
-use crate::util::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::io::Read;
 

@@ -1,4 +1,4 @@
-use super::{utils, Tag};
+use super::{Tag, utils};
 use crate::config::WriteOptions;
 use crate::error::LoftyError;
 use crate::file::FileType;

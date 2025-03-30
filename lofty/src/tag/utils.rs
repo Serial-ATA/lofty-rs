@@ -10,7 +10,7 @@ use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::tag::Id3v2TagRef;
 use crate::id3::v2::{self, Id3v2TagFlags};
 use crate::mp4::Ilst;
-use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
+use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;

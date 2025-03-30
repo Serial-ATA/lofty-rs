@@ -1,6 +1,6 @@
 use syn::parse::Parse;
 use syn::punctuated::Punctuated;
-use syn::{token, Attribute, Expr, Ident, LitStr, Token};
+use syn::{Attribute, Expr, Ident, LitStr, Token, token};
 
 pub(crate) enum AttributeValue {
 	/// `#[lofty(attribute_name)]`

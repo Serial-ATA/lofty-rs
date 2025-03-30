@@ -111,7 +111,7 @@ impl Id3v2Header {
 			major => {
 				return Err(
 					Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into(),
-				)
+				);
 			},
 		};
 

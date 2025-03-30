@@ -1,10 +1,10 @@
-use super::item::ApeItemRef;
 use super::ApeTagRef;
+use super::item::ApeItemRef;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::read;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config};
+use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
@@ -134,7 +134,7 @@ where
 
 	// Now, if there was a tag at the beginning, remove it
 	if header_ape_tag.0 {
-		file_bytes.drain(header_ape_tag.1 .0 as usize..header_ape_tag.1 .1 as usize);
+		file_bytes.drain(header_ape_tag.1.0 as usize..header_ape_tag.1.1 as usize);
 	}
 
 	file.rewind()?;

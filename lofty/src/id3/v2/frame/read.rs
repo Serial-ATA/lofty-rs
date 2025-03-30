@@ -1,5 +1,5 @@
-use super::header::parse::{parse_header, parse_v2_header};
 use super::Frame;
+use super::header::parse::{parse_header, parse_v2_header};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;

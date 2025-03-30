@@ -18,7 +18,7 @@ mod unique_file_identifier;
 mod url_link_frame;
 
 pub use attached_picture_frame::AttachedPictureFrame;
-pub use audio_text_frame::{scramble, AudioTextFrame, AudioTextFrameFlags};
+pub use audio_text_frame::{AudioTextFrame, AudioTextFrameFlags, scramble};
 pub use binary_frame::BinaryFrame;
 pub use encapsulated_object::GeneralEncapsulatedObject;
 pub use event_timing_codes_frame::{Event, EventTimingCodesFrame, EventType};

@@ -1,8 +1,8 @@
-use super::item::ApeItem;
 use super::ApeTag;
+use super::item::ApeItem;
+use crate::ape::APE_PICTURE_TYPES;
 use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
-use crate::ape::APE_PICTURE_TYPES;
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};

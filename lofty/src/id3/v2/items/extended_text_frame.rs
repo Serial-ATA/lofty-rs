@@ -4,7 +4,7 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
-	decode_text, encode_text, utf16_decode_bytes, TextDecodeOptions, TextEncoding,
+	TextDecodeOptions, TextEncoding, decode_text, encode_text, utf16_decode_bytes,
 };
 
 use std::borrow::Cow;

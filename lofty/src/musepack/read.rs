@@ -5,7 +5,7 @@ use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2, FindId3v2Config, ID3FindResults};
+use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::err;
 use crate::util::io::SeekStreamLen;
 

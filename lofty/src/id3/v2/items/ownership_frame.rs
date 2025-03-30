@@ -1,7 +1,7 @@
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{
-	decode_text, encode_text, utf8_decode_str, TextDecodeOptions, TextEncoding,
+	TextDecodeOptions, TextEncoding, decode_text, encode_text, utf8_decode_str,
 };
 
 use std::borrow::Cow;
@@ -138,8 +138,8 @@ impl OwnershipFrame<'_> {
 
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, OwnershipFrame};
 	use crate::TextEncoding;
+	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, OwnershipFrame};
 
 	use std::borrow::Cow;
 

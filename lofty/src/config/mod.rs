@@ -4,7 +4,7 @@ mod global_options;
 mod parse_options;
 mod write_options;
 
-pub use global_options::{apply_global_options, GlobalOptions};
+pub use global_options::{GlobalOptions, apply_global_options};
 pub use parse_options::{ParseOptions, ParsingMode};
 pub use write_options::WriteOptions;
 

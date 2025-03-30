@@ -124,7 +124,7 @@ impl Parse for LoftyTagAttribute {
 					return Err(Error::new(
 						nested_meta.span(),
 						"Unexpected input, check the format of the arguments",
-					))
+					));
 				},
 			}
 		}

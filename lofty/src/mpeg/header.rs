@@ -1,4 +1,4 @@
-use super::constants::{BITRATES, PADDING_SIZES, SAMPLES, SAMPLE_RATES, SIDE_INFORMATION_SIZES};
+use super::constants::{BITRATES, PADDING_SIZES, SAMPLE_RATES, SAMPLES, SIDE_INFORMATION_SIZES};
 use crate::error::Result;
 use crate::macros::decode_err;
 

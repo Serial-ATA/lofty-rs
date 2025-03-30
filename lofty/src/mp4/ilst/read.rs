@@ -5,12 +5,12 @@ use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::macros::{err, try_vec};
-use crate::mp4::atom_info::{AtomInfo, ATOM_HEADER_LEN};
+use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomInfo};
 use crate::mp4::ilst::atom::AtomDataStorage;
-use crate::mp4::read::{skip_atom, AtomReader};
+use crate::mp4::read::{AtomReader, skip_atom};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::tag::TagExt;
-use crate::util::text::{utf16_decode_bytes, utf8_decode};
+use crate::util::text::{utf8_decode, utf16_decode_bytes};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};

@@ -20,8 +20,8 @@ use lofty_attr::LoftyFile;
 
 pub use crate::picture::APE_PICTURE_TYPES;
 pub use properties::ApeProperties;
-pub use tag::item::ApeItem;
 pub use tag::ApeTag;
+pub use tag::item::ApeItem;
 
 /// An APE file
 #[derive(LoftyFile)]

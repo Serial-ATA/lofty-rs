@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests;
 
-use super::frame::{Frame, EMPTY_CONTENT_DESCRIPTOR};
+use super::frame::{EMPTY_CONTENT_DESCRIPTOR, Frame};
 use super::header::{Id3v2TagFlags, Id3v2Version};
-use crate::config::{global_options, WriteOptions};
+use crate::config::{WriteOptions, global_options};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::GENRES;
 use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
@@ -13,7 +13,7 @@ use crate::id3::v2::items::{
 };
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{
-	format_number_pair, set_number, NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR,
+	NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR, format_number_pair, set_number,
 };
 use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
@@ -23,7 +23,7 @@ use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
-use crate::util::text::{decode_text, TextDecodeOptions, TextEncoding};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
@@ -395,9 +395,9 @@ impl Id3v2Tag {
 	/// # Examples
 	///
 	/// ```rust
+	/// use lofty::TextEncoding;
 	/// use lofty::id3::v2::{Frame, FrameFlags, FrameId, Id3v2Tag, TextInformationFrame};
 	/// use lofty::tag::TagExt;
-	/// use lofty::TextEncoding;
 	/// use std::borrow::Cow;
 	///
 	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));

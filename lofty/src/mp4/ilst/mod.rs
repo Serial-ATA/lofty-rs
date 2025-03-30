@@ -7,13 +7,13 @@ mod r#ref;
 pub(crate) mod write;
 
 use super::AtomIdent;
-use crate::config::{global_options, WriteOptions};
+use crate::config::{WriteOptions, global_options};
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{
-	try_parse_year, Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
@@ -459,7 +459,7 @@ impl Ilst {
 					return Some(u16::from_be_bytes([
 						data[expected_size - 2],
 						data[expected_size - 1],
-					]))
+					]));
 				},
 				_ => {},
 			}
@@ -883,8 +883,8 @@ impl From<Tag> for Ilst {
 #[cfg(test)]
 mod tests {
 	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
-	use crate::mp4::ilst::atom::AtomDataStorage;
 	use crate::mp4::ilst::TITLE;
+	use crate::mp4::ilst::atom::AtomDataStorage;
 	use crate::mp4::read::AtomReader;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, DataType, Ilst, Mp4File};
 	use crate::picture::{MimeType, Picture, PictureType};
@@ -1136,11 +1136,13 @@ mod tests {
 		const PADDING_SIZE: usize = 990;
 
 		let file_bytes = read_path("tests/files/assets/ilst_trailing_padding.m4a");
-		assert!(Mp4File::read_from(
-			&mut Cursor::new(&file_bytes),
-			ParseOptions::new().read_properties(false)
-		)
-		.is_ok());
+		assert!(
+			Mp4File::read_from(
+				&mut Cursor::new(&file_bytes),
+				ParseOptions::new().read_properties(false)
+			)
+			.is_ok()
+		);
 
 		let mut ilst;
 		let old_free_size;

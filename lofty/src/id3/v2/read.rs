@@ -191,12 +191,14 @@ mod tests {
 
 		let mut f = Cursor::new(std::fs::read("tests/tags/assets/id3v2/zero.id3v2").unwrap());
 		let header = Id3v2Header::parse(&mut f).unwrap();
-		assert!(parse_id3v2(
-			&mut f,
-			header,
-			ParseOptions::new().parsing_mode(ParsingMode::Strict)
-		)
-		.is_ok());
+		assert!(
+			parse_id3v2(
+				&mut f,
+				header,
+				ParseOptions::new().parsing_mode(ParsingMode::Strict)
+			)
+			.is_ok()
+		);
 	}
 
 	#[test_log::test]

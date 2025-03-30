@@ -1,5 +1,6 @@
+use crate::TextEncoding;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::frame::{FrameRef, EMPTY_CONTENT_DESCRIPTOR, MUSICBRAINZ_UFID_OWNER};
+use crate::id3::v2::frame::{EMPTY_CONTENT_DESCRIPTOR, FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::tag::{
 	new_binary_frame, new_comment_frame, new_text_frame, new_unsync_text_frame, new_url_frame,
 	new_user_text_frame, new_user_url_frame,
@@ -10,7 +11,6 @@ use crate::id3::v2::{
 };
 use crate::macros::err;
 use crate::tag::{ItemKey, ItemValue, TagItem, TagType};
-use crate::TextEncoding;
 
 use std::borrow::Cow;
 
@@ -132,7 +132,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						return Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(
 							item_key.clone(),
 						))
-						.into())
+						.into());
 					},
 				}
 			},

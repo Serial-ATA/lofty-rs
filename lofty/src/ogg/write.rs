@@ -4,7 +4,7 @@ use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
-use crate::ogg::tag::{create_vorbis_comments_ref, VorbisCommentsRef};
+use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
@@ -13,7 +13,7 @@ use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use ogg_pager::{Packets, Page, PageHeader, CONTAINS_FIRST_PAGE_OF_BITSTREAM};
+use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
 
 #[derive(PartialEq, Copy, Clone)]
 pub(crate) enum OGGFormat {

@@ -23,10 +23,10 @@ pub mod constants {
 
 pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
 pub use atom_info::AtomIdent;
+pub use ilst::Ilst;
 pub use ilst::advisory_rating::AdvisoryRating;
 pub use ilst::atom::{Atom, AtomData};
 pub use ilst::data_type::DataType;
-pub use ilst::Ilst;
 
 pub(crate) use properties::SAMPLE_RATES;
 

@@ -1,4 +1,4 @@
-use super::block::{Block, BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS};
+use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS, Block};
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};

@@ -1,6 +1,6 @@
+use super::AiffFile;
 use super::properties::AiffProperties;
 use super::tag::{AiffTextChunks, Comment};
-use super::AiffFile;
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;

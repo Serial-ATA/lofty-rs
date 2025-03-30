@@ -2,7 +2,7 @@
 
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
-use crate::config::{global_options, ParseOptions};
+use crate::config::{ParseOptions, global_options};
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
@@ -10,8 +10,8 @@ use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
 use crate::macros::err;
 use crate::mp4::Mp4File;
-use crate::mpeg::header::search_for_frame_sync;
 use crate::mpeg::MpegFile;
+use crate::mpeg::header::search_for_frame_sync;
 use crate::musepack::MpcFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;

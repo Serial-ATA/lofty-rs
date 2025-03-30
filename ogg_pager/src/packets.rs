@@ -1,7 +1,7 @@
+use crate::Page;
 use crate::error::{PageError, Result};
 use crate::header::PageHeader;
 use crate::paginate::paginate;
-use crate::Page;
 
 use std::fmt::{Debug, Formatter};
 use std::io::{Read, Seek, Write};
@@ -332,7 +332,7 @@ impl Packets {
 	/// # Examples
 	///
 	/// ```rust
-	/// use ogg_pager::{Packets, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM};
+	/// use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM, Packets};
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
 	/// # let path = "../lofty/tests/files/assets/minimal/full_test.ogg";
@@ -372,7 +372,7 @@ impl Packets {
 	/// # Examples
 	///
 	/// ```rust,no_run
-	/// use ogg_pager::{Packets, CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM};
+	/// use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, CONTAINS_LAST_PAGE_OF_BITSTREAM, Packets};
 	/// use std::fs::OpenOptions;
 	///
 	/// # fn main() -> Result<(), ogg_pager::PageError> {
