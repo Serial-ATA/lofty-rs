@@ -1,4 +1,5 @@
 [workspace]
+# TODO: Switch to MSRV-aware resolver version "3" (Rust 1.84)
 resolver = "2"
 
 members = [
