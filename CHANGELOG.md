@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.3] - 2025-04-04
+
+### Added
+
+* **MimeType**: `MimeType::ext()` to get the standard file extension of `Picture` `MimeType`s ([PR](https://github.com/Serial-ATA/lofty-rs/pull/510))
+
+### Changed
+
+* **2024 Edition**: Set the edition to 2024 and MSRV to 1.85 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/35)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/513))
+  * This is not a breaking change, as there was no MSRV prior.
+
 ## [0.22.2] - 2025-02-08
 
 Thanks, [@Lepidopteran](https://github.com/Lepidopteran) for this release!
@@ -925,7 +936,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.2...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.3...HEAD
+[0.22.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.2...0.22.3
 [0.22.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.1...0.22.2
 [0.22.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.0...0.22.1
 [0.22.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.21.1...0.22.0
