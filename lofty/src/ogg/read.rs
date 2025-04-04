@@ -73,7 +73,7 @@ where
 				Err(_) => decode_err!(@BAIL "OGG: File has an invalid vendor string"),
 			}
 		},
-	};
+	}
 
 	let number_of_items = data.read_u32::<LittleEndian>()?;
 	if number_of_items > (len >> 2) as u32 {

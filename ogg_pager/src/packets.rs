@@ -153,7 +153,7 @@ impl Packets {
 				byte_count_to_read = packet_size;
 				*packet_bytes_already_read = Some(packet_size);
 			},
-		};
+		}
 
 		byte_count_to_read
 	}

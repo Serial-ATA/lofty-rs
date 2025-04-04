@@ -110,7 +110,7 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						)?);
 					},
 					(_, item_value) => value = frame_from_unknown_item(id, item_value.clone())?,
-				};
+				}
 			},
 			Err(_) => {
 				let item_key = tag_item.key();

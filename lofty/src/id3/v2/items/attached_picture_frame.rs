@@ -94,7 +94,7 @@ impl AttachedPictureFrame<'_> {
 			)?
 			.text_or_none();
 			mime_type = mime_type_str.map(|mime_type_str| MimeType::from_str(&mime_type_str));
-		};
+		}
 
 		let pic_type = PictureType::from_u8(reader.read_u8()?);
 
@@ -168,7 +168,7 @@ impl AttachedPictureFrame<'_> {
 				data.write_all(mime_type.as_str().as_bytes())?;
 			}
 			data.write_u8(0)?;
-		};
+		}
 
 		data.write_u8(self.picture.pic_type.as_u8())?;
 

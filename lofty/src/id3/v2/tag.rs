@@ -544,7 +544,7 @@ impl Id3v2Tag {
 					}
 				}
 			},
-		};
+		}
 	}
 
 	/// Returns all genres contained in a `TCON` frame.
@@ -806,7 +806,7 @@ impl Accessor for Id3v2Tag {
 
 		if genres.peek().is_none() {
 			return Some(Cow::Borrowed(first));
-		};
+		}
 
 		let mut joined = String::from(first);
 		for genre in genres {

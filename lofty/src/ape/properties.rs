@@ -191,7 +191,7 @@ where
 		properties.bit_depth = 24
 	} else {
 		properties.bit_depth = 16
-	};
+	}
 
 	let blocks_per_frame = match version {
 		_ if version >= 3950 => 73728 * 4,

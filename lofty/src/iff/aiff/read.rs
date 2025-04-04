@@ -163,7 +163,7 @@ where
 		}
 	} else {
 		properties = AiffProperties::default();
-	};
+	}
 
 	Ok(AiffFile {
 		properties,
