@@ -154,7 +154,7 @@ where
 							new_genre_string.push_str(genre);
 						},
 						_ => {
-							new_genre_string.push_str(&format!("({genre})"));
+							new_genre_string = format!("{new_genre_string}({genre})");
 						},
 					}
 				}
@@ -197,7 +197,7 @@ where
 						ipls_frame.value.push('\0');
 					}
 
-					ipls_frame.value.push_str(&format!("{}\0{}", key, value));
+					ipls_frame.value = format!("{}{key}\0{value}", ipls_frame.value);
 				}
 
 				continue;

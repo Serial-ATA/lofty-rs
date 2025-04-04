@@ -183,7 +183,7 @@ impl ApeTag {
 					self.insert(item);
 				}
 			},
-		};
+		}
 	}
 
 	fn split_num_pair(&self, key: &str) -> (Option<u32>, Option<u32>) {

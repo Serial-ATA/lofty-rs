@@ -118,7 +118,7 @@ where
 		)?;
 	} else {
 		tag = create_ape_tag(tag_ref, std::iter::empty(), write_options)?;
-	};
+	}
 
 	file.rewind()?;
 

@@ -489,7 +489,7 @@ impl Picture {
 	///
 	/// * This is for reading picture data only, from a [`File`](std::fs::File) for example.
 	/// * `pic_type` will always be [`PictureType::Other`], be sure to change it accordingly if
-	///    writing.
+	///   writing.
 	///
 	/// # Errors
 	///

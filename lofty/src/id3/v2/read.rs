@@ -36,7 +36,7 @@ where
 		tag_bytes = unsynchronized_reader.into_inner();
 	} else {
 		ret = read_all_frames_into_tag(&mut tag_bytes, header, parse_options)?;
-	};
+	}
 
 	// Throw away the rest of the tag (padding, bad frames)
 	std::io::copy(&mut tag_bytes, &mut std::io::sink())?;

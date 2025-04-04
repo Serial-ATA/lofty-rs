@@ -683,7 +683,7 @@ where
 			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
 			AtomData::Bool(b) => write_bool(*b, writer)?,
 			AtomData::Unknown { code, data } => write_data(*code, data, writer)?,
-		};
+		}
 	}
 
 	Ok(())
