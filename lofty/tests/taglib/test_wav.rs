@@ -8,7 +8,7 @@ use lofty::tag::{Accessor, TagType};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-#[test]
+#[test_log::test]
 fn test_pcm_properties() {
 	let f = get_file::<WavFile>("tests/taglib/data/empty.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -21,7 +21,7 @@ fn test_pcm_properties() {
 	assert_eq!(*f.properties().format(), WavFormat::PCM);
 }
 
-#[test]
+#[test_log::test]
 fn test_alaw_properties() {
 	let f = get_file::<WavFile>("tests/taglib/data/alaw.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -34,7 +34,7 @@ fn test_alaw_properties() {
 	assert_eq!(*f.properties().format(), WavFormat::Other(6));
 }
 
-#[test]
+#[test_log::test]
 fn test_float_properties() {
 	let f = get_file::<WavFile>("tests/taglib/data/float64.wav");
 	assert_eq!(f.properties().duration().as_secs(), 0);
@@ -47,7 +47,7 @@ fn test_float_properties() {
 	assert_eq!(*f.properties().format(), WavFormat::IEEE_FLOAT);
 }
 
-#[test]
+#[test_log::test]
 fn test_float_without_fact_chunk_properties() {
 	let mut wav_data = std::fs::read("tests/taglib/data/float64.wav").unwrap();
 	assert_eq!(&wav_data[36..40], b"fact");
@@ -66,13 +66,13 @@ fn test_float_without_fact_chunk_properties() {
 	assert_eq!(*f.properties().format(), WavFormat::IEEE_FLOAT);
 }
 
-#[test]
+#[test_log::test]
 fn test_zero_size_data_chunk() {
 	let mut file = temp_file!("tests/taglib/data/zero-size-chunk.wav");
 	let _f = WavFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_id3v2_tag() {
 	let mut file = temp_file!("tests/taglib/data/empty.wav");
 
@@ -108,7 +108,7 @@ fn test_id3v2_tag() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_save_id3v23() {
 	let mut file = temp_file!("tests/taglib/data/empty.wav");
 
@@ -136,7 +136,7 @@ fn test_save_id3v23() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_info_tag() {
 	let mut file = temp_file!("tests/taglib/data/empty.wav");
 
@@ -172,7 +172,7 @@ fn test_info_tag() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_strip_tags() {
 	let mut file = temp_file!("tests/taglib/data/empty.wav");
 
@@ -229,7 +229,7 @@ fn test_strip_tags() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_duplicate_tags() {
 	// Marker test, TagLib will ignore any tag except for the first. Lofty will *not* do this.
@@ -237,7 +237,7 @@ fn test_duplicate_tags() {
 	// the latest in the stream will have precedence.
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file1() {
 	let f1 = get_file::<WavFile>("tests/taglib/data/infloop.wav");
 	// The file has problems:
@@ -252,13 +252,13 @@ fn test_fuzzed_file1() {
 	assert!(f1.id3v2().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file2() {
 	let mut file = temp_file!("tests/taglib/data/segfault.wav");
 	let _f2 = WavFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_file_with_garbage_appended() {
 	let mut file = temp_file!("tests/taglib/data/empty.wav");
 	let contents_before_modification;
@@ -303,13 +303,13 @@ fn test_file_with_garbage_appended() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_strip_and_properties() {
 	// Marker test, Lofty does not replicate the properties API
 }
 
-#[test]
+#[test_log::test]
 fn test_pcm_with_fact_chunk() {
 	let f = get_file::<WavFile>("tests/taglib/data/pcm_with_fact_chunk.wav");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -322,7 +322,7 @@ fn test_pcm_with_fact_chunk() {
 	assert_eq!(*f.properties().format(), WavFormat::PCM);
 }
 
-#[test]
+#[test_log::test]
 fn test_wave_format_extensible() {
 	let f = get_file::<WavFile>("tests/taglib/data/uint8we.wav");
 	assert_eq!(f.properties().duration().as_secs(), 2);

@@ -11,7 +11,7 @@ use lofty::musepack::{MpcFile, MpcProperties};
 use lofty::probe::Probe;
 use lofty::tag::{Accessor, TagExt};
 
-#[test]
+#[test_log::test]
 fn test_properties_sv8() {
 	let f = get_file::<MpcFile>("tests/taglib/data/sv8_header.mpc");
 
@@ -30,7 +30,7 @@ fn test_properties_sv8() {
 	// assert_eq!(properties.sample_frames(), 66014);
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_sv7() {
 	let f = get_file::<MpcFile>("tests/taglib/data/click.mpc");
 
@@ -56,18 +56,18 @@ fn test_properties_sv7() {
 	assert_eq!(properties.album_peak(), 19848);
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_sv5() {
 	// Marker test, TagLib doesn't seem to produce the correct properties for SV5
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_properties_sv4() {
 	// Marker test, TagLib doesn't seem to produce the correct properties for SV4
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file1() {
 	let _ = Probe::open("tests/taglib/data/zerodiv.mpc")
 		.unwrap()
@@ -75,7 +75,7 @@ fn test_fuzzed_file1() {
 		.unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file2() {
 	let _ = Probe::open("tests/taglib/data/infloop.mpc")
 		.unwrap()
@@ -83,7 +83,7 @@ fn test_fuzzed_file2() {
 		.unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file3() {
 	let _ = Probe::open("tests/taglib/data/segfault.mpc")
 		.unwrap()
@@ -91,7 +91,7 @@ fn test_fuzzed_file3() {
 		.unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file4() {
 	let _ = Probe::open("tests/taglib/data/segfault2.mpc")
 		.unwrap()
@@ -99,7 +99,7 @@ fn test_fuzzed_file4() {
 		.unwrap();
 }
 
-#[test]
+#[test_log::test]
 fn test_strip_and_properties() {
 	let mut file = temp_file!("tests/taglib/data/click.mpc");
 
@@ -136,7 +136,7 @@ fn test_strip_and_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save() {
 	let mut file = temp_file!("tests/taglib/data/click.mpc");
 

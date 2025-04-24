@@ -1,7 +1,7 @@
 use lofty::iff::wav::RiffInfoList;
 use lofty::tag::Accessor;
 
-#[test]
+#[test_log::test]
 fn test_title() {
 	let mut tag = RiffInfoList::default();
 
@@ -14,7 +14,7 @@ fn test_title() {
 	assert_eq!(tag.get("TEST"), Some("Dummy Text"));
 }
 
-#[test]
+#[test_log::test]
 fn test_numeric_fields() {
 	let mut tag = RiffInfoList::default();
 

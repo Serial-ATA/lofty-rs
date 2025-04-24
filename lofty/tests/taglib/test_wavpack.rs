@@ -11,7 +11,7 @@ use lofty::id3::v1::Id3v1Tag;
 use lofty::tag::Accessor;
 use lofty::wavpack::WavPackFile;
 
-#[test]
+#[test_log::test]
 fn test_no_length_properties() {
 	let f = get_file::<WavPackFile>("tests/taglib/data/no_length.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -25,7 +25,7 @@ fn test_no_length_properties() {
 	assert_eq!(f.properties().version(), 1031);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_multi_channel_properties() {
 	// Marker test, this is not a valid file and TagLib does not handle it properly.
@@ -34,7 +34,7 @@ fn test_multi_channel_properties() {
 	// this file does not. Even FFMpeg thinks this is a mono file.
 }
 
-#[test]
+#[test_log::test]
 fn test_dsd_stereo_properties() {
 	let f = get_file::<WavPackFile>("tests/taglib/data/dsd_stereo.wv");
 	assert_eq!(f.properties().duration().as_secs(), 0);
@@ -48,7 +48,7 @@ fn test_dsd_stereo_properties() {
 	assert_eq!(f.properties().version(), 1040);
 }
 
-#[test]
+#[test_log::test]
 fn test_non_standard_rate_properties() {
 	let f = get_file::<WavPackFile>("tests/taglib/data/non_standard_rate.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -62,7 +62,7 @@ fn test_non_standard_rate_properties() {
 	assert_eq!(f.properties().version(), 1040);
 }
 
-#[test]
+#[test_log::test]
 fn test_tagged_properties() {
 	let f = get_file::<WavPackFile>("tests/taglib/data/tagged.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -76,13 +76,13 @@ fn test_tagged_properties() {
 	assert_eq!(f.properties().version(), 1031);
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file() {
 	let mut f = File::open("tests/taglib/data/infloop.wv").unwrap();
 	assert!(WavPackFile::read_from(&mut f, ParseOptions::new()).is_err());
 }
 
-#[test]
+#[test_log::test]
 fn test_strip_and_properties() {
 	let mut file = temp_file!("tests/taglib/data/click.wv");
 
@@ -113,7 +113,7 @@ fn test_strip_and_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save() {
 	let mut file = temp_file!("tests/taglib/data/click.wv");
 

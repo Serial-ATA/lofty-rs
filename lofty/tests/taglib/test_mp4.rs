@@ -10,7 +10,7 @@ use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst, Mp4Codec, Mp4File};
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::{Accessor, TagExt, TagType};
 
-#[test]
+#[test_log::test]
 fn test_properties_aac() {
 	let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -24,7 +24,7 @@ fn test_properties_aac() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
-#[test]
+#[test_log::test]
 #[allow(clippy::needless_range_loop)]
 fn test_properties_aac_without_bitrate() {
 	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
@@ -49,7 +49,7 @@ fn test_properties_aac_without_bitrate() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_alac() {
 	let f = get_file::<Mp4File>("tests/taglib/data/empty_alac.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -62,7 +62,7 @@ fn test_properties_alac() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
-#[test]
+#[test_log::test]
 #[allow(clippy::needless_range_loop)]
 fn test_properties_alac_without_bitrate() {
 	let mut file = temp_file!("tests/taglib/data/empty_alac.m4a");
@@ -87,7 +87,7 @@ fn test_properties_alac_without_bitrate() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_m4v() {
 	let f = get_file::<Mp4File>("tests/taglib/data/blank_video.m4v");
 	assert_eq!(f.properties().duration().as_secs(), 0);
@@ -100,13 +100,13 @@ fn test_properties_m4v() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
 }
 
-#[test]
+#[test_log::test]
 fn test_check_valid() {
 	let mut file = temp_file!("tests/taglib/data/empty.aiff");
 	assert!(Mp4File::read_from(&mut file, ParseOptions::new()).is_err());
 }
 
-#[test]
+#[test_log::test]
 fn test_has_tag() {
 	{
 		let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
@@ -132,7 +132,7 @@ fn test_has_tag() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_is_empty() {
 	let mut t1 = Ilst::default();
 	assert!(t1.is_empty());
@@ -140,7 +140,7 @@ fn test_is_empty() {
 	assert!(!t1.is_empty());
 }
 
-#[test]
+#[test_log::test]
 #[ignore] // TODO: The atom parsing internals are not exposed yet
 fn test_update_stco() {
 	let mut file = temp_file!("no-tags.3g2");
@@ -165,7 +165,7 @@ fn test_update_stco() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_freeform() {
 	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
 
@@ -211,7 +211,7 @@ fn test_freeform() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_save_existing_when_ilst_is_last() {
 	let mut file = temp_file!("tests/taglib/data/ilst-is-last.m4a");
 
@@ -257,19 +257,19 @@ fn test_save_existing_when_ilst_is_last() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_64bit_atom() {
 	// Marker test, this just checks the moov atom's length. We don't retain any atoms we don't need.
 }
 
-#[test]
+#[test_log::test]
 fn test_gnre() {
 	let f = get_file::<Mp4File>("tests/taglib/data/gnre.m4a");
 	assert_eq!(f.ilst().unwrap().genre().as_deref(), Some("Ska"));
 }
 
-#[test]
+#[test_log::test]
 fn test_covr_read() {
 	let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 	let tag = f.ilst().unwrap();
@@ -289,7 +289,7 @@ fn test_covr_read() {
 	assert_eq!(picture2.data().len(), 287);
 }
 
-#[test]
+#[test_log::test]
 fn test_covr_write() {
 	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
 
@@ -334,7 +334,7 @@ fn test_covr_write() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_covr_read2() {
 	let f = get_file::<Mp4File>("tests/taglib/data/covr-junk.m4a");
 	let tag = f.ilst().unwrap();
@@ -354,30 +354,30 @@ fn test_covr_read2() {
 	assert_eq!(picture2.data().len(), 287);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_properties() {
 	// Marker test, Lofty does not replicate the properties API
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_properties_all_supported() {
 	// Marker test, Lofty does not replicate the properties API
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_properties_movement() {
 	// Marker test, Lofty does not replicate the properties API
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file() {
 	let _f = get_file::<Mp4File>("tests/taglib/data/infloop.m4a");
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.m4a");
 	let mut f = Mp4File::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -404,20 +404,20 @@ fn test_repeated_save() {
 	assert_ne!(file_bytes.get(2863..2873), Some(b"0123456789".as_slice()));
 }
 
-#[test]
+#[test_log::test]
 fn test_with_zero_length_atom() {
 	let f = get_file::<Mp4File>("tests/taglib/data/zero-length-mdat.m4a");
 	assert_eq!(f.properties().duration().as_millis(), 1115);
 	assert_eq!(f.properties().sample_rate(), 22050);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_empty_values_remove_items() {
 	// Marker test, Lofty treats empty values as valid
 }
 
-#[test]
+#[test_log::test]
 fn test_remove_metadata() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.m4a");
 
@@ -467,7 +467,7 @@ fn test_remove_metadata() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_non_full_meta_atom() {
 	let f = get_file::<Mp4File>("tests/taglib/data/non-full-meta.m4a");
 	assert!(f.ilst().is_some());

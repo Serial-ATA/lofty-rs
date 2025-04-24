@@ -4,6 +4,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
 
+use lofty::TextEncoding;
 use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::id3::v2::{
@@ -18,9 +19,8 @@ use lofty::mpeg::MpegFile;
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
-use lofty::TextEncoding;
 
-#[test]
+#[test_log::test]
 fn test_unsynch_decode() {
 	let mut file = temp_file!("tests/taglib/data/unsynch.id3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
@@ -32,7 +32,7 @@ fn test_unsynch_decode() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_downgrade_utf8_for_id3v23_1() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -64,7 +64,7 @@ fn test_downgrade_utf8_for_id3v23_1() {
 	assert_eq!(f2.encoding, TextEncoding::UTF16);
 }
 
-#[test]
+#[test_log::test]
 fn test_downgrade_utf8_for_id3v23_2() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -93,7 +93,7 @@ fn test_downgrade_utf8_for_id3v23_2() {
 	assert_eq!(f2.encoding, TextEncoding::UTF16);
 }
 
-#[test]
+#[test_log::test]
 fn test_utf16be_delimiter() {
 	let mut f = TextInformationFrame::new(
 		FrameId::Valid(Cow::Borrowed("TIT2")),
@@ -119,7 +119,7 @@ fn test_utf16be_delimiter() {
 	assert_eq!(f.value, "Foo\0Bar");
 }
 
-#[test]
+#[test_log::test]
 fn test_utf16_delimiter() {
 	let mut f = TextInformationFrame::new(
 		FrameId::Valid(Cow::Borrowed("TIT2")),
@@ -187,7 +187,7 @@ fn test_utf16_delimiter() {
 	assert_eq!(f.value, "Foo\0Bar");
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_broken_frame1() {
 	// TODO: Determine if it is worth supporting unsychronized frame sizes in ID3v2.4
@@ -201,13 +201,13 @@ fn test_broken_frame1() {
 	// 	.contains(&FrameId::Valid(Cow::from("TENC"))));
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_read_string_field() {
 	// Marker test, this is not an API Lofty replicates
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_apic() {
 	let f = AttachedPictureFrame::parse(
 		&mut &b"\
@@ -228,7 +228,7 @@ fn test_parse_apic() {
 	assert_eq!(f.picture.description(), Some("d"));
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_apic_utf16_bom() {
 	let f = AttachedPictureFrame::parse(
 		&mut &b"\
@@ -246,7 +246,7 @@ fn test_parse_apic_utf16_bom() {
 	assert_eq!(f.picture.data(), b"\xff\xd8\xff");
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_apicv22() {
 	let frame = AttachedPictureFrame::parse(
 		&mut &b"\
@@ -265,7 +265,7 @@ fn test_parse_apicv22() {
 	assert_eq!(frame.picture.description(), Some("d"));
 }
 
-#[test]
+#[test_log::test]
 fn test_render_apic() {
 	let f = AttachedPictureFrame::new(
 		TextEncoding::UTF8,
@@ -288,13 +288,13 @@ fn test_render_apic() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_dont_render22() {
 	// Marker test, not sure what's going on here?
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_geob() {
 	let f = GeneralEncapsulatedObject::parse(
 		b"\
@@ -311,7 +311,7 @@ fn test_parse_geob() {
 	assert_eq!(f.descriptor.as_deref(), Some("d"));
 }
 
-#[test]
+#[test_log::test]
 fn test_render_geob() {
 	let f = GeneralEncapsulatedObject::new(
 		TextEncoding::Latin1,
@@ -332,7 +332,7 @@ fn test_render_geob() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_popm() {
 	let f = PopularimeterFrame::parse(
 		&mut &b"\
@@ -347,7 +347,7 @@ fn test_parse_popm() {
 	assert_eq!(f.counter, 3);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_popm_without_counter() {
 	let f = PopularimeterFrame::parse(
 		&mut &b"\
@@ -361,7 +361,7 @@ fn test_parse_popm_without_counter() {
 	assert_eq!(f.counter, 0);
 }
 
-#[test]
+#[test_log::test]
 fn test_render_popm() {
 	let f = PopularimeterFrame::new(String::from("email@example.com"), 2, 3);
 
@@ -374,13 +374,13 @@ fn test_render_popm() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_popm_to_string() {
 	// Marker test, Lofty doesn't have a display impl for Popularimeter
 }
 
-#[test]
+#[test_log::test]
 fn test_popm_from_file() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -412,7 +412,7 @@ fn test_popm_from_file() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[allow(clippy::float_cmp)]
 fn test_parse_relative_volume_frame() {
 	let f = RelativeVolumeAdjustmentFrame::parse(
@@ -441,7 +441,7 @@ fn test_parse_relative_volume_frame() {
 	assert_eq!(channels.len(), 1);
 }
 
-#[test]
+#[test_log::test]
 fn test_render_relative_volume_frame() {
 	let f = RelativeVolumeAdjustmentFrame::new(String::from("ident"), {
 		let mut m = HashMap::new();
@@ -468,7 +468,7 @@ fn test_render_relative_volume_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_unique_file_identifier_frame() {
 	let f = UniqueFileIdentifierFrame::parse(
 		&mut &b"\
@@ -484,7 +484,7 @@ fn test_parse_unique_file_identifier_frame() {
 	assert_eq!(f.identifier, &[0x00, 0x01, 0x02]);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_empty_unique_file_identifier_frame() {
 	let f = UniqueFileIdentifierFrame::parse(
 		&mut &b"\
@@ -498,7 +498,7 @@ fn test_parse_empty_unique_file_identifier_frame() {
 	assert!(f.is_err());
 }
 
-#[test]
+#[test_log::test]
 fn test_render_unique_file_identifier_frame() {
 	let f = UniqueFileIdentifierFrame::new(String::from("owner"), b"\x01\x02\x03".to_vec());
 
@@ -510,7 +510,7 @@ owner\x00\
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_url_link_frame() {
 	let f = UrlLinkFrame::parse(
 		&mut &b"http://example.com"[..],
@@ -522,7 +522,7 @@ fn test_parse_url_link_frame() {
 	assert_eq!(f.url(), "http://example.com");
 }
 
-#[test]
+#[test_log::test]
 fn test_render_url_link_frame() {
 	let f = UrlLinkFrame::parse(
 		&mut &b"http://example.com"[..],
@@ -534,7 +534,7 @@ fn test_render_url_link_frame() {
 	assert_eq!(f.as_bytes(), b"http://example.com");
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_user_url_link_frame() {
 	let f = ExtendedUrlFrame::parse(
 		&mut &b"\
@@ -551,7 +551,7 @@ fn test_parse_user_url_link_frame() {
 	assert_eq!(f.content, String::from("http://example.com"));
 }
 
-#[test]
+#[test_log::test]
 fn test_render_user_url_link_frame() {
 	let f = ExtendedUrlFrame::new(
 		TextEncoding::Latin1,
@@ -568,7 +568,7 @@ fn test_render_user_url_link_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_ownership_frame() {
 	let f = OwnershipFrame::parse(
 		&mut &b"\
@@ -586,7 +586,7 @@ fn test_parse_ownership_frame() {
 	assert_eq!(f.seller, "Beatport");
 }
 
-#[test]
+#[test_log::test]
 fn test_render_ownership_frame() {
 	let f = OwnershipFrame::new(
 		TextEncoding::Latin1,
@@ -605,7 +605,7 @@ fn test_render_ownership_frame() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_synchronized_lyrics_frame() {
 	let f = SynchronizedTextFrame::parse(
 		b"\
@@ -635,7 +635,7 @@ Lyrics\x00\
 	assert_eq!(f.content[1].0, 4567);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 	let f = SynchronizedTextFrame::parse(
 		b"\
@@ -665,7 +665,7 @@ fn test_parse_synchronized_lyrics_frame_with_empty_description() {
 	assert_eq!(f.content[1].0, 4567);
 }
 
-#[test]
+#[test_log::test]
 fn test_render_synchronized_lyrics_frame() {
 	let f = SynchronizedTextFrame::new(
 		TextEncoding::Latin1,
@@ -694,7 +694,7 @@ fn test_render_synchronized_lyrics_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_event_timing_codes_frame() {
 	let f = EventTimingCodesFrame::parse(
 		&mut &b"\
@@ -718,7 +718,7 @@ fn test_parse_event_timing_codes_frame() {
 	assert_eq!(sel[1].timestamp, 3_600_000);
 }
 
-#[test]
+#[test_log::test]
 fn test_render_event_timing_codes_frame() {
 	let f = EventTimingCodesFrame::new(
 		TimestampFormat::MS,
@@ -745,7 +745,7 @@ fn test_render_event_timing_codes_frame() {
 	)
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_comments_frame() {
 	let f = CommentFrame::parse(
 		&mut &b"\x03\
@@ -764,7 +764,7 @@ fn test_parse_comments_frame() {
 	assert_eq!(f.content, String::from("Text"));
 }
 
-#[test]
+#[test_log::test]
 fn test_render_comments_frame() {
 	let f = CommentFrame::new(
 		TextEncoding::UTF16,
@@ -783,19 +783,19 @@ fn test_render_comments_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_parse_podcast_frame() {
 	// Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_render_podcast_frame() {
 	// Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_private_frame() {
 	let f = PrivateFrame::parse(
 		&mut &b"\
@@ -810,7 +810,7 @@ fn test_parse_private_frame() {
 	assert_eq!(f.private_data, b"TL");
 }
 
-#[test]
+#[test_log::test]
 fn test_render_private_frame() {
 	let f = PrivateFrame::new(String::from("WM/Provider"), b"TL".to_vec());
 
@@ -822,7 +822,7 @@ fn test_render_private_frame() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_parse_user_text_identification_frame() {
 	let frame_without_description = ExtendedUrlFrame::parse(
 		&mut &b"\
@@ -855,7 +855,7 @@ fn test_parse_user_text_identification_frame() {
 	assert_eq!(frame_with_description.content, String::from("Text"));
 }
 
-#[test]
+#[test_log::test]
 fn test_render_user_text_identification_frame() {
 	let mut f = ExtendedTextFrame::new(TextEncoding::Latin1, String::new(), String::from("Text"));
 
@@ -879,16 +879,17 @@ fn test_render_user_text_identification_frame() {
 }
 
 // TODO: iTunes, being the great application it is writes unsynchronized integers for sizes. There's no *great* way to detect this.
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_itunes_24_frame_size() {
 	let mut file = temp_file!("tests/taglib/data/005411.id3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 
-	assert!(f
-		.id3v2()
-		.unwrap()
-		.contains(&FrameId::Valid(Cow::from("TIT2"))));
+	assert!(
+		f.id3v2()
+			.unwrap()
+			.contains(&FrameId::Valid(Cow::from("TIT2")))
+	);
 	assert_eq!(
 		f.id3v2()
 			.unwrap()
@@ -898,7 +899,7 @@ fn test_itunes_24_frame_size() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_save_utf16_comment() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -929,7 +930,7 @@ fn test_save_utf16_comment() {
 
 // TODO: Probably won't ever support this, it's a weird edge case with
 //       duplicate genres. That can be up to the caller to figure out.
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_update_genre_23_1() {
 	// "Refinement" is the same as the ID3v1 genre - duplicate
@@ -953,7 +954,7 @@ fn test_update_genre_23_1() {
 	assert_eq!(tag.genre().as_deref(), Some("Death Metal"));
 }
 
-#[test]
+#[test_log::test]
 fn test_update_genre23_2() {
 	// "Refinement" is different from the ID3v1 genre
 	let frame_value = TextInformationFrame::parse(
@@ -977,7 +978,7 @@ fn test_update_genre23_2() {
 	assert_eq!(tag.genre().as_deref(), Some("Disco / Eurodisco"));
 }
 
-#[test]
+#[test_log::test]
 fn test_update_genre23_3() {
 	// Multiple references and a refinement
 	let frame_value = TextInformationFrame::parse(
@@ -1005,7 +1006,7 @@ fn test_update_genre23_3() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_update_genre_24() {
 	let frame_value = TextInformationFrame::parse(
 		&mut &b"\x00\
@@ -1023,7 +1024,7 @@ fn test_update_genre_24() {
 	assert_eq!(tag.genre().as_deref(), Some("R&B / Eurodisco"));
 }
 
-#[test]
+#[test_log::test]
 fn test_update_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -1032,7 +1033,7 @@ fn test_update_date22() {
 }
 
 // TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_update_full_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
@@ -1047,7 +1048,7 @@ fn test_update_full_date22() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_downgrade_to_23() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -1238,14 +1239,15 @@ fn test_downgrade_to_23() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_compressed_frame_with_broken_length() {
 	let mut file = temp_file!("tests/taglib/data/compressed_id3_frame.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
-	assert!(f
-		.id3v2()
-		.unwrap()
-		.contains(&FrameId::Valid(Cow::from("APIC"))));
+	assert!(
+		f.id3v2()
+			.unwrap()
+			.contains(&FrameId::Valid(Cow::from("APIC")))
+	);
 
 	let frame = f
 		.id3v2()
@@ -1262,15 +1264,16 @@ fn test_compressed_frame_with_broken_length() {
 	assert_eq!(picture.data().len(), 86414);
 }
 
-#[test]
+#[test_log::test]
 fn test_w000() {
 	let mut file = temp_file!("tests/taglib/data/w000.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
 
-	assert!(f
-		.id3v2()
-		.unwrap()
-		.contains(&FrameId::Valid(Cow::from("W000"))));
+	assert!(
+		f.id3v2()
+			.unwrap()
+			.contains(&FrameId::Valid(Cow::from("W000")))
+	);
 	let frame = f
 		.id3v2()
 		.unwrap()
@@ -1282,33 +1285,33 @@ fn test_w000() {
 	assert_eq!(url_frame.url(), "lukas.lalinsky@example.com____");
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_property_interface() {
 	// Marker test, Lofty does not replicate the property interface
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_property_interface2() {
 	// Marker test, Lofty does not replicate the property interface
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_properties_movement() {
 	// Marker test, Lofty does not replicate the property interface.
 	// Outside of that, this is simply a text frame parsing test, which is redundant.
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_property_grouping() {
 	// Marker test, Lofty does not replicate the property interface.
 	// Outside of that, this is simply a text frame parsing test, which is redundant.
 }
 
-#[test]
+#[test_log::test]
 fn test_delete_frame() {
 	let mut file = temp_file!("tests/taglib/data/rare_frames.mp3");
 
@@ -1328,7 +1331,7 @@ fn test_delete_frame() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -1360,38 +1363,38 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 }
 
 // TODO: Support CHAP frames (#189)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_parse_chapter_frame() {}
 
 // TODO: Support CHAP frames (#189)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_render_chapter_frame() {}
 
 // TODO: Support CTOC frames (#189)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_parse_table_of_contents_frame() {}
 
 // TODO: Support CTOC frames (#189)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_render_table_of_contents_frame() {}
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_empty_frame() {
 	// Marker test, Lofty will not remove empty frames, as they can be valid
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_duplicate_tags() {
 	// Marker test, Lofty will combine duplicated tags
 }
 
 // TODO: Support CTOC frames (#189)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_parse_toc_frame_with_many_children() {}

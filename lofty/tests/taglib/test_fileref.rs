@@ -75,109 +75,109 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 	//       no need to replicate these.
 }
 
-#[test]
+#[test_log::test]
 fn test_musepack() {
 	file_ref_save("click.mpc", FileType::Mpc);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_asf() {
 	// TODO: We don't support ASF yet
 	// file_ref_save("silence-1.asf", FileType::ASF);
 }
 
-#[test]
+#[test_log::test]
 fn test_vorbis() {
 	file_ref_save("empty.ogg", FileType::Vorbis);
 }
 
-#[test]
+#[test_log::test]
 fn test_speex() {
 	file_ref_save("empty.spx", FileType::Speex);
 }
 
-#[test]
+#[test_log::test]
 fn test_flac() {
 	file_ref_save("no-tags.flac", FileType::Flac);
 }
 
-#[test]
+#[test_log::test]
 fn test_mp3() {
 	file_ref_save("xing.mp3", FileType::Mpeg);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_true_audio() {
 	// TODO: We don't support TTA yet
 	// file_ref_save("empty.tta", FileType::TrueAudio);
 }
 
-#[test]
+#[test_log::test]
 fn test_mp4_1() {
 	file_ref_save("has-tags.m4a", FileType::Mp4);
 }
 
-#[test]
+#[test_log::test]
 #[ignore] // TODO: The file has a malformed `free` atom. How does TagLib handle this? Currently we mess up entirely and just write a duplicate tag.
 fn test_mp4_2() {
 	file_ref_save("no-tags.m4a", FileType::Mp4);
 }
 
-#[test]
+#[test_log::test]
 #[ignore] // TODO: We are able to write the first tag and even reread, but the second save causes a `SizeMismatch`.
 fn test_mp4_3() {
 	file_ref_save("no-tags.3g2", FileType::Mp4);
 }
 
-#[test]
+#[test_log::test]
 fn test_mp4_4() {
 	file_ref_save("blank_video.m4v", FileType::Mp4);
 }
 
-#[test]
+#[test_log::test]
 fn test_wav() {
 	file_ref_save("empty.wav", FileType::Wav);
 }
 
-#[test]
+#[test_log::test]
 #[ignore] // TODO: We don't yet support FLAC in oga
 fn test_oga_flac() {
 	file_ref_save("empty_flac.oga", FileType::Flac);
 }
 
-#[test]
+#[test_log::test]
 fn test_oga_vorbis() {
 	file_ref_save("empty_vorbis.oga", FileType::Vorbis);
 }
 
-#[test]
+#[test_log::test]
 fn test_ape() {
 	file_ref_save("mac-399.ape", FileType::Ape);
 }
 
-#[test]
+#[test_log::test]
 fn test_aiff_1() {
 	file_ref_save("empty.aiff", FileType::Aiff);
 }
 
-#[test]
+#[test_log::test]
 fn test_aiff_2() {
 	file_ref_save("alaw.aifc", FileType::Aiff);
 }
 
-#[test]
+#[test_log::test]
 fn test_wavpack() {
 	file_ref_save("click.wv", FileType::WavPack);
 }
 
-#[test]
+#[test_log::test]
 fn test_opus() {
 	file_ref_save("correctness_gain_silent_output.opus", FileType::Opus);
 }
 
-#[test]
+#[test_log::test]
 fn test_unsupported() {
 	let f1 = lofty::read_from_path("tests/taglib/data/no-extension");
 	match f1 {
@@ -192,13 +192,13 @@ fn test_unsupported() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_create() {
 	// Marker test, Lofty does not replicate this API
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties() {
 	let file = lofty::read_from_path("tests/taglib/data/xing.mp3").unwrap();
 	let properties = file.properties();
@@ -206,7 +206,7 @@ fn test_audio_properties() {
 	assert_eq!(properties.duration().as_millis(), 2064);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_default_file_extensions() {
 	// Marker test, Lofty does not replicate this API
@@ -217,7 +217,7 @@ use lofty::properties::FileProperties;
 use rusty_fork::rusty_fork_test;
 
 rusty_fork_test! {
-	#[test]
+	#[test_log::test]
 	fn test_file_resolver() {
 		lofty::config::apply_global_options(GlobalOptions::new().use_custom_resolvers(true));
 

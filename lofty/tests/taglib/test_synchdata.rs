@@ -2,7 +2,7 @@ use std::io::Read;
 
 use lofty::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 
-#[test]
+#[test_log::test]
 fn test1() {
 	let v = u32::from_be_bytes([0, 0, 0, 127]);
 
@@ -10,7 +10,7 @@ fn test1() {
 	assert_eq!(127u32.synch().unwrap(), v);
 }
 
-#[test]
+#[test_log::test]
 fn test2() {
 	let v = u32::from_be_bytes([0, 0, 1, 0]);
 
@@ -18,7 +18,7 @@ fn test2() {
 	assert_eq!(128u32.synch().unwrap(), v);
 }
 
-#[test]
+#[test_log::test]
 fn test3() {
 	let v = u32::from_be_bytes([0, 0, 1, 1]);
 
@@ -26,19 +26,19 @@ fn test3() {
 	assert_eq!(129u32.synch().unwrap(), v);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_to_uint_broken() {
 	// Marker test, this behavior is not replicated in Lofty
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_to_uint_broken_and_too_large() {
 	// Marker test, this behavior is not replicated in Lofty
 }
 
-#[test]
+#[test_log::test]
 fn test_decode1() {
 	let a = [0xFFu8, 0x00u8, 0x00u8];
 
@@ -51,7 +51,7 @@ fn test_decode1() {
 	assert_eq!(a2, &[0xFF, 0x00]);
 }
 
-#[test]
+#[test_log::test]
 fn test_decode2() {
 	let a = [0xFFu8, 0x44u8];
 
@@ -64,7 +64,7 @@ fn test_decode2() {
 	assert_eq!(a2, &[0xFF, 0x44]);
 }
 
-#[test]
+#[test_log::test]
 fn test_decode3() {
 	let a = [0xFFu8, 0xFFu8, 0x00u8];
 
@@ -77,7 +77,7 @@ fn test_decode3() {
 	assert_eq!(a2, &[0xFFu8, 0xFFu8]);
 }
 
-#[test]
+#[test_log::test]
 fn test_decode4() {
 	let a = [0xFFu8, 0xFFu8, 0xFFu8];
 

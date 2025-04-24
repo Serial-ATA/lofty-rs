@@ -7,7 +7,7 @@ use lofty::tag::Accessor;
 
 use std::io::Seek;
 
-#[test]
+#[test_log::test]
 fn test_audio_properties() {
 	let f = get_file::<SpeexFile>("tests/taglib/data/empty.spx");
 
@@ -22,7 +22,7 @@ fn test_audio_properties() {
 }
 
 // TODO: This test doesn't work, it's very specific with file/packet sizes. Have to determine whether or not to even keep this one.
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_split_packets() {
 	let mut file = temp_file!("tests/taglib/data/empty.spx");

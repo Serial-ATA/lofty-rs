@@ -10,7 +10,7 @@ use lofty::iff::aiff::{AiffCompressionType, AiffFile};
 use lofty::probe::Probe;
 use lofty::tag::{Accessor, TagType};
 
-#[test]
+#[test_log::test]
 fn test_aiff_properties() {
 	let file = get_file::<AiffFile>("tests/taglib/data/empty.aiff");
 
@@ -26,7 +26,7 @@ fn test_aiff_properties() {
 	assert!(properties.compression_type().is_none());
 }
 
-#[test]
+#[test_log::test]
 fn test_aifc_properties() {
 	let file = get_file::<AiffFile>("tests/taglib/data/alaw.aifc");
 
@@ -55,7 +55,7 @@ fn test_aifc_properties() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_save_id3v2() {
 	let mut file = temp_file!("tests/taglib/data/empty.aiff");
 
@@ -95,19 +95,19 @@ fn test_save_id3v2() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_save_id3v23() {
 	todo!("Support writing ID3v2.3 tags")
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_duplicate_id3v2() {
 	// Marker test, Lofty will overwrite values in the original tag with any new values it finds in the next tag.
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file1() {
 	assert_eq!(
 		Probe::open("tests/taglib/data/segfault.aif")
@@ -119,7 +119,7 @@ fn test_fuzzed_file1() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_fuzzed_file2() {
 	// Marker test, this file doesn't even have a valid signature. No idea how TagLib manages to read it.

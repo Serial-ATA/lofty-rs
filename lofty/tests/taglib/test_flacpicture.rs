@@ -17,7 +17,7 @@ const DATA: &[u8] = &[
 	0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
 ];
 
-#[test]
+#[test_log::test]
 fn test_parse() {
 	let (picture, info) = Picture::from_flac_bytes(DATA, false, ParsingMode::Strict).unwrap();
 
@@ -31,7 +31,7 @@ fn test_parse() {
 	assert_eq!(picture.data().len(), 150);
 }
 
-#[test]
+#[test_log::test]
 fn test_pass_through() {
 	let (picture, info) = Picture::from_flac_bytes(DATA, false, ParsingMode::Strict).unwrap();
 	assert_eq!(DATA, picture.as_flac_bytes(info, false).as_slice());
