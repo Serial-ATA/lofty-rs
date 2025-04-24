@@ -517,7 +517,18 @@ where
 	if duration > 0 {
 		// TODO: We should keep track of the `mdat` length when first reading the file.
 		//       This extra read is unnecessary.
-		let mdat_len = mdat_length(reader)?;
+		let mdat_len;
+		match mdat_length(reader) {
+			Ok(len) => mdat_len = len,
+			Err(err) => {
+				if parse_mode == ParsingMode::Strict {
+					return Err(err);
+				}
+
+				log::warn!("No \"mdat\" atom found, any audio properties will be useless.");
+				return Ok(properties);
+			},
+		}
 
 		if let Some(stts) = stts {
 			let stts_specifies_duration =
@@ -547,8 +558,7 @@ where
 		if properties.audio_bitrate == 0 {
 			log::warn!("Estimating audio bitrate from 'mdat' size");
 
-			properties.audio_bitrate =
-				(u128::from(mdat_length(reader)? * 8) / duration_millis) as u32;
+			properties.audio_bitrate = (u128::from(mdat_len * 8) / duration_millis) as u32;
 		}
 	}
 
