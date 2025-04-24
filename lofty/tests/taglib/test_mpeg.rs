@@ -293,7 +293,7 @@ fn test_ignore_garbage() {
 	let mut file = temp_file!("tests/taglib/data/garbage.mp3");
 
 	{
-		let mut f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let mut f = MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
 		file.rewind().unwrap();
 		assert!(f.id3v2().is_some());
 
@@ -303,7 +303,7 @@ fn test_ignore_garbage() {
 	}
 	file.rewind().unwrap();
 	{
-		let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let f = MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
 		assert!(f.id3v2().is_some());
 		assert_eq!(f.id3v2().unwrap().title().as_deref(), Some("Title B"));
 	}

@@ -94,7 +94,7 @@ fn test_clear_comment() {
 #[test]
 #[ignore]
 fn test_remove_fields() {
-	// Market test, TagLib has some incredibly strange behavior in this test.
+	// Marker test, TagLib has some incredibly strange behavior in this test.
 	//
 	// When adding a field of the same key, TagLib will append each value to the same value.
 	// Meaning:
