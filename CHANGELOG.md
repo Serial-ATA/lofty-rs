@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+* **MP4**: A missing `mdat` atom is no longer a hard error when reading properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/515))
+  * This is now only an error in `Strict` mode. Note that any properties read in a file with no `mdat` atom are essentially useless.
+
 ## [0.22.3] - 2025-04-04
 
 ### Added
