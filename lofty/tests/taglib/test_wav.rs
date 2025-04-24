@@ -230,33 +230,11 @@ fn test_strip_tags() {
 }
 
 #[test]
+#[ignore]
 fn test_duplicate_tags() {
-	let mut file = temp_file!("tests/taglib/data/duplicate_tags.wav");
-
-	let f = WavFile::read_from(&mut file, ParseOptions::new()).unwrap();
-	assert_eq!(file.seek(SeekFrom::End(0)).unwrap(), 17052);
-	file.rewind().unwrap();
-
-	// duplicate_tags.wav has duplicate ID3v2/INFO tags.
-	// title() returns "Title2" if can't skip the second tag.
-
-	assert!(f.id3v2().is_some());
-	assert_eq!(f.id3v2().unwrap().title().as_deref(), Some("Title1"));
-
-	assert!(f.riff_info().is_some());
-	assert_eq!(f.riff_info().unwrap().title().as_deref(), Some("Title1"));
-
-	f.save_to(&mut file, WriteOptions::default()).unwrap();
-	assert_eq!(file.seek(SeekFrom::End(0)).unwrap(), 15898);
-
-	let mut file_bytes = Vec::new();
-	file.rewind().unwrap();
-	file.read_to_end(&mut file_bytes).unwrap();
-
-	assert_eq!(
-		file_bytes.windows(6).position(|window| window == b"Title2"),
-		None
-	);
+	// Marker test, TagLib will ignore any tag except for the first. Lofty will *not* do this.
+	// Every tag in the stream is read and merged into the previous one. Whichever tag ends up being
+	// the latest in the stream will have precedence.
 }
 
 #[test]
