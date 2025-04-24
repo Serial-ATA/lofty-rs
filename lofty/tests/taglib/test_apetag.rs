@@ -8,7 +8,7 @@ use lofty::file::AudioFile;
 use lofty::musepack::MpcFile;
 use lofty::tag::{Accessor, ItemValue, TagExt};
 
-#[test]
+#[test_log::test]
 fn test_is_empty() {
 	let mut tag = ApeTag::default();
 	assert!(tag.is_empty());
@@ -22,7 +22,7 @@ fn test_is_empty() {
 	assert!(!tag.is_empty());
 }
 
-#[test]
+#[test_log::test]
 fn test_is_empty_2() {
 	let mut tag = ApeTag::default();
 	assert!(tag.is_empty());
@@ -30,19 +30,19 @@ fn test_is_empty_2() {
 	assert!(!tag.is_empty());
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_property_interface_1() {
 	// Marker test, Lofty does not replicate the TagLib property API
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_property_interface_2() {
 	// Marker test, Lofty does not replicate the TagLib property API
 }
 
-#[test]
+#[test_log::test]
 fn test_invalid_keys() {
 	static INVALID_KEY_ONE_CHARACTER: &str = "A";
 	static INVALID_KEY_FORBIDDEN_STRING: &str = "MP+";
@@ -50,21 +50,27 @@ fn test_invalid_keys() {
 	static VALID_KEY_SPACE_AND_TILDE: &str = "A B~C";
 	static VALID_KEY_NORMAL_ONE: &str = "ARTIST";
 
-	assert!(ApeItem::new(
-		String::from(INVALID_KEY_ONE_CHARACTER),
-		ItemValue::Text(String::from("invalid key: one character"))
-	)
-	.is_err());
-	assert!(ApeItem::new(
-		String::from(INVALID_KEY_FORBIDDEN_STRING),
-		ItemValue::Text(String::from("invalid key: forbidden string"))
-	)
-	.is_err());
-	assert!(ApeItem::new(
-		String::from(INVALID_KEY_UNICODE),
-		ItemValue::Text(String::from("invalid key: Unicode"))
-	)
-	.is_err());
+	assert!(
+		ApeItem::new(
+			String::from(INVALID_KEY_ONE_CHARACTER),
+			ItemValue::Text(String::from("invalid key: one character"))
+		)
+		.is_err()
+	);
+	assert!(
+		ApeItem::new(
+			String::from(INVALID_KEY_FORBIDDEN_STRING),
+			ItemValue::Text(String::from("invalid key: forbidden string"))
+		)
+		.is_err()
+	);
+	assert!(
+		ApeItem::new(
+			String::from(INVALID_KEY_UNICODE),
+			ItemValue::Text(String::from("invalid key: Unicode"))
+		)
+		.is_err()
+	);
 
 	let valid_space_and_tilde = ApeItem::new(
 		String::from(VALID_KEY_SPACE_AND_TILDE),
@@ -84,7 +90,7 @@ fn test_invalid_keys() {
 	assert_eq!(tag.len(), 2);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_text_binary() {
 	// Marker test, this is useless as Lofty does not have a similar API that the test is based upon:
@@ -92,7 +98,7 @@ fn test_text_binary() {
 }
 
 // TODO: Does not work! We fall for this collision.
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_id3v1_collision() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.mpc");

@@ -8,7 +8,7 @@ use lofty::ogg::{OggPictureStorage, VorbisComments, VorbisFile};
 use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 use lofty::tag::{Accessor, TagExt};
 
-#[test]
+#[test_log::test]
 fn test_year() {
 	let mut cmt = VorbisComments::default();
 	assert_eq!(cmt.year(), None);
@@ -23,7 +23,7 @@ fn test_year() {
 	assert_eq!(cmt.year(), Some(2008));
 }
 
-#[test]
+#[test_log::test]
 fn test_set_year() {
 	let mut cmt = VorbisComments::default();
 	cmt.push(String::from("YEAR"), String::from("2009"));
@@ -33,7 +33,7 @@ fn test_set_year() {
 	assert_eq!(cmt.get("DATE"), Some("1995"));
 }
 
-#[test]
+#[test_log::test]
 fn test_track() {
 	let mut cmt = VorbisComments::default();
 	assert_eq!(cmt.track(), None);
@@ -43,7 +43,7 @@ fn test_track() {
 	assert_eq!(cmt.track(), Some(8));
 }
 
-#[test]
+#[test_log::test]
 fn test_set_track() {
 	let mut cmt = VorbisComments::default();
 	cmt.push(String::from("TRACKNUM"), String::from("7"));
@@ -53,13 +53,13 @@ fn test_set_track() {
 	assert_eq!(cmt.get("TRACKNUMBER"), Some("3"));
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_invalid_keys1() {
 	// Marker test, Lofty does not replicate the properties API
 }
 
-#[test]
+#[test_log::test]
 fn test_invalid_keys2() {
 	let mut cmt = VorbisComments::default();
 	cmt.push(String::new(), String::new());
@@ -71,7 +71,7 @@ fn test_invalid_keys2() {
 	assert!(cmt.is_empty());
 }
 
-#[test]
+#[test_log::test]
 fn test_clear_comment() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
 
@@ -91,7 +91,7 @@ fn test_clear_comment() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_remove_fields() {
 	// Marker test, TagLib has some incredibly strange behavior in this test.
@@ -106,7 +106,7 @@ fn test_remove_fields() {
 	// Lofty will never behave in this way.
 }
 
-#[test]
+#[test_log::test]
 fn test_picture() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
 
@@ -147,7 +147,7 @@ fn test_picture() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_lowercase_fields() {
 	let mut file = temp_file!("tests/taglib/data/lowercase-fields.ogg");
 

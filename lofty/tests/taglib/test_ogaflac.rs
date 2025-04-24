@@ -9,7 +9,7 @@ use lofty::ogg::VorbisComments;
 use lofty::tag::Accessor;
 
 // TODO: We don't support FLAC in OGA (#172)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_framing_bit() {
 	let mut file = temp_file!("tests/taglib/data/empty_flac.oga");
@@ -36,7 +36,7 @@ fn test_framing_bit() {
 }
 
 // TODO: We don't support FLAC in OGA (#172)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_fuzzed_file() {
 	let mut file = temp_file!("tests/taglib/data/segfault.oga");
@@ -44,7 +44,7 @@ fn test_fuzzed_file() {
 	assert!(f.is_err());
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_split_packets() {
 	// Marker test, Lofty does not retain the packet information

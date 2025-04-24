@@ -1,12 +1,12 @@
 use lofty::id3::v1::GENRES;
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_strip_whitespace() {
 	// Marker test, we'd be overstepping to remove trailing whitespace that may be intentional
 }
 
-#[test]
+#[test_log::test]
 fn test_genres() {
 	assert_eq!("Darkwave", GENRES[50]);
 	assert_eq!(
@@ -23,7 +23,7 @@ fn test_genres() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_renamed_genres() {
 	// Marker test, this covers a change where TagLib deviated from the list of genres available on Wikipedia.

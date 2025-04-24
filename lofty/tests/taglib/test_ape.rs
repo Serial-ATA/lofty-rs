@@ -25,22 +25,22 @@ fn test_399(path: &str) {
 	assert_eq!(properties.version(), 3990)
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_399() {
 	test_399("tests/taglib/data/mac-399.ape")
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_399_tagged() {
 	test_399("tests/taglib/data/mac-399-tagged.ape")
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_399_id3v2() {
 	test_399("tests/taglib/data/mac-399-id3v2.ape")
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_396() {
 	let f = get_file::<ApeFile>("tests/taglib/data/mac-396.ape");
 	let properties = f.properties();
@@ -55,7 +55,7 @@ fn test_properties_396() {
 	assert_eq!(properties.version(), 3960)
 }
 
-#[test]
+#[test_log::test]
 fn test_properties_390() {
 	let f = get_file::<ApeFile>("tests/taglib/data/mac-390-hdr.ape");
 	let properties = f.properties();
@@ -70,7 +70,7 @@ fn test_properties_390() {
 	assert_eq!(properties.version(), 3900)
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file_1() {
 	assert_eq!(
 		Probe::open("tests/taglib/data/longloop.ape")
@@ -82,7 +82,7 @@ fn test_fuzzed_file_1() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file_2() {
 	assert_eq!(
 		Probe::open("tests/taglib/data/zerodiv.ape")
@@ -94,7 +94,7 @@ fn test_fuzzed_file_2() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_strip_and_properties() {
 	let mut file = temp_file!("tests/taglib/data/mac-399.ape");
 	{
@@ -127,7 +127,7 @@ fn test_strip_and_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_properties() {
 	let mut tag = ApeTag::default();
 	tag.insert(
@@ -356,7 +356,7 @@ fn test_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save() {
 	let mut file = temp_file!("tests/taglib/data/mac-399.ape");
 	{

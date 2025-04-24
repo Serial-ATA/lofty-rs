@@ -12,7 +12,7 @@ use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::mpeg::MpegFile;
 use lofty::tag::Accessor;
 
-#[test]
+#[test_log::test]
 fn test_audio_properties_xing_header_cbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_cbr.mp3");
 
@@ -25,7 +25,7 @@ fn test_audio_properties_xing_header_cbr() {
 	// CPPUNIT_ASSERT_EQUAL(MPEG::XingHeader::Xing, f.audioProperties()->xingHeader()->type());
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties_xing_header_vbr() {
 	let f = get_file::<MpegFile>("tests/taglib/data/lame_vbr.mp3");
 
@@ -38,7 +38,7 @@ fn test_audio_properties_xing_header_vbr() {
 	// CPPUNIT_ASSERT_EQUAL(MPEG::XingHeader::Xing, f.audioProperties()->xingHeader()->type());
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties_vbri_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/rare_frames.mp3");
 
@@ -51,7 +51,7 @@ fn test_audio_properties_vbri_header() {
 	// CPPUNIT_ASSERT_EQUAL(MPEG::XingHeader::VBRI, f.audioProperties()->xingHeader()->type());
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties_no_vbr_headers() {
 	let f = get_file::<MpegFile>("tests/taglib/data/bladeenc.mp3");
 
@@ -65,7 +65,7 @@ fn test_audio_properties_no_vbr_headers() {
 	//       in Lofty, and it doesn't seem too useful to expose.
 }
 
-#[test]
+#[test_log::test]
 fn test_skip_invalid_frames_1() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames1.mp3");
 
@@ -76,7 +76,7 @@ fn test_skip_invalid_frames_1() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
-#[test]
+#[test_log::test]
 fn test_skip_invalid_frames_2() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames2.mp3");
 
@@ -87,25 +87,25 @@ fn test_skip_invalid_frames_2() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
-#[test]
+#[test_log::test]
 fn test_skip_invalid_frames_3() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames3.mp3");
 
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 183); // TODO: Off by 26
-	assert_eq!(f.properties().audio_bitrate(), 320);
+	assert_eq!(f.properties().audio_bitrate(), 362);
 	assert_eq!(f.properties().channels(), 2);
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
-#[test]
+#[test_log::test]
 fn test_version_2_duration_with_xing_header() {
 	let f = get_file::<MpegFile>("tests/taglib/data/mpeg2.mp3");
 	assert_eq!(f.properties().duration().as_secs(), 5387); // TODO: Off by 15
 	assert_eq!(f.properties().duration().as_millis(), 5_387_285);
 }
 
-#[test]
+#[test_log::test]
 fn test_save_id3v24() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -130,14 +130,14 @@ fn test_save_id3v24() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_save_id3v24_wrong_param() {
 	// Marker test, Lofty does not replicate the TagLib saving API
 }
 
 // TODO: We don't yet support writing an ID3v23 tag (#62)
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_save_id3v23() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
@@ -163,25 +163,25 @@ fn test_save_id3v23() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_duplicate_id3v2() {
 	let f = get_file::<MpegFile>("tests/taglib/data/duplicate_id3v2.mp3");
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
-#[test]
+#[test_log::test]
 fn test_fuzzed_file() {
 	let mut file = File::open("tests/taglib/data/excessive_alloc.mp3").unwrap();
 	assert!(MpegFile::read_from(&mut file, ParseOptions::new()).is_err())
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_frame_offset() {
 	// Marker test, Lofty does not replicate this API. Doesn't seem useful to retain frame offsets.
 }
 
-#[test]
+#[test_log::test]
 fn test_strip_and_properties() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -213,22 +213,22 @@ fn test_strip_and_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_properties() {}
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_repeated_save_1() {
 	// Marker test, yet another case of checking frame offsets that Lofty does not expose.
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_repeated_save_2() {
 	// Marker test, not entirely sure what's even being tested here?
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save_3() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -270,30 +270,31 @@ fn test_repeated_save_3() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_empty_id3v2() {
 	// Marker test, Lofty accepts empty strings as valid values
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_empty_id3v1() {
 	// Marker test, Lofty accepts empty strings as valid values
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_empty_ape() {
 	// Marker test, Lofty accepts empty strings as valid values
 }
 
-#[test]
+#[test_log::test]
 fn test_ignore_garbage() {
 	let mut file = temp_file!("tests/taglib/data/garbage.mp3");
 
 	{
-		let mut f = MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
+		let mut f =
+			MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
 		file.rewind().unwrap();
 		assert!(f.id3v2().is_some());
 

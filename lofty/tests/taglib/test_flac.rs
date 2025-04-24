@@ -11,7 +11,7 @@ use lofty::ogg::{OggPictureStorage, VorbisComments};
 use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 use lofty::tag::{Accessor, TagExt};
 
-#[test]
+#[test_log::test]
 fn test_signature() {
 	let f = get_file::<FlacFile>("tests/taglib/data/no-tags.flac");
 	assert_eq!(
@@ -20,7 +20,7 @@ fn test_signature() {
 	);
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_multiple_comment_blocks() {
 	// Marker test, Lofty does not replicate TagLib's behavior
@@ -28,7 +28,7 @@ fn test_multiple_comment_blocks() {
 	// TagLib will use the *first* tag in the stream, while we use the latest.
 }
 
-#[test]
+#[test_log::test]
 fn test_read_picture() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -46,7 +46,7 @@ fn test_read_picture() {
 	assert_eq!(pic.data().len(), 150);
 }
 
-#[test]
+#[test_log::test]
 fn test_add_picture() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -102,7 +102,7 @@ fn test_add_picture() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_replace_picture() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -149,7 +149,7 @@ fn test_replace_picture() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_remove_all_pictures() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -172,7 +172,7 @@ fn test_remove_all_pictures() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_repeated_save_1() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -214,14 +214,14 @@ fn test_repeated_save_1() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_repeated_save_2() {
 	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
 }
 
 // TODO: We don't make use of padding blocks yet
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_repeated_save_3() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
@@ -240,7 +240,7 @@ fn test_repeated_save_3() {
 	assert_eq!(file.metadata().unwrap().len(), 12862);
 }
 
-#[test]
+#[test_log::test]
 fn test_save_multiple_values() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -265,13 +265,13 @@ fn test_save_multiple_values() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_dict() {
 	// Marker test, Lofty does not replicate the dict API
 }
 
-#[test]
+#[test_log::test]
 fn test_properties() {
 	let mut tag = VorbisComments::default();
 	tag.push(String::from("ALBUM"), String::from("Album"));
@@ -361,7 +361,7 @@ fn test_properties() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_invalid() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	let mut f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -375,7 +375,7 @@ fn test_invalid() {
 	assert!(f.vorbis_comments().unwrap().is_empty());
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties() {
 	let f = get_file::<FlacFile>("tests/taglib/data/sinewave.flac");
 
@@ -394,12 +394,12 @@ fn test_audio_properties() {
 	);
 }
 
-#[test]
+#[test_log::test]
 fn test_zero_sized_padding_1() {
 	let _f = get_file::<FlacFile>("tests/taglib/data/zero-sized-padding.flac");
 }
 
-#[test]
+#[test_log::test]
 fn test_zero_sized_padding_2() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -428,7 +428,7 @@ fn test_zero_sized_padding_2() {
 }
 
 // TODO: We don't make use of padding blocks yet
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_shrink_padding() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
@@ -455,19 +455,19 @@ fn test_shrink_padding() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_save_id3v1() {
 	// Marker test, this test relies on saving an ID3v1 tag in a FLAC file, something Lofty does not and will not support.
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_update_id3v2() {
 	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
 }
 
-#[test]
+#[test_log::test]
 fn test_empty_id3v2() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.flac");
 	{
@@ -485,7 +485,7 @@ fn test_empty_id3v2() {
 }
 
 // TODO: TagLib doesn't fully remove Vorbis Comments when stripping. It will preserve the vendor string. Should we do the same?
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_strip_tags() {
 	// NOTE: In the TagLib test suite, this also tests ID3v1 and ID3v2. That is not replicated here.
@@ -527,7 +527,7 @@ fn test_strip_tags() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_remove_xiph_field() {
 	let mut file = temp_file!("tests/taglib/data/silence-44-s.flac");
 	{
@@ -560,7 +560,7 @@ fn test_remove_xiph_field() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_empty_seek_table() {
 	let mut file = temp_file!("tests/taglib/data/empty-seektable.flac");
 	{
@@ -584,7 +584,7 @@ fn test_empty_seek_table() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_picture_stored_after_comment() {
 	// Blank.png from https://commons.wikimedia.org/wiki/File:Blank.png
 	const BLANK_PNG_DATA: &[u8] = &[

@@ -8,7 +8,7 @@ use lofty::file::AudioFile;
 use lofty::ogg::OpusFile;
 use lofty::tag::Accessor;
 
-#[test]
+#[test_log::test]
 fn test_audio_properties() {
 	let f = get_file::<OpusFile>("tests/taglib/data/correctness_gain_silent_output.opus");
 	assert_eq!(f.properties().duration().as_secs(), 7);
@@ -19,7 +19,7 @@ fn test_audio_properties() {
 	assert_eq!(f.properties().version(), 1);
 }
 
-#[test]
+#[test_log::test]
 fn test_read_comments() {
 	let f = get_file::<OpusFile>("tests/taglib/data/correctness_gain_silent_output.opus");
 	assert_eq!(
@@ -31,7 +31,7 @@ fn test_read_comments() {
 	assert_eq!(f.vorbis_comments().vendor(), "libopus 0.9.11-66-g64c2dd7");
 }
 
-#[test]
+#[test_log::test]
 fn test_write_comments() {
 	let mut file = temp_file!("tests/taglib/data/correctness_gain_silent_output.opus");
 
@@ -55,7 +55,7 @@ fn test_write_comments() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_split_packets() {
 	// Marker test, Lofty does not retain packet information

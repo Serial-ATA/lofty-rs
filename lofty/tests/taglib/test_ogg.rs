@@ -9,7 +9,7 @@ use lofty::file::AudioFile;
 use lofty::ogg::VorbisFile;
 use lofty::tag::Accessor;
 
-#[test]
+#[test_log::test]
 fn test_simple() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
 
@@ -28,13 +28,13 @@ fn test_simple() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_split_packets1() {
 	// Marker test, Lofty doesn't retain packet information
 }
 
-#[test]
+#[test_log::test]
 fn test_split_packets2() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
 
@@ -63,19 +63,19 @@ fn test_split_packets2() {
 	}
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_dict_interface1() {
 	// Marker test, Lofty doesn't replicate the dictionary interface
 }
 
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_dict_interface2() {
 	// Marker test, Lofty doesn't replicate the dictionary interface
 }
 
-#[test]
+#[test_log::test]
 fn test_audio_properties() {
 	let f = get_file::<VorbisFile>("tests/taglib/data/empty.ogg");
 	assert_eq!(f.properties().duration().as_secs(), 3);
@@ -90,7 +90,7 @@ fn test_audio_properties() {
 }
 
 // TODO: Need to look into this one, not sure why there's a difference in checksums
-#[test]
+#[test_log::test]
 #[ignore]
 fn test_page_checksum() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
@@ -120,7 +120,7 @@ fn test_page_checksum() {
 	}
 }
 
-#[test]
+#[test_log::test]
 fn test_page_granule_position() {
 	let mut file = temp_file!("tests/taglib/data/empty.ogg");
 
