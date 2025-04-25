@@ -182,7 +182,11 @@ impl AtomInfo {
 		if (len - ATOM_HEADER_LEN) > reader_size {
 			log::warn!("Encountered an atom with an invalid length, stopping");
 
-			if parse_mode == ParsingMode::Relaxed {
+			// As with all formats, there's a good chance certain software won't know how to actually use padding.
+			// If the file ends with an incorrectly sized padding atom, we can just ignore it.
+			let skippable = (parse_mode != ParsingMode::Strict && identifier == *b"free")
+				|| parse_mode == ParsingMode::Relaxed;
+			if skippable {
 				// Seek to the end, as we cannot gather anything else from the file
 				data.seek(SeekFrom::End(0))?;
 				return Ok(None);
