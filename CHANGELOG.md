@@ -8,8 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* **MP4**: A missing `mdat` atom is no longer a hard error when reading properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/515))
-  * This is now only an error in `Strict` mode. Note that any properties read in a file with no `mdat` atom are essentially useless.
+* **MP4**:
+  * A missing `mdat` atom is no longer a hard error when reading properties ([PR](https://github.com/Serial-ATA/lofty-rs/pull/515))
+    * This is now only an error in `Strict` mode. Note that any properties read in a file with no `mdat` atom are essentially useless.
+  * Incorrectly sized `free` atoms are no longer a hard error ([PR](https://github.com/Serial-ATA/lofty-rs/pull/516))
+    * If a `free` atom claims to be larger than the remainder of the stream, parsing will simply stop. This will now only
+      be a `SizeMismatch` error in `Strict` mode. Invalid padding is a common issue in all tag formats due to buggy software,
+      so it's better to work around it by default rather than discard the entire stream as invalid.
 
 ## [0.22.3] - 2025-04-04
 
