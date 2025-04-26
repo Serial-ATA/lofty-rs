@@ -456,13 +456,16 @@ fn test_remove_metadata() {
 		original_file.read_to_end(&mut original_file_bytes).unwrap();
 		file.read_to_end(&mut new_file_bytes).unwrap();
 
-		// We need to do some editing, since we preserve the `udta` and `meta` atoms unlike TagLib
+		// We need to do some editing, since we preserve the `meta` atom unlike TagLib
 
-		// Remove the `udta` atom, which should be 53 bytes in length
-		new_file_bytes.splice(1505..1505 + 53, std::iter::empty());
+		// Remove the `udta` atom, which should be 45 bytes in length
+		new_file_bytes.splice(2785..2785 + 45, std::iter::empty());
 
 		// Fix the length of the `moov` atom
-		new_file_bytes[1500] = 0;
+		new_file_bytes[1500] = 8;
+
+		// Fix the length of the `udta` atom
+		new_file_bytes[2780] = 8;
 
 		assert_eq!(original_file_bytes, new_file_bytes);
 	}
