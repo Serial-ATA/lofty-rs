@@ -436,7 +436,7 @@ where
 
 		let mut chunks = Chunks::<BigEndian>::new(file_len);
 
-		while chunks.next(file).is_ok() {
+		while let Ok(true) = chunks.next(file) {
 			match &chunks.fourcc {
 				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
 					let start = (file.stream_position()? - 8) as usize;

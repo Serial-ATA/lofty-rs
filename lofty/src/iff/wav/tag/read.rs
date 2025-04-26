@@ -19,7 +19,7 @@ pub(in crate::iff::wav) fn parse_riff_info<R>(
 where
 	R: Read + Seek,
 {
-	while data.stream_position()? != end && chunks.next(data).is_ok() {
+	while data.stream_position()? != end && matches!(chunks.next(data), Ok(true)) {
 		let key_str = utf8_decode_str(&chunks.fourcc)
 			.map_err(|_| decode_err!(Wav, "Invalid item key found in RIFF INFO"))?;
 

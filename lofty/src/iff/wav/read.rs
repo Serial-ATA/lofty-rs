@@ -11,7 +11,8 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(super) fn verify_wav<T>(data: &mut T) -> Result<()>
+// Verifies that the stream is a WAV file and returns the stream length
+pub(crate) fn verify_wav<T>(data: &mut T) -> Result<u32>
 where
 	T: Read + Seek,
 {
@@ -27,7 +28,7 @@ where
 	}
 
 	log::debug!("File verified to be WAV");
-	Ok(())
+	Ok(u32::from_le_bytes(id[4..8].try_into().unwrap()))
 }
 
 pub(super) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<WavFile>
@@ -50,7 +51,7 @@ where
 
 	let mut chunks = Chunks::<LittleEndian>::new(file_len);
 
-	while chunks.next(data).is_ok() {
+	while let Ok(true) = chunks.next(data) {
 		match &chunks.fourcc {
 			b"fmt " if parse_options.read_properties => {
 				if fmt.is_empty() {
