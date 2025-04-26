@@ -1,7 +1,7 @@
 //! WAV specific items
 
 mod properties;
-mod read;
+pub(crate) mod read;
 pub(crate) mod tag;
 
 use crate::id3::v2::tag::Id3v2Tag;

@@ -9,6 +9,8 @@ use std::marker::PhantomData;
 
 use byteorder::{ByteOrder, ReadBytesExt};
 
+const RIFF_CHUNK_HEADER_SIZE: u64 = 8;
+
 pub(crate) struct Chunks<B>
 where
 	B: ByteOrder,
@@ -30,16 +32,20 @@ impl<B: ByteOrder> Chunks<B> {
 		}
 	}
 
-	pub fn next<R>(&mut self, data: &mut R) -> Result<()>
+	pub fn next<R>(&mut self, data: &mut R) -> Result<bool>
 	where
 		R: Read,
 	{
+		if self.remaining_size < RIFF_CHUNK_HEADER_SIZE {
+			return Ok(false);
+		}
+
 		data.read_exact(&mut self.fourcc)?;
 		self.size = data.read_u32::<B>()?;
 
 		self.remaining_size = self.remaining_size.saturating_sub(8);
 
-		Ok(())
+		Ok(true)
 	}
 
 	pub fn read_cstring<R>(&mut self, data: &mut R) -> Result<String>

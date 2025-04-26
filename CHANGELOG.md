@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * If a `free` atom claims to be larger than the remainder of the stream, parsing will simply stop. This will now only
       be a `SizeMismatch` error in `Strict` mode. Invalid padding is a common issue in all tag formats due to buggy software,
       so it's better to work around it by default rather than discard the entire stream as invalid.
+* **WAV**:
+  * When writing tags, the writer will be constrained to the stream size reported by the file, not by the file's actual length ([PR](https://github.com/Serial-ATA/lofty-rs/pull/517))
+    * Previously, tags were simply written to the end of the file, but this would break files that have junk data appended.
+    * This allows for files with appended junk data that falls outside of the stream length. This can be caused by buggy software
+      misusing padding.
 
 ## [0.22.3] - 2025-04-04
 

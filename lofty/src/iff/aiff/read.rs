@@ -67,7 +67,7 @@ where
 
 	let mut chunks = Chunks::<BigEndian>::new(file_len);
 
-	while chunks.next(data).is_ok() {
+	while let Ok(true) = chunks.next(data) {
 		match &chunks.fourcc {
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
 				let tag = chunks.id3_chunk(data, parse_options)?;
