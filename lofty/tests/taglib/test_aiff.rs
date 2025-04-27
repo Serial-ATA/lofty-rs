@@ -5,7 +5,7 @@ use std::io::Seek;
 
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{AudioFile, FileType};
-use lofty::id3::v2::Id3v2Tag;
+use lofty::id3::v2::{Id3v2Tag, Id3v2Version};
 use lofty::iff::aiff::{AiffCompressionType, AiffFile};
 use lofty::probe::Probe;
 use lofty::tag::{Accessor, TagType};
@@ -96,9 +96,33 @@ fn test_save_id3v2() {
 }
 
 #[test_log::test]
-#[ignore]
 fn test_save_id3v23() {
-	todo!("Support writing ID3v2.3 tags")
+	let mut file = temp_file!("tests/taglib/data/empty.aiff");
+
+	let xxx = "X".repeat(254);
+	{
+		let mut tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
+
+		assert!(tfile.id3v2().is_none());
+
+		let mut id3v2 = Id3v2Tag::new();
+		id3v2.set_title(xxx.clone());
+		id3v2.set_artist(String::from("Artist A"));
+		tfile.set_id3v2(id3v2);
+		file.rewind().unwrap();
+		tfile
+			.save_to(&mut file, WriteOptions::default().use_id3v23(true))
+			.unwrap();
+		assert!(tfile.contains_tag_type(TagType::Id3v2));
+	}
+	file.rewind().unwrap();
+	{
+		let tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		let id3v2 = tfile.id3v2().unwrap().to_owned();
+		assert_eq!(id3v2.original_version(), Id3v2Version::V3);
+		assert_eq!(id3v2.artist().as_deref(), Some("Artist A"));
+		assert_eq!(id3v2.title().as_deref(), Some(&*xxx));
+	}
 }
 
 #[test_log::test]

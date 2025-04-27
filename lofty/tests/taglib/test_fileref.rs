@@ -120,13 +120,11 @@ fn test_mp4_1() {
 }
 
 #[test_log::test]
-#[ignore] // TODO: The file has a malformed `free` atom. How does TagLib handle this? Currently we mess up entirely and just write a duplicate tag.
 fn test_mp4_2() {
 	file_ref_save("no-tags.m4a", FileType::Mp4);
 }
 
 #[test_log::test]
-#[ignore] // TODO: We are able to write the first tag and even reread, but the second save causes a `SizeMismatch`.
 fn test_mp4_3() {
 	file_ref_save("no-tags.3g2", FileType::Mp4);
 }
