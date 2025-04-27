@@ -29,36 +29,18 @@ macro_rules! test_read_file {
 }
 
 test_read_file!([
-	(AAC, "../benches_assets/01 TempleOS Hymn Risen (Remix).aac"),
-	(
-		AIFF,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).aiff"
-	),
-	(APE, "../benches_assets/01 TempleOS Hymn Risen (Remix).ape"),
-	(
-		FLAC,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).flac"
-	),
-	(MP4, "../benches_assets/01 TempleOS Hymn Risen (Remix).m4a"),
-	(MP3, "../benches_assets/01 TempleOS Hymn Risen (Remix).mp3"),
-	(MPC, "../benches_assets/01 TempleOS Hymn Risen (Remix).mpc"),
-	(
-		OPUS,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).opus"
-	),
-	(RIFF, "../benches_assets/01 TempleOS Hymn Risen (Remix).wav"),
-	(
-		SPEEX,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).spx"
-	),
-	(
-		VORBIS,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).ogg"
-	),
-	(
-		WAVPACK,
-		"../benches_assets/01 TempleOS Hymn Risen (Remix).wv"
-	),
+	(AAC, "./assets/01 TempleOS Hymn Risen (Remix).aac"),
+	(AIFF, "./assets/01 TempleOS Hymn Risen (Remix).aiff"),
+	(APE, "./assets/01 TempleOS Hymn Risen (Remix).ape"),
+	(FLAC, "./assets/01 TempleOS Hymn Risen (Remix).flac"),
+	(MP4, "./assets/01 TempleOS Hymn Risen (Remix).m4a"),
+	(MP3, "./assets/01 TempleOS Hymn Risen (Remix).mp3"),
+	(MPC, "./assets/01 TempleOS Hymn Risen (Remix).mpc"),
+	(OPUS, "./assets/01 TempleOS Hymn Risen (Remix).opus"),
+	(RIFF, "./assets/01 TempleOS Hymn Risen (Remix).wav"),
+	(SPEEX, "./assets/01 TempleOS Hymn Risen (Remix).spx"),
+	(VORBIS, "./assets/01 TempleOS Hymn Risen (Remix).ogg"),
+	(WAVPACK, "./assets/01 TempleOS Hymn Risen (Remix).wv"),
 ]);
 
 library_benchmark_group!(
