@@ -138,9 +138,7 @@ fn test_save_id3v24_wrong_param() {
 	// Marker test, Lofty does not replicate the TagLib saving API
 }
 
-// TODO: We don't yet support writing an ID3v23 tag (#62)
 #[test_log::test]
-#[ignore]
 fn test_save_id3v23() {
 	let mut file = temp_file!("tests/taglib/data/xing.mp3");
 
@@ -154,7 +152,8 @@ fn test_save_id3v23() {
 		tag.set_title(xxx.clone());
 		tag.set_artist(String::from("Artist A"));
 		f.set_id3v2(tag);
-		f.save_to(&mut file, WriteOptions::default()).unwrap();
+		f.save_to(&mut file, WriteOptions::default().use_id3v23(true))
+			.unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -216,7 +215,10 @@ fn test_strip_and_properties() {
 }
 
 #[test_log::test]
-fn test_properties() {}
+#[ignore]
+fn test_properties() {
+	// Marker test, Lofty does not replicate the properties API
+}
 
 #[test_log::test]
 #[ignore]
