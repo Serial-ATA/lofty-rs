@@ -48,7 +48,7 @@ bench_tag_write!([
 			PictureType::CoverFront,
 			Some(MimeType::Jpeg),
 			None,
-			include_bytes!("../benches_assets/cover.jpg").to_vec(),
+			include_bytes!("./assets/cover.jpg").to_vec(),
 		);
 
 		tag.insert(
@@ -74,7 +74,7 @@ bench_tag_write!([
 			PictureType::CoverFront,
 			Some(MimeType::Jpeg),
 			None,
-			include_bytes!("../benches_assets/cover.jpg").to_vec(),
+			include_bytes!("./assets/cover.jpg").to_vec(),
 		);
 
 		tag.insert_picture(picture);
@@ -92,7 +92,7 @@ bench_tag_write!([
 			PictureType::CoverFront,
 			Some(MimeType::Jpeg),
 			None,
-			include_bytes!("../benches_assets/cover.jpg").to_vec(),
+			include_bytes!("./assets/cover.jpg").to_vec(),
 		);
 
 		tag.insert_picture(picture);
@@ -111,7 +111,7 @@ bench_tag_write!([
 			PictureType::CoverFront,
 			Some(MimeType::Jpeg),
 			None,
-			include_bytes!("../benches_assets/cover.jpg").to_vec(),
+			include_bytes!("./assets/cover.jpg").to_vec(),
 		);
 
 		let _ = tag.insert_picture(picture, None).unwrap();
