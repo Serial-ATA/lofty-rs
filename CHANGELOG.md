@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **ItemKey**: `ItemKey::AlbumArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/523))
+    - This is a multi-value item that stores each artist for a track. It should be retrieved with `Tag::get_strings` or `Tag::take_strings`.
+    - For example, a track has `ItemKey::TrackArtist` = "Foo & Bar", then `ItemKey::AlbumArtists` = ["Foo", "Bar"].
+
+### Changed
+- **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
+- **Vorbis Comments**: Check `ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
+
 ## [0.22.4] - 2025-04-29
 
 ### Changed
