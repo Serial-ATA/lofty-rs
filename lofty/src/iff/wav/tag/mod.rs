@@ -37,14 +37,11 @@ macro_rules! impl_accessor {
 ///
 /// ### To `Tag`
 ///
-/// All items will be converted to a [`TagItem`], with all unknown keys being stored with [`ItemKey::Unknown`].
+/// All items without an [`ItemKey`] mapping will be discarded.
 ///
 /// ### From `Tag`
 ///
-/// When converting a [`TagItem`], two conditions must be met:
-///
-/// * The [`TagItem`] has a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
-/// * It has a key that is 4 bytes in length and within the ASCII range
+/// When converting a [`TagItem`], it must have a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(description = "A RIFF INFO LIST", supported_formats(Wav))]
 pub struct RiffInfoList {

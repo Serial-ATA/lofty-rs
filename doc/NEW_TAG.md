@@ -351,12 +351,9 @@ impl SplitTag for FooTag {
 Now callers can split their `FooTag` into a generic `Tag`, but we'll need a way to merge them back together.
 This is done with the `MergeTag` trait.
 
-When implementing `MergeTag`, one must take two things into consideration:
-
-* The distinction between `ItemValue::Text` and `ItemValue::Locator` in certain formats
+When implementing `MergeTag`, one may need to take the distinction between `ItemValue::Text` and `ItemValue::Locator` into consideration.
   * In ID3v2 for example, a locator is only valid for frames starting with W.
   * In a format such as VorbisComments, there is no need to distinguish between the two.
-* The presence of `ItemKey::Unknown`
 
 With that in mind, we'll now implement `MergeTag` on `SplitTagRemainder`:
 
