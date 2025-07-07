@@ -744,7 +744,7 @@ impl SplitTag for Ilst {
 				_ => {
 					return true; // Keep atom
 				},
-			};
+			}
 
 			tag.items.push(tag_item);
 			false // Atom consumed

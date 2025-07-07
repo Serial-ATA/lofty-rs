@@ -465,7 +465,7 @@ impl Tag {
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
-	pub fn take_strings<'a>(&'a mut self, key: ItemKey) -> impl Iterator<Item = String> + use<'a> {
+	pub fn take_strings(&mut self, key: ItemKey) -> impl Iterator<Item = String> + use<'_> {
 		self.take(key).filter_map(|i| i.item_value.into_string())
 	}
 
