@@ -483,6 +483,14 @@ impl Debug for Picture {
 }
 
 impl Picture {
+	/// Placeholder for conversions
+	pub(crate) const EMPTY: Self = Picture {
+		pic_type: PictureType::Other,
+		mime_type: None,
+		description: None,
+		data: Cow::Owned(Vec::new()),
+	};
+
 	/// Create a [`Picture`] from a reader
 	///
 	/// NOTES:
@@ -822,11 +830,3 @@ impl Picture {
 		}
 	}
 }
-
-// A placeholder that is needed during conversions.
-pub(crate) const TOMBSTONE_PICTURE: Picture = Picture {
-	pic_type: PictureType::Other,
-	mime_type: None,
-	description: None,
-	data: Cow::Owned(Vec::new()),
-};

@@ -286,10 +286,10 @@ impl From<AiffTextChunks> for Tag {
 
 impl From<Tag> for AiffTextChunks {
 	fn from(mut input: Tag) -> Self {
-		let name = input.take_strings(&ItemKey::TrackTitle).next();
-		let author = input.take_strings(&ItemKey::TrackArtist).next();
-		let copyright = input.take_strings(&ItemKey::CopyrightMessage).next();
-		let annotations = input.take_strings(&ItemKey::Comment).collect::<Vec<_>>();
+		let name = input.take_strings(ItemKey::TrackTitle).next();
+		let author = input.take_strings(ItemKey::TrackArtist).next();
+		let copyright = input.take_strings(ItemKey::CopyrightMessage).next();
+		let annotations = input.take_strings(ItemKey::Comment).collect::<Vec<_>>();
 
 		Self {
 			name,
@@ -582,14 +582,14 @@ mod tests {
 
 		let tag: Tag = aiff_text.into();
 
-		assert_eq!(tag.get_string(&ItemKey::TrackTitle), Some("Foo title"));
-		assert_eq!(tag.get_string(&ItemKey::TrackArtist), Some("Bar artist"));
+		assert_eq!(tag.get_string(ItemKey::TrackTitle), Some("Foo title"));
+		assert_eq!(tag.get_string(ItemKey::TrackArtist), Some("Bar artist"));
 		assert_eq!(
-			tag.get_string(&ItemKey::CopyrightMessage),
+			tag.get_string(ItemKey::CopyrightMessage),
 			Some("Baz copyright")
 		);
 
-		let mut comments = tag.get_strings(&ItemKey::Comment);
+		let mut comments = tag.get_strings(ItemKey::Comment);
 		assert_eq!(comments.next(), Some("Qux annotation"));
 		assert_eq!(comments.next(), Some("Quux annotation"));
 		assert_eq!(comments.next(), Some("Quuz comment"));

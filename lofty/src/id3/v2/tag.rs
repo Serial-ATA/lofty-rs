@@ -17,7 +17,7 @@ use crate::id3::v2::util::pairs::{
 };
 use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::mp4::AdvisoryRating;
-use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
+use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
@@ -1079,7 +1079,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 				for (item_key, tipl_key) in TIPL_MAPPINGS {
 					if key == *tipl_key {
 						tag.items.push(TagItem::new(
-							item_key.clone(),
+							*item_key,
 							ItemValue::Text(core::mem::take(value)),
 						));
 						return false; // This key-value pair is consumed
@@ -1092,20 +1092,19 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			!key_value_pairs.is_empty() // Frame is consumed if we consumed all items
 		},
 
-		// TODO: HACK!! We are specifically disallowing descriptions with a length of 4.
-		//       This is due to use storing 4 character IDs as Frame::Text on tag merge.
-		//       Maybe ItemKey could use a "TXXX:" prefix eventually, so we would store
-		//       "TXXX:MusicBrainz Album Id" instead of "MusicBrainz Album Id".
 		// Store TXXX/WXXX frames by their descriptions, rather than their IDs
 		&mut Frame::UserText(ExtendedTextFrame {
 			ref description,
 			ref content,
 			..
-		}) if !description.is_empty() && description.len() != 4 => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, description);
+		}) if !description.is_empty() => {
+			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, description) else {
+				return FRAME_RETAINED;
+			};
+
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 				tag.items.push(TagItem::new(
-					item_key.clone(),
+					item_key,
 					ItemValue::Text(c.to_string()),
 				));
 			}
@@ -1117,10 +1116,13 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			ref content,
 			..
 		}) if !description.is_empty() && description.len() != 4 => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, description);
+			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, description) else {
+				return FRAME_RETAINED;
+			};
+
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 				tag.items.push(TagItem::new(
-					item_key.clone(),
+					item_key,
 					ItemValue::Locator(c.to_string()),
 				));
 			}
@@ -1168,10 +1170,10 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			language,
 			..
 		}) => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str()).expect("both of these frames map to valid ItemKeys");
 
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
-				let mut item = TagItem::new(item_key.clone(), ItemValue::Text(c.to_string()));
+				let mut item = TagItem::new(item_key, ItemValue::Text(c.to_string()));
 
 				item.set_lang(*language);
 
@@ -1187,15 +1189,14 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		Frame::Picture(AttachedPictureFrame {
 			picture, ..
 		}) => {
-			tag.push_picture(std::mem::replace(picture, TOMBSTONE_PICTURE));
+			tag.push_picture(std::mem::replace(picture, Picture::EMPTY));
 			return FRAME_CONSUMED;
 		},
 
 		Frame::Timestamp(TimestampFrame { header: FrameHeader {id, ..} , timestamp, .. }) => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
-			if matches!(item_key, ItemKey::Unknown(_)) {
+			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, id.as_str()) else {
 				return FRAME_RETAINED;
-			}
+			};
 
 			if timestamp.verify().is_err() {
 				return FRAME_RETAINED;
@@ -1210,21 +1211,27 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		},
 
 		Frame::Text(TextInformationFrame { header: FrameHeader {id, .. }, value: content, .. }) => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, id.as_str()) else {
+				return FRAME_RETAINED;
+			};
 
 			for c in content.split(V4_MULTI_VALUE_SEPARATOR) {
 				tag.items.push(TagItem::new(
-					item_key.clone(),
+					item_key,
 					ItemValue::Text(c.to_string()),
 				));
 			}
+
 			return FRAME_CONSUMED;
 		},
 		Frame::Url(UrlLinkFrame {
 			header: FrameHeader {id, .. },
 			content, ..
 		}) => {
-			let item_key = ItemKey::from_key(TagType::Id3v2, id.as_str());
+			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, id.as_str()) else {
+				return FRAME_RETAINED;
+			};
+
 			tag.items.push(TagItem::new(
 				item_key,
 				ItemValue::Locator(std::mem::take(content)),
@@ -1266,7 +1273,7 @@ impl MergeTag for SplitTagRemainder {
 	fn merge_tag(self, mut tag: Tag) -> Id3v2Tag {
 		fn join_text_items<'a>(
 			tag: &mut Tag,
-			keys: impl IntoIterator<Item = &'a ItemKey>,
+			keys: impl IntoIterator<Item = ItemKey>,
 		) -> Option<String> {
 			let mut concatenated: Option<String> = None;
 			for key in keys {
@@ -1305,10 +1312,10 @@ impl MergeTag for SplitTagRemainder {
 			content: String,
 		}
 
-		fn join_language_items<'a>(
-			tag: &'a mut Tag,
-			key: &ItemKey,
-		) -> Option<impl Iterator<Item = JoinedLanguageItem> + use<'a>> {
+		fn join_language_items(
+			tag: &mut Tag,
+			key: ItemKey,
+		) -> Option<impl Iterator<Item = JoinedLanguageItem> + use<'_>> {
 			let mut items = tag.take(key).collect::<Vec<_>>();
 			if items.is_empty() {
 				return None;
@@ -1369,36 +1376,34 @@ impl MergeTag for SplitTagRemainder {
 		// Multi-valued text key-to-frame mappings
 		// TODO: Extend this list of item keys as needed or desired
 		for item_key in [
-			&ItemKey::TrackArtist,
-			&ItemKey::AlbumArtist,
-			&ItemKey::TrackTitle,
-			&ItemKey::AlbumTitle,
-			&ItemKey::SetSubtitle,
-			&ItemKey::TrackSubtitle,
-			&ItemKey::OriginalAlbumTitle,
-			&ItemKey::OriginalArtist,
-			&ItemKey::OriginalLyricist,
-			&ItemKey::ContentGroup,
-			&ItemKey::AppleId3v2ContentGroup,
-			&ItemKey::Genre,
-			&ItemKey::Mood,
-			&ItemKey::Composer,
-			&ItemKey::Conductor,
-			&ItemKey::Writer,
-			&ItemKey::Lyricist,
-			&ItemKey::MusicianCredits,
-			&ItemKey::InternetRadioStationName,
-			&ItemKey::InternetRadioStationOwner,
-			&ItemKey::Remixer,
-			&ItemKey::Work,
-			&ItemKey::Movement,
-			&ItemKey::FileOwner,
-			&ItemKey::CopyrightMessage,
-			&ItemKey::Language,
+			ItemKey::TrackArtist,
+			ItemKey::AlbumArtist,
+			ItemKey::TrackTitle,
+			ItemKey::AlbumTitle,
+			ItemKey::SetSubtitle,
+			ItemKey::TrackSubtitle,
+			ItemKey::OriginalAlbumTitle,
+			ItemKey::OriginalArtist,
+			ItemKey::OriginalLyricist,
+			ItemKey::ContentGroup,
+			ItemKey::AppleId3v2ContentGroup,
+			ItemKey::Genre,
+			ItemKey::Mood,
+			ItemKey::Composer,
+			ItemKey::Conductor,
+			ItemKey::Writer,
+			ItemKey::Lyricist,
+			ItemKey::MusicianCredits,
+			ItemKey::InternetRadioStationName,
+			ItemKey::InternetRadioStationOwner,
+			ItemKey::Remixer,
+			ItemKey::Work,
+			ItemKey::Movement,
+			ItemKey::FileOwner,
+			ItemKey::CopyrightMessage,
+			ItemKey::Language,
 		] {
-			let frame_id = item_key
-				.map_key(TagType::Id3v2, false)
-				.expect("valid frame id");
+			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key]) {
 				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
 				// Optimization: No duplicate checking according to the preconditions
@@ -1409,16 +1414,14 @@ impl MergeTag for SplitTagRemainder {
 
 		// Multi-valued TXXX key-to-frame mappings
 		for item_key in [
-			&ItemKey::TrackArtists,
-			&ItemKey::Director,
-			&ItemKey::CatalogNumber,
-			&ItemKey::MusicBrainzArtistId,
-			&ItemKey::MusicBrainzReleaseArtistId,
-			&ItemKey::MusicBrainzWorkId,
+			ItemKey::TrackArtists,
+			ItemKey::Director,
+			ItemKey::CatalogNumber,
+			ItemKey::MusicBrainzArtistId,
+			ItemKey::MusicBrainzReleaseArtistId,
+			ItemKey::MusicBrainzWorkId,
 		] {
-			let frame_id = item_key
-				.map_key(TagType::Id3v2, false)
-				.expect("valid frame id");
+			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key]) {
 				let frame = new_user_text_frame(String::from(frame_id), text);
 				// Optimization: No duplicate checking according to the preconditions
@@ -1430,13 +1433,10 @@ impl MergeTag for SplitTagRemainder {
 		// Multi-valued Label/Publisher key-to-frame mapping
 		{
 			let frame_id = ItemKey::Label
-				.map_key(TagType::Id3v2, false)
+				.map_key(TagType::Id3v2)
 				.expect("valid frame id");
-			debug_assert_eq!(
-				Some(frame_id),
-				ItemKey::Publisher.map_key(TagType::Id3v2, false)
-			);
-			if let Some(text) = join_text_items(&mut tag, &[ItemKey::Label, ItemKey::Publisher]) {
+			debug_assert_eq!(Some(frame_id), ItemKey::Publisher.map_key(TagType::Id3v2));
+			if let Some(text) = join_text_items(&mut tag, [ItemKey::Label, ItemKey::Publisher]) {
 				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
 				// Optimization: No duplicate checking according to the preconditions
 				debug_assert!(!merged.frames.contains(&frame));
@@ -1446,7 +1446,7 @@ impl MergeTag for SplitTagRemainder {
 
 		// Comment/Unsync text
 		for key in [ItemKey::Comment, ItemKey::Lyrics] {
-			let Some(items) = join_language_items(&mut tag, &key) else {
+			let Some(items) = join_language_items(&mut tag, key) else {
 				continue;
 			};
 
@@ -1481,7 +1481,7 @@ impl MergeTag for SplitTagRemainder {
 		'tipl: {
 			let mut key_value_pairs = Vec::new();
 			for (item_key, tipl_key) in TIPL_MAPPINGS {
-				for value in tag.take_strings(item_key) {
+				for value in tag.take_strings(*item_key) {
 					key_value_pairs.push(((*tipl_key).to_string(), value));
 				}
 			}
@@ -1513,7 +1513,7 @@ impl MergeTag for SplitTagRemainder {
 		}
 
 		// Flag items
-		for item_key in [&ItemKey::FlagCompilation, &ItemKey::FlagPodcast] {
+		for item_key in [ItemKey::FlagCompilation, ItemKey::FlagPodcast] {
 			let Some(text) = tag.take_strings(item_key).next() else {
 				continue;
 			};
@@ -1522,9 +1522,7 @@ impl MergeTag for SplitTagRemainder {
 				continue;
 			};
 
-			let frame_id = item_key
-				.map_key(TagType::Id3v2, false)
-				.expect("valid frame id");
+			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 
 			merged.frames.push(new_text_frame(
 				FrameId::Valid(Cow::Borrowed(frame_id)),
@@ -1534,7 +1532,7 @@ impl MergeTag for SplitTagRemainder {
 
 		// iTunes advisory rating
 		'rate: {
-			if let Some(advisory_rating) = tag.take_strings(&ItemKey::ParentalAdvisory).next() {
+			if let Some(advisory_rating) = tag.take_strings(ItemKey::ParentalAdvisory).next() {
 				let Ok(rating) = advisory_rating.parse::<u8>() else {
 					log::warn!(
 						"Parental advisory rating is not a number: {advisory_rating}, discarding"
@@ -1555,14 +1553,12 @@ impl MergeTag for SplitTagRemainder {
 		}
 
 		// Timestamps
-		for item_key in [&ItemKey::RecordingDate, &ItemKey::OriginalReleaseDate] {
+		for item_key in [ItemKey::RecordingDate, ItemKey::OriginalReleaseDate] {
 			let Some(text) = tag.take_strings(item_key).next() else {
 				continue;
 			};
 
-			let frame_id = item_key
-				.map_key(TagType::Id3v2, false)
-				.expect("valid frame id");
+			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 
 			let frame;
 			match Timestamp::from_str(&text) {
@@ -1677,17 +1673,17 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> {
 
 	let items = tag
 		.items()
-		.filter(|item| !NUMBER_PAIR_KEYS.contains(item.key()))
+		.filter(|item| !NUMBER_PAIR_KEYS.contains(&item.key()))
 		.map(TryInto::<FrameRef<'_>>::try_into)
 		.filter_map(Result::ok)
 		.chain(create_frameref_for_number_pair(
-			tag.get_string(&ItemKey::TrackNumber),
-			tag.get_string(&ItemKey::TrackTotal),
+			tag.get_string(ItemKey::TrackNumber),
+			tag.get_string(ItemKey::TrackTotal),
 			"TRCK",
 		))
 		.chain(create_frameref_for_number_pair(
-			tag.get_string(&ItemKey::DiscNumber),
-			tag.get_string(&ItemKey::DiscTotal),
+			tag.get_string(ItemKey::DiscNumber),
+			tag.get_string(ItemKey::DiscTotal),
 			"TPOS",
 		))
 		.chain(create_framerefs_for_companion_tag(

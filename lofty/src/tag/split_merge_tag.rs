@@ -28,7 +28,7 @@ use super::Tag;
 /// // Modify the metadata in the generic [`lofty::Tag`], independent
 /// // of the underlying tag and file format.
 /// tag.insert_text(ItemKey::TrackTitle, "Track Title".to_owned());
-/// tag.remove_key(&ItemKey::Composer);
+/// tag.remove_key(ItemKey::Composer);
 ///
 /// // ID3v2 <- [`lofty::Tag`]
 /// let id3v2 = remainder.merge_tag(tag);

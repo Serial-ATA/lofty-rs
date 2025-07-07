@@ -260,7 +260,9 @@ impl From<RiffInfoList> for Tag {
 		let mut tag = Self::new(TagType::RiffInfo);
 
 		for (k, v) in input.items {
-			let item_key = ItemKey::from_key(TagType::RiffInfo, &k);
+			let Some(item_key) = ItemKey::from_key(TagType::RiffInfo, &k) else {
+				continue;
+			};
 
 			tag.items.push(TagItem::new(
 				item_key,
@@ -278,17 +280,8 @@ impl From<Tag> for RiffInfoList {
 
 		for item in input.items {
 			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value {
-				match item.item_key {
-					ItemKey::Unknown(unknown) => {
-						if read::verify_key(&unknown) {
-							riff_info.items.push((unknown, val))
-						}
-					},
-					k => {
-						if let Some(key) = k.map_key(TagType::RiffInfo, false) {
-							riff_info.items.push((key.to_string(), val))
-						}
-					},
+				if let Some(key) = item.item_key.map_key(TagType::RiffInfo) {
+					riff_info.items.push((key.to_string(), val))
 				}
 			}
 		}
@@ -339,7 +332,7 @@ pub(crate) fn tagitems_into_riff<'a>(
 	items: impl IntoIterator<Item = &'a TagItem>,
 ) -> impl Iterator<Item = (&'a str, &'a str)> {
 	items.into_iter().filter_map(|i| {
-		let item_key = i.key().map_key(TagType::RiffInfo, true);
+		let item_key = i.key().map_key(TagType::RiffInfo);
 
 		match (item_key, i.value()) {
 			(Some(key), ItemValue::Text(val) | ItemValue::Locator(val))

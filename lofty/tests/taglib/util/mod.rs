@@ -51,7 +51,7 @@ macro_rules! verify_artist {
 		assert_eq!(tag.item_count(), $item_count);
 
 		assert_eq!(
-			tag.get_item_ref(&ItemKey::TrackArtist),
+			tag.get_item_ref(ItemKey::TrackArtist),
 			Some(&TagItem::new(
 				ItemKey::TrackArtist,
 				ItemValue::Text(String::from($expected_value))

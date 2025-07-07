@@ -17,6 +17,13 @@ pub struct ApeItem {
 }
 
 impl ApeItem {
+	/// Placeholder for conversions
+	pub(crate) const EMPTY: Self = ApeItem {
+		read_only: false,
+		key: String::new(),
+		value: ItemValue::Text(String::new()),
+	};
+
 	/// Create an [`ApeItem`]
 	///
 	/// # Errors
@@ -71,7 +78,7 @@ impl TryFrom<TagItem> for ApeItem {
 		Self::new(
 			value
 				.item_key
-				.map_key(TagType::Ape, false)
+				.map_key(TagType::Ape)
 				.ok_or_else(|| decode_err!(Ape, "Attempted to convert an unsupported item key"))?
 				.to_string(),
 			value.item_value,

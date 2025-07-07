@@ -368,7 +368,7 @@ fn multi_value_frame_to_tag() {
 	tag.set_artist(String::from("foo\0bar\0baz"));
 
 	let tag: Tag = tag.into();
-	let collected_artists = tag.get_strings(&ItemKey::TrackArtist).collect::<Vec<_>>();
+	let collected_artists = tag.get_strings(ItemKey::TrackArtist).collect::<Vec<_>>();
 	assert_eq!(&collected_artists, &["foo", "bar", "baz"])
 }
 
@@ -525,99 +525,6 @@ fn comments() {
 			.find_map(|frame| filter_comment_frame_by_description(frame, custom_descriptor))
 			.is_some()
 	);
-}
-
-#[test_log::test]
-fn txxx_wxxx_tag_conversion() {
-	let txxx_frame = Frame::UserText(ExtendedTextFrame::new(
-		TextEncoding::UTF8,
-		String::from("FOO_TEXT_FRAME"),
-		String::from("foo content"),
-	));
-
-	let wxxx_frame = Frame::UserUrl(ExtendedUrlFrame::new(
-		TextEncoding::UTF8,
-		String::from("BAR_URL_FRAME"),
-		String::from("bar url"),
-	));
-
-	let mut tag = Id3v2Tag::default();
-
-	tag.insert(txxx_frame.clone());
-	tag.insert(wxxx_frame.clone());
-
-	let tag: Tag = tag.into();
-
-	assert_eq!(tag.item_count(), 2);
-	let expected_items = [
-		TagItem::new(
-			ItemKey::Unknown(String::from("FOO_TEXT_FRAME")),
-			ItemValue::Text(String::from("foo content")),
-		),
-		TagItem::new(
-			ItemKey::Unknown(String::from("BAR_URL_FRAME")),
-			ItemValue::Locator(String::from("bar url")),
-		),
-	];
-	assert!(
-		expected_items
-			.iter()
-			.zip(tag.items())
-			.all(|(expected, actual)| expected == actual)
-	);
-
-	let tag: Id3v2Tag = tag.into();
-
-	assert_eq!(tag.frames.len(), 2);
-	assert_eq!(&tag.frames, &[txxx_frame, wxxx_frame])
-}
-
-#[test_log::test]
-fn user_defined_frames_conversion() {
-	let mut id3v2 = Id3v2Tag::default();
-	id3v2.insert(Frame::UserText(ExtendedTextFrame::new(
-		TextEncoding::UTF8,
-		String::from("FOO_BAR"),
-		String::from("foo content"),
-	)));
-
-	let (split_remainder, split_tag) = id3v2.split_tag();
-	assert_eq!(split_remainder.0.len(), 0);
-	assert_eq!(split_tag.len(), 1);
-
-	let id3v2 = split_remainder.merge_tag(split_tag);
-
-	// Verify we properly convert user defined frames between Tag <-> ID3v2Tag round trips
-	assert_eq!(
-		id3v2.frames.first(),
-		Some(&Frame::UserText(ExtendedTextFrame::new(
-			TextEncoding::UTF8, // Not considered by PartialEq!
-			String::from("FOO_BAR"),
-			String::new(), // Not considered by PartialEq!
-		),))
-	);
-
-	// Verify we properly convert user defined frames when writing a Tag, which has to convert
-	// to the reference types.
-	let (_remainder, tag) = id3v2.clone().split_tag();
-	assert_eq!(tag.len(), 1);
-
-	let mut content = Vec::new();
-	tag.dump_to(&mut content, WriteOptions::default()).unwrap();
-	assert!(!content.is_empty());
-
-	// And verify we can reread the tag
-	let mut reader = std::io::Cursor::new(&content[..]);
-
-	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let reparsed = crate::id3::v2::read::parse_id3v2(
-		&mut reader,
-		header,
-		ParseOptions::new().parsing_mode(ParsingMode::Strict),
-	)
-	.unwrap();
-
-	assert_eq!(id3v2, reparsed);
 }
 
 #[test_log::test]
@@ -910,7 +817,7 @@ fn ufid_frame_with_musicbrainz_record_id() {
 	assert_eq!(
 		ItemValue::Text(String::from_utf8(musicbrainz_recording_id.to_vec()).unwrap()),
 		*split_tag
-			.get_items(&ItemKey::MusicBrainzRecordingId)
+			.get_items(ItemKey::MusicBrainzRecordingId)
 			.next()
 			.unwrap()
 			.value()
@@ -1086,7 +993,7 @@ fn genres_id_multiple() {
 fn genres_id_multiple_into_tag() {
 	let id3v2 = id3v2_tag_with_genre("(51)(39)");
 	let tag: Tag = id3v2.into();
-	let mut genres = tag.get_strings(&ItemKey::Genre);
+	let mut genres = tag.get_strings(ItemKey::Genre);
 	assert_eq!(genres.next(), Some("Techno-Industrial"));
 	assert_eq!(genres.next(), Some("Noise"));
 	assert_eq!(genres.next(), None);
@@ -1159,7 +1066,7 @@ fn tipl_round_trip() {
 	for (item_key, _) in TIPL_MAPPINGS {
 		assert_eq!(
 			split_tag
-				.get(item_key)
+				.get(*item_key)
 				.map(TagItem::value)
 				.and_then(ItemValue::text),
 			Some("Serial-ATA")
@@ -1237,7 +1144,7 @@ fn timestamp_roundtrip() {
 	let tag: Tag = tag.into();
 	assert_eq!(tag.len(), 1);
 	assert_eq!(
-		tag.get_string(&ItemKey::RecordingDate),
+		tag.get_string(ItemKey::RecordingDate),
 		Some("2024-06-03T14:08:49")
 	);
 

@@ -421,8 +421,10 @@ impl SplitTag for ApeTag {
 
 		let mut tag = Tag::new(TagType::Ape);
 
-		for item in std::mem::take(&mut self.items) {
-			let item_key = ItemKey::from_key(TagType::Ape, item.key());
+		self.items.retain_mut(|item| {
+			let Some(item_key) = ItemKey::from_key(TagType::Ape, item.key()) else {
+				return true;
+			};
 
 			// The text pairs need some special treatment
 			match (item_key, item.value()) {
@@ -430,13 +432,15 @@ impl SplitTag for ApeTag {
 					if split_pair(val, &mut tag, ItemKey::TrackNumber, ItemKey::TrackTotal)
 						.is_some() =>
 				{
-					continue; // Item consumed
+					*item = ApeItem::EMPTY;
+					false // Item consumed
 				},
 				(ItemKey::DiscNumber | ItemKey::DiscTotal, ItemValue::Text(val))
 					if split_pair(val, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
 				{
-					continue; // Item consumed
+					*item = ApeItem::EMPTY;
+					false // Item consumed
 				},
 				(ItemKey::MovementNumber | ItemKey::MovementTotal, ItemValue::Text(val))
 					if split_pair(
@@ -447,13 +451,16 @@ impl SplitTag for ApeTag {
 					)
 					.is_some() =>
 				{
-					continue; // Item consumed
+					*item = ApeItem::EMPTY;
+					false // Item consumed
 				},
 				(k, _) => {
+					let item = std::mem::replace(item, ApeItem::EMPTY);
 					tag.items.push(TagItem::new(k, item.value));
+					false // Item consumed
 				},
 			}
-		}
+		});
 
 		(SplitTagRemainder(self), tag)
 	}
@@ -541,22 +548,22 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 	}
 
 	tag.items()
-		.filter(|item| !NUMBER_PAIR_KEYS.contains(item.key()))
+		.filter(|item| !NUMBER_PAIR_KEYS.contains(&item.key()))
 		.filter_map(|i| {
-			i.key().map_key(TagType::Ape, true).map(|key| ApeItemRef {
+			i.key().map_key(TagType::Ape).map(|key| ApeItemRef {
 				read_only: false,
 				key,
 				value: (&i.item_value).into(),
 			})
 		})
 		.chain(create_apeitemref_for_number_pair(
-			tag.get_string(&ItemKey::TrackNumber),
-			tag.get_string(&ItemKey::TrackTotal),
+			tag.get_string(ItemKey::TrackNumber),
+			tag.get_string(ItemKey::TrackTotal),
 			"Track",
 		))
 		.chain(create_apeitemref_for_number_pair(
-			tag.get_string(&ItemKey::DiscNumber),
-			tag.get_string(&ItemKey::DiscTotal),
+			tag.get_string(ItemKey::DiscNumber),
+			tag.get_string(ItemKey::DiscTotal),
 			"Disk",
 		))
 }
