@@ -52,7 +52,7 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 	/// assert!(tag.is_empty());
 	///
 	/// tag.set_artist(String::from("Foo artist"));
-	/// assert!(tag.contains(&ItemKey::TrackArtist));
+	/// assert!(tag.contains(ItemKey::TrackArtist));
 	/// ```
 	fn contains<'a>(&'a self, key: Self::RefKey<'a>) -> bool;
 

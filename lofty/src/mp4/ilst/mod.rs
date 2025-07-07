@@ -10,7 +10,7 @@ use super::AtomIdent;
 use crate::config::{WriteOptions, global_options};
 use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
-use crate::picture::{Picture, PictureType, TOMBSTONE_PICTURE};
+use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
@@ -670,18 +670,39 @@ impl SplitTag for Ilst {
 
 		self.atoms.retain_mut(|atom| {
 			let Atom { ident, data } = atom;
-			let value = match data.first_mut() {
-				AtomData::UTF8(text) | AtomData::UTF16(text) => {
-					ItemValue::Text(std::mem::take(text))
+
+			let tag_item;
+			match data.first_mut() {
+				data @ (AtomData::UTF8(_) | AtomData::UTF16(_) | AtomData::Bool(_)) => {
+					let Some(key) = ItemKey::from_key(
+						TagType::Mp4Ilst,
+						&match ident {
+							AtomIdent::Fourcc(fourcc) => {
+								fourcc.iter().map(|b| *b as char).collect::<String>()
+							},
+							AtomIdent::Freeform { mean, name } => {
+								format!("----:{mean}:{name}")
+							},
+						},
+					) else {
+						return true; // Keep atom
+					};
+
+					match data {
+						AtomData::UTF8(text) | AtomData::UTF16(text) => {
+							tag_item = TagItem::new(key, ItemValue::Text(std::mem::take(text)));
+						},
+						AtomData::Bool(b) => {
+							let text = if *b { "1".to_owned() } else { "0".to_owned() };
+							tag_item = TagItem::new(key, ItemValue::Text(text));
+						},
+						_ => unreachable!(),
+					}
 				},
 				AtomData::Picture(picture) => {
 					tag.pictures
-						.push(std::mem::replace(picture, TOMBSTONE_PICTURE));
+						.push(std::mem::replace(picture, Picture::EMPTY));
 					return false; // Atom consumed
-				},
-				AtomData::Bool(b) => {
-					let text = if *b { "1".to_owned() } else { "0".to_owned() };
-					ItemValue::Text(text)
 				},
 				// We have to special case track/disc numbers since they are stored together
 				AtomData::Unknown {
@@ -725,19 +746,7 @@ impl SplitTag for Ilst {
 				},
 			};
 
-			let key = ItemKey::from_key(
-				TagType::Mp4Ilst,
-				&match ident {
-					AtomIdent::Fourcc(fourcc) => {
-						fourcc.iter().map(|b| *b as char).collect::<String>()
-					},
-					AtomIdent::Freeform { mean, name } => {
-						format!("----:{mean}:{name}")
-					},
-				},
-			);
-
-			tag.items.push(TagItem::new(key, value));
+			tag.items.push(tag_item);
 			false // Atom consumed
 		});
 
@@ -1041,8 +1050,8 @@ mod tests {
 
 		crate::tag::utils::test_utils::verify_tag(&tag, true, true);
 
-		assert_eq!(tag.get_string(&ItemKey::DiscNumber), Some("1"));
-		assert_eq!(tag.get_string(&ItemKey::DiscTotal), Some("2"));
+		assert_eq!(tag.get_string(ItemKey::DiscNumber), Some("1"));
+		assert_eq!(tag.get_string(ItemKey::DiscTotal), Some("2"));
 	}
 
 	#[test_log::test]

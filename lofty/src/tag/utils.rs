@@ -90,10 +90,10 @@ pub(crate) fn dump_tag<W: Write>(
 			use crate::tag::item::ItemKey;
 
 			AiffTextChunksRef {
-				name: tag.get_string(&ItemKey::TrackTitle),
-				author: tag.get_string(&ItemKey::TrackArtist),
-				copyright: tag.get_string(&ItemKey::CopyrightMessage),
-				annotations: Some(tag.get_strings(&ItemKey::Comment)),
+				name: tag.get_string(ItemKey::TrackTitle),
+				author: tag.get_string(ItemKey::TrackArtist),
+				copyright: tag.get_string(ItemKey::CopyrightMessage),
+				annotations: Some(tag.get_strings(ItemKey::Comment)),
 				comments: None,
 			}
 		}
@@ -123,17 +123,17 @@ pub(crate) mod test_utils {
 	}
 
 	pub(crate) fn verify_tag(tag: &Tag, track_number: bool, genre: bool) {
-		assert_eq!(tag.get_string(&ItemKey::TrackTitle), Some("Foo title"));
-		assert_eq!(tag.get_string(&ItemKey::TrackArtist), Some("Bar artist"));
-		assert_eq!(tag.get_string(&ItemKey::AlbumTitle), Some("Baz album"));
-		assert_eq!(tag.get_string(&ItemKey::Comment), Some("Qux comment"));
+		assert_eq!(tag.get_string(ItemKey::TrackTitle), Some("Foo title"));
+		assert_eq!(tag.get_string(ItemKey::TrackArtist), Some("Bar artist"));
+		assert_eq!(tag.get_string(ItemKey::AlbumTitle), Some("Baz album"));
+		assert_eq!(tag.get_string(ItemKey::Comment), Some("Qux comment"));
 
 		if track_number {
-			assert_eq!(tag.get_string(&ItemKey::TrackNumber), Some("1"));
+			assert_eq!(tag.get_string(ItemKey::TrackNumber), Some("1"));
 		}
 
 		if genre {
-			assert_eq!(tag.get_string(&ItemKey::Genre), Some("Classical"));
+			assert_eq!(tag.get_string(ItemKey::Genre), Some("Classical"));
 		}
 	}
 

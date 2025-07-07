@@ -529,18 +529,22 @@ impl SplitTag for VorbisComments {
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		let mut tag = Tag::new(TagType::VorbisComments);
 
-		for (k, v) in std::mem::take(&mut self.items) {
-			tag.items.push(TagItem::new(
-				ItemKey::from_key(TagType::VorbisComments, &k),
-				ItemValue::Text(v),
-			));
-		}
+		self.items.retain_mut(|(k, v)| {
+			let Some(key) = ItemKey::from_key(TagType::VorbisComments, k) else {
+				return true;
+			};
+
+			let v = std::mem::take(v);
+			tag.items.push(TagItem::new(key, ItemValue::Text(v)));
+
+			false // Item consumed
+		});
 
 		// We need to preserve the vendor string
 		if !tag
 			.items
 			.iter()
-			.any(|i| i.key() == &ItemKey::EncoderSoftware)
+			.any(|i| i.key() == ItemKey::EncoderSoftware)
 		{
 			tag.items.push(TagItem::new(
 				ItemKey::EncoderSoftware,
@@ -566,7 +570,7 @@ impl MergeTag for SplitTagRemainder {
 		if let Some(TagItem {
 			item_value: ItemValue::Text(val),
 			..
-		}) = tag.take(&ItemKey::EncoderSoftware).next()
+		}) = tag.take(ItemKey::EncoderSoftware).next()
 		{
 			merged.vendor = val;
 		}
@@ -590,18 +594,9 @@ impl MergeTag for SplitTagRemainder {
 			}
 
 			let key;
-			match item_key {
-				ItemKey::Unknown(unknown) => {
-					if !verify_key(&unknown) {
-						continue; // Bad key, discard the item
-					}
-
-					key = unknown
-				},
-				_ => match item_key.map_key(TagType::VorbisComments, false) {
-					Some(mapped_key) => key = mapped_key.to_string(),
-					None => continue, // No mapping exists, discard the item
-				},
+			match item_key.map_key(TagType::VorbisComments) {
+				Some(mapped_key) => key = mapped_key.to_string(),
+				None => continue, // No mapping exists, discard the item
 			}
 
 			merged.items.push((key, val));
@@ -689,12 +684,12 @@ pub(crate) fn create_vorbis_comments_ref(
 	impl Iterator<Item = (&str, &str)>,
 	impl Iterator<Item = (&Picture, PictureInformation)>,
 ) {
-	let vendor = tag.get_string(&ItemKey::EncoderSoftware).unwrap_or("");
+	let vendor = tag.get_string(ItemKey::EncoderSoftware).unwrap_or("");
 
 	let items = tag.items.iter().filter_map(|i| match i.value() {
 		ItemValue::Text(val) | ItemValue::Locator(val) => i
 			.key()
-			.map_key(TagType::VorbisComments, true)
+			.map_key(TagType::VorbisComments)
 			.map(|key| (key, val.as_str())),
 		_ => None,
 	});
@@ -894,7 +889,7 @@ mod tests {
 				..Default::default()
 			};
 			let mut tag = Tag::from(vorbis_comments);
-			assert_eq!(Some("Cmaj"), tag.get_string(&ItemKey::InitialKey));
+			assert_eq!(Some("Cmaj"), tag.get_string(ItemKey::InitialKey));
 			tag.insert_text(ItemKey::InitialKey, "Cmin".to_owned());
 			vorbis_comments = tag.into();
 			assert_eq!(Some("Cmin"), vorbis_comments.get("INITIALKEY"));

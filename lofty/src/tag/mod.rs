@@ -32,7 +32,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
-					if let Some(ItemValue::Text(txt)) = self.get(&ItemKey::$item_key).map(TagItem::value) {
+					if let Some(ItemValue::Text(txt)) = self.get(ItemKey::$item_key).map(TagItem::value) {
 						return Some(Cow::Borrowed(txt))
 					}
 
@@ -91,8 +91,8 @@ macro_rules! impl_accessor {
 /// // If the type of an item is known, there are getter methods
 /// // to prevent having to match against the value
 ///
-/// tag.get_string(&ItemKey::TrackTitle);
-/// tag.get_binary(&ItemKey::TrackTitle, false);
+/// tag.get_string(ItemKey::TrackTitle);
+/// tag.get_binary(ItemKey::TrackTitle, false);
 /// ```
 ///
 /// Converting between formats
@@ -139,7 +139,7 @@ impl Accessor for Tag {
 	);
 
 	fn track(&self) -> Option<u32> {
-		self.get_u32_from_string(&ItemKey::TrackNumber)
+		self.get_u32_from_string(ItemKey::TrackNumber)
 	}
 
 	fn set_track(&mut self, value: u32) {
@@ -147,11 +147,11 @@ impl Accessor for Tag {
 	}
 
 	fn remove_track(&mut self) {
-		self.remove_key(&ItemKey::TrackNumber);
+		self.remove_key(ItemKey::TrackNumber);
 	}
 
 	fn track_total(&self) -> Option<u32> {
-		self.get_u32_from_string(&ItemKey::TrackTotal)
+		self.get_u32_from_string(ItemKey::TrackTotal)
 	}
 
 	fn set_track_total(&mut self, value: u32) {
@@ -159,11 +159,11 @@ impl Accessor for Tag {
 	}
 
 	fn remove_track_total(&mut self) {
-		self.remove_key(&ItemKey::TrackTotal);
+		self.remove_key(ItemKey::TrackTotal);
 	}
 
 	fn disk(&self) -> Option<u32> {
-		self.get_u32_from_string(&ItemKey::DiscNumber)
+		self.get_u32_from_string(ItemKey::DiscNumber)
 	}
 
 	fn set_disk(&mut self, value: u32) {
@@ -171,11 +171,11 @@ impl Accessor for Tag {
 	}
 
 	fn remove_disk(&mut self) {
-		self.remove_key(&ItemKey::DiscNumber);
+		self.remove_key(ItemKey::DiscNumber);
 	}
 
 	fn disk_total(&self) -> Option<u32> {
-		self.get_u32_from_string(&ItemKey::DiscTotal)
+		self.get_u32_from_string(ItemKey::DiscTotal)
 	}
 
 	fn set_disk_total(&mut self, value: u32) {
@@ -183,13 +183,13 @@ impl Accessor for Tag {
 	}
 
 	fn remove_disk_total(&mut self) {
-		self.remove_key(&ItemKey::DiscTotal);
+		self.remove_key(ItemKey::DiscTotal);
 	}
 
 	fn year(&self) -> Option<u32> {
 		if let Some(item) = self
-			.get_string(&ItemKey::Year)
-			.map_or_else(|| self.get_string(&ItemKey::RecordingDate), Some)
+			.get_string(ItemKey::Year)
+			.map_or_else(|| self.get_string(ItemKey::RecordingDate), Some)
 		{
 			return try_parse_year(item);
 		}
@@ -198,7 +198,7 @@ impl Accessor for Tag {
 	}
 
 	fn set_year(&mut self, value: u32) {
-		if let Some(item) = self.get_string(&ItemKey::RecordingDate) {
+		if let Some(item) = self.get_string(ItemKey::RecordingDate) {
 			if item.len() >= 4 {
 				let (_, remaining) = item.split_at(4);
 				self.insert_text(ItemKey::RecordingDate, format!("{value}{remaining}"));
@@ -208,7 +208,7 @@ impl Accessor for Tag {
 
 		// Some formats have a dedicated item for `Year`, others just have it as
 		// a part of `RecordingDate`
-		if ItemKey::Year.map_key(self.tag_type, false).is_some() {
+		if ItemKey::Year.map_key(self.tag_type).is_some() {
 			self.insert_text(ItemKey::Year, value.to_string());
 		} else {
 			self.insert_text(ItemKey::RecordingDate, value.to_string());
@@ -216,8 +216,8 @@ impl Accessor for Tag {
 	}
 
 	fn remove_year(&mut self) {
-		self.remove_key(&ItemKey::Year);
-		self.remove_key(&ItemKey::RecordingDate);
+		self.remove_key(ItemKey::Year);
+		self.remove_key(ItemKey::RecordingDate);
 	}
 }
 
@@ -308,12 +308,12 @@ impl Tag {
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]
-	pub fn get(&self, item_key: &ItemKey) -> Option<&TagItem> {
-		self.items.iter().find(|i| &i.item_key == item_key)
+	pub fn get(&self, item_key: ItemKey) -> Option<&TagItem> {
+		self.items.iter().find(|i| i.item_key == item_key)
 	}
 
 	/// Get a string value from an [`ItemKey`]
-	pub fn get_string(&self, item_key: &ItemKey) -> Option<&str> {
+	pub fn get_string(&self, item_key: ItemKey) -> Option<&str> {
 		if let Some(ItemValue::Text(ret)) = self.get(item_key).map(TagItem::value) {
 			return Some(ret);
 		}
@@ -321,7 +321,7 @@ impl Tag {
 		None
 	}
 
-	fn get_u32_from_string(&self, key: &ItemKey) -> Option<u32> {
+	fn get_u32_from_string(&self, key: ItemKey) -> Option<u32> {
 		let i = self.get_string(key)?;
 		i.parse::<u32>().ok()
 	}
@@ -329,7 +329,7 @@ impl Tag {
 	/// Gets a byte slice from an [`ItemKey`]
 	///
 	/// Use `convert` to convert [`ItemValue::Text`] and [`ItemValue::Locator`] to byte slices
-	pub fn get_binary(&self, item_key: &ItemKey, convert: bool) -> Option<&[u8]> {
+	pub fn get_binary(&self, item_key: ItemKey, convert: bool) -> Option<&[u8]> {
 		if let Some(item) = self.get(item_key) {
 			match item.value() {
 				ItemValue::Text(text) | ItemValue::Locator(text) if convert => {
@@ -406,7 +406,7 @@ impl Tag {
 	/// Removes all items with the specified [`ItemKey`], and returns them
 	///
 	/// See also: [take_filter()](Self::take_filter)
-	pub fn take<'a>(&'a mut self, key: &ItemKey) -> impl Iterator<Item = TagItem> + use<'a> {
+	pub fn take(&mut self, key: ItemKey) -> impl Iterator<Item = TagItem> + use<'_> {
 		self.take_filter(key, |_| true)
 	}
 
@@ -432,23 +432,23 @@ impl Tag {
 	/// );
 	/// item.set_description("description".to_owned());
 	/// tag.push(item);
-	/// assert_eq!(tag.get_strings(&ItemKey::Comment).count(), 2);
+	/// assert_eq!(tag.get_strings(ItemKey::Comment).count(), 2);
 	///
 	/// // Extract all comment items with an empty description.
 	/// let comments = tag
-	/// 	.take_filter(&ItemKey::Comment, |item| item.description().is_empty())
+	/// 	.take_filter(ItemKey::Comment, |item| item.description().is_empty())
 	/// 	.filter_map(|item| item.into_value().into_string())
 	/// 	.collect::<Vec<_>>();
 	/// assert_eq!(comments, vec!["comment without description".to_owned()]);
 	///
 	/// // The comments that didn't match the filter are still present.
-	/// assert_eq!(tag.get_strings(&ItemKey::Comment).count(), 1);
+	/// assert_eq!(tag.get_strings(ItemKey::Comment).count(), 1);
 	/// ```
-	pub fn take_filter<'a, F>(
-		&'a mut self,
-		key: &ItemKey,
+	pub fn take_filter<F>(
+		&mut self,
+		key: ItemKey,
 		mut filter: F,
-	) -> impl Iterator<Item = TagItem> + use<'a, F>
+	) -> impl Iterator<Item = TagItem> + use<'_, F>
 	where
 		F: FnMut(&TagItem) -> bool,
 	{
@@ -467,17 +467,17 @@ impl Tag {
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
-	pub fn take_strings<'a>(&'a mut self, key: &ItemKey) -> impl Iterator<Item = String> + use<'a> {
+	pub fn take_strings<'a>(&'a mut self, key: ItemKey) -> impl Iterator<Item = String> + use<'a> {
 		self.take(key).filter_map(|i| i.item_value.into_string())
 	}
 
 	/// Returns references to all [`TagItem`]s with the specified key
-	pub fn get_items<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a TagItem> + Clone {
+	pub fn get_items(&self, key: ItemKey) -> impl Iterator<Item = &TagItem> + Clone {
 		self.items.iter().filter(move |i| i.key() == key)
 	}
 
 	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
-	pub fn get_strings<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> + Clone {
+	pub fn get_strings(&self, key: ItemKey) -> impl Iterator<Item = &str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().text()
@@ -488,7 +488,7 @@ impl Tag {
 	}
 
 	/// Returns references to all locators of [`TagItem`]s with the specified key, and [`ItemValue::Locator`]
-	pub fn get_locators<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a str> + Clone {
+	pub fn get_locators(&self, key: ItemKey) -> impl Iterator<Item = &str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().locator()
@@ -499,7 +499,7 @@ impl Tag {
 	}
 
 	/// Returns references to all bytes of [`TagItem`]s with the specified key, and [`ItemValue::Binary`]
-	pub fn get_bytes<'a>(&'a self, key: &'a ItemKey) -> impl Iterator<Item = &'a [u8]> + Clone {
+	pub fn get_bytes(&self, key: ItemKey) -> impl Iterator<Item = &[u8]> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
 				i.value().binary()
@@ -512,7 +512,7 @@ impl Tag {
 	/// Remove an item by its key
 	///
 	/// This will remove all items with this key.
-	pub fn remove_key(&mut self, key: &ItemKey) {
+	pub fn remove_key(&mut self, key: ItemKey) {
 		self.items.retain(|i| i.key() != key)
 	}
 
@@ -641,7 +641,7 @@ impl Tag {
 
 impl TagExt for Tag {
 	type Err = LoftyError;
-	type RefKey<'a> = &'a ItemKey;
+	type RefKey<'a> = ItemKey;
 
 	#[inline]
 	fn tag_type(&self) -> TagType {

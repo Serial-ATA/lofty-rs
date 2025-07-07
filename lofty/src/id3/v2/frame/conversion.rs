@@ -35,7 +35,7 @@ impl From<TagItem> for Option<Frame<'static>> {
 			return frame_from_unknown_item(id, input.item_value).ok();
 		}
 
-		match input.item_key.map_key(TagType::Id3v2, true) {
+		match input.item_key.map_key(TagType::Id3v2) {
 			Some(desc) => match input.item_value {
 				ItemValue::Text(text) => {
 					value = Frame::UserText(ExtendedTextFrame::new(
@@ -114,11 +114,10 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 			},
 			Err(_) => {
 				let item_key = tag_item.key();
-				let Some(desc) = item_key.map_key(TagType::Id3v2, true) else {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(
-						item_key.clone(),
-					))
-					.into());
+				let Some(desc) = item_key.map_key(TagType::Id3v2) else {
+					return Err(
+						Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(item_key)).into(),
+					);
 				};
 
 				match tag_item.value() {
@@ -129,10 +128,9 @@ impl<'a> TryFrom<&'a TagItem> for FrameRef<'a> {
 						value = new_user_url_frame(String::from(desc), locator.clone());
 					},
 					_ => {
-						return Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(
-							item_key.clone(),
-						))
-						.into());
+						return Err(
+							Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(item_key)).into(),
+						);
 					},
 				}
 			},

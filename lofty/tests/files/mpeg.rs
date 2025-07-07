@@ -47,7 +47,7 @@ fn read_with_junk_bytes_between_frames() {
 	assert_eq!(id3v2_tag.album().as_deref(), Some("album test"));
 	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));
 	assert_eq!(
-		id3v2_tag.get_string(&ItemKey::EncoderSettings),
+		id3v2_tag.get_string(ItemKey::EncoderSettings),
 		Some("Lavf58.62.100")
 	);
 
@@ -87,7 +87,7 @@ fn issue_87_duplicate_id3v2() {
 	assert_eq!(id3v2_tag.album().as_deref(), Some("album test"));
 	assert_eq!(id3v2_tag.artist().as_deref(), Some("Foo artist")); // Original tag has "artist test"
 	assert_eq!(
-		id3v2_tag.get_string(&ItemKey::EncoderSettings),
+		id3v2_tag.get_string(ItemKey::EncoderSettings),
 		Some("Lavf58.62.100")
 	);
 	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));

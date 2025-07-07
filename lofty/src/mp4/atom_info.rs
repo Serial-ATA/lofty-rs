@@ -67,7 +67,7 @@ impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
 	type Error = LoftyError;
 
 	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
-		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst, true) {
+		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
 			if mapped_key.starts_with("----") {
 				let mut split = mapped_key.split(':');
 

@@ -347,11 +347,11 @@ impl From<Id3v1Tag> for Tag {
 
 impl From<Tag> for Id3v1Tag {
 	fn from(mut input: Tag) -> Self {
-		let title = input.take_strings(&ItemKey::TrackTitle).next();
-		let artist = input.take_strings(&ItemKey::TrackArtist).next();
-		let album = input.take_strings(&ItemKey::AlbumTitle).next();
+		let title = input.take_strings(ItemKey::TrackTitle).next();
+		let artist = input.take_strings(ItemKey::TrackArtist).next();
+		let album = input.take_strings(ItemKey::AlbumTitle).next();
 		let year = input.year().map(|y| y.to_string());
-		let comment = input.take_strings(&ItemKey::Comment).next();
+		let comment = input.take_strings(ItemKey::Comment).next();
 		Self {
 			title,
 			artist,
@@ -359,11 +359,11 @@ impl From<Tag> for Id3v1Tag {
 			year,
 			comment,
 			track_number: input
-				.get_string(&ItemKey::TrackNumber)
+				.get_string(ItemKey::TrackNumber)
 				.map(|g| g.parse::<u8>().ok())
 				.and_then(|g| g),
 			genre: input
-				.get_string(&ItemKey::Genre)
+				.get_string(ItemKey::Genre)
 				.map(|g| {
 					GENRES
 						.iter()
@@ -402,17 +402,17 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Id3v1Tag {
 impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 	fn into(self) -> Id3v1TagRef<'a> {
 		Id3v1TagRef {
-			title: self.get_string(&ItemKey::TrackTitle),
-			artist: self.get_string(&ItemKey::TrackArtist),
-			album: self.get_string(&ItemKey::AlbumTitle),
-			year: self.get_string(&ItemKey::Year),
-			comment: self.get_string(&ItemKey::Comment),
+			title: self.get_string(ItemKey::TrackTitle),
+			artist: self.get_string(ItemKey::TrackArtist),
+			album: self.get_string(ItemKey::AlbumTitle),
+			year: self.get_string(ItemKey::Year),
+			comment: self.get_string(ItemKey::Comment),
 			track_number: self
-				.get_string(&ItemKey::TrackNumber)
+				.get_string(ItemKey::TrackNumber)
 				.map(|g| g.parse::<u8>().ok())
 				.and_then(|g| g),
 			genre: self
-				.get_string(&ItemKey::Genre)
+				.get_string(ItemKey::Genre)
 				.map(|g| {
 					GENRES
 						.iter()

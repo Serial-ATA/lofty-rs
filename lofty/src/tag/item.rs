@@ -48,7 +48,7 @@ macro_rules! gen_map {
 					}).iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
 				}
 
-				pub(crate) fn get_key(&self, item_key: &ItemKey) -> Option<&str> {
+				pub(crate) fn get_key(&self, item_key: ItemKey) -> Option<&'static str> {
 					match item_key {
 						$(
 							ItemKey::$variant => Some(first_key!($($key)|*)),
@@ -432,7 +432,7 @@ macro_rules! gen_item_keys {
 			$(,)?
 		]
 	) => {
-		#[derive(PartialEq, Clone, Debug, Eq, Hash)]
+		#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 		#[allow(missing_docs)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
@@ -441,31 +441,24 @@ macro_rules! gen_item_keys {
 				$(#[$variant_meta])*
 				$variant_ident,
 			)+
-			/// When a key couldn't be mapped to another variant
-			///
-			/// This **will not** allow writing keys that are out of spec (Eg. ID3v2.4 frame IDs **must** be 4 characters)
-			Unknown(String),
 		}
 
 		impl ItemKey {
-			/// Map a format specific key to an `ItemKey`
+			/// Map a format specific key to an `ItemKey`, if a variant exists
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
 			/// If you wish to use a V2 or V3 key, see [`upgrade_v2`](crate::id3::v2::upgrade_v2) and [`upgrade_v3`](crate::id3::v2::upgrade_v3)
-			pub fn from_key(tag_type: TagType, key: &str) -> Self {
+			pub fn from_key(tag_type: TagType, key: &str) -> Option<Self> {
 				match tag_type {
 					$(
 						$(#[$feat])?
-						$tag_type => $MAP.get_item_key(key).unwrap_or_else(|| Self::Unknown(key.to_string())),
+						$tag_type => $MAP.get_item_key(key),
 					)+
-					_ => Self::Unknown(key.to_string())
+					_ => None
 				}
 			}
 			/// Maps the variant to a format-specific key
-			///
-			/// Use `allow_unknown` to include [`ItemKey::Unknown`]. It is up to the caller
-			/// to determine if the unknown key actually fits the format's specifications.
-			pub fn map_key(&self, tag_type: TagType, allow_unknown: bool) -> Option<&str> {
+			pub fn map_key(self, tag_type: TagType) -> Option<&'static str> {
 				match tag_type {
 					$(
 						$(#[$feat])?
@@ -474,12 +467,6 @@ macro_rules! gen_item_keys {
 						},
 					)+
 					_ => {}
-				}
-
-				if let ItemKey::Unknown(unknown) = self {
-					if allow_unknown {
-						return Some(unknown)
-					}
 				}
 
 				None
@@ -834,7 +821,7 @@ impl TagItem {
 		item_value: ItemValue,
 	) -> Option<Self> {
 		item_key
-			.map_key(tag_type, false)
+			.map_key(tag_type)
 			.is_some()
 			.then_some(Self::new(item_key, item_value))
 	}
@@ -882,13 +869,8 @@ impl TagItem {
 		&self.description
 	}
 
-	/// Returns a reference to the [`ItemKey`]
-	pub fn key(&self) -> &ItemKey {
-		&self.item_key
-	}
-
-	/// Consumes the `TagItem`, returning its [`ItemKey`]
-	pub fn into_key(self) -> ItemKey {
+	/// Returns the [`ItemKey`]
+	pub fn key(&self) -> ItemKey {
 		self.item_key
 	}
 
@@ -914,6 +896,6 @@ impl TagItem {
 			return VALID_ITEMKEYS.contains(&self.item_key);
 		}
 
-		self.item_key.map_key(tag_type, false).is_some()
+		self.item_key.map_key(tag_type).is_some()
 	}
 }

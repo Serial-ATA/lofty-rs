@@ -78,10 +78,10 @@ pub(crate) fn init_write_lookup(
 
 	insert!(map, AiffText, {
 		lofty::iff::aiff::tag::AiffTextChunksRef {
-			name: tag.get_string(&lofty::prelude::ItemKey::TrackTitle),
-			author: tag.get_string(&lofty::prelude::ItemKey::TrackArtist),
-			copyright: tag.get_string(&lofty::prelude::ItemKey::CopyrightMessage),
-			annotations: Some(tag.get_strings(&lofty::prelude::ItemKey::Comment)),
+			name: tag.get_string(lofty::prelude::ItemKey::TrackTitle),
+			author: tag.get_string(lofty::prelude::ItemKey::TrackArtist),
+			copyright: tag.get_string(lofty::prelude::ItemKey::CopyrightMessage),
+			annotations: Some(tag.get_strings(lofty::prelude::ItemKey::Comment)),
 			comments: None,
 		}
 		.write_to(file, write_options)
