@@ -1271,7 +1271,7 @@ impl MergeTag for SplitTagRemainder {
 	type Merged = Id3v2Tag;
 
 	fn merge_tag(self, mut tag: Tag) -> Id3v2Tag {
-		fn join_text_items<'a>(
+		fn join_text_items(
 			tag: &mut Tag,
 			keys: impl IntoIterator<Item = ItemKey>,
 		) -> Option<String> {
