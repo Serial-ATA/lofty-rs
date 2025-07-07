@@ -363,8 +363,6 @@ impl Tag {
 	///
 	/// * This **will not** verify an [`ItemKey`] mapping exists
 	/// * This **will not** allow writing item keys that are out of spec (keys are verified before writing)
-	///
-	/// This is only necessary if dealing with [`ItemKey::Unknown`].
 	pub fn insert_unchecked(&mut self, item: TagItem) {
 		self.retain(|i| i.item_key != item.item_key);
 		self.items.push(item);
@@ -391,7 +389,7 @@ impl Tag {
 
 	/// Append a [`TagItem`] to the tag
 	///
-	/// Notes: See [`Tag::insert_unchecked`]
+	/// Notes: See [`Tag::push()`] and the notes of [`Tag::insert_unchecked()`]
 	pub fn push_unchecked(&mut self, item: TagItem) {
 		self.items.push(item);
 	}

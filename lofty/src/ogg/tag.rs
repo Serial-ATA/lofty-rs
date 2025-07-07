@@ -52,9 +52,6 @@ macro_rules! impl_accessor {
 /// If a [`TagItem`] with the key [`ItemKey::EncoderSoftware`] is available, it will be taken and
 /// used for the vendor string.
 ///
-/// [`TagItem`]s with [`ItemKey::Unknown`] will have their keys verified for spec compliance. They must fall within
-/// ASCII range `0x20` through `0x7D`, excluding `0x3D` ('=').
-///
 /// When converting [Picture]s, they will first be passed through [`PictureInformation::from_picture`].
 /// If the information is available, it will be used. Otherwise, the picture will be stored with zeroed out
 /// [`PictureInformation`].
