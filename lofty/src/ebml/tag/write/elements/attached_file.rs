@@ -11,6 +11,7 @@ const FileReferral_ID: ElementId = ElementId(0x4675);
 const FileUsedStartTime_ID: ElementId = ElementId(0x4661);
 const FileUsedEndTime_ID: ElementId = ElementId(0x4662);
 
+// Segment\Attachments\AttachedFile
 impl WriteableElement for AttachedFile<'_> {
 	const ID: ElementId = ElementId(0x61A7);
 

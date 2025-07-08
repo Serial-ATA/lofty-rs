@@ -122,7 +122,16 @@ impl Tag<'static> {
 	}
 }
 
+impl<'a> From<&'a Tag<'a>> for TagRef<'a> {
+	fn from(tag: &'a Tag<'a>) -> Self {
+		Self {
+			targets: tag.target.as_ref().map(Into::into).unwrap_or_default(),
+			simple_tags: tag.simple_tags.iter().map(Cow::Borrowed).collect(),
+		}
+	}
+}
+
 pub(crate) struct TagRef<'a> {
 	pub(crate) targets: TargetDescriptor<'a>,
-	pub(crate) simple_tags: Box<dyn Iterator<Item = Cow<'a, SimpleTag<'a>>>>,
+	pub(crate) simple_tags: Vec<Cow<'a, SimpleTag<'a>>>,
 }

@@ -1,6 +1,7 @@
 use super::{EbmlWriteExt, ElementWriterCtx};
 use crate::ebml::{TagValue, VInt};
 use crate::error::Result;
+
 use std::io::Write;
 
 use byteorder::WriteBytesExt;

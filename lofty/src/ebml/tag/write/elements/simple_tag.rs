@@ -9,6 +9,7 @@ const TagDefault_ID: ElementId = ElementId(0x4484);
 const TagString_ID: ElementId = ElementId(0x4487);
 const TagBinary_ID: ElementId = ElementId(0x4485);
 
+// Segment\Tags\Tag\SimpleTag
 impl WriteableElement for SimpleTag<'_> {
 	const ID: ElementId = ElementId(0x67C8);
 

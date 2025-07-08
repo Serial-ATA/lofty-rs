@@ -21,10 +21,11 @@ use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
+use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::ops::Deref;
 
 use lofty_attr::tag;
@@ -356,23 +357,23 @@ impl TagExt for MatroskaTag {
 
 	fn save_to<F>(
 		&self,
-		_file: &mut F,
-		_write_options: WriteOptions,
+		file: &mut F,
+		write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err>
 	where
 		F: FileLike,
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
-		todo!()
+		MatroskaTagRef::from(self).write_to(file, write_options)
 	}
 
 	fn dump_to<W: Write>(
 		&self,
-		_writer: &mut W,
-		_write_options: WriteOptions,
+		writer: &mut W,
+		write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err> {
-		todo!()
+		MatroskaTagRef::from(self).dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -440,51 +441,64 @@ impl From<crate::tag::Tag> for MatroskaTag {
 	}
 }
 
-pub(crate) struct MatroskaTagRef<'a, I>
-where
-	I: Iterator<Item = TagRef<'a>>,
+pub(crate) struct MatroskaTagRef<'a>
 {
-	pub(crate) tags: I,
+	pub(crate) tags: Vec<TagRef<'a>>,
 }
 
-pub(crate) fn simple_tags_for_tag(tag: &crate::tag::Tag) -> impl Iterator<Item = TagRef<'static>> {
-	let mut mapped_tags: HashMap<TargetType, Vec<Cow<'static, SimpleTag<'static>>>> =
-		HashMap::new();
-	for item in &tag.items {
-		if let Some((simple_tag, target_type)) = generic::simple_tag_for_item(Cow::Borrowed(item)) {
-			mapped_tags
-				.entry(target_type)
-				.or_default()
-				.push(Cow::Owned(simple_tag))
+impl<'a> From<&'a MatroskaTag> for MatroskaTagRef<'a> {
+	fn from(value: &'a MatroskaTag) -> Self {
+		Self {
+			tags: value.tags.iter().map(Into::into).collect::<Vec<_>>()
 		}
 	}
-
-	mapped_tags
-		.into_iter()
-		.map(|(target_type, simple_tags)| TagRef {
-			targets: TargetDescriptor::Basic(target_type),
-			simple_tags: Box::new(simple_tags.into_iter()),
-		})
 }
 
-impl<'a, I> MatroskaTagRef<'a, I>
-where
-	I: Iterator<Item = TagRef<'a>>,
+impl<'a> From<&'a crate::tag::Tag> for MatroskaTagRef<'static> {
+	fn from(value: &'a crate::tag::Tag) -> Self {
+		let mut mapped_tags: HashMap<TargetType, Vec<Cow<'static, SimpleTag<'static>>>> =
+			HashMap::new();
+		for item in &value.items {
+			if let Some((simple_tag, target_type)) = generic::simple_tag_for_item(Cow::Borrowed(item)) {
+				mapped_tags
+					.entry(target_type)
+					.or_default()
+					.push(Cow::Owned(simple_tag))
+			}
+		}
+
+		let tags = mapped_tags
+			.into_iter()
+			.map(|(target_type, simple_tags)| TagRef {
+				targets: TargetDescriptor::Basic(target_type),
+				simple_tags,
+			}).collect::<Vec<_>>();
+
+		Self {
+			tags
+		}
+	}
+}
+
+impl<'a> MatroskaTagRef<'a>
 {
-	pub(crate) fn write_to<F>(&mut self, _file: &mut F, _write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
 	where
 		F: FileLike,
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
-		todo!("Writing matroska tags")
+		write::write_to(file, self, write_options)
 	}
 
 	pub(crate) fn dump_to<W: Write>(
 		&self,
-		_writer: &mut W,
+		writer: &mut W,
 		_write_options: WriteOptions,
 	) -> Result<()> {
-		todo!("Dumping matroska tags")
+		let mut buf = Cursor::new(Vec::new());
+		self.write_element(ElementWriterCtx::default(), &mut buf)?;
+		writer.write_all(&buf.into_inner())?;
+		Ok(())
 	}
 }

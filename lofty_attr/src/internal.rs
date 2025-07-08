@@ -52,10 +52,7 @@ pub(crate) fn init_write_lookup(
 	});
 
 	insert!(map, Matroska, {
-		lofty::ebml::tag::MatroskaTagRef {
-			tags: lofty::ebml::tag::simple_tags_for_tag(tag),
-		}
-		.write_to(file, write_options)
+		lofty::ebml::tag::MatroskaTagRef::from(tag).write_to(file, write_options)
 	});
 
 	insert!(map, Id3v1, {
