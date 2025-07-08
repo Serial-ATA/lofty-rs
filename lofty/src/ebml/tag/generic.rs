@@ -3,7 +3,7 @@
 //! NOTE: We can **ONLY** convert `SimpleTags` that come from a target with **NO** uids
 
 use super::{Language, MatroskaTag, SimpleTag, TOMBSTONE_SIMPLE_TAG, TargetType};
-use crate::tag::items::Lang;
+use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 use crate::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
 
 use std::borrow::Cow;
@@ -235,7 +235,7 @@ pub(super) fn simple_tag_for_item(
 	};
 
 	// Matroska uses "und" for unknown languages
-	if lang == *b"XXX" {
+	if lang == UNKNOWN_LANGUAGE {
 		lang = *b"und";
 	}
 
