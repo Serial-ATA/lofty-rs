@@ -302,6 +302,7 @@ fn test_covr_write() {
 		assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
 		tag.insert_picture(Picture::new_unchecked(
 			PictureType::Other,
+			None,
 			Some(MimeType::Png),
 			None,
 			b"foo".to_vec(),

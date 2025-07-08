@@ -8,9 +8,9 @@ mod segment_tracks;
 
 use super::EbmlFile;
 use crate::config::ParseOptions;
+use crate::ebml::EbmlProperties;
 use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
 use crate::ebml::vint::ElementId;
-use crate::ebml::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
 

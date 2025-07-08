@@ -116,6 +116,7 @@ fn test_picture() {
 
 		let picture = Picture::new_unchecked(
 			PictureType::CoverBack,
+			None,
 			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			b"JPEG data".to_vec(),
