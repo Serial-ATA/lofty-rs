@@ -1,4 +1,4 @@
-use crate::ebml::tag::write::{write_element, EbmlWriteExt, ElementWriterCtx, WriteableElement};
+use crate::ebml::tag::write::{EbmlWriteExt, ElementWriterCtx, WriteableElement, write_element};
 use crate::ebml::{ElementId, TargetDescriptor, TargetType, VInt};
 use crate::io::FileLike;
 

@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use std::collections::HashMap;
 use syn::parse::{Parse, Parser};
 use syn::punctuated::Punctuated;
-use syn::{braced, bracketed, Ident, Token};
+use syn::{Ident, Token, braced, bracketed};
 
 #[derive(Debug)]
 pub(crate) struct EbmlMasterElement {

@@ -1,9 +1,9 @@
 use crate::config::ParseOptions;
+use crate::ebml::VInt;
 use crate::ebml::element_reader::{
 	ChildElementDescriptor, ElementChildIterator, ElementIdent, ElementReaderYield,
 };
 use crate::ebml::properties::EbmlProperties;
-use crate::ebml::VInt;
 use crate::error::Result;
 
 use std::io::{Read, Seek};

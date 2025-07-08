@@ -2,7 +2,7 @@
 //!
 //! NOTE: We can **ONLY** convert `SimpleTags` that come from a target with **NO** uids
 
-use super::{Language, MatroskaTag, SimpleTag, TargetType, TOMBSTONE_SIMPLE_TAG};
+use super::{Language, MatroskaTag, SimpleTag, TOMBSTONE_SIMPLE_TAG, TargetType};
 use crate::tag::items::Lang;
 use crate::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
 

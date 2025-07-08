@@ -1,6 +1,6 @@
 use crate::config::ParseOptions;
-use crate::ebml::element_reader::ElementChildIterator;
 use crate::ebml::MatroskaTag;
+use crate::ebml::element_reader::ElementChildIterator;
 use crate::error::Result;
 
 use std::io::{Read, Seek};

@@ -15,7 +15,7 @@ pub use tag::*;
 pub use tag_name::*;
 pub use target::*;
 
-use crate::config::{global_options, WriteOptions};
+use crate::config::{WriteOptions, global_options};
 use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
