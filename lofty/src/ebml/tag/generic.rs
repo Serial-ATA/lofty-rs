@@ -56,19 +56,28 @@ macro_rules! matroska_mapping_tables {
 
 matroska_mapping_tables!(
 	Shot => [];
-	Scene => [];
+	Scene => [
+		// Identifiers
+		"TITLE"       <=> Movement,
+		"PART_NUMBER" <=> MovementNumber,
+		"TOTAL_PARTS" <=> MovementTotal,
+	];
 	Track => [
 		// Organization Information
 		"PART_NUMBER"         <=> TrackNumber,
 
 		// Titles
+		// TODO: This should be T=50 for MKV
 		"TITLE"               <=> TrackTitle,
+		// TODO: This should be T=50 for MKV
 		"SUBTITLE"            <=> TrackSubtitle,
 
 		// Nested Information
+		// TODO: This should be T=50 for MKV
 		"SORT_WITH"           <=> TrackTitleSortOrder,
 
 		// Entities
+		// TODO: This should be T=50 for MKV
 		"ARTIST"              <=> TrackArtist,
 		"LYRICS"              <=> Lyrics,
 		"COMPOSER"            <=> Composer,
@@ -77,6 +86,7 @@ matroska_mapping_tables!(
 		"CONDUCTOR"           <=> Conductor,
 		"DIRECTOR"            <=> Director,
 		"PRODUCER"            <=> Producer,
+		// TODO: This should be T=50 for MKV
 		"ENCODED_BY"          <=> EncodedBy,
 		"MIXED_BY"            <=> MixDj,
 		"REMIXED_BY"          <=> Remixer,
@@ -89,11 +99,44 @@ matroska_mapping_tables!(
 		"INITIAL_KEY"         <=> InitialKey,
 		"ORIGINAL_MEDIA_TYPE" <=> OriginalMediaType,
 
+		// Flags
+		"COMPILATION"         <=> FlagCompilation,
+		"PODCAST"             <=> FlagPodcast,
+
+		// File Information
+		"FILETYPE"            <=> FileType,
+		// TODO: Should be T=50 for MKV
+		"PURCHASE_OWNER"      <=> FileOwner,
+		"TAGGINGTIME"         <=> TaggingTime,
+		"LENGTH"              <=> Length,
+		"ORIGFILENAME"        <=> OriginalFileName,
+		"ORIGINAL_MEDIA_TYPE" <=> OriginalMediaType,
+
+		// URLs
+		"WWWAUDIOFILE"        <=> AudioFileUrl,
+		"WWWAUDIOSOURCE"      <=> AudioSourceUrl,
+		// TODO: Should be T=50 for MKV
+		"PURCHASE_INFO"       <=> CommercialInformationUrl,
+		"WWWCOPYRIGHT"        <=> CopyrightUrl,
+		"WWWARTIST"           <=> TrackArtistUrl,
+		"WWWRADIOPAGE"        <=> RadioStationUrl,
+		// TODO: Should be T=50 for MKV
+		"PURCHASE_ITEM"       <=> PaymentUrl,
+		"WWWPUBLISHER"        <=> PublisherUrl,
+
 		// Technical Information
 		"ENCODER"             <=> EncoderSoftware,
+		// TODO: This should be T=50 for MKV
 		"ENCODER_SETTINGS"    <=> EncoderSettings,
 		"BPM"                 <=> Bpm,
 		// TODO: ReplayGain? The values are binary in Matroska
+
+		// Podcast
+		"PODCASTDESC"         <=> PodcastDescription,
+		"PODCASTCATEGORY"     <=> PodcastSeriesCategory,
+		"PODCASTURL"          <=> PodcastUrl,
+		"PODCASTID"           <=> PodcastGlobalUniqueId,
+		"PODCASTKEYWORDS"     <=> PodcastKeywords,
 
 		// Identifiers
 		"ISRC"                <=> Isrc,
@@ -106,12 +149,17 @@ matroska_mapping_tables!(
 		"TOTAL_PARTS"    <=> TrackTotal,
 
 		// Titles
+		// TODO: This should be T=60 for MKV
 		"TITLE"          <=> AlbumTitle,
+		// TODO: This should be T=60 for MKV
+		"SUBTITLE"       <=> SetSubtitle,
 
 		// Nested Information
+		// TODO: This should be T=60 for MKV
 		"SORT_WITH"      <=> AlbumTitleSortOrder,
 
 		// Entities
+		// TODO: This should be T=60 for MKV
 		"ARTIST"         <=> AlbumArtist,
 
 		// Temporal Information

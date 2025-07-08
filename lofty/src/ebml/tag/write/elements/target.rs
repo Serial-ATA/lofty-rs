@@ -93,10 +93,7 @@ mod tests {
 		let mut buf = Cursor::new(Vec::new());
 		let target_descriptor = TargetDescriptor::from(&target);
 		target_descriptor
-			.write_element(
-				ElementWriterCtx::default(),
-				&mut buf,
-			)
+			.write_element(ElementWriterCtx::default(), &mut buf)
 			.unwrap();
 
 		let expected = vec![0x63, 0xC0, 0x80];

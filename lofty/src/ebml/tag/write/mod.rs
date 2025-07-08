@@ -1,11 +1,10 @@
 mod elements;
 mod type_encodings;
 
-use crate::ebml::{ElementId, VInt};
-use crate::error::Result;
 use super::MatroskaTagRef;
 use crate::config::WriteOptions;
-use crate::error::LoftyError;
+use crate::ebml::{ElementId, VInt};
+use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Truncate};
 
 use std::io::Write;

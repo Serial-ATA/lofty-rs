@@ -16,12 +16,12 @@ pub use tag_name::*;
 pub use target::*;
 
 use crate::config::{WriteOptions, global_options};
+use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement};
 use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
-use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -35,7 +35,7 @@ macro_rules! impl_accessor {
 		paste::paste! {
 			$(
 				fn $method(&self) -> Option<Cow<'_, str>> {
-					self.get_str(MatroskaTagKey(TargetType::$target, $name.into()))
+					self.get_str(TargetType::$target, $name)
 				}
 
 				fn [<set_ $method>](&mut self, value: String) {
@@ -72,8 +72,11 @@ pub struct MatroskaTag {
 pub struct MatroskaTagKey<'a>(TargetType, Cow<'a, str>);
 
 impl MatroskaTag {
-	fn get(&self, key: MatroskaTagKey<'_>) -> Option<&SimpleTag<'_>> {
-		let MatroskaTagKey(target, key) = key;
+	fn get<'a, K>(&self, target: TargetType, key: K) -> Option<&SimpleTag<'_>>
+	where
+		K: Into<Cow<'a, str>>,
+	{
+		let key = key.into();
 
 		let applicable_tags = self.tags.iter().filter(|tag| tag.matches_target(target));
 		for applicable_tag in applicable_tags {
@@ -112,8 +115,11 @@ impl MatroskaTag {
 		self.tags.get_mut(pos.unwrap()).unwrap()
 	}
 
-	fn get_str(&self, key: MatroskaTagKey<'_>) -> Option<Cow<'_, str>> {
-		let simple_tag = self.get(key)?;
+	fn get_str<'a, K>(&self, target: TargetType, key: K) -> Option<Cow<'_, str>>
+	where
+		K: Into<Cow<'a, str>>,
+	{
+		let simple_tag = self.get(target, key)?;
 		simple_tag.get_str().map(Cow::from)
 	}
 
@@ -279,16 +285,13 @@ impl Accessor for MatroskaTag {
 	);
 
 	fn track(&self) -> Option<u32> {
-		self.get(MatroskaTagKey(
-			TargetType::Track,
-			Cow::Borrowed("PART_NUMBER"),
-		))
-		.and_then(SimpleTag::get_str)
-		.and_then(|val| val.parse::<u32>().ok())
+		self.get_str(TargetType::Track, TagName::PartNumber)
+			.and_then(|val| val.parse::<u32>().ok())
 	}
 
-	fn set_track(&mut self, _value: u32) {
-		todo!()
+	fn set_track(&mut self, value: u32) {
+		let tag = SimpleTag::new(TagName::PartNumber, value.to_string());
+		self.push(TargetType::Track, tag);
 	}
 
 	fn remove_track(&mut self) {
@@ -296,21 +299,45 @@ impl Accessor for MatroskaTag {
 	}
 
 	fn track_total(&self) -> Option<u32> {
-		self.get(MatroskaTagKey(
-			TargetType::Album,
-			Cow::Borrowed("TOTAL_PARTS"),
-		))
-		.and_then(SimpleTag::get_str)
-		.and_then(|val| val.parse::<u32>().ok())
+		self.get(TargetType::Album, TagName::TotalParts)
+			.and_then(SimpleTag::get_str)
+			.and_then(|val| val.parse::<u32>().ok())
 	}
 
-	fn set_track_total(&mut self, _value: u32) {
-		todo!()
+	fn set_track_total(&mut self, value: u32) {
+		let tag = SimpleTag::new(TagName::TotalParts, value.to_string());
+		self.push(TargetType::Album, tag);
 	}
 
 	fn remove_track_total(&mut self) {
 		todo!()
 	}
+
+	fn disk(&self) -> Option<u32> {
+		self.get(TargetType::Edition, TagName::PartNumber)
+			.and_then(SimpleTag::get_str)
+			.and_then(|val| val.parse::<u32>().ok())
+	}
+
+	fn set_disk(&mut self, value: u32) {
+		let tag = SimpleTag::new(TagName::PartNumber, value.to_string());
+		self.push(TargetType::Edition, tag);
+	}
+
+	fn remove_disk(&mut self) {}
+
+	fn disk_total(&self) -> Option<u32> {
+		self.get(TargetType::Edition, TagName::TotalParts)
+			.and_then(SimpleTag::get_str)
+			.and_then(|val| val.parse::<u32>().ok())
+	}
+
+	fn set_disk_total(&mut self, value: u32) {
+		let tag = SimpleTag::new(TagName::TotalParts, value.to_string());
+		self.push(TargetType::Edition, tag);
+	}
+
+	fn remove_disk_total(&mut self) {}
 
 	fn year(&self) -> Option<u32> {
 		// `DATE_RELEASED`
@@ -441,15 +468,14 @@ impl From<crate::tag::Tag> for MatroskaTag {
 	}
 }
 
-pub(crate) struct MatroskaTagRef<'a>
-{
+pub(crate) struct MatroskaTagRef<'a> {
 	pub(crate) tags: Vec<TagRef<'a>>,
 }
 
 impl<'a> From<&'a MatroskaTag> for MatroskaTagRef<'a> {
 	fn from(value: &'a MatroskaTag) -> Self {
 		Self {
-			tags: value.tags.iter().map(Into::into).collect::<Vec<_>>()
+			tags: value.tags.iter().map(Into::into).collect::<Vec<_>>(),
 		}
 	}
 }
@@ -459,7 +485,9 @@ impl<'a> From<&'a crate::tag::Tag> for MatroskaTagRef<'static> {
 		let mut mapped_tags: HashMap<TargetType, Vec<Cow<'static, SimpleTag<'static>>>> =
 			HashMap::new();
 		for item in &value.items {
-			if let Some((simple_tag, target_type)) = generic::simple_tag_for_item(Cow::Borrowed(item)) {
+			if let Some((simple_tag, target_type)) =
+				generic::simple_tag_for_item(Cow::Borrowed(item))
+			{
 				mapped_tags
 					.entry(target_type)
 					.or_default()
@@ -472,16 +500,14 @@ impl<'a> From<&'a crate::tag::Tag> for MatroskaTagRef<'static> {
 			.map(|(target_type, simple_tags)| TagRef {
 				targets: TargetDescriptor::Basic(target_type),
 				simple_tags,
-			}).collect::<Vec<_>>();
+			})
+			.collect::<Vec<_>>();
 
-		Self {
-			tags
-		}
+		Self { tags }
 	}
 }
 
-impl<'a> MatroskaTagRef<'a>
-{
+impl<'a> MatroskaTagRef<'a> {
 	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
 	where
 		F: FileLike,
