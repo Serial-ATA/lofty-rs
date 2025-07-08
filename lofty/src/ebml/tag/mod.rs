@@ -30,15 +30,15 @@ use std::ops::Deref;
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
-	($($method:ident => ($target:ident, $name:literal)),+ $(,)?) => {
+	($($method:ident => ($target:ident, $name:expr)),+ $(,)?) => {
 		paste::paste! {
 			$(
 				fn $method(&self) -> Option<Cow<'_, str>> {
-					self.get_str(MatroskaTagKey(TargetType::$target, Cow::Borrowed($name)))
+					self.get_str(MatroskaTagKey(TargetType::$target, $name.into()))
 				}
 
 				fn [<set_ $method>](&mut self, value: String) {
-					todo!()
+					self.push(TargetType::$target, SimpleTag::new(Into::<Cow<'_, str>>::into($name), value))
 				}
 
 				fn [<remove_ $method>](&mut self) {
@@ -114,6 +114,43 @@ impl MatroskaTag {
 	fn get_str(&self, key: MatroskaTagKey<'_>) -> Option<Cow<'_, str>> {
 		let simple_tag = self.get(key)?;
 		simple_tag.get_str().map(Cow::from)
+	}
+
+	/// Append a new [`SimpleTag`] for the given [`TargetType`]
+	///
+	/// NOTE: This will **not** remove other items with the same key.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ebml::{SimpleTag, TagName, TargetType, MatroskaTag, Language};
+	/// use lofty::picture::Picture;
+	/// use lofty::tag::TagExt;
+	/// use lofty::tag::Accessor;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let mut tag = MatroskaTag::default();
+	///
+	/// // Set the track title the manual way
+	/// let title = SimpleTag::new(TagName::Title, "Foo title");
+	/// tag.push(TargetType::Track, title);
+	///
+	/// // Push a Spanish variant of the title
+	/// let mut title2 = SimpleTag::new(TagName::Title, "Título foo");
+	/// title2.language = Language::Iso639_2(String::from("spa"));
+	///
+	/// tag.push(TargetType::Track, title2);
+	///
+	/// // The variant with an undefined language was first in the list
+	/// assert_eq!(tag.title().as_deref(), Some("Foo title"));
+	///
+	/// // And the Spanish variant exists in the tag for players that support it
+	/// assert_eq!(tag.len(), 2);
+	/// # Ok(()) }
+	pub fn push(&mut self, target: TargetType, value: SimpleTag<'_>) {
+		let value = value.into_owned();
+		let tag = self.get_or_insert_tag_for_type(target);
+		tag.simple_tags.push(value);
 	}
 
 	/// Returns all [`Tag`]s, if there are any
@@ -234,10 +271,10 @@ impl MatroskaTag {
 
 impl Accessor for MatroskaTag {
 	impl_accessor!(
-		artist => (Track, "ARTIST"),
-		title => (Track, "TITLE"),
-		album => (Album, "TITLE"),
-		comment => (Track, "COMMENT"),
+		artist => (Track, TagName::Artist),
+		title => (Track, TagName::Title),
+		album => (Album, TagName::Title),
+		comment => (Track, TagName::Comment),
 	);
 
 	fn track(&self) -> Option<u32> {
