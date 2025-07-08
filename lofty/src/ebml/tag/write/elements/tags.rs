@@ -1,12 +1,11 @@
-use crate::ebml::tag::write::{write_element, ElementWriterCtx, WriteableElement};
+use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement, write_element};
 use crate::ebml::{ElementId, MatroskaTagRef};
 use crate::io::FileLike;
 
 use std::io::Cursor;
 
 // Segment\Tags
-impl<'a> WriteableElement for MatroskaTagRef<'a>
-{
+impl<'a> WriteableElement for MatroskaTagRef<'a> {
 	const ID: ElementId = ElementId(0x1254_C367);
 
 	fn write_element<F: FileLike>(
