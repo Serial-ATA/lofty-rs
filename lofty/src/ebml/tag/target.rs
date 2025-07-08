@@ -158,6 +158,12 @@ impl TargetDescriptor<'_> {
 	}
 }
 
+impl Default for TargetDescriptor<'_> {
+	fn default() -> Self {
+		TargetDescriptor::Basic(TargetType::default())
+	}
+}
+
 impl<'a> From<&'a Target> for TargetDescriptor<'a> {
 	fn from(target: &'a Target) -> Self {
 		if !target.has_uids() {

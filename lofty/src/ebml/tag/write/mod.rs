@@ -3,7 +3,10 @@ mod type_encodings;
 
 use crate::ebml::{ElementId, VInt};
 use crate::error::Result;
-use crate::io::FileLike;
+use super::MatroskaTagRef;
+use crate::config::WriteOptions;
+use crate::error::LoftyError;
+use crate::io::{FileLike, Truncate};
 
 use std::io::Write;
 
@@ -13,6 +16,15 @@ use type_encodings::ElementEncodable;
 pub(crate) struct ElementWriterCtx {
 	pub(crate) max_id_len: u8,
 	pub(crate) max_size_len: u8,
+}
+
+impl Default for ElementWriterCtx {
+	fn default() -> Self {
+		Self {
+			max_id_len: 4,
+			max_size_len: 8,
+		}
+	}
 }
 
 pub(crate) trait EbmlWriteExt: Write + Sized {
@@ -45,4 +57,16 @@ pub(crate) fn write_element<W: Write, E: ElementEncodable>(
 	element.write_to(ctx, writer)?;
 
 	Ok(())
+}
+
+pub(crate) fn write_to<'a, F>(
+	_file: &mut F,
+	_tag_ref: &mut MatroskaTagRef<'a>,
+	_write_options: WriteOptions,
+) -> Result<()>
+where
+	F: FileLike,
+	LoftyError: From<<F as Truncate>::Error>,
+{
+	todo!("Writing Segment\\Tags")
 }

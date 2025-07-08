@@ -9,6 +9,7 @@ const TagEditionUID_ID: ElementId = ElementId(0x63C9);
 const TagChapterUID_ID: ElementId = ElementId(0x63C4);
 const TagAttachmentUID_ID: ElementId = ElementId(0x63C6);
 
+// Segment\Tags\Tag\Targets
 impl WriteableElement for TargetDescriptor<'_> {
 	const ID: ElementId = ElementId(0x63C0);
 
@@ -93,10 +94,7 @@ mod tests {
 		let target_descriptor = TargetDescriptor::from(&target);
 		target_descriptor
 			.write_element(
-				ElementWriterCtx {
-					max_id_len: 4,
-					max_size_len: 8,
-				},
+				ElementWriterCtx::default(),
 				&mut buf,
 			)
 			.unwrap();

@@ -99,9 +99,7 @@ pub(crate) fn dump_tag<W: Write>(
 			}
 		}
 		.dump_to(writer, write_options),
-		TagType::Matroska => ebml::tag::MatroskaTagRef {
-			tags: ebml::tag::simple_tags_for_tag(tag),
-		}
+		TagType::Matroska => ebml::tag::MatroskaTagRef::from(tag)
 		.dump_to(writer, write_options),
 		_ => Ok(()),
 	}
