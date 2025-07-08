@@ -489,6 +489,7 @@ impl Picture {
 	/// Placeholder for conversions
 	pub(crate) const EMPTY: Self = Picture {
 		pic_type: PictureType::Other,
+		file_name: None,
 		mime_type: None,
 		description: None,
 		data: Cow::Owned(Vec::new()),
@@ -841,12 +842,3 @@ impl Picture {
 		}
 	}
 }
-
-// A placeholder that is needed during conversions.
-pub(crate) const TOMBSTONE_PICTURE: Picture = Picture {
-	pic_type: PictureType::Other,
-	file_name: None,
-	mime_type: None,
-	description: None,
-	data: Cow::Owned(Vec::new()),
-};
