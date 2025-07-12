@@ -1,5 +1,7 @@
 use crate::config::{ParseOptions, ParsingMode};
-use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
+use crate::ebml::element_reader::{
+	ElementChildIterator, ElementIdent, ElementReaderYield, KnownElementHeader,
+};
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -19,9 +21,9 @@ where
 	// for some reason.
 	let mut duration = None;
 
-	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((id, size)) => {
+	while let Some(child) = children_reader.next() {
+		match child? {
+			ElementReaderYield::Master(KnownElementHeader { id, size, .. }) => {
 				// We do not end up using information from any of the nested master
 				// elements, so we can just skip them.
 

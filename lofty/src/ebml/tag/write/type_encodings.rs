@@ -1,6 +1,7 @@
 use super::{EbmlWriteExt, ElementWriterCtx};
 use crate::ebml::{TagValue, VInt};
 use crate::error::Result;
+use crate::util::num::ShrinkableInteger;
 
 use std::io::Write;
 
@@ -32,6 +33,21 @@ impl ElementEncodable for VInt<i64> {
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		writer.write_size(ctx, self.len()?)?;
 		VInt::<i64>::write_to(self.value() as u64, None, None, writer)?;
+		Ok(())
+	}
+}
+
+impl ElementEncodable for u64 {
+	fn len(&self) -> Result<VInt<u64>> {
+		Ok(VInt(u64::from(self.occupied_bytes())))
+	}
+
+	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
+		writer.write_size(ctx, self.len()?)?;
+		for b in self.shrink_be() {
+			writer.write_u8(b)?;
+		}
+
 		Ok(())
 	}
 }
@@ -77,9 +93,9 @@ impl ElementEncodable for bool {
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		if *self {
-			VInt::<u64>(1).write_to(ctx, writer)
+			1_u64.write_to(ctx, writer)
 		} else {
-			VInt::<i64>::ZERO.write_to(ctx, writer)
+			0_u64.write_to(ctx, writer)
 		}
 	}
 }

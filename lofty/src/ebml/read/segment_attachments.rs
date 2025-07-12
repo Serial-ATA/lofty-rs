@@ -1,6 +1,6 @@
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{
-	ElementChildIterator, ElementIdent, ElementReader, ElementReaderYield,
+	ElementChildIterator, ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
 };
 use crate::ebml::{AttachedFile, MatroskaTag};
 use crate::error::Result;
@@ -18,14 +18,19 @@ pub(super) fn read_from<R>(
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((ElementIdent::AttachedFile, _size)) => {
+	while let Some(child) = children_reader.next() {
+		match child? {
+			ElementReaderYield::Master(KnownElementHeader {
+				id: ElementIdent::AttachedFile,
+				..
+			}) => {
 				let attached_file = read_attachment(children_reader)?;
 				tag.attached_files.push(attached_file);
 			},
 			ElementReaderYield::Eof => break,
-			_ => unreachable!("Unhandled child element in \\Segment\\Attachments: {child:?}"),
+			child => {
+				unreachable!("Unhandled child element in \\Segment\\Attachments: {child:?}")
+			},
 		}
 	}
 
@@ -46,14 +51,13 @@ where
 	let mut used_end_time = None;
 
 	let mut children_reader = element_reader.children();
-	while let Some(child) = children_reader.next()? {
-		let ElementReaderYield::Child((child, size)) = child else {
-			match child {
-				ElementReaderYield::Eof => break,
-				_ => unreachable!(
-					"Unhandled child element in \\Segment\\Attachments\\AttachedFile: {child:?}"
-				),
-			}
+	while let Some(child) = children_reader.next() {
+		let (child, size) = match child? {
+			ElementReaderYield::Child((child, size)) => (child, size),
+			ElementReaderYield::Eof => break,
+			child => unreachable!(
+				"Unhandled child element in \\Segment\\Attachments\\AttachedFile: {child:?}"
+			),
 		};
 
 		let size = size.value();
@@ -64,7 +68,7 @@ where
 			ElementIdent::FileName => {
 				file_name = Some(children_reader.read_string(size)?);
 			},
-			ElementIdent::FileMimeType => {
+			ElementIdent::FileMediaType => {
 				let mime_str = children_reader.read_string(size)?;
 				mime_type = Some(MimeType::from_str(&mime_str));
 			},

@@ -1,17 +1,11 @@
+use crate::ebml::element_reader::ElementIdent;
 use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement, write_element};
 use crate::ebml::{ElementId, Language, SimpleTag, TagValue};
 use crate::io::FileLike;
 
-const TagName_ID: ElementId = ElementId(0x45A3);
-const TagLanguage_ID: ElementId = ElementId(0x447A);
-const TagLanguageBcp47_ID: ElementId = ElementId(0x447B);
-const TagDefault_ID: ElementId = ElementId(0x4484);
-const TagString_ID: ElementId = ElementId(0x4487);
-const TagBinary_ID: ElementId = ElementId(0x4485);
-
 // Segment\Tags\Tag\SimpleTag
 impl WriteableElement for SimpleTag<'_> {
-	const ID: ElementId = ElementId(0x67C8);
+	const ID: ElementId = ElementId(ElementIdent::SimpleTag as _);
 
 	fn write_element<F: FileLike>(
 		&self,
@@ -19,33 +13,49 @@ impl WriteableElement for SimpleTag<'_> {
 		writer: &mut F,
 	) -> crate::error::Result<()> {
 		let mut element_children = Vec::new();
-		write_element(ctx, TagName_ID, &self.name.as_ref(), &mut element_children)?;
+		write_element(
+			ctx,
+			ElementIdent::TagName.into(),
+			&self.name.as_ref(),
+			&mut element_children,
+		)?;
 
 		match &self.language {
 			Language::Iso639_2(iso_639_2) => write_element(
 				ctx,
-				TagLanguage_ID,
+				ElementIdent::TagLanguage.into(),
 				&iso_639_2.as_str(),
 				&mut element_children,
 			)?,
 			Language::Bcp47(bcp47) => write_element(
 				ctx,
-				TagLanguageBcp47_ID,
+				ElementIdent::TagLanguageBCP47.into(),
 				&bcp47.as_str(),
 				&mut element_children,
 			)?,
 		}
 
-		write_element(ctx, TagDefault_ID, &self.default, &mut element_children)?;
+		write_element(
+			ctx,
+			ElementIdent::TagDefault.into(),
+			&self.default,
+			&mut element_children,
+		)?;
 
 		if let Some(value) = self.value.as_ref() {
 			match value {
-				TagValue::String(s) => {
-					write_element(ctx, TagString_ID, &s.as_ref(), &mut element_children)?
-				},
-				TagValue::Binary(b) => {
-					write_element(ctx, TagBinary_ID, &b.as_ref(), &mut element_children)?
-				},
+				TagValue::String(s) => write_element(
+					ctx,
+					ElementIdent::TagString.into(),
+					&s.as_ref(),
+					&mut element_children,
+				)?,
+				TagValue::Binary(b) => write_element(
+					ctx,
+					ElementIdent::TagBinary.into(),
+					&b.as_ref(),
+					&mut element_children,
+				)?,
 			}
 		}
 

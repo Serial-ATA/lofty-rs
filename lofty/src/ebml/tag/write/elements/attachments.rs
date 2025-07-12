@@ -1,13 +1,16 @@
 use crate::ebml::element_reader::ElementIdent;
 use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement, write_element};
-use crate::ebml::{ElementId, TagRef};
+use crate::ebml::{AttachedFile, ElementId};
 use crate::io::FileLike;
 
+use std::borrow::Cow;
 use std::io::Cursor;
 
-// Segment\Tags\Tag
-impl WriteableElement for TagRef<'_> {
-	const ID: ElementId = ElementId(ElementIdent::Tag as _);
+pub struct Attachments<'a>(pub Vec<Cow<'a, AttachedFile<'a>>>);
+
+// Segment\Tags
+impl WriteableElement for Attachments<'_> {
+	const ID: ElementId = ElementId(ElementIdent::Attachments as _);
 
 	fn write_element<F: FileLike>(
 		&self,
@@ -15,10 +18,8 @@ impl WriteableElement for TagRef<'_> {
 		writer: &mut F,
 	) -> crate::error::Result<()> {
 		let mut element_children = Cursor::new(Vec::new());
-		self.targets.write_element(ctx, &mut element_children)?;
-
-		for simple_tag in &self.simple_tags {
-			simple_tag.write_element(ctx, &mut element_children)?;
+		for file in &self.0 {
+			file.write_element(ctx, &mut element_children)?;
 		}
 
 		write_element(

@@ -63,15 +63,16 @@ macro_rules! impl_vint {
 					///
 					/// // This value is small enough to represent
 					/// let mut valid_vint_reader = &[0b1000_0010];
-					#[doc = " let valid_vint = VInt::<" $t ">::parse(&mut &valid_vint_reader[..], 8)?;"]
+					#[doc = " let (valid_vint, _bytes_read) = VInt::<" $t ">::parse(&mut &valid_vint_reader[..], 8)?;"]
 					/// assert_eq!(valid_vint.value(), 2);
 					/// # Ok(()) }
 					/// ```
-					pub fn parse<R>(reader: &mut R, max_length: u8) -> Result<Self>
+					pub fn parse<R>(reader: &mut R, max_length: u8) -> Result<(Self, u8)>
 					where
 						R: Read,
 					{
-						Ok(Self(parse_vint(reader, max_length, false)? as $t))
+						let (val, bytes_read) = parse_vint(reader, max_length, false)?;
+						Ok((Self(val as $t), bytes_read))
 					}
 
 					/// Represents the length of the `VInt` in octets
@@ -225,7 +226,7 @@ impl<T> VInt<T> {
 
 impl_vint!(u64, i64);
 
-fn parse_vint<R>(reader: &mut R, max_length: u8, retain_marker: bool) -> Result<u64>
+fn parse_vint<R>(reader: &mut R, max_length: u8, retain_marker: bool) -> Result<(u64, u8)>
 where
 	R: Read,
 {
@@ -239,12 +240,12 @@ where
 		val ^= 1 << start.ilog2();
 	}
 
-	while bytes_read < octet_length {
+	while u32::from(bytes_read) < octet_length {
 		bytes_read += 1;
 		val = (val << 8) | u64::from(reader.read_u8()?);
 	}
 
-	Ok(val)
+	Ok((val, bytes_read))
 }
 
 // Verify that the octet length is nonzero and <= 8
@@ -302,15 +303,15 @@ impl ElementId {
 	/// # fn main() -> lofty::error::Result<()> {
 	/// // Parse the EBML header element ID
 	/// let mut reader = &[0x1A, 0x45, 0xDF, 0xA3][..];
-	/// let id = ElementId::parse(&mut reader, 8)?;
+	/// let (id, _bytes_read) = ElementId::parse(&mut reader, 8)?;
 	/// assert_eq!(id, 0x1A45DFA3);
 	/// # Ok(()) }
-	pub fn parse<R>(reader: &mut R, max_id_length: u8) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, max_id_length: u8) -> Result<(Self, u8)>
 	where
 		R: Read,
 	{
-		let val = parse_vint(reader, max_id_length, true)?;
-		Ok(Self(val))
+		let (val, bytes_read) = parse_vint(reader, max_id_length, true)?;
+		Ok((Self(val), bytes_read))
 	}
 
 	/// Get the inner value of the `ElementId`
@@ -321,7 +322,7 @@ impl ElementId {
 	/// use lofty::ebml::ElementId;
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// let id = ElementId::parse(&mut &[0x1A, 0x45, 0xDF, 0xA3][..], 8)?;
+	/// let (id, _bytes_read) = ElementId::parse(&mut &[0x1A, 0x45, 0xDF, 0xA3][..], 8)?;
 	/// assert_eq!(id.value(), 0x1A45DFA3);
 	/// # Ok(()) }
 	pub fn value(&self) -> u64 {
@@ -332,8 +333,7 @@ impl ElementId {
 	///
 	/// Unlike a [`VInt`], an `ElementId` **MUST** be encoded with the shortest possible octet length.
 	///
-	/// * `max_length` can be used to specify the maximum number of octets the number should
-	///    occupy.
+	/// * `max_length` can be used to specify the maximum number of octets the number should occupy.
 	///
 	/// # Errors
 	///
@@ -348,7 +348,7 @@ impl ElementId {
 	/// const EBML_ID: [u8; 4] = [0x1A, 0x45, 0xDF, 0xA3];
 	///
 	/// # fn main() -> lofty::error::Result<()> {
-	/// let id = ElementId::parse(&mut &EBML_ID[..], 8)?;
+	/// let (id, _bytes_read) = ElementId::parse(&mut &EBML_ID[..], 8)?;
 	/// let bytes = id.as_bytes(None)?;
 	///
 	/// assert_eq!(bytes, &EBML_ID);
@@ -427,6 +427,7 @@ mod tests {
 			assert_eq!(
 				VInt::<u64>::parse(&mut Cursor::new(representation), 8)
 					.unwrap()
+					.0
 					.value(),
 				2
 			);
@@ -436,7 +437,9 @@ mod tests {
 	#[test_log::test]
 	fn vint_to_bytes() {
 		for representation in VALID_REPRESENTATIONS_OF_2 {
-			let vint = VInt::<u64>::parse(&mut Cursor::new(representation), 8).unwrap();
+			let vint = VInt::<u64>::parse(&mut Cursor::new(representation), 8)
+				.unwrap()
+				.0;
 			assert_eq!(
 				vint.as_bytes(Some(representation.len() as u8), None)
 					.unwrap(),

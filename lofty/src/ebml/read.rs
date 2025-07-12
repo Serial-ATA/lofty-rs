@@ -6,20 +6,21 @@ mod segment_info;
 mod segment_tags;
 mod segment_tracks;
 
-use super::EbmlFile;
+use super::{DocumentType, EbmlFile};
 use crate::config::ParseOptions;
 use crate::ebml::EbmlProperties;
-use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::element_reader::{
+	ElementHeader, ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
+};
 use crate::ebml::vint::ElementId;
 use crate::error::Result;
 use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
+use std::str::FromStr;
 
-const SUPPORTED_DOC_TYPES: &[&str] = &["matroska", "webm"];
-
-const CRC32_ID: ElementId = ElementId(0xBF);
-const VOID_ID: ElementId = ElementId(0xEC);
+pub const CRC32_ID: ElementId = ElementId(0xBF);
+pub const VOID_ID: ElementId = ElementId(0xEC);
 
 pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<EbmlFile>
 where
@@ -41,7 +42,10 @@ where
 	loop {
 		let res = element_reader.next()?;
 		match res {
-			ElementReaderYield::Master((ElementIdent::Segment, _)) => {
+			ElementReaderYield::Master(KnownElementHeader {
+				id: ElementIdent::Segment,
+				..
+			}) => {
 				ebml_tag = segment::read_from(&mut element_reader, parse_options, &mut properties)?;
 				break;
 			},
@@ -50,6 +54,7 @@ where
 			ElementReaderYield::Unknown(ElementHeader {
 				id: id @ (CRC32_ID | VOID_ID),
 				size,
+				..
 			}) => {
 				log::debug!("Skipping global element: {:X}", id);
 				element_reader.skip(size.value())?;
@@ -67,7 +72,7 @@ where
 	})
 }
 
-fn read_ebml_header<R>(
+pub(super) fn read_ebml_header<R>(
 	element_reader: &mut ElementReader<R>,
 	parse_options: ParseOptions,
 	properties: &mut EbmlProperties,
@@ -78,19 +83,28 @@ where
 	log::trace!("Reading EBML header");
 
 	match element_reader.next() {
-		Ok(ElementReaderYield::Master((ElementIdent::EBML, _))) => {},
+		Ok(ElementReaderYield::Master(KnownElementHeader {
+			id: ElementIdent::EBML,
+			..
+		})) => {},
 		Ok(_) => decode_err!(@BAIL Ebml, "File does not start with an EBML master element"),
 		Err(e) => return Err(e),
 	}
 
+	let mut doc_type = None;
+
 	let mut child_reader = element_reader.children();
-	while let Some(child) = child_reader.next()? {
+	while let Some(child) = child_reader.next() {
 		let ident;
 		let size;
 
-		match child {
+		match child? {
 			// The only expected master element in the header is `DocTypeExtension`
-			ElementReaderYield::Master((ElementIdent::DocTypeExtension, size)) => {
+			ElementReaderYield::Master(KnownElementHeader {
+				id: ElementIdent::DocTypeExtension,
+				size,
+				..
+			}) => {
 				child_reader.skip(size.value())?;
 				continue;
 			},
@@ -124,19 +138,19 @@ where
 		}
 
 		if ident == ElementIdent::DocType {
-			properties.header.doc_type = child_reader.read_string(size.value())?;
-			if !SUPPORTED_DOC_TYPES.contains(&properties.header.doc_type.as_str()) {
+			let doc_type_str = child_reader.read_string(size.value())?;
+			let Ok(parsed_doc_type) = DocumentType::from_str(&doc_type_str) else {
 				decode_err!(
 					@BAIL Ebml,
 					"Unsupported EBML DocType"
 				);
-			}
+			};
 
+			doc_type = Some(parsed_doc_type);
 			continue;
 		}
 
-		// Anything else in the header is unnecessary, and only read for the properties
-		// struct
+		// Anything else in the header is unnecessary, and only read for the properties struct
 		if !parse_options.read_properties {
 			child_reader.skip(size.value())?;
 			continue;
@@ -161,9 +175,11 @@ where
 		"There should be no remaining elements in the header"
 	);
 
-	if properties.header.doc_type.is_empty() {
+	let Some(doc_type) = doc_type.take() else {
 		decode_err!(@BAIL Ebml, "Unable to determine EBML DocType");
-	}
+	};
+
+	properties.header.doc_type = doc_type;
 
 	Ok(())
 }

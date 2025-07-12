@@ -1,12 +1,15 @@
+use crate::ebml::element_reader::ElementIdent;
 use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement, write_element};
-use crate::ebml::{ElementId, MatroskaTagRef};
+use crate::ebml::{ElementId, TagRef};
 use crate::io::FileLike;
 
 use std::io::Cursor;
 
+pub struct Tags<'a>(pub Vec<TagRef<'a>>);
+
 // Segment\Tags
-impl<'a> WriteableElement for MatroskaTagRef<'a> {
-	const ID: ElementId = ElementId(0x1254_C367);
+impl WriteableElement for Tags<'_> {
+	const ID: ElementId = ElementId(ElementIdent::Tags as _);
 
 	fn write_element<F: FileLike>(
 		&self,
@@ -14,7 +17,7 @@ impl<'a> WriteableElement for MatroskaTagRef<'a> {
 		writer: &mut F,
 	) -> crate::error::Result<()> {
 		let mut element_children = Cursor::new(Vec::new());
-		for tag in &self.tags {
+		for tag in &self.0 {
 			tag.write_element(ctx, &mut element_children)?;
 		}
 
