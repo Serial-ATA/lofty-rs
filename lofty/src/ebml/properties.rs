@@ -1,20 +1,66 @@
 use super::Language;
 use crate::properties::FileProperties;
 
+use std::fmt::Display;
+use std::str::FromStr;
 use std::time::Duration;
+
+/// The supported EBML document types
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum DocumentType {
+	/// Matroska (`audio/x-matroska` / `video/x-matroska`)
+	Matroska,
+	/// WebM (`audio/webm` / `video/webm`)
+	Webm,
+}
+
+impl FromStr for DocumentType {
+	type Err = ();
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"matroska" => Ok(DocumentType::Matroska),
+			"webm" => Ok(DocumentType::Webm),
+			_ => Err(()),
+		}
+	}
+}
+
+impl Display for DocumentType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			DocumentType::Matroska => write!(f, "matroska"),
+			DocumentType::Webm => write!(f, "webm"),
+		}
+	}
+}
 
 /// Properties from the EBML header
 ///
 /// These are present for all EBML formats.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct EbmlHeaderProperties {
 	pub(crate) version: u64,
 	pub(crate) read_version: u64,
 	pub(crate) max_id_length: u8,
 	pub(crate) max_size_length: u8,
-	pub(crate) doc_type: String,
+	pub(crate) doc_type: DocumentType,
 	pub(crate) doc_type_version: u64,
 	pub(crate) doc_type_read_version: u64,
+}
+
+impl Default for EbmlHeaderProperties {
+	fn default() -> Self {
+		Self {
+			version: 0,
+			read_version: 0,
+			max_id_length: 0,
+			max_size_length: 0,
+			doc_type: DocumentType::Matroska,
+			doc_type_version: 0,
+			doc_type_read_version: 0,
+		}
+	}
 }
 
 impl EbmlHeaderProperties {
@@ -38,9 +84,9 @@ impl EbmlHeaderProperties {
 		self.max_size_length
 	}
 
-	/// A string that describes the type of document
-	pub fn doc_type(&self) -> &str {
-		&self.doc_type
+	/// The type of document
+	pub fn doc_type(&self) -> DocumentType {
+		self.doc_type
 	}
 
 	/// The version of DocType interpreter used to create the EBML Document

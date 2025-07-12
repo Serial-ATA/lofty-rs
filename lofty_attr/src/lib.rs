@@ -119,6 +119,12 @@ pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
 			#( #ident_variants )*
 		}
 
+		impl From<ElementIdent> for crate::ebml::ElementId {
+			fn from(value: ElementIdent) -> crate::ebml::ElementId {
+				crate::ebml::ElementId(value as _)
+			}
+		}
+
 		fn master_elements() -> &'static ::std::collections::HashMap<ElementId, MasterElement> {
 			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<ElementId, MasterElement>> = ::std::sync::OnceLock::new();
 			INSTANCE.get_or_init(|| {

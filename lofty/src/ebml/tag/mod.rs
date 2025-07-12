@@ -16,7 +16,7 @@ pub use tag_name::*;
 pub use target::*;
 
 use crate::config::{WriteOptions, global_options};
-use crate::ebml::tag::write::{ElementWriterCtx, WriteableElement};
+use crate::ebml::tag::write::ElementWriterCtx;
 use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
@@ -25,7 +25,7 @@ use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::{Cursor, Write};
+use std::io::Write;
 use std::ops::Deref;
 
 use lofty_attr::tag;
@@ -470,12 +470,14 @@ impl From<crate::tag::Tag> for MatroskaTag {
 
 pub(crate) struct MatroskaTagRef<'a> {
 	pub(crate) tags: Vec<TagRef<'a>>,
+	pub(crate) attachments: Vec<Cow<'a, AttachedFile<'a>>>,
 }
 
 impl<'a> From<&'a MatroskaTag> for MatroskaTagRef<'a> {
 	fn from(value: &'a MatroskaTag) -> Self {
 		Self {
 			tags: value.tags.iter().map(Into::into).collect::<Vec<_>>(),
+			attachments: value.attached_files.iter().map(Cow::Borrowed).collect(),
 		}
 	}
 }
@@ -503,12 +505,15 @@ impl<'a> From<&'a crate::tag::Tag> for MatroskaTagRef<'static> {
 			})
 			.collect::<Vec<_>>();
 
-		Self { tags }
+		// TODO
+		let attachments = Vec::new();
+
+		Self { tags, attachments }
 	}
 }
 
-impl<'a> MatroskaTagRef<'a> {
-	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+impl MatroskaTagRef<'_> {
+	pub(crate) fn write_to<F>(self, file: &mut F, write_options: WriteOptions) -> Result<()>
 	where
 		F: FileLike,
 		LoftyError: From<<F as Truncate>::Error>,
@@ -518,13 +523,12 @@ impl<'a> MatroskaTagRef<'a> {
 	}
 
 	pub(crate) fn dump_to<W: Write>(
-		&self,
+		self,
 		writer: &mut W,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<()> {
-		let mut buf = Cursor::new(Vec::new());
-		self.write_element(ElementWriterCtx::default(), &mut buf)?;
-		writer.write_all(&buf.into_inner())?;
+		let encoded = write::encode_tag(self, write_options, ElementWriterCtx::default())?;
+		writer.write_all(&encoded)?;
 		Ok(())
 	}
 }

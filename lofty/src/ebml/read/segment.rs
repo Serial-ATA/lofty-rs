@@ -1,7 +1,8 @@
 use super::{segment_attachments, segment_cluster, segment_info, segment_tags, segment_tracks};
 use crate::config::ParseOptions;
-use crate::ebml::ElementId;
-use crate::ebml::element_reader::{ElementHeader, ElementIdent, ElementReader, ElementReaderYield};
+use crate::ebml::element_reader::{
+	ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
+};
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::tag::MatroskaTag;
 use crate::error::Result;
@@ -19,9 +20,9 @@ where
 	let mut tags = None;
 	let mut children_reader = element_reader.children();
 
-	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((id, size)) => {
+	while let Some(child) = children_reader.next() {
+		match child? {
+			ElementReaderYield::Master(header @ KnownElementHeader { id, .. }) => {
 				match id {
 					ElementIdent::Info if parse_options.read_properties => {
 						segment_info::read_from(
@@ -71,15 +72,12 @@ where
 						// We do not end up using information from all of the segment
 						// elements, so we can just skip any useless ones.
 
-						children_reader.skip_element(ElementHeader {
-							id: ElementId(id as u64),
-							size,
-						})?;
+						children_reader.skip_element(header.into())?;
 					},
 				}
 			},
 			ElementReaderYield::Eof => break,
-			_ => unreachable!("Unhandled child element in \\Segment: {child:?}"),
+			child => unreachable!("Unhandled child element in \\Segment: {child:?}"),
 		}
 	}
 

@@ -1,6 +1,7 @@
 use crate::config::ParseOptions;
 use crate::ebml::element_reader::{
 	ChildElementDescriptor, ElementChildIterator, ElementIdent, ElementReaderYield,
+	KnownElementHeader,
 };
 use crate::ebml::properties::EbmlProperties;
 use crate::ebml::{AudioTrackDescriptor, EbmlAudioTrackEmphasis, Language};
@@ -16,13 +17,16 @@ pub(super) fn read_from<R>(
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((ElementIdent::TrackEntry, _size)) => {
+	while let Some(child) = children_reader.next() {
+		match child? {
+			ElementReaderYield::Master(KnownElementHeader {
+				id: ElementIdent::TrackEntry,
+				..
+			}) => {
 				read_track_entry(children_reader, parse_options, &mut properties.audio_tracks)?;
 			},
 			ElementReaderYield::Eof => break,
-			_ => {
+			child => {
 				unimplemented!("Unhandled child element in \\Segment\\Tracks: {child:?}");
 			},
 		}
@@ -43,8 +47,8 @@ where
 {
 	let mut track = AudioTrackDescriptor::default();
 
-	while let Some(child) = children_reader.next()? {
-		match child {
+	while let Some(child) = children_reader.next() {
+		match child? {
 			ElementReaderYield::Child((ChildElementDescriptor { ident, .. }, size)) => {
 				match ident {
 					ElementIdent::TrackNumber => {
@@ -107,7 +111,7 @@ where
 					_ => unreachable!("Unhandled child element in TrackEntry: {:?}", ident),
 				}
 			},
-			ElementReaderYield::Master((id, _size)) => match id {
+			ElementReaderYield::Master(KnownElementHeader { id, .. }) => match id {
 				ElementIdent::Audio => {
 					read_audio_settings(&mut children_reader.children(), parse_options, &mut track)?
 				},
@@ -116,7 +120,7 @@ where
 				},
 			},
 			ElementReaderYield::Eof => break,
-			_ => {
+			child => {
 				unreachable!("Unhandled child element in TrackEntry: {child:?}");
 			},
 		}
@@ -135,8 +139,8 @@ fn read_audio_settings<R>(
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next()? {
-		match child {
+	while let Some(child) = children_reader.next() {
+		match child? {
 			ElementReaderYield::Child((ChildElementDescriptor { ident, .. }, size)) => {
 				match ident {
 					ElementIdent::SamplingFrequency => {
@@ -164,13 +168,13 @@ where
 						audio_track.settings.emphasis =
 							EbmlAudioTrackEmphasis::from_u8(emphasis as u8);
 					},
-					_ => {
+					child => {
 						unreachable!("Unhandled child element in Audio: {child:?}");
 					},
 				}
 			},
 			ElementReaderYield::Eof => break,
-			_ => {
+			child => {
 				unreachable!("Unhandled child element in Audio: {child:?}");
 			},
 		}

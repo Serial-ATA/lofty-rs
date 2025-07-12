@@ -1,5 +1,7 @@
 use crate::config::ParseOptions;
-use crate::ebml::element_reader::{ElementChildIterator, ElementIdent, ElementReaderYield};
+use crate::ebml::element_reader::{
+	ElementChildIterator, ElementIdent, ElementReaderYield, KnownElementHeader,
+};
 use crate::ebml::{Language, MatroskaTag, SimpleTag, Tag, TagValue, Target, TargetType};
 use crate::error::Result;
 use crate::macros::decode_err;
@@ -14,14 +16,17 @@ pub(super) fn read_from<R>(
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next()? {
-		match child {
-			ElementReaderYield::Master((ElementIdent::Tag, _size)) => {
+	while let Some(child) = children_reader.next() {
+		match child? {
+			ElementReaderYield::Master(KnownElementHeader {
+				id: ElementIdent::Tag,
+				..
+			}) => {
 				let tag_element = read_tag(&mut children_reader.children())?;
 				tag.tags.push(tag_element);
 			},
 			ElementReaderYield::Eof => break,
-			_ => unimplemented!("Unhandled child element in \\Segment\\Tags: {child:?}"),
+			child => unimplemented!("Unhandled child element in \\Segment\\Tags: {child:?}"),
 		}
 	}
 
@@ -35,14 +40,13 @@ where
 	let mut target = None;
 	let mut simple_tags = Vec::new();
 
-	while let Some(child) = children_reader.next()? {
-		let ElementReaderYield::Master((master, _size)) = child else {
-			match child {
-				ElementReaderYield::Eof => break,
-				_ => {
-					unreachable!("Unhandled child element in \\Segment\\Tags\\Tag: {child:?}")
-				},
-			}
+	while let Some(child) = children_reader.next() {
+		let master = match child? {
+			ElementReaderYield::Master(KnownElementHeader { id, .. }) => id,
+			ElementReaderYield::Eof => break,
+			child => {
+				unreachable!("Unhandled child element in \\Segment\\Tags\\Tag: {child:?}")
+			},
 		};
 
 		match master {
@@ -81,14 +85,13 @@ where
 {
 	let mut target = Target::default();
 
-	while let Some(child) = children_reader.next()? {
-		let ElementReaderYield::Child((child, size)) = child else {
-			match child {
-				ElementReaderYield::Eof => break,
-				_ => unreachable!(
-					"Unhandled child element in \\Segment\\Tags\\Tag\\Targets: {child:?}"
-				),
-			}
+	while let Some(child) = children_reader.next() {
+		let (child, size) = match child? {
+			ElementReaderYield::Child((child, size)) => (child, size),
+			ElementReaderYield::Eof => break,
+			child => {
+				unreachable!("Unhandled child element in \\Segment\\Tags\\Tag\\Targets: {child:?}")
+			},
 		};
 
 		match child.ident {
@@ -143,14 +146,13 @@ where
 	let mut default = false;
 	let mut value = None;
 
-	while let Some(child) = children_reader.next()? {
-		let ElementReaderYield::Child((child, size)) = child else {
-			match child {
-				ElementReaderYield::Eof => break,
-				_ => unreachable!(
-					"Unhandled child element in \\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
-				),
-			}
+	while let Some(child) = children_reader.next() {
+		let (child, size) = match child? {
+			ElementReaderYield::Child((child, size)) => (child, size),
+			ElementReaderYield::Eof => break,
+			child => unreachable!(
+				"Unhandled child element in \\Segment\\Tags\\Tag\\SimpleTag: {child:?}"
+			),
 		};
 
 		match child.ident {

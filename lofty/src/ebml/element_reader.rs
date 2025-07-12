@@ -12,6 +12,10 @@ use lofty_attr::ebml_master_elements;
 pub struct ElementHeader {
 	pub(crate) id: ElementId,
 	pub(crate) size: VInt<u64>,
+	/// Number of bytes that the `id` field occupied when parsed
+	pub(crate) size_of_id: u8,
+	/// Number of bytes that the `size` field occupied when parsed
+	pub(crate) size_of_size: u8,
 }
 
 impl ElementHeader {
@@ -19,10 +23,44 @@ impl ElementHeader {
 	where
 		R: Read,
 	{
+		let (id, id_bytes_read) = ElementId::parse(reader, max_id_length)?;
+		let (size, size_bytes_read) = VInt::<u64>::parse(reader, max_vint_length)?;
+
 		Ok(Self {
-			id: ElementId::parse(reader, max_id_length)?,
-			size: VInt::<u64>::parse(reader, max_vint_length)?,
+			id,
+			size,
+			size_of_id: id_bytes_read,
+			size_of_size: size_bytes_read,
 		})
+	}
+}
+
+/// Same as [`ElementHeader`], but with a known ID
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct KnownElementHeader {
+	pub(crate) id: ElementIdent,
+	pub(crate) size: VInt<u64>,
+	/// Number of bytes that the `id` field occupied when parsed
+	pub(crate) size_of_id: u8,
+	/// Number of bytes that the `size` field occupied when parsed
+	pub(crate) size_of_size: u8,
+}
+
+impl KnownElementHeader {
+	/// The number of bytes the header took occupied when parsed
+	pub fn len(self) -> usize {
+		(self.size_of_id + self.size_of_size) as usize
+	}
+}
+
+impl From<KnownElementHeader> for ElementHeader {
+	fn from(header: KnownElementHeader) -> Self {
+		Self {
+			id: ElementId(header.id as u64),
+			size: header.size,
+			size_of_id: header.size_of_id,
+			size_of_size: header.size_of_size,
+		}
 	}
 }
 
@@ -255,7 +293,7 @@ ebml_master_elements! {
 		children: [
 			FileDescription: { 0x467E, String },
 			FileName: { 0x466E, Utf8 },
-			FileMimeType: { 0x4660, String },
+			FileMediaType: { 0x4660, String },
 			FileData: { 0x465C, Binary },
 			FileUID: { 0x46AE, UnsignedInt },
 			FileReferral: { 0x4675, Binary },
@@ -348,29 +386,30 @@ impl ElementReaderContext {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) enum ElementReaderYield {
-	Master((ElementIdent, VInt<u64>)),
+	Master(KnownElementHeader),
 	Child((ChildElementDescriptor, VInt<u64>)),
 	Unknown(ElementHeader),
 	Eof,
 }
 
 impl ElementReaderYield {
-	pub fn ident(&self) -> Option<u64> {
+	pub fn ident(&self) -> Option<ElementId> {
 		match self {
-			ElementReaderYield::Master((ident, _)) => Some(*ident as u64),
-			ElementReaderYield::Child((child, _)) => Some(child.ident as u64),
-			ElementReaderYield::Unknown(header) => Some(header.id.value()),
+			ElementReaderYield::Master(KnownElementHeader { id, .. }) => {
+				Some(ElementId(*id as u64))
+			},
+			ElementReaderYield::Child((child, _)) => Some(ElementId(child.ident as u64)),
+			ElementReaderYield::Unknown(header) => Some(header.id),
 			_ => None,
 		}
 	}
 
 	pub fn size(&self) -> Option<u64> {
 		match self {
-			ElementReaderYield::Master((_, size)) | ElementReaderYield::Child((_, size)) => {
-				Some(size.value())
-			},
+			ElementReaderYield::Master(KnownElementHeader { size, .. })
+			| ElementReaderYield::Child((_, size)) => Some(size.value()),
 			ElementReaderYield::Unknown(header) => Some(header.size.value()),
 			_ => None,
 		}
@@ -421,11 +460,19 @@ impl<R> ElementReader<R>
 where
 	R: Read,
 {
-	pub(crate) fn new(reader: R) -> Self {
+	pub fn new(reader: R) -> Self {
 		Self {
 			reader,
 			ctx: ElementReaderContext::default(),
 		}
+	}
+
+	pub fn into_inner(self) -> R {
+		self.reader
+	}
+
+	pub fn inner(&self) -> &R {
+		&self.reader
 	}
 
 	pub(crate) fn set_max_id_length(&mut self, len: u8) {
@@ -437,7 +484,7 @@ where
 	}
 
 	fn push_new_master(&mut self, master: MasterElement, size: VInt<u64>) -> Result<()> {
-		log::debug!("New master element: {:?}", master.id);
+		log::trace!("New master element: {:?}", master.id);
 
 		if self.ctx.depth == MAX_DEPTH {
 			decode_err!(@BAIL Ebml, "Maximum depth reached");
@@ -477,8 +524,7 @@ where
 		}
 
 		if self.ctx.depth == ROOT_DEPTH {
-			return Err(io::Error::new(
-				io::ErrorKind::Other,
+			return Err(io::Error::other(
 				"Cannot go to previous master element, already at root",
 			));
 		}
@@ -504,7 +550,12 @@ where
 
 		self.push_new_master(*master, header.size)?;
 
-		Ok(ElementReaderYield::Master((master.id, header.size)))
+		Ok(ElementReaderYield::Master(KnownElementHeader {
+			id: master.id,
+			size: header.size,
+			size_of_id: header.size_of_id,
+			size_of_size: header.size_of_size,
+		}))
 	}
 
 	pub(crate) fn next(&mut self) -> Result<ElementReaderYield> {
@@ -539,7 +590,12 @@ where
 			self.push_new_master(master, header.size)?;
 
 			// We encountered a nested master element
-			return Ok(ElementReaderYield::Master((child.ident, header.size)));
+			return Ok(ElementReaderYield::Master(KnownElementHeader {
+				id: child.ident,
+				size: header.size,
+				size_of_id: header.size_of_id,
+				size_of_size: header.size_of_size,
+			}));
 		}
 
 		Ok(ElementReaderYield::Child((*child, header.size)))
@@ -593,7 +649,7 @@ where
 	}
 
 	pub(crate) fn skip_element(&mut self, element_header: ElementHeader) -> Result<()> {
-		log::debug!(
+		log::trace!(
 			"Encountered unknown EBML element: {:X}, skipping",
 			element_header.id.0
 		);
@@ -606,6 +662,11 @@ where
 		// A Signed Integer Element MUST declare a length from zero to eight octets
 		if element_length > 8 {
 			decode_err!(@BAIL Ebml, "Invalid size for signed int element")
+		}
+
+		// "a Signed Integer Element with a zero-octet length represents an integer value of zero."
+		if element_length == 0 {
+			return Ok(0);
 		}
 
 		let mut buf = [0; 8];
@@ -625,6 +686,11 @@ where
 			decode_err!(@BAIL Ebml, "Invalid size for unsigned int element")
 		}
 
+		// "an Unsigned Integer Element with a zero-octet length represents an integer value of zero."
+		if element_length == 0 {
+			return Ok(0);
+		}
+
 		let mut buf = [0; 8];
 		self.read_exact(&mut buf[8 - element_length as usize..])?;
 		Ok(u64::from_be_bytes(buf))
@@ -634,7 +700,7 @@ where
 	pub(crate) fn read_flag(&mut self, element_length: u64) -> Result<bool> {
 		let val = self.read_unsigned_int(element_length)?;
 		if val > 1 {
-			log::warn!("Flag value `{}` is out of range, assuming true", val);
+			log::warn!("Flag value `{val}` is out of range, assuming true");
 		}
 
 		Ok(val != 0)
@@ -722,14 +788,18 @@ where
 		Self { reader }
 	}
 
-	pub(crate) fn next(&mut self) -> Result<Option<ElementReaderYield>> {
+	pub(crate) fn next(&mut self) -> Option<Result<ElementReaderYield>> {
 		match self.reader.next() {
 			Ok(ElementReaderYield::Unknown(header)) => {
-				self.reader.skip_element(header)?;
+				if let Err(e) = self.reader.skip_element(header) {
+					return Some(Err(e));
+				}
+
 				self.next()
 			},
-			Err(e) => Err(e),
-			element => element.map(Some),
+			Ok(ElementReaderYield::Eof) => None,
+			Err(e) => Some(Err(e)),
+			element => Some(element),
 		}
 	}
 

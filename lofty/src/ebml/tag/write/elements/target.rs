@@ -1,17 +1,11 @@
+use crate::ebml::element_reader::ElementIdent;
 use crate::ebml::tag::write::{EbmlWriteExt, ElementWriterCtx, WriteableElement, write_element};
-use crate::ebml::{ElementId, TargetDescriptor, TargetType, VInt};
+use crate::ebml::{DocumentType, ElementId, TargetDescriptor, TargetType, VInt};
 use crate::io::FileLike;
-
-const TargetTypeValue_ID: ElementId = ElementId(0x68CA);
-const TargetType_ID: ElementId = ElementId(0x63CA);
-const TagTrackUID_ID: ElementId = ElementId(0x63C5);
-const TagEditionUID_ID: ElementId = ElementId(0x63C9);
-const TagChapterUID_ID: ElementId = ElementId(0x63C4);
-const TagAttachmentUID_ID: ElementId = ElementId(0x63C6);
 
 // Segment\Tags\Tag\Targets
 impl WriteableElement for TargetDescriptor<'_> {
-	const ID: ElementId = ElementId(0x63C0);
+	const ID: ElementId = ElementId(ElementIdent::Targets as _);
 
 	fn write_element<F: FileLike>(
 		&self,
@@ -30,45 +24,73 @@ impl WriteableElement for TargetDescriptor<'_> {
 		if target_type == TargetType::Album {
 			write_element(
 				ctx,
-				TargetTypeValue_ID,
+				ElementIdent::TargetTypeValue.into(),
 				&[].as_slice(),
 				&mut element_children,
 			)?;
 		} else {
-			let vint = VInt::<u64>::try_from(target_type as u64)?;
-			write_element(ctx, TargetTypeValue_ID, &vint, &mut element_children)?;
+			write_element(
+				ctx,
+				ElementIdent::TargetTypeValue.into(),
+				&(target_type as u64),
+				&mut element_children,
+			)?;
 		}
 
 		if let TargetDescriptor::Full(target) = self {
 			if let Some(name) = &target.name {
-				write_element(ctx, TargetType_ID, &name.as_str(), &mut element_children)?;
+				write_element(
+					ctx,
+					ElementIdent::TargetType.into(),
+					&name.as_str(),
+					&mut element_children,
+				)?;
 			}
 
-			if let Some(track_uids) = &target.track_uids {
-				for &uid in track_uids {
-					let vint = VInt::<u64>::try_from(uid)?;
-					write_element(ctx, TagTrackUID_ID, &vint, &mut element_children)?;
+			// None of these fields are supported in WebM
+			if ctx.doc_type == DocumentType::Matroska {
+				if let Some(track_uids) = &target.track_uids {
+					for &uid in track_uids {
+						write_element(
+							ctx,
+							ElementIdent::TagTrackUID.into(),
+							&uid,
+							&mut element_children,
+						)?;
+					}
 				}
-			}
 
-			if let Some(edition_uids) = &target.edition_uids {
-				for &uid in edition_uids {
-					let vint = VInt::<u64>::try_from(uid)?;
-					write_element(ctx, TagEditionUID_ID, &vint, &mut element_children)?;
+				if let Some(edition_uids) = &target.edition_uids {
+					for &uid in edition_uids {
+						write_element(
+							ctx,
+							ElementIdent::TagEditionUID.into(),
+							&uid,
+							&mut element_children,
+						)?;
+					}
 				}
-			}
 
-			if let Some(chapter_uids) = &target.chapter_uids {
-				for &uid in chapter_uids {
-					let vint = VInt::<u64>::try_from(uid)?;
-					write_element(ctx, TagChapterUID_ID, &vint, &mut element_children)?;
+				if let Some(chapter_uids) = &target.chapter_uids {
+					for &uid in chapter_uids {
+						write_element(
+							ctx,
+							ElementIdent::TagChapterUID.into(),
+							&uid,
+							&mut element_children,
+						)?;
+					}
 				}
-			}
 
-			if let Some(attachment_uids) = &target.attachment_uids {
-				for &uid in attachment_uids {
-					let vint = VInt::<u64>::try_from(uid)?;
-					write_element(ctx, TagAttachmentUID_ID, &vint, &mut element_children)?;
+				if let Some(attachment_uids) = &target.attachment_uids {
+					for &uid in attachment_uids {
+						write_element(
+							ctx,
+							ElementIdent::TagAttachmentUID.into(),
+							&uid,
+							&mut element_children,
+						)?;
+					}
 				}
 			}
 		}

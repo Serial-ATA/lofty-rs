@@ -2,6 +2,7 @@ use crate::config::ParseOptions;
 use crate::ebml::VInt;
 use crate::ebml::element_reader::{
 	ChildElementDescriptor, ElementChildIterator, ElementIdent, ElementReaderYield,
+	KnownElementHeader,
 };
 use crate::ebml::properties::EbmlProperties;
 use crate::error::Result;
@@ -31,12 +32,16 @@ where
 	let target_track_number = default_audio_track.number();
 	let mut total_audio_data_size = 0u64;
 
-	while let Some(child) = children_reader.next()? {
+	while let Some(child) = children_reader.next() {
 		let ident;
 		let size;
-		match child {
-			ElementReaderYield::Master((master_ident, master_size)) => {
-				ident = master_ident;
+		match child? {
+			ElementReaderYield::Master(KnownElementHeader {
+				id,
+				size: master_size,
+				..
+			}) => {
+				ident = id;
 				size = master_size;
 			},
 			ElementReaderYield::Child((descriptor, child_size)) => {
@@ -78,7 +83,7 @@ where
 				target_track_number,
 				&mut total_audio_data_size,
 			)?,
-			_ => unreachable!("Unhandled child element in \\Segment\\Cluster: {child:?}"),
+			child => unreachable!("Unhandled child element in \\Segment\\Cluster: {child:?}"),
 		}
 	}
 
@@ -111,9 +116,9 @@ fn read_block_group<R>(
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next()? {
+	while let Some(child) = children_reader.next() {
 		let size;
-		match child {
+		match child? {
 			ElementReaderYield::Child((
 				ChildElementDescriptor {
 					ident: ElementIdent::Block,
@@ -127,7 +132,7 @@ where
 				children_reader.skip_element(unknown)?;
 				continue;
 			},
-			_ => unimplemented!(
+			child => unimplemented!(
 				"Unhandled child element in \\Segment\\Cluster\\BlockGroup: {child:?}"
 			),
 		}
@@ -163,7 +168,7 @@ where
 	// The block header is Track number (variable), timestamp (i16), and flags (u8)
 	const NON_VARIABLE_BLOCK_HEADER_SIZE: u8 = 2 /* Timestamp */ + 1 /* Flags */;
 
-	let track_number = VInt::<u64>::parse(children_reader, max_size_length)?;
+	let (track_number, _) = VInt::<u64>::parse(children_reader, max_size_length)?;
 	let track_number_octets = track_number.octet_length();
 
 	children_reader.skip(block_size - u64::from(track_number_octets))?;

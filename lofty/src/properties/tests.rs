@@ -2,8 +2,8 @@ use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
 use crate::config::ParseOptions;
 use crate::ebml::{
-	AudioTrackDescriptor, AudioTrackSettings, EbmlFile, EbmlHeaderProperties, EbmlProperties,
-	Language, SegmentInfo,
+	AudioTrackDescriptor, AudioTrackSettings, DocumentType, EbmlFile, EbmlHeaderProperties,
+	EbmlProperties, Language, SegmentInfo,
 };
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
@@ -79,7 +79,7 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 			read_version: 1,
 			max_id_length: 4,
 			max_size_length: 8,
-			doc_type: String::from("matroska"),
+			doc_type: DocumentType::Matroska,
 			doc_type_version: 4,
 			doc_type_read_version: 0,
 		},

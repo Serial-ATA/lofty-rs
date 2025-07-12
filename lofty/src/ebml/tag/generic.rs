@@ -230,7 +230,7 @@ fn split_simple_tags(
 
 	lang = l.as_bytes().try_into().unwrap(); // Infallible
 
-	let Some(item_key) = MAPPINGS.get(&(target_type, &*simple_tag.name)).cloned() else {
+	let Some(item_key) = MAPPINGS.get(&(target_type, &*simple_tag.name)).copied() else {
 		return TAG_RETAINED;
 	};
 

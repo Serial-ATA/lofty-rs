@@ -533,9 +533,8 @@ impl Picture {
 	///
 	/// NOTES:
 	///
-	/// * This will **not** verify `data`'s signature.
-	/// This should only be used if all data has been verified
-	/// beforehand.
+	/// * This will **not** verify `data`'s signature. This should only be used if all data has been
+	///   verified beforehand.
 	/// * `file_name` is only used in Matroska
 	pub fn new_unchecked(
 		pic_type: PictureType,
