@@ -20,7 +20,7 @@ macro_rules! generate_tests {
 				// Here we have an MPC file with an ID3v2, ID3v1, and an APEv2 tag
 				let file = Probe::open($path)
 					.unwrap()
-					.options(ParseOptions::new().read_properties(false))
+					.options(ParseOptions::new())
 					.read()
 					.unwrap();
 

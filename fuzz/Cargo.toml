@@ -52,6 +52,10 @@ test = false
 doc = false
 
 [[bin]]
+name = "ebmlfile_read_from"
+path = "fuzz_targets/ebmlfile_read_from.rs"
+
+[[bin]]
 name = "flacfile_read_from"
 path = "fuzz_targets/flacfile_read_from.rs"
 test = false
