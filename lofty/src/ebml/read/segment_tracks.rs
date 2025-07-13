@@ -10,24 +10,30 @@ use crate::error::Result;
 use std::io::{Read, Seek};
 
 pub(super) fn read_from<R>(
-	children_reader: &mut ElementChildIterator<'_, R>,
+	tracks_reader: &mut ElementChildIterator<'_, R>,
 	parse_options: ParseOptions,
 	properties: &mut EbmlProperties,
 ) -> Result<()>
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next() {
+	while let Some(child) = tracks_reader.next() {
 		match child? {
 			ElementReaderYield::Master(KnownElementHeader {
 				id: ElementIdent::TrackEntry,
 				..
 			}) => {
-				read_track_entry(children_reader, parse_options, &mut properties.audio_tracks)?;
+				read_track_entry(
+					&mut tracks_reader.children(),
+					parse_options,
+					&mut properties.audio_tracks,
+				)?;
 			},
 			ElementReaderYield::Eof => break,
 			child => {
-				unimplemented!("Unhandled child element in \\Segment\\Tracks: {child:?}");
+				if let Some(size) = child.size() {
+					tracks_reader.skip(size)?;
+				}
 			},
 		}
 	}
@@ -38,7 +44,7 @@ where
 const AUDIO_TRACK_TYPE: u64 = 2;
 
 fn read_track_entry<R>(
-	children_reader: &mut ElementChildIterator<'_, R>,
+	track_entry_reader: &mut ElementChildIterator<'_, R>,
 	parse_options: ParseOptions,
 	audio_tracks: &mut Vec<AudioTrackDescriptor>,
 ) -> Result<()>
@@ -47,81 +53,86 @@ where
 {
 	let mut track = AudioTrackDescriptor::default();
 
-	while let Some(child) = children_reader.next() {
+	while let Some(child) = track_entry_reader.next() {
 		match child? {
 			ElementReaderYield::Child((ChildElementDescriptor { ident, .. }, size)) => {
 				match ident {
 					ElementIdent::TrackNumber => {
-						let track_number = children_reader.read_unsigned_int(size.value())?;
+						let track_number = track_entry_reader.read_unsigned_int(size.value())?;
 						track.number = track_number;
 					},
 					ElementIdent::TrackUid => {
-						let track_uid = children_reader.read_unsigned_int(size.value())?;
+						let track_uid = track_entry_reader.read_unsigned_int(size.value())?;
 						track.uid = track_uid;
 					},
 					ElementIdent::TrackType => {
-						let track_type = children_reader.read_unsigned_int(size.value())?;
+						let track_type = track_entry_reader.read_unsigned_int(size.value())?;
 						log::trace!("Encountered new track of type: {}", track_type);
 
 						if track_type != AUDIO_TRACK_TYPE {
-							children_reader.exhaust_current_master()?;
+							track_entry_reader.exhaust_current_master()?;
 							break;
 						}
 					},
 					ElementIdent::FlagEnabled => {
-						let enabled = children_reader.read_flag(size.value())?;
+						let enabled = track_entry_reader.read_flag(size.value())?;
 						track.enabled = enabled;
 					},
 					ElementIdent::FlagDefault => {
-						let default = children_reader.read_flag(size.value())?;
+						let default = track_entry_reader.read_flag(size.value())?;
 						track.default = default;
 					},
 					ElementIdent::DefaultDuration => {
-						let _default_duration = children_reader.read_unsigned_int(size.value())?;
+						let _default_duration =
+							track_entry_reader.read_unsigned_int(size.value())?;
 					},
 					ElementIdent::TrackTimecodeScale => {
-						let _timecode_scale = children_reader.read_float(size.value())?;
+						let _timecode_scale = track_entry_reader.read_float(size.value())?;
 					},
 					ElementIdent::Language => {
-						let language = children_reader.read_string(size.value())?;
+						let language = track_entry_reader.read_string(size.value())?;
 						track.language = Language::Iso639_2(language);
 					},
 					ElementIdent::LanguageBCP47 => {
-						let language = children_reader.read_string(size.value())?;
+						let language = track_entry_reader.read_string(size.value())?;
 						track.language = Language::Bcp47(language);
 					},
 					ElementIdent::CodecID => {
-						let codec_id = children_reader.read_string(size.value())?;
+						let codec_id = track_entry_reader.read_string(size.value())?;
 						track.codec_id = codec_id;
 					},
 					ElementIdent::CodecPrivate => {
-						let codec_private = children_reader.read_binary(size.value())?;
+						let codec_private = track_entry_reader.read_binary(size.value())?;
 						track.codec_private = Some(codec_private);
 					},
 					ElementIdent::CodecDelay => {
-						let _codec_delay = children_reader.read_unsigned_int(size.value())?;
+						let _codec_delay = track_entry_reader.read_unsigned_int(size.value())?;
 					},
 					ElementIdent::CodecName => {
-						let codec_name = children_reader.read_utf8(size.value())?;
+						let codec_name = track_entry_reader.read_utf8(size.value())?;
 						track.codec_name = Some(codec_name);
 					},
 					ElementIdent::SeekPreRoll => {
-						let _seek_pre_roll = children_reader.read_unsigned_int(size.value())?;
+						let _seek_pre_roll = track_entry_reader.read_unsigned_int(size.value())?;
 					},
 					_ => unreachable!("Unhandled child element in TrackEntry: {:?}", ident),
 				}
 			},
 			ElementReaderYield::Master(KnownElementHeader { id, .. }) => match id {
-				ElementIdent::Audio => {
-					read_audio_settings(&mut children_reader.children(), parse_options, &mut track)?
-				},
+				ElementIdent::Audio => read_audio_settings(
+					&mut track_entry_reader.children(),
+					parse_options,
+					&mut track,
+				)?,
 				_ => {
 					unreachable!("Unhandled master element in TrackEntry: {:?}", id);
 				},
 			},
 			ElementReaderYield::Eof => break,
 			child => {
-				unreachable!("Unhandled child element in TrackEntry: {child:?}");
+				if let Some(size) = child.size() {
+					track_entry_reader.skip(size)?;
+				}
 			},
 		}
 	}
@@ -132,35 +143,35 @@ where
 }
 
 fn read_audio_settings<R>(
-	children_reader: &mut ElementChildIterator<'_, R>,
+	audio_reader: &mut ElementChildIterator<'_, R>,
 	_parse_options: ParseOptions,
 	audio_track: &mut AudioTrackDescriptor,
 ) -> Result<()>
 where
 	R: Read + Seek,
 {
-	while let Some(child) = children_reader.next() {
+	while let Some(child) = audio_reader.next() {
 		match child? {
 			ElementReaderYield::Child((ChildElementDescriptor { ident, .. }, size)) => {
 				match ident {
 					ElementIdent::SamplingFrequency => {
-						let sampling_frequency = children_reader.read_float(size.value())?;
+						let sampling_frequency = audio_reader.read_float(size.value())?;
 						audio_track.settings.sampling_frequency = sampling_frequency;
 					},
 					ElementIdent::OutputSamplingFrequency => {
-						let output_sampling_frequency = children_reader.read_float(size.value())?;
+						let output_sampling_frequency = audio_reader.read_float(size.value())?;
 						audio_track.settings.output_sampling_frequency = output_sampling_frequency;
 					},
 					ElementIdent::Channels => {
-						let channels = children_reader.read_unsigned_int(size.value())? as u8;
+						let channels = audio_reader.read_unsigned_int(size.value())? as u8;
 						audio_track.settings.channels = channels;
 					},
 					ElementIdent::BitDepth => {
-						let bit_depth = children_reader.read_unsigned_int(size.value())? as u8;
+						let bit_depth = audio_reader.read_unsigned_int(size.value())? as u8;
 						audio_track.settings.bit_depth = Some(bit_depth);
 					},
 					ElementIdent::Emphasis => {
-						let emphasis = children_reader.read_unsigned_int(size.value())?;
+						let emphasis = audio_reader.read_unsigned_int(size.value())?;
 						if emphasis == 0 {
 							continue; // No emphasis
 						}
@@ -168,14 +179,16 @@ where
 						audio_track.settings.emphasis =
 							EbmlAudioTrackEmphasis::from_u8(emphasis as u8);
 					},
-					child => {
-						unreachable!("Unhandled child element in Audio: {child:?}");
+					_ => {
+						audio_reader.skip(size.value())?;
 					},
 				}
 			},
 			ElementReaderYield::Eof => break,
 			child => {
-				unreachable!("Unhandled child element in Audio: {child:?}");
+				if let Some(size) = child.size() {
+					audio_reader.skip(size)?;
+				}
 			},
 		}
 	}

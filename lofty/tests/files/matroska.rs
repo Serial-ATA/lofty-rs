@@ -1,10 +1,10 @@
 use crate::{set_artist, temp_file, verify_artist};
 use lofty::config::ParseOptions;
+use lofty::ebml::EbmlFile;
 use lofty::file::FileType;
 use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
-use lofty::ebml::EbmlFile;
 
 use std::fs::File;
 use std::io::Seek;

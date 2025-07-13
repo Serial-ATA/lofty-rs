@@ -13,7 +13,7 @@ use crate::ebml::element_reader::{
 	ElementHeader, ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
 };
 use crate::ebml::vint::ElementId;
-use crate::error::Result;
+use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
@@ -40,25 +40,17 @@ where
 	log::debug!("File verified to be EBML");
 
 	loop {
-		let res = element_reader.next()?;
-		match res {
-			ElementReaderYield::Master(KnownElementHeader {
+		match element_reader.next() {
+			Ok(ElementReaderYield::Master(KnownElementHeader {
 				id: ElementIdent::Segment,
 				..
-			}) => {
-				ebml_tag = segment::read_from(&mut element_reader, parse_options, &mut properties)?;
+			})) => {
+				ebml_tag = segment::read_from(
+					&mut element_reader.children(),
+					parse_options,
+					&mut properties,
+				)?;
 				break;
-			},
-			// CRC-32 (0xBF) and Void (0xEC) elements can occur at the top level.
-			// This is valid, and we can just skip them.
-			ElementReaderYield::Unknown(ElementHeader {
-				id: id @ (CRC32_ID | VOID_ID),
-				size,
-				..
-			}) => {
-				log::debug!("Skipping global element: {:X}", id);
-				element_reader.skip(size.value())?;
-				continue;
 			},
 			_ => {
 				decode_err!(@BAIL Ebml, "File does not contain a segment element")
@@ -82,11 +74,15 @@ where
 {
 	log::trace!("Reading EBML header");
 
+	let ebml_size;
 	match element_reader.next() {
 		Ok(ElementReaderYield::Master(KnownElementHeader {
 			id: ElementIdent::EBML,
+			size,
 			..
-		})) => {},
+		})) => {
+			ebml_size = size;
+		},
 		Ok(_) => decode_err!(@BAIL Ebml, "File does not start with an EBML master element"),
 		Err(e) => return Err(e),
 	}
@@ -170,10 +166,12 @@ where
 		}
 	}
 
-	debug_assert!(
-		child_reader.master_exhausted(),
-		"There should be no remaining elements in the header"
-	);
+	if !ebml_size.is_unknown() {
+		debug_assert!(
+			child_reader.master_exhausted(),
+			"There should be no remaining elements in the header"
+		);
+	}
 
 	let Some(doc_type) = doc_type.take() else {
 		decode_err!(@BAIL Ebml, "Unable to determine EBML DocType");

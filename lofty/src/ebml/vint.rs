@@ -14,9 +14,9 @@ macro_rules! impl_vint {
 				#[allow(trivial_numeric_casts)]
 				impl VInt<$t> {
 					/// The maximum value that can be represented by a `VInt`
-					pub const MAX: $t = <$t>::MAX >> (<$t>::BITS as u64 - Self::USABLE_BITS);
+					pub const MAX: Self = Self(<$t>::MAX >> (<$t>::BITS as u64 - Self::USABLE_BITS));
 					/// The minimum value that can be represented by a `VInt`
-					pub const MIN: $t = <$t>::MIN;
+					pub const MIN: Self = Self(<$t>::MIN);
 					/// A `VInt` with a value of 0
 					pub const ZERO: Self = Self(0);
 					/// An unknown-sized `VInt`
@@ -152,8 +152,8 @@ macro_rules! impl_vint {
 						}
 
 						let v = self.0.saturating_sub(other);
-						if v < Self::MIN {
-							return Self(Self::MIN);
+						if v < Self::MIN.0 {
+							return Self::MIN;
 						}
 
 						Self(v)
@@ -169,7 +169,7 @@ macro_rules! impl_vint {
 						}
 
 						let val = self.0 + other.0;
-						assert!(val <= Self::MAX, "VInt overflow");
+						assert!(val <= Self::MAX.0, "VInt overflow");
 
 						Self(val)
 					}
@@ -197,7 +197,7 @@ macro_rules! impl_vint {
 					type Error = crate::error::LoftyError;
 
 					fn try_from(value: $t) -> Result<Self> {
-						if value > Self::MAX {
+						if value > Self::MAX.0 {
 							err!(BadVintSize);
 						}
 
