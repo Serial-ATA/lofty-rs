@@ -81,7 +81,7 @@ fn MKA_PROPERTIES() -> EbmlProperties {
 			max_size_length: 8,
 			doc_type: DocumentType::Matroska,
 			doc_type_version: 4,
-			doc_type_read_version: 0,
+			doc_type_read_version: 1,
 		},
 		extensions: Vec::new(),
 		segment_info: SegmentInfo {
