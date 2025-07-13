@@ -88,14 +88,12 @@ where
 	let mut file_contents = Vec::new();
 	file.read_to_end(&mut file_contents)?;
 
+	// TODO: Forcing the use of ParseOptions::default()
+	let parse_options = ParseOptions::default();
+
 	let mut element_reader = ElementReader::new(Cursor::new(file_contents));
 
-	// TODO: Forcing the use of ParseOptions::default()
-	crate::ebml::read::read_ebml_header(
-		&mut element_reader,
-		ParseOptions::default(),
-		&mut properties,
-	)?;
+	crate::ebml::read::read_ebml_header(&mut element_reader, parse_options, &mut properties)?;
 
 	let element_writer_ctx = ElementWriterCtx {
 		max_id_len: properties.header.max_id_length,

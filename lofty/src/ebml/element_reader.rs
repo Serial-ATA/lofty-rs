@@ -313,7 +313,7 @@ struct Depth {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct MasterElementContext {
+pub struct MasterElementContext {
 	element: MasterElement,
 	depth: Depth,
 }
@@ -382,7 +382,13 @@ impl ElementReaderContext {
 		assert!(self.locked && !self.lock_depths.is_empty());
 
 		let lock_depth = *self.lock_depths.last().unwrap();
-		self.masters[lock_depth - 1].depth.length
+		let len = self.masters[lock_depth - 1].depth.length;
+
+		if len.is_unknown() {
+			return VInt::<u64>::MAX;
+		}
+
+		len
 	}
 }
 
@@ -484,7 +490,7 @@ where
 	}
 
 	fn push_new_master(&mut self, master: MasterElement, size: VInt<u64>) -> Result<()> {
-		log::trace!("New master element: {:?}", master.id);
+		log::trace!("New master element: {:?} (size: {size:?})", master.id);
 
 		if self.ctx.depth == MAX_DEPTH {
 			decode_err!(@BAIL Ebml, "Maximum depth reached");
@@ -542,6 +548,15 @@ where
 	fn goto_next_master(&mut self) -> Result<ElementReaderYield> {
 		self.exhaust_current_master()?;
 
+		// If we're locked to an exhausted root element, do *not* move on from it until unlocked
+		if self.ctx.locked
+			&& self.current_master_length() == Some(0)
+			&& self.ctx.depth == ROOT_DEPTH
+		{
+			log::trace!("Root master element exhausted");
+			return Ok(ElementReaderYield::Eof);
+		}
+
 		let header = ElementHeader::read(self, self.ctx.max_id_length, self.ctx.max_size_length)?;
 		let Some(master) = master_elements().get(&header.id) else {
 			// We encountered an unknown master element
@@ -598,16 +613,25 @@ where
 			}));
 		}
 
+		log::trace!("New child element: {:?}", child.ident);
 		Ok(ElementReaderYield::Child((*child, header.size)))
 	}
 
 	pub(crate) fn exhaust_current_master(&mut self) -> Result<()> {
-		let Some(current_master) = self.ctx.current_master() else {
+		let Some(current_master_length) = self.current_master_length() else {
 			return Ok(());
 		};
 
-		self.skip(current_master.depth.length.value())?;
+		self.skip(current_master_length)?;
 		Ok(())
+	}
+
+	pub(crate) fn current_master_length(&self) -> Option<u64> {
+		let Some(current_master) = self.ctx.current_master() else {
+			return None;
+		};
+
+		Some(current_master.depth.length.value())
 	}
 
 	pub(crate) fn lock(&mut self) {
@@ -628,7 +652,7 @@ where
 			return;
 		};
 
-		log::trace!("Moving lock to depth: {}", last);
+		log::trace!("Moving lock to depth: {last}");
 	}
 
 	pub(crate) fn children(&mut self) -> ElementChildIterator<'_, R> {
@@ -637,7 +661,7 @@ where
 	}
 
 	pub(crate) fn skip(&mut self, length: u64) -> Result<()> {
-		log::trace!("Skipping {} bytes", length);
+		log::trace!("Skipping {length} bytes");
 
 		let current_master_length = self.ctx.current_master_length();
 		if length > current_master_length.value() {
@@ -752,7 +776,7 @@ where
 		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.8
 		// A Binary Element MUST declare a length in octets from zero to VINTMAX.
 
-		if element_length > VInt::<u64>::MAX {
+		if element_length > VInt::<u64>::MAX.value() {
 			decode_err!(@BAIL Ebml, "Binary element length is too large")
 		}
 
@@ -803,7 +827,7 @@ where
 		}
 	}
 
-	pub(crate) fn master_exhausted(&self) -> bool {
+	pub fn remaining(&self) -> u64 {
 		let lock_depth = *self
 			.reader
 			.ctx
@@ -812,7 +836,11 @@ where
 			.expect("a child iterator should always have a lock depth");
 		assert!(lock_depth <= self.reader.ctx.depth as usize);
 
-		self.reader.ctx.remaining_lock_length() == 0
+		self.reader.ctx.remaining_lock_length().value()
+	}
+
+	pub(crate) fn master_exhausted(&self) -> bool {
+		self.remaining() == 0
 	}
 }
 
