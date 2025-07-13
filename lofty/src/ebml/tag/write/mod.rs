@@ -43,7 +43,13 @@ pub(crate) trait EbmlWriteExt: Write + Sized {
 	}
 
 	fn write_size(&mut self, ctx: ElementWriterCtx, size: VInt<u64>) -> Result<()> {
-		VInt::<u64>::write_to(size.value(), None, Some(ctx.max_size_len), self)?;
+		VInt::<u64>::write_to(
+			size.value(),
+			None,
+			Some(ctx.max_size_len),
+			size.is_unknown(),
+			self,
+		)?;
 		Ok(())
 	}
 }

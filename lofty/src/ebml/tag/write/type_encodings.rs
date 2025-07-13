@@ -20,7 +20,7 @@ impl ElementEncodable for VInt<u64> {
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		writer.write_size(ctx, self.len()?)?;
-		VInt::<u64>::write_to(self.value(), None, None, writer)?;
+		VInt::<u64>::write_to(self.value(), None, None, self.is_unknown(), writer)?;
 		Ok(())
 	}
 }
@@ -32,7 +32,7 @@ impl ElementEncodable for VInt<i64> {
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		writer.write_size(ctx, self.len()?)?;
-		VInt::<i64>::write_to(self.value() as u64, None, None, writer)?;
+		VInt::<i64>::write_to(self.value() as u64, None, None, self.is_unknown(), writer)?;
 		Ok(())
 	}
 }
@@ -59,7 +59,7 @@ impl ElementEncodable for f32 {
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		if *self == 0.0 {
-			VInt::<u64>::write_to(VInt::<u64>::ZERO.value(), None, None, writer)?;
+			VInt::<u64>::write_to(VInt::<u64>::ZERO.value(), None, None, false, writer)?;
 			return Ok(());
 		}
 
@@ -76,7 +76,7 @@ impl ElementEncodable for f64 {
 
 	fn write_to<W: Write>(&self, ctx: ElementWriterCtx, writer: &mut W) -> Result<()> {
 		if *self == 0.0 {
-			VInt::<u64>::write_to(VInt::<u64>::ZERO.value(), None, None, writer)?;
+			VInt::<u64>::write_to(VInt::<u64>::ZERO.value(), None, None, false, writer)?;
 			return Ok(());
 		}
 
