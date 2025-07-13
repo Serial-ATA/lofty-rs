@@ -1,7 +1,7 @@
 use crate::error::Result;
 use crate::macros::err;
-use std::fmt::UpperHex;
 
+use std::fmt::{Debug, Display, UpperHex};
 use std::io::{Read, Write};
 use std::ops::{Add, Sub};
 
@@ -19,6 +19,10 @@ macro_rules! impl_vint {
 					pub const MIN: $t = <$t>::MIN;
 					/// A `VInt` with a value of 0
 					pub const ZERO: Self = Self(0);
+					/// An unknown-sized `VInt`
+					///
+					/// See [`Self::is_unknown()`]
+					pub const UNKNOWN: Self = Self(Self::ZERO.0 | 1 << (<$t>::BITS as u64) - 1);
 
 					/// Gets the inner value of the `VInt`
 					///
@@ -32,8 +36,18 @@ macro_rules! impl_vint {
 					/// assert_eq!(vint.value(), 2);
 					/// # Ok(()) }
 					/// ```
-					pub fn value(&self) -> $t {
+					#[inline]
+					pub fn value(self) -> $t {
 						self.0
+					}
+
+					/// Whether this `VInt` represents an unknown size
+					///
+					/// Since EBML is built for streaming, elements can specify that their data length
+					/// is unknown.
+					#[inline]
+					pub fn is_unknown(self) -> bool {
+						self == Self::UNKNOWN
 					}
 
 					/// Parse a `VInt` from a reader
@@ -94,7 +108,8 @@ macro_rules! impl_vint {
 					/// assert_eq!(vint.octet_length(), 3);
 					/// # Ok(()) }
 					/// ```
-					pub fn octet_length(&self) -> u8 {
+					#[inline]
+					pub fn octet_length(self) -> u8 {
 						octet_length(self.0 as u64)
 					}
 
@@ -123,15 +138,19 @@ macro_rules! impl_vint {
 					/// assert_eq!(bytes, &[0b1000_1010]);
 					/// # Ok(()) }
 					/// ```
-					pub fn as_bytes(&self, min_length: Option<u8>, max_length: Option<u8>) -> Result<Vec<u8>> {
+					pub fn as_bytes(self, min_length: Option<u8>, max_length: Option<u8>) -> Result<Vec<u8>> {
 						let mut ret = Vec::with_capacity(8);
-						VInt::<$t>::write_to(self.0 as u64, min_length, max_length, &mut ret)?;
+						VInt::<$t>::write_to(self.0 as u64, min_length, max_length, self.is_unknown(), &mut ret)?;
 						Ok(ret)
 					}
 
 					#[inline]
 					#[allow(dead_code)]
 					pub(crate) fn saturating_sub(self, other: $t) -> Self {
+						if self.is_unknown() {
+							return self;
+						}
+
 						let v = self.0.saturating_sub(other);
 						if v < Self::MIN {
 							return Self(Self::MIN);
@@ -145,6 +164,10 @@ macro_rules! impl_vint {
 					type Output = Self;
 
 					fn add(self, other: Self) -> Self::Output {
+						if self.is_unknown() {
+							return self;
+						}
+
 						let val = self.0 + other.0;
 						assert!(val <= Self::MAX, "VInt overflow");
 
@@ -156,6 +179,10 @@ macro_rules! impl_vint {
 					type Output = Self;
 
 					fn sub(self, other: Self) -> Self::Output {
+						if self.is_unknown() {
+							return self;
+						}
+
 						Self(self.0 - other.0)
 					}
 				}
@@ -177,6 +204,18 @@ macro_rules! impl_vint {
 						Ok(Self(value))
 					}
 				}
+
+				impl Debug for VInt<$t> {
+					fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+						let mut debug = f.debug_tuple("VInt");
+						if self.is_unknown() {
+							debug.field(&"<unknown>");
+						} else {
+							debug.field(&self.0);
+						}
+						debug.finish()
+					}
+				}
 			}
 		)*
 	};
@@ -188,7 +227,7 @@ macro_rules! impl_vint {
 ///
 /// To ensure safe construction of `VInt`s, users must create them through the `TryFrom` implementations or [`VInt::parse`].
 #[repr(transparent)]
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 pub struct VInt<T>(pub(crate) T);
 
 impl<T> VInt<T> {
@@ -201,6 +240,7 @@ impl<T> VInt<T> {
 		mut value: u64,
 		min_length: Option<u8>,
 		max_length: Option<u8>,
+		unknown: bool,
 		writer: &mut W,
 	) -> Result<()>
 	where
@@ -214,6 +254,15 @@ impl<T> VInt<T> {
 		// Add the octet length
 		value |= 1 << (octets * (Self::USABLE_BITS_PER_BYTE as u8));
 
+		// All VINT_DATA bits set to one
+		if unknown {
+			for _ in 0..octets {
+				writer.write_u8(u8::MAX)?;
+			}
+
+			return Ok(());
+		}
+
 		let mut byte_shift = (octets - 1) as i8;
 		while byte_shift >= 0 {
 			writer.write_u8((value >> (byte_shift * 8)) as u8)?;
@@ -221,6 +270,15 @@ impl<T> VInt<T> {
 		}
 
 		Ok(())
+	}
+}
+
+impl<T> Display for VInt<T>
+where
+	T: Display,
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.0)
 	}
 }
 
@@ -243,6 +301,11 @@ where
 	while u32::from(bytes_read) < octet_length {
 		bytes_read += 1;
 		val = (val << 8) | u64::from(reader.read_u8()?);
+	}
+
+	// Special case for unknown VInts (all data bits set to one)
+	if val + 1 == 1 << (7 * bytes_read) {
+		return Ok((VInt::<u64>::UNKNOWN.0, bytes_read));
 	}
 
 	Ok((val, bytes_read))
@@ -283,7 +346,7 @@ fn octet_length(mut value: u64) -> u8 {
 ///
 /// * The `VINT_MARKER` is retained after parsing
 /// * When encoding, the minimum number of octets must be used
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Default)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Default)]
 pub struct ElementId(pub(crate) u64);
 
 impl ElementId {
@@ -364,7 +427,7 @@ impl ElementId {
 	pub(crate) fn write_to<W: Write>(self, max_length: Option<u8>, writer: &mut W) -> Result<()> {
 		let mut val = self.0;
 		val ^= 1 << val.ilog2();
-		VInt::<()>::write_to(val, None, max_length, writer)?;
+		VInt::<()>::write_to(val, None, max_length, false, writer)?;
 		Ok(())
 	}
 }
@@ -378,6 +441,12 @@ impl PartialEq<u64> for ElementId {
 impl UpperHex for ElementId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		std::fmt::UpperHex::fmt(&self.0, f)
+	}
+}
+
+impl Debug for ElementId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "ElementId({:#X})", self.0)
 	}
 }
 
