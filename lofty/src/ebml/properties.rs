@@ -52,13 +52,13 @@ pub struct EbmlHeaderProperties {
 impl Default for EbmlHeaderProperties {
 	fn default() -> Self {
 		Self {
-			version: 0,
-			read_version: 0,
-			max_id_length: 0,
-			max_size_length: 0,
+			version: 1,
+			read_version: 1,
+			max_id_length: 4,
+			max_size_length: 8,
 			doc_type: DocumentType::Matroska,
-			doc_type_version: 0,
-			doc_type_read_version: 0,
+			doc_type_version: 1,
+			doc_type_read_version: 1,
 		}
 	}
 }
