@@ -4,7 +4,9 @@ use lofty::file::FileType;
 use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
+use lofty::ebml::EbmlFile;
 
+use std::fs::File;
 use std::io::Seek;
 
 #[test_log::test]
@@ -67,4 +69,53 @@ fn read_no_properties() {
 #[test_log::test]
 fn read_no_tags() {
 	crate::no_tag_test!("tests/files/assets/minimal/full_test.mka");
+}
+
+// Official Matroska test files
+#[test_log::test]
+fn basic_file() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test1.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn non_default_timecodescale() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test2.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn header_stripping_standard_block() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test3.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn live_stream() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test4.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn multiple_audio_subtitles() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test5.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn different_header_sizes_cueless_seeking() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test6.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn extra_unknown_junk_elements_damaged() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test7.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
+}
+
+#[test_log::test]
+fn audio_gap() {
+	let mut f = File::open("tests/files/assets/matroska-test-files/test8.mkv").unwrap();
+	let _ = EbmlFile::read_from(&mut f, ParseOptions::default()).unwrap();
 }
