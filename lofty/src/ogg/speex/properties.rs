@@ -2,13 +2,13 @@ use crate::error::Result;
 use crate::macros::decode_err;
 use crate::ogg::find_last_page;
 use crate::properties::FileProperties;
-use crate::util::math::RoundedDivision;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use ogg_pager::{Packets, PageHeader};
+use aud_io::math::RoundedDivision;
 
 /// A Speex file's audio properties
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]

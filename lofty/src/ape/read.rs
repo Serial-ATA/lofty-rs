@@ -8,9 +8,11 @@ use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::macros::{decode_err, err};
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
+
+use aud_io::err as io_err;
 
 pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<ApeFile>
 where
@@ -39,7 +41,7 @@ where
 
 		let Some(new_stream_length) = stream_len.checked_sub(u64::from(header.full_tag_size()))
 		else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		stream_len = new_stream_length;
@@ -88,7 +90,7 @@ where
 				let ape_header = read_ape_header(data, false)?;
 				let Some(new_stream_length) = stream_len.checked_sub(u64::from(ape_header.size))
 				else {
-					err!(SizeMismatch);
+					io_err!(SizeMismatch);
 				};
 				stream_len = new_stream_length;
 
@@ -113,7 +115,7 @@ where
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;
 		let Some(new_stream_length) = stream_len.checked_sub(128) else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		stream_len = new_stream_length;
@@ -122,7 +124,7 @@ where
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(data)?;
 	let Some(new_stream_length) = stream_len.checked_sub(u64::from(lyrics3v2_size)) else {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	};
 
 	stream_len = new_stream_length;

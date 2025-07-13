@@ -10,13 +10,13 @@ use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
 use lofty_attr::tag;
+use aud_io::io::{FileLike, Length, Truncate};
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -700,13 +700,16 @@ pub(crate) fn create_vorbis_comments_ref(
 
 #[cfg(test)]
 mod tests {
-	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
+	use crate::config::{ParseOptions, WriteOptions};
 	use crate::ogg::{OggPictureStorage, VorbisComments};
 	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
+	
 	use std::io::Cursor;
 
+	use aud_io::config::ParsingMode;
+	
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
 

@@ -1,11 +1,12 @@
 use super::properties::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
-use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{decode_err, parse_mode_choice};
+use crate::error::Result;
+use crate::macros::decode_err;
 
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
+use aud_io::err as io_err;
+use aud_io::config::ParsingMode;
 
 // TODO: Support chapter packets?
 const STREAM_HEADER_KEY: [u8; 2] = *b"SH";
@@ -48,22 +49,22 @@ where
 	let stream_header = match stream_header {
 		Some(stream_header) => stream_header,
 		None => {
-			parse_mode_choice!(
-				parse_mode,
-				STRICT: decode_err!(@BAIL Mpc, "File is missing a Stream Header packet"),
-				DEFAULT: StreamHeader::default()
-			)
+			if parse_mode == ParsingMode::Strict {
+				decode_err!(@BAIL Mpc, "File is missing a Stream Header packet");
+			}
+
+			StreamHeader::default()
 		},
 	};
 
 	let replay_gain = match replay_gain {
 		Some(replay_gain) => replay_gain,
 		None => {
-			parse_mode_choice!(
-				parse_mode,
-				STRICT: decode_err!(@BAIL Mpc, "File is missing a ReplayGain packet"),
-				DEFAULT: ReplayGain::default()
-			)
+			if parse_mode == ParsingMode::Strict {
+				decode_err!(@BAIL Mpc, "File is missing a ReplayGain packet");
+			}
+
+			ReplayGain::default()
 		},
 	};
 
@@ -145,7 +146,7 @@ impl<R: Read> PacketReader<R> {
 
 			// Sizes cannot go above 9 bytes
 			if bytes_read > 9 {
-				return Err(LoftyError::new(ErrorKind::TooMuchData));
+				io_err!(TooMuchData);
 			}
 
 			size = (size << 7) | u64::from(current & 0x7F);

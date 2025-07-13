@@ -1,4 +1,4 @@
-use crate::config::{ParseOptions, ParsingMode};
+use crate::config::ParseOptions;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
@@ -8,10 +8,11 @@ use crate::id3::v2::{
 use crate::picture::MimeType;
 use crate::tag::items::{ENGLISH, Timestamp};
 use crate::tag::utils::test_utils::read_path;
-
 use super::*;
 
 use std::collections::HashMap;
+
+use aud_io::config::ParsingMode;
 
 const COMMENT_FRAME_ID: &str = "COMM";
 

@@ -1,17 +1,18 @@
 use super::Frame;
 use super::header::parse::{parse_header, parse_v2_header};
-use crate::config::{ParseOptions, ParsingMode};
+use crate::config::ParseOptions;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
-use crate::macros::try_vec;
 
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use aud_io::config::ParsingMode;
+use aud_io::try_vec;
 
 pub(crate) enum ParsedFrame<'a> {
 	Next(Frame<'a>),
@@ -43,14 +44,14 @@ impl ParsedFrame<'_> {
 			},
 			Ok(Some(some)) => some,
 			Err(err) => {
-				match parse_options.parsing_mode {
-					ParsingMode::Strict => return Err(err),
-					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-						log::warn!("Failed to read frame header, skipping: {}", err);
+				return match parse_options.parsing_mode {
+					ParsingMode::Strict => Err(err),
+					_ => {
+						log::warn!("Failed to read frame header, skipping: {err}");
 
 						// Skip this frame and continue reading
 						skip_frame(reader, size)?;
-						return Ok(Self::Skip);
+						Ok(Self::Skip)
 					},
 				}
 			},

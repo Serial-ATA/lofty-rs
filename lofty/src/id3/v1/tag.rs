@@ -2,13 +2,13 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::path::Path;
 
 use lofty_attr::tag;
+use aud_io::io::{FileLike, Length, Truncate};
 
 macro_rules! impl_accessor {
 	($($name:ident,)+) => {

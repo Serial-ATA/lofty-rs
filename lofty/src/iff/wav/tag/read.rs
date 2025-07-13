@@ -1,13 +1,13 @@
 use super::RiffInfoList;
-use crate::config::ParsingMode;
 use crate::error::{ErrorKind, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
-use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek};
 
 use byteorder::LittleEndian;
+use aud_io::text::utf8_decode_str;
+use aud_io::config::ParsingMode;
 
 pub(in crate::iff::wav) fn parse_riff_info<R>(
 	data: &mut R,

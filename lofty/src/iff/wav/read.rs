@@ -5,11 +5,12 @@ use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::macros::{decode_err, err};
+use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::err as io_err;
 
 // Verifies that the stream is a WAV file and returns the stream length
 pub(crate) fn verify_wav<T>(data: &mut T) -> Result<u32>
@@ -91,7 +92,7 @@ where
 						//       to avoid the seeks.
 						let end = data.stream_position()? + u64::from(size);
 						if end > file_len {
-							err!(SizeMismatch);
+							io_err!(SizeMismatch);
 						}
 
 						super::tag::read::parse_riff_info(

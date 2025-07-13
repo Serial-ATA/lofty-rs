@@ -1,9 +1,7 @@
 //! Format-agnostic picture handling
 
-use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
-use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
@@ -11,6 +9,10 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt as _};
 use data_encoding::BASE64;
+use aud_io::text::utf8_decode_str;
+use aud_io::config::ParsingMode;
+use aud_io::try_vec;
+use aud_io::err as io_err;
 
 /// Common picture item keys for APE
 pub const APE_PICTURE_TYPES: [&str; 21] = [
@@ -665,8 +667,6 @@ impl Picture {
 		content: &[u8],
 		parse_mode: ParsingMode,
 	) -> Result<(Self, PictureInformation)> {
-		use crate::macros::try_vec;
-
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);
 
@@ -688,7 +688,7 @@ impl Picture {
 		size -= 4;
 
 		if mime_len > size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mime_type_str = utf8_decode_str(&content[8..8 + mime_len])?;

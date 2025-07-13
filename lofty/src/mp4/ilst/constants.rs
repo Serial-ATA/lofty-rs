@@ -6,7 +6,7 @@
 /// [`AtomData::Bool`]: crate::mp4::AtomData::Bool
 /// [`Ilst::set_flag`]: crate::mp4::Ilst::set_flag
 pub mod flags {
-	use crate::mp4::AtomIdent;
+	use aud_io::mp4::AtomIdent;
 
 	/// Podcast flag (`pcst`)
 	pub const PODCAST: AtomIdent<'_> = AtomIdent::Fourcc(*b"pcst");

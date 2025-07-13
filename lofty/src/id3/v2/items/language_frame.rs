@@ -1,15 +1,15 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 use crate::tag::items::Lang;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::ReadBytesExt;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 // Generic struct for a text frame that has a language
 //
