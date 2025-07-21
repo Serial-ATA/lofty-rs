@@ -39,7 +39,7 @@ rusty-fork = "0.3.0"
 structopt = { version = "0.3.26", default-features = false }
 tempfile  = "3.15.0"
 test-log = "0.2.16"
-iai-callgrind = "0.15.1"
+iai-callgrind = "0.16.0"
 
 [lints]
 workspace = true
