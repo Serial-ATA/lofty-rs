@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::io::{Read, Seek};
 
 use lofty::TextEncoding;
-use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::id3::v2::{
 	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
@@ -19,6 +19,7 @@ use lofty::mpeg::MpegFile;
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
+use aud_io::config::ParsingMode;
 
 #[test_log::test]
 fn test_unsynch_decode() {

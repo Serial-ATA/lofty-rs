@@ -5,6 +5,7 @@ members = [
 	"lofty",
 	"lofty_attr",
 	"ogg_pager",
+	"aud_io",
 	"fuzz",
 	"examples/custom_resolver",
 ]
@@ -14,13 +15,16 @@ edition = "2024"
 rust-version = "1.85"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 license = "MIT OR Apache-2.0"
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 
 [workspace.dependencies]
 lofty = { version = "0.22.4", path = "lofty" }
 lofty_attr = { version = "0.11.1", path = "lofty_attr" }
 ogg_pager = { version = "0.7.0", path = "ogg_pager" }
+aud_io    = { version = "0.1.0", path = "aud_io" }
 
 byteorder = "1.5.0"
+log = "0.4.27"
 
 [workspace.lints.rust]
 missing_docs                   = "deny"

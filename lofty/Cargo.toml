@@ -20,8 +20,9 @@ byteorder     = { workspace = true }
 flate2        = { version = "1.0.30", optional = true }
 # Proc macros
 lofty_attr    = { workspace = true }
+aud_io        = { workspace = true }
 # Debug logging
-log           = "0.4.22"
+log           = { workspace = true }
 # OGG Vorbis/Opus
 ogg_pager     = "0.7.0"
 # Key maps

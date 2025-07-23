@@ -3,7 +3,7 @@
 /// This is implemented for all unsigned integers.
 ///
 /// NOTE: If the result is less than 1, it will be rounded up to 1.
-pub(crate) trait RoundedDivision<Rhs = Self> {
+pub trait RoundedDivision<Rhs = Self> {
 	type Output;
 
 	fn div_round(self, rhs: Rhs) -> Self::Output;
@@ -29,7 +29,7 @@ unsigned_rounded_division!(u8, u16, u32, u64, u128, usize);
 ///
 /// This is used in AIFF.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub(crate) struct F80 {
+pub struct F80 {
 	signed: bool,
 	// 15-bit exponent with a bias of 16383
 	exponent: u16,

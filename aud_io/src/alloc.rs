@@ -1,6 +1,5 @@
 use crate::error::Result;
-use crate::macros::err;
-
+use crate::err;
 use crate::config::global_options;
 
 /// Provides the `fallible_repeat` method on `Vec`
@@ -49,7 +48,8 @@ impl<T> VecFallibleRepeat<T> for Vec<T> {
 /// Creates a `Vec` of the specified length, containing copies of `element`.
 ///
 /// This should be used through [`try_vec!`](crate::macros::try_vec)
-pub(crate) fn fallible_vec_from_element<T>(element: T, expected_size: usize) -> Result<Vec<T>>
+#[doc(hidden)]
+pub fn fallible_vec_from_element<T>(element: T, expected_size: usize) -> Result<Vec<T>>
 where
 	T: Clone,
 {
@@ -59,7 +59,7 @@ where
 /// Provides the `try_with_capacity` method on `Vec`
 ///
 /// This can be used directly.
-pub(crate) trait VecFallibleCapacity<T>: Sized {
+pub trait VecFallibleCapacity<T>: Sized {
 	/// Same as `Vec::with_capacity`, but takes `GlobalOptions::allocation_limit` into account.
 	///
 	/// Named `try_with_capacity_stable` to avoid conflicts with the nightly `Vec::try_with_capacity`.
@@ -81,7 +81,7 @@ impl<T> VecFallibleCapacity<T> for Vec<T> {
 
 #[cfg(test)]
 mod tests {
-	use crate::util::alloc::fallible_vec_from_element;
+	use super::fallible_vec_from_element;
 
 	#[test_log::test]
 	fn vec_fallible_repeat() {

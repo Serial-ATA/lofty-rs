@@ -1,11 +1,11 @@
 #![allow(dead_code)]
 
 use crate::error::Result;
-use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
+use aud_io::try_vec;
 
 pub(in crate::flac) const BLOCK_ID_STREAMINFO: u8 = 0;
 pub(in crate::flac) const BLOCK_ID_PADDING: u8 = 1;

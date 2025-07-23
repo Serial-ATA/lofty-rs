@@ -1,15 +1,15 @@
 use super::read::PacketReader;
-use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::musepack::constants::FREQUENCY_TABLE;
 use crate::properties::FileProperties;
-use crate::util::math::RoundedDivision;
 
 use std::io::Read;
 use std::time::Duration;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use aud_io::math::RoundedDivision;
+use aud_io::config::ParsingMode;
 
 /// MPC stream version 8 audio properties
 #[derive(Debug, Clone, PartialEq, Default)]

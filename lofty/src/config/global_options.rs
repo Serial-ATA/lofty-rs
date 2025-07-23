@@ -28,8 +28,8 @@ pub struct GlobalOptions {
 }
 
 impl GlobalOptions {
-	/// Default allocation limit for any single tag item
-	pub const DEFAULT_ALLOCATION_LIMIT: usize = 16 * 1024 * 1024;
+	/// Default allocation limit for any single allocation
+	pub const DEFAULT_ALLOCATION_LIMIT: usize = aud_io::config::GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
 
 	/// Creates a new `GlobalOptions`, alias for `Default` implementation
 	///
@@ -72,7 +72,7 @@ impl GlobalOptions {
 	/// The maximum number of bytes to allocate for any single tag item
 	///
 	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
-	/// exceeds this limit, the allocator will return [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData).
+	/// exceeds this limit, the allocator will return [`TooMuchData`](aud_io::error::AudioError::TooMuchData).
 	///
 	/// # Examples
 	///
@@ -143,6 +143,8 @@ impl Default for GlobalOptions {
 /// apply_global_options(global_options);
 /// ```
 pub fn apply_global_options(options: GlobalOptions) {
+	aud_io::config::apply_global_options(aud_io::config::GlobalOptions::new().allocation_limit(options.allocation_limit));
+
 	GLOBAL_OPTIONS.with(|global_options| unsafe {
 		*global_options.get() = options;
 	});

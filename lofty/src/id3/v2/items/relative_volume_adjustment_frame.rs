@@ -1,8 +1,5 @@
-use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::try_vec;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -10,6 +7,9 @@ use std::hash::{Hash, Hasher};
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
+use aud_io::config::ParsingMode;
+use aud_io::try_vec;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("RVA2"));
 
@@ -238,13 +238,14 @@ impl RelativeVolumeAdjustmentFrame<'_> {
 
 #[cfg(test)]
 mod tests {
-	use crate::config::ParsingMode;
 	use crate::id3::v2::{
 		ChannelInformation, ChannelType, FrameFlags, FrameHeader, RelativeVolumeAdjustmentFrame,
 	};
 
 	use std::collections::HashMap;
 	use std::io::Read;
+
+	use aud_io::config::ParsingMode;
 
 	fn expected() -> RelativeVolumeAdjustmentFrame<'static> {
 		let mut channels = HashMap::new();

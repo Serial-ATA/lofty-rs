@@ -6,9 +6,10 @@ use std::io::{Read, Seek};
 
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
-use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst, Mp4Codec, Mp4File};
+use lofty::mp4::{Atom, AtomData, Ilst, Mp4Codec, Mp4File};
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::{Accessor, TagExt, TagType};
+use aud_io::mp4::AtomIdent;
 
 #[test_log::test]
 fn test_properties_aac() {

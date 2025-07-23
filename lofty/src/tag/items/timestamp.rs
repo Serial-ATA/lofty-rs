@@ -1,4 +1,3 @@
-use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
 
@@ -7,6 +6,7 @@ use std::io::Read;
 use std::str::FromStr;
 
 use byteorder::ReadBytesExt;
+use aud_io::config::ParsingMode;
 
 /// A subset of the ISO 8601 timestamp format
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Default)]
@@ -276,7 +276,7 @@ impl Timestamp {
 
 #[cfg(test)]
 mod tests {
-	use crate::config::ParsingMode;
+	use aud_io::config::ParsingMode;
 	use crate::tag::items::timestamp::Timestamp;
 
 	fn expected() -> Timestamp {

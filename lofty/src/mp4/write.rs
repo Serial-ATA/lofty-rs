@@ -1,8 +1,4 @@
-use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
-use crate::io::{FileLike, Length, Truncate};
-use crate::macros::err;
-use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::read::{meta_is_full, skip_atom};
 
 use std::cell::{RefCell, RefMut};
@@ -10,6 +6,10 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
 use byteorder::{BigEndian, WriteBytesExt};
+use aud_io::mp4::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
+use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::config::ParsingMode;
+use aud_io::err as io_err;
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
 #[derive(Debug)]
@@ -75,7 +75,7 @@ impl ContextualAtom {
 
 		if len != 0 {
 			// TODO: Print the container ident
-			err!(BadAtom("Unable to read entire container"));
+			io_err!(BadAtom("Unable to read entire container"));
 		}
 
 		*reader_len = reader_len.saturating_sub(info.len);

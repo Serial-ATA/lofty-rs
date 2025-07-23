@@ -1,4 +1,3 @@
-use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::items::{
@@ -8,10 +7,12 @@ use crate::id3::v2::items::{
 	UrlLinkFrame,
 };
 use crate::id3::v2::{BinaryFrame, Frame, FrameFlags, FrameId};
-use crate::macros::err;
-use crate::util::text::TextEncoding;
 
 use std::io::Read;
+
+use aud_io::text::TextEncoding;
+use aud_io::config::ParsingMode;
+use aud_io::err as io_err;
 
 #[rustfmt::skip]
 pub(super) fn parse_content<R: Read>(
@@ -61,7 +62,7 @@ pub(in crate::id3::v2) fn verify_encoding(
 	}
 
 	match TextEncoding::from_u8(encoding) {
-		None => err!(TextDecode("Found invalid encoding")),
+		None => io_err!(TextDecode("Found invalid encoding")),
 		Some(e) => Ok(e),
 	}
 }

@@ -1,9 +1,10 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::hash::Hash;
 use std::io::Read;
+
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 /// An `ID3v2` URL frame
 #[derive(Clone, Debug, Eq)]
