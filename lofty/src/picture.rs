@@ -281,7 +281,6 @@ impl PictureType {
 ///
 /// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
 /// See [`Picture::as_flac_bytes`] for more information.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels
