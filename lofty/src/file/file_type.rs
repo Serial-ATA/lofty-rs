@@ -6,6 +6,7 @@ use std::ffi::OsStr;
 use std::path::Path;
 
 /// The type of file read
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(missing_docs)]
 #[non_exhaustive]
