@@ -38,6 +38,7 @@ pub const APE_PICTURE_TYPES: [&str; 21] = [
 ];
 
 /// MIME types for pictures.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum MimeType {
@@ -130,6 +131,7 @@ impl Display for MimeType {
 
 /// The picture type, according to ID3v2 APIC
 #[allow(missing_docs)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum PictureType {
@@ -279,6 +281,7 @@ impl PictureType {
 ///
 /// This information is necessary for FLAC's `METADATA_BLOCK_PICTURE`.
 /// See [`Picture::as_flac_bytes`] for more information.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Default)]
 pub struct PictureInformation {
 	/// The picture's width in pixels

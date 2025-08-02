@@ -30,6 +30,12 @@ paste         = "1.0.15"
 [features]
 default                   = ["id3v2_compression_support"]
 id3v2_compression_support = ["dep:flate2"]
+serde = ["dep:serde"]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
 
 [dev-dependencies]
 # WAV properties validity tests

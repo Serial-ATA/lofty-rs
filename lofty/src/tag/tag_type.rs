@@ -10,6 +10,7 @@ use std::fs::OpenOptions;
 use std::path::Path;
 
 /// The tag's format
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TagType {
