@@ -12,6 +12,7 @@ use std::path::Path;
 /// The tag's format
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[allow(clippy::unsafe_derive_deserialize)]
 #[non_exhaustive]
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
