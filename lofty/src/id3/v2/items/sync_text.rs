@@ -2,12 +2,12 @@ use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
-	TextDecodeOptions, TextEncoding, decode_text, encode_text, read_to_terminator,
-	utf16_decode_bytes,
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	utf16_decode_terminated_maybe_bom,
 };
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Seek, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -148,23 +148,26 @@ impl SynchronizedTextFrame<'_> {
 			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
 		let mut cursor = Cursor::new(&data[6..]);
-		let description = crate::util::text::decode_text(
+		let DecodeTextResult {
+			content: description,
+			bom,
+			..
+		} = decode_text(
 			&mut cursor,
 			TextDecodeOptions::new().encoding(encoding).terminated(true),
 		)
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?
-		.text_or_none();
+		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
 		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
 
 		// It's possible for the description to be the only string with a BOM
 		// To be safe, we change the encoding to the concrete variant determined from the description
 		if encoding == TextEncoding::UTF16 {
-			endianness = match cursor.get_ref()[..=1] {
+			endianness = match bom {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
 				// Since the description was already read, we can assume the BOM was valid
-				_ => unreachable!(),
+				_ => unreachable!("Bad BOM {bom:?}"),
 			};
 		}
 
@@ -174,24 +177,14 @@ impl SynchronizedTextFrame<'_> {
 		let mut content = Vec::new();
 
 		while pos < total {
-			let text = (|| -> Result<String> {
-				if encoding == TextEncoding::UTF16 {
-					// Check for a BOM
-					let mut bom = [0; 2];
-					cursor
-						.read_exact(&mut bom)
+			let text;
+			if encoding == TextEncoding::UTF16 {
+				let (decoded, bytes_read) =
+					utf16_decode_terminated_maybe_bom(&mut cursor, endianness)
 						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-
-					cursor.seek(SeekFrom::Current(-2))?;
-
-					// Encountered text that doesn't include a BOM
-					if bom != [0xFF, 0xFE] && bom != [0xFE, 0xFF] {
-						let (raw_text, _) = read_to_terminator(&mut cursor, TextEncoding::UTF16);
-						return utf16_decode_bytes(&raw_text, endianness)
-							.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
-					}
-				}
-
+				pos += bytes_read as u64;
+				text = decoded;
+			} else {
 				let decoded_text = decode_text(
 					&mut cursor,
 					TextDecodeOptions::new().encoding(encoding).terminated(true),
@@ -199,8 +192,8 @@ impl SynchronizedTextFrame<'_> {
 				.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 				pos += decoded_text.bytes_read as u64;
 
-				Ok(decoded_text.content)
-			})()?;
+				text = decoded_text.content;
+			}
 
 			let time = cursor
 				.read_u32::<BigEndian>()
@@ -217,7 +210,11 @@ impl SynchronizedTextFrame<'_> {
 			language,
 			timestamp_format,
 			content_type,
-			description,
+			description: if description.is_empty() {
+				None
+			} else {
+				Some(description)
+			},
 			content,
 		})
 	}

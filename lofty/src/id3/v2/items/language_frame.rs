@@ -3,7 +3,10 @@ use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::tag::items::Lang;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	utf16_decode_terminated_maybe_bom,
+};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -35,12 +38,34 @@ impl LanguageFrame {
 		let mut language = [0; 3];
 		reader.read_exact(&mut language)?;
 
-		let description = decode_text(
+		let DecodeTextResult {
+			content: description,
+			bom,
+			..
+		} = decode_text(
 			reader,
 			TextDecodeOptions::new().encoding(encoding).terminated(true),
-		)?
-		.content;
-		let content = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+		)?;
+
+		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
+
+		// It's possible for the description to be the only string with a BOM
+		// To be safe, we change the encoding to the concrete variant determined from the description
+		if encoding == TextEncoding::UTF16 {
+			endianness = match bom {
+				[0xFF, 0xFE] => u16::from_le_bytes,
+				[0xFE, 0xFF] => u16::from_be_bytes,
+				// The BOM has to be valid for `decode_text` to succeed
+				_ => unreachable!("Bad BOM {bom:?}"),
+			};
+		}
+
+		let content;
+		if encoding == TextEncoding::UTF16 {
+			(content, _) = utf16_decode_terminated_maybe_bom(reader, endianness)?;
+		} else {
+			content = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+		}
 
 		Ok(Some(Self {
 			encoding,

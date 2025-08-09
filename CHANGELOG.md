@@ -18,6 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vorbis Comments**: Check `ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
 * **ItemKey**: `ItemKey` is now `Copy` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
 
+### Fixed
+- **ID3v2**: Support parsing UTF-16 `COMM`/`USLT` frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/532)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/535))
+  - Some encoders will only write a BOM to the frame's description, rather than to every string in the frame.
+    This was previously only supported in `SYLT` frames, and has been extended to `COMM` and `USLT`.
+
 ### Removed
 
 * **ItemKey**: `ItemKey::Unknown` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
