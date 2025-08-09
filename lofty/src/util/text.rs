@@ -160,22 +160,15 @@ where
 				err!(TextDecode("UTF-16 string has an odd length"));
 			}
 
-			let bom_to_check;
 			if options.bom == [0, 0] {
-				bom_to_check = [raw_bytes[0], raw_bytes[1]];
+				bom = [raw_bytes[0], raw_bytes[1]];
 			} else {
-				bom_to_check = options.bom;
+				bom = options.bom;
 			}
 
-			match bom_to_check {
-				[0xFE, 0xFF] => {
-					bom = [0xFE, 0xFF];
-					utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?
-				},
-				[0xFF, 0xFE] => {
-					bom = [0xFF, 0xFE];
-					utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?
-				},
+			match bom {
+				[0xFE, 0xFF] => utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?,
+				[0xFF, 0xFE] => utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?,
 				_ => err!(TextDecode("UTF-16 string has an invalid byte order mark")),
 			}
 		},
@@ -183,10 +176,6 @@ where
 		TextEncoding::UTF8 => utf8_decode(raw_bytes)
 			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
 	};
-
-	if read_string.is_empty() {
-		return Ok(EMPTY_DECODED_TEXT);
-	}
 
 	Ok(DecodeTextResult {
 		content: read_string,
@@ -276,6 +265,36 @@ pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -
 		.collect();
 
 	utf16_decode(&unverified)
+}
+
+// TODO: Can probably just be merged into an option on `TextDecodeOptions`
+/// Read a null-terminated UTF-16 string that may or may not have a BOM
+///
+/// This is needed for ID3v2, as some encoders will encode *only* the first string in a frame with a BOM,
+/// and the others are assumed to have the same byte order.
+///
+/// This is seen in frames like SYLT, COMM, and USLT, where the description will be the only string
+/// with a BOM.
+///
+/// If no BOM is present, the string will be decoded using `endianness`.
+pub(crate) fn utf16_decode_terminated_maybe_bom<R>(
+	reader: &mut R,
+	endianness: fn([u8; 2]) -> u16,
+) -> Result<(String, usize)>
+where
+	R: Read,
+{
+	let (raw_text, terminator_len) = read_to_terminator(reader, TextEncoding::UTF16);
+
+	let bytes_read = raw_text.len() + terminator_len;
+	let decoded;
+	match &*raw_text {
+		[0xFF, 0xFE, ..] => decoded = utf16_decode_bytes(&raw_text[2..], u16::from_le_bytes),
+		[0xFE, 0xFF, ..] => decoded = utf16_decode_bytes(&raw_text[2..], u16::from_be_bytes),
+		_ => decoded = utf16_decode_bytes(&raw_text, endianness),
+	}
+
+	decoded.map(|d| (d, bytes_read))
 }
 
 pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
