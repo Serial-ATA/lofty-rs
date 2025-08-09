@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ItemKey**: `ItemKey::AlbumArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/523))
     - This is a multi-value item that stores each artist for a track. It should be retrieved with `Tag::get_strings` or `Tag::take_strings`.
     - For example, a track has `ItemKey::TrackArtist` = "Foo & Bar", then `ItemKey::AlbumArtists` = ["Foo", "Bar"].
+- **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`)
+  - Support can be enabled with the new `serde` feature (not enabled by default)
 
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
@@ -1012,5 +1014,6 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 [0.5.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/Serial-ATA/lofty-rs/compare/64f0eff...0.5.0
 
+[serde]: https://docs.rs/serde
 [TagLib]: https://github.com/taglib/taglib
 [ogg_pager's changelog]: ogg_pager/CHANGELOG.md
