@@ -6,12 +6,12 @@ use crate::error::{LoftyError, Result};
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 
 use lofty_attr::tag;
+use aud_io::io::{FileLike, Length, Truncate};
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -344,15 +344,16 @@ pub(crate) fn tagitems_into_riff<'a>(
 
 #[cfg(test)]
 mod tests {
-	use crate::config::{ParsingMode, WriteOptions};
+	use crate::config::WriteOptions;
 	use crate::iff::chunk::Chunks;
 	use crate::iff::wav::RiffInfoList;
 	use crate::prelude::*;
 	use crate::tag::{Tag, TagType};
 
-	use byteorder::LittleEndian;
-
 	use std::io::Cursor;
+
+	use byteorder::LittleEndian;
+	use aud_io::config::ParsingMode;
 
 	#[test_log::test]
 	fn parse_riff_info() {

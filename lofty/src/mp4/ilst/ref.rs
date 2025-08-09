@@ -4,10 +4,12 @@
 
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::mp4::{Atom, AtomData, Ilst};
 
 use std::io::Write;
+
+use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::mp4::AtomIdent;
 
 impl Ilst {
 	pub(crate) fn as_ref(&self) -> IlstRef<'_, impl IntoIterator<Item = &AtomData>> {

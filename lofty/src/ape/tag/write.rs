@@ -8,11 +8,12 @@ use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
-use crate::util::io::{FileLike, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
+use aud_io::io::{FileLike, Truncate};
+use aud_io::err as io_err;
 
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_to<'a, F, I>(
@@ -205,7 +206,7 @@ where
 	let size = tag_write.get_ref().len();
 
 	if size as u64 + 32 > u64::from(u32::MAX) {
-		err!(TooMuchData);
+		io_err!(TooMuchData);
 	}
 
 	let mut footer = [0_u8; 32];

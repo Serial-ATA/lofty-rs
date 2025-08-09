@@ -1,14 +1,14 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
-use crate::util::text::{
-	TextDecodeOptions, TextEncoding, decode_text, encode_text, read_to_terminator,
-	utf16_decode_bytes,
-};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
+use aud_io::text::{
+	decode_text, encode_text, read_to_terminator, utf16_decode_bytes, TextDecodeOptions,
+	TextEncoding,
+};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("SYLT"));
@@ -136,8 +136,11 @@ impl SynchronizedTextFrame<'_> {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
-		let encoding = TextEncoding::from_u8(data[0])
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let encoding = match TextEncoding::from_u8(data[0]) {
+			Some(encoding) => encoding,
+			None => io_err!(TextDecode("Found invalid encoding")), 
+		};
+		
 		let language: [u8; 3] = data[1..4].try_into().unwrap();
 		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
@@ -148,7 +151,7 @@ impl SynchronizedTextFrame<'_> {
 			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
 		let mut cursor = Cursor::new(&data[6..]);
-		let description = crate::util::text::decode_text(
+		let description = decode_text(
 			&mut cursor,
 			TextDecodeOptions::new().encoding(encoding).terminated(true),
 		)
@@ -251,7 +254,7 @@ impl SynchronizedTextFrame<'_> {
 			}
 
 			if data.len() as u64 > u64::from(u32::MAX) {
-				err!(TooMuchData);
+				io_err!(TooMuchData);
 			}
 
 			return Ok(data);
@@ -266,7 +269,7 @@ mod tests {
 	use crate::id3::v2::{
 		FrameFlags, FrameHeader, SyncTextContentType, SynchronizedTextFrame, TimestampFormat,
 	};
-	use crate::util::text::TextEncoding;
+	use aud_io::text::TextEncoding;
 
 	fn expected(encoding: TextEncoding) -> SynchronizedTextFrame<'static> {
 		SynchronizedTextFrame {

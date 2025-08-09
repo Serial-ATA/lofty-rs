@@ -12,12 +12,13 @@ use super::items::{
 };
 use crate::error::Result;
 use crate::id3::v2::FrameHeader;
-use crate::util::text::TextEncoding;
 use header::FrameId;
 
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::ops::Deref;
+
+use aud_io::text::TextEncoding;
 
 pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 

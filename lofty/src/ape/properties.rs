@@ -1,4 +1,3 @@
-use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::properties::FileProperties;
@@ -7,6 +6,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::config::ParsingMode;
 
 /// An APE file's audio properties
 #[derive(Clone, Debug, PartialEq, Eq, Default)]

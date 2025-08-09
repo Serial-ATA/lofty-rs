@@ -1,15 +1,16 @@
 use super::read::CompressionPresent;
 use crate::error::Result;
-use crate::macros::{decode_err, try_vec};
+use crate::macros::decode_err;
 use crate::properties::FileProperties;
-use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
 use std::io::Read;
 use std::time::Duration;
 
-use crate::io::ReadExt;
 use byteorder::{BigEndian, ReadBytesExt};
+use aud_io::io::ReadExt;
+use aud_io::text::utf8_decode;
+use aud_io::try_vec;
 
 /// The AIFC compression type
 ///

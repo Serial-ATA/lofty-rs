@@ -1,11 +1,10 @@
 use super::tag::VorbisComments;
 use super::verify_signature;
-use crate::config::{ParseOptions, ParsingMode};
+use crate::config::ParseOptions;
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{decode_err, err, parse_mode_choice};
+use crate::macros::decode_err;
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::tag::Accessor;
-use crate::util::text::{utf8_decode, utf8_decode_str, utf16_decode};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
@@ -13,6 +12,11 @@ use std::io::{Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use data_encoding::BASE64;
 use ogg_pager::{Packets, PageHeader};
+use aud_io::text::{utf8_decode, utf8_decode_str, utf16_decode};
+use aud_io::config::ParsingMode;
+use aud_io::try_vec;
+use aud_io::err as io_err;
+use aud_io::error::AudioError;
 
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
@@ -24,13 +28,11 @@ pub(crate) fn read_comments<R>(
 where
 	R: Read,
 {
-	use crate::macros::try_vec;
-
 	let parse_mode = parse_options.parsing_mode;
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 	if u64::from(vendor_len) > len {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	let mut vendor_bytes = try_vec![0; vendor_len as usize];
@@ -45,7 +47,7 @@ where
 			// The actions following this are not spec-compliant in the slightest, so
 			// we need to short circuit if strict.
 			if parse_mode == ParsingMode::Strict {
-				return Err(e);
+				return Err(e.into());
 			}
 
 			log::warn!("Possibly corrupt vendor string, attempting to recover");
@@ -53,11 +55,9 @@ where
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
 			// the replacement character
-			let LoftyError {
-				kind: ErrorKind::StringFromUtf8(e),
-			} = e
+			let AudioError::StringFromUtf8(e) = e
 			else {
-				return Err(e);
+				return Err(e.into());
 			};
 			let s = e
 				.as_bytes()
@@ -77,7 +77,7 @@ where
 
 	let number_of_items = data.read_u32::<LittleEndian>()?;
 	if number_of_items > (len >> 2) as u32 {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	let mut tag = VorbisComments {
@@ -89,7 +89,7 @@ where
 	for _ in 0..number_of_items {
 		let comment_len = data.read_u32::<LittleEndian>()?;
 		if u64::from(comment_len) > len {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mut comment_bytes = try_vec![0; comment_len as usize];
@@ -193,7 +193,7 @@ where
 					},
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
-							return Err(e);
+							return Err(e.into());
 						}
 
 						log::warn!("Non UTF-8 value found, discarding field {key:?}");
@@ -210,7 +210,7 @@ where
 					Ok(value) => tag.items.push((key, value.to_owned())),
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
-							return Err(e);
+							return Err(e.into());
 						}
 
 						log::warn!("Non UTF-8 value found, discarding field {key:?}");
@@ -219,11 +219,11 @@ where
 				}
 			},
 			_ => {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL "OGG: Vorbis comments contain an invalid key"),
-					// Otherwise discard invalid keys
-				)
+				if parse_mode == ParsingMode::Strict {
+					decode_err!(@BAIL "OGG: Vorbis comments contain an invalid key");
+				}
+
+				// Otherwise discard invalid keys
 			},
 		}
 	}

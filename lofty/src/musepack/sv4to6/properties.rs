@@ -1,14 +1,14 @@
-use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
 use crate::properties::FileProperties;
-use crate::util::math::RoundedDivision;
 
 use std::io::Read;
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::math::RoundedDivision;
+use aud_io::config::ParsingMode;
 
 /// MPC stream versions 4-6 audio properties
 #[derive(Debug, Clone, PartialEq, Default)]

@@ -1,11 +1,11 @@
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::properties::{ChannelMask, FileProperties};
-use crate::util::math::RoundedDivision;
 
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::math::RoundedDivision;
 
 const PCM: u16 = 0x0001;
 const IEEE_FLOAT: u16 = 0x0003;

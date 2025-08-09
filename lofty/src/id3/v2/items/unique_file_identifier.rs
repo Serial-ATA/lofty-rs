@@ -1,12 +1,12 @@
-use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::parse_mode_choice;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
+
+use aud_io::config::ParsingMode;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("UFID"));
 
@@ -82,11 +82,12 @@ impl UniqueFileIdentifierFrame<'_> {
 		match owner_decode_result.text_or_none() {
 			Some(valid) => owner = valid,
 			None => {
-				parse_mode_choice!(
-					parse_mode,
-					BESTATTEMPT: owner = String::new(),
-					DEFAULT: return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into())
-				);
+				if parse_mode == ParsingMode::BestAttempt {
+					owner = String::new();
+				} else {
+					// ParsingMode::Relaxed will ignore this error and discard the whole frame
+					return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into())
+				}
 			},
 		}
 
@@ -123,7 +124,7 @@ mod tests {
 
 	#[test_log::test]
 	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
-		use crate::config::ParsingMode;
+		use aud_io::config::ParsingMode;
 		use crate::id3::v2::UniqueFileIdentifierFrame;
 
 		let ufid_no_owner = UniqueFileIdentifierFrame {

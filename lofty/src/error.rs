@@ -24,14 +24,8 @@ pub enum ErrorKind {
 	UnknownFormat,
 
 	// File data related errors
-	/// Attempting to read/write an abnormally large amount of data
-	TooMuchData,
-	/// Expected the data to be a different size than provided
-	///
-	/// This occurs when the size of an item is written as one value, but that size is either too
-	/// big or small to be valid within the bounds of that item.
-	// TODO: Should probably have context
-	SizeMismatch,
+	/// Represents all cases of [`aud_io::error::AudioError`].
+	AudioIo(aud_io::error::AudioError),
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -48,15 +42,11 @@ pub enum ErrorKind {
 	UnsupportedTag,
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
-	/// Errors that arise while decoding text
-	TextDecode(&'static str),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(Id3v2Error),
 
-	/// Arises when an atom contains invalid data
-	BadAtom(&'static str),
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
@@ -450,6 +440,14 @@ impl From<Id3v2Error> for LoftyError {
 	}
 }
 
+impl From<aud_io::error::AudioError> for LoftyError {
+	fn from(input: aud_io::error::AudioError) -> Self {
+		Self {
+			kind: ErrorKind::AudioIo(input),
+		}
+	}
+}
+
 impl From<FileDecodingError> for LoftyError {
 	fn from(input: FileDecodingError) -> Self {
 		Self {
@@ -545,26 +543,17 @@ impl Display for LoftyError {
 				"Attempted to write a tag to a format that does not support it"
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
-			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},
 			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
-			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,
 				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"
 			),
 
 			// Files
-			ErrorKind::TooMuchData => write!(
-				f,
-				"Attempted to read/write an abnormally large amount of data"
-			),
-			ErrorKind::SizeMismatch => write!(
-				f,
-				"Encountered an invalid item size, either too big or too small to be valid"
-			),
+			ErrorKind::AudioIo(ref err) => write!(f, "{err}"),
 			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
 

@@ -1,12 +1,14 @@
-use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
+use crate::macros::{decode_err, err};
 use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::try_vec;
+use aud_io::config::ParsingMode;
+use aud_io::err as io_err;
 
 /// A WavPack file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -148,30 +150,30 @@ where
 		if sample_rate_idx == 15 || flags & FLAG_DSD == FLAG_DSD {
 			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
 			if reader.read_exact(&mut block_contents).is_err() {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
-					DEFAULT: break
-				);
+				if parse_mode == ParsingMode::Strict {
+					decode_err!(@BAIL WavPack, "Block size mismatch");
+				}
+
+				break;
 			}
 
 			if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
 			{
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: return Err(e),
-					DEFAULT: break
-				);
+				if parse_mode == ParsingMode::Strict {
+					return Err(e);
+				}
+
+				break;
 			}
 
 			// A sample rate index of 15 indicates a custom sample rate, which should have been found
 			// when we just parsed the metadata blocks
 			if sample_rate_idx == 15 && properties.sample_rate == 0 {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Expected custom sample rate"),
-					DEFAULT: break
-				)
+				if parse_mode == ParsingMode::Strict {
+					decode_err!(@BAIL WavPack, "Expected custom sample rate");
+				}
+
+				break;
 			}
 		}
 
@@ -179,11 +181,11 @@ where
 			if block_header.version < MIN_STREAM_VERSION
 				|| block_header.version > MAX_STREAM_VERSION
 			{
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Unsupported stream version encountered"),
-					DEFAULT: break
-				);
+				if parse_mode == ParsingMode::Strict {
+					decode_err!(@BAIL WavPack, "Unsupported stream version encountered");
+				}
+
+				break;
 			}
 
 			total_samples = block_header.total_samples;
@@ -324,7 +326,7 @@ fn get_extended_meta_info(
 		}
 
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
@@ -349,11 +351,11 @@ fn get_extended_meta_info(
 				size -= 1;
 
 				if rate_multiplier > 30 {
-					parse_mode_choice!(
-						parse_mode,
-						STRICT: decode_err!(@BAIL WavPack, "Encountered an invalid sample rate multiplier"),
-						DEFAULT: break
-					)
+					if parse_mode == ParsingMode::Strict {
+						decode_err!(@BAIL WavPack, "Encountered an invalid sample rate multiplier");
+					}
+
+					break;
 				}
 
 				rate_multiplier = 1 << rate_multiplier;
@@ -415,7 +417,7 @@ fn get_extended_meta_info(
 
 		// Skip over any remaining block size
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let (_, rem) = reader.split_at(size as usize);

@@ -1,10 +1,11 @@
-use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
 use crate::mp4::{AudioObjectType, SAMPLE_RATES};
 use crate::mpeg::MpegVersion;
 
 use std::io::{Read, Seek, SeekFrom};
+
+use aud_io::config::ParsingMode;
 
 // Used to compare the headers up to the home bit.
 // If they aren't equal, something is broken.

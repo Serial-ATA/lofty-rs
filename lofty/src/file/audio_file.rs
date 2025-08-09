@@ -3,10 +3,11 @@ use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::tag::TagType;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use std::fs::OpenOptions;
 use std::io::{Read, Seek};
 use std::path::Path;
+
+use aud_io::io::{FileLike, Length, Truncate};
 
 /// Provides various methods for interaction with a file
 pub trait AudioFile: Into<TaggedFile> {

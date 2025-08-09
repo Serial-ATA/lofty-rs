@@ -3,10 +3,11 @@ use crate::temp_file;
 use std::fs::File;
 use std::io::Seek;
 
-use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::flac::FlacFile;
 use lofty::ogg::VorbisComments;
 use lofty::prelude::*;
+use aud_io::config::ParsingMode;
 
 #[test_log::test]
 fn multiple_vorbis_comments() {

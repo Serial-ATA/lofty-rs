@@ -5,13 +5,15 @@ use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
 use crate::config::ParseOptions;
 use crate::error::Result;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::decode_err;
 use crate::tag::ItemValue;
-use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
+use aud_io::text::utf8_decode;
+use aud_io::try_vec;
+use aud_io::err as io_err;
 
 pub(crate) fn read_ape_tag_with_header<R>(
 	data: &mut R,
@@ -31,7 +33,7 @@ where
 
 		let value_size = data.read_u32::<LittleEndian>()?;
 		if value_size > remaining_size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		remaining_size -= 4;

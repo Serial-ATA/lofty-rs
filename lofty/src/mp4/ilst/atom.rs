@@ -1,10 +1,11 @@
 use crate::error::Result;
 use crate::macros::err;
-use crate::mp4::AtomIdent;
 use crate::mp4::ilst::data_type::DataType;
 use crate::picture::Picture;
 
 use std::fmt::{Debug, Formatter};
+
+use aud_io::mp4::AtomIdent;
 
 // Atoms with multiple values aren't all that common,
 // so there's no need to create a bunch of single-element Vecs

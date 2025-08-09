@@ -182,9 +182,10 @@ mod tests {
 	use super::parse_id3v2;
 	use crate::config::ParseOptions;
 
+	use aud_io::config::ParsingMode;
+
 	#[test_log::test]
 	fn zero_size_id3v2() {
-		use crate::config::ParsingMode;
 		use crate::id3::v2::header::Id3v2Header;
 
 		use std::io::Cursor;
@@ -203,7 +204,6 @@ mod tests {
 
 	#[test_log::test]
 	fn bad_frame_id_relaxed_id3v2() {
-		use crate::config::ParsingMode;
 		use crate::id3::v2::header::Id3v2Header;
 		use crate::prelude::*;
 
