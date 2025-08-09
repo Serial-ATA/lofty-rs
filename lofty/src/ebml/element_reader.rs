@@ -627,10 +627,7 @@ where
 	}
 
 	pub(crate) fn current_master_length(&self) -> Option<u64> {
-		let Some(current_master) = self.ctx.current_master() else {
-			return None;
-		};
-
+		let current_master = self.ctx.current_master()?;
 		Some(current_master.depth.length.value())
 	}
 

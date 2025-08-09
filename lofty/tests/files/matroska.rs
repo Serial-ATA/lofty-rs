@@ -1,4 +1,3 @@
-use crate::{set_artist, temp_file, verify_artist};
 use lofty::config::ParseOptions;
 use lofty::ebml::EbmlFile;
 use lofty::file::FileType;
@@ -21,54 +20,60 @@ fn read() {
 	assert_eq!(file.file_type(), FileType::Ebml);
 
 	// Verify the tag
-	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
+	crate::util::verify_artist(&file, TagType::Matroska, "Foo artist", 1);
 }
 
 #[test_log::test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mka");
-
-	let mut tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.mka");
 
 	assert_eq!(tagged_file.file_type(), FileType::Ebml);
 
 	// Tags
-	crate::set_artist!(tagged_file, tag_mut, TagType::Matroska, "Foo artist", 1 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Matroska,
+		"Foo artist",
+		"Bar artist",
+		1,
+	);
 
 	// Now reread the file
+	let mut file = tagged_file.into_inner();
 	file.rewind().unwrap();
 
 	let mut tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
 		.guess_file_type()
 		.unwrap()
-		.read()
+		.read_bound()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Matroska, "Bar artist", 1 => file, "Foo artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Matroska,
+		"Bar artist",
+		"Foo artist",
+		1,
+	);
 }
 
 #[test_log::test]
 fn remove() {
-	crate::remove_tag!(
+	crate::util::remove_tag_test(
 		"tests/files/assets/minimal/full_test.mka",
-		TagType::Matroska
+		TagType::Matroska,
 	);
 }
 
 #[test_log::test]
 fn read_no_properties() {
-	crate::no_properties_test!("tests/files/assets/minimal/full_test.mka");
+	crate::util::no_properties_test("tests/files/assets/minimal/full_test.mka");
 }
 
 #[test_log::test]
 fn read_no_tags() {
-	crate::no_tag_test!("tests/files/assets/minimal/full_test.mka");
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.mka", None);
 }
 
 // Official Matroska test files

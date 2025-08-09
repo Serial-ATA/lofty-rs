@@ -403,7 +403,10 @@ impl EbmlProperties {
 	/// This will always use the duration written in `\Segment\Info` if present. Otherwise, it will
 	/// be manually calculated using `\Segment\Cluster` data.
 	pub fn duration(&self) -> Duration {
-		self.segment_info.duration().unwrap()
+		match self.segment_info.duration() {
+			None => todo!("\\Segment\\Cluster duration calculation"),
+			Some(segment_duration) => segment_duration,
+		}
 	}
 
 	/// Audio bitrate (kbps)

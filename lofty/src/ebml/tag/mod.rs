@@ -21,6 +21,7 @@ use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::picture::Picture;
 use crate::tag::companion_tag::CompanionTag;
+use crate::tag::items::Timestamp;
 use crate::tag::{Accessor, MergeTag, SplitTag, TagExt, TagType};
 
 use std::borrow::Cow;
@@ -339,16 +340,16 @@ impl Accessor for MatroskaTag {
 
 	fn remove_disk_total(&mut self) {}
 
-	fn year(&self) -> Option<u32> {
+	fn date(&self) -> Option<Timestamp> {
 		// `DATE_RELEASED`
 		todo!()
 	}
 
-	fn set_year(&mut self, _value: u32) {
+	fn set_date(&mut self, _value: Timestamp) {
 		todo!()
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		todo!()
 	}
 }

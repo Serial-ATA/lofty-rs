@@ -10,10 +10,10 @@ use super::{DocumentType, EbmlFile};
 use crate::config::ParseOptions;
 use crate::ebml::EbmlProperties;
 use crate::ebml::element_reader::{
-	ElementHeader, ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
+	ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
 };
 use crate::ebml::vint::ElementId;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
@@ -30,8 +30,6 @@ where
 	// new ones all scattered throughout the file
 	let mut properties = EbmlProperties::default();
 
-	let ebml_tag;
-
 	let mut element_reader = ElementReader::new(reader);
 
 	// First we need to go through the elements in the EBML master element
@@ -39,23 +37,21 @@ where
 
 	log::debug!("File verified to be EBML");
 
-	loop {
-		match element_reader.next() {
-			Ok(ElementReaderYield::Master(KnownElementHeader {
-				id: ElementIdent::Segment,
-				..
-			})) => {
-				ebml_tag = segment::read_from(
-					&mut element_reader.children(),
-					parse_options,
-					&mut properties,
-				)?;
-				break;
-			},
-			_ => {
-				decode_err!(@BAIL Ebml, "File does not contain a segment element")
-			},
-		}
+	let ebml_tag;
+	match element_reader.next() {
+		Ok(ElementReaderYield::Master(KnownElementHeader {
+			id: ElementIdent::Segment,
+			..
+		})) => {
+			ebml_tag = segment::read_from(
+				&mut element_reader.children(),
+				parse_options,
+				&mut properties,
+			)?;
+		},
+		_ => {
+			decode_err!(@BAIL Ebml, "File does not contain a segment element")
+		},
 	}
 
 	Ok(EbmlFile {

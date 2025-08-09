@@ -3,11 +3,13 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
+use crate::ebml::EbmlFile;
 use crate::error::Result;
 use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
+use crate::io::FileLike;
 use crate::macros::err;
 use crate::mp4::Mp4File;
 use crate::mpeg::MpegFile;
@@ -18,8 +20,6 @@ use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::custom_resolvers;
 use crate::wavpack::WavPackFile;
-use crate::io::FileLike;
-use crate::ebml::EbmlFile;
 
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};

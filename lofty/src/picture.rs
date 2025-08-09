@@ -522,7 +522,7 @@ impl PictureBuilder {
 	/// # Ok(()) }
 	/// ```
 	pub fn file_name(mut self, file_name: impl Into<Cow<'static, str>>) -> Self {
-		self.file_name = file_name.into();
+		self.file_name = Some(file_name.into());
 		self
 	}
 
