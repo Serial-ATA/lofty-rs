@@ -38,9 +38,7 @@ pub const APE_PICTURE_TYPES: [&str; 21] = [
 ];
 
 /// MIME types for pictures.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-#[allow(clippy::unsafe_derive_deserialize)]
 #[non_exhaustive]
 pub enum MimeType {
 	/// PNG image
