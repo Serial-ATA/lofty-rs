@@ -20,7 +20,7 @@ jobs:
         name: Tests
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v5
             -   name: Install test dependencies
                 run: |
                     sudo apt-get update
@@ -39,7 +39,7 @@ jobs:
         env:
             RUSTDOCFLAGS: -Dwarnings
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v5
             -   name: Install Rust toolchain
                 uses: dtolnay/rust-toolchain@v1
                 with:
@@ -52,7 +52,7 @@ jobs:
         name: Clippy
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v5
             -   name: Install Rust toolchain
                 uses: dtolnay/rust-toolchain@v1
                 with:
@@ -65,7 +65,7 @@ jobs:
         name: Style
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v5
             -   name: Install Rust toolchain
                 uses: dtolnay/rust-toolchain@v1
                 with:
