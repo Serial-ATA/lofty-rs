@@ -2,6 +2,7 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::macros::err;
 use crate::tag::items::Lang;
 use crate::util::text::{
 	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
@@ -55,8 +56,7 @@ impl LanguageFrame {
 			endianness = match bom {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
-				// The BOM has to be valid for `decode_text` to succeed
-				_ => unreachable!("Bad BOM {bom:?}"),
+				_ => err!(TextDecode("UTF-16 string missing a BOM")),
 			};
 		}
 

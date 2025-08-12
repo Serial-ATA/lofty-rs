@@ -41,6 +41,15 @@ fn crash5() {
 }
 
 #[test_log::test]
+fn crash6() {
+	let mut reader = get_reader(
+		"mpegfile_read_from/00. Dzienniki \
+		 Gwiazdowe_IDX_4_RAND_1362730390282399020432565_minimized_242.mp3",
+	);
+	let _ = MpegFile::read_from(&mut reader, ParseOptions::new());
+}
+
+#[test_log::test]
 fn oom1() {
 	oom_test::<MpegFile>("mpegfile_read_from/oom-f8730cbfa5682ab12343ccb70de9b71a061ef4d0");
 }
