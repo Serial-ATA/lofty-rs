@@ -166,8 +166,7 @@ impl SynchronizedTextFrame<'_> {
 			endianness = match bom {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
-				// Since the description was already read, we can assume the BOM was valid
-				_ => unreachable!("Bad BOM {bom:?}"),
+				_ => err!(TextDecode("UTF-16 string missing a BOM")),
 			};
 		}
 
