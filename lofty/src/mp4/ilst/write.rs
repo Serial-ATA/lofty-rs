@@ -12,6 +12,7 @@ use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::picture::{MimeType, Picture};
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::num::ShrinkableInteger;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
@@ -693,24 +694,18 @@ fn write_signed_int(int: i32, writer: &mut AtomWriterCompanion<'_>) -> Result<()
 	write_int(DataType::BeSignedInteger, int.to_be_bytes(), 4, writer)
 }
 
-fn bytes_to_occupy_uint(uint: u32) -> usize {
-	if uint == 0 {
-		return 1;
-	}
-
-	let ret = 4 - (uint.to_le().leading_zeros() >> 3) as usize;
-	if ret == 3 {
-		return 4;
-	}
-	ret
-}
-
 fn write_unsigned_int(uint: u32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
-	let bytes_needed = bytes_to_occupy_uint(uint);
+	let mut bytes_needed = uint.occupied_bytes();
+
+	// Only ever write 1, 2, or 4 byte integers
+	if bytes_needed == 3 {
+		bytes_needed = 4;
+	}
+
 	write_int(
 		DataType::BeUnsignedInteger,
 		uint.to_be_bytes(),
-		bytes_needed,
+		bytes_needed as usize,
 		writer,
 	)
 }
@@ -777,63 +772,4 @@ fn write_data(flags: DataType, data: &[u8], writer: &mut AtomWriterCompanion<'_>
 	writer.write_all(data)?;
 
 	Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-	use super::bytes_to_occupy_uint;
-
-	macro_rules! int_test {
-		(
-			func: $fun:expr,
-			$(
-				{
-					input: $input:expr,
-					expected: $expected:expr $(,)?
-				}
-			),+ $(,)?
-		) => {
-			$(
-				{
-					let bytes = $fun($input);
-					assert_eq!(&$input.to_be_bytes()[4 - bytes..], &$expected[..]);
-				}
-			)+
-		}
-	}
-
-	#[test_log::test]
-	fn integer_shrinking_unsigned() {
-		int_test! {
-			func: bytes_to_occupy_uint,
-			{
-				input: 0u32,
-				expected: [0],
-			},
-			{
-				input: 1u32,
-				expected: [1],
-			},
-			{
-				input: 32767u32,
-				expected: [127, 255],
-			},
-			{
-				input: 65535u32,
-				expected: [255, 255],
-			},
-			{
-				input: 8_388_607_u32,
-				expected: [0, 127, 255, 255],
-			},
-			{
-				input: 16_777_215_u32,
-				expected: [0, 255, 255, 255],
-			},
-			{
-				input: u32::MAX,
-				expected: [255, 255, 255, 255],
-			},
-		}
-	}
 }

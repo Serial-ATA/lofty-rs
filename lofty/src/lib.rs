@@ -104,6 +104,7 @@
 
 // proc macro hacks
 extern crate self as lofty;
+
 pub(crate) mod _this_is_internal {}
 
 pub mod config;
@@ -119,6 +120,7 @@ mod util;
 
 pub mod aac;
 pub mod ape;
+pub mod ebml;
 pub mod flac;
 pub mod id3;
 pub mod iff;
