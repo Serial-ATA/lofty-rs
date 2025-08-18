@@ -181,41 +181,6 @@ fn opus_issue_499() {
 	assert_eq!(comments.track_total(), Some(22));
 }
 
-// case TRACKNUMBER=01/05 disable implicit_conversions
-#[test_log::test]
-fn opus_issue_540_disable_implicit_conversions() {
-	use lofty::ogg::OpusFile;
-
-	let file = std::fs::read("tests/files/assets/issue_540.opus").unwrap();
-	let opus_file = OpusFile::read_from(
-		&mut std::io::Cursor::new(file),
-		ParseOptions::new().implicit_conversions(false),
-	)
-	.unwrap();
-
-	let comments = opus_file.vorbis_comments();
-	assert_eq!(comments.track(), None);
-	assert_eq!(comments.track_total(), None);
-	assert_eq!(comments.get("TRACKNUMBER"), Some("01/05"));
-}
-
-// case track number and total with leading 0
-#[test_log::test]
-fn opus_issue_540_leading_0() {
-	use lofty::ogg::OpusFile;
-
-	let file = std::fs::read("tests/files/assets/issue_540_leading_0.opus").unwrap();
-	let opus_file = OpusFile::read_from(
-		&mut std::io::Cursor::new(file),
-		ParseOptions::new().implicit_conversions(false),
-	)
-	.unwrap();
-
-	let comments = opus_file.vorbis_comments();
-	assert_eq!(comments.get("TRACKNUMBER"), Some("01"));
-	assert_eq!(comments.get("TRACKTOTAL"), Some("05"));
-}
-
 // case TRACKNUMBER=a5 (vinyl format)
 #[test_log::test]
 fn opus_issue_499_vinyl_track_number() {

@@ -923,4 +923,58 @@ mod tests {
 		assert_eq!(tag.pictures().len(), 0); // Artist, no picture
 		assert!(tag.artist().is_some());
 	}
+
+	// case TRACKNUMBER=01/05 disable implicit_conversions
+	#[test_log::test]
+	fn issue_540_disable_implicit_conversions() {
+		let mut comments = VorbisComments::new();
+		comments.insert(String::from("TRACKNUMBER"), String::from("01/05"));
+
+		let mut comments_bytes = Vec::new();
+		comments
+			.dump_to(&mut comments_bytes, WriteOptions::default())
+			.unwrap();
+
+		let mut reader = Cursor::new(&comments_bytes);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			comments_bytes.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.implicit_conversions(false)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.track(), None);
+		assert_eq!(tag.track_total(), None);
+		assert_eq!(tag.get("TRACKNUMBER"), Some("01/05"));
+	}
+
+	// case track number and total with leading 0
+	#[test_log::test]
+	fn opus_issue_540_leading_0() {
+		let mut comments = VorbisComments::new();
+		comments.insert(String::from("TRACKNUMBER"), String::from("01"));
+		comments.insert(String::from("TRACKTOTAL"), String::from("05"));
+
+		let mut comments_bytes = Vec::new();
+		comments
+			.dump_to(&mut comments_bytes, WriteOptions::default())
+			.unwrap();
+
+		let mut reader = Cursor::new(&comments_bytes);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			comments_bytes.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.implicit_conversions(false)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.get("TRACKNUMBER"), Some("01"));
+		assert_eq!(tag.get("TRACKTOTAL"), Some("05"));
+	}
 }
