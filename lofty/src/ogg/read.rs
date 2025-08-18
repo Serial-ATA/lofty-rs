@@ -172,6 +172,12 @@ where
 			k if k.eq_ignore_ascii_case(b"TRACKNUMBER") => {
 				match utf8_decode_str(value) {
 					Ok(value) => {
+						if !parse_options.implicit_conversions {
+							tag.items
+								.push((String::from("TRACKNUMBER"), value.to_owned()));
+							continue;
+						}
+
 						// try to parse as current/total
 						let mut value_split = value.splitn(2, '/');
 						let track_number: Option<u32> =
