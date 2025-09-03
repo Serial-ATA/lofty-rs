@@ -977,4 +977,83 @@ mod tests {
 		assert_eq!(tag.get("TRACKNUMBER"), Some("01"));
 		assert_eq!(tag.get("TRACKTOTAL"), Some("05"));
 	}
+
+	// case DISCNUMBER=01/05
+	#[test_log::test]
+	fn opus_issue_543() {
+		let mut comments = VorbisComments::new();
+		comments.insert(String::from("DISCNUMBER"), String::from("01/05"));
+
+		let mut comments_bytes = Vec::new();
+		comments
+			.dump_to(&mut comments_bytes, WriteOptions::default())
+			.unwrap();
+
+		let mut reader = Cursor::new(&comments_bytes);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			comments_bytes.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.disk(), Some(1));
+		assert_eq!(tag.disk_total(), Some(5));
+	}
+
+	// case DISCNUMBER=01/05 disable implicit_conversions
+	#[test_log::test]
+	fn opus_disc_disable_implicit_conversions() {
+		let mut comments = VorbisComments::new();
+		comments.insert(String::from("DISCNUMBER"), String::from("01/05"));
+
+		let mut comments_bytes = Vec::new();
+		comments
+			.dump_to(&mut comments_bytes, WriteOptions::default())
+			.unwrap();
+
+		let mut reader = Cursor::new(&comments_bytes);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			comments_bytes.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.implicit_conversions(false)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.disk(), None);
+		assert_eq!(tag.disk_total(), None);
+		assert_eq!(tag.get("DISCNUMBER"), Some("01/05"));
+	}
+
+	// case track number and total with leading 0
+	#[test_log::test]
+	fn opus_disc_leading_0() {
+		let mut comments = VorbisComments::new();
+		comments.insert(String::from("DISCNUMBER"), String::from("01"));
+		comments.insert(String::from("DISCTOTAL"), String::from("05"));
+
+		let mut comments_bytes = Vec::new();
+		comments
+			.dump_to(&mut comments_bytes, WriteOptions::default())
+			.unwrap();
+
+		let mut reader = Cursor::new(&comments_bytes);
+		let tag = crate::ogg::read::read_comments(
+			&mut reader,
+			comments_bytes.len() as u64,
+			ParseOptions::new()
+				.parsing_mode(ParsingMode::Strict)
+				.implicit_conversions(false)
+				.read_cover_art(false),
+		)
+		.unwrap();
+
+		assert_eq!(tag.get("DISCNUMBER"), Some("01"));
+		assert_eq!(tag.get("DISCTOTAL"), Some("05"));
+	}
 }
