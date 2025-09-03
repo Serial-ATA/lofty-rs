@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
 - **Vorbis Comments**: Check `ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
+- **Vorbis Comments**: Support `DISCNUMBER` fields with the `current/total` format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/543)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/544))
+    - These fields will now properly be split into `DISCNUMBER` and `DISCTOTAL`, making it possible to use them with
+      [Accessor::disk()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk) and [Accessor::disk_total()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk_total).
 * **ItemKey**: `ItemKey` is now `Copy` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
 
 ### Fixed
