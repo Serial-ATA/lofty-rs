@@ -168,33 +168,54 @@ where
 					},
 				}
 			},
-			// Support the case of TRACKNUMBER being equal to current/total
-			k if k.eq_ignore_ascii_case(b"TRACKNUMBER") => {
+			// Support the case of TRACKNUMBER / DISCNUMBER being equal to current/total
+			k if (k.eq_ignore_ascii_case(b"TRACKNUMBER")
+				|| k.eq_ignore_ascii_case(b"DISCNUMBER")) =>
+			{
 				match utf8_decode_str(value) {
 					Ok(value) => {
+						let key = if k.eq_ignore_ascii_case(b"TRACKNUMBER") {
+							String::from("TRACKNUMBER")
+						} else {
+							String::from("DISCNUMBER")
+						};
+
 						if !parse_options.implicit_conversions {
-							tag.items
-								.push((String::from("TRACKNUMBER"), value.to_owned()));
+							tag.items.push((key, value.to_owned()));
 							continue;
 						}
 
 						// try to parse as current/total
 						let mut value_split = value.splitn(2, '/');
-						let track_number: Option<u32> =
-							value_split.next().and_then(|b| b.parse().ok());
-						let track_total: Option<u32> =
-							value_split.next().and_then(|b| b.parse().ok());
+						let current: Option<u32> = value_split.next().and_then(|b| b.parse().ok());
+						let total: Option<u32> = value_split.next().and_then(|b| b.parse().ok());
 
-						if let Some(n) = track_number {
-							tag.set_track(n);
-						} else {
-							// Probably some other format, like a vinyl track number (A1, B1, etc.).
-							// Just leave it up to the caller to deal with.
-							tag.items
-								.push((String::from("TRACKNUMBER"), value.to_owned()));
-						}
-						if let Some(n) = track_total {
-							tag.set_track_total(n);
+						match key.as_str() {
+							"TRACKNUMBER" => {
+								if let Some(n) = total {
+									tag.set_track_total(n);
+								}
+								if let Some(n) = current {
+									tag.set_track(n);
+								} else {
+									// Probably some other format, like a vinyl track number (A1, B1, etc.).
+									// Just leave it up to the caller to deal with.
+									tag.items.push((key, value.to_owned()));
+								}
+							},
+							"DISCNUMBER" => {
+								if let Some(n) = total {
+									tag.set_disk_total(n);
+								}
+								if let Some(n) = current {
+									tag.set_disk(n);
+								} else {
+									// Probably some other format, like a vinyl track number (A1, B1, etc.).
+									// Just leave it up to the caller to deal with.
+									tag.items.push((key, value.to_owned()));
+								}
+							},
+							_ => {},
 						}
 					},
 					Err(e) => {
