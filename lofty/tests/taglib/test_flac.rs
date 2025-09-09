@@ -296,8 +296,7 @@ fn test_properties() {
 	);
 	tag.push(String::from("COMMENT"), String::from("Comment"));
 	tag.push(String::from("DATE"), String::from("2021-01-10"));
-	tag.push(String::from("DISCNUMBER"), String::from("3"));
-	tag.push(String::from("DISCTOTAL"), String::from("5"));
+	tag.push(String::from("DISCNUMBER"), String::from("3/5"));
 	tag.push(String::from("GENRE"), String::from("Genre"));
 	tag.push(String::from("ISRC"), String::from("UKAAA0500001"));
 	tag.push(String::from("LABEL"), String::from("Label 1"));
@@ -356,7 +355,10 @@ fn test_properties() {
 	}
 	file.rewind().unwrap();
 	{
-		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
+		// <current>/<total> DISCNUMBER is a special case in Lofty, so disable implicit_conversions
+		// to match TagLib
+		let f = FlacFile::read_from(&mut file, ParseOptions::new().implicit_conversions(false))
+			.unwrap();
 
 		assert_eq!(f.vorbis_comments(), Some(&tag));
 	}
