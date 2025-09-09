@@ -58,6 +58,7 @@ fn test_add_picture() {
 
 		let new_pic = Picture::new_unchecked(
 			PictureType::CoverBack,
+			None,
 			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			Vec::from("JPEG data"),
@@ -114,6 +115,7 @@ fn test_replace_picture() {
 
 		let new_pic = Picture::new_unchecked(
 			PictureType::CoverBack,
+			None,
 			Some(MimeType::Jpeg),
 			Some(String::from("new image")),
 			Vec::from("JPEG data"),
@@ -612,6 +614,7 @@ fn test_picture_stored_after_comment() {
 
 		let pic = Picture::new_unchecked(
 			PictureType::CoverFront,
+			None,
 			Some(MimeType::Png),
 			Some(String::from("blank.png")),
 			BLANK_PNG_DATA.to_vec(),

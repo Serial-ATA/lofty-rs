@@ -1,3 +1,4 @@
+use crate::ebml::MatroskaTag;
 use crate::id3::v2::Id3v2Tag;
 use crate::mp4::Ilst;
 
@@ -5,6 +6,7 @@ use crate::mp4::Ilst;
 pub(crate) enum CompanionTag {
 	Id3v2(Id3v2Tag),
 	Ilst(Ilst),
+	Matroska(MatroskaTag),
 }
 
 impl CompanionTag {
@@ -18,6 +20,13 @@ impl CompanionTag {
 	pub(crate) fn ilst(self) -> Option<Ilst> {
 		match self {
 			CompanionTag::Ilst(tag) => Some(tag),
+			_ => None,
+		}
+	}
+
+	pub(crate) fn matroska(self) -> Option<MatroskaTag> {
+		match self {
+			CompanionTag::Matroska(tag) => Some(tag),
 			_ => None,
 		}
 	}
