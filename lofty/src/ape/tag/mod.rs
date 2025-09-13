@@ -285,11 +285,11 @@ impl Accessor for ApeTag {
 	}
 
 	fn remove_disk_total(&mut self) {
-		let existing_track_number = self.track();
+		let existing_disk_number = self.disk();
 		self.remove("Disc");
 
-		if let Some(track) = existing_track_number {
-			self.insert(ApeItem::text("Disc", track.to_string()));
+		if let Some(disk) = existing_disk_number {
+			self.insert(ApeItem::text("Disc", disk.to_string()));
 		}
 	}
 
@@ -564,7 +564,7 @@ pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_
 		.chain(create_apeitemref_for_number_pair(
 			tag.get_string(ItemKey::DiscNumber),
 			tag.get_string(ItemKey::DiscTotal),
-			"Disk",
+			"Disc",
 		))
 }
 
@@ -946,5 +946,19 @@ mod tests {
 		};
 
 		assert_eq!(ape.len(), 1);
+	}
+
+	#[test_log::test]
+	fn remove_disk_total_preserves_disk_number() {
+		let mut ape = ApeTag::new();
+		ape.set_track(2);
+		ape.set_disk(3);
+		ape.set_disk_total(5);
+
+		ape.remove_disk_total();
+
+		assert_eq!(ape.disk(), Some(3));
+		assert!(ape.disk_total().is_none());
+		assert_eq!(ape.track(), Some(2));
 	}
 }
