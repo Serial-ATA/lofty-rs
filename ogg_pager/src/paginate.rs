@@ -30,7 +30,6 @@ impl PaginateContext {
 				first_page: true,
 				fresh_packet: true,
 				packet_finished_on_page: false,
-				need_nil_page: false,
 			},
 			pos: 0,
 			idx: 0,
@@ -81,12 +80,6 @@ impl PaginateContext {
 
 		// Moving on to a new packet
 		debug_assert!(self.pos <= self.current_packet_len as u64);
-		let at_packet_end = self.pos == self.current_packet_len as u64;
-		if at_packet_end && full_segments_occupied == MAX_WRITTEN_SEGMENT_COUNT {
-			// See comment on `PaginateContextFlags.need_nil_page`
-			self.flags.need_nil_page = true;
-			self.flags.packet_finished_on_page = false;
-		}
 
 		if self.flags.packet_finished_on_page {
 			header.abgp = self.abgp;
@@ -123,15 +116,6 @@ struct PaginateContextFlags {
 	first_page: bool,
 	fresh_packet: bool,
 	packet_finished_on_page: bool,
-	// A 'nil' page just means it is zero-length. This is used when our packet is perfectly
-	// divisible by `255 * MAX_SEGMENT_COUNT`. We need a zero-sized segment to mark the end of our
-	// packet across page boundaries.
-	//
-	// Very rare circumstance, but still possible.
-	//
-	// From <https://xiph.org/ogg/doc/framing.html>:
-	// "Note also that a 'nil' (zero length) packet is not an error; it consists of nothing more than a lacing value of zero in the header."
-	need_nil_page: bool,
 }
 
 /// Create pages from a list of packets
@@ -175,13 +159,6 @@ fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
 	let mut page_content = Vec::with_capacity(MAX_WRITTEN_CONTENT_SIZE);
 	let mut packet = packet;
 	loop {
-		// See comment on `PaginateContextFlags.need_nil_page`
-		if ctx.flags.need_nil_page {
-			assert!(packet.is_empty());
-			ctx.flags.packet_finished_on_page = true;
-			ctx.flush_page(&mut page_content);
-		}
-
 		if packet.is_empty() {
 			break;
 		}
@@ -208,6 +185,25 @@ fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
 	// Flush any content leftover
 	if !page_content.is_empty() {
 		ctx.flush_page(&mut page_content);
+	}
+
+	// After all packet bytes are consumed, check for nil page condition
+	// If the packet length is a multiple of 255 * MAX_WRITTEN_SEGMENT_COUNT, we need a nil page
+
+	// A 'nil' page just means it is zero-length. This is used when our packet is perfectly
+	// divisible by `255 * MAX_SEGMENT_COUNT`. We need a zero-sized segment to mark the end of our
+	// packet across page boundaries.
+	//
+	// Very rare circumstance, but still possible.
+	//
+	// From <https://xiph.org/ogg/doc/framing.html>:
+	// "Note also that a 'nil' (zero length) packet is not an error; it consists of nothing more than a lacing value of zero in the header."
+	if ctx.current_packet_len != 0
+		&& ctx.current_packet_len % (255 * MAX_WRITTEN_SEGMENT_COUNT) == 0
+	{
+		ctx.flags.packet_finished_on_page = true;
+		let mut nil_content = Vec::new();
+		ctx.flush_page(&mut nil_content);
 	}
 
 	Ok(())
