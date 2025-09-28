@@ -80,7 +80,8 @@ where
 		last_block = block.last;
 
 		if last_block {
-			last_block_info = (block.byte, (end - start) as usize, end as usize)
+			// (header_first_byte_value, header_start_offset, block_end_offset)
+			last_block_info = (block.byte, start as usize, end as usize);
 		}
 
 		match block_type {
@@ -148,8 +149,24 @@ where
 
 	create_picture_blocks(&mut comment_blocks, &mut tag.pictures)?;
 
+	let ending_with_padding = end_padding_exists || write_options.preferred_padding.is_some() || write_options.preferred_padding != Some(0);
+
+	if !comment_blocks.is_empty() && !ending_with_padding { {
+		// Clear the old "last" flag on the previously-last block header byte
+		file_bytes[last_block_info.1] &= 0x7F;
+
+		// Make the final block in our inserted sequence the new "last"
+		set_last_flag_on_final_block(&mut comment_blocks);
+	}
+
 	if blocks_to_remove.is_empty() {
-		file_bytes.splice(0..0, comment_blocks);
+		// If there is end padding, insert before it; otherwise append at the end.
+		let insert_at = if end_padding_exists {
+			last_block_info.1 // start of the last block (the terminal padding block)
+		} else {
+			last_block_info.2 // end of the last (non-padding) block
+		};
+		file_bytes.splice(insert_at..insert_at, comment_blocks);
 	} else {
 		blocks_to_remove.sort_unstable();
 		blocks_to_remove.reverse();
@@ -243,4 +260,21 @@ fn create_picture_blocks(
 	}
 
 	Ok(())
+}
+
+fn set_last_flag_on_final_block(buf: &mut [u8]) {
+	// Walk blocks in `buf`: [1 byte type/last][3 bytes len_be][len bytes data]
+	let mut i = 0usize;
+	let mut last_hdr = None;
+	while i + 4 <= buf.len() {
+		last_hdr = Some(i);
+		let len = u32::from_be_bytes([0, buf[i + 1], buf[i + 2], buf[i + 3]]) as usize;
+		i = i.saturating_add(4).saturating_add(len);
+		if i > buf.len() {
+			break;
+		}
+	}
+	if let Some(h) = last_hdr {
+		buf[h] |= 0x80; // mark final inserted block as "last"
+	}
 }
