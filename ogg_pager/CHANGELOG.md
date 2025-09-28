@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Removed a bad assertion when writing nil packets ([PR](https://github.com/Serial-ATA/lofty-rs/pull/547))
+
 ## [0.7.0] - 2025-01-05
 
 ### Fixed
