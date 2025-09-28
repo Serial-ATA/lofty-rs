@@ -271,6 +271,7 @@ fn test_render_apic() {
 		TextEncoding::UTF8,
 		Picture::new_unchecked(
 			PictureType::CoverBack,
+			None,
 			Some(MimeType::Png),
 			Some(String::from("Description")),
 			b"PNG data".to_vec(),

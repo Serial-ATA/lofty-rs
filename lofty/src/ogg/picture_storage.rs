@@ -79,6 +79,7 @@ pub trait OggPictureStorage: private::Sealed {
 	/// // Add a front cover
 	/// let front_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -92,6 +93,7 @@ pub trait OggPictureStorage: private::Sealed {
 	/// // Replace the front cover with a back cover
 	/// let back_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverBack,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -103,8 +105,13 @@ pub trait OggPictureStorage: private::Sealed {
 	/// assert_eq!(tag.pictures()[0].0.pic_type(), PictureType::CoverBack);
 	///
 	/// // Use an out of bounds index
-	/// let another_picture =
-	/// 	Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
+	/// let another_picture = Picture::new_unchecked(
+	/// 	PictureType::Band,
+	/// 	None,
+	/// 	Some(MimeType::Png),
+	/// 	None,
+	/// 	Vec::new(),
+	/// );
 	/// tag.set_picture(100, another_picture, PictureInformation::default());
 	///
 	/// assert_eq!(tag.pictures().len(), 2);
@@ -135,6 +142,7 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # fn main() -> lofty::error::Result<()> {
 	/// let front_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -171,6 +179,7 @@ pub trait OggPictureStorage: private::Sealed {
 	/// // Add front and back covers
 	/// let front_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverFront,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),
@@ -180,6 +189,7 @@ pub trait OggPictureStorage: private::Sealed {
 	///
 	/// let back_cover = Picture::new_unchecked(
 	/// 	PictureType::CoverBack,
+	/// 	None,
 	/// 	Some(MimeType::Png),
 	/// 	None,
 	/// 	Vec::new(),

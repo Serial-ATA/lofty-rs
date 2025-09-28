@@ -72,6 +72,7 @@ struct_excessive_bools 		       = "allow" # I have yet to find one case of this 
 needless_continue                  = "allow" # All occurences of this lint are just for clarity in large loops
 unbuffered_bytes                   = "allow" # It is up to the caller to wrap their data in `BufReader`s
 struct_field_names                 = "allow"
+module_inception                   = "allow"
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"
