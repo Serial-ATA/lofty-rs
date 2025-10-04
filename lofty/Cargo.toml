@@ -25,7 +25,7 @@ log           = "0.4.22"
 # OGG Vorbis/Opus
 ogg_pager     = "0.7.0"
 # Key maps
-paste         = "1.0.15"
+paste         = { package = "pastey" , version = "0.1.1" }
 
 [features]
 default                   = ["id3v2_compression_support"]
