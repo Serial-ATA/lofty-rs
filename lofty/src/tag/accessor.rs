@@ -53,7 +53,12 @@ macro_rules! accessor_trait {
 	};
 	(@GET_METHOD [$name:tt $($other:tt)*] Option<$ret_ty:ty>) => {
 		paste::paste! {
-			#[doc = "Returns the " $name $(" " $other)*]
+			#[doc = "Returns the " $name $(" " $other)* "."]
+			///
+			/// When the item is defined multiple times this only returns the first occurance.
+			/// You may want to use [get_items](struct.Tag.html#method.get_items) or [get_strings](struct.Tag.html#method.get_strings)
+			/// for retrieving all elements of that item
+			///
 			/// # Example
 			///
 			/// ```rust
@@ -70,7 +75,9 @@ macro_rules! accessor_trait {
 	};
 	(@SET_METHOD [$name:tt $($other:tt)*] $owned_ty:ty) => {
 		paste::paste! {
-			#[doc = "Sets the " $name $(" " $other)*]
+			#[doc = "Sets the " $name $(" " $other)* "."]
+			/// To set more than one element of that item use [push](struct.Tag.html#method.push)
+			///
 			/// # Example
 			///
 			/// ```rust,ignore
