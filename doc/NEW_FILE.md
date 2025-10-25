@@ -198,11 +198,11 @@ Then we'll store our tests in `tests/files/{format}.rs`.
 There is a simple suite of tests to go in that file:
 
 * `read()`: Read a file containing all possible tags (a Foo file with an ID3v2 *and* APE tag in this case), verifying
-  all expected information is present. This can be done quickly with the `crate::verify_artist!` macro.
-* `write()`: Change the artist field of each tag using the `crate::set_artist!` macro, which will verify the artist
+  all expected information is present. This can be done quickly with the `crate::verify_artist()` function.
+* `write()`: Change the artist field of each tag using the `crate::set_artist()` function, which will verify the artist
   and set a new one. Then, revert the artists using the same method.
 * `remove_{tag}()`: For each tag format the file supports, create a `remove_{tag}()` test that simply calls the
-  `crate::remove_tag!` macro. For example, this format would have `remove_ape()` and `remove_id3v2()`.
+  `crate::remove_tag_test()` function. For example, this format would have `remove_ape()` and `remove_id3v2()`.
 
 #### Fuzz Tests
 

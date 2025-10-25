@@ -1,4 +1,4 @@
-use crate::{set_artist, temp_file, verify_artist};
+use crate::util::temp_file;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{BoundTaggedFile, FileType};
 use lofty::id3::v2::{Frame, FrameId, Id3v2Tag, KeyValueFrame};
@@ -22,13 +22,13 @@ fn read() {
 	assert_eq!(file.file_type(), FileType::Mpeg);
 
 	// Verify the ID3v2 tag first
-	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
+	crate::util::verify_artist(&file, TagType::Id3v2, "Foo artist", 1);
 
 	// Now verify ID3v1
-	crate::verify_artist!(file, tag, TagType::Id3v1, "Bar artist", 1);
+	crate::util::verify_artist(&file, TagType::Id3v1, "Bar artist", 1);
 
 	// Finally, verify APEv2
-	crate::verify_artist!(file, tag, TagType::Ape, "Baz artist", 1);
+	crate::util::verify_artist(&file, TagType::Ape, "Baz artist", 1);
 }
 
 #[test_log::test]
@@ -95,45 +95,76 @@ fn issue_87_duplicate_id3v2() {
 
 #[test_log::test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
-
-	let mut tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.mp3");
 
 	assert_eq!(tagged_file.file_type(), FileType::Mpeg);
 
 	// ID3v2
-	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v2,
+		"Foo artist",
+		"Bar artist",
+		1,
+	);
 
 	// ID3v1
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Bar artist", 1 => file, "Baz artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v1,
+		"Bar artist",
+		"Baz artist",
+		1,
+	);
 
 	// APEv2
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Baz artist", 1 => file, "Qux artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Ape,
+		"Baz artist",
+		"Qux artist",
+		1,
+	);
 
 	// Now reread the file
+	let mut file = tagged_file.into_inner();
 	file.rewind().unwrap();
+
 	let mut tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
 		.guess_file_type()
 		.unwrap()
-		.read()
+		.read_bound()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v2,
+		"Bar artist",
+		"Foo artist",
+		1,
+	);
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Id3v1, "Baz artist", 1 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v1,
+		"Baz artist",
+		"Bar artist",
+		1,
+	);
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::Ape, "Qux artist", 1 => file, "Baz artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Ape,
+		"Qux artist",
+		"Baz artist",
+		1,
+	);
 }
 
 #[test_log::test]
 fn save_to_id3v2() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
@@ -171,7 +202,7 @@ fn save_to_id3v2() {
 
 #[test_log::test]
 fn save_number_of_track_and_disk_to_id3v2() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
@@ -212,7 +243,7 @@ fn save_number_of_track_and_disk_to_id3v2() {
 
 #[test_log::test]
 fn test_bound_tagged_into_inner() {
-	let file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let mut bounded = BoundTaggedFile::read_from(file, ParseOptions::default()).unwrap();
 
@@ -235,7 +266,7 @@ fn test_bound_tagged_into_inner() {
 
 #[test_log::test]
 fn save_total_of_track_and_disk_to_id3v2() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
@@ -276,7 +307,7 @@ fn save_total_of_track_and_disk_to_id3v2() {
 
 #[test_log::test]
 fn save_number_pair_of_track_and_disk_to_id3v2() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
@@ -322,17 +353,17 @@ fn save_number_pair_of_track_and_disk_to_id3v2() {
 
 #[test_log::test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
+	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
 }
 
 #[test_log::test]
 fn remove_id3v1() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Id3v1);
+	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Id3v1);
 }
 
 #[test_log::test]
 fn remove_ape() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
+	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
 }
 
 #[test_log::test]
@@ -342,7 +373,7 @@ fn read_and_write_tpil_frame() {
 		("vocalist".to_string(), "testhuman".to_string()),
 	];
 
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 
 	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 
@@ -372,7 +403,7 @@ fn read_and_write_tpil_frame() {
 
 #[test_log::test]
 fn read_no_properties() {
-	let mut file = crate::temp_file!("tests/files/assets/minimal/full_test.mp3");
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
 		.guess_file_type()
@@ -390,5 +421,5 @@ fn read_no_properties() {
 
 #[test_log::test]
 fn read_no_tags() {
-	crate::no_tag_test!("tests/files/assets/minimal/full_test.mp3");
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.mp3", None);
 }

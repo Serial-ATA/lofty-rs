@@ -1,4 +1,3 @@
-use crate::{set_artist, temp_file, verify_artist};
 use lofty::config::ParseOptions;
 use lofty::file::FileType;
 use lofty::prelude::*;
@@ -19,64 +18,83 @@ fn read() {
 	assert_eq!(file.file_type(), FileType::Aiff);
 
 	// Verify the ID3v2 tag first
-	crate::verify_artist!(file, primary_tag, "Foo artist", 1);
+	crate::util::verify_artist(&file, TagType::Id3v2, "Foo artist", 1);
 
 	// Now verify the text chunks
-	crate::verify_artist!(file, tag, TagType::AiffText, "Bar artist", 1);
+	crate::util::verify_artist(&file, TagType::AiffText, "Bar artist", 1);
 }
 
 #[test_log::test]
 fn write() {
-	let mut file = temp_file!("tests/files/assets/minimal/full_test.aiff");
-
-	let mut tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.aiff");
 
 	assert_eq!(tagged_file.file_type(), FileType::Aiff);
 
 	// ID3v2
-	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 1 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v2,
+		"Foo artist",
+		"Bar artist",
+		1,
+	);
 
 	// Text chunks
-	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Bar artist", 1 => file, "Baz artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::AiffText,
+		"Bar artist",
+		"Baz artist",
+		1,
+	);
 
 	// Now reread the file
+	let mut file = tagged_file.into_inner();
 	file.rewind().unwrap();
+
 	let mut tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
 		.guess_file_type()
 		.unwrap()
-		.read()
+		.read_bound()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 1 => file, "Foo artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Id3v2,
+		"Bar artist",
+		"Foo artist",
+		1,
+	);
 
-	crate::set_artist!(tagged_file, tag_mut, TagType::AiffText, "Baz artist", 1 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::AiffText,
+		"Baz artist",
+		"Bar artist",
+		1,
+	);
 }
 
 #[test_log::test]
 fn remove_text_chunks() {
-	crate::remove_tag!(
+	crate::util::remove_tag_test(
 		"tests/files/assets/minimal/full_test.aiff",
-		TagType::AiffText
+		TagType::AiffText,
 	);
 }
 
 #[test_log::test]
 fn remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/minimal/full_test.aiff", TagType::Id3v2);
+	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.aiff", TagType::Id3v2);
 }
 
 #[test_log::test]
 fn read_no_properties() {
-	crate::no_properties_test!("tests/files/assets/minimal/full_test.aiff");
+	crate::util::no_properties_test("tests/files/assets/minimal/full_test.aiff");
 }
 
 #[test_log::test]
 fn read_no_tags() {
-	crate::no_tag_test!("tests/files/assets/minimal/full_test.aiff");
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.aiff", None);
 }
