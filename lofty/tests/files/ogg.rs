@@ -1,4 +1,4 @@
-use crate::{set_artist, temp_file, verify_artist};
+use crate::util::temp_file;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::FileType;
 use lofty::prelude::*;
@@ -41,9 +41,9 @@ fn flac_write() {
 
 #[test_log::test]
 fn flac_remove_vorbis_comments() {
-	crate::remove_tag!(
+	crate::util::remove_tag_test(
 		"tests/files/assets/minimal/full_test.flac",
-		TagType::VorbisComments
+		TagType::VorbisComments,
 	);
 }
 
@@ -92,37 +92,45 @@ fn read(path: &str, file_type: FileType) {
 
 	assert_eq!(file.file_type(), file_type);
 
-	crate::verify_artist!(file, primary_tag, "Foo artist", 2);
+	// Expecting 2 items: vendor string and artist
+	crate::util::verify_artist(&file, TagType::VorbisComments, "Foo artist", 2);
 }
 
 fn write(path: &str, file_type: FileType) {
-	let mut file = temp_file!(path);
-
-	let mut tagged_file = Probe::new(&mut file)
-		.options(ParseOptions::new().read_properties(false))
-		.guess_file_type()
-		.unwrap()
-		.read()
-		.unwrap();
+	let mut tagged_file = crate::util::read(path);
 
 	assert_eq!(tagged_file.file_type(), file_type);
 
-	crate::set_artist!(tagged_file, primary_tag_mut, "Foo artist", 2 => file, "Bar artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::VorbisComments,
+		"Foo artist",
+		"Bar artist",
+		2,
+	);
 
 	// Now reread the file
+	let mut file = tagged_file.into_inner();
 	file.rewind().unwrap();
+
 	let mut tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
 		.guess_file_type()
 		.unwrap()
-		.read()
+		.read_bound()
 		.unwrap();
 
-	crate::set_artist!(tagged_file, primary_tag_mut, "Bar artist", 2 => file, "Foo artist");
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::VorbisComments,
+		"Bar artist",
+		"Foo artist",
+		2,
+	);
 }
 
 fn remove(path: &str, tag_type: TagType) {
-	let mut file = temp_file!(path);
+	let mut file = temp_file(path);
 
 	let tagged_file = Probe::new(&mut file)
 		.options(ParseOptions::new().read_properties(false))
@@ -197,7 +205,7 @@ fn opus_issue_499_vinyl_track_number() {
 
 #[test_log::test]
 fn flac_remove_id3v2() {
-	crate::remove_tag!("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
+	crate::util::remove_tag_test("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
 }
 
 #[test_log::test]
@@ -218,30 +226,30 @@ fn flac_try_write_non_empty_id3v2() {
 
 #[test_log::test]
 fn read_no_properties_opus() {
-	crate::no_properties_test!("tests/files/assets/minimal/full_test.opus");
+	crate::util::no_properties_test("tests/files/assets/minimal/full_test.opus");
 }
 
 #[test_log::test]
 fn read_no_tags_opus() {
-	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.opus", expected_len: 1);
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.opus", Some(1));
 }
 
 #[test_log::test]
 fn read_no_properties_vorbis() {
-	crate::no_properties_test!("tests/files/assets/minimal/full_test.ogg");
+	crate::util::no_properties_test("tests/files/assets/minimal/full_test.ogg");
 }
 
 #[test_log::test]
 fn read_no_tags_vorbis() {
-	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.ogg", expected_len: 1);
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.ogg", Some(1));
 }
 
 #[test_log::test]
 fn read_no_properties_speex() {
-	crate::no_properties_test!("tests/files/assets/minimal/full_test.spx");
+	crate::util::no_properties_test("tests/files/assets/minimal/full_test.spx");
 }
 
 #[test_log::test]
 fn read_no_tags_speex() {
-	crate::no_tag_test!(@MANDATORY_TAG "tests/files/assets/minimal/full_test.spx", expected_len: 1);
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.spx", Some(1));
 }
