@@ -29,6 +29,8 @@ struct Opt {
 }
 
 fn main() {
+	env_logger::init();
+
 	let opt = Opt::from_args();
 
 	let mut tagged_file = Probe::open(&opt.path)

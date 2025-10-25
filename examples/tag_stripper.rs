@@ -6,6 +6,8 @@ use lofty::probe::Probe;
 use std::io::Write;
 
 fn main() {
+	env_logger::init();
+
 	let path = std::env::args().nth(1).expect("ERROR: No path specified!");
 
 	let tagged_file = Probe::open(path.as_str())
