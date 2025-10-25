@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - For example, a track has `ItemKey::TrackArtist` = "Foo & Bar", then `ItemKey::AlbumArtists` = ["Foo", "Bar"].
 - **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`)
   - Support can be enabled with the new `serde` feature (not enabled by default)
+- **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
+  - Same as `Probe::read()`, but returns a [`BoundTaggedFile`](https://docs.rs/lofty/latest/lofty/file/struct.BoundTaggedFile.html)
 
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions

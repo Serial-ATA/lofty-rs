@@ -4,9 +4,8 @@ use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagType};
-
 use crate::util::io::{FileLike, Length, Truncate};
-use std::fs::File;
+
 use std::io::{Read, Seek};
 
 /// Provides a common interface between [`TaggedFile`] and [`BoundTaggedFile`]
@@ -453,13 +452,13 @@ impl AudioFile for TaggedFile {
 	}
 }
 
-impl From<BoundTaggedFile> for TaggedFile {
-	fn from(input: BoundTaggedFile) -> Self {
+impl<F> From<BoundTaggedFile<F>> for TaggedFile {
+	fn from(input: BoundTaggedFile<F>) -> Self {
 		input.inner
 	}
 }
 
-/// A variant of [`TaggedFile`] that holds a [`File`] handle, and reflects changes
+/// A variant of [`TaggedFile`] that holds a handle to its original [`FileLike`] buffer, and reflects changes
 /// such as tag removals.
 ///
 /// For example:
@@ -515,12 +514,27 @@ impl From<BoundTaggedFile> for TaggedFile {
 /// assert!(!bound_tagged_file.contains_tag_type(TagType::Id3v2));
 /// # Ok(()) }
 /// ```
-pub struct BoundTaggedFile {
-	inner: TaggedFile,
-	file_handle: File,
+pub struct BoundTaggedFile<F> {
+	pub(crate) inner: TaggedFile,
+	pub(crate) file_handle: F,
 }
 
-impl BoundTaggedFile {
+impl<F> BoundTaggedFile<F> {
+	/// Consume this tagged file and return the internal file "buffer".
+	/// This allows you to reuse the internal file.
+	///
+	/// Any changes that haven't been commited will be discarded once you
+	/// call this function.
+	pub fn into_inner(self) -> F {
+		self.file_handle
+	}
+}
+
+impl<F: FileLike> BoundTaggedFile<F>
+where
+	LoftyError: From<<F as Truncate>::Error>,
+	LoftyError: From<<F as Length>::Error>,
+{
 	/// Create a new [`BoundTaggedFile`]
 	///
 	/// # Errors
@@ -544,7 +558,7 @@ impl BoundTaggedFile {
 	/// let bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read_from(mut file: File, parse_options: ParseOptions) -> Result<Self> {
+	pub fn read_from(mut file: F, parse_options: ParseOptions) -> Result<Self> {
 		let inner = TaggedFile::read_from(&mut file, parse_options)?;
 		file.rewind()?;
 
@@ -588,18 +602,9 @@ impl BoundTaggedFile {
 
 		Ok(())
 	}
-
-	/// Consume this tagged file and return the internal file "buffer".
-	/// This allows you to reuse the internal file.
-	///
-	/// Any changes that haven't been commited will be discarded once you
-	/// call this function.
-	pub fn into_inner(self) -> File {
-		self.file_handle
-	}
 }
 
-impl TaggedFileExt for BoundTaggedFile {
+impl<F> TaggedFileExt for BoundTaggedFile<F> {
 	fn file_type(&self) -> FileType {
 		self.inner.file_type()
 	}
@@ -633,7 +638,7 @@ impl TaggedFileExt for BoundTaggedFile {
 	}
 }
 
-impl AudioFile for BoundTaggedFile {
+impl<T> AudioFile for BoundTaggedFile<T> {
 	type Properties = FileProperties;
 
 	fn read_from<R>(_: &mut R, _: ParseOptions) -> Result<Self>
