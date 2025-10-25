@@ -4,18 +4,15 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::macros::{err, try_vec};
 use crate::ogg::tag::VorbisCommentsRef;
-use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::iter::Peekable;
 
-use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-
-const BLOCK_HEADER_SIZE: usize = 4;
-const MAX_BLOCK_SIZE: u32 = 16_777_215;
+use byteorder::{LittleEndian, ReadBytesExt};
 
 pub(crate) fn write_to<F>(file: &mut F, tag: &Tag, write_options: WriteOptions) -> Result<()>
 where
@@ -43,6 +40,26 @@ where
 	}
 }
 
+/// The location of the last metadata block
+///
+/// Depending on the order of the metadata blocks, the metadata present for writing, and the [`WriteOptions`], the
+/// writer will have to determine when to set the `Last-metadata-block` flag. This is because the writer
+/// doesn't fully parse the file, it only writes what has changed.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum LastBlock {
+	/// The last block in the current file is the stream info
+	StreamInfo,
+	/// The last block will be the newly written Vorbis Comments
+	Comments,
+	/// The last block will be the final newly written picture
+	Picture,
+	/// The last block will be the newly written padding block, if the user allows for padding (most common case)
+	Padding,
+	/// The last block already exists in the stream and will not be touched while writing, so nothing
+	/// to do
+	Other,
+}
+
 pub(crate) fn write_to_inner<'a, F, II, IP>(
 	file: &mut F,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
@@ -54,195 +71,244 @@ where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
-	let stream_info = verify_flac(file)?;
-
-	let mut last_block = stream_info.last;
-
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;
 
 	let mut cursor = Cursor::new(file_bytes);
 
+	let stream_info = verify_flac(&mut cursor)?;
+	let stream_info_start = stream_info.start as usize;
+	let stream_info_end = stream_info.end as usize;
+
+	let BlockCollector {
+		vendor,
+		mut blocks,
+		mut last_block_location,
+		mut last_block_replaced,
+	} = BlockCollector::collect(&mut cursor, stream_info)?;
+
+	if let Some(vendor) = vendor {
+		tag.vendor = vendor;
+	}
+
+	let mut comments_peek = (&mut tag.items).peekable();
+	let mut pictures_peek = (&mut tag.pictures).peekable();
+
+	let has_comments = comments_peek.peek().is_some();
+	let has_pictures = pictures_peek.peek().is_some();
+
+	// Attempting to strip an already empty file
+	let has_blocks_to_remove = blocks.iter().any(|b| b.for_removal);
+	if !has_blocks_to_remove && !has_comments && !has_pictures {
+		log::debug!("Nothing to do");
+		return Ok(());
+	}
+
 	// TODO: We need to actually use padding (https://github.com/Serial-ATA/lofty-rs/issues/445)
-	let mut end_padding_exists = false;
-	let mut last_block_info = (
-		stream_info.byte,
-		stream_info.start as usize,
-		stream_info.end as usize,
-	);
+	let will_write_padding =
+		last_block_location != LastBlock::Padding && write_options.preferred_padding.is_some();
+	let mut file_bytes = cursor.into_inner();
 
-	let mut blocks_to_remove = Vec::new();
+	if last_block_location == LastBlock::StreamInfo {
+		if has_comments || has_pictures {
+			// Stream info is *always* the first block, so it'll always be replaced if we add more blocks
+			last_block_replaced = true;
 
-	while !last_block {
-		let block = Block::read(&mut cursor, |block_ty| block_ty == BLOCK_ID_VORBIS_COMMENTS)?;
-		let start = block.start;
-		let end = block.end;
-
-		let block_type = block.ty;
-		last_block = block.last;
-
-		if last_block {
-			last_block_info = (block.byte, (end - start) as usize, end as usize)
-		}
-
-		match block_type {
-			BLOCK_ID_VORBIS_COMMENTS => {
-				blocks_to_remove.push((start, end));
-
-				// Retain the original vendor string
-				let reader = &mut &block.content[..];
-
-				let vendor_len = reader.read_u32::<LittleEndian>()?;
-				let mut vendor = try_vec![0; vendor_len as usize];
-				reader.read_exact(&mut vendor)?;
-
-				// TODO: Error on strict?
-				let Ok(vendor_str) = String::from_utf8(vendor) else {
-					log::warn!("FLAC vendor string is not valid UTF-8, not re-using");
-					tag.vendor = Cow::Borrowed("");
-					continue;
-				};
-
-				tag.vendor = Cow::Owned(vendor_str);
-			},
-			BLOCK_ID_PICTURE => blocks_to_remove.push((start, end)),
-			BLOCK_ID_PADDING => {
-				if last_block {
-					end_padding_exists = true
-				} else {
-					blocks_to_remove.push((start, end))
-				}
-			},
-			_ => {},
+			if has_pictures {
+				last_block_location = LastBlock::Picture;
+			} else {
+				last_block_location = LastBlock::Comments;
+			}
+		} else if !will_write_padding {
+			// Otherwise, we set the `Last-metadata-block` flag
+			file_bytes[stream_info_start] |= 0x80;
 		}
 	}
 
-	let mut file_bytes = cursor.into_inner();
-
-	if !end_padding_exists {
+	let last_metadata_block = &blocks
+		.last()
+		.expect("should always have at least one block")
+		.block;
+	if will_write_padding {
 		if let Some(preferred_padding) = write_options.preferred_padding {
 			log::warn!("File is missing a PADDING block. Adding one");
 
-			let mut first_byte = 0_u8;
-			first_byte |= last_block_info.0 & 0x7F;
+			// `PADDING` always goes last
+			last_block_replaced = true;
 
-			file_bytes[last_block_info.1] = first_byte;
+			let mut padding_block = Block::new_padding(preferred_padding as usize)?;
+			padding_block.last = true;
 
-			let block_size = core::cmp::min(preferred_padding, MAX_BLOCK_SIZE);
-			let mut padding_block = try_vec![0; BLOCK_HEADER_SIZE + block_size as usize];
+			let mut encoded_padding_block = Vec::with_capacity(padding_block.len() as usize);
+			padding_block.write_to(&mut encoded_padding_block)?;
 
-			let mut padding_byte = 0;
-			padding_byte |= 0x80;
-			padding_byte |= 1 & 0x7F;
-
-			padding_block[0] = padding_byte;
-			padding_block[1..4].copy_from_slice(&block_size.to_be_bytes()[1..]);
-
-			file_bytes.splice(last_block_info.2..last_block_info.2, padding_block);
+			let metadata_end = last_metadata_block.end as usize;
+			file_bytes.splice(metadata_end..metadata_end, encoded_padding_block);
 		}
 	}
 
-	let mut comment_blocks = Cursor::new(Vec::new());
-
-	create_comment_block(&mut comment_blocks, &tag.vendor, &mut tag.items)?;
-
-	let mut comment_blocks = comment_blocks.into_inner();
-
-	create_picture_blocks(&mut comment_blocks, &mut tag.pictures)?;
-
-	if blocks_to_remove.is_empty() {
-		file_bytes.splice(0..0, comment_blocks);
-	} else {
-		blocks_to_remove.sort_unstable();
-		blocks_to_remove.reverse();
-
-		let first = blocks_to_remove.pop().unwrap(); // Infallible
-
-		for (s, e) in &blocks_to_remove {
-			file_bytes.drain(*s as usize..*e as usize);
-		}
-
-		file_bytes.splice(first.0 as usize..first.1 as usize, comment_blocks);
+	// For example, if the file's previous last block was `STREAMINFO`, and we wrote a `VORBIS_COMMENT` block,
+	// then we unset the `Last-metadata-block` flag on the `STREAMINFO`.
+	if last_block_replaced {
+		file_bytes[last_metadata_block.start as usize] = last_metadata_block.ty;
 	}
 
-	file.seek(SeekFrom::Start(stream_info.end))?;
-	file.truncate(stream_info.end)?;
+	let metadata_blocks = encode_tag(
+		&tag.vendor,
+		comments_peek,
+		pictures_peek,
+		last_block_location,
+	)?;
+
+	blocks.reverse();
+	for block in blocks {
+		if !block.for_removal {
+			continue;
+		}
+
+		file_bytes.drain(block.block.start as usize..block.block.end as usize);
+	}
+
+	file_bytes.splice(stream_info_end..stream_info_end, metadata_blocks);
+
+	file.seek(SeekFrom::Start(0))?;
 	file.write_all(&file_bytes)?;
 
 	Ok(())
 }
 
-fn create_comment_block(
-	writer: &mut Cursor<Vec<u8>>,
+fn encode_tag<'a, II, IP>(
 	vendor: &str,
-	items: &mut dyn Iterator<Item = (&str, &str)>,
-) -> Result<()> {
-	let mut peek = items.peekable();
+	mut comments_peek: Peekable<&mut II>,
+	mut pictures_peek: Peekable<&mut IP>,
+	last_block_location: LastBlock,
+) -> Result<Vec<u8>>
+where
+	II: Iterator<Item = (&'a str, &'a str)>,
+	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
+{
+	let mut metadata_blocks = Cursor::new(Vec::new());
 
-	if peek.peek().is_some() {
-		let mut byte = 0_u8;
-		byte |= 4 & 0x7F;
-
-		writer.write_u8(byte)?;
-		writer.write_u32::<LittleEndian>(vendor.len() as u32)?;
-		writer.write_all(vendor.as_bytes())?;
-
-		let item_count_pos = writer.stream_position()?;
-		let mut count = 0;
-
-		writer.write_u32::<LittleEndian>(count)?;
-
-		create_comments(writer, &mut count, &mut peek)?;
-
-		let len = (writer.get_ref().len() - 1) as u32;
-
-		if len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+	if comments_peek.peek().is_some() {
+		let mut block = Block::new_comments(vendor, &mut comments_peek)?;
+		if last_block_location == LastBlock::Comments {
+			block.last = true;
 		}
 
-		let comment_end = writer.stream_position()?;
+		let block_size = block.write_to(&mut metadata_blocks)?;
 
-		writer.seek(SeekFrom::Start(item_count_pos))?;
-		writer.write_u32::<LittleEndian>(count)?;
-
-		writer.seek(SeekFrom::Start(comment_end))?;
-		writer
-			.get_mut()
-			.splice(1..1, len.to_be_bytes()[1..].to_vec());
-
-		// size = block type + vendor length + vendor + item count + items
-		log::trace!(
-			"Wrote a comment block, size: {}",
-			1 + 4 + vendor.len() + 4 + (len as usize)
-		);
+		log::trace!("Wrote a comment block, size: {block_size}",);
 	}
 
-	Ok(())
+	loop {
+		let Some((picture, info)) = pictures_peek.next() else {
+			break;
+		};
+
+		let is_last_picture = pictures_peek.peek().is_none();
+
+		let mut block = Block::new_picture(picture, info)?;
+		if is_last_picture && last_block_location == LastBlock::Picture {
+			block.last = true;
+		}
+
+		let block_size = block.write_to(&mut metadata_blocks)?;
+		log::trace!("Wrote a picture block, size: {block_size}");
+	}
+
+	Ok(metadata_blocks.into_inner())
 }
 
-fn create_picture_blocks(
-	writer: &mut Vec<u8>,
-	pictures: &mut dyn Iterator<Item = (&Picture, PictureInformation)>,
-) -> Result<()> {
-	let mut byte = 0_u8;
-	byte |= 6 & 0x7F;
+struct CollectedBlock {
+	for_removal: bool,
+	block: Block,
+}
 
-	for (pic, info) in pictures {
-		writer.write_u8(byte)?;
+struct BlockCollector {
+	vendor: Option<Cow<'static, str>>,
+	blocks: Vec<CollectedBlock>,
+	last_block_location: LastBlock,
+	/// The *current* last block in the file will be replaced by whatever we end up writing, so we
+	/// need to set the `Last-metadata-block` flag on it
+	last_block_replaced: bool,
+}
 
-		let pic_bytes = pic.as_flac_bytes(info, false);
-		let pic_len = pic_bytes.len() as u32;
+impl BlockCollector {
+	/// Collect all the blocks in the file and mark which ones will be removed by this write
+	fn collect<R>(reader: &mut R, stream_info: Block) -> Result<Self>
+	where
+		R: Read + Seek,
+	{
+		// Vendor string from the file, if it exists
+		let mut vendor = None;
 
-		if pic_len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+		let mut last_block_location = LastBlock::StreamInfo;
+		let mut last_block_replaced = false;
+
+		let mut is_last_block = stream_info.last;
+		let mut blocks = Vec::new();
+		blocks.push(CollectedBlock {
+			for_removal: false,
+			block: stream_info,
+		});
+
+		while !is_last_block {
+			let block = Block::read(reader, |block_ty| block_ty == BLOCK_ID_VORBIS_COMMENTS)?;
+			is_last_block = block.last;
+
+			let mut for_removal = false;
+			match block.ty {
+				BLOCK_ID_VORBIS_COMMENTS => {
+					for_removal = true;
+
+					// Retain the original vendor string
+					let reader = &mut &block.content[..];
+
+					let vendor_len = reader.read_u32::<LittleEndian>()?;
+					let mut vendor_raw = try_vec![0; vendor_len as usize];
+					reader.read_exact(&mut vendor_raw)?;
+
+					match String::from_utf8(vendor_raw) {
+						Ok(vendor_str) => vendor = Some(Cow::Owned(vendor_str)),
+						// TODO: Error on strict?
+						Err(_) => {
+							log::warn!("FLAC vendor string is not valid UTF-8, not re-using");
+							vendor = Some(Cow::Borrowed(""));
+						},
+					}
+
+					if is_last_block {
+						last_block_replaced = true;
+					}
+				},
+				BLOCK_ID_PICTURE => {
+					for_removal = true;
+					if is_last_block {
+						last_block_replaced = true;
+					}
+				},
+				BLOCK_ID_PADDING => {
+					if is_last_block {
+						last_block_location = LastBlock::Padding;
+					} else {
+						for_removal = true;
+					}
+				},
+				_ => {
+					if is_last_block {
+						last_block_location = LastBlock::Other;
+					}
+				},
+			}
+
+			blocks.push(CollectedBlock { for_removal, block });
 		}
 
-		writer.write_all(&pic_len.to_be_bytes()[1..])?;
-		writer.write_all(pic_bytes.as_slice())?;
-
-		// size = block type + block length + data
-		log::trace!("Wrote a picture block, size: {}", 1 + 3 + pic_len);
+		Ok(Self {
+			vendor,
+			blocks,
+			last_block_location,
+			last_block_replaced,
+		})
 	}
-
-	Ok(())
 }
