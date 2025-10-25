@@ -1,5 +1,8 @@
 use std::borrow::Cow;
 
+#[cfg(doc)]
+use crate::{ogg::tag::VorbisComments, tag::Tag};
+
 // This defines the `Accessor` trait, used to define unified getters/setters for commonly
 // accessed tag values.
 //
@@ -26,6 +29,10 @@ macro_rules! accessor_trait {
 		///
 		/// This attempts to only provide methods for items that all tags have in common,
 		/// but there may be exceptions.
+		///
+		/// Note that for tag formats supporting multiple values, the behavior of any setter methods is
+		/// to **overwrite**, not append. If multi-value support is needed, consider using the format-specific methods.
+		/// For example: [`Tag::push()`] or [`VorbisComments::push()`].
 		pub trait Accessor {
 			$(
 				accessor_trait! { @GETTER [$($name)+] $($ty),+ }
@@ -53,7 +60,13 @@ macro_rules! accessor_trait {
 	};
 	(@GET_METHOD [$name:tt $($other:tt)*] Option<$ret_ty:ty>) => {
 		paste::paste! {
-			#[doc = "Returns the " $name $(" " $other)*]
+			#[doc = "Returns the " $name $(" " $other)* "."]
+			///
+			/// For formats that support multiple definitions of the same item, this will only return the first occurrence.
+			///
+			/// To retrieve all occurrences of a given item, consider using the format-specific methods.
+			/// For example: [`Tag::get_items()`] or [`VorbisComments::get_all()`].
+			///
 			/// # Example
 			///
 			/// ```rust
@@ -70,7 +83,14 @@ macro_rules! accessor_trait {
 	};
 	(@SET_METHOD [$name:tt $($other:tt)*] $owned_ty:ty) => {
 		paste::paste! {
-			#[doc = "Sets the " $name $(" " $other)*]
+			#[doc = "Sets the " $name $(" " $other)* "."]
+			///
+			/// For formats that support multiple definitions of the same item, this will remove **all**
+			/// existing values, and replace them with `value`.
+			///
+			/// To define multiple values, consider using the format-specific methods.
+			/// For example: [`Tag::push()`] or [`VorbisComments::push()`].
+			///
 			/// # Example
 			///
 			/// ```rust,ignore
