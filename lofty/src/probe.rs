@@ -4,7 +4,7 @@ use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
 use crate::error::Result;
-use crate::file::{AudioFile, FileType, FileTypeGuessResult, TaggedFile};
+use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
@@ -19,6 +19,7 @@ use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::custom_resolvers;
 use crate::wavpack::WavPackFile;
 
+use crate::io::FileLike;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -455,7 +456,11 @@ impl<R: Read + Seek> Probe<R> {
 	/// let parsed_file = probe.read()?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read(mut self) -> Result<TaggedFile> {
+	pub fn read(self) -> Result<TaggedFile> {
+		self.read_inner().map(|(tagged_file, _)| tagged_file)
+	}
+
+	fn read_inner(mut self) -> Result<(TaggedFile, R)> {
 		let reader = &mut self.inner;
 		let options = self.options.unwrap_or_default();
 
@@ -463,8 +468,8 @@ impl<R: Read + Seek> Probe<R> {
 			log::warn!("Skipping both tag and property reading, file will be empty");
 		}
 
-		match self.f_ty {
-			Some(f_type) => Ok(match f_type {
+		let tagged_file = match self.f_ty {
+			Some(f_type) => match f_type {
 				FileType::Aac => AacFile::read_from(reader, options)?.into(),
 				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
 				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
@@ -485,9 +490,42 @@ impl<R: Read + Seek> Probe<R> {
 					let resolver = crate::resolve::lookup_resolver(c);
 					resolver.read_from(reader, options)?
 				},
-			}),
+			},
 			None => err!(UnknownFormat),
-		}
+		};
+
+		Ok((tagged_file, self.inner))
+	}
+}
+
+impl<F: FileLike> Probe<F> {
+	/// Attempts to extract a [`BoundTaggedFile`] from the reader
+	///
+	/// # Errors
+	///
+	/// See [`Self::read()`].
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::file::FileType;
+	/// use lofty::probe::Probe;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// # let path = "tests/files/assets/minimal/full_test.mp3";
+	/// # let file = std::fs::File::open(path)?;
+	/// let probe = Probe::new(file).guess_file_type()?;
+	///
+	/// let bound_tagged_file = probe.read_bound()?;
+	/// # Ok(()) }
+	/// ```
+	pub fn read_bound(self) -> Result<BoundTaggedFile<F>> {
+		let (tagged_file, file_handle) = self.read_inner()?;
+
+		Ok(BoundTaggedFile {
+			inner: tagged_file,
+			file_handle,
+		})
 	}
 }
 
