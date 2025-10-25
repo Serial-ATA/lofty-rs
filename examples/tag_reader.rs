@@ -6,6 +6,8 @@ use lofty::probe::Probe;
 use std::path::Path;
 
 fn main() {
+	env_logger::init();
+
 	let path_str = std::env::args().nth(1).expect("ERROR: No path specified!");
 	let path = Path::new(&path_str);
 
