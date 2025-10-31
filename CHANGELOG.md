@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support can be enabled with the new `serde` feature (not enabled by default)
 - **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
   - Same as `Probe::read()`, but returns a [`BoundTaggedFile`](https://docs.rs/lofty/latest/lofty/file/struct.BoundTaggedFile.html)
+- **Other**: `EXTENSIONS` list containing common file extensions for all supported audio file types ([issue](https://github.com/Serial-ATA/lofty-rs/issues/509)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/558))
+  - This is useful for filtering files when scanning directories. If your app uses extension filtering, **please consider switching to this**, as to not
+    miss any supported files.
 
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions

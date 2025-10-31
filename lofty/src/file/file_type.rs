@@ -5,6 +5,44 @@ use crate::tag::{TagSupport, TagType};
 use std::ffi::OsStr;
 use std::path::Path;
 
+/// List of common audio extensions
+///
+/// This contains a bunch of common extensions for all supported [`FileType`]s, and can be used a filter
+/// when scanning directories.
+///
+/// NOTE: This is **not** an exhaustive list, but it should work fine in most cases.
+///
+/// # Examples
+///
+/// ```rust,no_run
+/// use lofty::file::EXTENSIONS;
+/// use std::fs;
+///
+/// # fn main() -> lofty::error::Result<()> {
+/// for entry in fs::read_dir(".")? {
+/// 	let entry = entry?;
+///
+/// 	let path = entry.path();
+/// 	let Some(extension) = path.extension() else {
+/// 		continue;
+/// 	};
+///
+/// 	// Skip any non-audio file extensions
+/// 	if !EXTENSIONS.iter().any(|e| *e == extension) {
+/// 		continue;
+/// 	}
+///
+/// 	// `entry` is *most likely* a supported file at this point
+/// 	let parsed = lofty::read_from_path(path)?;
+/// }
+/// # Ok(()) }
+/// ```
+pub const EXTENSIONS: &[&str] = &[
+	// Also update `FileType::from_ext()` below
+	"aac", "ape", "aiff", "aif", "afc", "aifc", "mp3", "mp2", "mp1", "wav", "wv", "opus", "flac",
+	"ogg", "mp4", "m4a", "m4b", "m4p", "m4r", "m4v", "3gp", "mpc", "mp+", "mpp", "spx",
+];
+
 /// The type of file read
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
@@ -149,6 +187,7 @@ impl FileType {
 			}
 		}
 
+		// Also update `EXTENSIONS` above
 		match ext.as_str() {
 			"aac" => Some(Self::Aac),
 			"ape" => Some(Self::Ape),
