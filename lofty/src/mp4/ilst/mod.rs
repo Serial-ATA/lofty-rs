@@ -37,7 +37,7 @@ const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
-		paste::paste! {
+		pastey::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(atom) = self.get(&$const) {
@@ -67,7 +67,7 @@ macro_rules! impl_accessor {
 macro_rules! impl_flag_accessors {
 	($($name:ident ($ident:ident)),+ $(,)?) => {
 		$(
-			paste::paste! {
+			pastey::paste! {
 				#[doc = "Whether the `" $ident "` flag atom is set"]
 				///
 				/// # Examples

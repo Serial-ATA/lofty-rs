@@ -21,7 +21,7 @@ use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $($key:literal)|+;)+) => {
-		paste::paste! {
+		pastey::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					$(

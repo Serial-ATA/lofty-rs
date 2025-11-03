@@ -29,7 +29,7 @@ pub use tag_type::TagType;
 
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
-		paste::paste! {
+		pastey::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(ItemValue::Text(txt)) = self.get(ItemKey::$item_key).map(TagItem::value) {

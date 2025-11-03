@@ -11,7 +11,7 @@ use std::io::Cursor;
 macro_rules! test_read_file {
 	([$(($NAME:ident, $path:expr)),+ $(,)?]) => {
 		$(
-			paste::paste! {
+			pastey::paste! {
 				#[library_benchmark]
 				fn [<$NAME:lower>]() {
 					const $NAME: &[u8] = include_bytes!($path);

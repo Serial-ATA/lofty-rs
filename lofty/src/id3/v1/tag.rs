@@ -12,7 +12,7 @@ use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident,)+) => {
-		paste::paste! {
+		pastey::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(item) = self.$name.as_deref() {

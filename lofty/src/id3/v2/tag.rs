@@ -48,7 +48,7 @@ fn remove_separators_from_frame_text(value: &str, version: Id3v2Version) -> Cow<
 
 macro_rules! impl_accessor {
 	($($name:ident => $id:literal;)+) => {
-		paste::paste! {
+		pastey::paste! {
 			$(
 				fn $name(&self) -> Option<Cow<'_, str>> {
 					if let Some(value) = self.get_text(&[<$name:upper _ID>]) {
