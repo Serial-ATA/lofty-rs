@@ -51,9 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **FileResolver**: Replaced `FileResolver::supported_tag_types()` with `FileResolver::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))
 
 ### Fixed
-- **ID3v2**: Support parsing UTF-16 `COMM`/`USLT` frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/532)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/535))
-  - Some encoders will only write a BOM to the frame's description, rather than to every string in the frame.
-    This was previously only supported in `SYLT` frames, and has been extended to `COMM` and `USLT`.
+- **ID3v2**:
+  - Support parsing UTF-16 `COMM`/`USLT` frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/532)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/535))
+    - Some encoders will only write a BOM to the frame's description, rather than to every string in the frame.
+      This was previously only supported in `SYLT` frames, and has been extended to `COMM` and `USLT`.
+  - Don't error on empty `SYLT` strings ([issue](https://github.com/Serial-ATA/lofty-rs/issues/563)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/564))
 - **Vorbis Comments**: Parse `TRACKNUMBER` with respect to `ParseOptions::implicit_conversions` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/540)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/542))
 - **APE**: Fix disc number removal/writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/545)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/546))
 
