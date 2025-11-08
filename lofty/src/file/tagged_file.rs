@@ -3,7 +3,7 @@ use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::properties::FileProperties;
-use crate::tag::{Tag, TagExt, TagType};
+use crate::tag::{Tag, TagExt, TagSupport, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Read, Seek};
@@ -78,11 +78,19 @@ pub trait TaggedFileExt {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.supports_tag_type(TagType::Id3v2));
+	/// // MP3 supports both reading and writing ID3v2
+	/// assert!(tagged_file.tag_support(TagType::Id3v2).is_writable());
+	///
+	/// // But doesn't support Vorbis Comments at all
+	/// assert!(
+	/// 	!tagged_file
+	/// 		.tag_support(TagType::VorbisComments)
+	/// 		.is_readable()
+	/// );
 	/// # Ok(()) }
 	/// ```
-	fn supports_tag_type(&self, tag_type: TagType) -> bool {
-		self.file_type().supports_tag_type(tag_type)
+	fn tag_support(&self, tag_type: TagType) -> TagSupport {
+		self.file_type().tag_support(tag_type)
 	}
 
 	/// Get a reference to a specific [`TagType`]
@@ -235,8 +243,8 @@ pub trait TaggedFileExt {
 
 	/// Inserts a [`Tag`]
 	///
-	/// NOTE: This will do nothing if the [`FileType`] does not support
-	/// the [`TagType`]. See [`FileType::supports_tag_type`]
+	/// NOTE: This will do nothing if the [`FileType`] does not support the [`TagType`].
+	/// See [`FileType::tag_support()`]
 	///
 	/// If a tag is replaced, it will be returned
 	///
@@ -333,7 +341,7 @@ impl TaggedFile {
 	///
 	/// NOTES:
 	///
-	/// * This will remove any tag the format does not support. See [`FileType::supports_tag_type`]
+	/// * This will remove any tag the format does not support. See [`FileType::tag_support()`]
 	/// * This will reset the [`FileProperties`]
 	///
 	/// # Examples
@@ -359,7 +367,7 @@ impl TaggedFile {
 		self.ty = file_type;
 		self.properties = FileProperties::default();
 		self.tags
-			.retain(|t| self.ty.supports_tag_type(t.tag_type()));
+			.retain(|t| self.ty.tag_support(t.tag_type()).is_readable());
 	}
 }
 
@@ -387,7 +395,7 @@ impl TaggedFileExt for TaggedFile {
 	fn insert_tag(&mut self, tag: Tag) -> Option<Tag> {
 		let tag_type = tag.tag_type();
 
-		if self.supports_tag_type(tag_type) {
+		if self.tag_support(tag_type).is_readable() {
 			let ret = self.remove(tag_type);
 			self.tags.push(tag);
 
@@ -430,6 +438,12 @@ impl AudioFile for TaggedFile {
 		LoftyError: From<<F as Length>::Error>,
 	{
 		for tag in &self.tags {
+			// It's likely that users of `TaggedFile` aren't going to be aware of any read-only tags
+			// if they happen to read any, so just skip them rather than error.
+			if !self.tag_support(tag.tag_type()).is_writable() {
+				continue;
+			}
+
 			// TODO: This is a temporary solution. Ideally we should probe once and use
 			//       the format-specific writing to avoid these rewinds.
 			file.rewind()?;

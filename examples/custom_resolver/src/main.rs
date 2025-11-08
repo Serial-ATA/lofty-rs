@@ -7,7 +7,7 @@ use lofty::file::FileType;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::properties::FileProperties;
 use lofty::resolve::FileResolver;
-use lofty::tag::TagType;
+use lofty::tag::{TagSupport, TagType};
 use lofty_attr::LoftyFile;
 
 use std::fs::File;
@@ -73,8 +73,11 @@ impl FileResolver for MyFile {
 
 	// All of the `TagType`s this file supports, including the
 	// primary one.
-	fn supported_tag_types() -> &'static [TagType] {
-		&[TagType::Id3v2, TagType::Ape]
+	fn tag_support(tag_type: TagType) -> TagSupport {
+		match tag_type {
+			TagType::Id3v2 | TagType::Ape => TagSupport::ReadWrite,
+			_ => TagSupport::Unsupported,
+		}
 	}
 
 	// This is used to guess the `FileType` when reading the file contents.
