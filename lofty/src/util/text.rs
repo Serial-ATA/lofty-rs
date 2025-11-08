@@ -52,7 +52,7 @@ impl TextEncoding {
 	}
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Default)]
 pub(crate) struct DecodeTextResult {
 	pub(crate) content: String,
 	pub(crate) bytes_read: usize,
@@ -68,12 +68,6 @@ impl DecodeTextResult {
 		Some(self.content)
 	}
 }
-
-const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
-	content: String::new(),
-	bytes_read: 0,
-	bom: [0, 0],
-};
 
 /// Specify how to decode the provided text
 ///
@@ -131,7 +125,10 @@ where
 		let (bytes, terminator_len) = read_to_terminator(reader, options.encoding);
 
 		if bytes.is_empty() {
-			return Ok(EMPTY_DECODED_TEXT);
+			return Ok(DecodeTextResult {
+				bytes_read: terminator_len,
+				..DecodeTextResult::default()
+			});
 		}
 
 		bytes_read = bytes.len() + terminator_len;
@@ -141,7 +138,7 @@ where
 		reader.read_to_end(&mut bytes)?;
 
 		if bytes.is_empty() {
-			return Ok(EMPTY_DECODED_TEXT);
+			return Ok(DecodeTextResult::default());
 		}
 
 		bytes_read = bytes.len();
@@ -401,6 +398,19 @@ mod tests {
 			TextDecodeOptions::new().encoding(TextEncoding::UTF8),
 		)
 		.unwrap();
+
+		let empty_text_fragment = super::decode_text(
+			&mut Cursor::new(&[
+				0x00, 0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00,
+				0x00, 0x02,
+			]),
+			TextDecodeOptions::new()
+				.encoding(TextEncoding::UTF8)
+				.terminated(true),
+		)
+		.unwrap();
+		assert_eq!(empty_text_fragment.content, "");
+		assert_eq!(empty_text_fragment.bytes_read, 1);
 
 		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}
