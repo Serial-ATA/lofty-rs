@@ -6,7 +6,7 @@ use lofty::config::{GlobalOptions, ParseOptions, WriteOptions};
 use lofty::error::{ErrorKind, LoftyError};
 use lofty::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 use lofty::resolve::FileResolver;
-use lofty::tag::{Accessor, Tag, TagExt, TagType};
+use lofty::tag::{Accessor, Tag, TagExt, TagSupport, TagType};
 
 fn file_ref_save(path: &str, expected_file_type: FileType) {
 	let path = format!("tests/taglib/data/{path}");
@@ -273,7 +273,7 @@ rusty_fork_test! {
 				unimplemented!()
 			}
 
-			fn supported_tag_types() -> &'static [TagType] {
+			fn tag_support(_tag_type: TagType) -> TagSupport {
 				unimplemented!()
 			}
 

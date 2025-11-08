@@ -25,7 +25,7 @@ pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use split_merge_tag::{MergeTag, SplitTag};
 pub use tag_ext::TagExt;
-pub use tag_type::TagType;
+pub use tag_type::{TagSupport, TagType};
 
 macro_rules! impl_accessor {
 	($($item_key:ident => $name:tt),+) => {
@@ -663,7 +663,7 @@ impl TagExt for Tag {
 	/// # Errors
 	///
 	/// * A [`FileType`](crate::file::FileType) couldn't be determined from the File
-	/// * Attempting to write a tag to a format that does not support it. See [`FileType::supports_tag_type`](crate::file::FileType::supports_tag_type)
+	/// * Attempting to write a tag to a format that does not support it. See [`FileType::tag_support()`](crate::file::FileType::tag_support)
 	fn save_to<F>(
 		&self,
 		file: &mut F,
@@ -678,11 +678,11 @@ impl TagExt for Tag {
 
 		match probe.file_type() {
 			Some(file_type) => {
-				if file_type.supports_tag_type(self.tag_type()) {
-					utils::write_tag(self, probe.into_inner(), file_type, write_options)
-				} else {
+				if !file_type.tag_support(self.tag_type).is_writable() {
 					err!(UnsupportedTag);
 				}
+
+				utils::write_tag(self, probe.into_inner(), file_type, write_options)
 			},
 			None => err!(UnknownFormat),
 		}

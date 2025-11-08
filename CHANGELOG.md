@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - These fields will now properly be split into `DISCNUMBER` and `DISCTOTAL`, making it possible to use them with
       [Accessor::disk()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk) and [Accessor::disk_total()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk_total).
 * **ItemKey**: `ItemKey` is now `Copy` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
+* **FileType**: Replaced `FileType::supports_tag_type()` with `FileType::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))
+  * Rather than a simple `bool`, this now returns a `TagSupport`, which can describe three states: unsupported, read-only, and read/write
+* **TaggedFileExt**: Replaced `TaggedFileExt::supports_tag_type()` with `TaggedFileExt::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))
+* **FileResolver**: Replaced `FileResolver::supported_tag_types()` with `FileResolver::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))
 
 ### Fixed
 - **ID3v2**: Support parsing UTF-16 `COMM`/`USLT` frames with a single BOM ([issue](https://github.com/Serial-ATA/lofty-rs/issues/532)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/535))

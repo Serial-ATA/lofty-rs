@@ -4,7 +4,7 @@
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::file::{AudioFile, FileType, TaggedFile};
-use crate::tag::TagType;
+use crate::tag::{TagSupport, TagType};
 
 use std::collections::HashMap;
 use std::io::{Read, Seek};
@@ -22,7 +22,7 @@ pub trait FileResolver: Send + Sync + AudioFile {
 	/// The primary [`TagType`] for the [`FileType`]
 	fn primary_tag_type() -> TagType;
 	/// The [`FileType`]'s supported [`TagType`]s
-	fn supported_tag_types() -> &'static [TagType];
+	fn tag_support(tag_type: TagType) -> TagSupport;
 
 	/// Attempts to guess the [`FileType`] from a portion of the file content
 	///
@@ -61,7 +61,7 @@ impl<T: Seek + Read> SeekRead for T {}
 pub(crate) trait ObjectSafeFileResolver: Send + Sync {
 	fn extension(&self) -> Option<&'static str>;
 	fn primary_tag_type(&self) -> TagType;
-	fn supported_tag_types(&self) -> &'static [TagType];
+	fn tag_support(&self, tag_type: TagType) -> TagSupport;
 	fn guess(&self, buf: &[u8]) -> Option<FileType>;
 
 	// A mask for the `AudioFile::read_from` impl
@@ -83,8 +83,8 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 		T::primary_tag_type()
 	}
 
-	fn supported_tag_types(&self) -> &'static [TagType] {
-		T::supported_tag_types()
+	fn tag_support(&self, tag_type: TagType) -> TagSupport {
+		T::tag_support(tag_type)
 	}
 
 	fn guess(&self, buf: &[u8]) -> Option<FileType> {
@@ -134,7 +134,7 @@ mod tests {
 	use crate::id3::v2::Id3v2Tag;
 	use crate::properties::FileProperties;
 	use crate::resolve::{FileResolver, register_custom_resolver};
-	use crate::tag::{Accessor, TagType};
+	use crate::tag::{Accessor, TagSupport, TagType};
 
 	use std::fs::File;
 	use std::io::{Read, Seek};
@@ -160,8 +160,11 @@ mod tests {
 			TagType::Id3v2
 		}
 
-		fn supported_tag_types() -> &'static [TagType] {
-			&[TagType::Id3v2]
+		fn tag_support(tag_type: TagType) -> TagSupport {
+			match tag_type {
+				TagType::Id3v2 => TagSupport::ReadWrite,
+				_ => TagSupport::Unsupported,
+			}
 		}
 
 		fn guess(buf: &[u8]) -> Option<FileType> {

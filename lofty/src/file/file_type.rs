@@ -1,6 +1,6 @@
 use crate::config::global_options;
 use crate::resolve::custom_resolvers;
-use crate::tag::TagType;
+use crate::tag::{TagSupport, TagType};
 
 use std::ffi::OsStr;
 use std::path::Path;
@@ -65,11 +65,7 @@ impl FileType {
 		}
 	}
 
-	/// Returns if the target `FileType` supports a [`TagType`]
-	///
-	/// NOTE: This is feature dependent, meaning if you do not have the
-	///       `id3v2` feature enabled, [`FileType::Mpeg`] will return `false` for
-	///        [`TagType::Id3v2`].
+	/// Describes how this `FileType` supports the given [`TagType`]
 	///
 	/// # Panics
 	///
@@ -81,24 +77,48 @@ impl FileType {
 	/// use lofty::file::FileType;
 	/// use lofty::tag::TagType;
 	///
-	/// let file_type = FileType::Mpeg;
-	/// assert!(file_type.supports_tag_type(TagType::Id3v2));
+	/// // `FileType::Mpeg` supports both reading and writing ID3v2
+	/// assert!(FileType::Mpeg.tag_support(TagType::Id3v2).is_writable());
 	/// ```
-	pub fn supports_tag_type(&self, tag_type: TagType) -> bool {
+	pub fn tag_support(&self, tag_type: TagType) -> TagSupport {
 		if let FileType::Custom(c) = self {
 			let resolver = crate::resolve::lookup_resolver(c);
-			return resolver.supported_tag_types().contains(&tag_type);
+			return resolver.tag_support(tag_type);
 		}
 
-		match tag_type {
-			TagType::Ape => crate::ape::ApeTag::SUPPORTED_FORMATS.contains(self),
-			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::SUPPORTED_FORMATS.contains(self),
-			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::SUPPORTED_FORMATS.contains(self),
-			TagType::Mp4Ilst => crate::mp4::Ilst::SUPPORTED_FORMATS.contains(self),
-			TagType::VorbisComments => crate::ogg::VorbisComments::SUPPORTED_FORMATS.contains(self),
-			TagType::RiffInfo => crate::iff::wav::RiffInfoList::SUPPORTED_FORMATS.contains(self),
-			TagType::AiffText => crate::iff::aiff::AiffTextChunks::SUPPORTED_FORMATS.contains(self),
+		macro_rules! tag_support {
+			(
+				$tag_type:ident,
+				$(($variant:ident, $tag:path)),* $(,)?
+			) => {
+				match $tag_type {
+					$(
+						TagType::$variant => {
+							if <$tag>::SUPPORTED_FORMATS.contains(self) {
+								if <$tag>::READ_ONLY_FORMATS.contains(self) {
+									return TagSupport::ReadOnly;
+								}
+
+								return TagSupport::ReadWrite;
+							}
+
+							TagSupport::Unsupported
+						},
+					)*
+				}
+			}
 		}
+
+		tag_support!(
+			tag_type,
+			(Ape, crate::ape::ApeTag),
+			(Id3v1, crate::id3::v1::Id3v1Tag),
+			(Id3v2, crate::id3::v2::Id3v2Tag),
+			(Mp4Ilst, crate::mp4::Ilst),
+			(VorbisComments, crate::ogg::VorbisComments),
+			(RiffInfo, crate::iff::wav::RiffInfoList),
+			(AiffText, crate::iff::aiff::AiffTextChunks),
+		)
 	}
 
 	/// Attempts to extract a [`FileType`] from an extension
