@@ -269,12 +269,11 @@ fn test_parse_apicv22() {
 fn test_render_apic() {
 	let f = AttachedPictureFrame::new(
 		TextEncoding::UTF8,
-		Picture::new_unchecked(
-			PictureType::CoverBack,
-			Some(MimeType::Png),
-			Some(String::from("Description")),
-			b"PNG data".to_vec(),
-		),
+		Picture::unchecked(b"PNG data".to_vec())
+			.pic_type(PictureType::CoverBack)
+			.mime_type(MimeType::Png)
+			.description("Description")
+			.build(),
 	);
 
 	assert_eq!(

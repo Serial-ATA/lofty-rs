@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * **ItemKey**: `ItemKey::Unknown` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
     * `Tag` is now intended for generic metadata editing only, with format-specific items only being available through concrete tag types.
       See <https://github.com/Serial-ATA/lofty-rs/issues/521> for the rationale.
+* **Picture**: `Picture::new_unchecked()`, replaced with `Picture::unchecked()` returning a builder ([issue](https://github.com/Serial-ATA/lofty-rs/issues/468)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/569))
 
 ## [0.22.4] - 2025-04-29
 

@@ -325,12 +325,12 @@ impl AtomData {
 	/// let data = AtomData::SignedInteger(42);
 	/// assert_eq!(data.data_type(), DataType::BeSignedInteger);
 	///
-	/// let data = AtomData::Picture(Picture::new_unchecked(
-	/// 	PictureType::CoverFront,
-	/// 	Some(MimeType::Jpeg),
-	/// 	None,
-	/// 	Vec::new(),
-	/// ));
+	/// let data = AtomData::Picture(
+	/// 	Picture::unchecked(Vec::new())
+	/// 		.pic_type(PictureType::CoverFront)
+	/// 		.mime_type(MimeType::Jpeg)
+	/// 		.build(),
+	/// );
 	/// assert_eq!(data.data_type(), DataType::Jpeg);
 	/// ```
 	pub fn data_type(&self) -> DataType {
