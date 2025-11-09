@@ -26,8 +26,18 @@ pub(crate) use first_key;
 // Some formats have multiple keys that map to the same ItemKey variant, which can be added with '|'.
 // The standard key(s) **must** come before any popular non-standard keys.
 // Keys should appear in order of popularity.
+//
+// The inverse is also true, where a single key may apply to multiple ItemKey variants. The most applicable
+// variant must appear first.
 macro_rules! gen_map {
-	($(#[$meta:meta])? $NAME:ident; $($($key:literal)|+ => $variant:ident),+) => {
+	(
+		$(#[$meta:meta])?
+		$NAME:ident;
+
+		$(
+			$($key:literal)|+ => $($variant:ident)|+
+		),+ $(,)?
+	) => {
 		paste::paste! {
 			$(#[$meta])?
 			#[allow(non_camel_case_types)]
@@ -36,22 +46,23 @@ macro_rules! gen_map {
 			$(#[$meta])?
 			impl $NAME {
 				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
-					static INSTANCE: std::sync::OnceLock<HashMap<&'static str, ItemKey>> = std::sync::OnceLock::new();
+					static INSTANCE: std::sync::OnceLock<HashMap<&'static str, &'static [ItemKey]>> = std::sync::OnceLock::new();
 					INSTANCE.get_or_init(|| {
 						let mut map = HashMap::new();
 						$(
+							let values: &'static [ItemKey] = &[$(ItemKey::$variant,)+];
 							$(
-								map.insert($key, ItemKey::$variant);
+								map.insert($key, values);
 							)+
 						)+
 						map
-					}).iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v.clone())
+					}).iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v[0])
 				}
 
 				pub(crate) fn get_key(&self, item_key: ItemKey) -> Option<&'static str> {
 					match item_key {
 						$(
-							ItemKey::$variant => Some(first_key!($($key)|*)),
+							$(ItemKey::$variant)|+ => Some(first_key!($($key)|*)),
 						)+
 						_ => None
 					}
@@ -128,6 +139,7 @@ gen_map!(
 	"language"                       => Language,
 	"Script"                         => Script,
 	"Lyrics"                         => Lyrics,
+	"UnsynchedLyrics"                => UnsyncLyrics,
 	"MUSICBRAINZ_TRACKID"            => MusicBrainzRecordingId,
 	"MUSICBRAINZ_RELEASETRACKID"     => MusicBrainzTrackId,
 	"MUSICBRAINZ_ALBUMID"            => MusicBrainzReleaseId,
@@ -222,7 +234,10 @@ gen_map!(
 	"TKWD"                                  => PodcastKeywords,
 	"COMM"                                  => Comment,
 	"TLAN"                                  => Language,
-	"USLT"                                  => Lyrics,
+	// Since ID3v2 has its own standard for synchronized lyrics (SYLT frame), and it'd be out of scope
+	// to attempt to parse and convert LRC text into one, we can just treat both `Lyrics` and `UnsyncLyrics`
+	// the same and map them to USLT.
+	"USLT"                                  => Lyrics | UnsyncLyrics,
 	// Mapping of MusicBrainzRecordingId is implemented as a special case
 	"MusicBrainz Release Track Id"          => MusicBrainzTrackId,
 	"MusicBrainz Album Id"                  => MusicBrainzReleaseId,
@@ -303,7 +318,9 @@ gen_map!(
 	"desc"                                               => Description,
 	"----:com.apple.iTunes:LANGUAGE"                     => Language,
 	"----:com.apple.iTunes:SCRIPT"                       => Script,
-	"\u{a9}lyr"                                          => Lyrics,
+	// Don't know of any key for synchronized lyrics, nor if any apps actually support them, so
+	// just treat both keys the same like ID3v2.
+	"\u{a9}lyr"                                          => Lyrics | UnsyncLyrics,
 	"xid "                                               => AppleXid,
 	"----:com.apple.iTunes:MusicBrainz Track Id"         => MusicBrainzRecordingId,
 	"----:com.apple.iTunes:MusicBrainz Release Track Id" => MusicBrainzTrackId,
@@ -407,6 +424,7 @@ gen_map!(
 	"LANGUAGE"                                => Language,
 	"SCRIPT"                                  => Script,
 	"LYRICS"                                  => Lyrics,
+	"UNSYNCEDLYRICS"                          => UnsyncLyrics,
 	"MUSICBRAINZ_TRACKID"                     => MusicBrainzRecordingId,
 	"MUSICBRAINZ_RELEASETRACKID"              => MusicBrainzTrackId,
 	"MUSICBRAINZ_ALBUMID"                     => MusicBrainzReleaseId,
@@ -709,7 +727,35 @@ gen_item_keys!(
 		Description,
 		Language,
 		Script,
+		/// (Possibly synchronized) lyrics text
+		///
+		/// Despite not being specified, this field has been overloaded in some formats (such as Vorbis Comments)
+		/// to store both synchronized lyrics (in [LRC format]) and unsynchronized lyrics.
+		///
+		/// Unfortunately, the best way to handle this field is to just attempt to parse it as LRC.
+		///
+		/// See [`ItemKey::UnsyncLyrics`] for lyrics that are *guaranteed* to be unsynchronized.
+		///
+		/// ## Note for ID3v2
+		///
+		/// ID3v2 is the only format that has a *specified* way of storing synchronized lyrics, and
+		/// with it being a binary frame, it's only supported through [`Id3v2Tag`] via [`SynchronizedTextFrame`].
+		/// Both [`ItemKey::Lyrics`] and [`ItemKey::UnsyncLyrics`] will be stored in a `USLT` frame.
+		///
+		/// [LRC format]: https://en.wikipedia.org/wiki/LRC_(file_format)
+		/// [`Id3v2Tag`]: crate::id3::v2::Id3v2Tag
+		/// [`SynchronizedTextFrame`]: crate::id3::v2::SynchronizedTextFrame
 		Lyrics,
+		/// Unsynchronized lyrics text
+		///
+		/// Unlike [`ItemKey::Lyrics`], this is *guaranteed* to be unsynchronized lyrics (no timecodes).
+		///
+		/// This only has special meaning in some formats, mapping to a separate key. In others, it's
+		/// identical to [`ItemKey::Lyrics`].
+		///
+		/// You should only use this key if you're absolutely sure you need it, otherwise [`ItemKey::Lyrics`]
+		/// is the safer default.
+		UnsyncLyrics,
 
 		// Vendor-specific
 		AppleXid,
@@ -897,5 +943,28 @@ impl TagItem {
 		}
 
 		self.item_key.map_key(tag_type).is_some()
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn one_to_many() {
+		assert_eq!(ItemKey::Lyrics.map_key(TagType::Id3v2), Some("USLT"));
+		assert_eq!(ItemKey::UnsyncLyrics.map_key(TagType::Id3v2), Some("USLT"));
+	}
+
+	#[test]
+	fn many_to_one() {
+		assert_eq!(
+			ItemKey::from_key(TagType::VorbisComments, "ALBUMARTIST"),
+			Some(ItemKey::AlbumArtist)
+		);
+		assert_eq!(
+			ItemKey::from_key(TagType::VorbisComments, "ALBUM ARTIST"),
+			Some(ItemKey::AlbumArtist)
+		);
 	}
 }
