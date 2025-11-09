@@ -291,20 +291,18 @@ impl Ilst {
 	///
 	/// # let png_data = b"foo".to_vec();
 	/// // Insert pictures
-	/// ilst.insert_picture(Picture::new_unchecked(
-	/// 	PictureType::Other,
-	/// 	Some(MimeType::Png),
-	/// 	None,
-	/// 	png_data,
-	/// ));
+	/// ilst.insert_picture(
+	/// 	Picture::unchecked(png_data)
+	/// 		.mime_type(MimeType::Png)
+	/// 		.build(),
+	/// );
 	///
 	/// # let jpeg_data = b"bar".to_vec();
-	/// ilst.insert_picture(Picture::new_unchecked(
-	/// 	PictureType::Other,
-	/// 	Some(MimeType::Jpeg),
-	/// 	None,
-	/// 	jpeg_data,
-	/// ));
+	/// ilst.insert_picture(
+	/// 	Picture::unchecked(jpeg_data)
+	/// 		.mime_type(MimeType::Jpeg)
+	/// 		.build(),
+	/// );
 	///
 	/// assert_eq!(ilst.pictures().unwrap().count(), 2);
 	/// ```
@@ -335,22 +333,20 @@ impl Ilst {
 	///
 	/// # let png_data = b"foo".to_vec();
 	/// // Insert a single picture
-	/// ilst.insert_picture(Picture::new_unchecked(
-	/// 	PictureType::Other,
-	/// 	Some(MimeType::Png),
-	/// 	None,
-	/// 	png_data,
-	/// ));
+	/// ilst.insert_picture(
+	/// 	Picture::unchecked(png_data)
+	/// 		.mime_type(MimeType::Png)
+	/// 		.build(),
+	/// );
 	/// assert_eq!(ilst.len(), 1);
 	///
 	/// # let jpeg_data = b"bar".to_vec();
 	/// // Insert another picture
-	/// ilst.insert_picture(Picture::new_unchecked(
-	/// 	PictureType::Other,
-	/// 	Some(MimeType::Jpeg),
-	/// 	None,
-	/// 	jpeg_data,
-	/// ));
+	/// ilst.insert_picture(
+	/// 	Picture::unchecked(jpeg_data)
+	/// 		.mime_type(MimeType::Jpeg)
+	/// 		.build(),
+	/// );
 	///
 	/// // The existing `covr` atom is reused
 	/// assert_eq!(ilst.len(), 1);
@@ -1467,12 +1463,10 @@ mod tests {
 
 	#[test_log::test]
 	fn skip_reading_cover_art() {
-		let p = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Jpeg),
-			None,
-			std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
-		);
+		let p = Picture::unchecked(std::iter::repeat(0).take(50).collect::<Vec<u8>>())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Jpeg)
+			.build();
 
 		let mut tag = Tag::new(TagType::Mp4Ilst);
 		tag.push_picture(p);

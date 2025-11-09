@@ -460,6 +460,109 @@ impl PictureInformation {
 	}
 }
 
+/// Builder for a [`Picture`]
+///
+/// This is created through [`Picture::unchecked()`].
+pub struct PictureBuilder {
+	pic_type: PictureType,
+	mime_type: Option<MimeType>,
+	description: Option<Cow<'static, str>>,
+	data: Cow<'static, [u8]>,
+}
+
+impl PictureBuilder {
+	fn new(data: Cow<'static, [u8]>) -> Self {
+		Self {
+			pic_type: PictureType::Other,
+			mime_type: None,
+			description: None,
+			data,
+		}
+	}
+
+	/// Set the [`PictureType`] for this picture
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::{Picture, PictureType};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let picture_path = "band.jpg";
+	/// # let picture_path = "tests/files/assets/issue_37.jpg";
+	/// let picture_data = std::fs::read(picture_path)?;
+	///
+	/// let picture = Picture::unchecked(picture_data)
+	/// 	.pic_type(PictureType::Band)
+	/// 	.build();
+	/// # Ok(()) }
+	/// ```
+	pub fn pic_type(mut self, pic_type: PictureType) -> Self {
+		self.pic_type = pic_type;
+		self
+	}
+
+	/// Set the [`PictureType`] for this picture
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::{MimeType, Picture};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let picture_path = "band.jpg";
+	/// # let picture_path = "tests/files/assets/issue_37.jpg";
+	/// let picture_data = std::fs::read(picture_path)?;
+	///
+	/// let picture = Picture::unchecked(picture_data)
+	/// 	.mime_type(MimeType::Jpeg)
+	/// 	.build();
+	/// # Ok(()) }
+	/// ```
+	pub fn mime_type(mut self, mime_type: MimeType) -> Self {
+		self.mime_type = Some(mime_type);
+		self
+	}
+
+	/// Set the [`PictureType`] for this picture
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::Picture;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let picture_path = "band.jpg";
+	/// # let picture_path = "tests/files/assets/issue_37.jpg";
+	/// let picture_data = std::fs::read(picture_path)?;
+	///
+	/// let picture = Picture::unchecked(picture_data)
+	/// 	.description("The band on stage")
+	/// 	.build();
+	/// # Ok(()) }
+	/// ```
+	pub fn description(mut self, description: impl Into<Cow<'static, str>>) -> Self {
+		self.description = Some(description.into());
+		self
+	}
+
+	/// Convert this builder into a [`Picture`]
+	pub fn build(self) -> Picture {
+		self.into()
+	}
+}
+
+impl From<PictureBuilder> for Picture {
+	fn from(builder: PictureBuilder) -> Self {
+		Self {
+			pic_type: builder.pic_type,
+			mime_type: builder.mime_type,
+			description: builder.description,
+			data: builder.data,
+		}
+	}
+}
+
 /// Represents a picture.
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Picture {
@@ -526,23 +629,31 @@ impl Picture {
 		})
 	}
 
-	/// Create a new `Picture`
+	/// Create a new `Picture` with no verification
 	///
-	/// NOTE: This will **not** verify `data`'s signature.
-	/// This should only be used if all data has been verified
-	/// beforehand.
-	pub fn new_unchecked(
-		pic_type: PictureType,
-		mime_type: Option<MimeType>,
-		description: Option<String>,
-		data: Vec<u8>,
-	) -> Self {
-		Self {
-			pic_type,
-			mime_type,
-			description: description.map(Cow::Owned),
-			data: Cow::Owned(data),
-		}
+	/// This will **not** verify `data`'s signature.
+	///
+	/// This should only be used if all data has been verified beforehand.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::{MimeType, Picture, PictureType};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let picture_path = "band.jpg";
+	/// # let picture_path = "tests/files/assets/issue_37.jpg";
+	/// let picture_data = std::fs::read(picture_path)?;
+	///
+	/// let picture = Picture::unchecked(picture_data)
+	/// 	.pic_type(PictureType::Band)
+	/// 	.mime_type(MimeType::Jpeg)
+	/// 	.description("The band on stage")
+	/// 	.build();
+	/// # Ok(()) }
+	/// ```
+	pub fn unchecked(data: Vec<u8>) -> PictureBuilder {
+		PictureBuilder::new(Cow::Owned(data))
 	}
 
 	/// Returns the [`PictureType`]

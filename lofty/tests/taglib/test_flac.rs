@@ -56,12 +56,11 @@ fn test_add_picture() {
 		let lst = f.pictures();
 		assert_eq!(lst.len(), 1);
 
-		let new_pic = Picture::new_unchecked(
-			PictureType::CoverBack,
-			Some(MimeType::Jpeg),
-			Some(String::from("new image")),
-			Vec::from("JPEG data"),
-		);
+		let new_pic = Picture::unchecked(Vec::from("JPEG data"))
+			.pic_type(PictureType::CoverBack)
+			.mime_type(MimeType::Jpeg)
+			.description("new image")
+			.build();
 		let new_pic_info = PictureInformation {
 			width: 5,
 			height: 6,
@@ -112,12 +111,11 @@ fn test_replace_picture() {
 		let lst = f.pictures();
 		assert_eq!(lst.len(), 1);
 
-		let new_pic = Picture::new_unchecked(
-			PictureType::CoverBack,
-			Some(MimeType::Jpeg),
-			Some(String::from("new image")),
-			Vec::from("JPEG data"),
-		);
+		let new_pic = Picture::unchecked(Vec::from("JPEG data"))
+			.pic_type(PictureType::CoverBack)
+			.mime_type(MimeType::Jpeg)
+			.description("new image")
+			.build();
 		let new_pic_info = PictureInformation {
 			width: 5,
 			height: 6,
@@ -610,12 +608,11 @@ fn test_picture_stored_after_comment() {
 		assert!(f.vorbis_comments().is_none());
 		assert!(f.pictures().is_empty());
 
-		let pic = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Png),
-			Some(String::from("blank.png")),
-			BLANK_PNG_DATA.to_vec(),
-		);
+		let pic = Picture::unchecked(BLANK_PNG_DATA.to_vec())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Png)
+			.description("blank.png")
+			.build();
 		let pic_information = PictureInformation {
 			width: 3,
 			height: 2,

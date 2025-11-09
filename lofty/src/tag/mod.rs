@@ -565,32 +565,30 @@ impl Tag {
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	///
 	/// // Add a front cover
-	/// let front_cover = Picture::new_unchecked(
-	/// 	PictureType::CoverFront,
-	/// 	Some(MimeType::Png),
-	/// 	None,
-	/// 	Vec::new(),
-	/// );
+	/// let front_cover = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::CoverFront)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
 	/// tag.push_picture(front_cover);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverFront);
 	///
 	/// // Replace the front cover with a back cover
-	/// let back_cover = Picture::new_unchecked(
-	/// 	PictureType::CoverBack,
-	/// 	Some(MimeType::Png),
-	/// 	None,
-	/// 	Vec::new(),
-	/// );
+	/// let back_cover = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::CoverBack)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
 	/// tag.set_picture(0, back_cover);
 	///
 	/// assert_eq!(tag.pictures().len(), 1);
 	/// assert_eq!(tag.pictures()[0].pic_type(), PictureType::CoverBack);
 	///
 	/// // Use an out of bounds index
-	/// let another_picture =
-	/// 	Picture::new_unchecked(PictureType::Band, Some(MimeType::Png), None, Vec::new());
+	/// let another_picture = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::Band)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
 	/// tag.set_picture(100, another_picture);
 	///
 	/// assert_eq!(tag.pictures().len(), 2);
@@ -617,12 +615,10 @@ impl Tag {
 	///
 	/// let mut tag = Tag::new(TagType::Id3v2);
 	///
-	/// let picture = Picture::new_unchecked(
-	/// 	PictureType::CoverFront,
-	/// 	Some(MimeType::Png),
-	/// 	None,
-	/// 	Vec::new(),
-	/// );
+	/// let picture = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::CoverFront)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
 	///
 	/// tag.push_picture(picture);
 	///

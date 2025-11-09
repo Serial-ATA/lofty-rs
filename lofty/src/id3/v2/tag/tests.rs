@@ -310,12 +310,11 @@ fn id3v24_footer() {
 fn issue_36() {
 	let picture_data = vec![0; 200];
 
-	let picture = Picture::new_unchecked(
-		PictureType::CoverFront,
-		Some(MimeType::Jpeg),
-		Some(String::from("cover")),
-		picture_data,
-	);
+	let picture = Picture::unchecked(picture_data)
+		.pic_type(PictureType::CoverFront)
+		.mime_type(MimeType::Jpeg)
+		.description("cover")
+		.build();
 
 	let mut tag = Tag::new(TagType::Id3v2);
 	tag.push_picture(picture.clone());
@@ -1277,12 +1276,10 @@ fn hold_back_4_character_txxx_description() {
 
 #[test_log::test]
 fn skip_reading_cover_art() {
-	let p = Picture::new_unchecked(
-		PictureType::CoverFront,
-		Some(MimeType::Jpeg),
-		None,
-		std::iter::repeat(0).take(50).collect::<Vec<u8>>(),
-	);
+	let p = Picture::unchecked(std::iter::repeat(0).take(50).collect::<Vec<u8>>())
+		.pic_type(PictureType::CoverFront)
+		.mime_type(MimeType::Jpeg)
+		.build();
 
 	let mut tag = Tag::new(TagType::Id3v2);
 	tag.push_picture(p);

@@ -7,7 +7,7 @@ use std::io::{Read, Seek};
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::mp4::{Atom, AtomData, AtomIdent, Ilst, Mp4Codec, Mp4File};
-use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::picture::{MimeType, Picture};
 use lofty::tag::{Accessor, TagExt, TagType};
 
 #[test_log::test]
@@ -300,12 +300,11 @@ fn test_covr_write() {
 
 		let tag = f.ilst_mut().unwrap();
 		assert!(tag.contains(&AtomIdent::Fourcc(*b"covr")));
-		tag.insert_picture(Picture::new_unchecked(
-			PictureType::Other,
-			Some(MimeType::Png),
-			None,
-			b"foo".to_vec(),
-		));
+		tag.insert_picture(
+			Picture::unchecked(b"foo".to_vec())
+				.mime_type(MimeType::Png)
+				.build(),
+		);
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();

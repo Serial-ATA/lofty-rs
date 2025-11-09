@@ -114,12 +114,11 @@ fn test_picture() {
 		let mut f = VorbisFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		file.rewind().unwrap();
 
-		let picture = Picture::new_unchecked(
-			PictureType::CoverBack,
-			Some(MimeType::Jpeg),
-			Some(String::from("new image")),
-			b"JPEG data".to_vec(),
-		);
+		let picture = Picture::unchecked(b"JPEG data".to_vec())
+			.pic_type(PictureType::CoverBack)
+			.mime_type(MimeType::Jpeg)
+			.description("new image")
+			.build();
 		let info = PictureInformation {
 			width: 5,
 			height: 6,
