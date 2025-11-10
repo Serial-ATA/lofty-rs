@@ -5,11 +5,11 @@ use crate::error::{LoftyError, Result};
 use crate::macros::{decode_err, err, try_vec};
 use crate::properties::FileProperties;
 use crate::util::alloc::VecFallibleCapacity;
-use crate::util::math::RoundedDivision;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use aud_io::math::RoundedDivision;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MP4 file's audio codec

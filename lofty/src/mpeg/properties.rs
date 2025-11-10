@@ -2,10 +2,11 @@ use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader
 use crate::error::Result;
 use crate::mpeg::header::rev_search_for_frame_header;
 use crate::properties::{ChannelMask, FileProperties};
-use crate::util::math::RoundedDivision;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
+
+use aud_io::math::RoundedDivision;
 
 /// An MPEG file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

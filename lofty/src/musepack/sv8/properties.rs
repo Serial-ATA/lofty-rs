@@ -4,11 +4,11 @@ use crate::error::Result;
 use crate::macros::decode_err;
 use crate::musepack::constants::FREQUENCY_TABLE;
 use crate::properties::FileProperties;
-use crate::util::math::RoundedDivision;
 
 use std::io::Read;
 use std::time::Duration;
 
+use aud_io::math::RoundedDivision;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// MPC stream version 8 audio properties

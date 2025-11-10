@@ -1,11 +1,12 @@
 //! Various traits for reading and writing to file-like objects
 
 use crate::error::{LoftyError, Result};
-use crate::util::math::F80;
 
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, Write};
+
+use aud_io::math::F80;
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: Seek {
