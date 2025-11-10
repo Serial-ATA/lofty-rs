@@ -182,13 +182,12 @@ where
 	R: Read + Seek,
 {
 	let handle_error = |err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
-		match parsing_mode {
-			ParsingMode::Strict => Err(err),
-			ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-				log::warn!("Skipping atom with invalid content: {}", err);
-				Ok(())
-			},
+		if parsing_mode == ParsingMode::Strict {
+			return Err(err);
 		}
+
+		log::warn!("Skipping atom with invalid content: {err}");
+		Ok(())
 	};
 
 	if let Some(mut atom_data) = parse_data_inner(reader, parsing_mode, &atom_info)? {

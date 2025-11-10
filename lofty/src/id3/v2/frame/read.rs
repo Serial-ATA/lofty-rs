@@ -43,16 +43,15 @@ impl ParsedFrame<'_> {
 			},
 			Ok(Some(some)) => some,
 			Err(err) => {
-				match parse_options.parsing_mode {
-					ParsingMode::Strict => return Err(err),
-					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-						log::warn!("Failed to read frame header, skipping: {}", err);
-
-						// Skip this frame and continue reading
-						skip_frame(reader, size)?;
-						return Ok(Self::Skip);
-					},
+				if parse_options.parsing_mode == ParsingMode::Strict {
+					return Err(err);
 				}
+
+				log::warn!("Failed to read frame header, skipping: {}", err);
+
+				// Skip this frame and continue reading
+				skip_frame(reader, size)?;
+				return Ok(Self::Skip);
 			},
 		};
 
