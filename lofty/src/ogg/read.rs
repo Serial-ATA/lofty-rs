@@ -5,14 +5,15 @@ use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::tag::Accessor;
-use crate::util::text::{utf8_decode, utf8_decode_str, utf16_decode};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::text::{utf8_decode, utf8_decode_str, utf16_decode};
 use byteorder::{LittleEndian, ReadBytesExt};
 use data_encoding::BASE64;
 use ogg_pager::{Packets, PageHeader};
+use aud_io::error::AudioError;
 
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
@@ -45,7 +46,7 @@ where
 			// The actions following this are not spec-compliant in the slightest, so
 			// we need to short circuit if strict.
 			if parse_mode == ParsingMode::Strict {
-				return Err(e);
+				return Err(e.into());
 			}
 
 			log::warn!("Possibly corrupt vendor string, attempting to recover");
@@ -53,12 +54,11 @@ where
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
 			// the replacement character
-			let LoftyError {
-				kind: ErrorKind::StringFromUtf8(e),
-			} = e
+			let AudioError::StringFromUtf8(e) = e
 			else {
-				return Err(e);
+				return Err(e.into());
 			};
+
 			let s = e
 				.as_bytes()
 				.iter()
@@ -220,7 +220,7 @@ where
 					},
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
-							return Err(e);
+							return Err(e.into());
 						}
 
 						log::warn!("Non UTF-8 value found, discarding field {key:?}");
@@ -237,7 +237,7 @@ where
 					Ok(value) => tag.items.push((key, value.to_owned())),
 					Err(e) => {
 						if parse_mode == ParsingMode::Strict {
-							return Err(e);
+							return Err(e.into());
 						}
 
 						log::warn!("Non UTF-8 value found, discarding field {key:?}");

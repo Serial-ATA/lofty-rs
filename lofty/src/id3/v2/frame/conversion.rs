@@ -1,4 +1,3 @@
-use crate::TextEncoding;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::{EMPTY_CONTENT_DESCRIPTOR, FrameRef, MUSICBRAINZ_UFID_OWNER};
 use crate::id3::v2::tag::{
@@ -9,10 +8,12 @@ use crate::id3::v2::{
 	ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags, FrameId, PopularimeterFrame,
 	UniqueFileIdentifierFrame,
 };
-use crate::macros::err;
 use crate::tag::{ItemKey, ItemValue, TagItem, TagType};
 
 use std::borrow::Cow;
+
+use aud_io::text::TextEncoding;
+use aud_io::err as io_err;
 
 fn frame_from_unknown_item(id: FrameId<'_>, item_value: ItemValue) -> Result<Frame<'_>> {
 	match item_value {
@@ -21,7 +22,7 @@ fn frame_from_unknown_item(id: FrameId<'_>, item_value: ItemValue) -> Result<Fra
 			if TextEncoding::verify_latin1(&locator) {
 				Ok(new_url_frame(id, locator))
 			} else {
-				err!(TextDecode("ID3v2 URL frames must be Latin-1"));
+				io_err!(TextDecode("ID3v2 URL frames must be Latin-1"));
 			}
 		},
 		ItemValue::Binary(binary) => Ok(new_binary_frame(id, binary.clone())),

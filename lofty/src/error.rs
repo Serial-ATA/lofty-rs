@@ -11,6 +11,7 @@ use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
 
 use ogg_pager::PageError;
+use aud_io::error::AudioError;
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
@@ -48,8 +49,6 @@ pub enum ErrorKind {
 	UnsupportedTag,
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
-	/// Errors that arise while decoding text
-	TextDecode(&'static str),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
@@ -63,10 +62,8 @@ pub enum ErrorKind {
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
 	OggPage(ogg_pager::PageError),
-	/// Unable to convert bytes to a String
-	StringFromUtf8(std::string::FromUtf8Error),
-	/// Unable to convert bytes to a str
-	StrFromUtf8(std::str::Utf8Error),
+	/// General Audio IO errors
+	AudioIo(aud_io::error::AudioError),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
 	/// Represents all cases of [`std::fmt::Error`].
@@ -477,7 +474,15 @@ impl From<ogg_pager::PageError> for LoftyError {
 impl From<std::io::Error> for LoftyError {
 	fn from(input: std::io::Error) -> Self {
 		Self {
-			kind: ErrorKind::Io(input),
+			kind: ErrorKind::AudioIo(AudioError::Io(input)),
+		}
+	}
+}
+
+impl From<aud_io::error::AudioError> for LoftyError {
+	fn from(input: aud_io::error::AudioError) -> Self {
+		Self {
+			kind: ErrorKind::AudioIo(input),
 		}
 	}
 }
@@ -486,22 +491,6 @@ impl From<std::fmt::Error> for LoftyError {
 	fn from(input: std::fmt::Error) -> Self {
 		Self {
 			kind: ErrorKind::Fmt(input),
-		}
-	}
-}
-
-impl From<std::string::FromUtf8Error> for LoftyError {
-	fn from(input: std::string::FromUtf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StringFromUtf8(input),
-		}
-	}
-}
-
-impl From<std::str::Utf8Error> for LoftyError {
-	fn from(input: std::str::Utf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StrFromUtf8(input),
 		}
 	}
 }
@@ -527,8 +516,7 @@ impl Display for LoftyError {
 		match self.kind {
 			// Conversions
 			ErrorKind::OggPage(ref err) => write!(f, "{err}"),
-			ErrorKind::StringFromUtf8(ref err) => write!(f, "{err}"),
-			ErrorKind::StrFromUtf8(ref err) => write!(f, "{err}"),
+			ErrorKind::AudioIo(ref err) => write!(f, "{err}"),
 			ErrorKind::Io(ref err) => write!(f, "{err}"),
 			ErrorKind::Fmt(ref err) => write!(f, "{err}"),
 			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
@@ -545,7 +533,6 @@ impl Display for LoftyError {
 				"Attempted to write a tag to a format that does not support it"
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
-			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},

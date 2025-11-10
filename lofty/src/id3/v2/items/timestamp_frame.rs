@@ -1,12 +1,13 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 use crate::macros::err;
 use crate::tag::items::Timestamp;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::io::Read;
 
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use aud_io::err as io_err;
 use byteorder::ReadBytesExt;
 
 /// An `ID3v2` timestamp frame
@@ -78,7 +79,7 @@ impl<'a> TimestampFrame<'a> {
 		};
 		let Some(encoding) = TextEncoding::from_u8(encoding_byte) else {
 			if parse_mode != ParsingMode::Relaxed {
-				err!(TextDecode("Found invalid encoding"))
+				io_err!(TextDecode("Found invalid encoding"))
 			}
 			return Ok(None);
 		};

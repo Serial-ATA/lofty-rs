@@ -23,7 +23,6 @@ use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
@@ -31,6 +30,7 @@ use std::iter::Peekable;
 use std::ops::Deref;
 use std::str::FromStr;
 
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text};
 use lofty_attr::tag;
 
 const INVOLVED_PEOPLE_LIST_ID: &str = "TIPL";

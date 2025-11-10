@@ -7,10 +7,10 @@ use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::macros::{decode_err, err, try_vec};
 use crate::tag::ItemValue;
-use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::text::utf8_decode;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 pub(crate) fn read_ape_tag_with_header<R>(

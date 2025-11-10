@@ -10,10 +10,11 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{AtomReader, skip_atom};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::tag::TagExt;
-use crate::util::text::{utf8_decode, utf16_decode_bytes};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+
+use aud_io::text::{utf8_decode, utf16_decode_bytes};
 
 pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,

@@ -1,5 +1,5 @@
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::err;
+use crate::error::{AudioError, Result};
+use crate::err;
 
 use std::io::Read;
 
@@ -31,36 +31,20 @@ impl TextEncoding {
 		}
 	}
 
-	pub(crate) fn verify_latin1(text: &str) -> bool {
+	pub fn verify_latin1(text: &str) -> bool {
 		text.chars().all(|c| c as u32 <= 255)
-	}
-
-	/// ID3v2.4 introduced two new text encodings.
-	///
-	/// When writing ID3v2.3, we just substitute with UTF-16.
-	pub(crate) fn to_id3v23(self) -> Self {
-		match self {
-			Self::UTF8 | Self::UTF16BE => {
-				log::warn!(
-					"Text encoding {:?} is not supported in ID3v2.3, substituting with UTF-16",
-					self
-				);
-				Self::UTF16
-			},
-			_ => self,
-		}
 	}
 }
 
 #[derive(Eq, PartialEq, Debug)]
-pub(crate) struct DecodeTextResult {
-	pub(crate) content: String,
-	pub(crate) bytes_read: usize,
-	pub(crate) bom: [u8; 2],
+pub struct DecodeTextResult {
+	pub content: String,
+	pub bytes_read: usize,
+	pub bom: [u8; 2],
 }
 
 impl DecodeTextResult {
-	pub(crate) fn text_or_none(self) -> Option<String> {
+	pub fn text_or_none(self) -> Option<String> {
 		if self.content.is_empty() {
 			return None;
 		}
@@ -83,28 +67,28 @@ const EMPTY_DECODED_TEXT: DecodeTextResult = DecodeTextResult {
 /// * Not expect the text to be null terminated
 /// * Have no byte order mark
 #[derive(Copy, Clone, Debug)]
-pub(crate) struct TextDecodeOptions {
+pub struct TextDecodeOptions {
 	pub encoding: TextEncoding,
 	pub terminated: bool,
 	pub bom: [u8; 2],
 }
 
 impl TextDecodeOptions {
-	pub(crate) fn new() -> Self {
+	pub fn new() -> Self {
 		Self::default()
 	}
 
-	pub(crate) fn encoding(mut self, encoding: TextEncoding) -> Self {
+	pub fn encoding(mut self, encoding: TextEncoding) -> Self {
 		self.encoding = encoding;
 		self
 	}
 
-	pub(crate) fn terminated(mut self, terminated: bool) -> Self {
+	pub fn terminated(mut self, terminated: bool) -> Self {
 		self.terminated = terminated;
 		self
 	}
 
-	pub(crate) fn bom(mut self, bom: [u8; 2]) -> Self {
+	pub fn bom(mut self, bom: [u8; 2]) -> Self {
 		self.bom = bom;
 		self
 	}
@@ -120,7 +104,7 @@ impl Default for TextDecodeOptions {
 	}
 }
 
-pub(crate) fn decode_text<R>(reader: &mut R, options: TextDecodeOptions) -> Result<DecodeTextResult>
+pub fn decode_text<R>(reader: &mut R, options: TextDecodeOptions) -> Result<DecodeTextResult>
 where
 	R: Read,
 {
@@ -174,7 +158,7 @@ where
 		},
 		TextEncoding::UTF16BE => utf16_decode_bytes(raw_bytes.as_slice(), u16::from_be_bytes)?,
 		TextEncoding::UTF8 => utf8_decode(raw_bytes)
-			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
+			.map_err(|_| AudioError::TextDecode("Expected a UTF-8 string"))?,
 	};
 
 	Ok(DecodeTextResult {
@@ -224,7 +208,7 @@ pub(crate) fn latin1_decode(bytes: &[u8]) -> String {
 	text
 }
 
-pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
+pub fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
 	String::from_utf8(bytes)
 		.map(|mut text| {
 			trim_end_nulls(&mut text);
@@ -233,22 +217,22 @@ pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
 		.map_err(Into::into)
 }
 
-pub(crate) fn utf8_decode_str(bytes: &[u8]) -> Result<&str> {
+pub fn utf8_decode_str(bytes: &[u8]) -> Result<&str> {
 	std::str::from_utf8(bytes)
 		.map(trim_end_nulls_str)
 		.map_err(Into::into)
 }
 
-pub(crate) fn utf16_decode(words: &[u16]) -> Result<String> {
+pub fn utf16_decode(words: &[u16]) -> Result<String> {
 	String::from_utf16(words)
 		.map(|mut text| {
 			trim_end_nulls(&mut text);
 			text
 		})
-		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
+		.map_err(|_| AudioError::TextDecode("Given an invalid UTF-16 string"))
 }
 
-pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
+pub fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
 	if bytes.is_empty() {
 		return Ok(String::new());
 	}
@@ -277,7 +261,7 @@ pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -
 /// with a BOM.
 ///
 /// If no BOM is present, the string will be decoded using `endianness`.
-pub(crate) fn utf16_decode_terminated_maybe_bom<R>(
+pub fn utf16_decode_terminated_maybe_bom<R>(
 	reader: &mut R,
 	endianness: fn([u8; 2]) -> u16,
 ) -> Result<(String, usize)>
@@ -297,7 +281,7 @@ where
 	decoded.map(|d| (d, bytes_read))
 }
 
-pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
+pub fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
 	match text_encoding {
 		TextEncoding::Latin1 => {
 			let mut out = text.chars().map(|c| c as u8).collect::<Vec<u8>>();
@@ -322,14 +306,14 @@ pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: b
 	}
 }
 
-pub(crate) fn trim_end_nulls(text: &mut String) {
+pub fn trim_end_nulls(text: &mut String) {
 	if text.ends_with('\0') {
 		let new_len = text.trim_end_matches('\0').len();
 		text.truncate(new_len);
 	}
 }
 
-pub(crate) fn trim_end_nulls_str(text: &str) -> &str {
+pub fn trim_end_nulls_str(text: &str) -> &str {
 	text.trim_end_matches('\0')
 }
 
@@ -358,7 +342,7 @@ fn utf16_encode(
 
 #[cfg(test)]
 mod tests {
-	use crate::util::text::{TextDecodeOptions, TextEncoding};
+	use super::{TextDecodeOptions, TextEncoding};
 	use std::io::Cursor;
 
 	const TEST_STRING: &str = "l\u{00f8}ft\u{00a5}";
@@ -372,7 +356,7 @@ mod tests {
 			],
 			u16::from_be_bytes,
 		)
-		.unwrap();
+			.unwrap();
 
 		assert_eq!(utf16_decode, TEST_STRING.to_string());
 
@@ -383,14 +367,14 @@ mod tests {
 			]),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
-		.unwrap();
+			.unwrap();
 		let le_utf16_decode = super::decode_text(
 			&mut Cursor::new(&[
 				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00, 0x00,
 			]),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
-		.unwrap();
+			.unwrap();
 
 		assert_eq!(be_utf16_decode.content, le_utf16_decode.content);
 		assert_eq!(be_utf16_decode.bytes_read, le_utf16_decode.bytes_read);
@@ -400,7 +384,7 @@ mod tests {
 			&mut TEST_STRING.as_bytes(),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF8),
 		)
-		.unwrap();
+			.unwrap();
 
 		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}

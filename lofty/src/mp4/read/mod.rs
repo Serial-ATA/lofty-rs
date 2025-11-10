@@ -8,10 +8,10 @@ use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{decode_err, err};
 use crate::util::io::SeekStreamLen;
-use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) use atom_reader::AtomReader;

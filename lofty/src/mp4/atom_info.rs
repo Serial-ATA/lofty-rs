@@ -2,11 +2,12 @@ use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::{err, try_vec};
 use crate::tag::{ItemKey, TagType};
-use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::text::utf8_decode;
+use aud_io::err as io_err;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) const FOURCC_LEN: u64 = 4;
@@ -91,7 +92,7 @@ impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
 			}
 		}
 
-		err!(TextDecode(
+		io_err!(TextDecode(
 			"ItemKey does not map to a freeform or fourcc identifier"
 		))
 	}

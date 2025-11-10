@@ -1,10 +1,11 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
+use aud_io::err as io_err;
+use aud_io::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
 use byteorder::ReadBytesExt as _;
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ATXT"));
@@ -132,8 +133,9 @@ impl AudioTextFrame<'_> {
 		}
 
 		let content = &mut &bytes[..];
-		let encoding = TextEncoding::from_u8(content.read_u8()?)
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let Some(encoding) = TextEncoding::from_u8(content.read_u8()?) else {
+			io_err!(TextDecode("Found invalid encoding"));
+		};
 
 		let mime_type = decode_text(
 			content,
@@ -234,8 +236,9 @@ pub fn scramble(audio_data: &mut [u8]) {
 
 #[cfg(test)]
 mod tests {
-	use crate::TextEncoding;
 	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
+	
+	use aud_io::text::TextEncoding;
 
 	fn expected() -> AudioTextFrame<'static> {
 		AudioTextFrame {

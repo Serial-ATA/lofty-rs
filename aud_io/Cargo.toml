@@ -12,6 +12,11 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+byteorder = { workspace = true }
+log       = { workspace = true }
+
+[dev-dependencies]
+test-log = { workspace = true }
 
 # TODO
 #[lints]

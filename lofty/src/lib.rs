@@ -130,7 +130,7 @@ pub mod wavpack;
 
 pub use crate::probe::{read_from, read_from_path};
 
-pub use util::text::TextEncoding;
+pub use aud_io::text::TextEncoding;
 
 pub use lofty_attr::LoftyFile;
 

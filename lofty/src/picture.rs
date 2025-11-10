@@ -3,12 +3,12 @@
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::err;
-use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt as _};
 use data_encoding::BASE64;
 

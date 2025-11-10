@@ -2,11 +2,12 @@ use crate::config::ParsingMode;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::parse_mode_choice;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
+
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("UFID"));
 
