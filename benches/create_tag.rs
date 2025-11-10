@@ -13,7 +13,7 @@ use lofty::tag::{Accessor, TagExt};
 
 use std::borrow::Cow;
 
-use iai_callgrind::{library_benchmark, library_benchmark_group, main};
+use gungraun::{library_benchmark, library_benchmark_group, main};
 
 const ENCODER: &str = "Lavf57.56.101";
 
@@ -44,12 +44,10 @@ bench_tag_write!([
 		use lofty::ape::ApeItem;
 		use lofty::tag::ItemValue;
 
-		let picture = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Jpeg),
-			None,
-			include_bytes!("./assets/cover.jpg").to_vec(),
-		);
+		let picture = Picture::unchecked(include_bytes!("./assets/cover.jpg").to_vec())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Jpeg)
+			.build();
 
 		tag.insert(
 			ApeItem::new(
@@ -70,12 +68,10 @@ bench_tag_write!([
 		use lofty::TextEncoding;
 		use lofty::id3::v2::{Frame, TextInformationFrame};
 
-		let picture = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Jpeg),
-			None,
-			include_bytes!("./assets/cover.jpg").to_vec(),
-		);
+		let picture = Picture::unchecked(include_bytes!("./assets/cover.jpg").to_vec())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Jpeg)
+			.build();
 
 		tag.insert_picture(picture);
 		tag.insert(Frame::Text(TextInformationFrame::new(
@@ -88,12 +84,10 @@ bench_tag_write!([
 	(ilst, Ilst, |tag| {
 		use lofty::mp4::{Atom, AtomData, AtomIdent};
 
-		let picture = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Jpeg),
-			None,
-			include_bytes!("./assets/cover.jpg").to_vec(),
-		);
+		let picture = Picture::unchecked(include_bytes!("./assets/cover.jpg").to_vec())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Jpeg)
+			.build();
 
 		tag.insert_picture(picture);
 		tag.insert(Atom::new(
@@ -107,12 +101,10 @@ bench_tag_write!([
 	(vorbis_comments, VorbisComments, |tag| {
 		use lofty::ogg::OggPictureStorage;
 
-		let picture = Picture::new_unchecked(
-			PictureType::CoverFront,
-			Some(MimeType::Jpeg),
-			None,
-			include_bytes!("./assets/cover.jpg").to_vec(),
-		);
+		let picture = Picture::unchecked(include_bytes!("./assets/cover.jpg").to_vec())
+			.pic_type(PictureType::CoverFront)
+			.mime_type(MimeType::Jpeg)
+			.build();
 
 		let _ = tag.insert_picture(picture, None).unwrap();
 		tag.push(String::from("ENCODER"), String::from(ENCODER));
