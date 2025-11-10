@@ -779,7 +779,7 @@ impl Picture {
 		content: &[u8],
 		parse_mode: ParsingMode,
 	) -> Result<(Self, PictureInformation)> {
-		use crate::macros::try_vec;
+		use aud_io::try_vec;
 
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);

@@ -2,7 +2,7 @@ use super::verify_signature;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, err};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::picture::{Picture, PictureInformation};
@@ -11,8 +11,8 @@ use crate::tag::{Tag, TagType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
 

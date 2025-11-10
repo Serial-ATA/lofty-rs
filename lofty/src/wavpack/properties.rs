@@ -1,12 +1,12 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
+use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use aud_io::err as io_err;
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 /// A WavPack file's audio properties

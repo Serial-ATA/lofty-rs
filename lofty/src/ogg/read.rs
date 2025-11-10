@@ -26,7 +26,7 @@ pub(crate) fn read_comments<R>(
 where
 	R: Read,
 {
-	use crate::macros::try_vec;
+	use aud_io::try_vec;
 
 	let parse_mode = parse_options.parsing_mode;
 

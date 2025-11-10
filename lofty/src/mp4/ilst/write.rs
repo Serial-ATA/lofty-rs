@@ -3,7 +3,7 @@ use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
-use crate::macros::{decode_err, try_vec};
+use crate::macros::decode_err;
 use crate::mp4::AtomData;
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{atom_tree, find_child_atom, meta_is_full, verify_mp4};
@@ -13,9 +13,9 @@ use crate::picture::{MimeType, Picture};
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use aud_io::alloc::VecFallibleCapacity;
-use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use aud_io::mp4::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, AtomReader, FOURCC_LEN};
+use aud_io::{err as io_err, try_vec};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)

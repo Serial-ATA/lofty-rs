@@ -2,7 +2,7 @@ use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS,
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::macros::{err, try_vec};
+use crate::macros::err;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
@@ -11,8 +11,8 @@ use crate::tag::{Tag, TagType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
-use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 const BLOCK_HEADER_SIZE: usize = 4;

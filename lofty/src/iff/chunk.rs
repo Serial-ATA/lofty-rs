@@ -1,13 +1,12 @@
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
-use aud_io::err as io_err;
 use aud_io::text::utf8_decode;
+use aud_io::{err as io_err, try_vec};
 use byteorder::{ByteOrder, ReadBytesExt};
 
 const RIFF_CHUNK_HEADER_SIZE: u64 = 8;

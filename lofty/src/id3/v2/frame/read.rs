@@ -7,10 +7,10 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
-use crate::macros::try_vec;
 
 use std::io::Read;
 
+use aud_io::try_vec;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) enum ParsedFrame<'a> {

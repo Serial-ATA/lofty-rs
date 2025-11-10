@@ -7,14 +7,13 @@ pub mod v1;
 pub mod v2;
 
 use crate::error::Result;
-use crate::macros::try_vec;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
 
-use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
+use aud_io::{err as io_err, try_vec};
 
 pub(crate) struct ID3FindResults<Header, Content>(pub Option<Header>, pub Content);
 

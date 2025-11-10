@@ -4,7 +4,6 @@ use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
-use crate::macros::try_vec;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::skip_atom;
 use crate::picture::{MimeType, Picture, PictureType};
@@ -13,9 +12,9 @@ use crate::tag::TagExt;
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
-use aud_io::err as io_err;
 use aud_io::mp4::{ATOM_HEADER_LEN, AtomInfo, AtomReader};
 use aud_io::text::{utf8_decode, utf16_decode_bytes};
+use aud_io::{err as io_err, try_vec};
 
 pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,

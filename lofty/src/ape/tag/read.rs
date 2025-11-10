@@ -5,13 +5,13 @@ use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
 use crate::config::ParseOptions;
 use crate::error::Result;
-use crate::macros::{decode_err, try_vec};
+use crate::macros::decode_err;
 use crate::tag::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use aud_io::err as io_err;
 use aud_io::text::utf8_decode;
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 pub(crate) fn read_ape_tag_with_header<R>(
