@@ -1,10 +1,11 @@
 use super::properties::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::macros::{decode_err, parse_mode_choice};
 
 use std::io::Read;
 
+use aud_io::err as io_err;
 use byteorder::ReadBytesExt;
 
 // TODO: Support chapter packets?
@@ -145,7 +146,7 @@ impl<R: Read> PacketReader<R> {
 
 			// Sizes cannot go above 9 bytes
 			if bytes_read > 9 {
-				return Err(LoftyError::new(ErrorKind::TooMuchData));
+				io_err!(TooMuchData);
 			}
 
 			size = (size << 7) | u64::from(current & 0x7F);

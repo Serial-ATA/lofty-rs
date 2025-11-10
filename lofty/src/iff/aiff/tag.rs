@@ -1,13 +1,13 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
-use crate::macros::err;
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::{SeekFrom, Write};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::BigEndian;
 use lofty_attr::tag;
@@ -371,7 +371,7 @@ where
 						let comt_len = comt.text.len();
 
 						if comt_len > u16::MAX as usize {
-							err!(TooMuchData);
+							io_err!(TooMuchData);
 						}
 
 						text_chunks.extend((comt_len as u16).to_be_bytes());
@@ -394,7 +394,7 @@ where
 							i += 1;
 						}
 					} else {
-						err!(TooMuchData);
+						io_err!(TooMuchData);
 					}
 
 					if (text_chunks.len() - 4) % 2 != 0 {

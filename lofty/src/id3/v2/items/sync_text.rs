@@ -1,6 +1,5 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Seek, Write};
@@ -250,7 +249,7 @@ impl SynchronizedTextFrame<'_> {
 			}
 
 			if data.len() as u64 > u64::from(u32::MAX) {
-				err!(TooMuchData);
+				io_err!(TooMuchData);
 			}
 
 			return Ok(data);

@@ -11,6 +11,7 @@ use crate::tag::{Tag, TagType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
@@ -213,7 +214,7 @@ pub(crate) fn create_comments(
 		let comment_bytes = comment.as_bytes();
 
 		let Ok(bytes_len) = u32::try_from(comment_bytes.len()) else {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		};
 
 		*count += 1;
@@ -236,7 +237,7 @@ fn create_pictures(
 		let picture = pic.as_flac_bytes(info, true);
 
 		let Ok(bytes_len) = u32::try_from(picture.len() + PICTURE_KEY.len()) else {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		};
 
 		*count += 1;

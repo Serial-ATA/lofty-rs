@@ -7,6 +7,7 @@ use crate::macros::err;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
@@ -154,7 +155,7 @@ pub(super) fn create_riff_info(
 	let packet_size = Vec::len(bytes) - 4;
 
 	if packet_size > u32::MAX as usize {
-		err!(TooMuchData);
+		io_err!(TooMuchData);
 	}
 
 	log::debug!("Created RIFF INFO list, size: {} bytes", packet_size);

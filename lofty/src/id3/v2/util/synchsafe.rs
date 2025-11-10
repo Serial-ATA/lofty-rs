@@ -243,7 +243,7 @@ macro_rules! impl_synchsafe {
 				};
 
 				if self > MAXIMUM_INTEGER {
-					crate::macros::err!(TooMuchData);
+					aud_io::err!(TooMuchData);
 				}
 
 				let $n = self;

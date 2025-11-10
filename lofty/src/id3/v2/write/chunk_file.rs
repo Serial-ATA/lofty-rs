@@ -5,6 +5,7 @@ use crate::macros::err;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{ByteOrder, WriteBytesExt};
 
@@ -91,7 +92,7 @@ where
 		}
 
 		let Ok(tag_size): std::result::Result<u32, _> = tag_bytes.get_ref().len().try_into() else {
-			err!(TooMuchData)
+			io_err!(TooMuchData)
 		};
 
 		let tag_position = actual_stream_size as usize + RIFF_CHUNK_HEADER_SIZE;

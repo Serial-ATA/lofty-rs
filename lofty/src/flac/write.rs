@@ -11,6 +11,7 @@ use crate::tag::{Tag, TagType};
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
@@ -195,7 +196,7 @@ fn create_comment_block(
 		let len = (writer.get_ref().len() - 1) as u32;
 
 		if len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		let comment_end = writer.stream_position()?;
@@ -232,7 +233,7 @@ fn create_picture_blocks(
 		let pic_len = pic_bytes.len() as u32;
 
 		if pic_len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		writer.write_all(&pic_len.to_be_bytes()[1..])?;

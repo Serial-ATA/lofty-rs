@@ -3,7 +3,7 @@ use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, try_vec};
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
@@ -13,6 +13,7 @@ use crate::picture::{MimeType, Picture};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use aud_io::alloc::VecFallibleCapacity;
@@ -298,7 +299,7 @@ fn save_to_existing(
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
-					err!(TooMuchData);
+					io_err!(TooMuchData);
 				}
 
 				let remaining_space = remaining_space as u32;

@@ -11,6 +11,7 @@ use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -107,7 +108,7 @@ where
 	if let (pos, false) = pos.overflowing_add(len - 8) {
 		reader.seek(SeekFrom::Start(pos))?;
 	} else {
-		err!(TooMuchData);
+		io_err!(TooMuchData);
 	}
 
 	Ok(())

@@ -7,6 +7,7 @@ use crate::picture::{MimeType, Picture, PictureType};
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
 
+use aud_io::err as io_err;
 use aud_io::text::{TextDecodeOptions, TextEncoding, encode_text};
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
@@ -180,7 +181,7 @@ impl AttachedPictureFrame<'_> {
 		data.write_all(&self.picture.data)?;
 
 		if data.len() as u64 > max_size {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		Ok(data)

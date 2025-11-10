@@ -12,6 +12,7 @@ use crate::tag::item::ItemValueRef;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use aud_io::io::{FileLike, Truncate};
+use aud_io::err as io_err;
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
@@ -205,7 +206,7 @@ where
 	let size = tag_write.get_ref().len();
 
 	if size as u64 + 32 > u64::from(u32::MAX) {
-		err!(TooMuchData);
+		io_err!(TooMuchData);
 	}
 
 	let mut footer = [0_u8; 32];

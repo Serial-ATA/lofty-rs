@@ -24,8 +24,6 @@ pub enum ErrorKind {
 	UnknownFormat,
 
 	// File data related errors
-	/// Attempting to read/write an abnormally large amount of data
-	TooMuchData,
 	/// Expected the data to be a different size than provided
 	///
 	/// This occurs when the size of an item is written as one value, but that size is either too
@@ -530,10 +528,6 @@ impl Display for LoftyError {
 			),
 
 			// Files
-			ErrorKind::TooMuchData => write!(
-				f,
-				"Attempted to read/write an abnormally large amount of data"
-			),
 			ErrorKind::SizeMismatch => write!(
 				f,
 				"Encountered an invalid item size, either too big or too small to be valid"
