@@ -1,5 +1,4 @@
 //! MP3 specific items
-mod constants;
 pub(crate) mod header;
 mod properties;
 mod read;
@@ -12,10 +11,9 @@ use lofty_attr::LoftyFile;
 
 // Exports
 
-pub use header::{ChannelMode, Emphasis, Layer};
 pub use properties::MpegProperties;
 
-pub use aud_io::mpeg::MpegVersion;
+pub use aud_io::mpeg::{ChannelMode, Emphasis, Layer, MpegVersion};
 
 /// An MPEG file
 #[derive(LoftyFile, Default)]

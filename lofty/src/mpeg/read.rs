@@ -1,4 +1,4 @@
-use super::header::{Header, HeaderCmpResult, VbrHeader, cmp_header, search_for_frame_sync};
+use super::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 use super::{MpegFile, MpegProperties};
 use crate::ape::header::read_ape_header;
 use crate::config::{ParseOptions, ParsingMode};
@@ -12,7 +12,10 @@ use crate::mpeg::header::HEADER_MASK;
 use std::io::{Read, Seek, SeekFrom};
 
 use aud_io::err as io_err;
+use aud_io::error::AudioError;
 use aud_io::io::SeekStreamLen;
+use aud_io::mpeg::error::VbrHeaderError;
+use aud_io::mpeg::{FrameHeader, VbrHeader};
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MpegFile>
@@ -198,7 +201,12 @@ where
 		let mut xing_reader = [0; 32];
 		reader.read_exact(&mut xing_reader)?;
 
-		let xing_header = VbrHeader::read(&mut &xing_reader[..])?;
+		let xing_header;
+		match VbrHeader::parse(&mut &xing_reader[..]) {
+			Ok(header) => xing_header = Some(header),
+			Err(VbrHeaderError::UnknownHeader) => xing_header = None,
+			Err(e) => return Err(AudioError::from(e).into()),
+		}
 
 		let file_length = reader.stream_len_hack()?;
 
@@ -216,7 +224,7 @@ where
 }
 
 // Searches for the next frame, comparing it to the following one
-fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
+fn find_next_frame<R>(reader: &mut R) -> Result<Option<(FrameHeader, u64)>>
 where
 	R: Read + Seek,
 {
@@ -229,7 +237,7 @@ where
 		reader.seek(SeekFrom::Start(first_mp3_frame_start_absolute))?;
 		let first_header_data = reader.read_u32::<BigEndian>()?;
 
-		if let Some(first_header) = Header::read(first_header_data) {
+		if let Ok(first_header) = FrameHeader::parse(first_header_data) {
 			match cmp_header(reader, 4, first_header.len, first_header_data, HEADER_MASK) {
 				HeaderCmpResult::Equal => {
 					return Ok(Some((first_header, first_mp3_frame_start_absolute)));
