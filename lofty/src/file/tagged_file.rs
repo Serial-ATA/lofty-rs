@@ -4,9 +4,10 @@ use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagSupport, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Read, Seek};
+
+use aud_io::io::{FileLike, Length, Truncate};
 
 /// Provides a common interface between [`TaggedFile`] and [`BoundTaggedFile`]
 pub trait TaggedFileExt {

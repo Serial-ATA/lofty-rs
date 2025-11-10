@@ -7,11 +7,11 @@ use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 const BLOCK_HEADER_SIZE: usize = 4;

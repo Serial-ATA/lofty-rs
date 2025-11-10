@@ -8,10 +8,10 @@ use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::macros::{decode_err, err};
 use crate::probe::Probe;
 use crate::tag::item::ItemValueRef;
-use crate::util::io::{FileLike, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::io::{FileLike, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]

@@ -16,7 +16,6 @@ use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
 use advisory_rating::AdvisoryRating;
 use atom::{Atom, AtomData};
 use data_type::DataType;
@@ -25,6 +24,7 @@ use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
+use aud_io::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 const ARTIST: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9ART");

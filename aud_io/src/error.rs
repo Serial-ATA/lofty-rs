@@ -15,6 +15,8 @@ pub enum AudioError {
 	StringFromUtf8(std::string::FromUtf8Error),
 	/// Unable to convert bytes to a str
 	StrFromUtf8(std::str::Utf8Error),
+	/// This should **never** be encountered
+	Infallible(std::convert::Infallible),
 }
 
 impl From<std::io::Error> for AudioError {
@@ -35,6 +37,12 @@ impl From<std::str::Utf8Error> for AudioError {
 	}
 }
 
+impl From<std::convert::Infallible> for AudioError {
+	fn from(input: std::convert::Infallible) -> Self {
+		AudioError::Infallible(input)
+	}
+}
+
 impl Display for AudioError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
@@ -43,6 +51,7 @@ impl Display for AudioError {
 			AudioError::StrFromUtf8(err) => write!(f, "{err}"),
 			AudioError::Io(err) => write!(f, "{err}"),
 			AudioError::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			AudioError::Infallible(_) => write!(f, "An expected condition was not upheld"),
 		}
 	}
 }

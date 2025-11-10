@@ -131,10 +131,9 @@ pub mod wavpack;
 pub use crate::probe::{read_from, read_from_path};
 
 pub use aud_io::text::TextEncoding;
+pub use aud_io::io;
 
 pub use lofty_attr::LoftyFile;
-
-pub use util::io;
 
 pub mod prelude {
 	//! A prelude for commonly used items in the library.

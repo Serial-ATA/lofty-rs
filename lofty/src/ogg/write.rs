@@ -7,11 +7,11 @@ use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
 

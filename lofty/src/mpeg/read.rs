@@ -6,7 +6,7 @@ use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
-use crate::io::SeekStreamLen;
+use crate::util::io::SeekStreamLen;
 use crate::macros::{decode_err, err};
 use crate::mpeg::header::HEADER_MASK;
 

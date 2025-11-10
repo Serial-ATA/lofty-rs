@@ -4,10 +4,10 @@ use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 const RIFF_CHUNK_HEADER_SIZE: usize = 8;
