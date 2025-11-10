@@ -5,11 +5,12 @@ use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
 use crate::ape::header::{self, ApeHeader};
 use crate::config::ParseOptions;
 use crate::error::Result;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, try_vec};
 use crate::tag::ItemValue;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::text::utf8_decode;
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -31,7 +32,7 @@ where
 
 		let value_size = data.read_u32::<LittleEndian>()?;
 		if value_size > remaining_size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		remaining_size -= 4;

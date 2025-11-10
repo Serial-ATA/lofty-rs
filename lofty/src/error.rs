@@ -24,12 +24,6 @@ pub enum ErrorKind {
 	UnknownFormat,
 
 	// File data related errors
-	/// Expected the data to be a different size than provided
-	///
-	/// This occurs when the size of an item is written as one value, but that size is either too
-	/// big or small to be valid within the bounds of that item.
-	// TODO: Should probably have context
-	SizeMismatch,
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -50,7 +44,7 @@ pub enum ErrorKind {
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(Id3v2Error),
-	
+
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
@@ -525,10 +519,6 @@ impl Display for LoftyError {
 			),
 
 			// Files
-			ErrorKind::SizeMismatch => write!(
-				f,
-				"Encountered an invalid item size, either too big or too small to be valid"
-			),
 			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
 		}

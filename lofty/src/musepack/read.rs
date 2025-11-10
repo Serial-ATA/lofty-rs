@@ -6,10 +6,10 @@ use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::macros::err;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::io::SeekStreamLen;
 
 pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MpcFile>
@@ -35,7 +35,7 @@ where
 	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, find_id3v2_config)? {
 		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
 		else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		stream_length = new_stream_length;
@@ -55,7 +55,7 @@ where
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		stream_length = new_stream_length;
@@ -63,7 +63,7 @@ where
 
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
 	let Some(new_stream_length) = stream_length.checked_sub(u64::from(lyrics3v2_size)) else {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	};
 
 	stream_length = new_stream_length;
@@ -78,13 +78,13 @@ where
 
 		let tag_size = u64::from(header.size);
 		let Some(tag_start) = pos.checked_sub(tag_size) else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		reader.seek(SeekFrom::Start(tag_start))?;
 
 		let Some(new_stream_length) = stream_length.checked_sub(tag_size) else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 		stream_length = new_stream_length;
 	}

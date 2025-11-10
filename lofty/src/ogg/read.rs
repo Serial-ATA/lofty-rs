@@ -2,13 +2,14 @@ use super::tag::VorbisComments;
 use super::verify_signature;
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{decode_err, err, parse_mode_choice};
+use crate::macros::{decode_err, parse_mode_choice};
 use crate::picture::{MimeType, Picture, PictureInformation, PictureType};
 use crate::tag::Accessor;
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::text::{utf8_decode, utf8_decode_str, utf16_decode};
 use byteorder::{LittleEndian, ReadBytesExt};
 use data_encoding::BASE64;
@@ -31,7 +32,7 @@ where
 
 	let vendor_len = data.read_u32::<LittleEndian>()?;
 	if u64::from(vendor_len) > len {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	let mut vendor_bytes = try_vec![0; vendor_len as usize];
@@ -77,7 +78,7 @@ where
 
 	let number_of_items = data.read_u32::<LittleEndian>()?;
 	if number_of_items > (len >> 2) as u32 {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	let mut tag = VorbisComments {
@@ -89,7 +90,7 @@ where
 	for _ in 0..number_of_items {
 		let comment_len = data.read_u32::<LittleEndian>()?;
 		if u64::from(comment_len) > len {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mut comment_bytes = try_vec![0; comment_len as usize];

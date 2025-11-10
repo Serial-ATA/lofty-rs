@@ -8,6 +8,7 @@ use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt as _};
 use data_encoding::BASE64;
@@ -801,7 +802,7 @@ impl Picture {
 		size -= 4;
 
 		if mime_len > size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mime_type_str = utf8_decode_str(&content[8..8 + mime_len])?;

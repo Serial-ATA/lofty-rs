@@ -11,6 +11,7 @@ use crate::mpeg::header::HEADER_MASK;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::io::SeekStreamLen;
 use byteorder::{BigEndian, ReadBytesExt};
 
@@ -164,7 +165,7 @@ where
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
 			let Some(start_of_tag) = pos.checked_sub(u64::from(header.size)) else {
-				err!(SizeMismatch);
+				io_err!(SizeMismatch);
 			};
 
 			reader.seek(SeekFrom::Start(start_of_tag))?;

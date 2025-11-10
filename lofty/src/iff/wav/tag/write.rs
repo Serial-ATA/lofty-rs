@@ -3,7 +3,6 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
 use crate::iff::wav::read::verify_wav;
-use crate::macros::err;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
@@ -35,7 +34,7 @@ where
 	file.read_to_end(file_bytes.get_mut())?;
 
 	if file_bytes.get_ref().len() < (stream_length as usize + RIFF_CHUNK_HEADER_SIZE) {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	// The first chunk format is RIFF....WAVE

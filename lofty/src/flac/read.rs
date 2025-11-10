@@ -6,11 +6,13 @@ use crate::error::Result;
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v2};
-use crate::macros::{decode_err, err};
+use crate::macros::decode_err;
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
+
+use aud_io::err as io_err;
 
 pub(super) fn verify_flac<R>(data: &mut R) -> Result<Block>
 where
@@ -137,7 +139,7 @@ where
 		// In the event that a block lies about its size, the current position could be
 		// completely wrong.
 		if current > end {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		(end - current, end)

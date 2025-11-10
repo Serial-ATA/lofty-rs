@@ -1,11 +1,12 @@
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::macros::{err, try_vec};
+use crate::macros::try_vec;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
+use aud_io::err as io_err;
 use aud_io::text::utf8_decode;
 use byteorder::{ByteOrder, ReadBytesExt};
 
@@ -87,7 +88,7 @@ impl<B: ByteOrder> Chunks<B> {
 		R: Read,
 	{
 		if size > self.remaining_size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mut content = try_vec![0; size as usize];
