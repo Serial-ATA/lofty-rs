@@ -934,7 +934,6 @@ mod tests {
 	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::mp4::ilst::TITLE;
 	use crate::mp4::ilst::atom::AtomDataStorage;
-	use crate::mp4::read::AtomReader;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, DataType, Ilst, Mp4File};
 	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
@@ -943,6 +942,8 @@ mod tests {
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
+
+	use aud_io::mp4::AtomReader;
 
 	fn read_ilst(path: &str, parse_options: ParseOptions) -> Ilst {
 		let tag = std::fs::read(path).unwrap();

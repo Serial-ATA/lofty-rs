@@ -1,11 +1,11 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::err;
-use crate::util::io::SeekStreamLen;
+use super::atom_info::AtomInfo;
+use crate::err;
+use crate::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use aud_io::mp4::AtomInfo;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// A reader for an MP4 file
@@ -15,7 +15,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 /// * [`Self::next`] to read atoms.
 /// * `read_u*` methods to read integers without needing to specify the endianness.
 /// * Bounds checking on reads and seeks to prevent going outside the file.
-pub(crate) struct AtomReader<R>
+pub struct AtomReader<R>
 where
 	R: Read + Seek,
 {
@@ -31,7 +31,7 @@ where
 	R: Read + Seek,
 {
 	/// Create a new `AtomReader`
-	pub(crate) fn new(mut reader: R, parse_mode: ParsingMode) -> Result<Self> {
+	pub fn new(mut reader: R, parse_mode: ParsingMode) -> Result<Self> {
 		let len = reader.stream_len_hack()?;
 		Ok(Self {
 			reader,
@@ -47,38 +47,38 @@ where
 	/// This is useful when reading an atom such as `moov`, where we only want to read it and its
 	/// children. We can read the atom, set the bounds to the atom's length, and then read the children
 	/// without worrying about reading past the atom's end.
-	pub(crate) fn reset_bounds(&mut self, start_position: u64, len: u64) {
+	pub fn reset_bounds(&mut self, start_position: u64, len: u64) {
 		self.start = start_position;
 		self.remaining_size = len;
 		self.len = len;
 	}
 
-	pub(crate) fn read_u8(&mut self) -> std::io::Result<u8> {
+	pub fn read_u8(&mut self) -> std::io::Result<u8> {
 		self.remaining_size = self.remaining_size.saturating_sub(1);
 		self.reader.read_u8()
 	}
 
-	pub(crate) fn read_u16(&mut self) -> std::io::Result<u16> {
+	pub fn read_u16(&mut self) -> std::io::Result<u16> {
 		self.remaining_size = self.remaining_size.saturating_sub(2);
 		self.reader.read_u16::<BigEndian>()
 	}
 
-	pub(crate) fn read_u24(&mut self) -> std::io::Result<u32> {
+	pub fn read_u24(&mut self) -> std::io::Result<u32> {
 		self.remaining_size = self.remaining_size.saturating_sub(3);
 		self.reader.read_u24::<BigEndian>()
 	}
 
-	pub(crate) fn read_u32(&mut self) -> std::io::Result<u32> {
+	pub fn read_u32(&mut self) -> std::io::Result<u32> {
 		self.remaining_size = self.remaining_size.saturating_sub(4);
 		self.reader.read_u32::<BigEndian>()
 	}
 
-	pub(crate) fn read_u64(&mut self) -> std::io::Result<u64> {
+	pub fn read_u64(&mut self) -> std::io::Result<u64> {
 		self.remaining_size = self.remaining_size.saturating_sub(8);
 		self.reader.read_u64::<BigEndian>()
 	}
 
-	pub(crate) fn read_uint(&mut self, size: usize) -> std::io::Result<u64> {
+	pub fn read_uint(&mut self, size: usize) -> std::io::Result<u64> {
 		self.remaining_size = self.remaining_size.saturating_sub(size as u64);
 		self.reader.read_uint::<BigEndian>(size)
 	}
@@ -86,7 +86,7 @@ where
 	/// Read the next atom in the file
 	///
 	/// This will leave the reader at the beginning of the atom content.
-	pub(crate) fn next(&mut self) -> Result<Option<AtomInfo>> {
+	pub fn next(&mut self) -> Result<Option<AtomInfo>> {
 		if self.remaining_size == 0 {
 			return Ok(None);
 		}
@@ -98,7 +98,7 @@ where
 		AtomInfo::read(self, self.remaining_size, self.parse_mode).map_err(Into::into)
 	}
 
-	pub(crate) fn into_inner(self) -> R {
+	pub fn into_inner(self) -> R {
 		self.reader
 	}
 }

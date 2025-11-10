@@ -1,5 +1,3 @@
-mod atom_reader;
-
 use super::Mp4File;
 use super::moov::Moov;
 use super::properties::Mp4Properties;
@@ -10,12 +8,10 @@ use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use aud_io::mp4::{AtomIdent, AtomInfo};
+use aud_io::mp4::{AtomIdent, AtomInfo, AtomReader};
 use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};
-
-pub(super) use atom_reader::AtomReader;
 
 pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String>
 where
