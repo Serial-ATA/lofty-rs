@@ -29,7 +29,7 @@ pub struct GlobalOptions {
 
 impl GlobalOptions {
 	/// Default allocation limit for any single tag item
-	pub const DEFAULT_ALLOCATION_LIMIT: usize = 16 * 1024 * 1024;
+	pub const DEFAULT_ALLOCATION_LIMIT: usize = aud_io::config::GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
 
 	/// Creates a new `GlobalOptions`, alias for `Default` implementation
 	///
@@ -131,6 +131,12 @@ impl Default for GlobalOptions {
 	}
 }
 
+impl From<GlobalOptions> for aud_io::config::GlobalOptions {
+	fn from(options: GlobalOptions) -> Self {
+		aud_io::config::GlobalOptions::new().allocation_limit(options.allocation_limit)
+	}
+}
+
 /// Applies the given `GlobalOptions` to the current thread
 ///
 /// # Examples
@@ -143,6 +149,9 @@ impl Default for GlobalOptions {
 /// apply_global_options(global_options);
 /// ```
 pub fn apply_global_options(options: GlobalOptions) {
+	// Propagate changes to `aud_io` as well
+	aud_io::config::apply_global_options(options.into());
+
 	GLOBAL_OPTIONS.with(|global_options| unsafe {
 		*global_options.get() = options;
 	});
