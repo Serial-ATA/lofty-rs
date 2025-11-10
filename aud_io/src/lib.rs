@@ -1,3 +1,4 @@
+pub mod aac;
 pub mod alloc;
 pub mod config;
 pub mod error;
@@ -5,4 +6,5 @@ pub mod io;
 pub(crate) mod macros;
 pub mod math;
 pub mod mp4;
+pub mod mpeg;
 pub mod text;

@@ -1,4 +1,4 @@
-use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader, VbrHeaderType};
+use super::header::{ChannelMode, Emphasis, Header, Layer, VbrHeader, VbrHeaderType};
 use crate::error::Result;
 use crate::mpeg::header::rev_search_for_frame_header;
 use crate::properties::{ChannelMask, FileProperties};
@@ -7,6 +7,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use aud_io::math::RoundedDivision;
+use aud_io::mpeg::MpegVersion;
 
 /// An MPEG file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

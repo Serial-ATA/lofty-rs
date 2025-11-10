@@ -4,6 +4,7 @@ use crate::macros::decode_err;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::mpeg::MpegVersion;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) fn verify_frame_sync(frame_sync: [u8; 2]) -> bool {
@@ -155,18 +156,6 @@ where
 		},
 		_ => HeaderCmpResult::NotEqual,
 	}
-}
-
-/// MPEG Audio version
-#[derive(Default, PartialEq, Eq, Copy, Clone, Debug)]
-#[allow(missing_docs)]
-pub enum MpegVersion {
-	#[default]
-	V1,
-	V2,
-	V2_5,
-	/// Exclusive to AAC
-	V4,
 }
 
 /// MPEG layer

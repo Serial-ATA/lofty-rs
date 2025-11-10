@@ -19,6 +19,7 @@ pub enum AudioError {
 	TextDecode(&'static str),
 
 	// Format-specific
+	Aac(crate::aac::error::AacError),
 	/// Arises when an MP4 atom contains invalid data
 	BadAtom(&'static str),
 
@@ -33,6 +34,12 @@ pub enum AudioError {
 	Alloc(std::collections::TryReserveError),
 	/// This should **never** be encountered
 	Infallible(std::convert::Infallible),
+}
+
+impl From<crate::aac::error::AacError> for AudioError {
+	fn from(err: crate::aac::error::AacError) -> Self {
+		AudioError::Aac(err)
+	}
 }
 
 impl From<std::io::Error> for AudioError {
@@ -88,6 +95,7 @@ impl Display for AudioError {
 			),
 
 			// Format-specific
+			AudioError::Aac(err) => write!(f, "AAC: {err}"),
 			AudioError::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 		}
 	}

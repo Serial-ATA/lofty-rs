@@ -1,33 +1,33 @@
+use super::error::AacError;
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::decode_err;
 use crate::mp4::{AudioObjectType, SAMPLE_RATES};
 use crate::mpeg::MpegVersion;
 
-use std::io::{Read, Seek, SeekFrom};
-
-// Used to compare the headers up to the home bit.
-// If they aren't equal, something is broken.
-pub(super) const HEADER_MASK: u32 = 0xFFFF_FFE0;
+use std::io::Read;
 
 #[derive(Copy, Clone)]
-pub(crate) struct ADTSHeader {
-	pub(crate) version: MpegVersion,
-	pub(crate) audio_object_ty: AudioObjectType,
-	pub(crate) sample_rate: u32,
-	pub(crate) channels: u8,
-	pub(crate) copyright: bool,
-	pub(crate) original: bool,
-	pub(crate) len: u16,
-	pub(crate) bitrate: u32,
-	pub(crate) bytes: [u8; 7],
-	pub(crate) has_crc: bool,
+pub struct ADTSHeader {
+	pub version: MpegVersion,
+	pub audio_object_ty: AudioObjectType,
+	pub sample_rate: u32,
+	pub channels: u8,
+	pub copyright: bool,
+	pub original: bool,
+	pub len: u16,
+	pub bitrate: u32,
+	pub bytes: [u8; 7],
+	pub has_crc: bool,
 }
 
 impl ADTSHeader {
-	pub(super) fn read<R>(reader: &mut R, _parse_mode: ParsingMode) -> Result<Option<Self>>
+	/// Used to compare ADTS headers up to the `home` bit. If they aren't equal, then something's broken
+	/// in the input.
+	pub const COMPARISON_MASK: u32 = 0xFFFF_FFE0;
+
+	pub fn read<R>(reader: &mut R, _parse_mode: ParsingMode) -> Result<Option<Self>>
 	where
-		R: Read + Seek,
+		R: Read,
 	{
 		// The ADTS header consists of 7 bytes, or 9 bytes with a CRC
 		let mut needs_crc_skip = false;
@@ -81,7 +81,7 @@ impl ADTSHeader {
 		let sample_rate_idx = (byte3 >> 2) & 0b1111;
 		if sample_rate_idx == 15 {
 			// 15 is forbidden
-			decode_err!(@BAIL Aac, "File contains an invalid sample frequency index");
+			return Err(AacError::BadSampleRate.into());
 		}
 
 		let sample_rate = SAMPLE_RATES[sample_rate_idx as usize];
@@ -106,7 +106,7 @@ impl ADTSHeader {
 
 		if needs_crc_skip {
 			log::debug!("Skipping CRC");
-			reader.seek(SeekFrom::Current(2))?;
+			reader.read_exact(&mut [0; 2])?;
 		}
 
 		Ok(Some(ADTSHeader {

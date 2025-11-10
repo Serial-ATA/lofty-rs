@@ -1,5 +1,4 @@
 use super::AacFile;
-use super::header::{ADTSHeader, HEADER_MASK};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
@@ -10,6 +9,7 @@ use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::aac::ADTSHeader;
 use aud_io::err as io_err;
 use byteorder::ReadBytesExt;
 
@@ -175,7 +175,7 @@ where
 				header_len,
 				u32::from(first_header.len),
 				u32::from_be_bytes(first_header.bytes[..4].try_into().unwrap()),
-				HEADER_MASK,
+				ADTSHeader::COMPARISON_MASK,
 			) {
 				HeaderCmpResult::Equal => {
 					return Ok(Some((
