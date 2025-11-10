@@ -1,18 +1,16 @@
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{err, try_vec};
-use crate::tag::{ItemKey, TagType};
+use crate::error::{AudioError, Result};
+use crate::text::utf8_decode;
+use crate::{err, try_vec};
 
 use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
-use aud_io::text::utf8_decode;
-use aud_io::err as io_err;
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) const FOURCC_LEN: u64 = 4;
-pub(super) const IDENTIFIER_LEN: u64 = 4;
-pub(super) const ATOM_HEADER_LEN: u64 = FOURCC_LEN + IDENTIFIER_LEN;
+pub const FOURCC_LEN: u64 = 4;
+pub const IDENTIFIER_LEN: u64 = 4;
+pub const ATOM_HEADER_LEN: u64 = FOURCC_LEN + IDENTIFIER_LEN;
 
 /// Represents an `MP4` atom identifier
 #[derive(Eq, PartialEq, Debug, Clone)]
@@ -64,55 +62,12 @@ impl<'a> AtomIdent<'a> {
 	}
 }
 
-impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
-	type Error = LoftyError;
-
-	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
-		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
-			if mapped_key.starts_with("----") {
-				let mut split = mapped_key.split(':');
-
-				split.next();
-
-				let mean = split.next();
-				let name = split.next();
-
-				if let (Some(mean), Some(name)) = (mean, name) {
-					return Ok(AtomIdent::Freeform {
-						mean: Cow::Borrowed(mean),
-						name: Cow::Borrowed(name),
-					});
-				}
-			} else {
-				let fourcc = mapped_key.chars().map(|c| c as u8).collect::<Vec<_>>();
-
-				if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
-					return Ok(AtomIdent::Fourcc(fourcc));
-				}
-			}
-		}
-
-		io_err!(TextDecode(
-			"ItemKey does not map to a freeform or fourcc identifier"
-		))
-	}
-}
-
-impl TryFrom<ItemKey> for AtomIdent<'static> {
-	type Error = LoftyError;
-
-	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
-		let ret: AtomIdent<'_> = (&value).try_into()?;
-		Ok(ret.into_owned())
-	}
-}
-
 #[derive(Debug)]
-pub(crate) struct AtomInfo {
-	pub(crate) start: u64,
-	pub(crate) len: u64,
-	pub(crate) extended: bool,
-	pub(crate) ident: AtomIdent<'static>,
+pub struct AtomInfo {
+	pub start: u64,
+	pub len: u64,
+	pub extended: bool,
+	pub ident: AtomIdent<'static>,
 }
 
 // The spec permits any characters to be used in atom identifiers. This doesn't
@@ -125,7 +80,7 @@ fn is_valid_identifier_byte(b: u8) -> bool {
 }
 
 impl AtomInfo {
-	pub(crate) fn read<R>(
+	pub fn read<R>(
 		data: &mut R,
 		mut reader_size: u64,
 		parse_mode: ParsingMode,
@@ -214,7 +169,7 @@ impl AtomInfo {
 		}))
 	}
 
-	pub(crate) fn header_size(&self) -> u64 {
+	pub fn header_size(&self) -> u64 {
 		if !self.extended {
 			return ATOM_HEADER_LEN;
 		}
@@ -261,10 +216,10 @@ where
 
 	match atom {
 		Some(AtomInfo {
-			ident: AtomIdent::Fourcc(ref fourcc),
-			len,
-			..
-		}) if fourcc == name => {
+				 ident: AtomIdent::Fourcc(ref fourcc),
+				 len,
+				 ..
+			 }) if fourcc == name => {
 			if len < 12 {
 				err!(BadAtom("Found an incomplete freeform identifier chunk"));
 			}
@@ -284,9 +239,9 @@ where
 			*reader_size -= len;
 
 			utf8_decode(content).map_err(|_| {
-				LoftyError::new(ErrorKind::BadAtom(
+				AudioError::BadAtom(
 					"Found a non UTF-8 string while reading freeform identifier",
-				))
+				)
 			})
 		},
 		_ => err!(BadAtom(

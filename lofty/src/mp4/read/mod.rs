@@ -1,7 +1,6 @@
 mod atom_reader;
 
 use super::Mp4File;
-use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
@@ -11,6 +10,7 @@ use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::mp4::{AtomIdent, AtomInfo};
 use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};

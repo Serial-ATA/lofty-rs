@@ -3,7 +3,6 @@
 //! ## File notes
 //!
 //! The only supported tag format is [`Ilst`].
-mod atom_info;
 pub(crate) mod ilst;
 mod moov;
 mod properties;
@@ -22,7 +21,7 @@ pub mod constants {
 }
 
 pub use crate::mp4::properties::{AudioObjectType, Mp4Codec, Mp4Properties};
-pub use atom_info::AtomIdent;
+pub use aud_io::mp4::AtomIdent;
 pub use ilst::Ilst;
 pub use ilst::advisory_rating::AdvisoryRating;
 pub use ilst::atom::{Atom, AtomData};

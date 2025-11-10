@@ -1,4 +1,3 @@
-use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{AtomReader, find_child_atom, skip_atom};
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
@@ -8,6 +7,7 @@ use crate::properties::FileProperties;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use aud_io::mp4::{AtomIdent, AtomInfo};
 use aud_io::alloc::VecFallibleCapacity;
 use aud_io::math::RoundedDivision;
 use byteorder::{BigEndian, ReadBytesExt};

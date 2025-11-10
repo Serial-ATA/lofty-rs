@@ -1,11 +1,11 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::err;
-use crate::mp4::atom_info::AtomInfo;
 use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::mp4::AtomInfo;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// A reader for an MP4 file
@@ -95,7 +95,7 @@ where
 			err!(SizeMismatch);
 		}
 
-		AtomInfo::read(self, self.remaining_size, self.parse_mode)
+		AtomInfo::read(self, self.remaining_size, self.parse_mode).map_err(Into::into)
 	}
 
 	pub(crate) fn into_inner(self) -> R {

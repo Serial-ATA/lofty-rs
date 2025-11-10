@@ -2,13 +2,13 @@ use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
 use crate::macros::err;
-use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::read::{meta_is_full, skip_atom};
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
+use aud_io::mp4::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important

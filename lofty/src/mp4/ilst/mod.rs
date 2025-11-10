@@ -24,6 +24,7 @@ use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
+use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
@@ -882,6 +883,49 @@ impl From<Tag> for Ilst {
 		}
 
 		SplitTagRemainder::default().merge_tag(input)
+	}
+}
+
+impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
+	type Error = LoftyError;
+
+	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
+		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
+			if mapped_key.starts_with("----") {
+				let mut split = mapped_key.split(':');
+
+				split.next();
+
+				let mean = split.next();
+				let name = split.next();
+
+				if let (Some(mean), Some(name)) = (mean, name) {
+					return Ok(AtomIdent::Freeform {
+						mean: Cow::Borrowed(mean),
+						name: Cow::Borrowed(name),
+					});
+				}
+			} else {
+				let fourcc = mapped_key.chars().map(|c| c as u8).collect::<Vec<_>>();
+
+				if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
+					return Ok(AtomIdent::Fourcc(fourcc));
+				}
+			}
+		}
+
+		io_err!(TextDecode(
+			"ItemKey does not map to a freeform or fourcc identifier"
+		))
+	}
+}
+
+impl TryFrom<ItemKey> for AtomIdent<'static> {
+	type Error = LoftyError;
+
+	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
+		let ret: AtomIdent<'_> = (&value).try_into()?;
+		Ok(ret.into_owned())
 	}
 }
 

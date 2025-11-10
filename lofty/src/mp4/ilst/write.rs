@@ -5,7 +5,6 @@ use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, try_vec};
 use crate::mp4::AtomData;
-use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
@@ -13,6 +12,7 @@ use crate::picture::{MimeType, Picture};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::mp4::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};

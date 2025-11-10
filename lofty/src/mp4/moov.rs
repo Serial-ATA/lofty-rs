@@ -1,4 +1,3 @@
-use super::atom_info::{AtomIdent, AtomInfo};
 use super::ilst::Ilst;
 use super::ilst::read::parse_ilst;
 use super::read::{AtomReader, find_child_atom, meta_is_full, skip_atom};
@@ -7,6 +6,8 @@ use crate::error::Result;
 use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
+
+use aud_io::mp4::{AtomIdent, AtomInfo};
 
 pub(crate) struct Moov {
 	// Represents the trak.mdia atom
