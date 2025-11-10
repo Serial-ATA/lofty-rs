@@ -1,10 +1,10 @@
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
 
+use aud_io::io::SeekStreamLen;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 #[derive(Copy, Clone)]
