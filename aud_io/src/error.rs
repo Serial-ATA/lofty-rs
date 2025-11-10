@@ -5,6 +5,10 @@ pub type Result<T> = std::result::Result<T, AudioError>;
 
 #[derive(Debug)]
 pub enum AudioError {
+	// File data related errors
+	/// Attempting to read/write an abnormally large amount of data
+	TooMuchData,
+
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
 
@@ -15,6 +19,8 @@ pub enum AudioError {
 	StringFromUtf8(std::string::FromUtf8Error),
 	/// Unable to convert bytes to a str
 	StrFromUtf8(std::str::Utf8Error),
+	/// Failure to allocate enough memory
+	Alloc(std::collections::TryReserveError),
 	/// This should **never** be encountered
 	Infallible(std::convert::Infallible),
 }
@@ -37,6 +43,12 @@ impl From<std::str::Utf8Error> for AudioError {
 	}
 }
 
+impl From<std::collections::TryReserveError> for AudioError {
+	fn from(input: std::collections::TryReserveError) -> Self {
+		AudioError::Alloc(input)
+	}
+}
+
 impl From<std::convert::Infallible> for AudioError {
 	fn from(input: std::convert::Infallible) -> Self {
 		AudioError::Infallible(input)
@@ -46,12 +58,20 @@ impl From<std::convert::Infallible> for AudioError {
 impl Display for AudioError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
+			AudioError::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			
 			// Conversions
 			AudioError::StringFromUtf8(err) => write!(f, "{err}"),
 			AudioError::StrFromUtf8(err) => write!(f, "{err}"),
 			AudioError::Io(err) => write!(f, "{err}"),
-			AudioError::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			AudioError::Alloc(err) => write!(f, "{err}"),
 			AudioError::Infallible(_) => write!(f, "An expected condition was not upheld"),
+
+			// Files
+			AudioError::TooMuchData => write!(
+				f,
+				"Attempted to read/write an abnormally large amount of data"
+			),
 		}
 	}
 }

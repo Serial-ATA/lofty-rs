@@ -10,12 +10,12 @@ use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::picture::{MimeType, Picture};
-use crate::util::alloc::VecFallibleCapacity;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
 use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use aud_io::alloc::VecFallibleCapacity;
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;

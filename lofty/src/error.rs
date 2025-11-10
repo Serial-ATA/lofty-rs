@@ -7,7 +7,6 @@ use crate::file::FileType;
 use crate::id3::v2::FrameId;
 use crate::tag::ItemKey;
 
-use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
 
 use ogg_pager::PageError;
@@ -68,8 +67,6 @@ pub enum ErrorKind {
 	Io(std::io::Error),
 	/// Represents all cases of [`std::fmt::Error`].
 	Fmt(std::fmt::Error),
-	/// Failure to allocate enough memory
-	Alloc(TryReserveError),
 }
 
 /// The types of errors that can occur while interacting with ID3v2 tags
@@ -493,14 +490,6 @@ impl From<std::fmt::Error> for LoftyError {
 	}
 }
 
-impl From<std::collections::TryReserveError> for LoftyError {
-	fn from(input: TryReserveError) -> Self {
-		Self {
-			kind: ErrorKind::Alloc(input),
-		}
-	}
-}
-
 impl From<std::convert::Infallible> for LoftyError {
 	fn from(input: std::convert::Infallible) -> Self {
 		Self {
@@ -517,7 +506,6 @@ impl Display for LoftyError {
 			ErrorKind::AudioIo(ref err) => write!(f, "{err}"),
 			ErrorKind::Io(ref err) => write!(f, "{err}"),
 			ErrorKind::Fmt(ref err) => write!(f, "{err}"),
-			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")

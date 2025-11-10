@@ -1,11 +1,11 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::alloc::VecFallibleCapacity;
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+use aud_io::alloc::VecFallibleCapacity;
 use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 use byteorder::ReadBytesExt;
 

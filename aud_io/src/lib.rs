@@ -4,3 +4,4 @@ pub(crate) mod macros;
 pub mod math;
 pub mod io;
 pub mod config;
+pub mod alloc;

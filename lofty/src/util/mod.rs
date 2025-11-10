@@ -1,4 +1,3 @@
-pub(crate) mod alloc;
 pub(crate) mod io;
 
 pub(crate) fn flag_item(item: &str) -> Option<bool> {
