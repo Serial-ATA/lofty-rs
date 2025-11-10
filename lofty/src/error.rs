@@ -50,9 +50,7 @@ pub enum ErrorKind {
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(Id3v2Error),
-
-	/// Arises when an atom contains invalid data
-	BadAtom(&'static str),
+	
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
@@ -521,7 +519,6 @@ impl Display for LoftyError {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},
 			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
-			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,
 				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"

@@ -1,12 +1,13 @@
 use super::read::{find_child_atom, skip_atom};
 use crate::config::ParsingMode;
 use crate::error::{LoftyError, Result};
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, try_vec};
 use crate::properties::FileProperties;
 
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use aud_io::err as io_err;
 use aud_io::mp4::{AtomReader, AtomIdent, AtomInfo};
 use aud_io::alloc::VecFallibleCapacity;
 use aud_io::math::RoundedDivision;
@@ -285,7 +286,7 @@ where
 	}
 
 	let Some(mdhd) = mdhd else {
-		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
+		io_err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
 	};
 
 	Ok(AudioTrak { mdhd, minf })
@@ -433,11 +434,11 @@ where
 
 	for _ in 0..num_sample_entries {
 		let Some(atom) = reader.next()? else {
-			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
+			io_err!(BadAtom("Expected sample entry atom in `stsd` atom"))
 		};
 
 		let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
-			err!(BadAtom("Expected fourcc atom in `stsd` atom"))
+			io_err!(BadAtom("Expected fourcc atom in `stsd` atom"))
 		};
 
 		match fourcc {

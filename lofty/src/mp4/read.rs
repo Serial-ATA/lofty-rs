@@ -2,7 +2,7 @@ use super::Mp4File;
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -36,11 +36,9 @@ where
 
 	reader.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
-	let major_brand = utf8_decode_str(&major_brand)
-		.map(ToOwned::to_owned)
-		.map_err(|_| {
-			LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"))
-		})?;
+	let Ok(major_brand) = utf8_decode_str(&major_brand).map(ToOwned::to_owned) else {
+		io_err!(BadAtom("Unable to parse \"ftyp\"'s major brand"));
+	};
 
 	log::debug!("Verified to be an MP4 file. Major brand: {}", major_brand);
 	Ok(major_brand)
