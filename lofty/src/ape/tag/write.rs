@@ -11,8 +11,8 @@ use crate::tag::item::ItemValueRef;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
-use aud_io::io::{FileLike, Truncate};
 use aud_io::err as io_err;
+use aud_io::io::{FileLike, Truncate};
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]

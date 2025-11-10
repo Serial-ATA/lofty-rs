@@ -6,8 +6,8 @@ use crate::tag::items::Timestamp;
 
 use std::io::Read;
 
-use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 use aud_io::err as io_err;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 use byteorder::ReadBytesExt;
 
 /// An `ID3v2` timestamp frame

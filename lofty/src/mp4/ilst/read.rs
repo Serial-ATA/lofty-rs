@@ -14,8 +14,8 @@ use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use aud_io::err as io_err;
-use aud_io::text::{utf8_decode, utf16_decode_bytes};
 use aud_io::mp4::{ATOM_HEADER_LEN, AtomInfo, AtomReader};
+use aud_io::text::{utf8_decode, utf16_decode_bytes};
 
 pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,

@@ -6,9 +6,7 @@ use std::hash::Hash;
 use std::io::Read;
 
 use aud_io::err as io_err;
-use aud_io::text::{
-	decode_text, encode_text, utf8_decode_str, TextDecodeOptions, TextEncoding,
-};
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text, utf8_decode_str};
 use byteorder::ReadBytesExt;
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("OWNE"));

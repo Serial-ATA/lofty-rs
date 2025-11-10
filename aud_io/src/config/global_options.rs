@@ -16,7 +16,8 @@ pub(crate) unsafe fn global_options() -> &'static GlobalOptions {
 /// use aud_io::config::{GlobalOptions, apply_global_options};
 ///
 /// // I want to double the allocation limit
-/// let global_options = GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
+/// let global_options =
+/// 	GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
 /// apply_global_options(global_options);
 /// ```
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
@@ -58,7 +59,8 @@ impl GlobalOptions {
 	/// use aud_io::config::{GlobalOptions, apply_global_options};
 	///
 	/// // I have files with gigantic images, I'll double the allocation limit!
-	/// let global_options = GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
+	/// let global_options =
+	/// 	GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
 	/// apply_global_options(global_options);
 	/// ```
 	pub fn allocation_limit(&mut self, allocation_limit: usize) -> Self {
@@ -90,7 +92,8 @@ impl Default for GlobalOptions {
 /// use aud_io::config::{GlobalOptions, apply_global_options};
 ///
 /// // I want to double the allocation limit
-/// let global_options = GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
+/// let global_options =
+/// 	GlobalOptions::new().allocation_limit(GlobalOptions::DEFAULT_ALLOCATION_LIMIT * 2);
 /// apply_global_options(global_options);
 /// ```
 pub fn apply_global_options(options: GlobalOptions) {

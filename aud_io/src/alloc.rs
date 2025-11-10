@@ -1,6 +1,6 @@
-use crate::error::Result;
-use crate::err;
 use crate::config::global_options;
+use crate::err;
+use crate::error::Result;
 
 /// Provides the `fallible_repeat` method on [`Vec`]
 ///

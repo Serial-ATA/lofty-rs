@@ -5,7 +5,7 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 
 use aud_io::err as io_err;
-use aud_io::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 use byteorder::ReadBytesExt as _;
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ATXT"));
@@ -237,7 +237,7 @@ pub fn scramble(audio_data: &mut [u8]) {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
-	
+
 	use aud_io::text::TextEncoding;
 
 	fn expected() -> AudioTextFrame<'static> {

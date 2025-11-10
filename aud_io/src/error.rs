@@ -21,7 +21,7 @@ pub enum AudioError {
 	// Format-specific
 	/// Arises when an MP4 atom contains invalid data
 	BadAtom(&'static str),
-	
+
 	// Conversions for external errors
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
@@ -69,7 +69,7 @@ impl Display for AudioError {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			AudioError::TextDecode(message) => write!(f, "Text decoding: {message}"),
-			
+
 			// Conversions
 			AudioError::StringFromUtf8(err) => write!(f, "{err}"),
 			AudioError::StrFromUtf8(err) => write!(f, "{err}"),
@@ -86,7 +86,7 @@ impl Display for AudioError {
 				f,
 				"Encountered an invalid item size, either too big or too small to be valid"
 			),
-			
+
 			// Format-specific
 			AudioError::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 		}

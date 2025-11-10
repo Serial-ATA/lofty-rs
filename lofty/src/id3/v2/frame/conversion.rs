@@ -12,8 +12,8 @@ use crate::tag::{ItemKey, ItemValue, TagItem, TagType};
 
 use std::borrow::Cow;
 
-use aud_io::text::TextEncoding;
 use aud_io::err as io_err;
+use aud_io::text::TextEncoding;
 
 fn frame_from_unknown_item(id: FrameId<'_>, item_value: ItemValue) -> Result<Frame<'_>> {
 	match item_value {

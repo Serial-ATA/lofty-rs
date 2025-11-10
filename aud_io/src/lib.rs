@@ -1,8 +1,8 @@
-pub mod text;
+pub mod alloc;
+pub mod config;
 pub mod error;
+pub mod io;
 pub(crate) mod macros;
 pub mod math;
-pub mod io;
-pub mod config;
-pub mod alloc;
 pub mod mp4;
+pub mod text;

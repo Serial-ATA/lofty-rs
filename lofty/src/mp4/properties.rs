@@ -7,10 +7,10 @@ use crate::properties::FileProperties;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::time::Duration;
 
-use aud_io::err as io_err;
-use aud_io::mp4::{AtomReader, AtomIdent, AtomInfo};
 use aud_io::alloc::VecFallibleCapacity;
+use aud_io::err as io_err;
 use aud_io::math::RoundedDivision;
+use aud_io::mp4::{AtomIdent, AtomInfo, AtomReader};
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MP4 file's audio codec

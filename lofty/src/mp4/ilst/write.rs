@@ -12,11 +12,11 @@ use crate::picture::{MimeType, Picture};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
-use aud_io::mp4::{AtomReader, ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
+use aud_io::alloc::VecFallibleCapacity;
 use aud_io::err as io_err;
 use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::mp4::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, AtomReader, FOURCC_LEN};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use aud_io::alloc::VecFallibleCapacity;
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;

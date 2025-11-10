@@ -8,11 +8,11 @@ use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+use aud_io::err as io_err;
 use aud_io::text::{
 	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
 	utf16_decode_terminated_maybe_bom,
 };
-use aud_io::err as io_err;
 use byteorder::ReadBytesExt;
 
 // Generic struct for a text frame that has a language

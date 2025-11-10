@@ -6,8 +6,8 @@ use std::io::{Cursor, Seek, Write};
 
 use aud_io::err as io_err;
 use aud_io::text::{
-	decode_text, encode_text, utf16_decode_terminated_maybe_bom, DecodeTextResult, TextDecodeOptions,
-	TextEncoding,
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	utf16_decode_terminated_maybe_bom,
 };
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
@@ -139,7 +139,7 @@ impl SynchronizedTextFrame<'_> {
 		let Some(encoding) = TextEncoding::from_u8(data[0]) else {
 			io_err!(TextDecode("Found invalid encoding"));
 		};
-		
+
 		let language: [u8; 3] = data[1..4].try_into().unwrap();
 		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());

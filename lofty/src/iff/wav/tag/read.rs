@@ -6,9 +6,9 @@ use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
+use aud_io::error::AudioError;
 use aud_io::text::utf8_decode_str;
 use byteorder::LittleEndian;
-use aud_io::error::AudioError;
 
 pub(in crate::iff::wav) fn parse_riff_info<R>(
 	data: &mut R,

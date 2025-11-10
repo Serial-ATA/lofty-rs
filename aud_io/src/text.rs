@@ -1,5 +1,5 @@
-use crate::error::{AudioError, Result};
 use crate::err;
+use crate::error::{AudioError, Result};
 
 use std::io::Read;
 
@@ -157,8 +157,9 @@ where
 			}
 		},
 		TextEncoding::UTF16BE => utf16_decode_bytes(raw_bytes.as_slice(), u16::from_be_bytes)?,
-		TextEncoding::UTF8 => utf8_decode(raw_bytes)
-			.map_err(|_| AudioError::TextDecode("Expected a UTF-8 string"))?,
+		TextEncoding::UTF8 => {
+			utf8_decode(raw_bytes).map_err(|_| AudioError::TextDecode("Expected a UTF-8 string"))?
+		},
 	};
 
 	Ok(DecodeTextResult {
@@ -356,7 +357,7 @@ mod tests {
 			],
 			u16::from_be_bytes,
 		)
-			.unwrap();
+		.unwrap();
 
 		assert_eq!(utf16_decode, TEST_STRING.to_string());
 
@@ -367,14 +368,14 @@ mod tests {
 			]),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
-			.unwrap();
+		.unwrap();
 		let le_utf16_decode = super::decode_text(
 			&mut Cursor::new(&[
 				0xFF, 0xFE, 0x6C, 0x00, 0xF8, 0x00, 0x66, 0x00, 0x74, 0x00, 0xA5, 0x00, 0x00, 0x00,
 			]),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF16),
 		)
-			.unwrap();
+		.unwrap();
 
 		assert_eq!(be_utf16_decode.content, le_utf16_decode.content);
 		assert_eq!(be_utf16_decode.bytes_read, le_utf16_decode.bytes_read);
@@ -384,7 +385,7 @@ mod tests {
 			&mut TEST_STRING.as_bytes(),
 			TextDecodeOptions::new().encoding(TextEncoding::UTF8),
 		)
-			.unwrap();
+		.unwrap();
 
 		assert_eq!(utf8_decode.content, TEST_STRING.to_string());
 	}

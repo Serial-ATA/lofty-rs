@@ -216,10 +216,10 @@ where
 
 	match atom {
 		Some(AtomInfo {
-				 ident: AtomIdent::Fourcc(ref fourcc),
-				 len,
-				 ..
-			 }) if fourcc == name => {
+			ident: AtomIdent::Fourcc(ref fourcc),
+			len,
+			..
+		}) if fourcc == name => {
 			if len < 12 {
 				err!(BadAtom("Found an incomplete freeform identifier chunk"));
 			}
@@ -239,9 +239,7 @@ where
 			*reader_size -= len;
 
 			utf8_decode(content).map_err(|_| {
-				AudioError::BadAtom(
-					"Found a non UTF-8 string while reading freeform identifier",
-				)
+				AudioError::BadAtom("Found a non UTF-8 string while reading freeform identifier")
 			})
 		},
 		_ => err!(BadAtom(

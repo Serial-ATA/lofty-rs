@@ -10,11 +10,11 @@ use std::borrow::Cow;
 use std::io::{Read, Seek, SeekFrom};
 
 use aud_io::err as io_err;
+use aud_io::error::AudioError;
 use aud_io::text::{utf8_decode, utf8_decode_str, utf16_decode};
 use byteorder::{LittleEndian, ReadBytesExt};
 use data_encoding::BASE64;
 use ogg_pager::{Packets, PageHeader};
-use aud_io::error::AudioError;
 
 pub type OGGTags = (Option<VorbisComments>, PageHeader, Packets);
 
@@ -55,8 +55,7 @@ where
 			// Some vendor strings have invalid mixed UTF-8 and UTF-16 encodings.
 			// This seems to work, while preserving the string opposed to using
 			// the replacement character
-			let AudioError::StringFromUtf8(e) = e
-			else {
+			let AudioError::StringFromUtf8(e) = e else {
 				return Err(e.into());
 			};
 

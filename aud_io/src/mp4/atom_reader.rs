@@ -1,7 +1,7 @@
-use crate::config::ParsingMode;
-use crate::error::Result;
 use super::atom_info::AtomInfo;
+use crate::config::ParsingMode;
 use crate::err;
+use crate::error::Result;
 use crate::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};

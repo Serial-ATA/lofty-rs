@@ -7,7 +7,7 @@ use crate::macros::decode_err;
 
 use std::io::{Read, Seek};
 
-use aud_io::mp4::{AtomReader, AtomIdent, AtomInfo};
+use aud_io::mp4::{AtomIdent, AtomInfo, AtomReader};
 
 pub(crate) struct Moov {
 	// Represents the trak.mdia atom

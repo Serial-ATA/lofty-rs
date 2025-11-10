@@ -29,7 +29,8 @@ pub struct GlobalOptions {
 
 impl GlobalOptions {
 	/// Default allocation limit for any single tag item
-	pub const DEFAULT_ALLOCATION_LIMIT: usize = aud_io::config::GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
+	pub const DEFAULT_ALLOCATION_LIMIT: usize =
+		aud_io::config::GlobalOptions::DEFAULT_ALLOCATION_LIMIT;
 
 	/// Creates a new `GlobalOptions`, alias for `Default` implementation
 	///

@@ -4,7 +4,7 @@ use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use std::io::{Cursor, Read};
 
 use aud_io::err as io_err;
-use aud_io::text::{decode_text, encode_text, TextDecodeOptions, TextEncoding};
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(std::borrow::Cow::Borrowed("GEOB"));
 

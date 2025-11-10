@@ -11,8 +11,8 @@ use crate::id3::v2::{BinaryFrame, Frame, FrameFlags, FrameId};
 
 use std::io::Read;
 
-use aud_io::text::TextEncoding;
 use aud_io::err as io_err;
+use aud_io::text::TextEncoding;
 
 #[rustfmt::skip]
 pub(super) fn parse_content<R: Read>(

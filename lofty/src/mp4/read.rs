@@ -7,9 +7,9 @@ use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
 use aud_io::io::SeekStreamLen;
 use aud_io::mp4::{AtomIdent, AtomInfo, AtomReader};
-use aud_io::err as io_err;
 use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};
 

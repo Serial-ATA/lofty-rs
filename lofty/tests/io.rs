@@ -2,10 +2,10 @@
 
 use std::io::{Cursor, Read, Seek, Write};
 
-use lofty::file::AudioFile;
-use lofty::tag::Accessor;
 use lofty::config::{ParseOptions, WriteOptions};
+use lofty::file::AudioFile;
 use lofty::mpeg::MpegFile;
+use lofty::tag::Accessor;
 
 const TEST_ASSET: &str = "tests/files/assets/minimal/full_test.mp3";
 

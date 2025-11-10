@@ -1,9 +1,9 @@
 use super::FrameFlags;
+use crate::config::ParseOptions;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::FrameId;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
-use crate::config::ParseOptions;
 
 use std::borrow::Cow;
 use std::io::Read;

@@ -9,8 +9,8 @@ use crate::tag::ItemKey;
 
 use std::fmt::{Debug, Display, Formatter};
 
-use ogg_pager::PageError;
 use aud_io::error::AudioError;
+use ogg_pager::PageError;
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;

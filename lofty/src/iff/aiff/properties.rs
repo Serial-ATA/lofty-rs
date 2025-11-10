@@ -1,8 +1,8 @@
 use super::read::CompressionPresent;
 use crate::error::Result;
+use crate::io::ReadExt;
 use crate::macros::{decode_err, try_vec};
 use crate::properties::FileProperties;
-use crate::io::ReadExt;
 
 use std::borrow::Cow;
 use std::io::Read;
