@@ -191,10 +191,8 @@ fn test_unsupported() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_create() {
-	// Marker test, Lofty does not replicate this API
-}
+#[ignore = "Marker test, Lofty does not replicate this API"]
+fn test_create() {}
 
 #[test_log::test]
 fn test_audio_properties() {
@@ -205,10 +203,8 @@ fn test_audio_properties() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_default_file_extensions() {
-	// Marker test, Lofty does not replicate this API
-}
+#[ignore = "Marker test, Lofty does not replicate this API"]
+fn test_default_file_extensions() {}
 
 use lofty::io::{FileLike, Length, Truncate};
 use lofty::properties::FileProperties;

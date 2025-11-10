@@ -27,12 +27,10 @@ fn test_no_length_properties() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, this is not a valid file and TagLib does not handle it properly."]
 fn test_multi_channel_properties() {
-	// Marker test, this is not a valid file and TagLib does not handle it properly.
-	//
-	// A multichannel file should make use of the multichannel metadata sub block, which
-	// this file does not. Even FFMpeg thinks this is a mono file.
+	// A multichannel file should make use of the multichannel metadata sub block, which this file does not.
+	// Even FFmpeg thinks this is a mono file.
 }
 
 #[test_log::test]

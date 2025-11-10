@@ -57,15 +57,12 @@ fn test_properties_sv7() {
 }
 
 #[test_log::test]
-fn test_properties_sv5() {
-	// Marker test, TagLib doesn't seem to produce the correct properties for SV5
-}
+#[ignore = "Marker test, TagLib doesn't seem to produce the correct properties for SV5"]
+fn test_properties_sv5() {}
 
 #[test_log::test]
-#[ignore]
-fn test_properties_sv4() {
-	// Marker test, TagLib doesn't seem to produce the correct properties for SV4
-}
+#[ignore = "Marker test, TagLib doesn't seem to produce the correct properties for SV4"]
+fn test_properties_sv4() {}
 
 #[test_log::test]
 fn test_fuzzed_file1() {

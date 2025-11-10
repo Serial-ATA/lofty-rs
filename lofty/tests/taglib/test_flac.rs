@@ -21,10 +21,8 @@ fn test_signature() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, Lofty does not replicate TagLib's behavior here"]
 fn test_multiple_comment_blocks() {
-	// Marker test, Lofty does not replicate TagLib's behavior
-	//
 	// TagLib will use the *first* tag in the stream, while we use the latest.
 }
 
@@ -213,10 +211,9 @@ fn test_repeated_save_1() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_repeated_save_2() {
-	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
-}
+#[ignore = "Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty \
+            does not and will not support."]
+fn test_repeated_save_2() {}
 
 // TODO: We don't make use of padding blocks yet
 #[test_log::test]
@@ -264,10 +261,8 @@ fn test_save_multiple_values() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_dict() {
-	// Marker test, Lofty does not replicate the dict API
-}
+#[ignore = "Marker test, Lofty does not replicate the dict API"]
+fn test_dict() {}
 
 #[test_log::test]
 fn test_properties() {
@@ -457,16 +452,14 @@ fn test_shrink_padding() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_save_id3v1() {
-	// Marker test, this test relies on saving an ID3v1 tag in a FLAC file, something Lofty does not and will not support.
-}
+#[ignore = "Marker test, this test relies on saving an ID3v1 tag in a FLAC file, something Lofty \
+            does not and will not support."]
+fn test_save_id3v1() {}
 
 #[test_log::test]
-#[ignore]
-fn test_update_id3v2() {
-	// Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty does not and will not support.
-}
+#[ignore = "Marker test, this test relies on saving an ID3v2 tag in a FLAC file, something Lofty \
+            does not and will not support."]
+fn test_update_id3v2() {}
 
 #[test_log::test]
 fn test_empty_id3v2() {

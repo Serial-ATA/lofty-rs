@@ -54,10 +54,8 @@ fn test_set_track() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_invalid_keys1() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_invalid_keys1() {}
 
 #[test_log::test]
 fn test_invalid_keys2() {
@@ -92,10 +90,8 @@ fn test_clear_comment() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, TagLib has some incredibly strange behavior in this test."]
 fn test_remove_fields() {
-	// Marker test, TagLib has some incredibly strange behavior in this test.
-	//
 	// When adding a field of the same key, TagLib will append each value to the same value.
 	// Meaning:
 	//

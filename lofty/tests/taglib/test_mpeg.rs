@@ -133,10 +133,8 @@ fn test_save_id3v24() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_save_id3v24_wrong_param() {
-	// Marker test, Lofty does not replicate the TagLib saving API
-}
+#[ignore = "Marker test, Lofty does not replicate the TagLib saving API"]
+fn test_save_id3v24_wrong_param() {}
 
 #[test_log::test]
 fn test_save_id3v23() {
@@ -177,10 +175,9 @@ fn test_fuzzed_file() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_frame_offset() {
-	// Marker test, Lofty does not replicate this API. Doesn't seem useful to retain frame offsets.
-}
+#[ignore = "Marker test, Lofty does not replicate this API. Doesn't seem useful to retain frame \
+            offsets."]
+fn test_frame_offset() {}
 
 #[test_log::test]
 fn test_strip_and_properties() {
@@ -215,22 +212,16 @@ fn test_strip_and_properties() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_properties() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_properties() {}
 
 #[test_log::test]
-#[ignore]
-fn test_repeated_save_1() {
-	// Marker test, yet another case of checking frame offsets that Lofty does not expose.
-}
+#[ignore = "Marker test, yet another case of checking frame offsets that Lofty does not expose."]
+fn test_repeated_save_1() {}
 
 #[test_log::test]
-#[ignore]
-fn test_repeated_save_2() {
-	// Marker test, not entirely sure what's even being tested here?
-}
+#[ignore = "Marker test, not entirely sure what's even being tested here?"]
+fn test_repeated_save_2() {}
 
 #[test_log::test]
 fn test_repeated_save_3() {
@@ -275,22 +266,16 @@ fn test_repeated_save_3() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_empty_id3v2() {
-	// Marker test, Lofty accepts empty strings as valid values
-}
+#[ignore = "Marker test, Lofty accepts empty strings as valid values"]
+fn test_empty_id3v2() {}
 
 #[test_log::test]
-#[ignore]
-fn test_empty_id3v1() {
-	// Marker test, Lofty accepts empty strings as valid values
-}
+#[ignore = "Marker test, Lofty accepts empty strings as valid values"]
+fn test_empty_id3v1() {}
 
 #[test_log::test]
-#[ignore]
-fn test_empty_ape() {
-	// Marker test, Lofty accepts empty strings as valid values
-}
+#[ignore = "Marker test, Lofty accepts empty strings as valid values"]
+fn test_empty_ape() {}
 
 #[test_log::test]
 fn test_ignore_garbage() {
