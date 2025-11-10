@@ -1,18 +1,20 @@
 [package]
 name        = "lofty"
 version     = "0.22.4"
-authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "Audio metadata library"
 keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
 categories  = ["multimedia", "multimedia::audio", "parser-implementations"]
 readme      = "../README.md"
 include     = ["src", "LICENSE-APACHE", "LICENSE-MIT", "SUPPORTED_FORMATS.md"]
+authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true
 license.workspace = true
 
 [dependencies]
+aud_io = { workspace = true }
+
 # Vorbis comments pictures
 data-encoding = "2.6.0"
 byteorder     = { workspace = true }

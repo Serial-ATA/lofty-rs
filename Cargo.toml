@@ -2,6 +2,7 @@
 resolver = "3"
 
 members = [
+	"aud_io",
 	"lofty",
 	"lofty_attr",
 	"ogg_pager",
@@ -10,12 +11,14 @@ members = [
 ]
 
 [workspace.package]
+authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 edition = "2024"
 rust-version = "1.85"
 repository = "https://github.com/Serial-ATA/lofty-rs"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
+aud_io = { version = "0.1.0", path = "aud_io" }
 lofty = { version = "0.22.4", path = "lofty" }
 lofty_attr = { version = "0.11.1", path = "lofty_attr" }
 ogg_pager = { version = "0.7.0", path = "ogg_pager" }
