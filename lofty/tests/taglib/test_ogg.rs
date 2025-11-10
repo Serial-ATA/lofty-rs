@@ -29,10 +29,8 @@ fn test_simple() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_split_packets1() {
-	// Marker test, Lofty doesn't retain packet information
-}
+#[ignore = "Marker test, Lofty doesn't retain packet information"]
+fn test_split_packets1() {}
 
 #[test_log::test]
 fn test_split_packets2() {
@@ -64,16 +62,12 @@ fn test_split_packets2() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_dict_interface1() {
-	// Marker test, Lofty doesn't replicate the dictionary interface
-}
+#[ignore = "Marker test, Lofty doesn't replicate the dictionary interface"]
+fn test_dict_interface1() {}
 
 #[test_log::test]
-#[ignore]
-fn test_dict_interface2() {
-	// Marker test, Lofty doesn't replicate the dictionary interface
-}
+#[ignore = "Marker test, Lofty doesn't replicate the dictionary interface"]
+fn test_dict_interface2() {}
 
 #[test_log::test]
 fn test_audio_properties() {

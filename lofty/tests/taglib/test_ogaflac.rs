@@ -45,7 +45,5 @@ fn test_fuzzed_file() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_split_packets() {
-	// Marker test, Lofty does not retain the packet information
-}
+#[ignore = "Marker test, Lofty does not retain the packet information"]
+fn test_split_packets() {}

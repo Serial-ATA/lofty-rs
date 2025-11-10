@@ -259,10 +259,9 @@ fn test_save_existing_when_ilst_is_last() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_64bit_atom() {
-	// Marker test, this just checks the moov atom's length. We don't retain any atoms we don't need.
-}
+#[ignore = "Marker test, this just checks the moov atom's length. We don't retain any atoms we \
+            don't need."]
+fn test_64bit_atom() {}
 
 #[test_log::test]
 fn test_gnre() {
@@ -355,22 +354,16 @@ fn test_covr_read2() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_properties() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_properties() {}
 
 #[test_log::test]
-#[ignore]
-fn test_properties_all_supported() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_properties_all_supported() {}
 
 #[test_log::test]
-#[ignore]
-fn test_properties_movement() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_properties_movement() {}
 
 #[test_log::test]
 fn test_fuzzed_file() {
@@ -412,10 +405,8 @@ fn test_with_zero_length_atom() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_empty_values_remove_items() {
-	// Marker test, Lofty treats empty values as valid
-}
+#[ignore = "Marker test, Lofty treats empty values as valid"]
+fn test_empty_values_remove_items() {}
 
 #[test_log::test]
 fn test_remove_metadata() {

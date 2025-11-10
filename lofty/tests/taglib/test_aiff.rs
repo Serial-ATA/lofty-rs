@@ -126,10 +126,9 @@ fn test_save_id3v23() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_duplicate_id3v2() {
-	// Marker test, Lofty will overwrite values in the original tag with any new values it finds in the next tag.
-}
+#[ignore = "Marker test, Lofty will overwrite values in the original tag with any new values it \
+            finds in the next tag."]
+fn test_duplicate_id3v2() {}
 
 #[test_log::test]
 fn test_fuzzed_file1() {
@@ -144,7 +143,6 @@ fn test_fuzzed_file1() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_fuzzed_file2() {
-	// Marker test, this file doesn't even have a valid signature. No idea how TagLib manages to read it.
-}
+#[ignore = "Marker test, this file doesn't even have a valid signature. No idea how TagLib manages \
+            to read it."]
+fn test_fuzzed_file2() {}

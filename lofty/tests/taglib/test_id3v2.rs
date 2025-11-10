@@ -202,10 +202,8 @@ fn test_broken_frame1() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_read_string_field() {
-	// Marker test, this is not an API Lofty replicates
-}
+#[ignore = "Marker test, this is not an API Lofty replicates"]
+fn test_read_string_field() {}
 
 #[test_log::test]
 fn test_parse_apic() {
@@ -288,10 +286,8 @@ fn test_render_apic() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_dont_render22() {
-	// Marker test, not sure what's going on here?
-}
+#[ignore = "Marker test, not sure what's going on here?"]
+fn test_dont_render22() {}
 
 #[test_log::test]
 fn test_parse_geob() {
@@ -374,10 +370,8 @@ fn test_render_popm() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_popm_to_string() {
-	// Marker test, Lofty doesn't have a display impl for Popularimeter
-}
+#[ignore = "Marker test, Lofty doesn't have a display impl for Popularimeter"]
+fn test_popm_to_string() {}
 
 #[test_log::test]
 fn test_popm_from_file() {
@@ -783,16 +777,12 @@ fn test_render_comments_frame() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_parse_podcast_frame() {
-	// Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary
-}
+#[ignore = "Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary"]
+fn test_parse_podcast_frame() {}
 
 #[test_log::test]
-#[ignore]
-fn test_render_podcast_frame() {
-	// Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary
-}
+#[ignore = "Marker test, Lofty doesn't have dedicated support for PCST frames, it seems unnecessary"]
+fn test_render_podcast_frame() {}
 
 #[test_log::test]
 fn test_parse_private_frame() {
@@ -1285,28 +1275,22 @@ fn test_w000() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_property_interface() {
-	// Marker test, Lofty does not replicate the property interface
-}
+#[ignore = "Marker test, Lofty does not replicate the property interface"]
+fn test_property_interface() {}
 
 #[test_log::test]
-#[ignore]
-fn test_property_interface2() {
-	// Marker test, Lofty does not replicate the property interface
-}
+#[ignore = "Marker test, Lofty does not replicate the property interface"]
+fn test_property_interface2() {}
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, Lofty does not replicate the property interface"]
 fn test_properties_movement() {
-	// Marker test, Lofty does not replicate the property interface.
 	// Outside of that, this is simply a text frame parsing test, which is redundant.
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, Lofty does not replicate the property interface"]
 fn test_property_grouping() {
-	// Marker test, Lofty does not replicate the property interface.
 	// Outside of that, this is simply a text frame parsing test, which is redundant.
 }
 
@@ -1382,16 +1366,12 @@ fn test_parse_table_of_contents_frame() {}
 fn test_render_table_of_contents_frame() {}
 
 #[test_log::test]
-#[ignore]
-fn test_empty_frame() {
-	// Marker test, Lofty will not remove empty frames, as they can be valid
-}
+#[ignore = "Marker test, Lofty will not remove empty frames, as they can be valid"]
+fn test_empty_frame() {}
 
 #[test_log::test]
-#[ignore]
-fn test_duplicate_tags() {
-	// Marker test, Lofty will combine duplicated tags
-}
+#[ignore = "Marker test, Lofty will combine duplicated tags"]
+fn test_duplicate_tags() {}
 
 // TODO: Support CTOC frames (#189)
 #[test_log::test]

@@ -31,16 +31,12 @@ fn test_is_empty_2() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_property_interface_1() {
-	// Marker test, Lofty does not replicate the TagLib property API
-}
+#[ignore = "Marker test, Lofty does not replicate the TagLib property API"]
+fn test_property_interface_1() {}
 
 #[test_log::test]
-#[ignore]
-fn test_property_interface_2() {
-	// Marker test, Lofty does not replicate the TagLib property API
-}
+#[ignore = "Marker test, Lofty does not replicate the TagLib property API"]
+fn test_property_interface_2() {}
 
 #[test_log::test]
 fn test_invalid_keys() {

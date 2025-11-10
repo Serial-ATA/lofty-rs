@@ -27,16 +27,12 @@ fn test3() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_to_uint_broken() {
-	// Marker test, this behavior is not replicated in Lofty
-}
+#[ignore = "Marker test, this behavior is not replicated in Lofty"]
+fn test_to_uint_broken() {}
 
 #[test_log::test]
-#[ignore]
-fn test_to_uint_broken_and_too_large() {
-	// Marker test, this behavior is not replicated in Lofty
-}
+#[ignore = "Marker test, this behavior is not replicated in Lofty"]
+fn test_to_uint_broken_and_too_large() {}
 
 #[test_log::test]
 fn test_decode1() {

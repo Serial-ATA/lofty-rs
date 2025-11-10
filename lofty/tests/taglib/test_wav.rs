@@ -230,11 +230,10 @@ fn test_strip_tags() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, TagLib will ignore any tag except for the first."]
 fn test_duplicate_tags() {
-	// Marker test, TagLib will ignore any tag except for the first. Lofty will *not* do this.
-	// Every tag in the stream is read and merged into the previous one. Whichever tag ends up being
-	// the latest in the stream will have precedence.
+	// Lofty will *not* do this. Every tag in the stream is read and merged into the previous one. Whichever tag ends up
+	// being the latest in the stream will have precedence.
 }
 
 #[test_log::test]
@@ -304,10 +303,8 @@ fn test_file_with_garbage_appended() {
 }
 
 #[test_log::test]
-#[ignore]
-fn test_strip_and_properties() {
-	// Marker test, Lofty does not replicate the properties API
-}
+#[ignore = "Marker test, Lofty does not replicate the properties API"]
+fn test_strip_and_properties() {}
 
 #[test_log::test]
 fn test_pcm_with_fact_chunk() {

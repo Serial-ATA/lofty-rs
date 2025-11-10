@@ -1,10 +1,8 @@
 use lofty::id3::v1::GENRES;
 
 #[test_log::test]
-#[ignore]
-fn test_strip_whitespace() {
-	// Marker test, we'd be overstepping to remove trailing whitespace that may be intentional
-}
+#[ignore = "Marker test, we'd be overstepping to remove trailing whitespace that may be intentional"]
+fn test_strip_whitespace() {}
 
 #[test_log::test]
 fn test_genres() {
