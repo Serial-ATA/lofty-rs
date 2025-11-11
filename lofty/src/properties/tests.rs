@@ -8,8 +8,8 @@ use crate::iff::wav::{WavFile, WavFormat, WavProperties};
 use crate::mp4::{AudioObjectType, Mp4Codec, Mp4File, Mp4Properties};
 use crate::mpeg::{ChannelMode, Layer, MpegFile, MpegProperties};
 use crate::musepack::sv4to6::MpcSv4to6Properties;
-use crate::musepack::sv7::{Link, MpcSv7Properties, Profile};
-use crate::musepack::sv8::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
+use crate::musepack::sv7::MpcSv7Properties;
+use crate::musepack::sv8::MpcSv8Properties;
 use crate::musepack::{MpcFile, MpcProperties};
 use crate::ogg::{
 	OpusFile, OpusProperties, SpeexFile, SpeexProperties, VorbisFile, VorbisProperties,
@@ -21,6 +21,8 @@ use std::fs::File;
 use std::time::Duration;
 
 use aud_io::mpeg::MpegVersion;
+use aud_io::musepack::sv7::{Link, Profile};
+use aud_io::musepack::sv8::{EncoderInfo, ReplayGain, StreamHeader};
 
 // These values are taken from FFmpeg's ffprobe
 // There is a chance they will be +/- 1, anything greater (for real world files)

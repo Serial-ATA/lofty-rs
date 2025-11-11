@@ -1,13 +1,14 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
 use crate::macros::decode_err;
-use crate::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
 use crate::properties::FileProperties;
 
 use std::io::Read;
 use std::time::Duration;
 
 use aud_io::math::RoundedDivision;
+use aud_io::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
+use aud_io::musepack::sv4to6::StreamHeader;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 /// MPC stream versions 4-6 audio properties
@@ -35,6 +36,19 @@ impl From<MpcSv4to6Properties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.channels),
 			channel_mask: None,
+		}
+	}
+}
+
+impl From<StreamHeader> for MpcSv4to6Properties {
+	fn from(header: StreamHeader) -> Self {
+		Self {
+			average_bitrate: header.average_bitrate,
+			mid_side_stereo: header.mid_side_stereo,
+			stream_version: header.stream_version,
+			max_band: header.max_band,
+			frame_count: header.frame_count,
+			..Default::default()
 		}
 	}
 }
@@ -91,39 +105,23 @@ impl MpcSv4to6Properties {
 		let mut header_data = [0u32; 8];
 		reader.read_u32_into::<LittleEndian>(&mut header_data)?;
 
-		let mut properties = Self::default();
-
-		properties.average_bitrate = (header_data[0] >> 23) & 0x1FF;
-		let intensity_stereo = (header_data[0] >> 22) & 0x1 == 1;
-		properties.mid_side_stereo = (header_data[0] >> 21) & 0x1 == 1;
-
-		properties.stream_version = ((header_data[0] >> 11) & 0x03FF) as u16;
-		if !(4..=6).contains(&properties.stream_version) {
-			decode_err!(@BAIL Mpc, "Invalid stream version encountered")
-		}
-
-		properties.max_band = ((header_data[0] >> 6) & 0x1F) as u8;
-		let block_size = header_data[0] & 0x3F;
-
-		if properties.stream_version >= 5 {
-			properties.frame_count = header_data[1]; // 32 bit
-		} else {
-			properties.frame_count = header_data[1] >> 16; // 16 bit
-		}
+		let header = StreamHeader::parse(header_data)?;
 
 		if parse_mode == ParsingMode::Strict {
-			if properties.average_bitrate != 0 {
+			if header.average_bitrate != 0 {
 				decode_err!(@BAIL Mpc, "Encountered CBR stream")
 			}
 
-			if intensity_stereo {
+			if header.intensity_stereo {
 				decode_err!(@BAIL Mpc, "Stream uses intensity stereo coding")
 			}
 
-			if block_size != 1 {
+			if header.block_size != 1 {
 				decode_err!(@BAIL Mpc, "Stream has an invalid block size (must be 1)")
 			}
 		}
+
+		let mut properties: MpcSv4to6Properties = header.into();
 
 		if properties.stream_version < 6 {
 			// Versions before 6 had an invalid last frame

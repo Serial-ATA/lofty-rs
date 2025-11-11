@@ -7,4 +7,5 @@ pub(crate) mod macros;
 pub mod math;
 pub mod mp4;
 pub mod mpeg;
+pub mod musepack;
 pub mod text;

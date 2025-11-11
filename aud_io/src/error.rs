@@ -21,6 +21,7 @@ pub enum AudioError {
 	// Format-specific
 	Aac(crate::aac::error::AacError),
 	Mpeg(crate::mpeg::error::MpegError),
+	Musepack(crate::musepack::error::MusePackError),
 	/// Arises when an MP4 atom contains invalid data
 	BadAtom(&'static str),
 
@@ -46,6 +47,12 @@ impl From<crate::aac::error::AacError> for AudioError {
 impl From<crate::mpeg::error::MpegError> for AudioError {
 	fn from(err: crate::mpeg::error::MpegError) -> Self {
 		AudioError::Mpeg(err)
+	}
+}
+
+impl From<crate::musepack::error::MusePackError> for AudioError {
+	fn from(err: crate::musepack::error::MusePackError) -> Self {
+		AudioError::Musepack(err)
 	}
 }
 
@@ -104,6 +111,7 @@ impl Display for AudioError {
 			// Format-specific
 			AudioError::Aac(err) => write!(f, "AAC: {err}"),
 			AudioError::Mpeg(err) => write!(f, "MPEG: {err}"),
+			AudioError::Musepack(err) => write!(f, "MPC: {err}"),
 			AudioError::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 		}
 	}
