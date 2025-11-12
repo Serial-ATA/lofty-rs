@@ -3,8 +3,10 @@ mod write;
 
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
+use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	try_parse_timestamp,
 };
 use crate::util::io::{FileLike, Length, Truncate};
 
@@ -147,19 +149,19 @@ impl Accessor for RiffInfoList {
 		self.remove("IFRM");
 	}
 
-	fn year(&self) -> Option<u32> {
+	fn date(&self) -> Option<Timestamp> {
 		if let Some(item) = self.get("ICRD") {
-			return try_parse_year(item);
+			return try_parse_timestamp(item);
 		}
 
 		None
 	}
 
-	fn set_year(&mut self, value: u32) {
+	fn set_date(&mut self, value: Timestamp) {
 		self.insert(String::from("ICRD"), value.to_string());
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		let _ = self.remove("ICRD");
 	}
 }

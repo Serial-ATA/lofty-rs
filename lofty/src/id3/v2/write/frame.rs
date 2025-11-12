@@ -1,12 +1,12 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::{FrameFlags, FrameRef};
+use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::{Frame, FrameId, KeyValueFrame, TextInformationFrame};
 use crate::tag::items::Timestamp;
 
 use std::io::Write;
 
-use crate::id3::v2::tag::GenresIter;
 use byteorder::{BigEndian, WriteBytesExt};
 
 pub(in crate::id3::v2) fn create_items<W>(

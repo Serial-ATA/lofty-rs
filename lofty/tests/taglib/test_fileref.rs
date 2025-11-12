@@ -30,7 +30,10 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 		tag.set_album(String::from("albummmm"));
 		tag.set_comment(String::from("a comment"));
 		tag.set_track(5);
-		tag.set_year(2020);
+		tag.set_date(Timestamp {
+			year: 2020,
+			..Timestamp::default()
+		});
 		tag.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
@@ -45,14 +48,17 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 		assert_eq!(tag.album().as_deref(), Some("albummmm"));
 		assert_eq!(tag.comment().as_deref(), Some("a comment"));
 		assert_eq!(tag.track(), Some(5));
-		assert_eq!(tag.year(), Some(2020));
+		assert_eq!(tag.date().map(|date| date.year), Some(2020));
 		tag.set_artist(String::from("ttest artist"));
 		tag.set_title(String::from("ytest title"));
 		tag.set_genre(String::from("uTest!"));
 		tag.set_album(String::from("ialbummmm"));
 		tag.set_comment(String::from("another comment"));
 		tag.set_track(7);
-		tag.set_year(2080);
+		tag.set_date(Timestamp {
+			year: 2080,
+			..Timestamp::default()
+		});
 		tag.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
@@ -67,7 +73,7 @@ fn file_ref_save(path: &str, expected_file_type: FileType) {
 		assert_eq!(tag.album().as_deref(), Some("ialbummmm"));
 		assert_eq!(tag.comment().as_deref(), Some("another comment"));
 		assert_eq!(tag.track(), Some(7));
-		assert_eq!(tag.year(), Some(2080));
+		assert_eq!(tag.date().map(|date| date.year), Some(2080));
 	}
 
 	// NOTE: All tests following this in the TagLib suite are doing the exact same procedures, just
@@ -208,6 +214,7 @@ fn test_default_file_extensions() {}
 
 use lofty::io::{FileLike, Length, Truncate};
 use lofty::properties::FileProperties;
+use lofty::tag::items::Timestamp;
 use rusty_fork::rusty_fork_test;
 
 rusty_fork_test! {

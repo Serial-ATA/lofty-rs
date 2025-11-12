@@ -83,7 +83,10 @@ impl Timestamp {
 
 	/// Read a [`Timestamp`]
 	///
-	/// NOTE: This will take [`Self::MAX_LENGTH`] bytes from the reader. Ensure that it only contains the timestamp
+	/// NOTES:
+	///
+	/// * When not using [`ParsingMode::Strict`], this will skip any leading whitespace
+	/// * Afterwards, this will take [`Self::MAX_LENGTH`] bytes from the reader. Ensure that it only contains the timestamp
 	///
 	/// # Errors
 	///
@@ -103,20 +106,32 @@ impl Timestamp {
 			};
 		}
 
+		let mut c = match reader.read_u8() {
+			Ok(val) => val,
+			Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+				if parse_mode == ParsingMode::Strict {
+					err!(BadTimestamp("Timestamp frame is empty"))
+				}
+
+				return Ok(None);
+			},
+			Err(e) => return Err(e.into()),
+		};
+
+		if parse_mode != ParsingMode::Strict {
+			while c.is_ascii_whitespace() {
+				c = reader.read_u8()?;
+			}
+		}
+
 		let mut timestamp = Timestamp::default();
 
 		let mut content = Vec::with_capacity(Self::MAX_LENGTH);
+		content.push(c);
+
 		reader
-			.take(Self::MAX_LENGTH as u64)
+			.take(Self::MAX_LENGTH as u64 - 1)
 			.read_to_end(&mut content)?;
-
-		if content.is_empty() {
-			if parse_mode == ParsingMode::Strict {
-				err!(BadTimestamp("Timestamp frame is empty"))
-			}
-
-			return Ok(None);
-		}
 
 		// It is valid for a timestamp to contain no separators, but this will lower our tolerance
 		// for common mistakes. We ignore the "T" separator here because it is **ALWAYS** required.
@@ -553,6 +568,27 @@ mod tests {
 	#[test_log::test]
 	fn timestamp_no_time_marker() {
 		let timestamp = "2024-06-03 14:08:49";
+
+		let parsed_timestamp_strict =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::Strict);
+		assert!(parsed_timestamp_strict.is_err());
+
+		let parsed_timestamp_best_attempt =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::BestAttempt).unwrap();
+		assert_eq!(
+			parsed_timestamp_best_attempt,
+			Some(Timestamp {
+				year: 2024,
+				month: Some(6),
+				day: Some(3),
+				..Timestamp::default()
+			})
+		);
+	}
+
+	#[test_log::test]
+	fn timestamp_whitespace() {
+		let timestamp = "\t\t\t2024-06-03";
 
 		let parsed_timestamp_strict =
 			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::Strict);

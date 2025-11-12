@@ -4,6 +4,12 @@ use crate::tag::items::{Lang, UNKNOWN_LANGUAGE};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
+#[cfg(doc)]
+use crate::{
+	id3::v1::Id3v1Tag,
+	tag::{Accessor, Tag},
+};
+
 macro_rules! first_key {
 	($key:tt $(| $remaining:expr)*) => {
 		$key
@@ -119,7 +125,8 @@ gen_map!(
 	"Disc"                           => DiscTotal,
 	"Track"                          => TrackNumber,
 	"Track"                          => TrackTotal,
-	"Year"                           => Year,
+	// For some reason, the ecosystem agreed on the key "Year", even for full date strings.
+	"Year"                           => RecordingDate | Year,
 	"ORIGINALYEAR"                   => OriginalReleaseDate,
 	"RELEASEDATE"                    => ReleaseDate,
 	"ISRC"                           => Isrc,
@@ -583,15 +590,30 @@ gen_item_keys!(
 		// Dates
 		/// Recording date
 		///
+		/// Note that most applications unfortunately interpret this as the *release* date, so this
+		/// is the key used in [`Accessor::date()`].
+		///
+		/// [`ItemKey::ReleaseDate`] also exists, but its use is not generally recommended.
+		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#date-10>
 		RecordingDate,
 
-		/// Year
+		/// Release year
+		///
+		/// This is not a commonly used field, but still appears occasionally in the wild. Typically,
+		/// you should use a date field, such as [`ItemKey::RecordingDate`] for wider application support.
+		///
+		/// ## Note for ID3v1
+		///
+		/// Since ID3v1 only supports years, when converting a [`Tag`] to an [`Id3v1Tag`], this key will
+		/// have priority over [`ItemKey::RecordingDate`].
 		Year,
 
 		/// Release date
 		///
 		/// The release date of a podcast episode or any other kind of release.
+		///
+		/// Note that this is **not widely used**, and you should likely be using [`ItemKey::RecordingDate`].
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#release-date-10>
 		ReleaseDate,

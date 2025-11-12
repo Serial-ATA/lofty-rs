@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
+- **ID3v1**: The `year` field in `Id3v1Tag` is now a `u16`, instead of a `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/574))
 - **Vorbis Comments**: Check `ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
 - **Vorbis Comments**: Support `DISCNUMBER` fields with the `current/total` format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/543)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/544))
     - These fields will now properly be split into `DISCNUMBER` and `DISCTOTAL`, making it possible to use them with
@@ -51,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     * `Tag` is now intended for generic metadata editing only, with format-specific items only being available through concrete tag types.
       See <https://github.com/Serial-ATA/lofty-rs/issues/521> for the rationale.
 * **Picture**: `Picture::new_unchecked()`, replaced with `Picture::unchecked()` returning a builder ([issue](https://github.com/Serial-ATA/lofty-rs/issues/468)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/569))
+* **Accessor**: `Accessor::*_year()` methods, replaced with `Accessor::*_date()` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/565)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/574))
+  - Since all formats (*except ID3v1*) have full date support, the generic API now accepts `Timestamp`s. For ID3v1, the date will be truncated
+    down to the year for conversions/writing.
+  - Year tags can still be set manually with `ItemKey::Year`
 
 ## [0.22.4] - 2025-04-29
 

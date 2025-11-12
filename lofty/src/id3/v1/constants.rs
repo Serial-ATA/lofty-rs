@@ -195,12 +195,14 @@ pub const GENRES: [&str; 192] = [
 ];
 
 use crate::tag::ItemKey;
-pub(crate) const VALID_ITEMKEYS: [ItemKey; 7] = [
+pub(crate) const VALID_ITEMKEYS: [ItemKey; 8] = [
 	ItemKey::TrackTitle,
 	ItemKey::TrackArtist,
 	ItemKey::AlbumTitle,
-	ItemKey::Year,
 	ItemKey::Comment,
 	ItemKey::TrackNumber,
 	ItemKey::Genre,
+	// These two are used identically. ID3v1 is the only format that *only* supports year.
+	ItemKey::Year,
+	ItemKey::RecordingDate,
 ];

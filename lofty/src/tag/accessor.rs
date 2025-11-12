@@ -1,3 +1,5 @@
+use crate::tag::items::Timestamp;
+
 use std::borrow::Cow;
 
 #[cfg(doc)]
@@ -135,5 +137,5 @@ accessor_trait! {
 	[album ]<Cow<'_, str>, String>, [genre      ]<Cow<'_, str>, String>,
 	[track ]<u32>,                  [track total]<u32>,
 	[disk  ]<u32>,                  [disk total ]<u32>,
-	[year  ]<u32>,                  [comment    ]<Cow<'_, str>, String>,
+	[date  ]<Timestamp>,            [comment    ]<Cow<'_, str>, String>,
 }
