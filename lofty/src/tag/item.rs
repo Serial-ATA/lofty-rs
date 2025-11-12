@@ -245,7 +245,8 @@ gen_map!(
 	"MusicBrainz Release Group Id"          => MusicBrainzReleaseGroupId,
 	"MusicBrainz Artist Id"                 => MusicBrainzArtistId,
 	"MusicBrainz Album Artist Id"           => MusicBrainzReleaseArtistId,
-	"MusicBrainz Work Id"                   => MusicBrainzWorkId
+	"MusicBrainz Work Id"                   => MusicBrainzWorkId,
+	"MusicBrainz Album Release Country" 	=> ReleaseCountry
 );
 
 gen_map!(
