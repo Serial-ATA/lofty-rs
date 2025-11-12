@@ -131,6 +131,8 @@ gen_map!(
 	"RELEASEDATE"                    => ReleaseDate,
 	"ISRC"                           => Isrc,
 	"Barcode"                        => Barcode,
+	"ACOUSTID_ID"                    => AcoustId,
+	"ACOUSTID_FINGERPRINT"           => AcoustIdFingerprint,
 	"CatalogNumber"                  => CatalogNumber,
 	"Compilation"                    => FlagCompilation,
 	"Media"                          => OriginalMediaType,
@@ -199,6 +201,8 @@ gen_map!(
 	"TDOR"                                  => OriginalReleaseDate,
 	"TSRC"                                  => Isrc,
 	"BARCODE"                               => Barcode,
+	"Acoustid Id"                           => AcoustId,
+	"Acoustid Fingerprint"                  => AcoustIdFingerprint,
 	"CATALOGNUMBER"                         => CatalogNumber,
 	"WORK"                                  => Work, // ID3v2.4: TXXX:WORK (Apple uses TIT1/ContentGroup, see GRP1/AppleId3v2ContentGroup for disambiguation)
 	"MVNM"                                  => Movement,
@@ -300,6 +304,8 @@ gen_map!(
 	"----:com.apple.iTunes:RELEASEDATE"                       => ReleaseDate,
 	"----:com.apple.iTunes:ISRC"                              => Isrc,
 	"----:com.apple.iTunes:BARCODE"                           => Barcode,
+	"----:com.apple.iTunes:Acoustid Id"                       => AcoustId,
+	"----:com.apple.iTunes:Acoustid Fingerprint"              => AcoustIdFingerprint,
 	"----:com.apple.iTunes:CATALOGNUMBER"                     => CatalogNumber,
 	"cpil"                                                    => FlagCompilation,
 	"pcst"                                                    => FlagPodcast,
@@ -411,6 +417,8 @@ gen_map!(
 	"RELEASEDATE"                             => ReleaseDate,
 	"ISRC"                                    => Isrc,
 	"BARCODE"                                 => Barcode,
+	"ACOUSTID_ID"                             => AcoustId,
+	"ACOUSTID_FINGERPRINT"                    => AcoustIdFingerprint,
 	"CATALOGNUMBER"                           => CatalogNumber,
 	"COMPILATION"                             => FlagCompilation,
 	"MEDIA"                                   => OriginalMediaType,
@@ -627,6 +635,18 @@ gen_item_keys!(
 		// Identifiers
 		Isrc,
 		Barcode,
+		/// [AcoustID] audio identifiers
+		///
+		/// Note that this may appear multiple times in a single tag.
+		///
+		/// [AcoustID]: https://acoustid.org/
+		AcoustId,
+		/// [AcoustID] audio fingerprints
+		///
+		/// Note that this may appear multiple times in a single tag.
+		///
+		/// [AcoustID]: https://acoustid.org/
+		AcoustIdFingerprint,
 		CatalogNumber,
 		Work,
 		Movement,

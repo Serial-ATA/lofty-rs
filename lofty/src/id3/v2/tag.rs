@@ -1416,6 +1416,8 @@ impl MergeTag for SplitTagRemainder {
 		for item_key in [
 			ItemKey::TrackArtists,
 			ItemKey::Director,
+			ItemKey::AcoustId,
+			ItemKey::AcoustIdFingerprint,
 			ItemKey::CatalogNumber,
 			ItemKey::MusicBrainzArtistId,
 			ItemKey::MusicBrainzReleaseArtistId,
