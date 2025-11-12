@@ -6,8 +6,10 @@ use crate::ogg::picture_storage::OggPictureStorage;
 use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
+use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
@@ -404,23 +406,22 @@ impl Accessor for VorbisComments {
 		let _ = self.remove("TOTALDISCS");
 	}
 
-	fn year(&self) -> Option<u32> {
-		if let Some(item) = self.get("YEAR").map_or_else(|| self.get("DATE"), Some) {
-			return try_parse_year(item);
+	fn date(&self) -> Option<Timestamp> {
+		if let Some(item) = self.get("DATE").or_else(|| self.get("YEAR")) {
+			return try_parse_timestamp(item);
 		}
 
 		None
 	}
 
-	fn set_year(&mut self, value: u32) {
-		// DATE is the preferred way of storing the year, but it is still possible we will
-		// encounter YEAR
+	fn set_date(&mut self, value: Timestamp) {
+		// Just like the Accessor impl for `Tag`, we remove "YEAR". It's not a standard key for
+		// Vorbis Comments, but it appears sometimes in the wild. Just normalize the tag to use "DATE".
 		self.insert(String::from("DATE"), value.to_string());
 		let _ = self.remove("YEAR");
 	}
 
-	fn remove_year(&mut self) {
-		// DATE is not valid without a year, so we can remove them as well
+	fn remove_date(&mut self) {
 		let _ = self.remove("DATE");
 		let _ = self.remove("YEAR");
 	}

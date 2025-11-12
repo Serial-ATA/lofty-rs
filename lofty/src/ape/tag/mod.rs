@@ -7,8 +7,10 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_number};
 use crate::tag::item::ItemValueRef;
+use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Truncate};
@@ -293,23 +295,24 @@ impl Accessor for ApeTag {
 		}
 	}
 
-	fn year(&self) -> Option<u32> {
+	// For some reason, the ecosystem agreed on the key "Year", even for full date strings.
+	fn date(&self) -> Option<Timestamp> {
 		if let Some(ApeItem {
 			value: ItemValue::Text(text),
 			..
 		}) = self.get("Year")
 		{
-			return try_parse_year(text);
+			return try_parse_timestamp(text);
 		}
 
 		None
 	}
 
-	fn set_year(&mut self, value: u32) {
+	fn set_date(&mut self, value: Timestamp) {
 		self.insert(ApeItem::text("Year", value.to_string()));
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		self.remove("Year");
 	}
 }

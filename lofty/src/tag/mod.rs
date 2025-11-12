@@ -9,11 +9,12 @@ mod tag_ext;
 mod tag_type;
 pub(crate) mod utils;
 
-use crate::config::WriteOptions;
+use crate::config::{ParsingMode, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
+use crate::tag::items::Timestamp;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
@@ -116,17 +117,13 @@ pub struct Tag {
 }
 
 #[must_use]
-pub(crate) fn try_parse_year(input: &str) -> Option<u32> {
-	let (num_digits, year) = input
-		.chars()
-		.skip_while(|c| c.is_whitespace())
-		.take_while(char::is_ascii_digit)
-		.take(4)
-		.fold((0usize, 0u32), |(num_digits, year), c| {
-			let decimal_digit = c.to_digit(10).expect("decimal digit");
-			(num_digits + 1, year * 10 + decimal_digit)
-		});
-	(num_digits == 4).then_some(year)
+pub(crate) fn try_parse_timestamp(input: &str) -> Option<Timestamp> {
+	let Ok(timestamp) = Timestamp::parse(&mut input.as_bytes(), ParsingMode::Relaxed) else {
+		log::warn!("Timestamp exists in file, but cannot be parsed.");
+		return None;
+	};
+
+	timestamp
 }
 
 impl Accessor for Tag {
@@ -186,36 +183,22 @@ impl Accessor for Tag {
 		self.remove_key(ItemKey::DiscTotal);
 	}
 
-	fn year(&self) -> Option<u32> {
-		if let Some(item) = self
-			.get_string(ItemKey::Year)
-			.map_or_else(|| self.get_string(ItemKey::RecordingDate), Some)
-		{
-			return try_parse_year(item);
-		}
-
-		None
+	fn date(&self) -> Option<Timestamp> {
+		self.get_string(ItemKey::RecordingDate)
+			.or_else(|| self.get_string(ItemKey::Year))
+			.and_then(|d| {
+				Timestamp::parse(&mut d.as_bytes(), ParsingMode::Relaxed)
+					.ok()
+					.flatten()
+			})
 	}
 
-	fn set_year(&mut self, value: u32) {
-		if let Some(item) = self.get_string(ItemKey::RecordingDate) {
-			if item.len() >= 4 {
-				let (_, remaining) = item.split_at(4);
-				self.insert_text(ItemKey::RecordingDate, format!("{value}{remaining}"));
-				return;
-			}
-		}
-
-		// Some formats have a dedicated item for `Year`, others just have it as
-		// a part of `RecordingDate`
-		if ItemKey::Year.map_key(self.tag_type).is_some() {
-			self.insert_text(ItemKey::Year, value.to_string());
-		} else {
-			self.insert_text(ItemKey::RecordingDate, value.to_string());
-		}
+	fn set_date(&mut self, value: Timestamp) {
+		self.remove_key(ItemKey::Year);
+		self.insert_text(ItemKey::RecordingDate, value.to_string());
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		self.remove_key(ItemKey::Year);
 		self.remove_key(ItemKey::RecordingDate);
 	}
@@ -739,7 +722,7 @@ impl MergeTag for SplitTagRemainder {
 
 #[cfg(test)]
 mod tests {
-	use super::try_parse_year;
+	use super::try_parse_timestamp;
 	use crate::config::WriteOptions;
 	use crate::picture::{Picture, PictureType};
 	use crate::prelude::*;
@@ -835,21 +818,9 @@ mod tests {
 	}
 
 	#[test_log::test]
-	fn try_parse_year_with_leading_trailing_whitespace_and_various_formats() {
-		assert_eq!(Some(1983), try_parse_year("\t 1983\n"));
-		assert_eq!(Some(1983), try_parse_year("1983-1"));
-		assert_eq!(Some(1983), try_parse_year("1983- 1"));
-		assert_eq!(Some(1983), try_parse_year("1983-01"));
-		assert_eq!(Some(1983), try_parse_year("1983-1-2"));
-		assert_eq!(Some(1983), try_parse_year("1983- 1- 2"));
-		assert_eq!(Some(1983), try_parse_year("1983-01-02T10:24:08Z"));
-		assert_eq!(Some(1983), try_parse_year("1983-01-02T10:24:08.001Z"));
-	}
-
-	#[test_log::test]
 	fn should_not_parse_year_from_less_than_4_digits() {
-		assert!(try_parse_year("198").is_none());
-		assert!(try_parse_year("19").is_none());
-		assert!(try_parse_year("1").is_none());
+		assert!(try_parse_timestamp("198").is_none());
+		assert!(try_parse_timestamp("19").is_none());
+		assert!(try_parse_timestamp("1").is_none());
 	}
 }

@@ -78,7 +78,23 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 	let album = resize_string(tag.album, 30)?;
 	writer.write_all(&album)?;
 
-	let year = resize_string(tag.year, 4)?;
+	let mut year = [0; 4];
+	if let Some(year_num) = tag.year {
+		let mut year_num = std::cmp::min(year_num, 9999);
+
+		let mut idx = 3;
+		loop {
+			year[idx] = b'0' + (year_num % 10) as u8;
+			year_num /= 10;
+
+			if idx == 0 {
+				break;
+			}
+
+			idx -= 1;
+		}
+	}
+
 	writer.write_all(&year)?;
 
 	let comment = resize_string(tag.comment, 28)?;

@@ -181,6 +181,7 @@ where
 mod tests {
 	use super::parse_id3v2;
 	use crate::config::ParseOptions;
+	use crate::tag::items::Timestamp;
 
 	#[test_log::test]
 	fn zero_size_id3v2() {
@@ -230,7 +231,13 @@ mod tests {
 		assert_eq!(id3v2.title().as_deref(), Some("Foo title"));
 		assert_eq!(id3v2.artist().as_deref(), Some("Bar artist"));
 		assert_eq!(id3v2.comment().as_deref(), Some("Qux comment"));
-		assert_eq!(id3v2.year(), Some(1984));
+		assert_eq!(
+			id3v2.date(),
+			Some(Timestamp {
+				year: 1984,
+				..Default::default()
+			})
+		);
 		assert_eq!(id3v2.track(), Some(1));
 		assert_eq!(id3v2.genre().as_deref(), Some("Classical"));
 	}

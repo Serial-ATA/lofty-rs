@@ -9,6 +9,7 @@ use lofty::iff::wav::RiffInfoList;
 use lofty::mp4::Ilst;
 use lofty::ogg::VorbisComments;
 use lofty::picture::{MimeType, Picture, PictureType};
+use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
 
 use std::borrow::Cow;
@@ -28,7 +29,10 @@ macro_rules! bench_tag_write {
 				$tag_.set_artist(String::from("Dave Eddy"));
 				$tag_.set_title(String::from("TempleOS Hymn Risen (Remix)"));
 				$tag_.set_album(String::from("Summer"));
-				$tag_.set_year(2017);
+				$tag_.set_date(Timestamp {
+					year: 2017,
+					..Timestamp::default()
+				});
 				$tag_.set_track(1);
 				$tag_.set_genre(String::from("Electronic"));
 				$extra_block;

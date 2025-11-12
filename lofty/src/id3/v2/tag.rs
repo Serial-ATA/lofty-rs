@@ -825,21 +825,21 @@ impl Accessor for Id3v2Tag {
 		let _ = self.remove(&GENRE_ID);
 	}
 
-	fn year(&self) -> Option<u32> {
+	fn date(&self) -> Option<Timestamp> {
 		if let Some(Frame::Timestamp(TimestampFrame { timestamp, .. })) =
 			self.get(&RECORDING_TIME_ID)
 		{
-			return Some(u32::from(timestamp.year));
+			return Some(*timestamp);
 		}
 
 		None
 	}
 
-	fn set_year(&mut self, value: u32) {
+	fn set_date(&mut self, value: Timestamp) {
 		self.insert(Frame::text(Cow::Borrowed("TDRC"), value.to_string()));
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		let _ = self.remove(&RECORDING_TIME_ID);
 	}
 

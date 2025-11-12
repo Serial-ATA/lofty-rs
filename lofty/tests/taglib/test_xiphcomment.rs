@@ -6,21 +6,17 @@ use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::ogg::{OggPictureStorage, VorbisComments, VorbisFile};
 use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
+use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
 
 #[test_log::test]
 fn test_year() {
 	let mut cmt = VorbisComments::default();
-	assert_eq!(cmt.year(), None);
+	assert_eq!(cmt.date(), None);
 	cmt.push(String::from("YEAR"), String::from("2009"));
-	assert_eq!(cmt.year(), Some(2009));
-
-	// NOTE: Lofty will *always* prioritize "YEAR" over "DATE". TagLib doesn't have the same ideas,
-	//       so we have to remove "YEAR".
-	let _ = cmt.remove("YEAR");
-
+	assert_eq!(cmt.date().map(|date| date.year), Some(2009));
 	cmt.push(String::from("DATE"), String::from("2008"));
-	assert_eq!(cmt.year(), Some(2008));
+	assert_eq!(cmt.date().map(|date| date.year), Some(2008));
 }
 
 #[test_log::test]
@@ -28,7 +24,10 @@ fn test_set_year() {
 	let mut cmt = VorbisComments::default();
 	cmt.push(String::from("YEAR"), String::from("2009"));
 	cmt.push(String::from("DATE"), String::from("2008"));
-	cmt.set_year(1995);
+	cmt.set_date(Timestamp {
+		year: 1995,
+		..Timestamp::default()
+	});
 	assert!(cmt.get("YEAR").is_none());
 	assert_eq!(cmt.get("DATE"), Some("1995"));
 }

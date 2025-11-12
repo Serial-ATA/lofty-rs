@@ -1018,7 +1018,7 @@ fn test_update_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
 	assert!(f.id3v2().is_some());
-	assert_eq!(f.id3v2().unwrap().year(), Some(2010));
+	assert_eq!(f.id3v2().unwrap().date().map(|date| date.year), Some(2010));
 }
 
 // TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4

@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
+use crate::tag::items::Timestamp;
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
@@ -80,8 +81,8 @@ pub struct Id3v1Tag {
 	pub artist: Option<String>,
 	/// Album title, 30 bytes max
 	pub album: Option<String>,
-	/// Release year, 4 bytes max
-	pub year: Option<String>,
+	/// Release year (max 9999)
+	pub year: Option<u16>,
 	/// A short comment
 	///
 	/// The number of bytes differs between versions, but not much.
@@ -186,21 +187,18 @@ impl Accessor for Id3v1Tag {
 		self.comment = None;
 	}
 
-	fn year(&self) -> Option<u32> {
-		if let Some(ref year) = self.year {
-			if let Ok(y) = year.parse() {
-				return Some(y);
-			}
-		}
-
-		None
+	fn date(&self) -> Option<Timestamp> {
+		self.year.map(|year| Timestamp {
+			year,
+			..Default::default()
+		})
 	}
 
-	fn set_year(&mut self, value: u32) {
-		self.year = Some(value.to_string());
+	fn set_date(&mut self, value: Timestamp) {
+		self.year = Some(value.year);
 	}
 
-	fn remove_year(&mut self) {
+	fn remove_date(&mut self) {
 		self.year = None;
 	}
 }
@@ -309,7 +307,9 @@ impl SplitTag for Id3v1Tag {
 		self.album
 			.take()
 			.map(|a| tag.insert_text(ItemKey::AlbumTitle, a));
-		self.year.take().map(|y| tag.insert_text(ItemKey::Year, y));
+		self.year
+			.take()
+			.map(|y| tag.insert_text(ItemKey::Year, y.to_string()));
 		self.comment
 			.take()
 			.map(|c| tag.insert_text(ItemKey::Comment, c));
@@ -350,7 +350,10 @@ impl From<Tag> for Id3v1Tag {
 		let title = input.take_strings(ItemKey::TrackTitle).next();
 		let artist = input.take_strings(ItemKey::TrackArtist).next();
 		let album = input.take_strings(ItemKey::AlbumTitle).next();
-		let year = input.year().map(|y| y.to_string());
+		let year = input
+			.get_string(ItemKey::Year)
+			.and_then(|year| year.parse().ok())
+			.or_else(|| input.date().map(|y| y.year));
 		let comment = input.take_strings(ItemKey::Comment).next();
 		Self {
 			title,
@@ -379,7 +382,7 @@ pub(crate) struct Id3v1TagRef<'a> {
 	pub title: Option<&'a str>,
 	pub artist: Option<&'a str>,
 	pub album: Option<&'a str>,
-	pub year: Option<&'a str>,
+	pub year: Option<u16>,
 	pub comment: Option<&'a str>,
 	pub track_number: Option<u8>,
 	pub genre: Option<u8>,
@@ -391,7 +394,7 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Id3v1Tag {
 			title: self.title.as_deref(),
 			artist: self.artist.as_deref(),
 			album: self.album.as_deref(),
-			year: self.year.as_deref(),
+			year: self.year,
 			comment: self.comment.as_deref(),
 			track_number: self.track_number,
 			genre: self.genre,
@@ -405,7 +408,10 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
 			title: self.get_string(ItemKey::TrackTitle),
 			artist: self.get_string(ItemKey::TrackArtist),
 			album: self.get_string(ItemKey::AlbumTitle),
-			year: self.get_string(ItemKey::Year),
+			year: self
+				.get_string(ItemKey::Year)
+				.and_then(|year| year.parse().ok())
+				.or_else(|| self.date().map(|date| date.year)),
 			comment: self.get_string(ItemKey::Comment),
 			track_number: self
 				.get_string(ItemKey::TrackNumber)
@@ -461,6 +467,7 @@ mod tests {
 	use crate::config::WriteOptions;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::prelude::*;
+	use crate::tag::items::Timestamp;
 	use crate::tag::{Tag, TagType};
 
 	#[test_log::test]
@@ -469,7 +476,7 @@ mod tests {
 			title: Some(String::from("Foo title")),
 			artist: Some(String::from("Bar artist")),
 			album: Some(String::from("Baz album")),
-			year: Some(String::from("1984")),
+			year: Some(1984),
 			comment: Some(String::from("Qux comment")),
 			track_number: Some(1),
 			genre: Some(32),
@@ -482,7 +489,7 @@ mod tests {
 	}
 
 	#[test_log::test]
-	fn id3v2_re_read() {
+	fn id3v1_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
 		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
 
@@ -518,5 +525,47 @@ mod tests {
 		assert_eq!(id3v1_tag.comment.as_deref(), Some("Qux comment"));
 		assert_eq!(id3v1_tag.track_number, Some(1));
 		assert_eq!(id3v1_tag.genre, Some(32));
+	}
+
+	#[test_log::test]
+	fn year_roundtrip() {
+		// via set_date(), which uses `ItemKey::RecordingDate`
+
+		let mut tag = Tag::new(TagType::Id3v1);
+		tag.set_date(Timestamp {
+			year: 1999,
+			month: Some(10),
+			day: Some(11),
+			hour: Some(12),
+			minute: Some(13),
+			second: Some(14),
+		});
+
+		let id3v1_tag: Id3v1Tag = tag.into();
+
+		assert_eq!(id3v1_tag.year, Some(1999));
+		assert_eq!(
+			id3v1_tag.date(),
+			Some(Timestamp {
+				year: 1999,
+				..Timestamp::default()
+			})
+		);
+
+		// via `ItemKey::Year`
+
+		let mut tag = Tag::new(TagType::Id3v1);
+		tag.insert_text(ItemKey::Year, 1999u16.to_string());
+
+		let id3v1_tag: Id3v1Tag = tag.into();
+
+		assert_eq!(id3v1_tag.year, Some(1999));
+		assert_eq!(
+			id3v1_tag.date(),
+			Some(Timestamp {
+				year: 1999,
+				..Timestamp::default()
+			})
+		);
 	}
 }

@@ -12,8 +12,10 @@ use crate::error::LoftyError;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
+use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
@@ -572,25 +574,25 @@ impl Accessor for Ilst {
 		}
 	}
 
-	fn year(&self) -> Option<u32> {
+	fn date(&self) -> Option<Timestamp> {
 		if let Some(atom) = self.get(&AtomIdent::Fourcc(*b"\xa9day")) {
 			if let Some(AtomData::UTF8(text)) = atom.data().next() {
-				return try_parse_year(text);
+				return try_parse_timestamp(text);
 			}
 		}
 
 		None
 	}
 
-	fn set_year(&mut self, value: u32) {
+	fn set_date(&mut self, value: Timestamp) {
 		self.replace_atom(Atom::text(
 			AtomIdent::Fourcc(*b"\xa9day"),
 			value.to_string(),
 		));
 	}
 
-	fn remove_year(&mut self) {
-		let _ = self.remove(&AtomIdent::Fourcc(*b"Year"));
+	fn remove_date(&mut self) {
+		let _ = self.remove(&AtomIdent::Fourcc(*b"\xa9day"));
 	}
 }
 

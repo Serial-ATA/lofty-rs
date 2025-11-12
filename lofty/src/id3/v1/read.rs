@@ -17,7 +17,11 @@ pub fn parse_id3v1(reader: [u8; 128]) -> Id3v1Tag {
 	tag.title = decode_text(&reader[..30]);
 	tag.artist = decode_text(&reader[30..60]);
 	tag.album = decode_text(&reader[60..90]);
-	tag.year = decode_text(&reader[90..94]);
+
+	let year = try_parse_year(&reader[90..94]).unwrap_or(0);
+	if year != 0 {
+		tag.year = Some(year);
+	}
 
 	// Determine the range of the comment (30 bytes for ID3v1 and 28 for ID3v1.1)
 	// We check for the null terminator 28 bytes in, and for a non-zero track number after it.
@@ -47,4 +51,14 @@ fn decode_text(data: &[u8]) -> Option<String> {
 		.collect::<String>();
 
 	if read.is_empty() { None } else { Some(read) }
+}
+
+fn try_parse_year(input: &[u8]) -> Option<u16> {
+	let (num_digits, year) = input
+		.iter()
+		.take_while(|c| (**c).is_ascii_digit())
+		.fold((0usize, 0u16), |(num_digits, year), c| {
+			(num_digits + 1, year * 10 + u16::from(*c - b'0'))
+		});
+	(num_digits == 4).then_some(year)
 }
