@@ -18,7 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ItemKey::ReleaseCountry` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/573))
     - Currently, this maps to the [fields](https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id30) used by MusicBrainz Picard, which expect an
       ISO 3166-1 code.
-- **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`)
+  - `ItemKey::AcoustId` and `ItemKey::AcoustIdFingerprint` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/455)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/575))
+    - These two fields come from [AcoustID], and can appear multiple times in a single tag.
+- **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/533)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/534))
   - Support can be enabled with the new `serde` feature (not enabled by default)
 - **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
   - Same as `Probe::read()`, but returns a [`BoundTaggedFile`](https://docs.rs/lofty/latest/lofty/file/struct.BoundTaggedFile.html)
@@ -1044,4 +1046,5 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 
 [serde]: https://docs.rs/serde
 [TagLib]: https://github.com/taglib/taglib
+[AcoustID]: https://acoustid.org/
 [ogg_pager's changelog]: ogg_pager/CHANGELOG.md
