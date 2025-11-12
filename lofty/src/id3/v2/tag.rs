@@ -1420,6 +1420,7 @@ impl MergeTag for SplitTagRemainder {
 			ItemKey::MusicBrainzArtistId,
 			ItemKey::MusicBrainzReleaseArtistId,
 			ItemKey::MusicBrainzWorkId,
+			ItemKey::ReleaseCountry,
 		] {
 			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 			if let Some(text) = join_text_items(&mut tag, [item_key]) {
