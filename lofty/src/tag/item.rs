@@ -366,6 +366,7 @@ gen_map!(
 	"MOVEMENTNAME"                            => Movement,
 	"MOVEMENT"                                => MovementNumber,
 	"MOVEMENTTOTAL"                           => MovementTotal,
+	"RELEASECOUNTRY"                          => ReleaseCountry,
 	"ALBUMSORT"                               => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                         => AlbumArtistSortOrder,
 	"TITLESORT"                               => TrackTitleSortOrder,
@@ -605,6 +606,7 @@ gen_item_keys!(
 		Movement,
 		MovementNumber,
 		MovementTotal,
+		ReleaseCountry,
 
 		///////////////////////////////////////////////////////////////
 		// MusicBrainz Identifiers
