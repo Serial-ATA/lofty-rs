@@ -3,10 +3,11 @@ use crate::config::ParsingMode;
 use crate::error::{ErrorKind, Result};
 use crate::iff::chunk::Chunks;
 use crate::macros::decode_err;
-use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek};
 
+use aud_io::error::AudioError;
+use aud_io::text::utf8_decode_str;
 use byteorder::LittleEndian;
 
 pub(in crate::iff::wav) fn parse_riff_info<R>(
@@ -39,7 +40,7 @@ where
 				// RIFF INFO tags have no standard text encoding, so they will occasionally default
 				// to the system encoding, which isn't always UTF-8. In reality, if one item fails
 				// they likely all will, but we'll keep trying.
-				if matches!(e.kind(), ErrorKind::StringFromUtf8(_)) {
+				if matches!(e.kind(), ErrorKind::AudioIo(AudioError::StringFromUtf8(_))) {
 					continue;
 				}
 

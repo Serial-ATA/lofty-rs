@@ -1,9 +1,10 @@
-use crate::aac::header::ADTSHeader;
-use crate::mp4::AudioObjectType;
-use crate::mpeg::header::MpegVersion;
 use crate::properties::{ChannelMask, FileProperties};
 
 use std::time::Duration;
+
+use aud_io::aac::ADTSHeader;
+use aud_io::mp4::AudioObjectType;
+use aud_io::mpeg::MpegVersion;
 
 /// An AAC file's audio properties
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]

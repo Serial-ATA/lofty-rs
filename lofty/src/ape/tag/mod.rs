@@ -11,12 +11,12 @@ use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
+use aud_io::io::{FileLike, Truncate};
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {

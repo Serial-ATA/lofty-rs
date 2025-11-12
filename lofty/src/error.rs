@@ -7,9 +7,9 @@ use crate::file::FileType;
 use crate::id3::v2::FrameId;
 use crate::tag::ItemKey;
 
-use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
 
+use aud_io::error::AudioError;
 use ogg_pager::PageError;
 
 /// Alias for `Result<T, LoftyError>`
@@ -24,14 +24,6 @@ pub enum ErrorKind {
 	UnknownFormat,
 
 	// File data related errors
-	/// Attempting to read/write an abnormally large amount of data
-	TooMuchData,
-	/// Expected the data to be a different size than provided
-	///
-	/// This occurs when the size of an item is written as one value, but that size is either too
-	/// big or small to be valid within the bounds of that item.
-	// TODO: Should probably have context
-	SizeMismatch,
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -48,33 +40,23 @@ pub enum ErrorKind {
 	UnsupportedTag,
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
-	/// Errors that arise while decoding text
-	TextDecode(&'static str),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
 	Id3v2(Id3v2Error),
 
-	/// Arises when an atom contains invalid data
-	BadAtom(&'static str),
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
 	OggPage(ogg_pager::PageError),
-	/// Unable to convert bytes to a String
-	StringFromUtf8(std::string::FromUtf8Error),
-	/// Unable to convert bytes to a str
-	StrFromUtf8(std::str::Utf8Error),
+	/// General Audio IO errors
+	AudioIo(aud_io::error::AudioError),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
 	/// Represents all cases of [`std::fmt::Error`].
 	Fmt(std::fmt::Error),
-	/// Failure to allocate enough memory
-	Alloc(TryReserveError),
-	/// This should **never** be encountered
-	Infallible(std::convert::Infallible),
 }
 
 /// The types of errors that can occur while interacting with ID3v2 tags
@@ -477,7 +459,15 @@ impl From<ogg_pager::PageError> for LoftyError {
 impl From<std::io::Error> for LoftyError {
 	fn from(input: std::io::Error) -> Self {
 		Self {
-			kind: ErrorKind::Io(input),
+			kind: ErrorKind::AudioIo(AudioError::Io(input)),
+		}
+	}
+}
+
+impl From<aud_io::error::AudioError> for LoftyError {
+	fn from(input: aud_io::error::AudioError) -> Self {
+		Self {
+			kind: ErrorKind::AudioIo(input),
 		}
 	}
 }
@@ -490,34 +480,10 @@ impl From<std::fmt::Error> for LoftyError {
 	}
 }
 
-impl From<std::string::FromUtf8Error> for LoftyError {
-	fn from(input: std::string::FromUtf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StringFromUtf8(input),
-		}
-	}
-}
-
-impl From<std::str::Utf8Error> for LoftyError {
-	fn from(input: std::str::Utf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StrFromUtf8(input),
-		}
-	}
-}
-
-impl From<std::collections::TryReserveError> for LoftyError {
-	fn from(input: TryReserveError) -> Self {
-		Self {
-			kind: ErrorKind::Alloc(input),
-		}
-	}
-}
-
 impl From<std::convert::Infallible> for LoftyError {
 	fn from(input: std::convert::Infallible) -> Self {
 		Self {
-			kind: ErrorKind::Infallible(input),
+			kind: ErrorKind::AudioIo(AudioError::Infallible(input)),
 		}
 	}
 }
@@ -527,11 +493,9 @@ impl Display for LoftyError {
 		match self.kind {
 			// Conversions
 			ErrorKind::OggPage(ref err) => write!(f, "{err}"),
-			ErrorKind::StringFromUtf8(ref err) => write!(f, "{err}"),
-			ErrorKind::StrFromUtf8(ref err) => write!(f, "{err}"),
+			ErrorKind::AudioIo(ref err) => write!(f, "{err}"),
 			ErrorKind::Io(ref err) => write!(f, "{err}"),
 			ErrorKind::Fmt(ref err) => write!(f, "{err}"),
-			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
@@ -545,30 +509,18 @@ impl Display for LoftyError {
 				"Attempted to write a tag to a format that does not support it"
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
-			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},
 			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
-			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,
 				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"
 			),
 
 			// Files
-			ErrorKind::TooMuchData => write!(
-				f,
-				"Attempted to read/write an abnormally large amount of data"
-			),
-			ErrorKind::SizeMismatch => write!(
-				f,
-				"Encountered an invalid item size, either too big or too small to be valid"
-			),
 			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
-
-			ErrorKind::Infallible(_) => write!(f, "A expected condition was not upheld"),
 		}
 	}
 }

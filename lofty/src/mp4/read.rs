@@ -1,20 +1,17 @@
-mod atom_reader;
-
 use super::Mp4File;
-use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::Result;
 use crate::macros::{decode_err, err};
-use crate::util::io::SeekStreamLen;
-use crate::util::text::utf8_decode_str;
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::err as io_err;
+use aud_io::io::SeekStreamLen;
+use aud_io::mp4::{AtomIdent, AtomInfo, AtomReader};
+use aud_io::text::utf8_decode_str;
 use byteorder::{BigEndian, ReadBytesExt};
-
-pub(super) use atom_reader::AtomReader;
 
 pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String>
 where
@@ -39,11 +36,9 @@ where
 
 	reader.seek(SeekFrom::Current((atom.len - 12) as i64))?;
 
-	let major_brand = utf8_decode_str(&major_brand)
-		.map(ToOwned::to_owned)
-		.map_err(|_| {
-			LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"))
-		})?;
+	let Ok(major_brand) = utf8_decode_str(&major_brand).map(ToOwned::to_owned) else {
+		io_err!(BadAtom("Unable to parse \"ftyp\"'s major brand"));
+	};
 
 	log::debug!("Verified to be an MP4 file. Major brand: {}", major_brand);
 	Ok(major_brand)
@@ -107,7 +102,7 @@ where
 	if let (pos, false) = pos.overflowing_add(len - 8) {
 		reader.seek(SeekFrom::Start(pos))?;
 	} else {
-		err!(TooMuchData);
+		io_err!(TooMuchData);
 	}
 
 	Ok(())

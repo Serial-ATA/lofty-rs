@@ -1,11 +1,12 @@
 use crate::config::ParsingMode;
 use crate::error::Result;
-use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
+use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::properties::{ChannelMask, FileProperties};
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 /// A WavPack file's audio properties
@@ -324,7 +325,7 @@ fn get_extended_meta_info(
 		}
 
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
@@ -415,7 +416,7 @@ fn get_extended_meta_info(
 
 		// Skip over any remaining block size
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let (_, rem) = reader.split_at(size as usize);

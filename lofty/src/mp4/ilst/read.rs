@@ -4,16 +4,17 @@ use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
-use crate::macros::{err, try_vec};
-use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomInfo};
 use crate::mp4::ilst::atom::AtomDataStorage;
-use crate::mp4::read::{AtomReader, skip_atom};
+use crate::mp4::read::skip_atom;
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::tag::TagExt;
-use crate::util::text::{utf8_decode, utf16_decode_bytes};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+
+use aud_io::mp4::{ATOM_HEADER_LEN, AtomInfo, AtomReader};
+use aud_io::text::{utf8_decode, utf16_decode_bytes};
+use aud_io::{err as io_err, try_vec};
 
 pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,
@@ -181,13 +182,12 @@ where
 	R: Read + Seek,
 {
 	let handle_error = |err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
-		match parsing_mode {
-			ParsingMode::Strict => Err(err),
-			ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-				log::warn!("Skipping atom with invalid content: {}", err);
-				Ok(())
-			},
+		if parsing_mode == ParsingMode::Strict {
+			return Err(err);
 		}
+
+		log::warn!("Skipping atom with invalid content: {err}");
+		Ok(())
 	};
 
 	if let Some(mut atom_data) = parse_data_inner(reader, parsing_mode, &atom_info)? {
@@ -259,7 +259,7 @@ where
 				next_atom.len
 			);
 			if parsing_mode == ParsingMode::Strict {
-				err!(BadAtom("Data atom is too small"))
+				io_err!(BadAtom("Data atom is too small"))
 			}
 
 			break;
@@ -267,7 +267,7 @@ where
 
 		if next_atom.ident != DATA_ATOM_IDENT {
 			if parsing_mode == ParsingMode::Strict {
-				err!(BadAtom("Expected atom \"data\" to follow name"))
+				io_err!(BadAtom("Expected atom \"data\" to follow name"))
 			}
 
 			log::warn!(
@@ -323,7 +323,7 @@ where
 	let type_set = reader.read_u8()?;
 	if type_set != WELL_KNOWN_TYPE_SET {
 		if parsing_mode == ParsingMode::Strict {
-			err!(BadAtom("Unknown type set in data atom"))
+			io_err!(BadAtom("Unknown type set in data atom"))
 		}
 
 		return Ok(None);
@@ -338,7 +338,7 @@ fn parse_uint(bytes: &[u8]) -> Result<u32> {
 		2 => u32::from(u16::from_be_bytes([bytes[0], bytes[1]])),
 		3 => u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
 		4 => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => err!(BadAtom(
+		_ => io_err!(BadAtom(
 			"Unexpected atom size for type \"BE unsigned integer\""
 		)),
 	})
@@ -350,7 +350,7 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 		2 => i32::from(i16::from_be_bytes([bytes[0], bytes[1]])),
 		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
 		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => err!(BadAtom(
+		_ => io_err!(BadAtom(
 			"Unexpected atom size for type \"BE signed integer\""
 		)),
 	})
@@ -380,7 +380,7 @@ where
 				DataType::Bmp => Some(MimeType::Bmp),
 				_ => {
 					if parsing_mode == ParsingMode::Strict {
-						err!(BadAtom("\"covr\" atom has an unknown type"))
+						io_err!(BadAtom("\"covr\" atom has an unknown type"))
 					}
 
 					log::warn!(

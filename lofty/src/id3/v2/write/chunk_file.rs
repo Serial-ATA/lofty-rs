@@ -1,11 +1,11 @@
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::Chunks;
-use crate::macros::err;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::err as io_err;
+use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::{ByteOrder, WriteBytesExt};
 
 const CHUNK_NAME_UPPER: [u8; 4] = [b'I', b'D', b'3', b' '];
@@ -37,7 +37,7 @@ where
 	file.read_to_end(file_bytes.get_mut())?;
 
 	if file_bytes.get_ref().len() < (actual_stream_size as usize + RIFF_CHUNK_HEADER_SIZE) {
-		err!(SizeMismatch);
+		io_err!(SizeMismatch);
 	}
 
 	// The first chunk format is RIFF....WAVE
@@ -91,7 +91,7 @@ where
 		}
 
 		let Ok(tag_size): std::result::Result<u32, _> = tag_bytes.get_ref().len().try_into() else {
-			err!(TooMuchData)
+			io_err!(TooMuchData)
 		};
 
 		let tag_position = actual_stream_size as usize + RIFF_CHUNK_HEADER_SIZE;

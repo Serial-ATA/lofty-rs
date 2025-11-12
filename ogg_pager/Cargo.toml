@@ -1,11 +1,11 @@
 [package]
 name = "ogg_pager"
 version = "0.7.0"
-authors = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "A simple OGG page reader"
 keywords = ["ogg", "xiph"]
 categories = ["multimedia", "multimedia::audio", "parser-implementations"]
 include = ["src", "Cargo.toml", "../LICENSE-*"]
+authors.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 repository.workspace = true

@@ -1,7 +1,3 @@
-macro_rules! try_vec {
-	($elem:expr; $size:expr) => {{ $crate::util::alloc::fallible_vec_from_element($elem, $size)? }};
-}
-
 // Shorthand for return Err(LoftyError::new(ErrorKind::Foo))
 //
 // Usage:
@@ -93,4 +89,4 @@ macro_rules! parse_mode_choice {
 	};
 }
 
-pub(crate) use {decode_err, err, parse_mode_choice, try_vec};
+pub(crate) use {decode_err, err, parse_mode_choice};

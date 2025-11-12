@@ -1,13 +1,14 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::header::Id3v2Version;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
-use crate::util::text::{TextDecodeOptions, TextEncoding, encode_text};
 
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
 
+use aud_io::err as io_err;
+use aud_io::text::{TextDecodeOptions, TextEncoding, encode_text};
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
@@ -86,7 +87,7 @@ impl AttachedPictureFrame<'_> {
 				},
 			}
 		} else {
-			let mime_type_str = crate::util::text::decode_text(
+			let mime_type_str = aud_io::text::decode_text(
 				reader,
 				TextDecodeOptions::new()
 					.encoding(TextEncoding::Latin1)
@@ -98,7 +99,7 @@ impl AttachedPictureFrame<'_> {
 
 		let pic_type = PictureType::from_u8(reader.read_u8()?);
 
-		let description = crate::util::text::decode_text(
+		let description = aud_io::text::decode_text(
 			reader,
 			TextDecodeOptions::new().encoding(encoding).terminated(true),
 		)?
@@ -180,7 +181,7 @@ impl AttachedPictureFrame<'_> {
 		data.write_all(&self.picture.data)?;
 
 		if data.len() as u64 > max_size {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		Ok(data)

@@ -1,18 +1,18 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 use crate::tag::items::Lang;
-use crate::util::text::{
-	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
-	utf16_decode_terminated_maybe_bom,
-};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+use aud_io::err as io_err;
+use aud_io::text::{
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	utf16_decode_terminated_maybe_bom,
+};
 use byteorder::ReadBytesExt;
 
 // Generic struct for a text frame that has a language
@@ -56,7 +56,7 @@ impl LanguageFrame {
 			endianness = match bom {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
-				_ => err!(TextDecode("UTF-16 string missing a BOM")),
+				_ => io_err!(TextDecode("UTF-16 string missing a BOM")),
 			};
 		}
 

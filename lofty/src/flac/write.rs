@@ -2,16 +2,17 @@ use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS,
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
-use crate::macros::{err, try_vec};
+use crate::macros::err;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::write::create_comments;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
+use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::{err as io_err, try_vec};
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 const BLOCK_HEADER_SIZE: usize = 4;
@@ -195,7 +196,7 @@ fn create_comment_block(
 		let len = (writer.get_ref().len() - 1) as u32;
 
 		if len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		let comment_end = writer.stream_position()?;
@@ -232,7 +233,7 @@ fn create_picture_blocks(
 		let pic_len = pic_bytes.len() as u32;
 
 		if pic_len > MAX_BLOCK_SIZE {
-			err!(TooMuchData);
+			io_err!(TooMuchData);
 		}
 
 		writer.write_all(&pic_len.to_be_bytes()[1..])?;

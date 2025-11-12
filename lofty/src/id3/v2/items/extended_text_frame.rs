@@ -1,16 +1,14 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
-use crate::util::text::{
-	TextDecodeOptions, TextEncoding, decode_text, encode_text, utf16_decode_bytes,
-};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
 use std::io::Read;
 
+use aud_io::err as io_err;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text, utf16_decode_bytes};
 use byteorder::ReadBytesExt;
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TXXX"));
@@ -142,7 +140,7 @@ impl ExtendedTextFrame<'_> {
 				},
 				[0x00, 0x00] => {
 					debug_assert!(description.content.is_empty());
-					err!(TextDecode("UTF-16 string has no BOM"));
+					io_err!(TextDecode("UTF-16 string has no BOM"));
 				},
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,

@@ -7,10 +7,10 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
-use crate::macros::try_vec;
 
 use std::io::Read;
 
+use aud_io::try_vec;
 use byteorder::{BigEndian, ReadBytesExt};
 
 pub(crate) enum ParsedFrame<'a> {
@@ -43,16 +43,15 @@ impl ParsedFrame<'_> {
 			},
 			Ok(Some(some)) => some,
 			Err(err) => {
-				match parse_options.parsing_mode {
-					ParsingMode::Strict => return Err(err),
-					ParsingMode::BestAttempt | ParsingMode::Relaxed => {
-						log::warn!("Failed to read frame header, skipping: {}", err);
-
-						// Skip this frame and continue reading
-						skip_frame(reader, size)?;
-						return Ok(Self::Skip);
-					},
+				if parse_options.parsing_mode == ParsingMode::Strict {
+					return Err(err);
 				}
+
+				log::warn!("Failed to read frame header, skipping: {}", err);
+
+				// Skip this frame and continue reading
+				skip_frame(reader, size)?;
+				return Ok(Self::Skip);
 			},
 		};
 

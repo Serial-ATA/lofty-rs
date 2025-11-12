@@ -1,17 +1,19 @@
 //! MP3 specific items
-mod constants;
 pub(crate) mod header;
 mod properties;
 mod read;
-
-pub use header::{ChannelMode, Emphasis, Layer, MpegVersion};
-pub use properties::MpegProperties;
 
 use crate::ape::tag::ApeTag;
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::tag::Id3v2Tag;
 
 use lofty_attr::LoftyFile;
+
+// Exports
+
+pub use properties::MpegProperties;
+
+pub use aud_io::mpeg::{ChannelMode, Emphasis, Layer, MpegVersion};
 
 /// An MPEG file
 #[derive(LoftyFile, Default)]

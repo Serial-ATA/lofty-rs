@@ -6,13 +6,14 @@
 pub mod v1;
 pub mod v2;
 
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::try_vec;
-use crate::util::text::utf8_decode_str;
+use crate::error::Result;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::ops::Neg;
+
+use aud_io::text::utf8_decode_str;
+use aud_io::{err as io_err, try_vec};
 
 pub(crate) struct ID3FindResults<Header, Content>(pub Option<Header>, pub Content);
 
@@ -36,11 +37,9 @@ where
 		header = Some(());
 
 		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
-		let lyrics_size = lyrics_size.parse::<u32>().map_err(|_| {
-			LoftyError::new(ErrorKind::TextDecode(
-				"Lyrics3v2 tag has an invalid size string",
-			))
-		})?;
+		let Ok(lyrics_size) = lyrics_size.parse::<u32>() else {
+			io_err!(TextDecode("Lyrics3v2 tag has an invalid size string"));
+		};
 
 		size += lyrics_size;
 

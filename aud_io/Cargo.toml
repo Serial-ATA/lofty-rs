@@ -1,0 +1,23 @@
+[package]
+name        = "aud_io"
+version     = "0.1.0"
+description = "" # TODO
+keywords    = ["audio", "mp4"]
+categories  = ["multimedia", "multimedia::audio", "parser-implementations"]
+readme      = "" # TODO
+include     = ["src", "../LICENSE-APACHE", "../LICENSE-MIT"]
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+byteorder = { workspace = true }
+log       = { workspace = true }
+
+[dev-dependencies]
+test-log = { workspace = true }
+
+# TODO
+#[lints]
+#workspace = true

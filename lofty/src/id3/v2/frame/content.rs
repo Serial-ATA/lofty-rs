@@ -8,10 +8,11 @@ use crate::id3::v2::items::{
 	UrlLinkFrame,
 };
 use crate::id3::v2::{BinaryFrame, Frame, FrameFlags, FrameId};
-use crate::macros::err;
-use crate::util::text::TextEncoding;
 
 use std::io::Read;
+
+use aud_io::err as io_err;
+use aud_io::text::TextEncoding;
 
 #[rustfmt::skip]
 pub(super) fn parse_content<R: Read>(
@@ -22,7 +23,7 @@ pub(super) fn parse_content<R: Read>(
 	parse_mode: ParsingMode,
 ) -> Result<Option<Frame<'static>>> {
 	log::trace!("Parsing frame content for ID: {}", id);
-	
+
 	Ok(match id.as_str() {
 		// The ID was previously upgraded, but the content remains unchanged, so version is necessary
 		"APIC" => {
@@ -61,7 +62,7 @@ pub(in crate::id3::v2) fn verify_encoding(
 	}
 
 	match TextEncoding::from_u8(encoding) {
-		None => err!(TextDecode("Found invalid encoding")),
+		None => io_err!(TextDecode("Found invalid encoding")),
 		Some(e) => Ok(e),
 	}
 }

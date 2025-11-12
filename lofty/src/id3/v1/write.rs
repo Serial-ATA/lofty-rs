@@ -4,10 +4,10 @@ use crate::error::{LoftyError, Result};
 use crate::id3::{ID3FindResults, find_id3v1};
 use crate::macros::err;
 use crate::probe::Probe;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Seek, Write};
 
+use aud_io::io::{FileLike, Length, Truncate};
 use byteorder::WriteBytesExt;
 
 #[allow(clippy::shadow_unrelated)]

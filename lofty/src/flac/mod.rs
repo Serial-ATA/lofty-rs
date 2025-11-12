@@ -17,10 +17,10 @@ use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::{OggPictureStorage, VorbisComments};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::TagExt;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 
+use aud_io::io::{FileLike, Length, Truncate};
 use lofty_attr::LoftyFile;
 
 // Exports

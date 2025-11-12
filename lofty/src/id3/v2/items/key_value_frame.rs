@@ -1,12 +1,12 @@
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
-
-use byteorder::ReadBytesExt;
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 
 use std::io::Read;
+
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use byteorder::ReadBytesExt;
 
 /// An `ID3v2` key-value frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]

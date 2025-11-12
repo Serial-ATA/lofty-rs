@@ -1,15 +1,16 @@
 use super::AacFile;
-use super::header::{ADTSHeader, HEADER_MASK};
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{ID3FindResults, find_id3v1};
-use crate::macros::{decode_err, err, parse_mode_choice};
+use crate::macros::{decode_err, parse_mode_choice};
 use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use aud_io::aac::ADTSHeader;
+use aud_io::err as io_err;
 use byteorder::ReadBytesExt;
 
 #[allow(clippy::unnecessary_wraps)]
@@ -47,7 +48,7 @@ where
 				let skip_footer = header.flags.footer;
 
 				let Some(new_stream_len) = stream_len.checked_sub(u64::from(header.size)) else {
-					err!(SizeMismatch);
+					io_err!(SizeMismatch);
 				};
 
 				stream_len = new_stream_len;
@@ -72,7 +73,7 @@ where
 					log::debug!("Skipping ID3v2 footer");
 
 					let Some(new_stream_len) = stream_len.checked_sub(10) else {
-						err!(SizeMismatch);
+						io_err!(SizeMismatch);
 					};
 
 					stream_len = new_stream_len;
@@ -108,7 +109,7 @@ where
 
 	if header.is_some() {
 		let Some(new_stream_len) = stream_len.checked_sub(128) else {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		};
 
 		stream_len = new_stream_len;
@@ -174,7 +175,7 @@ where
 				header_len,
 				u32::from(first_header.len),
 				u32::from_be_bytes(first_header.bytes[..4].try_into().unwrap()),
-				HEADER_MASK,
+				ADTSHeader::COMPARISON_MASK,
 			) {
 				HeaderCmpResult::Equal => {
 					return Ok(Some((

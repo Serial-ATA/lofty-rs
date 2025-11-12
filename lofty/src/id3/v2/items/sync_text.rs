@@ -1,14 +1,14 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
-use crate::util::text::{
-	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
-	utf16_decode_terminated_maybe_bom,
-};
 
 use std::borrow::Cow;
 use std::io::{Cursor, Seek, Write};
 
+use aud_io::err as io_err;
+use aud_io::text::{
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	utf16_decode_terminated_maybe_bom,
+};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("SYLT"));
@@ -136,8 +136,10 @@ impl SynchronizedTextFrame<'_> {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
-		let encoding = TextEncoding::from_u8(data[0])
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let Some(encoding) = TextEncoding::from_u8(data[0]) else {
+			io_err!(TextDecode("Found invalid encoding"));
+		};
+
 		let language: [u8; 3] = data[1..4].try_into().unwrap();
 		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
@@ -166,7 +168,7 @@ impl SynchronizedTextFrame<'_> {
 			endianness = match bom {
 				[0xFF, 0xFE] => u16::from_le_bytes,
 				[0xFE, 0xFF] => u16::from_be_bytes,
-				_ => err!(TextDecode("UTF-16 string missing a BOM")),
+				_ => io_err!(TextDecode("UTF-16 string missing a BOM")),
 			};
 		}
 
@@ -247,7 +249,7 @@ impl SynchronizedTextFrame<'_> {
 			}
 
 			if data.len() as u64 > u64::from(u32::MAX) {
-				err!(TooMuchData);
+				io_err!(TooMuchData);
 			}
 
 			return Ok(data);
@@ -262,7 +264,7 @@ mod tests {
 	use crate::id3::v2::{
 		FrameFlags, FrameHeader, SyncTextContentType, SynchronizedTextFrame, TimestampFormat,
 	};
-	use crate::util::text::TextEncoding;
+	use aud_io::text::TextEncoding;
 
 	fn expected(encoding: TextEncoding) -> SynchronizedTextFrame<'static> {
 		SynchronizedTextFrame {

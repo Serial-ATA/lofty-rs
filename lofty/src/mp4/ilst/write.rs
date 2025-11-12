@@ -3,18 +3,19 @@ use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::decode_err;
 use crate::mp4::AtomData;
-use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::ilst::r#ref::AtomRef;
-use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
+use crate::mp4::read::{atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::picture::{MimeType, Picture};
-use crate::util::alloc::VecFallibleCapacity;
-use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use aud_io::alloc::VecFallibleCapacity;
+use aud_io::io::{FileLike, Length, Truncate};
+use aud_io::mp4::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, AtomReader, FOURCC_LEN};
+use aud_io::{err as io_err, try_vec};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 // A "full" atom is a traditional length + identifier, followed by a version (1) and flags (3)
@@ -298,7 +299,7 @@ fn save_to_existing(
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
-					err!(TooMuchData);
+					io_err!(TooMuchData);
 				}
 
 				let remaining_space = remaining_space as u32;

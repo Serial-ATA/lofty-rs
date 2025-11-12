@@ -1,13 +1,12 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
-use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{
-	TextDecodeOptions, TextEncoding, decode_text, encode_text, utf8_decode_str,
-};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3TextEncodingExt};
 
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
 
+use aud_io::err as io_err;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text, utf8_decode_str};
 use byteorder::ReadBytesExt;
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("OWNE"));
@@ -82,8 +81,10 @@ impl OwnershipFrame<'_> {
 			return Ok(None);
 		};
 
-		let encoding = TextEncoding::from_u8(encoding_byte)
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let Some(encoding) = TextEncoding::from_u8(encoding_byte) else {
+			io_err!(TextDecode("Found invalid encoding"));
+		};
+
 		let price_paid = decode_text(
 			reader,
 			TextDecodeOptions::new()
@@ -138,10 +139,11 @@ impl OwnershipFrame<'_> {
 
 #[cfg(test)]
 mod tests {
-	use crate::TextEncoding;
 	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, OwnershipFrame};
 
 	use std::borrow::Cow;
+
+	use aud_io::text::TextEncoding;
 
 	fn expected() -> OwnershipFrame<'static> {
 		OwnershipFrame {

@@ -1,12 +1,11 @@
-use crate::error::Result;
-use crate::macros::err;
-
 use crate::config::global_options;
+use crate::err;
+use crate::error::Result;
 
-/// Provides the `fallible_repeat` method on `Vec`
+/// Provides the `fallible_repeat` method on [`Vec`]
 ///
-/// It is intended to be used in [`try_vec!`](crate::macros::try_vec).
-trait VecFallibleRepeat<T>: Sized {
+/// It is intended to be used in [`try_vec!`](crate::try_vec).
+pub trait VecFallibleRepeat<T>: Sized {
 	fn fallible_repeat(self, element: T, expected_size: usize) -> Result<Self>
 	where
 		T: Clone;
@@ -46,23 +45,24 @@ impl<T> VecFallibleRepeat<T> for Vec<T> {
 
 /// **DO NOT USE DIRECTLY**
 ///
-/// Creates a `Vec` of the specified length, containing copies of `element`.
+/// Creates a [`Vec`] of the specified length, containing copies of `element`.
 ///
-/// This should be used through [`try_vec!`](crate::macros::try_vec)
-pub(crate) fn fallible_vec_from_element<T>(element: T, expected_size: usize) -> Result<Vec<T>>
+/// This should be used through [`try_vec!`](crate::try_vec)
+#[doc(hidden)]
+pub fn fallible_vec_from_element<T>(element: T, expected_size: usize) -> Result<Vec<T>>
 where
 	T: Clone,
 {
 	Vec::new().fallible_repeat(element, expected_size)
 }
 
-/// Provides the `try_with_capacity` method on `Vec`
+/// Provides the `try_with_capacity` method on [`Vec`]
 ///
 /// This can be used directly.
-pub(crate) trait VecFallibleCapacity<T>: Sized {
-	/// Same as `Vec::with_capacity`, but takes `GlobalOptions::allocation_limit` into account.
+pub trait VecFallibleCapacity<T>: Sized {
+	/// Same as [`Vec::with_capacity()`], but takes [`GlobalOptions::allocation_limit()`] into account.
 	///
-	/// Named `try_with_capacity_stable` to avoid conflicts with the nightly `Vec::try_with_capacity`.
+	/// Named `try_with_capacity_stable` to avoid conflicts with the nightly [`Vec::try_with_capacity()`].
 	fn try_with_capacity_stable(capacity: usize) -> Result<Self>;
 }
 
@@ -81,7 +81,7 @@ impl<T> VecFallibleCapacity<T> for Vec<T> {
 
 #[cfg(test)]
 mod tests {
-	use crate::util::alloc::fallible_vec_from_element;
+	use super::fallible_vec_from_element;
 
 	#[test_log::test]
 	fn vec_fallible_repeat() {

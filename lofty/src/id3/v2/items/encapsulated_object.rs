@@ -1,8 +1,10 @@
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 use std::io::{Cursor, Read};
+
+use aud_io::err as io_err;
+use aud_io::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(std::borrow::Cow::Borrowed("GEOB"));
 
@@ -69,8 +71,9 @@ impl GeneralEncapsulatedObject<'_> {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
-		let encoding = TextEncoding::from_u8(data[0])
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let Some(encoding) = TextEncoding::from_u8(data[0]) else {
+			io_err!(TextDecode("Found invalid encoding"));
+		};
 
 		let mut cursor = Cursor::new(&data[1..]);
 
@@ -129,7 +132,7 @@ impl GeneralEncapsulatedObject<'_> {
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::{FrameFlags, FrameHeader, GeneralEncapsulatedObject};
-	use crate::util::text::TextEncoding;
+	use aud_io::text::TextEncoding;
 
 	fn expected() -> GeneralEncapsulatedObject<'static> {
 		GeneralEncapsulatedObject {

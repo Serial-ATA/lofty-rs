@@ -1,12 +1,12 @@
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::macros::{err, try_vec};
-use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::marker::PhantomData;
 
+use aud_io::text::utf8_decode;
+use aud_io::{err as io_err, try_vec};
 use byteorder::{ByteOrder, ReadBytesExt};
 
 const RIFF_CHUNK_HEADER_SIZE: u64 = 8;
@@ -55,7 +55,7 @@ impl<B: ByteOrder> Chunks<B> {
 		let cont = self.content(data)?;
 		self.correct_position(data)?;
 
-		utf8_decode(cont)
+		utf8_decode(cont).map_err(Into::into)
 	}
 
 	pub fn read_pstring<R>(&mut self, data: &mut R, size: Option<u32>) -> Result<String>
@@ -72,7 +72,7 @@ impl<B: ByteOrder> Chunks<B> {
 			data.seek(SeekFrom::Current(1))?;
 		}
 
-		utf8_decode(cont)
+		utf8_decode(cont).map_err(Into::into)
 	}
 
 	pub fn content<R>(&mut self, data: &mut R) -> Result<Vec<u8>>
@@ -87,7 +87,7 @@ impl<B: ByteOrder> Chunks<B> {
 		R: Read,
 	{
 		if size > self.remaining_size {
-			err!(SizeMismatch);
+			io_err!(SizeMismatch);
 		}
 
 		let mut content = try_vec![0; size as usize];

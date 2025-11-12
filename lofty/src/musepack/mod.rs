@@ -1,5 +1,5 @@
 //! Musepack specific items
-pub mod constants;
+
 mod read;
 pub mod sv4to6;
 pub mod sv7;
@@ -11,6 +11,10 @@ use crate::id3::v2::tag::Id3v2Tag;
 use crate::properties::FileProperties;
 
 use lofty_attr::LoftyFile;
+
+// Exports
+
+pub use aud_io::musepack::constants;
 
 /// Audio properties of an MPC file
 ///

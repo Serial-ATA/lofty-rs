@@ -16,7 +16,6 @@ use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, try_parse_year,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
 use advisory_rating::AdvisoryRating;
 use atom::{Atom, AtomData};
 use data_type::DataType;
@@ -25,6 +24,8 @@ use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
 
+use aud_io::err as io_err;
+use aud_io::io::{FileLike, Length, Truncate};
 use lofty_attr::tag;
 
 const ARTIST: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9ART");
@@ -885,12 +886,54 @@ impl From<Tag> for Ilst {
 	}
 }
 
+impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
+	type Error = LoftyError;
+
+	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
+		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
+			if mapped_key.starts_with("----") {
+				let mut split = mapped_key.split(':');
+
+				split.next();
+
+				let mean = split.next();
+				let name = split.next();
+
+				if let (Some(mean), Some(name)) = (mean, name) {
+					return Ok(AtomIdent::Freeform {
+						mean: Cow::Borrowed(mean),
+						name: Cow::Borrowed(name),
+					});
+				}
+			} else {
+				let fourcc = mapped_key.chars().map(|c| c as u8).collect::<Vec<_>>();
+
+				if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
+					return Ok(AtomIdent::Fourcc(fourcc));
+				}
+			}
+		}
+
+		io_err!(TextDecode(
+			"ItemKey does not map to a freeform or fourcc identifier"
+		))
+	}
+}
+
+impl TryFrom<ItemKey> for AtomIdent<'static> {
+	type Error = LoftyError;
+
+	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
+		let ret: AtomIdent<'_> = (&value).try_into()?;
+		Ok(ret.into_owned())
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::mp4::ilst::TITLE;
 	use crate::mp4::ilst::atom::AtomDataStorage;
-	use crate::mp4::read::AtomReader;
 	use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, DataType, Ilst, Mp4File};
 	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
@@ -899,6 +942,8 @@ mod tests {
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
+
+	use aud_io::mp4::AtomReader;
 
 	fn read_ilst(path: &str, parse_options: ParseOptions) -> Ilst {
 		let tag = std::fs::read(path).unwrap();
