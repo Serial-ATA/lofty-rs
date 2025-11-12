@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - In formats like Vorbis Comments, `ItemKey::Lyrics` may actually contain synchronized lyrics in LRC format. To help with the ambiguity, some
       apps may write a separate field containing normal, unsynchronized lyrics.
     - In other formats where the difference doesn't matter (like ID3v2), this will act exactly the same as `ItemKey::Lyrics`.
+  - `ItemKey::ReleaseCountry` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/573))
+    - Currently, this maps to the [fields](https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id30) used by MusicBrainz Picard, which expect an
+      ISO 3166-1 code.
 - **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`)
   - Support can be enabled with the new `serde` feature (not enabled by default)
 - **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
