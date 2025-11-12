@@ -93,6 +93,7 @@ gen_map!(
 	"MOVEMENTNAME"                   => Movement,
 	"MOVEMENT"                       => MovementNumber,
 	"MOVEMENTTOTAL"                  => MovementTotal,
+	"RELEASECOUNTRY"                 => ReleaseCountry,
 	"ALBUMSORT"                      => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                => AlbumArtistSortOrder,
 	"TITLESORT"                      => TrackTitleSortOrder,
@@ -351,7 +352,8 @@ gen_map!(
 	"IGNR"          => Genre,
 	"ICOP"          => CopyrightMessage,
 	"ICMT"          => Comment,
-	"ILNG"          => Language
+	"ILNG"          => Language,
+	"ICNT"	        => ReleaseCountry
 );
 
 gen_map!(
