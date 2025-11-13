@@ -1,13 +1,12 @@
 mod chunk_file;
 mod frame;
 
-use super::Id3v2TagFlags;
+use super::{Frame, Id3v2TagFlags};
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::id3::v2::Id3v2Tag;
-use crate::id3::v2::frame::FrameRef;
-use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::{FindId3v2Config, find_id3v2};
 use crate::macros::{err, try_vec};
@@ -47,7 +46,7 @@ where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
 	LoftyError: From<<F as Length>::Error>,
-	I: Iterator<Item = FrameRef<'a>> + 'a,
+	I: Iterator<Item = Frame<'a>> + 'a,
 {
 	let probe = Probe::new(file).guess_file_type()?;
 	let file_type = probe.file_type();
@@ -102,7 +101,7 @@ where
 	Ok(())
 }
 
-pub(super) fn create_tag<'a, I: Iterator<Item = FrameRef<'a>> + 'a>(
+pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 	tag: &mut Id3v2TagRef<'a, I>,
 	write_options: WriteOptions,
 ) -> Result<Vec<u8>> {

@@ -7,7 +7,7 @@ use crate::util::io::{FileLike, Length, Truncate};
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;
-use crate::id3::v2::tag::Id3v2TagRef;
+use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::{self, Id3v2TagFlags};
 use crate::mp4::Ilst;
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
@@ -66,7 +66,7 @@ pub(crate) fn dump_tag<W: Write>(
 		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer, write_options),
 		TagType::Id3v2 => Id3v2TagRef {
 			flags: Id3v2TagFlags::default(),
-			frames: v2::tag::tag_frames(tag).peekable(),
+			frames: v2::tag::conversion::tag_frames(tag).peekable(),
 		}
 		.dump_to(writer, write_options),
 		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone())

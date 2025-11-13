@@ -36,7 +36,9 @@ where
 			write_to_inner(file, &mut comments_ref, write_options)
 		},
 		// This tag can *only* be removed in this format
-		TagType::Id3v2 => crate::id3::v2::tag::Id3v2TagRef::empty().write_to(file, write_options),
+		TagType::Id3v2 => {
+			crate::id3::v2::tag::conversion::Id3v2TagRef::empty().write_to(file, write_options)
+		},
 		_ => err!(UnsupportedTag),
 	}
 }

@@ -33,7 +33,7 @@ fn id3v24_apic() {
 	let apic = AttachedPictureFrame::parse(&mut &buf[..], FrameFlags::default(), Id3v2Version::V4)
 		.unwrap();
 
-	assert_eq!(create_original_picture(), apic.picture);
+	assert_eq!(&create_original_picture(), &*apic.picture);
 }
 
 #[test_log::test]
@@ -55,7 +55,7 @@ fn id3v22_pic() {
 	let pic = AttachedPictureFrame::parse(&mut &buf[..], FrameFlags::default(), Id3v2Version::V2)
 		.unwrap();
 
-	assert_eq!(create_original_picture(), pic.picture);
+	assert_eq!(&create_original_picture(), &*pic.picture);
 }
 
 #[test_log::test]

@@ -17,19 +17,19 @@ pub struct PrivateFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
 	/// A URL containing an email address, or a link to a location where an email can be found,
 	/// that belongs to the organisation responsible for the frame
-	pub owner: String,
+	pub owner: Cow<'a, str>,
 	/// Binary data
-	pub private_data: Vec<u8>,
+	pub private_data: Cow<'a, [u8]>,
 }
 
-impl PrivateFrame<'_> {
+impl<'a> PrivateFrame<'a> {
 	/// Create a new [`PrivateFrame`]
-	pub fn new(owner: String, private_data: Vec<u8>) -> Self {
+	pub fn new(owner: impl Into<Cow<'a, str>>, private_data: impl Into<Cow<'a, [u8]>>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
-			owner,
-			private_data,
+			owner: owner.into(),
+			private_data: private_data.into(),
 		}
 	}
 
@@ -76,8 +76,8 @@ impl PrivateFrame<'_> {
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(PrivateFrame {
 			header,
-			owner,
-			private_data,
+			owner: Cow::Owned(owner),
+			private_data: Cow::Owned(private_data),
 		}))
 	}
 
@@ -94,23 +94,29 @@ impl PrivateFrame<'_> {
 		} = self;
 
 		let mut content = Vec::try_with_capacity_stable(owner.len() + private_data.len())?;
-		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
+		content.extend(encode_text(owner, TextEncoding::Latin1, true));
 		content.extend_from_slice(private_data);
 
 		Ok(content)
 	}
 }
 
+impl PrivateFrame<'static> {
+	pub(crate) fn downgrade(&self) -> PrivateFrame<'_> {
+		PrivateFrame {
+			header: self.header.downgrade(),
+			owner: Cow::Borrowed(&self.owner),
+			private_data: Cow::Borrowed(&self.private_data),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{FrameFlags, FrameHeader, PrivateFrame};
+	use crate::id3::v2::{FrameFlags, PrivateFrame};
 
 	fn expected() -> PrivateFrame<'static> {
-		PrivateFrame {
-			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
-			owner: String::from("foo@bar.com"),
-			private_data: String::from("some data").into_bytes(),
-		}
+		PrivateFrame::new("foo@bar.com", String::from("some data").into_bytes())
 	}
 
 	#[test_log::test]

@@ -369,8 +369,8 @@ fn remove_ape() {
 #[test_log::test]
 fn read_and_write_tpil_frame() {
 	let key_value_pairs = vec![
-		("engineer".to_string(), "testperson".to_string()),
-		("vocalist".to_string(), "testhuman".to_string()),
+		(Cow::Borrowed("engineer"), Cow::Borrowed("testperson")),
+		(Cow::Borrowed("vocalist"), Cow::Borrowed("testhuman")),
 	];
 
 	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");

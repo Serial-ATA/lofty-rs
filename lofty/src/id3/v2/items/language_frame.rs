@@ -111,9 +111,9 @@ pub struct CommentFrame<'a> {
 	/// ISO-639-2 language code (3 bytes)
 	pub language: Lang,
 	/// Unique content description
-	pub description: String,
+	pub description: Cow<'a, str>,
 	/// The actual frame content
-	pub content: String,
+	pub content: Cow<'a, str>,
 }
 
 impl PartialEq for CommentFrame<'_> {
@@ -129,23 +129,23 @@ impl Hash for CommentFrame<'_> {
 	}
 }
 
-impl CommentFrame<'_> {
+impl<'a> CommentFrame<'a> {
 	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("COMM"));
 
 	/// Create a new [`CommentFrame`]
 	pub fn new(
 		encoding: TextEncoding,
 		language: Lang,
-		description: String,
-		content: String,
+		description: impl Into<Cow<'a, str>>,
+		content: impl Into<Cow<'a, str>>,
 	) -> Self {
 		let header = FrameHeader::new(Self::FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
 			language,
-			description,
-			content,
+			description: description.into(),
+			content: content.into(),
 		}
 	}
 
@@ -192,8 +192,8 @@ impl CommentFrame<'_> {
 			header,
 			encoding: language_frame.encoding,
 			language: language_frame.language,
-			description: language_frame.description,
-			content: language_frame.content,
+			description: Cow::Owned(language_frame.description),
+			content: Cow::Owned(language_frame.content),
 		}))
 	}
 
@@ -216,6 +216,18 @@ impl CommentFrame<'_> {
 	}
 }
 
+impl CommentFrame<'static> {
+	pub(crate) fn downgrade(&self) -> CommentFrame<'_> {
+		CommentFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			language: self.language,
+			description: Cow::Borrowed(&self.description),
+			content: Cow::Borrowed(&self.content),
+		}
+	}
+}
+
 /// An `ID3v2` unsynchronized lyrics/text frame
 ///
 /// Similar to `TXXX` and `WXXX` frames, USLT frames are told apart by their descriptions.
@@ -227,9 +239,9 @@ pub struct UnsynchronizedTextFrame<'a> {
 	/// ISO-639-2 language code (3 bytes)
 	pub language: Lang,
 	/// Unique content description
-	pub description: String,
+	pub description: Cow<'a, str>,
 	/// The actual frame content
-	pub content: String,
+	pub content: Cow<'a, str>,
 }
 
 impl PartialEq for UnsynchronizedTextFrame<'_> {
@@ -245,23 +257,23 @@ impl Hash for UnsynchronizedTextFrame<'_> {
 	}
 }
 
-impl UnsynchronizedTextFrame<'_> {
+impl<'a> UnsynchronizedTextFrame<'a> {
 	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("USLT"));
 
 	/// Create a new [`UnsynchronizedTextFrame`]
 	pub fn new(
 		encoding: TextEncoding,
 		language: Lang,
-		description: String,
-		content: String,
+		description: impl Into<Cow<'a, str>>,
+		content: impl Into<Cow<'a, str>>,
 	) -> Self {
 		let header = FrameHeader::new(Self::FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
 			language,
-			description,
-			content,
+			description: description.into(),
+			content: content.into(),
 		}
 	}
 
@@ -308,8 +320,8 @@ impl UnsynchronizedTextFrame<'_> {
 			header,
 			encoding: language_frame.encoding,
 			language: language_frame.language,
-			description: language_frame.description,
-			content: language_frame.content,
+			description: Cow::Owned(language_frame.description),
+			content: Cow::Owned(language_frame.content),
 		}))
 	}
 
@@ -329,5 +341,17 @@ impl UnsynchronizedTextFrame<'_> {
 			&self.content,
 			is_id3v23,
 		)
+	}
+}
+
+impl UnsynchronizedTextFrame<'static> {
+	pub(crate) fn downgrade(&self) -> UnsynchronizedTextFrame<'_> {
+		UnsynchronizedTextFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			language: self.language,
+			description: Cow::Borrowed(&self.description),
+			content: Cow::Borrowed(&self.content),
+		}
 	}
 }

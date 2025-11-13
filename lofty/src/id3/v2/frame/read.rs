@@ -9,6 +9,7 @@ use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
 
+use std::borrow::Cow;
 use std::io::Read;
 
 use byteorder::{BigEndian, ReadBytesExt};
@@ -240,7 +241,7 @@ fn handle_encryption<R: Read>(
 
 	let encrypted_frame = Frame::Binary(BinaryFrame {
 		header: FrameHeader::new(id, flags),
-		data: content,
+		data: Cow::Owned(content),
 	});
 
 	// Nothing further we can do with encrypted frames

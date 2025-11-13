@@ -6,6 +6,7 @@ use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_tex
 
 use byteorder::ReadBytesExt;
 
+use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
 
@@ -16,7 +17,7 @@ pub struct TextInformationFrame<'a> {
 	/// The encoding of the text
 	pub encoding: TextEncoding,
 	/// The text itself
-	pub value: String,
+	pub value: Cow<'a, str>,
 }
 
 impl PartialEq for TextInformationFrame<'_> {
@@ -33,12 +34,12 @@ impl Hash for TextInformationFrame<'_> {
 
 impl<'a> TextInformationFrame<'a> {
 	/// Create a new [`TextInformationFrame`]
-	pub fn new(id: FrameId<'a>, encoding: TextEncoding, value: String) -> Self {
+	pub fn new(id: FrameId<'a>, encoding: TextEncoding, value: impl Into<Cow<'a, str>>) -> Self {
 		let header = FrameHeader::new(id, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			value,
+			value: value.into(),
 		}
 	}
 
@@ -88,7 +89,7 @@ impl<'a> TextInformationFrame<'a> {
 		Ok(Some(TextInformationFrame {
 			header,
 			encoding,
-			value,
+			value: Cow::Owned(value),
 		}))
 	}
 
@@ -103,5 +104,15 @@ impl<'a> TextInformationFrame<'a> {
 
 		content.insert(0, encoding as u8);
 		content
+	}
+}
+
+impl TextInformationFrame<'static> {
+	pub(crate) fn downgrade(&self) -> TextInformationFrame<'_> {
+		TextInformationFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			value: Cow::Borrowed(&self.value),
+		}
 	}
 }

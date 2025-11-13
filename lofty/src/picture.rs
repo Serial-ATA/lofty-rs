@@ -943,3 +943,15 @@ impl Picture {
 		}
 	}
 }
+
+impl From<Picture> for Cow<'_, Picture> {
+	fn from(pic: Picture) -> Self {
+		Cow::Owned(pic)
+	}
+}
+
+impl<'a> From<&'a Picture> for Cow<'a, Picture> {
+	fn from(pic: &'a Picture) -> Self {
+		Cow::Borrowed(pic)
+	}
+}

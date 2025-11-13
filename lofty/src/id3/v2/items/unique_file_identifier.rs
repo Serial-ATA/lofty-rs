@@ -15,9 +15,9 @@ const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("UFID"));
 pub struct UniqueFileIdentifierFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
 	/// The non-empty owner of the identifier.
-	pub owner: String,
+	pub owner: Cow<'a, str>,
 	/// The binary payload with up to 64 bytes of data.
-	pub identifier: Vec<u8>,
+	pub identifier: Cow<'a, [u8]>,
 }
 
 impl PartialEq for UniqueFileIdentifierFrame<'_> {
@@ -32,14 +32,14 @@ impl Hash for UniqueFileIdentifierFrame<'_> {
 	}
 }
 
-impl UniqueFileIdentifierFrame<'_> {
+impl<'a> UniqueFileIdentifierFrame<'a> {
 	/// Create a new [`UniqueFileIdentifierFrame`]
-	pub fn new(owner: String, identifier: Vec<u8>) -> Self {
+	pub fn new(owner: impl Into<Cow<'a, str>>, identifier: impl Into<Cow<'a, [u8]>>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
-			owner,
-			identifier,
+			owner: owner.into(),
+			identifier: identifier.into(),
 		}
 	}
 
@@ -96,8 +96,8 @@ impl UniqueFileIdentifierFrame<'_> {
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(Self {
 			header,
-			owner,
-			identifier,
+			owner: Cow::Owned(owner),
+			identifier: Cow::Owned(identifier),
 		}))
 	}
 
@@ -108,29 +108,33 @@ impl UniqueFileIdentifierFrame<'_> {
 		} = self;
 
 		let mut content = Vec::with_capacity(owner.len() + 1 + identifier.len());
-		content.extend(encode_text(owner.as_str(), TextEncoding::Latin1, true));
+		content.extend(encode_text(owner, TextEncoding::Latin1, true));
 		content.extend_from_slice(identifier);
 
 		content
 	}
 }
 
+impl UniqueFileIdentifierFrame<'static> {
+	pub(crate) fn downgrade(&self) -> UniqueFileIdentifierFrame<'_> {
+		UniqueFileIdentifierFrame {
+			header: self.header.downgrade(),
+			owner: Cow::Borrowed(&self.owner),
+			identifier: Cow::Borrowed(&self.identifier),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-
-	use std::borrow::Cow;
+	use crate::id3::v2::FrameFlags;
 
 	#[test_log::test]
 	fn issue_204_invalid_ufid_parsing_mode_best_attempt() {
 		use crate::config::ParsingMode;
 		use crate::id3::v2::UniqueFileIdentifierFrame;
 
-		let ufid_no_owner = UniqueFileIdentifierFrame {
-			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("UFID")), FrameFlags::default()),
-			owner: String::new(),
-			identifier: vec![0],
-		};
+		let ufid_no_owner = UniqueFileIdentifierFrame::new("", vec![0]);
 
 		let bytes = ufid_no_owner.as_bytes();
 

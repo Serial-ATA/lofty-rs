@@ -19,7 +19,7 @@ const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("POPM"));
 pub struct PopularimeterFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
 	/// An email address of the user performing the rating
-	pub email: String,
+	pub email: Cow<'a, str>,
 	/// A rating of 1-255, where 1 is the worst and 255 is the best.
 	/// A rating of 0 is unknown.
 	///
@@ -43,13 +43,13 @@ impl Hash for PopularimeterFrame<'_> {
 	}
 }
 
-impl PopularimeterFrame<'_> {
+impl<'a> PopularimeterFrame<'a> {
 	/// Create a new [`PopularimeterFrame`]
-	pub fn new(email: String, rating: u8, counter: u64) -> Self {
+	pub fn new(email: impl Into<Cow<'a, str>>, rating: u8, counter: u64) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
-			email,
+			email: email.into(),
 			rating,
 			counter,
 		}
@@ -106,7 +106,7 @@ impl PopularimeterFrame<'_> {
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Self {
 			header,
-			email: email.content,
+			email: Cow::Owned(email.content),
 			rating,
 			counter,
 		})
@@ -121,7 +121,7 @@ impl PopularimeterFrame<'_> {
 	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
 	pub fn as_bytes(&self) -> Result<Vec<u8>> {
 		let mut content = Vec::try_with_capacity_stable(self.email.len() + 9)?;
-		content.extend(encode_text(self.email.as_str(), TextEncoding::Latin1, true));
+		content.extend(encode_text(&self.email, TextEncoding::Latin1, true));
 		content.push(self.rating);
 
 		// When the counter reaches all one's, one byte is inserted in front of the counter
@@ -141,10 +141,20 @@ impl PopularimeterFrame<'_> {
 	}
 }
 
+impl PopularimeterFrame<'static> {
+	pub(crate) fn downgrade(&self) -> PopularimeterFrame<'_> {
+		PopularimeterFrame {
+			header: self.header.downgrade(),
+			email: Cow::Borrowed(&self.email),
+			rating: self.rating,
+			counter: self.counter,
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::id3::v2::items::popularimeter::PopularimeterFrame;
-	use crate::id3::v2::{FrameFlags, FrameHeader};
 
 	fn test_popm(popm: &PopularimeterFrame<'_>) {
 		let email = popm.email.clone();
@@ -169,21 +179,10 @@ mod tests {
 
 	#[test_log::test]
 	fn write_popm() {
-		let popm_u32_boundary = PopularimeterFrame {
-			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
-			email: String::from("foo@bar.com"),
-			rating: 255,
-			counter: u64::from(u32::MAX),
-		};
-
-		let popm_u40 = PopularimeterFrame {
-			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
-			email: String::from("baz@qux.com"),
-			rating: 196,
-			counter: u64::from(u32::MAX) + 1,
-		};
-
+		let popm_u32_boundary = PopularimeterFrame::new("foo@bar.com", 255, u64::from(u32::MAX));
 		test_popm(&popm_u32_boundary);
+
+		let popm_u40 = PopularimeterFrame::new("baz@qux.com", 196, u64::from(u32::MAX) + 1);
 		test_popm(&popm_u40);
 	}
 }
