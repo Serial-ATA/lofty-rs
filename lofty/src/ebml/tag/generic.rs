@@ -10,6 +10,9 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+const MATROSKA_UNKNOWN_LANGUAGE: Lang = *b"und";
+const MATROSKA_UNKNOWN_LANGUAGE_STR: &str = "und";
+
 macro_rules! matroska_mapping_tables {
 	(
         $($target:ident => [
@@ -218,7 +221,7 @@ fn split_simple_tags(
 	simple_tag: &mut SimpleTag<'_>,
 	tag: &mut Tag,
 ) -> bool {
-	let lang: Lang;
+	let mut lang: Lang;
 	let Language::Iso639_2(l) = &simple_tag.language else {
 		return TAG_RETAINED;
 	};
@@ -229,6 +232,11 @@ fn split_simple_tags(
 	}
 
 	lang = l.as_bytes().try_into().unwrap(); // Infallible
+	if lang == MATROSKA_UNKNOWN_LANGUAGE {
+		// `TagItem` uses an ID3v2-style unknown language for consistency. The language is changed back
+		// when converting/writing.
+		lang = UNKNOWN_LANGUAGE;
+	}
 
 	let Some(item_key) = MAPPINGS.get(&(target_type, &*simple_tag.name)).copied() else {
 		return TAG_RETAINED;
@@ -282,12 +290,12 @@ pub(super) fn simple_tag_for_item(
 		return None;
 	};
 
-	// Matroska uses "und" for unknown languages
+	// `TagItem` uses the ID3v2-style unknown language
 	if lang == UNKNOWN_LANGUAGE {
-		lang = *b"und";
+		lang = MATROSKA_UNKNOWN_LANGUAGE;
 	}
 
-	let lang_str = std::str::from_utf8(lang.as_slice()).unwrap_or("und");
+	let lang_str = std::str::from_utf8(lang.as_slice()).unwrap_or(MATROSKA_UNKNOWN_LANGUAGE_STR);
 
 	let mut simple_tag = SimpleTag::new((*simple_tag_name).to_string(), text);
 	simple_tag.language = Language::Iso639_2(lang_str.to_string());
