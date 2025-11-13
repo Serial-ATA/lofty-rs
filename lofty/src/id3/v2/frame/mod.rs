@@ -1,5 +1,4 @@
 pub(super) mod content;
-mod conversion;
 pub(super) mod header;
 pub(super) mod read;
 
@@ -17,7 +16,6 @@ use header::FrameId;
 
 use std::borrow::Cow;
 use std::hash::Hash;
-use std::ops::Deref;
 
 pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 
@@ -27,7 +25,7 @@ pub(super) const MUSICBRAINZ_UFID_OWNER: &str = "http://musicbrainz.org";
 /// are supposed to have an empty content descriptor. Only those
 /// are currently supported as [`TagItem`]s to avoid ambiguities
 /// and to prevent inconsistencies when writing them.
-pub(super) const EMPTY_CONTENT_DESCRIPTOR: String = String::new();
+pub(super) const EMPTY_CONTENT_DESCRIPTOR: Cow<'static, str> = Cow::Borrowed("");
 
 // TODO: Messy module, rough conversions
 
@@ -159,8 +157,31 @@ impl<'a> Frame<'a> {
 		Frame::Text(TextInformationFrame {
 			header: FrameHeader::new(FrameId::Valid(id), FrameFlags::default()),
 			encoding: TextEncoding::UTF8,
-			value: content,
+			value: Cow::Owned(content),
 		})
+	}
+}
+
+impl Frame<'static> {
+	pub(super) fn downgrade(&self) -> Frame<'_> {
+		match self {
+			Frame::Comment(f) => Frame::Comment(f.downgrade()),
+			Frame::UnsynchronizedText(f) => Frame::UnsynchronizedText(f.downgrade()),
+			Frame::Text(f) => Frame::Text(f.downgrade()),
+			Frame::UserText(f) => Frame::UserText(f.downgrade()),
+			Frame::Url(f) => Frame::Url(f.downgrade()),
+			Frame::UserUrl(f) => Frame::UserUrl(f.downgrade()),
+			Frame::Picture(f) => Frame::Picture(f.downgrade()),
+			Frame::Popularimeter(f) => Frame::Popularimeter(f.downgrade()),
+			Frame::KeyValue(f) => Frame::KeyValue(f.downgrade()),
+			Frame::RelativeVolumeAdjustment(f) => Frame::RelativeVolumeAdjustment(f.downgrade()),
+			Frame::UniqueFileIdentifier(f) => Frame::UniqueFileIdentifier(f.downgrade()),
+			Frame::Ownership(f) => Frame::Ownership(f.downgrade()),
+			Frame::EventTimingCodes(f) => Frame::EventTimingCodes(f.downgrade()),
+			Frame::Private(f) => Frame::Private(f.downgrade()),
+			Frame::Timestamp(f) => Frame::Timestamp(f.downgrade()),
+			Frame::Binary(f) => Frame::Binary(f.downgrade()),
+		}
 	}
 }
 
@@ -403,26 +424,5 @@ impl FrameFlags {
 		}
 
 		flags
-	}
-}
-
-#[derive(Clone)]
-pub(crate) struct FrameRef<'a>(pub(crate) Cow<'a, Frame<'a>>);
-
-impl<'a> Deref for FrameRef<'a> {
-	type Target = Frame<'a>;
-
-	fn deref(&self) -> &Self::Target {
-		self.0.as_ref()
-	}
-}
-
-impl<'a> Frame<'a> {
-	pub(crate) fn as_opt_ref(&'a self) -> Option<FrameRef<'a>> {
-		if let FrameId::Valid(_) = self.id() {
-			Some(FrameRef(Cow::Borrowed(self)))
-		} else {
-			None
-		}
 	}
 }

@@ -26,28 +26,28 @@ pub struct OwnershipFrame<'a> {
 	/// The first three characters of this field contains the currency used for the transaction,
 	/// encoded according to ISO 4217 alphabetic currency code. Concatenated to this is the actual price paid,
 	/// as a numerical string using ”.” as the decimal separator.
-	pub price_paid: String,
+	pub price_paid: Cow<'a, str>,
 	/// The date of purchase as an 8 character date string (YYYYMMDD)
-	pub date_of_purchase: String,
+	pub date_of_purchase: Cow<'a, str>,
 	/// The seller name
-	pub seller: String,
+	pub seller: Cow<'a, str>,
 }
 
-impl OwnershipFrame<'_> {
+impl<'a> OwnershipFrame<'a> {
 	/// Create a new [`OwnershipFrame`]
 	pub fn new(
 		encoding: TextEncoding,
-		price_paid: String,
-		date_of_purchase: String,
-		seller: String,
+		price_paid: impl Into<Cow<'a, str>>,
+		date_of_purchase: impl Into<Cow<'a, str>>,
+		seller: impl Into<Cow<'a, str>>,
 	) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			price_paid,
-			date_of_purchase,
-			seller,
+			price_paid: price_paid.into(),
+			date_of_purchase: date_of_purchase.into(),
+			seller: seller.into(),
 		}
 	}
 
@@ -103,9 +103,9 @@ impl OwnershipFrame<'_> {
 		Ok(Some(OwnershipFrame {
 			header,
 			encoding,
-			price_paid,
-			date_of_purchase,
-			seller,
+			price_paid: Cow::Owned(price_paid),
+			date_of_purchase: Cow::Owned(date_of_purchase),
+			seller: Cow::Owned(seller),
 		}))
 	}
 
@@ -136,21 +136,25 @@ impl OwnershipFrame<'_> {
 	}
 }
 
+impl OwnershipFrame<'static> {
+	pub(crate) fn downgrade(&self) -> OwnershipFrame<'_> {
+		OwnershipFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			price_paid: Cow::Borrowed(&self.price_paid),
+			date_of_purchase: Cow::Borrowed(&self.date_of_purchase),
+			seller: Cow::Borrowed(&self.seller),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::TextEncoding;
-	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, OwnershipFrame};
-
-	use std::borrow::Cow;
+	use crate::id3::v2::{FrameFlags, OwnershipFrame};
 
 	fn expected() -> OwnershipFrame<'static> {
-		OwnershipFrame {
-			header: FrameHeader::new(FrameId::Valid(Cow::Borrowed("OWNE")), FrameFlags::default()),
-			encoding: TextEncoding::Latin1,
-			price_paid: String::from("USD1000"),
-			date_of_purchase: String::from("19840407"),
-			seller: String::from("FooBar"),
-		}
+		OwnershipFrame::new(TextEncoding::Latin1, "USD1000", "19840407", "FooBar")
 	}
 
 	#[test_log::test]

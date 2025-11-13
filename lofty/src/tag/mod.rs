@@ -286,7 +286,7 @@ impl Tag {
 	}
 
 	/// Returns the stored [`TagItem`]s as a slice
-	pub fn items(&self) -> impl Iterator<Item = &TagItem> + Clone {
+	pub fn items(&self) -> impl ExactSizeIterator<Item = &TagItem> + Clone {
 		self.items.iter()
 	}
 

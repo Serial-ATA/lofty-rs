@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 
+use std::borrow::Cow;
 use std::io::Read;
 
 /// A binary fallback for all unknown `ID3v2` frames
@@ -8,14 +9,17 @@ use std::io::Read;
 pub struct BinaryFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
 	/// The binary data
-	pub data: Vec<u8>,
+	pub data: Cow<'a, [u8]>,
 }
 
 impl<'a> BinaryFrame<'a> {
 	/// Create a new [`BinaryFrame`]
-	pub fn new(id: FrameId<'a>, data: Vec<u8>) -> Self {
+	pub fn new(id: FrameId<'a>, data: impl Into<Cow<'a, [u8]>>) -> Self {
 		let header = FrameHeader::new(id, FrameFlags::default());
-		Self { header, data }
+		Self {
+			header,
+			data: data.into(),
+		}
 	}
 
 	/// Get the ID for the frame
@@ -48,12 +52,24 @@ impl<'a> BinaryFrame<'a> {
 		reader.read_to_end(&mut data)?;
 
 		let header = FrameHeader::new(id, frame_flags);
-		Ok(BinaryFrame { header, data })
+		Ok(BinaryFrame {
+			header,
+			data: Cow::Owned(data),
+		})
 	}
 
 	/// Convert an [`BinaryFrame`] to a byte vec
 	pub fn as_bytes(&self) -> Vec<u8> {
 		let Self { data, .. } = self;
-		data.clone()
+		data.to_vec()
+	}
+}
+
+impl BinaryFrame<'static> {
+	pub(crate) fn downgrade(&self) -> BinaryFrame<'_> {
+		BinaryFrame {
+			header: self.header.downgrade(),
+			data: Cow::Borrowed(&self.data),
+		}
 	}
 }

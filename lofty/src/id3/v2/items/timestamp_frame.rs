@@ -140,3 +140,13 @@ impl<'a> TimestampFrame<'a> {
 		Ok(encoded_text)
 	}
 }
+
+impl TimestampFrame<'static> {
+	pub(crate) fn downgrade(&self) -> TimestampFrame<'_> {
+		TimestampFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			timestamp: self.timestamp,
+		}
+	}
+}

@@ -1,35 +1,31 @@
+pub(crate) mod conversion;
 #[cfg(test)]
 mod tests;
 
 use super::frame::{EMPTY_CONTENT_DESCRIPTOR, Frame};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::config::{WriteOptions, global_options};
-use crate::error::{LoftyError, Result};
+use crate::error::LoftyError;
 use crate::id3::v1::GENRES;
-use crate::id3::v2::frame::{FrameRef, MUSICBRAINZ_UFID_OWNER};
+use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 use crate::id3::v2::items::{
 	AttachedPictureFrame, CommentFrame, ExtendedTextFrame, ExtendedUrlFrame, TextInformationFrame,
 	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
-use crate::id3::v2::util::pairs::{
-	NUMBER_PAIR_KEYS, NUMBER_PAIR_SEPARATOR, format_number_pair, set_number,
-};
-use crate::id3::v2::{BinaryFrame, FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
-use crate::mp4::AdvisoryRating;
+use crate::id3::v2::util::pairs::{NUMBER_PAIR_SEPARATOR, format_number_pair};
+use crate::id3::v2::{FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
-use crate::tag::items::{Lang, Timestamp, UNKNOWN_LANGUAGE};
+use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
-use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
+use conversion::Id3v2TagRef;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
-use std::iter::Peekable;
 use std::ops::Deref;
-use std::str::FromStr;
 
 use lofty_attr::tag;
 
@@ -290,7 +286,7 @@ impl Id3v2Tag {
 					description: desc,
 					content,
 					..
-				}) if desc == description => Some(content.as_str()),
+				}) if desc == description => Some(&**content),
 				_ => None,
 			})
 	}
@@ -473,7 +469,7 @@ impl Id3v2Tag {
 			for (i, frame) in self.frames.iter().enumerate() {
 				match frame {
 					Frame::Picture(AttachedPictureFrame {
-						picture: Picture { pic_type, .. },
+						picture: Cow::Owned(Picture { pic_type, .. }),
 						..
 					}) if pic_type == &picture.pic_type => {
 						pos = Some(i);
@@ -497,10 +493,10 @@ impl Id3v2Tag {
 	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
 		self.frames.retain(|f| {
 			!matches!(f, Frame::Picture(AttachedPictureFrame {
-						picture: Picture {
+						picture: Cow::Owned(Picture {
 							pic_type: p_ty,
 							..
-						}, ..
+						}), ..
 					}) if p_ty == &picture_type)
 		})
 	}
@@ -529,22 +525,6 @@ impl Id3v2Tag {
 		}
 
 		(None, None)
-	}
-
-	fn insert_item(&mut self, item: TagItem) {
-		match item.key() {
-			ItemKey::TrackNumber => set_number(&item, |number| self.set_track(number)),
-			ItemKey::TrackTotal => set_number(&item, |number| self.set_track_total(number)),
-			ItemKey::DiscNumber => set_number(&item, |number| self.set_disk(number)),
-			ItemKey::DiscTotal => set_number(&item, |number| self.set_disk_total(number)),
-			_ => {
-				if let Some(frame) = item.into() {
-					if let Some(replaced) = self.insert(frame) {
-						log::warn!("Replaced frame: {replaced:?}");
-					}
-				}
-			},
-		}
 	}
 
 	/// Returns all genres contained in a `TCON` frame.
@@ -665,24 +645,15 @@ fn filter_comment_frame_by_description_mut<'a, 'f: 'a>(
 	}
 }
 
-pub(super) fn new_text_frame(id: FrameId<'_>, value: String) -> Frame<'_> {
+pub(super) fn new_text_frame<'a>(id: FrameId<'a>, value: impl Into<Cow<'a, str>>) -> Frame<'a> {
 	Frame::Text(TextInformationFrame::new(id, TextEncoding::UTF8, value))
 }
 
-pub(super) fn new_url_frame(id: FrameId<'_>, value: String) -> Frame<'_> {
-	Frame::Url(UrlLinkFrame::new(id, value))
-}
-
-pub(super) fn new_user_text_frame(description: String, content: String) -> Frame<'static> {
+pub(super) fn new_user_text_frame<'a>(
+	description: impl Into<Cow<'a, str>>,
+	content: impl Into<Cow<'a, str>>,
+) -> Frame<'a> {
 	Frame::UserText(ExtendedTextFrame::new(
-		TextEncoding::UTF8,
-		description,
-		content,
-	))
-}
-
-pub(super) fn new_user_url_frame(description: String, content: String) -> Frame<'static> {
-	Frame::UserUrl(ExtendedUrlFrame::new(
 		TextEncoding::UTF8,
 		description,
 		content,
@@ -702,28 +673,8 @@ pub(super) fn new_picture_frame(picture: Picture) -> Frame<'static> {
 	Frame::Picture(AttachedPictureFrame::new(TextEncoding::UTF8, picture))
 }
 
-pub(super) fn new_key_value_frame(
-	id: FrameId<'_>,
-	key_value_pairs: Vec<(String, String)>,
-) -> Frame<'_> {
-	Frame::KeyValue(KeyValueFrame::new(id, TextEncoding::UTF8, key_value_pairs))
-}
-
 pub(super) fn new_timestamp_frame(id: FrameId<'_>, timestamp: Timestamp) -> Frame<'_> {
 	Frame::Timestamp(TimestampFrame::new(id, TextEncoding::UTF8, timestamp))
-}
-
-pub(super) fn new_unsync_text_frame(content: String) -> Frame<'static> {
-	Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
-		TextEncoding::UTF8,
-		UNKNOWN_LANGUAGE,
-		EMPTY_CONTENT_DESCRIPTOR,
-		content,
-	))
-}
-
-pub(super) fn new_binary_frame(id: FrameId<'_>, data: Vec<u8>) -> Frame<'_> {
-	Frame::Binary(BinaryFrame::new(id, data))
 }
 
 const TITLE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIT2"));
@@ -847,7 +798,7 @@ impl Accessor for Id3v2Tag {
 		self.frames
 			.iter()
 			.find_map(|frame| filter_comment_frame_by_description(frame, &EMPTY_CONTENT_DESCRIPTOR))
-			.map(|CommentFrame { content, .. }| Cow::Borrowed(content.as_str()))
+			.map(|CommentFrame { content, .. }| Cow::Borrowed(&**content))
 	}
 
 	fn set_comment(&mut self, value: String) {
@@ -860,7 +811,7 @@ impl Accessor for Id3v2Tag {
 			};
 			if let Some(value) = value.take() {
 				// Replace value in first comment frame
-				*content = value;
+				*content = Cow::Owned(value);
 				true
 			} else {
 				// Remove all subsequent comment frames
@@ -919,7 +870,7 @@ impl TagExt for Id3v2Tag {
 	{
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().filter_map(Frame::as_opt_ref).peekable(),
+			frames: self.frames.iter().map(Frame::downgrade).peekable(),
 		}
 		.write_to(file, write_options)
 	}
@@ -937,7 +888,7 @@ impl TagExt for Id3v2Tag {
 	) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().filter_map(Frame::as_opt_ref).peekable(),
+			frames: self.frames.iter().map(Frame::downgrade).peekable(),
 		}
 		.dump_to(writer, write_options)
 	}
@@ -1080,7 +1031,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 					if key == *tipl_key {
 						tag.items.push(TagItem::new(
 							*item_key,
-							ItemValue::Text(core::mem::take(value)),
+							ItemValue::Text(core::mem::take(value).into_owned()),
 						));
 						return false; // This key-value pair is consumed
 					}
@@ -1178,7 +1129,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 				item.set_lang(*language);
 
 				if *description != EMPTY_CONTENT_DESCRIPTOR {
-					item.set_description(std::mem::take(description));
+					item.set_description(std::mem::take(description).into_owned());
 				}
 
 				tag.items.push(item);
@@ -1189,7 +1140,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		Frame::Picture(AttachedPictureFrame {
 			picture, ..
 		}) => {
-			tag.push_picture(std::mem::replace(picture, Picture::EMPTY));
+			tag.push_picture(std::mem::replace(picture, Cow::Owned(Picture::EMPTY)).into_owned());
 			return FRAME_CONSUMED;
 		},
 
@@ -1234,7 +1185,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 
 			tag.items.push(TagItem::new(
 				item_key,
-				ItemValue::Locator(std::mem::take(content)),
+				ItemValue::Locator(std::mem::take(content).into_owned()),
 			));
 
 			return FRAME_CONSUMED;
@@ -1270,233 +1221,28 @@ impl SplitTag for Id3v2Tag {
 impl MergeTag for SplitTagRemainder {
 	type Merged = Id3v2Tag;
 
-	fn merge_tag(self, mut tag: Tag) -> Id3v2Tag {
-		fn join_text_items(
-			tag: &mut Tag,
-			keys: impl IntoIterator<Item = ItemKey>,
-		) -> Option<String> {
-			let mut concatenated: Option<String> = None;
-			for key in keys {
-				let mut iter = tag.take_strings(key);
-				let Some(first) = iter.next() else {
-					continue;
-				};
-				// Use the length of the first string for estimating the capacity
-				// of the concatenated string.
-				let estimated_len_per_item = first.len();
-				let min_remaining_items = iter.size_hint().0;
-				let concatenated = if let Some(concatenated) = &mut concatenated {
-					concatenated.reserve(
-						(1 + estimated_len_per_item) * (1 + min_remaining_items) + first.len(),
-					);
-					concatenated.push(V4_MULTI_VALUE_SEPARATOR);
-					concatenated.push_str(&first);
-					concatenated
-				} else {
-					let mut first = first;
-					first.reserve((1 + estimated_len_per_item) * min_remaining_items);
-					concatenated = Some(first);
-					concatenated.as_mut().expect("some")
-				};
-				iter.for_each(|i| {
-					concatenated.push(V4_MULTI_VALUE_SEPARATOR);
-					concatenated.push_str(&i);
-				});
-			}
-			concatenated
-		}
-
-		struct JoinedLanguageItem {
-			lang: Lang,
-			description: String,
-			content: String,
-		}
-
-		fn join_language_items(
-			tag: &mut Tag,
-			key: ItemKey,
-		) -> Option<impl Iterator<Item = JoinedLanguageItem> + use<'_>> {
-			let mut items = tag.take(key).collect::<Vec<_>>();
-			if items.is_empty() {
-				return None;
-			}
-
-			items.sort_by(|a, b| a.lang.cmp(&b.lang).then(a.description.cmp(&b.description)));
-
-			let TagItem {
-				lang: mut current_lang,
-				description: mut current_description,
-				item_value: ItemValue::Text(mut current_content),
-				..
-			} = items.remove(0)
-			else {
-				log::warn!("Expected a text item for {key:?}");
-				return None;
-			};
-
-			let mut joined_items = Vec::<JoinedLanguageItem>::new();
-			for item in items {
-				let TagItem {
-					lang,
-					description,
-					item_value: ItemValue::Text(content),
-					..
-				} = item
-				else {
-					continue;
-				};
-
-				if lang != current_lang || description != current_description {
-					joined_items.push(JoinedLanguageItem {
-						lang: current_lang,
-						description: std::mem::take(&mut current_description),
-						content: std::mem::take(&mut current_content),
-					});
-					current_lang = lang;
-					current_description = description;
-					current_content = content;
-				} else {
-					current_content.push(V4_MULTI_VALUE_SEPARATOR);
-					current_content.push_str(&content);
-				}
-			}
-
-			joined_items.push(JoinedLanguageItem {
-				lang: current_lang,
-				description: current_description,
-				content: current_content,
-			});
-
-			Some(joined_items.into_iter())
-		}
-
+	fn merge_tag(self, tag: Tag) -> Id3v2Tag {
 		let Self(mut merged) = self;
 		merged.frames.reserve(tag.item_count() as usize);
 
-		// Multi-valued text key-to-frame mappings
-		// TODO: Extend this list of item keys as needed or desired
-		for item_key in [
-			ItemKey::TrackArtist,
-			ItemKey::AlbumArtist,
-			ItemKey::TrackTitle,
-			ItemKey::AlbumTitle,
-			ItemKey::SetSubtitle,
-			ItemKey::TrackSubtitle,
-			ItemKey::OriginalAlbumTitle,
-			ItemKey::OriginalArtist,
-			ItemKey::OriginalLyricist,
-			ItemKey::ContentGroup,
-			ItemKey::AppleId3v2ContentGroup,
-			ItemKey::Genre,
-			ItemKey::Mood,
-			ItemKey::Composer,
-			ItemKey::Conductor,
-			ItemKey::Writer,
-			ItemKey::Lyricist,
-			ItemKey::MusicianCredits,
-			ItemKey::InternetRadioStationName,
-			ItemKey::InternetRadioStationOwner,
-			ItemKey::Remixer,
-			ItemKey::Work,
-			ItemKey::Movement,
-			ItemKey::FileOwner,
-			ItemKey::CopyrightMessage,
-			ItemKey::Language,
-		] {
-			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
-			if let Some(text) = join_text_items(&mut tag, [item_key]) {
-				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
-				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!merged.frames.contains(&frame));
-				merged.frames.push(frame);
-			}
-		}
-
-		// Multi-valued TXXX key-to-frame mappings
-		for item_key in [
-			ItemKey::TrackArtists,
-			ItemKey::Director,
-			ItemKey::AcoustId,
-			ItemKey::AcoustIdFingerprint,
-			ItemKey::CatalogNumber,
-			ItemKey::MusicBrainzArtistId,
-			ItemKey::MusicBrainzReleaseArtistId,
-			ItemKey::MusicBrainzWorkId,
-			ItemKey::ReleaseCountry,
-		] {
-			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
-			if let Some(text) = join_text_items(&mut tag, [item_key]) {
-				let frame = new_user_text_frame(String::from(frame_id), text);
-				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!merged.frames.contains(&frame));
-				merged.frames.push(frame);
-			}
-		}
-
-		// Multi-valued Label/Publisher key-to-frame mapping
-		{
-			let frame_id = ItemKey::Label
-				.map_key(TagType::Id3v2)
-				.expect("valid frame id");
-			debug_assert_eq!(Some(frame_id), ItemKey::Publisher.map_key(TagType::Id3v2));
-			if let Some(text) = join_text_items(&mut tag, [ItemKey::Label, ItemKey::Publisher]) {
-				let frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
-				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!merged.frames.contains(&frame));
-				merged.frames.push(frame);
-			}
-		}
-
-		// Comment/Unsync text
-		for key in [ItemKey::Comment, ItemKey::Lyrics] {
-			let Some(items) = join_language_items(&mut tag, key) else {
-				continue;
-			};
-
-			for JoinedLanguageItem {
-				lang,
-				description,
-				content,
-			} in items
-			{
-				let frame = match key {
-					ItemKey::Comment => Frame::Comment(CommentFrame::new(
-						TextEncoding::UTF8,
-						lang,
-						description,
-						content,
-					)),
-					ItemKey::Lyrics => Frame::UnsynchronizedText(UnsynchronizedTextFrame::new(
-						TextEncoding::UTF8,
-						lang,
-						description,
-						content,
-					)),
-					_ => continue,
-				};
-				// Optimization: No duplicate checking according to the preconditions
-				debug_assert!(!merged.frames.contains(&frame));
-				merged.frames.push(frame);
-			}
-		}
-
-		// TIPL key-value mappings
-		'tipl: {
-			let mut key_value_pairs = Vec::new();
-			for (item_key, tipl_key) in TIPL_MAPPINGS {
-				for value in tag.take_strings(*item_key) {
-					key_value_pairs.push(((*tipl_key).to_string(), value));
-				}
-			}
-
-			if key_value_pairs.is_empty() {
-				break 'tipl;
-			}
-
+		for frame in conversion::from_tag(tag.items.into_iter().map(Cow::Owned)) {
 			// Check for an existing TIPL frame, and simply extend the existing list
 			// to retain the current `TextEncoding` and `FrameFlags`.
-			let existing_tipl = merged.take_first(&FrameId::Valid(Cow::Borrowed("TIPL")));
-			if let Some(mut tipl_frame) = existing_tipl {
+			if frame.id_str() == INVOLVED_PEOPLE_LIST_ID {
+				let Some(mut tipl_frame) =
+					merged.take_first(&FrameId::Valid(Cow::Borrowed(INVOLVED_PEOPLE_LIST_ID)))
+				else {
+					merged.frames.push(frame);
+					continue;
+				};
+
+				let Frame::KeyValue(KeyValueFrame {
+					key_value_pairs, ..
+				}) = frame
+				else {
+					unreachable!("Frames validated before this point");
+				};
+
 				if let Frame::KeyValue(KeyValueFrame {
 					key_value_pairs: existing,
 					..
@@ -1506,80 +1252,11 @@ impl MergeTag for SplitTagRemainder {
 				}
 
 				merged.frames.push(tipl_frame);
-				break 'tipl;
+				continue;
 			}
 
-			merged.frames.push(new_key_value_frame(
-				FrameId::Valid(Cow::Borrowed(INVOLVED_PEOPLE_LIST_ID)),
-				key_value_pairs,
-			));
-		}
-
-		// Flag items
-		for item_key in [ItemKey::FlagCompilation, ItemKey::FlagPodcast] {
-			let Some(text) = tag.take_strings(item_key).next() else {
-				continue;
-			};
-
-			let Some(flag_value) = flag_item(&text) else {
-				continue;
-			};
-
-			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
-
-			merged.frames.push(new_text_frame(
-				FrameId::Valid(Cow::Borrowed(frame_id)),
-				u8::from(flag_value).to_string(),
-			));
-		}
-
-		// iTunes advisory rating
-		'rate: {
-			if let Some(advisory_rating) = tag.take_strings(ItemKey::ParentalAdvisory).next() {
-				let Ok(rating) = advisory_rating.parse::<u8>() else {
-					log::warn!(
-						"Parental advisory rating is not a number: {advisory_rating}, discarding"
-					);
-					break 'rate;
-				};
-
-				let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
-					log::warn!("Parental advisory rating is out of range: {rating}, discarding");
-					break 'rate;
-				};
-
-				merged.frames.push(new_user_text_frame(
-					"ITUNESADVISORY".to_string(),
-					parsed_rating.as_u8().to_string(),
-				));
-			}
-		}
-
-		// Timestamps
-		for item_key in [ItemKey::RecordingDate, ItemKey::OriginalReleaseDate] {
-			let Some(text) = tag.take_strings(item_key).next() else {
-				continue;
-			};
-
-			let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
-
-			let frame;
-			match Timestamp::from_str(&text) {
-				Ok(timestamp) => {
-					frame = new_timestamp_frame(FrameId::Valid(Cow::Borrowed(frame_id)), timestamp);
-				},
-				Err(_) => {
-					// We can just preserve it as a text frame
-					frame = new_text_frame(FrameId::Valid(Cow::Borrowed(frame_id)), text);
-				},
-			}
-
-			merged.insert(frame);
-		}
-
-		// Insert all remaining items as single frames and deduplicate as needed
-		for item in tag.items {
-			merged.insert_item(item);
+			// Safe to push at this point, `from_tag()` already deduplicates
+			merged.frames.push(frame)
 		}
 
 		// Insert all pictures as single frames and deduplicate as needed
@@ -1615,112 +1292,5 @@ impl From<Tag> for Id3v2Tag {
 		}
 
 		SplitTagRemainder::default().merge_tag(input)
-	}
-}
-
-pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = FrameRef<'a>> + 'a> {
-	pub(crate) flags: Id3v2TagFlags,
-	pub(crate) frames: Peekable<I>,
-}
-
-impl<'a> Id3v2TagRef<'a, std::iter::Empty<FrameRef<'a>>> {
-	pub(crate) fn empty() -> Self {
-		Self {
-			flags: Id3v2TagFlags::default(),
-			frames: std::iter::empty().peekable(),
-		}
-	}
-}
-
-// Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
-pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = FrameRef<'_>> {
-	#[derive(Clone)]
-	enum CompanionTagIter<F, E> {
-		Filled(F),
-		Empty(E),
-	}
-
-	impl<'a, I> Iterator for CompanionTagIter<I, std::iter::Empty<Frame<'_>>>
-	where
-		I: Iterator<Item = FrameRef<'a>>,
-	{
-		type Item = FrameRef<'a>;
-
-		fn next(&mut self) -> Option<Self::Item> {
-			match self {
-				CompanionTagIter::Filled(iter) => iter.next(),
-				CompanionTagIter::Empty(_) => None,
-			}
-		}
-	}
-
-	fn create_frameref_for_number_pair<'a>(
-		number: Option<&str>,
-		total: Option<&str>,
-		id: &'a str,
-	) -> Option<FrameRef<'a>> {
-		format_number_pair(number, total)
-			.map(|value| FrameRef(Cow::Owned(Frame::text(Cow::Borrowed(id), value))))
-	}
-
-	fn create_framerefs_for_companion_tag(
-		companion: Option<&CompanionTag>,
-	) -> impl IntoIterator<Item = FrameRef<'_>> + Clone {
-		match companion {
-			Some(CompanionTag::Id3v2(companion)) => {
-				CompanionTagIter::Filled(companion.frames.iter().filter_map(Frame::as_opt_ref))
-			},
-			_ => CompanionTagIter::Empty(std::iter::empty()),
-		}
-	}
-
-	let items = tag
-		.items()
-		.filter(|item| !NUMBER_PAIR_KEYS.contains(&item.key()))
-		.map(TryInto::<FrameRef<'_>>::try_into)
-		.filter_map(Result::ok)
-		.chain(create_frameref_for_number_pair(
-			tag.get_string(ItemKey::TrackNumber),
-			tag.get_string(ItemKey::TrackTotal),
-			"TRCK",
-		))
-		.chain(create_frameref_for_number_pair(
-			tag.get_string(ItemKey::DiscNumber),
-			tag.get_string(ItemKey::DiscTotal),
-			"TPOS",
-		))
-		.chain(create_framerefs_for_companion_tag(
-			tag.companion_tag.as_ref(),
-		));
-
-	let pictures = tag.pictures().iter().map(|p| {
-		FrameRef(Cow::Owned(Frame::Picture(AttachedPictureFrame::new(
-			TextEncoding::UTF8,
-			p.clone(),
-		))))
-	});
-
-	items.chain(pictures)
-}
-
-impl<'a, I: Iterator<Item = FrameRef<'a>> + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		super::write::write_id3v2(file, self, write_options)
-	}
-
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<()> {
-		let temp = super::write::create_tag(self, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
 	}
 }

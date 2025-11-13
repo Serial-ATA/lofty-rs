@@ -27,9 +27,9 @@ pub struct ExtendedTextFrame<'a> {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// Unique content description
-	pub description: String,
+	pub description: Cow<'a, str>,
 	/// The actual frame content
-	pub content: String,
+	pub content: Cow<'a, str>,
 }
 
 impl PartialEq for ExtendedTextFrame<'_> {
@@ -44,15 +44,19 @@ impl Hash for ExtendedTextFrame<'_> {
 	}
 }
 
-impl ExtendedTextFrame<'_> {
+impl<'a> ExtendedTextFrame<'a> {
 	/// Create a new [`ExtendedTextFrame`]
-	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
+	pub fn new(
+		encoding: TextEncoding,
+		description: impl Into<Cow<'a, str>>,
+		content: impl Into<Cow<'a, str>>,
+	) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			description,
-			content,
+			description: description.into(),
+			content: content.into(),
 		}
 	}
 
@@ -109,8 +113,8 @@ impl ExtendedTextFrame<'_> {
 			return Ok(Some(ExtendedTextFrame {
 				header,
 				encoding,
-				description: description.content,
-				content: frame_content,
+				description: Cow::Owned(description.content),
+				content: Cow::Owned(frame_content),
 			}));
 		}
 
@@ -159,8 +163,8 @@ impl ExtendedTextFrame<'_> {
 		Ok(Some(ExtendedTextFrame {
 			header,
 			encoding,
-			description: description.content,
-			content: frame_content,
+			description: Cow::Owned(description.content),
+			content: Cow::Owned(frame_content),
 		}))
 	}
 
@@ -177,5 +181,16 @@ impl ExtendedTextFrame<'_> {
 		bytes.extend(encode_text(&self.content, encoding, false));
 
 		bytes
+	}
+}
+
+impl ExtendedTextFrame<'static> {
+	pub(crate) fn downgrade(&self) -> ExtendedTextFrame<'_> {
+		ExtendedTextFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			description: Cow::Borrowed(&self.description),
+			content: Cow::Borrowed(&self.content),
+		}
 	}
 }

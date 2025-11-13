@@ -21,17 +21,17 @@ pub struct AttachedPictureFrame<'a> {
 	/// The encoding of the description
 	pub encoding: TextEncoding,
 	/// The picture itself
-	pub picture: Picture,
+	pub picture: Cow<'a, Picture>,
 }
 
-impl AttachedPictureFrame<'_> {
+impl<'a> AttachedPictureFrame<'a> {
 	/// Create a new [`AttachedPictureFrame`]
-	pub fn new(encoding: TextEncoding, picture: Picture) -> Self {
+	pub fn new(encoding: TextEncoding, picture: impl Into<Cow<'a, Picture>>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			picture,
+			picture: picture.into(),
 		}
 	}
 
@@ -119,7 +119,7 @@ impl AttachedPictureFrame<'_> {
 		Ok(Self {
 			header,
 			encoding,
-			picture,
+			picture: Cow::Owned(picture),
 		})
 	}
 
@@ -184,5 +184,15 @@ impl AttachedPictureFrame<'_> {
 		}
 
 		Ok(data)
+	}
+}
+
+impl AttachedPictureFrame<'static> {
+	pub(crate) fn downgrade(&self) -> AttachedPictureFrame<'_> {
+		AttachedPictureFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			picture: Cow::Borrowed(&self.picture),
+		}
 	}
 }

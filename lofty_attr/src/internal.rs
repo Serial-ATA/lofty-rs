@@ -57,13 +57,13 @@ pub(crate) fn init_write_lookup(
 
 	if id3v2_strippable {
 		insert!(map, Id3v2, {
-			lofty::id3::v2::tag::Id3v2TagRef::empty().write_to(file, write_options)
+			lofty::id3::v2::tag::conversion::Id3v2TagRef::empty().write_to(file, write_options)
 		});
 	} else {
 		insert!(map, Id3v2, {
-			lofty::id3::v2::tag::Id3v2TagRef {
+			lofty::id3::v2::tag::conversion::Id3v2TagRef {
 				flags: lofty::id3::v2::Id3v2TagFlags::default(),
-				frames: lofty::id3::v2::tag::tag_frames(tag).peekable(),
+				frames: lofty::id3::v2::tag::conversion::tag_frames(tag).peekable(),
 			}
 			.write_to(file, write_options)
 		});

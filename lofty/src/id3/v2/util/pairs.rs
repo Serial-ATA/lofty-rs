@@ -1,7 +1,9 @@
 //! Contains utilities for ID3v2 style number pairs
 
+use crate::id3::v2::{Frame, FrameId};
 use crate::tag::{ItemKey, TagItem};
 
+use crate::id3::v2::tag::new_text_frame;
 use std::fmt::Display;
 
 pub(crate) const NUMBER_PAIR_SEPARATOR: char = '/';
@@ -16,6 +18,18 @@ pub(crate) const NUMBER_PAIR_KEYS: &[ItemKey] = &[
 	ItemKey::DiscNumber,
 	ItemKey::DiscTotal,
 ];
+
+pub(crate) fn new_number_pair_frame<N, T>(
+	id: FrameId<'_>,
+	number: Option<N>,
+	total: Option<T>,
+) -> Option<Frame<'_>>
+where
+	N: Display,
+	T: Display,
+{
+	format_number_pair(number, total).map(|content| new_text_frame(id, content))
+}
 
 /// Creates an ID3v2 style number pair
 pub(crate) fn format_number_pair<N, T>(number: Option<N>, total: Option<T>) -> Option<String>

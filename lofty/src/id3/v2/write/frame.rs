@@ -1,24 +1,39 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
-use crate::id3::v2::frame::{FrameFlags, FrameRef};
+use crate::id3::v2::frame::FrameFlags;
 use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::{Frame, FrameId, KeyValueFrame, TextInformationFrame};
 use crate::tag::items::Timestamp;
 
+use std::borrow::Cow;
 use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
+/// Adapter to filter out any lingering ID3v2.2 frames
+fn strip_outdated_frames<'a>(
+	frames: &mut dyn Iterator<Item = Frame<'a>>,
+) -> impl Iterator<Item = Frame<'a>> {
+	frames.filter_map(|f| {
+		if f.id().is_valid() {
+			Some(f)
+		} else {
+			log::warn!("Discarding outdated frame: {}", f.id_str());
+			None
+		}
+	})
+}
+
 pub(in crate::id3::v2) fn create_items<W>(
 	writer: &mut W,
-	frames: &mut dyn Iterator<Item = FrameRef<'_>>,
+	frames: &mut dyn Iterator<Item = Frame<'_>>,
 ) -> Result<()>
 where
 	W: Write,
 {
 	let is_id3v23 = false;
 
-	for frame in frames {
+	for frame in strip_outdated_frames(frames) {
 		verify_frame(&frame)?;
 		let value = frame.as_bytes(is_id3v23)?;
 
@@ -36,7 +51,7 @@ where
 
 pub(in crate::id3::v2) fn create_items_v3<W>(
 	writer: &mut W,
-	frames: &mut dyn Iterator<Item = FrameRef<'_>>,
+	frames: &mut dyn Iterator<Item = Frame<'_>>,
 ) -> Result<()>
 where
 	W: Write,
@@ -52,34 +67,39 @@ where
 	let is_id3v23 = true;
 
 	let mut ipls = None;
-	for mut frame in frames {
-		let id = frame.id_str();
-
-		if FRAMES_TO_DISCARD.contains(&id) {
-			log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+	for mut frame in strip_outdated_frames(frames) {
+		if FRAMES_TO_DISCARD.contains(&frame.id_str()) {
+			log::warn!(
+				"Discarding frame: {}, not supported in ID3v2.3",
+				frame.id_str()
+			);
 			continue;
 		}
 
 		verify_frame(&frame)?;
 
-		match id {
+		match frame.id_str() {
 			// TORY (Original release year) is the only component of TDOR
 			// that is supported in ID3v2.3
 			//
 			// TDRC (Recording time) gets split into three frames: TYER, TDAT, and TIME
 			"TDOR" | "TDRC" => {
-				let mut value = frame.0.clone();
-				let Frame::Timestamp(f) = value.to_mut() else {
-					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+				let is_tdor = frame.id_str() == "TDOR";
+
+				let Frame::Timestamp(f) = &mut frame else {
+					log::warn!(
+						"Discarding frame: {}, not supported in ID3v2.3",
+						frame.id_str()
+					);
 					continue;
 				};
 
 				if f.timestamp.verify().is_err() {
-					log::warn!("Discarding frame: {}, invalid timestamp", id);
+					log::warn!("Discarding frame: {}, invalid timestamp", frame.id_str());
 					continue;
 				}
 
-				if id == "TDOR" {
+				if is_tdor {
 					let year = f.timestamp.year;
 					f.timestamp = Timestamp {
 						year,
@@ -87,8 +107,6 @@ where
 					};
 
 					f.header.id = FrameId::Valid("TORY".into());
-
-					frame.0 = value;
 				} else {
 					let mut new_frames = Vec::with_capacity(3);
 
@@ -138,9 +156,11 @@ where
 			// TCON (Content type) cannot be separated by nulls, so we have to wrap its
 			// components in parentheses
 			"TCON" => {
-				let mut value = frame.0.clone();
-				let Frame::Text(f) = value.to_mut() else {
-					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+				let Frame::Text(f) = &mut frame else {
+					log::warn!(
+						"Discarding frame: {}, not supported in ID3v2.3",
+						frame.id_str()
+					);
 					continue;
 				};
 
@@ -159,21 +179,22 @@ where
 					}
 				}
 
-				f.value = new_genre_string;
-				frame.0 = value;
+				f.value = Cow::Owned(new_genre_string);
 			},
 			// TIPL (Involved people list) and TMCL (Musician credits list) are
 			// both key-value pairs. ID3v2.3 does not distinguish between the two,
 			// so we must merge them into a single IPLS frame.
 			"TIPL" | "TMCL" => {
-				let mut value = frame.0.clone();
 				let Frame::KeyValue(KeyValueFrame {
 					key_value_pairs,
 					encoding,
 					..
-				}) = value.to_mut()
+				}) = &mut frame
 				else {
-					log::warn!("Discarding frame: {}, not supported in ID3v2.3", id);
+					log::warn!(
+						"Discarding frame: {}, not supported in ID3v2.3",
+						frame.id_str()
+					);
 					continue;
 				};
 
@@ -194,10 +215,18 @@ where
 
 				for (key, value) in key_value_pairs.drain(..) {
 					if !ipls_frame.value.is_empty() {
-						ipls_frame.value.push('\0');
+						match &mut ipls_frame.value {
+							Cow::Owned(v) => v.push('\0'),
+							v => {
+								let mut new = String::from(&**v);
+								new.push('\0');
+
+								*v = Cow::Owned(new);
+							},
+						}
 					}
 
-					ipls_frame.value = format!("{}{key}\0{value}", ipls_frame.value);
+					ipls_frame.value = Cow::Owned(format!("{}{key}\0{value}", ipls_frame.value));
 				}
 
 				continue;
@@ -225,8 +254,8 @@ where
 	Ok(())
 }
 
-fn verify_frame(frame: &FrameRef<'_>) -> Result<()> {
-	match (frame.id().as_str(), &**frame) {
+fn verify_frame(frame: &Frame<'_>) -> Result<()> {
+	match (frame.id().as_str(), frame) {
 		("APIC", Frame::Picture { .. })
 		| ("USLT", Frame::UnsynchronizedText(_))
 		| ("COMM", Frame::Comment(_))

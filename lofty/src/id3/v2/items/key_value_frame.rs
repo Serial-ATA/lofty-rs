@@ -6,6 +6,7 @@ use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_tex
 
 use byteorder::ReadBytesExt;
 
+use std::borrow::Cow;
 use std::io::Read;
 
 /// An `ID3v2` key-value frame
@@ -15,7 +16,7 @@ pub struct KeyValueFrame<'a> {
 	/// The encoding of the text
 	pub encoding: TextEncoding,
 	/// The key value pairs. Keys can be specified multiple times
-	pub key_value_pairs: Vec<(String, String)>,
+	pub key_value_pairs: Vec<(Cow<'a, str>, Cow<'a, str>)>,
 }
 
 impl<'a> KeyValueFrame<'a> {
@@ -23,7 +24,7 @@ impl<'a> KeyValueFrame<'a> {
 	pub fn new(
 		id: FrameId<'a>,
 		encoding: TextEncoding,
-		key_value_pairs: Vec<(String, String)>,
+		key_value_pairs: Vec<(Cow<'a, str>, Cow<'a, str>)>,
 	) -> Self {
 		let header = FrameHeader::new(id, FrameFlags::default());
 		Self {
@@ -91,8 +92,8 @@ impl<'a> KeyValueFrame<'a> {
 		}
 
 		values.push((
-			first_key.content,
-			decode_text(reader, text_decode_options)?.content,
+			Cow::Owned(first_key.content),
+			Cow::Owned(decode_text(reader, text_decode_options)?.content),
 		));
 
 		loop {
@@ -102,7 +103,7 @@ impl<'a> KeyValueFrame<'a> {
 				break;
 			}
 
-			values.push((key.content, value.content));
+			values.push((Cow::Owned(key.content), Cow::Owned(value.content)));
 		}
 
 		let header = FrameHeader::new(id, frame_flags);
@@ -127,5 +128,16 @@ impl<'a> KeyValueFrame<'a> {
 			content.append(&mut encode_text(value, encoding, true));
 		}
 		content
+	}
+}
+
+impl KeyValueFrame<'static> {
+	pub(crate) fn downgrade(&self) -> KeyValueFrame<'_> {
+		KeyValueFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			// TODO: not ideal
+			key_value_pairs: self.key_value_pairs.clone(),
+		}
 	}
 }

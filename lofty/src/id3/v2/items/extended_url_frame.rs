@@ -24,9 +24,9 @@ pub struct ExtendedUrlFrame<'a> {
 	/// The encoding of the description and comment text
 	pub encoding: TextEncoding,
 	/// Unique content description
-	pub description: String,
+	pub description: Cow<'a, str>,
 	/// The actual frame content
-	pub content: String,
+	pub content: Cow<'a, str>,
 }
 
 impl PartialEq for ExtendedUrlFrame<'_> {
@@ -41,15 +41,19 @@ impl Hash for ExtendedUrlFrame<'_> {
 	}
 }
 
-impl ExtendedUrlFrame<'_> {
+impl<'a> ExtendedUrlFrame<'a> {
 	/// Create a new [`ExtendedUrlFrame`]
-	pub fn new(encoding: TextEncoding, description: String, content: String) -> Self {
+	pub fn new(
+		encoding: TextEncoding,
+		description: impl Into<Cow<'a, str>>,
+		content: impl Into<Cow<'a, str>>,
+	) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			description,
-			content,
+			description: description.into(),
+			content: content.into(),
 		}
 	}
 
@@ -107,8 +111,8 @@ impl ExtendedUrlFrame<'_> {
 		Ok(Some(ExtendedUrlFrame {
 			header,
 			encoding,
-			description,
-			content,
+			description: Cow::Owned(description),
+			content: Cow::Owned(content),
 		}))
 	}
 
@@ -125,5 +129,16 @@ impl ExtendedUrlFrame<'_> {
 		bytes.extend(encode_text(&self.content, encoding, false));
 
 		bytes
+	}
+}
+
+impl ExtendedUrlFrame<'static> {
+	pub(crate) fn downgrade(&self) -> ExtendedUrlFrame<'_> {
+		ExtendedUrlFrame {
+			header: self.header.downgrade(),
+			encoding: self.encoding,
+			description: Cow::Borrowed(&self.description),
+			content: Cow::Borrowed(&self.content),
+		}
 	}
 }

@@ -182,17 +182,17 @@ pub struct EventTimingCodesFrame<'a> {
 	///
 	/// Events are guaranteed to be sorted by their timestamps when read. They can be inserted in
 	/// arbitrary order after the fact, and will be sorted again prior to writing.
-	pub events: Vec<Event>,
+	pub events: Cow<'a, [Event]>,
 }
 
-impl EventTimingCodesFrame<'_> {
+impl<'a> EventTimingCodesFrame<'a> {
 	/// Create a new [`EventTimingCodesFrame`]
-	pub fn new(timestamp_format: TimestampFormat, events: Vec<Event>) -> Self {
+	pub fn new(timestamp_format: TimestampFormat, events: impl Into<Cow<'a, [Event]>>) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
 			timestamp_format,
-			events,
+			events: events.into(),
 		}
 	}
 
@@ -247,7 +247,7 @@ impl EventTimingCodesFrame<'_> {
 		Ok(Some(EventTimingCodesFrame {
 			header,
 			timestamp_format,
-			events,
+			events: Cow::Owned(events),
 		}))
 	}
 
@@ -269,20 +269,24 @@ impl EventTimingCodesFrame<'_> {
 	}
 }
 
+impl EventTimingCodesFrame<'static> {
+	pub(crate) fn downgrade(&self) -> EventTimingCodesFrame<'_> {
+		EventTimingCodesFrame {
+			header: self.header.downgrade(),
+			timestamp_format: self.timestamp_format,
+			events: Cow::Borrowed(&self.events),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
-	use crate::id3::v2::{
-		Event, EventTimingCodesFrame, EventType, FrameFlags, FrameHeader, FrameId, TimestampFormat,
-	};
+	use crate::id3::v2::{Event, EventTimingCodesFrame, EventType, FrameFlags, TimestampFormat};
 
 	fn expected() -> EventTimingCodesFrame<'static> {
-		EventTimingCodesFrame {
-			header: FrameHeader {
-				id: FrameId::Valid(std::borrow::Cow::Borrowed("ETCO")),
-				flags: FrameFlags::default(),
-			},
-			timestamp_format: TimestampFormat::MS,
-			events: vec![
+		EventTimingCodesFrame::new(
+			TimestampFormat::MS,
+			vec![
 				Event {
 					event_type: EventType::IntroStart,
 					timestamp: 1500,
@@ -304,7 +308,7 @@ mod tests {
 					timestamp: 750_000_000,
 				},
 			],
-		}
+		)
 	}
 
 	#[test_log::test]

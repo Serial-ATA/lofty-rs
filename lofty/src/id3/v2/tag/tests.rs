@@ -476,13 +476,22 @@ fn multi_value_roundtrip() {
 	assert_eq!(20, tag.len());
 
 	let id3v2 = Id3v2Tag::from(tag.clone());
-	let (split_remainder, split_tag) = id3v2.split_tag();
+	let (split_remainder, mut split_tag) = id3v2.split_tag();
 
 	assert_eq!(0, split_remainder.0.len());
 	assert_eq!(tag.len(), split_tag.len());
-	// The ordering of items/frames matters, see above!
-	// TODO: Replace with an unordered comparison.
-	assert_eq!(tag.items, split_tag.items);
+
+	for item in tag.items {
+		let Some(pos) = split_tag
+			.items
+			.iter()
+			.position(|item_split| item == *item_split)
+		else {
+			panic!("mismatch");
+		};
+
+		split_tag.items.remove(pos);
+	}
 }
 
 #[test_log::test]
@@ -1049,12 +1058,11 @@ fn tipl_round_trip() {
 	// Add all supported keys
 	for (_, key) in TIPL_MAPPINGS {
 		tipl.key_value_pairs
-			.push((String::from(*key), String::from("Serial-ATA")));
+			.push(((*key).into(), "Serial-ATA".into()));
 	}
 
 	// Add one unsupported key
-	tipl.key_value_pairs
-		.push((String::from("Foo"), String::from("Bar")));
+	tipl.key_value_pairs.push(("Foo".into(), "Bar".into()));
 
 	tag.insert(Frame::KeyValue(tipl.clone()));
 
@@ -1171,7 +1179,7 @@ fn special_items_roundtrip() {
 
 	let rva2 = Frame::RelativeVolumeAdjustment(RelativeVolumeAdjustmentFrame::new(
 		String::from("Foo RVA"),
-		HashMap::from([(
+		Cow::Owned(HashMap::from([(
 			ChannelType::MasterVolume,
 			ChannelInformation {
 				channel_type: ChannelType::MasterVolume,
@@ -1179,7 +1187,7 @@ fn special_items_roundtrip() {
 				bits_representing_peak: 0,
 				peak_volume: None,
 			},
-		)]),
+		)])),
 	));
 
 	tag.insert(rva2.clone());
@@ -1301,7 +1309,7 @@ fn remove_id3v24_frames_on_id3v23_save() {
 	tag.insert(Frame::RelativeVolumeAdjustment(
 		RelativeVolumeAdjustmentFrame::new(
 			String::from("Foo RVA"),
-			HashMap::from([(
+			Cow::Owned(HashMap::from([(
 				ChannelType::MasterVolume,
 				ChannelInformation {
 					channel_type: ChannelType::MasterVolume,
@@ -1309,7 +1317,7 @@ fn remove_id3v24_frames_on_id3v23_save() {
 					bits_representing_peak: 0,
 					peak_volume: None,
 				},
-			)]),
+			)])),
 		),
 	));
 
@@ -1499,4 +1507,32 @@ fn ensure_frame_skipping_within_bounds() {
 			},
 		)))
 	);
+}
+
+#[test_log::test]
+fn multi_item_tag_dump() {
+	let mut tag = Tag::new(TagType::Id3v2);
+
+	tag.push(TagItem::new(
+		ItemKey::TrackArtist,
+		ItemValue::Text(String::from("Foo")),
+	));
+	tag.push(TagItem::new(
+		ItemKey::TrackArtist,
+		ItemValue::Text(String::from("Bar")),
+	));
+
+	let mut id3v2 = Vec::new();
+	tag.dump_to(&mut id3v2, WriteOptions::default()).unwrap();
+
+	let tag = read_tag_with_options(
+		&id3v2,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	);
+
+	// Both artists should be merged into a single frame
+	assert_eq!(tag.len(), 1);
+
+	let artist_tag = tag.get_text(&FrameId::new("TPE1").unwrap()).unwrap();
+	assert_eq!(artist_tag, "Foo\0Bar");
 }

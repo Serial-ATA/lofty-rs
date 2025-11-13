@@ -34,6 +34,15 @@ impl<'a> FrameHeader<'a> {
 	}
 }
 
+impl FrameHeader<'static> {
+	pub(crate) fn downgrade(&self) -> FrameHeader<'_> {
+		FrameHeader {
+			id: self.id.downgrade(),
+			flags: self.flags,
+		}
+	}
+}
+
 /// An `ID3v2` frame ID
 ///
 /// ⚠ WARNING ⚠: Be very careful when constructing this by hand. It is recommended to use [`FrameId::new`].
@@ -78,6 +87,47 @@ impl<'a> FrameId<'a> {
 		}
 	}
 
+	/// Whether this frame ID represents an outdated (ID3v2.2) ID
+	///
+	/// Note that frames with ID3v2.2 IDs *must* be upgraded to a 4-character ID3v2.3/4 ID in order to be
+	/// written, otherwise they will be discarded.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::FrameId;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let id_valid = FrameId::new("TPE1")?;
+	/// assert!(!id_valid.is_outdated());
+	///
+	/// let id_outdated = FrameId::new("TP1")?;
+	/// assert!(id_outdated.is_outdated());
+	/// # Ok(()) }
+	/// ```
+	pub fn is_outdated(&self) -> bool {
+		matches!(self, FrameId::Outdated(_))
+	}
+
+	/// Whether this frame ID represents a valid (ID3v2.3 or ID3v2.4) ID
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::id3::v2::FrameId;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let id_valid = FrameId::new("TPE1")?;
+	/// assert!(id_valid.is_valid());
+	///
+	/// let id_outdated = FrameId::new("TP1")?;
+	/// assert!(!id_outdated.is_valid());
+	/// # Ok(()) }
+	/// ```
+	pub fn is_valid(&self) -> bool {
+		matches!(self, FrameId::Valid(_))
+	}
+
 	/// Extracts the string from the ID
 	pub fn as_str(&self) -> &str {
 		match self {
@@ -118,6 +168,15 @@ impl<'a> FrameId<'a> {
 	pub fn into_inner(self) -> Cow<'a, str> {
 		match self {
 			FrameId::Valid(v) | FrameId::Outdated(v) => v,
+		}
+	}
+}
+
+impl FrameId<'static> {
+	pub(crate) fn downgrade(&self) -> FrameId<'_> {
+		match self {
+			FrameId::Valid(id) => FrameId::Valid(Cow::Borrowed(&**id)),
+			FrameId::Outdated(id) => FrameId::Outdated(Cow::Borrowed(&**id)),
 		}
 	}
 }

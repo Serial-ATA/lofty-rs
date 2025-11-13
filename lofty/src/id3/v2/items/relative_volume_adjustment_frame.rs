@@ -85,9 +85,9 @@ pub struct ChannelInformation {
 pub struct RelativeVolumeAdjustmentFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
 	/// The identifier used to identify the situation and/or device where this adjustment should apply
-	pub identification: String,
+	pub identification: Cow<'a, str>,
 	/// The information for each channel described in the frame
-	pub channels: HashMap<ChannelType, ChannelInformation>,
+	pub channels: Cow<'a, HashMap<ChannelType, ChannelInformation>>,
 }
 
 impl PartialEq for RelativeVolumeAdjustmentFrame<'_> {
@@ -102,14 +102,17 @@ impl Hash for RelativeVolumeAdjustmentFrame<'_> {
 	}
 }
 
-impl RelativeVolumeAdjustmentFrame<'_> {
+impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 	/// Create a new [`RelativeVolumeAdjustmentFrame`]
-	pub fn new(identification: String, channels: HashMap<ChannelType, ChannelInformation>) -> Self {
+	pub fn new(
+		identification: impl Into<Cow<'a, str>>,
+		channels: impl Into<Cow<'a, HashMap<ChannelType, ChannelInformation>>>,
+	) -> Self {
 		let header = FrameHeader::new(FRAME_ID, FrameFlags::default());
 		Self {
 			header,
-			identification,
-			channels,
+			identification: identification.into(),
+			channels: channels.into(),
 		}
 	}
 
@@ -188,8 +191,8 @@ impl RelativeVolumeAdjustmentFrame<'_> {
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(Some(Self {
 			header,
-			identification,
-			channels,
+			identification: Cow::Owned(identification),
+			channels: Cow::Owned(channels),
 		}))
 	}
 
@@ -203,7 +206,7 @@ impl RelativeVolumeAdjustmentFrame<'_> {
 			true,
 		));
 
-		for (channel_type, info) in &self.channels {
+		for (channel_type, info) in &*self.channels {
 			let mut bits_representing_peak = info.bits_representing_peak;
 			let expected_peak_byte_length = (u16::from(bits_representing_peak) + 7) >> 3;
 
@@ -236,13 +239,24 @@ impl RelativeVolumeAdjustmentFrame<'_> {
 	}
 }
 
+impl RelativeVolumeAdjustmentFrame<'static> {
+	pub(crate) fn downgrade(&self) -> RelativeVolumeAdjustmentFrame<'_> {
+		RelativeVolumeAdjustmentFrame {
+			header: self.header.downgrade(),
+			identification: Cow::Borrowed(&self.identification),
+			channels: Cow::Borrowed(&self.channels),
+		}
+	}
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::config::ParsingMode;
 	use crate::id3::v2::{
-		ChannelInformation, ChannelType, FrameFlags, FrameHeader, RelativeVolumeAdjustmentFrame,
+		ChannelInformation, ChannelType, FrameFlags, RelativeVolumeAdjustmentFrame,
 	};
 
+	use std::borrow::Cow;
 	use std::collections::HashMap;
 	use std::io::Read;
 
@@ -279,11 +293,7 @@ mod tests {
 			},
 		);
 
-		RelativeVolumeAdjustmentFrame {
-			header: FrameHeader::new(super::FRAME_ID, FrameFlags::default()),
-			identification: String::from("Surround sound"),
-			channels,
-		}
+		RelativeVolumeAdjustmentFrame::new("Surround sound", Cow::Owned(channels))
 	}
 
 	#[test_log::test]

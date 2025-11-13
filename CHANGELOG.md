@@ -24,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Support can be enabled with the new `serde` feature (not enabled by default)
 - **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
   - Same as `Probe::read()`, but returns a [`BoundTaggedFile`](https://docs.rs/lofty/latest/lofty/file/struct.BoundTaggedFile.html)
+- **ID3v2** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/576)):
+  - Unified the two generic conversion paths
+    - The background conversion used in `Tag::save_to()`, and the direct conversion done via `Into::<Id3v2Tag>::into(tag)` used to
+      take different paths, causing certain conversions and frame merging to not occur in the former case ([issue](https://github.com/Serial-ATA/lofty-rs/issues/349)).
+      They now use the same logic, which has also been rewritten to reuse data whenever possible, instead of cloning like before.
+  - The following frames now use `Cow` internally: `CommentFrame`, `UnsynchronizedTextFrame`, `TextInformationFrame`, `ExtendedTextFrame`, `UrlLinkFrame`, `ExtendedUrlFrame`,
+    `AttachedPictureFrame`, `PopularimeterFrame`, `KeyValueFrame`, `RelativeVolumeAdjustmentFrame`, `UniqueFileIdentifierFrame`, `OwnershipFrame`, `EventTimingCodesFrame`,
+    `PrivateFrame`, `BinaryFrame`
+  - `FrameId::is_valid()` and `FrameId::is_outdated()`
 - **Other**: `EXTENSIONS` list containing common file extensions for all supported audio file types ([issue](https://github.com/Serial-ATA/lofty-rs/issues/509)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/558))
   - This is useful for filtering files when scanning directories. If your app uses extension filtering, **please consider switching to this**, as to not
     miss any supported files.

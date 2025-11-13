@@ -436,7 +436,7 @@ fn test_parse_relative_volume_frame() {
 
 #[test_log::test]
 fn test_render_relative_volume_frame() {
-	let f = RelativeVolumeAdjustmentFrame::new(String::from("ident"), {
+	let f = RelativeVolumeAdjustmentFrame::new("ident", {
 		let mut m = HashMap::new();
 		m.insert(
 			ChannelType::FrontRight,
@@ -447,7 +447,7 @@ fn test_render_relative_volume_frame() {
 				peak_volume: Some(vec![0x45]),
 			},
 		);
-		m
+		Cow::Owned(m)
 	});
 
 	assert_eq!(
@@ -474,7 +474,7 @@ fn test_parse_unique_file_identifier_frame() {
 	.unwrap();
 
 	assert_eq!(f.owner, "owner");
-	assert_eq!(f.identifier, &[0x00, 0x01, 0x02]);
+	assert_eq!(&*f.identifier, &[0x00, 0x01, 0x02]);
 }
 
 #[test_log::test]
@@ -796,7 +796,7 @@ fn test_parse_private_frame() {
 	.unwrap();
 
 	assert_eq!(f.owner, "WM/Provider");
-	assert_eq!(f.private_data, b"TL");
+	assert_eq!(&*f.private_data, b"TL");
 }
 
 #[test_log::test]
@@ -856,7 +856,7 @@ fn test_render_user_text_identification_frame() {
 	Text"
 	);
 
-	f.description = String::from("Description");
+	f.description = Cow::Borrowed("Description");
 
 	assert_eq!(
 		f.as_bytes(false),
@@ -1064,8 +1064,8 @@ fn test_downgrade_to_23() {
 			FrameId::Valid(Cow::Borrowed("TMCL")),
 			TextEncoding::Latin1,
 			vec![
-				(String::from("Guitar"), String::from("Artist 1")),
-				(String::from("Drums"), String::from("Artist 2")),
+				(Cow::Borrowed("Guitar"), Cow::Borrowed("Artist 1")),
+				(Cow::Borrowed("Drums"), Cow::Borrowed("Artist 2")),
 			],
 		)));
 
@@ -1073,8 +1073,8 @@ fn test_downgrade_to_23() {
 			FrameId::Valid(Cow::Borrowed("TIPL")),
 			TextEncoding::Latin1,
 			vec![
-				(String::from("Producer"), String::from("Artist 3")),
-				(String::from("Mastering"), String::from("Artist 4")),
+				(Cow::Borrowed("Producer"), Cow::Borrowed("Artist 3")),
+				(Cow::Borrowed("Mastering"), Cow::Borrowed("Artist 4")),
 			],
 		)));
 
@@ -1164,19 +1164,19 @@ fn test_downgrade_to_23() {
 		assert_eq!(key_value_pairs.len(), 4);
 		assert_eq!(
 			key_value_pairs[0],
-			(String::from("Guitar"), String::from("Artist 1"))
+			(Cow::Borrowed("Guitar"), Cow::Borrowed("Artist 1"))
 		);
 		assert_eq!(
 			key_value_pairs[1],
-			(String::from("Drums"), String::from("Artist 2"))
+			(Cow::Borrowed("Drums"), Cow::Borrowed("Artist 2"))
 		);
 		assert_eq!(
 			key_value_pairs[2],
-			(String::from("Producer"), String::from("Artist 3"))
+			(Cow::Borrowed("Producer"), Cow::Borrowed("Artist 3"))
 		);
 		assert_eq!(
 			key_value_pairs[3],
-			(String::from("Mastering"), String::from("Artist 4"))
+			(Cow::Borrowed("Mastering"), Cow::Borrowed("Artist 4"))
 		);
 
 		// NOTE: Lofty upgrades the first genre (originally 51) to "Techno-Industrial"

@@ -2,6 +2,7 @@ use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
 
+use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
 
@@ -9,7 +10,7 @@ use std::io::Read;
 #[derive(Clone, Debug, Eq)]
 pub struct UrlLinkFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
-	pub(crate) content: String,
+	pub(crate) content: Cow<'a, str>,
 }
 
 impl PartialEq for UrlLinkFrame<'_> {
@@ -26,10 +27,10 @@ impl Hash for UrlLinkFrame<'_> {
 
 impl<'a> UrlLinkFrame<'a> {
 	/// Create a new [`UrlLinkFrame`]
-	pub fn new(id: FrameId<'a>, content: String) -> Self {
+	pub fn new(id: FrameId<'a>, content: impl Into<Cow<'a, str>>) -> Self {
 		UrlLinkFrame {
 			header: FrameHeader::new(id, FrameFlags::default()),
-			content,
+			content: content.into(),
 		}
 	}
 
@@ -76,7 +77,7 @@ impl<'a> UrlLinkFrame<'a> {
 		let header = FrameHeader::new(id, frame_flags);
 		Ok(Some(UrlLinkFrame {
 			header,
-			content: url.content,
+			content: Cow::Owned(url.content),
 		}))
 	}
 
@@ -93,12 +94,22 @@ impl<'a> UrlLinkFrame<'a> {
 	/// Change the URL of the frame
 	///
 	/// This will return a `bool` indicating whether or not the URL provided is Latin-1
-	pub fn set_url(&mut self, url: String) -> bool {
+	pub fn set_url(&mut self, url: impl Into<Cow<'a, str>>) -> bool {
+		let url = url.into();
 		if TextEncoding::verify_latin1(&url) {
 			self.content = url;
 			return true;
 		}
 
 		false
+	}
+}
+
+impl UrlLinkFrame<'static> {
+	pub(crate) fn downgrade(&self) -> UrlLinkFrame<'_> {
+		UrlLinkFrame {
+			header: self.header.downgrade(),
+			content: Cow::Borrowed(&self.content),
+		}
 	}
 }
