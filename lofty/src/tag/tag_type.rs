@@ -98,6 +98,8 @@ impl TagSupport {
 pub enum TagType {
 	/// This covers both APEv1 and APEv2 as it doesn't matter much
 	Ape,
+	/// Represents a `\Segment\Tags` element in Matroska/WebM
+	Matroska,
 	/// Represents an ID3v1 tag
 	Id3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4

@@ -11,7 +11,7 @@ fn read() {
 	// Here we have an APE file with an ID3v2, ID3v1, and an APEv2 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.ape")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

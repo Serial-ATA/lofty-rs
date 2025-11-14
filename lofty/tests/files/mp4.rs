@@ -11,7 +11,7 @@ fn read() {
 	// This file contains an ilst atom
 	let file = Probe::open("tests/files/assets/minimal/m4a_codec_aac.m4a")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

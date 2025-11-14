@@ -34,6 +34,7 @@
 )]
 
 mod attribute;
+mod ebml;
 mod internal;
 mod lofty_file;
 mod lofty_tag;
@@ -43,6 +44,7 @@ use crate::lofty_file::LoftyFile;
 use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
 use proc_macro::TokenStream;
+use quote::quote;
 use syn::{ItemStruct, parse_macro_input};
 
 /// Creates a file usable by Lofty
@@ -65,4 +67,71 @@ pub fn tag(args_input: TokenStream, input: TokenStream) -> TokenStream {
 
 	let lofty_tag = LoftyTag::new(attribute, input);
 	lofty_tag.emit()
+}
+
+#[proc_macro]
+#[doc(hidden)]
+pub fn ebml_master_elements(input: TokenStream) -> TokenStream {
+	let ret = ebml::parse_ebml_master_elements(input);
+
+	if let Err(err) = ret {
+		return TokenStream::from(err.to_compile_error());
+	}
+
+	let (identifiers, elements) = ret.unwrap();
+	let elements_map_inserts = elements.iter().map(|element| {
+		let readable_ident = &element.readable_ident;
+		let id = element.info.id;
+		let children = element.info.children.iter().map(|child| {
+			let readable_ident = &child.readable_ident;
+			let id = child.info.id;
+			let data_type = &child.info.data_type;
+			quote! {
+				(ElementId(#id), ChildElementDescriptor {
+					ident: ElementIdent::#readable_ident,
+					data_type: ElementDataType::#data_type,
+				})
+			}
+		});
+
+		quote! {
+			m.insert(
+				ElementId(#id),
+				MasterElement {
+					id: ElementIdent::#readable_ident,
+					children: &[#( #children ),*][..]
+				}
+			);
+		}
+	});
+
+	let mut ident_variants = Vec::new();
+	for (ident, id) in &identifiers {
+		ident_variants.push(quote! {
+			#ident = #id,
+		});
+	}
+
+	TokenStream::from(quote! {
+		#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+		#[repr(u64)]
+		pub(crate) enum ElementIdent {
+			#( #ident_variants )*
+		}
+
+		impl From<ElementIdent> for crate::ebml::ElementId {
+			fn from(value: ElementIdent) -> crate::ebml::ElementId {
+				crate::ebml::ElementId(value as _)
+			}
+		}
+
+		fn master_elements() -> &'static ::std::collections::HashMap<ElementId, MasterElement> {
+			static INSTANCE: ::std::sync::OnceLock<::std::collections::HashMap<ElementId, MasterElement>> = ::std::sync::OnceLock::new();
+			INSTANCE.get_or_init(|| {
+				let mut m = ::std::collections::HashMap::new();
+				#( #elements_map_inserts )*
+				m
+			})
+		}
+	})
 }

@@ -11,7 +11,7 @@ fn read() {
 	// Here we have an AIFF file with both an ID3v2 chunk and text chunks
 	let file = Probe::open("tests/files/assets/minimal/full_test.aiff")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

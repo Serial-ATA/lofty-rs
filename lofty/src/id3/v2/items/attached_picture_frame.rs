@@ -110,6 +110,7 @@ impl<'a> AttachedPictureFrame<'a> {
 
 		let picture = Picture {
 			pic_type,
+			file_name: None,
 			mime_type,
 			description,
 			data: Cow::from(data),

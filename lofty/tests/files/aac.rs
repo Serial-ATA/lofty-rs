@@ -11,7 +11,7 @@ fn read() {
 	// Here we have an AAC file with an ID3v2, and an ID3v1 tag
 	let file = Probe::open("tests/files/assets/minimal/full_test.aac")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

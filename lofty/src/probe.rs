@@ -3,11 +3,13 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
+use crate::ebml::EbmlFile;
 use crate::error::Result;
 use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
+use crate::io::FileLike;
 use crate::macros::err;
 use crate::mp4::Mp4File;
 use crate::mpeg::MpegFile;
@@ -19,7 +21,6 @@ use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::custom_resolvers;
 use crate::wavpack::WavPackFile;
 
-use crate::io::FileLike;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -473,6 +474,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Aac => AacFile::read_from(reader, options)?.into(),
 				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
 				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
+				FileType::Ebml => EbmlFile::read_from(reader, options)?.into(),
 				FileType::Flac => FlacFile::read_from(reader, options)?.into(),
 				FileType::Mpeg => MpegFile::read_from(reader, options)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, options)?.into(),

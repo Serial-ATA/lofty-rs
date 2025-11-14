@@ -989,6 +989,12 @@ impl TagItem {
 			return VALID_ITEMKEYS.contains(&self.item_key);
 		}
 
+		if tag_type == TagType::Matroska {
+			use crate::ebml::tag::SUPPORTED_ITEMKEYS;
+
+			return SUPPORTED_ITEMKEYS.contains(&self.item_key);
+		}
+
 		self.item_key.map_key(tag_type).is_some()
 	}
 }

@@ -393,6 +393,7 @@ where
 
 			let picture_data = AtomData::Picture(Picture {
 				pic_type: PictureType::Other,
+				file_name: None,
 				mime_type,
 				description: None,
 				data: Cow::from(value),

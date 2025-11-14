@@ -11,7 +11,7 @@ fn read() {
 	// Here we have a WAV file with both an ID3v2 chunk and a RIFF INFO chunk
 	let file = Probe::open("tests/files/assets/minimal/wav_format_pcm.wav")
 		.unwrap()
-		.options(ParseOptions::new().read_properties(false))
+		.options(ParseOptions::new())
 		.read()
 		.unwrap();
 

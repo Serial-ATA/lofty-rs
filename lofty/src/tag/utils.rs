@@ -4,7 +4,7 @@ use crate::file::FileType;
 use crate::macros::err;
 use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
-use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
+use crate::{aac, ape, ebml, flac, iff, mpeg, musepack, wavpack};
 
 use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
@@ -34,6 +34,7 @@ where
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
+		FileType::Ebml => ebml::write::write_to(file, tag, write_options),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type, write_options)
@@ -98,6 +99,7 @@ pub(crate) fn dump_tag<W: Write>(
 			}
 		}
 		.dump_to(writer, write_options),
+		TagType::Matroska => ebml::tag::MatroskaTagRef::from(tag).dump_to(writer, write_options),
 		_ => Ok(()),
 	}
 }

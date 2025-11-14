@@ -60,6 +60,9 @@ pub enum ErrorKind {
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
+	/// Arises when an EBML variable-size integer exceeds the maximum allowed size
+	BadVintSize,
+
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
 	OggPage(ogg_pager::PageError),
@@ -554,6 +557,10 @@ impl Display for LoftyError {
 			ErrorKind::AtomMismatch => write!(
 				f,
 				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"
+			),
+			ErrorKind::BadVintSize => write!(
+				f,
+				"EBML: Attempted to create a VInt with an invalid octet length"
 			),
 
 			// Files
