@@ -10,7 +10,7 @@ use lofty::tag::Accessor;
 
 // TODO: We don't support FLAC in OGA (#172)
 #[test_log::test]
-#[ignore]
+#[ignore = "FLAC in OGA isn't supported yet"]
 fn test_framing_bit() {
 	let mut file = temp_file!("tests/taglib/data/empty_flac.oga");
 
@@ -37,7 +37,7 @@ fn test_framing_bit() {
 
 // TODO: We don't support FLAC in OGA (#172)
 #[test_log::test]
-#[ignore]
+#[ignore = "FLAC in OGA isn't supported yet"]
 fn test_fuzzed_file() {
 	let mut file = temp_file!("tests/taglib/data/segfault.oga");
 	let f = FlacFile::read_from(&mut file, ParseOptions::new());

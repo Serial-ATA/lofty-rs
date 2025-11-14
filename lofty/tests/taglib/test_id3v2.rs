@@ -188,7 +188,7 @@ fn test_utf16_delimiter() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "iTunes bug that isn't handled yet"]
 fn test_broken_frame1() {
 	// TODO: Determine if it is worth supporting unsychronized frame sizes in ID3v2.4
 	//       This is apparently an issue iTunes had at some point in the past.
@@ -869,7 +869,7 @@ fn test_render_user_text_identification_frame() {
 
 // TODO: iTunes, being the great application it is writes unsynchronized integers for sizes. There's no *great* way to detect this.
 #[test_log::test]
-#[ignore]
+#[ignore = "iTunes bug that isn't handled yet"]
 fn test_itunes_24_frame_size() {
 	let mut file = temp_file!("tests/taglib/data/005411.id3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new().read_properties(false)).unwrap();
@@ -920,7 +920,7 @@ fn test_save_utf16_comment() {
 // TODO: Probably won't ever support this, it's a weird edge case with
 //       duplicate genres. That can be up to the caller to figure out.
 #[test_log::test]
-#[ignore]
+#[ignore = "Weird edge case, probably won't ever support this"]
 fn test_update_genre_23_1() {
 	// "Refinement" is the same as the ID3v1 genre - duplicate
 	let frame_value = TextInformationFrame::parse(
@@ -1023,7 +1023,7 @@ fn test_update_date22() {
 
 // TODO: Determine if this is even worth doing. It is just combining TYE+TDA when upgrading ID3v2.2 to 2.4
 #[test_log::test]
-#[ignore]
+#[ignore = "Lofty doesn't upgrade dates in ID3v2.2, for now"]
 fn test_update_full_date22() {
 	let mut file = temp_file!("tests/taglib/data/id3v22-tda.mp3");
 	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
@@ -1081,7 +1081,7 @@ fn test_downgrade_to_23() {
 		id3v2.insert(Frame::Text(TextInformationFrame::new(
 			FrameId::Valid(Cow::Borrowed("TCON")),
 			TextEncoding::Latin1,
-			String::from("51\039\0Power Noise"),
+			String::from("51\x0039\x00Power Noise"),
 		)));
 
 		id3v2.insert(Frame::Text(TextInformationFrame::new(
@@ -1347,22 +1347,22 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 
 // TODO: Support CHAP frames (#189)
 #[test_log::test]
-#[ignore]
+#[ignore = "CHAP frames aren't support yet"]
 fn test_parse_chapter_frame() {}
 
 // TODO: Support CHAP frames (#189)
 #[test_log::test]
-#[ignore]
+#[ignore = "CHAP frames aren't support yet"]
 fn test_render_chapter_frame() {}
 
 // TODO: Support CTOC frames (#189)
 #[test_log::test]
-#[ignore]
+#[ignore = "CTOC frames aren't support yet"]
 fn test_parse_table_of_contents_frame() {}
 
 // TODO: Support CTOC frames (#189)
 #[test_log::test]
-#[ignore]
+#[ignore = "CTOC frames aren't support yet"]
 fn test_render_table_of_contents_frame() {}
 
 #[test_log::test]
@@ -1375,5 +1375,5 @@ fn test_duplicate_tags() {}
 
 // TODO: Support CTOC frames (#189)
 #[test_log::test]
-#[ignore]
+#[ignore = "CTOC frames aren't support yet"]
 fn test_parse_toc_frame_with_many_children() {}

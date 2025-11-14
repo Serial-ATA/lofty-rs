@@ -1284,7 +1284,7 @@ fn hold_back_4_character_txxx_description() {
 
 #[test_log::test]
 fn skip_reading_cover_art() {
-	let p = Picture::unchecked(std::iter::repeat(0).take(50).collect::<Vec<u8>>())
+	let p = Picture::unchecked(std::iter::repeat_n(0, 50).collect::<Vec<u8>>())
 		.pic_type(PictureType::CoverFront)
 		.mime_type(MimeType::Jpeg)
 		.build();

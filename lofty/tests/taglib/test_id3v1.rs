@@ -22,7 +22,7 @@ fn test_genres() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, doesn't apply to Lofty"]
 fn test_renamed_genres() {
 	// Marker test, this covers a change where TagLib deviated from the list of genres available on Wikipedia.
 	// For now, Lofty has no reason to change.

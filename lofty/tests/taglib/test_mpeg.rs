@@ -76,8 +76,9 @@ fn test_skip_invalid_frames_1() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
+// TODO: Duration off by 27ms, as reported by FFmpeg
 #[test_log::test]
-#[ignore] // TODO: Duration off by 27ms, as reported by FFmpeg
+#[ignore = "Different duration than TagLib and FFmpeg"]
 fn test_skip_invalid_frames_2() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames2.mp3");
 
@@ -88,8 +89,9 @@ fn test_skip_invalid_frames_2() {
 	assert_eq!(f.properties().sample_rate(), 44100);
 }
 
+// TODO: Duration off by 26ms, as reported by FFmpeg
 #[test_log::test]
-#[ignore] // TODO: Duration off by 26ms, as reported by FFmpeg
+#[ignore = "Different duration than TagLib and FFmpeg"]
 fn test_skip_invalid_frames_3() {
 	let f = get_file::<MpegFile>("tests/taglib/data/invalid-frames3.mp3");
 
