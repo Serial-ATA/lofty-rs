@@ -11,13 +11,14 @@ use crate::config::{ParseOptions, WriteOptions};
 use crate::ebml::element_reader::{
 	ElementHeader, ElementIdent, ElementReader, ElementReaderYield, KnownElementHeader,
 };
+use crate::ebml::read::segment_seekhead::SeekHead;
 use crate::ebml::read::{CRC32_ID, VOID_ID};
 use crate::ebml::{DocumentType, EbmlProperties, ElementId, VInt};
 use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Truncate};
 use crate::macros::decode_err;
 
-use std::io::{Cursor, SeekFrom, Write};
+use std::io::{Cursor, Seek, SeekFrom, Write};
 
 #[derive(Copy, Clone)]
 pub(crate) struct ElementWriterCtx {
@@ -74,6 +75,70 @@ pub(crate) fn write_element<W: Write, E: ElementEncodable>(
 	Ok(())
 }
 
+struct EbmlFileContext {
+	seek_heads: SeekHeads,
+	elements_to_remove: Option<ElementsToRemove>,
+	segment_header_start: usize,
+	segment_header_end: usize,
+	segment_length: usize,
+}
+
+impl EbmlFileContext {
+	fn parse(
+		element_reader: &mut ElementReader<Cursor<Vec<u8>>>,
+		parse_options: ParseOptions,
+	) -> Result<Self> {
+		let seek_heads;
+		let elements_to_remove;
+		let segment_header_start;
+		let segment_header_end;
+		let segment_length;
+		loop {
+			let res = element_reader.next()?;
+			match res {
+				ElementReaderYield::Master(
+					header @ KnownElementHeader {
+						id: ElementIdent::Segment,
+						size,
+						..
+					},
+				) => {
+					let current_pos = element_reader.inner().position() as usize;
+					segment_header_start = current_pos - header.len();
+					segment_header_end = current_pos;
+					segment_length = size.value() as usize;
+
+					(seek_heads, elements_to_remove) =
+						collect_tags_in_segment(element_reader, parse_options)?;
+					break;
+				},
+				// CRC-32 (0xBF) and Void (0xEC) elements can occur at the top level.
+				// This is valid, and we can just skip them.
+				ElementReaderYield::Unknown(ElementHeader {
+					id: id @ (CRC32_ID | VOID_ID),
+					size,
+					..
+				}) => {
+					log::debug!("EBML: Skipping global element: {:X}", id);
+					element_reader.skip(size.value())?;
+					continue;
+				},
+				_ => {
+					decode_err!(@BAIL Ebml, "File does not contain a segment element")
+				},
+			}
+		}
+
+		Ok(Self {
+			seek_heads,
+			elements_to_remove,
+			segment_header_start,
+			segment_header_end,
+			segment_length,
+		})
+	}
+}
+
 pub(crate) fn write_to<F>(
 	file: &mut F,
 	tag_ref: MatroskaTagRef<'_>,
@@ -101,52 +166,13 @@ where
 		doc_type: properties.header.doc_type,
 	};
 
-	// TODO: update SeekHead
-	let elements_to_remove;
-	let segment_header;
-	let mut segment_length;
-	loop {
-		let res = element_reader.next()?;
-		match res {
-			ElementReaderYield::Master(
-				header @ KnownElementHeader {
-					id: ElementIdent::Segment,
-					size,
-					..
-				},
-			) => {
-				let current_pos = element_reader.inner().position() as usize;
-				let segment_header_start = current_pos - header.len();
-				let segment_header_end = current_pos;
-
-				segment_header = segment_header_start..segment_header_end;
-				segment_length = size.value() as usize;
-
-				elements_to_remove = collect_tags_in_segment(&mut element_reader)?;
-				break;
-			},
-			// CRC-32 (0xBF) and Void (0xEC) elements can occur at the top level.
-			// This is valid, and we can just skip them.
-			ElementReaderYield::Unknown(ElementHeader {
-				id: id @ (CRC32_ID | VOID_ID),
-				size,
-				..
-			}) => {
-				log::debug!("EBML: Skipping global element: {:X}", id);
-				element_reader.skip(size.value())?;
-				continue;
-			},
-			_ => {
-				decode_err!(@BAIL Ebml, "File does not contain a segment element")
-			},
-		}
-	}
+	let mut file_context = EbmlFileContext::parse(&mut element_reader, parse_options)?;
 
 	let mut file_contents = element_reader.into_inner();
 	let tag_bytes = encode_tag(tag_ref, write_options, element_writer_ctx)?;
 
 	let mut bytes_removed = 0;
-	if let Some(elements_to_remove) = elements_to_remove {
+	if let Some(elements_to_remove) = file_context.elements_to_remove {
 		if attempt_overwrite(file, &elements_to_remove, &tag_bytes)? {
 			return Ok(());
 		}
@@ -158,23 +184,35 @@ where
 	let segment_length_diff = tag_bytes.len() as isize - bytes_removed as isize;
 	log::debug!("EBML: Segment size changing by {segment_length_diff} bytes");
 
-	segment_length = (segment_length as isize + segment_length_diff) as usize;
+	// Shift all the offsets in the relevant `\Segment\SeekHead`s
+	file_context.seek_heads.propagate_change(
+		file_context.segment_header_end as u64,
+		segment_length_diff as i64,
+	);
+	file_context
+		.seek_heads
+		.update_seekheads(element_writer_ctx, &mut file_contents)?;
 
+	file_context.segment_length =
+		(file_context.segment_length as isize + segment_length_diff) as usize;
+
+	// TODO: need to also consider the case where the segment header vint grows
 	let mut new_segment_header = Cursor::new(Vec::new());
 	new_segment_header.write_id(element_writer_ctx, ElementIdent::Segment.into())?;
 	new_segment_header.write_size(
 		element_writer_ctx,
-		VInt::<u64>::try_from(segment_length as u64)?,
+		VInt::<u64>::try_from(file_context.segment_length as u64)?,
 	)?;
 
 	if !tag_bytes.is_empty() {
-		file_contents
-			.get_mut()
-			.splice(segment_header.end..segment_header.end, tag_bytes);
+		file_contents.get_mut().splice(
+			file_context.segment_header_end..file_context.segment_header_end,
+			tag_bytes,
+		);
 	}
 
 	file_contents.get_mut().splice(
-		segment_header.start..segment_header.end,
+		file_context.segment_header_start..file_context.segment_header_end,
 		new_segment_header.into_inner(),
 	);
 
@@ -185,6 +223,8 @@ where
 	Ok(())
 }
 
+/// Attempts to overwrite the existing in-place, if the new tag is small enough. Any extra space will be
+/// filled with padding.
 fn attempt_overwrite<F>(
 	file: &mut F,
 	elements_to_remove: &ElementsToRemove,
@@ -198,6 +238,8 @@ where
 		return Ok(false);
 	}
 
+	// TODO: Need to check if there's enough space for a Void element to follow the tag as well, in the case that
+	// the new tag is too small.
 	if elements_to_remove.total_size() < tag_bytes.len() {
 		log::warn!("EBML: Previous tag too small to overwrite, the entire file will be rewritten");
 		return Ok(false);
@@ -239,10 +281,71 @@ impl ElementsToRemove {
 	}
 }
 
+#[derive(Default)]
+struct SeekHeads {
+	entries: Vec<SeekHeadEntry>,
+}
+
+struct SeekHeadEntry {
+	entry: SeekHead,
+	offset: u64,
+	dirty: bool,
+}
+
+impl SeekHeads {
+	fn push(&mut self, entry: SeekHead, offset: u64) {
+		self.entries.push(SeekHeadEntry {
+			entry,
+			offset,
+			dirty: false,
+		});
+	}
+
+	fn propagate_change(&mut self, from: u64, size: i64) {
+		for entry in &mut self.entries {
+			for seek_entry in &mut entry.entry.entries {
+				// The entry isn't affected by the shift
+				if seek_entry.position < from {
+					continue;
+				}
+
+				log::trace!("Shifting seek point for {:#X} by {size}", seek_entry.id.0);
+
+				entry.dirty = true;
+				seek_entry.position = seek_entry.position.saturating_add_signed(size);
+			}
+		}
+	}
+
+	fn update_seekheads(
+		&self,
+		ctx: ElementWriterCtx,
+		file_contents: &mut Cursor<Vec<u8>>,
+	) -> Result<()> {
+		for entry in &self.entries {
+			if !entry.dirty {
+				continue;
+			}
+
+			log::trace!("Overwriting \\Segment\\SeekHead at offset {}", entry.offset);
+
+			// TODO: What if the seek position grows/shrinks?
+			file_contents.seek(SeekFrom::Start(entry.offset))?;
+			entry.entry.write_element(ctx, file_contents)?;
+		}
+
+		Ok(())
+	}
+}
+
 fn collect_tags_in_segment(
 	element_reader: &mut ElementReader<Cursor<Vec<u8>>>,
-) -> Result<Option<ElementsToRemove>> {
+	parse_options: ParseOptions,
+) -> Result<(SeekHeads, Option<ElementsToRemove>)> {
 	let mut elements_to_remove = Vec::new();
+
+	// Unfortunately, files can have multiple SeekHeads, so we'll need to track all of them
+	let mut seekheads = SeekHeads::default();
 
 	let mut children = element_reader.children();
 	while let Some(child) = children.next() {
@@ -257,13 +360,27 @@ fn collect_tags_in_segment(
 			}) => {
 				let header_len = size_of_id + size_of_size;
 				let start = children.inner().position() - u64::from(header_len);
-				if id == ElementIdent::Tags || id == ElementIdent::Attachments {
-					elements_to_remove.push(ElementToRemove {
-						start,
-						size: size.value(),
-					});
 
-					continue;
+				match id {
+					ElementIdent::Tags | ElementIdent::Attachments => {
+						// TODO: Need to figure out how to determine the location of the new tag. Imagine
+						//       the attachments appear before the tags.
+						elements_to_remove.push(ElementToRemove {
+							start,
+							size: size.value(),
+						});
+
+						continue;
+					},
+					ElementIdent::SeekHead => {
+						let seekhead = crate::ebml::read::segment_seekhead::read_from(
+							&mut children.children(),
+							parse_options,
+						)?;
+						seekheads.push(seekhead, start);
+						continue;
+					},
+					_ => {},
 				}
 
 				children.skip(size.value())?;
@@ -278,7 +395,7 @@ fn collect_tags_in_segment(
 	}
 
 	if elements_to_remove.is_empty() {
-		return Ok(None);
+		return Ok((seekheads, None));
 	}
 
 	log::debug!("EBML: File has tags and/or attached files to remove");
@@ -302,10 +419,13 @@ fn collect_tags_in_segment(
 		prev = Some((element.start, element.size));
 	}
 
-	Ok(Some(ElementsToRemove {
-		elements: elements_to_remove,
-		contiguous: is_contiguous,
-	}))
+	Ok((
+		seekheads,
+		Some(ElementsToRemove {
+			elements: elements_to_remove,
+			contiguous: is_contiguous,
+		}),
+	))
 }
 
 pub(crate) fn encode_tag(

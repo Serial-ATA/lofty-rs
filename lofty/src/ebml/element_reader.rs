@@ -1,6 +1,7 @@
 use crate::ebml::vint::{ElementId, VInt};
 use crate::error::Result;
 use crate::macros::{decode_err, try_vec};
+use crate::tag::items::Timestamp;
 
 use std::io::{self, Read};
 use std::ops::{Deref, DerefMut};
@@ -145,7 +146,7 @@ ebml_master_elements! {
 	Segment: {
 		id: 0x1853_8067,
 		children: [
-			// SeekHead: { 0x114D_9B74, Master },
+			SeekHead: { 0x114D_9B74, Master },
 			Info: { 0x1549_A966, Master },
 			Cluster: { 0x1F43_B675, Master },
 			Tracks: { 0x1654_AE6B, Master },
@@ -156,12 +157,21 @@ ebml_master_elements! {
 	},
 
 	// segment.seekHead
-	// SeekHead: {
-	// 	id: 0x114D_9B74,
-	// 	children: [
-	// 		Seek: { 0x4DBB, Master },
-	// 	],
-	// },
+	SeekHead: {
+		id: 0x114D_9B74,
+		children: [
+			Seek: { 0x4DBB, Master },
+		],
+	},
+
+	// segment.seekHead.seek
+	Seek: {
+		id: 0x4DBB,
+		children: [
+			SeekId: { 0x53AB, Binary },
+			SeekPosition: { 0x53AC, UnsignedInt },
+		],
+	},
 
 	// segment.info
 	Info: {
@@ -678,6 +688,10 @@ where
 		Ok(())
 	}
 
+	pub(crate) fn read_element_id(&mut self) -> Result<ElementId> {
+		ElementId::parse(self, self.ctx.max_id_length).map(|(id, _bytes_read)| id)
+	}
+
 	pub(crate) fn read_signed_int(&mut self, element_length: u64) -> Result<i64> {
 		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.1
 		// A Signed Integer Element MUST declare a length from zero to eight octets
@@ -765,7 +779,22 @@ where
 		self.read_string(element_length)
 	}
 
-	pub(crate) fn read_date(&mut self) -> Result<String> {
+	pub(crate) fn read_date(&mut self, element_length: u64) -> Result<Timestamp> {
+		// https://www.rfc-editor.org/rfc/rfc8794.html#section-7.6
+		// A Date Element MUST declare a length of either zero octets or eight octets.
+
+		// If the EBML Element is not defined to have a default value, then a Date Element with a
+		// zero-octet length represents a timestamp of 2001-01-01T00:00:00.000000000 UTC
+		if element_length == 0 {
+			return Ok(Timestamp {
+				year: 2001,
+				month: Some(1),
+				day: Some(1),
+				..Timestamp::default()
+			});
+		}
+
+		let _nanos = self.read_signed_int(element_length)?;
 		todo!()
 	}
 

@@ -76,6 +76,34 @@ fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/full_test.mka", None);
 }
 
+// This file has a single \Segment\SeekHead, where only one of the entries needs to be updated after a tag write
+#[test_log::test]
+fn single_seekhead() {
+	let mut tagged_file = crate::util::read("tests/files/assets/matroska/seekhead.mka");
+
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Matroska,
+		"Foo artist",
+		"Bar artist",
+		1,
+	);
+}
+
+// This file has multiple `\Segment\SeekHead`s, where only one of them needs to be updated after a tag write
+#[test_log::test]
+fn multiple_seekheads() {
+	let mut tagged_file = crate::util::read("tests/files/assets/matroska/multiple_seekheads.mka");
+
+	crate::util::set_artist(
+		&mut tagged_file,
+		TagType::Matroska,
+		"Foo artist",
+		"Bar artist",
+		1,
+	);
+}
+
 // Official Matroska test files
 #[test_log::test]
 fn basic_file() {

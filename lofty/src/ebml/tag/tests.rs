@@ -1,6 +1,5 @@
 use crate::ebml::MatroskaTag;
-use crate::prelude::ItemKey;
-use crate::tag::{Accessor, Tag, TagType};
+use crate::tag::{Accessor, ItemKey, Tag, TagType};
 
 #[test_log::test]
 fn tag_to_matroska_tag() {

@@ -3,6 +3,7 @@ mod segment_attachments;
 mod segment_chapters;
 mod segment_cluster;
 mod segment_info;
+pub(super) mod segment_seekhead;
 mod segment_tags;
 mod segment_tracks;
 

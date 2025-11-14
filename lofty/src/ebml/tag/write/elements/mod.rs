@@ -2,6 +2,8 @@
 
 pub(super) mod attached_file;
 pub(super) mod attachments;
+pub(super) mod seek;
+pub(super) mod seekhead;
 pub(super) mod simple_tag;
 mod tag;
 pub(super) mod tags;
