@@ -86,10 +86,10 @@ fn test_musepack() {
 	file_ref_save("click.mpc", FileType::Mpc);
 }
 
+// TODO: We don't support ASF yet
 #[test_log::test]
-#[ignore]
+#[ignore = "AFK is not supported yet"]
 fn test_asf() {
-	// TODO: We don't support ASF yet
 	// file_ref_save("silence-1.asf", FileType::ASF);
 }
 
@@ -113,10 +113,10 @@ fn test_mp3() {
 	file_ref_save("xing.mp3", FileType::Mpeg);
 }
 
+// TODO: We don't support TTA yet
 #[test_log::test]
-#[ignore]
+#[ignore = "TTA is not supported yet"]
 fn test_true_audio() {
-	// TODO: We don't support TTA yet
 	// file_ref_save("empty.tta", FileType::TrueAudio);
 }
 
@@ -145,8 +145,9 @@ fn test_wav() {
 	file_ref_save("empty.wav", FileType::Wav);
 }
 
+// TODO: We don't yet support FLAC in oga
 #[test_log::test]
-#[ignore] // TODO: We don't yet support FLAC in oga
+#[ignore = "FLAC in OGA isn't supported yet"]
 fn test_oga_flac() {
 	file_ref_save("empty_flac.oga", FileType::Flac);
 }

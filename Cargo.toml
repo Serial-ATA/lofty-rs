@@ -34,8 +34,7 @@ explicit_outlives_requirements = "deny"
 unknown_lints                  = "allow"
 
 [workspace.lints.clippy]
-dbg_macro                          = "forbid"
-string_to_string                   = "forbid"
+dbg_macro                          = "deny"
 pedantic                           = { level = "deny", priority = -1 }
 all                                = { level = "deny", priority = -1 }
 too_many_lines                     = "allow"
@@ -72,6 +71,7 @@ struct_excessive_bools 		       = "allow" # I have yet to find one case of this 
 needless_continue                  = "allow" # All occurences of this lint are just for clarity in large loops
 unbuffered_bytes                   = "allow" # It is up to the caller to wrap their data in `BufReader`s
 struct_field_names                 = "allow"
+items_after_statements             = "allow"
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"

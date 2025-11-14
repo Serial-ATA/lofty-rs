@@ -87,8 +87,9 @@ fn test_properties_alac_without_bitrate() {
 	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
 }
 
+// TODO: FFmpeg reports a bitrate of 95kb/s, we report 104
 #[test_log::test]
-#[ignore] // TODO: FFmpeg reports a bitrate of 95kb/s, we report 104
+#[ignore = "Different bitrate than TagLib and FFmpeg"]
 fn test_properties_m4v() {
 	let f = get_file::<Mp4File>("tests/taglib/data/blank_video.m4v");
 	assert_eq!(f.properties().duration().as_secs(), 0);
@@ -141,8 +142,9 @@ fn test_is_empty() {
 	assert!(!t1.is_empty());
 }
 
+// TODO: The atom parsing internals are not exposed yet
 #[test_log::test]
-#[ignore] // TODO: The atom parsing internals are not exposed yet
+#[ignore = "Waiting for atom parsing internals to be exposed"]
 fn test_update_stco() {
 	let mut file = temp_file!("no-tags.3g2");
 

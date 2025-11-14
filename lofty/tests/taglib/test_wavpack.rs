@@ -11,8 +11,9 @@ use lofty::id3::v1::Id3v1Tag;
 use lofty::tag::Accessor;
 use lofty::wavpack::WavPackFile;
 
+// TODO: Should we even bother supporting this? FFmpeg also reports zeroed out properties.
 #[test_log::test]
-#[ignore] // TODO: Should we even bother supporting this? FFmpeg also reports zeroed out properties.
+#[ignore = "Not sure if this should be supported"]
 fn test_no_length_properties() {
 	let f = get_file::<WavPackFile>("tests/taglib/data/no_length.wv");
 	assert_eq!(f.properties().duration().as_secs(), 3);

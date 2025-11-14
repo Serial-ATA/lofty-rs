@@ -22,14 +22,13 @@ pub fn temp_file(path: impl AsRef<Path>) -> File {
 /// Copy `path` into a [`temp_file()`] and parse it via [`Probe`]
 pub fn read(path: impl AsRef<Path>) -> BoundTaggedFile<File> {
 	let file = temp_file(path);
-	let tagged_file = Probe::new(file)
+
+	Probe::new(file)
 		.options(ParseOptions::new())
 		.guess_file_type()
 		.unwrap()
 		.read_bound()
-		.unwrap();
-
-	tagged_file
+		.unwrap()
 }
 
 /// Verify that the file at `path` has no tags

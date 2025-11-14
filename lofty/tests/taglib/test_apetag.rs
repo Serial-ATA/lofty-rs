@@ -87,15 +87,14 @@ fn test_invalid_keys() {
 }
 
 #[test_log::test]
-#[ignore]
+#[ignore = "Marker test, Lofty doesn't replicate this API"]
 fn test_text_binary() {
-	// Marker test, this is useless as Lofty does not have a similar API that the test is based upon:
 	// https://github.com/taglib/taglib/blob/a31356e330674640a07bef7d71d08242cae8e9bf/tests/test_apetag.cpp#L153
 }
 
 // TODO: Does not work! We fall for this collision.
 #[test_log::test]
-#[ignore]
+#[ignore = "We currently fall for this collision"]
 fn test_id3v1_collision() {
 	let mut file = temp_file!("tests/taglib/data/no-tags.mpc");
 	{

@@ -44,6 +44,7 @@ struct MyFile {
 }
 
 impl MyFile {
+	#[allow(clippy::unnecessary_wraps)]
 	pub fn parse_my_file<R>(_reader: &mut R, _parse_options: ParseOptions) -> LoftyResult<Self>
 	where
 		R: std::io::Read + std::io::Seek,
