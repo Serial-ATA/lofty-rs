@@ -1536,3 +1536,36 @@ fn multi_item_tag_dump() {
 	let artist_tag = tag.get_text(&FrameId::new("TPE1").unwrap()).unwrap();
 	assert_eq!(artist_tag, "Foo\0Bar");
 }
+
+#[test_log::test]
+fn single_value_frame() {
+	let mut tag = Tag::new(TagType::Id3v2);
+
+	// TBPM should be deduplicated during the conversion, taking whatever happens to be first
+	tag.push(TagItem::new(
+		ItemKey::IntegerBpm,
+		ItemValue::Text(String::from("120")),
+	));
+	tag.push(TagItem::new(
+		ItemKey::IntegerBpm,
+		ItemValue::Text(String::from("130")),
+	));
+	tag.push(TagItem::new(
+		ItemKey::IntegerBpm,
+		ItemValue::Text(String::from("140")),
+	));
+
+	let mut id3v2 = Vec::new();
+	tag.dump_to(&mut id3v2, WriteOptions::default()).unwrap();
+
+	let tag = read_tag_with_options(
+		&id3v2,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	);
+
+	// The other BPM values were discarded, **NOT** merged
+	assert_eq!(tag.len(), 1);
+
+	let artist_tag = tag.get_text(&FrameId::new("TBPM").unwrap()).unwrap();
+	assert_eq!(artist_tag, "120");
+}

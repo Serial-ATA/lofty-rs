@@ -13,7 +13,9 @@ use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Tag, TagItem, TagType};
 
 use super::V4_MULTI_VALUE_SEPARATOR;
-use crate::id3::v2::tag::{new_text_frame, new_timestamp_frame, new_user_text_frame};
+use crate::id3::v2::tag::{
+	new_text_frame, new_timestamp_frame, new_url_frame, new_user_text_frame,
+};
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::mp4::AdvisoryRating;
 use crate::tag::items::{Lang, Timestamp};
@@ -282,7 +284,7 @@ pub(crate) fn from_tag<'a>(
 			},
 
 			// TIPL key-value mappings
-			_ => {
+			_ if TIPL_MAPPINGS.iter().any(|(k, _)| *k == item_key) => {
 				let (_, tipl_key) = TIPL_MAPPINGS.iter().find(|(k, _)| *k == item_key)?;
 
 				let (value, _) = take_item_text_and_description(item)?;
@@ -291,6 +293,25 @@ pub(crate) fn from_tag<'a>(
 					.push((Cow::Borrowed(tipl_key), value));
 
 				// TIPL is collected at the end
+				None
+			},
+
+			// Anything else
+			_ => {
+				let Ok(id) = FrameId::try_from(item_key) else {
+					return None;
+				};
+
+				if id.as_str().starts_with('T') {
+					let (value, _) = take_item_text_and_description(item)?;
+					return Some(new_text_frame(id, value));
+				}
+
+				if id.as_str().starts_with('W') {
+					let (value, _) = take_item_text_and_description(item)?;
+					return Some(new_url_frame(id, value));
+				}
+
 				None
 			},
 		}
