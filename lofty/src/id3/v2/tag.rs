@@ -649,6 +649,10 @@ pub(super) fn new_text_frame<'a>(id: FrameId<'a>, value: impl Into<Cow<'a, str>>
 	Frame::Text(TextInformationFrame::new(id, TextEncoding::UTF8, value))
 }
 
+pub(super) fn new_url_frame<'a>(id: FrameId<'a>, value: impl Into<Cow<'a, str>>) -> Frame<'a> {
+	Frame::Url(UrlLinkFrame::new(id, value))
+}
+
 pub(super) fn new_user_text_frame<'a>(
 	description: impl Into<Cow<'a, str>>,
 	content: impl Into<Cow<'a, str>>,
