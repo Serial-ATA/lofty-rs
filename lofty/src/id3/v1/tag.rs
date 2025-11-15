@@ -56,9 +56,11 @@ macro_rules! impl_accessor {
 /// * `comment` -> [`ItemKey::Comment`]
 /// * `track_number` -> [`ItemKey::TrackNumber`]
 /// * `genre` -> [`ItemKey::Genre`] (As long as the genre is a valid index into [`GENRES`])
-///
+/// 	* Note that [`ItemKey::Genre`] will contain the *string* at [`GENRES`]\[index\], not the index.
 ///
 /// ### From `Tag`
+///
+/// #### Items
 ///
 /// All of the [`ItemKey`]s referenced in the conversion to [`Tag`] will be checked.
 ///
@@ -66,9 +68,12 @@ macro_rules! impl_accessor {
 ///
 /// * [`ItemKey::TrackNumber`] - Will only be used if the value can be parsed as a `u8`
 /// * [`ItemKey::Genre`] - Will only be used if:
+/// 	* [`GENRES`] contains the string
+/// 	* **OR** The [`ItemValue`](crate::ItemValue) can be parsed into a `u8` ***and*** it is a valid index into [`GENRES`]
 ///
-/// 	[`GENRES`] contains the string **OR** The [`ItemValue`](crate::ItemValue) can be parsed into
-/// 	a `u8` ***and*** it is a valid index into [`GENRES`]
+/// #### Pictures
+///
+/// Pictures will be discarded, as they aren't supported in this format.
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(
 	description = "An ID3v1 tag",

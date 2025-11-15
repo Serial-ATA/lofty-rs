@@ -101,17 +101,25 @@ macro_rules! impl_flag_accessors {
 ///
 /// ### To `Tag`
 ///
-/// When converting to [`Tag`], only atoms with a value of [`AtomData::UTF8`] and [`AtomData::UTF16`],
-/// with the exception of the `trkn` and `disk` atoms, as well as pictures, will be preserved.
+/// For an [`Atom`] to be converted it must:
 ///
-/// Do note, all pictures will be [`PictureType::Other`](crate::PictureType::Other)
+/// * Have a value of [`AtomData::UTF8`] and [`AtomData::UTF16`]
+/// * **OR** be a `trkn`/`disk` atom
+/// * **OR** be a `covr` atom
+///
+/// Note that all pictures will be [`PictureType::Other`].
 ///
 /// ### From `Tag`
 ///
-/// When converting from [`Tag`], only items with a value of [`ItemValue::Text`](crate::ItemValue::Text), as
-/// well as pictures, will be preserved.
+/// #### Items
 ///
-/// An attempt will be made to create the `TrackNumber/TrackTotal` (trkn) and `DiscNumber/DiscTotal` (disk) pairs.
+/// For a [`TagItem`] to be converted, it must have a value of [`ItemValue::Text`].
+///
+/// An attempt will be made to create the `TrackNumber/TrackTotal` (trkn) and `DiscNumber/DiscTotal` (disk) atoms.
+///
+/// #### Pictures
+///
+/// [`Picture`]s will also be preserved, but their [`PictureType`] will be overwritten with [`PictureType::Other`].
 #[derive(Default, PartialEq, Debug, Clone)]
 #[tag(description = "An MP4 ilst atom", supported_formats(Mp4))]
 pub struct Ilst {

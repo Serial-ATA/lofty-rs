@@ -76,28 +76,6 @@ macro_rules! impl_accessor {
 ///
 /// In the [`Accessor`] methods, these values have the separators (`\0`) replaced with `"/"` for convenience.
 ///
-/// ## Conversions
-///
-/// ⚠ **Warnings** ⚠
-///
-/// ### From `Tag`
-///
-/// When converting from a [`Tag`] to an `Id3v2Tag`, some frames may need editing.
-///
-/// * [`ItemKey::Comment`] and [`ItemKey::Lyrics`] - Unlike a normal text frame, these require a language and description.
-///   * If these values aren't specified in the [`TagItem`], it will be filled in with (possibly incorrect) defaults.
-///      * `language` - Unknown and set to "XXX"
-///      * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
-///    by their descriptions, and as such they are expected to be unique for each.
-///   * See [`CommentFrame`] and [`UnsynchronizedTextFrame`] respectively.
-///
-/// ### To `Tag`
-///
-/// * TXXX/WXXX - These frames will be stored as an [`ItemKey`] by their description. Some variants exist
-///   for these descriptions, such as [`ItemKey::ReplayGainAlbumGain`]. Anything without a mapping will
-///   be discarded.
-/// * POPM - These frames will be stored as a raw [`ItemValue::Binary`] value under the [`ItemKey::Popularimeter`] key.
-///
 /// ## Special Frames
 ///
 /// ID3v2 has `GEOB` and `SYLT` frames, which are not parsed by default, instead storing them as [`FrameType::Binary`].
@@ -105,6 +83,26 @@ macro_rules! impl_accessor {
 /// and [`SynchronizedText::parse`](crate::id3::v2::SynchronizedTextFrame::parse) respectively, and converted back to binary with
 /// [`GeneralEncapsulatedObject::as_bytes`](crate::id3::v2::GeneralEncapsulatedObject::as_bytes) and
 /// [`SynchronizedText::as_bytes`](crate::id3::v2::SynchronizedTextFrame::as_bytes) for writing.
+///
+/// ## Conversions
+///
+/// ### To `Tag`
+///
+/// * TXXX/WXXX
+/// 	* These frames map to [`ItemKey`] by their description, rather than their frame ID (e.g. `TXXX:REPLAYGAIN_ALBUM_GAIN` maps to [`ItemKey::ReplayGainAlbumGain`]).
+///     * Anything without a mapping will be discarded.
+/// * POPM - These frames will be stored as a raw [`ItemValue::Binary`] value under the [`ItemKey::Popularimeter`] key.
+///
+/// ### From `Tag`
+///
+/// When converting from a [`Tag`] to an `Id3v2Tag`, some frames may need editing.
+///
+/// * [`ItemKey::Comment`] and [`ItemKey::Lyrics`] - Unlike a normal text frame, these require a language and description.
+///   * If these values aren't specified in the [`TagItem`], it will be filled in with (possibly incorrect) defaults.
+///      * `language` - Set to [`UNKNOWN_LANGUAGE`]
+///      * `description` - Left empty, which is invalid if there are more than one of these frames. These frames can only be identified
+///    by their descriptions, and as such they are expected to be unique for each.
+///   * See [`CommentFrame`] and [`UnsynchronizedTextFrame`] respectively.
 #[derive(PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "An `ID3v2` tag",

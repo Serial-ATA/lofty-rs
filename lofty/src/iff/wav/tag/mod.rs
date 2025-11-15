@@ -43,7 +43,16 @@ macro_rules! impl_accessor {
 ///
 /// ### From `Tag`
 ///
-/// When converting a [`TagItem`], it must have a value other than [`ItemValue::Binary`](crate::ItemValue::Binary)
+/// #### Items
+///
+/// When converting a [`TagItem`], the only conditions are that:
+///
+/// * It has an [`ItemKey`] mapping
+/// * It has a value of [`ItemValue::Text`](crate::ItemValue::Text) or [`ItemValue::Locator`](crate::ItemValue::Locator)
+///
+/// #### Pictures
+///
+/// Pictures will be discarded, as they aren't supported in this format.
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(description = "A RIFF INFO LIST", supported_formats(Wav))]
 pub struct RiffInfoList {
