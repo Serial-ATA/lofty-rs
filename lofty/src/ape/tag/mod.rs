@@ -61,8 +61,7 @@ macro_rules! impl_accessor {
 /// a normal [`ItemValue`](crate::tag::ItemValue) unlike other formats.
 ///
 /// Pictures are stored as [`ItemValue::Binary`](crate::tag::ItemValue::Binary), and can be converted with
-/// [`Picture::from_ape_bytes`](crate::picture::Picture::from_ape_bytes). For the appropriate item keys, see
-/// [`APE_PICTURE_TYPES`](crate::ape::APE_PICTURE_TYPES).
+/// [`Picture::from_ape_bytes()`]. For the appropriate item keys, see [`APE_PICTURE_TYPES`].
 ///
 /// ## Conversions
 ///
@@ -72,8 +71,20 @@ macro_rules! impl_accessor {
 ///
 /// ### From `Tag`
 ///
+/// Converting [`Tag`]s into `ApeTag` is *mostly* seamless.
+///
+/// #### Items
+///
+/// As long at the [`ItemKey`] has a mapping for APE, it can be converted to an [`ApeItem`].
+///
+/// #### Pictures
+///
 /// When converting pictures, any of type [`PictureType::Undefined`](crate::picture::PictureType::Undefined) will be discarded.
-/// For items, see [`ApeItem::new`].
+/// Since APE doesn't have dedicated item types for pictures like other formats (e.g. [Id3v2Tag]), pictures
+/// **must** be disambiguated by their [`PictureType`](crate::picture::PictureType).
+///
+/// [`Picture::from_ape_bytes()`]: crate::picture::Picture::from_ape_bytes
+/// [`APE_PICTURE_TYPES`]: crate::ape::APE_PICTURE_TYPES
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(
 	description = "An `APE` tag",
