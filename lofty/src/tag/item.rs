@@ -440,6 +440,12 @@ gen_map!(
 	"COPYRIGHT"                               => CopyrightMessage,
 	"LICENSE"                                 => License,
 	"COMMENT"                                 => Comment,
+	// This field comes from the spec: <https://xiph.org/vorbis/doc/v-comment.html#fieldnames>
+	//
+	// But doesn't seem to actually be used anywhere? AFAICT, it was meant to serve the same purpose as
+	// "COMMENT". I haven't found any cases of taggers converting this field to "COMMENT" though, so
+	// it's probably safest to keep the two distinct.
+	"DESCRIPTION"                             => Description,
 	"LANGUAGE"                                => Language,
 	"SCRIPT"                                  => Script,
 	"LYRICS"                                  => Lyrics,
