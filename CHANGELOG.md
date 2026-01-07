@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       ISO 3166-1 code.
   - `ItemKey::AcoustId` and `ItemKey::AcoustIdFingerprint` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/455)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/575))
     - These two fields come from [AcoustID], and can appear multiple times in a single tag.
+  - `ItemKey::Description` mapping for Vorbis Comments ([issue](https://github.com/Serial-ATA/lofty-rs/issues/585)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/587))
 - **Serde**: [Serde] support for `*Type` enums (`FileType`, `TagType`, `PictureType`) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/533)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/534))
   - Support can be enabled with the new `serde` feature (not enabled by default)
 - **Probe**: `Probe::read_bound()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/557))
