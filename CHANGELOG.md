@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Don't error on empty `SYLT` strings ([issue](https://github.com/Serial-ATA/lofty-rs/issues/563)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/564))
 - **Vorbis Comments**: Parse `TRACKNUMBER` with respect to `ParseOptions::implicit_conversions` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/540)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/542))
 - **APE**: Fix disc number removal/writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/545)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/546))
+- **FLAC**: Fix corruption of files with no metadata blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/549)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/583))
 
 ### Removed
 

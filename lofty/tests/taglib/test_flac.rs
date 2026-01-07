@@ -569,7 +569,10 @@ fn test_empty_seek_table() {
 	file.rewind().unwrap();
 	{
 		let f = FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		file.seek(SeekFrom::Start(42)).unwrap();
+
+		// NOTE: TagLib has this at offset 42. This is because we always shift any blocks we write
+		//       to be immediately after `STREAMINFO`, whereas TagLib will append them to the end.
+		file.seek(SeekFrom::Start(113)).unwrap();
 		assert!(f.vorbis_comments().is_some());
 
 		let mut data = [0; 4];
