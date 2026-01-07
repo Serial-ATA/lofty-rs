@@ -6,6 +6,7 @@ use crate::id3::v2::{
 	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame, TimestampFrame,
 };
 use crate::picture::MimeType;
+use crate::tag::items::popularimeter::{Popularimeter, StarRating};
 use crate::tag::items::{ENGLISH, Timestamp};
 use crate::tag::utils::test_utils::read_path;
 
@@ -1568,4 +1569,44 @@ fn single_value_frame() {
 
 	let artist_tag = tag.get_text(&FrameId::new("TBPM").unwrap()).unwrap();
 	assert_eq!(artist_tag, "120");
+}
+
+macro_rules! popm_tests {
+		(
+			$($tagger_name:ident => $(($tagger_value:expr, $mapped_value:literal)),+);* $(;)?
+		) => {
+			paste::paste! {
+				$(
+				#[test]
+				fn [<popm_ $tagger_name>]() {
+					$(
+					let popularimeter = Popularimeter::$tagger_name($tagger_value, 0);
+					let frame = PopularimeterFrame::from(popularimeter);
+					assert_eq!(frame.rating, $mapped_value, "Expected {} to map to {}", stringify!($tagger_value), $mapped_value);
+					)+
+				}
+				)*
+			}
+		}
+	}
+
+popm_tests! {
+	musicbee =>
+	(StarRating::One, 1),
+	(StarRating::Two, 64),
+	(StarRating::Three, 128),
+	(StarRating::Four, 196),
+	(StarRating::Five, 255);
+	windows_media_player =>
+	(StarRating::One, 1),
+	(StarRating::Two, 64),
+	(StarRating::Three, 128),
+	(StarRating::Four, 196),
+	(StarRating::Five, 255);
+	picard =>
+	(StarRating::One, 51),
+	(StarRating::Two, 102),
+	(StarRating::Three, 153),
+	(StarRating::Four, 204),
+	(StarRating::Five, 255);
 }

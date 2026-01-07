@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
+use crate::tag::TagType;
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
@@ -153,6 +154,18 @@ impl PopularimeterFrame<'static> {
 			email: Cow::Borrowed(&self.email),
 			rating: self.rating,
 			counter: self.counter,
+		}
+	}
+}
+
+impl<'a> From<crate::tag::items::popularimeter::Popularimeter<'a>> for PopularimeterFrame<'a> {
+	fn from(item: crate::tag::items::popularimeter::Popularimeter<'a>) -> Self {
+		let rating = item.mapped_value(TagType::Id3v2);
+		Self {
+			header: FrameHeader::new(FRAME_ID, FrameFlags::default()),
+			email: item.email.unwrap_or(Cow::Borrowed("")),
+			rating,
+			counter: item.play_counter,
 		}
 	}
 }

@@ -15,6 +15,7 @@ use crate::macros::err;
 use crate::picture::{Picture, PictureType};
 use crate::probe::Probe;
 use crate::tag::items::Timestamp;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
@@ -288,6 +289,38 @@ impl Tag {
 	/// Returns the stored [`TagItem`]s as a slice
 	pub fn items(&self) -> impl ExactSizeIterator<Item = &TagItem> + Clone {
 		self.items.iter()
+	}
+
+	/// Returns all [`Popularimeter`] ratings
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lofty::tag::items::popularimeter::{Popularimeter, StarRating};
+	/// use lofty::tag::{ItemKey, Tag, TagType};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	///
+	/// /// Create a new popularimeter
+	/// let star_rating = StarRating::Three;
+	/// let play_count = 5;
+	/// let popularimeter = Popularimeter::musicbee(star_rating, play_count);
+	///
+	/// /// Insert the popularimeter as text
+	/// tag.insert_text(ItemKey::Popularimeter, popularimeter.to_string());
+	///
+	/// /// Fetch all ratings
+	/// let mut ratings = tag.ratings();
+	/// let first_rating = ratings.next().expect("should exist");
+	/// assert!(ratings.next().is_none());
+	///
+	/// assert_eq!(first_rating.email(), popularimeter.email());
+	/// assert_eq!(first_rating.rating, popularimeter.rating);
+	/// assert_eq!(first_rating.play_counter, popularimeter.play_counter);
+	/// ```
+	pub fn ratings(&self) -> impl Iterator<Item = Popularimeter<'static>> + Clone {
+		self.get_strings(ItemKey::Popularimeter)
+			.filter_map(|i| Popularimeter::from_str(i).ok())
 	}
 
 	/// Returns a reference to a [`TagItem`] matching an [`ItemKey`]

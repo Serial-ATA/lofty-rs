@@ -17,6 +17,7 @@ use crate::id3::v2::util::pairs::{NUMBER_PAIR_SEPARATOR, format_number_pair};
 use crate::id3::v2::{FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
@@ -1163,6 +1164,21 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			return FRAME_CONSUMED;
 		},
 
+		Frame::Popularimeter(popm) => {
+			let Some(generic) = Popularimeter::mapped(
+				&*popm.email,
+				TagType::Id3v2,
+				popm.rating,
+				popm.counter,
+			) else {
+				log::warn!("Unable to find handler for popularimeter during tag split, retaining");
+				return FRAME_RETAINED;
+			};
+
+			tag.items.push(TagItem::new(ItemKey::Popularimeter, ItemValue::Text(generic.to_string())));
+			return FRAME_CONSUMED;
+		},
+
 		Frame::Text(TextInformationFrame { header: FrameHeader {id, .. }, value: content, .. }) => {
 			let Some(item_key) = ItemKey::from_key(TagType::Id3v2, id.as_str()) else {
 				return FRAME_RETAINED;
@@ -1200,7 +1216,6 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		| Frame::RelativeVolumeAdjustment(_)
 		| Frame::Ownership(_)
 		| Frame::EventTimingCodes(_)
-		| Frame::Popularimeter(_)
 		| Frame::Private(_) => {
 			return FRAME_RETAINED; // Keep unsupported frame
 		},
