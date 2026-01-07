@@ -137,9 +137,11 @@ where
 
 		let mut frame_count = 1;
 
-		while let Some((header, _)) = find_next_frame(reader, parse_mode)? {
+		while let Some((header, frame_end)) = find_next_frame(reader, parse_mode)? {
 			first_frame_header.bitrate += header.bitrate;
 			frame_count += 1u32;
+
+			reader.seek(SeekFrom::Start(frame_end))?;
 		}
 
 		first_frame_header.bitrate /= frame_count;
@@ -150,6 +152,7 @@ where
 	Ok(file)
 }
 
+// TODO: Does a lot of unnecessary seeking
 // Searches for the next frame, comparing it to the following one
 fn find_next_frame<R>(
 	reader: &mut R,
@@ -179,7 +182,7 @@ where
 				HeaderCmpResult::Equal => {
 					return Ok(Some((
 						first_header,
-						first_adts_frame_start_absolute + u64::from(header_len),
+						first_adts_frame_start_absolute + u64::from(first_header.len),
 					)));
 				},
 				HeaderCmpResult::Undetermined => return Ok(None),

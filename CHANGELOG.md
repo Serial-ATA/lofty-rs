@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Don't error on empty `SYLT` strings ([issue](https://github.com/Serial-ATA/lofty-rs/issues/563)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/564))
 - **Vorbis Comments**: Parse `TRACKNUMBER` with respect to `ParseOptions::implicit_conversions` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/540)) ([PR](https://github.com/Serial-ATA/lofty-rs/issues/542))
 - **APE**: Fix disc number removal/writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/545)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/546))
+- **AAC/ADTS**: Fix frame header search ([issue](https://github.com/Serial-ATA/lofty-rs/issues/584)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/586))
+  - When searching for the next frame, the parser was not fully skipping the previous one. If the AAC payload contained the frame sync bits and an otherwise invalid ADTS
+    header, then the parser would error.
 
 ### Removed
 
