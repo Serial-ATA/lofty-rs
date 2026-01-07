@@ -7,6 +7,7 @@ use crate::ogg::write::OGGFormat;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::items::Timestamp;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 	try_parse_timestamp,
@@ -14,11 +15,11 @@ use crate::tag::{
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
 
+use crate::ogg::read::valid_vorbis_comments_key;
+use lofty_attr::tag;
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
-
-use lofty_attr::tag;
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -534,17 +535,53 @@ impl SplitTag for VorbisComments {
 	type Remainder = SplitTagRemainder;
 
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
+		const ITEM_RETAINED: bool = true;
+		const ITEM_CONSUMED: bool = false;
+
 		let mut tag = Tag::new(TagType::VorbisComments);
 
 		self.items.retain_mut(|(k, v)| {
-			let Some(key) = ItemKey::from_key(TagType::VorbisComments, k) else {
-				return true;
-			};
+			let key;
+			match ItemKey::from_key(TagType::VorbisComments, k) {
+				Some(k) => key = k,
+				// Special case for ratings with associated emails (RATING:foo@example.com). Ratings
+				// without emails are handled by `ItemKey::from_key`.
+				None if k.starts_with("RATING:") => {
+					let Some((_, email)) = k.split_once(':') else {
+						return ITEM_RETAINED;
+					};
+
+					let Ok(value) = v.parse::<u8>() else {
+						log::warn!(
+							"Unable to parse popularimeter rating during tag split, retaining"
+						);
+						return ITEM_RETAINED;
+					};
+
+					// There is no play counter in Vorbis Comments
+					let play_counter = 0;
+					let Some(popm) =
+						Popularimeter::mapped(email, TagType::VorbisComments, value, play_counter)
+					else {
+						log::warn!(
+							"Unable to find handler for popularimeter during tag split, retaining"
+						);
+						return ITEM_RETAINED;
+					};
+
+					tag.items.push(TagItem::new(
+						ItemKey::Popularimeter,
+						ItemValue::Text(popm.to_string()),
+					));
+					return ITEM_CONSUMED;
+				},
+				None => return ITEM_RETAINED,
+			}
 
 			let v = std::mem::take(v);
 			tag.items.push(TagItem::new(key, ItemValue::Text(v)));
 
-			false // Item consumed
+			ITEM_CONSUMED // Item consumed
 		});
 
 		// We need to preserve the vendor string
@@ -600,10 +637,29 @@ impl MergeTag for SplitTagRemainder {
 				val = u8::from(flag).to_string();
 			}
 
-			let key;
+			let mut key;
 			match item_key.map_key(TagType::VorbisComments) {
 				Some(mapped_key) => key = mapped_key.to_string(),
 				None => continue, // No mapping exists, discard the item
+			}
+
+			// Special case for generic popularimeters, since emails are part of the field name
+			if item_key == ItemKey::Popularimeter {
+				let Ok(popm) = Popularimeter::from_str(&val) else {
+					log::warn!("Failed to parse popularimeter during tag merge, skipping");
+					continue;
+				};
+
+				if let Some(email) = popm.email() {
+					if !valid_vorbis_comments_key(email.as_bytes()) {
+						log::warn!("Popularimeter email contains invalid characters, skipping");
+						continue;
+					}
+
+					key = format!("{key}:{email}");
+				}
+
+				val = popm.mapped_value(TagType::VorbisComments).to_string();
 			}
 
 			merged.items.push((key, val));

@@ -5,7 +5,7 @@ use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 use crate::id3::v2::util::pairs::new_number_pair_frame;
 use crate::id3::v2::{
 	AttachedPictureFrame, CommentFrame, Frame, FrameId, Id3v2TagFlags, KeyValueFrame,
-	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, write,
+	PopularimeterFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, write,
 };
 use crate::io::{FileLike, Length, Truncate};
 use crate::prelude::ItemKey;
@@ -18,6 +18,7 @@ use crate::id3::v2::tag::{
 };
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::mp4::AdvisoryRating;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Lang, Timestamp};
 use crate::util::flag_item;
 
@@ -281,6 +282,18 @@ pub(crate) fn from_tag<'a>(
 						Cow::Borrowed(v) => Cow::Borrowed(v.as_bytes()),
 					},
 				)))
+			},
+
+			// POPM
+			ItemKey::Popularimeter => {
+				let (encoded_popm, _) = take_item_text_and_description(item)?;
+
+				let Ok(popm) = Popularimeter::from_str(&encoded_popm) else {
+					log::warn!("Failed to parse popularimeter during tag merge, skipping");
+					return None;
+				};
+
+				Some(Frame::Popularimeter(PopularimeterFrame::from(popm)))
 			},
 
 			// TIPL key-value mappings

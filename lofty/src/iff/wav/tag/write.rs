@@ -6,6 +6,7 @@ use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
 use crate::util::io::{FileLike, Length, Truncate};
 
+use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, WriteBytesExt};
@@ -21,7 +22,7 @@ where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
 	LoftyError: From<<F as Length>::Error>,
-	I: Iterator<Item = (&'a str, &'a str)>,
+	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
 	let mut stream_length = verify_wav(file)?;
 
@@ -120,7 +121,7 @@ where
 }
 
 pub(super) fn create_riff_info(
-	items: &mut dyn Iterator<Item = (&str, &str)>,
+	items: &mut dyn Iterator<Item = (&str, Cow<'_, str>)>,
 	bytes: &mut Vec<u8>,
 ) -> Result<()> {
 	let mut items = items.peekable();
