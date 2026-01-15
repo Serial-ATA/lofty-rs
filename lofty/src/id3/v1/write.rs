@@ -50,13 +50,18 @@ where
 }
 
 pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
+	#[allow(clippy::sliced_string_as_bytes)]
 	fn resize_string(value: Option<&str>, size: usize) -> std::io::Result<Vec<u8>> {
 		let mut cursor = Cursor::new(vec![0; size]);
 		cursor.rewind()?;
 
 		if let Some(val) = value {
 			if val.len() > size {
-				cursor.write_all(val.split_at(size).0.as_bytes())?;
+				let mut end = size;
+				while !val.is_char_boundary(end) {
+					end -= 1;
+				}
+				cursor.write_all(val[..end].as_bytes())?;
 			} else {
 				cursor.write_all(val.as_bytes())?;
 			}
