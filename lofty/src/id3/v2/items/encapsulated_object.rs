@@ -1,6 +1,7 @@
+use crate::config::WriteOptions;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::io::{Cursor, Read};
 
@@ -103,7 +104,11 @@ impl GeneralEncapsulatedObject<'_> {
 	/// Convert a [`GeneralEncapsulatedObject`] into an ID3v2 GEOB frame byte Vec
 	///
 	/// NOTE: This does not include a frame header
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let encoding = self.encoding;
 
 		let mut bytes = vec![encoding as u8];
@@ -115,19 +120,28 @@ impl GeneralEncapsulatedObject<'_> {
 		bytes.push(0);
 
 		let file_name = self.file_name.as_deref();
-		bytes.extend(&*encode_text(file_name.unwrap_or(""), encoding, true));
+		bytes.extend(&*encoding.encode(
+			file_name.unwrap_or(""),
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 
 		let descriptor = self.descriptor.as_deref();
-		bytes.extend(&*encode_text(descriptor.unwrap_or(""), encoding, true));
+		bytes.extend(&*encoding.encode(
+			descriptor.unwrap_or(""),
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 
 		bytes.extend(&self.data);
 
-		bytes
+		Ok(bytes)
 	}
 }
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{FrameFlags, FrameHeader, GeneralEncapsulatedObject};
 	use crate::util::text::TextEncoding;
 
@@ -159,7 +173,7 @@ mod tests {
 	fn geob_encode() {
 		let to_encode = expected();
 
-		let encoded = to_encode.as_bytes();
+		let encoded = to_encode.as_bytes(WriteOptions::default()).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.geob");

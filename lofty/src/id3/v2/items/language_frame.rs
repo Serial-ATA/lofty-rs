@@ -1,3 +1,4 @@
+use crate::config::WriteOptions;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
@@ -5,7 +6,7 @@ use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::tag::items::Lang;
 use crate::util::text::{
-	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text,
 	utf16_decode_terminated_maybe_bom,
 };
 
@@ -80,9 +81,9 @@ impl LanguageFrame {
 		language: [u8; 3],
 		description: &str,
 		content: &str,
-		is_id3v23: bool,
+		write_options: WriteOptions,
 	) -> Result<Vec<u8>> {
-		if is_id3v23 {
+		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
@@ -93,8 +94,12 @@ impl LanguageFrame {
 		}
 
 		bytes.extend(language);
-		bytes.extend(encode_text(description, encoding, true).iter());
-		bytes.extend(encode_text(content, encoding, false));
+		bytes.extend(
+			encoding
+				.encode(description, true, write_options.lossy_text_encoding)?
+				.iter(),
+		);
+		bytes.extend(encoding.encode(content, false, write_options.lossy_text_encoding)?);
 
 		Ok(bytes)
 	}
@@ -205,13 +210,13 @@ impl<'a> CommentFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,
 			&self.description,
 			&self.content,
-			is_id3v23,
+			write_options,
 		)
 	}
 }
@@ -333,13 +338,13 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,
 			&self.description,
 			&self.content,
-			is_id3v23,
+			write_options,
 		)
 	}
 }

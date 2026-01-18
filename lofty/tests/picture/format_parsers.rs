@@ -1,5 +1,5 @@
 use lofty::TextEncoding;
-use lofty::config::ParsingMode;
+use lofty::config::{ParsingMode, WriteOptions};
 use lofty::id3::v2::{AttachedPictureFrame, FrameFlags, Id3v2Version};
 use lofty::picture::{Picture, PictureInformation, PictureType};
 
@@ -43,7 +43,7 @@ fn as_apic_bytes() {
 	let original_picture = create_original_picture();
 	let apic = AttachedPictureFrame::new(TextEncoding::Latin1, original_picture);
 
-	let original_as_apic = apic.as_bytes(Id3v2Version::V4).unwrap();
+	let original_as_apic = apic.as_bytes(WriteOptions::default()).unwrap();
 
 	assert_eq!(buf, original_as_apic);
 }
@@ -56,18 +56,6 @@ fn id3v22_pic() {
 		.unwrap();
 
 	assert_eq!(&create_original_picture(), &*pic.picture);
-}
-
-#[test_log::test]
-fn as_apic_bytes_v2() {
-	let buf = get_buf("tests/picture/assets/png_640x628.pic");
-
-	let original_picture = create_original_picture();
-	let pic = AttachedPictureFrame::new(TextEncoding::Latin1, original_picture);
-
-	let original_as_pic = pic.as_bytes(Id3v2Version::V2).unwrap();
-
-	assert_eq!(buf, original_as_pic);
 }
 
 #[test_log::test]

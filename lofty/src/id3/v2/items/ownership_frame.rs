@@ -1,8 +1,7 @@
+use crate::config::WriteOptions;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{
-	TextDecodeOptions, TextEncoding, decode_text, encode_text, utf8_decode_str,
-};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, utf8_decode_str};
 
 use std::borrow::Cow;
 use std::hash::Hash;
@@ -116,21 +115,26 @@ impl<'a> OwnershipFrame<'a> {
 	/// # Errors
 	///
 	/// * `date_of_purchase` is not at least 8 characters (it will be truncated if greater)
-	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut encoding = self.encoding;
-		if is_id3v23 {
+		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
 		let mut bytes = vec![encoding as u8];
 
-		bytes.extend(encode_text(&self.price_paid, TextEncoding::Latin1, true));
+		bytes.extend(TextEncoding::Latin1.encode(
+			&self.price_paid,
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 		if self.date_of_purchase.len() < 8 {
 			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
 		}
 
 		bytes.extend(self.date_of_purchase.as_bytes().iter().take(8));
-		bytes.extend(encode_text(&self.seller, encoding, false));
+		bytes.extend(encoding.encode(&self.seller, false, write_options.lossy_text_encoding)?);
 
 		Ok(bytes)
 	}
@@ -151,6 +155,7 @@ impl OwnershipFrame<'static> {
 #[cfg(test)]
 mod tests {
 	use crate::TextEncoding;
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{FrameFlags, OwnershipFrame};
 
 	fn expected() -> OwnershipFrame<'static> {
@@ -170,7 +175,7 @@ mod tests {
 
 	#[test_log::test]
 	fn owne_encode() {
-		let encoded = expected().as_bytes(false).unwrap();
+		let encoded = expected().as_bytes(WriteOptions::default()).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.owne");

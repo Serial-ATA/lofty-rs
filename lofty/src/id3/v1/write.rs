@@ -5,6 +5,7 @@ use crate::id3::{ID3FindResults, find_id3v1};
 use crate::macros::err;
 use crate::probe::Probe;
 use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::text::latin1_encode;
 
 use std::io::{Cursor, Seek, Write};
 
@@ -14,7 +15,7 @@ use byteorder::WriteBytesExt;
 pub(crate) fn write_id3v1<F>(
 	file: &mut F,
 	tag: &Id3v1TagRef<'_>,
-	_write_options: WriteOptions,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	F: FileLike,
@@ -42,23 +43,25 @@ where
 		return Ok(());
 	}
 
-	let tag = encode(tag)?;
+	let tag = encode(tag, write_options)?;
 
 	file.write_all(&tag)?;
 
 	Ok(())
 }
 
-pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
-	fn resize_string(value: Option<&str>, size: usize) -> std::io::Result<Vec<u8>> {
+pub(super) fn encode(tag: &Id3v1TagRef<'_>, write_options: WriteOptions) -> Result<Vec<u8>> {
+	fn resize_string(
+		value: Option<&str>,
+		size: usize,
+		write_options: WriteOptions,
+	) -> Result<Vec<u8>> {
 		let mut cursor = Cursor::new(vec![0; size]);
 		cursor.rewind()?;
 
 		if let Some(val) = value {
-			if val.len() > size {
-				cursor.write_all(val.split_at(size).0.as_bytes())?;
-			} else {
-				cursor.write_all(val.as_bytes())?;
+			for b in latin1_encode(val, write_options.lossy_text_encoding).take(size) {
+				cursor.write_u8(b?)?;
 			}
 		}
 
@@ -69,13 +72,13 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 
 	writer.write_all(b"TAG")?;
 
-	let title = resize_string(tag.title, 30)?;
+	let title = resize_string(tag.title, 30, write_options)?;
 	writer.write_all(&title)?;
 
-	let artist = resize_string(tag.artist, 30)?;
+	let artist = resize_string(tag.artist, 30, write_options)?;
 	writer.write_all(&artist)?;
 
-	let album = resize_string(tag.album, 30)?;
+	let album = resize_string(tag.album, 30, write_options)?;
 	writer.write_all(&album)?;
 
 	let mut year = [0; 4];
@@ -97,7 +100,7 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>) -> std::io::Result<Vec<u8>> {
 
 	writer.write_all(&year)?;
 
-	let comment = resize_string(tag.comment, 28)?;
+	let comment = resize_string(tag.comment, 28, write_options)?;
 	writer.write_all(&comment)?;
 
 	writer.write_u8(0)?;

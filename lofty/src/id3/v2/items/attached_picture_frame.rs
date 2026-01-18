@@ -3,11 +3,12 @@ use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
-use crate::util::text::{TextDecodeOptions, TextEncoding, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
 
+use crate::config::WriteOptions;
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
@@ -130,56 +131,34 @@ impl<'a> AttachedPictureFrame<'a> {
 	/// # Errors
 	///
 	/// * Too much data was provided
-	///
-	/// ID3v2.2:
-	///
-	/// * The mimetype is not [`MimeType::Png`] or [`MimeType::Jpeg`]
-	pub fn as_bytes(&self, version: Id3v2Version) -> Result<Vec<u8>> {
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut encoding = self.encoding;
-		if version != Id3v2Version::V4 {
+		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
 		let mut data = vec![encoding as u8];
 
-		let max_size = match version {
-			// ID3v2.2 uses a 24-bit number for sizes
-			Id3v2Version::V2 => 0xFFFF_FF16_u64,
-			_ => u64::from(u32::MAX),
-		};
-
-		if version == Id3v2Version::V2 {
-			// ID3v2.2 PIC is pretty limited with formats
-			let format = match self.picture.mime_type {
-				Some(MimeType::Png) => "PNG",
-				Some(MimeType::Jpeg) => "JPG",
-				_ => {
-					let mime_str = self.picture.mime_str();
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
-						mime_str.to_string(),
-					))
-					.into());
-				},
-			};
-
-			data.write_all(format.as_bytes())?;
-		} else {
-			if let Some(mime_type) = &self.picture.mime_type {
-				data.write_all(mime_type.as_str().as_bytes())?;
-			}
-			data.write_u8(0)?;
+		if let Some(mime_type) = &self.picture.mime_type {
+			data.write_all(mime_type.as_str().as_bytes())?;
 		}
+		data.write_u8(0)?;
 
 		data.write_u8(self.picture.pic_type.as_u8())?;
 
 		match &self.picture.description {
-			Some(description) => data.write_all(&encode_text(description, encoding, true))?,
+			Some(description) => data.write_all(&encoding.encode(
+				description,
+				true,
+				write_options.lossy_text_encoding,
+			)?)?,
 			None => data.write_u8(0)?,
 		}
 
 		data.write_all(&self.picture.data)?;
 
-		if data.len() as u64 > max_size {
+		if data.len() as u64 > u64::from(u32::MAX) {
 			err!(TooMuchData);
 		}
 
