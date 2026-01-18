@@ -1,5 +1,6 @@
+use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
-use crate::config::WriteOptions;
+use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::id3::{ID3FindResults, find_id3v1};
 use crate::macros::err;
@@ -32,7 +33,9 @@ where
 	let file = probe.into_inner();
 
 	// This will seek us to the writing position
-	let ID3FindResults(header, _) = find_id3v1(file, false)?;
+	// TODO: Forcing the use of ParseOptions::default()
+	let parse_options = ParseOptions::default();
+	let ID3FindResults(header, _) = find_id3v1(file, false, parse_options.parsing_mode)?;
 
 	if tag.is_empty() && header.is_some() {
 		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
@@ -70,7 +73,7 @@ pub(super) fn encode(tag: &Id3v1TagRef<'_>, write_options: WriteOptions) -> Resu
 
 	let mut writer = Vec::with_capacity(128);
 
-	writer.write_all(b"TAG")?;
+	writer.write_all(&ID3V1_TAG_MARKER)?;
 
 	let title = resize_string(tag.title, 30, write_options)?;
 	writer.write_all(&title)?;

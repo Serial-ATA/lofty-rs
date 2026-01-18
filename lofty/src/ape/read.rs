@@ -108,7 +108,8 @@ where
 	// Starts with ['T', 'A', 'G']
 	// Exactly 128 bytes long (including the identifier)
 	#[allow(unused_variables)]
-	let ID3FindResults(id3v1_header, id3v1) = find_id3v1(data, parse_options.read_tags)?;
+	let ID3FindResults(id3v1_header, id3v1) =
+		find_id3v1(data, parse_options.read_tags, parse_options.parsing_mode)?;
 
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;

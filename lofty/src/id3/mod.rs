@@ -6,9 +6,11 @@
 pub mod v1;
 pub mod v2;
 
+use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
 use crate::macros::try_vec;
 use crate::util::text::utf8_decode_str;
+use v1::constants::ID3V1_TAG_MARKER;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -54,6 +56,7 @@ where
 pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
+	parse_mode: ParsingMode,
 ) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>
 where
 	R: Read + Seek,
@@ -75,7 +78,7 @@ where
 	data.seek(SeekFrom::Current(-3))?;
 
 	// No ID3v1 tag found
-	if &id3v1_header != b"TAG" {
+	if id3v1_header != ID3V1_TAG_MARKER {
 		data.seek(SeekFrom::End(0))?;
 		return Ok(ID3FindResults(header, id3v1));
 	}
@@ -90,7 +93,7 @@ where
 
 		data.seek(SeekFrom::End(-128))?;
 
-		id3v1 = Some(v1::read::parse_id3v1(id3v1_tag))
+		id3v1 = Some(v1::tag::Id3v1Tag::parse(id3v1_tag, parse_mode)?)
 	}
 
 	Ok(ID3FindResults(header, id3v1))

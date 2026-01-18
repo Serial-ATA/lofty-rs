@@ -1,0 +1,3836 @@
+﻿ID3v1/ID3v1.1 test suite
+Copyright (c) 2003 Martin Nilsson
+Output generated 2003-10-28 18:30
+Generated with Pike v7.5 release 12
+
+Test cases that tests basic tag capabilities.
+
+Test case 1
+Generated test file "id3v1_001_basic.mp3"
+An ordinary ID3v1 tag with all fields set to a plauseble value.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Title"
+artist : "Artist"
+album  : "Album"
+year   : "2003"
+comment: "Comment"
+genre  : 7 (Hip-Hop)
+
+Test case 2
+Generated test file "id3v1_002_basic.mp3"
+An ordinary ID3v1.1 tag with all fields set to a plauseble value.
+Tag structure
+version: 1.1
+head   : "TAG"
+title  : "Title"
+artist : "Artist"
+album  : "Album"
+year   : "2003"
+comment: "Comment"
+track  : 12
+genre  : 7 (Hip-Hop)
+
+Test case 3
+Generated test file "id3v1_003_basic_F.mp3"
+An ID3 tag with its header in the wrong case.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "tag"
+title  : ""
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 4
+Generated test file "id3v1_004_basic.mp3"
+An ID3 tag with all fields set to shortest legal value.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 5
+Generated test file "id3v1_005_basic.mp3"
+An ID3v1 tag with all fields set to longest value.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaA"
+artist : "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbB"
+album  : "cccccccccccccccccccccccccccccC"
+year   : "2003"
+comment: "dddddddddddddddddddddddddddddD"
+genre  : 0 (Blues)
+
+Test case 6
+Generated test file "id3v1_006_basic.mp3"
+An ID3v1.1 tag with all fields set to longest value.
+Tag structure
+version: 1.1
+head   : "TAG"
+title  : "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaA"
+artist : "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbB"
+album  : "cccccccccccccccccccccccccccccC"
+year   : "2003"
+comment: "dddddddddddddddddddddddddddD"
+track  : 1
+genre  : 0 (Blues)
+
+Test case 7
+Generated test file "id3v1_007_basic_W.mp3"
+An ID3v1 tag with junk after string terminator. The junk should not
+show up for the user (i.e. only the string 12345 should show up).
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+artist : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+album  : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+year   : "2003"
+comment: "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+genre  : 0 (Blues)
+
+Test case 8
+Generated test file "id3v1_008_basic_W.mp3"
+An ID3v1 tag with junk after string terminator. The junk should not
+show up for the user (i.e. only the string 12345 should show up).
+Test case might generate a decoding warning.
+Tag structure
+version: 1.1
+head   : "TAG"
+title  : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+artist : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+album  : "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+year   : "2003"
+comment: "12345\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0junk"
+track  : 1
+genre  : 0 (Blues)
+
+Test case 9
+Generated test file "id3v1_009_basic.mp3"
+An ID3 tag with the track number set to max (255).
+Tag structure
+version: 1.1
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+track  : 255
+genre  : 0 (Blues)
+
+
+Different tests that tries to break the year parser.
+
+Test case 10
+Generated test file "id3v1_010_year.mp3"
+An ID3 tag with the year set to 0000.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "0000"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 11
+Generated test file "id3v1_011_year.mp3"
+An ID3 tag with the year set to 9999.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "9999"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 12
+Generated test file "id3v1_012_year_F.mp3"
+An ID3 tag with the year set to "   3".
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "   3"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 13
+Generated test file "id3v1_013_year_F.mp3"
+An ID3 tag with the year set to "112\0".
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "112"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 14
+Generated test file "id3v1_014_year_F.mp3"
+An ID3 tag with the year set to NULL.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : ""
+comment: ""
+genre  : 0 (Blues)
+
+
+Tests that tests the genre capabilities.
+
+Test case 15
+Generated test file "id3v1_015_genre.mp3"
+An ID3 tag with genre set to Blues.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Blues"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 0 (Blues)
+
+Test case 16
+Generated test file "id3v1_016_genre.mp3"
+An ID3 tag with genre set to Classic Rock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Classic Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 1 (Classic Rock)
+
+Test case 17
+Generated test file "id3v1_017_genre.mp3"
+An ID3 tag with genre set to Country.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Country"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 2 (Country)
+
+Test case 18
+Generated test file "id3v1_018_genre.mp3"
+An ID3 tag with genre set to Dance.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Dance"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 3 (Dance)
+
+Test case 19
+Generated test file "id3v1_019_genre.mp3"
+An ID3 tag with genre set to Disco.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Disco"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 4 (Disco)
+
+Test case 20
+Generated test file "id3v1_020_genre.mp3"
+An ID3 tag with genre set to Funk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Funk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 5 (Funk)
+
+Test case 21
+Generated test file "id3v1_021_genre.mp3"
+An ID3 tag with genre set to Grunge.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Grunge"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 6 (Grunge)
+
+Test case 22
+Generated test file "id3v1_022_genre.mp3"
+An ID3 tag with genre set to Hip-Hop.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Hip-Hop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 7 (Hip-Hop)
+
+Test case 23
+Generated test file "id3v1_023_genre.mp3"
+An ID3 tag with genre set to Jazz.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Jazz"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 8 (Jazz)
+
+Test case 24
+Generated test file "id3v1_024_genre.mp3"
+An ID3 tag with genre set to Metal.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Metal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 9 (Metal)
+
+Test case 25
+Generated test file "id3v1_025_genre.mp3"
+An ID3 tag with genre set to New Age.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "New Age"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 10 (New Age)
+
+Test case 26
+Generated test file "id3v1_026_genre.mp3"
+An ID3 tag with genre set to Oldies.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Oldies"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 11 (Oldies)
+
+Test case 27
+Generated test file "id3v1_027_genre.mp3"
+An ID3 tag with genre set to Other.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Other"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 12 (Other)
+
+Test case 28
+Generated test file "id3v1_028_genre.mp3"
+An ID3 tag with genre set to Pop.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Pop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 13 (Pop)
+
+Test case 29
+Generated test file "id3v1_029_genre.mp3"
+An ID3 tag with genre set to R&B.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "R&B"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 14 (R&B)
+
+Test case 30
+Generated test file "id3v1_030_genre.mp3"
+An ID3 tag with genre set to Rap.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Rap"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 15 (Rap)
+
+Test case 31
+Generated test file "id3v1_031_genre.mp3"
+An ID3 tag with genre set to Reggae.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Reggae"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 16 (Reggae)
+
+Test case 32
+Generated test file "id3v1_032_genre.mp3"
+An ID3 tag with genre set to Rock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 17 (Rock)
+
+Test case 33
+Generated test file "id3v1_033_genre.mp3"
+An ID3 tag with genre set to Techno.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Techno"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 18 (Techno)
+
+Test case 34
+Generated test file "id3v1_034_genre.mp3"
+An ID3 tag with genre set to Industrial.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Industrial"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 19 (Industrial)
+
+Test case 35
+Generated test file "id3v1_035_genre.mp3"
+An ID3 tag with genre set to Alternative.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Alternative"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 20 (Alternative)
+
+Test case 36
+Generated test file "id3v1_036_genre.mp3"
+An ID3 tag with genre set to Ska.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Ska"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 21 (Ska)
+
+Test case 37
+Generated test file "id3v1_037_genre.mp3"
+An ID3 tag with genre set to Death Metal.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Death Metal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 22 (Death Metal)
+
+Test case 38
+Generated test file "id3v1_038_genre.mp3"
+An ID3 tag with genre set to Pranks.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Pranks"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 23 (Pranks)
+
+Test case 39
+Generated test file "id3v1_039_genre.mp3"
+An ID3 tag with genre set to Soundtrack.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Soundtrack"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 24 (Soundtrack)
+
+Test case 40
+Generated test file "id3v1_040_genre.mp3"
+An ID3 tag with genre set to Euro-Techno.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Euro-Techno"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 25 (Euro-Techno)
+
+Test case 41
+Generated test file "id3v1_041_genre.mp3"
+An ID3 tag with genre set to Ambient.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Ambient"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 26 (Ambient)
+
+Test case 42
+Generated test file "id3v1_042_genre.mp3"
+An ID3 tag with genre set to Trip-Hop.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Trip-Hop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 27 (Trip-Hop)
+
+Test case 43
+Generated test file "id3v1_043_genre.mp3"
+An ID3 tag with genre set to Vocal.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Vocal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 28 (Vocal)
+
+Test case 44
+Generated test file "id3v1_044_genre.mp3"
+An ID3 tag with genre set to Jazz+Funk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Jazz+Funk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 29 (Jazz+Funk)
+
+Test case 45
+Generated test file "id3v1_045_genre.mp3"
+An ID3 tag with genre set to Fusion.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Fusion"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 30 (Fusion)
+
+Test case 46
+Generated test file "id3v1_046_genre.mp3"
+An ID3 tag with genre set to Trance.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Trance"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 31 (Trance)
+
+Test case 47
+Generated test file "id3v1_047_genre.mp3"
+An ID3 tag with genre set to Classical.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Classical"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 32 (Classical)
+
+Test case 48
+Generated test file "id3v1_048_genre.mp3"
+An ID3 tag with genre set to Instrumental.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Instrumental"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 33 (Instrumental)
+
+Test case 49
+Generated test file "id3v1_049_genre.mp3"
+An ID3 tag with genre set to Acid.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Acid"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 34 (Acid)
+
+Test case 50
+Generated test file "id3v1_050_genre.mp3"
+An ID3 tag with genre set to House.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "House"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 35 (House)
+
+Test case 51
+Generated test file "id3v1_051_genre.mp3"
+An ID3 tag with genre set to Game.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Game"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 36 (Game)
+
+Test case 52
+Generated test file "id3v1_052_genre.mp3"
+An ID3 tag with genre set to Sound Clip.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Sound Clip"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 37 (Sound Clip)
+
+Test case 53
+Generated test file "id3v1_053_genre.mp3"
+An ID3 tag with genre set to Gospel.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Gospel"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 38 (Gospel)
+
+Test case 54
+Generated test file "id3v1_054_genre.mp3"
+An ID3 tag with genre set to Noise.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Noise"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 39 (Noise)
+
+Test case 55
+Generated test file "id3v1_055_genre.mp3"
+An ID3 tag with genre set to AlternRock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "AlternRock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 40 (AlternRock)
+
+Test case 56
+Generated test file "id3v1_056_genre.mp3"
+An ID3 tag with genre set to Bass.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Bass"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 41 (Bass)
+
+Test case 57
+Generated test file "id3v1_057_genre.mp3"
+An ID3 tag with genre set to Soul.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Soul"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 42 (Soul)
+
+Test case 58
+Generated test file "id3v1_058_genre.mp3"
+An ID3 tag with genre set to Punk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Punk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 43 (Punk)
+
+Test case 59
+Generated test file "id3v1_059_genre.mp3"
+An ID3 tag with genre set to Space.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Space"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 44 (Space)
+
+Test case 60
+Generated test file "id3v1_060_genre.mp3"
+An ID3 tag with genre set to Meditative.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Meditative"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 45 (Meditative)
+
+Test case 61
+Generated test file "id3v1_061_genre.mp3"
+An ID3 tag with genre set to Instrumental Pop.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Instrumental Pop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 46 (Instrumental Pop)
+
+Test case 62
+Generated test file "id3v1_062_genre.mp3"
+An ID3 tag with genre set to Instrumental Rock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Instrumental Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 47 (Instrumental Rock)
+
+Test case 63
+Generated test file "id3v1_063_genre.mp3"
+An ID3 tag with genre set to Ethnic.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Ethnic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 48 (Ethnic)
+
+Test case 64
+Generated test file "id3v1_064_genre.mp3"
+An ID3 tag with genre set to Gothic.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Gothic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 49 (Gothic)
+
+Test case 65
+Generated test file "id3v1_065_genre.mp3"
+An ID3 tag with genre set to Darkwave.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Darkwave"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 50 (Darkwave)
+
+Test case 66
+Generated test file "id3v1_066_genre.mp3"
+An ID3 tag with genre set to Techno-Industrial.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Techno-Industrial"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 51 (Techno-Industrial)
+
+Test case 67
+Generated test file "id3v1_067_genre.mp3"
+An ID3 tag with genre set to Electronic.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Electronic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 52 (Electronic)
+
+Test case 68
+Generated test file "id3v1_068_genre.mp3"
+An ID3 tag with genre set to Pop-Folk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Pop-Folk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 53 (Pop-Folk)
+
+Test case 69
+Generated test file "id3v1_069_genre.mp3"
+An ID3 tag with genre set to Eurodance.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Eurodance"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 54 (Eurodance)
+
+Test case 70
+Generated test file "id3v1_070_genre.mp3"
+An ID3 tag with genre set to Dream.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Dream"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 55 (Dream)
+
+Test case 71
+Generated test file "id3v1_071_genre.mp3"
+An ID3 tag with genre set to Southern Rock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Southern Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 56 (Southern Rock)
+
+Test case 72
+Generated test file "id3v1_072_genre.mp3"
+An ID3 tag with genre set to Comedy.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Comedy"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 57 (Comedy)
+
+Test case 73
+Generated test file "id3v1_073_genre.mp3"
+An ID3 tag with genre set to Cult.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Cult"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 58 (Cult)
+
+Test case 74
+Generated test file "id3v1_074_genre.mp3"
+An ID3 tag with genre set to Gangsta.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Gangsta"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 59 (Gangsta)
+
+Test case 75
+Generated test file "id3v1_075_genre.mp3"
+An ID3 tag with genre set to Top 40.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Top 40"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 60 (Top 40)
+
+Test case 76
+Generated test file "id3v1_076_genre.mp3"
+An ID3 tag with genre set to Christian Rap.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Christian Rap"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 61 (Christian Rap)
+
+Test case 77
+Generated test file "id3v1_077_genre.mp3"
+An ID3 tag with genre set to Pop/Funk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Pop/Funk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 62 (Pop/Funk)
+
+Test case 78
+Generated test file "id3v1_078_genre.mp3"
+An ID3 tag with genre set to Jungle.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Jungle"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 63 (Jungle)
+
+Test case 79
+Generated test file "id3v1_079_genre.mp3"
+An ID3 tag with genre set to Native American.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Native American"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 64 (Native American)
+
+Test case 80
+Generated test file "id3v1_080_genre.mp3"
+An ID3 tag with genre set to Cabaret.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Cabaret"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 65 (Cabaret)
+
+Test case 81
+Generated test file "id3v1_081_genre.mp3"
+An ID3 tag with genre set to New Wave.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "New Wave"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 66 (New Wave)
+
+Test case 82
+Generated test file "id3v1_082_genre.mp3"
+An ID3 tag with genre set to Psychadelic.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Psychadelic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 67 (Psychadelic)
+
+Test case 83
+Generated test file "id3v1_083_genre.mp3"
+An ID3 tag with genre set to Rave.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Rave"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 68 (Rave)
+
+Test case 84
+Generated test file "id3v1_084_genre.mp3"
+An ID3 tag with genre set to Showtunes.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Showtunes"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 69 (Showtunes)
+
+Test case 85
+Generated test file "id3v1_085_genre.mp3"
+An ID3 tag with genre set to Trailer.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Trailer"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 70 (Trailer)
+
+Test case 86
+Generated test file "id3v1_086_genre.mp3"
+An ID3 tag with genre set to Lo-Fi.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Lo-Fi"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 71 (Lo-Fi)
+
+Test case 87
+Generated test file "id3v1_087_genre.mp3"
+An ID3 tag with genre set to Tribal.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Tribal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 72 (Tribal)
+
+Test case 88
+Generated test file "id3v1_088_genre.mp3"
+An ID3 tag with genre set to Acid Punk.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Acid Punk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 73 (Acid Punk)
+
+Test case 89
+Generated test file "id3v1_089_genre.mp3"
+An ID3 tag with genre set to Acid Jazz.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Acid Jazz"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 74 (Acid Jazz)
+
+Test case 90
+Generated test file "id3v1_090_genre.mp3"
+An ID3 tag with genre set to Polka.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Polka"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 75 (Polka)
+
+Test case 91
+Generated test file "id3v1_091_genre.mp3"
+An ID3 tag with genre set to Retro.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Retro"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 76 (Retro)
+
+Test case 92
+Generated test file "id3v1_092_genre.mp3"
+An ID3 tag with genre set to Musical.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Musical"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 77 (Musical)
+
+Test case 93
+Generated test file "id3v1_093_genre.mp3"
+An ID3 tag with genre set to Rock & Roll.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Rock & Roll"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 78 (Rock & Roll)
+
+Test case 94
+Generated test file "id3v1_094_genre.mp3"
+An ID3 tag with genre set to Hard Rock.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Hard Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 79 (Hard Rock)
+
+Test case 95
+Generated test file "id3v1_095_genre_W.mp3"
+An ID3 tag with genre set to Folk. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Folk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 80 (Folk)
+
+Test case 96
+Generated test file "id3v1_096_genre_W.mp3"
+An ID3 tag with genre set to Folk-Rock. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Folk-Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 81 (Folk-Rock)
+
+Test case 97
+Generated test file "id3v1_097_genre_W.mp3"
+An ID3 tag with genre set to National Folk. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "National Folk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 82 (National Folk)
+
+Test case 98
+Generated test file "id3v1_098_genre_W.mp3"
+An ID3 tag with genre set to Swing. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Swing"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 83 (Swing)
+
+Test case 99
+Generated test file "id3v1_099_genre_W.mp3"
+An ID3 tag with genre set to Fast Fusion. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Fast Fusion"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 84 (Fast Fusion)
+
+Test case 100
+Generated test file "id3v1_100_genre_W.mp3"
+An ID3 tag with genre set to Bebob. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Bebob"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 85 (Bebob)
+
+Test case 101
+Generated test file "id3v1_101_genre_W.mp3"
+An ID3 tag with genre set to Latin. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Latin"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 86 (Latin)
+
+Test case 102
+Generated test file "id3v1_102_genre_W.mp3"
+An ID3 tag with genre set to Revival. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Revival"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 87 (Revival)
+
+Test case 103
+Generated test file "id3v1_103_genre_W.mp3"
+An ID3 tag with genre set to Celtic. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Celtic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 88 (Celtic)
+
+Test case 104
+Generated test file "id3v1_104_genre_W.mp3"
+An ID3 tag with genre set to Bluegrass. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Bluegrass"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 89 (Bluegrass)
+
+Test case 105
+Generated test file "id3v1_105_genre_W.mp3"
+An ID3 tag with genre set to Avantgarde. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Avantgarde"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 90 (Avantgarde)
+
+Test case 106
+Generated test file "id3v1_106_genre_W.mp3"
+An ID3 tag with genre set to Gothic Rock. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Gothic Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 91 (Gothic Rock)
+
+Test case 107
+Generated test file "id3v1_107_genre_W.mp3"
+An ID3 tag with genre set to Progressive Rock. Only the first 80
+genres are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Progressive Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 92 (Progressive Rock)
+
+Test case 108
+Generated test file "id3v1_108_genre_W.mp3"
+An ID3 tag with genre set to Psychedelic Rock. Only the first 80
+genres are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Psychedelic Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 93 (Psychedelic Rock)
+
+Test case 109
+Generated test file "id3v1_109_genre_W.mp3"
+An ID3 tag with genre set to Symphonic Rock. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Symphonic Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 94 (Symphonic Rock)
+
+Test case 110
+Generated test file "id3v1_110_genre_W.mp3"
+An ID3 tag with genre set to Slow Rock. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Slow Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 95 (Slow Rock)
+
+Test case 111
+Generated test file "id3v1_111_genre_W.mp3"
+An ID3 tag with genre set to Big Band. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Big Band"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 96 (Big Band)
+
+Test case 112
+Generated test file "id3v1_112_genre_W.mp3"
+An ID3 tag with genre set to Chorus. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Chorus"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 97 (Chorus)
+
+Test case 113
+Generated test file "id3v1_113_genre_W.mp3"
+An ID3 tag with genre set to Easy Listening. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Easy Listening"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 98 (Easy Listening)
+
+Test case 114
+Generated test file "id3v1_114_genre_W.mp3"
+An ID3 tag with genre set to Acoustic. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Acoustic"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 99 (Acoustic)
+
+Test case 115
+Generated test file "id3v1_115_genre_W.mp3"
+An ID3 tag with genre set to Humour. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Humour"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 100 (Humour)
+
+Test case 116
+Generated test file "id3v1_116_genre_W.mp3"
+An ID3 tag with genre set to Speech. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Speech"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 101 (Speech)
+
+Test case 117
+Generated test file "id3v1_117_genre_W.mp3"
+An ID3 tag with genre set to Chanson. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Chanson"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 102 (Chanson)
+
+Test case 118
+Generated test file "id3v1_118_genre_W.mp3"
+An ID3 tag with genre set to Opera. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Opera"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 103 (Opera)
+
+Test case 119
+Generated test file "id3v1_119_genre_W.mp3"
+An ID3 tag with genre set to Chamber Music. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Chamber Music"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 104 (Chamber Music)
+
+Test case 120
+Generated test file "id3v1_120_genre_W.mp3"
+An ID3 tag with genre set to Sonata. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Sonata"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 105 (Sonata)
+
+Test case 121
+Generated test file "id3v1_121_genre_W.mp3"
+An ID3 tag with genre set to Symphony. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Symphony"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 106 (Symphony)
+
+Test case 122
+Generated test file "id3v1_122_genre_W.mp3"
+An ID3 tag with genre set to Booty Bass. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Booty Bass"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 107 (Booty Bass)
+
+Test case 123
+Generated test file "id3v1_123_genre_W.mp3"
+An ID3 tag with genre set to Primus. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Primus"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 108 (Primus)
+
+Test case 124
+Generated test file "id3v1_124_genre_W.mp3"
+An ID3 tag with genre set to Porn Groove. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Porn Groove"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 109 (Porn Groove)
+
+Test case 125
+Generated test file "id3v1_125_genre_W.mp3"
+An ID3 tag with genre set to Satire. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Satire"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 110 (Satire)
+
+Test case 126
+Generated test file "id3v1_126_genre_W.mp3"
+An ID3 tag with genre set to Slow Jam. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Slow Jam"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 111 (Slow Jam)
+
+Test case 127
+Generated test file "id3v1_127_genre_W.mp3"
+An ID3 tag with genre set to Club. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Club"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 112 (Club)
+
+Test case 128
+Generated test file "id3v1_128_genre_W.mp3"
+An ID3 tag with genre set to Tango. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Tango"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 113 (Tango)
+
+Test case 129
+Generated test file "id3v1_129_genre_W.mp3"
+An ID3 tag with genre set to Samba. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Samba"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 114 (Samba)
+
+Test case 130
+Generated test file "id3v1_130_genre_W.mp3"
+An ID3 tag with genre set to Folklore. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Folklore"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 115 (Folklore)
+
+Test case 131
+Generated test file "id3v1_131_genre_W.mp3"
+An ID3 tag with genre set to Ballad. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Ballad"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 116 (Ballad)
+
+Test case 132
+Generated test file "id3v1_132_genre_W.mp3"
+An ID3 tag with genre set to Power Ballad. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Power Ballad"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 117 (Power Ballad)
+
+Test case 133
+Generated test file "id3v1_133_genre_W.mp3"
+An ID3 tag with genre set to Rhythmic Soul. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Rhythmic Soul"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 118 (Rhythmic Soul)
+
+Test case 134
+Generated test file "id3v1_134_genre_W.mp3"
+An ID3 tag with genre set to Freestyle. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Freestyle"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 119 (Freestyle)
+
+Test case 135
+Generated test file "id3v1_135_genre_W.mp3"
+An ID3 tag with genre set to Duet. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Duet"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 120 (Duet)
+
+Test case 136
+Generated test file "id3v1_136_genre_W.mp3"
+An ID3 tag with genre set to Punk Rock. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Punk Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 121 (Punk Rock)
+
+Test case 137
+Generated test file "id3v1_137_genre_W.mp3"
+An ID3 tag with genre set to Drum Solo. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Drum Solo"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 122 (Drum Solo)
+
+Test case 138
+Generated test file "id3v1_138_genre_W.mp3"
+An ID3 tag with genre set to A capella. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "A capella"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 123 (A capella)
+
+Test case 139
+Generated test file "id3v1_139_genre_W.mp3"
+An ID3 tag with genre set to Euro-House. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Euro-House"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 124 (Euro-House)
+
+Test case 140
+Generated test file "id3v1_140_genre_W.mp3"
+An ID3 tag with genre set to Dance Hall. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Dance Hall"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 125 (Dance Hall)
+
+Test case 141
+Generated test file "id3v1_141_genre_W.mp3"
+An ID3 tag with genre set to Goa. Only the first 80 genres are defined
+in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Goa"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 126 (Goa)
+
+Test case 142
+Generated test file "id3v1_142_genre_W.mp3"
+An ID3 tag with genre set to Drum & Bass. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Drum & Bass"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 127 (Drum & Bass)
+
+Test case 143
+Generated test file "id3v1_143_genre_W.mp3"
+An ID3 tag with genre set to Club-House. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Club-House"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 128 (Club-House)
+
+Test case 144
+Generated test file "id3v1_144_genre_W.mp3"
+An ID3 tag with genre set to Hardcore. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Hardcore"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 129 (Hardcore)
+
+Test case 145
+Generated test file "id3v1_145_genre_W.mp3"
+An ID3 tag with genre set to Terror. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Terror"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 130 (Terror)
+
+Test case 146
+Generated test file "id3v1_146_genre_W.mp3"
+An ID3 tag with genre set to Indie. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Indie"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 131 (Indie)
+
+Test case 147
+Generated test file "id3v1_147_genre_W.mp3"
+An ID3 tag with genre set to BritPop. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "BritPop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 132 (BritPop)
+
+Test case 148
+Generated test file "id3v1_148_genre_W.mp3"
+An ID3 tag with genre set to Negerpunk. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Negerpunk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 133 (Negerpunk)
+
+Test case 149
+Generated test file "id3v1_149_genre_W.mp3"
+An ID3 tag with genre set to Polsk Punk. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Polsk Punk"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 134 (Polsk Punk)
+
+Test case 150
+Generated test file "id3v1_150_genre_W.mp3"
+An ID3 tag with genre set to Beat. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Beat"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 135 (Beat)
+
+Test case 151
+Generated test file "id3v1_151_genre_W.mp3"
+An ID3 tag with genre set to Christian. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Christian"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 136 (Christian)
+
+Test case 152
+Generated test file "id3v1_152_genre_W.mp3"
+An ID3 tag with genre set to Heavy Metal. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Heavy Metal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 137 (Heavy Metal)
+
+Test case 153
+Generated test file "id3v1_153_genre_W.mp3"
+An ID3 tag with genre set to Black Metal. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Black Metal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 138 (Black Metal)
+
+Test case 154
+Generated test file "id3v1_154_genre_W.mp3"
+An ID3 tag with genre set to Crossover. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Crossover"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 139 (Crossover)
+
+Test case 155
+Generated test file "id3v1_155_genre_W.mp3"
+An ID3 tag with genre set to Contemporary. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Contemporary"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 140 (Contemporary)
+
+Test case 156
+Generated test file "id3v1_156_genre_W.mp3"
+An ID3 tag with genre set to Christian Rock. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Christian Rock"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 141 (Christian Rock)
+
+Test case 157
+Generated test file "id3v1_157_genre_W.mp3"
+An ID3 tag with genre set to Merengue. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Merengue"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 142 (Merengue)
+
+Test case 158
+Generated test file "id3v1_158_genre_W.mp3"
+An ID3 tag with genre set to Salsa. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Salsa"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 143 (Salsa)
+
+Test case 159
+Generated test file "id3v1_159_genre_W.mp3"
+An ID3 tag with genre set to Thrash Metal. Only the first 80 genres
+are defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Thrash Metal"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 144 (Thrash Metal)
+
+Test case 160
+Generated test file "id3v1_160_genre_W.mp3"
+An ID3 tag with genre set to Anime. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Anime"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 145 (Anime)
+
+Test case 161
+Generated test file "id3v1_161_genre_W.mp3"
+An ID3 tag with genre set to JPop. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "JPop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 146 (JPop)
+
+Test case 162
+Generated test file "id3v1_162_genre_W.mp3"
+An ID3 tag with genre set to Synthpop. Only the first 80 genres are
+defined in the original ID3.
+Test case might generate a decoding warning.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Synthpop"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 147 (Synthpop)
+
+Test case 163
+Generated test file "id3v1_163_genre_F.mp3"
+An ID3 tag with genre set to 148.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/148"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 148 (unknown)
+
+Test case 164
+Generated test file "id3v1_164_genre_F.mp3"
+An ID3 tag with genre set to 149.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/149"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 149 (unknown)
+
+Test case 165
+Generated test file "id3v1_165_genre_F.mp3"
+An ID3 tag with genre set to 150.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/150"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 150 (unknown)
+
+Test case 166
+Generated test file "id3v1_166_genre_F.mp3"
+An ID3 tag with genre set to 151.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/151"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 151 (unknown)
+
+Test case 167
+Generated test file "id3v1_167_genre_F.mp3"
+An ID3 tag with genre set to 152.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/152"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 152 (unknown)
+
+Test case 168
+Generated test file "id3v1_168_genre_F.mp3"
+An ID3 tag with genre set to 153.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/153"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 153 (unknown)
+
+Test case 169
+Generated test file "id3v1_169_genre_F.mp3"
+An ID3 tag with genre set to 154.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/154"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 154 (unknown)
+
+Test case 170
+Generated test file "id3v1_170_genre_F.mp3"
+An ID3 tag with genre set to 155.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/155"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 155 (unknown)
+
+Test case 171
+Generated test file "id3v1_171_genre_F.mp3"
+An ID3 tag with genre set to 156.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/156"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 156 (unknown)
+
+Test case 172
+Generated test file "id3v1_172_genre_F.mp3"
+An ID3 tag with genre set to 157.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/157"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 157 (unknown)
+
+Test case 173
+Generated test file "id3v1_173_genre_F.mp3"
+An ID3 tag with genre set to 158.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/158"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 158 (unknown)
+
+Test case 174
+Generated test file "id3v1_174_genre_F.mp3"
+An ID3 tag with genre set to 159.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/159"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 159 (unknown)
+
+Test case 175
+Generated test file "id3v1_175_genre_F.mp3"
+An ID3 tag with genre set to 160.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/160"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 160 (unknown)
+
+Test case 176
+Generated test file "id3v1_176_genre_F.mp3"
+An ID3 tag with genre set to 161.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/161"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 161 (unknown)
+
+Test case 177
+Generated test file "id3v1_177_genre_F.mp3"
+An ID3 tag with genre set to 162.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/162"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 162 (unknown)
+
+Test case 178
+Generated test file "id3v1_178_genre_F.mp3"
+An ID3 tag with genre set to 163.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/163"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 163 (unknown)
+
+Test case 179
+Generated test file "id3v1_179_genre_F.mp3"
+An ID3 tag with genre set to 164.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/164"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 164 (unknown)
+
+Test case 180
+Generated test file "id3v1_180_genre_F.mp3"
+An ID3 tag with genre set to 165.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/165"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 165 (unknown)
+
+Test case 181
+Generated test file "id3v1_181_genre_F.mp3"
+An ID3 tag with genre set to 166.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/166"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 166 (unknown)
+
+Test case 182
+Generated test file "id3v1_182_genre_F.mp3"
+An ID3 tag with genre set to 167.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/167"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 167 (unknown)
+
+Test case 183
+Generated test file "id3v1_183_genre_F.mp3"
+An ID3 tag with genre set to 168.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/168"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 168 (unknown)
+
+Test case 184
+Generated test file "id3v1_184_genre_F.mp3"
+An ID3 tag with genre set to 169.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/169"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 169 (unknown)
+
+Test case 185
+Generated test file "id3v1_185_genre_F.mp3"
+An ID3 tag with genre set to 170.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/170"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 170 (unknown)
+
+Test case 186
+Generated test file "id3v1_186_genre_F.mp3"
+An ID3 tag with genre set to 171.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/171"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 171 (unknown)
+
+Test case 187
+Generated test file "id3v1_187_genre_F.mp3"
+An ID3 tag with genre set to 172.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/172"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 172 (unknown)
+
+Test case 188
+Generated test file "id3v1_188_genre_F.mp3"
+An ID3 tag with genre set to 173.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/173"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 173 (unknown)
+
+Test case 189
+Generated test file "id3v1_189_genre_F.mp3"
+An ID3 tag with genre set to 174.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/174"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 174 (unknown)
+
+Test case 190
+Generated test file "id3v1_190_genre_F.mp3"
+An ID3 tag with genre set to 175.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/175"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 175 (unknown)
+
+Test case 191
+Generated test file "id3v1_191_genre_F.mp3"
+An ID3 tag with genre set to 176.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/176"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 176 (unknown)
+
+Test case 192
+Generated test file "id3v1_192_genre_F.mp3"
+An ID3 tag with genre set to 177.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/177"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 177 (unknown)
+
+Test case 193
+Generated test file "id3v1_193_genre_F.mp3"
+An ID3 tag with genre set to 178.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/178"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 178 (unknown)
+
+Test case 194
+Generated test file "id3v1_194_genre_F.mp3"
+An ID3 tag with genre set to 179.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/179"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 179 (unknown)
+
+Test case 195
+Generated test file "id3v1_195_genre_F.mp3"
+An ID3 tag with genre set to 180.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/180"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 180 (unknown)
+
+Test case 196
+Generated test file "id3v1_196_genre_F.mp3"
+An ID3 tag with genre set to 181.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/181"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 181 (unknown)
+
+Test case 197
+Generated test file "id3v1_197_genre_F.mp3"
+An ID3 tag with genre set to 182.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/182"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 182 (unknown)
+
+Test case 198
+Generated test file "id3v1_198_genre_F.mp3"
+An ID3 tag with genre set to 183.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/183"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 183 (unknown)
+
+Test case 199
+Generated test file "id3v1_199_genre_F.mp3"
+An ID3 tag with genre set to 184.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/184"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 184 (unknown)
+
+Test case 200
+Generated test file "id3v1_200_genre_F.mp3"
+An ID3 tag with genre set to 185.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/185"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 185 (unknown)
+
+Test case 201
+Generated test file "id3v1_201_genre_F.mp3"
+An ID3 tag with genre set to 186.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/186"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 186 (unknown)
+
+Test case 202
+Generated test file "id3v1_202_genre_F.mp3"
+An ID3 tag with genre set to 187.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/187"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 187 (unknown)
+
+Test case 203
+Generated test file "id3v1_203_genre_F.mp3"
+An ID3 tag with genre set to 188.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/188"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 188 (unknown)
+
+Test case 204
+Generated test file "id3v1_204_genre_F.mp3"
+An ID3 tag with genre set to 189.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/189"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 189 (unknown)
+
+Test case 205
+Generated test file "id3v1_205_genre_F.mp3"
+An ID3 tag with genre set to 190.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/190"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 190 (unknown)
+
+Test case 206
+Generated test file "id3v1_206_genre_F.mp3"
+An ID3 tag with genre set to 191.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/191"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 191 (unknown)
+
+Test case 207
+Generated test file "id3v1_207_genre_F.mp3"
+An ID3 tag with genre set to 192.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/192"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 192 (unknown)
+
+Test case 208
+Generated test file "id3v1_208_genre_F.mp3"
+An ID3 tag with genre set to 193.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/193"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 193 (unknown)
+
+Test case 209
+Generated test file "id3v1_209_genre_F.mp3"
+An ID3 tag with genre set to 194.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/194"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 194 (unknown)
+
+Test case 210
+Generated test file "id3v1_210_genre_F.mp3"
+An ID3 tag with genre set to 195.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/195"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 195 (unknown)
+
+Test case 211
+Generated test file "id3v1_211_genre_F.mp3"
+An ID3 tag with genre set to 196.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/196"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 196 (unknown)
+
+Test case 212
+Generated test file "id3v1_212_genre_F.mp3"
+An ID3 tag with genre set to 197.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/197"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 197 (unknown)
+
+Test case 213
+Generated test file "id3v1_213_genre_F.mp3"
+An ID3 tag with genre set to 198.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/198"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 198 (unknown)
+
+Test case 214
+Generated test file "id3v1_214_genre_F.mp3"
+An ID3 tag with genre set to 199.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/199"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 199 (unknown)
+
+Test case 215
+Generated test file "id3v1_215_genre_F.mp3"
+An ID3 tag with genre set to 200.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/200"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 200 (unknown)
+
+Test case 216
+Generated test file "id3v1_216_genre_F.mp3"
+An ID3 tag with genre set to 201.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/201"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 201 (unknown)
+
+Test case 217
+Generated test file "id3v1_217_genre_F.mp3"
+An ID3 tag with genre set to 202.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/202"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 202 (unknown)
+
+Test case 218
+Generated test file "id3v1_218_genre_F.mp3"
+An ID3 tag with genre set to 203.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/203"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 203 (unknown)
+
+Test case 219
+Generated test file "id3v1_219_genre_F.mp3"
+An ID3 tag with genre set to 204.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/204"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 204 (unknown)
+
+Test case 220
+Generated test file "id3v1_220_genre_F.mp3"
+An ID3 tag with genre set to 205.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/205"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 205 (unknown)
+
+Test case 221
+Generated test file "id3v1_221_genre_F.mp3"
+An ID3 tag with genre set to 206.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/206"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 206 (unknown)
+
+Test case 222
+Generated test file "id3v1_222_genre_F.mp3"
+An ID3 tag with genre set to 207.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/207"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 207 (unknown)
+
+Test case 223
+Generated test file "id3v1_223_genre_F.mp3"
+An ID3 tag with genre set to 208.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/208"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 208 (unknown)
+
+Test case 224
+Generated test file "id3v1_224_genre_F.mp3"
+An ID3 tag with genre set to 209.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/209"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 209 (unknown)
+
+Test case 225
+Generated test file "id3v1_225_genre_F.mp3"
+An ID3 tag with genre set to 210.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/210"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 210 (unknown)
+
+Test case 226
+Generated test file "id3v1_226_genre_F.mp3"
+An ID3 tag with genre set to 211.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/211"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 211 (unknown)
+
+Test case 227
+Generated test file "id3v1_227_genre_F.mp3"
+An ID3 tag with genre set to 212.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/212"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 212 (unknown)
+
+Test case 228
+Generated test file "id3v1_228_genre_F.mp3"
+An ID3 tag with genre set to 213.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/213"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 213 (unknown)
+
+Test case 229
+Generated test file "id3v1_229_genre_F.mp3"
+An ID3 tag with genre set to 214.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/214"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 214 (unknown)
+
+Test case 230
+Generated test file "id3v1_230_genre_F.mp3"
+An ID3 tag with genre set to 215.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/215"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 215 (unknown)
+
+Test case 231
+Generated test file "id3v1_231_genre_F.mp3"
+An ID3 tag with genre set to 216.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/216"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 216 (unknown)
+
+Test case 232
+Generated test file "id3v1_232_genre_F.mp3"
+An ID3 tag with genre set to 217.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/217"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 217 (unknown)
+
+Test case 233
+Generated test file "id3v1_233_genre_F.mp3"
+An ID3 tag with genre set to 218.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/218"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 218 (unknown)
+
+Test case 234
+Generated test file "id3v1_234_genre_F.mp3"
+An ID3 tag with genre set to 219.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/219"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 219 (unknown)
+
+Test case 235
+Generated test file "id3v1_235_genre_F.mp3"
+An ID3 tag with genre set to 220.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/220"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 220 (unknown)
+
+Test case 236
+Generated test file "id3v1_236_genre_F.mp3"
+An ID3 tag with genre set to 221.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/221"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 221 (unknown)
+
+Test case 237
+Generated test file "id3v1_237_genre_F.mp3"
+An ID3 tag with genre set to 222.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/222"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 222 (unknown)
+
+Test case 238
+Generated test file "id3v1_238_genre_F.mp3"
+An ID3 tag with genre set to 223.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/223"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 223 (unknown)
+
+Test case 239
+Generated test file "id3v1_239_genre_F.mp3"
+An ID3 tag with genre set to 224.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/224"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 224 (unknown)
+
+Test case 240
+Generated test file "id3v1_240_genre_F.mp3"
+An ID3 tag with genre set to 225.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/225"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 225 (unknown)
+
+Test case 241
+Generated test file "id3v1_241_genre_F.mp3"
+An ID3 tag with genre set to 226.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/226"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 226 (unknown)
+
+Test case 242
+Generated test file "id3v1_242_genre_F.mp3"
+An ID3 tag with genre set to 227.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/227"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 227 (unknown)
+
+Test case 243
+Generated test file "id3v1_243_genre_F.mp3"
+An ID3 tag with genre set to 228.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/228"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 228 (unknown)
+
+Test case 244
+Generated test file "id3v1_244_genre_F.mp3"
+An ID3 tag with genre set to 229.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/229"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 229 (unknown)
+
+Test case 245
+Generated test file "id3v1_245_genre_F.mp3"
+An ID3 tag with genre set to 230.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/230"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 230 (unknown)
+
+Test case 246
+Generated test file "id3v1_246_genre_F.mp3"
+An ID3 tag with genre set to 231.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/231"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 231 (unknown)
+
+Test case 247
+Generated test file "id3v1_247_genre_F.mp3"
+An ID3 tag with genre set to 232.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/232"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 232 (unknown)
+
+Test case 248
+Generated test file "id3v1_248_genre_F.mp3"
+An ID3 tag with genre set to 233.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/233"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 233 (unknown)
+
+Test case 249
+Generated test file "id3v1_249_genre_F.mp3"
+An ID3 tag with genre set to 234.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/234"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 234 (unknown)
+
+Test case 250
+Generated test file "id3v1_250_genre_F.mp3"
+An ID3 tag with genre set to 235.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/235"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 235 (unknown)
+
+Test case 251
+Generated test file "id3v1_251_genre_F.mp3"
+An ID3 tag with genre set to 236.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/236"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 236 (unknown)
+
+Test case 252
+Generated test file "id3v1_252_genre_F.mp3"
+An ID3 tag with genre set to 237.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/237"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 237 (unknown)
+
+Test case 253
+Generated test file "id3v1_253_genre_F.mp3"
+An ID3 tag with genre set to 238.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/238"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 238 (unknown)
+
+Test case 254
+Generated test file "id3v1_254_genre_F.mp3"
+An ID3 tag with genre set to 239.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/239"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 239 (unknown)
+
+Test case 255
+Generated test file "id3v1_255_genre_F.mp3"
+An ID3 tag with genre set to 240.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/240"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 240 (unknown)
+
+Test case 256
+Generated test file "id3v1_256_genre_F.mp3"
+An ID3 tag with genre set to 241.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/241"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 241 (unknown)
+
+Test case 257
+Generated test file "id3v1_257_genre_F.mp3"
+An ID3 tag with genre set to 242.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/242"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 242 (unknown)
+
+Test case 258
+Generated test file "id3v1_258_genre_F.mp3"
+An ID3 tag with genre set to 243.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/243"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 243 (unknown)
+
+Test case 259
+Generated test file "id3v1_259_genre_F.mp3"
+An ID3 tag with genre set to 244.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/244"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 244 (unknown)
+
+Test case 260
+Generated test file "id3v1_260_genre_F.mp3"
+An ID3 tag with genre set to 245.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/245"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 245 (unknown)
+
+Test case 261
+Generated test file "id3v1_261_genre_F.mp3"
+An ID3 tag with genre set to 246.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/246"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 246 (unknown)
+
+Test case 262
+Generated test file "id3v1_262_genre_F.mp3"
+An ID3 tag with genre set to 247.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/247"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 247 (unknown)
+
+Test case 263
+Generated test file "id3v1_263_genre_F.mp3"
+An ID3 tag with genre set to 248.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/248"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 248 (unknown)
+
+Test case 264
+Generated test file "id3v1_264_genre_F.mp3"
+An ID3 tag with genre set to 249.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/249"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 249 (unknown)
+
+Test case 265
+Generated test file "id3v1_265_genre_F.mp3"
+An ID3 tag with genre set to 250.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/250"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 250 (unknown)
+
+Test case 266
+Generated test file "id3v1_266_genre_F.mp3"
+An ID3 tag with genre set to 251.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/251"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 251 (unknown)
+
+Test case 267
+Generated test file "id3v1_267_genre_F.mp3"
+An ID3 tag with genre set to 252.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/252"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 252 (unknown)
+
+Test case 268
+Generated test file "id3v1_268_genre_F.mp3"
+An ID3 tag with genre set to 253.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/253"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 253 (unknown)
+
+Test case 269
+Generated test file "id3v1_269_genre_F.mp3"
+An ID3 tag with genre set to 254.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/254"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 254 (unknown)
+
+Test case 270
+Generated test file "id3v1_270_genre_F.mp3"
+An ID3 tag with genre set to 255.
+Test case should generate a decoding failure.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "Unknown/255"
+artist : ""
+album  : ""
+year   : "2003"
+comment: ""
+genre  : 255 (unknown)
+
+
+Tests to test charset decoding and similar optional capabilities.
+
+Test case 271
+Generated test file "id3v1_271_extra.mp3"
+Title with 8-bit iso-8859-1 characters (would be written as
+r&auml;ksm&ouml;rg&aring;s in HTML).
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "räksmörgås"
+artist : "räksmörgås"
+album  : "räksmörgås"
+year   : "2003"
+comment: "räksmörgås"
+genre  : 0 (Blues)
+
+Test case 272
+Generated test file "id3v1_272_extra.mp3"
+Title with utf-8-encoded 8-bit string (would be written as
+r&auml;ksm&ouml;rg&aring;s in HTML).
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : "räksmörgås"
+artist : "räksmörgås"
+album  : "räksmörgås"
+year   : "2003"
+comment: "räksmörgås"
+genre  : 0 (Blues)
+
+Test case 273
+Generated test file "id3v1_273_extra.mp3"
+Comment field with http://-style URL.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "2003"
+comment: "http://www.id3.org/"
+genre  : 0 (Blues)
+
+Test case 274
+Generated test file "id3v1_274_extra.mp3"
+Comment field with unprefixed URL.
+Tag structure
+version: 1.0
+head   : "TAG"
+title  : ""
+artist : ""
+album  : ""
+year   : "2003"
+comment: "www.id3.org/"
+genre  : 0 (Blues)
+

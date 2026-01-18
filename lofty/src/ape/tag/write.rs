@@ -47,9 +47,11 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_ape_tag = (false, (0, 0));
 
-	let start = file.stream_position()?;
 	// TODO: Forcing the use of ParseOptions::default()
-	match read::read_ape_tag(file, false, ParseOptions::new())? {
+	let parse_options = ParseOptions::new();
+
+	let start = file.stream_position()?;
+	match read::read_ape_tag(file, false, parse_options)? {
 		(Some(mut existing_tag), Some(header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
@@ -68,7 +70,7 @@ where
 	}
 
 	// Skip over ID3v1 and Lyrics3v2 tags
-	find_id3v1(file, false)?;
+	find_id3v1(file, false, parse_options.parsing_mode)?;
 	find_lyrics3v2(file)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
