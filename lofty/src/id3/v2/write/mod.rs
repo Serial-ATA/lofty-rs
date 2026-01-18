@@ -127,9 +127,9 @@ pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 
 	// Write the items
 	if is_id3v23 {
-		frame::create_items_v3(&mut id3v2, &mut peek)?;
+		frame::create_items_v3(&mut id3v2, &mut peek, write_options)?;
 	} else {
-		frame::create_items(&mut id3v2, &mut peek)?;
+		frame::create_items(&mut id3v2, &mut peek, write_options)?;
 	}
 
 	let mut len = id3v2.get_ref().len() - header_len;

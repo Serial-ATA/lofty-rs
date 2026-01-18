@@ -1,8 +1,9 @@
+use crate::config::WriteOptions;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::util::text::{
-	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text, encode_text,
+	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text,
 	utf16_decode_terminated_maybe_bom,
 };
 
@@ -227,7 +228,8 @@ impl SynchronizedTextFrame<'_> {
 	/// * `content`'s length > [`u32::MAX`]
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut data = vec![self.encoding as u8];
 
 		if self.language.len() == 3 && self.language.iter().all(u8::is_ascii_alphabetic) {
@@ -236,13 +238,21 @@ impl SynchronizedTextFrame<'_> {
 			data.write_u8(self.content_type as u8)?;
 
 			if let Some(description) = &self.description {
-				data.write_all(&encode_text(description, self.encoding, true))?;
+				data.write_all(&self.encoding.encode(
+					description,
+					true,
+					write_options.lossy_text_encoding,
+				)?)?;
 			} else {
 				data.write_u8(0)?;
 			}
 
 			for (time, text) in &self.content {
-				data.write_all(&encode_text(text, self.encoding, true))?;
+				data.write_all(&self.encoding.encode(
+					text,
+					true,
+					write_options.lossy_text_encoding,
+				)?)?;
 				data.write_u32::<BigEndian>(*time)?;
 			}
 
@@ -259,6 +269,7 @@ impl SynchronizedTextFrame<'_> {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{
 		FrameFlags, FrameHeader, SyncTextContentType, SynchronizedTextFrame, TimestampFormat,
 	};
@@ -293,7 +304,9 @@ mod tests {
 
 	#[test_log::test]
 	fn sylt_encode() {
-		let encoded = expected(TextEncoding::Latin1).as_bytes().unwrap();
+		let encoded = expected(TextEncoding::Latin1)
+			.as_bytes(WriteOptions::default())
+			.unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.sylt");
@@ -313,7 +326,9 @@ mod tests {
 
 	#[test_log::test]
 	fn sylt_encode_utf_16() {
-		let encoded = expected(TextEncoding::UTF16).as_bytes().unwrap();
+		let encoded = expected(TextEncoding::UTF16)
+			.as_bytes(WriteOptions::default())
+			.unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.sylt");

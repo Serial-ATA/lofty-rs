@@ -33,13 +33,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `AttachedPictureFrame`, `PopularimeterFrame`, `KeyValueFrame`, `RelativeVolumeAdjustmentFrame`, `UniqueFileIdentifierFrame`, `OwnershipFrame`, `EventTimingCodesFrame`,
     `PrivateFrame`, `BinaryFrame`
   - `FrameId::is_valid()` and `FrameId::is_outdated()`
+- **WriteOptions**: `WriteOptions::lossy_text_encoding()` to replace invalid characters when encoding strings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/594))
+  - When enabled, any non-representable character will be replaced with `?` (e.g. `lфfty` in `TextEncoding::Latin1` will return `l?fty`)
 - **Other**: `EXTENSIONS` list containing common file extensions for all supported audio file types ([issue](https://github.com/Serial-ATA/lofty-rs/issues/509)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/558))
   - This is useful for filtering files when scanning directories. If your app uses extension filtering, **please consider switching to this**, as to not
     miss any supported files.
 
 ### Changed
 - **ID3v2**: Check `TXXX:ALBUMARTIST` and `TXXX:ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
-- **ID3v1**: The `year` field in `Id3v1Tag` is now a `u16`, instead of a `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/574))
+- **ID3v1**:
+  - The `year` field in `Id3v1Tag` is now a `u16`, instead of a `String` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/574))
+  - Strings are now verified to be Latin-1 ([PR](https://github.com/Serial-ATA/lofty-rs/pull/594))
 - **Vorbis Comments**: Check `ALBUM ARTIST` for `ItemKey::AlbumArtist` conversions
 - **Vorbis Comments**: Support `DISCNUMBER` fields with the `current/total` format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/543)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/544))
     - These fields will now properly be split into `DISCNUMBER` and `DISCTOTAL`, making it possible to use them with
@@ -69,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Since all formats (*except ID3v1*) have full date support, the generic API now accepts `Timestamp`s. For ID3v1, the date will be truncated
     down to the year for conversions/writing.
   - Year tags can still be set manually with `ItemKey::Year`
+- **ID3v2**: `AttachedPictureFrame::as_bytes()` no longer supports encoding ID3v2.2 `PIC` frames
 
 ## [0.22.4] - 2025-04-29
 

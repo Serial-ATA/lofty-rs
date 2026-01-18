@@ -6,6 +6,7 @@
 use crate::file::FileType;
 use crate::id3::v2::FrameId;
 use crate::tag::ItemKey;
+pub use crate::util::text::TextEncodingError;
 
 use std::collections::TryReserveError;
 use std::fmt::{Debug, Display, Formatter};
@@ -50,6 +51,8 @@ pub enum ErrorKind {
 	FakeTag,
 	/// Errors that arise while decoding text
 	TextDecode(&'static str),
+	/// Errors that arise while encoding text
+	TextEncode(TextEncodingError),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
 	BadTimestamp(&'static str),
 	/// Errors that arise while reading/writing ID3v2 tags
@@ -466,6 +469,14 @@ impl From<FileEncodingError> for LoftyError {
 	}
 }
 
+impl From<TextEncodingError> for LoftyError {
+	fn from(input: TextEncodingError) -> Self {
+		Self {
+			kind: ErrorKind::TextEncode(input),
+		}
+	}
+}
+
 impl From<ogg_pager::PageError> for LoftyError {
 	fn from(input: PageError) -> Self {
 		Self {
@@ -546,6 +557,7 @@ impl Display for LoftyError {
 			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
+			ErrorKind::TextEncode(message) => write!(f, "Text encoding: {message}"),
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},

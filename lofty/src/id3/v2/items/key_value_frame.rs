@@ -1,13 +1,14 @@
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
-
-use byteorder::ReadBytesExt;
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::io::Read;
+
+use byteorder::ReadBytesExt;
 
 /// An `ID3v2` key-value frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -115,19 +116,23 @@ impl<'a> KeyValueFrame<'a> {
 	}
 
 	/// Convert a [`KeyValueFrame`] to a byte vec
-	pub fn as_bytes(&self, is_id3v23: bool) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut encoding = self.encoding;
-		if is_id3v23 {
+		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
 		let mut content = vec![encoding as u8];
 
 		for (key, value) in &self.key_value_pairs {
-			content.append(&mut encode_text(key, encoding, true));
-			content.append(&mut encode_text(value, encoding, true));
+			content.append(&mut encoding.encode(key, true, write_options.lossy_text_encoding)?);
+			content.append(&mut encoding.encode(value, true, write_options.lossy_text_encoding)?);
 		}
-		content
+		Ok(content)
 	}
 }
 

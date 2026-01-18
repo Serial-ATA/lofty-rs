@@ -1,8 +1,8 @@
-use crate::config::ParsingMode;
+use crate::config::{ParsingMode, WriteOptions};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -197,14 +197,18 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 	}
 
 	/// Convert a [`RelativeVolumeAdjustmentFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the identifier cannot be Latin-1 encoded.
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut content = Vec::new();
 
-		content.extend(encode_text(
+		content.extend(TextEncoding::Latin1.encode(
 			&self.identification,
-			TextEncoding::Latin1,
 			true,
-		));
+			write_options.lossy_text_encoding,
+		)?);
 
 		for (channel_type, info) in &*self.channels {
 			let mut bits_representing_peak = info.bits_representing_peak;
@@ -235,7 +239,7 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 			}
 		}
 
-		content
+		Ok(content)
 	}
 }
 
@@ -251,7 +255,7 @@ impl RelativeVolumeAdjustmentFrame<'static> {
 
 #[cfg(test)]
 mod tests {
-	use crate::config::ParsingMode;
+	use crate::config::{ParsingMode, WriteOptions};
 	use crate::id3::v2::{
 		ChannelInformation, ChannelType, FrameFlags, RelativeVolumeAdjustmentFrame,
 	};
@@ -314,7 +318,7 @@ mod tests {
 	#[test_log::test]
 	#[allow(unstable_name_collisions)]
 	fn rva2_encode() {
-		let encoded = expected().as_bytes();
+		let encoded = expected().as_bytes(WriteOptions::default()).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.rva2");

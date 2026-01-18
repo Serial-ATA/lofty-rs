@@ -2,13 +2,13 @@ pub(super) mod content;
 pub(super) mod header;
 pub(super) mod read;
 
-use super::header::Id3v2Version;
 use super::items::{
 	AttachedPictureFrame, BinaryFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame,
 	ExtendedUrlFrame, KeyValueFrame, OwnershipFrame, PopularimeterFrame, PrivateFrame,
 	RelativeVolumeAdjustmentFrame, TextInformationFrame, TimestampFrame, UniqueFileIdentifierFrame,
 	UnsynchronizedTextFrame, UrlLinkFrame,
 };
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::v2::FrameHeader;
 use crate::util::text::TextEncoding;
@@ -216,31 +216,23 @@ impl Frame<'_> {
 }
 
 impl Frame<'_> {
-	pub(super) fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+	pub(super) fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		Ok(match self {
-			Frame::Comment(comment) => comment.as_bytes(is_id3v23)?,
-			Frame::UnsynchronizedText(lf) => lf.as_bytes(is_id3v23)?,
-			Frame::Text(tif) => tif.as_bytes(is_id3v23),
-			Frame::UserText(content) => content.as_bytes(is_id3v23),
-			Frame::UserUrl(content) => content.as_bytes(is_id3v23),
-			Frame::Url(link) => link.as_bytes(),
-			Frame::Picture(attached_picture) => {
-				let version = if is_id3v23 {
-					Id3v2Version::V3
-				} else {
-					Id3v2Version::V4
-				};
-
-				attached_picture.as_bytes(version)?
-			},
-			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes()?,
-			Frame::KeyValue(content) => content.as_bytes(is_id3v23),
-			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(),
-			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(),
-			Frame::Ownership(frame) => frame.as_bytes(is_id3v23)?,
+			Frame::Comment(comment) => comment.as_bytes(write_options)?,
+			Frame::UnsynchronizedText(lf) => lf.as_bytes(write_options)?,
+			Frame::Text(tif) => tif.as_bytes(write_options)?,
+			Frame::UserText(content) => content.as_bytes(write_options)?,
+			Frame::UserUrl(content) => content.as_bytes(write_options)?,
+			Frame::Url(link) => link.as_bytes(write_options)?,
+			Frame::Picture(attached_picture) => attached_picture.as_bytes(write_options)?,
+			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(write_options)?,
+			Frame::KeyValue(content) => content.as_bytes(write_options)?,
+			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(write_options)?,
+			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(write_options)?,
+			Frame::Ownership(frame) => frame.as_bytes(write_options)?,
 			Frame::EventTimingCodes(frame) => frame.as_bytes(),
-			Frame::Private(frame) => frame.as_bytes()?,
-			Frame::Timestamp(frame) => frame.as_bytes(is_id3v23)?,
+			Frame::Private(frame) => frame.as_bytes(write_options)?,
+			Frame::Timestamp(frame) => frame.as_bytes(write_options)?,
 			Frame::Binary(frame) => frame.as_bytes(),
 		})
 	}
