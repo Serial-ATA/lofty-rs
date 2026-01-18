@@ -49,7 +49,8 @@ where
 	let pos_past_id3v2 = reader.stream_position()?;
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) = find_id3v1(reader, parse_options.read_tags)?;
+	let ID3FindResults(header, id3v1) =
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
