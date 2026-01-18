@@ -1,7 +1,8 @@
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::alloc::VecFallibleCapacity;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::io::Read;
@@ -86,7 +87,8 @@ impl<'a> PrivateFrame<'a> {
 	/// # Errors
 	///
 	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the `owner` cannot be Latin-1 encoded.
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let Self {
 			owner,
 			private_data,
@@ -94,7 +96,11 @@ impl<'a> PrivateFrame<'a> {
 		} = self;
 
 		let mut content = Vec::try_with_capacity_stable(owner.len() + private_data.len())?;
-		content.extend(encode_text(owner, TextEncoding::Latin1, true));
+		content.extend(TextEncoding::Latin1.encode(
+			owner,
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 		content.extend_from_slice(private_data);
 
 		Ok(content)
@@ -113,6 +119,7 @@ impl PrivateFrame<'static> {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{FrameFlags, PrivateFrame};
 
 	fn expected() -> PrivateFrame<'static> {
@@ -132,7 +139,7 @@ mod tests {
 
 	#[test_log::test]
 	fn priv_encode() {
-		let encoded = expected().as_bytes().unwrap();
+		let encoded = expected().as_bytes(WriteOptions::default()).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.priv");

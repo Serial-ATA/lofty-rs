@@ -48,7 +48,9 @@ fn test_downgrade_utf8_for_id3v23_1() {
 		.save_to(&mut file, WriteOptions::new().use_id3v23(true))
 		.unwrap();
 
-	let data = f.as_bytes(true);
+	let data = f
+		.as_bytes(WriteOptions::default().use_id3v23(true))
+		.unwrap();
 	assert_eq!(data.len(), 1 + 6 + 2); // NOTE: This does not include frame headers like TagLib does
 
 	let f2 = TextInformationFrame::parse(
@@ -81,7 +83,9 @@ fn test_downgrade_utf8_for_id3v23_2() {
 		.save_to(&mut file, WriteOptions::new().use_id3v23(true))
 		.unwrap();
 
-	let data = f.as_bytes(true).unwrap();
+	let data = f
+		.as_bytes(WriteOptions::default().use_id3v23(true))
+		.unwrap();
 	assert_eq!(data.len(), 1 + 3 + 2 + 2 + 6 + 2); // NOTE: This does not include frame headers like TagLib does
 
 	let f2 =
@@ -101,7 +105,7 @@ fn test_utf16be_delimiter() {
 		String::from("Foo\0Bar"),
 	);
 
-	let data = f.as_bytes(false);
+	let data = f.as_bytes(WriteOptions::default()).unwrap();
 
 	let no_bom_be_data = b"\x02\
 	\0F\0o\0o\0\0\
@@ -127,7 +131,7 @@ fn test_utf16_delimiter() {
 		String::from("Foo\0Bar"),
 	);
 
-	let data = f.as_bytes(false);
+	let data = f.as_bytes(WriteOptions::default()).unwrap();
 
 	// TODO: TagLib writes a BOM to every string, making the output identical to `mutli_bom_le_data`,
 	//       rather than `single_bom_le_data` in Lofty's case. Not sure if we should be writing the BOM
@@ -275,7 +279,7 @@ fn test_render_apic() {
 	);
 
 	assert_eq!(
-		f.as_bytes(Id3v2Version::V4).unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x03\
 	image/png\x00\
@@ -317,7 +321,7 @@ fn test_render_geob() {
 	);
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x00\
 	application/octet-stream\x00\
@@ -361,7 +365,7 @@ fn test_render_popm() {
 	let f = PopularimeterFrame::new(String::from("email@example.com"), 2, 3);
 
 	assert_eq!(
-		f.as_bytes().unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	email@example.com\x00\
 	\x02\
@@ -451,7 +455,7 @@ fn test_render_relative_volume_frame() {
 	});
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	ident\x00\
     \x02\
@@ -496,7 +500,7 @@ fn test_render_unique_file_identifier_frame() {
 	let f = UniqueFileIdentifierFrame::new(String::from("owner"), b"\x01\x02\x03".to_vec());
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 owner\x00\
 \x01\x02\x03"
@@ -524,7 +528,10 @@ fn test_render_url_link_frame() {
 	)
 	.unwrap()
 	.unwrap();
-	assert_eq!(f.as_bytes(), b"http://example.com");
+	assert_eq!(
+		f.as_bytes(WriteOptions::default()).unwrap(),
+		b"http://example.com"
+	);
 }
 
 #[test_log::test]
@@ -553,7 +560,7 @@ fn test_render_user_url_link_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes(false),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x00\
 	foo\x00\
@@ -589,7 +596,7 @@ fn test_render_ownership_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes(false).unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 		\x00\
         GBP1.99\x00\
@@ -673,7 +680,7 @@ fn test_render_synchronized_lyrics_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes().unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x00\
 	eng\
@@ -767,7 +774,7 @@ fn test_render_comments_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes(false).unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x01\
 	eng\
@@ -804,7 +811,7 @@ fn test_render_private_frame() {
 	let f = PrivateFrame::new(String::from("WM/Provider"), b"TL".to_vec());
 
 	assert_eq!(
-		f.as_bytes().unwrap(),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	WM/Provider\x00\
 	TL"
@@ -849,7 +856,7 @@ fn test_render_user_text_identification_frame() {
 	let mut f = ExtendedTextFrame::new(TextEncoding::Latin1, String::new(), String::from("Text"));
 
 	assert_eq!(
-		f.as_bytes(false),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x00\
 	\x00\
@@ -859,7 +866,7 @@ fn test_render_user_text_identification_frame() {
 	f.description = Cow::Borrowed("Description");
 
 	assert_eq!(
-		f.as_bytes(false),
+		f.as_bytes(WriteOptions::default()).unwrap(),
 		b"\
 	\x00\
 	Description\x00\

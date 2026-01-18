@@ -1,7 +1,8 @@
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
+use crate::config::WriteOptions;
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
@@ -82,8 +83,14 @@ impl<'a> UrlLinkFrame<'a> {
 	}
 
 	/// Convert an [`UrlLinkFrame`] to a byte vec
-	pub fn as_bytes(&self) -> Vec<u8> {
-		encode_text(&self.content, TextEncoding::Latin1, false)
+	///
+	/// # Errors
+	///
+	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be Latin-1 encoded.
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+		TextEncoding::Latin1
+			.encode(&self.content, false, write_options.lossy_text_encoding)
+			.map_err(Into::into)
 	}
 
 	/// Get the URL of the frame

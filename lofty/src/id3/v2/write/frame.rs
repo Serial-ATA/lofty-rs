@@ -1,3 +1,4 @@
+use crate::config::WriteOptions;
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameFlags;
 use crate::id3::v2::tag::GenresIter;
@@ -27,22 +28,21 @@ fn strip_outdated_frames<'a>(
 pub(in crate::id3::v2) fn create_items<W>(
 	writer: &mut W,
 	frames: &mut dyn Iterator<Item = Frame<'_>>,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	W: Write,
 {
-	let is_id3v23 = false;
-
 	for frame in strip_outdated_frames(frames) {
 		verify_frame(&frame)?;
-		let value = frame.as_bytes(is_id3v23)?;
+		let value = frame.as_bytes(write_options)?;
 
 		write_frame(
 			writer,
 			frame.id().as_str(),
 			frame.flags(),
 			&value,
-			is_id3v23,
+			write_options,
 		)?;
 	}
 
@@ -52,6 +52,7 @@ where
 pub(in crate::id3::v2) fn create_items_v3<W>(
 	writer: &mut W,
 	frames: &mut dyn Iterator<Item = Frame<'_>>,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	W: Write,
@@ -63,8 +64,6 @@ where
 	];
 
 	const IPLS_ID: &str = "IPLS";
-
-	let is_id3v23 = true;
 
 	let mut ipls = None;
 	for mut frame in strip_outdated_frames(frames) {
@@ -139,14 +138,14 @@ where
 
 					for mut frame in new_frames {
 						frame.set_flags(f.header.flags);
-						let value = frame.as_bytes(is_id3v23)?;
+						let value = frame.as_bytes(write_options)?;
 
 						write_frame(
 							writer,
 							frame.id().as_str(),
 							frame.flags(),
 							&value,
-							is_id3v23,
+							write_options,
 						)?;
 					}
 
@@ -234,21 +233,21 @@ where
 			_ => {},
 		}
 
-		let value = frame.as_bytes(is_id3v23)?;
+		let value = frame.as_bytes(write_options)?;
 
 		write_frame(
 			writer,
 			frame.id().as_str(),
 			frame.flags(),
 			&value,
-			is_id3v23,
+			write_options,
 		)?;
 	}
 
 	if let Some(ipls) = ipls {
 		let frame = Frame::Text(ipls);
-		let value = frame.as_bytes(is_id3v23)?;
-		write_frame(writer, IPLS_ID, frame.flags(), &value, is_id3v23)?;
+		let value = frame.as_bytes(write_options)?;
+		write_frame(writer, IPLS_ID, frame.flags(), &value, write_options)?;
 	}
 
 	Ok(())
@@ -284,13 +283,13 @@ fn write_frame<W>(
 	name: &str,
 	flags: FrameFlags,
 	value: &[u8],
-	is_id3v23: bool,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	W: Write,
 {
 	if flags.encryption.is_some() {
-		write_encrypted(writer, name, value, flags, is_id3v23)?;
+		write_encrypted(writer, name, value, flags, write_options)?;
 		return Ok(());
 	}
 
@@ -302,7 +301,7 @@ where
 		name,
 		if is_grouping_identity { len + 1 } else { len },
 		flags,
-		is_id3v23,
+		write_options,
 	)?;
 
 	if is_grouping_identity {
@@ -320,7 +319,7 @@ fn write_encrypted<W>(
 	name: &str,
 	value: &[u8],
 	flags: FrameFlags,
-	is_id3v23: bool,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	W: Write,
@@ -336,8 +335,8 @@ where
 
 	if let Some(mut len) = flags.data_length_indicator {
 		if len > 0 {
-			write_frame_header(writer, name, (value.len() + 1) as u32, flags, is_id3v23)?;
-			if !is_id3v23 {
+			write_frame_header(writer, name, (value.len() + 1) as u32, flags, write_options)?;
+			if !write_options.use_id3v23 {
 				len = len.synch()?;
 			}
 
@@ -357,19 +356,19 @@ fn write_frame_header<W>(
 	name: &str,
 	mut len: u32,
 	flags: FrameFlags,
-	is_id3v23: bool,
+	write_options: WriteOptions,
 ) -> Result<()>
 where
 	W: Write,
 {
-	let flags = if is_id3v23 {
+	let flags = if write_options.use_id3v23 {
 		flags.as_id3v23_bytes()
 	} else {
 		flags.as_id3v24_bytes()
 	};
 
 	writer.write_all(name.as_bytes())?;
-	if !is_id3v23 {
+	if !write_options.use_id3v23 {
 		len = len.synch()?;
 	}
 

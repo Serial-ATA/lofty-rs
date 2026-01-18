@@ -1,8 +1,8 @@
-use crate::config::ParsingMode;
+use crate::config::{ParsingMode, WriteOptions};
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::parse_mode_choice;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -102,16 +102,24 @@ impl<'a> UniqueFileIdentifierFrame<'a> {
 	}
 
 	/// Encode the frame contents as bytes
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the `owner` cannot be Latin-1 encoded.
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let Self {
 			owner, identifier, ..
 		} = self;
 
 		let mut content = Vec::with_capacity(owner.len() + 1 + identifier.len());
-		content.extend(encode_text(owner, TextEncoding::Latin1, true));
+		content.extend(TextEncoding::Latin1.encode(
+			owner,
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 		content.extend_from_slice(identifier);
 
-		content
+		Ok(content)
 	}
 }
 
@@ -127,6 +135,7 @@ impl UniqueFileIdentifierFrame<'static> {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::FrameFlags;
 
 	#[test_log::test]
@@ -136,7 +145,7 @@ mod tests {
 
 		let ufid_no_owner = UniqueFileIdentifierFrame::new("", vec![0]);
 
-		let bytes = ufid_no_owner.as_bytes();
+		let bytes = ufid_no_owner.as_bytes(WriteOptions::default()).unwrap();
 
 		assert!(
 			UniqueFileIdentifierFrame::parse(

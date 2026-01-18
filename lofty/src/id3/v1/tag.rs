@@ -458,9 +458,9 @@ impl Id3v1TagRef<'_> {
 	pub(crate) fn dump_to<W: Write>(
 		&mut self,
 		writer: &mut W,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<()> {
-		let temp = super::write::encode(self)?;
+		let temp = super::write::encode(self, write_options)?;
 		writer.write_all(&temp)?;
 
 		Ok(())
@@ -572,5 +572,29 @@ mod tests {
 				..Timestamp::default()
 			})
 		);
+	}
+
+	#[test_log::test]
+	fn lossy_encodings() {
+		let mut tag = Tag::new(TagType::Id3v1);
+		tag.set_artist(String::from("lфfty"));
+
+		// Lossy encoding should pass
+		let id3v1_tag: Id3v1Tag = tag.into();
+		let mut bytes = Vec::new();
+		id3v1_tag
+			.dump_to(&mut bytes, WriteOptions::new().lossy_text_encoding(true))
+			.unwrap();
+
+		let id3v1 = crate::id3::v1::read::parse_id3v1(bytes.try_into().unwrap());
+		assert_eq!(id3v1.artist.as_deref(), Some("l?fty"));
+
+		// And should fail when disabled
+		id3v1_tag
+			.dump_to(
+				&mut Vec::new(),
+				WriteOptions::new().lossy_text_encoding(false),
+			)
+			.unwrap_err();
 	}
 }

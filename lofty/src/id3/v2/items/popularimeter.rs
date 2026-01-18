@@ -1,7 +1,8 @@
+use crate::config::WriteOptions;
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::alloc::VecFallibleCapacity;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -119,9 +120,13 @@ impl<'a> PopularimeterFrame<'a> {
 	/// # Errors
 	///
 	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
-	pub fn as_bytes(&self) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut content = Vec::try_with_capacity_stable(self.email.len() + 9)?;
-		content.extend(encode_text(&self.email, TextEncoding::Latin1, true));
+		content.extend(TextEncoding::Latin1.encode(
+			&self.email,
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 		content.push(self.rating);
 
 		// When the counter reaches all one's, one byte is inserted in front of the counter
@@ -154,6 +159,7 @@ impl PopularimeterFrame<'static> {
 
 #[cfg(test)]
 mod tests {
+	use crate::config::WriteOptions;
 	use crate::id3::v2::items::popularimeter::PopularimeterFrame;
 
 	fn test_popm(popm: &PopularimeterFrame<'_>) {
@@ -161,7 +167,7 @@ mod tests {
 		let rating = popm.rating;
 		let counter = popm.counter;
 
-		let popm_bytes = popm.as_bytes().unwrap();
+		let popm_bytes = popm.as_bytes(WriteOptions::default()).unwrap();
 		assert_eq!(&popm_bytes[..email.len()], email.as_bytes());
 		assert_eq!(popm_bytes[email.len()], 0);
 		assert_eq!(popm_bytes[email.len() + 1], rating);

@@ -10,6 +10,7 @@ pub struct WriteOptions {
 	pub(crate) respect_read_only: bool,
 	pub(crate) uppercase_id3v2_chunk: bool,
 	pub(crate) use_id3v23: bool,
+	pub(crate) lossy_text_encoding: bool,
 }
 
 impl WriteOptions {
@@ -34,6 +35,7 @@ impl WriteOptions {
 			respect_read_only: true,
 			uppercase_id3v2_chunk: true,
 			use_id3v23: false,
+			lossy_text_encoding: true,
 		}
 	}
 
@@ -177,6 +179,42 @@ impl WriteOptions {
 		self.use_id3v23 = use_id3v23;
 		*self
 	}
+
+	/// Whether to replace invalid characters when writing strings
+	///
+	/// Some tag formats are restricted to certain [`TextEncoding`]s, which may restrict the available
+	/// character set.
+	///
+	/// If this is enabled, any invalid characters will be replaced with `'?'` (e.g `lфfty` in [`TextEncoding::Latin1`] will return `l?fty`).
+	///
+	/// If this is disabled, any writes with non-representable characters will return an [`ErrorKind::TextEncode`].
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::config::WriteOptions;
+	/// use lofty::prelude::*;
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let mut id3v1_tag = Tag::new(TagType::Id3v1);
+	///
+	/// // ID3v1 is restricted to Latin-1, this string can't be written as-is!
+	/// id3v1_tag.insert_text(ItemKey::TrackArtist, String::from("lфfty"));
+	///
+	/// // With lossy encoding disabled, the write will fail!
+	/// let options = WriteOptions::new().lossy_text_encoding(false);
+	/// id3v1_tag.save_to_path("test.mp3", options)?;
+	/// # Ok(()) }
+	/// ```
+	///
+	/// [`TextEncoding`]: crate::util::text::TextEncoding
+	/// [`TextEncoding::Latin1`]: crate::util::text::TextEncoding::Latin1
+	/// [`ErrorKind::TextEncode`]: crate::error::ErrorKind::TextEncode
+	pub fn lossy_text_encoding(&mut self, lossy_text_encoding: bool) -> Self {
+		self.lossy_text_encoding = lossy_text_encoding;
+		*self
+	}
 }
 
 impl Default for WriteOptions {
@@ -191,6 +229,7 @@ impl Default for WriteOptions {
 	///     respect_read_only: true,
 	///     uppercase_id3v2_chunk: true,
 	///     use_id3v23: false,
+	///     lossy_text_encoding: true,
 	/// }
 	/// ```
 	fn default() -> Self {

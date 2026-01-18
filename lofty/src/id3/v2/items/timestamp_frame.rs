@@ -1,9 +1,9 @@
-use crate::config::ParsingMode;
+use crate::config::{ParsingMode, WriteOptions};
 use crate::error::Result;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
 use crate::tag::items::Timestamp;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::io::Read;
 
@@ -126,15 +126,20 @@ impl<'a> TimestampFrame<'a> {
 	///
 	/// * The timestamp is invalid
 	/// * Failure to write to the buffer
-	pub fn as_bytes(&self, is_id3v23: bool) -> Result<Vec<u8>> {
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut encoding = self.encoding;
-		if is_id3v23 {
+		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
 		self.timestamp.verify()?;
 
-		let mut encoded_text = encode_text(&self.timestamp.to_string(), encoding, false);
+		let mut encoded_text = encoding.encode(
+			&self.timestamp.to_string(),
+			false,
+			write_options.lossy_text_encoding,
+		)?;
 		encoded_text.insert(0, encoding as u8);
 
 		Ok(encoded_text)

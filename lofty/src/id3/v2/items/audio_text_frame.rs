@@ -1,6 +1,7 @@
+use crate::config::WriteOptions;
 use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, encode_text};
+use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -165,18 +166,27 @@ impl AudioTextFrame<'_> {
 	/// Convert an [`AudioTextFrame`] to a ID3v2 A/PIC byte Vec
 	///
 	/// NOTE: This does not include the frame header
-	pub fn as_bytes(&self) -> Vec<u8> {
+	///
+	/// # Errors
+	///
+	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
 		let mut content = vec![self.encoding as u8];
 
-		content.extend(encode_text(
+		content.extend(TextEncoding::Latin1.encode(
 			self.mime_type.as_str(),
-			TextEncoding::Latin1,
 			true,
-		));
+			write_options.lossy_text_encoding,
+		)?);
 		content.push(self.flags.as_u8());
-		content.extend(encode_text(&self.equivalent_text, self.encoding, true));
+		content.extend(self.encoding.encode(
+			&self.equivalent_text,
+			true,
+			write_options.lossy_text_encoding,
+		)?);
 		content.extend(&self.audio_data);
-		content
+
+		Ok(content)
 	}
 }
 
@@ -235,6 +245,7 @@ pub fn scramble(audio_data: &mut [u8]) {
 #[cfg(test)]
 mod tests {
 	use crate::TextEncoding;
+	use crate::config::WriteOptions;
 	use crate::id3::v2::{AudioTextFrame, AudioTextFrameFlags, FrameFlags};
 
 	fn expected() -> AudioTextFrame<'static> {
@@ -265,7 +276,7 @@ mod tests {
 	fn atxt_encode() {
 		let to_encode = expected();
 
-		let encoded = to_encode.as_bytes();
+		let encoded = to_encode.as_bytes(WriteOptions::default()).unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.atxt");

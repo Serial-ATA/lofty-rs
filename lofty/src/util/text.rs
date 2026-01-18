@@ -5,6 +5,44 @@ use std::io::Read;
 
 use byteorder::ReadBytesExt;
 
+/// Errors that can occur while encoding text
+#[derive(Copy, Clone, Debug)]
+pub struct TextEncodingError {
+	encoding: TextEncoding,
+	valid_up_to: usize,
+}
+
+impl TextEncodingError {
+	/// The target text encoding
+	pub fn encoding(&self) -> TextEncoding {
+		self.encoding
+	}
+
+	/// The byte index in the provided string up to which the encoding was valid
+	pub fn valid_up_to(&self) -> usize {
+		self.valid_up_to
+	}
+}
+
+impl core::fmt::Display for TextEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		let encoding = match self.encoding {
+			TextEncoding::Latin1 => "Latin-1",
+			TextEncoding::UTF16 => "UTF-16",
+			TextEncoding::UTF8 => "UTF-8",
+			TextEncoding::UTF16BE => "UTF-16 BE",
+		};
+
+		write!(
+			f,
+			"invalid {encoding} sequence from index {}",
+			self.valid_up_to
+		)
+	}
+}
+
+impl core::error::Error for TextEncodingError {}
+
 /// The text encoding for use in ID3v2 frames
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 #[repr(u8)]
@@ -48,6 +86,36 @@ impl TextEncoding {
 				Self::UTF16
 			},
 			_ => self,
+		}
+	}
+
+	pub(crate) fn encode(
+		self,
+		text: &str,
+		terminated: bool,
+		lossy: bool,
+	) -> std::result::Result<Vec<u8>, TextEncodingError> {
+		match self {
+			TextEncoding::Latin1 => {
+				let mut out =
+					latin1_encode(text, lossy).collect::<std::result::Result<Vec<u8>, _>>()?;
+				if terminated {
+					out.push(0)
+				}
+
+				Ok(out)
+			},
+			TextEncoding::UTF16 => Ok(utf16_encode(text, u16::to_ne_bytes, true, terminated)),
+			TextEncoding::UTF16BE => Ok(utf16_encode(text, u16::to_be_bytes, false, terminated)),
+			TextEncoding::UTF8 => {
+				let mut out = text.as_bytes().to_vec();
+
+				if terminated {
+					out.push(0);
+				}
+
+				Ok(out)
+			},
 		}
 	}
 }
@@ -221,6 +289,24 @@ pub(crate) fn latin1_decode(bytes: &[u8]) -> String {
 	text
 }
 
+pub(crate) fn latin1_encode(
+	s: &str,
+	lossy: bool,
+) -> impl Iterator<Item = std::result::Result<u8, TextEncodingError>> {
+	s.chars().enumerate().map(move |(index, c)| {
+		if (c as u32) <= 255 {
+			Ok(c as u8)
+		} else if lossy {
+			Ok(b'?')
+		} else {
+			Err(TextEncodingError {
+				encoding: TextEncoding::Latin1,
+				valid_up_to: index, // All characters up to this point are single-byte
+			})
+		}
+	})
+}
+
 pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
 	String::from_utf8(bytes)
 		.map(|mut text| {
@@ -292,31 +378,6 @@ where
 	}
 
 	decoded.map(|d| (d, bytes_read))
-}
-
-pub(crate) fn encode_text(text: &str, text_encoding: TextEncoding, terminated: bool) -> Vec<u8> {
-	match text_encoding {
-		TextEncoding::Latin1 => {
-			let mut out = text.chars().map(|c| c as u8).collect::<Vec<u8>>();
-
-			if terminated {
-				out.push(0)
-			}
-
-			out
-		},
-		TextEncoding::UTF16 => utf16_encode(text, u16::to_ne_bytes, true, terminated),
-		TextEncoding::UTF16BE => utf16_encode(text, u16::to_be_bytes, false, terminated),
-		TextEncoding::UTF8 => {
-			let mut out = text.as_bytes().to_vec();
-
-			if terminated {
-				out.push(0);
-			}
-
-			out
-		},
-	}
 }
 
 pub(crate) fn trim_end_nulls(text: &mut String) {
@@ -428,7 +489,9 @@ mod tests {
 		);
 
 		// BOM test
-		let be_utf16_encode = super::encode_text(TEST_STRING, TextEncoding::UTF16BE, false);
+		let be_utf16_encode = TextEncoding::UTF16BE
+			.encode(TEST_STRING, false, false)
+			.unwrap();
 		let le_utf16_encode = super::utf16_encode(TEST_STRING, u16::to_le_bytes, true, false);
 		let be_utf16_encode_bom = super::utf16_encode(TEST_STRING, u16::to_be_bytes, true, false);
 
@@ -451,7 +514,9 @@ mod tests {
 			]
 		);
 
-		let utf8_encode = super::encode_text(TEST_STRING, TextEncoding::UTF8, false);
+		let utf8_encode = TextEncoding::UTF8
+			.encode(TEST_STRING, false, false)
+			.unwrap();
 
 		assert_eq!(utf8_encode.as_slice(), TEST_STRING.as_bytes());
 	}
