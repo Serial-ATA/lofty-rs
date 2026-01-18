@@ -1,3 +1,5 @@
+pub(crate) const ID3V1_TAG_MARKER: [u8; 3] = *b"TAG";
+
 /// All possible genres for ID3v1
 pub const GENRES: [&str; 192] = [
 	"Blues",

@@ -469,7 +469,7 @@ impl Id3v1TagRef<'_> {
 
 #[cfg(test)]
 mod tests {
-	use crate::config::WriteOptions;
+	use crate::config::{ParsingMode, WriteOptions};
 	use crate::id3::v1::Id3v1Tag;
 	use crate::prelude::*;
 	use crate::tag::items::Timestamp;
@@ -488,7 +488,7 @@ mod tests {
 		};
 
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
-		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
+		let parsed_tag = Id3v1Tag::parse(tag.try_into().unwrap(), ParsingMode::Strict).unwrap();
 
 		assert_eq!(expected_tag, parsed_tag);
 	}
@@ -496,14 +496,15 @@ mod tests {
 	#[test_log::test]
 	fn id3v1_re_read() {
 		let tag = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
-		let parsed_tag = crate::id3::v1::read::parse_id3v1(tag.try_into().unwrap());
+		let parsed_tag = Id3v1Tag::parse(tag.try_into().unwrap(), ParsingMode::Strict).unwrap();
 
 		let mut writer = Vec::new();
 		parsed_tag
 			.dump_to(&mut writer, WriteOptions::default())
 			.unwrap();
 
-		let temp_parsed_tag = crate::id3::v1::read::parse_id3v1(writer.try_into().unwrap());
+		let temp_parsed_tag =
+			Id3v1Tag::parse(writer.try_into().unwrap(), ParsingMode::Strict).unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
 	}
@@ -511,7 +512,7 @@ mod tests {
 	#[test_log::test]
 	fn id3v1_to_tag() {
 		let tag_bytes = crate::tag::utils::test_utils::read_path("tests/tags/assets/test.id3v1");
-		let id3v1 = crate::id3::v1::read::parse_id3v1(tag_bytes.try_into().unwrap());
+		let id3v1 = Id3v1Tag::parse(tag_bytes.try_into().unwrap(), ParsingMode::Strict).unwrap();
 
 		let tag: Tag = id3v1.into();
 
@@ -586,7 +587,7 @@ mod tests {
 			.dump_to(&mut bytes, WriteOptions::new().lossy_text_encoding(true))
 			.unwrap();
 
-		let id3v1 = crate::id3::v1::read::parse_id3v1(bytes.try_into().unwrap());
+		let id3v1 = Id3v1Tag::parse(bytes.try_into().unwrap(), ParsingMode::BestAttempt).unwrap();
 		assert_eq!(id3v1.artist.as_deref(), Some("l?fty"));
 
 		// And should fail when disabled
