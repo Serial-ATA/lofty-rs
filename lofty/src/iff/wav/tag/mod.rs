@@ -4,6 +4,7 @@ mod write;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::tag::items::Timestamp;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 	try_parse_timestamp,
@@ -226,8 +227,12 @@ impl TagExt for RiffInfoList {
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
-		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-			.write_to(file, write_options)
+		RIFFInfoListRef::new(
+			self.items
+				.iter()
+				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
+		)
+		.write_to(file, write_options)
 	}
 
 	fn dump_to<W: Write>(
@@ -235,8 +240,12 @@ impl TagExt for RiffInfoList {
 		writer: &mut W,
 		write_options: WriteOptions,
 	) -> std::result::Result<(), Self::Err> {
-		RIFFInfoListRef::new(self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())))
-			.dump_to(writer, write_options)
+		RIFFInfoListRef::new(
+			self.items
+				.iter()
+				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
+		)
+		.dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -300,14 +309,14 @@ impl From<Tag> for RiffInfoList {
 
 pub(crate) struct RIFFInfoListRef<'a, I>
 where
-	I: Iterator<Item = (&'a str, &'a str)>,
+	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
 	pub(crate) items: I,
 }
 
 impl<'a, I> RIFFInfoListRef<'a, I>
 where
-	I: Iterator<Item = (&'a str, &'a str)>,
+	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
 	pub(crate) fn new(items: I) -> RIFFInfoListRef<'a, I> {
 		RIFFInfoListRef { items }
@@ -338,18 +347,28 @@ where
 
 pub(crate) fn tagitems_into_riff<'a>(
 	items: impl IntoIterator<Item = &'a TagItem>,
-) -> impl Iterator<Item = (&'a str, &'a str)> {
+) -> impl Iterator<Item = (&'a str, Cow<'a, str>)> {
 	items.into_iter().filter_map(|i| {
-		let item_key = i.key().map_key(TagType::RiffInfo);
+		let (ItemValue::Text(val) | ItemValue::Locator(val)) = i.value() else {
+			return None;
+		};
 
-		match (item_key, i.value()) {
-			(Some(key), ItemValue::Text(val) | ItemValue::Locator(val))
-				if read::verify_key(key) =>
-			{
-				Some((key, val.as_str()))
-			},
-			_ => None,
+		let key = i.key().map_key(TagType::RiffInfo)?;
+
+		// Special case for generic popularimeters
+		if i.key() == ItemKey::Popularimeter {
+			let Ok(popm) = Popularimeter::from_str(val) else {
+				log::warn!("Failed to parse popularimeter during tag merge, skipping");
+				return None;
+			};
+
+			return Some((
+				key,
+				Cow::Owned(popm.mapped_value(TagType::RiffInfo).to_string()),
+			));
 		}
+
+		Some((key, Cow::Borrowed(val.as_str())))
 	})
 }
 

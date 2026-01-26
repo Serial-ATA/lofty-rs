@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FrameId::is_valid()` and `FrameId::is_outdated()`
 - **WriteOptions**: `WriteOptions::lossy_text_encoding()` to replace invalid characters when encoding strings ([PR](https://github.com/Serial-ATA/lofty-rs/pull/594))
   - When enabled, any non-representable character will be replaced with `?` (e.g. `lфfty` in `TextEncoding::Latin1` will return `l?fty`)
+- **Popularimeter**: Generic user-specified star rating support ([discussion](https://github.com/Serial-ATA/lofty-rs/discussions/581)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/597))
+  - ***These items require special handling.***
+    See [the docs](https://docs.rs/lofty/latest/lofty/tag/items/popularimeter/index.html) for more details.
 - **Other**: `EXTENSIONS` list containing common file extensions for all supported audio file types ([issue](https://github.com/Serial-ATA/lofty-rs/issues/509)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/558))
   - This is useful for filtering files when scanning directories. If your app uses extension filtering, **please consider switching to this**, as to not
     miss any supported files.
@@ -49,7 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vorbis Comments**: Support `DISCNUMBER` fields with the `current/total` format. ([issue](https://github.com/Serial-ATA/lofty-rs/issues/543)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/544))
     - These fields will now properly be split into `DISCNUMBER` and `DISCTOTAL`, making it possible to use them with
       [Accessor::disk()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk) and [Accessor::disk_total()](https://docs.rs/lofty/latest/lofty/tag/trait.Accessor.html#method.disk_total).
-* **ItemKey**: `ItemKey` is now `Copy` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
+* **ItemKey**:
+  * `ItemKey` is now `Copy` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
+  * `ItemKey::Popularimeter` is now intended to be used with the new `Popularimeter` type ([PR](https://github.com/Serial-ATA/lofty-rs/pull/597))
 * **FileType**: Replaced `FileType::supports_tag_type()` with `FileType::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))
   * Rather than a simple `bool`, this now returns a `TagSupport`, which can describe three states: unsupported, read-only, and read/write
 * **TaggedFileExt**: Replaced `TaggedFileExt::supports_tag_type()` with `TaggedFileExt::tag_support()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/566))

@@ -228,8 +228,7 @@ where
 					},
 				}
 			},
-			// The valid range is 0x20..=0x7D not including 0x3D
-			k if k.iter().all(|c| (b' '..=b'}').contains(c) && *c != b'=') => {
+			k if valid_vorbis_comments_key(k) => {
 				// SAFETY: We just verified that all of the bytes fall within the subset of ASCII
 				let key = unsafe { String::from_utf8_unchecked(k.to_vec()) };
 
@@ -256,6 +255,11 @@ where
 	}
 
 	Ok(tag)
+}
+
+pub(super) fn valid_vorbis_comments_key(key: &[u8]) -> bool {
+	// The valid range is 0x20..=0x7D not including 0x3D
+	key.iter().all(|c| (b' '..=b'}').contains(c) && *c != b'=')
 }
 
 pub(crate) fn read_from<T>(

@@ -597,6 +597,33 @@ gen_item_keys!(
 		DiscTotal,
 		TrackNumber,
 		TrackTotal,
+		/// User-specific ratings (a.k.a. "Popularimeter")
+		///
+		/// This key is not intended to be used with arbitrary text.
+		/// **See the [`popularimeter`] module docs**
+		///
+		/// # Examples
+		///
+		/// ```
+		/// use lofty::tag::items::popularimeter::{Popularimeter, StarRating};
+		/// use lofty::tag::{ItemKey, TagType, Tag};
+		///
+		/// // Construct a MusicBee-style popularimeter rating
+		/// let play_counter = 15;
+		/// let popularimeter = Popularimeter::musicbee(StarRating::Four, play_counter);
+		///
+		/// let mut tag = Tag::new(TagType::Id3v2);
+		///
+		/// // The popularimeter can be inserted like any other text value.
+		/// // All format-specific encoding is handled behind the scenes.
+		/// tag.insert_text(ItemKey::Popularimeter, popularimeter.to_string());
+		///
+		/// // Then `Tag::ratings()` can be used to retrieve the ratings
+		/// let all_ratings = tag.ratings().collect::<Vec<_>>();
+		/// assert_eq!(all_ratings.len(), 1);
+		/// ```
+		///
+		/// [`popularimeter`]: crate::tag::items::popularimeter
 		Popularimeter,
 		ParentalAdvisory,
 
