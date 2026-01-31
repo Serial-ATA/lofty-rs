@@ -1,6 +1,8 @@
 use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
 use crate::config::ParseOptions;
+use crate::dsd::dff::{DffFile, DffProperties, LoudspeakerConfig};
+use crate::dsd::dsf::{DsfFile, DsfProperties};
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
 use crate::iff::aiff::{AiffFile, AiffProperties};
@@ -281,6 +283,28 @@ const WAVPACK_PROPERTIES: WavPackProperties = WavPackProperties {
 	lossless: true,
 };
 
+// DSF test file expected properties
+fn expected_dsf_properties() -> DsfProperties {
+	DsfProperties {
+		sample_rate: 2_822_400,
+		channels: 2,
+		bits_per_sample: 1,
+		sample_count: 2_822_400,
+		channel_mask: Some(ChannelMask::stereo()),
+	}
+}
+
+// DFF test file expected properties
+fn expected_dff_properties() -> DffProperties {
+	DffProperties::new(
+		2_822_400,                       // sample_rate
+		2,                               // channels
+		11_032,                          // sample_count
+		Some("DSD ".to_string()),        // compression
+		Some(LoudspeakerConfig::Stereo), // loudspeaker_config
+	)
+}
+
 fn get_properties<T>(path: &str) -> T::Properties
 where
 	T: AudioFile,
@@ -442,5 +466,21 @@ fn wavpack_properties() {
 	assert_eq!(
 		get_properties::<WavPackFile>("tests/files/assets/minimal/full_test.wv"),
 		WAVPACK_PROPERTIES
+	)
+}
+
+#[test_log::test]
+fn dsf_properties() {
+	assert_eq!(
+		get_properties::<DsfFile>("tests/files/assets/minimal/full_test.dsf"),
+		expected_dsf_properties()
+	)
+}
+
+#[test_log::test]
+fn dff_properties() {
+	assert_eq!(
+		get_properties::<DffFile>("tests/files/assets/minimal/full_test.dff"),
+		expected_dff_properties()
 	)
 }
