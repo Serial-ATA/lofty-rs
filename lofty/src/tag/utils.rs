@@ -34,25 +34,8 @@ where
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
-		FileType::Dff => {
-			// DFF supports both ID3v2 and DffText tags
-			match tag.tag_type() {
-				TagType::Id3v2 => {
-					let id3v2_tag = Into::<crate::id3::v2::Id3v2Tag>::into(tag.clone());
-					id3v2_tag.save_to(file, write_options)
-				},
-				TagType::DffText => {
-					let dff_text = Into::<crate::dsd::dff::DffTextChunks>::into(tag.clone());
-					dff_text.save_to(file, write_options)
-				},
-				_ => err!(UnsupportedTag),
-			}
-		},
-		FileType::Dsf => {
-			// DSF only supports ID3v2 tags
-			let id3v2_tag = Into::<crate::id3::v2::Id3v2Tag>::into(tag.clone());
-			id3v2_tag.save_to(file, write_options)
-		},
+		FileType::Dff => crate::dsd::dff::write::write_to(file, tag, write_options),
+		FileType::Dsf => crate::dsd::dsf::write::write_to(file, tag, write_options),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type, write_options)

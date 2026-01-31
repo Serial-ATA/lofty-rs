@@ -14,7 +14,7 @@ use std::io::{Seek, SeekFrom, Write};
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DSF file or if I/O fails
-pub fn write_id3v2_to_dsf<F>(file: &mut F, id3v2_bytes: &[u8]) -> Result<()>
+pub(crate) fn write_id3v2_to_dsf<F>(file: &mut F, id3v2_bytes: &[u8]) -> Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
@@ -85,6 +85,7 @@ where
 	}
 	.write_to(file, write_options)
 }
+
 /// Write DSF file (update metadata only, preserve audio)
 ///
 /// This function updates the ID3v2 tag at the end of a DSF file while
@@ -93,7 +94,7 @@ where
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DSF file or if I/O fails
-pub fn write_to<F>(dsf_file: &DsfFile, file: &mut F, write_options: WriteOptions) -> Result<()>
+pub fn write_dsf_file<F>(dsf_file: &DsfFile, file: &mut F, write_options: WriteOptions) -> Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,

@@ -1,10 +1,13 @@
-// DSF (DSD Stream File) format support
+//! DSF (DSD Stream File) format support
+//!
+//! Sony's format for DSD audio with ID3v2 tag support
 
 mod properties;
 mod read;
-mod write;
+pub(crate) mod write;
 
 pub use properties::DsfProperties;
+pub use read::read_from;
 
 use crate::id3::v2::Id3v2Tag;
 
@@ -13,7 +16,7 @@ use lofty_attr::LoftyFile;
 /// DSF file representation
 #[derive(LoftyFile, Debug)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(write_fn = "write::write_to")]
+#[lofty(write_fn = "write::write_dsf_file")]
 pub struct DsfFile {
 	/// ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]
