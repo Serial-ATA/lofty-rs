@@ -75,12 +75,12 @@ name = "tag_reader"
 path = "../examples/tag_reader.rs"
 
 [[example]]
-name = "tag_writer"
-path = "../examples/tag_writer.rs"
-
-[[example]]
 name = "tag_stripper"
 path = "../examples/tag_stripper.rs"
+
+[[example]]
+name = "tag_writer"
+path = "../examples/tag_writer.rs"
 
 [package.metadata.docs.rs]
 all-features = true

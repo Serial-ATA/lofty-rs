@@ -2,7 +2,7 @@ use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
-use crate::tag::{Tag, TagType};
+use crate::tag::{Tag, TagExt, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 
@@ -34,6 +34,25 @@ where
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
+		FileType::Dff => {
+			// DFF supports both ID3v2 and DffText tags
+			match tag.tag_type() {
+				TagType::Id3v2 => {
+					let id3v2_tag = Into::<crate::id3::v2::Id3v2Tag>::into(tag.clone());
+					id3v2_tag.save_to(file, write_options)
+				},
+				TagType::DffText => {
+					let dff_text = Into::<crate::dsd::dff::DffTextChunks>::into(tag.clone());
+					dff_text.save_to(file, write_options)
+				},
+				_ => err!(UnsupportedTag),
+			}
+		},
+		FileType::Dsf => {
+			// DSF only supports ID3v2 tags
+			let id3v2_tag = Into::<crate::id3::v2::Id3v2Tag>::into(tag.clone());
+			id3v2_tag.save_to(file, write_options)
+		},
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::write::write_to(file, tag, file_type, write_options)
@@ -98,6 +117,10 @@ pub(crate) fn dump_tag<W: Write>(
 			}
 		}
 		.dump_to(writer, write_options),
+		TagType::DffText => {
+			let dff_text = Into::<crate::dsd::dff::DffTextChunks>::into(tag.clone());
+			dff_text.dump_to(writer, write_options)
+		},
 		_ => Ok(()),
 	}
 }
