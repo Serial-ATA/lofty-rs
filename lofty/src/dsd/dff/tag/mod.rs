@@ -123,7 +123,10 @@ impl DffTextChunks {
 			artist: d.artist.as_deref(),
 			title: d.title.as_deref(),
 		});
-		let comt_refs = self.comments.iter().map(|c| DffCommentRef { text: &c.text });
+		let comt_refs = self
+			.comments
+			.iter()
+			.map(|c| DffCommentRef { text: &c.text });
 
 		DffTextChunksRef {
 			diin: diin_ref,

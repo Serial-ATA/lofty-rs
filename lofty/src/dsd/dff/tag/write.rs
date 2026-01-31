@@ -40,7 +40,9 @@ pub(super) fn dump_diin_to_vec(diin: Option<DffEditedMasterInfoRef<'_>>) -> Vec<
 }
 
 /// Serialize COMT chunk to bytes
-pub(super) fn dump_comt_to_vec<'a>(comments: impl IntoIterator<Item = DffCommentRef<'a>>) -> Vec<u8> {
+pub(super) fn dump_comt_to_vec<'a>(
+	comments: impl IntoIterator<Item = DffCommentRef<'a>>,
+) -> Vec<u8> {
 	use byteorder::{BigEndian, WriteBytesExt};
 
 	let mut comt_contents = Vec::new();
@@ -80,9 +82,7 @@ pub(super) fn dump_comt_to_vec<'a>(comments: impl IntoIterator<Item = DffComment
 	}
 
 	// Number of comments (2 bytes)
-	comt_contents
-		.write_u16::<BigEndian>(count)
-		.unwrap();
+	comt_contents.write_u16::<BigEndian>(count).unwrap();
 	comt_contents.extend_from_slice(&comment_data);
 
 	// Wrap in COMT chunk

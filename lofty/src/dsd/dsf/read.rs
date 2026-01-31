@@ -17,7 +17,10 @@ use byteorder::{LittleEndian, ReadBytesExt};
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DSF file or if I/O fails
-pub(super) fn read_from<R: Read + Seek>(reader: &mut R, parse_options: ParseOptions) -> Result<DsfFile> {
+pub(super) fn read_from<R: Read + Seek>(
+	reader: &mut R,
+	parse_options: ParseOptions,
+) -> Result<DsfFile> {
 	// Read and validate header
 	let (_file_size, metadata_pointer) = read_header(reader)?;
 

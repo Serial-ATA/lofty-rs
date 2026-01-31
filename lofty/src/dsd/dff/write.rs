@@ -1,5 +1,5 @@
-use super::tag::{DffCommentRef, DffEditedMasterInfoRef, DffTextChunksRef};
 use super::DffFile;
+use super::tag::{DffCommentRef, DffEditedMasterInfoRef, DffTextChunksRef};
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
@@ -420,18 +420,16 @@ where
 	LoftyError: From<<F as Truncate>::Error>,
 	LoftyError: From<<F as Length>::Error>,
 {
-	use crate::id3::v2::tag::conversion::{tag_frames, Id3v2TagRef};
 	use crate::id3::v2::Id3v2TagFlags;
+	use crate::id3::v2::tag::conversion::{Id3v2TagRef, tag_frames};
 	use crate::tag::TagType;
 
 	match tag.tag_type() {
-		TagType::Id3v2 => {
-			Id3v2TagRef {
-				flags: Id3v2TagFlags::default(),
-				frames: tag_frames(tag).peekable(),
-			}
-			.write_to(file, write_options)
-		},
+		TagType::Id3v2 => Id3v2TagRef {
+			flags: Id3v2TagFlags::default(),
+			frames: tag_frames(tag).peekable(),
+		}
+		.write_to(file, write_options),
 		TagType::DffText => {
 			// Convert Tag to DffTextChunksRef without cloning
 			let tag_dff: crate::dsd::dff::DffTextChunks = tag.clone().into();
@@ -439,9 +437,10 @@ where
 				artist: d.artist.as_deref(),
 				title: d.title.as_deref(),
 			});
-			let comt_refs = tag_dff.comments.iter().map(|c| DffCommentRef {
-				text: &c.text,
-			});
+			let comt_refs = tag_dff
+				.comments
+				.iter()
+				.map(|c| DffCommentRef { text: &c.text });
 
 			DffTextChunksRef {
 				diin: diin_ref,

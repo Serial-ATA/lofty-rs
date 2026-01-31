@@ -81,7 +81,7 @@ fn parse_generation_log() -> HashMap<String, ExpectedTag> {
 fn test_id3v1_suite() {
 	let expectations = parse_generation_log();
 
-	for entry in std::fs::read_dir(&assets_path()).unwrap() {
+	for entry in std::fs::read_dir(assets_path()).unwrap() {
 		let entry = entry.unwrap();
 		let path = entry.path();
 		if path.extension().and_then(OsStr::to_str) != Some("mp3") {
