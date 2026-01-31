@@ -7,7 +7,6 @@ mod read;
 pub(crate) mod write;
 
 pub use properties::DsfProperties;
-pub use read::read_from;
 
 use crate::id3::v2::Id3v2Tag;
 
