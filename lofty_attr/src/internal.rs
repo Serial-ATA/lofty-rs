@@ -87,6 +87,26 @@ pub(crate) fn init_write_lookup(
 		.write_to(file, write_options)
 	});
 
+	insert!(map, DffText, {
+		lofty::dsd::dff::tag::DffTextChunksRef {
+			diin: {
+				let artist = tag.get_string(lofty::prelude::ItemKey::TrackArtist);
+				let title = tag.get_string(lofty::prelude::ItemKey::TrackTitle);
+				if artist.is_some() || title.is_some() {
+					Some(lofty::dsd::dff::tag::DffEditedMasterInfoRef { artist, title })
+				} else {
+					None
+				}
+			},
+			comments: tag
+				.get_strings(lofty::prelude::ItemKey::Comment)
+				.into_iter()
+				.map(|text| lofty::dsd::dff::tag::DffCommentRef { text })
+				.collect::<Vec<_>>(),
+		}
+		.write_to(file, write_options)
+	});
+
 	map
 }
 

@@ -94,7 +94,11 @@ where
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DSF file or if I/O fails
-pub fn write_dsf_file<F>(dsf_file: &DsfFile, file: &mut F, write_options: WriteOptions) -> Result<()>
+pub fn write_dsf_file<F>(
+	dsf_file: &DsfFile,
+	file: &mut F,
+	write_options: WriteOptions,
+) -> Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,

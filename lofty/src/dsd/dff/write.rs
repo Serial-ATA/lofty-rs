@@ -410,7 +410,11 @@ where
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DFF file or if I/O fails
-pub(crate) fn write_to<F>(file: &mut F, tag: &crate::tag::Tag, write_options: WriteOptions) -> Result<()>
+pub(crate) fn write_to<F>(
+	file: &mut F,
+	tag: &crate::tag::Tag,
+	write_options: WriteOptions,
+) -> Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
@@ -454,7 +458,11 @@ where
 /// # Errors
 ///
 /// Returns an error if the file is not a valid DFF file or if I/O fails
-pub fn write_dff_file<F>(dff_file: &DffFile, file: &mut F, write_options: WriteOptions) -> Result<()>
+pub fn write_dff_file<F>(
+	dff_file: &DffFile,
+	file: &mut F,
+	write_options: WriteOptions,
+) -> Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
