@@ -4,7 +4,7 @@
 
 mod properties;
 mod read;
-pub(crate) mod write;
+pub(crate) mod write_impl;
 
 pub use properties::DsfProperties;
 
@@ -15,7 +15,7 @@ use lofty_attr::LoftyFile;
 /// DSF file representation
 #[derive(LoftyFile, Debug)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(write_fn = "write::write_dsf_file")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct DsfFile {
 	/// ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]

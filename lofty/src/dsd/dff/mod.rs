@@ -5,7 +5,7 @@
 mod properties;
 mod read;
 pub(crate) mod tag;
-pub(crate) mod write;
+pub(crate) mod write_impl;
 
 pub use properties::{DffProperties, LoudspeakerConfig};
 pub use read::read_from;
@@ -18,7 +18,7 @@ use lofty_attr::LoftyFile;
 /// DFF file representation
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(write_fn = "write::write_dff_file")]
+#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct DffFile {
 	/// DFF text chunks (DIIN)
 	#[lofty(tag_type = "DffText")]

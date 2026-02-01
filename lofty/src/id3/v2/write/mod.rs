@@ -85,12 +85,12 @@ where
 		// DSF stores the ID3v2 tag at the end of the file with a pointer in the header
 		FileType::Dsf => {
 			tag.flags.footer = false;
-			return crate::dsd::dsf::write::write_id3v2_to_dsf(file, &id3v2);
+			return crate::dsd::dsf::write_impl::write_id3v2_to_dsf(file, &id3v2);
 		},
 		// DFF stores the ID3v2 tag in an ID3 chunk within the IFF structure
 		FileType::Dff => {
 			tag.flags.footer = false;
-			return crate::dsd::dff::write::write_id3v2_to_dff(file, &id3v2);
+			return crate::dsd::dff::write_impl::write_id3v2_to_dff(file, &id3v2);
 		},
 		_ => {},
 	}

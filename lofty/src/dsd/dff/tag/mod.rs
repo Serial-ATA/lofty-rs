@@ -76,7 +76,7 @@ where
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
-		use crate::dsd::dff::write::{write_comt_to_dff, write_diin_to_dff};
+		use crate::dsd::dff::write_impl::{write_comt_to_dff, write_diin_to_dff};
 
 		// No cloning needed - pass references directly
 		let diin_bytes = write::dump_diin_to_vec(self.diin);

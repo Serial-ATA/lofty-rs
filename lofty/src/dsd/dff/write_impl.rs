@@ -1,9 +1,5 @@
-use super::DffFile;
-use super::tag::{DffCommentRef, DffEditedMasterInfoRef, DffTextChunksRef};
-use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, LoftyError, Result};
 use crate::file::FileType;
-use crate::tag::TagExt;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::SeekFrom;
@@ -401,90 +397,6 @@ where
 	// Update FRM8 size
 	file.seek(SeekFrom::Start(4))?;
 	file.write_u64::<BigEndian>(new_frm8_size)?;
-
-	Ok(())
-}
-
-/// Write a tag to a DFF file
-///
-/// # Errors
-///
-/// Returns an error if the file is not a valid DFF file or if I/O fails
-pub(crate) fn write_to<F>(
-	file: &mut F,
-	tag: &crate::tag::Tag,
-	write_options: WriteOptions,
-) -> Result<()>
-where
-	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
-{
-	use crate::id3::v2::Id3v2TagFlags;
-	use crate::id3::v2::tag::conversion::{Id3v2TagRef, tag_frames};
-	use crate::tag::TagType;
-
-	match tag.tag_type() {
-		TagType::Id3v2 => Id3v2TagRef {
-			flags: Id3v2TagFlags::default(),
-			frames: tag_frames(tag).peekable(),
-		}
-		.write_to(file, write_options),
-		TagType::DffText => {
-			// Convert Tag to DffTextChunksRef without cloning
-			let tag_dff: crate::dsd::dff::DffTextChunks = tag.clone().into();
-			let diin_ref = tag_dff.diin.as_ref().map(|d| DffEditedMasterInfoRef {
-				artist: d.artist.as_deref(),
-				title: d.title.as_deref(),
-			});
-			let comt_refs = tag_dff
-				.comments
-				.iter()
-				.map(|c| DffCommentRef { text: &c.text });
-
-			DffTextChunksRef {
-				diin: diin_ref,
-				comments: comt_refs,
-			}
-			.write_to(file, write_options)
-		},
-		_ => crate::macros::err!(UnsupportedTag),
-	}
-}
-
-/// Write DFF file (update metadata only, preserve audio)
-///
-/// # Errors
-///
-/// Returns an error if the file is not a valid DFF file or if I/O fails
-pub fn write_dff_file<F>(
-	dff_file: &DffFile,
-	file: &mut F,
-	write_options: WriteOptions,
-) -> Result<()>
-where
-	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
-{
-	// Write DIIN chunk first
-	if let Some(dff_text) = &dff_file.dff_text_tag {
-		file.rewind()?;
-		dff_text.save_to(file, write_options)?;
-	} else {
-		// No DFF text tag - remove any existing DIIN chunk
-		file.rewind()?;
-		write_diin_to_dff(file, &[])?;
-	}
-
-	// Write ID3v2 chunk
-	if let Some(id3v2_tag) = &dff_file.id3v2_tag {
-		file.rewind()?;
-		id3v2_tag.save_to(file, write_options)?;
-	} else {
-		// No tag - remove any existing ID3 chunk
-		write_id3v2_to_dff(file, &[])?;
-	}
 
 	Ok(())
 }
