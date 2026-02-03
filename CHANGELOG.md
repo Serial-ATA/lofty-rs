@@ -73,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     header, then the parser would error.
 - **FLAC**: Fix corruption of files with no metadata blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/549)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/583))
 - **OGG**: Improved performance of page searching ([issue](https://github.com/Serial-ATA/lofty-rs/issues/588)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/600))
+- **MP4**: Don't error on freeform atoms with no data ([PR](https://github.com/Serial-ATA/lofty-rs/pull/599))
 
 ### Removed
 * **ItemKey**: `ItemKey::Unknown` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
