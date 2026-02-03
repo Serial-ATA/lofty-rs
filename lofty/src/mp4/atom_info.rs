@@ -180,7 +180,12 @@ impl AtomInfo {
 
 		// `len` includes itself and the identifier
 		if (len - ATOM_HEADER_LEN) > reader_size {
-			log::warn!("Encountered an atom with an invalid length, stopping");
+			log::warn!(
+				"Atom size exceeds remaining data (ident={} len={}, remaining={})",
+				identifier.escape_ascii(),
+				len,
+				reader_size
+			);
 
 			// As with all formats, there's a good chance certain software won't know how to actually use padding.
 			// If the file ends with an incorrectly sized padding atom, we can just ignore it.
@@ -271,7 +276,7 @@ where
 				err!(BadAtom("Found an incomplete freeform identifier chunk"));
 			}
 
-			if len >= *reader_size {
+			if len > *reader_size {
 				err!(SizeMismatch);
 			}
 
