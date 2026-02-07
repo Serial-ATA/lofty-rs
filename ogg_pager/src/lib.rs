@@ -20,7 +20,7 @@ pub(crate) const MAX_WRITTEN_CONTENT_SIZE: usize = MAX_WRITTEN_SEGMENT_COUNT * 2
 
 /// The maximum page content size
 // NOTE: An OGG page can have up to 255 segments, or ~64KB. We cap it at 32 segments, or ~8KB when writing.
-pub const MAX_CONTENT_SIZE: usize = MAX_WRITTEN_CONTENT_SIZE * 4;
+pub const MAX_CONTENT_SIZE: usize = MAX_SEGMENT_COUNT * 255;
 /// The maximum number of segments a page can contain
 pub const MAX_SEGMENT_COUNT: usize = 255;
 /// The packet contains the first page of the logical bitstream
