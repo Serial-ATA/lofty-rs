@@ -13,11 +13,13 @@ pub(crate) mod vorbis;
 pub(crate) mod write;
 
 use crate::error::Result;
+use crate::io::{RevSearchEnd, RevSearchStart};
 use crate::macros::decode_err;
+use crate::util::io::ReadFindExt;
 
 use std::io::{Read, Seek, SeekFrom};
 
-use ogg_pager::{Page, PageHeader};
+use ogg_pager::{MAX_CONTENT_SIZE, Page, PageError, PageHeader};
 
 // Exports
 
@@ -40,16 +42,50 @@ fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 	Ok(())
 }
 
+/// Find the last page in the OGG stream.
+///
+/// This will leave the reader at the end of the [`Page`].
 fn find_last_page<R>(data: &mut R) -> Result<Page>
 where
 	R: Read + Seek,
 {
-	let mut last_page_header = PageHeader::read(data)?;
-	data.seek(SeekFrom::Current(last_page_header.content_size() as i64))?;
+	const PATTERN: &[u8] = b"OggS";
+	const BUFFER_SIZE: u64 = (MAX_CONTENT_SIZE / 4) as u64;
 
-	while let Ok(header) = PageHeader::read(data) {
-		last_page_header = header;
-		data.seek(SeekFrom::Current(last_page_header.content_size() as i64))?;
+	let header_end = data.stream_position()?;
+
+	// Prior to this point, all implementations only read the header packets. There should *always*
+	// be more pages for the audio data, otherwise the file is invalid.
+	if !data.rfind(PATTERN).buffer_size(BUFFER_SIZE).search()? {
+		return Err(PageError::MissingMagic.into());
+	}
+
+	// In the absolute *worst* case we'll do 3 more retries. Realistically though, the last page in
+	// the stream should be well below the maximum size.
+	let last_page_header;
+	loop {
+		match PageHeader::read(data) {
+			Ok(h) => {
+				last_page_header = h;
+				break;
+			},
+			// False positive, keep searching
+			Err(
+				PageError::MissingMagic | PageError::InvalidVersion | PageError::BadSegmentCount,
+			) => {
+				if !data
+					.rfind(PATTERN)
+					.buffer_size(BUFFER_SIZE)
+					.start_pos(RevSearchStart::FromCurrent)
+					.end_pos(RevSearchEnd::Pos(header_end))
+					.search()?
+				{
+					return Err(PageError::MissingMagic.into());
+				}
+				continue;
+			},
+			Err(err) => return Err(err.into()),
+		}
 	}
 
 	data.seek(SeekFrom::Start(last_page_header.start))?;

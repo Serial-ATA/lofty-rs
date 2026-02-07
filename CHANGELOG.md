@@ -72,9 +72,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - When searching for the next frame, the parser was not fully skipping the previous one. If the AAC payload contained the frame sync bits and an otherwise invalid ADTS
     header, then the parser would error.
 - **FLAC**: Fix corruption of files with no metadata blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/549)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/583))
+- **OGG**: Improved performance of page searching ([issue](https://github.com/Serial-ATA/lofty-rs/issues/588)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/600))
 
 ### Removed
-
 * **ItemKey**: `ItemKey::Unknown` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/526))
     * `Tag` is now intended for generic metadata editing only, with format-specific items only being available through concrete tag types.
       See <https://github.com/Serial-ATA/lofty-rs/issues/521> for the rationale.

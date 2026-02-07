@@ -5,7 +5,7 @@ use crate::util::math::F80;
 
 use std::collections::VecDeque;
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: Seek {
@@ -231,6 +231,7 @@ where
 }
 
 pub(crate) trait ReadExt: Read {
+	/// Read a big-endian [`F80`] from the current position.
 	fn read_f80(&mut self) -> Result<F80>;
 }
 
@@ -246,14 +247,152 @@ where
 	}
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub(crate) enum RevSearchStart {
+	/// Start the search from the end of the stream
+	#[default]
+	FromEnd,
+	/// Start the search from the current position
+	FromCurrent,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
+pub(crate) enum RevSearchEnd {
+	/// End the search at the start of the stream
+	StreamStart,
+	/// End the search at the current position
+	///
+	/// Collides with [`RevSearchStart::FromCurrent`]
+	#[default]
+	FromCurrent,
+	/// End the search at a specific position
+	Pos(u64),
+}
+
+pub(crate) struct RevPatternSearcher<'a, T> {
+	start: RevSearchStart,
+	end: RevSearchEnd,
+	buffer_size: u64,
+	pattern: &'a [u8],
+	reader: &'a mut T,
+}
+
+impl<T> RevPatternSearcher<'_, T>
+where
+	T: Read + Seek,
+{
+	pub(crate) fn buffer_size(&mut self, buffer_size: u64) -> &mut Self {
+		self.buffer_size = buffer_size;
+		self
+	}
+
+	pub(crate) fn start_pos(&mut self, start: RevSearchStart) -> &mut Self {
+		self.start = start;
+		self
+	}
+
+	pub(crate) fn end_pos(&mut self, end: RevSearchEnd) -> &mut Self {
+		self.end = end;
+		self
+	}
+
+	/// Search for `pattern` in the stream, from the end up to the current position.
+	///
+	/// If found, this will leave the reader at the start of the pattern. Otherwise, the reader will
+	/// be at the original position.
+	pub(crate) fn search(&mut self) -> std::io::Result<bool> {
+		if self.pattern.is_empty() {
+			return Ok(true);
+		}
+
+		let original_pos = self.reader.stream_position()?;
+		let pattern_len = self.pattern.len();
+
+		let start_pos = match self.start {
+			RevSearchStart::FromEnd => self.reader.seek(SeekFrom::End(0))?,
+			RevSearchStart::FromCurrent => original_pos,
+		};
+
+		let end_pos = match self.end {
+			RevSearchEnd::StreamStart => 0,
+			RevSearchEnd::FromCurrent => original_pos,
+			RevSearchEnd::Pos(p) => p,
+		};
+
+		if start_pos < end_pos
+			|| (start_pos - end_pos) < pattern_len as u64
+			|| self.buffer_size < pattern_len as u64
+		{
+			self.reader.seek(SeekFrom::Start(original_pos))?;
+			return Ok(false);
+		}
+
+		// To handle partial matches, the `current_pos` gets decremented in "steps". Which is the
+		// `buffer_size`, but with just enough room at the end for the pattern.
+		let overlap_step = self.buffer_size - ((pattern_len as u64) - 1);
+
+		let mut current_pos = start_pos;
+		let mut buf = vec![0; self.buffer_size as usize];
+
+		while current_pos > end_pos {
+			let window_size = current_pos - end_pos;
+			let read_size = std::cmp::min(self.buffer_size, window_size);
+
+			let read_start = current_pos - read_size;
+			self.reader.seek(SeekFrom::Start(read_start))?;
+
+			let window = &mut buf[..read_size as usize];
+			self.reader.read_exact(window)?;
+
+			if let Some(match_offset) = window
+				.windows(self.pattern.len())
+				.enumerate()
+				.rev()
+				.find_map(|(idx, window)| {
+					if window == self.pattern {
+						Some(idx)
+					} else {
+						None
+					}
+				}) {
+				self.reader
+					.seek(SeekFrom::Start(read_start + match_offset as u64))?;
+				return Ok(true);
+			}
+
+			current_pos -= std::cmp::min(read_size, overlap_step);
+		}
+
+		Ok(false)
+	}
+}
+
+pub(crate) trait ReadFindExt: Read + Seek + Sized {
+	/// Construct a [`RevPatternSearcher`]
+	fn rfind<'a>(&'a mut self, pattern: &'a [u8]) -> RevPatternSearcher<'a, Self> {
+		RevPatternSearcher {
+			start: RevSearchStart::default(),
+			end: RevSearchEnd::StreamStart,
+			buffer_size: 1024,
+			pattern,
+			reader: self,
+		}
+	}
+}
+
+impl<T> ReadFindExt for T where T: Read + Seek {}
+
 #[cfg(test)]
 mod tests {
 	use crate::config::{ParseOptions, WriteOptions};
 	use crate::file::AudioFile;
+	use crate::io::{ReadFindExt, RevSearchEnd, RevSearchStart};
 	use crate::mpeg::MpegFile;
 	use crate::tag::Accessor;
 
-	use std::io::{Cursor, Read, Seek, Write};
+	use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+	use std::iter::repeat_n;
+	use std::ops::Neg;
 
 	const TEST_ASSET: &str = "tests/files/assets/minimal/full_test.mp3";
 
@@ -367,5 +506,60 @@ mod tests {
 
 		let current_file_contents = f.buf;
 		assert_eq!(current_file_contents, test_asset_contents());
+	}
+
+	#[test_log::test]
+	fn rev_search() {
+		// Basic search
+		const PAT: &[u8] = b"PATTERN";
+		let mut data1 = PAT.to_vec();
+		data1.extend(repeat_n(0, 5000));
+
+		let mut stream1 = Cursor::new(data1);
+		assert!(stream1.rfind(PAT).search().unwrap());
+
+		// Search across boundaries
+		let mut data2 = PAT.to_vec();
+		data2.extend(repeat_n(0, 1023));
+
+		let mut stream2 = Cursor::new(data2);
+		assert!(stream2.rfind(PAT).search().unwrap());
+
+		// Multiple occurrences, should find the last one
+		let mut data3 = PAT.to_vec();
+		let junk_len = 20;
+		data3.extend(repeat_n(0, junk_len));
+		data3.extend(PAT);
+		data3.extend(repeat_n(0, junk_len));
+		let last_occurence_offset = data3.len() - (junk_len + PAT.len());
+
+		let mut stream3 = Cursor::new(data3);
+		assert!(stream3.rfind(PAT).search().unwrap());
+		assert_eq!(stream3.position(), last_occurence_offset as u64);
+
+		// Multiple occurrences, search starts within a partial match
+		let mut data4 = PAT.to_vec();
+		data4.extend(repeat_n(0, junk_len));
+		data4.extend(PAT);
+		data4.extend(repeat_n(0, junk_len));
+		data4.extend(PAT);
+
+		let middle_match_offset = PAT.len() + junk_len;
+
+		let mut stream4 = Cursor::new(data4);
+		// Eat partially into the first match
+		stream4
+			.seek(SeekFrom::End(((PAT.len() - 3) as i64).neg()))
+			.unwrap();
+
+		assert!(
+			stream4
+				.rfind(PAT)
+				.start_pos(RevSearchStart::FromCurrent)
+				.end_pos(RevSearchEnd::StreamStart)
+				.search()
+				.unwrap()
+		);
+		assert_eq!(stream4.position(), middle_match_offset as u64);
 	}
 }
