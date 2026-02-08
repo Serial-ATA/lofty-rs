@@ -37,13 +37,13 @@ jobs:
         name: Docs
         runs-on: ubuntu-latest
         env:
-            RUSTDOCFLAGS: -Dwarnings
+            RUSTDOCFLAGS: -Dwarnings --cfg=docsrs
         steps:
             -   uses: actions/checkout@v6
             -   name: Install Rust toolchain
                 uses: dtolnay/rust-toolchain@v1
                 with:
-                    toolchain: stable
+                    toolchain: nightly
             -   run: |
                     cargo doc --all-features --no-deps
                     cargo test --all-features --doc

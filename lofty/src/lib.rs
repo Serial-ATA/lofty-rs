@@ -99,7 +99,7 @@
 //!
 //! All formats have their own quirks that may produce unexpected results between conversions.
 //! Be sure to read the module documentation of each format to see important notes and warnings.
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(html_logo_url = "https://raw.githubusercontent.com/Serial-ATA/lofty-rs/main/doc/lofty.svg")]
 
 // proc macro hacks
