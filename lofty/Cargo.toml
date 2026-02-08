@@ -23,7 +23,7 @@ lofty_attr    = { workspace = true }
 # Debug logging
 log           = "0.4.22"
 # OGG Vorbis/Opus
-ogg_pager     = "0.7.0"
+ogg_pager     = { workspace = true }
 # Key maps
 paste         = "1.0.15"
 
