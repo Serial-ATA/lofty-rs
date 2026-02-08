@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.1] - 2026-02-08
+
+### Fixed
+
+- **Docs**: Replaced `doc_auto_cfg` with `doc_cfg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/605))
+
 ## [0.23.0] - 2026-02-08
 
 ### Added
@@ -1035,7 +1041,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.1...HEAD
+[0.23.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.0...0.23.1
 [0.23.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.4...0.23.0
 [0.22.4]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.3...0.22.4
 [0.22.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.2...0.22.3
