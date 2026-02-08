@@ -16,9 +16,9 @@ repository = "https://github.com/Serial-ATA/lofty-rs"
 license = "MIT OR Apache-2.0"
 
 [workspace.dependencies]
-lofty = { version = "0.22.4", path = "lofty" }
+lofty = { version = "0.23.0", path = "lofty" }
 lofty_attr = { version = "0.11.1", path = "lofty_attr" }
-ogg_pager = { version = "0.7.0", path = "ogg_pager" }
+ogg_pager = { version = "0.7.1", path = "ogg_pager" }
 
 byteorder = "1.5.0"
 

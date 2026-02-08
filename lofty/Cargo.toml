@@ -1,6 +1,6 @@
 [package]
 name        = "lofty"
-version     = "0.22.4"
+version     = "0.23.0"
 authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "Audio metadata library"
 keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
@@ -14,14 +14,14 @@ license.workspace = true
 
 [dependencies]
 # Vorbis comments pictures
-data-encoding = "2.6.0"
+data-encoding = "2.10.0"
 byteorder     = { workspace = true }
 # ID3 compressed frames
-flate2        = { version = "1.0.30", optional = true }
+flate2        = { version = "1.1.9", optional = true }
 # Proc macros
 lofty_attr    = { workspace = true }
 # Debug logging
-log           = "0.4.22"
+log           = "0.4.29"
 # OGG Vorbis/Opus
 ogg_pager     = { workspace = true }
 # Key maps
@@ -42,12 +42,12 @@ optional = true
 env_logger = "0.11.8"
 # WAV properties validity tests
 hound     = { git = "https://github.com/ruuda/hound.git", rev = "02e66effb33683dd6acb92df792683ee46ad6a59" }
-regex = "1.12.2"
-rusty-fork = "0.3.0"
+regex = "1.12.3"
+rusty-fork = "0.3.1"
 # tag_writer example
 structopt = { version = "0.3.26", default-features = false }
-tempfile  = "3.15.0"
-test-log = "0.2.16"
+tempfile  = "3.24.0"
+test-log = "0.2.19"
 gungraun = "0.17.0"
 
 [lints]

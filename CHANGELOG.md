@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-02-08
+
 ### Added
 - **ItemKey**:
   - `ItemKey::AlbumArtists`, available for ID3v2, Vorbis Comments, APE, and MP4 Ilst ([PR](https://github.com/Serial-ATA/lofty-rs/pull/523))
@@ -1033,7 +1035,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.4...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.0...HEAD
+[0.23.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.4...0.23.0
 [0.22.4]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.3...0.22.4
 [0.22.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.2...0.22.3
 [0.22.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.22.1...0.22.2
