@@ -1,6 +1,6 @@
 [package]
 name        = "lofty"
-version     = "0.23.1"
+version     = "0.23.2"
 authors     = ["Serial <69764315+Serial-ATA@users.noreply.github.com>"]
 description = "Audio metadata library"
 keywords    = ["tags", "audio", "metadata", "id3", "vorbis"]
