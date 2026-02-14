@@ -135,6 +135,7 @@ where
 
 			// `PADDING` always goes last
 			last_block_replaced = true;
+			last_block_location = LastBlock::Padding;
 
 			let mut padding_block = Block::new_padding(preferred_padding as usize)?;
 			padding_block.last = true;
