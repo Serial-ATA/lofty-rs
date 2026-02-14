@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.23.2] - 2026-02-14
 
-- **FLAC**: Fix duplicate `Last-metadata-block` flags in the presence of PADDING blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/607)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/609))
+- **FLAC**:
+  - Fix duplicate `Last-metadata-block` flags in the presence of PADDING blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/607)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/609))
+  - Ignore ID3v2 tags when not stripped during write ([issue](https://github.com/Serial-ATA/lofty-rs/issues/608)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/609))
+    - Previously, the Vorbis Comments writer assumed that the ID3v2 tag had already been stripped.
+      If that wasn't the case, it would error that it couldn't find the FLAC stream marker.
 
 ## [0.23.1] - 2026-02-08
 

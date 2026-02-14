@@ -2,6 +2,7 @@ use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS,
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
+use crate::id3::{FindId3v2Config, find_id3v2};
 use crate::macros::{err, try_vec};
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
@@ -75,6 +76,9 @@ where
 	file.read_to_end(&mut file_bytes)?;
 
 	let mut cursor = Cursor::new(file_bytes);
+
+	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
+	find_id3v2(&mut cursor, FindId3v2Config::NO_READ_TAG)?;
 
 	let stream_info = verify_flac(&mut cursor)?;
 	let stream_info_start = stream_info.start as usize;
