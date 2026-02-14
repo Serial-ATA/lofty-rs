@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.2] - 2026-02-14
+
+- **FLAC**: Fix duplicate `Last-metadata-block` flags in the presence of PADDING blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/607)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/609))
+
 ## [0.23.1] - 2026-02-08
 
 ### Fixed
