@@ -1,5 +1,5 @@
 mod chunk_file;
-mod frame;
+pub(in crate::id3::v2) mod frame;
 
 use super::{Frame, Id3v2TagFlags};
 use crate::config::WriteOptions;

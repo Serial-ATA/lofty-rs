@@ -180,10 +180,10 @@ impl<'a> AttachedPictureFrame<'a> {
 	}
 }
 
-impl AttachedPictureFrame<'static> {
-	pub(crate) fn downgrade(&self) -> AttachedPictureFrame<'_> {
+impl AttachedPictureFrame<'_> {
+	pub(crate) fn borrow(&self) -> AttachedPictureFrame<'_> {
 		AttachedPictureFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			picture: Cow::Borrowed(&self.picture),
 		}

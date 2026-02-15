@@ -159,10 +159,10 @@ impl<'a> OwnershipFrame<'a> {
 	}
 }
 
-impl OwnershipFrame<'static> {
-	pub(crate) fn downgrade(&self) -> OwnershipFrame<'_> {
+impl OwnershipFrame<'_> {
+	pub(crate) fn borrow(&self) -> OwnershipFrame<'_> {
 		OwnershipFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			price_paid: Cow::Borrowed(&self.price_paid),
 			date_of_purchase: Cow::Borrowed(&self.date_of_purchase),

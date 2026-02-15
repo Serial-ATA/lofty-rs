@@ -1,6 +1,6 @@
 use crate::error::{TextEncodingError, TooMuchDataError};
-use crate::id3::v2::FrameId;
 use crate::id3::v2::util::synchsafe::SynchOverflowError;
+use crate::id3::v2::{FrameId, Id3v2Version};
 use crate::tag::items::timestamp::TimestampParseError;
 use crate::util::alloc::AllocationError;
 use crate::util::text::{BadTextEncodingError, TextDecodingError};
@@ -59,6 +59,13 @@ impl FrameParseError {
 				"invalid frame language found: {} (expected 3 ascii characters)",
 				language.escape_ascii()
 			),
+		)
+	}
+
+	pub(crate) fn unsupported_version(version: Id3v2Version) -> Self {
+		Self::message(
+			None,
+			format!("attempted to read frame in version {version}"),
 		)
 	}
 
@@ -168,6 +175,13 @@ impl FrameEncodingError {
 				"invalid frame language found: {} (expected 3 ascii characters)",
 				language.escape_ascii()
 			),
+		)
+	}
+
+	pub(crate) fn unsupported_version(version: Id3v2Version) -> Self {
+		Self::message(
+			None,
+			format!("attempted to write frame in version {version}"),
 		)
 	}
 

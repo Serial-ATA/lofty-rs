@@ -4,13 +4,15 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::{Read, Seek};
 
+use crate::util::get_file;
 use lofty::TextEncoding;
 use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::id3::v2::{
-	AttachedPictureFrame, ChannelInformation, ChannelType, CommentFrame, Event,
-	EventTimingCodesFrame, EventType, ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags,
-	FrameId, GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, KeyValueFrame, OwnershipFrame,
+	AttachedPictureFrame, ChannelInformation, ChannelType, ChapterFrame,
+	ChapterTableOfContentsFrame, CommentFrame, CtocFlags, Event, EventTimingCodesFrame, EventType,
+	ExtendedTextFrame, ExtendedUrlFrame, Frame, FrameFlags, FrameId, FrameList,
+	GeneralEncapsulatedObject, Id3v2Tag, Id3v2Version, KeyValueFrame, OwnershipFrame,
 	PopularimeterFrame, PrivateFrame, RelativeVolumeAdjustmentFrame, SyncTextContentType,
 	SynchronizedTextFrame, TextInformationFrame, TimestampFormat, TimestampFrame,
 	UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
@@ -1352,25 +1354,158 @@ fn test_save_and_strip_id3v1_should_not_add_frame_from_id3v1_to_id3v2() {
 	assert!(f.id3v2().is_none());
 }
 
-// TODO: Support CHAP frames (#189)
 #[test_log::test]
-#[ignore = "CHAP frames aren't support yet"]
-fn test_parse_chapter_frame() {}
+fn test_parse_chapter_frame() {
+	const CHAPTER_DATA: &[u8] = b"\x43\x00\
+	\x00\x00\x00\x03\
+	\x00\x00\x00\x05\
+	\x00\x00\x00\x02\
+	\x00\x00\x00\x03";
 
-// TODO: Support CHAP frames (#189)
-#[test_log::test]
-#[ignore = "CHAP frames aren't support yet"]
-fn test_render_chapter_frame() {}
+	const EMBEDDED_FRAME_DATA: &[u8] = b"TIT2\
+	\x00\x00\x00\x04\
+	\x00\x00\
+	\x00\
+	CH1";
 
-// TODO: Support CTOC frames (#189)
-#[test_log::test]
-#[ignore = "CTOC frames aren't support yet"]
-fn test_parse_table_of_contents_frame() {}
+	let f1 = ChapterFrame::parse(
+		&mut &CHAPTER_DATA[..],
+		ParseOptions::default(),
+		Id3v2Version::V4,
+		FrameFlags::default(),
+	)
+	.unwrap();
+	assert_eq!(f1.id, "C");
+	assert_eq!(f1.times.start, 0x03);
+	assert_eq!(f1.times.end, 0x05);
+	assert_eq!(f1.offsets.start, 0x02);
+	assert_eq!(f1.offsets.end, 0x03);
+	assert!(f1.children.is_empty());
 
-// TODO: Support CTOC frames (#189)
+	let chap_with_tit2_data = [CHAPTER_DATA, EMBEDDED_FRAME_DATA].concat();
+	let f2 = ChapterFrame::parse(
+		&mut &chap_with_tit2_data[..],
+		ParseOptions::default(),
+		Id3v2Version::V4,
+		FrameFlags::default(),
+	)
+	.unwrap();
+	assert_eq!(f2.id, "C");
+	assert_eq!(f2.times.start, 0x03);
+	assert_eq!(f2.times.end, 0x05);
+	assert_eq!(f2.offsets.start, 0x02);
+	assert_eq!(f2.offsets.end, 0x03);
+	assert_eq!(f2.children.len(), 1);
+	assert_eq!(
+		f2.children.get_text(&FrameId::Valid(Cow::Borrowed("TIT2"))),
+		Some("CH1")
+	);
+}
+
 #[test_log::test]
-#[ignore = "CTOC frames aren't support yet"]
-fn test_render_table_of_contents_frame() {}
+fn test_render_chapter_frame() {
+	let mut ef = FrameList::new();
+	ef.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::new("TIT2").unwrap(),
+		TextEncoding::Latin1,
+		"CH1",
+	)));
+
+	let mut f1 = ChapterFrame::new("\x43", 3..5, 2..3, ef);
+
+	const EXPECTED: &[u8] = b"\x43\x00\
+	\x00\x00\x00\x03\
+	\x00\x00\x00\x05\
+	\x00\x00\x00\x02\
+	\x00\x00\x00\x03\
+	TIT2\
+	\x00\x00\x00\x04\
+	\x00\x00\
+	\x00\
+	CH1";
+
+	assert_eq!(
+		f1.as_bytes(Id3v2Version::V4, WriteOptions::default())
+			.unwrap(),
+		EXPECTED
+	);
+
+	f1.id = "C".into();
+
+	assert_eq!(
+		f1.as_bytes(Id3v2Version::V4, WriteOptions::default())
+			.unwrap(),
+		EXPECTED
+	);
+}
+
+#[test_log::test]
+fn test_parse_table_of_contents_frame() {
+	const DATA: &[u8] = b"\x54\x00\
+	                 \x01\
+	                 \x02\
+	                 \x43\x00\
+	                 \x44\x00\
+	                 TIT2\
+	                 \x00\x00\x00\x04\
+	                 \x00\x00\
+	                 \x00\
+	                 TC1";
+
+	let f = ChapterTableOfContentsFrame::parse(
+		&mut &DATA[..],
+		ParseOptions::default(),
+		Id3v2Version::V4,
+		FrameFlags::default(),
+	)
+	.unwrap();
+	assert_eq!(f.id, "T");
+	assert!(!f.flags.top_level);
+	assert!(f.flags.ordered);
+	assert_eq!(f.entries.len(), 2);
+	assert_eq!(f.entries[0], "C");
+	assert_eq!(f.entries[1], "D");
+	assert_eq!(f.children.len(), 1);
+	assert_eq!(
+		f.children.get_text(&FrameId::Valid(Cow::Borrowed("TIT2"))),
+		Some("TC1")
+	);
+}
+
+#[test_log::test]
+fn test_render_table_of_contents_frame() {
+	let mut ef = FrameList::new();
+	ef.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::new("TIT2").unwrap(),
+		TextEncoding::Latin1,
+		"TC1",
+	)));
+
+	let f = ChapterTableOfContentsFrame::new(
+		"T",
+		CtocFlags {
+			top_level: false,
+			ordered: true,
+		},
+		vec![Cow::Borrowed("C"), Cow::Borrowed("D")],
+		ef,
+	);
+
+	assert_eq!(
+		f.as_bytes(Id3v2Version::V4, WriteOptions::default())
+			.unwrap(),
+		b"\x54\x00\
+	                 \x01\
+	                 \x02\
+	                 \x43\x00\
+	                 \x44\x00\
+	                 TIT2\
+	                 \x00\x00\x00\x04\
+	                 \x00\x00\
+	                 \x00\
+	                 TC1"
+	);
+}
 
 #[test_log::test]
 #[ignore = "Marker test, Lofty will not remove empty frames, as they can be valid"]
@@ -1380,7 +1515,41 @@ fn test_empty_frame() {}
 #[ignore = "Marker test, Lofty will combine duplicated tags"]
 fn test_duplicate_tags() {}
 
-// TODO: Support CTOC frames (#189)
 #[test_log::test]
-#[ignore = "CTOC frames aren't support yet"]
-fn test_parse_toc_frame_with_many_children() {}
+fn test_parse_toc_frame_with_many_children() {
+	let f = get_file::<MpegFile>("tests/taglib/data/toc_many_children.mp3");
+
+	let tag = f.id3v2().unwrap();
+	assert_eq!(tag.len(), 130);
+
+	for (i, frame) in tag.into_iter().enumerate() {
+		if i > 0 {
+			assert_eq!(frame.id_str(), "CHAP");
+			let Frame::Chapter(chap_frame) = frame else {
+				unreachable!();
+			};
+			assert_eq!(chap_frame.id, format!("chapter{}", i - 1));
+			assert_eq!(chap_frame.times.start as usize, 100 * i);
+			assert_eq!(chap_frame.times.end as usize, 100 * i);
+			assert_eq!(chap_frame.children.len(), 1);
+			let Frame::Text(tit2_frame) = &chap_frame.children[0] else {
+				unreachable!();
+			};
+			assert_eq!(tit2_frame.value, format!("Marker {}", i));
+		} else {
+			assert_eq!(frame.id_str(), "CTOC");
+			let Frame::TableOfContents(ctoc_frame) = frame else {
+				unreachable!();
+			};
+			assert_eq!(ctoc_frame.id, "toc");
+			assert!(!ctoc_frame.flags.top_level);
+			assert!(!ctoc_frame.flags.ordered);
+			assert_eq!(ctoc_frame.entries.len(), 129);
+			assert_eq!(ctoc_frame.children.len(), 1);
+			let Frame::Text(tit2_frame) = &ctoc_frame.children[0] else {
+				unreachable!();
+			};
+			assert_eq!(tit2_frame.value, "toplevel toc");
+		}
+	}
+}

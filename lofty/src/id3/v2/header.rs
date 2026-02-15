@@ -3,6 +3,7 @@ use crate::id3::v2::error::{Id3v2HeaderError, Id3v2ParseError};
 use crate::id3::v2::restrictions::TagRestrictions;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 
+use std::fmt::Display;
 use std::io::Read;
 
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
@@ -16,6 +17,16 @@ pub enum Id3v2Version {
 	V3,
 	/// ID3v2.4
 	V4,
+}
+
+impl Display for Id3v2Version {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Id3v2Version::V2 => write!(f, "ID3v2.2"),
+			Id3v2Version::V3 => write!(f, "ID3v2.3"),
+			Id3v2Version::V4 => write!(f, "ID3v2.4"),
+		}
+	}
 }
 
 /// Flags that apply to the entire tag
