@@ -6,7 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Don't error on empty UTF-16 descriptions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/613)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/614))
+
 ## [0.23.2] - 2026-02-14
+
+### Fixed
 
 - **FLAC**:
   - Fix duplicate `Last-metadata-block` flags in the presence of PADDING blocks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/607)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/609))
