@@ -271,10 +271,10 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 	}
 }
 
-impl RelativeVolumeAdjustmentFrame<'static> {
-	pub(crate) fn downgrade(&self) -> RelativeVolumeAdjustmentFrame<'_> {
+impl RelativeVolumeAdjustmentFrame<'_> {
+	pub(crate) fn borrow(&self) -> RelativeVolumeAdjustmentFrame<'_> {
 		RelativeVolumeAdjustmentFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			identification: Cow::Borrowed(&self.identification),
 			channels: Cow::Borrowed(&self.channels),
 		}

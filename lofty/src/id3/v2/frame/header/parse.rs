@@ -14,7 +14,7 @@ pub(crate) fn parse_v2_header<R>(
 	size: &mut u32,
 ) -> Result<Option<(FrameId<'static>, FrameFlags)>, FrameParseError>
 where
-	R: Read,
+	R: Read + ?Sized,
 {
 	let mut header = [0; 6];
 	match reader.read_exact(&mut header) {
@@ -50,7 +50,7 @@ pub(crate) fn parse_header<R>(
 	parse_options: ParseOptions,
 ) -> Result<Option<(FrameId<'static>, FrameFlags)>, FrameParseError>
 where
-	R: Read,
+	R: Read + ?Sized,
 {
 	let mut header = [0; 10];
 	match reader.read_exact(&mut header) {

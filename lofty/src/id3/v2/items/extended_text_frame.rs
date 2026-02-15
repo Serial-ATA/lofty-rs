@@ -205,10 +205,10 @@ impl<'a> ExtendedTextFrame<'a> {
 	}
 }
 
-impl ExtendedTextFrame<'static> {
-	pub(crate) fn downgrade(&self) -> ExtendedTextFrame<'_> {
+impl ExtendedTextFrame<'_> {
+	pub(crate) fn borrow(&self) -> ExtendedTextFrame<'_> {
 		ExtendedTextFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			description: Cow::Borrowed(&self.description),
 			content: Cow::Borrowed(&self.content),

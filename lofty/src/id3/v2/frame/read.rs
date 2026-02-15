@@ -20,14 +20,14 @@ pub(crate) enum ParsedFrame<'a> {
 	Eof,
 }
 
-impl ParsedFrame<'_> {
+impl ParsedFrame<'static> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
 		parse_options: ParseOptions,
 	) -> Result<Self, FrameParseError>
 	where
-		R: Read,
+		R: Read + ?Sized,
 	{
 		let mut size = 0u32;
 
@@ -168,7 +168,7 @@ impl ParsedFrame<'_> {
 						id,
 						flags,
 						version,
-						parse_options.parsing_mode,
+						parse_options,
 					);
 				}
 
@@ -182,7 +182,7 @@ impl ParsedFrame<'_> {
 					id,
 					flags,
 					version,
-					parse_options.parsing_mode,
+					parse_options,
 				);
 			},
 			// Possible combinations:
@@ -204,7 +204,7 @@ impl ParsedFrame<'_> {
 					id,
 					flags,
 					version,
-					parse_options.parsing_mode,
+					parse_options,
 				);
 			},
 			// Possible combinations:
@@ -218,14 +218,7 @@ impl ParsedFrame<'_> {
 			},
 			// Everything else that doesn't have special flags
 			_ => {
-				return parse_frame(
-					&mut reader,
-					size,
-					id,
-					flags,
-					version,
-					parse_options.parsing_mode,
-				);
+				return parse_frame(&mut reader, size, id, flags, version, parse_options);
 			},
 		}
 	}
@@ -273,9 +266,9 @@ fn parse_frame<R: Read>(
 	id: FrameId<'static>,
 	flags: FrameFlags,
 	version: Id3v2Version,
-	parse_mode: ParsingMode,
+	parse_options: ParseOptions,
 ) -> Result<ParsedFrame<'static>, FrameParseError> {
-	match parse_content(reader, id, flags, version, parse_mode) {
+	match parse_content(reader, id, flags, version, parse_options) {
 		Some(result) => result.map(ParsedFrame::Next),
 		None => {
 			skip_frame(None, reader, size)?;
@@ -292,7 +285,7 @@ fn parse_frame<R: Read>(
 // This assumption *CANNOT* be made in other contexts.
 fn skip_frame(
 	id: Option<FrameId<'static>>,
-	reader: &mut impl Read,
+	reader: &mut (impl Read + ?Sized),
 	size: u32,
 ) -> Result<(), FrameParseError> {
 	log::trace!("Skipping frame of size {}", size);

@@ -143,10 +143,10 @@ impl<'a> TimestampFrame<'a> {
 	}
 }
 
-impl TimestampFrame<'static> {
-	pub(crate) fn downgrade(&self) -> TimestampFrame<'_> {
+impl TimestampFrame<'_> {
+	pub(crate) fn borrow(&self) -> TimestampFrame<'_> {
 		TimestampFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			timestamp: self.timestamp,
 		}

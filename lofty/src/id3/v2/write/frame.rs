@@ -1,9 +1,9 @@
 use crate::config::WriteOptions;
-use crate::id3::v2::frame::FrameFlags;
 use crate::id3::v2::frame::error::FrameEncodingError;
+use crate::id3::v2::frame::{FrameEncodingContext, FrameFlags};
 use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
-use crate::id3::v2::{Frame, FrameId, KeyValueFrame, TextInformationFrame};
+use crate::id3::v2::{Frame, FrameId, Id3v2Version, KeyValueFrame, TextInformationFrame};
 use crate::tag::items::Timestamp;
 
 use std::borrow::Cow;
@@ -33,9 +33,12 @@ pub(in crate::id3::v2) fn create_items<W>(
 where
 	W: Write,
 {
+	let mut ctx = FrameEncodingContext::new(Id3v2Version::V4, write_options);
 	for frame in strip_outdated_frames(frames) {
 		verify_frame(&frame)?;
-		let value = frame.as_bytes(write_options)?;
+		let Some(value) = frame.as_bytes(&mut ctx)? else {
+			continue;
+		};
 
 		write_frame(
 			writer,
@@ -66,6 +69,8 @@ where
 	const IPLS_ID: &str = "IPLS";
 
 	let mut ipls = None;
+
+	let mut ctx = FrameEncodingContext::new(Id3v2Version::V3, write_options);
 	for mut frame in strip_outdated_frames(frames) {
 		if FRAMES_TO_DISCARD.contains(&frame.id_str()) {
 			log::warn!(
@@ -138,7 +143,9 @@ where
 
 					for mut frame in new_frames {
 						frame.set_flags(f.header.flags);
-						let value = frame.as_bytes(write_options)?;
+						let Some(value) = frame.as_bytes(&mut ctx)? else {
+							continue;
+						};
 
 						write_frame(
 							writer,
@@ -212,7 +219,7 @@ where
 					},
 				}
 
-				for (key, value) in key_value_pairs.drain(..) {
+				for (key, value) in key_value_pairs.to_mut().drain(..) {
 					if !ipls_frame.value.is_empty() {
 						match &mut ipls_frame.value {
 							Cow::Owned(v) => v.push('\0'),
@@ -233,7 +240,9 @@ where
 			_ => {},
 		}
 
-		let value = frame.as_bytes(write_options)?;
+		let Some(value) = frame.as_bytes(&mut ctx)? else {
+			continue;
+		};
 
 		write_frame(
 			writer,
@@ -246,8 +255,9 @@ where
 
 	if let Some(ipls) = ipls {
 		let frame = Frame::Text(ipls);
-		let value = frame.as_bytes(write_options)?;
-		write_frame(writer, IPLS_ID, frame.flags(), &value, write_options)?;
+		if let Some(value) = frame.as_bytes(&mut ctx)? {
+			write_frame(writer, IPLS_ID, frame.flags(), &value, write_options)?;
+		}
 	}
 
 	Ok(())
@@ -267,7 +277,9 @@ fn verify_frame(frame: &Frame<'_>) -> Result<(), FrameEncodingError> {
 		| ("WFED" | "GRP1" | "MVNM" | "MVIN", Frame::Text { .. })
 		| ("TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG", Frame::Timestamp(_))
 		| ("RVA2", Frame::RelativeVolumeAdjustment(_))
-		| ("PRIV", Frame::Private(_)) => Ok(()),
+		| ("PRIV", Frame::Private(_))
+		| ("CHAP", Frame::Chapter(_))
+		| ("CTOC", Frame::TableOfContents(_)) => Ok(()),
 		(id, Frame::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, Frame::Url(_)) if id.starts_with('W') => Ok(()),
 		(_, frame_value) => Err(FrameEncodingError::message(

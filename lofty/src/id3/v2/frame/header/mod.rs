@@ -30,10 +30,10 @@ impl<'a> FrameHeader<'a> {
 	}
 }
 
-impl FrameHeader<'static> {
-	pub(crate) fn downgrade(&self) -> FrameHeader<'_> {
+impl FrameHeader<'_> {
+	pub(crate) fn borrow(&self) -> FrameHeader<'_> {
 		FrameHeader {
-			id: self.id.downgrade(),
+			id: self.id.borrow(),
 			flags: self.flags,
 		}
 	}
@@ -195,8 +195,8 @@ impl<'a> FrameId<'a> {
 	}
 }
 
-impl FrameId<'static> {
-	pub(crate) fn downgrade(&self) -> FrameId<'_> {
+impl FrameId<'_> {
+	pub(crate) fn borrow(&self) -> FrameId<'_> {
 		match self {
 			FrameId::Valid(id) => FrameId::Valid(Cow::Borrowed(&**id)),
 			FrameId::Outdated(id) => FrameId::Outdated(Cow::Borrowed(&**id)),

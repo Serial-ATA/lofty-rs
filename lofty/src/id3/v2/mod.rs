@@ -27,6 +27,7 @@ pub use tag::Id3v2Tag;
 pub use items::*;
 
 pub use frame::header::{FrameHeader, FrameId};
+pub use frame::list::FrameList;
 pub use frame::{Frame, FrameFlags};
 
 pub use restrictions::{

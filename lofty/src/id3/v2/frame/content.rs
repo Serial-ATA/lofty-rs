@@ -1,11 +1,11 @@
-use crate::config::ParsingMode;
+use crate::config::ParseOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::items::{
-	AttachedPictureFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame,
-	KeyValueFrame, OwnershipFrame, PopularimeterFrame, PrivateFrame, RelativeVolumeAdjustmentFrame,
-	TextInformationFrame, TimestampFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame,
-	UrlLinkFrame,
+	AttachedPictureFrame, ChapterFrame, ChapterTableOfContentsFrame, CommentFrame,
+	EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame, OwnershipFrame,
+	PopularimeterFrame, PrivateFrame, RelativeVolumeAdjustmentFrame, TextInformationFrame,
+	TimestampFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::id3::v2::{BinaryFrame, Frame, FrameFlags, FrameId};
 use crate::util::text::TextEncoding;
@@ -17,7 +17,7 @@ pub(super) fn parse_content<R: Read>(
 	id: FrameId<'static>,
 	flags: FrameFlags,
 	version: Id3v2Version,
-	parse_mode: ParsingMode,
+	parse_options: ParseOptions,
 ) -> Option<Result<Frame<'static>, FrameParseError>> {
 	log::trace!("Parsing frame content for ID: {}", id);
 
@@ -39,10 +39,10 @@ pub(super) fn parse_content<R: Read>(
 		"TIPL" | "TMCL" => KeyValueFrame::parse(reader, id, flags, version)
 			.transpose()?
 			.map(Frame::KeyValue),
-		"UFID" => UniqueFileIdentifierFrame::parse(reader, flags, parse_mode)
+		"UFID" => UniqueFileIdentifierFrame::parse(reader, flags, parse_options.parsing_mode)
 			.transpose()?
 			.map(Frame::UniqueFileIdentifier),
-		"RVA2" => RelativeVolumeAdjustmentFrame::parse(reader, flags, parse_mode)
+		"RVA2" => RelativeVolumeAdjustmentFrame::parse(reader, flags, parse_options.parsing_mode)
 			.transpose()?
 			.map(Frame::RelativeVolumeAdjustment),
 		"OWNE" => OwnershipFrame::parse(reader, flags)
@@ -55,7 +55,7 @@ pub(super) fn parse_content<R: Read>(
 			.transpose()?
 			.map(Frame::Private),
 		"TDEN" | "TDOR" | "TDRC" | "TDRL" | "TDTG" => {
-			TimestampFrame::parse(reader, id, flags, parse_mode)
+			TimestampFrame::parse(reader, id, flags, parse_options.parsing_mode)
 				.transpose()?
 				.map(Frame::Timestamp)
 		},
@@ -71,6 +71,9 @@ pub(super) fn parse_content<R: Read>(
 			.transpose()?
 			.map(Frame::Url),
 		"POPM" => PopularimeterFrame::parse(reader, flags).map(Frame::Popularimeter),
+		"CHAP" => ChapterFrame::parse(reader, parse_options, version, flags).map(Frame::Chapter),
+		"CTOC" => ChapterTableOfContentsFrame::parse(reader, parse_options, version, flags)
+			.map(Frame::TableOfContents),
 		// SYLT, GEOB, and any unknown frames
 		_ => BinaryFrame::parse(reader, id, flags).map(Frame::Binary),
 	})

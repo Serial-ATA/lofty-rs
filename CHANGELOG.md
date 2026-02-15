@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ItemKey**: `ItemKey::R128{Track,Album}Gain` for EBU-R128 loudness normalization tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/665))
 - **MP4**: `Display` impl for `AtomIdent`
 - **Opus**: `OpusProperties::output_gain_db()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/666))
+- **ID3v2**:
+    - `ChapterFrame` and `ChapterTableOfContentsFrame`
+    - `FrameList`, a shared `Frame` storage used in `Id3v2Tag`, `ChapterFrame` and `ChapterTableOfContentsFrame`
 
 ### Changed
 

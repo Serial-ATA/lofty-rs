@@ -1,17 +1,18 @@
 pub(super) mod content;
 pub(super) mod error;
 pub(super) mod header;
+pub(super) mod list;
 pub(super) mod read;
 
 use super::items::{
-	AttachedPictureFrame, BinaryFrame, CommentFrame, EventTimingCodesFrame, ExtendedTextFrame,
-	ExtendedUrlFrame, KeyValueFrame, OwnershipFrame, PopularimeterFrame, PrivateFrame,
-	RelativeVolumeAdjustmentFrame, TextInformationFrame, TimestampFrame, UniqueFileIdentifierFrame,
-	UnsynchronizedTextFrame, UrlLinkFrame,
+	AttachedPictureFrame, BinaryFrame, ChapterFrame, ChapterTableOfContentsFrame, CommentFrame,
+	EventTimingCodesFrame, ExtendedTextFrame, ExtendedUrlFrame, KeyValueFrame, OwnershipFrame,
+	PopularimeterFrame, PrivateFrame, RelativeVolumeAdjustmentFrame, TextInformationFrame,
+	TimestampFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::config::WriteOptions;
-use crate::id3::v2::FrameHeader;
 use crate::id3::v2::frame::error::FrameEncodingError;
+use crate::id3::v2::{FrameHeader, Id3v2Version};
 use crate::util::text::TextEncoding;
 use header::FrameId;
 
@@ -135,6 +136,10 @@ define_frames! {
 		Private(PrivateFrame<'a>),
 		/// Represents a timestamp for the "TDEN", "TDOR", "TDRC", "TDRL", and "TDTG" frames
 		Timestamp(TimestampFrame<'a>),
+		/// Represents a "CHAP" frame
+		Chapter(ChapterFrame<'a>),
+		/// Represents a "CTOC" frame
+		TableOfContents(ChapterTableOfContentsFrame<'a>),
 		/// Binary data
 		///
 		/// NOTES:
@@ -163,25 +168,28 @@ impl<'a> Frame<'a> {
 	}
 }
 
-impl Frame<'static> {
-	pub(super) fn downgrade(&self) -> Frame<'_> {
+impl Frame<'_> {
+	/// Create a borrowed copy of the [`Frame`].
+	pub(super) fn borrow(&self) -> Frame<'_> {
 		match self {
-			Frame::Comment(f) => Frame::Comment(f.downgrade()),
-			Frame::UnsynchronizedText(f) => Frame::UnsynchronizedText(f.downgrade()),
-			Frame::Text(f) => Frame::Text(f.downgrade()),
-			Frame::UserText(f) => Frame::UserText(f.downgrade()),
-			Frame::Url(f) => Frame::Url(f.downgrade()),
-			Frame::UserUrl(f) => Frame::UserUrl(f.downgrade()),
-			Frame::Picture(f) => Frame::Picture(f.downgrade()),
-			Frame::Popularimeter(f) => Frame::Popularimeter(f.downgrade()),
-			Frame::KeyValue(f) => Frame::KeyValue(f.downgrade()),
-			Frame::RelativeVolumeAdjustment(f) => Frame::RelativeVolumeAdjustment(f.downgrade()),
-			Frame::UniqueFileIdentifier(f) => Frame::UniqueFileIdentifier(f.downgrade()),
-			Frame::Ownership(f) => Frame::Ownership(f.downgrade()),
-			Frame::EventTimingCodes(f) => Frame::EventTimingCodes(f.downgrade()),
-			Frame::Private(f) => Frame::Private(f.downgrade()),
-			Frame::Timestamp(f) => Frame::Timestamp(f.downgrade()),
-			Frame::Binary(f) => Frame::Binary(f.downgrade()),
+			Frame::Comment(f) => Frame::Comment(f.borrow()),
+			Frame::UnsynchronizedText(f) => Frame::UnsynchronizedText(f.borrow()),
+			Frame::Text(f) => Frame::Text(f.borrow()),
+			Frame::UserText(f) => Frame::UserText(f.borrow()),
+			Frame::Url(f) => Frame::Url(f.borrow()),
+			Frame::UserUrl(f) => Frame::UserUrl(f.borrow()),
+			Frame::Picture(f) => Frame::Picture(f.borrow()),
+			Frame::Popularimeter(f) => Frame::Popularimeter(f.borrow()),
+			Frame::KeyValue(f) => Frame::KeyValue(f.borrow()),
+			Frame::RelativeVolumeAdjustment(f) => Frame::RelativeVolumeAdjustment(f.borrow()),
+			Frame::UniqueFileIdentifier(f) => Frame::UniqueFileIdentifier(f.borrow()),
+			Frame::Ownership(f) => Frame::Ownership(f.borrow()),
+			Frame::EventTimingCodes(f) => Frame::EventTimingCodes(f.borrow()),
+			Frame::Private(f) => Frame::Private(f.borrow()),
+			Frame::Timestamp(f) => Frame::Timestamp(f.borrow()),
+			Frame::Chapter(f) => Frame::Chapter(f.borrow()),
+			Frame::TableOfContents(f) => Frame::TableOfContents(f.borrow()),
+			Frame::Binary(f) => Frame::Binary(f.borrow()),
 		}
 	}
 }
@@ -207,7 +215,9 @@ impl Frame<'_> {
 			Frame::Popularimeter(_)
 			| Frame::RelativeVolumeAdjustment(_)
 			| Frame::Ownership(_)
-			| Frame::Timestamp(_) => {
+			| Frame::Timestamp(_)
+			| Frame::Chapter(_)
+			| Frame::TableOfContents(_) => {
 				// Undefined.
 				return None;
 			},
@@ -216,27 +226,61 @@ impl Frame<'_> {
 	}
 }
 
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct FrameEncodingContext {
+	pub(crate) version: Id3v2Version,
+	pub(crate) write_options: WriteOptions,
+	/// Whether we've already hit a rooted `CTOC` frame
+	pub(crate) ctoc_root_encountered: bool,
+}
+
+impl FrameEncodingContext {
+	pub(crate) fn new(version: Id3v2Version, write_options: WriteOptions) -> Self {
+		Self {
+			version,
+			write_options,
+			ctoc_root_encountered: false,
+		}
+	}
+}
+
 impl Frame<'_> {
 	pub(super) fn as_bytes(
 		&self,
-		write_options: WriteOptions,
-	) -> Result<Vec<u8>, FrameEncodingError> {
+		ctx: &mut FrameEncodingContext,
+	) -> Result<Option<Vec<u8>>, FrameEncodingError> {
 		let ret = match self {
-			Frame::Comment(comment) => comment.as_bytes(write_options),
-			Frame::UnsynchronizedText(lf) => lf.as_bytes(write_options),
-			Frame::Text(tif) => tif.as_bytes(write_options),
-			Frame::UserText(content) => content.as_bytes(write_options),
-			Frame::UserUrl(content) => content.as_bytes(write_options),
-			Frame::Url(link) => link.as_bytes(write_options),
-			Frame::Picture(attached_picture) => attached_picture.as_bytes(write_options),
-			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(write_options),
-			Frame::KeyValue(content) => content.as_bytes(write_options),
-			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(write_options),
-			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(write_options),
-			Frame::Ownership(frame) => frame.as_bytes(write_options),
+			Frame::Comment(comment) => comment.as_bytes(ctx.write_options),
+			Frame::UnsynchronizedText(lf) => lf.as_bytes(ctx.write_options),
+			Frame::Text(tif) => tif.as_bytes(ctx.write_options),
+			Frame::UserText(content) => content.as_bytes(ctx.write_options),
+			Frame::UserUrl(content) => content.as_bytes(ctx.write_options),
+			Frame::Url(link) => link.as_bytes(ctx.write_options),
+			Frame::Picture(attached_picture) => attached_picture.as_bytes(ctx.write_options),
+			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(ctx.write_options),
+			Frame::KeyValue(content) => content.as_bytes(ctx.write_options),
+			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(ctx.write_options),
+			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(ctx.write_options),
+			Frame::Ownership(frame) => frame.as_bytes(ctx.write_options),
 			Frame::EventTimingCodes(frame) => frame.as_bytes(),
-			Frame::Private(frame) => frame.as_bytes(write_options),
-			Frame::Timestamp(frame) => frame.as_bytes(write_options),
+			Frame::Private(frame) => frame.as_bytes(ctx.write_options),
+			Frame::Timestamp(frame) => frame.as_bytes(ctx.write_options),
+			Frame::Chapter(frame) => frame.as_bytes(ctx.version, ctx.write_options),
+			Frame::TableOfContents(frame) => {
+				if frame.flags.top_level {
+					if ctx.ctoc_root_encountered {
+						log::warn!(
+							"Multiple rooted CTOC frames encountered, skipping TOC '{}'",
+							frame.id
+						);
+						return Ok(None);
+					}
+
+					ctx.ctoc_root_encountered = true;
+				}
+
+				frame.as_bytes(ctx.version, ctx.write_options)
+			},
 			Frame::Binary(frame) => Ok(frame.as_bytes()),
 		};
 
@@ -244,6 +288,7 @@ impl Frame<'_> {
 			e.set_id(self.id().as_borrowed());
 			e
 		})
+		.map(Some)
 	}
 
 	/// Used for errors in write::frame::verify_frame
@@ -264,6 +309,8 @@ impl Frame<'_> {
 			Frame::EventTimingCodes(_) => "EventTimingCodes",
 			Frame::Private(_) => "Private",
 			Frame::Timestamp(_) => "Timestamp",
+			Frame::Chapter(_) => "Chapter",
+			Frame::TableOfContents(_) => "TableOfContents",
 			Frame::Binary(_) => "Binary",
 		}
 	}
