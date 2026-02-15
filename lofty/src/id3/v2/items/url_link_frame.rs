@@ -112,10 +112,10 @@ impl<'a> UrlLinkFrame<'a> {
 	}
 }
 
-impl UrlLinkFrame<'static> {
-	pub(crate) fn downgrade(&self) -> UrlLinkFrame<'_> {
+impl UrlLinkFrame<'_> {
+	pub(crate) fn borrow(&self) -> UrlLinkFrame<'_> {
 		UrlLinkFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			content: Cow::Borrowed(&self.content),
 		}
 	}

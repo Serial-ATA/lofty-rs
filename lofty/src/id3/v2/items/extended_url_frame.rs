@@ -141,10 +141,10 @@ impl<'a> ExtendedUrlFrame<'a> {
 	}
 }
 
-impl ExtendedUrlFrame<'static> {
-	pub(crate) fn downgrade(&self) -> ExtendedUrlFrame<'_> {
+impl ExtendedUrlFrame<'_> {
+	pub(crate) fn borrow(&self) -> ExtendedUrlFrame<'_> {
 		ExtendedUrlFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			description: Cow::Borrowed(&self.description),
 			content: Cow::Borrowed(&self.content),

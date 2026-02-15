@@ -111,10 +111,10 @@ impl<'a> TextInformationFrame<'a> {
 	}
 }
 
-impl TextInformationFrame<'static> {
-	pub(crate) fn downgrade(&self) -> TextInformationFrame<'_> {
+impl TextInformationFrame<'_> {
+	pub(crate) fn borrow(&self) -> TextInformationFrame<'_> {
 		TextInformationFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			value: Cow::Borrowed(&self.value),
 		}

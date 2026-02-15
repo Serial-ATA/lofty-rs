@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{ErrorKind, LoftyError, Result};
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, utf8_decode_str};
 
@@ -140,10 +141,10 @@ impl<'a> OwnershipFrame<'a> {
 	}
 }
 
-impl OwnershipFrame<'static> {
-	pub(crate) fn downgrade(&self) -> OwnershipFrame<'_> {
+impl OwnershipFrame<'_> {
+	pub(crate) fn borrow(&self) -> OwnershipFrame<'_> {
 		OwnershipFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			price_paid: Cow::Borrowed(&self.price_paid),
 			date_of_purchase: Cow::Borrowed(&self.date_of_purchase),

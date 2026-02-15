@@ -1,7 +1,8 @@
 pub(crate) mod conversion;
 #[cfg(test)]
-mod tests;
+pub(in crate::id3::v2) mod tests;
 
+use super::frame::list::FrameList;
 use super::frame::{EMPTY_CONTENT_DESCRIPTOR, Frame};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::config::{WriteOptions, global_options};
@@ -15,7 +16,7 @@ use crate::id3::v2::items::{
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_SEPARATOR, format_number_pair};
 use crate::id3::v2::{FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
-use crate::picture::{Picture, PictureType};
+use crate::picture::Picture;
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
@@ -26,13 +27,13 @@ use conversion::Id3v2TagRef;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Write};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use lofty_attr::tag;
 
 const INVOLVED_PEOPLE_LIST_ID: &str = "TIPL";
 
-const V4_MULTI_VALUE_SEPARATOR: char = '\0';
+pub(in crate::id3::v2) const V4_MULTI_VALUE_SEPARATOR: char = '\0';
 
 // Used exclusively for `Accessor` convenience methods
 fn remove_separators_from_frame_text(value: &str, version: Id3v2Version) -> Cow<'_, str> {
@@ -70,6 +71,8 @@ macro_rules! impl_accessor {
 	}
 }
 
+/// **NOTE**: Most methods are implemented on [`FrameList`], which `Id3v2Tag` can dereference to.
+///
 /// ## [`Accessor`] Methods
 ///
 /// As ID3v2.4 allows for multiple values to exist in a single frame, the raw strings, as provided by [`Id3v2Tag::get_text`]
@@ -112,7 +115,7 @@ macro_rules! impl_accessor {
 pub struct Id3v2Tag {
 	flags: Id3v2TagFlags,
 	pub(super) original_version: Id3v2Version,
-	pub(crate) frames: Vec<Frame<'static>>,
+	pub(crate) frames: FrameList<'static>,
 }
 
 impl IntoIterator for Id3v2Tag {
@@ -138,7 +141,7 @@ impl Default for Id3v2Tag {
 		Self {
 			flags: Id3v2TagFlags::default(),
 			original_version: Id3v2Version::V4,
-			frames: Vec::new(),
+			frames: FrameList::new(),
 		}
 	}
 }
@@ -171,335 +174,13 @@ impl Id3v2Tag {
 
 	/// The original version of the tag
 	///
-	/// This is here, since the tag is upgraded to `ID3v2.4`, but a `v2.2` or `v2.3`
-	/// tag may have been read.
+	/// Lofty will *always* upgrade ID3v2 tags to `ID3v2.4` when reading `v2.2` or `v2.3` tags.
 	pub fn original_version(&self) -> Id3v2Version {
 		self.original_version
 	}
 }
 
 impl Id3v2Tag {
-	/// Gets a [`Frame`] from an id
-	pub fn get(&self, id: &FrameId<'_>) -> Option<&Frame<'static>> {
-		self.frames.iter().find(|f| f.id() == id)
-	}
-
-	/// Gets the text for a frame
-	///
-	/// NOTE: If the tag is [`Id3v2Version::V4`], there could be multiple values separated by null characters (`'\0'`).
-	///       Use [`Id3v2Tag::get_texts`] to conveniently split all of the values.
-	///
-	/// NOTE: This will not work for `TXXX` frames, use [`Id3v2Tag::get_user_text`] for that.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
-	/// use lofty::tag::Accessor;
-	/// use std::borrow::Cow;
-	///
-	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
-	///
-	/// let mut tag = Id3v2Tag::new();
-	///
-	/// tag.set_title(String::from("Foo"));
-	///
-	/// let title = tag.get_text(&TITLE_ID);
-	/// assert_eq!(title, Some("Foo"));
-	///
-	/// // Now we have a string with multiple values
-	/// tag.set_title(String::from("Foo\0Bar"));
-	///
-	/// // Null separator is retained! This case is better handled by `get_texts`.
-	/// let title = tag.get_text(&TITLE_ID);
-	/// assert_eq!(title, Some("Foo\0Bar"));
-	/// ```
-	pub fn get_text(&self, id: &FrameId<'_>) -> Option<&str> {
-		let frame = self.get(id);
-		if let Some(Frame::Text(TextInformationFrame { value, .. })) = frame {
-			return Some(value);
-		}
-
-		None
-	}
-
-	/// Gets all of the values for a text frame
-	///
-	/// NOTE: Multiple values are only supported in ID3v2.4, this will not be
-	///       very useful for ID3v2.2/3 tags.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::{FrameId, Id3v2Tag};
-	/// use lofty::tag::Accessor;
-	/// use std::borrow::Cow;
-	///
-	/// const TITLE_ID: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIT2"));
-	///
-	/// let mut tag = Id3v2Tag::new();
-	///
-	/// tag.set_title(String::from("Foo\0Bar"));
-	///
-	/// let mut titles = tag.get_texts(&TITLE_ID).expect("Should exist");
-	///
-	/// assert_eq!(titles.next(), Some("Foo"));
-	/// assert_eq!(titles.next(), Some("Bar"));
-	/// ```
-	pub fn get_texts<'a>(
-		&'a self,
-		id: &FrameId<'_>,
-	) -> Option<impl Iterator<Item = &'a str> + use<'a>> {
-		if let Some(Frame::Text(TextInformationFrame { value, .. })) = self.get(id) {
-			return Some(value.split(V4_MULTI_VALUE_SEPARATOR));
-		}
-
-		None
-	}
-
-	/// Gets the text for a user-defined frame
-	///
-	/// NOTE: If the tag is [`Id3v2Version::V4`], there could be multiple values separated by null characters (`'\0'`).
-	///       The caller is responsible for splitting these values as necessary.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::Id3v2Tag;
-	///
-	/// let mut tag = Id3v2Tag::new();
-	///
-	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
-	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
-	///
-	/// // Now we can get the value back using the description
-	/// let value = tag.get_user_text("SOME_DESCRIPTION");
-	/// assert_eq!(value, Some("Some value"));
-	/// ```
-	pub fn get_user_text(&self, description: &str) -> Option<&str> {
-		self.frames
-			.iter()
-			.filter(|frame| frame.id().as_str() == "TXXX")
-			.find_map(|frame| match frame {
-				Frame::UserText(ExtendedTextFrame {
-					description: desc,
-					content,
-					..
-				}) if desc == description => Some(&**content),
-				_ => None,
-			})
-	}
-
-	/// Inserts a new user-defined text frame (`TXXX`)
-	///
-	/// NOTE: The encoding will be UTF-8
-	///
-	/// This will replace any TXXX frame with the same description, see [`Id3v2Tag::insert`].
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::Id3v2Tag;
-	/// use lofty::tag::TagExt;
-	///
-	/// let mut tag = Id3v2Tag::new();
-	///
-	/// assert!(tag.is_empty());
-	///
-	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
-	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
-	///
-	/// // Now we can get the value back using `get_user_text`
-	/// let value = tag.get_user_text("SOME_DESCRIPTION");
-	/// assert_eq!(value, Some("Some value"));
-	/// ```
-	pub fn insert_user_text(
-		&mut self,
-		description: String,
-		content: String,
-	) -> Option<Frame<'static>> {
-		self.insert(Frame::UserText(ExtendedTextFrame::new(
-			TextEncoding::UTF8,
-			description,
-			content,
-		)))
-	}
-
-	/// Inserts a [`Frame`]
-	///
-	/// This will replace any frame of the same id (**or description!** See [`ExtendedTextFrame`])
-	pub fn insert(&mut self, frame: Frame<'static>) -> Option<Frame<'static>> {
-		// Some frames can only appear once in a tag, handle them separately
-		const ONE_PER_TAG: [&str; 11] = [
-			"MCDI", "ETCO", "MLLT", "SYTC", "RVRB", "PCNT", "RBUF", "POSS", "OWNE", "SEEK", "ASPI",
-		];
-
-		if ONE_PER_TAG.contains(&frame.id_str()) {
-			let ret = self.remove(frame.id()).next();
-			self.frames.push(frame);
-			return ret;
-		}
-
-		let replaced = self
-			.frames
-			.iter()
-			.position(|f| f == &frame)
-			.map(|pos| self.frames.remove(pos));
-
-		self.frames.push(frame);
-		replaced
-	}
-
-	/// Removes a user-defined text frame (`TXXX`) by its description
-	///
-	/// This will return the matching frame.
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::Id3v2Tag;
-	/// use lofty::tag::TagExt;
-	///
-	/// let mut tag = Id3v2Tag::new();
-	/// assert!(tag.is_empty());
-	///
-	/// // Add a new "TXXX" frame identified by "SOME_DESCRIPTION"
-	/// let _ = tag.insert_user_text(String::from("SOME_DESCRIPTION"), String::from("Some value"));
-	/// assert!(!tag.is_empty());
-	///
-	/// // Now we can remove it by its description
-	/// let value = tag.remove_user_text("SOME_DESCRIPTION");
-	/// assert!(tag.is_empty());
-	/// ```
-	pub fn remove_user_text(&mut self, description: &str) -> Option<Frame<'static>> {
-		self.frames
-			.iter()
-			.position(|frame| {
-				matches!(frame, Frame::UserText(ExtendedTextFrame {
-                             description: desc, ..
-                         }) if desc == description)
-			})
-			.map(|pos| self.frames.remove(pos))
-	}
-
-	/// Removes a [`Frame`] by id
-	///
-	/// This will remove any frames with the same ID. To remove `TXXX` frames by their descriptions,
-	/// see [`Id3v2Tag::remove_user_text`].
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::TextEncoding;
-	/// use lofty::id3::v2::{Frame, FrameFlags, FrameId, Id3v2Tag, TextInformationFrame};
-	/// use lofty::tag::TagExt;
-	/// use std::borrow::Cow;
-	///
-	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));
-	///
-	/// # fn main() -> lofty::error::Result<()> {
-	/// let mut tag = Id3v2Tag::new();
-	/// assert!(tag.is_empty());
-	///
-	/// // Add a new "TMOO" frame
-	/// let tmoo_frame = Frame::Text(TextInformationFrame::new(
-	/// 	MOOD_FRAME_ID,
-	/// 	TextEncoding::Latin1,
-	/// 	String::from("Classical"),
-	/// ));
-	///
-	/// let _ = tag.insert(tmoo_frame.clone());
-	/// assert!(!tag.is_empty());
-	///
-	/// // Now we can remove it by its ID
-	/// let mut values = tag.remove(&MOOD_FRAME_ID);
-	///
-	/// // We got back exactly what we inserted
-	/// assert_eq!(values.next(), Some(tmoo_frame));
-	/// assert!(values.next().is_none());
-	/// drop(values);
-	///
-	/// // The tag is now empty
-	/// assert!(tag.is_empty());
-	/// # Ok(()) }
-	/// ```
-	pub fn remove<'a>(
-		&'a mut self,
-		id: &FrameId<'_>,
-	) -> impl Iterator<Item = Frame<'static>> + use<'a> {
-		// TODO: drain_filter
-		let mut split_idx = 0_usize;
-
-		for read_idx in 0..self.frames.len() {
-			if self.frames[read_idx].id() == id {
-				self.frames.swap(split_idx, read_idx);
-				split_idx += 1;
-			}
-		}
-
-		self.frames.drain(..split_idx)
-	}
-
-	fn take_first(&mut self, id: &FrameId<'_>) -> Option<Frame<'static>> {
-		self.frames
-			.iter()
-			.position(|f| f.id() == id)
-			.map(|pos| self.frames.remove(pos))
-	}
-
-	/// Retains [`Frame`]s by evaluating the predicate
-	pub fn retain<P>(&mut self, predicate: P)
-	where
-		P: FnMut(&Frame<'_>) -> bool,
-	{
-		self.frames.retain(predicate)
-	}
-
-	/// Inserts a [`Picture`]
-	///
-	/// According to spec, there can only be one picture of type [`PictureType::Icon`] and [`PictureType::OtherIcon`].
-	/// When attempting to insert these types, if another is found it will be removed and returned.
-	pub fn insert_picture(&mut self, picture: Picture) -> Option<Frame<'static>> {
-		let ret = if picture.pic_type == PictureType::Icon
-			|| picture.pic_type == PictureType::OtherIcon
-		{
-			let mut pos = None;
-
-			for (i, frame) in self.frames.iter().enumerate() {
-				match frame {
-					Frame::Picture(AttachedPictureFrame {
-						picture: Cow::Owned(Picture { pic_type, .. }),
-						..
-					}) if pic_type == &picture.pic_type => {
-						pos = Some(i);
-						break;
-					},
-					_ => {},
-				}
-			}
-
-			pos.map(|p| self.frames.remove(p))
-		} else {
-			None
-		};
-
-		self.frames.push(new_picture_frame(picture));
-
-		ret
-	}
-
-	/// Removes a certain [`PictureType`]
-	pub fn remove_picture_type(&mut self, picture_type: PictureType) {
-		self.frames.retain(|f| {
-			!matches!(f, Frame::Picture(AttachedPictureFrame {
-						picture: Cow::Owned(Picture {
-							pic_type: p_ty,
-							..
-						}), ..
-					}) if p_ty == &picture_type)
-		})
-	}
-
 	/// Returns all `USLT` frames
 	pub fn unsync_text(&self) -> impl Iterator<Item = &UnsynchronizedTextFrame<'_>> + Clone {
 		self.frames.iter().filter_map(|f| match f {
@@ -549,6 +230,20 @@ impl Id3v2Tag {
 		} else {
 			log::warn!("{id} is not set. number: {number:?}, total: {total:?}");
 		}
+	}
+}
+
+impl Deref for Id3v2Tag {
+	type Target = FrameList<'static>;
+
+	fn deref(&self) -> &Self::Target {
+		&self.frames
+	}
+}
+
+impl DerefMut for Id3v2Tag {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.frames
 	}
 }
 
@@ -680,7 +375,7 @@ pub(super) fn new_timestamp_frame(id: FrameId<'_>, timestamp: Timestamp) -> Fram
 	Frame::Timestamp(TimestampFrame::new(id, TextEncoding::UTF8, timestamp))
 }
 
-const TITLE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIT2"));
+pub(in crate::id3::v2) const TITLE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIT2"));
 const ARTIST_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TPE1"));
 const ALBUM_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TALB"));
 const GENRE_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TCON"));
@@ -873,7 +568,7 @@ impl TagExt for Id3v2Tag {
 	{
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().map(Frame::downgrade).peekable(),
+			frames: self.frames.iter().map(Frame::borrow).peekable(),
 		}
 		.write_to(file, write_options)
 	}
@@ -891,7 +586,7 @@ impl TagExt for Id3v2Tag {
 	) -> std::result::Result<(), Self::Err> {
 		Id3v2TagRef {
 			flags: self.flags,
-			frames: self.frames.iter().map(Frame::downgrade).peekable(),
+			frames: self.frames.iter().map(Frame::borrow).peekable(),
 		}
 		.dump_to(writer, write_options)
 	}
@@ -1029,7 +724,7 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 			key_value_pairs,
 			..
 		}) if id.as_str() == "TIPL" => {
-			key_value_pairs.retain_mut(|(key, value)| {
+			key_value_pairs.to_mut().retain_mut(|(key, value)| {
 				for (item_key, tipl_key) in TIPL_MAPPINGS {
 					if key == *tipl_key {
 						tag.items.push(TagItem::new(
@@ -1216,7 +911,9 @@ fn handle_tag_split(tag: &mut Tag, frame: &mut Frame<'_>) -> bool {
 		| Frame::RelativeVolumeAdjustment(_)
 		| Frame::Ownership(_)
 		| Frame::EventTimingCodes(_)
-		| Frame::Private(_) => {
+		| Frame::Private(_)
+		| Frame::Chapter(_)
+		| Frame::TableOfContents(_) => {
 			return FRAME_RETAINED; // Keep unsupported frame
 		},
 	}
@@ -1265,7 +962,7 @@ impl MergeTag for SplitTagRemainder {
 					..
 				}) = &mut tipl_frame
 				{
-					existing.extend(key_value_pairs);
+					existing.to_mut().extend(key_value_pairs.into_owned());
 				}
 
 				merged.frames.push(tipl_frame);
@@ -1292,7 +989,7 @@ impl From<Id3v2Tag> for Tag {
 	fn from(input: Id3v2Tag) -> Self {
 		let (remainder, mut tag) = input.split_tag();
 
-		if unsafe { global_options().preserve_format_specific_items } && remainder.0.len() > 0 {
+		if unsafe { global_options().preserve_format_specific_items } && !remainder.0.is_empty() {
 			tag.companion_tag = Some(CompanionTag::Id3v2(remainder.0));
 		}
 

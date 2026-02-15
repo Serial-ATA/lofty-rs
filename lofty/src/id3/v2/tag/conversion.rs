@@ -320,6 +320,7 @@ pub(crate) fn from_tag<'a>(
 				let (value, _) = take_item_text_and_description(item)?;
 				ctx.tipl
 					.key_value_pairs
+					.to_mut()
 					.push((Cow::Borrowed(tipl_key), value));
 
 				// TIPL is collected at the end
@@ -473,7 +474,7 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = Frame<'_>> {
 	) -> impl IntoIterator<Item = Frame<'_>> + Clone {
 		match companion {
 			Some(CompanionTag::Id3v2(companion)) => {
-				CompanionTagIter::Filled(companion.frames.iter().map(Frame::downgrade))
+				CompanionTagIter::Filled(companion.frames.iter().map(Frame::borrow))
 			},
 			_ => CompanionTagIter::Empty(std::iter::empty()),
 		}

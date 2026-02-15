@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::{LoftyError, Result};
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
@@ -191,10 +192,10 @@ impl<'a> ExtendedTextFrame<'a> {
 	}
 }
 
-impl ExtendedTextFrame<'static> {
-	pub(crate) fn downgrade(&self) -> ExtendedTextFrame<'_> {
+impl ExtendedTextFrame<'_> {
+	pub(crate) fn borrow(&self) -> ExtendedTextFrame<'_> {
 		ExtendedTextFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			description: Cow::Borrowed(&self.description),
 			content: Cow::Borrowed(&self.content),

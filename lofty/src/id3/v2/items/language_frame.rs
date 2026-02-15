@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
@@ -226,10 +227,10 @@ impl<'a> CommentFrame<'a> {
 	}
 }
 
-impl CommentFrame<'static> {
-	pub(crate) fn downgrade(&self) -> CommentFrame<'_> {
+impl CommentFrame<'_> {
+	pub(crate) fn borrow(&self) -> CommentFrame<'_> {
 		CommentFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			language: self.language,
 			description: Cow::Borrowed(&self.description),
@@ -354,10 +355,10 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 	}
 }
 
-impl UnsynchronizedTextFrame<'static> {
-	pub(crate) fn downgrade(&self) -> UnsynchronizedTextFrame<'_> {
+impl UnsynchronizedTextFrame<'_> {
+	pub(crate) fn borrow(&self) -> UnsynchronizedTextFrame<'_> {
 		UnsynchronizedTextFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			language: self.language,
 			description: Cow::Borrowed(&self.description),

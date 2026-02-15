@@ -1,7 +1,8 @@
 use super::FrameFlags;
 use crate::config::ParseOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
 use crate::id3::v2::FrameId;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::util::text::utf8_decode_str;
@@ -14,7 +15,7 @@ pub(crate) fn parse_v2_header<R>(
 	size: &mut u32,
 ) -> Result<Option<(FrameId<'static>, FrameFlags)>>
 where
-	R: Read,
+	R: Read + ?Sized,
 {
 	let mut header = [0; 6];
 	match reader.read_exact(&mut header) {
@@ -48,7 +49,7 @@ pub(crate) fn parse_header<R>(
 	parse_options: ParseOptions,
 ) -> Result<Option<(FrameId<'static>, FrameFlags)>>
 where
-	R: Read,
+	R: Read + ?Sized,
 {
 	let mut header = [0; 10];
 	match reader.read_exact(&mut header) {

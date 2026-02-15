@@ -398,7 +398,7 @@ fn read_and_write_tpil_frame() {
 		panic!("Wrong Frame Value Type for TIPL")
 	};
 
-	assert_eq!(key_value_pairs, content.key_value_pairs);
+	assert_eq!(key_value_pairs, &*content.key_value_pairs);
 }
 
 #[test_log::test]

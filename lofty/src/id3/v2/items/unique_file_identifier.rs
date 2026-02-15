@@ -1,5 +1,6 @@
 use crate::config::{ParsingMode, WriteOptions};
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::parse_mode_choice;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -123,10 +124,10 @@ impl<'a> UniqueFileIdentifierFrame<'a> {
 	}
 }
 
-impl UniqueFileIdentifierFrame<'static> {
-	pub(crate) fn downgrade(&self) -> UniqueFileIdentifierFrame<'_> {
+impl UniqueFileIdentifierFrame<'_> {
+	pub(crate) fn borrow(&self) -> UniqueFileIdentifierFrame<'_> {
 		UniqueFileIdentifierFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			owner: Cow::Borrowed(&self.owner),
 			identifier: Cow::Borrowed(&self.identifier),
 		}

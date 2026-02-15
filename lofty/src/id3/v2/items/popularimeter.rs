@@ -147,10 +147,10 @@ impl<'a> PopularimeterFrame<'a> {
 	}
 }
 
-impl PopularimeterFrame<'static> {
-	pub(crate) fn downgrade(&self) -> PopularimeterFrame<'_> {
+impl PopularimeterFrame<'_> {
+	pub(crate) fn borrow(&self) -> PopularimeterFrame<'_> {
 		PopularimeterFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			email: Cow::Borrowed(&self.email),
 			rating: self.rating,
 			counter: self.counter,
