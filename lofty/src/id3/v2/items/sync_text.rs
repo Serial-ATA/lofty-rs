@@ -159,17 +159,23 @@ impl SynchronizedTextFrame<'_> {
 		)
 		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
 
-		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
-
-		// It's possible for the description to be the only string with a BOM
-		// To be safe, we change the encoding to the concrete variant determined from the description
-		if encoding == TextEncoding::UTF16 {
-			endianness = match bom {
-				[0xFF, 0xFE] => u16::from_le_bytes,
-				[0xFE, 0xFF] => u16::from_be_bytes,
-				_ => err!(TextDecode("UTF-16 string missing a BOM")),
-			};
-		}
+		// There are 3 possibilities for UTF-16 encoded frames:
+		//
+		// * The description is the only string with a BOM
+		// * The description is empty (has no BOM)
+		// * All strings have a BOM
+		//
+		// To be safe, we change the encoding to the concrete variant determined from the description.
+		// Otherwise, we just have to hope that the other fields are encoded properly.
+		let endianness: Option<fn([u8; 2]) -> u16> = if encoding == TextEncoding::UTF16 {
+			match bom {
+				[0xFF, 0xFE] => Some(u16::from_le_bytes),
+				[0xFE, 0xFF] => Some(u16::from_be_bytes),
+				_ => None,
+			}
+		} else {
+			None
+		};
 
 		let mut pos = 0;
 		let total = (data.len() - 6) as u64 - cursor.stream_position()?;
@@ -178,7 +184,7 @@ impl SynchronizedTextFrame<'_> {
 
 		while pos < total {
 			let text;
-			if encoding == TextEncoding::UTF16 {
+			if let Some(endianness) = endianness {
 				let (decoded, bytes_read) =
 					utf16_decode_terminated_maybe_bom(&mut cursor, endianness)
 						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;

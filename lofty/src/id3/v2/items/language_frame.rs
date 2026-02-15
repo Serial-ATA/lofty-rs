@@ -3,7 +3,6 @@ use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::content::verify_encoding;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
 use crate::tag::items::Lang;
 use crate::util::text::{
 	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text,
@@ -49,20 +48,26 @@ impl LanguageFrame {
 			TextDecodeOptions::new().encoding(encoding).terminated(true),
 		)?;
 
-		let mut endianness: fn([u8; 2]) -> u16 = u16::from_le_bytes;
-
-		// It's possible for the description to be the only string with a BOM
-		// To be safe, we change the encoding to the concrete variant determined from the description
-		if encoding == TextEncoding::UTF16 {
-			endianness = match bom {
-				[0xFF, 0xFE] => u16::from_le_bytes,
-				[0xFE, 0xFF] => u16::from_be_bytes,
-				_ => err!(TextDecode("UTF-16 string missing a BOM")),
-			};
-		}
+		// There are 3 possibilities for UTF-16 encoded frames:
+		//
+		// * The description is the only string with a BOM
+		// * The description is empty (has no BOM)
+		// * All strings have a BOM
+		//
+		// To be safe, we change the encoding to the concrete variant determined from the description.
+		// Otherwise, we just have to hope that the other fields are encoded properly.
+		let endianness: Option<fn([u8; 2]) -> u16> = if encoding == TextEncoding::UTF16 {
+			match bom {
+				[0xFF, 0xFE] => Some(u16::from_le_bytes),
+				[0xFE, 0xFF] => Some(u16::from_be_bytes),
+				_ => None,
+			}
+		} else {
+			None
+		};
 
 		let content;
-		if encoding == TextEncoding::UTF16 {
+		if let Some(endianness) = endianness {
 			(content, _) = utf16_decode_terminated_maybe_bom(reader, endianness)?;
 		} else {
 			content = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
