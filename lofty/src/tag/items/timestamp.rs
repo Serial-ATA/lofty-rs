@@ -1,6 +1,6 @@
 use crate::config::ParsingMode;
 use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::err;
+use crate::macros::{err, parse_mode_choice};
 
 use std::fmt::Display;
 use std::io::Read;
@@ -144,9 +144,13 @@ impl Timestamp {
 		// We need to verify that the year is exactly 4 bytes long. This doesn't matter for other segments.
 		let (year, bytes_read) = Self::segment::<4>(reader, None, parse_mode)?;
 		if bytes_read != 4 {
-			err!(BadTimestamp(
-				"Encountered an invalid year length (should be 4 digits)"
-			))
+			parse_mode_choice!(
+				parse_mode,
+				STRICT: err!(BadTimestamp(
+					"Encountered an invalid year length (should be 4 digits)"
+				)),
+				DEFAULT: return Ok(None)
+			)
 		}
 
 		timestamp.year = year;
