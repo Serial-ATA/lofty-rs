@@ -1,6 +1,6 @@
-use crate::config::WriteOptions;
+use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
-use crate::iff::chunk::Chunks;
+use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::macros::err;
 use crate::util::io::{FileLike, Length, Truncate};
 
@@ -10,7 +10,6 @@ use byteorder::{ByteOrder, WriteBytesExt};
 
 const CHUNK_NAME_UPPER: [u8; 4] = [b'I', b'D', b'3', b' '];
 const CHUNK_NAME_LOWER: [u8; 4] = [b'i', b'd', b'3', b' '];
-const RIFF_CHUNK_HEADER_SIZE: usize = 8;
 
 pub(in crate::id3::v2) fn write_to_chunk_file<F, B>(
 	file: &mut F,
@@ -23,54 +22,70 @@ where
 	LoftyError: From<<F as Length>::Error>,
 	B: ByteOrder,
 {
-	// Only rely on the actual file for the first chunk read
+	const FIRST_CHUNK_LEN: u64 = (IFF_CHUNK_HEADER_SIZE as u64) + 4;
+
+	// We only want to rely on the file size for the first chunk read.
+	// Since a file can have trailing junk, but otherwise be valid, we actually want to use the
+	// first chunk size, which (should) encompass the entire stream.
 	let file_len = file.len()?;
 
-	let mut chunks = Chunks::<B>::new(file_len);
-	chunks.next(file)?;
+	let mut chunks = Chunks::<_, B>::new(file, file_len);
 
-	let mut actual_stream_size = chunks.size;
+	// TODO: Forcing the use of ParseOptions::default()
+	let parse_options = ParseOptions::default();
+	let Some(first_chunk) = chunks.next(parse_options.parsing_mode)? else {
+		err!(UnknownFormat);
+	};
 
+	let mut actual_stream_size = first_chunk.size();
+
+	let file = chunks.into_inner();
 	file.rewind()?;
 
 	let mut file_bytes = Cursor::new(Vec::with_capacity(actual_stream_size as usize));
 	file.read_to_end(file_bytes.get_mut())?;
 
-	if file_bytes.get_ref().len() < (actual_stream_size as usize + RIFF_CHUNK_HEADER_SIZE) {
+	if file_bytes.get_ref().len() < (actual_stream_size as usize + IFF_CHUNK_HEADER_SIZE as usize) {
 		err!(SizeMismatch);
 	}
 
 	// The first chunk format is RIFF....WAVE
-	file_bytes.seek(SeekFrom::Start(12))?;
+	file_bytes.seek(SeekFrom::Start(FIRST_CHUNK_LEN))?;
 
-	let (mut exising_id3_start, mut existing_id3_size) = (None, None);
+	let mut existing_id3_tag = None;
 
-	let mut chunks = Chunks::<B>::new(u64::from(actual_stream_size));
-	while let Ok(true) = chunks.next(&mut file_bytes) {
-		if chunks.fourcc == CHUNK_NAME_UPPER || chunks.fourcc == CHUNK_NAME_LOWER {
-			exising_id3_start = Some(file_bytes.stream_position()? - 8);
-			existing_id3_size = Some(chunks.size);
+	let mut chunks = Chunks::<_, B>::new(file_bytes, u64::from(actual_stream_size));
+	while let Some(chunk) = chunks.next(parse_options.parsing_mode)? {
+		if chunk.fourcc == CHUNK_NAME_UPPER || chunk.fourcc == CHUNK_NAME_LOWER {
+			// Need to add FIRST_CHUNK_LEN since we started the chunk reader at that offset
+			let chunk_start = chunk.start() + FIRST_CHUNK_LEN;
+
+			// Can't trust the written chunk size, since some encoders don't handle padding
+			// correctly, see Chunks::skip(). Since skip detects invalid padding, we just let it
+			// do the work and figure out where we are in the file afterwards.
+			chunks.skip()?;
+
+			let chunk_end = chunks.stream_position() + FIRST_CHUNK_LEN;
+
+			log::debug!(
+				"Found existing ID3v2 chunk, size: {} bytes",
+				chunk_end - chunk_start
+			);
+			existing_id3_tag = Some(chunk_start..chunk_end);
 			break;
 		}
-
-		chunks.skip(&mut file_bytes)?;
 	}
 
-	if let (Some(exising_id3_start), Some(mut existing_id3_size)) =
-		(exising_id3_start, existing_id3_size)
-	{
-		// We need to remove the padding byte if it exists
-		if existing_id3_size % 2 != 0 {
-			existing_id3_size += 1;
-		}
+	let mut file_bytes = chunks.into_inner();
 
-		let existing_tag_end =
-			exising_id3_start as usize + RIFF_CHUNK_HEADER_SIZE + existing_id3_size as usize;
+	if let Some(existing_id3_tag) = existing_id3_tag {
+		let tag_size = existing_id3_tag.end - existing_id3_tag.start;
+
 		let _ = file_bytes
 			.get_mut()
-			.drain(exising_id3_start as usize..existing_tag_end);
+			.drain(existing_id3_tag.start as usize..existing_id3_tag.end as usize);
 
-		actual_stream_size -= existing_id3_size + RIFF_CHUNK_HEADER_SIZE as u32;
+		actual_stream_size -= tag_size as u32;
 	}
 
 	if !tag.is_empty() {
@@ -94,7 +109,7 @@ where
 			err!(TooMuchData)
 		};
 
-		let tag_position = actual_stream_size as usize + RIFF_CHUNK_HEADER_SIZE;
+		let tag_position = actual_stream_size as usize + IFF_CHUNK_HEADER_SIZE as usize;
 
 		file_bytes.get_mut().splice(
 			tag_position..tag_position,

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when during generic conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/621)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/623))
 - **Timestamp**: Only enforce valid year in strict mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/615)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/616))
 - **OGG Vorbis**: Fixed potential infinite loop while property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/620)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/622))
+- **IFF**: Support chunks with invalid padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/619)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/627))
+  - When RIFF/AIFF chunks have an odd length, they should be padded, and the padding is not counted in the chunk size.
+    However, some encoders incorrectly include the padding in the size, which can cause the parser to go out of sync.
+    We no longer assume padding is valid and have additional checks to stay in sync when possible.
 
 ## [0.23.2] - 2026-02-14
 

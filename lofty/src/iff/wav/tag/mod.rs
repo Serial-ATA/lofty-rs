@@ -14,6 +14,7 @@ use crate::util::io::{FileLike, Length, Truncate};
 use std::borrow::Cow;
 use std::io::Write;
 
+use crate::iff::chunk::valid_fourcc;
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -91,7 +92,11 @@ impl RiffInfoList {
 	///
 	/// This will case-insensitively replace any item with the same key
 	pub fn insert(&mut self, key: String, value: String) {
-		if read::verify_key(key.as_str()) {
+		let Ok(fourcc) = key.as_bytes().try_into() else {
+			return;
+		};
+
+		if valid_fourcc(fourcc) {
 			self.items
 				.iter()
 				.position(|(k, _)| k.eq_ignore_ascii_case(key.as_str()))
@@ -399,9 +404,7 @@ mod tests {
 		let mut parsed_tag = RiffInfoList::default();
 
 		super::read::parse_riff_info(
-			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
-			(tag.len() - 1) as u64,
+			&mut Chunks::<_, LittleEndian>::new(&mut Cursor::new(&tag[..]), tag.len() as u64),
 			&mut parsed_tag,
 			ParsingMode::Strict,
 		)
@@ -416,9 +419,7 @@ mod tests {
 		let mut parsed_tag = RiffInfoList::default();
 
 		super::read::parse_riff_info(
-			&mut Cursor::new(&tag[..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
-			(tag.len() - 1) as u64,
+			&mut Chunks::<_, LittleEndian>::new(&mut Cursor::new(&tag[..]), tag.len() as u64),
 			&mut parsed_tag,
 			ParsingMode::Strict,
 		)
@@ -433,9 +434,7 @@ mod tests {
 
 		// Remove the LIST....INFO from the tag
 		super::read::parse_riff_info(
-			&mut Cursor::new(&writer[12..]),
-			&mut Chunks::<LittleEndian>::new(tag.len() as u64),
-			(tag.len() - 13) as u64,
+			&mut Chunks::<_, LittleEndian>::new(&mut Cursor::new(&writer[12..]), tag.len() as u64),
 			&mut temp_parsed_tag,
 			ParsingMode::Strict,
 		)
@@ -452,9 +451,7 @@ mod tests {
 		let mut riff_info = RiffInfoList::default();
 
 		super::read::parse_riff_info(
-			&mut reader,
-			&mut Chunks::<LittleEndian>::new(tag_bytes.len() as u64),
-			(tag_bytes.len() - 1) as u64,
+			&mut Chunks::<_, LittleEndian>::new(&mut reader, tag_bytes.len() as u64),
 			&mut riff_info,
 			ParsingMode::Strict,
 		)
