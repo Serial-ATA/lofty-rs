@@ -1,13 +1,13 @@
-use crate::config::WriteOptions;
+use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
-use crate::iff::chunk::Chunks;
-use crate::macros::err;
+use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
+use crate::macros::{encode_err, err};
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::io::{SeekFrom, Write};
+use std::io::Write;
 
 use byteorder::BigEndian;
 use lofty_attr::tag;
@@ -427,60 +427,69 @@ where
 		LoftyError: From<<F as Truncate>::Error>,
 		LoftyError: From<<F as Length>::Error>,
 	{
+		// FORM....AIFF
+		const FIRST_CHUNK_LEN: u64 = (IFF_CHUNK_HEADER_SIZE as u64) + 4;
+
 		super::read::verify_aiff(file)?;
-		let file_len = file.len()?.saturating_sub(12);
+		let file_len = file.len()?.saturating_sub(FIRST_CHUNK_LEN);
 
 		let text_chunks = Self::create_text_chunks(&mut tag)?;
 
-		let mut chunks_remove = Vec::new();
+		let mut chunks_to_remove = Vec::new();
+		let mut comm_end = None;
 
-		let mut chunks = Chunks::<BigEndian>::new(file_len);
-
-		while let Ok(true) = chunks.next(file) {
-			match &chunks.fourcc {
+		// TODO: Forcing the use of ParseOptions::default()
+		let parse_options = ParseOptions::default();
+		let mut chunks = Chunks::<_, BigEndian>::new(file, file_len);
+		while let Some(chunk) = chunks.next(parse_options.parsing_mode)? {
+			match &chunk.fourcc {
 				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
-					let start = (file.stream_position()? - 8) as usize;
-					let mut end = start + 8 + chunks.size as usize;
+					// Need to add FIRST_CHUNK_LEN since we started the chunk reader at that offset
+					let start = chunk.start() + FIRST_CHUNK_LEN;
 
-					if chunks.size % 2 != 0 {
-						end += 1
-					}
+					// Can't trust the written chunk size, since some encoders don't handle padding
+					// correctly, see Chunks::skip(). Since skip detects invalid padding, we just let it
+					// do the work and figure out where we are in the file afterwards.
+					chunks.skip()?;
 
-					chunks_remove.push((start, end))
+					let end = chunks.stream_position() + FIRST_CHUNK_LEN;
+
+					chunks_to_remove.push((start as usize, end as usize))
+				},
+				b"COMM" => {
+					chunks.skip()?;
+					comm_end = Some(chunks.stream_position() + FIRST_CHUNK_LEN);
 				},
 				_ => {},
 			}
-
-			chunks.skip(file)?;
 		}
 
+		let Some(comm_end) = comm_end else {
+			encode_err!(@BAIL Aiff, "COMM chunk not found");
+		};
+
+		let file = chunks.into_inner();
 		file.rewind()?;
 
 		let mut file_bytes = Vec::new();
 		file.read_to_end(&mut file_bytes)?;
 
-		if chunks_remove.is_empty() {
-			file.seek(SeekFrom::Start(16))?;
-
-			let mut size = [0; 4];
-			file.read_exact(&mut size)?;
-
-			let comm_end = (20 + u32::from_le_bytes(size)) as usize;
-			file_bytes.splice(comm_end..comm_end, text_chunks);
+		if chunks_to_remove.is_empty() {
+			file_bytes.splice((comm_end as usize)..(comm_end as usize), text_chunks);
 		} else {
-			chunks_remove.sort_unstable();
-			chunks_remove.reverse();
+			chunks_to_remove.sort_unstable();
+			chunks_to_remove.reverse();
 
-			let first = chunks_remove.pop().unwrap(); // Infallible
+			let first = chunks_to_remove.pop().unwrap(); // Infallible
 
-			for (s, e) in &chunks_remove {
+			for (s, e) in &chunks_to_remove {
 				file_bytes.drain(*s..*e);
 			}
 
 			file_bytes.splice(first.0..first.1, text_chunks);
 		}
 
-		let total_size = ((file_bytes.len() - 8) as u32).to_be_bytes();
+		let total_size = ((file_bytes.len() - IFF_CHUNK_HEADER_SIZE as usize) as u32).to_be_bytes();
 		file_bytes.splice(4..8, total_size.to_vec());
 
 		file.rewind()?;

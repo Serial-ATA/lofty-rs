@@ -1,7 +1,7 @@
 use super::RIFFInfoListRef;
-use crate::config::WriteOptions;
+use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 use crate::error::{LoftyError, Result};
-use crate::iff::chunk::Chunks;
+use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::iff::wav::read::verify_wav;
 use crate::macros::err;
 use crate::util::io::{FileLike, Length, Truncate};
@@ -10,8 +10,6 @@ use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, WriteBytesExt};
-
-const RIFF_CHUNK_HEADER_SIZE: usize = 8;
 
 pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(
 	file: &mut F,
@@ -24,7 +22,10 @@ where
 	LoftyError: From<<F as Length>::Error>,
 	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
-	let mut stream_length = verify_wav(file)?;
+	// The first chunk format is RIFF....WAVE
+	const FIRST_CHUNK_LEN: u32 = IFF_CHUNK_HEADER_SIZE + 4;
+
+	let original_stream_length = verify_wav(file)?;
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
@@ -34,30 +35,39 @@ where
 	let mut file_bytes = Cursor::new(Vec::new());
 	file.read_to_end(file_bytes.get_mut())?;
 
-	if file_bytes.get_ref().len() < (stream_length as usize + RIFF_CHUNK_HEADER_SIZE) {
+	// File is lying about its length
+	if file_bytes.get_ref().len() < (original_stream_length + IFF_CHUNK_HEADER_SIZE) as usize {
 		err!(SizeMismatch);
 	}
 
-	// The first chunk format is RIFF....WAVE
-	file_bytes.seek(SeekFrom::Start(12))?;
+	file_bytes.seek(SeekFrom::Start(u64::from(FIRST_CHUNK_LEN)))?;
 
-	let Some(info_list_size) = find_info_list(&mut file_bytes, u64::from(stream_length - 4))?
+	// TODO: Forcing the use of ParseOptions::default()
+	let parse_options = ParseOptions::default();
+	let Some(original_info_list_size) = find_info_list(
+		&mut file_bytes,
+		u64::from(original_stream_length - 4),
+		parse_options.parsing_mode,
+	)?
 	else {
 		// Simply append the info list to the end of the file and update the file size
+
+		let new_stream_length = riff_info_bytes.len() as u64 + u64::from(original_stream_length);
+		if new_stream_length > u64::from(u32::MAX) {
+			err!(TooMuchData);
+		}
+
 		file_bytes.rewind()?;
 
-		let tag_position = stream_length as usize + RIFF_CHUNK_HEADER_SIZE;
-
+		let tag_position = (original_stream_length + IFF_CHUNK_HEADER_SIZE) as usize;
 		file_bytes.seek(SeekFrom::Start(tag_position as u64))?;
 
 		file_bytes
 			.get_mut()
 			.splice(tag_position..tag_position, riff_info_bytes.iter().copied());
 
-		let len = (riff_info_bytes.len() + tag_position - 8) as u32;
-
 		file_bytes.seek(SeekFrom::Start(4))?;
-		file_bytes.write_u32::<LittleEndian>(len)?;
+		file_bytes.write_u32::<LittleEndian>(new_stream_length as u32)?;
 
 		file.rewind()?;
 		file.truncate(0)?;
@@ -69,20 +79,25 @@ where
 	// Replace the existing tag
 
 	let info_list_start = file_bytes.seek(SeekFrom::Current(-12))? as usize;
-	let info_list_end = info_list_start + RIFF_CHUNK_HEADER_SIZE + info_list_size as usize;
 
-	stream_length -= info_list_end as u32 - info_list_start as u32;
+	// `original_info_list_size` doesn't include the b"LIST\0\0\0\0" chunk header
+	let info_list_end =
+		info_list_start + (IFF_CHUNK_HEADER_SIZE + original_info_list_size) as usize;
+	let original_info_list = info_list_start..info_list_end;
 
-	let new_tag_len = riff_info_bytes.len() as u32;
+	let new_stream_length = riff_info_bytes.len() as u64
+		+ (u64::from(original_stream_length) - original_info_list.len() as u64);
+	if new_stream_length > u64::from(u32::MAX) {
+		err!(TooMuchData);
+	}
+
 	let _ = file_bytes
 		.get_mut()
-		.splice(info_list_start..info_list_end, riff_info_bytes);
-
-	stream_length += new_tag_len;
+		.splice(original_info_list, riff_info_bytes);
 
 	let _ = file_bytes
 		.get_mut()
-		.splice(4..8, stream_length.to_le_bytes());
+		.splice(4..8, (new_stream_length as u32).to_le_bytes());
 
 	file.rewind()?;
 	file.truncate(0)?;
@@ -91,30 +106,30 @@ where
 	Ok(())
 }
 
-fn find_info_list<R>(data: &mut R, file_size: u64) -> Result<Option<u32>>
+fn find_info_list<R>(data: &mut R, file_size: u64, parse_mode: ParsingMode) -> Result<Option<u32>>
 where
 	R: Read + Seek,
 {
 	let mut info = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(file_size);
-
-	while let Ok(true) = chunks.next(data) {
-		if &chunks.fourcc == b"LIST" {
-			let mut list_type = [0; 4];
-			data.read_exact(&mut list_type)?;
-
-			if &list_type == b"INFO" {
-				log::debug!("Found existing RIFF INFO list, size: {} bytes", chunks.size);
-
-				info = Some(chunks.size);
-				break;
-			}
-
-			data.seek(SeekFrom::Current(-8))?;
+	let mut chunks = Chunks::<_, LittleEndian>::new(data, file_size);
+	while let Some(mut chunk) = chunks.next(parse_mode)? {
+		if &chunk.fourcc != b"LIST" {
+			continue;
 		}
 
-		chunks.skip(data)?;
+		let mut list_type = [0; 4];
+		chunk.read_exact(&mut list_type)?;
+
+		if &list_type == b"INFO" {
+			log::debug!(
+				"Found existing RIFF INFO list, size: {} bytes",
+				chunk.size()
+			);
+
+			info = Some(chunk.size());
+			break;
+		}
 	}
 
 	Ok(info)
@@ -131,9 +146,7 @@ pub(super) fn create_riff_info(
 		return Ok(());
 	}
 
-	bytes.extend(b"LIST");
-	bytes.extend(b"INFO");
-
+	bytes.extend(b"LIST\0\0\0\0INFO");
 	for (k, v) in items {
 		if v.is_empty() {
 			continue;
@@ -152,19 +165,13 @@ pub(super) fn create_riff_info(
 		bytes.extend(terminator);
 	}
 
-	let packet_size = Vec::len(bytes) - 4;
-
-	if packet_size > u32::MAX as usize {
+	let list_size = Vec::len(bytes) - IFF_CHUNK_HEADER_SIZE as usize;
+	if list_size > u32::MAX as usize {
 		err!(TooMuchData);
 	}
 
-	log::debug!("Created RIFF INFO list, size: {} bytes", packet_size);
-	let size = (packet_size as u32).to_le_bytes();
-
-	#[allow(clippy::needless_range_loop)]
-	for i in 0..4 {
-		bytes.insert(i + 4, size[i]);
-	}
+	log::debug!("Created RIFF INFO list, size: {} bytes", list_size);
+	bytes[4..8].copy_from_slice(&(list_size as u32).to_le_bytes());
 
 	Ok(())
 }

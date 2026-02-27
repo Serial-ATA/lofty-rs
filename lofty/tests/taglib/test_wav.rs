@@ -247,7 +247,7 @@ fn test_fuzzed_file1() {
 	assert_eq!(88, properties.bitrate());
 	assert_eq!(8, properties.bit_depth());
 	assert_eq!(11025, properties.sample_rate());
-	assert!(f1.riff_info().is_none());
+	assert!(f1.riff_info().is_some()); // NOTE: TagLib isn't able to read the INFO tag
 	assert!(f1.id3v2().is_none());
 }
 

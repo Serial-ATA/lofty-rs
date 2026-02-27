@@ -52,7 +52,9 @@ where
 	let compression_present = verify_aiff(data)?;
 
 	let current_pos = data.stream_position()?;
-	let file_len = data.seek(SeekFrom::End(0))?;
+
+	// - 12 for the FORM chunk content we already read
+	let file_len = data.seek(SeekFrom::End(0))?.saturating_sub(12);
 
 	data.seek(SeekFrom::Start(current_pos))?;
 
@@ -65,12 +67,11 @@ where
 
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut chunks = Chunks::<BigEndian>::new(file_len);
-
-	while let Ok(true) = chunks.next(data) {
-		match &chunks.fourcc {
+	let mut chunks = Chunks::<_, BigEndian>::new(data, file_len);
+	while let Some(mut chunk) = chunks.next(parse_options.parsing_mode)? {
+		match &chunk.fourcc {
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
-				let tag = chunks.id3_chunk(data, parse_options)?;
+				let tag = chunk.id3_chunk(parse_options)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
 					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
 
@@ -84,35 +85,33 @@ where
 				id3v2_tag = Some(tag);
 			},
 			b"COMM" if parse_options.read_properties && comm.is_none() => {
-				if chunks.size < 18 {
+				if chunk.size() < 18 {
 					decode_err!(@BAIL Aiff, "File has an invalid \"COMM\" chunk size (< 18)");
 				}
 
-				comm = Some(chunks.content(data)?);
-				chunks.correct_position(data)?;
+				comm = Some(chunk.content()?);
 			},
 			b"SSND" if parse_options.read_properties => {
-				stream_len = chunks.size;
-				chunks.skip(data)?;
+				stream_len = chunk.size();
 			},
 			b"ANNO" if parse_options.read_tags => {
-				annotations.push(chunks.read_pstring(data, None)?);
+				annotations.push(chunk.read_string(None)?);
 			},
 			// These four chunks are expected to appear at most once per file,
 			// so there's no need to replace anything we already read
 			b"COMT" if comments.is_empty() && parse_options.read_tags => {
-				if chunks.size < 2 {
+				if chunk.size() < 2 {
 					continue;
 				}
 
-				let num_comments = data.read_u16::<BigEndian>()?;
+				let num_comments = chunk.read_u16::<BigEndian>()?;
 
 				for _ in 0..num_comments {
-					let timestamp = data.read_u32::<BigEndian>()?;
-					let marker_id = data.read_u16::<BigEndian>()?;
-					let size = data.read_u16::<BigEndian>()?;
+					let timestamp = chunk.read_u32::<BigEndian>()?;
+					let marker_id = chunk.read_u16::<BigEndian>()?;
+					let size = chunk.read_u16::<BigEndian>()?;
 
-					let text = chunks.read_pstring(data, Some(u32::from(size)))?;
+					let text = chunk.read_string(Some(u32::from(size)))?;
 
 					comments.push(Comment {
 						timestamp,
@@ -120,21 +119,21 @@ where
 						text,
 					})
 				}
-
-				chunks.correct_position(data)?;
 			},
 			b"NAME" if text_chunks.name.is_none() && parse_options.read_tags => {
-				text_chunks.name = Some(chunks.read_pstring(data, None)?);
+				text_chunks.name = Some(chunk.read_string(None)?);
 			},
 			b"AUTH" if text_chunks.author.is_none() && parse_options.read_tags => {
-				text_chunks.author = Some(chunks.read_pstring(data, None)?);
+				text_chunks.author = Some(chunk.read_string(None)?);
 			},
 			b"(c) " if text_chunks.copyright.is_none() && parse_options.read_tags => {
-				text_chunks.copyright = Some(chunks.read_pstring(data, None)?);
+				text_chunks.copyright = Some(chunk.read_string(None)?);
 			},
-			_ => chunks.skip(data)?,
+			_ => {},
 		}
 	}
+
+	let data = chunks.into_inner();
 
 	if !annotations.is_empty() {
 		text_chunks.annotations = Some(annotations);

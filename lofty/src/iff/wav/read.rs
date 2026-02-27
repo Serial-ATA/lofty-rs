@@ -38,7 +38,9 @@ where
 	verify_wav(data)?;
 
 	let current_pos = data.stream_position()?;
-	let file_len = data.seek(SeekFrom::End(0))?;
+
+	// - 12 for the RIFF chunk we already read
+	let file_len = data.seek(SeekFrom::End(0))?.saturating_sub(12);
 
 	data.seek(SeekFrom::Start(current_pos))?;
 
@@ -49,67 +51,54 @@ where
 	let mut riff_info = RiffInfoList::default();
 	let mut id3v2_tag: Option<Id3v2Tag> = None;
 
-	let mut chunks = Chunks::<LittleEndian>::new(file_len);
-
-	while let Ok(true) = chunks.next(data) {
-		match &chunks.fourcc {
+	let mut chunks = Chunks::<_, LittleEndian>::new(data, file_len);
+	while let Some(mut chunk) = chunks.next(parse_options.parsing_mode)? {
+		match &chunk.fourcc {
 			b"fmt " if parse_options.read_properties => {
 				if fmt.is_empty() {
-					fmt = chunks.content(data)?;
-				} else {
-					chunks.skip(data)?;
+					fmt = chunk.content()?;
 				}
 			},
 			b"fact" if parse_options.read_properties => {
 				if total_samples == 0 {
-					total_samples = data.read_u32::<LittleEndian>()?;
-				} else {
-					data.seek(SeekFrom::Current(4))?;
+					total_samples = chunk.read_u32::<LittleEndian>()?;
 				}
 			},
 			b"data" if parse_options.read_properties => {
 				if stream_len == 0 {
-					stream_len += chunks.size
+					stream_len += chunk.size()
 				}
-
-				chunks.skip(data)?;
 			},
 			b"LIST" => {
-				let mut size = chunks.size;
+				let mut size = chunk.size();
 				if size < 4 {
 					decode_err!(@BAIL Wav, "Invalid LIST chunk size");
 				}
 
 				let mut list_type = [0; 4];
-				data.read_exact(&mut list_type)?;
+				chunk.read_exact(&mut list_type)?;
 
 				size -= 4;
 
-				match &list_type {
-					b"INFO" if parse_options.read_tags => {
-						// TODO: We already get the current position above, just keep it up to date and use it here
-						//       to avoid the seeks.
-						let end = data.stream_position()? + u64::from(size);
-						if end > file_len {
-							err!(SizeMismatch);
-						}
-
-						super::tag::read::parse_riff_info(
-							data,
-							&mut chunks,
-							end,
-							&mut riff_info,
-							parse_options.parsing_mode,
-						)?;
-					},
-					_ => {
-						data.seek(SeekFrom::Current(-4))?;
-						chunks.skip(data)?;
-					},
+				if &list_type != b"INFO" || !parse_options.read_tags {
+					continue;
 				}
+
+				let end = chunks.stream_position() + u64::from(size);
+				if end > file_len {
+					err!(SizeMismatch);
+				}
+
+				chunks.lock();
+				super::tag::read::parse_riff_info(
+					&mut chunks,
+					&mut riff_info,
+					parse_options.parsing_mode,
+				)?;
+				chunks.unlock()?;
 			},
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
-				let tag = chunks.id3_chunk(data, parse_options)?;
+				let tag = chunk.id3_chunk(parse_options)?;
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
 					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
 
@@ -122,10 +111,11 @@ where
 				}
 				id3v2_tag = Some(tag);
 			},
-			_ => chunks.skip(data)?,
+			_ => {},
 		}
 	}
 
+	let data = chunks.into_inner();
 	let properties = if parse_options.read_properties {
 		let file_length = data.stream_position()?;
 
