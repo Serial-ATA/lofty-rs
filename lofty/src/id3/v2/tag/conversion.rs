@@ -155,6 +155,7 @@ pub(crate) fn from_tag<'a>(
 
 			// Multi-valued TXXX key-to-frame mappings
 			ItemKey::TrackArtists
+			| ItemKey::AlbumArtists
 			| ItemKey::Director
 			| ItemKey::AcoustId
 			| ItemKey::AcoustIdFingerprint
@@ -162,7 +163,8 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::MusicBrainzArtistId
 			| ItemKey::MusicBrainzReleaseArtistId
 			| ItemKey::MusicBrainzWorkId
-			| ItemKey::ReleaseCountry => {
+			| ItemKey::ReleaseCountry
+			| ItemKey::Barcode => {
 				let (value, _) = take_item_text_and_description(item)?;
 
 				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
@@ -175,15 +177,29 @@ pub(crate) fn from_tag<'a>(
 				None
 			},
 
+			// Single-valued TXXX mappings
+			ItemKey::ReplayGainAlbumGain
+			| ItemKey::ReplayGainAlbumPeak
+			| ItemKey::ReplayGainTrackGain
+			| ItemKey::ReplayGainTrackPeak => {
+				let (value, _) = take_item_text_and_description(item)?;
+
+				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
+				ctx.txxx_frames.insert(frame_id, value);
+
+				// Collected at the end
+				None
+			},
+
 			// Comment/Unsync text
-			ItemKey::Comment | ItemKey::Lyrics => {
+			ItemKey::Comment | ItemKey::Lyrics | ItemKey::UnsyncLyrics => {
 				let lang = item.lang;
 				let (value, description) = take_item_text_and_description(item)?;
 
 				let map;
 				match item_key {
 					ItemKey::Comment => map = &mut ctx.comments,
-					ItemKey::Lyrics => map = &mut ctx.unsync_text,
+					ItemKey::Lyrics | ItemKey::UnsyncLyrics => map = &mut ctx.unsync_text,
 					_ => unreachable!(),
 				}
 
