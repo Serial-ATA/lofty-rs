@@ -8,7 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **ID3v2**: Don't error on empty UTF-16 descriptions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/613)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/614))
+- **ID3v2**:
+  - Don't error on empty UTF-16 descriptions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/613)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/614))
+  - Retain `ItemKey::{AlbumArtists, Barcode, UnsyncLyrics, ReplayGainAlbumGain, ReplayGainAlbumPeak, ReplayGainTrackGain, ReplayGainTrackPeak}`
+    when during generic conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/621)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/623))
 - **Timestamp**: Only enforce valid year in strict mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/615)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/616))
 - **OGG Vorbis**: Fixed potential infinite loop while property reading ([issue](https://github.com/Serial-ATA/lofty-rs/issues/620)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/622))
 
