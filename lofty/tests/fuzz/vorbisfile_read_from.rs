@@ -21,3 +21,11 @@ fn panic1() {
 		crate::get_reader("vorbisfile_read_from/order01d_IDX_32_RAND_22064097693866277502540.ogg");
 	let _ = VorbisFile::read_from(&mut reader, ParseOptions::new());
 }
+
+#[test_log::test]
+fn infinite_loop() {
+	let mut reader = crate::get_reader(
+		"vorbisfile_read_from/order01d_IDX_62_RAND_1029626158139888904228417_minimized_403.ogg",
+	);
+	let _ = VorbisFile::read_from(&mut reader, ParseOptions::new());
+}

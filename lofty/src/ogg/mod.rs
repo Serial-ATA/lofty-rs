@@ -64,6 +64,8 @@ where
 	// the stream should be well below the maximum size.
 	let last_page_header;
 	loop {
+		let current_pos = data.stream_position()?;
+
 		match PageHeader::read(data) {
 			Ok(h) => {
 				last_page_header = h;
@@ -73,6 +75,8 @@ where
 			Err(
 				PageError::MissingMagic | PageError::InvalidVersion | PageError::BadSegmentCount,
 			) => {
+				data.seek(SeekFrom::Start(current_pos))?;
+
 				if !data
 					.rfind(PATTERN)
 					.buffer_size(BUFFER_SIZE)
