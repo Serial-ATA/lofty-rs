@@ -14,7 +14,7 @@ fn fake() {}
 
 macro_rules! generate_tests {
 	($stream_version:ident, $path:literal) => {
-		paste::paste! {
+		pastey::paste! {
 			#[test_log::test]
 			fn [<read_ $stream_version>]() {
 				// Here we have an MPC file with an ID3v2, ID3v1, and an APEv2 tag

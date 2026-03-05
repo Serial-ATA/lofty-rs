@@ -1575,7 +1575,7 @@ macro_rules! popm_tests {
 		(
 			$($tagger_name:ident => $(($tagger_value:expr, $mapped_value:literal)),+);* $(;)?
 		) => {
-			paste::paste! {
+			pastey::paste! {
 				$(
 				#[test]
 				fn [<popm_ $tagger_name>]() {

@@ -375,7 +375,7 @@ mod tests {
 			});+
 		) => {
 			$(
-				paste::paste! {
+				pastey::paste! {
 					#[test_log::test]
 					fn [<$int _synch>]() {
 						assert_eq!($original.synch().unwrap(), $new);

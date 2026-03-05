@@ -61,7 +61,7 @@ macro_rules! accessor_trait {
 		accessor_trait! { @REMOVE_METHOD [$($name)+], $ty }
 	};
 	(@GET_METHOD [$name:tt $($other:tt)*] Option<$ret_ty:ty>) => {
-		paste::paste! {
+		pastey::paste! {
 			#[doc = "Returns the " $name $(" " $other)* "."]
 			///
 			/// For formats that support multiple definitions of the same item, this will only return the first occurrence.
@@ -84,7 +84,7 @@ macro_rules! accessor_trait {
 		}
 	};
 	(@SET_METHOD [$name:tt $($other:tt)*] $owned_ty:ty) => {
-		paste::paste! {
+		pastey::paste! {
 			#[doc = "Sets the " $name $(" " $other)* "."]
 			///
 			/// For formats that support multiple definitions of the same item, this will remove **all**
@@ -109,7 +109,7 @@ macro_rules! accessor_trait {
 		}
 	};
 	(@REMOVE_METHOD [$name:tt $($other:tt)*], $ty:ty) => {
-		paste::paste! {
+		pastey::paste! {
 			#[doc = "Removes the " $name $(" " $other)*]
 			/// # Example
 			///

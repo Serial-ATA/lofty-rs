@@ -44,7 +44,7 @@ macro_rules! gen_map {
 			$($key:literal)|+ => $($variant:ident)|+
 		),+ $(,)?
 	) => {
-		paste::paste! {
+		pastey::paste! {
 			$(#[$meta])?
 			#[allow(non_camel_case_types)]
 			struct $NAME;
