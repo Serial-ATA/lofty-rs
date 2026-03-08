@@ -100,6 +100,7 @@ gen_map!(
 	"MOVEMENT"                       => MovementNumber,
 	"MOVEMENTTOTAL"                  => MovementTotal,
 	"RELEASECOUNTRY"                 => ReleaseCountry,
+	"MUSICBRAINZ_ALBUMTYPE"			 => ReleaseType,
 	"ALBUMSORT"                      => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                => AlbumArtistSortOrder,
 	"TITLESORT"                      => TrackTitleSortOrder,
@@ -256,7 +257,8 @@ gen_map!(
 	"MusicBrainz Artist Id"                 => MusicBrainzArtistId,
 	"MusicBrainz Album Artist Id"           => MusicBrainzReleaseArtistId,
 	"MusicBrainz Work Id"                   => MusicBrainzWorkId,
-	"MusicBrainz Album Release Country" 	=> ReleaseCountry
+	"MusicBrainz Album Release Country" 	=> ReleaseCountry,
+	"MusicBrainz Release Type"				=> ReleaseType,
 );
 
 gen_map!(
@@ -343,7 +345,8 @@ gen_map!(
 	"----:com.apple.iTunes:MusicBrainz Artist Id"             => MusicBrainzArtistId,
 	"----:com.apple.iTunes:MusicBrainz Album Artist Id"       => MusicBrainzReleaseArtistId,
 	"----:com.apple.iTunes:MusicBrainz Work Id"               => MusicBrainzWorkId,
-	"----:com.apple.iTunes:MusicBrainz Album Release Country" => ReleaseCountry
+	"----:com.apple.iTunes:MusicBrainz Album Release Country" => ReleaseCountry,
+	"----:com.apple.iTunes:MusicBrainz Album Type"		  	  => ReleaseType,
 );
 
 gen_map!(
@@ -383,6 +386,7 @@ gen_map!(
 	"MOVEMENT"                                => MovementNumber,
 	"MOVEMENTTOTAL"                           => MovementTotal,
 	"RELEASECOUNTRY"                          => ReleaseCountry,
+	"RELEASETYPE"							  => ReleaseType,
 	"ALBUMSORT"                               => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                         => AlbumArtistSortOrder,
 	"TITLESORT"                               => TrackTitleSortOrder,
@@ -685,6 +689,7 @@ gen_item_keys!(
 		MovementNumber,
 		MovementTotal,
 		ReleaseCountry,
+		ReleaseType,
 
 		///////////////////////////////////////////////////////////////
 		// MusicBrainz Identifiers
