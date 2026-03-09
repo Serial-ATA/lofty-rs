@@ -100,7 +100,6 @@ gen_map!(
 	"MOVEMENT"                       => MovementNumber,
 	"MOVEMENTTOTAL"                  => MovementTotal,
 	"RELEASECOUNTRY"                 => ReleaseCountry,
-	"MUSICBRAINZ_ALBUMTYPE"			 => ReleaseType,
 	"ALBUMSORT"                      => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                => AlbumArtistSortOrder,
 	"TITLESORT"                      => TrackTitleSortOrder,
@@ -157,7 +156,8 @@ gen_map!(
 	"MUSICBRAINZ_RELEASEGROUPID"     => MusicBrainzReleaseGroupId,
 	"MUSICBRAINZ_ARTISTID"           => MusicBrainzArtistId,
 	"MUSICBRAINZ_ALBUMARTISTID"      => MusicBrainzReleaseArtistId,
-	"MUSICBRAINZ_WORKID"             => MusicBrainzWorkId
+	"MUSICBRAINZ_WORKID"             => MusicBrainzWorkId,
+	"MUSICBRAINZ_ALBUMTYPE"			 => MusicBrainzReleaseType,
 );
 
 gen_map!(
@@ -257,8 +257,8 @@ gen_map!(
 	"MusicBrainz Artist Id"                 => MusicBrainzArtistId,
 	"MusicBrainz Album Artist Id"           => MusicBrainzReleaseArtistId,
 	"MusicBrainz Work Id"                   => MusicBrainzWorkId,
+	"MusicBrainz Album Type"				=> MusicBrainzReleaseType,
 	"MusicBrainz Album Release Country" 	=> ReleaseCountry,
-	"MusicBrainz Album Type"				=> ReleaseType,
 );
 
 gen_map!(
@@ -345,8 +345,8 @@ gen_map!(
 	"----:com.apple.iTunes:MusicBrainz Artist Id"             => MusicBrainzArtistId,
 	"----:com.apple.iTunes:MusicBrainz Album Artist Id"       => MusicBrainzReleaseArtistId,
 	"----:com.apple.iTunes:MusicBrainz Work Id"               => MusicBrainzWorkId,
+	"----:com.apple.iTunes:MusicBrainz Album Type"		  	  => MusicBrainzReleaseType,
 	"----:com.apple.iTunes:MusicBrainz Album Release Country" => ReleaseCountry,
-	"----:com.apple.iTunes:MusicBrainz Album Type"		  	  => ReleaseType,
 );
 
 gen_map!(
@@ -386,7 +386,6 @@ gen_map!(
 	"MOVEMENT"                                => MovementNumber,
 	"MOVEMENTTOTAL"                           => MovementTotal,
 	"RELEASECOUNTRY"                          => ReleaseCountry,
-	"RELEASETYPE"							  => ReleaseType,
 	"ALBUMSORT"                               => AlbumTitleSortOrder,
 	"ALBUMARTISTSORT"                         => AlbumArtistSortOrder,
 	"TITLESORT"                               => TrackTitleSortOrder,
@@ -460,7 +459,8 @@ gen_map!(
 	"MUSICBRAINZ_RELEASEGROUPID"              => MusicBrainzReleaseGroupId,
 	"MUSICBRAINZ_ARTISTID"                    => MusicBrainzArtistId,
 	"MUSICBRAINZ_ALBUMARTISTID"               => MusicBrainzReleaseArtistId,
-	"MUSICBRAINZ_WORKID"                      => MusicBrainzWorkId
+	"MUSICBRAINZ_WORKID"                      => MusicBrainzWorkId,
+	"RELEASETYPE"							  => MusicBrainzReleaseType,
 );
 
 macro_rules! gen_item_keys {
@@ -689,7 +689,6 @@ gen_item_keys!(
 		MovementNumber,
 		MovementTotal,
 		ReleaseCountry,
-		ReleaseType,
 
 		///////////////////////////////////////////////////////////////
 		// MusicBrainz Identifiers
@@ -742,6 +741,15 @@ gen_item_keys!(
 		///
 		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#musicbrainz-work-id>
 		MusicBrainzWorkId,
+
+		/// MusicBrainz Release Type
+		///
+		/// A description of the *kind* of album a release is.
+		///
+		/// <https://musicbrainz.org/doc/Release_Group/Type>
+		///
+		/// Reference: <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id32>
+		MusicBrainzReleaseType,
 
 		///////////////////////////////////////////////////////////////
 
