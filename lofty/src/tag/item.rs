@@ -744,7 +744,7 @@ gen_item_keys!(
 
 		/// MusicBrainz Release Type
 		///
-		/// A description of the *kind* of album a release is.
+		/// A description of the MusicBrainz release group type (e.g. `album`, `single`, `ep`, etc.).
 		///
 		/// <https://musicbrainz.org/doc/Release_Group/Type>
 		///
