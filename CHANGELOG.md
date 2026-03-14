@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ItemKey**: `ItemKey::MusicBrainzReleaseType` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/626))
+  - See <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id32>
+
 ### Fixed
 
 - **ID3v2**:

@@ -163,6 +163,7 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::MusicBrainzArtistId
 			| ItemKey::MusicBrainzReleaseArtistId
 			| ItemKey::MusicBrainzWorkId
+			| ItemKey::MusicBrainzReleaseType
 			| ItemKey::ReleaseCountry
 			| ItemKey::Barcode => {
 				let (value, _) = take_item_text_and_description(item)?;
