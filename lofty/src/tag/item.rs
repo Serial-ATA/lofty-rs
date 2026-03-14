@@ -149,7 +149,7 @@ gen_map!(
 	"language"                       => Language,
 	"Script"                         => Script,
 	"Lyrics"                         => Lyrics,
-	"UnsynchedLyrics"                => UnsyncLyrics,
+	"UnsyncedLyrics"                 => UnsyncLyrics,
 	"MUSICBRAINZ_TRACKID"            => MusicBrainzRecordingId,
 	"MUSICBRAINZ_RELEASETRACKID"     => MusicBrainzTrackId,
 	"MUSICBRAINZ_ALBUMID"            => MusicBrainzReleaseId,
@@ -247,9 +247,9 @@ gen_map!(
 	"COMM"                                  => Comment,
 	"TLAN"                                  => Language,
 	// Since ID3v2 has its own standard for synchronized lyrics (SYLT frame), and it'd be out of scope
-	// to attempt to parse and convert LRC text into one, we can just treat both `Lyrics` and `UnsyncLyrics`
-	// the same and map them to USLT.
-	"USLT"                                  => Lyrics | UnsyncLyrics,
+	// to attempt to parse and convert LRC text into one. So we can't reasonably support `ItemKey::Lyrics`,
+	// with it being overloaded with both synchronized and unsynchronized lyrics.
+	"USLT"                                  => UnsyncLyrics,
 	// Mapping of MusicBrainzRecordingId is implemented as a special case
 	"MusicBrainz Release Track Id"          => MusicBrainzTrackId,
 	"MusicBrainz Album Id"                  => MusicBrainzReleaseId,
@@ -833,7 +833,7 @@ gen_item_keys!(
 		///
 		/// ID3v2 is the only format that has a *specified* way of storing synchronized lyrics, and
 		/// with it being a binary frame, it's only supported through [`Id3v2Tag`] via [`SynchronizedTextFrame`].
-		/// Both [`ItemKey::Lyrics`] and [`ItemKey::UnsyncLyrics`] will be stored in a `USLT` frame.
+		/// [`ItemKey::Lyrics`] is **not** supported in ID3v2, you must use [`ItemKey::UnsyncLyrics`].
 		///
 		/// [LRC format]: https://en.wikipedia.org/wiki/LRC_(file_format)
 		/// [`Id3v2Tag`]: crate::id3::v2::Id3v2Tag
@@ -1045,8 +1045,8 @@ mod tests {
 
 	#[test]
 	fn one_to_many() {
-		assert_eq!(ItemKey::Lyrics.map_key(TagType::Id3v2), Some("USLT"));
-		assert_eq!(ItemKey::UnsyncLyrics.map_key(TagType::Id3v2), Some("USLT"));
+		assert_eq!(ItemKey::Publisher.map_key(TagType::Id3v2), Some("TPUB"));
+		assert_eq!(ItemKey::Label.map_key(TagType::Id3v2), Some("TPUB"));
 	}
 
 	#[test]

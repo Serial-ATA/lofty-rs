@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ItemKey**: `ItemKey::MusicBrainzReleaseType` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/626))
   - See <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#id32>
 
+### Changed
+
+- **ID3v2**: `ItemKey::Lyrics` is no longer supported ([issue](https://github.com/Serial-ATA/lofty-rs/issues/624)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/628))
+  - `ItemKey::Lyrics` is often overloaded with synchronized lyrics in [LRC format](https://en.wikipedia.org/wiki/LRC_(file_format)).
+    In other formats, the distinction between `ItemKey::Lyrics` and `ItemKey::UnsyncLyrics` doesn't matter much as they're both
+    text fields. In ID3v2, however, synchronized lyrics are a separate binary frame. To write synchronized lyrics, you'll have to use
+    [`Id3v2Tag`](https://docs.rs/lofty/latest/lofty/id3/v2/struct.Id3v2Tag.html) and [`SynchronizedTextFrame`](https://docs.rs/lofty/latest/lofty/id3/v2/struct.SynchronizedTextFrame.html)
+    directly.
+
 ### Fixed
 
 - **ID3v2**:

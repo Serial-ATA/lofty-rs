@@ -17,7 +17,7 @@ use std::borrow::Cow;
 #[test_log::test]
 fn tag_to_id3v2_lang_frame() {
 	let mut tag = Tag::new(TagType::Id3v2);
-	tag.insert_text(ItemKey::Lyrics, String::from("Test lyrics"));
+	tag.insert_text(ItemKey::UnsyncLyrics, String::from("Test lyrics"));
 	tag.insert_text(ItemKey::Comment, String::from("Test comment"));
 
 	let id3: Id3v2Tag = tag.into();
