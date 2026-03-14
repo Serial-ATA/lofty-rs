@@ -193,14 +193,14 @@ pub(crate) fn from_tag<'a>(
 			},
 
 			// Comment/Unsync text
-			ItemKey::Comment | ItemKey::Lyrics | ItemKey::UnsyncLyrics => {
+			ItemKey::Comment | ItemKey::UnsyncLyrics => {
 				let lang = item.lang;
 				let (value, description) = take_item_text_and_description(item)?;
 
 				let map;
 				match item_key {
 					ItemKey::Comment => map = &mut ctx.comments,
-					ItemKey::Lyrics | ItemKey::UnsyncLyrics => map = &mut ctx.unsync_text,
+					ItemKey::UnsyncLyrics => map = &mut ctx.unsync_text,
 					_ => unreachable!(),
 				}
 
