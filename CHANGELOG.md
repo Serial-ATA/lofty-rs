@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **APE** ([issue](https://github.com/Serial-ATA/lofty-rs/issues/631)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/633)):
+  - `ApeTag::push()` which will append values to existing items
+  - `ApeItem::text_values()` which returns an iterator over all text values in the item
+
+### Changed
+
+- **APE**: The `Tag` -> `ApeTag` conversion will now preserve multi-value items ([issue](https://github.com/Serial-ATA/lofty-rs/issues/631)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/633))
+
 ## [0.23.3] - 2026-03-14
 
 ### Added
