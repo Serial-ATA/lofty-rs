@@ -17,7 +17,7 @@ pub struct KeyValueFrame<'a> {
 	/// The encoding of the text
 	pub encoding: TextEncoding,
 	/// The key value pairs. Keys can be specified multiple times
-	pub key_value_pairs: Vec<(Cow<'a, str>, Cow<'a, str>)>,
+	pub key_value_pairs: Cow<'a, [(Cow<'a, str>, Cow<'a, str>)]>,
 }
 
 impl<'a> KeyValueFrame<'a> {
@@ -25,13 +25,13 @@ impl<'a> KeyValueFrame<'a> {
 	pub fn new(
 		id: FrameId<'a>,
 		encoding: TextEncoding,
-		key_value_pairs: Vec<(Cow<'a, str>, Cow<'a, str>)>,
+		key_value_pairs: impl Into<Cow<'a, [(Cow<'a, str>, Cow<'a, str>)]>>,
 	) -> Self {
 		let header = FrameHeader::new(id, FrameFlags::default());
 		Self {
 			header,
 			encoding,
-			key_value_pairs,
+			key_value_pairs: key_value_pairs.into(),
 		}
 	}
 
@@ -111,7 +111,7 @@ impl<'a> KeyValueFrame<'a> {
 		Ok(Some(Self {
 			header,
 			encoding,
-			key_value_pairs: values,
+			key_value_pairs: Cow::Owned(values),
 		}))
 	}
 
@@ -128,7 +128,7 @@ impl<'a> KeyValueFrame<'a> {
 
 		let mut content = vec![encoding as u8];
 
-		for (key, value) in &self.key_value_pairs {
+		for (key, value) in &*self.key_value_pairs {
 			content.append(&mut encoding.encode(key, true, write_options.lossy_text_encoding)?);
 			content.append(&mut encoding.encode(value, true, write_options.lossy_text_encoding)?);
 		}
@@ -136,13 +136,12 @@ impl<'a> KeyValueFrame<'a> {
 	}
 }
 
-impl KeyValueFrame<'static> {
-	pub(crate) fn downgrade(&self) -> KeyValueFrame<'_> {
+impl KeyValueFrame<'_> {
+	pub(crate) fn borrow(&self) -> KeyValueFrame<'_> {
 		KeyValueFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
-			// TODO: not ideal
-			key_value_pairs: self.key_value_pairs.clone(),
+			key_value_pairs: Cow::Borrowed(&self.key_value_pairs),
 		}
 	}
 }

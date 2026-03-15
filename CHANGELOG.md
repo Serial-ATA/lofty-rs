@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ID3v2**:
+  - `ChapterFrame` and `ChapterTableOfContentsFrame`
+  - `FrameList`, a shared `Frame` storage used in `Id3v2Tag`, `ChapterFrame` and `ChapterTableOfContentsFrame`
+  - `Id3v2ErrorKind::UnsupportedVersion`
+
+### Changed
+
+- **ID3v2**: Moved `error::{Id3v2Error, Id3v2ErrorKind}` to `id3::v2::error::{Id3v2Error, Id3v2ErrorKind}`
+
 ## [0.23.3] - 2026-03-14
 
 ### Added

@@ -4,7 +4,7 @@ use super::tag::Id3v2Tag;
 use crate::config::ParseOptions;
 use crate::error::Result;
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
-use crate::id3::v2::{Frame, FrameId, Id3v2Version, TimestampFrame};
+use crate::id3::v2::{Frame, FrameId, FrameList, Id3v2Version, TimestampFrame};
 use crate::tag::items::Timestamp;
 
 use std::borrow::Cow;
@@ -130,7 +130,7 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 	}
 }
 
-fn read_all_frames_into_tag<R>(
+pub(super) fn read_all_frames_into_tag<R>(
 	reader: &mut R,
 	header: Id3v2Header,
 	parse_options: ParseOptions,
@@ -141,12 +141,23 @@ where
 	let mut tag = Id3v2Tag::default();
 	tag.original_version = header.version;
 	tag.set_flags(header.flags);
+	tag.frames = read_all_frames_into_list(reader, header.version, parse_options)?;
+
+	Ok(tag)
+}
+
+pub(super) fn read_all_frames_into_list(
+	reader: &mut dyn Read,
+	version: Id3v2Version,
+	parse_options: ParseOptions,
+) -> Result<FrameList<'static>> {
+	let mut list = FrameList::default();
 
 	loop {
-		match ParsedFrame::read(reader, header.version, parse_options)? {
+		match ParsedFrame::read(reader, version, parse_options)? {
 			ParsedFrame::Next(frame) => {
 				let frame_value_is_empty = frame.is_empty();
-				if let Some(replaced_frame) = tag.insert(frame) {
+				if let Some(replaced_frame) = list.insert(frame) {
 					// Duplicate frames are not allowed. But if this occurs we try
 					// to keep the frame with the non-empty content. Superfluous,
 					// duplicate frames that follow the first frame are often empty.
@@ -158,7 +169,7 @@ where
 							 an empty frame with the same ID",
 							id = replaced_frame.id()
 						);
-						drop(tag.insert(replaced_frame));
+						drop(list.insert(replaced_frame));
 					} else {
 						log::warn!(
 							"Replaced frame with ID \"{id}\" by a frame with the same ID",
@@ -174,7 +185,7 @@ where
 		}
 	}
 
-	Ok(tag)
+	Ok(list)
 }
 
 #[cfg(test)]

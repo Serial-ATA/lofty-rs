@@ -65,10 +65,10 @@ impl<'a> BinaryFrame<'a> {
 	}
 }
 
-impl BinaryFrame<'static> {
-	pub(crate) fn downgrade(&self) -> BinaryFrame<'_> {
+impl BinaryFrame<'_> {
+	pub(crate) fn borrow(&self) -> BinaryFrame<'_> {
 		BinaryFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			data: Cow::Borrowed(&self.data),
 		}
 	}

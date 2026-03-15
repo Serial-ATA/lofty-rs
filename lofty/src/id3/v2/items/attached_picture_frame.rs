@@ -1,4 +1,6 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::config::WriteOptions;
+use crate::error::Result;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::err;
@@ -8,7 +10,6 @@ use crate::util::text::{TextDecodeOptions, TextEncoding};
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
 
-use crate::config::WriteOptions;
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
@@ -166,10 +167,10 @@ impl<'a> AttachedPictureFrame<'a> {
 	}
 }
 
-impl AttachedPictureFrame<'static> {
-	pub(crate) fn downgrade(&self) -> AttachedPictureFrame<'_> {
+impl AttachedPictureFrame<'_> {
+	pub(crate) fn borrow(&self) -> AttachedPictureFrame<'_> {
 		AttachedPictureFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			encoding: self.encoding,
 			picture: Cow::Borrowed(&self.picture),
 		}

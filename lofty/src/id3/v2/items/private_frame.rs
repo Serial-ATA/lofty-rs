@@ -107,10 +107,10 @@ impl<'a> PrivateFrame<'a> {
 	}
 }
 
-impl PrivateFrame<'static> {
-	pub(crate) fn downgrade(&self) -> PrivateFrame<'_> {
+impl PrivateFrame<'_> {
+	pub(crate) fn borrow(&self) -> PrivateFrame<'_> {
 		PrivateFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			owner: Cow::Borrowed(&self.owner),
 			private_data: Cow::Borrowed(&self.private_data),
 		}

@@ -1,4 +1,5 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, TimestampFormat};
 
 use std::borrow::Cow;
@@ -269,10 +270,10 @@ impl<'a> EventTimingCodesFrame<'a> {
 	}
 }
 
-impl EventTimingCodesFrame<'static> {
-	pub(crate) fn downgrade(&self) -> EventTimingCodesFrame<'_> {
+impl EventTimingCodesFrame<'_> {
+	pub(crate) fn borrow(&self) -> EventTimingCodesFrame<'_> {
 		EventTimingCodesFrame {
-			header: self.header.downgrade(),
+			header: self.header.borrow(),
 			timestamp_format: self.timestamp_format,
 			events: Cow::Borrowed(&self.events),
 		}

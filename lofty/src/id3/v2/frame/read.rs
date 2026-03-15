@@ -1,7 +1,8 @@
 use super::Frame;
 use super::header::parse::{parse_header, parse_v2_header};
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::Result;
+use crate::id3::v2::error::{Id3v2Error, Id3v2ErrorKind};
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
@@ -20,14 +21,14 @@ pub(crate) enum ParsedFrame<'a> {
 	Eof,
 }
 
-impl ParsedFrame<'_> {
+impl ParsedFrame<'static> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
 		parse_options: ParseOptions,
 	) -> Result<Self>
 	where
-		R: Read,
+		R: Read + ?Sized,
 	{
 		let mut size = 0u32;
 
@@ -151,7 +152,7 @@ impl ParsedFrame<'_> {
 						id,
 						flags,
 						version,
-						parse_options.parsing_mode,
+						parse_options,
 					);
 				}
 
@@ -165,7 +166,7 @@ impl ParsedFrame<'_> {
 					id,
 					flags,
 					version,
-					parse_options.parsing_mode,
+					parse_options,
 				);
 			},
 			// Possible combinations:
@@ -187,7 +188,7 @@ impl ParsedFrame<'_> {
 					id,
 					flags,
 					version,
-					parse_options.parsing_mode,
+					parse_options,
 				);
 			},
 			// Possible combinations:
@@ -201,14 +202,7 @@ impl ParsedFrame<'_> {
 			},
 			// Everything else that doesn't have special flags
 			_ => {
-				return parse_frame(
-					&mut reader,
-					size,
-					id,
-					flags,
-					version,
-					parse_options.parsing_mode,
-				);
+				return parse_frame(&mut reader, size, id, flags, version, parse_options);
 			},
 		}
 	}
@@ -254,9 +248,9 @@ fn parse_frame<R: Read>(
 	id: FrameId<'static>,
 	flags: FrameFlags,
 	version: Id3v2Version,
-	parse_mode: ParsingMode,
+	parse_options: ParseOptions,
 ) -> Result<ParsedFrame<'static>> {
-	match parse_content(reader, id, flags, version, parse_mode)? {
+	match parse_content(reader, id, flags, version, parse_options)? {
 		Some(frame) => Ok(ParsedFrame::Next(frame)),
 		None => {
 			skip_frame(reader, size)?;
@@ -271,7 +265,7 @@ fn parse_frame<R: Read>(
 // is a safe operation, regardless of where we are in parsing the frame.
 //
 // This assumption *CANNOT* be made in other contexts.
-fn skip_frame(reader: &mut impl Read, size: u32) -> Result<()> {
+fn skip_frame(reader: &mut (impl Read + ?Sized), size: u32) -> Result<()> {
 	log::trace!("Skipping frame of size {}", size);
 
 	let size = u64::from(size);

@@ -5,7 +5,7 @@ use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
 use crate::id3::v2::{
 	ChannelInformation, ChannelType, RelativeVolumeAdjustmentFrame, TimestampFrame,
 };
-use crate::picture::MimeType;
+use crate::picture::{MimeType, PictureType};
 use crate::tag::items::popularimeter::{Popularimeter, StarRating};
 use crate::tag::items::{ENGLISH, Timestamp};
 use crate::tag::utils::test_utils::read_path;
@@ -31,7 +31,10 @@ fn read_tag_with_options(bytes: &[u8], parse_options: ParseOptions) -> Id3v2Tag 
 	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options).unwrap()
 }
 
-fn dump_and_re_read(tag: &Id3v2Tag, write_options: WriteOptions) -> Id3v2Tag {
+pub(in crate::id3::v2) fn dump_and_re_read(
+	tag: &Id3v2Tag,
+	write_options: WriteOptions,
+) -> Id3v2Tag {
 	let mut tag_bytes = Vec::new();
 	let mut writer = Cursor::new(&mut tag_bytes);
 	tag.dump_to(&mut writer, write_options).unwrap();
@@ -150,7 +153,7 @@ fn fail_write_bad_frame() {
 
 #[test_log::test]
 fn tag_to_id3v2() {
-	fn verify_frame(tag: &Id3v2Tag, id: &str, value: &str) {
+	fn verify_frame(tag: &Id3v2Tag, id: &'static str, value: &str) {
 		let frame = tag.get(&FrameId::Valid(Cow::Borrowed(id)));
 
 		assert!(frame.is_some());
@@ -1059,11 +1062,14 @@ fn tipl_round_trip() {
 	// Add all supported keys
 	for (_, key) in TIPL_MAPPINGS {
 		tipl.key_value_pairs
+			.to_mut()
 			.push(((*key).into(), "Serial-ATA".into()));
 	}
 
 	// Add one unsupported key
-	tipl.key_value_pairs.push(("Foo".into(), "Bar".into()));
+	tipl.key_value_pairs
+		.to_mut()
+		.push(("Foo".into(), "Bar".into()));
 
 	tag.insert(Frame::KeyValue(tipl.clone()));
 
@@ -1081,13 +1087,15 @@ fn tipl_round_trip() {
 		);
 	}
 
-	let mut id3v2 = split_remainder.merge_tag(split_tag);
+	let id3v2 = split_remainder.merge_tag(split_tag);
 	assert_eq!(id3v2.frames.len(), 1);
-	match &mut id3v2.frames[..] {
+
+	let mut frames: Vec<_> = id3v2.frames.into();
+	match &mut frames[..] {
 		[Frame::KeyValue(tipl2)] => {
 			// Order will not be the same, so we have to sort first
-			tipl.key_value_pairs.sort();
-			tipl2.key_value_pairs.sort();
+			tipl.key_value_pairs.to_mut().sort();
+			tipl2.key_value_pairs.to_mut().sort();
 			assert_eq!(tipl, *tipl2);
 		},
 		_ => unreachable!(),
