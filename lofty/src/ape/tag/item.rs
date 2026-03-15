@@ -61,6 +61,33 @@ impl ApeItem {
 		&self.value
 	}
 
+	/// Get all text values of this item
+	///
+	/// This will return `None` for [`ItemValue::Binary`].
+	///
+	/// ```rust
+	/// use lofty::ape::ApeItem;
+	/// use lofty::tag::ItemValue;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let item = ApeItem::new(
+	/// 	String::from("Artist"),
+	/// 	ItemValue::Text(String::from("Serial\0ATA")),
+	/// )?;
+	///
+	/// let mut values = item.text_values().expect("should be text");
+	/// assert_eq!(values.next(), Some("Serial"));
+	/// assert_eq!(values.next(), Some("ATA"));
+	/// assert!(values.next().is_none());
+	/// # Ok(()) }
+	/// ```
+	pub fn text_values(&self) -> Option<impl Iterator<Item = &str>> {
+		match self.value() {
+			ItemValue::Text(text) | ItemValue::Locator(text) => Some(text.split('\0')),
+			ItemValue::Binary(_) => None,
+		}
+	}
+
 	// Used internally, has no correctness checks
 	pub(crate) fn text(key: &str, value: String) -> Self {
 		Self {
