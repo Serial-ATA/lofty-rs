@@ -136,11 +136,107 @@ impl ApeTag {
 			.find(|i| i.key().eq_ignore_ascii_case(key))
 	}
 
-	/// Insert an [`ApeItem`]
+	fn get_mut(&mut self, key: &str) -> Option<&mut ApeItem> {
+		self.items
+			.iter_mut()
+			.find(|i| i.key().eq_ignore_ascii_case(key))
+	}
+
+	/// Inserts an item
 	///
-	/// This will remove any item with the same key prior to insertion
+	/// This is the same as [`ApeTag::push()`], except it will remove any items with the same key.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::{ApeItem, ApeTag};
+	/// use lofty::tag::ItemValue;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// let mut tag = ApeTag::default();
+	/// tag.insert(ApeItem::new(
+	/// 	String::from("Title"),
+	/// 	ItemValue::Text(String::from("Title 1")),
+	/// )?);
+	/// tag.insert(ApeItem::new(
+	/// 	String::from("Title"),
+	/// 	ItemValue::Text(String::from("Title 2")),
+	/// )?);
+	///
+	/// // We only retain the last title inserted
+	/// let mut titles = tag.get("Title").expect("should exist");
+	/// let mut values = titles.text_values().expect("should be text");
+	/// assert_eq!(values.next(), Some("Title 2"));
+	/// assert!(values.next().is_none());
+	/// # Ok(()) }
+	/// ```
 	pub fn insert(&mut self, value: ApeItem) {
 		self.remove(value.key());
+		self.items.push(value);
+	}
+
+	/// Appends an item
+	///
+	/// If an item with the same key already exists, this will:
+	///
+	/// * Append the value to the existing item if they are the same **text-based** [`ItemValue`] variant
+	/// * Or replace the existing item if they are different [`ItemValue`]s or binary
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::ape::{ApeItem, ApeTag};
+	/// use lofty::tag::ItemValue;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// use lofty::tag::ItemValue;
+	/// let mut tag = ApeTag::default();
+	/// tag.push(ApeItem::new(
+	/// 	String::from("Title"),
+	/// 	ItemValue::Text(String::from("Title 1")),
+	/// )?);
+	/// tag.push(ApeItem::new(
+	/// 	String::from("Title"),
+	/// 	ItemValue::Text(String::from("Title 2")),
+	/// )?);
+	///
+	/// // We retain both titles
+	/// {
+	/// 	let mut titles = tag.get("Title").expect("should exist");
+	/// 	let mut values = titles.text_values().expect("should be text");
+	/// 	assert_eq!(values.next(), Some("Title 1"));
+	/// 	assert_eq!(values.next(), Some("Title 2"));
+	/// 	assert!(values.next().is_none());
+	/// }
+	///
+	/// // With different value types
+	/// tag.push(ApeItem::new(
+	/// 	String::from("Artist"),
+	/// 	ItemValue::Text(String::from("Text artist")),
+	/// )?);
+	/// tag.push(ApeItem::new(
+	/// 	String::from("Artist"),
+	/// 	ItemValue::Binary(b"Binary artist".to_vec()),
+	/// )?);
+	///
+	/// let artist = tag.get("Artist").expect("should exist");
+	/// assert!(matches!(artist.value(), ItemValue::Binary(_)));
+	/// # Ok(()) }
+	/// ```
+	pub fn push(&mut self, value: ApeItem) {
+		if let Some(existing) = self.get_mut(value.key()) {
+			match (&mut existing.value, &value.value) {
+				(ItemValue::Text(existing_text), ItemValue::Text(new_text))
+				| (ItemValue::Locator(existing_text), ItemValue::Locator(new_text)) => {
+					existing_text.push('\0');
+					existing_text.push_str(new_text);
+				},
+				_ => {
+					let _ = std::mem::replace(existing, value);
+				},
+			}
+			return;
+		}
 		self.items.push(value);
 	}
 
@@ -193,7 +289,7 @@ impl ApeTag {
 			},
 			_ => {
 				if let Ok(item) = item.try_into() {
-					self.insert(item);
+					self.push(item);
 				}
 			},
 		}
@@ -470,6 +566,23 @@ impl SplitTag for ApeTag {
 				},
 				(k, _) => {
 					let item = std::mem::replace(item, ApeItem::EMPTY);
+
+					// Multi-value string
+					if let Some(text) = item.value.text() {
+						if text.contains('\0') {
+							for value in text.split('\0') {
+								let item_value = match &item.value {
+									ItemValue::Text(_) => ItemValue::Text(value.to_string()),
+									ItemValue::Locator(_) => ItemValue::Locator(value.to_string()),
+									_ => unreachable!(),
+								};
+
+								tag.items.push(TagItem::new(k, item_value))
+							}
+							return false; // Item consumed
+						}
+					}
+
 					tag.items.push(TagItem::new(k, item.value));
 					false // Item consumed
 				},
@@ -972,5 +1085,57 @@ mod tests {
 		assert_eq!(ape.disk(), Some(3));
 		assert!(ape.disk_total().is_none());
 		assert_eq!(ape.track(), Some(2));
+	}
+
+	#[test_log::test]
+	fn split_text_values() {
+		let mut ape = ApeTag::new();
+		ape.push(
+			ApeItem::new(
+				String::from("Artists"),
+				ItemValue::Text(String::from("Serial-ATA")),
+			)
+			.unwrap(),
+		);
+		ape.push(
+			ApeItem::new(
+				String::from("Artists"),
+				ItemValue::Text(String::from("Lofty")),
+			)
+			.unwrap(),
+		);
+
+		let artists = ape.get("Artists").unwrap();
+		assert_eq!(artists.value.text(), Some("Serial-ATA\0Lofty"));
+
+		let tag: Tag = ape.into();
+		assert_eq!(tag.len(), 2);
+
+		let mut artists = tag.get_strings(ItemKey::TrackArtists);
+		assert_eq!(artists.next().unwrap(), "Serial-ATA");
+		assert_eq!(artists.next().unwrap(), "Lofty");
+		assert!(artists.next().is_none());
+	}
+
+	#[test_log::test]
+	fn merge_text_values() {
+		let mut tag = Tag::new(TagType::Ape);
+		tag.push(TagItem::new(
+			ItemKey::TrackArtists,
+			ItemValue::Text(String::from("Serial-ATA")),
+		));
+		tag.push(TagItem::new(
+			ItemKey::TrackArtists,
+			ItemValue::Text(String::from("Lofty")),
+		));
+
+		let ape: ApeTag = tag.into();
+		assert_eq!(ape.len(), 1);
+
+		let artists = ape.get("Artists").unwrap();
+		let mut values = artists.text_values().unwrap();
+		assert_eq!(values.next().unwrap(), "Serial-ATA");
+		assert_eq!(values.next().unwrap(), "Lofty");
+		assert!(values.next().is_none());
 	}
 }
