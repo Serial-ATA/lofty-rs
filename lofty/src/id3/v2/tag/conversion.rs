@@ -131,7 +131,6 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::Conductor
 			| ItemKey::Writer
 			| ItemKey::Lyricist
-			| ItemKey::MusicianCredits
 			| ItemKey::InternetRadioStationName
 			| ItemKey::InternetRadioStationOwner
 			| ItemKey::Remixer

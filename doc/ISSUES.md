@@ -97,7 +97,7 @@ The "[MISC] Feature Request" issue template is for feature requests that either:
 
 The "[API] Feature Request" issue template is for feature requests that have a specific design.
 
-If you have an feature with an exact idea of how it should be used, be sure to use this template.
+If you have a feature with an exact idea of how it should be used, be sure to use this template.
 
 The "API design" form should only serve as a design, not an implementation.
 

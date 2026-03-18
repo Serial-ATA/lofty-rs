@@ -1,7 +1,9 @@
 //! ID3 specific items
 //!
-//! ID3 does things differently than other tags, making working with them a little more effort than other formats.
-//! Check the other modules for important notes and/or warnings.
+//! This covers both [`v1`] (ID3v1) and [`v2`] (ID3v2) tag formats.
+//!
+//! ID3 does things differently than other tags, making them a little more cumbersome to work with.
+//! Check the other modules for important notes and warnings.
 
 pub mod v1;
 pub mod v2;

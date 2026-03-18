@@ -13,69 +13,116 @@ use std::time::Duration;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MP4 file's audio codec
-#[allow(missing_docs)]
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Mp4Codec {
+	/// Some other codec unknown to Lofty
 	#[default]
 	Unknown,
+	/// Advanced Audio Coding
 	AAC,
+	/// Apple Lossless Audio Codec
 	ALAC,
+	/// MPEG Audio Layer 3
 	MP3,
+	/// Free Lossless Audio Codec
 	FLAC,
 }
 
-#[allow(missing_docs)]
+/// MPEG-4 Audio Object Type as defined in ISO 14496-3
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
 #[rustfmt::skip]
 #[non_exhaustive]
 pub enum AudioObjectType {
 	// https://en.wikipedia.org/wiki/MPEG-4_Part_3#MPEG-4_Audio_Object_Types
 
+	/// Null/unknown object type
 	#[default]
 	NULL = 0,
-	AacMain = 1,                                       // AAC Main Profile
-	AacLowComplexity = 2,                              // AAC Low Complexity
-	AacScalableSampleRate = 3,                         // AAC Scalable Sample Rate
-	AacLongTermPrediction = 4,                         // AAC Long Term Predictor
-	SpectralBandReplication = 5,                       // Spectral band Replication
-	AACScalable = 6,                                   // AAC Scalable
-	TwinVQ = 7,                                        // Twin VQ
-	CodeExcitedLinearPrediction = 8,                   // CELP
-	HarmonicVectorExcitationCoding = 9,                // HVXC
-	TextToSpeechtInterface = 12,                       // TTSI
-	MainSynthetic = 13,                                // Main Synthetic
-	WavetableSynthesis = 14,                           // Wavetable Synthesis
-	GeneralMIDI = 15,                                  // General MIDI
-	AlgorithmicSynthesis = 16,                         // Algorithmic Synthesis
-	ErrorResilientAacLowComplexity = 17,               // ER AAC LC
-	ErrorResilientAacLongTermPrediction = 19,          // ER AAC LTP
-	ErrorResilientAacScalable = 20,                    // ER AAC Scalable
-	ErrorResilientAacTwinVQ = 21,                      // ER AAC TwinVQ
-	ErrorResilientAacBitSlicedArithmeticCoding = 22,   // ER Bit Sliced Arithmetic Coding
-	ErrorResilientAacLowDelay = 23,                    // ER AAC Low Delay
-	ErrorResilientCodeExcitedLinearPrediction = 24,    // ER CELP
-	ErrorResilientHarmonicVectorExcitationCoding = 25, // ER HVXC
-	ErrorResilientHarmonicIndividualLinesNoise = 26,   // ER HILN
-	ErrorResilientParametric = 27,                     // ER Parametric
-	SinuSoidalCoding = 28,                             // SSC
-	ParametricStereo = 29,                             // PS
-	MpegSurround = 30,                                 // MPEG Surround
-	MpegLayer1 = 32,                                   // MPEG Layer 1
-	MpegLayer2 = 33,                                   // MPEG Layer 2
-	MpegLayer3 = 34,                                   // MPEG Layer 3
-	DirectStreamTransfer = 35,                         // DST Direct Stream Transfer
-	AudioLosslessCoding = 36,                          // ALS Audio Lossless Coding
-	ScalableLosslessCoding = 37,                       // SLC Scalable Lossless Coding
-	ScalableLosslessCodingNoneCore = 38,               // SLC non-core
-	ErrorResilientAacEnhancedLowDelay = 39,            // ER AAC ELD
-	SymbolicMusicRepresentationSimple = 40,            // SMR Simple
-	SymbolicMusicRepresentationMain = 41,              // SMR Main
-	UnifiedSpeechAudioCoding = 42,                     // USAC
-	SpatialAudioObjectCoding = 43,                     // SAOC
-	LowDelayMpegSurround = 44,                         // LD MPEG Surround
-	SpatialAudioObjectCodingDialogueEnhancement = 45,  // SAOC-DE
-	AudioSync = 46,                                    // Audio Sync
+	/// AAC Main Profile
+	AacMain = 1,
+	/// AAC Low Complexity
+	AacLowComplexity = 2,
+	/// AAC Scalable Sample Rate
+	AacScalableSampleRate = 3,
+	/// AAC Long Term Predictor
+	AacLongTermPrediction = 4,
+	/// Spectral Band Replication
+	SpectralBandReplication = 5,
+	/// AAC Scalable
+	AACScalable = 6,
+	/// Twin VQ
+	TwinVQ = 7,
+	/// Code Excited Linear Prediction (CELP)
+	CodeExcitedLinearPrediction = 8,
+	/// Harmonic Vector Excitation Coding (HVXC)
+	HarmonicVectorExcitationCoding = 9,
+	/// Text-To-Speech Interface (TTSI)
+	TextToSpeechtInterface = 12,
+	/// Main Synthetic
+	MainSynthetic = 13,
+	/// Wavetable Synthesis
+	WavetableSynthesis = 14,
+	/// General MIDI
+	GeneralMIDI = 15,
+	/// Algorithmic Synthesis and Audio FX
+	AlgorithmicSynthesis = 16,
+	/// Error Resilient AAC Low Complexity
+	ErrorResilientAacLowComplexity = 17,
+	/// Error Resilient AAC Long Term Prediction
+	ErrorResilientAacLongTermPrediction = 19,
+	/// Error Resilient AAC Scalable
+	ErrorResilientAacScalable = 20,
+	/// Error Resilient AAC TwinVQ
+	ErrorResilientAacTwinVQ = 21,
+	/// Error Resilient Bit Sliced Arithmetic Coding
+	ErrorResilientAacBitSlicedArithmeticCoding = 22,
+	/// Error Resilient AAC Low Delay
+	ErrorResilientAacLowDelay = 23,
+	/// Error Resilient Code Excited Linear Prediction
+	ErrorResilientCodeExcitedLinearPrediction = 24,
+	/// Error Resilient Harmonic Vector Excitation Coding
+	ErrorResilientHarmonicVectorExcitationCoding = 25,
+	/// Error Resilient Harmonic and Individual Lines plus Noise
+	ErrorResilientHarmonicIndividualLinesNoise = 26,
+	/// Error Resilient Parametric
+	ErrorResilientParametric = 27,
+	/// Sinusoidal Coding (SSC)
+	SinuSoidalCoding = 28,
+	/// Parametric Stereo
+	ParametricStereo = 29,
+	/// MPEG Surround
+	MpegSurround = 30,
+	/// MPEG Layer 1
+	MpegLayer1 = 32,
+	/// MPEG Layer 2
+	MpegLayer2 = 33,
+	/// MPEG Layer 3
+	MpegLayer3 = 34,
+	/// Direct Stream Transfer (DST)
+	DirectStreamTransfer = 35,
+	/// Audio Lossless Coding (ALS)
+	AudioLosslessCoding = 36,
+	/// Scalable Lossless Coding (SLS)
+	ScalableLosslessCoding = 37,
+	/// Scalable Lossless Coding non-core
+	ScalableLosslessCodingNoneCore = 38,
+	/// Error Resilient AAC Enhanced Low Delay
+	ErrorResilientAacEnhancedLowDelay = 39,
+	/// Symbolic Music Representation Simple
+	SymbolicMusicRepresentationSimple = 40,
+	/// Symbolic Music Representation Main
+	SymbolicMusicRepresentationMain = 41,
+	/// Unified Speech and Audio Coding (USAC)
+	UnifiedSpeechAudioCoding = 42,
+	/// Spatial Audio Object Coding (SAOC)
+	SpatialAudioObjectCoding = 43,
+	/// Low Delay MPEG Surround
+	LowDelayMpegSurround = 44,
+	/// Spatial Audio Object Coding - Dialogue Enhancement
+	SpatialAudioObjectCodingDialogueEnhancement = 45,
+	/// Audio Sync
+	AudioSync = 46,
 }
 
 impl TryFrom<u8> for AudioObjectType {

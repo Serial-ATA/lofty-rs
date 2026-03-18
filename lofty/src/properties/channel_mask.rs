@@ -10,7 +10,6 @@ macro_rules! define_channels {
 		impl ChannelMask {
 			$(
 				$(#[$meta])?
-				#[allow(missing_docs)]
 				pub const $name: Self = Self(1 << $shift);
 			)+
 		}
@@ -31,23 +30,41 @@ pub struct ChannelMask(pub(crate) u32);
 
 define_channels! {
 	[
+		/// Front left speaker
 		FRONT_LEFT            => 0,
+		/// Front right speaker
 		FRONT_RIGHT           => 1,
+		/// Front center speaker
 		FRONT_CENTER          => 2,
+		/// Low frequency effects (subwoofer)
 		LOW_FREQUENCY         => 3,
+		/// Back left speaker (surround left)
 		BACK_LEFT             => 4,
+		/// Back right speaker (surround right)
 		BACK_RIGHT            => 5,
+		/// Front left of center speaker
 		FRONT_LEFT_OF_CENTER  => 6,
+		/// Front right of center speaker
 		FRONT_RIGHT_OF_CENTER => 7,
+		/// Back center speaker
 		BACK_CENTER           => 8,
+		/// Side left speaker
 		SIDE_LEFT             => 9,
+		/// Side right speaker
 		SIDE_RIGHT            => 10,
+		/// Top center speaker
 		TOP_CENTER            => 11,
+		/// Top front left speaker
 		TOP_FRONT_LEFT        => 12,
+		/// Top front center speaker
 		TOP_FRONT_CENTER      => 13,
+		/// Top front right speaker
 		TOP_FRONT_RIGHT       => 14,
+		/// Top back left speaker
 		TOP_BACK_LEFT         => 15,
+		/// Top back center speaker
 		TOP_BACK_CENTER       => 16,
+		/// Top back right speaker
 		TOP_BACK_RIGHT        => 17
 	]
 }

@@ -35,7 +35,7 @@ This document will cover the implementation of a tag file format named "Foo".
 To define a new tag format, first determine if it is supported by a single format. In this example it is,
 so we would place its definition in a subdirectory of the `foo` directory, where we defined the Foo audio format.
 If this was a generic tag format supported by multiple audio formats, like ID3, you'd simply define it in its own
-folder inside [src/](../src).
+folder inside [src/](../lofty/src).
 
 There are some files that every tag needs:
 
@@ -62,7 +62,7 @@ Now that the directories are created, we can start working on defining our file.
 
 Before we can define the tag struct, we need to add a variant to `TagType`.
 
-Go to [src/tag/mod.rs](../src/tag/mod.rs) and edit the `TagType` enum to add your new variant.
+Go to [src/tag/mod.rs](../lofty/src/tag/mod.rs) and edit the `TagType` enum to add your new variant.
 
 ```rust
 pub enum TagType {
@@ -149,7 +149,7 @@ impl Accessor for FooTag {
 
     fn artist(&self) -> Option<Cow<'_, str>> { /**/ }
     fn set_artist(&mut self, value: String) { /**/ }
-    fn remove_artist() { /**/ }
+    fn remove_artist(&mut self) { /**/ }
 
     fn album(&self) -> Option<Cow<'_, str>> { /**/ }
     fn set_album(&mut self, value: String) { /**/ }
@@ -187,8 +187,8 @@ impl FooTag {
         self.items.push((key, value))
     }
 
-    pub fn remove<'a>(&'a mut self, key: &str) -> impl Iterator<Item=String> + use<'a> {
-        self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(&key));
+    pub fn remove(&mut self, key: &str) {
+        self.items.retain(|(k, _)| !k.eq_ignore_ascii_case(key));
     }
 }
 ```
@@ -240,7 +240,7 @@ Converting your concrete tag type into the generic `Tag` involves the following:
 
 ##### Defining Generic Mappings
 
-The `ItemKey` mappings are defined in [src/tag/item.rs](../src/tag/item.rs).
+The `ItemKey` mappings are defined in [src/tag/item.rs](../lofty/src/tag/item.rs).
 
 See the comments for the `gen_map!` macro, which explains its use in detail, and will be kept up to
 date with any future changes.
@@ -411,7 +411,7 @@ TODO
 
 #### Assets
 
-Test assets for tag formats are to be placed in [tests/tags/assets/](../tests/tags/assets).
+Test assets for tag formats are to be placed in [tests/tags/assets/](../lofty/tests/tags/assets).
 
 There should at least be one asset, which is a binary file containing the tag below:
 
@@ -444,7 +444,7 @@ There are at least 4 unit tests that should be created for every tag format:
   * Using `crate::tag::utils::test_utils::create_tag()`, verify that the converted tag is correct
 
 These tests should be placed in the tag's `read` module. If there are many tests, feel free to break them out
-into their own module (ex. See the [ID3v2 `tests` module](../src/id3/v2/tag)).
+into their own module (ex. See the [ID3v2 `tests` module](../lofty/src/id3/v2/tag)).
 
 For an example of these tests, see the [ApeTag tests](https://github.com/Serial-ATA/lofty-rs/blob/9c0ea926c690bc6338ba95aceccc4d93e2ee9826/src/ape/tag/mod.rs#L540-L656).
 
@@ -452,4 +452,4 @@ For an example of these tests, see the [ApeTag tests](https://github.com/Serial-
 
 Integration testing is not normally necessary for tag formats, as they are typically
 tested extensively through the module's unit tests. However, if one wants to create integration tests,
-they can be placed in [tests/tags/](../tests/tags).
+they can be placed in [tests/tags/](../lofty/tests/tags).

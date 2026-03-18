@@ -14,9 +14,9 @@ use std::fmt::{Display, Formatter};
 /// These are rarely constructed by hand. Usually they are created in the background
 /// when making a new [`Frame`](crate::id3::v2::Frame).
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-#[allow(missing_docs)]
 pub struct FrameHeader<'a> {
 	pub(crate) id: FrameId<'a>,
+	/// The frame's flags
 	pub flags: FrameFlags,
 }
 

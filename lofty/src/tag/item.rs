@@ -186,7 +186,6 @@ gen_map!(
 	"TPE3"                                  => Conductor,
 	"DIRECTOR"                              => Director,
 	"TEXT"                                  => Lyricist,
-	"TMCL"                                  => MusicianCredits,
 	"TPUB"                                  => Publisher | Label,
 	"TRSN"                                  => InternetRadioStationName,
 	"TRSO"                                  => InternetRadioStationOwner,
@@ -210,7 +209,6 @@ gen_map!(
 	"MVIN"                                  => MovementTotal,
 	"TCMP"                                  => FlagCompilation,
 	"PCST"                                  => FlagPodcast,
-	"TFLT"                                  => FileType,
 	"TOWN"                                  => FileOwner,
 	"TDTG"                                  => TaggingTime,
 	"TLEN"                                  => Length,
@@ -480,7 +478,6 @@ macro_rules! gen_item_keys {
 		]
 	) => {
 		#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-		#[allow(missing_docs)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
 		pub enum ItemKey {
@@ -539,27 +536,43 @@ gen_item_keys!(
 
 	KEYS => [
 		// Titles
+		/// The album title
 		AlbumTitle,
+		/// The subtitle of the set (e.g. box set title)
 		SetSubtitle,
+		/// The show name (for podcasts/TV series)
 		ShowName,
+		/// The content group description
 		ContentGroup,
+		/// The track title
 		TrackTitle,
+		/// The track subtitle
 		TrackSubtitle,
 
 		// Original names
+		/// The original album title
 		OriginalAlbumTitle,
+		/// The original artist
 		OriginalArtist,
+		/// The original lyricist/text writer
 		OriginalLyricist,
 
 		// Sorting
+		/// The album title sort order key
 		AlbumTitleSortOrder,
+		/// The album artist sort order key
 		AlbumArtistSortOrder,
+		/// The track title sort order key
 		TrackTitleSortOrder,
+		/// The track artist sort order key
 		TrackArtistSortOrder,
+		/// The show name sort order key
 		ShowNameSortOrder,
+		/// The composer sort order key
 		ComposerSortOrder,
 
 		// People & Organizations
+		/// The album artist
 		AlbumArtist,
 		/// The name of each credited album-level artist
 		///
@@ -569,6 +582,7 @@ gen_item_keys!(
 		/// [`Tag::get_strings`]: crate::tag::Tag::get_strings
 		/// [`Tag::take_strings`]: crate::tag::Tag::take_strings
 		AlbumArtists,
+		/// The track artist
 		TrackArtist,
 		/// The name of each credited artist
 		///
@@ -578,28 +592,47 @@ gen_item_keys!(
 		/// [`Tag::get_strings`]: crate::tag::Tag::get_strings
 		/// [`Tag::take_strings`]: crate::tag::Tag::take_strings
 		TrackArtists,
+		/// The arranger
 		Arranger,
+		/// The writer
 		Writer,
+		/// The composer
 		Composer,
+		/// The conductor
 		Conductor,
+		/// The director
 		Director,
+		/// The engineer
 		Engineer,
+		/// The lyricist/text writer
 		Lyricist,
+		/// The mix DJ
 		MixDj,
+		/// The mix engineer
 		MixEngineer,
-		MusicianCredits,
+		/// The performer
 		Performer,
+		/// The producer
 		Producer,
+		/// The publisher
 		Publisher,
+		/// The record label
 		Label,
+		/// The internet radio station name
 		InternetRadioStationName,
+		/// The internet radio station owner
 		InternetRadioStationOwner,
+		/// The remixer
 		Remixer,
 
 		// Counts & Indexes
+		/// The disc number
 		DiscNumber,
+		/// The total number of discs
 		DiscTotal,
+		/// The track number
 		TrackNumber,
+		/// The total number of tracks
 		TrackTotal,
 		/// User-specific ratings (a.k.a. "Popularimeter")
 		///
@@ -629,6 +662,7 @@ gen_item_keys!(
 		///
 		/// [`popularimeter`]: crate::tag::items::popularimeter
 		Popularimeter,
+		/// The parental advisory rating
 		ParentalAdvisory,
 
 		// Dates
@@ -669,7 +703,12 @@ gen_item_keys!(
 		OriginalReleaseDate,
 
 		// Identifiers
+		/// The International Standard Recording Code (ISRC)
 		Isrc,
+		/// The barcode (typically [UPC]/[EAN])
+		///
+		/// [UPC]: https://en.wikipedia.org/wiki/Universal_Product_Code
+		/// [EAN]: https://en.wikipedia.org/wiki/European_Article_Number
 		Barcode,
 		/// [AcoustID] audio identifiers
 		///
@@ -683,11 +722,21 @@ gen_item_keys!(
 		///
 		/// [AcoustID]: https://acoustid.org/
 		AcoustIdFingerprint,
+		/// The label catalog number
+		///
+		/// See also: <https://musicbrainz.org/doc/Release/Catalog_Number>
 		CatalogNumber,
+		/// The work title
 		Work,
+		/// The movement name
 		Movement,
+		/// The movement number
 		MovementNumber,
+		/// The total number of movements
 		MovementTotal,
+		/// The country in which this was released
+		///
+		/// NOTE: This should contain an [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code.
 		ReleaseCountry,
 
 		///////////////////////////////////////////////////////////////
@@ -754,41 +803,71 @@ gen_item_keys!(
 		///////////////////////////////////////////////////////////////
 
 		// Flags
+		/// Whether the track is part of a compilation
+		///
+		/// NOTE: The value will always be `"1"` or `"0"` for `true` and `false`, respectively.
 		FlagCompilation,
+		/// Whether the track is a podcast
+		///
+		/// NOTE: The value will always be `"1"` or `"0"` for `true` and `false`, respectively.
 		FlagPodcast,
 
 		// File Information
-		FileType,
+		/// The file owner/licensee
 		FileOwner,
+		/// The tagging date/time
 		TaggingTime,
+		/// The audio length in milliseconds
 		Length,
+		/// The original file name
 		OriginalFileName,
+		/// The original media type
 		OriginalMediaType,
 
 		// Encoder information
+		/// The person or organization that encoded the audio
 		EncodedBy,
+		/// The encoder software/hardware and settings
 		EncoderSoftware,
+		/// The encoder settings
 		EncoderSettings,
+		/// The encoding date/time
 		EncodingTime,
+		/// The ReplayGain album gain value
 		ReplayGainAlbumGain,
+		/// The ReplayGain album peak value
 		ReplayGainAlbumPeak,
+		/// The ReplayGain track gain value
 		ReplayGainTrackGain,
+		/// The ReplayGain track peak value
 		ReplayGainTrackPeak,
 
 		// URLs
+		/// A URL link to the audio file
 		AudioFileUrl,
+		/// A URL link to the audio source
 		AudioSourceUrl,
+		/// A URL for commercial information
 		CommercialInformationUrl,
+		/// A URL for copyright/legal information
 		CopyrightUrl,
+		/// A URL for the track artist
 		TrackArtistUrl,
+		/// A URL for the internet radio station
 		RadioStationUrl,
+		/// A URL for payment
 		PaymentUrl,
+		/// A URL for the publisher
 		PublisherUrl,
 
 		// Style
+		/// The genre of the track
 		Genre,
+		/// The initial musical key
 		InitialKey,
+		/// The color associated with the track
 		Color,
+		/// The mood of the track
 		Mood,
 		/// Decimal BPM value with arbitrary precision
 		///
@@ -805,20 +884,37 @@ gen_item_keys!(
 		IntegerBpm,
 
 		// Legal
+		/// The copyright message
 		CopyrightMessage,
+		/// The license under which the release is available
+		///
+		/// NOTE: This is typically a URL to a license.
 		License,
 
 		// Podcast
+		/// The podcast episode description
 		PodcastDescription,
+		/// The podcast series category
 		PodcastSeriesCategory,
+		/// The podcast URL
 		PodcastUrl,
+		/// The podcast globally unique identifier
 		PodcastGlobalUniqueId,
+		/// The podcast keywords
 		PodcastKeywords,
 
 		// Miscellaneous
+		/// A comment
 		Comment,
+		/// A description
 		Description,
+		/// The language of the content ([ISO 639-2])
+		///
+		/// [ISO 639-2]: https://en.wikipedia.org/wiki/ISO_639-3
 		Language,
+		/// The script used to write the release and track titles ([ISO 15924])
+		///
+		/// [ISO 15924]: https://en.wikipedia.org/wiki/ISO_15924
 		Script,
 		/// (Possibly synchronized) lyrics text
 		///
@@ -851,7 +947,9 @@ gen_item_keys!(
 		UnsyncLyrics,
 
 		// Vendor-specific
+		/// Apple's XID identifier
 		AppleXid,
+		/// Apple's ID3v2 content group (GRP1 frame)
 		AppleId3v2ContentGroup, // GRP1
 	]
 );
@@ -863,7 +961,7 @@ pub enum ItemValue {
 	Text(String),
 	/// Any UTF-8 encoded locator of external information
 	///
-	/// This is only gets special treatment in `ID3v2` and `APE` tags, being written
+	/// This only gets special treatment in `ID3v2` and `APE` tags, being written
 	/// as a normal string in other tags
 	Locator(String),
 	/// Binary information
@@ -966,6 +1064,18 @@ impl TagItem {
 	}
 
 	/// Create a new [`TagItem`]
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lofty::tag::{ItemKey, ItemValue, TagItem};
+	///
+	/// let item = TagItem::new(
+	/// 	ItemKey::TrackTitle,
+	/// 	ItemValue::Text(String::from("My Song")),
+	/// );
+	/// assert_eq!(item.key(), ItemKey::TrackTitle);
+	/// ```
 	#[must_use]
 	pub const fn new(item_key: ItemKey, item_value: ItemValue) -> Self {
 		Self {

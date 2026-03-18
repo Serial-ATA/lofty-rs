@@ -12,11 +12,14 @@ const IEEE_FLOAT: u16 = 0x0003;
 const EXTENSIBLE: u16 = 0xFFFE;
 
 /// A WAV file's format
-#[allow(missing_docs, non_camel_case_types)]
+#[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum WavFormat {
+	/// Pulse-code modulation (uncompressed)
 	PCM,
+	/// IEEE 754 floating-point
 	IEEE_FLOAT,
+	/// Other format identified by its format tag
 	Other(u16),
 }
 
