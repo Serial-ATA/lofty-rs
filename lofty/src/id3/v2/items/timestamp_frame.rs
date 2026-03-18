@@ -11,10 +11,11 @@ use byteorder::ReadBytesExt;
 
 /// An `ID3v2` timestamp frame
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-#[allow(missing_docs)]
 pub struct TimestampFrame<'a> {
 	pub(crate) header: FrameHeader<'a>,
+	/// The text encoding used for the timestamp
 	pub encoding: TextEncoding,
+	/// The timestamp value
 	pub timestamp: Timestamp,
 }
 

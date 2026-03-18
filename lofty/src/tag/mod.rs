@@ -733,8 +733,8 @@ impl TagExt for Tag {
 	}
 }
 
+/// The remainder of a [`Tag`] after calling [`SplitTag::split_tag`]
 #[derive(Debug, Clone, Default)]
-#[allow(missing_docs)]
 pub struct SplitTagRemainder;
 
 impl SplitTag for Tag {

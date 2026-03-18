@@ -16,16 +16,24 @@ const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("RVA2"));
 /// A channel identifier used in the RVA2 frame
 #[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
-#[allow(missing_docs)]
 pub enum ChannelType {
+	/// Other channel type
 	Other = 0,
+	/// Master volume
 	MasterVolume = 1,
+	/// Front right
 	FrontRight = 2,
+	/// Front left
 	FrontLeft = 3,
+	/// Back right
 	BackRight = 4,
+	/// Back left
 	BackLeft = 5,
+	/// Front centre
 	FrontCentre = 6,
+	/// Back centre
 	BackCentre = 7,
+	/// Subwoofer
 	Subwoofer = 8,
 }
 

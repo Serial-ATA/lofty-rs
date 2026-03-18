@@ -129,33 +129,54 @@ impl Display for MimeType {
 }
 
 /// The picture type, according to ID3v2 APIC
-#[allow(missing_docs)]
 #[allow(clippy::unsafe_derive_deserialize)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum PictureType {
+	/// Other picture type not covered by the remaining variants
 	Other,
+	/// 32x32 pixels file icon (PNG only)
 	Icon,
+	/// Other file icon
 	OtherIcon,
+	/// Front cover
 	CoverFront,
+	/// Back cover
 	CoverBack,
+	/// Leaflet page
 	Leaflet,
+	/// Media (e.g. label side of CD)
 	Media,
+	/// Lead artist/lead performer/soloist
 	LeadArtist,
+	/// Artist/performer
 	Artist,
+	/// Conductor
 	Conductor,
+	/// Band/orchestra
 	Band,
+	/// Composer
 	Composer,
+	/// Lyricist/text writer
 	Lyricist,
+	/// Recording location
 	RecordingLocation,
+	/// During recording
 	DuringRecording,
+	/// During performance
 	DuringPerformance,
+	/// Movie/video screen capture
 	ScreenCapture,
+	/// A bright colored fish
 	BrightFish,
+	/// Illustration
 	Illustration,
+	/// Band/artist logotype
 	BandLogo,
+	/// Publisher/studio logotype
 	PublisherLogo,
+	/// Undefined picture type
 	Undefined(u8),
 }
 

@@ -57,7 +57,7 @@ Now that the directories are created, we can start working on defining our file.
 
 Before we can define the file struct, we need to add a variant to `FileType`.
 
-Go to [src/file.rs](../src/file.rs) and edit the `FileType` enum to add your new variant.
+Go to [src/file/file_type.rs](../lofty/src/file/file_type.rs) and edit the `FileType` enum to add your new variant.
 
 ```rust
 pub enum FileType {
@@ -216,7 +216,8 @@ They can be easily defined in a few lines:
 use std::io::Cursor;
 
 use libfuzzer_sys::fuzz_target;
-use lofty::{AudioFile, ParseOptions};
+use lofty::config::ParseOptions;
+use lofty::file::AudioFile;
 
 fuzz_target!(|data: Vec<u8>| {
     let _ = lofty::foo::FooFile::read_from(

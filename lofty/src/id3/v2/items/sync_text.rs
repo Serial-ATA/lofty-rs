@@ -38,16 +38,24 @@ impl TimestampFormat {
 /// The type of text stored in a [`SynchronizedTextFrame`]
 #[derive(Copy, Clone, PartialEq, Debug, Eq, Hash)]
 #[repr(u8)]
-#[allow(missing_docs)]
 pub enum SyncTextContentType {
+	/// Other content type
 	Other = 0,
+	/// Lyrics
 	Lyrics = 1,
+	/// Text transcription
 	TextTranscription = 2,
+	/// Movement/part name (e.g. "Adagio")
 	PartName = 3,
+	/// Events (e.g. "Don Quixote enters the stage")
 	Events = 4,
+	/// Chord (e.g. "Bb F Fsus")
 	Chord = 5,
+	/// Trivia/"pop up" information
 	Trivia = 6,
+	/// URLs to webpages
 	WebpageURL = 7,
+	/// URLs to images
 	ImageURL = 8,
 }
 

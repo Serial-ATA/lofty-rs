@@ -22,54 +22,93 @@ const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("ETCO"));
 /// >>> like setting off an explosion on-stage, activating a screensaver etc.
 #[repr(u8)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
-#[allow(missing_docs)]
 pub enum EventType {
+	/// Padding (has no meaning)
 	Padding = 0x00,
+	/// End of initial silence
 	EndOfInitialSilence = 0x01,
+	/// Intro start
 	IntroStart = 0x02,
+	/// Main part start
 	MainPartStart = 0x03,
+	/// Outro start
 	OutroStart = 0x04,
+	/// Outro end
 	OutroEnd = 0x05,
+	/// Verse start
 	VerseStart = 0x06,
+	/// Refrain start
 	RefrainStart = 0x07,
+	/// Interlude start
 	InterludeStart = 0x08,
+	/// Theme start
 	ThemeStart = 0x09,
+	/// Variation start
 	VariationStart = 0x0A,
+	/// Key change
 	KeyChange = 0x0B,
+	/// Time change
 	TimeChange = 0x0C,
+	/// Momentary unwanted noise (Alarm, Phone, etc.)
 	MomentaryUnwantedNoise = 0x0D,
+	/// Sustained noise
 	SustainedNoise = 0x0E,
+	/// Sustained noise end
 	SustainedNoiseEnd = 0x0F,
+	/// Intro end
 	IntroEnd = 0x10,
+	/// Main part end
 	MainPartEnd = 0x11,
+	/// Verse end
 	VerseEnd = 0x12,
+	/// Refrain end
 	RefrainEnd = 0x13,
+	/// Theme end
 	ThemeEnd = 0x14,
+	/// Profanity
 	Profanity = 0x15,
+	/// Profanity end
 	ProfanityEnd = 0x16,
 
-	// User-defined events
+	/// Not predefined synch 0 (user event)
 	NotPredefinedSynch0 = 0xE0,
+	/// Not predefined synch 1 (user event)
 	NotPredefinedSynch1 = 0xE1,
+	/// Not predefined synch 2 (user event)
 	NotPredefinedSynch2 = 0xE2,
+	/// Not predefined synch 3 (user event)
 	NotPredefinedSynch3 = 0xE3,
+	/// Not predefined synch 4 (user event)
 	NotPredefinedSynch4 = 0xE4,
+	/// Not predefined synch 5 (user event)
 	NotPredefinedSynch5 = 0xE5,
+	/// Not predefined synch 6 (user event)
 	NotPredefinedSynch6 = 0xE6,
+	/// Not predefined synch 7 (user event)
 	NotPredefinedSynch7 = 0xE7,
+	/// Not predefined synch 8 (user event)
 	NotPredefinedSynch8 = 0xE8,
+	/// Not predefined synch 9 (user event)
 	NotPredefinedSynch9 = 0xE9,
+	/// Not predefined synch A (user event)
 	NotPredefinedSynchA = 0xEA,
+	/// Not predefined synch B (user event)
 	NotPredefinedSynchB = 0xEB,
+	/// Not predefined synch C (user event)
 	NotPredefinedSynchC = 0xEC,
+	/// Not predefined synch D (user event)
 	NotPredefinedSynchD = 0xED,
+	/// Not predefined synch E (user event)
 	NotPredefinedSynchE = 0xEE,
+	/// Not predefined synch F (user event)
 	NotPredefinedSynchF = 0xEF,
 
+	/// Audio end (start of silence)
 	AudioEnd = 0xFD,
+	/// Audio file ends
 	AudioFileEnds = 0xFE,
 
-	/// 0x17..=0xDF and 0xF0..=0xFC
+	/// Reserved event type (0x17..=0xDF and 0xF0..=0xFC)
 	Reserved,
 }
 

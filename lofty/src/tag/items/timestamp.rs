@@ -9,14 +9,30 @@ use std::str::FromStr;
 use byteorder::ReadBytesExt;
 
 /// A subset of the ISO 8601 timestamp format
+///
+/// # Examples
+///
+/// ```
+/// use lofty::tag::items::Timestamp;
+///
+/// let timestamp: Timestamp = "2024-06-15T14:30:00".parse().unwrap();
+/// assert_eq!(timestamp.year, 2024);
+/// assert_eq!(timestamp.month, Some(6));
+/// assert_eq!(timestamp.to_string(), "2024-06-15T14:30:00");
+/// ```
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Default)]
-#[allow(missing_docs)]
 pub struct Timestamp {
+	/// The year component (e.g. 2024)
 	pub year: u16,
+	/// The month component (1-12)
 	pub month: Option<u8>,
+	/// The day component (1-31)
 	pub day: Option<u8>,
+	/// The hour component (0-23)
 	pub hour: Option<u8>,
+	/// The minute component (0-59)
 	pub minute: Option<u8>,
+	/// The second component (0-59)
 	pub second: Option<u8>,
 }
 

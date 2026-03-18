@@ -162,15 +162,16 @@ impl StreamHeader {
 /// * For 16-bit output (range \[-32767 32768]), the max is 68813 (out of range). It will be encoded as $ 20 * log10(68813) * 256 ~ 24769 = 0x60C1 $
 /// * For float output (range \[-1 1]), the max is 0.96. It will be encoded as $ 20 * log10(0.96 * 215) * 256 ~ 23029 = 0x59F5 $ (for peak values it is suggested to round to nearest higher integer)
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-#[allow(missing_docs)]
 pub struct ReplayGain {
 	/// The replay gain version
 	pub version: u8,
 	/// The loudness calculated for the title, and not the gain that the player must apply
 	pub title_gain: u16,
+	/// The peak title loudness level
 	pub title_peak: u16,
 	/// The loudness calculated for the album
 	pub album_gain: u16,
+	/// The peak album loudness level
 	pub album_peak: u16,
 }
 
@@ -203,10 +204,10 @@ impl ReplayGain {
 
 /// Information from an Encoder Info packet
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
-#[allow(missing_docs)]
 pub struct EncoderInfo {
 	/// Quality in 4.3 format
 	pub profile: f32,
+	/// Whether the PNS (Perceptual Noise Substitution) tool is enabled
 	pub pns_tool: bool,
 	/// Major version
 	pub major: u8,

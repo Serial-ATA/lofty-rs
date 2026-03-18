@@ -14,7 +14,7 @@
 Before you create a PR, we ask that you do the following:
 
 1. **If fixing a bug, make an issue first**: The issue tracker should have a searchable history of
-bugs reports.
+bug reports.
 
 2. **If adding a feature, make an issue or discussion first**: Features should be discussed prior to implementation.
 

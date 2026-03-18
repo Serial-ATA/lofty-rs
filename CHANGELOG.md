@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **APE**: The `Tag` -> `ApeTag` conversion will now preserve multi-value items ([issue](https://github.com/Serial-ATA/lofty-rs/issues/631)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/633))
 
+### Removed
+
+- **ItemKey**: `ItemKey::FileType` and `ItemKey::MusicianCredits` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/636))
+    - These are ID3v2-specific fields with special formats.
+
 ## [0.23.3] - 2026-03-14
 
 ### Added

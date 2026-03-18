@@ -159,46 +159,53 @@ where
 
 /// MPEG Audio version
 #[derive(Default, PartialEq, Eq, Copy, Clone, Debug)]
-#[allow(missing_docs)]
 pub enum MpegVersion {
+	/// MPEG Version 1
 	#[default]
 	V1,
+	/// MPEG Version 2
 	V2,
+	/// MPEG Version 2.5
 	V2_5,
-	/// Exclusive to AAC
+	/// MPEG-4 (exclusive to AAC)
 	V4,
 }
 
 /// MPEG layer
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
-#[allow(missing_docs)]
 pub enum Layer {
+	/// MPEG Audio Layer 1
 	Layer1 = 1,
+	/// MPEG Audio Layer 2
 	Layer2 = 2,
+	/// MPEG Audio Layer 3 (MP3)
 	#[default]
 	Layer3 = 3,
 }
 
 /// Channel mode
 #[derive(Default, Copy, Clone, PartialEq, Eq, Debug)]
-#[allow(missing_docs)]
 pub enum ChannelMode {
+	/// Standard stereo
 	#[default]
 	Stereo = 0,
+	/// Joint stereo (intensity and/or mid-side)
 	JointStereo = 1,
 	/// Two independent mono channels
 	DualChannel = 2,
+	/// Single mono channel
 	SingleChannel = 3,
 }
 
 /// A rarely-used decoder hint that the file must be de-emphasized
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-#[allow(missing_docs, non_camel_case_types)]
+#[allow(non_camel_case_types)]
 pub enum Emphasis {
-	/// 50/15 ms
+	/// 50/15 ms de-emphasis
 	MS5015,
+	/// Reserved
 	Reserved,
-	/// CCIT J.17
+	/// CCIT J.17 de-emphasis
 	CCIT_J17,
 }
 

@@ -47,21 +47,33 @@ pub const EXTENSIONS: &[&str] = &[
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(PartialEq, Eq, Copy, Clone, Debug)]
 #[allow(clippy::unsafe_derive_deserialize)]
-#[allow(missing_docs)]
 #[non_exhaustive]
 pub enum FileType {
+	/// Advanced Audio Coding (AAC/ADTS)
 	Aac,
+	/// Audio Interchange File Format
 	Aiff,
+	/// Monkey's Audio
 	Ape,
+	/// Free Lossless Audio Codec
 	Flac,
+	/// MPEG-1/2 Audio (MP1, MP2, MP3)
 	Mpeg,
+	/// MPEG-4 Audio (M4A, M4B, etc.)
 	Mp4,
+	/// Musepack
 	Mpc,
+	/// Opus
 	Opus,
+	/// Ogg Vorbis
 	Vorbis,
+	/// Speex
 	Speex,
+	/// Waveform Audio
 	Wav,
+	/// WavPack
 	WavPack,
+	/// A custom file type, registered through [`register_custom_resolver`](crate::resolve::register_custom_resolver)
 	Custom(&'static str),
 }
 
