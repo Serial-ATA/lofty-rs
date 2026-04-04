@@ -39,8 +39,8 @@ use std::path::Path;
 /// ```
 pub const EXTENSIONS: &[&str] = &[
 	// Also update `FileType::from_ext()` below
-	"aac", "ape", "aiff", "aif", "afc", "aifc", "mp3", "mp2", "mp1", "wav", "wv", "opus", "flac",
-	"ogg", "mp4", "m4a", "m4b", "m4p", "m4r", "m4v", "3gp", "mpc", "mp+", "mpp", "spx",
+	"aac", "ape", "aiff", "aif", "afc", "aifc", "dsf", "mp3", "mp2", "mp1", "wav", "wv", "opus",
+	"flac", "ogg", "mp4", "m4a", "m4b", "m4p", "m4r", "m4v", "3gp", "mpc", "mp+", "mpp", "spx",
 ];
 
 /// The type of file read
@@ -53,6 +53,7 @@ pub enum FileType {
 	Aac,
 	Aiff,
 	Ape,
+	Dsf,
 	Flac,
 	Mpeg,
 	Mp4,
@@ -70,7 +71,7 @@ impl FileType {
 	///
 	/// | [`FileType`]                      | [`TagType`]      |
 	/// |-----------------------------------|------------------|
-	/// | `Aac`, `Aiff`, `Mp3`, `Wav`       | `Id3v2`          |
+	/// | `Aac`, `Aiff`, `Dsf`, `Mp3`, `Wav` | `Id3v2`          |
 	/// | `Ape` , `Mpc`, `WavPack`          | `Ape`            |
 	/// | `Flac`, `Opus`, `Vorbis`, `Speex` | `VorbisComments` |
 	/// | `Mp4`                             | `Mp4Ilst`        |
@@ -90,7 +91,9 @@ impl FileType {
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
+			FileType::Aac | FileType::Aiff | FileType::Dsf | FileType::Mpeg | FileType::Wav => {
+			TagType::Id3v2
+		},
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
@@ -192,6 +195,7 @@ impl FileType {
 			"aac" => Some(Self::Aac),
 			"ape" => Some(Self::Ape),
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::Aiff),
+			"dsf" => Some(Self::Dsf),
 			"mp3" | "mp2" | "mp1" => Some(Self::Mpeg),
 			"wav" | "wave" => Some(Self::Wav),
 			"wv" => Some(Self::WavPack),
@@ -297,6 +301,7 @@ impl FileType {
 
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
+			68 if buf.len() >= 4 && &buf[..4] == b"DSD " => Some(Self::Dsf),
 			77 if buf.starts_with(b"MAC") => Some(Self::Ape),
 			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => {
 				// ADTS and MPEG frame headers are way too similar

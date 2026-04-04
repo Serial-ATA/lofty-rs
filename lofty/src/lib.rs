@@ -119,6 +119,7 @@ mod util;
 
 pub mod aac;
 pub mod ape;
+pub mod dsf;
 pub mod flac;
 pub mod id3;
 pub mod iff;
