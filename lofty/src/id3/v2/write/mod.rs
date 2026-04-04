@@ -82,6 +82,11 @@ where
 			tag.flags.footer = false;
 			return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
 		},
+		// DSF stores the ID3v2 tag after the audio data, with a pointer in the DSD chunk header
+		FileType::Dsf => {
+			tag.flags.footer = false;
+			return crate::dsf::write_impl::write_to(file, &id3v2);
+		},
 		_ => {},
 	}
 
