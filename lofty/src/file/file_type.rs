@@ -92,8 +92,8 @@ impl FileType {
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
 			FileType::Aac | FileType::Aiff | FileType::Dsf | FileType::Mpeg | FileType::Wav => {
-			TagType::Id3v2
-		},
+				TagType::Id3v2
+			},
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments

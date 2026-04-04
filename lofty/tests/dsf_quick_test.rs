@@ -24,11 +24,7 @@ fn build_minimal_dsf(id3v2_tag: Option<&[u8]>) -> Vec<u8> {
 	let audio_end: u64 = 28 + 52 + data_chunk_size;
 	let tag_len = id3v2_tag.map_or(0, |t| t.len() as u64);
 	let total_file_size = audio_end + tag_len;
-	let metadata_offset = if id3v2_tag.is_some() {
-		audio_end
-	} else {
-		0
-	};
+	let metadata_offset = if id3v2_tag.is_some() { audio_end } else { 0 };
 
 	// Sample count: block_size * 8 (bits per byte) samples per channel
 	let sample_count: u64 = block_size as u64 * 8;
