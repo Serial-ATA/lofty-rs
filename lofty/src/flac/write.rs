@@ -10,7 +10,7 @@ use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read, SeekFrom};
+use std::io::{Cursor, Read};
 use std::iter::Peekable;
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -90,6 +90,10 @@ where
 			let reader = &mut &block.content[..];
 
 			let vendor_len = reader.read_u32::<LittleEndian>()?;
+			if vendor_len as usize > reader.len() {
+				err!(SizeMismatch);
+			}
+
 			let mut vendor_raw = try_vec![0; vendor_len as usize];
 			reader.read_exact(&mut vendor_raw)?;
 
@@ -164,7 +168,8 @@ where
 
 	file_bytes.splice(metadata_range, encoded_metadata);
 
-	file.seek(SeekFrom::Start(0))?;
+	file.rewind()?;
+	file.truncate(0)?;
 	file.write_all(&file_bytes)?;
 
 	Ok(())
@@ -173,7 +178,7 @@ where
 fn encode_tag<'a, II, IP>(
 	vendor: &str,
 	mut comments_peek: Peekable<&mut II>,
-	mut pictures_peek: Peekable<&mut IP>,
+	pictures_peek: Peekable<&mut IP>,
 ) -> Result<Vec<Block>>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -185,11 +190,7 @@ where
 		metadata_blocks.push(Block::new_comments(vendor, &mut comments_peek)?);
 	}
 
-	loop {
-		let Some((picture, info)) = pictures_peek.next() else {
-			break;
-		};
-
+	for (picture, info) in pictures_peek {
 		metadata_blocks.push(Block::new_picture(picture, info)?);
 	}
 

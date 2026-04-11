@@ -7,16 +7,23 @@ use lofty::tag::{ItemKey, TagExt, TagType};
 use std::fs::File;
 use std::io::{Seek as _, Write as _};
 use std::path::Path;
+use std::process::Command;
+use tempfile::NamedTempFile;
 
 /// Create a new temporary file and copy the contents of `path` into it
-pub fn temp_file(path: impl AsRef<Path>) -> File {
+pub fn named_temp_file(path: impl AsRef<Path>) -> NamedTempFile {
 	let content = std::fs::read(path).unwrap();
 
-	let mut file = tempfile::tempfile().unwrap();
+	let mut file = NamedTempFile::new().unwrap();
 	file.write_all(&content).unwrap();
 	file.rewind().unwrap();
 
 	file
+}
+
+/// Create a new temporary file and copy the contents of `path` into it
+pub fn temp_file(path: impl AsRef<Path>) -> File {
+	named_temp_file(path).into_file()
 }
 
 /// Copy `path` into a [`temp_file()`] and parse it via [`Probe`]
@@ -152,4 +159,16 @@ pub fn remove_tag_test(path: impl AsRef<Path>, tag_type: TagType) {
 		.read()
 		.unwrap();
 	assert!(tagged_file.tag(tag_type).is_none());
+}
+
+/// Check if a CLI tool is installed
+pub fn tool_installed(tool: &str) -> bool {
+	match Command::new(tool).output() {
+		Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound) => {
+			eprintln!("Skipping test, `{tool}` is not installed!");
+			false
+		},
+		Err(e) => panic!("{}", e),
+		_ => true,
+	}
 }
