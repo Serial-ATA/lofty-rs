@@ -8,6 +8,7 @@ mod mp4;
 mod mpc;
 mod mpeg;
 mod ogg;
+mod resize;
 pub(crate) mod util;
 mod wav;
 mod wavpack;

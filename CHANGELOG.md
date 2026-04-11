@@ -16,12 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **APE**: The `Tag` -> `ApeTag` conversion will now preserve multi-value items ([issue](https://github.com/Serial-ATA/lofty-rs/issues/631)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/633))
 
+### Fixed
+
+- **FLAC**: Fixed corruption of shrinking metadata ([issue](https://github.com/Serial-ATA/lofty-rs/issues/640)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/641))
+
 ### Removed
 
 - **ItemKey**: `ItemKey::FileType` and `ItemKey::MusicianCredits` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/636))
     - These are ID3v2-specific fields with special formats.
 
-## [0.23.3] - 2026-03-14
+## [0.23.3] - 2026-03-14 (YANKED)
 
 ### Added
 
@@ -50,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     However, some encoders incorrectly include the padding in the size, which can cause the parser to go out of sync.
     We no longer assume padding is valid and have additional checks to stay in sync when possible.
 
-## [0.23.2] - 2026-02-14
+## [0.23.2] - 2026-02-14 (YANKED)
 
 ### Fixed
 
@@ -60,13 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Previously, the Vorbis Comments writer assumed that the ID3v2 tag had already been stripped.
       If that wasn't the case, it would error that it couldn't find the FLAC stream marker.
 
-## [0.23.1] - 2026-02-08
+## [0.23.1] - 2026-02-08 (YANKED)
 
 ### Fixed
 
 - **Docs**: Replaced `doc_auto_cfg` with `doc_cfg` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/605))
 
-## [0.23.0] - 2026-02-08
+## [0.23.0] - 2026-02-08 (YANKED)
 
 ### Added
 - **ItemKey**:

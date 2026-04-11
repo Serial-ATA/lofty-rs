@@ -129,11 +129,12 @@ impl Block {
 	where
 		W: Write,
 	{
-		let block_content_size =
-			core::cmp::min(self.content.len(), Self::MAX_CONTENT_SIZE as usize);
+		if self.content.len() > Self::MAX_CONTENT_SIZE as usize {
+			err!(TooMuchData);
+		}
 
 		writer.write_u8((self.ty & 0x7F) | u8::from(self.last) << 7)?;
-		writer.write_u24::<BigEndian>(block_content_size as u32)?;
+		writer.write_u24::<BigEndian>(self.content.len() as u32)?;
 		writer.write_all(&self.content)?;
 
 		Ok(Self::BLOCK_HEADER_SIZE + self.content.len())
