@@ -98,3 +98,14 @@ fn read_no_properties() {
 fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/full_test.aiff", None);
 }
+
+#[test_log::test]
+fn empty_id3_chunk_skipped_644() {
+	let file = Probe::open("tests/files/assets/644_empty_id3v2.aiff")
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(file.file_type(), FileType::Aiff);
+	assert!(file.tag(TagType::Id3v2).is_none());
+}

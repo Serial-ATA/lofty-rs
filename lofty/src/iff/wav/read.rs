@@ -98,7 +98,9 @@ where
 				chunks.unlock()?;
 			},
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
-				let tag = chunk.id3_chunk(parse_options)?;
+				let Some(tag) = chunk.id3_chunk(parse_options)? else {
+					continue;
+				};
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
 					log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
 

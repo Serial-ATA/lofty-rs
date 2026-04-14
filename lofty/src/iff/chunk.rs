@@ -268,18 +268,26 @@ impl<R: Read + Seek> Chunk<'_, R> {
 	}
 
 	/// Parse this chunk as an ID3v2 tag
-	pub fn id3_chunk(&mut self, parse_options: ParseOptions) -> Result<Id3v2Tag> {
+	pub fn id3_chunk(&mut self, parse_options: ParseOptions) -> Result<Option<Id3v2Tag>> {
 		use crate::id3::v2::header::Id3v2Header;
 		use crate::id3::v2::read::parse_id3v2;
 
 		let content = self.content()?;
+
+		if content.len() < 10 {
+			log::warn!("ID3 chunk too small to contain a valid header");
+			if parse_options.parsing_mode == crate::config::ParsingMode::Strict {
+				err!(FakeTag);
+			}
+			return Ok(None);
+		}
 
 		let reader = &mut &*content;
 
 		let header = Id3v2Header::parse(reader)?;
 		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 
-		Ok(id3v2)
+		Ok(Some(id3v2))
 	}
 }
 
