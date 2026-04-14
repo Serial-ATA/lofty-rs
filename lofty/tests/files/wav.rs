@@ -113,3 +113,14 @@ fn read_no_properties() {
 fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/wav_format_pcm.wav", None);
 }
+
+#[test_log::test]
+fn empty_id3_chunk_skipped_644() {
+	let file = Probe::open("tests/files/assets/644_empty_id3v2.wav")
+		.unwrap()
+		.read()
+		.unwrap();
+
+	assert_eq!(file.file_type(), FileType::Wav);
+	assert!(file.tag(TagType::Id3v2).is_none());
+}
