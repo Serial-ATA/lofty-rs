@@ -54,20 +54,14 @@ where
 	let mut chunks = Chunks::<_, LittleEndian>::new(data, file_len);
 	while let Some(mut chunk) = chunks.next(parse_options.parsing_mode)? {
 		match &chunk.fourcc {
-			b"fmt " if parse_options.read_properties => {
-				if fmt.is_empty() {
-					fmt = chunk.content()?;
-				}
+			b"fmt " if parse_options.read_properties && fmt.is_empty() => {
+				fmt = chunk.content()?;
 			},
-			b"fact" if parse_options.read_properties => {
-				if total_samples == 0 {
-					total_samples = chunk.read_u32::<LittleEndian>()?;
-				}
+			b"fact" if parse_options.read_properties && total_samples == 0 => {
+				total_samples = chunk.read_u32::<LittleEndian>()?;
 			},
-			b"data" if parse_options.read_properties => {
-				if stream_len == 0 {
-					stream_len += chunk.size()
-				}
+			b"data" if parse_options.read_properties && stream_len == 0 => {
+				stream_len += chunk.size()
 			},
 			b"LIST" => {
 				let mut size = chunk.size();

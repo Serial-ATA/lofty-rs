@@ -138,8 +138,8 @@ where
 		}
 	}
 
-	if length > 0 {
-		properties.overall_bitrate = (file_length.saturating_mul(8) / length) as u32;
+	if let Some(overall_bitrate) = file_length.saturating_mul(8).checked_div(length) {
+		properties.overall_bitrate = overall_bitrate as u32;
 	}
 
 	if properties.bitrate_nominal > 0 {

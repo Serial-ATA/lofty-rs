@@ -121,4 +121,8 @@ macro_rules! parse_mode_choice {
 	};
 }
 
-pub(crate) use {decode_err, encode_err, err, parse_mode_choice, try_vec};
+pub(crate) use decode_err;
+pub(crate) use encode_err;
+pub(crate) use err;
+pub(crate) use parse_mode_choice;
+pub(crate) use try_vec;
