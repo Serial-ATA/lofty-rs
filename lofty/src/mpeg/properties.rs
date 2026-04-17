@@ -227,9 +227,9 @@ where
 	}
 
 	let length = (stream_len * 8).div_round(u64::from(properties.audio_bitrate));
-	if length > 0 {
-		properties.overall_bitrate = ((file_length * 8) / length) as u32;
-		properties.duration = Duration::from_millis(length);
+	properties.duration = Duration::from_millis(length);
+	if let Some(overall_bitrate) = file_length.saturating_mul(8).checked_div(length) {
+		properties.overall_bitrate = overall_bitrate as u32;
 	}
 
 	Ok(())

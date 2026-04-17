@@ -356,51 +356,44 @@ where
 
 		let mut text_chunks = Vec::new();
 
-		if let Some(comments) = tag.comments.take() {
-			if !comments.is_empty() {
-				let comment_count = comments.len();
+		if let Some(comments) = tag.comments.take()
+			&& !comments.is_empty()
+		{
+			let Ok(num_comments) = u16::try_from(comments.len()) else {
+				err!(TooMuchData);
+			};
 
-				if let Ok(len) = u16::try_from(comment_count) {
-					text_chunks.extend(b"COMT");
-					text_chunks.extend(len.to_be_bytes());
+			text_chunks.extend(b"COMT");
+			text_chunks.extend([0; 4]); // Size written at the end
+			text_chunks.extend(num_comments.to_be_bytes());
 
-					for comt in comments {
-						text_chunks.extend(comt.timestamp.to_be_bytes());
-						text_chunks.extend(comt.marker_id.to_be_bytes());
+			for comt in comments {
+				text_chunks.extend(comt.timestamp.to_be_bytes());
+				text_chunks.extend(comt.marker_id.to_be_bytes());
 
-						let comt_len = comt.text.len();
+				let comt_len = comt.text.len();
 
-						if comt_len > u16::MAX as usize {
-							err!(TooMuchData);
-						}
-
-						text_chunks.extend((comt_len as u16).to_be_bytes());
-						text_chunks.extend(comt.text.as_bytes());
-
-						if comt_len % 2 != 0 {
-							text_chunks.push(0);
-						}
-					}
-
-					// Get the size of the COMT chunk
-					let comt_len = text_chunks.len() - 4;
-
-					if let Ok(chunk_len) = u32::try_from(comt_len) {
-						let mut i = 4;
-
-						// Write the size back
-						for b in chunk_len.to_be_bytes() {
-							text_chunks.insert(i, b);
-							i += 1;
-						}
-					} else {
-						err!(TooMuchData);
-					}
-
-					if (text_chunks.len() - 4) % 2 != 0 {
-						text_chunks.push(0);
-					}
+				if comt_len > u16::MAX as usize {
+					err!(TooMuchData);
 				}
+
+				text_chunks.extend((comt_len as u16).to_be_bytes());
+				text_chunks.extend(comt.text.as_bytes());
+
+				if comt_len % 2 != 0 {
+					text_chunks.push(0);
+				}
+			}
+
+			let comt_chunk_len = text_chunks.len() - IFF_CHUNK_HEADER_SIZE as usize;
+			let Ok(comt_chunk_len) = u32::try_from(comt_chunk_len) else {
+				err!(TooMuchData);
+			};
+
+			text_chunks[4..8].copy_from_slice(&comt_chunk_len.to_be_bytes());
+
+			if comt_chunk_len % 2 != 0 {
+				text_chunks.push(0);
 			}
 		}
 

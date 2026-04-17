@@ -118,7 +118,7 @@ pub fn set_artist<F: FileLike>(
 	LoftyError: From<<F as Length>::Error>,
 {
 	verify_artist(tagged_file, tag_type, expected_value, expected_item_count);
-	println!("WRITE: Writing artist \"{new_value}\" to {tag_type:?}\n",);
+	println!("WRITE: Writing artist \"{new_value}\" to {tag_type:?}\n");
 
 	let tag = tagged_file.tag_mut(tag_type).unwrap();
 
