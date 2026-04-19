@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 
 use std::borrow::Cow;
@@ -44,12 +44,18 @@ impl<'a> BinaryFrame<'a> {
 	/// # Errors
 	///
 	/// * Failure to read from `reader`
-	pub fn parse<R>(reader: &mut R, id: FrameId<'a>, frame_flags: FrameFlags) -> Result<Self>
+	pub fn parse<R>(
+		reader: &mut R,
+		id: FrameId<'a>,
+		frame_flags: FrameFlags,
+	) -> Result<Self, FrameParseError>
 	where
 		R: Read,
 	{
 		let mut data = Vec::new();
-		reader.read_to_end(&mut data)?;
+		if let Err(e) = reader.read_to_end(&mut data) {
+			return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e)));
+		}
 
 		let header = FrameHeader::new(id, frame_flags);
 		Ok(BinaryFrame {

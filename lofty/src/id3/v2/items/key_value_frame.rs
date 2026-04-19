@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -66,15 +67,19 @@ impl<'a> KeyValueFrame<'a> {
 		id: FrameId<'a>,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(encoding_byte) = reader.read_u8() else {
-			return Ok(None);
+		let encoding_byte = match reader.read_u8() {
+			Ok(byte) => byte,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
 		};
 
-		let encoding = verify_encoding(encoding_byte, version)?;
+		let encoding = match verify_encoding(encoding_byte, version) {
+			Ok(encoding) => encoding,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
 
 		let mut values = Vec::new();
 
@@ -82,7 +87,10 @@ impl<'a> KeyValueFrame<'a> {
 
 		// We have to read the first key/value pair separately because it may be the only string with a BOM
 
-		let first_key = decode_text(reader, text_decode_options)?;
+		let first_key = match decode_text(reader, text_decode_options) {
+			Ok(key) => key,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
 
 		if first_key.bytes_read == 0 {
 			return Ok(None);
@@ -92,14 +100,25 @@ impl<'a> KeyValueFrame<'a> {
 			text_decode_options = text_decode_options.bom(first_key.bom);
 		}
 
+		let first_value = match decode_text(reader, text_decode_options) {
+			Ok(key) => key,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
+
 		values.push((
 			Cow::Owned(first_key.content),
-			Cow::Owned(decode_text(reader, text_decode_options)?.content),
+			Cow::Owned(first_value.content),
 		));
 
 		loop {
-			let key = decode_text(reader, text_decode_options)?;
-			let value = decode_text(reader, text_decode_options)?;
+			let key = match decode_text(reader, text_decode_options) {
+				Ok(key) => key,
+				Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+			};
+			let value = match decode_text(reader, text_decode_options) {
+				Ok(key) => key,
+				Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+			};
 			if key.bytes_read == 0 || value.bytes_read == 0 {
 				break;
 			}
@@ -120,7 +139,7 @@ impl<'a> KeyValueFrame<'a> {
 	/// # Errors
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();

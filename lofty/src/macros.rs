@@ -13,7 +13,7 @@ macro_rules! err {
 			crate::error::ErrorKind::$variant,
 		))
 	};
-	($variant:ident($reason:literal)) => {
+	($variant:ident($reason:expr)) => {
 		return Err(crate::error::LoftyError::new(
 			crate::error::ErrorKind::$variant($reason),
 		))

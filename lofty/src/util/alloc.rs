@@ -1,19 +1,48 @@
-use crate::error::Result;
-use crate::macros::err;
+use std::collections::TryReserveError;
 
 use crate::config::global_options;
+
+/// A memory allocation failed
+#[derive(Debug)]
+pub enum AllocationError {
+	/// The requested allocation exceeds the [`GlobalOptions::allocation_limit()`]
+	///
+	/// [`GlobalOptions::allocation_limit()`]: crate::config::GlobalOptions::allocation_limit
+	LimitExceeded,
+	/// Unable to reserve the requested size
+	ReserveError(TryReserveError),
+}
+
+impl core::fmt::Display for AllocationError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			AllocationError::LimitExceeded => {
+				write!(f, "attempted allocation would exceed global limits")
+			},
+			AllocationError::ReserveError(e) => write!(f, "{e}"),
+		}
+	}
+}
+
+impl core::error::Error for AllocationError {}
+
+impl From<TryReserveError> for AllocationError {
+	fn from(input: TryReserveError) -> Self {
+		Self::ReserveError(input)
+	}
+}
 
 /// Provides the `fallible_repeat` method on `Vec`
 ///
 /// It is intended to be used in [`try_vec!`](crate::macros::try_vec).
 trait VecFallibleRepeat<T>: Sized {
-	fn fallible_repeat(self, element: T, expected_size: usize) -> Result<Self>
+	fn fallible_repeat(self, element: T, expected_size: usize) -> Result<Self, AllocationError>
 	where
 		T: Clone;
 }
 
 impl<T> VecFallibleRepeat<T> for Vec<T> {
-	fn fallible_repeat(mut self, element: T, expected_size: usize) -> Result<Self>
+	fn fallible_repeat(mut self, element: T, expected_size: usize) -> Result<Self, AllocationError>
 	where
 		T: Clone,
 	{
@@ -22,7 +51,7 @@ impl<T> VecFallibleRepeat<T> for Vec<T> {
 		}
 
 		if expected_size > unsafe { global_options().allocation_limit } {
-			err!(TooMuchData);
+			return Err(AllocationError::LimitExceeded);
 		}
 
 		self.try_reserve(expected_size)?;
@@ -49,7 +78,10 @@ impl<T> VecFallibleRepeat<T> for Vec<T> {
 /// Creates a `Vec` of the specified length, containing copies of `element`.
 ///
 /// This should be used through [`try_vec!`](crate::macros::try_vec)
-pub(crate) fn fallible_vec_from_element<T>(element: T, expected_size: usize) -> Result<Vec<T>>
+pub(crate) fn fallible_vec_from_element<T>(
+	element: T,
+	expected_size: usize,
+) -> Result<Vec<T>, AllocationError>
 where
 	T: Clone,
 {
@@ -63,13 +95,13 @@ pub(crate) trait VecFallibleCapacity<T>: Sized {
 	/// Same as `Vec::with_capacity`, but takes `GlobalOptions::allocation_limit` into account.
 	///
 	/// Named `try_with_capacity_stable` to avoid conflicts with the nightly `Vec::try_with_capacity`.
-	fn try_with_capacity_stable(capacity: usize) -> Result<Self>;
+	fn try_with_capacity_stable(capacity: usize) -> Result<Self, AllocationError>;
 }
 
 impl<T> VecFallibleCapacity<T> for Vec<T> {
-	fn try_with_capacity_stable(capacity: usize) -> Result<Self> {
+	fn try_with_capacity_stable(capacity: usize) -> Result<Self, AllocationError> {
 		if capacity > unsafe { global_options().allocation_limit } {
-			err!(TooMuchData);
+			return Err(AllocationError::LimitExceeded);
 		}
 
 		let mut v = Vec::new();
