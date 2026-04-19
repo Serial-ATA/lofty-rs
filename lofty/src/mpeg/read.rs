@@ -2,19 +2,22 @@ use super::header::{Header, HeaderCmpResult, VbrHeader, cmp_header, search_for_f
 use super::{MpegFile, MpegProperties};
 use crate::ape::header::read_ape_header;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::Result;
+use crate::error::{FakeTagError, SizeMismatchError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
 use crate::io::SeekStreamLen;
-use crate::macros::{decode_err, err};
+use crate::mpeg::error::MpegParseError;
 use crate::mpeg::header::HEADER_MASK;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MpegFile>
+pub(super) fn read_from<R>(
+	reader: &mut R,
+	parse_options: ParseOptions,
+) -> Result<MpegFile, MpegParseError>
 where
 	R: Read + Seek,
 {
@@ -91,7 +94,7 @@ where
 					continue;
 				}
 
-				err!(FakeTag);
+				return Err(FakeTagError.into());
 			},
 			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {
@@ -165,7 +168,7 @@ where
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
 			let Some(start_of_tag) = pos.checked_sub(u64::from(header.size)) else {
-				err!(SizeMismatch);
+				return Err(SizeMismatchError.into());
 			};
 
 			reader.seek(SeekFrom::Start(start_of_tag))?;
@@ -182,11 +185,11 @@ where
 	if parse_options.read_properties {
 		let Some(first_frame_header) = first_frame_header else {
 			// The search for sync bits was unsuccessful
-			decode_err!(@BAIL Mpeg, "File contains an invalid frame");
+			return Err(MpegParseError::message("file contains an invalid frame"));
 		};
 
 		if first_frame_header.sample_rate == 0 {
-			decode_err!(@BAIL Mpeg, "Sample rate is 0");
+			return Err(MpegParseError::message("sample rate is 0"));
 		}
 
 		let first_frame_offset = first_frame_offset;
@@ -216,7 +219,7 @@ where
 }
 
 // Searches for the next frame, comparing it to the following one
-fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
+fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>, MpegParseError>
 where
 	R: Read + Seek,
 {

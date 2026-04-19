@@ -438,11 +438,11 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 		impl ::lofty::prelude::AudioFile for #struct_name {
 			type Properties = #properties_field_ty;
 
-			fn read_from<R>(reader: &mut R, parse_options: ::lofty::config::ParseOptions) -> ::lofty::error::Result<Self>
+			fn read_from<R>(reader: &mut R, parse_options: ::lofty::config::ParseOptions) -> ::core::result::Result<Self, ::lofty::error::FileParseError>
 			where
-				R: std::io::Read + std::io::Seek,
+				R: ::std::io::Read + ::std::io::Seek,
 			{
-				#read_fn(reader, parse_options)
+				#read_fn(reader, parse_options).map_err(::core::convert::Into::into)
 			}
 
 			fn save_to<F>(&self, file: &mut F, write_options: ::lofty::config::WriteOptions) -> ::lofty::error::Result<()>

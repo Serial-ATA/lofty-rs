@@ -1,5 +1,6 @@
 //! MP3 specific items
 mod constants;
+mod error;
 pub(crate) mod header;
 mod properties;
 mod read;
