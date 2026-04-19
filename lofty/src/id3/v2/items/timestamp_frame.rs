@@ -1,7 +1,7 @@
 use crate::config::{ParsingMode, WriteOptions};
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
 use crate::tag::items::Timestamp;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
@@ -70,33 +70,26 @@ impl<'a> TimestampFrame<'a> {
 		id: FrameId<'a>,
 		frame_flags: FrameFlags,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(encoding_byte) = reader.read_u8() else {
-			return Ok(None);
-		};
-		let Some(encoding) = TextEncoding::from_u8(encoding_byte) else {
-			if parse_mode != ParsingMode::Relaxed {
-				err!(TextDecode("Found invalid encoding"))
-			}
-			return Ok(None);
+		let encoding_byte = match reader.read_u8() {
+			Ok(byte) => byte,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
 		};
 
-		let value = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
-		if !value.is_ascii() {
-			if parse_mode == ParsingMode::Strict {
-				err!(BadTimestamp("Timestamp contains non-ASCII characters"))
-			}
-			return Ok(None);
-		}
+		let encoding = match TextEncoding::try_from(encoding_byte) {
+			Ok(encoding) => encoding,
+			Err(e) if parse_mode != ParsingMode::Relaxed => {
+				return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e)));
+			},
+			Err(_) => return Ok(None),
+		};
 
-		let header = FrameHeader::new(id, frame_flags);
-		let mut frame = TimestampFrame {
-			header,
-			encoding,
-			timestamp: Timestamp::default(),
+		let value = match decode_text(reader, TextDecodeOptions::new().encoding(encoding)) {
+			Ok(value) => value.content,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
 		};
 
 		let reader = &mut value.as_bytes();
@@ -106,7 +99,7 @@ impl<'a> TimestampFrame<'a> {
 			Ok(timestamp) => result = timestamp,
 			Err(e) => {
 				if parse_mode != ParsingMode::Relaxed {
-					return Err(e);
+					return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e)));
 				}
 				return Ok(None);
 			},
@@ -117,8 +110,11 @@ impl<'a> TimestampFrame<'a> {
 			return Ok(None);
 		};
 
-		frame.timestamp = timestamp;
-		Ok(Some(frame))
+		Ok(Some(TimestampFrame {
+			header: FrameHeader::new(id, frame_flags),
+			encoding,
+			timestamp,
+		}))
 	}
 
 	/// Convert a [`TimestampFrame`] to a byte vec
@@ -128,7 +124,7 @@ impl<'a> TimestampFrame<'a> {
 	/// * The timestamp is invalid
 	/// * Failure to write to the buffer
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();

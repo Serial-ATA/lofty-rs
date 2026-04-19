@@ -7,6 +7,7 @@
 //! * [`Id3v2Tag`]
 //! * [`Frame`]
 
+pub mod error;
 mod frame;
 pub(crate) mod header;
 mod items;

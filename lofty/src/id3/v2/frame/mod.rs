@@ -1,4 +1,5 @@
 pub(super) mod content;
+pub(super) mod error;
 pub(super) mod header;
 pub(super) mod read;
 
@@ -9,8 +10,8 @@ use super::items::{
 	UnsynchronizedTextFrame, UrlLinkFrame,
 };
 use crate::config::WriteOptions;
-use crate::error::Result;
 use crate::id3::v2::FrameHeader;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::util::text::TextEncoding;
 use header::FrameId;
 
@@ -216,24 +217,32 @@ impl Frame<'_> {
 }
 
 impl Frame<'_> {
-	pub(super) fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
-		Ok(match self {
-			Frame::Comment(comment) => comment.as_bytes(write_options)?,
-			Frame::UnsynchronizedText(lf) => lf.as_bytes(write_options)?,
-			Frame::Text(tif) => tif.as_bytes(write_options)?,
-			Frame::UserText(content) => content.as_bytes(write_options)?,
-			Frame::UserUrl(content) => content.as_bytes(write_options)?,
-			Frame::Url(link) => link.as_bytes(write_options)?,
-			Frame::Picture(attached_picture) => attached_picture.as_bytes(write_options)?,
-			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(write_options)?,
-			Frame::KeyValue(content) => content.as_bytes(write_options)?,
-			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(write_options)?,
-			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(write_options)?,
-			Frame::Ownership(frame) => frame.as_bytes(write_options)?,
+	pub(super) fn as_bytes(
+		&self,
+		write_options: WriteOptions,
+	) -> Result<Vec<u8>, FrameEncodingError> {
+		let ret = match self {
+			Frame::Comment(comment) => comment.as_bytes(write_options),
+			Frame::UnsynchronizedText(lf) => lf.as_bytes(write_options),
+			Frame::Text(tif) => tif.as_bytes(write_options),
+			Frame::UserText(content) => content.as_bytes(write_options),
+			Frame::UserUrl(content) => content.as_bytes(write_options),
+			Frame::Url(link) => link.as_bytes(write_options),
+			Frame::Picture(attached_picture) => attached_picture.as_bytes(write_options),
+			Frame::Popularimeter(popularimeter) => popularimeter.as_bytes(write_options),
+			Frame::KeyValue(content) => content.as_bytes(write_options),
+			Frame::RelativeVolumeAdjustment(frame) => frame.as_bytes(write_options),
+			Frame::UniqueFileIdentifier(frame) => frame.as_bytes(write_options),
+			Frame::Ownership(frame) => frame.as_bytes(write_options),
 			Frame::EventTimingCodes(frame) => frame.as_bytes(),
-			Frame::Private(frame) => frame.as_bytes(write_options)?,
-			Frame::Timestamp(frame) => frame.as_bytes(write_options)?,
-			Frame::Binary(frame) => frame.as_bytes(),
+			Frame::Private(frame) => frame.as_bytes(write_options),
+			Frame::Timestamp(frame) => frame.as_bytes(write_options),
+			Frame::Binary(frame) => Ok(frame.as_bytes()),
+		};
+
+		ret.map_err(|mut e| {
+			e.set_id(self.id().as_borrowed());
+			e
 		})
 	}
 

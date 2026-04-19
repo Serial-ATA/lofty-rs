@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::tag::items::Lang;
@@ -26,7 +27,7 @@ struct LanguageFrame {
 }
 
 impl LanguageFrame {
-	fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>>
+	fn parse<R>(reader: &mut R, version: Id3v2Version) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
@@ -87,16 +88,16 @@ impl LanguageFrame {
 		description: &str,
 		content: &str,
 		write_options: WriteOptions,
-	) -> Result<Vec<u8>> {
+	) -> Result<Vec<u8>, FrameEncodingError> {
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
 		}
 
-		let mut bytes = vec![encoding as u8];
-
-		if language.len() != 3 || language.iter().any(|c| !c.is_ascii_alphabetic()) {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::InvalidLanguage(language)).into());
+		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
+			return Err(FrameEncodingError::invalid_language(language));
 		}
+
+		let mut bytes = vec![encoding as u8];
 
 		bytes.extend(language);
 		bytes.extend(
@@ -189,12 +190,17 @@ impl<'a> CommentFrame<'a> {
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Some(language_frame) = LanguageFrame::parse(reader, version)? else {
-			return Ok(None);
+		let language_frame = match LanguageFrame::parse(reader, version) {
+			Ok(Some(frame)) => frame,
+			Ok(None) => return Ok(None),
+			Err(mut e) => {
+				e.set_id(Self::FRAME_ID);
+				return Err(e);
+			},
 		};
 
 		let header = FrameHeader::new(Self::FRAME_ID, frame_flags);
@@ -215,7 +221,7 @@ impl<'a> CommentFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,
@@ -317,12 +323,17 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Some(language_frame) = LanguageFrame::parse(reader, version)? else {
-			return Ok(None);
+		let language_frame = match LanguageFrame::parse(reader, version) {
+			Ok(Some(frame)) => frame,
+			Ok(None) => return Ok(None),
+			Err(mut e) => {
+				e.set_id(Self::FRAME_ID);
+				return Err(e);
+			},
 		};
 
 		let header = FrameHeader::new(Self::FRAME_ID, frame_flags);
@@ -343,7 +354,7 @@ impl<'a> UnsynchronizedTextFrame<'a> {
 	///
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		LanguageFrame::create_bytes(
 			self.encoding,
 			self.language,

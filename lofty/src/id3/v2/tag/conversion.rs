@@ -327,18 +327,20 @@ pub(crate) fn from_tag<'a>(
 
 			// Anything else
 			_ => {
-				let Ok(id) = FrameId::try_from(item_key) else {
-					return None;
-				};
+				if let Some(mapped) = item_key.map_key(TagType::Id3v2)
+					&& mapped.len() == 4
+				{
+					let id = FrameId::new(mapped).ok()?;
 
-				if id.as_str().starts_with('T') {
-					let (value, _) = take_item_text_and_description(item)?;
-					return Some(new_text_frame(id, value));
-				}
+					if id.as_str().starts_with('T') {
+						let (value, _) = take_item_text_and_description(item)?;
+						return Some(new_text_frame(id, value));
+					}
 
-				if id.as_str().starts_with('W') {
-					let (value, _) = take_item_text_and_description(item)?;
-					return Some(new_url_frame(id, value));
+					if id.as_str().starts_with('W') {
+						let (value, _) = take_item_text_and_description(item)?;
+						return Some(new_url_frame(id, value));
+					}
 				}
 
 				None

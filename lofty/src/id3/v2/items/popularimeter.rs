@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::tag::TagType;
 use crate::util::alloc::VecFallibleCapacity;
@@ -78,39 +79,52 @@ impl<'a> PopularimeterFrame<'a> {
 	///
 	/// * Email is improperly encoded
 	/// * `bytes` doesn't contain enough data
-	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Self>
+	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Self, FrameParseError>
 	where
 		R: Read,
 	{
-		let email = decode_text(
-			reader,
-			TextDecodeOptions::new()
-				.encoding(TextEncoding::Latin1)
-				.terminated(true),
-		)?;
-		let rating = reader.read_u8()?;
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+		) -> Result<PopularimeterFrame<'a>, FrameParseError>
+		where
+			R: Read,
+		{
+			let email = decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			)?;
+			let rating = reader.read_u8()?;
 
-		let mut counter_content = Vec::new();
-		reader.read_to_end(&mut counter_content)?;
+			let mut counter_content = Vec::new();
+			reader.read_to_end(&mut counter_content)?;
 
-		let counter;
-		let remaining_size = counter_content.len();
-		if remaining_size > 8 {
-			counter = u64::MAX;
-		} else {
-			let mut counter_bytes = [0; 8];
-			let counter_start_pos = 8 - remaining_size;
+			let counter;
+			let remaining_size = counter_content.len();
+			if remaining_size > 8 {
+				counter = u64::MAX;
+			} else {
+				let mut counter_bytes = [0; 8];
+				let counter_start_pos = 8 - remaining_size;
 
-			counter_bytes[counter_start_pos..].copy_from_slice(&counter_content);
-			counter = u64::from_be_bytes(counter_bytes);
+				counter_bytes[counter_start_pos..].copy_from_slice(&counter_content);
+				counter = u64::from_be_bytes(counter_bytes);
+			}
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(PopularimeterFrame {
+				header,
+				email: Cow::Owned(email.content),
+				rating,
+				counter,
+			})
 		}
 
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Self {
-			header,
-			email: Cow::Owned(email.content),
-			rating,
-			counter,
+		parse_inner(reader, frame_flags).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
 		})
 	}
 
@@ -121,7 +135,7 @@ impl<'a> PopularimeterFrame<'a> {
 	/// # Errors
 	///
 	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut content = Vec::try_with_capacity_stable(self.email.len() + 9)?;
 		content.extend(TextEncoding::Latin1.encode(
 			&self.email,

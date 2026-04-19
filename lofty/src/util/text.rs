@@ -1,7 +1,6 @@
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::err;
-
 use std::io::Read;
+use std::str::Utf8Error;
+use std::string::{FromUtf8Error, FromUtf16Error};
 
 use byteorder::ReadBytesExt;
 
@@ -43,6 +42,135 @@ impl core::fmt::Display for TextEncodingError {
 
 impl core::error::Error for TextEncodingError {}
 
+/// Errors that can occur while decoding text
+#[derive(Debug)]
+pub struct TextDecodingError {
+	encoding: TextEncoding,
+	valid_up_to: Option<usize>,
+	message: Option<&'static str>,
+	source: Option<Box<dyn core::error::Error + Send + Sync + 'static>>,
+}
+
+impl TextDecodingError {
+	/// The target text encoding
+	pub fn encoding(&self) -> TextEncoding {
+		self.encoding
+	}
+
+	/// The byte index in the provided string up to which the input was valid, if available
+	pub fn valid_up_to(&self) -> Option<usize> {
+		self.valid_up_to
+	}
+
+	fn utf16_bad_bom() -> Self {
+		Self {
+			encoding: TextEncoding::UTF16,
+			valid_up_to: Some(0),
+			message: Some("UTF-16 string has an invalid byte order mark"),
+			source: None,
+		}
+	}
+
+	pub(crate) fn utf16_missing_bom() -> Self {
+		Self {
+			encoding: TextEncoding::UTF16,
+			valid_up_to: Some(0),
+			message: Some("UTF-16 string has no byte order mark"),
+			source: None,
+		}
+	}
+
+	fn utf16_bad_length() -> Self {
+		Self {
+			encoding: TextEncoding::UTF16,
+			valid_up_to: Some(0),
+			message: Some("UTF-16 string has an invalid length (< 2)"),
+			source: None,
+		}
+	}
+
+	fn utf16_odd_length() -> Self {
+		Self {
+			encoding: TextEncoding::UTF16,
+			valid_up_to: Some(0),
+			message: Some("UTF-16 string has an odd length"),
+			source: None,
+		}
+	}
+}
+
+impl core::fmt::Display for TextDecodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		let encoding = match self.encoding {
+			TextEncoding::Latin1 => "Latin-1",
+			TextEncoding::UTF16 => "UTF-16",
+			TextEncoding::UTF8 => "UTF-8",
+			TextEncoding::UTF16BE => "UTF-16 BE",
+		};
+
+		match self.message {
+			None => write!(f, "failed to decode {encoding} sequence"),
+			Some(message) => write!(f, "failed to decode {encoding} sequence: {message}"),
+		}
+	}
+}
+
+impl From<Utf8Error> for TextDecodingError {
+	fn from(err: Utf8Error) -> Self {
+		Self {
+			encoding: TextEncoding::UTF8,
+			valid_up_to: Some(err.valid_up_to()),
+			message: None,
+			source: Some(err.into()),
+		}
+	}
+}
+
+impl From<FromUtf8Error> for TextDecodingError {
+	fn from(err: FromUtf8Error) -> Self {
+		Self {
+			encoding: TextEncoding::UTF8,
+			valid_up_to: Some(err.utf8_error().valid_up_to()),
+			message: None,
+			source: Some(err.into()),
+		}
+	}
+}
+
+impl From<FromUtf16Error> for TextDecodingError {
+	fn from(err: FromUtf16Error) -> Self {
+		Self {
+			encoding: TextEncoding::UTF16,
+			valid_up_to: None,
+			message: None,
+			source: Some(err.into()),
+		}
+	}
+}
+
+impl core::error::Error for TextDecodingError {
+	#[allow(trivial_casts)]
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		self.source.as_ref().map(|e| &**e as _)
+	}
+}
+
+/// Encountered an invalid text encoding in an ID3v2 frame.
+///
+/// This is **NOT** the same as [`TextDecodingError`], which describes errors within the
+/// actual text. This simply means that an ID3v2 frame specifies a text encoding that does
+/// not exist.
+#[derive(Copy, Clone, Debug)]
+pub struct BadTextEncodingError;
+
+impl core::fmt::Display for BadTextEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "ID3v2 frame specifies invalid text encoding")
+	}
+}
+
+impl core::error::Error for BadTextEncodingError {}
+
 /// The text encoding for use in ID3v2 frames
 #[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 #[repr(u8)]
@@ -57,18 +185,21 @@ pub enum TextEncoding {
 	UTF8 = 3,
 }
 
-impl TextEncoding {
-	/// Get a `TextEncoding` from a u8, must be 0-3 inclusive
-	pub fn from_u8(byte: u8) -> Option<Self> {
-		match byte {
-			0 => Some(Self::Latin1),
-			1 => Some(Self::UTF16),
-			2 => Some(Self::UTF16BE),
-			3 => Some(Self::UTF8),
-			_ => None,
+impl TryFrom<u8> for TextEncoding {
+	type Error = BadTextEncodingError;
+
+	fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+		match value {
+			0 => Ok(Self::Latin1),
+			1 => Ok(Self::UTF16),
+			2 => Ok(Self::UTF16BE),
+			3 => Ok(Self::UTF8),
+			_ => Err(BadTextEncodingError),
 		}
 	}
+}
 
+impl TextEncoding {
 	pub(crate) fn verify_latin1(text: &str) -> bool {
 		text.chars().all(|c| c as u32 <= 255)
 	}
@@ -94,11 +225,10 @@ impl TextEncoding {
 		text: &str,
 		terminated: bool,
 		lossy: bool,
-	) -> std::result::Result<Vec<u8>, TextEncodingError> {
+	) -> Result<Vec<u8>, TextEncodingError> {
 		match self {
 			TextEncoding::Latin1 => {
-				let mut out =
-					latin1_encode(text, lossy).collect::<std::result::Result<Vec<u8>, _>>()?;
+				let mut out = latin1_encode(text, lossy).collect::<Result<Vec<u8>, _>>()?;
 				if terminated {
 					out.push(0)
 				}
@@ -182,7 +312,10 @@ impl Default for TextDecodeOptions {
 	}
 }
 
-pub(crate) fn decode_text<R>(reader: &mut R, options: TextDecodeOptions) -> Result<DecodeTextResult>
+pub(crate) fn decode_text<R>(
+	reader: &mut R,
+	options: TextDecodeOptions,
+) -> Result<DecodeTextResult, TextDecodingError>
 where
 	R: Read,
 {
@@ -203,7 +336,14 @@ where
 		raw_bytes = bytes;
 	} else {
 		let mut bytes = Vec::new();
-		reader.read_to_end(&mut bytes)?;
+		reader
+			.read_to_end(&mut bytes)
+			.map_err(|e| TextDecodingError {
+				encoding: options.encoding,
+				valid_up_to: None,
+				message: None,
+				source: Some(Box::new(e)),
+			})?;
 
 		if bytes.is_empty() {
 			return Ok(DecodeTextResult::default());
@@ -218,11 +358,11 @@ where
 		TextEncoding::Latin1 => latin1_decode(&raw_bytes),
 		TextEncoding::UTF16 => {
 			if raw_bytes.len() < 2 {
-				err!(TextDecode("UTF-16 string has an invalid length (< 2)"));
+				return Err(TextDecodingError::utf16_bad_length());
 			}
 
 			if raw_bytes.len() % 2 != 0 {
-				err!(TextDecode("UTF-16 string has an odd length"));
+				return Err(TextDecodingError::utf16_odd_length());
 			}
 
 			if options.bom == [0, 0] {
@@ -234,12 +374,11 @@ where
 			match bom {
 				[0xFE, 0xFF] => utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?,
 				[0xFF, 0xFE] => utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?,
-				_ => err!(TextDecode("UTF-16 string has an invalid byte order mark")),
+				_ => return Err(TextDecodingError::utf16_bad_bom()),
 			}
 		},
 		TextEncoding::UTF16BE => utf16_decode_bytes(raw_bytes.as_slice(), u16::from_be_bytes)?,
-		TextEncoding::UTF8 => utf8_decode(raw_bytes)
-			.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Expected a UTF-8 string")))?,
+		TextEncoding::UTF8 => utf8_decode(raw_bytes)?,
 	};
 
 	Ok(DecodeTextResult {
@@ -292,7 +431,7 @@ pub(crate) fn latin1_decode(bytes: &[u8]) -> String {
 pub(crate) fn latin1_encode(
 	s: &str,
 	lossy: bool,
-) -> impl Iterator<Item = std::result::Result<u8, TextEncodingError>> {
+) -> impl Iterator<Item = Result<u8, TextEncodingError>> {
 	s.chars().enumerate().map(move |(index, c)| {
 		if (c as u32) <= 255 {
 			Ok(c as u8)
@@ -307,7 +446,7 @@ pub(crate) fn latin1_encode(
 	})
 }
 
-pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
+pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String, TextDecodingError> {
 	String::from_utf8(bytes)
 		.map(|mut text| {
 			trim_end_nulls(&mut text);
@@ -316,22 +455,25 @@ pub(crate) fn utf8_decode(bytes: Vec<u8>) -> Result<String> {
 		.map_err(Into::into)
 }
 
-pub(crate) fn utf8_decode_str(bytes: &[u8]) -> Result<&str> {
+pub(crate) fn utf8_decode_str(bytes: &[u8]) -> Result<&str, TextDecodingError> {
 	std::str::from_utf8(bytes)
 		.map(trim_end_nulls_str)
 		.map_err(Into::into)
 }
 
-pub(crate) fn utf16_decode(words: &[u16]) -> Result<String> {
+pub(crate) fn utf16_decode(words: &[u16]) -> Result<String, TextDecodingError> {
 	String::from_utf16(words)
 		.map(|mut text| {
 			trim_end_nulls(&mut text);
 			text
 		})
-		.map_err(|_| LoftyError::new(ErrorKind::TextDecode("Given an invalid UTF-16 string")))
+		.map_err(Into::into)
 }
 
-pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -> Result<String> {
+pub(crate) fn utf16_decode_bytes(
+	bytes: &[u8],
+	endianness: fn([u8; 2]) -> u16,
+) -> Result<String, TextDecodingError> {
 	if bytes.is_empty() {
 		return Ok(String::new());
 	}
@@ -363,7 +505,7 @@ pub(crate) fn utf16_decode_bytes(bytes: &[u8], endianness: fn([u8; 2]) -> u16) -
 pub(crate) fn utf16_decode_terminated_maybe_bom<R>(
 	reader: &mut R,
 	endianness: fn([u8; 2]) -> u16,
-) -> Result<(String, usize)>
+) -> Result<(String, usize), TextDecodingError>
 where
 	R: Read,
 {

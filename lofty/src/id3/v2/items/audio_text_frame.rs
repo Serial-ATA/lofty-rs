@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
@@ -127,14 +128,13 @@ impl AudioTextFrame<'_> {
 	///
 	/// * Not enough data
 	/// * Improperly encoded text
-	pub fn parse(bytes: &[u8], frame_flags: FrameFlags) -> Result<Self> {
+	pub fn parse(bytes: &[u8], frame_flags: FrameFlags) -> Result<Self, FrameParseError> {
 		if bytes.len() < 4 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			return Err(FrameParseError::undersized(FRAME_ID));
 		}
 
 		let content = &mut &bytes[..];
-		let encoding = TextEncoding::from_u8(content.read_u8()?)
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
+		let encoding = TextEncoding::try_from(content.read_u8()?)?;
 
 		let mime_type = decode_text(
 			content,
@@ -170,7 +170,7 @@ impl AudioTextFrame<'_> {
 	/// # Errors
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut content = vec![self.encoding as u8];
 
 		content.extend(TextEncoding::Latin1.encode(

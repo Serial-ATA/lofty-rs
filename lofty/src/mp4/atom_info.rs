@@ -64,7 +64,7 @@ impl<'a> AtomIdent<'a> {
 }
 
 impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
-	type Error = LoftyError;
+	type Error = ();
 
 	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
 		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
@@ -91,14 +91,12 @@ impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
 			}
 		}
 
-		err!(TextDecode(
-			"ItemKey does not map to a freeform or fourcc identifier"
-		))
+		Err(())
 	}
 }
 
 impl TryFrom<ItemKey> for AtomIdent<'static> {
-	type Error = LoftyError;
+	type Error = ();
 
 	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
 		let ret: AtomIdent<'_> = (&value).try_into()?;
@@ -290,10 +288,13 @@ where
 
 			*reader_size -= len;
 
-			utf8_decode(content).map_err(|_| {
-				LoftyError::new(ErrorKind::BadAtom(
-					"Found a non UTF-8 string while reading freeform identifier",
-				))
+			utf8_decode(content).map_err(|e| {
+				LoftyError::with_source(
+					ErrorKind::BadAtom(
+						"Found a non UTF-8 string while reading freeform identifier",
+					),
+					e,
+				)
 			})
 		},
 		_ => err!(BadAtom(

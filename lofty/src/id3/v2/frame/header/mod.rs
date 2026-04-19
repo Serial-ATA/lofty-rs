@@ -1,13 +1,9 @@
 pub(super) mod parse;
 
-use crate::error;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError};
 use crate::id3::v2::FrameFlags;
-use crate::prelude::ItemKey;
-use crate::tag::TagType;
+use crate::id3::v2::error::FrameParseError;
 
 use std::borrow::Cow;
-use std::fmt::{Display, Formatter};
 
 /// An ID3v2 frame header
 ///
@@ -43,6 +39,26 @@ impl FrameHeader<'static> {
 	}
 }
 
+/// Errors that can occur while converting a string to a [`FrameId`]
+#[derive(Debug)]
+pub struct FrameIdParseError {
+	id_bytes: Vec<u8>,
+}
+
+impl core::fmt::Display for FrameIdParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "failed to parse a frame ID: 0x{:x?}", self.id_bytes)
+	}
+}
+
+impl core::error::Error for FrameIdParseError {}
+
+impl From<FrameIdParseError> for FrameParseError {
+	fn from(input: FrameIdParseError) -> Self {
+		FrameParseError::new(None, Box::new(input))
+	}
+}
+
 /// An `ID3v2` frame ID
 ///
 /// ⚠ WARNING ⚠: Be very careful when constructing this by hand. It is recommended to use [`FrameId::new`].
@@ -67,7 +83,7 @@ impl<'a> FrameId<'a> {
 	///
 	/// * `id` contains invalid characters (must be 'A'..='Z' and '0'..='9')
 	/// * `id` is an invalid length (must be 3 or 4)
-	pub fn new<I>(id: I) -> error::Result<Self>
+	pub fn new<I>(id: I) -> Result<Self, FrameIdParseError>
 	where
 		I: Into<Cow<'a, str>>,
 	{
@@ -75,15 +91,15 @@ impl<'a> FrameId<'a> {
 	}
 
 	// Split from generic, public method to avoid code bloat by monomorphization.
-	pub(in crate::id3::v2::frame) fn new_cow(id: Cow<'a, str>) -> error::Result<Self> {
+	pub(in crate::id3::v2::frame) fn new_cow(id: Cow<'a, str>) -> Result<Self, FrameIdParseError> {
 		Self::verify_id(&id)?;
 
 		match id.len() {
 			3 => Ok(FrameId::Outdated(id)),
 			4 => Ok(FrameId::Valid(id)),
-			_ => Err(
-				Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id.into_owned().into_bytes())).into(),
-			),
+			_ => Err(FrameIdParseError {
+				id_bytes: id.as_bytes().to_owned(),
+			}),
 		}
 	}
 
@@ -97,7 +113,7 @@ impl<'a> FrameId<'a> {
 	/// ```rust
 	/// use lofty::id3::v2::FrameId;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::id3::v2::error::FrameIdParseError> {
 	/// let id_valid = FrameId::new("TPE1")?;
 	/// assert!(!id_valid.is_outdated());
 	///
@@ -116,7 +132,7 @@ impl<'a> FrameId<'a> {
 	/// ```rust
 	/// use lofty::id3::v2::FrameId;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::id3::v2::error::FrameIdParseError> {
 	/// let id_valid = FrameId::new("TPE1")?;
 	/// assert!(id_valid.is_valid());
 	///
@@ -135,13 +151,12 @@ impl<'a> FrameId<'a> {
 		}
 	}
 
-	pub(in crate::id3::v2::frame) fn verify_id(id_str: &str) -> error::Result<()> {
+	pub(in crate::id3::v2::frame) fn verify_id(id_str: &str) -> Result<(), FrameIdParseError> {
 		for c in id_str.chars() {
 			if !c.is_ascii_uppercase() && !c.is_ascii_digit() {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameId(
-					id_str.as_bytes().to_vec(),
-				))
-				.into());
+				return Err(FrameIdParseError {
+					id_bytes: id_str.as_bytes().to_vec(),
+				});
 			}
 		}
 
@@ -153,6 +168,14 @@ impl<'a> FrameId<'a> {
 		match self {
 			Self::Valid(inner) => Self::Valid(Cow::Borrowed(inner)),
 			Self::Outdated(inner) => Self::Outdated(Cow::Borrowed(inner)),
+		}
+	}
+
+	/// Creates an owned clone of the ID
+	pub fn to_owned(&self) -> FrameId<'static> {
+		match self {
+			Self::Valid(inner) => FrameId::Valid(Cow::Owned(String::from(&**inner))),
+			Self::Outdated(inner) => FrameId::Outdated(Cow::Owned(String::from(&**inner))),
 		}
 	}
 
@@ -181,8 +204,8 @@ impl FrameId<'static> {
 	}
 }
 
-impl Display for FrameId<'_> {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FrameId<'_> {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.write_str(self.as_str())
 	}
 }
@@ -190,20 +213,5 @@ impl Display for FrameId<'_> {
 impl<'a> Into<Cow<'a, str>> for FrameId<'a> {
 	fn into(self) -> Cow<'a, str> {
 		self.into_inner()
-	}
-}
-
-impl TryFrom<ItemKey> for FrameId<'_> {
-	type Error = LoftyError;
-
-	fn try_from(value: ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
-		if let Some(mapped) = value.map_key(TagType::Id3v2)
-			&& mapped.len() == 4
-		{
-			Self::verify_id(mapped)?;
-			return Ok(Self::Valid(Cow::Borrowed(mapped)));
-		}
-
-		Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(value)).into())
 	}
 }

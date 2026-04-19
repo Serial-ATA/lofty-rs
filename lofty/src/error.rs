@@ -4,17 +4,108 @@
 //! which can be extended at any time.
 
 use crate::file::FileType;
-use crate::id3::v2::FrameId;
-use crate::tag::ItemKey;
-pub use crate::util::text::TextEncodingError;
-
-use std::collections::TryReserveError;
-use std::fmt::{Debug, Display, Formatter};
+use crate::id3::Lyrics3v2ParseError;
+use crate::id3::v1::error::Id3v1ParseError;
+use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
+use crate::tag::items::timestamp::TimestampParseError;
+pub use crate::util::alloc::AllocationError;
+pub use crate::util::text::{TextDecodingError, TextEncodingError};
 
 use ogg_pager::PageError;
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
+
+/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn’t found
+#[derive(Debug)]
+pub struct FakeTagError;
+
+impl core::fmt::Display for FakeTagError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "expected a tag, found invalid data")
+	}
+}
+
+impl core::error::Error for FakeTagError {}
+
+/// Attempting to read/write an abnormally large amount of data
+#[derive(Debug)]
+pub struct TooMuchDataError;
+
+impl core::fmt::Display for TooMuchDataError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(
+			f,
+			"attempted to read/write an abnormally large amount of data"
+		)
+	}
+}
+
+impl core::error::Error for TooMuchDataError {}
+
+/// Errors that can occur while parsing tags
+#[derive(Debug)]
+pub enum TagParseError {
+	/// Errors that can occur within Lyrics3v2 tags
+	Lyrics3v2(Lyrics3v2ParseError),
+	/// Errors that can occur within ID3v1 tags
+	Id3v1(Id3v1ParseError),
+	/// Errors that arise while reading/writing ID3v2 tags
+	Id3v2(Id3v2ParseError),
+}
+
+impl core::fmt::Display for TagParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			Self::Lyrics3v2(e) => write!(f, "{e}"),
+			Self::Id3v1(e) => write!(f, "{e}"),
+			Self::Id3v2(e) => write!(f, "{e}"),
+		}
+	}
+}
+
+impl core::error::Error for TagParseError {}
+
+impl From<Lyrics3v2ParseError> for TagParseError {
+	fn from(input: Lyrics3v2ParseError) -> Self {
+		Self::Lyrics3v2(input)
+	}
+}
+
+impl From<Id3v1ParseError> for TagParseError {
+	fn from(input: Id3v1ParseError) -> Self {
+		Self::Id3v1(input)
+	}
+}
+
+impl From<Id3v2ParseError> for TagParseError {
+	fn from(input: Id3v2ParseError) -> Self {
+		Self::Id3v2(input)
+	}
+}
+
+/// Errors that can occur while encoding tags
+#[derive(Debug)]
+pub enum TagEncodingError {
+	/// Failed to encode an ID3v2 tag
+	Id3v2(Id3v2EncodingError),
+}
+
+impl core::fmt::Display for TagEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			Self::Id3v2(e) => write!(f, "{e}"),
+		}
+	}
+}
+
+impl core::error::Error for TagEncodingError {}
+
+impl From<Id3v2EncodingError> for TagEncodingError {
+	fn from(input: Id3v2EncodingError) -> Self {
+		Self::Id3v2(input)
+	}
+}
 
 /// The types of errors that can occur
 #[derive(Debug)]
@@ -50,13 +141,15 @@ pub enum ErrorKind {
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
 	/// Errors that arise while decoding text
-	TextDecode(&'static str),
+	TextDecode(TextDecodingError),
 	/// Errors that arise while encoding text
 	TextEncode(TextEncodingError),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
-	BadTimestamp(&'static str),
-	/// Errors that arise while reading/writing ID3v2 tags
-	Id3v2(Id3v2Error),
+	BadTimestamp(TimestampParseError),
+	/// Errors that can occur while parsing tags
+	TagParse(TagParseError),
+	/// Errors that can occur while encoding tags
+	TagEncoding(TagEncodingError),
 
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
@@ -66,179 +159,14 @@ pub enum ErrorKind {
 	// Conversions for external errors
 	/// Errors that arise while parsing OGG pages
 	OggPage(ogg_pager::PageError),
-	/// Unable to convert bytes to a String
-	StringFromUtf8(std::string::FromUtf8Error),
-	/// Unable to convert bytes to a str
-	StrFromUtf8(std::str::Utf8Error),
 	/// Represents all cases of [`std::io::Error`].
 	Io(std::io::Error),
 	/// Represents all cases of [`std::fmt::Error`].
 	Fmt(std::fmt::Error),
 	/// Failure to allocate enough memory
-	Alloc(TryReserveError),
+	Alloc(AllocationError),
 	/// This should **never** be encountered
 	Infallible(std::convert::Infallible),
-}
-
-/// The types of errors that can occur while interacting with ID3v2 tags
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum Id3v2ErrorKind {
-	// Header
-	/// Arises when an invalid ID3v2 version is found
-	BadId3v2Version(u8, u8),
-	/// Arises when a compressed ID3v2.2 tag is encountered
-	///
-	/// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
-	/// As such, it is recommended to ignore the tag entirely.
-	V2Compression,
-	/// Arises when an extended header has an invalid size (must be >= 6 bytes and less than the total tag size)
-	BadExtendedHeaderSize,
-
-	// Frame
-	/// Arises when a frame ID contains invalid characters (must be within `'A'..'Z'` or `'0'..'9'`)
-	/// or if the ID is too short/long.
-	BadFrameId(Vec<u8>),
-	/// Arises when no frame ID is available in the ID3v2 specification for an item key
-	/// and the associated value type.
-	UnsupportedFrameId(ItemKey),
-	/// Arises when a frame doesn't have enough data
-	BadFrameLength,
-	/// Arises when a frame with no content is parsed with [ParsingMode::Strict](crate::config::ParsingMode::Strict)
-	EmptyFrame(FrameId<'static>),
-	/// Arises when reading/writing a compressed or encrypted frame with no data length indicator
-	MissingDataLengthIndicator,
-	/// Arises when a frame or tag has its unsynchronisation flag set, but the content is not actually synchsafe
-	///
-	/// See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
-	InvalidUnsynchronisation,
-	/// Arises when a text encoding other than Latin-1 or UTF-16 appear in an ID3v2.2 tag
-	V2InvalidTextEncoding,
-	/// Arises when an invalid picture format is parsed. Only applicable to [`ID3v2Version::V2`](crate::id3::v2::Id3v2Version::V2)
-	BadPictureFormat(String),
-	/// Arises when invalid data is encountered while reading an ID3v2 synchronized text frame
-	BadSyncText,
-	/// Arises when decoding a [`UniqueFileIdentifierFrame`](crate::id3::v2::UniqueFileIdentifierFrame) with no owner
-	MissingUfidOwner,
-	/// Arises when decoding a [`RelativeVolumeAdjustmentFrame`](crate::id3::v2::RelativeVolumeAdjustmentFrame) with an invalid channel type
-	BadRva2ChannelType,
-	/// Arises when decoding a [`TimestampFormat`](crate::id3::v2::TimestampFormat) with an invalid type
-	BadTimestampFormat,
-
-	// Compression
-	#[cfg(feature = "id3v2_compression_support")]
-	/// Arises when a compressed frame is unable to be decompressed
-	Decompression(flate2::DecompressError),
-	#[cfg(not(feature = "id3v2_compression_support"))]
-	/// Arises when a compressed frame is encountered, but support is disabled
-	CompressedFrameEncountered,
-
-	// Writing
-	/// Arises when attempting to write an encrypted frame with an invalid encryption method symbol (must be <= 0x80)
-	InvalidEncryptionMethodSymbol(u8),
-	/// Arises when attempting to write an invalid Frame (Bad `FrameId`/`FrameValue` pairing)
-	BadFrame(String, &'static str),
-	/// Arises when attempting to write a [`CommentFrame`](crate::id3::v2::CommentFrame) or [`UnsynchronizedTextFrame`](crate::id3::v2::UnsynchronizedTextFrame) with an invalid language
-	InvalidLanguage([u8; 3]),
-}
-
-impl Display for Id3v2ErrorKind {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		match self {
-			// Header
-			Self::BadId3v2Version(major, minor) => write!(
-				f,
-				"Found an invalid version (v{major}.{minor}), expected any major revision in: (2, \
-				 3, 4)"
-			),
-			Self::V2Compression => write!(f, "Encountered a compressed ID3v2.2 tag"),
-			Self::BadExtendedHeaderSize => {
-				write!(f, "Found an extended header with an invalid size")
-			},
-
-			// Frame
-			Self::BadFrameId(frame_id) => write!(f, "Failed to parse a frame ID: 0x{frame_id:x?}"),
-			Self::UnsupportedFrameId(item_key) => {
-				write!(f, "Unsupported frame ID for item key {item_key:?}")
-			},
-			Self::BadFrameLength => write!(
-				f,
-				"Frame isn't long enough to extract the necessary information"
-			),
-			Self::EmptyFrame(id) => write!(f, "Frame `{id}` is empty"),
-			Self::MissingDataLengthIndicator => write!(
-				f,
-				"Encountered an encrypted frame without a data length indicator"
-			),
-			Self::InvalidUnsynchronisation => write!(f, "Encountered an invalid unsynchronisation"),
-			Self::V2InvalidTextEncoding => {
-				write!(f, "ID3v2.2 only supports Latin-1 and UTF-16 encodings")
-			},
-			Self::BadPictureFormat(format) => {
-				write!(f, "Picture: Found unexpected format \"{format}\"")
-			},
-			Self::BadSyncText => write!(f, "Encountered invalid data in SYLT frame"),
-			Self::MissingUfidOwner => write!(f, "Missing owner in UFID frame"),
-			Self::BadRva2ChannelType => write!(f, "Encountered invalid channel type in RVA2 frame"),
-			Self::BadTimestampFormat => write!(
-				f,
-				"Encountered an invalid timestamp format in a synchronized frame"
-			),
-
-			// Compression
-			#[cfg(feature = "id3v2_compression_support")]
-			Self::Decompression(err) => write!(f, "Failed to decompress frame: {err}"),
-			#[cfg(not(feature = "id3v2_compression_support"))]
-			Self::CompressedFrameEncountered => write!(
-				f,
-				"Encountered a compressed ID3v2 frame, support is disabled"
-			),
-
-			// Writing
-			Self::InvalidEncryptionMethodSymbol(symbol) => write!(
-				f,
-				"Attempted to write an encrypted frame with an invalid method symbol ({symbol})"
-			),
-			Self::BadFrame(frame_id, frame_value) => write!(
-				f,
-				"Attempted to write an invalid frame. ID: \"{frame_id}\", Value: \"{frame_value}\"",
-			),
-			Self::InvalidLanguage(lang) => write!(
-				f,
-				"Invalid frame language found: {lang:?} (expected 3 ascii characters)"
-			),
-		}
-	}
-}
-
-/// An error that arises while interacting with an ID3v2 tag
-pub struct Id3v2Error {
-	kind: Id3v2ErrorKind,
-}
-
-impl Id3v2Error {
-	/// Create a new `ID3v2Error` from an [`Id3v2ErrorKind`]
-	#[must_use]
-	pub const fn new(kind: Id3v2ErrorKind) -> Self {
-		Self { kind }
-	}
-
-	/// Returns the [`Id3v2ErrorKind`]
-	pub fn kind(&self) -> &Id3v2ErrorKind {
-		&self.kind
-	}
-}
-
-impl Debug for Id3v2Error {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "ID3v2: {:?}", self.kind)
-	}
-}
-
-impl Display for Id3v2Error {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		write!(f, "ID3v2: {}", self.kind)
-	}
 }
 
 /// An error that arises while decoding a file
@@ -276,8 +204,8 @@ impl FileDecodingError {
 	}
 }
 
-impl Debug for FileDecodingError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for FileDecodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(format) = self.format {
 			write!(f, "{:?}: {:?}", format, self.description)
 		} else {
@@ -286,8 +214,8 @@ impl Debug for FileDecodingError {
 	}
 }
 
-impl Display for FileDecodingError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FileDecodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(format) = self.format {
 			write!(f, "{:?}: {}", format, self.description)
 		} else {
@@ -380,8 +308,8 @@ impl FileEncodingError {
 	}
 }
 
-impl Debug for FileEncodingError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for FileEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(format) = self.format {
 			write!(f, "{:?}: {:?}", format, self.description)
 		} else {
@@ -390,8 +318,8 @@ impl Debug for FileEncodingError {
 	}
 }
 
-impl Display for FileEncodingError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for FileEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(format) = self.format {
 			write!(f, "{:?}: {:?}", format, self.description)
 		} else {
@@ -403,6 +331,7 @@ impl Display for FileEncodingError {
 /// Errors that could occur within Lofty
 pub struct LoftyError {
 	pub(crate) kind: ErrorKind,
+	source: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
 }
 
 impl LoftyError {
@@ -417,7 +346,18 @@ impl LoftyError {
 	/// ```
 	#[must_use]
 	pub const fn new(kind: ErrorKind) -> Self {
-		Self { kind }
+		Self { kind, source: None }
+	}
+
+	/// Create a `LoftyError` with a source error
+	pub fn with_source<E>(kind: ErrorKind, source: E) -> Self
+	where
+		E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+	{
+		Self {
+			kind,
+			source: Some(source.into()),
+		}
 	}
 
 	/// Returns the [`ErrorKind`]
@@ -437,112 +377,117 @@ impl LoftyError {
 	}
 }
 
-impl std::error::Error for LoftyError {}
+impl std::error::Error for LoftyError {
+	#[allow(trivial_casts)]
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		self.source.as_ref().map(|e| &**e as _)
+	}
+}
 
-impl Debug for LoftyError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for LoftyError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{:?}", self.kind)
 	}
 }
 
-impl From<Id3v2Error> for LoftyError {
-	fn from(input: Id3v2Error) -> Self {
-		Self {
-			kind: ErrorKind::Id3v2(input),
-		}
+impl From<TimestampParseError> for LoftyError {
+	fn from(input: TimestampParseError) -> Self {
+		Self::new(ErrorKind::BadTimestamp(input))
 	}
 }
 
 impl From<FileDecodingError> for LoftyError {
 	fn from(input: FileDecodingError) -> Self {
-		Self {
-			kind: ErrorKind::FileDecoding(input),
-		}
+		Self::new(ErrorKind::FileDecoding(input))
 	}
 }
 
 impl From<FileEncodingError> for LoftyError {
 	fn from(input: FileEncodingError) -> Self {
-		Self {
-			kind: ErrorKind::FileEncoding(input),
-		}
+		Self::new(ErrorKind::FileEncoding(input))
 	}
 }
 
 impl From<TextEncodingError> for LoftyError {
 	fn from(input: TextEncodingError) -> Self {
-		Self {
-			kind: ErrorKind::TextEncode(input),
-		}
+		Self::new(ErrorKind::TextEncode(input))
+	}
+}
+
+impl From<TextDecodingError> for LoftyError {
+	fn from(input: TextDecodingError) -> Self {
+		Self::new(ErrorKind::TextDecode(input))
 	}
 }
 
 impl From<ogg_pager::PageError> for LoftyError {
 	fn from(input: PageError) -> Self {
-		Self {
-			kind: ErrorKind::OggPage(input),
-		}
+		Self::new(ErrorKind::OggPage(input))
 	}
 }
 
 impl From<std::io::Error> for LoftyError {
 	fn from(input: std::io::Error) -> Self {
-		Self {
-			kind: ErrorKind::Io(input),
-		}
+		Self::new(ErrorKind::Io(input))
 	}
 }
 
 impl From<std::fmt::Error> for LoftyError {
 	fn from(input: std::fmt::Error) -> Self {
-		Self {
-			kind: ErrorKind::Fmt(input),
-		}
+		Self::new(ErrorKind::Fmt(input))
 	}
 }
 
 impl From<std::string::FromUtf8Error> for LoftyError {
 	fn from(input: std::string::FromUtf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StringFromUtf8(input),
-		}
+		Self::new(ErrorKind::TextDecode(input.into()))
 	}
 }
 
 impl From<std::str::Utf8Error> for LoftyError {
 	fn from(input: std::str::Utf8Error) -> Self {
-		Self {
-			kind: ErrorKind::StrFromUtf8(input),
-		}
+		Self::new(ErrorKind::TextDecode(input.into()))
 	}
 }
 
-impl From<std::collections::TryReserveError> for LoftyError {
-	fn from(input: TryReserveError) -> Self {
-		Self {
-			kind: ErrorKind::Alloc(input),
-		}
+impl From<AllocationError> for LoftyError {
+	fn from(input: AllocationError) -> Self {
+		Self::new(ErrorKind::Alloc(input))
 	}
 }
 
 impl From<std::convert::Infallible> for LoftyError {
 	fn from(input: std::convert::Infallible) -> Self {
-		Self {
-			kind: ErrorKind::Infallible(input),
-		}
+		Self::new(ErrorKind::Infallible(input))
 	}
 }
 
-impl Display for LoftyError {
-	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-		match self.kind {
+impl From<Id3v2EncodingError> for LoftyError {
+	fn from(input: Id3v2EncodingError) -> Self {
+		Self::new(ErrorKind::TagEncoding(input.into()))
+	}
+}
+
+impl From<FakeTagError> for LoftyError {
+	fn from(_: FakeTagError) -> Self {
+		Self::new(ErrorKind::FakeTag)
+	}
+}
+
+impl From<TooMuchDataError> for LoftyError {
+	fn from(_: TooMuchDataError) -> Self {
+		Self::new(ErrorKind::TooMuchData)
+	}
+}
+
+impl core::fmt::Display for LoftyError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+		match &self.kind {
 			// Conversions
-			ErrorKind::OggPage(ref err) => write!(f, "{err}"),
-			ErrorKind::StringFromUtf8(ref err) => write!(f, "{err}"),
-			ErrorKind::StrFromUtf8(ref err) => write!(f, "{err}"),
-			ErrorKind::Io(ref err) => write!(f, "{err}"),
-			ErrorKind::Fmt(ref err) => write!(f, "{err}"),
-			ErrorKind::Alloc(ref err) => write!(f, "{err}"),
+			ErrorKind::OggPage(err) => write!(f, "{err}"),
+			ErrorKind::Io(err) => write!(f, "{err}"),
+			ErrorKind::Fmt(err) => write!(f, "{err}"),
+			ErrorKind::Alloc(err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
 				write!(f, "No format could be determined from the provided file")
@@ -561,7 +506,8 @@ impl Display for LoftyError {
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},
-			ErrorKind::Id3v2(ref id3v2_err) => write!(f, "{id3v2_err}"),
+			ErrorKind::TagParse(e) => write!(f, "{e}"),
+			ErrorKind::TagEncoding(e) => write!(f, "{e}"),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,
@@ -577,8 +523,8 @@ impl Display for LoftyError {
 				f,
 				"Encountered an invalid item size, either too big or too small to be valid"
 			),
-			ErrorKind::FileDecoding(ref file_decode_err) => write!(f, "{file_decode_err}"),
-			ErrorKind::FileEncoding(ref file_encode_err) => write!(f, "{file_encode_err}"),
+			ErrorKind::FileDecoding(file_decode_err) => write!(f, "{file_decode_err}"),
+			ErrorKind::FileEncoding(file_encode_err) => write!(f, "{file_encode_err}"),
 
 			ErrorKind::Infallible(_) => write!(f, "A expected condition was not upheld"),
 		}

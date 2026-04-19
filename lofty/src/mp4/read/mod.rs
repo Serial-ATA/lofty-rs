@@ -41,8 +41,11 @@ where
 
 	let major_brand = utf8_decode_str(&major_brand)
 		.map(ToOwned::to_owned)
-		.map_err(|_| {
-			LoftyError::new(ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"))
+		.map_err(|e| {
+			LoftyError::with_source(
+				ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"),
+				e,
+			)
 		})?;
 
 	log::debug!("Verified to be an MP4 file. Major brand: {}", major_brand);

@@ -15,6 +15,7 @@
 //! A track number of 0 will be treated as an empty field.
 //! Additionally, there is no track total field.
 pub(crate) mod constants;
+pub mod error;
 pub(crate) mod read;
 pub(crate) mod tag;
 pub(crate) mod write;

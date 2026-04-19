@@ -1,14 +1,15 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::config::WriteOptions;
+use crate::error::TooMuchDataError;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::util::text::{TextDecodeOptions, TextEncoding};
 
 use std::borrow::Cow;
 use std::io::{Read, Write as _};
 
-use crate::config::WriteOptions;
 use byteorder::{ReadBytesExt as _, WriteBytesExt as _};
 
 const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("APIC"));
@@ -63,64 +64,80 @@ impl<'a> AttachedPictureFrame<'a> {
 	/// ID3v2.2:
 	///
 	/// * The format is not "PNG" or "JPG"
-	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags, version: Id3v2Version) -> Result<Self>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+		version: Id3v2Version,
+	) -> Result<Self, FrameParseError>
 	where
 		R: Read,
 	{
-		let Some(encoding) = TextEncoding::from_u8(reader.read_u8()?) else {
-			err!(NotAPicture);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+			version: Id3v2Version,
+		) -> Result<AttachedPictureFrame<'a>, FrameParseError>
+		where
+			R: Read,
+		{
+			let encoding = TextEncoding::try_from(reader.read_u8()?)?;
 
-		let mime_type;
-		if version == Id3v2Version::V2 {
-			let mut format = [0; 3];
-			reader.read_exact(&mut format)?;
+			let mime_type;
+			if version == Id3v2Version::V2 {
+				let mut format = [0; 3];
+				reader.read_exact(&mut format)?;
 
-			match format {
-				[b'P', b'N', b'G'] => mime_type = Some(MimeType::Png),
-				[b'J', b'P', b'G'] => mime_type = Some(MimeType::Jpeg),
-				_ => {
-					return Err(Id3v2Error::new(Id3v2ErrorKind::BadPictureFormat(
-						String::from_utf8_lossy(&format).into_owned(),
-					))
-					.into());
-				},
+				match format {
+					[b'P', b'N', b'G'] => mime_type = Some(MimeType::Png),
+					[b'J', b'P', b'G'] => mime_type = Some(MimeType::Jpeg),
+					_ => {
+						return Err(FrameParseError::message(
+							Some(FRAME_ID),
+							format!("unexpected picture format \"{}\"", format.escape_ascii()),
+						));
+					},
+				}
+			} else {
+				let mime_type_str = crate::util::text::decode_text(
+					reader,
+					TextDecodeOptions::new()
+						.encoding(TextEncoding::Latin1)
+						.terminated(true),
+				)?
+				.text_or_none();
+				mime_type = mime_type_str.map(|mime_type_str| MimeType::from_str(&mime_type_str));
 			}
-		} else {
-			let mime_type_str = crate::util::text::decode_text(
+
+			let pic_type = PictureType::from_u8(reader.read_u8()?);
+
+			let description = crate::util::text::decode_text(
 				reader,
-				TextDecodeOptions::new()
-					.encoding(TextEncoding::Latin1)
-					.terminated(true),
+				TextDecodeOptions::new().encoding(encoding).terminated(true),
 			)?
-			.text_or_none();
-			mime_type = mime_type_str.map(|mime_type_str| MimeType::from_str(&mime_type_str));
+			.text_or_none()
+			.map(Cow::from);
+
+			let mut data = Vec::new();
+			reader.read_to_end(&mut data)?;
+
+			let picture = Picture {
+				pic_type,
+				mime_type,
+				description,
+				data: Cow::from(data),
+			};
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(AttachedPictureFrame {
+				header,
+				encoding,
+				picture: Cow::Owned(picture),
+			})
 		}
 
-		let pic_type = PictureType::from_u8(reader.read_u8()?);
-
-		let description = crate::util::text::decode_text(
-			reader,
-			TextDecodeOptions::new().encoding(encoding).terminated(true),
-		)?
-		.text_or_none()
-		.map(Cow::from);
-
-		let mut data = Vec::new();
-		reader.read_to_end(&mut data)?;
-
-		let picture = Picture {
-			pic_type,
-			mime_type,
-			description,
-			data: Cow::from(data),
-		};
-
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Self {
-			header,
-			encoding,
-			picture: Cow::Owned(picture),
+		parse_inner(reader, frame_flags, version).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
 		})
 	}
 
@@ -132,7 +149,7 @@ impl<'a> AttachedPictureFrame<'a> {
 	///
 	/// * Too much data was provided
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
@@ -159,7 +176,7 @@ impl<'a> AttachedPictureFrame<'a> {
 		data.write_all(&self.picture.data)?;
 
 		if data.len() as u64 > u64::from(u32::MAX) {
-			err!(TooMuchData);
+			return Err(TooMuchDataError.into());
 		}
 
 		Ok(data)

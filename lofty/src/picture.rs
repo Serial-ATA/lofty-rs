@@ -788,7 +788,7 @@ impl Picture {
 		if encoded {
 			let data = BASE64
 				.decode(bytes)
-				.map_err(|_| LoftyError::new(ErrorKind::NotAPicture))?;
+				.map_err(|e| LoftyError::with_source(ErrorKind::NotAPicture, e))?;
 			Self::from_flac_bytes_inner(&data, parse_mode)
 		} else {
 			Self::from_flac_bytes_inner(bytes, parse_mode)

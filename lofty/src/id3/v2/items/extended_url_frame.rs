@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -88,33 +89,47 @@ impl<'a> ExtendedUrlFrame<'a> {
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(encoding_byte) = reader.read_u8() else {
-			return Ok(None);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+			version: Id3v2Version,
+		) -> Result<Option<ExtendedUrlFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let Ok(encoding_byte) = reader.read_u8() else {
+				return Ok(None);
+			};
 
-		let encoding = verify_encoding(encoding_byte, version)?;
-		let description = decode_text(
-			reader,
-			TextDecodeOptions::new().encoding(encoding).terminated(true),
-		)?
-		.content;
-		let content = decode_text(
-			reader,
-			TextDecodeOptions::new().encoding(TextEncoding::Latin1),
-		)?
-		.content;
+			let encoding = verify_encoding(encoding_byte, version)?;
+			let description = decode_text(
+				reader,
+				TextDecodeOptions::new().encoding(encoding).terminated(true),
+			)?
+			.content;
+			let content = decode_text(
+				reader,
+				TextDecodeOptions::new().encoding(TextEncoding::Latin1),
+			)?
+			.content;
 
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(ExtendedUrlFrame {
-			header,
-			encoding,
-			description: Cow::Owned(description),
-			content: Cow::Owned(content),
-		}))
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(ExtendedUrlFrame {
+				header,
+				encoding,
+				description: Cow::Owned(description),
+				content: Cow::Owned(content),
+			}))
+		}
+
+		parse_inner(reader, frame_flags, version).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert an [`ExtendedUrlFrame`] to a byte vec
@@ -122,7 +137,7 @@ impl<'a> ExtendedUrlFrame<'a> {
 	/// # Errors
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();

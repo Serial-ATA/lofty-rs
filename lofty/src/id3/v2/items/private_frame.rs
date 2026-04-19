@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -56,30 +57,46 @@ impl<'a> PrivateFrame<'a> {
 	/// # Errors
 	///
 	/// * Failure to read from `reader`
-	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(owner) = decode_text(
-			reader,
-			TextDecodeOptions::new()
-				.encoding(TextEncoding::Latin1)
-				.terminated(true),
-		) else {
-			return Ok(None);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+		) -> Result<Option<PrivateFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let Ok(owner) = decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			) else {
+				return Ok(None);
+			};
 
-		let owner = owner.content;
+			let owner = owner.content;
 
-		let mut private_data = Vec::new();
-		reader.read_to_end(&mut private_data)?;
+			let mut private_data = Vec::new();
+			reader.read_to_end(&mut private_data)?;
 
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(PrivateFrame {
-			header,
-			owner: Cow::Owned(owner),
-			private_data: Cow::Owned(private_data),
-		}))
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(PrivateFrame {
+				header,
+				owner: Cow::Owned(owner),
+				private_data: Cow::Owned(private_data),
+			}))
+		}
+
+		parse_inner(reader, frame_flags).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert an [`PrivateFrame`] to a byte vec
@@ -88,7 +105,7 @@ impl<'a> PrivateFrame<'a> {
 	///
 	/// * The resulting [`Vec`] exceeds [`GlobalOptions::allocation_limit`](crate::config::GlobalOptions::allocation_limit)
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the `owner` cannot be Latin-1 encoded.
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let Self {
 			owner,
 			private_data,

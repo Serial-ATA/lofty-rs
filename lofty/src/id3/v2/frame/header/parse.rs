@@ -1,7 +1,7 @@
-use super::FrameFlags;
+use super::{FrameFlags, FrameIdParseError};
 use crate::config::ParseOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::FrameId;
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::util::upgrade::{upgrade_v2, upgrade_v3};
 use crate::util::text::utf8_decode_str;
@@ -12,7 +12,7 @@ use std::io::Read;
 pub(crate) fn parse_v2_header<R>(
 	reader: &mut R,
 	size: &mut u32,
-) -> Result<Option<(FrameId<'static>, FrameFlags)>>
+) -> Result<Option<(FrameId<'static>, FrameFlags)>, FrameParseError>
 where
 	R: Read,
 {
@@ -31,7 +31,9 @@ where
 
 	let id_bytes = &header[..3];
 	let id_str = std::str::from_utf8(id_bytes)
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id_bytes.to_vec())))
+		.map_err(|_| FrameIdParseError {
+			id_bytes: id_bytes.to_vec(),
+		})
 		.map(|id_str| {
 			upgrade_v2(id_str).map_or_else(|| Cow::Owned(id_str.to_owned()), Cow::Borrowed)
 		})?;
@@ -46,7 +48,7 @@ pub(crate) fn parse_header<R>(
 	size: &mut u32,
 	synchsafe: bool,
 	parse_options: ParseOptions,
-) -> Result<Option<(FrameId<'static>, FrameFlags)>>
+) -> Result<Option<(FrameId<'static>, FrameFlags)>, FrameParseError>
 where
 	R: Read,
 {
@@ -79,8 +81,9 @@ where
 	}
 
 	let id_bytes = &header[..id_end];
-	let id_str = utf8_decode_str(id_bytes)
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadFrameId(id_bytes.to_vec())))?;
+	let id_str = utf8_decode_str(id_bytes).map_err(|_| FrameIdParseError {
+		id_bytes: id_bytes.to_vec(),
+	})?;
 
 	// Now upgrade the FrameId
 	let id = if invalid_v2_frame {

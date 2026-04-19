@@ -1,7 +1,7 @@
 use super::Frame;
 use super::header::parse::{parse_header, parse_v2_header};
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
@@ -25,7 +25,7 @@ impl ParsedFrame<'_> {
 		reader: &mut R,
 		version: Id3v2Version,
 		parse_options: ParseOptions,
-	) -> Result<Self>
+	) -> Result<Self, FrameParseError>
 	where
 		R: Read,
 	{
@@ -50,7 +50,7 @@ impl ParsedFrame<'_> {
 						log::warn!("Failed to read frame header, skipping: {}", err);
 
 						// Skip this frame and continue reading
-						skip_frame(reader, size)?;
+						skip_frame(None, reader, size)?;
 						return Ok(Self::Skip);
 					},
 				}
@@ -58,18 +58,18 @@ impl ParsedFrame<'_> {
 		};
 
 		if !parse_options.read_cover_art && id == ATTACHED_PICTURE_ID {
-			skip_frame(reader, size)?;
+			skip_frame(Some(id), reader, size)?;
 			return Ok(Self::Skip);
 		}
 
 		if size == 0 {
 			if parse_options.parsing_mode == ParsingMode::Strict {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::EmptyFrame(id)).into());
+				return Err(FrameParseError::undersized(id));
 			}
 
 			log::debug!("Encountered a zero length frame, skipping");
 
-			skip_frame(reader, size)?;
+			skip_frame(Some(id), reader, size)?;
 			return Ok(Self::Skip);
 		}
 
@@ -78,10 +78,16 @@ impl ParsedFrame<'_> {
 			log::trace!("Reading encryption method symbol");
 
 			if size < 1 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+				return Err(FrameParseError::undersized(id));
 			}
 
-			*enc = reader.read_u8()?;
+			match reader.read_u8() {
+				Ok(sym) => *enc = sym,
+				Err(e) => {
+					return Err(FrameParseError::io(Some(id), e));
+				},
+			}
+
 			size -= 1;
 		}
 
@@ -90,10 +96,16 @@ impl ParsedFrame<'_> {
 			log::trace!("Reading group identifier");
 
 			if size < 1 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+				return Err(FrameParseError::undersized(id));
 			}
 
-			*group = reader.read_u8()?;
+			match reader.read_u8() {
+				Ok(sym) => *group = sym,
+				Err(e) => {
+					return Err(FrameParseError::io(Some(id), e));
+				},
+			}
+
 			size -= 1;
 		}
 
@@ -102,19 +114,24 @@ impl ParsedFrame<'_> {
 			log::trace!("Reading data length indicator");
 
 			if size < 4 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+				return Err(FrameParseError::undersized(id));
 			}
 
 			// For some reason, no one can follow the spec, so while a data length indicator is *written*
 			// the flag **isn't always set**
-			let len = reader.read_u32::<BigEndian>()?.unsynch();
+			let len = match reader.read_u32::<BigEndian>() {
+				Ok(len) => len.unsynch(),
+				Err(e) => {
+					return Err(FrameParseError::io(Some(id), e));
+				},
+			};
 			flags.data_length_indicator = Some(len);
 			size -= 4;
 		}
 
 		// Frames must have at least 1 byte, *after* all of the additional data flags can provide
 		if size == 0 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			return Err(FrameParseError::undersized(id));
 		}
 
 		// Restrict the reader to the frame content
@@ -216,13 +233,13 @@ impl ParsedFrame<'_> {
 
 #[cfg(feature = "id3v2_compression_support")]
 #[allow(clippy::unnecessary_wraps)]
-fn handle_compression<R: Read>(reader: R) -> Result<flate2::read::ZlibDecoder<R>> {
+fn handle_compression<R: Read>(reader: R) -> Result<flate2::read::ZlibDecoder<R>, FrameParseError> {
 	Ok(flate2::read::ZlibDecoder::new(reader))
 }
 
 #[cfg(not(feature = "id3v2_compression_support"))]
 #[allow(clippy::unnecessary_wraps)]
-fn handle_compression<R>(_: R) -> Result<std::io::Empty> {
+fn handle_compression<R>(_: R) -> Result<std::io::Empty, FrameParseError> {
 	Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into())
 }
 
@@ -231,13 +248,15 @@ fn handle_encryption<R: Read>(
 	size: u32,
 	id: FrameId<'static>,
 	flags: FrameFlags,
-) -> Result<ParsedFrame<'static>> {
+) -> Result<ParsedFrame<'static>, FrameParseError> {
 	if flags.data_length_indicator.is_none() {
-		return Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into());
+		return Err(FrameParseError::missing_data_length_indicator(id));
 	}
 
 	let mut content = try_vec![0; size as usize];
-	reader.read_exact(&mut content)?;
+	if let Err(e) = reader.read_exact(&mut content) {
+		return Err(FrameParseError::io(Some(id), e));
+	}
 
 	let encrypted_frame = Frame::Binary(BinaryFrame {
 		header: FrameHeader::new(id, flags),
@@ -255,11 +274,11 @@ fn parse_frame<R: Read>(
 	flags: FrameFlags,
 	version: Id3v2Version,
 	parse_mode: ParsingMode,
-) -> Result<ParsedFrame<'static>> {
-	match parse_content(reader, id, flags, version, parse_mode)? {
-		Some(frame) => Ok(ParsedFrame::Next(frame)),
+) -> Result<ParsedFrame<'static>, FrameParseError> {
+	match parse_content(reader, id, flags, version, parse_mode) {
+		Some(result) => result.map(ParsedFrame::Next),
 		None => {
-			skip_frame(reader, size)?;
+			skip_frame(None, reader, size)?;
 			Ok(ParsedFrame::Skip)
 		},
 	}
@@ -271,12 +290,19 @@ fn parse_frame<R: Read>(
 // is a safe operation, regardless of where we are in parsing the frame.
 //
 // This assumption *CANNOT* be made in other contexts.
-fn skip_frame(reader: &mut impl Read, size: u32) -> Result<()> {
+fn skip_frame(
+	id: Option<FrameId<'static>>,
+	reader: &mut impl Read,
+	size: u32,
+) -> Result<(), FrameParseError> {
 	log::trace!("Skipping frame of size {}", size);
 
 	let size = u64::from(size);
 	let mut reader = reader.take(size);
-	let skipped = std::io::copy(&mut reader, &mut std::io::sink())?;
+	let skipped = match std::io::copy(&mut reader, &mut std::io::sink()) {
+		Ok(skipped) => skipped,
+		Err(e) => return Err(FrameParseError::io(id, e)),
+	};
 	debug_assert!(skipped <= size);
 
 	Ok(())

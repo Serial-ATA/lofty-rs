@@ -1,6 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::frame::FrameFlags;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::tag::GenresIter;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::v2::{Frame, FrameId, KeyValueFrame, TextInformationFrame};
@@ -29,7 +29,7 @@ pub(in crate::id3::v2) fn create_items<W>(
 	writer: &mut W,
 	frames: &mut dyn Iterator<Item = Frame<'_>>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FrameEncodingError>
 where
 	W: Write,
 {
@@ -53,7 +53,7 @@ pub(in crate::id3::v2) fn create_items_v3<W>(
 	writer: &mut W,
 	frames: &mut dyn Iterator<Item = Frame<'_>>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FrameEncodingError>
 where
 	W: Write,
 {
@@ -253,7 +253,7 @@ where
 	Ok(())
 }
 
-fn verify_frame(frame: &Frame<'_>) -> Result<()> {
+fn verify_frame(frame: &Frame<'_>) -> Result<(), FrameEncodingError> {
 	match (frame.id().as_str(), frame) {
 		("APIC", Frame::Picture { .. })
 		| ("USLT", Frame::UnsynchronizedText(_))
@@ -270,11 +270,13 @@ fn verify_frame(frame: &Frame<'_>) -> Result<()> {
 		| ("PRIV", Frame::Private(_)) => Ok(()),
 		(id, Frame::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, Frame::Url(_)) if id.starts_with('W') => Ok(()),
-		(id, frame_value) => Err(Id3v2Error::new(Id3v2ErrorKind::BadFrame(
-			id.to_string(),
-			frame_value.name(),
-		))
-		.into()),
+		(_, frame_value) => Err(FrameEncodingError::message(
+			Some(frame.id().to_owned()),
+			format!(
+				"a value of type '{}' cannot be written under this ID",
+				frame_value.name()
+			),
+		)),
 	}
 }
 
@@ -284,7 +286,7 @@ fn write_frame<W>(
 	flags: FrameFlags,
 	value: &[u8],
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FrameEncodingError>
 where
 	W: Write,
 {
@@ -320,7 +322,7 @@ fn write_encrypted<W>(
 	value: &[u8],
 	flags: FrameFlags,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FrameEncodingError>
 where
 	W: Write,
 {
@@ -328,9 +330,10 @@ where
 	let method_symbol = flags.encryption.unwrap();
 
 	if method_symbol > 0x80 {
-		return Err(
-			Id3v2Error::new(Id3v2ErrorKind::InvalidEncryptionMethodSymbol(method_symbol)).into(),
-		);
+		return Err(FrameEncodingError::message(
+			Some(FrameId::Valid(String::from(name).into())),
+			"attempted to write an encrypted frame with an invalid method symbol",
+		));
 	}
 
 	if let Some(mut len) = flags.data_length_indicator
@@ -348,7 +351,9 @@ where
 		return Ok(());
 	}
 
-	Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into())
+	Err(FrameEncodingError::missing_data_length_indicator(
+		FrameId::Valid(String::from(name).into()),
+	))
 }
 
 fn write_frame_header<W>(
@@ -357,7 +362,7 @@ fn write_frame_header<W>(
 	mut len: u32,
 	flags: FrameFlags,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FrameEncodingError>
 where
 	W: Write,
 {

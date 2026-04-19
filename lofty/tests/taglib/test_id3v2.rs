@@ -735,7 +735,7 @@ fn test_render_event_timing_codes_frame() {
 	);
 
 	assert_eq!(
-		f.as_bytes(),
+		f.as_bytes().unwrap(),
 		b"\
 	\x02\
 	\x02\

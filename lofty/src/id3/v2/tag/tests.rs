@@ -144,7 +144,7 @@ fn fail_write_bad_frame() {
 	assert!(res.is_err());
 	assert_eq!(
 		res.unwrap_err().to_string(),
-		String::from("ID3v2: Attempted to write an invalid frame. ID: \"ABCD\", Value: \"Url\"")
+		String::from("failed to write ID3v2 tag")
 	);
 }
 

@@ -245,7 +245,7 @@ impl<R: Read + Seek> Chunk<'_, R> {
 	/// Read a C-style string from the chunk
 	pub fn read_cstring(&mut self) -> Result<String> {
 		let cont = self.content()?;
-		utf8_decode(cont)
+		utf8_decode(cont).map_err(Into::into)
 	}
 
 	/// Read a UTF-8 string from the chunk
@@ -257,7 +257,7 @@ impl<R: Read + Seek> Chunk<'_, R> {
 		let mut content = try_vec![0; size];
 		self.read_exact(&mut content)?;
 
-		utf8_decode(content)
+		utf8_decode(content).map_err(Into::into)
 	}
 
 	/// Read the entire chunk's content

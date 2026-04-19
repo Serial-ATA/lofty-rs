@@ -2,8 +2,6 @@
 //!
 //! See [`FrameFlags::unsynchronisation`](crate::id3::v2::FrameFlags::unsynchronisation) for an explanation.
 
-use crate::error::Result;
-
 use std::io::Read;
 
 /// A reader for unsynchronized content
@@ -147,6 +145,18 @@ impl<R: Read> Read for UnsynchronizedStream<R> {
 	}
 }
 
+/// Overflow while creating a synchsafe integer
+#[derive(Debug)]
+pub struct SynchOverflowError;
+
+impl core::fmt::Display for SynchOverflowError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "integer too large to create a synchsafe representation")
+	}
+}
+
+impl core::error::Error for SynchOverflowError {}
+
 /// An integer that can be converted to and from synchsafe variants
 pub trait SynchsafeInteger: Sized {
 	/// The integer type that this can be widened to for use in [`SynchsafeInteger::widening_synch`]
@@ -165,7 +175,7 @@ pub trait SynchsafeInteger: Sized {
 	/// ```rust
 	/// use lofty::id3::v2::util::synchsafe::SynchsafeInteger;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::id3::v2::util::synchsafe::SynchOverflowError> {
 	/// // Maximum value we can represent in a synchsafe u32
 	/// let unsynch_number = 0xFFF_FFFF_u32;
 	/// let synch_number = unsynch_number.synch()?;
@@ -177,7 +187,7 @@ pub trait SynchsafeInteger: Sized {
 	/// assert_eq!(synch_number, 0b01111111_01111111_01111111_01111111_u32);
 	/// # Ok(()) }
 	/// ```
-	fn synch(self) -> Result<Self>;
+	fn synch(self) -> Result<Self, SynchOverflowError>;
 
 	/// Create a synchsafe integer, widening to the next available integer type
 	///
@@ -209,7 +219,7 @@ pub trait SynchsafeInteger: Sized {
 	/// ```rust
 	/// use lofty::id3::v2::util::synchsafe::SynchsafeInteger;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::id3::v2::util::synchsafe::SynchOverflowError> {
 	/// let unsynch_number = 0xFFF_FFFF_u32;
 	/// let synch_number = unsynch_number.synch()?;
 	///
@@ -235,7 +245,7 @@ macro_rules! impl_synchsafe {
 		impl SynchsafeInteger for $ty {
 			type WideningType = $widening_ty;
 
-			fn synch(self) -> Result<Self> {
+			fn synch(self) -> Result<Self, SynchOverflowError> {
 				const MAXIMUM_INTEGER: $ty = {
 					let num_bytes = core::mem::size_of::<$ty>();
 					// 7 bits are available per byte, shave off 1 bit per byte
@@ -243,7 +253,7 @@ macro_rules! impl_synchsafe {
 				};
 
 				if self > MAXIMUM_INTEGER {
-					crate::macros::err!(TooMuchData);
+					return Err(SynchOverflowError);
 				}
 
 				let $n = self;

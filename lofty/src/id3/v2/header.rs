@@ -1,7 +1,7 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::error::FakeTagError;
+use crate::id3::v2::error::{Id3v2HeaderError, Id3v2ParseError};
 use crate::id3::v2::restrictions::TagRestrictions;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
-use crate::macros::err;
 
 use std::io::Read;
 
@@ -90,7 +90,7 @@ pub(crate) struct Id3v2Header {
 }
 
 impl Id3v2Header {
-	pub(crate) fn parse<R>(bytes: &mut R) -> Result<Self>
+	pub(crate) fn parse<R>(bytes: &mut R) -> Result<Self, Id3v2ParseError>
 	where
 		R: Read,
 	{
@@ -100,7 +100,7 @@ impl Id3v2Header {
 		bytes.read_exact(&mut header)?;
 
 		if &header[..3] != b"ID3" {
-			err!(FakeTag);
+			return Err(FakeTagError.into());
 		}
 
 		// Version is stored as [major, minor], but here we don't care about minor revisions unless there's an error.
@@ -109,9 +109,7 @@ impl Id3v2Header {
 			3 => Id3v2Version::V3,
 			4 => Id3v2Version::V4,
 			major => {
-				return Err(
-					Id3v2Error::new(Id3v2ErrorKind::BadId3v2Version(major, header[4])).into(),
-				);
+				return Err(Id3v2HeaderError::BadId3v2Version(major, header[4]).into());
 			},
 		};
 
@@ -121,7 +119,7 @@ impl Id3v2Header {
 		// At the time the ID3v2.2 specification was written, a compression scheme wasn't decided.
 		// The spec recommends just ignoring the tag in this case.
 		if version == Id3v2Version::V2 && flags & 0x40 == 0x40 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::V2Compression).into());
+			return Err(Id3v2HeaderError::V2Compression.into());
 		}
 
 		let mut flags_parsed = Id3v2TagFlags {
@@ -144,7 +142,7 @@ impl Id3v2Header {
 			extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
 
 			if extended_size < 6 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
+				return Err(Id3v2HeaderError::BadExtendedHeaderSize.into());
 			}
 
 			// Useless byte since there's only 1 byte for flags
@@ -171,7 +169,7 @@ impl Id3v2Header {
 		}
 
 		if extended_size > 0 && extended_size >= size {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
+			return Err(Id3v2HeaderError::BadExtendedHeaderSize.into());
 		}
 
 		Ok(Id3v2Header {

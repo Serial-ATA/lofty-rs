@@ -1,10 +1,12 @@
 use crate::config::WriteOptions;
-use crate::error::{Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
-use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, utf16_decode_bytes};
+use crate::util::text::{
+	TextDecodeOptions, TextDecodingError, TextEncoding, decode_text, utf16_decode_bytes,
+};
 
 use std::borrow::Cow;
 use std::hash::{Hash, Hasher};
@@ -89,82 +91,94 @@ impl<'a> ExtendedTextFrame<'a> {
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(encoding_byte) = reader.read_u8() else {
-			return Ok(None);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+			version: Id3v2Version,
+		) -> Result<Option<ExtendedTextFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let Ok(encoding_byte) = reader.read_u8() else {
+				return Ok(None);
+			};
 
-		let encoding = verify_encoding(encoding_byte, version)?;
-		let description = decode_text(
-			reader,
-			TextDecodeOptions::new().encoding(encoding).terminated(true),
-		)?;
+			let encoding = verify_encoding(encoding_byte, version)?;
+			let description = decode_text(
+				reader,
+				TextDecodeOptions::new().encoding(encoding).terminated(true),
+			)?;
 
-		let frame_content;
-		if encoding != TextEncoding::UTF16 {
-			frame_content =
-				decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+			let frame_content;
+			if encoding != TextEncoding::UTF16 {
+				frame_content =
+					decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+
+				let header = FrameHeader::new(FRAME_ID, frame_flags);
+				return Ok(Some(ExtendedTextFrame {
+					header,
+					encoding,
+					description: Cow::Owned(description.content),
+					content: Cow::Owned(frame_content),
+				}));
+			}
+
+			// It's possible for the description to be the only string with a BOM
+			'utf16: {
+				let mut raw_text = Vec::new();
+				reader.read_to_end(&mut raw_text)?;
+
+				if raw_text.is_empty() {
+					// Nothing left to do
+					frame_content = String::new();
+					break 'utf16;
+				}
+
+				// Reuse the BOM from the description as a fallback if the text
+				// doesn't specify one.
+				let mut bom = description.bom;
+				if raw_text.starts_with(&[0xFF, 0xFE]) || raw_text.starts_with(&[0xFE, 0xFF]) {
+					// The text specifies a BOM
+					bom = [raw_text[0], raw_text[1]];
+				}
+
+				let endianness = match bom {
+					[0x00, 0x00] if raw_text.is_empty() => {
+						debug_assert!(description.content.is_empty());
+						// Empty string
+						frame_content = String::new();
+						break 'utf16;
+					},
+					[0x00, 0x00] => {
+						debug_assert!(description.content.is_empty());
+						return Err(TextDecodingError::utf16_missing_bom().into());
+					},
+					[0xFF, 0xFE] => u16::from_le_bytes,
+					[0xFE, 0xFF] => u16::from_be_bytes,
+					// Handled in description decoding
+					_ => unreachable!(),
+				};
+
+				frame_content = utf16_decode_bytes(&raw_text, endianness)?;
+			}
 
 			let header = FrameHeader::new(FRAME_ID, frame_flags);
-			return Ok(Some(ExtendedTextFrame {
+			Ok(Some(ExtendedTextFrame {
 				header,
 				encoding,
 				description: Cow::Owned(description.content),
 				content: Cow::Owned(frame_content),
-			}));
+			}))
 		}
 
-		// It's possible for the description to be the only string with a BOM
-		'utf16: {
-			let mut raw_text = Vec::new();
-			reader.read_to_end(&mut raw_text)?;
-
-			if raw_text.is_empty() {
-				// Nothing left to do
-				frame_content = String::new();
-				break 'utf16;
-			}
-
-			// Reuse the BOM from the description as a fallback if the text
-			// doesn't specify one.
-			let mut bom = description.bom;
-			if raw_text.starts_with(&[0xFF, 0xFE]) || raw_text.starts_with(&[0xFE, 0xFF]) {
-				// The text specifies a BOM
-				bom = [raw_text[0], raw_text[1]];
-			}
-
-			let endianness = match bom {
-				[0x00, 0x00] if raw_text.is_empty() => {
-					debug_assert!(description.content.is_empty());
-					// Empty string
-					frame_content = String::new();
-					break 'utf16;
-				},
-				[0x00, 0x00] => {
-					debug_assert!(description.content.is_empty());
-					err!(TextDecode("UTF-16 string has no BOM"));
-				},
-				[0xFF, 0xFE] => u16::from_le_bytes,
-				[0xFE, 0xFF] => u16::from_be_bytes,
-				// Handled in description decoding
-				_ => unreachable!(),
-			};
-
-			frame_content = utf16_decode_bytes(&raw_text, endianness).map_err(|_| {
-				Into::<LoftyError>::into(Id3v2Error::new(Id3v2ErrorKind::BadSyncText))
-			})?;
-		}
-
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(ExtendedTextFrame {
-			header,
-			encoding,
-			description: Cow::Owned(description.content),
-			content: Cow::Owned(frame_content),
-		}))
+		parse_inner(reader, frame_flags, version).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert an [`ExtendedTextFrame`] to a byte vec
@@ -172,7 +186,7 @@ impl<'a> ExtendedTextFrame<'a> {
 	/// # Errors
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();

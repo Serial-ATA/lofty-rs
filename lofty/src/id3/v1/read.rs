@@ -2,6 +2,7 @@ use super::constants::{GENRES, ID3V1_TAG_MARKER};
 use super::tag::Id3v1Tag;
 use crate::config::ParsingMode;
 use crate::error::LoftyError;
+use crate::id3::v1::error::Id3v1ParseError;
 use crate::macros::err;
 use crate::util::text::latin1_decode;
 
@@ -69,7 +70,7 @@ fn decode_text(data: &[u8]) -> Option<String> {
 	Some(latin1_decode(&data[..first_null_pos]))
 }
 
-fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, LoftyError> {
+fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, Id3v1ParseError> {
 	let (num_digits, year) = input
 		.iter()
 		.take_while(|c| (**c).is_ascii_digit())
@@ -81,9 +82,7 @@ fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, 
 		// However, it seems most popular libraries (including us) will write "\0\0\0\0" for empty
 		// years, rather than "0000" as the "spec" would suggest.
 		if parse_mode == ParsingMode::Strict {
-			err!(TextDecode(
-				"ID3v1 year field contains non-ASCII digit characters"
-			));
+			return Err(Id3v1ParseError::NonDigitYear);
 		}
 
 		return Ok(None);

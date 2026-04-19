@@ -1,5 +1,6 @@
 use crate::config::{ParsingMode, WriteOptions};
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::macros::try_vec;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -37,36 +38,38 @@ pub enum ChannelType {
 	Subwoofer = 8,
 }
 
-impl ChannelType {
-	/// Get a [`ChannelType`] from a `u8`
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::id3::v2::ChannelType;
-	///
-	/// let valid_byte = 1;
-	/// assert_eq!(
-	/// 	ChannelType::from_u8(valid_byte),
-	/// 	Some(ChannelType::MasterVolume)
-	/// );
-	///
-	/// // The valid range is 0..=8
-	/// let invalid_byte = 10;
-	/// assert_eq!(ChannelType::from_u8(invalid_byte), None);
-	/// ```
-	pub fn from_u8(byte: u8) -> Option<Self> {
-		match byte {
-			0 => Some(Self::Other),
-			1 => Some(Self::MasterVolume),
-			2 => Some(Self::FrontRight),
-			3 => Some(Self::FrontLeft),
-			4 => Some(Self::BackRight),
-			5 => Some(Self::BackLeft),
-			6 => Some(Self::FrontCentre),
-			7 => Some(Self::BackCentre),
-			8 => Some(Self::Subwoofer),
-			_ => None,
+#[derive(Copy, Clone, Debug)]
+pub struct BadRva2ChannelTypeError;
+
+impl core::fmt::Display for BadRva2ChannelTypeError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "encountered invalid channel type in RVA2 frame")
+	}
+}
+
+impl core::error::Error for BadRva2ChannelTypeError {}
+
+impl From<BadRva2ChannelTypeError> for FrameParseError {
+	fn from(input: BadRva2ChannelTypeError) -> Self {
+		FrameParseError::new(Some(FRAME_ID), Box::new(input))
+	}
+}
+
+impl TryFrom<u8> for ChannelType {
+	type Error = BadRva2ChannelTypeError;
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			0 => Ok(Self::Other),
+			1 => Ok(Self::MasterVolume),
+			2 => Ok(Self::FrontRight),
+			3 => Ok(Self::FrontLeft),
+			4 => Ok(Self::BackRight),
+			5 => Ok(Self::BackLeft),
+			6 => Ok(Self::FrontCentre),
+			7 => Ok(Self::BackCentre),
+			8 => Ok(Self::Subwoofer),
+			_ => Err(BadRva2ChannelTypeError),
 		}
 	}
 }
@@ -145,63 +148,80 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 	///
 	/// # Errors
 	///
-	/// * Bad channel type (See [Id3v2ErrorKind::BadRva2ChannelType])
+	/// * Bad channel type
 	/// * Not enough data
 	pub fn parse<R>(
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let identification = decode_text(
-			reader,
-			TextDecodeOptions::new()
-				.encoding(TextEncoding::Latin1)
-				.terminated(true),
-		)?
-		.content;
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+			parse_mode: ParsingMode,
+		) -> Result<Option<RelativeVolumeAdjustmentFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let identification = decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			)?
+			.content;
 
-		let mut channels = HashMap::new();
-		while let Ok(channel_type_byte) = reader.read_u8() {
-			let channel_type;
-			match ChannelType::from_u8(channel_type_byte) {
-				Some(channel_ty) => channel_type = channel_ty,
-				None if parse_mode == ParsingMode::BestAttempt => channel_type = ChannelType::Other,
-				_ => return Err(Id3v2Error::new(Id3v2ErrorKind::BadRva2ChannelType).into()),
-			}
+			let mut channels = HashMap::new();
+			while let Ok(channel_type_byte) = reader.read_u8() {
+				let channel_type;
+				match ChannelType::try_from(channel_type_byte) {
+					Ok(channel_ty) => channel_type = channel_ty,
+					Err(_) if parse_mode == ParsingMode::BestAttempt => {
+						channel_type = ChannelType::Other
+					},
+					// Relaxed mode will just discard the frame entirely
+					Err(e) => return Err(e.into()),
+				}
 
-			let volume_adjustment = reader.read_i16::<BigEndian>()?;
+				let volume_adjustment = reader.read_i16::<BigEndian>()?;
 
-			let bits_representing_peak = reader.read_u8()?;
+				let bits_representing_peak = reader.read_u8()?;
 
-			let mut peak_volume = None;
-			if bits_representing_peak > 0 {
-				let bytes_representing_peak = (u16::from(bits_representing_peak) + 7) >> 3;
+				let mut peak_volume = None;
+				if bits_representing_peak > 0 {
+					let bytes_representing_peak = (u16::from(bits_representing_peak) + 7) >> 3;
 
-				let mut peak_volume_bytes = try_vec![0; bytes_representing_peak as usize];
-				reader.read_exact(&mut peak_volume_bytes)?;
-				peak_volume = Some(peak_volume_bytes);
-			}
+					let mut peak_volume_bytes = try_vec![0; bytes_representing_peak as usize];
+					reader.read_exact(&mut peak_volume_bytes)?;
+					peak_volume = Some(peak_volume_bytes);
+				}
 
-			channels.insert(
-				channel_type,
-				ChannelInformation {
+				channels.insert(
 					channel_type,
-					volume_adjustment,
-					bits_representing_peak,
-					peak_volume,
-				},
-			);
+					ChannelInformation {
+						channel_type,
+						volume_adjustment,
+						bits_representing_peak,
+						peak_volume,
+					},
+				);
+			}
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(RelativeVolumeAdjustmentFrame {
+				header,
+				identification: Cow::Owned(identification),
+				channels: Cow::Owned(channels),
+			}))
 		}
 
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(Self {
-			header,
-			identification: Cow::Owned(identification),
-			channels: Cow::Owned(channels),
-		}))
+		parse_inner(reader, frame_flags, parse_mode).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert a [`RelativeVolumeAdjustmentFrame`] to a byte vec
@@ -209,7 +229,7 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 	/// # Errors
 	///
 	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the identifier cannot be Latin-1 encoded.
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut content = Vec::new();
 
 		content.extend(TextEncoding::Latin1.encode(

@@ -1,7 +1,8 @@
 use crate::config::WriteOptions;
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::error::TooMuchDataError;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::err;
 use crate::util::text::{
 	DecodeTextResult, TextDecodeOptions, TextEncoding, decode_text,
 	utf16_decode_terminated_maybe_bom,
@@ -24,13 +25,32 @@ pub enum TimestampFormat {
 	MS = 2,
 }
 
-impl TimestampFormat {
-	/// Get a `TimestampFormat` from a u8, must be 1-2 inclusive
-	pub fn from_u8(byte: u8) -> Option<Self> {
-		match byte {
-			1 => Some(Self::MPEG),
-			2 => Some(Self::MS),
-			_ => None,
+/// Invalid timestamp format for a [`SynchronizedTextFrame`]
+#[derive(Debug)]
+pub struct BadTimestampFormatError;
+
+impl core::fmt::Display for BadTimestampFormatError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.write_str("encountered an invalid timestamp format in a synchronized frame")
+	}
+}
+
+impl core::error::Error for BadTimestampFormatError {}
+
+impl From<BadTimestampFormatError> for FrameParseError {
+	fn from(input: BadTimestampFormatError) -> Self {
+		FrameParseError::new(None, Box::new(input))
+	}
+}
+
+impl TryFrom<u8> for TimestampFormat {
+	type Error = BadTimestampFormatError;
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			1 => Ok(TimestampFormat::MPEG),
+			2 => Ok(TimestampFormat::MS),
+			_ => Err(BadTimestampFormatError),
 		}
 	}
 }
@@ -59,20 +79,39 @@ pub enum SyncTextContentType {
 	ImageURL = 8,
 }
 
-impl SyncTextContentType {
-	/// Get a `SyncTextContentType` from a u8, must be 0-8 inclusive
-	pub fn from_u8(byte: u8) -> Option<Self> {
-		match byte {
-			0 => Some(Self::Other),
-			1 => Some(Self::Lyrics),
-			2 => Some(Self::TextTranscription),
-			3 => Some(Self::PartName),
-			4 => Some(Self::Events),
-			5 => Some(Self::Chord),
-			6 => Some(Self::Trivia),
-			7 => Some(Self::WebpageURL),
-			8 => Some(Self::ImageURL),
-			_ => None,
+/// Invalid content type for a [`SynchronizedTextFrame`]
+#[derive(Debug)]
+pub struct BadSyncTextContentTypeError;
+
+impl core::fmt::Display for BadSyncTextContentTypeError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.write_str("encountered an invalid synchronized text content type")
+	}
+}
+
+impl core::error::Error for BadSyncTextContentTypeError {}
+
+impl From<BadSyncTextContentTypeError> for FrameParseError {
+	fn from(input: BadSyncTextContentTypeError) -> Self {
+		FrameParseError::new(None, Box::new(input))
+	}
+}
+
+impl TryFrom<u8> for SyncTextContentType {
+	type Error = BadSyncTextContentTypeError;
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			0 => Ok(Self::Other),
+			1 => Ok(Self::Lyrics),
+			2 => Ok(Self::TextTranscription),
+			3 => Ok(Self::PartName),
+			4 => Ok(Self::Events),
+			5 => Ok(Self::Chord),
+			6 => Ok(Self::Trivia),
+			7 => Ok(Self::WebpageURL),
+			8 => Ok(Self::ImageURL),
+			_ => Err(BadSyncTextContentTypeError),
 		}
 	}
 }
@@ -138,98 +177,106 @@ impl SynchronizedTextFrame<'_> {
 	///
 	/// # Errors
 	///
-	/// This function will return [`BadSyncText`][Id3v2ErrorKind::BadSyncText] if at any point it's unable to parse the data
+	/// * Not enough data
+	/// * Invalid language
+	/// * [`BadTimestampFormatError`]
+	/// * [`BadSyncTextContentTypeError`]
+	/// * [`TextDecodingError`]
+	///
+	/// [`TextDecodingError`]: crate::error::TextDecodingError
 	#[allow(clippy::missing_panics_doc)] // Infallible
-	pub fn parse(data: &[u8], frame_flags: FrameFlags) -> Result<Self> {
-		if data.len() < 7 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
-		}
-
-		let encoding = TextEncoding::from_u8(data[0])
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
-		let language: [u8; 3] = data[1..4].try_into().unwrap();
-		if language.iter().any(|c| !c.is_ascii_alphabetic()) {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into());
-		}
-		let timestamp_format = TimestampFormat::from_u8(data[4])
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadTimestampFormat))?;
-		let content_type = SyncTextContentType::from_u8(data[5])
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-
-		let mut cursor = Cursor::new(&data[6..]);
-		let DecodeTextResult {
-			content: description,
-			bom,
-			..
-		} = decode_text(
-			&mut cursor,
-			TextDecodeOptions::new().encoding(encoding).terminated(true),
-		)
-		.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-
-		// There are 3 possibilities for UTF-16 encoded frames:
-		//
-		// * The description is the only string with a BOM
-		// * The description is empty (has no BOM)
-		// * All strings have a BOM
-		//
-		// To be safe, we change the encoding to the concrete variant determined from the description.
-		// Otherwise, we just have to hope that the other fields are encoded properly.
-		let endianness: Option<fn([u8; 2]) -> u16> = if encoding == TextEncoding::UTF16 {
-			match bom {
-				[0xFF, 0xFE] => Some(u16::from_le_bytes),
-				[0xFE, 0xFF] => Some(u16::from_be_bytes),
-				_ => None,
+	pub fn parse(data: &[u8], frame_flags: FrameFlags) -> Result<Self, FrameParseError> {
+		fn parse_inner<'a>(
+			data: &[u8],
+			frame_flags: FrameFlags,
+		) -> Result<SynchronizedTextFrame<'a>, FrameParseError> {
+			if data.len() < 7 {
+				return Err(FrameParseError::undersized(FRAME_ID));
 			}
-		} else {
-			None
-		};
 
-		let mut pos = 0;
-		let total = (data.len() - 6) as u64 - cursor.stream_position()?;
+			let encoding = TextEncoding::try_from(data[0])?;
+			let language: [u8; 3] = data[1..4].try_into().unwrap();
+			if language.iter().any(|c| !c.is_ascii_alphabetic()) {
+				return Err(FrameParseError::invalid_language(language));
+			}
+			let timestamp_format = TimestampFormat::try_from(data[4])?;
+			let content_type = SyncTextContentType::try_from(data[5])?;
 
-		let mut content = Vec::new();
+			let mut cursor = Cursor::new(&data[6..]);
+			let DecodeTextResult {
+				content: description,
+				bom,
+				..
+			} = decode_text(
+				&mut cursor,
+				TextDecodeOptions::new().encoding(encoding).terminated(true),
+			)?;
 
-		while pos < total {
-			let text;
-			if let Some(endianness) = endianness {
-				let (decoded, bytes_read) =
-					utf16_decode_terminated_maybe_bom(&mut cursor, endianness)
-						.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-				pos += bytes_read as u64;
-				text = decoded;
+			// There are 3 possibilities for UTF-16 encoded frames:
+			//
+			// * The description is the only string with a BOM
+			// * The description is empty (has no BOM)
+			// * All strings have a BOM
+			//
+			// To be safe, we change the encoding to the concrete variant determined from the description.
+			// Otherwise, we just have to hope that the other fields are encoded properly.
+			let endianness: Option<fn([u8; 2]) -> u16> = if encoding == TextEncoding::UTF16 {
+				match bom {
+					[0xFF, 0xFE] => Some(u16::from_le_bytes),
+					[0xFE, 0xFF] => Some(u16::from_be_bytes),
+					_ => None,
+				}
 			} else {
-				let decoded_text = decode_text(
-					&mut cursor,
-					TextDecodeOptions::new().encoding(encoding).terminated(true),
-				)
-				.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-				pos += decoded_text.bytes_read as u64;
-
-				text = decoded_text.content;
-			}
-
-			let time = cursor
-				.read_u32::<BigEndian>()
-				.map_err(|_| Id3v2Error::new(Id3v2ErrorKind::BadSyncText))?;
-			pos += 4;
-
-			content.push((time, text));
-		}
-
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Self {
-			header,
-			encoding,
-			language,
-			timestamp_format,
-			content_type,
-			description: if description.is_empty() {
 				None
-			} else {
-				Some(description)
-			},
-			content,
+			};
+
+			let mut pos = 0;
+			let total = (data.len() - 6) as u64 - cursor.stream_position()?;
+
+			let mut content = Vec::new();
+
+			while pos < total {
+				let text;
+				if let Some(endianness) = endianness {
+					let (decoded, bytes_read) =
+						utf16_decode_terminated_maybe_bom(&mut cursor, endianness)?;
+					pos += bytes_read as u64;
+					text = decoded;
+				} else {
+					let decoded_text = decode_text(
+						&mut cursor,
+						TextDecodeOptions::new().encoding(encoding).terminated(true),
+					)?;
+					pos += decoded_text.bytes_read as u64;
+
+					text = decoded_text.content;
+				}
+
+				let time = cursor.read_u32::<BigEndian>()?;
+				pos += 4;
+
+				content.push((time, text));
+			}
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(SynchronizedTextFrame {
+				header,
+				encoding,
+				language,
+				timestamp_format,
+				content_type,
+				description: if description.is_empty() {
+					None
+				} else {
+					Some(description)
+				},
+				content,
+			})
+		}
+
+		parse_inner(data, frame_flags).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
 		})
 	}
 
@@ -243,41 +290,41 @@ impl SynchronizedTextFrame<'_> {
 	/// * `language` is not exactly 3 bytes
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
-		let mut data = vec![self.encoding as u8];
-
-		if self.language.len() == 3 && self.language.iter().all(u8::is_ascii_alphabetic) {
-			data.write_all(&self.language)?;
-			data.write_u8(self.timestamp_format as u8)?;
-			data.write_u8(self.content_type as u8)?;
-
-			if let Some(description) = &self.description {
-				data.write_all(&self.encoding.encode(
-					description,
-					true,
-					write_options.lossy_text_encoding,
-				)?)?;
-			} else {
-				data.write_u8(0)?;
-			}
-
-			for (time, text) in &self.content {
-				data.write_all(&self.encoding.encode(
-					text,
-					true,
-					write_options.lossy_text_encoding,
-				)?)?;
-				data.write_u32::<BigEndian>(*time)?;
-			}
-
-			if data.len() as u64 > u64::from(u32::MAX) {
-				err!(TooMuchData);
-			}
-
-			return Ok(data);
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
+		if !self.language.iter().all(u8::is_ascii_alphabetic) {
+			return Err(FrameEncodingError::invalid_language(self.language));
 		}
 
-		Err(Id3v2Error::new(Id3v2ErrorKind::BadSyncText).into())
+		let mut data = vec![self.encoding as u8];
+
+		data.write_all(&self.language)?;
+		data.write_u8(self.timestamp_format as u8)?;
+		data.write_u8(self.content_type as u8)?;
+
+		if let Some(description) = &self.description {
+			data.write_all(&self.encoding.encode(
+				description,
+				true,
+				write_options.lossy_text_encoding,
+			)?)?;
+		} else {
+			data.write_u8(0)?;
+		}
+
+		for (time, text) in &self.content {
+			data.write_all(&self.encoding.encode(
+				text,
+				true,
+				write_options.lossy_text_encoding,
+			)?)?;
+			data.write_u32::<BigEndian>(*time)?;
+		}
+
+		if data.len() as u64 > u64::from(u32::MAX) {
+			return Err(TooMuchDataError.into());
+		}
+
+		Ok(data)
 	}
 }
 
