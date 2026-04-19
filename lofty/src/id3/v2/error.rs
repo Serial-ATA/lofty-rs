@@ -1,16 +1,14 @@
 //! ID3v2 error types
 
-use crate::error::{ErrorKind, FakeTagError, LoftyError};
-use crate::id3::v2::frame::error::FrameEncodingError;
-use crate::id3::v2::util::synchsafe::SynchOverflowError;
 use crate::prelude::ItemKey;
-use crate::util::alloc::AllocationError;
+
+use lofty_attr::LoftyError;
 
 // Exports
 
-pub use super::frame::error::FrameParseError;
+pub use super::frame::error::{FrameEncodingError, FrameParseError};
 pub use super::frame::header::FrameIdParseError;
-pub use crate::id3::v2::items::sync_text::{BadSyncTextContentTypeError, BadTimestampFormatError};
+pub use super::items::sync_text::{BadSyncTextContentTypeError, BadTimestampFormatError};
 
 /// The types of errors that can occur while interacting with ID3v2 tags
 #[derive(Debug)]
@@ -88,117 +86,28 @@ impl core::fmt::Display for Id3v2HeaderError {
 impl core::error::Error for Id3v2HeaderError {}
 
 /// Errors that can occur while parsing an ID3v2 tag
+#[derive(LoftyError)]
+#[error(message = "failed to parse ID3v2 tag")]
 pub struct Id3v2ParseError {
+	#[error(from(
+		std::io::Error,
+		crate::error::FakeTagError,
+		Id3v2HeaderError,
+		super::frame::error::FrameParseError,
+		crate::util::alloc::AllocationError,
+	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
-}
-
-impl core::fmt::Debug for Id3v2ParseError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		f.debug_struct("Id3v2ParseError").finish_non_exhaustive()
-	}
-}
-
-impl core::fmt::Display for Id3v2ParseError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "failed to parse ID3v2 tag")
-	}
-}
-
-impl core::error::Error for Id3v2ParseError {
-	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-		Some(&*self.source)
-	}
-}
-
-impl From<Id3v2HeaderError> for Id3v2ParseError {
-	fn from(err: Id3v2HeaderError) -> Self {
-		Self {
-			source: Box::new(err),
-		}
-	}
-}
-
-impl From<FrameParseError> for Id3v2ParseError {
-	fn from(input: FrameParseError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<std::io::Error> for Id3v2ParseError {
-	fn from(input: std::io::Error) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<FakeTagError> for Id3v2ParseError {
-	fn from(input: FakeTagError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<Id3v2ParseError> for LoftyError {
-	fn from(input: Id3v2ParseError) -> Self {
-		Self::new(ErrorKind::TagParse(input.into()))
-	}
 }
 
 /// Errors that can occur while encoding an ID3v2 tag
+#[derive(LoftyError)]
+#[error(message = "failed to write ID3v2 tag")]
 pub struct Id3v2EncodingError {
+	#[error(from(
+		std::io::Error,
+		super::frame::error::FrameEncodingError,
+		crate::id3::v2::util::synchsafe::SynchOverflowError,
+		crate::util::alloc::AllocationError,
+	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
-}
-
-impl core::fmt::Debug for Id3v2EncodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		f.debug_struct("Id3v2EncodingError").finish_non_exhaustive()
-	}
-}
-
-impl core::fmt::Display for Id3v2EncodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "failed to write ID3v2 tag")
-	}
-}
-
-impl core::error::Error for Id3v2EncodingError {
-	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-		Some(&*self.source)
-	}
-}
-
-impl From<std::io::Error> for Id3v2EncodingError {
-	fn from(input: std::io::Error) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<FrameEncodingError> for Id3v2EncodingError {
-	fn from(input: FrameEncodingError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<SynchOverflowError> for Id3v2EncodingError {
-	fn from(input: SynchOverflowError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<AllocationError> for Id3v2EncodingError {
-	fn from(input: AllocationError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
 }

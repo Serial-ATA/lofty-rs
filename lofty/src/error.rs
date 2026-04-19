@@ -11,37 +11,109 @@ use crate::tag::items::timestamp::TimestampParseError;
 pub use crate::util::alloc::AllocationError;
 pub use crate::util::text::{TextDecodingError, TextEncodingError};
 
+use lofty_attr::LoftyError;
 use ogg_pager::PageError;
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
 
+/// Failed to parse a file
+pub struct FileParseError {
+	ty: Option<FileType>,
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl FileParseError {
+	pub(crate) fn new(
+		ty: FileType,
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self {
+			ty: Some(ty),
+			source,
+		}
+	}
+
+	/// Whether this error represents an [`UnknownFormatError`]
+	pub fn is_unknown_format(&self) -> bool {
+		// `UnknownFormat` only ever occurs at the top level
+		self.source.is::<UnknownFormatError>()
+	}
+}
+
+impl core::fmt::Display for FileParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self.ty {
+			Some(ty) => write!(f, "failed to parse {ty:?} file"),
+			None => write!(f, "failed to parse file"),
+		}
+	}
+}
+
+impl core::fmt::Debug for FileParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("FileParseError")
+			.field("ty", &self.ty)
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for FileParseError {
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(self.source.as_ref())
+	}
+}
+
+impl From<std::io::Error> for FileParseError {
+	fn from(input: std::io::Error) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<UnknownFormatError> for FileParseError {
+	fn from(input: UnknownFormatError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+// TODO: remove this
+impl From<LoftyError> for FileParseError {
+	fn from(input: LoftyError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
 /// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn’t found
-#[derive(Debug)]
+#[derive(LoftyError)]
+#[error(message = "expected a tag, found invalid data")]
 pub struct FakeTagError;
 
-impl core::fmt::Display for FakeTagError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		write!(f, "expected a tag, found invalid data")
-	}
-}
-
-impl core::error::Error for FakeTagError {}
-
 /// Attempting to read/write an abnormally large amount of data
-#[derive(Debug)]
+#[derive(LoftyError)]
+#[error(message = "attempted to read/write an abnormally large amount of data")]
 pub struct TooMuchDataError;
 
-impl core::fmt::Display for TooMuchDataError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		write!(
-			f,
-			"attempted to read/write an abnormally large amount of data"
-		)
-	}
-}
+/// Expected the data to be a different size than provided
+///
+/// This occurs when the size of an item is written as one value, but that size is either too
+/// big or small to be valid within the bounds of that item.
+#[derive(LoftyError)]
+#[error(message = "encountered an invalid item size, either too big or too small to be valid")]
+pub struct SizeMismatchError;
 
-impl core::error::Error for TooMuchDataError {}
+/// Unable to guess the format of the input
+#[derive(LoftyError)]
+#[error(message = "no format could be determined from the provided file")]
+pub struct UnknownFormatError;
 
 /// Errors that can occur while parsing tags
 #[derive(Debug)]
@@ -124,6 +196,9 @@ pub enum ErrorKind {
 	/// big or small to be valid within the bounds of that item.
 	// TODO: Should probably have context
 	SizeMismatch,
+	// TODO: Remove this and `FileDecoding`
+	/// Errors that occur while decoding a file
+	FileParse(FileParseError),
 	/// Errors that occur while decoding a file
 	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
@@ -468,15 +543,51 @@ impl From<Id3v2EncodingError> for LoftyError {
 	}
 }
 
+// TODO: Remove this
 impl From<FakeTagError> for LoftyError {
 	fn from(_: FakeTagError) -> Self {
 		Self::new(ErrorKind::FakeTag)
 	}
 }
 
+// TODO: Remove this
 impl From<TooMuchDataError> for LoftyError {
 	fn from(_: TooMuchDataError) -> Self {
 		Self::new(ErrorKind::TooMuchData)
+	}
+}
+
+// TODO: Remove this
+impl From<UnknownFormatError> for LoftyError {
+	fn from(_: UnknownFormatError) -> Self {
+		Self::new(ErrorKind::UnknownFormat)
+	}
+}
+
+// TODO: Remove this
+impl From<Lyrics3v2ParseError> for LoftyError {
+	fn from(input: Lyrics3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse(TagParseError::Lyrics3v2(input)))
+	}
+}
+
+// TODO: Remove this
+impl From<Id3v1ParseError> for LoftyError {
+	fn from(input: Id3v1ParseError) -> Self {
+		Self::new(ErrorKind::TagParse(input.into()))
+	}
+}
+
+// TODO: Remove this
+impl From<Id3v2ParseError> for LoftyError {
+	fn from(input: Id3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse(input.into()))
+	}
+}
+
+impl From<FileParseError> for LoftyError {
+	fn from(input: FileParseError) -> Self {
+		Self::new(ErrorKind::FileParse(input))
 	}
 }
 
@@ -490,7 +601,7 @@ impl core::fmt::Display for LoftyError {
 			ErrorKind::Alloc(err) => write!(f, "{err}"),
 
 			ErrorKind::UnknownFormat => {
-				write!(f, "No format could be determined from the provided file")
+				write!(f, "{}", UnknownFormatError)
 			},
 			ErrorKind::NotAPicture => write!(f, "Picture: Encountered invalid data"),
 			ErrorKind::UnsupportedPicture => {
@@ -515,14 +626,9 @@ impl core::fmt::Display for LoftyError {
 			),
 
 			// Files
-			ErrorKind::TooMuchData => write!(
-				f,
-				"Attempted to read/write an abnormally large amount of data"
-			),
-			ErrorKind::SizeMismatch => write!(
-				f,
-				"Encountered an invalid item size, either too big or too small to be valid"
-			),
+			ErrorKind::TooMuchData => write!(f, "{}", TooMuchDataError),
+			ErrorKind::SizeMismatch => write!(f, "{}", SizeMismatchError),
+			ErrorKind::FileParse(e) => write!(f, "{e}"),
 			ErrorKind::FileDecoding(file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(file_encode_err) => write!(f, "{file_encode_err}"),
 

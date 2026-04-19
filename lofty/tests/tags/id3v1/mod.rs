@@ -1,6 +1,6 @@
 use lofty::config::ParsingMode;
-use lofty::error::LoftyError;
 use lofty::id3::v1::Id3v1Tag;
+use lofty::id3::v1::error::Id3v1ParseError;
 use regex::Regex;
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -123,7 +123,7 @@ fn test_id3v1_suite() {
 		f.seek(SeekFrom::End(-128)).unwrap();
 		f.read_exact(&mut tag_bytes).unwrap();
 
-		let res: Result<_, LoftyError> = Id3v1Tag::parse(tag_bytes, ParsingMode::Strict);
+		let res: Result<_, Id3v1ParseError> = Id3v1Tag::parse(tag_bytes, ParsingMode::Strict);
 
 		match expectation {
 			Expectation::Failure => {

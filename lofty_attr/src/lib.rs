@@ -35,10 +35,12 @@
 
 mod attribute;
 mod internal;
+mod lofty_error;
 mod lofty_file;
 mod lofty_tag;
 mod util;
 
+use crate::lofty_error::LoftyError;
 use crate::lofty_file::LoftyFile;
 use crate::lofty_tag::{LoftyTag, LoftyTagAttribute};
 
@@ -55,6 +57,14 @@ pub fn lofty_file(input: TokenStream) -> TokenStream {
 		Ok(ret) => ret,
 		Err(e) => e.to_compile_error().into(),
 	}
+}
+
+// TODO: Actually document this
+/// Handles the boilerplate for custom error types
+#[proc_macro_derive(LoftyError, attributes(error))]
+pub fn lofty_error(input: TokenStream) -> TokenStream {
+	let lofty_error = parse_macro_input!(input as LoftyError);
+	lofty_error.emit()
 }
 
 #[proc_macro_attribute]

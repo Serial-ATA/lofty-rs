@@ -1,7 +1,7 @@
 use super::audio_file::AudioFile;
 use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileParseError, LoftyError, Result};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagSupport, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
@@ -420,7 +420,10 @@ impl TaggedFileExt for TaggedFile {
 impl AudioFile for TaggedFile {
 	type Properties = FileProperties;
 
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	fn read_from<R>(
+		reader: &mut R,
+		parse_options: ParseOptions,
+	) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized,
@@ -655,7 +658,7 @@ impl<F> TaggedFileExt for BoundTaggedFile<F> {
 impl<T> AudioFile for BoundTaggedFile<T> {
 	type Properties = FileProperties;
 
-	fn read_from<R>(_: &mut R, _: ParseOptions) -> Result<Self>
+	fn read_from<R>(_: &mut R, _: ParseOptions) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized,

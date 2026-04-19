@@ -1,9 +1,9 @@
 use super::tagged_file::TaggedFile;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileParseError, LoftyError, Result};
 use crate::tag::TagType;
-
 use crate::util::io::{FileLike, Length, Truncate};
+
 use std::fs::OpenOptions;
 use std::io::{Read, Seek};
 use std::path::Path;
@@ -20,7 +20,10 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// # Errors
 	///
 	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::error::LoftyError)
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	fn read_from<R>(
+		reader: &mut R,
+		parse_options: ParseOptions,
+	) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized;
