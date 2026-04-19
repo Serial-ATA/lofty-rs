@@ -95,7 +95,7 @@ impl Timestamp {
 	/// The maximum length of a timestamp in bytes
 	pub const MAX_LENGTH: usize = 19;
 
-	const SEPARATORS: [u8; 3] = [b'-', b'T', b':'];
+	const SEPARATORS: [u8; 4] = [b'-', b'.', b'T', b':'];
 
 	/// Read a [`Timestamp`]
 	///
@@ -178,23 +178,29 @@ impl Timestamp {
 		loop {
 			timestamp.month = read_segment!(Self::segment::<2>(
 				reader,
-				timestamp_contains_separators.then_some(b'-'),
+				timestamp_contains_separators.then_some(&Self::SEPARATORS[..2]),
 				parse_mode
 			));
 			timestamp.day = read_segment!(Self::segment::<2>(
 				reader,
-				timestamp_contains_separators.then_some(b'-'),
+				timestamp_contains_separators.then_some(&Self::SEPARATORS[..2]),
 				parse_mode
 			));
-			timestamp.hour = read_segment!(Self::segment::<2>(reader, Some(b'T'), parse_mode));
+			timestamp.hour = read_segment!(Self::segment::<2>(
+				reader,
+				Some(core::slice::from_ref(&Self::SEPARATORS[2])),
+				parse_mode
+			));
 			timestamp.minute = read_segment!(Self::segment::<2>(
 				reader,
-				timestamp_contains_separators.then_some(b':'),
+				timestamp_contains_separators
+					.then_some(core::slice::from_ref(&Self::SEPARATORS[3])),
 				parse_mode
 			));
 			timestamp.second = read_segment!(Self::segment::<2>(
 				reader,
-				timestamp_contains_separators.then_some(b':'),
+				timestamp_contains_separators
+					.then_some(core::slice::from_ref(&Self::SEPARATORS[3])),
 				parse_mode
 			));
 			break;
@@ -205,7 +211,7 @@ impl Timestamp {
 
 	fn segment<const SIZE: usize>(
 		content: &mut &[u8],
-		sep: Option<u8>,
+		sep: Option<&[u8]>,
 		parse_mode: ParsingMode,
 	) -> Result<(u16, usize)> {
 		const STOP_PARSING: (u16, usize) = (0, 0);
@@ -216,11 +222,20 @@ impl Timestamp {
 
 		if let Some(sep) = sep {
 			let byte = content.read_u8()?;
-			if byte != sep {
-				if parse_mode == ParsingMode::Strict {
-					err!(BadTimestamp("Expected a separator"))
-				}
-				return Ok(STOP_PARSING);
+			match sep.iter().position(|s| *s == byte) {
+				// The first separator in the list is the only *strictly* valid one (by ISO 8601 standards).
+				// Some encoders may prefer other separators, which are harmless to pass through in
+				// other modes.
+				Some(pos) if pos > 0 && parse_mode == ParsingMode::Strict => {
+					err!(BadTimestamp("Unexpected separator"))
+				},
+				Some(_) => {},
+				None => {
+					if parse_mode == ParsingMode::Strict {
+						err!(BadTimestamp("Expected a separator"))
+					}
+					return Ok(STOP_PARSING);
+				},
 			}
 		}
 
@@ -609,6 +624,27 @@ mod tests {
 	#[test_log::test]
 	fn timestamp_whitespace() {
 		let timestamp = "\t\t\t2024-06-03";
+
+		let parsed_timestamp_strict =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::Strict);
+		assert!(parsed_timestamp_strict.is_err());
+
+		let parsed_timestamp_best_attempt =
+			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::BestAttempt).unwrap();
+		assert_eq!(
+			parsed_timestamp_best_attempt,
+			Some(Timestamp {
+				year: 2024,
+				month: Some(6),
+				day: Some(3),
+				..Timestamp::default()
+			})
+		);
+	}
+
+	#[test_log::test]
+	fn timestamp_dot_separators() {
+		let timestamp = "2024.06.03";
 
 		let parsed_timestamp_strict =
 			Timestamp::parse(&mut timestamp.as_bytes(), ParsingMode::Strict);
