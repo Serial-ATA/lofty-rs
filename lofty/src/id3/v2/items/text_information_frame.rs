@@ -1,6 +1,7 @@
 use crate::config::WriteOptions;
-use crate::error::Result;
+use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -75,7 +76,7 @@ impl<'a> TextInformationFrame<'a> {
 		id: FrameId<'a>,
 		frame_flags: FrameFlags,
 		version: Id3v2Version,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
@@ -83,8 +84,14 @@ impl<'a> TextInformationFrame<'a> {
 			return Ok(None);
 		};
 
-		let encoding = verify_encoding(encoding_byte, version)?;
-		let value = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+		let encoding = match verify_encoding(encoding_byte, version) {
+			Ok(encoding) => encoding,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
+		let value = match decode_text(reader, TextDecodeOptions::new().encoding(encoding)) {
+			Ok(result) => result.content,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
 
 		let header = FrameHeader::new(id, frame_flags);
 		Ok(Some(TextInformationFrame {
@@ -99,7 +106,7 @@ impl<'a> TextInformationFrame<'a> {
 	/// # Errors
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();

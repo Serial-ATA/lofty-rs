@@ -2,7 +2,7 @@
 
 mod lang;
 pub mod popularimeter;
-mod timestamp;
+pub mod timestamp;
 
 pub use lang::*;
 pub use timestamp::Timestamp;

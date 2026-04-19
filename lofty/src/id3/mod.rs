@@ -20,6 +20,37 @@ use std::ops::Neg;
 
 pub(crate) struct ID3FindResults<Header, Content>(pub Option<Header>, pub Content);
 
+/// Errors that can occur while parsing Lyrics3v2 tags
+pub struct Lyrics3v2ParseError {
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl core::fmt::Display for Lyrics3v2ParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "failed to parse Lyrics3v2 tag")
+	}
+}
+
+impl core::fmt::Debug for Lyrics3v2ParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("Lyrics3v2ParseError")
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for Lyrics3v2ParseError {
+	#[allow(trivial_casts)]
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(&*self.source as _)
+	}
+}
+
+impl From<Lyrics3v2ParseError> for LoftyError {
+	fn from(input: Lyrics3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse(input.into()))
+	}
+}
+
 pub(crate) fn find_lyrics3v2<R>(data: &mut R) -> Result<ID3FindResults<(), u32>>
 where
 	R: Read + Seek,
@@ -39,12 +70,14 @@ where
 
 		header = Some(());
 
-		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
-		let lyrics_size = lyrics_size.parse::<u32>().map_err(|_| {
-			LoftyError::new(ErrorKind::TextDecode(
-				"Lyrics3v2 tag has an invalid size string",
-			))
+		let lyrics_size = utf8_decode_str(&lyrics3v2[..7]).map_err(|e| Lyrics3v2ParseError {
+			source: Box::new(e),
 		})?;
+		let lyrics_size = lyrics_size
+			.parse::<u32>()
+			.map_err(|e| Lyrics3v2ParseError {
+				source: Box::new(e),
+			})?;
 
 		size += lyrics_size;
 

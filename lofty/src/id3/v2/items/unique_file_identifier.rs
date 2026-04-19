@@ -1,7 +1,7 @@
 use crate::config::{ParsingMode, WriteOptions};
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
-use crate::macros::parse_mode_choice;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
 use std::borrow::Cow;
@@ -67,38 +67,49 @@ impl<'a> UniqueFileIdentifierFrame<'a> {
 		reader: &mut R,
 		frame_flags: FrameFlags,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let owner_decode_result = decode_text(
-			reader,
-			TextDecodeOptions::new()
-				.encoding(TextEncoding::Latin1)
-				.terminated(true),
-		)?;
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+			parse_mode: ParsingMode,
+		) -> Result<Option<UniqueFileIdentifierFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let owner_decode_result = decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			)?;
 
-		let owner;
-		match owner_decode_result.text_or_none() {
-			Some(valid) => owner = valid,
-			None => {
-				parse_mode_choice!(
-					parse_mode,
-					BESTATTEMPT: owner = String::new(),
-					DEFAULT: return Err(Id3v2Error::new(Id3v2ErrorKind::MissingUfidOwner).into())
-				);
-			},
+			let owner;
+			match owner_decode_result.text_or_none() {
+				Some(valid) => owner = valid,
+				None if parse_mode == ParsingMode::BestAttempt => {
+					owner = String::new();
+				},
+				None => return Err(FrameParseError::message(None, "empty owner field")),
+			}
+
+			let mut identifier = Vec::new();
+			reader.read_to_end(&mut identifier)?;
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(UniqueFileIdentifierFrame {
+				header,
+				owner: Cow::Owned(owner),
+				identifier: Cow::Owned(identifier),
+			}))
 		}
 
-		let mut identifier = Vec::new();
-		reader.read_to_end(&mut identifier)?;
-
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(Self {
-			header,
-			owner: Cow::Owned(owner),
-			identifier: Cow::Owned(identifier),
-		}))
+		parse_inner(reader, frame_flags, parse_mode).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Encode the frame contents as bytes
@@ -106,7 +117,7 @@ impl<'a> UniqueFileIdentifierFrame<'a> {
 	/// # Errors
 	///
 	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the `owner` cannot be Latin-1 encoded.
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let Self {
 			owner, identifier, ..
 		} = self;

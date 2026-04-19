@@ -2,7 +2,7 @@ use super::frame::read::ParsedFrame;
 use super::header::Id3v2Header;
 use super::tag::Id3v2Tag;
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::id3::v2::error::{FrameParseError, Id3v2ParseError};
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
 use crate::id3::v2::{Frame, FrameId, Id3v2Version, TimestampFrame};
 use crate::tag::items::Timestamp;
@@ -14,7 +14,7 @@ pub(crate) fn parse_id3v2<R>(
 	bytes: &mut R,
 	header: Id3v2Header,
 	parse_options: ParseOptions,
-) -> Result<Id3v2Tag>
+) -> Result<Id3v2Tag, Id3v2ParseError>
 where
 	R: Read,
 {
@@ -134,7 +134,7 @@ fn read_all_frames_into_tag<R>(
 	reader: &mut R,
 	header: Id3v2Header,
 	parse_options: ParseOptions,
-) -> Result<Id3v2Tag>
+) -> Result<Id3v2Tag, FrameParseError>
 where
 	R: Read,
 {

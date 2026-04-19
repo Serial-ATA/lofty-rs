@@ -1,6 +1,9 @@
+//! [ISO 8601] timestamp implementation
+//!
+//! [ISO 8601]: https://en.wikipedia.org/wiki/ISO_8601
+
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{err, parse_mode_choice};
+use crate::macros::parse_mode_choice;
 
 use std::fmt::Display;
 use std::io::Read;
@@ -82,12 +85,91 @@ impl Display for Timestamp {
 	}
 }
 
-impl FromStr for Timestamp {
-	type Err = LoftyError;
+/// A field of a [`Timestamp`]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum TimestampField {
+	/// The year of the timestamp
+	Year,
+	/// The month of the timestamp
+	Month,
+	/// The day of the timestamp
+	Day,
+	/// The hour of the timestamp
+	Hour,
+	/// The minute of the timestamp
+	Minute,
+	/// The second of the timestamp
+	Second,
+}
 
-	fn from_str(s: &str) -> Result<Self> {
+/// Errors that can occur while parsing [`Timestamp`]s
+#[derive(Debug)]
+pub enum TimestampParseError {
+	/// An empty timestamp string
+	Empty,
+	/// The `year` field is invalid (e.g., less than 4 digits)
+	BadYear,
+	/// A field is missing a separator when expected
+	///
+	/// Timestamps must either have *all* segments separated or none at all. For example:
+	///
+	/// `2026-04-18` and `20260418` are valid, while `2026-0418` is not.
+	MissingSeparator,
+	/// A [`TimestampField`] was shorter than expected
+	SegmentTooShort,
+	/// **(STRICT MODE ONLY)*** occurs if any timestamp segment contains spaces.
+	///
+	/// This is a common spec violation, where the month of June, for example, may be written
+	/// as " 6" rather than "06".
+	ContainsSpaces,
+	/// Encountered an unexpected character
+	UnexpectedChar(char),
+	/// A [`Timestamp`] failed verification when encoding
+	///
+	/// This only occurs when encoding a [`Timestamp`], through a [`TimestampFrame`] for example.
+	///
+	/// Verification ensures that all fields are within bounds (e.g., `year <= 9999`, `month <= 12`, etc.),
+	/// and that every field has its parent (a `day` can't be encoded without a `month`, for example).
+	///
+	/// [`TimestampFrame`]: crate::id3::v2::TimestampFrame
+	FieldTooLarge(TimestampField),
+	/// Some I/O failure
+	Io(std::io::Error),
+}
+
+impl Display for TimestampParseError {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			TimestampParseError::Empty => write!(f, "empty timestamp"),
+			TimestampParseError::BadYear => {
+				write!(f, "encountered an invalid year length (should be 4 digits)")
+			},
+			TimestampParseError::MissingSeparator => write!(f, "expected a separator"),
+			TimestampParseError::SegmentTooShort => write!(f, "timestamp segment too short"),
+			TimestampParseError::ContainsSpaces => write!(f, "timestamp contains spaces"),
+			TimestampParseError::UnexpectedChar(c) => write!(f, "unexpected character '{}'", c),
+			TimestampParseError::FieldTooLarge(field) => {
+				write!(f, "field '{field:?}' exceeds its limits")
+			},
+			TimestampParseError::Io(e) => write!(f, "{e}"),
+		}
+	}
+}
+
+impl From<std::io::Error> for TimestampParseError {
+	fn from(input: std::io::Error) -> Self {
+		TimestampParseError::Io(input)
+	}
+}
+
+impl core::error::Error for TimestampParseError {}
+
+impl FromStr for Timestamp {
+	type Err = TimestampParseError;
+
+	fn from_str(s: &str) -> Result<Self, TimestampParseError> {
 		Timestamp::parse(&mut s.as_bytes(), ParsingMode::BestAttempt)?
-			.ok_or_else(|| LoftyError::new(ErrorKind::BadTimestamp("Timestamp frame is empty")))
+			.ok_or(TimestampParseError::Empty)
 	}
 }
 
@@ -108,7 +190,10 @@ impl Timestamp {
 	///
 	/// * Failure to read from `reader`
 	/// * The timestamp is invalid
-	pub fn parse<R>(reader: &mut R, parse_mode: ParsingMode) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Self>, TimestampParseError>
 	where
 		R: Read,
 	{
@@ -126,7 +211,7 @@ impl Timestamp {
 			Ok(val) => val,
 			Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
 				if parse_mode == ParsingMode::Strict {
-					err!(BadTimestamp("Timestamp frame is empty"))
+					return Err(TimestampParseError::Empty);
 				}
 
 				return Ok(None);
@@ -162,9 +247,7 @@ impl Timestamp {
 		if bytes_read != 4 {
 			parse_mode_choice!(
 				parse_mode,
-				STRICT: err!(BadTimestamp(
-					"Encountered an invalid year length (should be 4 digits)"
-				)),
+				STRICT: return Err(TimestampParseError::BadYear),
 				DEFAULT: return Ok(None)
 			)
 		}
@@ -213,7 +296,7 @@ impl Timestamp {
 		content: &mut &[u8],
 		sep: Option<&[u8]>,
 		parse_mode: ParsingMode,
-	) -> Result<(u16, usize)> {
+	) -> Result<(u16, usize), TimestampParseError> {
 		const STOP_PARSING: (u16, usize) = (0, 0);
 
 		if content.is_empty() {
@@ -227,12 +310,12 @@ impl Timestamp {
 				// Some encoders may prefer other separators, which are harmless to pass through in
 				// other modes.
 				Some(pos) if pos > 0 && parse_mode == ParsingMode::Strict => {
-					err!(BadTimestamp("Unexpected separator"))
+					return Err(TimestampParseError::UnexpectedChar(byte as char));
 				},
 				Some(_) => {},
 				None => {
 					if parse_mode == ParsingMode::Strict {
-						err!(BadTimestamp("Expected a separator"))
+						return Err(TimestampParseError::MissingSeparator);
 					}
 					return Ok(STOP_PARSING);
 				},
@@ -241,7 +324,7 @@ impl Timestamp {
 
 		if content.len() < SIZE {
 			if parse_mode == ParsingMode::Strict {
-				err!(BadTimestamp("Timestamp segment is too short"))
+				return Err(TimestampParseError::SegmentTooShort);
 			}
 
 			return Ok(STOP_PARSING);
@@ -254,7 +337,7 @@ impl Timestamp {
 			// could be written as " 6" rather than "06" for example.
 			if i == b' ' {
 				if parse_mode == ParsingMode::Strict {
-					err!(BadTimestamp("Timestamp contains spaces"))
+					return Err(TimestampParseError::ContainsSpaces);
 				}
 
 				byte_count += 1;
@@ -276,9 +359,7 @@ impl Timestamp {
 					break;
 				}
 
-				err!(BadTimestamp(
-					"Timestamp segment contains non-digit characters"
-				))
+				return Err(TimestampParseError::UnexpectedChar(i as char));
 			}
 
 			num = Some(num.unwrap_or(0) * 10 + u16::from(i - b'0'));
@@ -300,27 +381,31 @@ impl Timestamp {
 		Ok((parsed_num, byte_count))
 	}
 
-	pub(crate) fn verify(&self) -> Result<()> {
-		fn verify_field(field: Option<u8>, limit: u8, parent: Option<u8>) -> bool {
+	pub(crate) fn verify(&self) -> std::result::Result<(), TimestampParseError> {
+		fn verify_field(
+			field_variant: TimestampField,
+			field: Option<u8>,
+			limit: u8,
+			parent: Option<u8>,
+		) -> std::result::Result<(), TimestampParseError> {
 			if let Some(field) = field {
-				return parent.is_some() && field <= limit;
+				if parent.is_some() && field <= limit {
+					return Ok(());
+				}
+				return Err(TimestampParseError::FieldTooLarge(field_variant));
 			}
-			return true; // Field does not exist, so it's valid
+			Ok(()) // Field does not exist, so it's valid
 		}
 
-		if self.year > 9999
-			|| !verify_field(self.month, 12, Some(self.year as u8))
-			|| !verify_field(self.day, 31, self.month)
-			|| !verify_field(self.hour, 23, self.day)
-			|| !verify_field(self.minute, 59, self.hour)
-			|| !verify_field(self.second, 59, self.minute)
-		{
-			err!(BadTimestamp(
-				"Timestamp contains segment(s) that exceed their limits"
-			))
+		if self.year > 9999 {
+			return Err(TimestampParseError::FieldTooLarge(TimestampField::Year));
 		}
 
-		Ok(())
+		verify_field(TimestampField::Month, self.month, 12, Some(self.year as u8))
+			.and_then(|_| verify_field(TimestampField::Day, self.day, 31, self.month))
+			.and_then(|_| verify_field(TimestampField::Hour, self.hour, 23, self.day))
+			.and_then(|_| verify_field(TimestampField::Minute, self.minute, 59, self.hour))
+			.and_then(|_| verify_field(TimestampField::Second, self.second, 59, self.minute))
 	}
 }
 

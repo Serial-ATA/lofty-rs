@@ -3,9 +3,10 @@ mod frame;
 
 use super::{Frame, Id3v2TagFlags};
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::LoftyError;
 use crate::file::FileType;
 use crate::id3::v2::Id3v2Tag;
+use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::{FindId3v2Config, find_id3v2};
@@ -38,7 +39,7 @@ pub(crate) fn write_id3v2<'a, F, I>(
 	file: &mut F,
 	tag: &mut Id3v2TagRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> crate::error::Result<()>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
@@ -101,7 +102,7 @@ where
 pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 	tag: &mut Id3v2TagRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<Vec<u8>> {
+) -> Result<Vec<u8>, Id3v2EncodingError> {
 	let frames = &mut tag.frames;
 	let mut peek = frames.peekable();
 
@@ -195,7 +196,10 @@ pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 	Ok(id3v2.into_inner())
 }
 
-fn create_tag_header(flags: Id3v2TagFlags, is_id3v23: bool) -> Result<(Cursor<Vec<u8>>, u32)> {
+fn create_tag_header(
+	flags: Id3v2TagFlags,
+	is_id3v23: bool,
+) -> Result<(Cursor<Vec<u8>>, u32), Id3v2EncodingError> {
 	let mut header = Cursor::new(Vec::new());
 
 	header.write_all(b"ID3")?;

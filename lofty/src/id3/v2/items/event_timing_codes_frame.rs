@@ -1,5 +1,7 @@
-use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, TimestampFormat};
+use crate::util::alloc::VecFallibleCapacity;
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -257,44 +259,66 @@ impl<'a> EventTimingCodesFrame<'a> {
 	/// # Errors
 	///
 	/// * Invalid timestamp format
-	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(timestamp_format_byte) = reader.read_u8() else {
-			return Ok(None);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+		) -> Result<Option<EventTimingCodesFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let Ok(timestamp_format_byte) = reader.read_u8() else {
+				return Ok(None);
+			};
 
-		let timestamp_format = TimestampFormat::from_u8(timestamp_format_byte)
-			.ok_or_else(|| Id3v2Error::new(Id3v2ErrorKind::BadTimestampFormat))?;
+			let timestamp_format = TimestampFormat::try_from(timestamp_format_byte)?;
 
-		let mut events = Vec::new();
-		while let Ok(event_type_byte) = reader.read_u8() {
-			let event_type = EventType::from_u8(event_type_byte);
-			let timestamp = reader.read_u32::<BigEndian>()?;
+			let mut events = Vec::new();
+			while let Ok(event_type_byte) = reader.read_u8() {
+				let event_type = EventType::from_u8(event_type_byte);
+				let timestamp = reader.read_u32::<BigEndian>()?;
 
-			events.push(Event {
-				event_type,
-				timestamp,
-			})
+				events.push(Event {
+					event_type,
+					timestamp,
+				})
+			}
+
+			// Order is important, can't use sort_unstable
+			events.sort();
+
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(EventTimingCodesFrame {
+				header,
+				timestamp_format,
+				events: Cow::Owned(events),
+			}))
 		}
 
-		// Order is important, can't use sort_unstable
-		events.sort();
-
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(EventTimingCodesFrame {
-			header,
-			timestamp_format,
-			events: Cow::Owned(events),
-		}))
+		parse_inner(reader, frame_flags).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert an [`EventTimingCodesFrame`] to a byte vec
 	///
 	/// NOTE: This will sort all events according to their timestamps
-	pub fn as_bytes(&self) -> Vec<u8> {
-		let mut content = vec![self.timestamp_format as u8];
+	///
+	/// # Errors
+	///
+	/// * [`AllocationError`]
+	///
+	/// [`AllocationError`]: crate::error::AllocationError
+	pub fn as_bytes(&self) -> Result<Vec<u8>, FrameEncodingError> {
+		let mut content = Vec::try_with_capacity_stable(1 + (self.events.len() * 5))?;
+		content.push(self.timestamp_format as u8);
 
 		let mut sorted_events = self.events.iter().collect::<Vec<_>>();
 		sorted_events.sort();
@@ -304,7 +328,7 @@ impl<'a> EventTimingCodesFrame<'a> {
 			content.extend(event.timestamp.to_be_bytes())
 		}
 
-		content
+		Ok(content)
 	}
 }
 
@@ -363,7 +387,7 @@ mod tests {
 
 	#[test_log::test]
 	fn etco_encode() {
-		let encoded = expected().as_bytes();
+		let encoded = expected().as_bytes().unwrap();
 
 		let expected_bytes =
 			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.etco");
