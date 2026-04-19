@@ -1,14 +1,14 @@
-//! Format-agonostic file parsing tools
+//! Format-agnostic file parsing tools
 
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
-use crate::error::Result;
+use crate::error::{FileParseError, Result, UnknownFormatError};
 use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
 use crate::iff::wav::WavFile;
-use crate::macros::err;
+use crate::io::FileLike;
 use crate::mp4::Mp4File;
 use crate::mpeg::MpegFile;
 use crate::mpeg::header::search_for_frame_sync;
@@ -19,7 +19,6 @@ use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::CUSTOM_RESOLVERS;
 use crate::wavpack::WavPackFile;
 
-use crate::io::FileLike;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -255,7 +254,7 @@ impl Probe<BufReader<File>> {
 	/// assert_eq!(probe.file_type(), Some(FileType::Mpeg));
 	/// # Ok(()) }
 	/// ```
-	pub fn open<P>(path: P) -> Result<Self>
+	pub fn open<P>(path: P) -> std::result::Result<Self, FileParseError>
 	where
 		P: AsRef<Path>,
 	{
@@ -456,11 +455,11 @@ impl<R: Read + Seek> Probe<R> {
 	/// let parsed_file = probe.read()?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read(self) -> Result<TaggedFile> {
+	pub fn read(self) -> std::result::Result<TaggedFile, FileParseError> {
 		self.read_inner().map(|(tagged_file, _)| tagged_file)
 	}
 
-	fn read_inner(mut self) -> Result<(TaggedFile, R)> {
+	fn read_inner(mut self) -> std::result::Result<(TaggedFile, R), FileParseError> {
 		let reader = &mut self.inner;
 		let options = self.options.unwrap_or_default();
 
@@ -484,14 +483,14 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::WavPack => WavPackFile::read_from(reader, options)?.into(),
 				FileType::Custom(c) => {
 					if !unsafe { global_options().use_custom_resolvers } {
-						err!(UnknownFormat)
+						return Err(UnknownFormatError.into());
 					}
 
 					let resolver = crate::resolve::lookup_resolver(c);
 					resolver.read_from(reader, options)?
 				},
 			},
-			None => err!(UnknownFormat),
+			None => return Err(UnknownFormatError.into()),
 		};
 
 		Ok((tagged_file, self.inner))
@@ -551,7 +550,7 @@ impl<F: FileLike> Probe<F> {
 /// let parsed_file = read_from(&mut file)?;
 /// # Ok(()) }
 /// ```
-pub fn read_from(file: &mut File) -> Result<TaggedFile> {
+pub fn read_from(file: &mut File) -> std::result::Result<TaggedFile, FileParseError> {
 	Probe::new(BufReader::new(file)).guess_file_type()?.read()
 }
 
@@ -576,7 +575,7 @@ pub fn read_from(file: &mut File) -> Result<TaggedFile> {
 /// let parsed_file = read_from_path(path)?;
 /// # Ok(()) }
 /// ```
-pub fn read_from_path<P>(path: P) -> Result<TaggedFile>
+pub fn read_from_path<P>(path: P) -> std::result::Result<TaggedFile, FileParseError>
 where
 	P: AsRef<Path>,
 {

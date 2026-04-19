@@ -1,15 +1,14 @@
 use super::constants::{GENRES, ID3V1_TAG_MARKER};
 use super::tag::Id3v1Tag;
 use crate::config::ParsingMode;
-use crate::error::LoftyError;
+use crate::error::FakeTagError;
 use crate::id3::v1::error::Id3v1ParseError;
-use crate::macros::err;
 use crate::util::text::latin1_decode;
 
 impl Id3v1Tag {
 	/// This is **NOT** a public API
 	#[doc(hidden)]
-	pub fn parse(reader: [u8; 128], parse_mode: ParsingMode) -> Result<Self, LoftyError> {
+	pub fn parse(reader: [u8; 128], parse_mode: ParsingMode) -> Result<Self, Id3v1ParseError> {
 		let mut tag = Self {
 			title: None,
 			artist: None,
@@ -21,7 +20,7 @@ impl Id3v1Tag {
 		};
 
 		if reader[..3] != ID3V1_TAG_MARKER {
-			err!(FakeTag);
+			return Err(FakeTagError.into());
 		}
 
 		let reader = &reader[3..];
@@ -82,7 +81,7 @@ fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, 
 		// However, it seems most popular libraries (including us) will write "\0\0\0\0" for empty
 		// years, rather than "0000" as the "spec" would suggest.
 		if parse_mode == ParsingMode::Strict {
-			return Err(Id3v1ParseError::NonDigitYear);
+			return Err(Id3v1ParseError::non_digit_year());
 		}
 
 		return Ok(None);

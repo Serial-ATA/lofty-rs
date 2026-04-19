@@ -43,15 +43,16 @@ impl AttributeValue {
 
 			// `#[lofty(attribute_name(value1, value2, value3))]`
 			if meta.input.peek(token::Paren) {
-				return meta.parse_nested_meta(|meta| {
-					let list = meta.input.parse_terminated(syn::Expr::parse, Token![,])?;
-					value = Some(AttributeValue::SingleList(
-						meta.path.get_ident().unwrap().clone(),
-						list,
-					));
+				let content;
+				syn::parenthesized!(content in meta.input);
 
-					Ok(())
-				});
+				let list = content.parse_terminated(syn::Expr::parse, Token![,])?;
+
+				value = Some(AttributeValue::SingleList(
+					meta.path.get_ident().unwrap().clone(),
+					list,
+				));
+				return Ok(());
 			}
 
 			Err(meta.error("Unrecognized attribute format"))
