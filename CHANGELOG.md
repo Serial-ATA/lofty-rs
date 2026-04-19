@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **IFF**: Undersized ID3v2 chunks will no longer error outside of strict mode ([PR](https://github.com/Serial-ATA/lofty-rs/pull/644))
+- **Timestamp**: Support dot-separated dates (e.g. `2024.06.03`) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/647)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/648))
 
 ## [0.24.0] - 2026-04-12
 
