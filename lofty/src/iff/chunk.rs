@@ -1,7 +1,9 @@
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::Result;
+use crate::error::{FakeTagError, SizeMismatchError};
+use crate::id3::v2::error::Id3v2ParseError;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::macros::{err, try_vec};
+use crate::iff::error::ChunkParseError;
+use crate::macros::try_vec;
 use crate::util::text::utf8_decode;
 
 use std::io::{Read, Seek, SeekFrom, Take};
@@ -65,7 +67,10 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 	/// Get the next chunk in the stream, if it exists
 	///
 	/// This will return `Ok(None)` on EOF.
-	pub fn next(&mut self, parse_mode: ParsingMode) -> Result<Option<Chunk<'_, R>>> {
+	pub fn next(
+		&mut self,
+		parse_mode: ParsingMode,
+	) -> Result<Option<Chunk<'_, R>>, ChunkParseError> {
 		self.skip()?;
 
 		if self.remaining_size < u64::from(IFF_CHUNK_HEADER_SIZE) {
@@ -84,7 +89,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 			self.remaining_size = 0;
 
 			if parse_mode == ParsingMode::Strict {
-				err!(SizeMismatch);
+				return Err(SizeMismatchError.into());
 			}
 
 			return Ok(None);
@@ -97,7 +102,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 			self.remaining_size = 0;
 
 			if parse_mode == ParsingMode::Strict {
-				err!(SizeMismatch);
+				return Err(SizeMismatchError.into());
 			}
 
 			return Ok(None);
@@ -118,7 +123,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 	}
 
 	/// Skip the rest of the current chunk's content
-	pub fn skip(&mut self) -> Result<()> {
+	pub fn skip(&mut self) -> Result<(), ChunkParseError> {
 		if self.current_chunk_remaining_size > 0 {
 			self.reader.seek(SeekFrom::Current(i64::from(
 				self.current_chunk_remaining_size,
@@ -160,7 +165,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 	///
 	/// This will skip any remaining unread content in the locked scope,
 	/// handle parent padding, and restore the reader to the outer scope.
-	pub fn unlock(&mut self) -> Result<()> {
+	pub fn unlock(&mut self) -> Result<(), ChunkParseError> {
 		let Some((outer_remaining, parent_chunk_size)) = self.lock_state.take() else {
 			return Ok(());
 		};
@@ -181,7 +186,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 		Ok(())
 	}
 
-	fn correct_position(&mut self, current_chunk_size: u32) -> Result<()> {
+	fn correct_position(&mut self, current_chunk_size: u32) -> Result<(), ChunkParseError> {
 		// Chunks are expected to start on even boundaries, and are padded
 		// with a 0 if necessary. This is NOT the null terminator of the value,
 		// and it is NOT included in the chunk's size
@@ -242,33 +247,32 @@ impl<R: Read + Seek> Chunk<'_, R> {
 		self.start_pos
 	}
 
-	/// Read a C-style string from the chunk
-	pub fn read_cstring(&mut self) -> Result<String> {
-		let cont = self.content()?;
-		utf8_decode(cont).map_err(Into::into)
-	}
-
 	/// Read a UTF-8 string from the chunk
 	///
 	/// If `size` isn't provided, the string is assumed to take up the entire chunk's content.
-	pub fn read_string(&mut self, size: Option<u32>) -> Result<String> {
-		let size = size.map_or(self.size() as usize, |size| size as usize);
-
-		let mut content = try_vec![0; size]?;
-		self.read_exact(&mut content)?;
-
-		utf8_decode(content).map_err(Into::into)
+	pub fn read_string(&mut self, size: Option<u32>) -> Result<String, ChunkParseError> {
+		let content = self.read_size(size.unwrap_or(self.size()))?;
+		utf8_decode(content).map_err(|e| ChunkParseError::from(e).with_fourcc(self.fourcc))
 	}
 
 	/// Read the entire chunk's content
-	pub fn content(&mut self) -> Result<Vec<u8>> {
-		let mut content = try_vec![0; self.size() as usize]?;
-		self.read_exact(&mut content)?;
+	pub fn content(&mut self) -> Result<Vec<u8>, ChunkParseError> {
+		self.read_size(self.size())
+	}
+
+	fn read_size(&mut self, size: u32) -> Result<Vec<u8>, ChunkParseError> {
+		let mut content = try_vec![0; size as usize]
+			.map_err(|e| ChunkParseError::from(e).with_fourcc(self.fourcc))?;
+		self.read_exact(&mut content)
+			.map_err(|e| ChunkParseError::from(e).with_fourcc(self.fourcc))?;
 		Ok(content)
 	}
 
 	/// Parse this chunk as an ID3v2 tag
-	pub fn id3_chunk(&mut self, parse_options: ParseOptions) -> Result<Option<Id3v2Tag>> {
+	pub fn id3_chunk(
+		&mut self,
+		parse_options: ParseOptions,
+	) -> Result<Option<Id3v2Tag>, Id3v2ParseError> {
 		use crate::id3::v2::header::Id3v2Header;
 		use crate::id3::v2::read::parse_id3v2;
 
@@ -276,8 +280,8 @@ impl<R: Read + Seek> Chunk<'_, R> {
 
 		if content.len() < 10 {
 			log::warn!("ID3 chunk too small to contain a valid header");
-			if parse_options.parsing_mode == crate::config::ParsingMode::Strict {
-				err!(FakeTag);
+			if parse_options.parsing_mode == ParsingMode::Strict {
+				return Err(FakeTagError.into());
 			}
 			return Ok(None);
 		}

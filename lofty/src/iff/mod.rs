@@ -4,4 +4,5 @@
 
 pub mod aiff;
 pub(crate) mod chunk;
+pub mod error;
 pub mod wav;

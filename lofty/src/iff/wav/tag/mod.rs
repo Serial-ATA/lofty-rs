@@ -1,3 +1,4 @@
+pub(super) mod error;
 pub(super) mod read;
 mod write;
 
