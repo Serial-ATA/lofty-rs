@@ -2,36 +2,36 @@ use super::WavFile;
 use super::properties::WavProperties;
 use super::tag::RiffInfoList;
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::{SizeMismatchError, UnknownFormatError};
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
-use crate::macros::{decode_err, err};
+use crate::iff::error::ChunkParseError;
+use crate::iff::wav::error::WavParseError;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
 // Verifies that the stream is a WAV file and returns the stream length
-pub(crate) fn verify_wav<T>(data: &mut T) -> Result<u32>
+pub(crate) fn verify_wav<T>(data: &mut T) -> Result<u32, WavParseError>
 where
 	T: Read + Seek,
 {
 	let mut id = [0; 12];
 	data.read_exact(&mut id)?;
 
-	if &id[..4] != b"RIFF" {
-		decode_err!(@BAIL Wav, "WAV file doesn't contain a RIFF chunk");
-	}
-
-	if &id[8..] != b"WAVE" {
-		decode_err!(@BAIL Wav, "Found RIFF file, format is not WAVE");
+	if &id[..4] != b"RIFF" || &id[8..] != b"WAVE" {
+		return Err(UnknownFormatError.into());
 	}
 
 	log::debug!("File verified to be WAV");
 	Ok(u32::from_le_bytes(id[4..8].try_into().unwrap()))
 }
 
-pub(super) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<WavFile>
+pub(super) fn read_from<R>(
+	data: &mut R,
+	parse_options: ParseOptions,
+) -> Result<WavFile, WavParseError>
 where
 	R: Read + Seek,
 {
@@ -58,7 +58,9 @@ where
 				fmt = chunk.content()?;
 			},
 			b"fact" if parse_options.read_properties && total_samples == 0 => {
-				total_samples = chunk.read_u32::<LittleEndian>()?;
+				total_samples = chunk
+					.read_u32::<LittleEndian>()
+					.map_err(|e| ChunkParseError::from(e).with_fourcc(chunk.fourcc))?;
 			},
 			b"data" if parse_options.read_properties && stream_len == 0 => {
 				stream_len += chunk.size()
@@ -66,7 +68,7 @@ where
 			b"LIST" => {
 				let mut size = chunk.size();
 				if size < 4 {
-					decode_err!(@BAIL Wav, "Invalid LIST chunk size");
+					return Err(SizeMismatchError.into());
 				}
 
 				let mut list_type = [0; 4];
@@ -80,7 +82,7 @@ where
 
 				let end = chunks.stream_position() + u64::from(size);
 				if end > file_len {
-					err!(SizeMismatch);
+					return Err(SizeMismatchError.into());
 				}
 
 				chunks.lock();

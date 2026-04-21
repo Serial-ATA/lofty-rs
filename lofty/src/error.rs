@@ -8,12 +8,19 @@ use crate::file::FileType;
 use crate::id3::Lyrics3v2ParseError;
 use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
+use crate::iff::error::ChunkParseError;
+use crate::iff::wav::error::WavParseError;
 use crate::tag::items::timestamp::TimestampParseError;
-pub use crate::util::alloc::AllocationError;
-pub use crate::util::text::{TextDecodingError, TextEncodingError};
+
+use std::error::Error;
 
 use lofty_attr::LoftyError;
 use ogg_pager::PageError;
+
+// Exports
+
+pub use crate::util::alloc::AllocationError;
+pub use crate::util::text::{TextDecodingError, TextEncodingError};
 
 /// Alias for `Result<T, LoftyError>`
 pub type Result<T> = std::result::Result<T, LoftyError>;
@@ -37,8 +44,17 @@ impl FileParseError {
 
 	/// Whether this error represents an [`UnknownFormatError`]
 	pub fn is_unknown_format(&self) -> bool {
-		// `UnknownFormat` only ever occurs at the top level
-		self.source.is::<UnknownFormatError>()
+		let mut source = self.source();
+
+		while let Some(s) = source {
+			if s.is::<UnknownFormatError>() {
+				return true;
+			}
+
+			source = s.source();
+		}
+
+		false
 	}
 }
 
@@ -528,6 +544,20 @@ impl From<Id3v2ParseError> for LoftyError {
 impl From<ApeTagParseError> for LoftyError {
 	fn from(_: ApeTagParseError) -> Self {
 		Self::new(ErrorKind::TagParse)
+	}
+}
+
+// TODO: Remove this
+impl From<ChunkParseError> for LoftyError {
+	fn from(_: ChunkParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
+	}
+}
+
+// TODO: Remove this
+impl From<WavParseError> for LoftyError {
+	fn from(input: WavParseError) -> Self {
+		Self::new(ErrorKind::FileParse(input.into()))
 	}
 }
 
