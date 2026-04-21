@@ -1,18 +1,21 @@
 use super::header::read_ape_header;
 use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
+use crate::ape::error::ApeParseError;
 use crate::ape::tag::read::{read_ape_tag, read_ape_tag_with_header};
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::{FakeTagError, SizeMismatchError};
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::macros::{decode_err, err};
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<ApeFile>
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	parse_options: ParseOptions,
+) -> Result<ApeFile, ApeParseError>
 where
 	R: Read + Seek,
 {
@@ -39,7 +42,7 @@ where
 
 		let Some(new_stream_length) = stream_len.checked_sub(u64::from(header.full_tag_size()))
 		else {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		};
 
 		stream_len = new_stream_length;
@@ -74,21 +77,16 @@ where
 
 				// Get the remaining part of the ape tag
 				let mut remaining = [0; 4];
-				data.read_exact(&mut remaining).map_err(|_| {
-					decode_err!(
-						Ape,
-						"Found partial APE tag, but there isn't enough data left in the reader"
-					)
-				})?;
+				data.read_exact(&mut remaining)?;
 
 				if &remaining[..4] != b"AGEX" {
-					decode_err!(@BAIL Ape, "Found incomplete APE tag");
+					return Err(FakeTagError.into());
 				}
 
 				let ape_header = read_ape_header(data, false)?;
 				let Some(new_stream_length) = stream_len.checked_sub(u64::from(ape_header.size))
 				else {
-					err!(SizeMismatch);
+					return Err(SizeMismatchError.into());
 				};
 				stream_len = new_stream_length;
 
@@ -98,7 +96,10 @@ where
 				}
 			},
 			_ => {
-				decode_err!(@BAIL Ape, "Invalid data found while reading header, expected any of [\"MAC \", \"APETAGEX\", \"ID3\"]")
+				return Err(ApeParseError::message(
+					"Invalid data found while reading header, expected any of [\"MAC \", \
+					 \"APETAGEX\", \"ID3\"]",
+				));
 			},
 		}
 	}
@@ -114,7 +115,7 @@ where
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;
 		let Some(new_stream_length) = stream_len.checked_sub(128) else {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		};
 
 		stream_len = new_stream_length;
@@ -123,7 +124,7 @@ where
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(data)?;
 	let Some(new_stream_length) = stream_len.checked_sub(u64::from(lyrics3v2_size)) else {
-		err!(SizeMismatch);
+		return Err(SizeMismatchError.into());
 	};
 
 	stream_len = new_stream_length;

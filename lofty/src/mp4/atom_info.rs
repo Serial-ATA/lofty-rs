@@ -283,7 +283,7 @@ where
 			data.seek(SeekFrom::Current(4))?;
 
 			// Already read the size (4) + identifier (4) + version/flags (4)
-			let mut content = try_vec![0; (len - 12) as usize];
+			let mut content = try_vec![0; (len - 12) as usize]?;
 			data.read_exact(&mut content)?;
 
 			*reader_size -= len;
