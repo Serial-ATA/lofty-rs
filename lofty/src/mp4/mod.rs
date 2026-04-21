@@ -34,8 +34,6 @@ pub(crate) use properties::SAMPLE_RATES;
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
 pub struct Mp4File {
-	/// The file format from ftyp's "major brand" (Ex. "M4A ")
-	pub(crate) ftyp: String,
 	#[lofty(tag_type = "Mp4Ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists
 	pub(crate) ilst_tag: Option<Ilst>,
@@ -61,6 +59,6 @@ impl Mp4File {
 	/// # Ok(()) }
 	/// ```
 	pub fn ftyp(&self) -> &str {
-		self.ftyp.as_ref()
+		self.properties.ftyp()
 	}
 }

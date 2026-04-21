@@ -65,21 +65,23 @@ where
 
 	let moov = Moov::parse(&mut reader, parse_options)?;
 
+	let mut properties = if parse_options.read_properties {
+		// Remove the length restriction
+		reader.reset_bounds(0, file_length);
+		super::properties::read_properties(
+			&mut reader,
+			&moov.traks,
+			file_length,
+			parse_options.parsing_mode,
+		)?
+	} else {
+		Mp4Properties::default()
+	};
+	properties.ftyp = ftyp;
+
 	Ok(Mp4File {
-		ftyp,
 		ilst_tag: moov.ilst,
-		properties: if parse_options.read_properties {
-			// Remove the length restriction
-			reader.reset_bounds(0, file_length);
-			super::properties::read_properties(
-				&mut reader,
-				&moov.traks,
-				file_length,
-				parse_options.parsing_mode,
-			)?
-		} else {
-			Mp4Properties::default()
-		},
+		properties,
 	})
 }
 

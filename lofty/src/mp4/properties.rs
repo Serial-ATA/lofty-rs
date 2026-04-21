@@ -191,6 +191,7 @@ pub struct Mp4Properties {
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) channels: u8,
 	pub(crate) drm_protected: bool,
+	pub(crate) ftyp: String,
 }
 
 impl From<Mp4Properties> for FileProperties {
@@ -255,6 +256,26 @@ impl Mp4Properties {
 	/// Whether or not the file is DRM protected
 	pub fn is_drm_protected(&self) -> bool {
 		self.drm_protected
+	}
+
+	/// The file format from ftyp's "major brand" (Ex. "M4A ")
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::config::ParseOptions;
+	/// use lofty::file::AudioFile;
+	/// use lofty::mp4::Mp4File;
+	///
+	/// # fn main() -> lofty::error::Result<()> {
+	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
+	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, ParseOptions::new())?;
+	///
+	/// assert_eq!(m4a_file.properties().ftyp(), "M4A ");
+	/// # Ok(()) }
+	/// ```
+	pub fn ftyp(&self) -> &str {
+		self.ftyp.as_ref()
 	}
 }
 
