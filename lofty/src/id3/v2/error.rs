@@ -95,6 +95,7 @@ pub struct Id3v2ParseError {
 		Id3v2HeaderError,
 		super::frame::error::FrameParseError,
 		crate::util::alloc::AllocationError,
+		crate::iff::error::ChunkParseError,
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
