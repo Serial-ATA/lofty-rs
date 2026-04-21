@@ -44,7 +44,7 @@ impl Block {
 
 		let mut content;
 		if predicate(ty) {
-			content = try_vec![0; size as usize];
+			content = try_vec![0; size as usize]?;
 			data.read_exact(&mut content)?;
 		} else {
 			content = Vec::new();
@@ -68,7 +68,7 @@ impl Block {
 
 	pub(super) fn new_padding(size: usize) -> Result<Self> {
 		let block_size = core::cmp::min(size, Self::MAX_CONTENT_SIZE as usize);
-		let content = try_vec![0; block_size];
+		let content = try_vec![0; block_size]?;
 		Ok(Self {
 			ty: BLOCK_ID_PADDING,
 			last: false,

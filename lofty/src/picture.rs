@@ -853,7 +853,7 @@ impl Picture {
 		size -= 20;
 
 		if data_len <= size {
-			let mut data = try_vec![0; data_len];
+			let mut data = try_vec![0; data_len]?;
 
 			if let Ok(()) = reader.read_exact(&mut data) {
 				let mime_type;

@@ -3,6 +3,7 @@
 //! The primary error is [`LoftyError`]. The type of error is determined by [`ErrorKind`],
 //! which can be extended at any time.
 
+use crate::ape::error::ApeTagParseError;
 use crate::file::FileType;
 use crate::id3::Lyrics3v2ParseError;
 use crate::id3::v1::error::Id3v1ParseError;
@@ -115,70 +116,6 @@ pub struct SizeMismatchError;
 #[error(message = "no format could be determined from the provided file")]
 pub struct UnknownFormatError;
 
-/// Errors that can occur while parsing tags
-#[derive(Debug)]
-pub enum TagParseError {
-	/// Errors that can occur within Lyrics3v2 tags
-	Lyrics3v2(Lyrics3v2ParseError),
-	/// Errors that can occur within ID3v1 tags
-	Id3v1(Id3v1ParseError),
-	/// Errors that arise while reading/writing ID3v2 tags
-	Id3v2(Id3v2ParseError),
-}
-
-impl core::fmt::Display for TagParseError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		match self {
-			Self::Lyrics3v2(e) => write!(f, "{e}"),
-			Self::Id3v1(e) => write!(f, "{e}"),
-			Self::Id3v2(e) => write!(f, "{e}"),
-		}
-	}
-}
-
-impl core::error::Error for TagParseError {}
-
-impl From<Lyrics3v2ParseError> for TagParseError {
-	fn from(input: Lyrics3v2ParseError) -> Self {
-		Self::Lyrics3v2(input)
-	}
-}
-
-impl From<Id3v1ParseError> for TagParseError {
-	fn from(input: Id3v1ParseError) -> Self {
-		Self::Id3v1(input)
-	}
-}
-
-impl From<Id3v2ParseError> for TagParseError {
-	fn from(input: Id3v2ParseError) -> Self {
-		Self::Id3v2(input)
-	}
-}
-
-/// Errors that can occur while encoding tags
-#[derive(Debug)]
-pub enum TagEncodingError {
-	/// Failed to encode an ID3v2 tag
-	Id3v2(Id3v2EncodingError),
-}
-
-impl core::fmt::Display for TagEncodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		match self {
-			Self::Id3v2(e) => write!(f, "{e}"),
-		}
-	}
-}
-
-impl core::error::Error for TagEncodingError {}
-
-impl From<Id3v2EncodingError> for TagEncodingError {
-	fn from(input: Id3v2EncodingError) -> Self {
-		Self::Id3v2(input)
-	}
-}
-
 /// The types of errors that can occur
 #[derive(Debug)]
 #[non_exhaustive]
@@ -221,10 +158,11 @@ pub enum ErrorKind {
 	TextEncode(TextEncodingError),
 	/// Arises when decoding OR encoding a problematic [`Timestamp`](crate::tag::items::Timestamp)
 	BadTimestamp(TimestampParseError),
+	// TODO: remove these
 	/// Errors that can occur while parsing tags
-	TagParse(TagParseError),
+	TagParse,
 	/// Errors that can occur while encoding tags
-	TagEncoding(TagEncodingError),
+	TagEncoding,
 
 	/// Arises when an atom contains invalid data
 	BadAtom(&'static str),
@@ -537,9 +475,10 @@ impl From<std::convert::Infallible> for LoftyError {
 	}
 }
 
+// TODO: Remove this
 impl From<Id3v2EncodingError> for LoftyError {
-	fn from(input: Id3v2EncodingError) -> Self {
-		Self::new(ErrorKind::TagEncoding(input.into()))
+	fn from(_: Id3v2EncodingError) -> Self {
+		Self::new(ErrorKind::TagEncoding)
 	}
 }
 
@@ -566,22 +505,29 @@ impl From<UnknownFormatError> for LoftyError {
 
 // TODO: Remove this
 impl From<Lyrics3v2ParseError> for LoftyError {
-	fn from(input: Lyrics3v2ParseError) -> Self {
-		Self::new(ErrorKind::TagParse(TagParseError::Lyrics3v2(input)))
+	fn from(_: Lyrics3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
 	}
 }
 
 // TODO: Remove this
 impl From<Id3v1ParseError> for LoftyError {
-	fn from(input: Id3v1ParseError) -> Self {
-		Self::new(ErrorKind::TagParse(input.into()))
+	fn from(_: Id3v1ParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
 	}
 }
 
 // TODO: Remove this
 impl From<Id3v2ParseError> for LoftyError {
-	fn from(input: Id3v2ParseError) -> Self {
-		Self::new(ErrorKind::TagParse(input.into()))
+	fn from(_: Id3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
+	}
+}
+
+// TODO: Remove this
+impl From<ApeTagParseError> for LoftyError {
+	fn from(_: ApeTagParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
 	}
 }
 
@@ -617,8 +563,8 @@ impl core::fmt::Display for LoftyError {
 			ErrorKind::BadTimestamp(message) => {
 				write!(f, "Encountered an invalid timestamp: {message}")
 			},
-			ErrorKind::TagParse(e) => write!(f, "{e}"),
-			ErrorKind::TagEncoding(e) => write!(f, "{e}"),
+			ErrorKind::TagParse => write!(f, "failed to parse tag"),
+			ErrorKind::TagEncoding => write!(f, "failed to encode tag"),
 			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,

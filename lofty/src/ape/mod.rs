@@ -6,6 +6,7 @@
 //! this tag will be read, but **cannot** be written. The only tags allowed by spec are `APEv1/2` and
 //! `ID3v1`.
 pub(crate) mod constants;
+pub mod error;
 pub(crate) mod header;
 mod properties;
 mod read;

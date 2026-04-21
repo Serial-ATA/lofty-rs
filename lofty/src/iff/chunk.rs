@@ -254,7 +254,7 @@ impl<R: Read + Seek> Chunk<'_, R> {
 	pub fn read_string(&mut self, size: Option<u32>) -> Result<String> {
 		let size = size.map_or(self.size() as usize, |size| size as usize);
 
-		let mut content = try_vec![0; size];
+		let mut content = try_vec![0; size]?;
 		self.read_exact(&mut content)?;
 
 		utf8_decode(content).map_err(Into::into)
@@ -262,7 +262,7 @@ impl<R: Read + Seek> Chunk<'_, R> {
 
 	/// Read the entire chunk's content
 	pub fn content(&mut self) -> Result<Vec<u8>> {
-		let mut content = try_vec![0; self.size() as usize];
+		let mut content = try_vec![0; self.size() as usize]?;
 		self.read_exact(&mut content)?;
 		Ok(content)
 	}

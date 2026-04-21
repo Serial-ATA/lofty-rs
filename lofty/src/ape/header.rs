@@ -1,5 +1,5 @@
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::ape::error::ApeTagParseError;
+use crate::error::SizeMismatchError;
 use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -13,7 +13,7 @@ pub(crate) struct ApeHeader {
 	pub(crate) item_count: u32,
 }
 
-pub(crate) fn read_ape_header<R>(data: &mut R, footer: bool) -> Result<ApeHeader>
+pub(crate) fn read_ape_header<R>(data: &mut R, footer: bool) -> Result<ApeHeader, ApeTagParseError>
 where
 	R: Read + Seek,
 {
@@ -24,7 +24,7 @@ where
 	if size < 32 {
 		// If the size is < 32, something went wrong during encoding
 		// The size includes the footer and all items
-		decode_err!(@BAIL Ape, "APE tag has an invalid size (< 32)");
+		return Err(SizeMismatchError.into());
 	}
 
 	let item_count = data.read_u32::<LittleEndian>()?;
@@ -45,7 +45,7 @@ where
 	}
 
 	if u64::from(size) > data.stream_len_hack()? {
-		decode_err!(@BAIL Ape, "APE tag has an invalid size (> file size)");
+		return Err(SizeMismatchError.into());
 	}
 
 	Ok(ApeHeader { size, item_count })

@@ -1,3 +1,4 @@
+pub(super) mod error;
 pub(crate) mod item;
 pub(crate) mod read;
 mod write;
@@ -152,7 +153,7 @@ impl ApeTag {
 	/// use lofty::ape::{ApeItem, ApeTag};
 	/// use lofty::tag::ItemValue;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::ape::error::ApeTagItemValidationError> {
 	/// let mut tag = ApeTag::default();
 	/// tag.insert(ApeItem::new(
 	/// 	String::from("Title"),
@@ -188,8 +189,7 @@ impl ApeTag {
 	/// use lofty::ape::{ApeItem, ApeTag};
 	/// use lofty::tag::ItemValue;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
-	/// use lofty::tag::ItemValue;
+	/// # fn main() -> Result<(), lofty::ape::error::ApeTagItemValidationError> {
 	/// let mut tag = ApeTag::default();
 	/// tag.push(ApeItem::new(
 	/// 	String::from("Title"),
@@ -287,10 +287,16 @@ impl ApeTag {
 				let value = u8::from(flag).to_string();
 				self.insert(ApeItem::text("Compilation", value));
 			},
-			_ => {
-				if let Ok(item) = item.try_into() {
-					self.push(item);
-				}
+			key => {
+				let Some(mapped_key) = key.map_key(TagType::Ape) else {
+					return;
+				};
+
+				let Ok(item) = ApeItem::new(mapped_key.to_string(), item.item_value) else {
+					return;
+				};
+
+				self.push(item)
 			},
 		}
 	}

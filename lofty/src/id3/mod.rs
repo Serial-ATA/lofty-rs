@@ -203,7 +203,7 @@ where
 		log::debug!("Found an ID3v2 tag, parsing");
 
 		if config.read {
-			let mut tag = try_vec![0; id3v2_header.size as usize];
+			let mut tag = try_vec![0; id3v2_header.size as usize]?;
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)

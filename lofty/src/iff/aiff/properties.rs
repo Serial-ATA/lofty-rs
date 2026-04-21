@@ -228,7 +228,7 @@ pub(super) fn read_properties(
 
 			let compression_name_size = comm.read_u8()?;
 			if compression_name_size > 0 {
-				let mut compression_name_bytes = try_vec![0u8; compression_name_size as usize];
+				let mut compression_name_bytes = try_vec![0u8; compression_name_size as usize]?;
 				comm.read_exact(&mut compression_name_bytes)?;
 
 				compression_name = utf8_decode(compression_name_bytes)?;

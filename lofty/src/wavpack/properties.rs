@@ -146,7 +146,7 @@ where
 		// In the case of non-standard sample rates and DSD audio, we need to actually read the
 		// block to get the sample rate
 		if sample_rate_idx == 15 || flags & FLAG_DSD == FLAG_DSD {
-			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize];
+			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize]?;
 			if reader.read_exact(&mut block_contents).is_err() {
 				parse_mode_choice!(
 					parse_mode,

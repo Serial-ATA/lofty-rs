@@ -191,7 +191,7 @@ pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 	log::trace!("Padding tag with {} bytes", padding_len);
 
 	id3v2.seek(SeekFrom::End(0))?;
-	id3v2.write_all(&try_vec![0; padding_len])?;
+	id3v2.write_all(&try_vec![0; padding_len]?)?;
 
 	Ok(id3v2.into_inner())
 }

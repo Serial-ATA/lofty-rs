@@ -467,7 +467,7 @@ impl Minf {
 			if let AtomIdent::Fourcc(fourcc) = atom.ident {
 				match &fourcc {
 					b"stsd" => {
-						let mut stsd = try_vec![0; (atom.len - 8) as usize];
+						let mut stsd = try_vec![0; (atom.len - 8) as usize]?;
 						reader.read_exact(&mut stsd)?;
 						stsd_data = Some(stsd);
 					},

@@ -94,7 +94,7 @@ where
 				err!(SizeMismatch);
 			}
 
-			let mut vendor_raw = try_vec![0; vendor_len as usize];
+			let mut vendor_raw = try_vec![0; vendor_len as usize]?;
 			reader.read_exact(&mut vendor_raw)?;
 
 			match String::from_utf8(vendor_raw) {

@@ -253,7 +253,7 @@ fn handle_encryption<R: Read>(
 		return Err(FrameParseError::missing_data_length_indicator(id));
 	}
 
-	let mut content = try_vec![0; size as usize];
+	let mut content = try_vec![0; size as usize]?;
 	if let Err(e) = reader.read_exact(&mut content) {
 		return Err(FrameParseError::io(Some(id), e));
 	}

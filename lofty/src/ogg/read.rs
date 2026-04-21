@@ -34,7 +34,7 @@ where
 		err!(SizeMismatch);
 	}
 
-	let mut vendor_bytes = try_vec![0; vendor_len as usize];
+	let mut vendor_bytes = try_vec![0; vendor_len as usize]?;
 	data.read_exact(&mut vendor_bytes)?;
 
 	len -= u64::from(vendor_len);
@@ -87,7 +87,7 @@ where
 			err!(SizeMismatch);
 		}
 
-		let mut comment_bytes = try_vec![0; comment_len as usize];
+		let mut comment_bytes = try_vec![0; comment_len as usize]?;
 		data.read_exact(&mut comment_bytes)?;
 
 		len -= u64::from(comment_len);

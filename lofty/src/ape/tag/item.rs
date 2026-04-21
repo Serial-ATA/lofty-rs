@@ -1,8 +1,7 @@
 use crate::ape::constants::INVALID_KEYS;
-use crate::error::{LoftyError, Result};
-use crate::macros::decode_err;
+use crate::ape::tag::error::ApeTagItemValidationError;
+use crate::tag::ItemValue;
 use crate::tag::item::ItemValueRef;
-use crate::tag::{ItemValue, TagItem, TagType};
 
 /// Represents an `APE` tag item
 ///
@@ -31,17 +30,17 @@ impl ApeItem {
 	/// * `key` is illegal ("ID3", "TAG", "OGGS", "MP+")
 	/// * `key` has a bad length (must be 2 to 255, inclusive)
 	/// * `key` contains invalid characters (must be in the range 0x20 to 0x7E, inclusive)
-	pub fn new(key: String, value: ItemValue) -> Result<Self> {
-		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			decode_err!(@BAIL Ape, "APE tag item contains an illegal key");
+	pub fn new(key: String, value: ItemValue) -> Result<Self, ApeTagItemValidationError> {
+		if INVALID_KEYS.iter().any(|k| k.eq_ignore_ascii_case(&key)) {
+			return Err(ApeTagItemValidationError::illegal_key(&key));
 		}
 
 		if !(2..=255).contains(&key.len()) {
-			decode_err!(@BAIL Ape, "APE tag item key has an invalid length (< 2 || > 255)");
+			return Err(ApeTagItemValidationError::invalid_length());
 		}
 
 		if key.chars().any(|c| !(0x20..=0x7E).contains(&(c as u32))) {
-			decode_err!(@BAIL Ape, "APE tag item key contains invalid characters");
+			return Err(ApeTagItemValidationError::invalid_characters());
 		}
 
 		Ok(Self {
@@ -69,7 +68,7 @@ impl ApeItem {
 	/// use lofty::ape::ApeItem;
 	/// use lofty::tag::ItemValue;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::ape::error::ApeTagItemValidationError> {
 	/// let item = ApeItem::new(
 	/// 	String::from("Artist"),
 	/// 	ItemValue::Text(String::from("Serial\0ATA")),
@@ -95,21 +94,6 @@ impl ApeItem {
 			key: String::from(key),
 			value: ItemValue::Text(value),
 		}
-	}
-}
-
-impl TryFrom<TagItem> for ApeItem {
-	type Error = LoftyError;
-
-	fn try_from(value: TagItem) -> std::result::Result<Self, Self::Error> {
-		Self::new(
-			value
-				.item_key
-				.map_key(TagType::Ape)
-				.ok_or_else(|| decode_err!(Ape, "Attempted to convert an unsupported item key"))?
-				.to_string(),
-			value.item_value,
-		)
 	}
 }
 
