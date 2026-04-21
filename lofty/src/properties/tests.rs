@@ -112,53 +112,65 @@ const MP3_PROPERTIES: MpegProperties = MpegProperties {
 	emphasis: None,
 };
 
-const MP4_AAC_PROPERTIES: Mp4Properties = Mp4Properties {
-	codec: Mp4Codec::AAC,
-	extended_audio_object_type: Some(AudioObjectType::AacLowComplexity),
-	duration: Duration::from_millis(1449),
-	overall_bitrate: 135,
-	audio_bitrate: 124,
-	sample_rate: 48000,
-	bit_depth: None,
-	channels: 2,
-	drm_protected: false,
-};
+fn expected_mp4_aac_properties() -> Mp4Properties {
+	Mp4Properties {
+		codec: Mp4Codec::AAC,
+		extended_audio_object_type: Some(AudioObjectType::AacLowComplexity),
+		duration: Duration::from_millis(1449),
+		overall_bitrate: 135,
+		audio_bitrate: 124,
+		sample_rate: 48000,
+		bit_depth: None,
+		channels: 2,
+		drm_protected: false,
+		ftyp: String::from("M4A "),
+	}
+}
 
-const MP4_ALAC_PROPERTIES: Mp4Properties = Mp4Properties {
-	codec: Mp4Codec::ALAC,
-	extended_audio_object_type: None,
-	duration: Duration::from_millis(1428),
-	overall_bitrate: 331,
-	audio_bitrate: 326,
-	sample_rate: 48000,
-	bit_depth: Some(16),
-	channels: 2,
-	drm_protected: false,
-};
+fn expected_mp4_alac_properties() -> Mp4Properties {
+	Mp4Properties {
+		codec: Mp4Codec::ALAC,
+		extended_audio_object_type: None,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 331,
+		audio_bitrate: 326,
+		sample_rate: 48000,
+		bit_depth: Some(16),
+		channels: 2,
+		drm_protected: false,
+		ftyp: String::from("M4A "),
+	}
+}
 
-const MP4_ALS_PROPERTIES: Mp4Properties = Mp4Properties {
-	codec: Mp4Codec::AAC,
-	extended_audio_object_type: Some(AudioObjectType::AudioLosslessCoding),
-	duration: Duration::from_millis(1429),
-	overall_bitrate: 1083,
-	audio_bitrate: 1078,
-	sample_rate: 48000,
-	bit_depth: None,
-	channels: 2,
-	drm_protected: false,
-};
+fn expected_mp4_als_properties() -> Mp4Properties {
+	Mp4Properties {
+		codec: Mp4Codec::AAC,
+		extended_audio_object_type: Some(AudioObjectType::AudioLosslessCoding),
+		duration: Duration::from_millis(1429),
+		overall_bitrate: 1083,
+		audio_bitrate: 1078,
+		sample_rate: 48000,
+		bit_depth: None,
+		channels: 2,
+		drm_protected: false,
+		ftyp: String::from("mp42"),
+	}
+}
 
-const MP4_FLAC_PROPERTIES: Mp4Properties = Mp4Properties {
-	codec: Mp4Codec::FLAC,
-	extended_audio_object_type: None,
-	duration: Duration::from_millis(1428),
-	overall_bitrate: 280,
-	audio_bitrate: 275,
-	sample_rate: 48000,
-	bit_depth: Some(16),
-	channels: 2,
-	drm_protected: false,
-};
+fn expected_mp4_flac_properties() -> Mp4Properties {
+	Mp4Properties {
+		codec: Mp4Codec::FLAC,
+		extended_audio_object_type: None,
+		duration: Duration::from_millis(1428),
+		overall_bitrate: 280,
+		audio_bitrate: 275,
+		sample_rate: 48000,
+		bit_depth: Some(16),
+		channels: 2,
+		drm_protected: false,
+		ftyp: String::from("isom"),
+	}
+}
 
 // Properties verified with libmpcdec 1.2.2
 const MPC_SV5_PROPERTIES: MpcSv4to6Properties = MpcSv4to6Properties {
@@ -353,7 +365,7 @@ fn mp3_properties() {
 fn mp4_aac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_aac.m4a"),
-		MP4_AAC_PROPERTIES
+		expected_mp4_aac_properties()
 	)
 }
 
@@ -361,7 +373,7 @@ fn mp4_aac_properties() {
 fn mp4_alac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/m4a_codec_alac.m4a"),
-		MP4_ALAC_PROPERTIES
+		expected_mp4_alac_properties()
 	)
 }
 
@@ -369,7 +381,7 @@ fn mp4_alac_properties() {
 fn mp4_als_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_als.mp4"),
-		MP4_ALS_PROPERTIES
+		expected_mp4_als_properties()
 	)
 }
 
@@ -377,7 +389,7 @@ fn mp4_als_properties() {
 fn mp4_flac_properties() {
 	assert_eq!(
 		get_properties::<Mp4File>("tests/files/assets/minimal/mp4_codec_flac.mp4"),
-		MP4_FLAC_PROPERTIES
+		expected_mp4_flac_properties()
 	)
 }
 
