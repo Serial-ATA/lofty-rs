@@ -1,11 +1,13 @@
 use super::ApeTag;
 use super::item::ApeItem;
 use crate::ape::APE_PICTURE_TYPES;
-use crate::ape::constants::{APE_PREAMBLE, INVALID_KEYS};
+use crate::ape::constants::APE_PREAMBLE;
+use crate::ape::error::ApeTagParseError;
 use crate::ape::header::{self, ApeHeader};
+use crate::ape::tag::error::ApeTagItemParseError;
 use crate::config::ParseOptions;
-use crate::error::Result;
-use crate::macros::{decode_err, err, try_vec};
+use crate::error::SizeMismatchError;
+use crate::macros::try_vec;
 use crate::tag::ItemValue;
 use crate::util::text::utf8_decode;
 
@@ -13,71 +15,49 @@ use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
+/// Attempt to read an APE tag from the current position with the provided header
+///
+/// This assumes that the reader immediately follows the end of the header
 pub(crate) fn read_ape_tag_with_header<R>(
-	data: &mut R,
+	reader: &mut R,
 	header: ApeHeader,
 	parse_options: ParseOptions,
-) -> Result<ApeTag>
+) -> Result<ApeTag, ApeTagParseError>
 where
 	R: Read + Seek,
 {
-	let mut tag = ApeTag::default();
-	let mut remaining_size = header.size;
-
-	for _ in 0..header.item_count {
-		if remaining_size < 11 {
-			break;
-		}
-
-		let value_size = data.read_u32::<LittleEndian>()?;
-		if value_size > remaining_size {
-			err!(SizeMismatch);
-		}
-
-		remaining_size -= 4;
-		let flags = data.read_u32::<LittleEndian>()?;
-
-		let mut key = Vec::new();
-		let mut key_char = data.read_u8()?;
-
-		while key_char != 0 {
-			key.push(key_char);
-			key_char = data.read_u8()?;
-		}
-
-		let key = utf8_decode(key)
-			.map_err(|_| decode_err!(Ape, "APE tag item contains a non UTF-8 key"))?;
-
-		if INVALID_KEYS.contains(&&*key.to_uppercase()) {
-			decode_err!(@BAIL Ape, "APE tag item contains an illegal key");
-		}
-
-		if APE_PICTURE_TYPES.contains(&&*key) && !parse_options.read_cover_art {
-			data.seek(SeekFrom::Current(i64::from(value_size)))?;
-			continue;
-		}
-
+	fn parse_item_with_key<R>(
+		reader: &mut R,
+		key: String,
+		flags: u32,
+		value_size: u32,
+	) -> Result<ApeItem, ApeTagItemParseError>
+	where
+		R: Read + Seek,
+	{
 		let read_only = (flags & 1) == 1;
 		let item_type = (flags >> 1) & 3;
 
-		if value_size == 0 || key.len() < 2 || key.len() > 255 {
-			log::warn!("APE: Encountered invalid item key '{}'", key);
-			data.seek(SeekFrom::Current(i64::from(value_size)))?;
-			continue;
+		let mut value = match try_vec![0; value_size as usize] {
+			Ok(v) => v,
+			Err(e) => return Err((key, e).into()),
+		};
+
+		if let Err(e) = reader.read_exact(&mut value) {
+			return Err((key, e).into());
 		}
 
-		let mut value = try_vec![0; value_size as usize];
-		data.read_exact(&mut value)?;
-
 		let parsed_value = match item_type {
-			0 => ItemValue::Text(utf8_decode(value).map_err(|_| {
-				decode_err!(Ape, "Failed to convert text item into a UTF-8 string")
-			})?),
+			0 => ItemValue::Text(match utf8_decode(value) {
+				Ok(val) => val,
+				Err(e) => return Err(ApeTagItemParseError::from((key, e))),
+			}),
 			1 => ItemValue::Binary(value),
-			2 => ItemValue::Locator(utf8_decode(value).map_err(|_| {
-				decode_err!(Ape, "Failed to convert locator item into a UTF-8 string")
-			})?),
-			_ => decode_err!(@BAIL Ape, "APE tag item contains an invalid item type"),
+			2 => ItemValue::Locator(match utf8_decode(value) {
+				Ok(val) => val,
+				Err(e) => return Err(ApeTagItemParseError::from((key, e))),
+			}),
+			_ => return Err(ApeTagItemParseError::illegal_item_type(key)),
 		};
 
 		let mut item = ApeItem::new(key, parsed_value)?;
@@ -86,20 +66,56 @@ where
 			item.read_only = true;
 		}
 
+		Ok(item)
+	}
+
+	let mut tag = ApeTag::default();
+	let mut remaining_size = header.size;
+
+	for _ in 0..header.item_count {
+		if remaining_size < 11 {
+			break;
+		}
+
+		let value_size = reader.read_u32::<LittleEndian>()?;
+		if value_size > remaining_size {
+			return Err(SizeMismatchError.into());
+		}
+
+		remaining_size -= 4;
+		let flags = reader.read_u32::<LittleEndian>()?;
+
+		let mut key = Vec::new();
+		let mut key_char = reader.read_u8()?;
+
+		while key_char != 0 {
+			key.push(key_char);
+			key_char = reader.read_u8()?;
+		}
+
+		let key = utf8_decode(key).map_err(ApeTagItemParseError::from)?;
+
+		if APE_PICTURE_TYPES.contains(&&*key) && !parse_options.read_cover_art {
+			reader.seek(SeekFrom::Current(i64::from(value_size)))?;
+			continue;
+		}
+
+		let item = parse_item_with_key(reader, key, flags, value_size)?;
 		tag.insert(item);
 	}
 
 	// Skip over footer
-	data.seek(SeekFrom::Current(32))?;
+	reader.seek(SeekFrom::Current(32))?;
 
 	Ok(tag)
 }
 
+/// Attempt to read an APE tag from the current position
 pub(crate) fn read_ape_tag<R: Read + Seek>(
 	reader: &mut R,
 	footer: bool,
 	parse_options: ParseOptions,
-) -> Result<(Option<ApeTag>, Option<ApeHeader>)> {
+) -> Result<(Option<ApeTag>, Option<ApeHeader>), ApeTagParseError> {
 	let mut ape_preamble = [0; 8];
 	reader.read_exact(&mut ape_preamble)?;
 

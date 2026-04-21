@@ -423,7 +423,7 @@ where
 {
 	writer.write_u32::<BigEndian>(size)?;
 	writer.write_all(b"free")?;
-	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize])?;
+	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize]?)?;
 	Ok(())
 }
 

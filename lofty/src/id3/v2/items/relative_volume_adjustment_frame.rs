@@ -194,7 +194,7 @@ impl<'a> RelativeVolumeAdjustmentFrame<'a> {
 				if bits_representing_peak > 0 {
 					let bytes_representing_peak = (u16::from(bits_representing_peak) + 7) >> 3;
 
-					let mut peak_volume_bytes = try_vec![0; bytes_representing_peak as usize];
+					let mut peak_volume_bytes = try_vec![0; bytes_representing_peak as usize]?;
 					reader.read_exact(&mut peak_volume_bytes)?;
 					peak_volume = Some(peak_volume_bytes);
 				}

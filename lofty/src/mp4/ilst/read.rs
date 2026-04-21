@@ -25,7 +25,7 @@ where
 {
 	let parsing_mode = parse_options.parsing_mode;
 
-	let mut contents = try_vec![0; len as usize];
+	let mut contents = try_vec![0; len as usize]?;
 	reader.read_exact(&mut contents)?;
 
 	let mut cursor = Cursor::new(contents);
@@ -294,7 +294,7 @@ where
 
 		let content_len = (next_atom.len - 16) as usize;
 		if content_len > 0 {
-			let mut content = try_vec![0; content_len];
+			let mut content = try_vec![0; content_len]?;
 			reader.read_exact(&mut content)?;
 			ret.push((data_type, content));
 		} else {

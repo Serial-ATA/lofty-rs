@@ -118,7 +118,7 @@ where
 	let md_reader = &mut &comment_packet[comment_signature.len()..];
 
 	let vendor_len = md_reader.read_u32::<LittleEndian>()?;
-	let mut vendor = try_vec![0; vendor_len as usize];
+	let mut vendor = try_vec![0; vendor_len as usize]?;
 	md_reader.read_exact(&mut vendor)?;
 
 	let vendor_str;
