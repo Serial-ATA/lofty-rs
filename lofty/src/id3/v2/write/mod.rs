@@ -15,14 +15,13 @@ use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header
 fn crc_32_table() -> &'static [u32; 256] {
-	static INSTANCE: OnceLock<[u32; 256]> = OnceLock::new();
-	INSTANCE.get_or_init(|| {
+	static INSTANCE: LazyLock<[u32; 256]> = LazyLock::new(|| {
 		let mut crc32_table = [0; 256];
 
 		for n in 0..256 {
@@ -33,7 +32,8 @@ fn crc_32_table() -> &'static [u32; 256] {
 		}
 
 		crc32_table
-	})
+	});
+	&INSTANCE
 }
 
 #[allow(clippy::shadow_unrelated)]

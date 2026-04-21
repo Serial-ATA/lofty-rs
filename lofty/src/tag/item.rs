@@ -52,8 +52,7 @@ macro_rules! gen_map {
 			$(#[$meta])?
 			impl $NAME {
 				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
-					static INSTANCE: std::sync::OnceLock<HashMap<&'static str, &'static [ItemKey]>> = std::sync::OnceLock::new();
-					INSTANCE.get_or_init(|| {
+					static INSTANCE: std::sync::LazyLock<HashMap<&'static str, &'static [ItemKey]>> = std::sync::LazyLock::new(|| {
 						let mut map = HashMap::new();
 						$(
 							let values: &'static [ItemKey] = &[$(ItemKey::$variant,)+];
@@ -62,7 +61,8 @@ macro_rules! gen_map {
 							)+
 						)+
 						map
-					}).iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v[0])
+					});
+					INSTANCE.iter().find(|(k, _)| k.eq_ignore_ascii_case(key)).map(|(_, v)| v[0])
 				}
 
 				pub(crate) fn get_key(&self, item_key: ItemKey) -> Option<&'static str> {

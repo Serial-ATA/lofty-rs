@@ -9,7 +9,7 @@ use crate::tag::{TagSupport, TagType};
 use std::collections::HashMap;
 use std::io::{Read, Seek};
 use std::marker::PhantomData;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex};
 
 /// A custom file resolver
 ///
@@ -36,8 +36,8 @@ pub trait FileResolver: Send + Sync + AudioFile {
 type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
 
 pub(crate) fn custom_resolvers() -> &'static Arc<Mutex<ResolverMap>> {
-	static INSTANCE: OnceLock<Arc<Mutex<ResolverMap>>> = OnceLock::new();
-	INSTANCE.get_or_init(Default::default)
+	static INSTANCE: LazyLock<Arc<Mutex<ResolverMap>>> = LazyLock::new(Default::default);
+	&INSTANCE
 }
 
 pub(crate) fn lookup_resolver(name: &'static str) -> &'static dyn ObjectSafeFileResolver {
