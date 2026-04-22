@@ -1,3 +1,5 @@
+//! MPEG error types
+
 use crate::error::FileParseError;
 use crate::file::FileType;
 
