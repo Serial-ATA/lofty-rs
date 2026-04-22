@@ -1,6 +1,6 @@
 //! Contains the errors that can arise within Lofty
 //!
-//! The primary error is [`LoftyError`]. The type of error is determined by [`ErrorKind`],
+//! The primary error is [`struct@LoftyError`]. The type of error is determined by [`ErrorKind`],
 //! which can be extended at any time.
 
 use crate::ape::error::ApeTagParseError;
