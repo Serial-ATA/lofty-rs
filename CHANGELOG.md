@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+
 ### Fixed
 
 - **IFF**: Undersized ID3v2 chunks will no longer error outside of strict mode ([PR](https://github.com/Serial-ATA/lofty-rs/pull/644))
