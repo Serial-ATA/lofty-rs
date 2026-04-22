@@ -124,9 +124,6 @@ const LOFTY_FILE_TYPES: [&str; N] = [
 
 Now we can define our file struct in `src/foo/mod.rs`.
 
-Unless there is additional information to provide from the format, such as [`Mp4Properties::ftyp()`](https://docs.rs/lofty/latest/lofty/mp4/struct.Mp4Properties.html#method.ftyp),
-this file can simply be a struct definition (with exports as necessary).
-
 ```rust
 mod read;
 mod properties;
