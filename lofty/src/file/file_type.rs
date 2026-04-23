@@ -1,5 +1,5 @@
 use crate::config::global_options;
-use crate::resolve::custom_resolvers;
+use crate::resolve::CUSTOM_RESOLVERS;
 use crate::tag::{TagSupport, TagType};
 
 use std::ffi::OsStr;
@@ -189,7 +189,7 @@ impl FileType {
 
 		// Give custom resolvers priority
 		if unsafe { global_options().use_custom_resolvers } {
-			if let Some((ty, _)) = custom_resolvers()
+			if let Some((ty, _)) = CUSTOM_RESOLVERS
 				.lock()
 				.ok()?
 				.iter()
