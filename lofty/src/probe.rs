@@ -16,7 +16,7 @@ use crate::musepack::MpcFile;
 use crate::ogg::opus::OpusFile;
 use crate::ogg::speex::SpeexFile;
 use crate::ogg::vorbis::VorbisFile;
-use crate::resolve::custom_resolvers;
+use crate::resolve::CUSTOM_RESOLVERS;
 use crate::wavpack::WavPackFile;
 
 use crate::io::FileLike;
@@ -336,7 +336,7 @@ impl<R: Read + Seek> Probe<R> {
 
 		// Give custom resolvers priority
 		if unsafe { global_options().use_custom_resolvers } {
-			if let Ok(lock) = custom_resolvers().lock() {
+			if let Ok(lock) = CUSTOM_RESOLVERS.lock() {
 				#[allow(clippy::significant_drop_in_scrutinee)]
 				for (_, resolve) in lock.iter() {
 					if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {

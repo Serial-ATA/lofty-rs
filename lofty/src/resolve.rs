@@ -9,7 +9,7 @@ use crate::tag::{TagSupport, TagType};
 use std::collections::HashMap;
 use std::io::{Read, Seek};
 use std::marker::PhantomData;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex};
 
 /// A custom file resolver
 ///
@@ -35,13 +35,11 @@ pub trait FileResolver: Send + Sync + AudioFile {
 // Just broken out to its own type to make `CUSTOM_RESOLVER`'s type shorter :)
 type ResolverMap = HashMap<&'static str, &'static dyn ObjectSafeFileResolver>;
 
-pub(crate) fn custom_resolvers() -> &'static Arc<Mutex<ResolverMap>> {
-	static INSTANCE: OnceLock<Arc<Mutex<ResolverMap>>> = OnceLock::new();
-	INSTANCE.get_or_init(Default::default)
-}
+pub(crate) static CUSTOM_RESOLVERS: LazyLock<Arc<Mutex<ResolverMap>>> =
+	LazyLock::new(Default::default);
 
 pub(crate) fn lookup_resolver(name: &'static str) -> &'static dyn ObjectSafeFileResolver {
-	let res = custom_resolvers().lock().unwrap();
+	let res = CUSTOM_RESOLVERS.lock().unwrap();
 
 	if let Some(resolver) = res.get(name).copied() {
 		return resolver;
@@ -114,7 +112,7 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 /// * Attempting to register an existing name or type
 /// * See [`Mutex::lock`]
 pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
-	let mut res = custom_resolvers().lock().unwrap();
+	let mut res = CUSTOM_RESOLVERS.lock().unwrap();
 	assert!(
 		res.iter().all(|(n, _)| *n != name),
 		"Resolver `{}` already exists!",

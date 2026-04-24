@@ -15,26 +15,23 @@ use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
-use std::sync::OnceLock;
+use std::sync::LazyLock;
 
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 
 // In the very rare chance someone wants to write a CRC in their extended header
-fn crc_32_table() -> &'static [u32; 256] {
-	static INSTANCE: OnceLock<[u32; 256]> = OnceLock::new();
-	INSTANCE.get_or_init(|| {
-		let mut crc32_table = [0; 256];
+static CRC32_TABLE: LazyLock<[u32; 256]> = LazyLock::new(|| {
+	let mut crc32_table = [0; 256];
 
-		for n in 0..256 {
-			crc32_table[n as usize] = (0..8).fold(n as u32, |acc, _| match acc & 1 {
-				1 => 0xEDB8_8320 ^ (acc >> 1),
-				_ => acc >> 1,
-			});
-		}
+	for n in 0..256 {
+		crc32_table[n as usize] = (0..8).fold(n as u32, |acc, _| match acc & 1 {
+			1 => 0xEDB8_8320 ^ (acc >> 1),
+			_ => acc >> 1,
+		});
+	}
 
-		crc32_table
-	})
-}
+	crc32_table
+});
 
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_id3v2<'a, F, I>(
@@ -270,7 +267,7 @@ fn calculate_crc(content: &[u8]) -> [u8; 5] {
 	let crc: u32 = content
 		.iter()
 		.fold(!0, |crc, octet| {
-			(crc >> 8) ^ crc_32_table()[(((crc & 0xFF) ^ u32::from(*octet)) & 0xFF) as usize]
+			(crc >> 8) ^ CRC32_TABLE[(((crc & 0xFF) ^ u32::from(*octet)) & 0xFF) as usize]
 		})
 		.not();
 
