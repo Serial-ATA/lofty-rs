@@ -7,7 +7,7 @@ use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_
 use crate::flac::error::FlacParseError;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v2};
-use crate::ogg::read::read_comments;
+use crate::ogg::tag::read::read_comments;
 use crate::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};

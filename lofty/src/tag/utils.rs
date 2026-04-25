@@ -36,7 +36,7 @@ where
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
-			crate::ogg::write::write_to(file, tag, file_type, write_options)
+			crate::ogg::tag::write::write_to(file, tag, file_type, write_options)
 		},
 		FileType::Mpc => musepack::write::write_to(file, tag, write_options),
 		FileType::Mpeg => mpeg::write::write_to(file, tag, write_options),

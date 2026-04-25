@@ -7,7 +7,7 @@ use lofty::id3::v2::{FrameId, Id3v2Tag};
 use lofty::iff::aiff::AiffTextChunks;
 use lofty::iff::wav::RiffInfoList;
 use lofty::mp4::Ilst;
-use lofty::ogg::VorbisComments;
+use lofty::ogg::tag::VorbisComments;
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};
