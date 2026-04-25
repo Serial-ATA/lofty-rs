@@ -1,8 +1,10 @@
 //! Format-agnostic picture handling
 
+pub mod error;
+
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::err;
+use crate::error::{NotEnoughDataError, SizeMismatchError};
+use crate::picture::error::{PictureParseError, UnknownImageFormatError};
 use crate::util::text::utf8_decode_str;
 
 use std::borrow::Cow;
@@ -324,11 +326,11 @@ impl PictureInformation {
 	///
 	/// * `picture.data` is less than 8 bytes in length
 	/// * See [`PictureInformation::from_png`] and [`PictureInformation::from_jpeg`]
-	pub fn from_picture(picture: &Picture) -> Result<Self> {
+	pub fn from_picture(picture: &Picture) -> Result<Self, PictureParseError> {
 		let reader = &mut &*picture.data;
 
 		if reader.len() < 8 {
-			err!(NotAPicture);
+			return Err(NotEnoughDataError::new(Some(8)).into());
 		}
 
 		match reader[..4] {
@@ -343,14 +345,14 @@ impl PictureInformation {
 	/// # Errors
 	///
 	/// * `reader` is not a valid PNG
-	pub fn from_png(mut data: &[u8]) -> Result<Self> {
+	pub fn from_png(mut data: &[u8]) -> Result<Self, PictureParseError> {
 		let reader = &mut data;
 
 		let mut sig = [0; 8];
 		reader.read_exact(&mut sig)?;
 
 		if sig != [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
-			err!(NotAPicture);
+			return Err(UnknownImageFormatError.into());
 		}
 
 		let mut ihdr = [0; 8];
@@ -358,7 +360,7 @@ impl PictureInformation {
 
 		// Verify the signature is immediately followed by the IHDR chunk
 		if !ihdr.ends_with(&[0x49, 0x48, 0x44, 0x52]) {
-			err!(NotAPicture);
+			return Err(UnknownImageFormatError.into());
 		}
 
 		let width = reader.read_u32::<BigEndian>()?;
@@ -425,14 +427,14 @@ impl PictureInformation {
 	///
 	/// * `reader` is not a JPEG image
 	/// * `reader` does not contain a `SOFn` frame
-	pub fn from_jpeg(mut data: &[u8]) -> Result<Self> {
+	pub fn from_jpeg(mut data: &[u8]) -> Result<Self, PictureParseError> {
 		let reader = &mut data;
 
 		let mut frame_marker = [0; 4];
 		reader.read_exact(&mut frame_marker)?;
 
 		if !matches!(frame_marker, [0xFF, 0xD8, 0xFF, ..]) {
-			err!(NotAPicture);
+			return Err(UnknownImageFormatError.into());
 		}
 
 		let mut section_len = reader.read_u16::<BigEndian>()?;
@@ -440,10 +442,10 @@ impl PictureInformation {
 		let mut reader = Cursor::new(reader);
 
 		// The length contains itself, so anything < 2 is invalid
-		let (content_len, overflowed) = section_len.overflowing_sub(2);
-		if overflowed {
-			err!(NotAPicture);
-		}
+		let Some(content_len) = section_len.checked_sub(2) else {
+			return Err(NotEnoughDataError::new(Some(2)).into());
+		};
+
 		reader.seek(SeekFrom::Current(i64::from(content_len)))?;
 
 		while let Ok(0xFF) = reader.read_u8() {
@@ -477,7 +479,7 @@ impl PictureInformation {
 			reader.seek(SeekFrom::Current(i64::from(section_len - 2)))?;
 		}
 
-		err!(NotAPicture)
+		Err(UnknownImageFormatError.into())
 	}
 }
 
@@ -629,7 +631,7 @@ impl Picture {
 	///
 	/// * `reader` contains less than 8 bytes
 	/// * `reader` does not contain a supported format. See [`MimeType`] for valid formats
-	pub fn from_reader<R>(reader: &mut R) -> Result<Self>
+	pub fn from_reader<R>(reader: &mut R) -> Result<Self, PictureParseError>
 	where
 		R: Read,
 	{
@@ -637,7 +639,7 @@ impl Picture {
 		reader.read_to_end(&mut data)?;
 
 		if data.len() < 8 {
-			err!(NotAPicture);
+			return Err(NotEnoughDataError::new(Some(8)).into());
 		}
 
 		let mime_type = Self::mimetype_from_bin(&data[..8])?;
@@ -784,11 +786,9 @@ impl Picture {
 		bytes: &[u8],
 		encoded: bool,
 		parse_mode: ParsingMode,
-	) -> Result<(Self, PictureInformation)> {
+	) -> Result<(Self, PictureInformation), PictureParseError> {
 		if encoded {
-			let data = BASE64
-				.decode(bytes)
-				.map_err(|e| LoftyError::with_source(ErrorKind::NotAPicture, e))?;
+			let data = BASE64.decode(bytes)?;
 			Self::from_flac_bytes_inner(&data, parse_mode)
 		} else {
 			Self::from_flac_bytes_inner(bytes, parse_mode)
@@ -798,14 +798,14 @@ impl Picture {
 	fn from_flac_bytes_inner(
 		content: &[u8],
 		parse_mode: ParsingMode,
-	) -> Result<(Self, PictureInformation)> {
+	) -> Result<(Self, PictureInformation), PictureParseError> {
 		use crate::macros::try_vec;
 
 		let mut size = content.len();
 		let mut reader = Cursor::new(content);
 
 		if size < 32 {
-			err!(NotAPicture);
+			return Err(NotEnoughDataError::new(Some(32)).into());
 		}
 
 		let pic_ty = reader.read_u32::<BigEndian>()?;
@@ -815,14 +815,16 @@ impl Picture {
 		// Anything greater than that is probably invalid, so
 		// we just stop early
 		if pic_ty > 255 && parse_mode == ParsingMode::Strict {
-			err!(NotAPicture);
+			return Err(PictureParseError::message(format!(
+				"unknown picture type: {pic_ty}"
+			)));
 		}
 
 		let mime_len = reader.read_u32::<BigEndian>()? as usize;
 		size -= 4;
 
 		if mime_len > size {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		let mime_type_str = utf8_decode_str(&content[8..8 + mime_len])?;
@@ -852,35 +854,34 @@ impl Picture {
 		let data_len = reader.read_u32::<BigEndian>()? as usize;
 		size -= 20;
 
-		if data_len <= size {
-			let mut data = try_vec![0; data_len]?;
-
-			if let Ok(()) = reader.read_exact(&mut data) {
-				let mime_type;
-				if mime_type_str.is_empty() {
-					mime_type = None;
-				} else {
-					mime_type = Some(MimeType::from_str(mime_type_str));
-				}
-
-				return Ok((
-					Self {
-						pic_type: PictureType::from_u8(pic_ty as u8),
-						mime_type,
-						description,
-						data: Cow::from(data),
-					},
-					PictureInformation {
-						width,
-						height,
-						color_depth,
-						num_colors,
-					},
-				));
-			}
+		if data_len > size {
+			return Err(SizeMismatchError.into());
 		}
 
-		err!(NotAPicture)
+		let mut data = try_vec![0; data_len]?;
+		reader.read_exact(&mut data)?;
+
+		let mime_type;
+		if mime_type_str.is_empty() {
+			mime_type = None;
+		} else {
+			mime_type = Some(MimeType::from_str(mime_type_str));
+		}
+
+		Ok((
+			Self {
+				pic_type: PictureType::from_u8(pic_ty as u8),
+				mime_type,
+				description,
+				data: Cow::from(data),
+			},
+			PictureInformation {
+				width,
+				height,
+				color_depth,
+				num_colors,
+			},
+		))
 	}
 
 	/// Convert a [`Picture`] to an APE Cover Art byte vec:
@@ -909,9 +910,9 @@ impl Picture {
 	///
 	/// This function will return [`NotAPicture`](ErrorKind::NotAPicture)
 	/// if at any point it's unable to parse the data
-	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self> {
+	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self, PictureParseError> {
 		if bytes.is_empty() {
-			err!(NotAPicture);
+			return Err(NotEnoughDataError::new(None).into());
 		}
 
 		let pic_type = PictureType::from_ape_key(key);
@@ -953,14 +954,14 @@ impl Picture {
 		})
 	}
 
-	pub(crate) fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType> {
+	pub(crate) fn mimetype_from_bin(bytes: &[u8]) -> Result<MimeType, UnknownImageFormatError> {
 		match bytes[..8] {
 			[0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] => Ok(MimeType::Png),
 			[0xFF, 0xD8, ..] => Ok(MimeType::Jpeg),
 			[b'G', b'I', b'F', 0x38, 0x37 | 0x39, b'a', ..] => Ok(MimeType::Gif),
 			[b'B', b'M', ..] => Ok(MimeType::Bmp),
 			[b'I', b'I', b'*', 0x00, ..] | [b'M', b'M', 0x00, b'*', ..] => Ok(MimeType::Tiff),
-			_ => err!(NotAPicture),
+			_ => Err(UnknownImageFormatError),
 		}
 	}
 }

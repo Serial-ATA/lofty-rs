@@ -107,7 +107,7 @@ impl Block {
 
 		comments.write_u32::<LittleEndian>(count)?;
 
-		crate::ogg::write::create_comments(&mut comments, &mut count, items)?;
+		crate::ogg::tag::write::create_comments(&mut comments, &mut count, items)?;
 
 		if comments.get_ref().len() > Block::MAX_CONTENT_SIZE as usize {
 			err!(TooMuchData);

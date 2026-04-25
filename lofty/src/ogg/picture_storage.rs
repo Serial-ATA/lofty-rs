@@ -1,9 +1,9 @@
-use crate::error::Result;
+use crate::picture::error::PictureParseError;
 use crate::picture::{Picture, PictureInformation, PictureType};
 
 /// Defines methods for interacting with an item storing OGG pictures
 ///
-/// This exists due to *both* [`VorbisComments`](crate::ogg::VorbisComments) and [`FlacFile`](crate::flac::FlacFile) needing to store
+/// This exists due to *both* [`VorbisComments`](crate::ogg::tag::VorbisComments) and [`FlacFile`](crate::flac::FlacFile) needing to store
 /// pictures in their own ways.
 ///
 /// It cannot be implemented downstream.
@@ -23,7 +23,7 @@ pub trait OggPictureStorage: private::Sealed {
 		&mut self,
 		picture: Picture,
 		information: Option<PictureInformation>,
-	) -> Result<Option<(Picture, PictureInformation)>> {
+	) -> Result<Option<(Picture, PictureInformation)>, PictureParseError> {
 		let ret = match picture.pic_type {
 			PictureType::Icon | PictureType::OtherIcon => self
 				.pictures()
@@ -54,7 +54,8 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::ogg::OggPictureStorage;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut tag = VorbisComments::default();
 	///
@@ -70,10 +71,11 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::ogg::OggPictureStorage;
+	/// use lofty::ogg::tag::VorbisComments;
 	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::picture::error::PictureParseError> {
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add a front cover
@@ -127,10 +129,11 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::ogg::OggPictureStorage;
+	/// use lofty::ogg::tag::VorbisComments;
 	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::picture::error::PictureParseError> {
 	/// let front_cover = Picture::unchecked(Vec::new())
 	/// 	.pic_type(PictureType::CoverFront)
 	/// 	.mime_type(MimeType::Png)
@@ -158,10 +161,11 @@ pub trait OggPictureStorage: private::Sealed {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::{OggPictureStorage, VorbisComments};
+	/// use lofty::ogg::OggPictureStorage;
+	/// use lofty::ogg::tag::VorbisComments;
 	/// use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::picture::error::PictureParseError> {
 	/// let mut tag = VorbisComments::default();
 	///
 	/// // Add front and back covers

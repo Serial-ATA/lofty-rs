@@ -11,6 +11,7 @@ use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
+use crate::ogg::tag::error::VorbisCommentsParseError;
 use crate::tag::items::timestamp::TimestampParseError;
 
 use std::error::Error;
@@ -119,6 +120,29 @@ pub struct FakeTagError;
 #[derive(LoftyError)]
 #[error(message = "attempted to read/write an abnormally large amount of data")]
 pub struct TooMuchDataError;
+
+/// Attempting to parse an item, but there isn't enough data available
+#[derive(Debug)]
+pub struct NotEnoughDataError {
+	expected: Option<usize>,
+}
+
+impl NotEnoughDataError {
+	pub(crate) fn new(expected: Option<usize>) -> Self {
+		Self { expected }
+	}
+}
+
+impl core::fmt::Display for NotEnoughDataError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self.expected {
+			None => write!(f, "not enough data in reader"),
+			Some(expected) => write!(f, "not enough data in reader (expected {expected} bytes)"),
+		}
+	}
+}
+
+impl core::error::Error for NotEnoughDataError {}
 
 // TODO: Should definitely have a mandatory context message
 /// Expected the data to be a different size than provided
@@ -538,6 +562,13 @@ impl From<Id3v1ParseError> for LoftyError {
 // TODO: Remove this
 impl From<Id3v2ParseError> for LoftyError {
 	fn from(_: Id3v2ParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
+	}
+}
+
+// TODO: Remove this
+impl From<VorbisCommentsParseError> for LoftyError {
+	fn from(_: VorbisCommentsParseError) -> Self {
 		Self::new(ErrorKind::TagParse)
 	}
 }

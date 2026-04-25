@@ -74,7 +74,7 @@ mod private {
 	use crate::id3::v2::Id3v2Tag;
 	use crate::iff::aiff::AiffTextChunks;
 	use crate::iff::wav::RiffInfoList;
-	use crate::ogg::VorbisComments;
+	use crate::ogg::tag::VorbisComments;
 	use crate::tag::Tag;
 
 	pub trait Sealed {}

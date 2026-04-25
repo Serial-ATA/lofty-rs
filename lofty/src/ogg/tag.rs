@@ -1,9 +1,11 @@
+//! Vorbis Comments implementation
+
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::err;
 use crate::ogg::picture_storage::OggPictureStorage;
-use crate::ogg::write::OGGFormat;
+use crate::ogg::tag::read::valid_vorbis_comments_key;
 use crate::picture::{Picture, PictureInformation};
 use crate::probe::Probe;
 use crate::tag::items::Timestamp;
@@ -14,12 +16,17 @@ use crate::tag::{
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
+use write::OGGFormat;
 
-use crate::ogg::read::valid_vorbis_comments_key;
-use lofty_attr::tag;
 use std::borrow::Cow;
 use std::io::Write;
 use std::ops::Deref;
+
+use lofty_attr::tag;
+
+pub(crate) mod error;
+pub(crate) mod read;
+pub(crate) mod write;
 
 macro_rules! impl_accessor {
 	($($name:ident => $key:literal;)+) => {
@@ -87,7 +94,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	/// use lofty::tag::TagExt;
 	///
 	/// let vorbis_comments_tag = VorbisComments::new();
@@ -100,7 +107,7 @@ impl VorbisComments {
 	/// Returns the vendor string
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	/// assert!(vorbis_comments.vendor().is_empty());
@@ -115,7 +122,7 @@ impl VorbisComments {
 	/// Sets the vendor string
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	///
@@ -131,7 +138,7 @@ impl VorbisComments {
 	/// Returns an [`Iterator`] over the stored key/value pairs.
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	///
@@ -152,7 +159,7 @@ impl VorbisComments {
 	/// Returns an [`Iterator`] with the stored key/value pairs.
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	/// use lofty::tag::TagExt;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
@@ -179,7 +186,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	///
@@ -207,7 +214,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut vorbis_comments = VorbisComments::default();
 	///
@@ -234,7 +241,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut tag = VorbisComments::default();
 	/// tag.insert(String::from("TITLE"), String::from("Title 1"));
@@ -261,7 +268,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut tag = VorbisComments::default();
 	/// tag.push(String::from("TITLE"), String::from("Title 1"));
@@ -285,7 +292,7 @@ impl VorbisComments {
 	/// # Examples
 	///
 	/// ```rust
-	/// use lofty::ogg::VorbisComments;
+	/// use lofty::ogg::tag::VorbisComments;
 	///
 	/// let mut tag = VorbisComments::default();
 	/// tag.push(String::from("TITLE"), String::from("Title 1"));
@@ -514,6 +521,9 @@ impl TagExt for VorbisComments {
 	}
 }
 
+/// Remainder from a [`VorbisComments`] tag split
+///
+/// See [`SplitTag`]
 #[derive(Debug, Clone, Default)]
 pub struct SplitTagRemainder(VorbisComments);
 
@@ -726,7 +736,7 @@ where
 
 		let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
 
-		super::write::write(file, self, format, header_packet_count, write_options)
+		write::write(file, self, format, header_packet_count, write_options)
 	}
 
 	pub(crate) fn dump_to<W: Write>(
@@ -734,7 +744,7 @@ where
 		writer: &mut W,
 		_write_options: WriteOptions,
 	) -> Result<()> {
-		let metadata_packet = super::write::create_metadata_packet(self, &[], false)?;
+		let metadata_packet = write::create_metadata_packet(self, &[], false)?;
 		writer.write_all(&metadata_packet)?;
 		Ok(())
 	}
@@ -767,7 +777,8 @@ pub(crate) fn create_vorbis_comments_ref(
 #[cfg(test)]
 mod tests {
 	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
-	use crate::ogg::{OggPictureStorage, VorbisComments};
+	use crate::ogg::OggPictureStorage;
+	use crate::ogg::tag::VorbisComments;
 	use crate::picture::{MimeType, Picture, PictureType};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
@@ -776,7 +787,7 @@ mod tests {
 	fn read_tag(tag: &[u8]) -> VorbisComments {
 		let mut reader = std::io::Cursor::new(tag);
 
-		crate::ogg::read::read_comments(
+		crate::ogg::tag::read::read_comments(
 			&mut reader,
 			tag.len() as u64,
 			ParseOptions::new().parsing_mode(ParsingMode::Strict),
@@ -975,7 +986,7 @@ mod tests {
 		tag.dump_to(&mut writer, WriteOptions::new()).unwrap();
 
 		let mut reader = Cursor::new(&writer);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			writer.len() as u64,
 			ParseOptions::new()
@@ -1000,7 +1011,7 @@ mod tests {
 			.unwrap();
 
 		let mut reader = Cursor::new(&comments_bytes);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			comments_bytes.len() as u64,
 			ParseOptions::new()
@@ -1028,7 +1039,7 @@ mod tests {
 			.unwrap();
 
 		let mut reader = Cursor::new(&comments_bytes);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			comments_bytes.len() as u64,
 			ParseOptions::new()
@@ -1054,7 +1065,7 @@ mod tests {
 			.unwrap();
 
 		let mut reader = Cursor::new(&comments_bytes);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			comments_bytes.len() as u64,
 			ParseOptions::new()
@@ -1079,7 +1090,7 @@ mod tests {
 			.unwrap();
 
 		let mut reader = Cursor::new(&comments_bytes);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			comments_bytes.len() as u64,
 			ParseOptions::new()
@@ -1107,7 +1118,7 @@ mod tests {
 			.unwrap();
 
 		let mut reader = Cursor::new(&comments_bytes);
-		let tag = crate::ogg::read::read_comments(
+		let tag = crate::ogg::tag::read::read_comments(
 			&mut reader,
 			comments_bytes.len() as u64,
 			ParseOptions::new()

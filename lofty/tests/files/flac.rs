@@ -5,7 +5,8 @@ use std::io::Seek;
 
 use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
 use lofty::flac::FlacFile;
-use lofty::ogg::{OggPictureStorage, VorbisComments};
+use lofty::ogg::OggPictureStorage;
+use lofty::ogg::tag::VorbisComments;
 use lofty::picture::{Picture, PictureInformation, PictureType};
 use lofty::prelude::*;
 

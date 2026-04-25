@@ -6,7 +6,7 @@ use lofty::id3::v2::{
 };
 use lofty::iff::wav::RiffInfoList;
 use lofty::mp4::Ilst;
-use lofty::ogg::VorbisComments;
+use lofty::ogg::tag::VorbisComments;
 use lofty::tag::items::popularimeter::{
 	Popularimeter, RatingProvider, StarRating, set_custom_rating_provider,
 };

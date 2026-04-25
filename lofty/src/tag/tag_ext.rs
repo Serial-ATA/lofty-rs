@@ -158,7 +158,7 @@ mod private {
 	use crate::iff::aiff::AiffTextChunks;
 	use crate::iff::wav::RiffInfoList;
 	use crate::mp4::Ilst;
-	use crate::ogg::VorbisComments;
+	use crate::ogg::tag::VorbisComments;
 	use crate::tag::Tag;
 
 	pub trait Sealed {}

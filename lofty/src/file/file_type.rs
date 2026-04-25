@@ -165,7 +165,7 @@ impl FileType {
 			(Id3v1, crate::id3::v1::Id3v1Tag),
 			(Id3v2, crate::id3::v2::Id3v2Tag),
 			(Mp4Ilst, crate::mp4::Ilst),
-			(VorbisComments, crate::ogg::VorbisComments),
+			(VorbisComments, crate::ogg::tag::VorbisComments),
 			(RiffInfo, crate::iff::wav::RiffInfoList),
 			(AiffText, crate::iff::aiff::AiffTextChunks),
 		)

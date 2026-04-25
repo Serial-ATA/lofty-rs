@@ -1,10 +1,10 @@
-use super::verify_signature;
 use crate::config::WriteOptions;
 use crate::error::{LoftyError, Result};
 use crate::file::FileType;
 use crate::macros::{decode_err, err, try_vec};
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
+use crate::ogg::verify_signature;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
@@ -31,7 +31,7 @@ impl OGGFormat {
 		}
 	}
 
-	pub(super) fn from_filetype(file_type: FileType) -> (Self, isize) {
+	pub(in crate::ogg) fn from_filetype(file_type: FileType) -> (Self, isize) {
 		match file_type {
 			FileType::Opus => (OGGFormat::Opus, 2),
 			FileType::Vorbis => (OGGFormat::Vorbis, 3),
@@ -75,7 +75,7 @@ where
 	)
 }
 
-pub(super) fn write<'a, F, II, IP>(
+pub(in crate::ogg) fn write<'a, F, II, IP>(
 	file: &mut F,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	format: OGGFormat,
@@ -160,7 +160,7 @@ where
 	Ok(())
 }
 
-pub(super) fn create_metadata_packet<'a, II, IP>(
+pub(in crate::ogg) fn create_metadata_packet<'a, II, IP>(
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	comment_signature: &[u8],
 	add_framing_bit: bool,
