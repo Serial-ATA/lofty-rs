@@ -14,7 +14,9 @@ pub struct FlacParseError {
 	#[error(from(
 		std::io::Error,
 		crate::id3::v2::error::Id3v2ParseError,
+		crate::ogg::tag::error::VorbisCommentsParseError,
 		crate::error::SizeMismatchError,
+		crate::picture::error::PictureParseError,
 		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,

@@ -8,9 +8,8 @@ pub(crate) mod opus;
 mod picture_storage;
 pub(crate) mod read;
 pub(crate) mod speex;
-pub(crate) mod tag;
+pub mod tag;
 pub(crate) mod vorbis;
-pub(crate) mod write;
 
 use crate::error::Result;
 use crate::io::{RevSearchEnd, RevSearchStart};
@@ -28,7 +27,6 @@ pub use opus::properties::OpusProperties;
 pub use picture_storage::OggPictureStorage;
 pub use speex::SpeexFile;
 pub use speex::properties::SpeexProperties;
-pub use tag::VorbisComments;
 pub use vorbis::VorbisFile;
 pub use vorbis::properties::VorbisProperties;
 
