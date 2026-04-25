@@ -2,17 +2,17 @@ use super::FlacFile;
 use super::block::Block;
 use super::properties::FlacProperties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::Result;
+use crate::error::SizeMismatchError;
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
+use crate::flac::error::FlacParseError;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v2};
-use crate::macros::{decode_err, err};
 use crate::ogg::read::read_comments;
 use crate::picture::Picture;
 
 use std::io::{Read, Seek, SeekFrom};
 
-pub(super) fn verify_flac<R>(data: &mut R) -> Result<Block>
+pub(super) fn verify_flac<R>(data: &mut R) -> Result<Block, FlacParseError>
 where
 	R: Read + Seek,
 {
@@ -20,20 +20,27 @@ where
 	data.read_exact(&mut marker)?;
 
 	if &marker != b"fLaC" {
-		decode_err!(@BAIL Flac, "File missing \"fLaC\" stream marker");
+		return Err(FlacParseError::message(
+			"file missing \"fLaC\" stream marker",
+		));
 	}
 
 	let block = Block::read(data, |_| true)?;
 
 	if block.ty != BLOCK_ID_STREAMINFO {
-		decode_err!(@BAIL Flac, "File missing mandatory STREAMINFO block");
+		return Err(FlacParseError::message(
+			"file missing mandatory STREAMINFO block",
+		));
 	}
 
 	log::debug!("File verified to be FLAC");
 	Ok(block)
 }
 
-pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<FlacFile>
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	parse_options: ParseOptions,
+) -> Result<FlacFile, FlacParseError>
 where
 	R: Read + Seek,
 {
@@ -64,7 +71,7 @@ where
 	let stream_info_len = (stream_info.end - stream_info.start) as u32;
 
 	if stream_info_len < 18 {
-		decode_err!(@BAIL Flac, "File has an invalid STREAMINFO block size (< 18)");
+		return Err(SizeMismatchError.into());
 	}
 
 	let mut last_block = stream_info.last;
@@ -96,7 +103,9 @@ where
 			if flac_file.vorbis_comments_tag.is_some()
 				&& parse_options.parsing_mode == ParsingMode::Strict
 			{
-				decode_err!(@BAIL Flac, "Streams are only allowed one Vorbis Comments block per stream");
+				return Err(FlacParseError::message(
+					"file contains multiple `VORBIS_COMMENT` blocks",
+				));
 			}
 
 			let vorbis_comments = read_comments(
@@ -116,7 +125,7 @@ where
 				Ok(picture) => flac_file.pictures.push(picture),
 				Err(e) => {
 					if parse_options.parsing_mode == ParsingMode::Strict {
-						return Err(e);
+						return Err(e.into());
 					}
 
 					log::warn!("Unable to read FLAC picture block, discarding");
@@ -137,7 +146,7 @@ where
 		// In the event that a block lies about its size, the current position could be
 		// completely wrong.
 		if current > end {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		(end - current, end)

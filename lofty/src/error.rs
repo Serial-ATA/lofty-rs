@@ -5,6 +5,7 @@
 
 use crate::ape::error::ApeTagParseError;
 use crate::file::FileType;
+use crate::flac::error::FlacParseError;
 use crate::id3::Lyrics3v2ParseError;
 use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
@@ -119,6 +120,7 @@ pub struct FakeTagError;
 #[error(message = "attempted to read/write an abnormally large amount of data")]
 pub struct TooMuchDataError;
 
+// TODO: Should definitely have a mandatory context message
 /// Expected the data to be a different size than provided
 ///
 /// This occurs when the size of an item is written as one value, but that size is either too
@@ -557,6 +559,13 @@ impl From<ChunkParseError> for LoftyError {
 // TODO: Remove this
 impl From<WavParseError> for LoftyError {
 	fn from(input: WavParseError) -> Self {
+		Self::new(ErrorKind::FileParse(input.into()))
+	}
+}
+
+// TODO: Remove this
+impl From<FlacParseError> for LoftyError {
+	fn from(input: FlacParseError) -> Self {
 		Self::new(ErrorKind::FileParse(input.into()))
 	}
 }
