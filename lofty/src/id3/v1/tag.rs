@@ -326,10 +326,10 @@ impl SplitTag for Id3v1Tag {
 			))
 		}
 
-		if let Some(genre_index) = self.genre.take() {
-			if let Some(genre) = GENRES.get(genre_index as usize) {
-				tag.insert_text(ItemKey::Genre, (*genre).to_string());
-			}
+		if let Some(genre_index) = self.genre.take()
+			&& let Some(genre) = GENRES.get(genre_index as usize)
+		{
+			tag.insert_text(ItemKey::Genre, (*genre).to_string());
 		}
 
 		(SplitTagRemainder, tag)

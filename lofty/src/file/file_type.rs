@@ -188,15 +188,14 @@ impl FileType {
 		let ext = ext.as_ref().to_str()?.to_ascii_lowercase();
 
 		// Give custom resolvers priority
-		if unsafe { global_options().use_custom_resolvers } {
-			if let Some((ty, _)) = CUSTOM_RESOLVERS
+		if unsafe { global_options().use_custom_resolvers }
+			&& let Some((ty, _)) = CUSTOM_RESOLVERS
 				.lock()
 				.ok()?
 				.iter()
 				.find(|(_, f)| f.extension() == Some(ext.as_str()))
-			{
-				return Some(Self::Custom(ty));
-			}
+		{
+			return Some(Self::Custom(ty));
 		}
 
 		// Also update `EXTENSIONS` above

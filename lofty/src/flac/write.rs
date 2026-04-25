@@ -140,16 +140,14 @@ where
 
 	blocks.extend(metadata_blocks);
 
-	if will_write_padding {
-		if let Some(preferred_padding) = write_options.preferred_padding {
-			log::warn!("File is missing a PADDING block. Adding one");
+	if will_write_padding && let Some(preferred_padding) = write_options.preferred_padding {
+		log::warn!("File is missing a PADDING block. Adding one");
 
-			// `PADDING` always goes last
-			let mut padding_block = Block::new_padding(preferred_padding as usize)?;
-			padding_block.last = true;
+		// `PADDING` always goes last
+		let mut padding_block = Block::new_padding(preferred_padding as usize)?;
+		padding_block.last = true;
 
-			blocks.push(padding_block);
-		}
+		blocks.push(padding_block);
 	}
 
 	if let Some(block) = blocks.last_mut() {

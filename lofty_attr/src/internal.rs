@@ -17,16 +17,15 @@ pub(crate) fn opt_internal_file_type(
 	const ID3V2_STRIPPABLE: [&str; 2] = ["Flac", "Ape"];
 
 	let stripped = struct_name.strip_suffix("File");
-	if let Some(prefix) = stripped {
-		if let Some(pos) = LOFTY_FILE_TYPES
+	if let Some(prefix) = stripped
+		&& let Some(pos) = LOFTY_FILE_TYPES
 			.iter()
 			.position(|p| p.eq_ignore_ascii_case(prefix))
-		{
-			let file_ty = LOFTY_FILE_TYPES[pos];
-			let tt = file_ty.parse::<proc_macro2::TokenStream>().unwrap();
+	{
+		let file_ty = LOFTY_FILE_TYPES[pos];
+		let tt = file_ty.parse::<proc_macro2::TokenStream>().unwrap();
 
-			return Some((tt, ID3V2_STRIPPABLE.contains(&file_ty)));
-		}
+		return Some((tt, ID3V2_STRIPPABLE.contains(&file_ty)));
 	}
 
 	None

@@ -197,11 +197,11 @@ impl TryFrom<ItemKey> for FrameId<'_> {
 	type Error = LoftyError;
 
 	fn try_from(value: ItemKey) -> std::prelude::rust_2015::Result<Self, Self::Error> {
-		if let Some(mapped) = value.map_key(TagType::Id3v2) {
-			if mapped.len() == 4 {
-				Self::verify_id(mapped)?;
-				return Ok(Self::Valid(Cow::Borrowed(mapped)));
-			}
+		if let Some(mapped) = value.map_key(TagType::Id3v2)
+			&& mapped.len() == 4
+		{
+			Self::verify_id(mapped)?;
+			return Ok(Self::Valid(Cow::Borrowed(mapped)));
 		}
 
 		Err(Id3v2Error::new(Id3v2ErrorKind::UnsupportedFrameId(value)).into())

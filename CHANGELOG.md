@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+- **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
 
 ### Fixed
 

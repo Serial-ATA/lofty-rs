@@ -100,10 +100,10 @@ impl Accessor for AiffTextChunks {
 	}
 
 	fn comment(&self) -> Option<Cow<'_, str>> {
-		if let Some(ref anno) = self.annotations {
-			if !anno.is_empty() {
-				return anno.first().map(String::as_str).map(Cow::Borrowed);
-			}
+		if let Some(ref anno) = self.annotations
+			&& !anno.is_empty()
+		{
+			return anno.first().map(String::as_str).map(Cow::Borrowed);
 		}
 
 		if let Some(ref comm) = self.comments {
@@ -339,17 +339,17 @@ where
 
 	fn create_text_chunks(tag: &mut AiffTextChunksRef<'_, T, AI>) -> Result<Vec<u8>> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
-			if let Some(val) = value {
-				if let Ok(len) = u32::try_from(val.len()) {
-					writer.extend(key.as_bytes());
-					writer.extend(len.to_be_bytes());
-					writer.extend(val.as_bytes());
+			if let Some(val) = value
+				&& let Ok(len) = u32::try_from(val.len())
+			{
+				writer.extend(key.as_bytes());
+				writer.extend(len.to_be_bytes());
+				writer.extend(val.as_bytes());
 
-					// AIFF only needs a terminator if the string is on an odd boundary,
-					// unlike RIFF, which makes use of both C-strings and even boundaries
-					if len % 2 != 0 {
-						writer.push(0);
-					}
+				// AIFF only needs a terminator if the string is on an odd boundary,
+				// unlike RIFF, which makes use of both C-strings and even boundaries
+				if len % 2 != 0 {
+					writer.push(0);
 				}
 			}
 		}

@@ -7,7 +7,7 @@
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Serial-ATA/lofty-rs/ci.yml?branch=main&logo=github&style=for-the-badge)](https://github.com/Serial-ATA/lofty-rs/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/crates/d/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
 [![Version](https://img.shields.io/crates/v/lofty?style=for-the-badge&logo=rust)](https://crates.io/crates/lofty)
-[![MSRV](https://img.shields.io/crates/msrv/lofty?style=for-the-badge&color=lightgray)](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0/)
+[![MSRV](https://img.shields.io/crates/msrv/lofty?style=for-the-badge&color=lightgray)](https://blog.rust-lang.org/2025/08/07/Rust-1.89.0/)
 [![Documentation](https://img.shields.io/badge/docs.rs-lofty-informational?style=for-the-badge&logo=read-the-docs)](https://docs.rs/lofty/)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/Serial-ATA?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/Serial-ATA)
 

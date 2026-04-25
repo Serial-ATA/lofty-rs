@@ -132,17 +132,16 @@ where
 				b"cpil" | b"hdvd" | b"pcst" | b"pgap" | b"shwm" => {
 					if let Some(atom_data) =
 						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+						&& let Some((_, content)) = atom_data.first()
 					{
-						if let Some((_, content)) = atom_data.first() {
-							// Any size integer is technically valid, we'll correct it on write.
-							let is_true = content.iter().any(|&b| b != 0);
-							let data = AtomData::Bool(is_true);
+						// Any size integer is technically valid, we'll correct it on write.
+						let is_true = content.iter().any(|&b| b != 0);
+						let data = AtomData::Bool(is_true);
 
-							tag.atoms.push(Atom {
-								ident: AtomIdent::Fourcc(*fourcc),
-								data: AtomDataStorage::Single(data),
-							})
-						}
+						tag.atoms.push(Atom {
+							ident: AtomIdent::Fourcc(*fourcc),
+							data: AtomDataStorage::Single(data),
+						})
 					}
 
 					continue;

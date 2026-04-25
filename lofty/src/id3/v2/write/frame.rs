@@ -333,19 +333,19 @@ where
 		);
 	}
 
-	if let Some(mut len) = flags.data_length_indicator {
-		if len > 0 {
-			write_frame_header(writer, name, (value.len() + 1) as u32, flags, write_options)?;
-			if !write_options.use_id3v23 {
-				len = len.synch()?;
-			}
-
-			writer.write_u32::<BigEndian>(len)?;
-			writer.write_u8(method_symbol)?;
-			writer.write_all(value)?;
-
-			return Ok(());
+	if let Some(mut len) = flags.data_length_indicator
+		&& len > 0
+	{
+		write_frame_header(writer, name, (value.len() + 1) as u32, flags, write_options)?;
+		if !write_options.use_id3v23 {
+			len = len.synch()?;
 		}
+
+		writer.write_u32::<BigEndian>(len)?;
+		writer.write_u8(method_symbol)?;
+		writer.write_all(value)?;
+
+		return Ok(());
 	}
 
 	Err(Id3v2Error::new(Id3v2ErrorKind::MissingDataLengthIndicator).into())
