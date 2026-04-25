@@ -5,6 +5,7 @@
 //! * See [`FlacFile`]
 
 pub(crate) mod block;
+pub mod error;
 pub(crate) mod properties;
 mod read;
 pub(crate) mod write;
