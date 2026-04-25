@@ -301,10 +301,10 @@ impl From<Tag> for RiffInfoList {
 		let mut riff_info = RiffInfoList::default();
 
 		for item in input.items {
-			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value {
-				if let Some(key) = item.item_key.map_key(TagType::RiffInfo) {
-					riff_info.items.push((key.to_string(), val))
-				}
+			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value
+				&& let Some(key) = item.item_key.map_key(TagType::RiffInfo)
+			{
+				riff_info.items.push((key.to_string(), val))
 			}
 		}
 

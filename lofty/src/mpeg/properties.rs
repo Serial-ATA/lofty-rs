@@ -148,23 +148,24 @@ where
 		2
 	};
 
-	if let Some(vbr_header) = vbr_header {
-		if first_frame_header.sample_rate > 0 && vbr_header.is_valid() {
-			log::debug!("MPEG: Valid VBR header; using it to calculate duration");
+	if let Some(vbr_header) = vbr_header
+		&& first_frame_header.sample_rate > 0
+		&& vbr_header.is_valid()
+	{
+		log::debug!("MPEG: Valid VBR header; using it to calculate duration");
 
-			let sample_rate = u64::from(first_frame_header.sample_rate);
-			let samples_per_frame = u64::from(first_frame_header.samples);
+		let sample_rate = u64::from(first_frame_header.sample_rate);
+		let samples_per_frame = u64::from(first_frame_header.samples);
 
-			let total_frames = u64::from(vbr_header.frames);
+		let total_frames = u64::from(vbr_header.frames);
 
-			let length = (samples_per_frame * 1000 * total_frames).div_round(sample_rate);
+		let length = (samples_per_frame * 1000 * total_frames).div_round(sample_rate);
 
-			properties.duration = Duration::from_millis(length);
-			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.audio_bitrate = ((u64::from(vbr_header.size) * 8) / length) as u32;
+		properties.duration = Duration::from_millis(length);
+		properties.overall_bitrate = ((file_length * 8) / length) as u32;
+		properties.audio_bitrate = ((u64::from(vbr_header.size) * 8) / length) as u32;
 
-			return Ok(());
-		}
+		return Ok(());
 	}
 
 	// Nothing more we can do

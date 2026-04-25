@@ -146,10 +146,10 @@ where
 		paginate_packet(&mut ctx, packet)?;
 	}
 
-	if flags & CONTAINS_LAST_PAGE_OF_BITSTREAM == 0x04 {
-		if let Some(last) = ctx.pages.last_mut() {
-			last.header.header_type_flag |= CONTAINS_LAST_PAGE_OF_BITSTREAM;
-		}
+	if flags & CONTAINS_LAST_PAGE_OF_BITSTREAM == 0x04
+		&& let Some(last) = ctx.pages.last_mut()
+	{
+		last.header.header_type_flag |= CONTAINS_LAST_PAGE_OF_BITSTREAM;
 	}
 
 	Ok(ctx.pages)
@@ -199,7 +199,9 @@ fn paginate_packet(ctx: &mut PaginateContext, packet: &[u8]) -> Result<()> {
 	// From <https://xiph.org/ogg/doc/framing.html>:
 	// "Note also that a 'nil' (zero length) packet is not an error; it consists of nothing more than a lacing value of zero in the header."
 	if ctx.current_packet_len != 0
-		&& ctx.current_packet_len % (255 * MAX_WRITTEN_SEGMENT_COUNT) == 0
+		&& ctx
+			.current_packet_len
+			.is_multiple_of(255 * MAX_WRITTEN_SEGMENT_COUNT)
 	{
 		ctx.flags.packet_finished_on_page = true;
 		let mut nil_content = Vec::new();

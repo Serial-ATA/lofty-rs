@@ -187,7 +187,7 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 		// and it is NOT included in the chunk's size
 
 		let mut padding_size = 1;
-		if current_chunk_size % 2 == 0 || self.remaining_size < padding_size {
+		if current_chunk_size.is_multiple_of(2) || self.remaining_size < padding_size {
 			return Ok(());
 		}
 

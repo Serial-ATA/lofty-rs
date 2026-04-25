@@ -335,13 +335,13 @@ impl<R: Read + Seek> Probe<R> {
 		self.inner.seek(SeekFrom::Start(starting_position))?;
 
 		// Give custom resolvers priority
-		if unsafe { global_options().use_custom_resolvers } {
-			if let Ok(lock) = CUSTOM_RESOLVERS.lock() {
-				#[allow(clippy::significant_drop_in_scrutinee)]
-				for (_, resolve) in lock.iter() {
-					if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
-						return Ok(ret);
-					}
+		if unsafe { global_options().use_custom_resolvers }
+			&& let Ok(lock) = CUSTOM_RESOLVERS.lock()
+		{
+			#[allow(clippy::significant_drop_in_scrutinee)]
+			for (_, resolve) in lock.iter() {
+				if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
+					return Ok(ret);
 				}
 			}
 		}

@@ -1302,10 +1302,10 @@ impl From<Id3v2Tag> for Tag {
 
 impl From<Tag> for Id3v2Tag {
 	fn from(mut input: Tag) -> Self {
-		if unsafe { global_options().preserve_format_specific_items } {
-			if let Some(companion) = input.companion_tag.take().and_then(CompanionTag::id3v2) {
-				return SplitTagRemainder(companion).merge_tag(input);
-			}
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::id3v2)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
 		}
 
 		SplitTagRemainder::default().merge_tag(input)

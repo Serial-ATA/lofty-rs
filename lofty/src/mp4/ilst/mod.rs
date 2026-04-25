@@ -583,10 +583,10 @@ impl Accessor for Ilst {
 	}
 
 	fn date(&self) -> Option<Timestamp> {
-		if let Some(atom) = self.get(&AtomIdent::Fourcc(*b"\xa9day")) {
-			if let Some(AtomData::UTF8(text)) = atom.data().next() {
-				return try_parse_timestamp(text);
-			}
+		if let Some(atom) = self.get(&AtomIdent::Fourcc(*b"\xa9day"))
+			&& let Some(AtomData::UTF8(text)) = atom.data().next()
+		{
+			return try_parse_timestamp(text);
 		}
 
 		None
@@ -885,10 +885,10 @@ impl From<Ilst> for Tag {
 
 impl From<Tag> for Ilst {
 	fn from(mut input: Tag) -> Self {
-		if unsafe { global_options().preserve_format_specific_items } {
-			if let Some(companion) = input.companion_tag.take().and_then(CompanionTag::ilst) {
-				return SplitTagRemainder(companion).merge_tag(input);
-			}
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::ilst)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
 		}
 
 		SplitTagRemainder::default().merge_tag(input)

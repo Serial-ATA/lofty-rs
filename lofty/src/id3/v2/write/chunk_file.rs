@@ -101,7 +101,7 @@ where
 
 		// It is required an odd length chunk be padded with a 0
 		// The 0 isn't included in the chunk size, however
-		if tag.len() % 2 != 0 {
+		if !tag.len().is_multiple_of(2) {
 			tag_bytes.write_u8(0)?;
 		}
 

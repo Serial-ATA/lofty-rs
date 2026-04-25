@@ -568,19 +568,19 @@ impl SplitTag for ApeTag {
 					let item = std::mem::replace(item, ApeItem::EMPTY);
 
 					// Multi-value string
-					if let Some(text) = item.value.text() {
-						if text.contains('\0') {
-							for value in text.split('\0') {
-								let item_value = match &item.value {
-									ItemValue::Text(_) => ItemValue::Text(value.to_string()),
-									ItemValue::Locator(_) => ItemValue::Locator(value.to_string()),
-									_ => unreachable!(),
-								};
+					if let Some(text) = item.value.text()
+						&& text.contains('\0')
+					{
+						for value in text.split('\0') {
+							let item_value = match &item.value {
+								ItemValue::Text(_) => ItemValue::Text(value.to_string()),
+								ItemValue::Locator(_) => ItemValue::Locator(value.to_string()),
+								_ => unreachable!(),
+							};
 
-								tag.items.push(TagItem::new(k, item_value))
-							}
-							return false; // Item consumed
+							tag.items.push(TagItem::new(k, item_value))
 						}
+						return false; // Item consumed
 					}
 
 					tag.items.push(TagItem::new(k, item.value));
@@ -604,12 +604,11 @@ impl MergeTag for SplitTagRemainder {
 		}
 
 		for pic in tag.pictures {
-			if let Some(key) = pic.pic_type.as_ape_key() {
-				if let Ok(item) =
+			if let Some(key) = pic.pic_type.as_ape_key()
+				&& let Ok(item) =
 					ApeItem::new(key.to_string(), ItemValue::Binary(pic.as_ape_bytes()))
-				{
-					merged.insert(item)
-				}
+			{
+				merged.insert(item)
 			}
 		}
 
