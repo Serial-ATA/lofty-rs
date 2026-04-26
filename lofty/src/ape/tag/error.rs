@@ -1,4 +1,5 @@
-use crate::error::{AllocationError, TextDecodingError};
+use crate::error::{AllocationError, TagEncodingError, TextDecodingError};
+use crate::tag::TagType;
 
 use std::borrow::Cow;
 
@@ -150,4 +151,10 @@ pub struct ApeTagParseError {
 pub struct ApeTagEncodingError {
 	#[error(from(std::io::Error, crate::util::alloc::AllocationError,))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl From<ApeTagEncodingError> for TagEncodingError {
+	fn from(input: ApeTagEncodingError) -> Self {
+		TagEncodingError::new(TagType::Ape, input.source)
+	}
 }

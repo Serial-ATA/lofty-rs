@@ -14,6 +14,7 @@ use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
 use crate::mp4::error::{AtomParseError, IlstEncodingError, Mp4ParseError};
 use crate::ogg::tag::error::VorbisCommentsParseError;
+use crate::tag::TagType;
 use crate::tag::items::timestamp::TimestampParseError;
 
 use std::error::Error;
@@ -160,6 +161,57 @@ impl From<LoftyError> for FileEncodingError {
 	fn from(input: LoftyError) -> Self {
 		Self {
 			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+/// An error that arises while encoding a tag
+pub struct TagEncodingError {
+	ty: Option<TagType>,
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl TagEncodingError {
+	pub(crate) fn new(
+		ty: TagType,
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self {
+			ty: Some(ty),
+			source,
+		}
+	}
+}
+
+impl core::fmt::Display for TagEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self.ty {
+			Some(format) => write!(f, "failed to write {format:?} tag"),
+			None => write!(f, "failed to write tag"),
+		}
+	}
+}
+
+impl core::fmt::Debug for TagEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("TagEncodingError")
+			.field("ty", &self.ty)
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for TagEncodingError {
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(self.source.as_ref())
+	}
+}
+
+// TODO: remove this
+impl From<LoftyError> for TagEncodingError {
+	fn from(input: LoftyError) -> Self {
+		Self {
+			ty: None,
 			source: Box::new(input),
 		}
 	}
