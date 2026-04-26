@@ -1,6 +1,5 @@
+use crate::aac::error::AacParseError;
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::decode_err;
 use crate::mp4::{AudioObjectType, SAMPLE_RATES};
 use crate::mpeg::MpegVersion;
 
@@ -25,7 +24,10 @@ pub(crate) struct ADTSHeader {
 }
 
 impl ADTSHeader {
-	pub(super) fn read<R>(reader: &mut R, _parse_mode: ParsingMode) -> Result<Option<Self>>
+	pub(super) fn read<R>(
+		reader: &mut R,
+		_parse_mode: ParsingMode,
+	) -> Result<Option<Self>, AacParseError>
 	where
 		R: Read + Seek,
 	{
@@ -81,7 +83,9 @@ impl ADTSHeader {
 		let sample_rate_idx = (byte3 >> 2) & 0b1111;
 		if sample_rate_idx == 15 {
 			// 15 is forbidden
-			decode_err!(@BAIL Aac, "File contains an invalid sample frequency index");
+			return Err(AacParseError::message(
+				"file contains an invalid sample frequency index",
+			));
 		}
 
 		let sample_rate = SAMPLE_RATES[sample_rate_idx as usize];
