@@ -1,6 +1,6 @@
 //! Various traits for reading and writing to file-like objects
 
-use crate::error::{LoftyError, Result};
+use crate::error::LoftyError;
 use crate::util::math::F80;
 
 use std::collections::VecDeque;
@@ -232,14 +232,14 @@ where
 
 pub(crate) trait ReadExt: Read {
 	/// Read a big-endian [`F80`] from the current position.
-	fn read_f80(&mut self) -> Result<F80>;
+	fn read_f80(&mut self) -> std::io::Result<F80>;
 }
 
 impl<R> ReadExt for R
 where
 	R: Read,
 {
-	fn read_f80(&mut self) -> Result<F80> {
+	fn read_f80(&mut self) -> std::io::Result<F80> {
 		let mut bytes = [0; 10];
 		self.read_exact(&mut bytes)?;
 
