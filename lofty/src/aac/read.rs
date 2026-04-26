@@ -1,19 +1,22 @@
 use super::AacFile;
 use super::header::{ADTSHeader, HEADER_MASK};
+use crate::aac::error::AacParseError;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::Result;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{ID3FindResults, find_id3v1};
-use crate::macros::{decode_err, err, parse_mode_choice};
 use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::error::SizeMismatchError;
 use byteorder::ReadBytesExt;
 
 #[allow(clippy::unnecessary_wraps)]
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<AacFile>
+pub(super) fn read_from<R>(
+	reader: &mut R,
+	parse_options: ParseOptions,
+) -> Result<AacFile, AacParseError>
 where
 	R: Read + Seek,
 {
@@ -47,7 +50,7 @@ where
 				let skip_footer = header.flags.footer;
 
 				let Some(new_stream_len) = stream_len.checked_sub(u64::from(header.size)) else {
-					err!(SizeMismatch);
+					return Err(SizeMismatchError.into());
 				};
 
 				stream_len = new_stream_len;
@@ -72,7 +75,7 @@ where
 					log::debug!("Skipping ID3v2 footer");
 
 					let Some(new_stream_len) = stream_len.checked_sub(10) else {
-						err!(SizeMismatch);
+						return Err(SizeMismatchError.into());
 					};
 
 					stream_len = new_stream_len;
@@ -109,7 +112,7 @@ where
 
 	if header.is_some() {
 		let Some(new_stream_len) = stream_len.checked_sub(128) else {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		};
 
 		stream_len = new_stream_len;
@@ -119,18 +122,15 @@ where
 	if parse_options.read_properties {
 		let Some(mut first_frame_header) = first_frame_header else {
 			// The search for sync bits was unsuccessful
-			decode_err!(@BAIL Mpeg, "File contains an invalid frame");
+			return Err(AacParseError::message("file contains an invalid frame"));
 		};
 
-		if first_frame_header.sample_rate == 0 {
-			parse_mode_choice!(
-				parse_mode,
-				STRICT: decode_err!(@BAIL Mpeg, "Sample rate is 0"),
-			);
+		if first_frame_header.sample_rate == 0 && parse_mode == ParsingMode::Strict {
+			return Err(AacParseError::message("file specifies a sample rate of 0"));
 		}
 
 		if first_frame_header.bitrate == 0 {
-			parse_mode_choice!(parse_mode, STRICT: decode_err!(@BAIL Mpeg, "Bitrate is 0"),);
+			return Err(AacParseError::message("file specifies a bitrate of 0"));
 		}
 
 		// Read as many frames as we can to try and find the average bitrate
@@ -158,7 +158,7 @@ where
 fn find_next_frame<R>(
 	reader: &mut R,
 	parsing_mode: ParsingMode,
-) -> Result<Option<(ADTSHeader, u64)>>
+) -> Result<Option<(ADTSHeader, u64)>, AacParseError>
 where
 	R: Read + Seek,
 {
