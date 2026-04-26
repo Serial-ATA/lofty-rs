@@ -2,10 +2,10 @@ use super::AiffFile;
 use super::properties::AiffProperties;
 use super::tag::{AiffTextChunks, Comment};
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::{NotEnoughDataError, UnknownFormatError};
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::iff::chunk::Chunks;
-use crate::macros::{decode_err, err};
+use crate::iff::aiff::error::{AiffParseError, AiffTextChunksParseError};
+use crate::iff::chunk::{Chunk, Chunks};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -18,7 +18,7 @@ pub(in crate::iff) enum CompressionPresent {
 	No,
 }
 
-pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<CompressionPresent>
+pub(in crate::iff) fn verify_aiff<R>(data: &mut R) -> Result<CompressionPresent, AiffParseError>
 where
 	R: Read + Seek,
 {
@@ -26,14 +26,14 @@ where
 	data.read_exact(&mut id)?;
 
 	if &id[..4] != b"FORM" {
-		err!(UnknownFormat);
+		return Err(UnknownFormatError.into());
 	}
 
 	let compression_present;
 	match &id[8..] {
 		b"AIFF" => compression_present = CompressionPresent::No,
 		b"AIFC" => compression_present = CompressionPresent::Yes,
-		_ => err!(UnknownFormat),
+		_ => return Err(UnknownFormatError.into()),
 	}
 
 	log::debug!(
@@ -43,7 +43,10 @@ where
 	Ok(compression_present)
 }
 
-pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<AiffFile>
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	parse_options: ParseOptions,
+) -> Result<AiffFile, AiffParseError>
 where
 	R: Read + Seek,
 {
@@ -88,7 +91,7 @@ where
 			},
 			b"COMM" if parse_options.read_properties && comm.is_none() => {
 				if chunk.size() < 18 {
-					decode_err!(@BAIL Aiff, "File has an invalid \"COMM\" chunk size (< 18)");
+					return Err(NotEnoughDataError::new(Some(18)).into());
 				}
 
 				comm = Some(chunk.content()?);
@@ -106,30 +109,54 @@ where
 					continue;
 				}
 
-				let num_comments = chunk.read_u16::<BigEndian>()?;
+				fn parse_comments<R>(
+					chunk: &mut Chunk<'_, R>,
+					comments: &mut Vec<Comment>,
+				) -> Result<(), AiffTextChunksParseError>
+				where
+					R: Read + Seek,
+				{
+					let num_comments = chunk.read_u16::<BigEndian>()?;
 
-				for _ in 0..num_comments {
-					let timestamp = chunk.read_u32::<BigEndian>()?;
-					let marker_id = chunk.read_u16::<BigEndian>()?;
-					let size = chunk.read_u16::<BigEndian>()?;
+					for _ in 0..num_comments {
+						let timestamp = chunk.read_u32::<BigEndian>()?;
+						let marker_id = chunk.read_u16::<BigEndian>()?;
+						let size = chunk.read_u16::<BigEndian>()?;
 
-					let text = chunk.read_string(Some(u32::from(size)))?;
+						let text = chunk.read_string(Some(u32::from(size)))?;
 
-					comments.push(Comment {
-						timestamp,
-						marker_id,
-						text,
-					})
+						comments.push(Comment {
+							timestamp,
+							marker_id,
+							text,
+						})
+					}
+
+					Ok(())
 				}
+
+				parse_comments(&mut chunk, &mut comments)?;
 			},
 			b"NAME" if text_chunks.name.is_none() && parse_options.read_tags => {
-				text_chunks.name = Some(chunk.read_string(None)?);
+				text_chunks.name = Some(
+					chunk
+						.read_string(None)
+						.map_err(AiffTextChunksParseError::from)?,
+				);
 			},
 			b"AUTH" if text_chunks.author.is_none() && parse_options.read_tags => {
-				text_chunks.author = Some(chunk.read_string(None)?);
+				text_chunks.author = Some(
+					chunk
+						.read_string(None)
+						.map_err(AiffTextChunksParseError::from)?,
+				);
 			},
 			b"(c) " if text_chunks.copyright.is_none() && parse_options.read_tags => {
-				text_chunks.copyright = Some(chunk.read_string(None)?);
+				text_chunks.copyright = Some(
+					chunk
+						.read_string(None)
+						.map_err(AiffTextChunksParseError::from)?,
+				);
 			},
 			_ => {},
 		}
@@ -150,7 +177,9 @@ where
 		match comm {
 			Some(comm) => {
 				if stream_len == 0 {
-					decode_err!(@BAIL Aiff, "File does not contain a \"SSND\" chunk");
+					return Err(AiffParseError::message(
+						"file does not contain an \"SSND\" chunk",
+					));
 				}
 
 				properties = super::properties::read_properties(
@@ -160,7 +189,11 @@ where
 					data.stream_position()?,
 				)?;
 			},
-			None => decode_err!(@BAIL Aiff, "File does not contain a \"COMM\" chunk"),
+			None => {
+				return Err(AiffParseError::message(
+					"file does not contain an \"COMM\" chunk",
+				));
+			},
 		}
 	} else {
 		properties = AiffProperties::default();

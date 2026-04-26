@@ -1,3 +1,5 @@
+pub(super) mod error;
+
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
