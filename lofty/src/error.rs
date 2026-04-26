@@ -12,6 +12,7 @@ use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::iff::aiff::error::AiffParseError;
 use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::ogg::tag::error::VorbisCommentsParseError;
 use crate::tag::items::timestamp::TimestampParseError;
 
@@ -207,8 +208,6 @@ pub enum ErrorKind {
 	/// Errors that can occur while encoding tags
 	TagEncoding,
 
-	/// Arises when an atom contains invalid data
-	BadAtom(&'static str),
 	/// Arises when attempting to use [`Atom::merge`](crate::mp4::Atom::merge) with mismatching identifiers
 	AtomMismatch,
 
@@ -609,6 +608,20 @@ impl From<FlacParseError> for LoftyError {
 	}
 }
 
+// TODO: Remove this
+impl From<Mp4ParseError> for LoftyError {
+	fn from(input: Mp4ParseError) -> Self {
+		Self::new(ErrorKind::FileParse(input.into()))
+	}
+}
+
+// TODO: Remove this
+impl From<AtomParseError> for LoftyError {
+	fn from(_: AtomParseError) -> Self {
+		Self::new(ErrorKind::TagParse)
+	}
+}
+
 impl From<FileParseError> for LoftyError {
 	fn from(input: FileParseError) -> Self {
 		Self::new(ErrorKind::FileParse(input))
@@ -643,7 +656,6 @@ impl core::fmt::Display for LoftyError {
 			},
 			ErrorKind::TagParse => write!(f, "failed to parse tag"),
 			ErrorKind::TagEncoding => write!(f, "failed to encode tag"),
-			ErrorKind::BadAtom(message) => write!(f, "MP4 Atom: {message}"),
 			ErrorKind::AtomMismatch => write!(
 				f,
 				"MP4 Atom: Attempted to use `Atom::merge()` with mismatching identifiers"

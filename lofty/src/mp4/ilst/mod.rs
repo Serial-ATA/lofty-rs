@@ -2,6 +2,7 @@ pub(super) mod advisory_rating;
 pub(super) mod atom;
 pub(super) mod constants;
 pub(super) mod data_type;
+pub(super) mod error;
 pub(super) mod read;
 mod r#ref;
 pub(crate) mod write;

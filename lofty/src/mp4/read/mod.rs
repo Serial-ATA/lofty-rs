@@ -5,8 +5,8 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{decode_err, err};
+use crate::error::{NotEnoughDataError, TooMuchDataError, UnknownFormatError};
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::util::io::SeekStreamLen;
 use crate::util::text::utf8_decode_str;
 
@@ -16,22 +16,22 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) use atom_reader::AtomReader;
 
-pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String>
+pub(in crate::mp4) fn verify_mp4<R>(reader: &mut AtomReader<R>) -> Result<String, Mp4ParseError>
 where
 	R: Read + Seek,
 {
 	let Some(atom) = reader.next()? else {
-		err!(UnknownFormat);
+		return Err(UnknownFormatError.into());
 	};
 
 	if atom.ident != AtomIdent::Fourcc(*b"ftyp") {
-		err!(UnknownFormat);
+		return Err(UnknownFormatError.into());
 	}
 
 	// size + identifier + major brand
 	// There *should* be more, but this is all we need from it
 	if atom.len < 12 {
-		decode_err!(@BAIL Mp4, "\"ftyp\" atom too short");
+		return Err(NotEnoughDataError::new(Some(12)).into());
 	}
 
 	let mut major_brand = [0u8; 4];
@@ -41,19 +41,16 @@ where
 
 	let major_brand = utf8_decode_str(&major_brand)
 		.map(ToOwned::to_owned)
-		.map_err(|e| {
-			LoftyError::with_source(
-				ErrorKind::BadAtom("Unable to parse \"ftyp\"'s major brand"),
-				e,
-			)
-		})?;
+		.map_err(|_| Mp4ParseError::message("malformed ftyp major brand"))?;
 
 	log::debug!("Verified to be an MP4 file. Major brand: {}", major_brand);
 	Ok(major_brand)
 }
 
-#[allow(unstable_name_collisions)]
-pub(crate) fn read_from<R>(data: &mut R, parse_options: ParseOptions) -> Result<Mp4File>
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	parse_options: ParseOptions,
+) -> Result<Mp4File, Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -96,7 +93,7 @@ where
 ///
 /// * This makes the assumption that the reader is at the end of the atom's header.
 /// * This makes the assumption that the `len` is the *full atom length*, not just that of the content.
-pub(super) fn skip_atom<R>(reader: &mut R, extended: bool, len: u64) -> Result<()>
+pub(super) fn skip_atom<R>(reader: &mut R, extended: bool, len: u64) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -109,11 +106,11 @@ where
 
 	let pos = reader.stream_position()?;
 
-	if let (pos, false) = pos.overflowing_add(len - 8) {
-		reader.seek(SeekFrom::Start(pos))?;
-	} else {
-		err!(TooMuchData);
-	}
+	let Some(pos) = pos.checked_add(len - 8) else {
+		return Err(TooMuchDataError.into());
+	};
+
+	reader.seek(SeekFrom::Start(pos))?;
 
 	Ok(())
 }
@@ -127,7 +124,7 @@ pub(super) fn find_child_atom<R>(
 	mut len: u64,
 	expected: [u8; 4],
 	parse_mode: ParsingMode,
-) -> Result<Option<AtomInfo>>
+) -> Result<Option<AtomInfo>, AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -159,7 +156,7 @@ pub(super) fn atom_tree<R>(
 	mut len: u64,
 	up_to: &[u8],
 	parse_mode: ParsingMode,
-) -> Result<(usize, Vec<AtomInfo>)>
+) -> Result<(usize, Vec<AtomInfo>), Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -192,7 +189,7 @@ where
 	Ok((found_idx, buf))
 }
 
-pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool>
+pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool, AtomParseError>
 where
 	R: Read + Seek,
 {

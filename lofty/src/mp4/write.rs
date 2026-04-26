@@ -1,14 +1,14 @@
 use crate::config::ParsingMode;
-use crate::error::{LoftyError, Result};
 use crate::io::{FileLike, Length, Truncate};
-use crate::macros::err;
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
+use crate::mp4::error::AtomParseError;
 use crate::mp4::read::{meta_is_full, skip_atom};
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
+use crate::error::LoftyError;
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
@@ -35,7 +35,7 @@ impl ContextualAtom {
 		reader: &mut R,
 		reader_len: &mut u64,
 		parse_mode: ParsingMode,
-	) -> Result<Option<ContextualAtom>>
+	) -> Result<Option<ContextualAtom>, AtomParseError>
 	where
 		R: Read + Seek,
 	{
@@ -74,8 +74,10 @@ impl ContextualAtom {
 		}
 
 		if len != 0 {
-			// TODO: Print the container ident
-			err!(BadAtom("Unable to read entire container"));
+			return Err(AtomParseError::message(
+				Some(info.ident),
+				"unable to read entire container",
+			));
 		}
 
 		*reader_len = reader_len.saturating_sub(info.len);
@@ -125,7 +127,10 @@ impl AtomWriter {
 	/// Create a new [`AtomWriter`]
 	///
 	/// This will read the entire file into memory, and parse its atoms.
-	pub(super) fn new_from_file<F>(file: &mut F, parse_mode: ParsingMode) -> Result<Self>
+	pub(super) fn new_from_file<F>(
+		file: &mut F,
+		parse_mode: ParsingMode,
+	) -> crate::error::Result<Self>
 	where
 		F: FileLike,
 		LoftyError: From<<F as Truncate>::Error>,
@@ -164,7 +169,7 @@ impl AtomWriter {
 		}
 	}
 
-	pub(super) fn save_to<F>(&mut self, file: &mut F) -> Result<()>
+	pub(super) fn save_to<F>(&mut self, file: &mut F) -> crate::error::Result<()>
 	where
 		F: FileLike,
 		LoftyError: From<<F as Truncate>::Error>,
@@ -205,7 +210,12 @@ impl AtomWriterCompanion<'_> {
 	/// NOTES:
 	/// * This expects the cursor to be at the start of the atom size
 	/// * This will leave the cursor at the start of the atom's data
-	pub(super) fn write_atom_size(&mut self, start: u64, size: u64, extended: bool) -> Result<()> {
+	pub(super) fn write_atom_size(
+		&mut self,
+		start: u64,
+		size: u64,
+		extended: bool,
+	) -> crate::error::Result<()> {
 		if u32::try_from(size).is_ok() {
 			// ???? (identifier)
 			self.write_u32::<BigEndian>(size as u32)?;
