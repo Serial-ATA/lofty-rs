@@ -4,6 +4,7 @@
 //!
 //! The only supported tag format is [`Ilst`].
 mod atom_info;
+pub mod error;
 pub(crate) mod ilst;
 mod moov;
 mod properties;
