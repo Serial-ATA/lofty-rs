@@ -1,11 +1,11 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileEncodingError, LoftyError, Result};
-use crate::file::FileType;
+use crate::error::LoftyError;
 use crate::macros::{decode_err, err, try_vec};
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
+use crate::mp4::error::{IlstEncodingError, Mp4ParseError};
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
@@ -26,7 +26,7 @@ pub(crate) fn write_to<'a, F, I>(
 	file: &mut F,
 	tag: &mut IlstRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), LoftyError>
 where
 	F: FileLike,
 	LoftyError: From<<F as Truncate>::Error>,
@@ -46,11 +46,7 @@ where
 	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
-		return Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Could not find \"moov\" atom in target file",
-		)
-		.into());
+		return Err(Mp4ParseError::missing_moov().into());
 	};
 
 	let moov_start = moov.info.start;
@@ -217,7 +213,7 @@ fn save_to_existing(
 	ilst: Vec<u8>,
 	remove_tag: bool,
 	write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<(), LoftyError> {
 	let mut replacement;
 	let range;
 
@@ -368,7 +364,7 @@ fn pad_atom<W>(
 	writer: &mut W,
 	mut atom_size_difference: i64,
 	write_options: WriteOptions,
-) -> Result<(i64, u64)>
+) -> Result<(i64, u64), LoftyError>
 where
 	W: Write + Seek,
 {
@@ -417,7 +413,7 @@ where
 	Ok((atom_size_difference, padding_size))
 }
 
-fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<()>
+fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), LoftyError>
 where
 	W: Write,
 {
@@ -432,7 +428,7 @@ fn update_offsets(
 	moov: &ContextualAtom,
 	difference: i64,
 	ilst_offset: u64,
-) -> Result<()> {
+) -> Result<(), LoftyError> {
 	log::debug!("Checking for offset atoms to update");
 
 	let mut write_handle = writer.start_write();
@@ -537,7 +533,7 @@ fn update_offsets(
 	Ok(())
 }
 
-fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
+fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, LoftyError> {
 	const UDTA_HEADER: [u8; 8] = [0, 0, 0, 0, b'u', b'd', b't', b'a'];
 
 	// `udta` + `meta` + `hdlr` + `ilst`
@@ -564,7 +560,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
 	Ok(udta_writer.into_contents())
 }
 
-fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
+fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<(), LoftyError> {
 	let mut write_handle = writer.start_write();
 
 	let start = write_handle.stream_position()?;
@@ -593,7 +589,9 @@ fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
 	Ok(())
 }
 
-pub(super) fn build_ilst<'a, I>(atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>) -> Result<Vec<u8>>
+pub(super) fn build_ilst<'a, I>(
+	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
+) -> Result<Vec<u8>, IlstEncodingError>
 where
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
@@ -648,7 +646,7 @@ where
 	Ok(ilst_writer.into_contents())
 }
 
-fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<()>
+fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<(), IlstEncodingError>
 where
 	W: Write,
 {
@@ -670,7 +668,10 @@ where
 	Ok(())
 }
 
-fn write_atom_data<'a, I>(data: I, writer: &mut AtomWriterCompanion<'_>) -> Result<()>
+fn write_atom_data<'a, I>(
+	data: I,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError>
 where
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
@@ -689,7 +690,10 @@ where
 	Ok(())
 }
 
-fn write_signed_int(int: i32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_signed_int(
+	int: i32,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	write_int(DataType::BeSignedInteger, int.to_be_bytes(), 4, writer)
 }
 
@@ -705,7 +709,10 @@ fn bytes_to_occupy_uint(uint: u32) -> usize {
 	ret
 }
 
-fn write_unsigned_int(uint: u32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_unsigned_int(
+	uint: u32,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	let bytes_needed = bytes_to_occupy_uint(uint);
 	write_int(
 		DataType::BeUnsignedInteger,
@@ -720,12 +727,12 @@ fn write_int(
 	bytes: [u8; 4],
 	bytes_needed: usize,
 	writer: &mut AtomWriterCompanion<'_>,
-) -> Result<()> {
+) -> Result<(), IlstEncodingError> {
 	debug_assert!(bytes_needed != 0);
 	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
-fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<(), IlstEncodingError> {
 	write_int(
 		DataType::BeSignedInteger,
 		i32::from(b).to_be_bytes(),
@@ -734,7 +741,10 @@ fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	)
 }
 
-fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_picture(
+	picture: &Picture,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	match picture.mime_type {
 		// GIF is deprecated
 		Some(MimeType::Gif) => write_data(DataType::Gif, &picture.data, writer),
@@ -743,21 +753,21 @@ fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Res
 		Some(MimeType::Bmp) => write_data(DataType::Bmp, &picture.data, writer),
 		// We'll assume implicit (0) was the intended type
 		None => write_data(DataType::Reserved, &picture.data, writer),
-		_ => Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Attempted to write an unsupported picture format",
-		)
-		.into()),
+		_ => Err(IlstEncodingError::message(
+			"attempted to write a picture with an unsupported MIME type",
+		)),
 	}
 }
 
-fn write_data(flags: DataType, data: &[u8], writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_data(
+	flags: DataType,
+	data: &[u8],
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	if u32::from(flags) > DataType::MAX {
-		return Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Attempted to write a code that cannot fit in 24 bits",
-		)
-		.into());
+		return Err(IlstEncodingError::message(
+			"attempted to write a code that cannot fit in 24 bits",
+		));
 	}
 
 	// .... DATA (version = 0) (flags) (locale = 0000) (data)

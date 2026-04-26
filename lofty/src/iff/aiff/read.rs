@@ -190,9 +190,7 @@ where
 				)?;
 			},
 			None => {
-				return Err(AiffParseError::message(
-					"file does not contain an \"COMM\" chunk",
-				));
+				return Err(AiffParseError::missing_comm());
 			},
 		}
 	} else {

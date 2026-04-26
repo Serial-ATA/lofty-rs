@@ -30,7 +30,7 @@ impl Moov {
 			skip_atom(reader, atom.extended, atom.len)?;
 		}
 
-		moov.ok_or_else(|| Mp4ParseError::message("file does not contain a \"moov\" atom"))
+		moov.ok_or_else(Mp4ParseError::missing_moov)
 	}
 
 	pub(super) fn parse<R>(
