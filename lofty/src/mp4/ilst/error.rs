@@ -1,3 +1,6 @@
+use crate::error::TagEncodingError;
+use crate::tag::TagType;
+
 use std::borrow::Cow;
 
 use lofty_attr::LoftyError;
@@ -35,5 +38,11 @@ impl IlstEncodingError {
 		Self {
 			source: message.into(),
 		}
+	}
+}
+
+impl From<IlstEncodingError> for TagEncodingError {
+	fn from(input: IlstEncodingError) -> Self {
+		TagEncodingError::new(TagType::Mp4Ilst, input.source)
 	}
 }

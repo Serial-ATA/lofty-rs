@@ -1,6 +1,7 @@
 //! ID3v2 error types
 
-use crate::prelude::ItemKey;
+use crate::error::TagEncodingError;
+use crate::tag::{ItemKey, TagType};
 
 use lofty_attr::LoftyError;
 
@@ -111,4 +112,10 @@ pub struct Id3v2EncodingError {
 		crate::util::alloc::AllocationError,
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl From<Id3v2EncodingError> for TagEncodingError {
+	fn from(input: Id3v2EncodingError) -> Self {
+		TagEncodingError::new(TagType::Id3v2, input.source)
+	}
 }
