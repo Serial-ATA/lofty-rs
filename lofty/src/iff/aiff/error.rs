@@ -30,6 +30,10 @@ pub struct AiffParseError {
 }
 
 impl AiffParseError {
+	pub(super) fn missing_comm() -> Self {
+		Self::message("file does not contain an \"COMM\" chunk")
+	}
+
 	pub(super) fn message(message: &'static str) -> Self {
 		Self {
 			source: message.into(),

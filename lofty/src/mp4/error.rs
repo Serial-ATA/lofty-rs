@@ -13,7 +13,7 @@ use lofty_attr::LoftyError;
 
 // Exports
 
-pub use super::ilst::error::IlstParseError;
+pub use super::ilst::error::{IlstEncodingError, IlstParseError};
 
 /// Failed to parse a [`Mp4File`]
 ///
@@ -32,6 +32,10 @@ pub struct Mp4ParseError {
 }
 
 impl Mp4ParseError {
+	pub(super) fn missing_moov() -> Self {
+		Self::message("file does not contain a \"moov\" atom")
+	}
+
 	pub(super) fn message(message: &'static str) -> Self {
 		Self {
 			source: message.into(),

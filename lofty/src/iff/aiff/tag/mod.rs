@@ -3,7 +3,7 @@ pub(super) mod error;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{LoftyError, Result};
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
-use crate::macros::{encode_err, err};
+use crate::macros::err;
 use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
 
@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::Write;
 
+use crate::iff::aiff::error::AiffParseError;
 use byteorder::BigEndian;
 use lofty_attr::tag;
 
@@ -460,7 +461,7 @@ where
 		}
 
 		let Some(comm_end) = comm_end else {
-			encode_err!(@BAIL Aiff, "COMM chunk not found");
+			return Err(AiffParseError::missing_comm().into());
 		};
 
 		let file = chunks.into_inner();
