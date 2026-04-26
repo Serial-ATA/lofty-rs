@@ -1,6 +1,7 @@
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{err, try_vec};
+use crate::error::{NotEnoughDataError, SizeMismatchError};
+use crate::macros::try_vec;
+use crate::mp4::error::AtomParseError;
 use crate::tag::{ItemKey, TagType};
 use crate::util::text::utf8_decode;
 
@@ -59,6 +60,15 @@ impl<'a> AtomIdent<'a> {
 				mean: Cow::Owned(mean.into_owned()),
 				name: Cow::Owned(name.into_owned()),
 			},
+		}
+	}
+}
+
+impl core::fmt::Display for AtomIdent<'_> {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self {
+			AtomIdent::Fourcc(fourcc) => write!(f, "{}", fourcc.escape_ascii()),
+			AtomIdent::Freeform { mean, name } => write!(f, "---:{mean}:{name}"),
 		}
 	}
 }
@@ -123,29 +133,47 @@ fn is_valid_identifier_byte(b: u8) -> bool {
 
 impl AtomInfo {
 	pub(crate) fn read<R>(
-		data: &mut R,
-		mut reader_size: u64,
+		reader: &mut R,
+		reader_size: u64,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, AtomParseError>
 	where
 		R: Read + Seek,
 	{
-		let start = data.stream_position()?;
+		Self::read_inner(reader, reader_size, parse_mode, false)
+	}
 
-		let len_raw = u64::from(data.read_u32::<BigEndian>()?);
+	fn read_inner<R>(
+		reader: &mut R,
+		mut reader_size: u64,
+		parse_mode: ParsingMode,
+		in_freeform: bool,
+	) -> Result<Option<Self>, AtomParseError>
+	where
+		R: Read + Seek,
+	{
+		let start = reader.stream_position()?;
+
+		let len_raw = u64::from(reader.read_u32::<BigEndian>()?);
 
 		let mut identifier = [0; IDENTIFIER_LEN as usize];
-		data.read_exact(&mut identifier)?;
+		reader.read_exact(&mut identifier)?;
 
 		if !identifier.iter().copied().all(is_valid_identifier_byte) {
 			// The atom identifier contains invalid characters
 			//
 			// Seek to the end, since we can't recover from this
-			data.seek(SeekFrom::End(0))?;
+			reader.seek(SeekFrom::End(0))?;
 
 			match parse_mode {
 				ParsingMode::Strict => {
-					err!(BadAtom("Encountered an atom with invalid characters"));
+					return Err(AtomParseError::message(
+						None,
+						format!(
+							"atom ident '{}' contains invalid characters",
+							identifier.escape_ascii()
+						),
+					));
 				},
 				ParsingMode::BestAttempt | ParsingMode::Relaxed => {
 					log::warn!("Encountered an atom with invalid characters, stopping");
@@ -157,23 +185,23 @@ impl AtomInfo {
 		let (len, extended) = match len_raw {
 			// The atom extends to the end of the file
 			0 => {
-				let pos = data.stream_position()?;
-				let end = data.seek(SeekFrom::End(0))?;
+				let pos = reader.stream_position()?;
+				let end = reader.seek(SeekFrom::End(0))?;
 
-				data.seek(SeekFrom::Start(pos))?;
+				reader.seek(SeekFrom::Start(pos))?;
 
 				(end - pos, false)
 			},
 			// There's an extended length
-			1 => (data.read_u64::<BigEndian>()?, true),
+			1 => (reader.read_u64::<BigEndian>()?, true),
 			_ => (len_raw, false),
 		};
 
 		if len < ATOM_HEADER_LEN {
 			// Seek to the end, since we can't recover from this
-			data.seek(SeekFrom::End(0))?;
+			reader.seek(SeekFrom::End(0))?;
 
-			err!(BadAtom("Found an invalid length (< 8)"));
+			return Err(NotEnoughDataError::new(Some(8)).into());
 		}
 
 		// `len` includes itself and the identifier
@@ -191,22 +219,21 @@ impl AtomInfo {
 				|| parse_mode == ParsingMode::Relaxed;
 			if skippable {
 				// Seek to the end, as we cannot gather anything else from the file
-				data.seek(SeekFrom::End(0))?;
+				reader.seek(SeekFrom::End(0))?;
 				return Ok(None);
 			}
 
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		let atom_ident;
-		if identifier == *b"----" {
-			// Encountered a freeform identifier
+		if identifier == *b"----" && !in_freeform {
 			reader_size -= ATOM_HEADER_LEN;
 			if reader_size < ATOM_HEADER_LEN {
-				err!(BadAtom("Found an incomplete freeform identifier"));
+				return Err(NotEnoughDataError::new(Some(ATOM_HEADER_LEN as usize)).into());
 			}
 
-			atom_ident = parse_freeform(data, len - ATOM_HEADER_LEN, parse_mode)?;
+			atom_ident = parse_freeform(reader, len - ATOM_HEADER_LEN, parse_mode)?;
 		} else {
 			atom_ident = AtomIdent::Fourcc(identifier);
 		}
@@ -232,7 +259,7 @@ fn parse_freeform<R>(
 	data: &mut R,
 	atom_len: u64,
 	parse_mode: ParsingMode,
-) -> Result<AtomIdent<'static>>
+) -> Result<AtomIdent<'static>, AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -240,7 +267,7 @@ where
 	const MINIMUM_FREEFORM_LEN: u64 = ATOM_HEADER_LEN * 3;
 
 	if atom_len < MINIMUM_FREEFORM_LEN {
-		err!(BadAtom("Found an incomplete freeform identifier"));
+		return Err(NotEnoughDataError::new(Some(MINIMUM_FREEFORM_LEN as usize)).into());
 	}
 
 	let mut atom_len = atom_len;
@@ -258,49 +285,52 @@ fn freeform_chunk<R>(
 	name: &[u8],
 	reader_size: &mut u64,
 	parse_mode: ParsingMode,
-) -> Result<String>
+) -> Result<String, AtomParseError>
 where
 	R: Read + Seek,
 {
-	let atom = AtomInfo::read(data, *reader_size, parse_mode)?;
+	let Some(AtomInfo {
+		ident: AtomIdent::Fourcc(fourcc),
+		len,
+		..
+	}) = AtomInfo::read_inner(data, *reader_size, parse_mode, true)?
+	else {
+		return Err(AtomParseError::message(
+			None,
+			"found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms",
+		));
+	};
 
-	match atom {
-		Some(AtomInfo {
-			ident: AtomIdent::Fourcc(ref fourcc),
-			len,
-			..
-		}) if fourcc == name => {
-			if len < 12 {
-				err!(BadAtom("Found an incomplete freeform identifier chunk"));
-			}
-
-			if len > *reader_size {
-				err!(SizeMismatch);
-			}
-
-			// Version (1)
-			// Flags (3)
-			data.seek(SeekFrom::Current(4))?;
-
-			// Already read the size (4) + identifier (4) + version/flags (4)
-			let mut content = try_vec![0; (len - 12) as usize]?;
-			data.read_exact(&mut content)?;
-
-			*reader_size -= len;
-
-			utf8_decode(content).map_err(|e| {
-				LoftyError::with_source(
-					ErrorKind::BadAtom(
-						"Found a non UTF-8 string while reading freeform identifier",
-					),
-					e,
-				)
-			})
-		},
-		_ => err!(BadAtom(
-			"Found freeform identifier \"----\" with no trailing \"mean\" or \"name\" atoms"
-		)),
+	if fourcc != name {
+		return Err(AtomParseError::message(
+			None,
+			format!(
+				"expected \"{}\" chunk, found \"{}\"",
+				name.escape_ascii(),
+				fourcc.escape_ascii()
+			),
+		));
 	}
+
+	if len < 12 {
+		return Err(NotEnoughDataError::new(Some(12)).into());
+	}
+
+	if len > *reader_size {
+		return Err(SizeMismatchError.into());
+	}
+
+	// Version (1)
+	// Flags (3)
+	data.seek(SeekFrom::Current(4))?;
+
+	// Already read the size (4) + identifier (4) + version/flags (4)
+	let mut content = try_vec![0; (len - 12) as usize]?;
+	data.read_exact(&mut content)?;
+
+	*reader_size -= len;
+
+	utf8_decode(content).map_err(Into::into)
 }
 
 #[cfg(test)]

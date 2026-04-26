@@ -1,8 +1,8 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{AtomReader, find_child_atom, skip_atom};
 use crate::config::ParsingMode;
-use crate::error::{LoftyError, Result};
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::try_vec;
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::properties::FileProperties;
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::math::RoundedDivision;
@@ -126,7 +126,7 @@ pub enum AudioObjectType {
 }
 
 impl TryFrom<u8> for AudioObjectType {
-	type Error = LoftyError;
+	type Error = ();
 
 	#[rustfmt::skip]
 	fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
@@ -173,7 +173,7 @@ impl TryFrom<u8> for AudioObjectType {
 			44 => Ok(Self::LowDelayMpegSurround),
 			45 => Ok(Self::SpatialAudioObjectCodingDialogueEnhancement),
 			46 => Ok(Self::AudioSync),
-			_ => decode_err!(@BAIL Mp4, "Encountered an invalid audio object type"),
+			_ => Err(()),
 		}
 	}
 }
@@ -285,10 +285,15 @@ struct AudioTrak {
 }
 
 /// Search through all the traks to find the first one with audio
-fn find_audio_trak<R>(reader: &mut AtomReader<R>, traks: &[AtomInfo]) -> Result<AudioTrak>
+fn find_audio_trak<R>(
+	reader: &mut AtomReader<R>,
+	traks: &[AtomInfo],
+) -> Result<AudioTrak, Mp4ParseError>
 where
 	R: Read + Seek,
 {
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"mdia");
+
 	let mut audio_track = false;
 	let mut mdhd = None;
 	let mut minf = None;
@@ -349,11 +354,13 @@ where
 	}
 
 	if !audio_track {
-		decode_err!(@BAIL Mp4, "File contains no audio tracks");
+		return Err(Mp4ParseError::message("file contains no audio tracks"));
 	}
 
 	let Some(mdhd) = mdhd else {
-		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
+		return Err(
+			AtomParseError::message(Some(IDENT), "audio track has no \"mdhd\" atom").into(),
+		);
 	};
 
 	Ok(AudioTrak { mdhd, minf })
@@ -365,36 +372,45 @@ struct Mdhd {
 }
 
 impl Mdhd {
-	fn parse<R>(reader: &mut AtomReader<R>) -> Result<Self>
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"mdhd");
+
+	fn parse<R>(reader: &mut AtomReader<R>) -> Result<Self, AtomParseError>
 	where
 		R: Read + Seek,
 	{
-		let version = reader.read_u8()?;
-		let _flags = reader.read_uint(3)?;
+		fn parse_inner<R>(reader: &mut AtomReader<R>) -> Result<Mdhd, AtomParseError>
+		where
+			R: Read + Seek,
+		{
+			let version = reader.read_u8()?;
+			let _flags = reader.read_uint(3)?;
 
-		let (timescale, duration) = if version == 1 {
-			// We don't care about these two values
-			let _creation_time = reader.read_u64()?;
-			let _modification_time = reader.read_u64()?;
+			let (timescale, duration) = if version == 1 {
+				// We don't care about these two values
+				let _creation_time = reader.read_u64()?;
+				let _modification_time = reader.read_u64()?;
 
-			let timescale = reader.read_u32()?;
-			let duration = reader.read_u64()?;
+				let timescale = reader.read_u32()?;
+				let duration = reader.read_u64()?;
 
-			(timescale, duration)
-		} else {
-			let _creation_time = reader.read_u32()?;
-			let _modification_time = reader.read_u32()?;
+				(timescale, duration)
+			} else {
+				let _creation_time = reader.read_u32()?;
+				let _modification_time = reader.read_u32()?;
 
-			let timescale = reader.read_u32()?;
-			let duration = reader.read_u32()?;
+				let timescale = reader.read_u32()?;
+				let duration = reader.read_u32()?;
 
-			(timescale, u64::from(duration))
-		};
+				(timescale, u64::from(duration))
+			};
 
-		Ok(Mdhd {
-			timescale,
-			duration,
-		})
+			Ok(Mdhd {
+				timescale,
+				duration,
+			})
+		}
+
+		parse_inner(reader).map_err(|e| e.with_ident(Self::IDENT))
 	}
 }
 
@@ -414,26 +430,35 @@ struct Stts {
 }
 
 impl Stts {
-	fn parse<R>(reader: &mut R) -> Result<Self>
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stts");
+
+	fn parse<R>(reader: &mut R) -> Result<Self, AtomParseError>
 	where
 		R: Read,
 	{
-		let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
+		fn parse_inner<R>(reader: &mut R) -> Result<Stts, AtomParseError>
+		where
+			R: Read,
+		{
+			let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
 
-		let entry_count = reader.read_u32::<BigEndian>()?;
-		let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
+			let entry_count = reader.read_u32::<BigEndian>()?;
+			let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
 
-		for _ in 0..entry_count {
-			let sample_count = reader.read_u32::<BigEndian>()?;
-			let sample_duration = reader.read_u32::<BigEndian>()?;
+			for _ in 0..entry_count {
+				let sample_count = reader.read_u32::<BigEndian>()?;
+				let sample_duration = reader.read_u32::<BigEndian>()?;
 
-			entries.push(SttsEntry {
-				_sample_count: sample_count,
-				sample_duration,
-			});
+				entries.push(SttsEntry {
+					_sample_count: sample_count,
+					sample_duration,
+				});
+			}
+
+			Ok(Stts { entries })
 		}
 
-		Ok(Self { entries })
+		parse_inner(reader).map_err(|e| e.with_ident(Self::IDENT))
 	}
 }
 
@@ -443,101 +468,146 @@ struct Minf {
 }
 
 impl Minf {
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"minf");
+
 	fn parse<R>(
 		reader: &mut AtomReader<R>,
 		len: u64,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, AtomParseError>
 	where
 		R: Read + Seek,
 	{
-		let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
-			return Ok(None);
-		};
+		fn parse_inner<R>(
+			reader: &mut AtomReader<R>,
+			len: u64,
+			parse_mode: ParsingMode,
+		) -> Result<Option<Minf>, AtomParseError>
+		where
+			R: Read + Seek,
+		{
+			let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
+				return Ok(None);
+			};
 
-		let mut stsd_data = None;
-		let mut stts = None;
+			let mut stsd_data = None;
+			let mut stts = None;
 
-		let mut read = 8;
-		while read < stbl.len {
-			let Some(atom) = reader.next()? else { break };
+			let mut read = 8;
+			while read < stbl.len {
+				let Some(atom) = reader.next()? else { break };
 
-			read += atom.len;
+				read += atom.len;
 
-			if let AtomIdent::Fourcc(fourcc) = atom.ident {
-				match &fourcc {
-					b"stsd" => {
-						let mut stsd = try_vec![0; (atom.len - 8) as usize]?;
-						reader.read_exact(&mut stsd)?;
-						stsd_data = Some(stsd);
-					},
-					b"stts" => stts = Some(Stts::parse(reader)?),
-					_ => {
-						skip_atom(reader, atom.extended, atom.len)?;
-					},
+				if let AtomIdent::Fourcc(fourcc) = atom.ident {
+					match &fourcc {
+						b"stsd" => {
+							fn parse_stsd<R>(
+								reader: &mut AtomReader<R>,
+								atom: &AtomInfo,
+							) -> Result<Vec<u8>, AtomParseError>
+							where
+								R: Read + Seek,
+							{
+								let mut stsd = try_vec![0; (atom.len - 8) as usize]?;
+								reader.read_exact(&mut stsd)?;
+								Ok(stsd)
+							}
+
+							stsd_data = Some(
+								parse_stsd(reader, &atom).map_err(|e| e.with_ident(atom.ident))?,
+							);
+						},
+						b"stts" => stts = Some(Stts::parse(reader)?),
+						_ => {
+							skip_atom(reader, atom.extended, atom.len)?;
+						},
+					}
+
+					continue;
 				}
-
-				continue;
 			}
+
+			let Some(stsd_data) = stsd_data else {
+				return Ok(None);
+			};
+
+			Ok(Some(Minf { stsd_data, stts }))
 		}
 
-		let Some(stsd_data) = stsd_data else {
-			return Ok(None);
-		};
-
-		Ok(Some(Minf { stsd_data, stts }))
+		parse_inner(reader, len, parse_mode).map_err(|e| e.with_ident_if_not_present(Self::IDENT))
 	}
 }
 
-fn read_stsd<R>(reader: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn read_stsd<R>(
+	reader: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
-	// Skipping 4 bytes
-	// Version (1)
-	// Flags (3)
-	reader.seek(SeekFrom::Current(4))?;
-	let num_sample_entries = reader.read_u32()?;
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stsd");
 
-	for _ in 0..num_sample_entries {
-		let Some(atom) = reader.next()? else {
-			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
-		};
+	fn read_inner<R>(
+		reader: &mut AtomReader<R>,
+		properties: &mut Mp4Properties,
+	) -> Result<(), AtomParseError>
+	where
+		R: Read + Seek,
+	{
+		// Skipping 4 bytes
+		// Version (1)
+		// Flags (3)
+		reader.seek(SeekFrom::Current(4))?;
+		let num_sample_entries = reader.read_u32()?;
 
-		let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
-			err!(BadAtom("Expected fourcc atom in `stsd` atom"))
-		};
+		for _ in 0..num_sample_entries {
+			let Some(atom) = reader.next()? else {
+				// ident gets set later
+				return Err(AtomParseError::message(None, "expected sample entry atom"));
+			};
 
-		match fourcc {
-			b"mp4a" => mp4a_properties(reader, properties)?,
-			b"alac" => alac_properties(reader, properties)?,
-			b"fLaC" => flac_properties(reader, properties)?,
-			// Maybe do these?
-			// TODO: dops (opus)
-			// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
+			let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
+				return Err(AtomParseError::message(None, "unexpected freeform atom"));
+			};
 
-			// Special case to detect encrypted files
-			b"drms" => {
-				properties.drm_protected = true;
-				skip_atom(reader, atom.extended, atom.len)?;
-				continue;
-			},
-			_ => {
-				log::warn!(
-					"Found unsupported sample entry: {:?}",
-					fourcc.escape_ascii().to_string()
-				);
-				skip_atom(reader, atom.extended, atom.len)?;
-				continue;
-			},
+			match fourcc {
+				b"mp4a" => mp4a_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"mp4a")))?,
+				b"alac" => alac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"alac")))?,
+				b"fLaC" => flac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"fLaC")))?,
+				// Maybe do these?
+				// TODO: dops (opus)
+				// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
+
+				// Special case to detect encrypted files
+				b"drms" => {
+					properties.drm_protected = true;
+					skip_atom(reader, atom.extended, atom.len)
+						.map_err(|e| e.with_ident(atom.ident))?;
+					continue;
+				},
+				_ => {
+					log::warn!(
+						"Found unsupported sample entry: {:?}",
+						fourcc.escape_ascii().to_string()
+					);
+					skip_atom(reader, atom.extended, atom.len)?;
+					continue;
+				},
+			}
+
+			// We only want to read the properties of the first stream
+			// that we can actually recognize
+			break;
 		}
 
-		// We only want to read the properties of the first stream
-		// that we can actually recognize
-		break;
+		Ok(())
 	}
 
-	Ok(())
+	read_inner(reader, properties).map_err(|e| e.with_ident_if_not_present(IDENT))
 }
 
 pub(super) fn read_properties<R>(
@@ -545,7 +615,7 @@ pub(super) fn read_properties<R>(
 	traks: &[AtomInfo],
 	file_length: u64,
 	parse_mode: ParsingMode,
-) -> Result<Mp4Properties>
+) -> Result<Mp4Properties, Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -638,7 +708,10 @@ pub(crate) const SAMPLE_RATES: [u32; 15] = [
 	96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0,
 ];
 
-fn mp4a_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn mp4a_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -739,8 +812,10 @@ where
 					frequency_index = (byte_b >> 1) & 0x0F;
 				}
 
-				properties.extended_audio_object_type =
-					Some(AudioObjectType::try_from(object_type)?);
+				properties.extended_audio_object_type = Some(
+					AudioObjectType::try_from(object_type)
+						.map_err(|_| AtomParseError::message(None, "invalid audio object type"))?,
+				);
 
 				match frequency_index {
 					// 15 means the sample rate is stored in the next 24 bits
@@ -807,7 +882,10 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn alac_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -864,7 +942,10 @@ where
 	Ok(())
 }
 
-fn flac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn flac_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -926,7 +1007,7 @@ where
 }
 
 // Used to calculate the bitrate, when it isn't readily available to us
-fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64>
+fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64, Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -940,7 +1021,9 @@ where
 		skip_atom(reader, atom.extended, atom.len)?;
 	}
 
-	decode_err!(@BAIL Mp4, "Failed to find \"mdat\" atom");
+	Err(Mp4ParseError::message(
+		"files does not contain an \"mdat\" atom",
+	))
 }
 
 struct Descriptor {
@@ -949,7 +1032,7 @@ struct Descriptor {
 }
 
 impl Descriptor {
-	fn read<R: Read>(reader: &mut R) -> Result<Descriptor> {
+	fn read<R: Read>(reader: &mut R) -> Result<Descriptor, AtomParseError> {
 		let tag = reader.read_u8()?;
 
 		// https://github.com/FFmpeg/FFmpeg/blob/84f5583078699e96b040f4f41b39720b683326d0/libavformat/isom.c#L283

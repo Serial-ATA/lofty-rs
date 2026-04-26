@@ -2,16 +2,17 @@ use super::constants::WELL_KNOWN_TYPE_SET;
 use super::data_type::DataType;
 use super::{Atom, AtomData, AtomIdent, Ilst};
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{LoftyError, Result};
 use crate::id3::v1::constants::GENRES;
-use crate::macros::{err, try_vec};
+use crate::macros::try_vec;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomInfo};
+use crate::mp4::error::{AtomParseError, IlstParseError};
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::mp4::read::{AtomReader, skip_atom};
 use crate::picture::{MimeType, Picture, PictureType};
 use crate::tag::TagExt;
 use crate::util::text::{utf8_decode, utf16_decode_bytes};
 
+use crate::error::NotEnoughDataError;
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
@@ -19,7 +20,7 @@ pub(in crate::mp4) fn parse_ilst<R>(
 	reader: &mut AtomReader<R>,
 	parse_options: ParseOptions,
 	len: u64,
-) -> Result<Ilst>
+) -> Result<Ilst, IlstParseError>
 where
 	R: Read + Seek,
 {
@@ -44,20 +45,29 @@ where
 				},
 				b"covr" => {
 					if parse_options.read_cover_art {
-						handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)?;
+						handle_covr(&mut ilst_reader, parsing_mode, &mut tag, &atom)
+							.map_err(|e| e.with_ident_if_not_present(atom.ident))?;
 					} else {
 						skip_atom(&mut ilst_reader, atom.extended, atom.len)?;
 					}
 
 					continue;
 				},
-				// Upgrade this to a \xa9gen atom
-				b"gnre" if parse_options.implicit_conversions => {
-					log::warn!("Encountered outdated 'gnre' atom, attempting to upgrade to '©gen'");
+				b"gnre" => {
+					log::warn!("Encountered outdated 'gnre' atom");
 
-					if let Some(atom_data) =
-						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
-					{
+					let Some(atom_data) = parse_data_inner(&mut ilst_reader, parsing_mode, &atom)
+						.map_err(|e| e.with_ident_if_not_present(atom.ident))?
+					else {
+						continue;
+					};
+
+					if parse_options.implicit_conversions {
+						// Upgrade this to a \xa9gen atom
+						log::warn!(
+							"Encountered outdated 'gnre' atom, attempting to upgrade to '©gen'"
+						);
+
 						for (_, content) in atom_data {
 							if content.len() >= 2 {
 								let index = content[1] as usize;
@@ -67,17 +77,8 @@ where
 								}
 							}
 						}
-					}
-
-					continue;
-				},
-				// Just insert these normally, the caller will deal with them (hopefully)
-				b"gnre" => {
-					log::warn!("Encountered outdated 'gnre' atom");
-
-					if let Some(atom_data) =
-						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
-					{
+					} else {
+						// Otherwise just insert normally, the caller will deal with them (hopefully)
 						let mut data = Vec::new();
 
 						for (code, content) in atom_data {
@@ -100,8 +101,8 @@ where
 				// Special case the "Album ID", as it has the code "BE signed integer" (21), but
 				// must be interpreted as a "BE 64-bit Signed Integer" (74)
 				b"plID" => {
-					if let Some(atom_data) =
-						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, parsing_mode, &atom)
+						.map_err(|e| e.with_ident_if_not_present(atom.ident))?
 					{
 						let mut data = Vec::new();
 
@@ -130,8 +131,8 @@ where
 					continue;
 				},
 				b"cpil" | b"hdvd" | b"pcst" | b"pgap" | b"shwm" => {
-					if let Some(atom_data) =
-						parse_data_inner(&mut ilst_reader, parsing_mode, &atom)?
+					if let Some(atom_data) = parse_data_inner(&mut ilst_reader, parsing_mode, &atom)
+						.map_err(|e| e.with_ident_if_not_present(atom.ident.clone()))?
 						&& let Some((_, content)) = atom_data.first()
 					{
 						// Any size integer is technically valid, we'll correct it on write.
@@ -175,13 +176,16 @@ fn parse_data<R>(
 	parsing_mode: ParsingMode,
 	tag: &mut Ilst,
 	atom_info: AtomInfo,
-) -> Result<()>
+) -> Result<(), IlstParseError>
 where
 	R: Read + Seek,
 {
-	let handle_error = |err: LoftyError, parsing_mode: ParsingMode| -> Result<()> {
+	let handle_error = |err: AtomParseError,
+	                    parsing_mode: ParsingMode,
+	                    atom_info: AtomInfo|
+	 -> Result<(), IlstParseError> {
 		match parsing_mode {
-			ParsingMode::Strict => Err(err),
+			ParsingMode::Strict => Err(err.with_ident_if_not_present(atom_info.ident).into()),
 			ParsingMode::BestAttempt | ParsingMode::Relaxed => {
 				log::warn!("Skipping atom with invalid content: {}", err);
 				Ok(())
@@ -195,7 +199,7 @@ where
 			let (flags, content) = atom_data.remove(0);
 			let data = match interpret_atom_content(flags, content) {
 				Ok(data) => data,
-				Err(err) => return handle_error(err, parsing_mode),
+				Err(err) => return handle_error(err, parsing_mode, atom_info),
 			};
 
 			tag.atoms.push(Atom {
@@ -210,7 +214,7 @@ where
 		for (flags, content) in atom_data {
 			let value = match interpret_atom_content(flags, content) {
 				Ok(data) => data,
-				Err(err) => return handle_error(err, parsing_mode),
+				Err(err) => return handle_error(err, parsing_mode, atom_info),
 			};
 
 			data.push(value);
@@ -231,7 +235,7 @@ fn parse_data_inner<R>(
 	reader: &mut AtomReader<R>,
 	parsing_mode: ParsingMode,
 	atom_info: &AtomInfo,
-) -> Result<Option<Vec<(DataType, Vec<u8>)>>>
+) -> Result<Option<Vec<(DataType, Vec<u8>)>>, AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -258,7 +262,7 @@ where
 				next_atom.len
 			);
 			if parsing_mode == ParsingMode::Strict {
-				err!(BadAtom("Data atom is too small"))
+				return Err(NotEnoughDataError::new(Some(16)).into());
 			}
 
 			break;
@@ -266,7 +270,11 @@ where
 
 		if next_atom.ident != DATA_ATOM_IDENT {
 			if parsing_mode == ParsingMode::Strict {
-				err!(BadAtom("Expected atom \"data\" to follow name"))
+				// Ident gets set later
+				return Err(AtomParseError::message(
+					None,
+					"expected atom \"data\" to follow name",
+				));
 			}
 
 			log::warn!(
@@ -311,7 +319,7 @@ where
 fn parse_type_indicator<R>(
 	reader: &mut AtomReader<R>,
 	parsing_mode: ParsingMode,
-) -> Result<Option<DataType>>
+) -> Result<Option<DataType>, AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -322,7 +330,10 @@ where
 	let type_set = reader.read_u8()?;
 	if type_set != WELL_KNOWN_TYPE_SET {
 		if parsing_mode == ParsingMode::Strict {
-			err!(BadAtom("Unknown type set in data atom"))
+			return Err(AtomParseError::message(
+				None,
+				"unknown type set in data atom",
+			));
 		}
 
 		return Ok(None);
@@ -331,28 +342,32 @@ where
 	Ok(Some(DataType::from(reader.read_u24()?)))
 }
 
-fn parse_uint(bytes: &[u8]) -> Result<u32> {
-	Ok(match bytes.len() {
-		1 => u32::from(bytes[0]),
-		2 => u32::from(u16::from_be_bytes([bytes[0], bytes[1]])),
-		3 => u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
-		4 => u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => err!(BadAtom(
-			"Unexpected atom size for type \"BE unsigned integer\""
+fn parse_uint(bytes: &[u8]) -> Result<u32, AtomParseError> {
+	match bytes.len() {
+		1 => Ok(u32::from(bytes[0])),
+		2 => Ok(u32::from(u16::from_be_bytes([bytes[0], bytes[1]]))),
+		3 => Ok(u32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])),
+		4 => Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])),
+		// Ident set later
+		_ => Err(AtomParseError::message(
+			None,
+			"unexpected atom size for type \"BE unsigned integer\"",
 		)),
-	})
+	}
 }
 
-fn parse_int(bytes: &[u8]) -> Result<i32> {
-	Ok(match bytes.len() {
-		1 => i32::from(bytes[0]),
-		2 => i32::from(i16::from_be_bytes([bytes[0], bytes[1]])),
-		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
-		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
-		_ => err!(BadAtom(
-			"Unexpected atom size for type \"BE signed integer\""
+fn parse_int(bytes: &[u8]) -> Result<i32, AtomParseError> {
+	match bytes.len() {
+		1 => Ok(i32::from(bytes[0])),
+		2 => Ok(i32::from(i16::from_be_bytes([bytes[0], bytes[1]]))),
+		3 => Ok(i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]])),
+		4 => Ok(i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])),
+		// Ident set later
+		_ => Err(AtomParseError::message(
+			None,
+			"unexpected atom size for type \"BE signed integer\"",
 		)),
-	})
+	}
 }
 
 fn handle_covr<R>(
@@ -360,7 +375,7 @@ fn handle_covr<R>(
 	parsing_mode: ParsingMode,
 	tag: &mut Ilst,
 	atom_info: &AtomInfo,
-) -> Result<()>
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -379,7 +394,7 @@ where
 				DataType::Bmp => Some(MimeType::Bmp),
 				_ => {
 					if parsing_mode == ParsingMode::Strict {
-						err!(BadAtom("\"covr\" atom has an unknown type"))
+						return Err(AtomParseError::message(None, "unknown data type"));
 					}
 
 					log::warn!(
@@ -418,7 +433,7 @@ where
 	Ok(())
 }
 
-fn interpret_atom_content(flags: DataType, content: Vec<u8>) -> Result<AtomData> {
+fn interpret_atom_content(flags: DataType, content: Vec<u8>) -> Result<AtomData, AtomParseError> {
 	// https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/Metadata/Metadata.html#//apple_ref/doc/uid/TP40000939-CH1-SW35
 	Ok(match flags {
 		DataType::Utf8 => AtomData::UTF8(utf8_decode(content)?),

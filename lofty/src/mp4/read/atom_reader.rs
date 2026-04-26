@@ -1,7 +1,7 @@
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::err;
+use crate::error::SizeMismatchError;
 use crate::mp4::atom_info::AtomInfo;
+use crate::mp4::error::AtomParseError;
 use crate::util::io::SeekStreamLen;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -31,7 +31,7 @@ where
 	R: Read + Seek,
 {
 	/// Create a new `AtomReader`
-	pub(crate) fn new(mut reader: R, parse_mode: ParsingMode) -> Result<Self> {
+	pub(crate) fn new(mut reader: R, parse_mode: ParsingMode) -> std::io::Result<Self> {
 		let len = reader.stream_len_hack()?;
 		Ok(Self {
 			reader,
@@ -86,13 +86,13 @@ where
 	/// Read the next atom in the file
 	///
 	/// This will leave the reader at the beginning of the atom content.
-	pub(crate) fn next(&mut self) -> Result<Option<AtomInfo>> {
+	pub(crate) fn next(&mut self) -> Result<Option<AtomInfo>, AtomParseError> {
 		if self.remaining_size == 0 {
 			return Ok(None);
 		}
 
 		if self.remaining_size < 8 {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		AtomInfo::read(self, self.remaining_size, self.parse_mode)
