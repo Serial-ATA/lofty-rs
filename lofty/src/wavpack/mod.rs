@@ -1,4 +1,5 @@
 //! WavPack specific items
+pub mod error;
 mod properties;
 mod read;
 
