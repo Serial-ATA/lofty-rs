@@ -1,13 +1,16 @@
 use super::WavPackFile;
 use super::properties::WavPackProperties;
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::SizeMismatchError;
 use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3v2};
+use crate::wavpack::error::WavPackParseError;
 
-use crate::macros::err;
 use std::io::{Read, Seek, SeekFrom};
 
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<WavPackFile>
+pub(super) fn read_from<R>(
+	reader: &mut R,
+	parse_options: ParseOptions,
+) -> Result<WavPackFile, WavPackParseError>
 where
 	R: Read + Seek,
 {
@@ -24,7 +27,7 @@ where
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		};
 
 		stream_length = new_stream_length;
@@ -33,7 +36,7 @@ where
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
 	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
 	let Some(new_stream_length) = stream_length.checked_sub(u64::from(lyrics3v2_size)) else {
-		err!(SizeMismatch);
+		return Err(SizeMismatchError.into());
 	};
 
 	stream_length = new_stream_length;

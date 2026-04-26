@@ -1,7 +1,8 @@
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::{decode_err, err, parse_mode_choice, try_vec};
+use crate::error::{NotEnoughDataError, SizeMismatchError, TooMuchDataError, UnknownFormatError};
+use crate::macros::try_vec;
 use crate::properties::{ChannelMask, FileProperties};
+use crate::wavpack::error::WavPackParseError;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
@@ -121,7 +122,7 @@ const SAMPLE_RATES: [u32; 16] = [
 ];
 
 #[rustfmt::skip]
-pub(super) fn read_properties<R>(reader: &mut R, stream_length: u64, parse_mode: ParsingMode) -> Result<WavPackProperties>
+pub(super) fn read_properties<R>(reader: &mut R, stream_length: u64, parse_mode: ParsingMode) -> Result<WavPackProperties, WavPackParseError>
 where
 	R: Read + Seek,
 {
@@ -147,31 +148,25 @@ where
 		// block to get the sample rate
 		if sample_rate_idx == 15 || flags & FLAG_DSD == FLAG_DSD {
 			let mut block_contents = try_vec![0; (block_header.block_size - 24) as usize]?;
-			if reader.read_exact(&mut block_contents).is_err() {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Block size mismatch"),
-					DEFAULT: break
-				);
-			}
+			reader.read_exact(&mut block_contents)?;
 
 			if let Err(e) = get_extended_meta_info(parse_mode, &block_contents, &mut properties)
 			{
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: return Err(e),
-					DEFAULT: break
-				);
+				if parse_mode == ParsingMode::Strict {
+					return Err(e);
+				}
+
+				break
 			}
 
 			// A sample rate index of 15 indicates a custom sample rate, which should have been found
 			// when we just parsed the metadata blocks
 			if sample_rate_idx == 15 && properties.sample_rate == 0 {
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Expected custom sample rate"),
-					DEFAULT: break
-				)
+				if parse_mode == ParsingMode::Strict {
+					return Err(WavPackParseError::message("expected custom sample rate"));
+				}
+
+				break
 			}
 		}
 
@@ -179,11 +174,11 @@ where
 			if block_header.version < MIN_STREAM_VERSION
 				|| block_header.version > MAX_STREAM_VERSION
 			{
-				parse_mode_choice!(
-					parse_mode,
-					STRICT: decode_err!(@BAIL WavPack, "Unsupported stream version encountered"),
-					DEFAULT: break
-				);
+				if parse_mode == ParsingMode::Strict {
+					return Err(WavPackParseError::message("unsupported stream version encountered"));
+				}
+
+				break
 			}
 
 			total_samples = block_header.total_samples;
@@ -220,14 +215,14 @@ where
 	}
 
 	// TODO: Support unknown sample counts in WavPack
-	if total_samples == !0 {
+	if total_samples == u32::MAX {
 		log::warn!("Unable to calculate duration, unknown sample counts are not yet supported");
 		return Ok(properties);
 	}
 
 	if total_samples == 0 || properties.sample_rate == 0 {
 		if parse_mode == ParsingMode::Strict {
-			decode_err!(@BAIL WavPack, "Unable to calculate duration (sample count == 0 || sample rate == 0)")
+			return Err(WavPackParseError::message("unable to calculate duration (sample count == 0 || sample rate == 0)"));
 		}
 
 		// We aren't able to determine the duration/bitrate, just early return
@@ -257,7 +252,7 @@ struct WVHeader {
 }
 
 // NOTE: Any error here is ignored unless using `ParsingMode::Strict`
-fn parse_wv_header<R>(reader: &mut R) -> Result<WVHeader>
+fn parse_wv_header<R>(reader: &mut R) -> Result<WVHeader, WavPackParseError>
 where
 	R: Read + Seek,
 {
@@ -265,12 +260,15 @@ where
 	reader.read_exact(&mut wv_ident)?;
 
 	if &wv_ident != b"wvpk" {
-		err!(UnknownFormat);
+		return Err(UnknownFormatError.into());
 	}
 
 	let block_size = reader.read_u32::<LittleEndian>()?;
-	if !(24..=WV_BLOCK_MAX_SIZE).contains(&block_size) {
-		decode_err!(@BAIL WavPack, "WavPack block has an invalid size");
+	if block_size < 24 {
+		return Err(NotEnoughDataError::new(Some(24)).into());
+	}
+	if block_size > WV_BLOCK_MAX_SIZE {
+		return Err(TooMuchDataError.into());
 	}
 
 	let version = reader.read_u16::<LittleEndian>()?;
@@ -301,7 +299,7 @@ fn get_extended_meta_info(
 	parse_mode: ParsingMode,
 	block_content: &[u8],
 	properties: &mut WavPackProperties,
-) -> Result<()> {
+) -> Result<(), WavPackParseError> {
 	let reader = &mut &block_content[..];
 	loop {
 		if reader.len() < 2 {
@@ -324,7 +322,7 @@ fn get_extended_meta_info(
 		}
 
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		if id & ID_FLAG_ODD_SIZE > 0 {
@@ -334,7 +332,9 @@ fn get_extended_meta_info(
 		match id & 0x3F {
 			ID_NON_STANDARD_SAMPLE_RATE => {
 				if size < 3 {
-					decode_err!(@BAIL WavPack, "Encountered an invalid block size for non-standard sample rate");
+					return Err(WavPackParseError::message(
+						"encountered an invalid block size for non-standard sample rate",
+					));
 				}
 
 				properties.sample_rate = reader.read_u24::<LittleEndian>()?;
@@ -342,18 +342,22 @@ fn get_extended_meta_info(
 			},
 			ID_DSD => {
 				if size <= 1 {
-					decode_err!(@BAIL WavPack, "Encountered an invalid DSD block size");
+					return Err(WavPackParseError::message(
+						"encountered an invalid DSD block size",
+					));
 				}
 
 				let mut rate_multiplier = u32::from(reader.read_u8()?);
 				size -= 1;
 
 				if rate_multiplier > 30 {
-					parse_mode_choice!(
-						parse_mode,
-						STRICT: decode_err!(@BAIL WavPack, "Encountered an invalid sample rate multiplier"),
-						DEFAULT: break
-					)
+					if parse_mode == ParsingMode::Strict {
+						return Err(WavPackParseError::message(
+							"encountered an invalid sample rate multiplier",
+						));
+					}
+
+					break;
 				}
 
 				rate_multiplier = 1 << rate_multiplier;
@@ -361,7 +365,9 @@ fn get_extended_meta_info(
 			},
 			ID_MULTICHANNEL => {
 				if size <= 1 {
-					decode_err!(@BAIL WavPack, "Unable to extract channel information");
+					return Err(WavPackParseError::message(
+						"unable to extract channel information",
+					));
 				}
 
 				properties.channels = u16::from(reader.read_u8()?);
@@ -407,7 +413,11 @@ fn get_extended_meta_info(
 
 						properties.channel_mask = ChannelMask(channel_mask);
 					},
-					_ => decode_err!(@BAIL WavPack, "Encountered invalid channel info size"),
+					_ => {
+						return Err(WavPackParseError::message(
+							"encountered invalid channel info size",
+						));
+					},
 				}
 			},
 			_ => {},
@@ -415,7 +425,7 @@ fn get_extended_meta_info(
 
 		// Skip over any remaining block size
 		if (size as usize) > reader.len() {
-			err!(SizeMismatch);
+			return Err(SizeMismatchError.into());
 		}
 
 		let (_, rem) = reader.split_at(size as usize);
