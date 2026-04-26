@@ -1,7 +1,6 @@
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::decode_err;
 use crate::musepack::constants::{MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH};
+use crate::musepack::error::MpcParseError;
 use crate::properties::FileProperties;
 use crate::util::math::RoundedDivision;
 
@@ -84,7 +83,7 @@ impl MpcSv4to6Properties {
 		reader: &mut R,
 		parse_mode: ParsingMode,
 		stream_length: u64,
-	) -> Result<Self>
+	) -> Result<Self, MpcParseError>
 	where
 		R: Read,
 	{
@@ -99,7 +98,7 @@ impl MpcSv4to6Properties {
 
 		properties.stream_version = ((header_data[0] >> 11) & 0x03FF) as u16;
 		if !(4..=6).contains(&properties.stream_version) {
-			decode_err!(@BAIL Mpc, "Invalid stream version encountered")
+			return Err(MpcParseError::message("invalid stream version encountered"));
 		}
 
 		properties.max_band = ((header_data[0] >> 6) & 0x1F) as u8;
@@ -113,15 +112,19 @@ impl MpcSv4to6Properties {
 
 		if parse_mode == ParsingMode::Strict {
 			if properties.average_bitrate != 0 {
-				decode_err!(@BAIL Mpc, "Encountered CBR stream")
+				return Err(MpcParseError::message("encountered CBR stream"));
 			}
 
 			if intensity_stereo {
-				decode_err!(@BAIL Mpc, "Stream uses intensity stereo coding")
+				return Err(MpcParseError::message(
+					"stream uses intensity stereo coding",
+				));
 			}
 
 			if block_size != 1 {
-				decode_err!(@BAIL Mpc, "Stream has an invalid block size (must be 1)")
+				return Err(MpcParseError::message(
+					"stream has an invalid block size (must be 1)",
+				));
 			}
 		}
 
