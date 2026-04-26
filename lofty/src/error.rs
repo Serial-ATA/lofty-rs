@@ -9,6 +9,7 @@ use crate::flac::error::FlacParseError;
 use crate::id3::Lyrics3v2ParseError;
 use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
+use crate::iff::aiff::error::AiffParseError;
 use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
 use crate::ogg::tag::error::VorbisCommentsParseError;
@@ -590,6 +591,13 @@ impl From<ChunkParseError> for LoftyError {
 // TODO: Remove this
 impl From<WavParseError> for LoftyError {
 	fn from(input: WavParseError) -> Self {
+		Self::new(ErrorKind::FileParse(input.into()))
+	}
+}
+
+// TODO: Remove this
+impl From<AiffParseError> for LoftyError {
+	fn from(input: AiffParseError) -> Self {
 		Self::new(ErrorKind::FileParse(input.into()))
 	}
 }

@@ -1,5 +1,6 @@
 //! AIFF specific items
 
+pub mod error;
 mod properties;
 mod read;
 pub(crate) mod tag;

@@ -1,6 +1,6 @@
 use super::read::CompressionPresent;
-use crate::error::Result;
-use crate::macros::{decode_err, try_vec};
+use crate::io::ReadExt;
+use crate::macros::try_vec;
 use crate::properties::FileProperties;
 use crate::util::text::utf8_decode;
 
@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::io::Read;
 use std::time::Duration;
 
-use crate::io::ReadExt;
+use crate::iff::aiff::error::AiffParseError;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// The AIFC compression type
@@ -157,11 +157,11 @@ pub(super) fn read_properties(
 	compression_present: CompressionPresent,
 	stream_len: u32,
 	file_length: u64,
-) -> Result<AiffProperties> {
+) -> Result<AiffProperties, AiffParseError> {
 	let channels = comm.read_u16::<BigEndian>()?;
 
 	if channels == 0 {
-		decode_err!(@BAIL Aiff, "File contains 0 channels");
+		return Err(AiffParseError::message("file specifies 0 audio channels"));
 	}
 
 	let sample_frames = comm.read_u32::<BigEndian>()?;
@@ -170,7 +170,7 @@ pub(super) fn read_properties(
 	let sample_rate_extended = comm.read_f80()?;
 	let sample_rate_64 = sample_rate_extended.as_f64();
 	if !sample_rate_64.is_finite() || !sample_rate_64.is_sign_positive() {
-		decode_err!(@BAIL Aiff, "Invalid sample rate");
+		return Err(AiffParseError::message("invalid sample rate"));
 	}
 
 	let sample_rate = sample_rate_64.round() as u32;
