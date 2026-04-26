@@ -12,7 +12,7 @@ use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::iff::aiff::error::AiffParseError;
 use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
-use crate::mp4::error::{AtomParseError, Mp4ParseError};
+use crate::mp4::error::{AtomParseError, IlstEncodingError, Mp4ParseError};
 use crate::ogg::tag::error::VorbisCommentsParseError;
 use crate::tag::items::timestamp::TimestampParseError;
 
@@ -108,6 +108,58 @@ impl From<LoftyError> for FileParseError {
 	fn from(input: LoftyError) -> Self {
 		Self {
 			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+/// An error that arises while encoding a file
+pub struct FileEncodingError {
+	format: Option<FileType>,
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl FileEncodingError {
+	#[expect(dead_code)]
+	pub(crate) fn new(
+		format: FileType,
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self {
+			format: Some(format),
+			source,
+		}
+	}
+}
+
+impl core::fmt::Display for FileEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self.format {
+			Some(format) => write!(f, "failed to write {format:?} file"),
+			None => write!(f, "failed to write to file"),
+		}
+	}
+}
+
+impl core::fmt::Debug for FileEncodingError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("FileEncodingError")
+			.field("format", &self.format)
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for FileEncodingError {
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(self.source.as_ref())
+	}
+}
+
+// TODO: remove this
+impl From<LoftyError> for FileEncodingError {
+	fn from(input: LoftyError) -> Self {
+		Self {
+			format: None,
 			source: Box::new(input),
 		}
 	}
@@ -279,110 +331,6 @@ impl core::fmt::Display for FileDecodingError {
 	}
 }
 
-/// An error that arises while encoding a file
-pub struct FileEncodingError {
-	format: Option<FileType>,
-	description: &'static str,
-}
-
-impl FileEncodingError {
-	/// Create a `FileEncodingError` from a [`FileType`] and description
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::error::FileEncodingError;
-	/// use lofty::file::FileType;
-	///
-	/// // This error is bounded to `FileType::Mpeg`, which will be displayed when the error is formatted
-	/// let mpeg_error =
-	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
-	/// ```
-	#[must_use]
-	pub const fn new(format: FileType, description: &'static str) -> Self {
-		Self {
-			format: Some(format),
-			description,
-		}
-	}
-
-	/// Create a `FileEncodingError` without binding it to a [`FileType`]
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::error::FileEncodingError;
-	/// use lofty::file::FileType;
-	///
-	/// // The error isn't bounded to FileType::Mpeg, only the message will be displayed when the
-	/// // error is formatted
-	/// let mpeg_error = FileEncodingError::from_description("Something went wrong in the MPEG file!");
-	/// ```
-	pub fn from_description(description: &'static str) -> Self {
-		Self {
-			format: None,
-			description,
-		}
-	}
-
-	/// Returns the associated [`FileType`], if one exists
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::error::FileEncodingError;
-	/// use lofty::file::FileType;
-	///
-	/// let mpeg_error =
-	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
-	///
-	/// assert_eq!(mpeg_error.format(), Some(FileType::Mpeg));
-	/// ```
-	pub fn format(&self) -> Option<FileType> {
-		self.format
-	}
-
-	/// Returns the error description
-	///
-	/// # Examples
-	///
-	/// ```rust
-	/// use lofty::error::FileEncodingError;
-	/// use lofty::file::FileType;
-	///
-	/// let mpeg_error =
-	/// 	FileEncodingError::new(FileType::Mpeg, "Something went wrong in the MPEG file!");
-	///
-	/// assert_eq!(
-	/// 	mpeg_error.description(),
-	/// 	"Something went wrong in the MPEG file!"
-	/// );
-	/// ```
-	pub fn description(&self) -> &str {
-		self.description
-	}
-}
-
-impl core::fmt::Debug for FileEncodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		if let Some(format) = self.format {
-			write!(f, "{:?}: {:?}", format, self.description)
-		} else {
-			write!(f, "{:?}", self.description)
-		}
-	}
-}
-
-impl core::fmt::Display for FileEncodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		if let Some(format) = self.format {
-			write!(f, "{:?}: {:?}", format, self.description)
-		} else {
-			write!(f, "{}", self.description)
-		}
-	}
-}
-
 /// Errors that could occur within Lofty
 pub struct LoftyError {
 	pub(crate) kind: ErrorKind,
@@ -520,6 +468,13 @@ impl From<std::convert::Infallible> for LoftyError {
 // TODO: Remove this
 impl From<Id3v2EncodingError> for LoftyError {
 	fn from(_: Id3v2EncodingError) -> Self {
+		Self::new(ErrorKind::TagEncoding)
+	}
+}
+
+// TODO: Remove this
+impl From<IlstEncodingError> for LoftyError {
+	fn from(_: IlstEncodingError) -> Self {
 		Self::new(ErrorKind::TagEncoding)
 	}
 }
