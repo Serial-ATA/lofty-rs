@@ -1,11 +1,14 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::LoftyError;
+use crate::error::{FileEncodingError, FileParseError, LoftyError, TagEncodingError};
+use crate::file::FileType;
+use crate::io::VerifiedFile;
 use crate::macros::{decode_err, err, try_vec};
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
-use crate::mp4::error::{IlstEncodingError, Mp4ParseError};
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
+use crate::mp4::ilst::error::IlstEncodingError;
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
@@ -21,23 +24,28 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
+fn handle_atom_parse_error(error: AtomParseError) -> FileEncodingError {
+	FileEncodingError::new(FileType::Mp4, error.into())
+}
+
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 pub(crate) fn write_to<'a, F, I>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &mut IlstRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<(), LoftyError>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	log::debug!("Attempting to write `ilst` tag to file");
 
 	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
+	let file = file.into_inner();
 	let mut reader = AtomReader::new(file, ParseOptions::DEFAULT_PARSING_MODE)?;
-	verify_mp4(&mut reader)?;
+	verify_mp4(&mut reader).map_err(FileParseError::from)?;
 
 	// Now we can just read the entire file into memory
 	let file = reader.into_inner();
@@ -46,7 +54,7 @@ where
 	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
-		return Err(Mp4ParseError::missing_moov().into());
+		return Err(FileParseError::from(Mp4ParseError::missing_moov()).into());
 	};
 
 	let moov_start = moov.info.start;
@@ -67,7 +75,7 @@ where
 	let mut write_handle = atom_writer.start_write();
 	write_handle.seek(SeekFrom::Start(moov_data_start))?;
 
-	let ilst = build_ilst(&mut tag.atoms)?;
+	let ilst = build_ilst(&mut tag.atoms).map_err(TagEncodingError::from)?;
 	let remove_tag = ilst.is_empty();
 
 	let udta = find_child_atom(
@@ -75,7 +83,8 @@ where
 		moov_len,
 		*b"udta",
 		ParseOptions::DEFAULT_PARSING_MODE,
-	)?;
+	)
+	.map_err(handle_atom_parse_error)?;
 
 	// Nothing to do
 	if remove_tag && udta.is_none() {
@@ -103,7 +112,8 @@ where
 			udta.len,
 			*b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
-		)?;
+		)
+		.map_err(handle_atom_parse_error)?;
 
 		// Nothing to do
 		if remove_tag && meta.is_none() {
@@ -119,7 +129,7 @@ where
 				);
 
 				// We may encounter a non-full `meta` atom
-				meta_is_full(&mut write_handle)?;
+				meta_is_full(&mut write_handle).map_err(handle_atom_parse_error)?;
 				drop(write_handle);
 
 				// We can use the existing `udta` and `meta` atoms

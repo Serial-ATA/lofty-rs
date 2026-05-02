@@ -1,10 +1,10 @@
 use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
+use crate::id3::v1::error::Id3v1EncodingError;
 use crate::id3::{ID3FindResults, find_id3v1};
-use crate::macros::err;
-use crate::probe::Probe;
+use crate::io::VerifiedFile;
 use crate::util::io::{FileLike, Length, Truncate};
 use crate::util::text::latin1_encode;
 
@@ -14,28 +14,22 @@ use byteorder::WriteBytesExt;
 
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_id3v1<F>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &Id3v1TagRef<'_>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 {
-	let probe = Probe::new(file).guess_file_type()?;
-
-	match probe.file_type() {
-		Some(ft) if super::Id3v1Tag::SUPPORTED_FORMATS.contains(&ft) => {},
-		_ => err!(UnsupportedTag),
-	}
-
-	let file = probe.into_inner();
+	let file = file.into_inner();
 
 	// This will seek us to the writing position
 	// TODO: Forcing the use of ParseOptions::default()
 	let parse_options = ParseOptions::default();
-	let ID3FindResults(header, _) = find_id3v1(file, false, parse_options.parsing_mode)?;
+	let ID3FindResults(header, _) =
+		find_id3v1(file, false, parse_options.parsing_mode).map_err(TagParseError::from)?;
 
 	if tag.is_empty() && header.is_some() {
 		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
@@ -46,19 +40,22 @@ where
 		return Ok(());
 	}
 
-	let tag = encode(tag, write_options)?;
+	let tag = encode(tag, write_options).map_err(TagEncodingError::from)?;
 
 	file.write_all(&tag)?;
 
 	Ok(())
 }
 
-pub(super) fn encode(tag: &Id3v1TagRef<'_>, write_options: WriteOptions) -> Result<Vec<u8>> {
+pub(super) fn encode(
+	tag: &Id3v1TagRef<'_>,
+	write_options: WriteOptions,
+) -> Result<Vec<u8>, Id3v1EncodingError> {
 	fn resize_string(
 		value: Option<&str>,
 		size: usize,
 		write_options: WriteOptions,
-	) -> Result<Vec<u8>> {
+	) -> Result<Vec<u8>, Id3v1EncodingError> {
 		let mut cursor = Cursor::new(vec![0; size]);
 		cursor.rewind()?;
 

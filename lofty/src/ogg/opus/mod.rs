@@ -4,6 +4,7 @@ use super::find_last_page;
 use super::tag::VorbisComments;
 use crate::config::ParseOptions;
 use crate::error::Result;
+use crate::file::FileType;
 use crate::ogg::constants::{OPUSHEAD, OPUSTAGS};
 use properties::OpusProperties;
 
@@ -29,8 +30,8 @@ impl OpusFile {
 	where
 		R: Read + Seek,
 	{
-		let file_information =
-			super::read::read_from(reader, OPUSHEAD, OPUSTAGS, 2, parse_options)?;
+		let file_information = super::read::read_from(reader, OPUSHEAD, OPUSTAGS, 2, parse_options)
+			.map_err(|e| e.with_format(FileType::Opus))?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {

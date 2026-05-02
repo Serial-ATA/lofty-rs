@@ -13,9 +13,7 @@ use lofty_attr::LoftyError;
 pub struct MpegParseError {
 	#[error(from(
 		std::io::Error,
-		crate::ape::error::ApeTagParseError,
-		crate::id3::v2::error::Id3v2ParseError,
-		crate::id3::v1::error::Id3v1ParseError,
+		crate::error::TagParseError,
 		crate::id3::Lyrics3v2ParseError,
 		crate::error::FakeTagError,
 		crate::error::SizeMismatchError,

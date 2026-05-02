@@ -7,7 +7,7 @@ use lofty_attr::LoftyError;
 
 // Exports
 
-pub use super::tag::error::{ApeTagEncodingError, ApeTagItemValidationError, ApeTagParseError};
+pub use super::tag::error::ApeTagItemValidationError;
 
 /// Failed to parse an [`ApeFile`]
 ///
@@ -17,10 +17,8 @@ pub use super::tag::error::{ApeTagEncodingError, ApeTagItemValidationError, ApeT
 pub struct ApeParseError {
 	#[error(from(
 		std::io::Error,
-		crate::id3::v2::error::Id3v2ParseError,
-		crate::id3::v1::error::Id3v1ParseError,
+		crate::error::TagParseError,
 		crate::id3::Lyrics3v2ParseError,
-		ApeTagParseError,
 		crate::error::SizeMismatchError,
 		crate::error::FakeTagError,
 		crate::error::LoftyError, // TODO: Remove this

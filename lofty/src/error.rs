@@ -3,17 +3,13 @@
 //! The primary error is [`struct@LoftyError`]. The type of error is determined by [`ErrorKind`],
 //! which can be extended at any time.
 
-use crate::ape::error::ApeTagParseError;
 use crate::file::FileType;
 use crate::flac::error::FlacParseError;
 use crate::id3::Lyrics3v2ParseError;
-use crate::id3::v1::error::Id3v1ParseError;
-use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::iff::aiff::error::AiffParseError;
 use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
-use crate::mp4::error::{AtomParseError, IlstEncodingError, Mp4ParseError};
-use crate::ogg::tag::error::VorbisCommentsParseError;
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::tag::TagType;
 use crate::tag::items::timestamp::TimestampParseError;
 
@@ -44,6 +40,18 @@ impl FileParseError {
 		Self {
 			ty: Some(ty),
 			source,
+		}
+	}
+
+	pub(crate) fn with_format(mut self, format: FileType) -> Self {
+		self.ty = Some(format);
+		self
+	}
+
+	pub(crate) fn message(ty: Option<FileType>, message: &'static str) -> Self {
+		Self {
+			ty,
+			source: message.into(),
 		}
 	}
 
@@ -95,8 +103,44 @@ impl From<std::io::Error> for FileParseError {
 	}
 }
 
+impl From<ogg_pager::PageError> for FileParseError {
+	fn from(input: ogg_pager::PageError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<TagParseError> for FileParseError {
+	fn from(input: TagParseError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
 impl From<UnknownFormatError> for FileParseError {
 	fn from(input: UnknownFormatError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<SizeMismatchError> for FileParseError {
+	fn from(input: SizeMismatchError) -> Self {
+		Self {
+			ty: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<Lyrics3v2ParseError> for FileParseError {
+	fn from(input: Lyrics3v2ParseError) -> Self {
 		Self {
 			ty: None,
 			source: Box::new(input),
@@ -121,7 +165,6 @@ pub struct FileEncodingError {
 }
 
 impl FileEncodingError {
-	#[expect(dead_code)]
 	pub(crate) fn new(
 		format: FileType,
 		source: Box<dyn core::error::Error + Send + Sync + 'static>,
@@ -130,6 +173,11 @@ impl FileEncodingError {
 			format: Some(format),
 			source,
 		}
+	}
+
+	pub(crate) fn with_format(mut self, format: FileType) -> Self {
+		self.format = Some(format);
+		self
 	}
 }
 
@@ -156,6 +204,93 @@ impl core::error::Error for FileEncodingError {
 	}
 }
 
+impl From<core::convert::Infallible> for FileEncodingError {
+	fn from(_: core::convert::Infallible) -> Self {
+		unreachable!()
+	}
+}
+
+impl From<std::io::Error> for FileEncodingError {
+	fn from(input: std::io::Error) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<TagEncodingError> for FileEncodingError {
+	fn from(input: TagEncodingError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<UnknownFormatError> for FileEncodingError {
+	fn from(input: UnknownFormatError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<UnsupportedTagError> for FileEncodingError {
+	fn from(input: UnsupportedTagError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<FileParseError> for FileEncodingError {
+	fn from(input: FileParseError) -> Self {
+		Self {
+			format: input.ty,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<TagParseError> for FileEncodingError {
+	fn from(input: TagParseError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<SizeMismatchError> for FileEncodingError {
+	fn from(input: SizeMismatchError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<TooMuchDataError> for FileEncodingError {
+	fn from(input: TooMuchDataError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<AllocationError> for FileEncodingError {
+	fn from(input: AllocationError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
 // TODO: remove this
 impl From<LoftyError> for FileEncodingError {
 	fn from(input: LoftyError) -> Self {
@@ -163,6 +298,47 @@ impl From<LoftyError> for FileEncodingError {
 			format: None,
 			source: Box::new(input),
 		}
+	}
+}
+
+/// An error that arises while parsing a tag
+pub struct TagParseError {
+	ty: Option<TagType>,
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl TagParseError {
+	pub(crate) fn new(
+		ty: TagType,
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self {
+			ty: Some(ty),
+			source,
+		}
+	}
+}
+
+impl core::fmt::Display for TagParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		match self.ty {
+			Some(format) => write!(f, "failed to parse {format:?} tag"),
+			None => write!(f, "failed to parse tag"),
+		}
+	}
+}
+
+impl core::fmt::Debug for TagParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("TagParseError")
+			.field("ty", &self.ty)
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for TagParseError {
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(self.source.as_ref())
 	}
 }
 
@@ -264,6 +440,11 @@ pub struct SizeMismatchError;
 #[error(message = "no format could be determined from the provided file")]
 pub struct UnknownFormatError;
 
+/// Attempting to write a tag to a [`FileType`] that doesn't support it
+#[derive(LoftyError)]
+#[error(message = "attempted to write a tag to a format that does not support it")]
+pub struct UnsupportedTagError;
+
 /// The types of errors that can occur
 #[derive(Debug)]
 #[non_exhaustive]
@@ -296,8 +477,6 @@ pub enum ErrorKind {
 	UnsupportedPicture,
 
 	// Tag related errors
-	/// Arises when writing a tag to a file type that doesn't support it
-	UnsupportedTag,
 	/// Arises when a tag is expected (Ex. found an "ID3 " chunk in a WAV file), but isn't found
 	FakeTag,
 	/// Errors that arise while decoding text
@@ -518,20 +697,6 @@ impl From<std::convert::Infallible> for LoftyError {
 }
 
 // TODO: Remove this
-impl From<Id3v2EncodingError> for LoftyError {
-	fn from(_: Id3v2EncodingError) -> Self {
-		Self::new(ErrorKind::TagEncoding)
-	}
-}
-
-// TODO: Remove this
-impl From<IlstEncodingError> for LoftyError {
-	fn from(_: IlstEncodingError) -> Self {
-		Self::new(ErrorKind::TagEncoding)
-	}
-}
-
-// TODO: Remove this
 impl From<FakeTagError> for LoftyError {
 	fn from(_: FakeTagError) -> Self {
 		Self::new(ErrorKind::FakeTag)
@@ -555,34 +720,6 @@ impl From<UnknownFormatError> for LoftyError {
 // TODO: Remove this
 impl From<Lyrics3v2ParseError> for LoftyError {
 	fn from(_: Lyrics3v2ParseError) -> Self {
-		Self::new(ErrorKind::TagParse)
-	}
-}
-
-// TODO: Remove this
-impl From<Id3v1ParseError> for LoftyError {
-	fn from(_: Id3v1ParseError) -> Self {
-		Self::new(ErrorKind::TagParse)
-	}
-}
-
-// TODO: Remove this
-impl From<Id3v2ParseError> for LoftyError {
-	fn from(_: Id3v2ParseError) -> Self {
-		Self::new(ErrorKind::TagParse)
-	}
-}
-
-// TODO: Remove this
-impl From<VorbisCommentsParseError> for LoftyError {
-	fn from(_: VorbisCommentsParseError) -> Self {
-		Self::new(ErrorKind::TagParse)
-	}
-}
-
-// TODO: Remove this
-impl From<ApeTagParseError> for LoftyError {
-	fn from(_: ApeTagParseError) -> Self {
 		Self::new(ErrorKind::TagParse)
 	}
 }
@@ -651,10 +788,6 @@ impl core::fmt::Display for LoftyError {
 			ErrorKind::UnsupportedPicture => {
 				write!(f, "Picture: attempted to write an unsupported picture")
 			},
-			ErrorKind::UnsupportedTag => write!(
-				f,
-				"Attempted to write a tag to a format that does not support it"
-			),
 			ErrorKind::FakeTag => write!(f, "Reading: Expected a tag, found invalid data"),
 			ErrorKind::TextDecode(message) => write!(f, "Text decoding: {message}"),
 			ErrorKind::TextEncode(message) => write!(f, "Text encoding: {message}"),

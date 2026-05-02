@@ -2,9 +2,10 @@ use super::AiffFile;
 use super::properties::AiffProperties;
 use super::tag::{AiffTextChunks, Comment};
 use crate::config::ParseOptions;
-use crate::error::{NotEnoughDataError, UnknownFormatError};
+use crate::error::{NotEnoughDataError, TagParseError, UnknownFormatError};
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::iff::aiff::error::{AiffParseError, AiffTextChunksParseError};
+use crate::iff::aiff::error::AiffParseError;
+use crate::iff::aiff::tag::error::AiffTextChunksParseError;
 use crate::iff::chunk::{Chunk, Chunks};
 
 use std::io::{Read, Seek, SeekFrom};
@@ -74,7 +75,10 @@ where
 	while let Some(mut chunk) = chunks.next(parse_options.parsing_mode)? {
 		match &chunk.fourcc {
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
-				let Some(tag) = chunk.id3_chunk(parse_options)? else {
+				let Some(tag) = chunk
+					.id3_chunk(parse_options)
+					.map_err(TagParseError::from)?
+				else {
 					continue;
 				};
 				if let Some(existing_tag) = id3v2_tag.as_mut() {
@@ -135,27 +139,30 @@ where
 					Ok(())
 				}
 
-				parse_comments(&mut chunk, &mut comments)?;
+				parse_comments(&mut chunk, &mut comments).map_err(TagParseError::from)?;
 			},
 			b"NAME" if text_chunks.name.is_none() && parse_options.read_tags => {
 				text_chunks.name = Some(
 					chunk
 						.read_string(None)
-						.map_err(AiffTextChunksParseError::from)?,
+						.map_err(AiffTextChunksParseError::from)
+						.map_err(TagParseError::from)?,
 				);
 			},
 			b"AUTH" if text_chunks.author.is_none() && parse_options.read_tags => {
 				text_chunks.author = Some(
 					chunk
 						.read_string(None)
-						.map_err(AiffTextChunksParseError::from)?,
+						.map_err(AiffTextChunksParseError::from)
+						.map_err(TagParseError::from)?,
 				);
 			},
 			b"(c) " if text_chunks.copyright.is_none() && parse_options.read_tags => {
 				text_chunks.copyright = Some(
 					chunk
 						.read_string(None)
-						.map_err(AiffTextChunksParseError::from)?,
+						.map_err(AiffTextChunksParseError::from)
+						.map_err(TagParseError::from)?,
 				);
 			},
 			_ => {},

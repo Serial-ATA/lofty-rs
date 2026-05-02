@@ -1,4 +1,4 @@
-use crate::error::{AllocationError, TagEncodingError, TextDecodingError};
+use crate::error::{AllocationError, TagEncodingError, TagParseError, TextDecodingError};
 use crate::tag::TagType;
 
 use std::borrow::Cow;
@@ -131,10 +131,10 @@ impl From<ApeTagItemValidationError> for ApeTagItemParseError {
 	}
 }
 
-/// Errors that can occur while parsing an APE tag
+/// Internal concrete variant of [`TagParseError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to parse APE tag")]
-pub struct ApeTagParseError {
+pub(crate) struct ApeTagParseError {
 	#[error(from(
 		std::io::Error,
 		crate::error::FakeTagError,
@@ -145,11 +145,21 @@ pub struct ApeTagParseError {
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 
-/// Errors that can occur while encoding an APE tag
+impl From<ApeTagParseError> for TagParseError {
+	fn from(input: ApeTagParseError) -> Self {
+		TagParseError::new(TagType::Ape, input.source)
+	}
+}
+
+/// Internal concrete variant of [`TagEncodingError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to write APE tag")]
-pub struct ApeTagEncodingError {
-	#[error(from(std::io::Error, crate::util::alloc::AllocationError,))]
+pub(crate) struct ApeTagEncodingError {
+	#[error(from(
+		std::io::Error,
+		crate::util::alloc::AllocationError,
+		crate::error::TooMuchDataError,
+	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 

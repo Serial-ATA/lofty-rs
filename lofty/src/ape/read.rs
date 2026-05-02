@@ -1,10 +1,10 @@
-use super::header::read_ape_header;
 use super::tag::ApeTag;
 use super::{ApeFile, ApeProperties};
 use crate::ape::error::ApeParseError;
+use crate::ape::tag::header::read_ape_header;
 use crate::ape::tag::read::{read_ape_tag, read_ape_tag_with_header};
 use crate::config::ParseOptions;
-use crate::error::{FakeTagError, SizeMismatchError};
+use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
@@ -37,7 +37,9 @@ where
 	};
 
 	// ID3v2 tags are unsupported in APE files, but still possible
-	if let ID3FindResults(Some(header), content) = find_id3v2(data, find_id3v2_config)? {
+	if let ID3FindResults(Some(header), content) =
+		find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
+	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the APE file!");
 
 		let Some(new_stream_length) = stream_len.checked_sub(u64::from(header.full_tag_size()))
@@ -50,7 +52,7 @@ where
 		if let Some(content) = content {
 			let reader = &mut &*content;
 
-			let id3v2 = parse_id3v2(reader, header, parse_options)?;
+			let id3v2 = parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 			id3v2_tag = Some(id3v2);
 		}
 	}
@@ -83,7 +85,7 @@ where
 					return Err(FakeTagError.into());
 				}
 
-				let ape_header = read_ape_header(data, false)?;
+				let ape_header = read_ape_header(data, false).map_err(TagParseError::from)?;
 				let Some(new_stream_length) = stream_len.checked_sub(u64::from(ape_header.size))
 				else {
 					return Err(SizeMismatchError.into());
@@ -91,7 +93,8 @@ where
 				stream_len = new_stream_length;
 
 				if parse_options.read_tags {
-					let ape = read_ape_tag_with_header(data, ape_header, parse_options)?;
+					let ape = read_ape_tag_with_header(data, ape_header, parse_options)
+						.map_err(TagParseError::from)?;
 					ape_tag = Some(ape);
 				}
 			},
@@ -110,7 +113,8 @@ where
 	// Exactly 128 bytes long (including the identifier)
 	#[allow(unused_variables)]
 	let ID3FindResults(id3v1_header, id3v1) =
-		find_id3v1(data, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(data, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;
@@ -136,7 +140,9 @@ where
 	// Strongly recommended to be at the end of the file
 	data.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) = read_ape_tag(data, true, parse_options)? {
+	if let (tag, Some(header)) =
+		read_ape_tag(data, true, parse_options).map_err(TagParseError::from)?
+	{
 		stream_len -= u64::from(header.size);
 		ape_tag = tag;
 	}

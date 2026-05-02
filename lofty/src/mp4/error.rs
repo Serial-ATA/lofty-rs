@@ -11,10 +11,6 @@ use std::borrow::Cow;
 
 use lofty_attr::LoftyError;
 
-// Exports
-
-pub use super::ilst::error::{IlstEncodingError, IlstParseError};
-
 /// Failed to parse a [`Mp4File`]
 ///
 /// [`Mp4File`]: crate::mp4::Mp4File
@@ -23,7 +19,7 @@ pub use super::ilst::error::{IlstEncodingError, IlstParseError};
 pub struct Mp4ParseError {
 	#[error(from(
 		std::io::Error,
-		IlstParseError,
+		crate::error::TagParseError,
 		AtomParseError,
 		crate::error::UnknownFormatError,
 		crate::error::NotEnoughDataError,
@@ -56,6 +52,16 @@ pub struct AtomParseError {
 }
 
 impl AtomParseError {
+	pub(super) fn new(
+		ident: AtomIdent<'static>,
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self {
+			ident: Some(ident),
+			source,
+		}
+	}
+
 	pub(super) fn with_ident(mut self, ident: AtomIdent<'_>) -> Self {
 		self.ident = Some(ident.into_owned());
 		self

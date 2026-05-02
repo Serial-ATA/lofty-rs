@@ -2,7 +2,7 @@ use super::FlacFile;
 use super::block::Block;
 use super::properties::FlacProperties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::SizeMismatchError;
+use crate::error::{SizeMismatchError, TagParseError};
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::flac::error::FlacParseError;
 use crate::id3::v2::read::parse_id3v2;
@@ -58,12 +58,14 @@ where
 	};
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
-	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(data, find_id3v2_config)? {
+	if let ID3FindResults(Some(header), Some(content)) =
+		find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
+	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
 
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 		flac_file.id3v2_tag = Some(id3v2);
 	}
 
@@ -112,7 +114,8 @@ where
 				&mut &*block.content,
 				block.content.len() as u64,
 				parse_options,
-			)?;
+			)
+			.map_err(TagParseError::from)?;
 
 			flac_file.vorbis_comments_tag = Some(vorbis_comments);
 			continue;

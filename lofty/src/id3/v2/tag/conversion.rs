@@ -1,18 +1,19 @@
 use crate::TextEncoding;
 use crate::config::WriteOptions;
-use crate::error::LoftyError;
+use crate::error::FileEncodingError;
 use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 use crate::id3::v2::util::pairs::new_number_pair_frame;
 use crate::id3::v2::{
 	AttachedPictureFrame, CommentFrame, Frame, FrameId, Id3v2TagFlags, KeyValueFrame,
 	PopularimeterFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, write,
 };
-use crate::io::{FileLike, Length, Truncate};
+use crate::io::{FileLike, Length, Truncate, VerifiedFile};
 use crate::prelude::ItemKey;
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Tag, TagItem, TagType};
 
 use super::V4_MULTI_VALUE_SEPARATOR;
+use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::tag::{
 	new_text_frame, new_timestamp_frame, new_url_frame, new_user_text_frame,
 };
@@ -495,13 +496,13 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = Frame<'_>> {
 impl<'a, I: Iterator<Item = Frame<'a>> + 'a> Id3v2TagRef<'a, I> {
 	pub(crate) fn write_to<F>(
 		&mut self,
-		file: &mut F,
+		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
-	) -> crate::error::Result<()>
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		write::write_id3v2(file, self, write_options)
 	}
@@ -510,7 +511,7 @@ impl<'a, I: Iterator<Item = Frame<'a>> + 'a> Id3v2TagRef<'a, I> {
 		&mut self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> crate::error::Result<()> {
+	) -> Result<(), Id3v2EncodingError> {
 		let temp = write::create_tag(self, write_options)?;
 		writer.write_all(&temp)?;
 

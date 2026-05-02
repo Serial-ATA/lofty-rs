@@ -1,13 +1,15 @@
 use lofty::config::{ParseOptions, WriteOptions};
-use lofty::error::LoftyError;
+use lofty::error::FileEncodingError;
 use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
 use lofty::io::{FileLike, Length, Truncate};
 use lofty::probe::Probe;
 use lofty::tag::{ItemKey, TagExt, TagType};
+
 use std::fs::File;
 use std::io::{Seek as _, Write as _};
 use std::path::Path;
 use std::process::Command;
+
 use tempfile::NamedTempFile;
 
 /// Create a new temporary file and copy the contents of `path` into it
@@ -114,8 +116,8 @@ pub fn set_artist<F: FileLike>(
 	new_value: &str,
 	expected_item_count: u32,
 ) where
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 {
 	verify_artist(tagged_file, tag_type, expected_value, expected_item_count);
 	println!("WRITE: Writing artist \"{new_value}\" to {tag_type:?}\n");
@@ -148,7 +150,9 @@ pub fn remove_tag_test(path: impl AsRef<Path>, tag_type: TagType) {
 
 	file.rewind().unwrap();
 
-	tag_type.remove_from(&mut file).unwrap();
+	tag_type
+		.remove_from(&mut file, WriteOptions::default())
+		.unwrap();
 
 	file.rewind().unwrap();
 

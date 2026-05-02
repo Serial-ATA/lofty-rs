@@ -5,10 +5,6 @@ use crate::file::FileType;
 
 use lofty_attr::LoftyError;
 
-// Exports
-
-pub use super::tag::error::RiffInfoListParseError;
-
 /// Failed to parse a [`WavFile`]
 ///
 /// [`WavFile`]: crate::iff::wav::WavFile
@@ -17,8 +13,7 @@ pub use super::tag::error::RiffInfoListParseError;
 pub struct WavParseError {
 	#[error(from(
 		std::io::Error,
-		crate::id3::v2::error::Id3v2ParseError,
-		RiffInfoListParseError,
+		crate::error::TagParseError,
 		crate::iff::error::ChunkParseError,
 		crate::error::SizeMismatchError,
 		crate::error::UnknownFormatError,

@@ -13,8 +13,7 @@ use lofty_attr::LoftyError;
 pub struct AacParseError {
 	#[error(from(
 		std::io::Error,
-		crate::id3::v2::error::Id3v2ParseError,
-		crate::id3::v1::error::Id3v1ParseError,
+		crate::error::TagParseError,
 		crate::error::SizeMismatchError,
 		crate::error::TooMuchDataError,
 	))]

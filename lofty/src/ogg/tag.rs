@@ -1,22 +1,21 @@
 //! Vorbis Comments implementation
 
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError};
 use crate::file::FileType;
-use crate::macros::err;
+use crate::io::VerifiedFile;
 use crate::ogg::picture_storage::OggPictureStorage;
+use crate::ogg::tag::error::VorbisCommentsEncodingError;
 use crate::ogg::tag::read::valid_vorbis_comments_key;
 use crate::picture::{Picture, PictureInformation};
-use crate::probe::Probe;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, Length, Truncate};
-use write::OGGFormat;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -445,7 +444,6 @@ impl Accessor for VorbisComments {
 }
 
 impl TagExt for VorbisComments {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
 	#[inline]
@@ -467,32 +465,6 @@ impl TagExt for VorbisComments {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Writes the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	/// * The file does not contain valid packets
-	/// * [`PictureInformation::from_picture`]
-	/// * [`std::io::Error`]
-	fn save_to<F>(
-		&self,
-		file: &mut F,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		VorbisCommentsRef {
-			vendor: Cow::from(self.vendor.as_str()),
-			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
-			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
-		}
-		.write_to(file, write_options)
-	}
-
 	/// Dumps the tag to a writer
 	///
 	/// This does not include a vendor string, and will thus
@@ -506,18 +478,39 @@ impl TagExt for VorbisComments {
 		&self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), TagEncodingError> {
 		VorbisCommentsRef {
 			vendor: Cow::from(self.vendor.as_str()),
 			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
 		.dump_to(writer, write_options)
+		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
 		self.items.clear();
 		self.pictures.clear();
+	}
+}
+
+impl TagWriteExt for VorbisComments {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
+	{
+		VorbisCommentsRef {
+			vendor: Cow::from(self.vendor.as_str()),
+			items: self.items.iter().map(|(k, v)| (k.as_str(), v.as_str())),
+			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
+		}
+		.write_to(file, write_options)
 	}
 }
 
@@ -713,37 +706,28 @@ where
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
 	#[allow(clippy::shadow_unrelated)]
-	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(
+		&mut self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
-		let probe = Probe::new(file).guess_file_type()?;
-		let f_ty = probe.file_type();
-
-		let file = probe.into_inner();
-
-		let file_type = match f_ty {
-			Some(ft) if VorbisComments::SUPPORTED_FORMATS.contains(&ft) => ft,
-			_ => err!(UnsupportedTag),
-		};
-
-		// FLAC has its own special writing needs :)
-		if file_type == FileType::Flac {
+		if file.format() == FileType::Flac {
 			return crate::flac::write::write_to_inner(file, self, write_options);
 		}
 
-		let (format, header_packet_count) = OGGFormat::from_filetype(file_type);
-
-		write::write(file, self, format, header_packet_count, write_options)
+		write::write(file, self, write_options)
 	}
 
 	pub(crate) fn dump_to<W: Write>(
 		&mut self,
 		writer: &mut W,
 		_write_options: WriteOptions,
-	) -> Result<()> {
+	) -> Result<(), VorbisCommentsEncodingError> {
 		let metadata_packet = write::create_metadata_packet(self, &[], false)?;
 		writer.write_all(&metadata_packet)?;
 		Ok(())

@@ -3,7 +3,7 @@ use crate::temp_file;
 use std::io::{Read, Seek};
 
 use lofty::config::{GlobalOptions, ParseOptions, WriteOptions};
-use lofty::error::{FileParseError, LoftyError};
+use lofty::error::{FileEncodingError, FileParseError};
 use lofty::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 use lofty::resolve::FileResolver;
 use lofty::tag::{Accessor, Tag, TagExt, TagSupport, TagType};
@@ -246,11 +246,11 @@ rusty_fork_test! {
 				Ok(Self)
 			}
 
-			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> lofty::error::Result<()>
+			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> Result<(), FileEncodingError>
 			where
 				F: FileLike,
-				LoftyError: From<<F as Truncate>::Error>,
-				LoftyError: From<<F as Length>::Error>
+				FileEncodingError: From<<F as Truncate>::Error>,
+				FileEncodingError: From<<F as Length>::Error>
 			{
 				unimplemented!()
 			}

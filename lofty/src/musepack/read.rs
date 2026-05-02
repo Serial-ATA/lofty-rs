@@ -3,7 +3,7 @@ use super::sv7::MpcSv7Properties;
 use super::sv8::MpcSv8Properties;
 use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::config::ParseOptions;
-use crate::error::SizeMismatchError;
+use crate::error::{SizeMismatchError, TagParseError};
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::musepack::error::MpcParseError;
@@ -34,7 +34,9 @@ where
 
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
-	if let ID3FindResults(Some(header), Some(content)) = find_id3v2(reader, find_id3v2_config)? {
+	if let ID3FindResults(Some(header), Some(content)) =
+		find_id3v2(reader, find_id3v2_config).map_err(TagParseError::from)?
+	{
 		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
 		else {
 			return Err(SizeMismatchError.into());
@@ -44,7 +46,7 @@ where
 
 		let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options)?;
+		let id3v2 = parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 		file.id3v2_tag = Some(id3v2);
 	}
 
@@ -53,7 +55,8 @@ where
 
 	#[allow(unused_variables)]
 	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
@@ -73,7 +76,9 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
+	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)
+		.map_err(TagParseError::from)?
+	{
 		file.ape_tag = tag;
 
 		// Seek back to the start of the tag

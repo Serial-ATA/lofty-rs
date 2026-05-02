@@ -1,6 +1,6 @@
 //! ID3v2 error types
 
-use crate::error::TagEncodingError;
+use crate::error::{TagEncodingError, TagParseError};
 use crate::tag::{ItemKey, TagType};
 
 use lofty_attr::LoftyError;
@@ -86,10 +86,10 @@ impl core::fmt::Display for Id3v2HeaderError {
 
 impl core::error::Error for Id3v2HeaderError {}
 
-/// Errors that can occur while parsing an ID3v2 tag
+/// Internal concrete variant of [`TagParseError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to parse ID3v2 tag")]
-pub struct Id3v2ParseError {
+pub(crate) struct Id3v2ParseError {
 	#[error(from(
 		std::io::Error,
 		crate::error::FakeTagError,
@@ -101,10 +101,16 @@ pub struct Id3v2ParseError {
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 
-/// Errors that can occur while encoding an ID3v2 tag
+impl From<Id3v2ParseError> for TagParseError {
+	fn from(input: Id3v2ParseError) -> Self {
+		TagParseError::new(TagType::Id3v2, input.source)
+	}
+}
+
+/// Internal concrete variant of [`TagEncodingError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to write ID3v2 tag")]
-pub struct Id3v2EncodingError {
+pub(crate) struct Id3v2EncodingError {
 	#[error(from(
 		std::io::Error,
 		super::frame::error::FrameEncodingError,

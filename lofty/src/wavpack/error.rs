@@ -13,8 +13,7 @@ use lofty_attr::LoftyError;
 pub struct WavPackParseError {
 	#[error(from(
 		std::io::Error,
-		crate::ape::error::ApeTagParseError,
-		crate::id3::v1::error::Id3v1ParseError,
+		crate::error::TagParseError,
 		crate::id3::Lyrics3v2ParseError,
 		crate::error::SizeMismatchError,
 		crate::error::AllocationError,

@@ -3,7 +3,9 @@ use super::ilst::Ilst;
 use super::ilst::read::parse_ilst;
 use super::read::{AtomReader, find_child_atom, meta_is_full, skip_atom};
 use crate::config::ParseOptions;
-use crate::mp4::error::{IlstParseError, Mp4ParseError};
+use crate::error::TagParseError;
+use crate::mp4::error::Mp4ParseError;
+use crate::mp4::ilst::error::IlstParseError;
 
 use std::io::{Read, Seek};
 
@@ -56,7 +58,8 @@ impl Moov {
 						}
 					},
 					b"udta" if parse_options.read_tags => {
-						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)?;
+						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)
+							.map_err(TagParseError::from)?;
 						if let Some(ilst_parsed) = ilst_parsed {
 							let Some(mut existing_ilst) = ilst else {
 								ilst = Some(ilst_parsed);

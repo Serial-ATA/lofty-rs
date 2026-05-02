@@ -144,7 +144,9 @@ fn remove(path: &str, tag_type: TagType) {
 	);
 
 	file.rewind().unwrap();
-	tag_type.remove_from(&mut file).unwrap();
+	tag_type
+		.remove_from(&mut file, WriteOptions::default())
+		.unwrap();
 
 	file.rewind().unwrap();
 	let tagged_file = Probe::new(&mut file)
