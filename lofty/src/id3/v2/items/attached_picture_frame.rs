@@ -147,14 +147,11 @@ impl<'a> AttachedPictureFrame<'a> {
 
 		data.write_u8(self.picture.pic_type.as_u8())?;
 
-		match &self.picture.description {
-			Some(description) => data.write_all(&encoding.encode(
-				description,
-				true,
-				write_options.lossy_text_encoding,
-			)?)?,
-			None => data.write_u8(0)?,
-		}
+		data.write_all(&encoding.encode(
+			self.picture.description().unwrap_or(""),
+			true,
+			write_options.lossy_text_encoding,
+		)?)?;
 
 		data.write_all(&self.picture.data)?;
 

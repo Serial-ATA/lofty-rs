@@ -109,7 +109,10 @@ impl GeneralEncapsulatedObject<'_> {
 	///
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
 	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
-		let encoding = self.encoding;
+		let mut encoding = self.encoding;
+		if write_options.use_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
 
 		let mut bytes = vec![encoding as u8];
 
