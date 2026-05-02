@@ -244,29 +244,26 @@ impl SynchronizedTextFrame<'_> {
 	/// * `language` contains invalid characters (Only `'a'..='z'` and `'A'..='Z'` allowed)
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
 	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
-		let mut data = vec![self.encoding as u8];
+		let mut encoding = self.encoding;
+		if write_options.use_id3v23 {
+			encoding = encoding.to_id3v23();
+		}
+
+		let mut data = vec![encoding as u8];
 
 		if self.language.len() == 3 && self.language.iter().all(u8::is_ascii_alphabetic) {
 			data.write_all(&self.language)?;
 			data.write_u8(self.timestamp_format as u8)?;
 			data.write_u8(self.content_type as u8)?;
 
-			if let Some(description) = &self.description {
-				data.write_all(&self.encoding.encode(
-					description,
-					true,
-					write_options.lossy_text_encoding,
-				)?)?;
-			} else {
-				data.write_u8(0)?;
-			}
+			data.write_all(&encoding.encode(
+				self.description.as_deref().unwrap_or(""),
+				true,
+				write_options.lossy_text_encoding,
+			)?)?;
 
 			for (time, text) in &self.content {
-				data.write_all(&self.encoding.encode(
-					text,
-					true,
-					write_options.lossy_text_encoding,
-				)?)?;
+				data.write_all(&encoding.encode(text, true, write_options.lossy_text_encoding)?)?;
 				data.write_u32::<BigEndian>(*time)?;
 			}
 
