@@ -1,11 +1,14 @@
 //! Various traits for reading and writing to file-like objects
 
-use crate::error::LoftyError;
+use crate::error::{FileParseError, LoftyError, UnknownFormatError};
 use crate::util::math::F80;
 
+use crate::file::FileType;
+use crate::probe::Probe;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::ops::{Deref, DerefMut};
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: Seek {
@@ -205,6 +208,49 @@ where
 
 	fn len(&self) -> std::result::Result<u64, Self::Error> {
 		Length::len(*self)
+	}
+}
+
+/// Wrapper for a [`FileLike`] with a predetermined [`FileType`]
+///
+/// Used for tag writes to prevent repeated format verification
+pub(crate) struct VerifiedFile<'a, F> {
+	format: FileType,
+	file: &'a mut F,
+}
+
+impl<'a, F: FileLike> VerifiedFile<'a, F> {
+	pub(crate) fn new(file: &'a mut F) -> Result<Self, FileParseError> {
+		let probe = Probe::new(file).guess_file_type()?;
+		match probe.file_type() {
+			Some(format) => Ok(Self {
+				format,
+				file: probe.into_inner(),
+			}),
+			None => Err(UnknownFormatError.into()),
+		}
+	}
+
+	pub(crate) fn format(&self) -> FileType {
+		self.format
+	}
+
+	pub(crate) fn into_inner(self) -> &'a mut F {
+		self.file
+	}
+}
+
+impl<F> Deref for VerifiedFile<'_, F> {
+	type Target = F;
+
+	fn deref(&self) -> &Self::Target {
+		self.file
+	}
+}
+
+impl<F> DerefMut for VerifiedFile<'_, F> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.file
 	}
 }
 

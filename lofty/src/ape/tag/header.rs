@@ -1,4 +1,4 @@
-use crate::ape::error::ApeTagParseError;
+use crate::ape::tag::error::ApeTagParseError;
 use crate::error::SizeMismatchError;
 use crate::util::io::SeekStreamLen;
 

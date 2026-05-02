@@ -96,8 +96,16 @@ impl<R: Read + Seek, B: ByteOrder> Chunks<R, B> {
 		}
 
 		let size = self.reader.read_u32::<B>()?;
+
+		log::trace!(
+			"Parsed chunk header: (FourCC={}, size={size})",
+			fourcc.escape_ascii()
+		);
 		if u64::from(size) > self.remaining_size {
-			log::warn!("Chunk exceeds reader size, stopping");
+			log::warn!(
+				"Chunk exceeds reader size, stopping (size: {size}, remaining: {})",
+				self.remaining_size
+			);
 
 			self.remaining_size = 0;
 

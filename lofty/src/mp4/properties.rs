@@ -539,6 +539,8 @@ impl Minf {
 	}
 }
 
+const STSD_IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stsd");
+
 fn read_stsd<R>(
 	reader: &mut AtomReader<R>,
 	properties: &mut Mp4Properties,
@@ -546,7 +548,6 @@ fn read_stsd<R>(
 where
 	R: Read + Seek,
 {
-	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stsd");
 	const MIN_SUPPORTED_ENTRY_VERSION: u16 = 0;
 	const MAX_SUPPORTED_ENTRY_VERSION: u16 = 2;
 
@@ -570,10 +571,13 @@ where
 			};
 
 			if atom.extended {
-				return Err(AtomParseError::message(None, "extended atoms are not supported in `stsd`"));
+				return Err(AtomParseError::message(
+					None,
+					"extended atoms are not supported in `stsd`",
+				));
 			}
 
-			let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
+			let AtomIdent::Fourcc(ref descriptor_format) = atom.ident else {
 				return Err(AtomParseError::message(None, "unexpected freeform atom"));
 			};
 
@@ -583,8 +587,9 @@ where
 			reader.seek(SeekFrom::Current(8))?;
 
 			let stsd_version = reader.read_u16()?;
-			if !(MIN_SUPPORTED_ENTRY_VERSION..=MAX_SUPPORTED_ENTRY_VERSION).contains(&stsd_version) {
-				err!(BadAtom("Unsupported `stsd` version"))
+			if !(MIN_SUPPORTED_ENTRY_VERSION..=MAX_SUPPORTED_ENTRY_VERSION).contains(&stsd_version)
+			{
+				return Err(AtomParseError::message(None, "unsupported `stsd` version"));
 			}
 
 			// Skipping 6 bytes
@@ -627,9 +632,12 @@ where
 			}
 
 			match descriptor_format {
-				b"mp4a" => mp4a_properties(reader, properties).map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"mp4a")))?,,
-				b"alac" => alac_properties(reader, properties).map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"alac")))?,,
-				b"fLaC" => flac_properties(reader, properties).map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"fLaC")))?,,
+				b"mp4a" => mp4a_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"mp4a")))?,
+				b"alac" => alac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"alac")))?,
+				b"fLaC" => flac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"fLaC")))?,
 				// Maybe do these?
 				// TODO: dops (opus)
 				// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
@@ -637,7 +645,8 @@ where
 				// Special case to detect encrypted files
 				b"drms" => {
 					properties.drm_protected = true;
-					skip_atom(reader, false, offset - atom.start)?;
+					skip_atom(reader, false, offset - atom.start)
+						.map_err(|e| e.with_ident(atom.ident))?;
 					continue;
 				},
 				_ => {
@@ -658,7 +667,7 @@ where
 		Ok(())
 	}
 
-	read_inner(reader, properties).map_err(|e| e.with_ident_if_not_present(IDENT))
+	read_inner(reader, properties).map_err(|e| e.with_ident_if_not_present(STSD_IDENT))
 }
 
 pub(super) fn read_properties<R>(
@@ -997,7 +1006,8 @@ where
 		return Ok(());
 	}
 
-	let stream_info_block = crate::flac::block::Block::read(stsd, |_| true)?;
+	let stream_info_block = crate::flac::block::Block::read(stsd, |_| true)
+		.map_err(|e| AtomParseError::new(STSD_IDENT, e.into()))?;
 	let flac_properties =
 		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
 

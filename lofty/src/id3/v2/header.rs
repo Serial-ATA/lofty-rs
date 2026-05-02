@@ -183,7 +183,7 @@ fn read_extended_header<R: Read>(
 	reader: &mut R,
 	flags: &mut Id3v2TagFlags,
 	header_size: u32,
-) -> Result<(), Id3v2HeaderError> {
+) -> Result<(), Id3v2ParseError> {
 	if header_size < 6 {
 		return Err(Id3v2HeaderError::BadExtendedHeaderSize.into());
 	}

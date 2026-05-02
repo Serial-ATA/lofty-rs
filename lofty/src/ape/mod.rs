@@ -7,7 +7,6 @@
 //! `ID3v1`.
 pub(crate) mod constants;
 pub mod error;
-pub(crate) mod header;
 mod properties;
 mod read;
 pub(crate) mod tag;

@@ -1,6 +1,6 @@
 use super::tagged_file::TaggedFile;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileParseError, LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError};
 use crate::tag::TagType;
 use crate::util::io::{FileLike, Length, Truncate};
 
@@ -51,7 +51,11 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to_path(path, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to_path(&self, path: impl AsRef<Path>, write_options: WriteOptions) -> Result<()> {
+	fn save_to_path(
+		&self,
+		path: impl AsRef<Path>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError> {
 		self.save_to(
 			&mut OpenOptions::new().read(true).write(true).open(path)?,
 			write_options,
@@ -81,11 +85,15 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to(&mut file, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(
+		&self,
+		file: &mut F,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>;
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;

@@ -1,41 +1,72 @@
 use super::ApeTagRef;
 use super::item::ApeItemRef;
+use crate::ape::ApeTag;
 use crate::ape::constants::APE_PREAMBLE;
+use crate::ape::tag::error::ApeTagEncodingError;
 use crate::ape::tag::read;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{
+	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TagParseError,
+	TooMuchDataError,
+};
 use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
-use crate::macros::{decode_err, err};
-use crate::probe::Probe;
+use crate::io::VerifiedFile;
 use crate::tag::item::ItemValueRef;
 use crate::util::io::{FileLike, Truncate};
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::ops::Range;
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_to<'a, F, I>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag_ref: &mut ApeTagRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
 {
-	let probe = Probe::new(file).guess_file_type()?;
+	let file = file.into_inner();
 
-	match probe.file_type() {
-		Some(ft) if super::ApeTag::SUPPORTED_FORMATS.contains(&ft) => {},
-		_ => err!(UnsupportedTag),
+	let mut original_tags = find_existing_ape_tags(file, write_options)?;
+
+	// Preserve any metadata marked as read only
+	let tag;
+	if let Some(read_only) = original_tags.read_only.take() {
+		tag = create_ape_tag(
+			tag_ref,
+			read_only.items.iter().map(Into::into),
+			write_options,
+		)
+		.map_err(TagEncodingError::from)?;
+	} else {
+		tag = create_ape_tag(tag_ref, std::iter::empty(), write_options)
+			.map_err(TagEncodingError::from)?;
 	}
 
-	let file = probe.into_inner();
+	write_tag(original_tags, tag, file)
+}
 
+struct ApeTags {
+	read_only: Option<ApeTag>,
+	header: Option<Range<usize>>,
+	footer: Option<Range<usize>>,
+	write_position: u64,
+}
+
+fn find_existing_ape_tags<F>(
+	file: &mut F,
+	write_options: WriteOptions,
+) -> Result<ApeTags, FileParseError>
+where
+	F: FileLike,
+{
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(file, FindId3v2Config::NO_READ_TAG)?;
+	find_id3v2(file, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
 
 	let mut ape_preamble = [0; 8];
 	file.read_exact(&mut ape_preamble)?;
@@ -45,13 +76,13 @@ where
 
 	// An APE tag in the beginning of a file is against the spec
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
-	let mut header_ape_tag = (false, (0, 0));
+	let mut header_tag_location = None;
 
 	// TODO: Forcing the use of ParseOptions::default()
 	let parse_options = ParseOptions::new();
 
-	let start = file.stream_position()?;
-	match read::read_ape_tag(file, false, parse_options)? {
+	let start = file.stream_position()? as usize;
+	match read::read_ape_tag(file, false, parse_options).map_err(TagParseError::from)? {
 		(Some(mut existing_tag), Some(header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
@@ -62,7 +93,7 @@ where
 				}
 			}
 
-			header_ape_tag = (true, (start, start + u64::from(header.size)))
+			header_tag_location = Some(start..start + header.size as usize);
 		},
 		_ => {
 			file.seek(SeekFrom::Current(-8))?;
@@ -70,7 +101,7 @@ where
 	}
 
 	// Skip over ID3v1 and Lyrics3v2 tags
-	find_id3v1(file, false, parse_options.parsing_mode)?;
+	find_id3v1(file, false, parse_options.parsing_mode).map_err(TagParseError::from)?;
 	find_lyrics3v2(file)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
@@ -79,13 +110,13 @@ where
 	// Now search for an APE tag at the end
 	file.seek(SeekFrom::Current(-32))?;
 
-	let mut ape_tag_location = None;
+	let mut footer_tag_location = None;
 
 	// Also check this tag for any read only items
 	let start = file.stream_position()? as usize + 32;
 	// TODO: Forcing the use of ParseOptions::default()
 	if let (Some(mut existing_tag), Some(header)) =
-		read::read_ape_tag(file, true, ParseOptions::new())?
+		read::read_ape_tag(file, true, ParseOptions::new()).map_err(TagParseError::from)?
 	{
 		if write_options.respect_read_only {
 			existing_tag.items.retain(|i| i.read_only);
@@ -103,40 +134,44 @@ where
 
 		// Since the "start" was really at the end of the tag, this sanity check seems necessary
 		let size = header.size;
-		if let Some(start) = start.checked_sub(size as usize) {
-			ape_tag_location = Some(start..start + size as usize);
-		} else {
-			decode_err!(@BAIL Ape, "File has a tag with an invalid size");
-		}
+		let Some(start) = start.checked_sub(size as usize) else {
+			return Err(SizeMismatchError.into());
+		};
+
+		footer_tag_location = Some(start..start + size as usize);
 	}
 
-	// Preserve any metadata marked as read only
-	let tag;
-	if let Some(read_only) = read_only {
-		tag = create_ape_tag(
-			tag_ref,
-			read_only.items.iter().map(Into::into),
-			write_options,
-		)?;
-	} else {
-		tag = create_ape_tag(tag_ref, std::iter::empty(), write_options)?;
-	}
+	Ok(ApeTags {
+		read_only,
+		header: header_tag_location,
+		footer: footer_tag_location,
+		write_position: ape_position,
+	})
+}
 
+fn write_tag<F>(ape_tags: ApeTags, new_tag: Vec<u8>, file: &mut F) -> Result<(), FileEncodingError>
+where
+	F: FileLike,
+	FileEncodingError: From<<F as Truncate>::Error>,
+{
 	file.rewind()?;
 
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;
 
 	// Write the tag in the appropriate place
-	if let Some(range) = ape_tag_location {
-		file_bytes.splice(range, tag);
+	if let Some(range) = ape_tags.footer {
+		file_bytes.splice(range, new_tag);
 	} else {
-		file_bytes.splice(ape_position as usize..ape_position as usize, tag);
+		file_bytes.splice(
+			ape_tags.write_position as usize..ape_tags.write_position as usize,
+			new_tag,
+		);
 	}
 
 	// Now, if there was a tag at the beginning, remove it
-	if header_ape_tag.0 {
-		file_bytes.drain(header_ape_tag.1.0 as usize..header_ape_tag.1.1 as usize);
+	if let Some(range) = ape_tags.header {
+		file_bytes.drain(range);
 	}
 
 	file.rewind()?;
@@ -150,7 +185,7 @@ pub(super) fn create_ape_tag<'a, 'b, I, R>(
 	tag: &mut ApeTagRef<'a, I>,
 	mut read_only: R,
 	write_options: WriteOptions,
-) -> Result<Vec<u8>>
+) -> Result<Vec<u8>, ApeTagEncodingError>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 	R: Iterator<Item = ApeItemRef<'b>>,
@@ -207,7 +242,7 @@ where
 	let size = tag_write.get_ref().len();
 
 	if size as u64 + 32 > u64::from(u32::MAX) {
-		err!(TooMuchData);
+		return Err(TooMuchDataError.into());
 	}
 
 	let mut footer = [0_u8; 32];

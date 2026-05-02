@@ -9,7 +9,7 @@ use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::error::SizeMismatchError;
+use crate::error::{SizeMismatchError, TagParseError};
 use byteorder::ReadBytesExt;
 
 #[allow(clippy::unnecessary_wraps)]
@@ -46,7 +46,7 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = Id3v2Header::parse(reader)?;
+				let header = Id3v2Header::parse(reader).map_err(TagParseError::from)?;
 				let skip_footer = header.flags.footer;
 
 				let Some(new_stream_len) = stream_len.checked_sub(u64::from(header.size)) else {
@@ -56,7 +56,8 @@ where
 				stream_len = new_stream_len;
 
 				if parse_options.read_tags {
-					let id3v2 = parse_id3v2(reader, header, parse_options)?;
+					let id3v2 =
+						parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 					if let Some(existing_tag) = &mut file.id3v2_tag {
 						log::warn!("Duplicate ID3v2 tag found, appending frames to previous tag");
 
@@ -108,7 +109,8 @@ where
 
 	#[allow(unused_variables)]
 	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if header.is_some() {
 		let Some(new_stream_len) = stream_len.checked_sub(128) else {

@@ -1,16 +1,19 @@
 pub(super) mod error;
+pub(crate) mod header;
 pub(crate) mod item;
 pub(crate) mod read;
 mod write;
 
+use crate::ape::tag::error::ApeTagEncodingError;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_number};
+use crate::io::{Length, VerifiedFile};
 use crate::tag::item::ItemValueRef;
 use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
@@ -431,7 +434,6 @@ impl Accessor for ApeTag {
 }
 
 impl TagExt for ApeTag {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
 	#[inline]
@@ -451,28 +453,6 @@ impl TagExt for ApeTag {
 		self.items.is_empty()
 	}
 
-	/// Write an `APE` tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	/// * An existing tag has an invalid size
-	fn save_to<F>(
-		&self,
-		file: &mut F,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-	{
-		ApeTagRef {
-			read_only: self.read_only,
-			items: self.items.iter().map(Into::into),
-		}
-		.write_to(file, write_options)
-	}
-
 	/// Dumps the tag to a writer
 	///
 	/// # Errors
@@ -482,16 +462,36 @@ impl TagExt for ApeTag {
 		&self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
+	) -> std::result::Result<(), TagEncodingError> {
 		ApeTagRef {
 			read_only: self.read_only,
 			items: self.items.iter().map(Into::into),
 		}
 		.dump_to(writer, write_options)
+		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
 		self.items.clear();
+	}
+}
+
+impl TagWriteExt for ApeTag {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
+	{
+		ApeTagRef {
+			read_only: self.read_only,
+			items: self.items.iter().map(Into::into),
+		}
+		.write_to(file, write_options)
 	}
 }
 
@@ -646,10 +646,14 @@ impl<'a, I> ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
-	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(
+		&mut self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
 	{
 		write::write_to(file, self, write_options)
 	}
@@ -658,7 +662,7 @@ where
 		&mut self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> Result<()> {
+	) -> Result<(), ApeTagEncodingError> {
 		let temp = write::create_ape_tag(self, std::iter::empty(), write_options)?;
 		writer.write_all(&temp)?;
 

@@ -1,8 +1,8 @@
 use super::header::{Header, HeaderCmpResult, VbrHeader, cmp_header, search_for_frame_sync};
 use super::{MpegFile, MpegProperties};
-use crate::ape::header::read_ape_header;
+use crate::ape::tag::header::read_ape_header;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{FakeTagError, SizeMismatchError};
+use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
@@ -43,11 +43,12 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = Id3v2Header::parse(reader)?;
+				let header = Id3v2Header::parse(reader).map_err(TagParseError::from)?;
 				let skip_footer = header.flags.footer;
 
 				if parse_options.read_tags {
-					let id3v2 = parse_id3v2(reader, header, parse_options)?;
+					let id3v2 =
+						parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 					if let Some(existing_tag) = &mut file.id3v2_tag {
 						// https://github.com/Serial-ATA/lofty-rs/issues/87
 						// Duplicate tags should have their frames appended to the previous
@@ -79,14 +80,17 @@ where
 				reader.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					let ape_header = read_ape_header(reader, false)?;
+					let ape_header = read_ape_header(reader, false).map_err(TagParseError::from)?;
 
 					if parse_options.read_tags {
-						file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
-							reader,
-							ape_header,
-							parse_options,
-						)?);
+						file.ape_tag = Some(
+							crate::ape::tag::read::read_ape_tag_with_header(
+								reader,
+								ape_header,
+								parse_options,
+							)
+							.map_err(TagParseError::from)?,
+						);
 					} else {
 						reader.seek(SeekFrom::Current(i64::from(ape_header.size)))?;
 					}
@@ -123,11 +127,12 @@ where
 					};
 
 					if let ID3FindResults(Some(header), Some(id3v2_bytes)) =
-						crate::id3::find_id3v2(reader, config)?
+						crate::id3::find_id3v2(reader, config).map_err(TagParseError::from)?
 					{
 						let reader = &mut &*id3v2_bytes;
 
-						let id3v2 = parse_id3v2(reader, header, parse_options)?;
+						let id3v2 = parse_id3v2(reader, header, parse_options)
+							.map_err(TagParseError::from)?;
 
 						if let Some(existing_tag) = &mut file.id3v2_tag {
 							// https://github.com/Serial-ATA/lofty-rs/issues/87
@@ -151,7 +156,8 @@ where
 
 	#[allow(unused_variables)]
 	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
@@ -161,7 +167,9 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
+	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options)
+		.map_err(TagParseError::from)?
+	{
 		(tag, Some(header)) => {
 			file.ape_tag = tag;
 

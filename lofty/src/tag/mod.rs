@@ -10,19 +10,18 @@ mod tag_type;
 pub(crate) mod utils;
 
 use crate::config::{ParsingMode, WriteOptions};
-use crate::error::{LoftyError, Result};
-use crate::macros::err;
+use crate::error::{FileEncodingError, TagEncodingError};
+use crate::io::VerifiedFile;
 use crate::picture::{Picture, PictureType};
-use crate::probe::Probe;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
 use std::io::Write;
-use std::path::Path;
 
 // Exports
+pub(crate) use crate::tag::tag_ext::TagWriteExt;
 pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use split_merge_tag::{MergeTag, SplitTag};
@@ -650,7 +649,6 @@ impl Tag {
 }
 
 impl TagExt for Tag {
-	type Err = LoftyError;
 	type RefKey<'a> = ItemKey;
 
 	#[inline]
@@ -670,66 +668,32 @@ impl TagExt for Tag {
 		self.items.is_empty() && self.pictures.is_empty()
 	}
 
-	/// Save the `Tag` to a [`FileLike`]
-	///
-	/// # Errors
-	///
-	/// * A [`FileType`](crate::file::FileType) couldn't be determined from the File
-	/// * Attempting to write a tag to a format that does not support it. See [`FileType::tag_support()`](crate::file::FileType::tag_support)
-	fn save_to<F>(
+	fn dump_to<W: Write>(
 		&self,
-		file: &mut F,
+		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		let probe = Probe::new(file).guess_file_type()?;
-
-		match probe.file_type() {
-			Some(file_type) => {
-				if !file_type.tag_support(self.tag_type).is_writable() {
-					err!(UnsupportedTag);
-				}
-
-				utils::write_tag(self, probe.into_inner(), file_type, write_options)
-			},
-			None => err!(UnknownFormat),
-		}
-	}
-
-	fn dump_to<W: Write>(&self, writer: &mut W, write_options: WriteOptions) -> Result<()> {
+	) -> Result<(), TagEncodingError> {
 		utils::dump_tag(self, writer, write_options)
-	}
-
-	/// Remove a tag from a [`Path`]
-	///
-	/// # Errors
-	///
-	/// See [`TagType::remove_from`]
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.tag_type.remove_from_path(path)
-	}
-
-	/// Remove a tag from a [`FileLike`]
-	///
-	/// # Errors
-	///
-	/// See [`TagType::remove_from`]
-	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		self.tag_type.remove_from(file)
 	}
 
 	fn clear(&mut self) {
 		self.items.clear();
 		self.pictures.clear();
+	}
+}
+
+impl TagWriteExt for Tag {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
+	{
+		utils::write_tag(self, file, write_options)
 	}
 }
 

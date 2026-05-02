@@ -1,9 +1,14 @@
 use super::RIFFInfoListRef;
 use crate::config::{ParseOptions, ParsingMode, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{
+	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TooMuchDataError,
+};
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
+use crate::iff::error::ChunkParseError;
+use crate::iff::wav::error::WavParseError;
 use crate::iff::wav::read::verify_wav;
-use crate::macros::err;
+use crate::iff::wav::tag::error::RiffInfoListEncodingError;
+use crate::io::VerifiedFile;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::borrow::Cow;
@@ -11,24 +16,26 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
+// TODO: Write JUNK chunk for padding
 pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &mut RIFFInfoListRef<'a, I>,
 	_write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
 	// The first chunk format is RIFF....WAVE
 	const FIRST_CHUNK_LEN: u32 = IFF_CHUNK_HEADER_SIZE + 4;
 
-	let original_stream_length = verify_wav(file)?;
+	let file = file.into_inner();
+	let original_stream_length = verify_wav(file).map_err(FileParseError::from)?;
 
 	let mut riff_info_bytes = Vec::new();
-	create_riff_info(&mut tag.items, &mut riff_info_bytes)?;
+	create_riff_info(&mut tag.items, &mut riff_info_bytes).map_err(TagEncodingError::from)?;
 
 	file.rewind()?;
 
@@ -37,7 +44,7 @@ where
 
 	// File is lying about its length
 	if file_bytes.get_ref().len() < (original_stream_length + IFF_CHUNK_HEADER_SIZE) as usize {
-		err!(SizeMismatch);
+		return Err(SizeMismatchError.into());
 	}
 
 	file_bytes.seek(SeekFrom::Start(u64::from(FIRST_CHUNK_LEN)))?;
@@ -48,13 +55,14 @@ where
 		&mut file_bytes,
 		u64::from(original_stream_length - 4),
 		parse_options.parsing_mode,
-	)?
+	)
+	.map_err(FileParseError::from)?
 	else {
 		// Simply append the info list to the end of the file and update the file size
 
 		let new_stream_length = riff_info_bytes.len() as u64 + u64::from(original_stream_length);
 		if new_stream_length > u64::from(u32::MAX) {
-			err!(TooMuchData);
+			return Err(TooMuchDataError.into());
 		}
 
 		file_bytes.rewind()?;
@@ -88,7 +96,7 @@ where
 	let new_stream_length = riff_info_bytes.len() as u64
 		+ (u64::from(original_stream_length) - original_info_list.len() as u64);
 	if new_stream_length > u64::from(u32::MAX) {
-		err!(TooMuchData);
+		return Err(TooMuchDataError.into());
 	}
 
 	let _ = file_bytes
@@ -106,7 +114,11 @@ where
 	Ok(())
 }
 
-fn find_info_list<R>(data: &mut R, file_size: u64, parse_mode: ParsingMode) -> Result<Option<u32>>
+fn find_info_list<R>(
+	data: &mut R,
+	file_size: u64,
+	parse_mode: ParsingMode,
+) -> Result<Option<u32>, WavParseError>
 where
 	R: Read + Seek,
 {
@@ -119,7 +131,9 @@ where
 		}
 
 		let mut list_type = [0; 4];
-		chunk.read_exact(&mut list_type)?;
+		chunk
+			.read_exact(&mut list_type)
+			.map_err(|e| ChunkParseError::from(e).with_fourcc(chunk.fourcc))?;
 
 		if &list_type == b"INFO" {
 			log::debug!(
@@ -138,7 +152,7 @@ where
 pub(super) fn create_riff_info(
 	items: &mut dyn Iterator<Item = (&str, Cow<'_, str>)>,
 	bytes: &mut Vec<u8>,
-) -> Result<()> {
+) -> Result<(), RiffInfoListEncodingError> {
 	let mut items = items.peekable();
 
 	if items.peek().is_none() {
@@ -167,7 +181,7 @@ pub(super) fn create_riff_info(
 
 	let list_size = Vec::len(bytes) - IFF_CHUNK_HEADER_SIZE as usize;
 	if list_size > u32::MAX as usize {
-		err!(TooMuchData);
+		return Err(TooMuchDataError.into());
 	}
 
 	log::debug!("Created RIFF INFO list, size: {} bytes", list_size);

@@ -1,7 +1,7 @@
 use super::WavPackFile;
 use super::properties::WavPackProperties;
 use crate::config::ParseOptions;
-use crate::error::SizeMismatchError;
+use crate::error::{SizeMismatchError, TagParseError};
 use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3v2};
 use crate::wavpack::error::WavPackParseError;
 
@@ -22,7 +22,8 @@ where
 	let mut ape_tag = None;
 
 	let ID3FindResults(id3v1_header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if id3v1_header.is_some() {
 		id3v1_tag = id3v1;
@@ -48,7 +49,9 @@ where
 	// Strongly recommended to be at the end of the file
 	reader.seek(SeekFrom::Current(-32))?;
 
-	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
+	if let (tag, Some(header)) = crate::ape::tag::read::read_ape_tag(reader, true, parse_options)
+		.map_err(TagParseError::from)?
+	{
 		stream_length -= u64::from(header.size);
 		ape_tag = tag;
 	}

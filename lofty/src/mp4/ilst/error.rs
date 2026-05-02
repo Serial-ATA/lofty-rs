@@ -1,16 +1,14 @@
-use crate::error::TagEncodingError;
+use crate::error::{TagEncodingError, TagParseError};
 use crate::tag::TagType;
 
 use std::borrow::Cow;
 
 use lofty_attr::LoftyError;
 
-/// Failed to parse an [`Ilst`]
-///
-/// [`Ilst`]: crate::mp4::Ilst
+/// Internal concrete variant of [`TagParseError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to parse ilst tag")]
-pub struct IlstParseError {
+pub(crate) struct IlstParseError {
 	#[error(from(
 		std::io::Error,
 		crate::mp4::error::AtomParseError,
@@ -19,12 +17,16 @@ pub struct IlstParseError {
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 
-/// Failed to write an [`Ilst`]
-///
-/// [`Ilst`]: crate::mp4::Ilst
+impl From<IlstParseError> for TagParseError {
+	fn from(input: IlstParseError) -> Self {
+		TagParseError::new(TagType::Mp4Ilst, input.source)
+	}
+}
+
+/// Internal concrete variant of [`TagEncodingError`] for conversions
 #[derive(LoftyError)]
 #[error(message = "failed to write ilst tag")]
-pub struct IlstEncodingError {
+pub(crate) struct IlstEncodingError {
 	#[error(from(
 		std::io::Error,
 		crate::error::LoftyError, // TODO: remove this

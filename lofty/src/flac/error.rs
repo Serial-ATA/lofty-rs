@@ -1,6 +1,6 @@
 //! FLAC error types
 
-use crate::error::FileParseError;
+use crate::error::{FileEncodingError, FileParseError};
 use crate::file::FileType;
 
 use lofty_attr::LoftyError;
@@ -13,10 +13,10 @@ use lofty_attr::LoftyError;
 pub struct FlacParseError {
 	#[error(from(
 		std::io::Error,
-		crate::id3::v2::error::Id3v2ParseError,
-		crate::ogg::tag::error::VorbisCommentsParseError,
+		crate::error::TagParseError,
 		crate::error::SizeMismatchError,
 		crate::picture::error::PictureParseError,
+		crate::error::AllocationError,
 		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
@@ -32,6 +32,25 @@ impl FlacParseError {
 
 impl From<FlacParseError> for FileParseError {
 	fn from(input: FlacParseError) -> FileParseError {
+		Self::new(FileType::Flac, input.source)
+	}
+}
+
+/// Internal concrete variant of [`FileEncodingError`] for conversions
+#[derive(LoftyError)]
+#[error(message = "failed to write to FLAC file")]
+pub(super) struct FlacEncodingError {
+	#[error(from(
+		std::io::Error,
+		crate::error::TooMuchDataError,
+		crate::error::AllocationError,
+		crate::error::TagEncodingError,
+	))]
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl From<FlacEncodingError> for FileEncodingError {
+	fn from(input: FlacEncodingError) -> FileEncodingError {
 		Self::new(FileType::Flac, input.source)
 	}
 }

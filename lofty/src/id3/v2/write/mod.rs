@@ -3,15 +3,14 @@ mod frame;
 
 use super::{Frame, Id3v2TagFlags};
 use crate::config::WriteOptions;
-use crate::error::LoftyError;
+use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::file::FileType;
-use crate::id3::v2::Id3v2Tag;
 use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::{FindId3v2Config, find_id3v2};
-use crate::macros::{err, try_vec};
-use crate::probe::Probe;
+use crate::io::VerifiedFile;
+use crate::macros::try_vec;
 use crate::util::io::{FileLike, Length, Truncate};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -36,56 +35,47 @@ static CRC32_TABLE: LazyLock<[u32; 256]> = LazyLock::new(|| {
 
 #[allow(clippy::shadow_unrelated)]
 pub(crate) fn write_id3v2<'a, F, I>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &mut Id3v2TagRef<'a, I>,
 	write_options: WriteOptions,
-) -> crate::error::Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 	I: Iterator<Item = Frame<'a>> + 'a,
 {
-	let probe = Probe::new(file).guess_file_type()?;
-	let file_type = probe.file_type();
+	// IFF formats store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
+	let mut iff_format = false;
+	if file.format() == FileType::Wav || file.format() == FileType::Aiff {
+		iff_format = true;
 
-	let file = probe.into_inner();
-
-	// Unable to determine a format
-	if file_type.is_none() {
-		err!(UnknownFormat);
+		// Footers in IFF formats don't make sense
+		tag.flags.footer = false;
 	}
 
-	let file_type = file_type.unwrap();
-
-	if !Id3v2Tag::SUPPORTED_FORMATS.contains(&file_type) {
-		err!(UnsupportedTag);
+	let id3v2 = create_tag(tag, write_options).map_err(TagEncodingError::from)?;
+	if iff_format {
+		match file.format() {
+			FileType::Wav => {
+				return chunk_file::write_to_chunk_file::<F, LittleEndian>(
+					file,
+					&id3v2,
+					write_options,
+				);
+			},
+			FileType::Aiff => {
+				return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
+			},
+			_ => unreachable!(),
+		}
 	}
 
-	// Attempting to write a non-empty tag to a read only format
-	// An empty tag implies the tag should be stripped.
-	if Id3v2Tag::READ_ONLY_FORMATS.contains(&file_type) && tag.frames.peek().is_some() {
-		err!(UnsupportedTag);
-	}
+	let file = file.into_inner();
 
-	let id3v2 = create_tag(tag, write_options)?;
-
-	match file_type {
-		// Formats such as WAV and AIFF store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-		FileType::Wav => {
-			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<F, LittleEndian>(file, &id3v2, write_options);
-		},
-		FileType::Aiff => {
-			tag.flags.footer = false;
-			return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
-		},
-		_ => {},
-	}
-
-	// find_id3v2 will seek us to the end of the tag
+	// `find_id3v2` will seek us to the end of the tag
 	// TODO: Search through junk
-	find_id3v2(file, FindId3v2Config::NO_READ_TAG)?;
+	find_id3v2(file, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
 
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;

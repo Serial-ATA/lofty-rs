@@ -5,10 +5,6 @@ use crate::file::FileType;
 
 use lofty_attr::LoftyError;
 
-// Exports
-
-pub use super::tag::error::AiffTextChunksParseError;
-
 /// Failed to parse an [`AiffFile`]
 ///
 /// [`AiffFile`]: crate::iff::aiff::AiffFile
@@ -17,8 +13,7 @@ pub use super::tag::error::AiffTextChunksParseError;
 pub struct AiffParseError {
 	#[error(from(
 		std::io::Error,
-		crate::id3::v2::error::Id3v2ParseError,
-		AiffTextChunksParseError,
+		crate::error::TagParseError,
 		crate::iff::error::ChunkParseError,
 		crate::error::SizeMismatchError,
 		crate::error::UnknownFormatError,

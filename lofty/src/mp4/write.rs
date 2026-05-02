@@ -1,4 +1,5 @@
 use crate::config::ParsingMode;
+use crate::error::FileEncodingError;
 use crate::io::{FileLike, Length, Truncate};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::error::AtomParseError;
@@ -8,7 +9,6 @@ use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::RangeBounds;
 
-use crate::error::LoftyError;
 use byteorder::{BigEndian, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
@@ -133,8 +133,8 @@ impl AtomWriter {
 	) -> crate::error::Result<Self>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		let mut contents = Cursor::new(Vec::new());
 		file.read_to_end(contents.get_mut())?;
@@ -169,11 +169,11 @@ impl AtomWriter {
 		}
 	}
 
-	pub(super) fn save_to<F>(&mut self, file: &mut F) -> crate::error::Result<()>
+	pub(super) fn save_to<F>(&mut self, file: &mut F) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		file.rewind()?;
 		file.truncate(0)?;

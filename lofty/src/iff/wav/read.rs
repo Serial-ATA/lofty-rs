@@ -2,7 +2,7 @@ use super::WavFile;
 use super::properties::WavProperties;
 use super::tag::RiffInfoList;
 use crate::config::ParseOptions;
-use crate::error::{SizeMismatchError, UnknownFormatError};
+use crate::error::{SizeMismatchError, TagParseError, UnknownFormatError};
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::chunk::Chunks;
 use crate::iff::error::ChunkParseError;
@@ -90,11 +90,15 @@ where
 					&mut chunks,
 					&mut riff_info,
 					parse_options.parsing_mode,
-				)?;
+				)
+				.map_err(TagParseError::from)?;
 				chunks.unlock()?;
 			},
 			b"ID3 " | b"id3 " if parse_options.read_tags => {
-				let Some(tag) = chunk.id3_chunk(parse_options)? else {
+				let Some(tag) = chunk
+					.id3_chunk(parse_options)
+					.map_err(TagParseError::from)?
+				else {
 					continue;
 				};
 				if let Some(existing_tag) = id3v2_tag.as_mut() {

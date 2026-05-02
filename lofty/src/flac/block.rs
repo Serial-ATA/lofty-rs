@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use crate::error::Result;
-use crate::macros::{err, try_vec};
+use crate::error::{TagEncodingError, TooMuchDataError};
+use crate::flac::error::{FlacEncodingError, FlacParseError};
+use crate::macros::try_vec;
 use crate::picture::{Picture, PictureInformation};
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -28,7 +29,7 @@ impl Block {
 	pub(super) const BLOCK_HEADER_SIZE: usize = 4;
 	pub(super) const MAX_CONTENT_SIZE: u32 = 16_777_215;
 
-	pub(crate) fn read<R, P>(data: &mut R, mut predicate: P) -> Result<Self>
+	pub(crate) fn read<R, P>(data: &mut R, mut predicate: P) -> Result<Self, FlacParseError>
 	where
 		R: Read + Seek,
 		P: FnMut(u8) -> bool,
@@ -66,7 +67,7 @@ impl Block {
 		(Self::BLOCK_HEADER_SIZE as u32) + self.content.len() as u32
 	}
 
-	pub(super) fn new_padding(size: usize) -> Result<Self> {
+	pub(super) fn new_padding(size: usize) -> Result<Self, FlacEncodingError> {
 		let block_size = core::cmp::min(size, Self::MAX_CONTENT_SIZE as usize);
 		let content = try_vec![0; block_size]?;
 		Ok(Self {
@@ -78,10 +79,13 @@ impl Block {
 		})
 	}
 
-	pub(super) fn new_picture(picture: &Picture, info: PictureInformation) -> Result<Self> {
+	pub(super) fn new_picture(
+		picture: &Picture,
+		info: PictureInformation,
+	) -> Result<Self, FlacEncodingError> {
 		let picture_data = picture.as_flac_bytes(info, false);
 		if picture_data.len() > Self::MAX_CONTENT_SIZE as usize {
-			err!(TooMuchData);
+			return Err(TooMuchDataError.into());
 		}
 
 		Ok(Self {
@@ -96,7 +100,7 @@ impl Block {
 	pub(super) fn new_comments<'a>(
 		vendor: &str,
 		items: &mut impl Iterator<Item = (&'a str, &'a str)>,
-	) -> Result<Self> {
+	) -> Result<Self, FlacEncodingError> {
 		let mut comments = Cursor::new(Vec::new());
 
 		comments.write_u32::<LittleEndian>(vendor.len() as u32)?;
@@ -107,10 +111,11 @@ impl Block {
 
 		comments.write_u32::<LittleEndian>(count)?;
 
-		crate::ogg::tag::write::create_comments(&mut comments, &mut count, items)?;
+		crate::ogg::tag::write::create_comments(&mut comments, &mut count, items)
+			.map_err(TagEncodingError::from)?;
 
 		if comments.get_ref().len() > Block::MAX_CONTENT_SIZE as usize {
-			err!(TooMuchData);
+			return Err(TooMuchDataError.into());
 		}
 
 		comments.seek(SeekFrom::Start(item_count_pos))?;
@@ -125,12 +130,12 @@ impl Block {
 		})
 	}
 
-	pub(super) fn write_to<W>(&self, writer: &mut W) -> Result<usize>
+	pub(super) fn write_to<W>(&self, writer: &mut W) -> Result<usize, FlacEncodingError>
 	where
 		W: Write,
 	{
 		if self.content.len() > Self::MAX_CONTENT_SIZE as usize {
-			err!(TooMuchData);
+			return Err(TooMuchDataError.into());
 		}
 
 		writer.write_u8((self.ty & 0x7F) | u8::from(self.last) << 7)?;

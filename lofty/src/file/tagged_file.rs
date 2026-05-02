@@ -1,7 +1,7 @@
 use super::audio_file::AudioFile;
 use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileParseError, LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagSupport, TagType};
 use crate::util::io::{FileLike, Length, Truncate};
@@ -434,11 +434,11 @@ impl AudioFile for TaggedFile {
 			.read()
 	}
 
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		for tag in &self.tags {
 			// It's likely that users of `TaggedFile` aren't going to be aware of any read-only tags
@@ -549,8 +549,8 @@ impl<F> BoundTaggedFile<F> {
 
 impl<F: FileLike> BoundTaggedFile<F>
 where
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
+	FileEncodingError: From<<F as Truncate>::Error>,
+	FileEncodingError: From<<F as Length>::Error>,
 {
 	/// Create a new [`BoundTaggedFile`]
 	///
@@ -575,9 +575,10 @@ where
 	/// let bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read_from(mut file: F, parse_options: ParseOptions) -> Result<Self> {
+	pub fn read_from(mut file: F, parse_options: ParseOptions) -> Result<Self, FileParseError> {
 		let inner = TaggedFile::read_from(&mut file, parse_options)?;
-		file.rewind()?;
+		file.rewind()
+			.map_err(|e| FileParseError::from(e).with_format(inner.ty))?;
 
 		Ok(Self {
 			inner,
@@ -613,7 +614,7 @@ where
 	/// bound_tagged_file.save(WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	pub fn save(&mut self, write_options: WriteOptions) -> Result<()> {
+	pub fn save(&mut self, write_options: WriteOptions) -> Result<(), FileEncodingError> {
 		self.inner.save_to(&mut self.file_handle, write_options)?;
 		self.inner.tags.retain(|tag| !tag.is_empty());
 
@@ -668,11 +669,11 @@ impl<T> AudioFile for BoundTaggedFile<T> {
 		)
 	}
 
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		self.inner.save_to(file, write_options)
 	}

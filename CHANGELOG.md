@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
 - **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
 - **VorbisComments**: Moved from `crate::ogg` to `crate::ogg::tag`
+- **TagType**: `TagType::remove_from{_path}` now takes a `WriteOptions` to control padding behavior
+  - By default, Lofty will attempt to replace tags with padding rather than *actually* removing them from
+    to avoid rewriting the entire file. Disabling `WriteOptions::preferred_padding()` disables that behavior.
 
 ### Fixed
 
@@ -25,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed `Id3v2Tag::remove_disk_total()`, which incorrectly preserved the track number rather than disk number ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
+- **MusePack**: ID3v1 tags are now correctly treated as read-only
 
 ## [0.24.0] - 2026-04-12
 

@@ -1,19 +1,22 @@
 pub(super) mod error;
 
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
+use crate::iff::aiff::error::AiffParseError;
+use crate::iff::aiff::tag::error::AiffTextChunksEncodingError;
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
-use crate::macros::err;
-use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
+use crate::io::VerifiedFile;
+use crate::tag::{
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+};
 use crate::util::io::{FileLike, Length, Truncate};
 
+use byteorder::BigEndian;
+use lofty_attr::tag;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::Write;
-
-use crate::iff::aiff::error::AiffParseError;
-use byteorder::BigEndian;
-use lofty_attr::tag;
+use std::ops::Range;
 
 /// Represents an AIFF `COMT` chunk
 ///
@@ -156,7 +159,6 @@ impl AiffTextChunks {
 }
 
 impl TagExt for AiffTextChunks {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
 	#[inline]
@@ -195,15 +197,37 @@ impl TagExt for AiffTextChunks {
 		)
 	}
 
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), TagEncodingError> {
+		AiffTextChunksRef {
+			name: self.name.as_deref(),
+			author: self.author.as_deref(),
+			copyright: self.copyright.as_deref(),
+			annotations: self.annotations.as_deref(),
+			comments: self.comments.as_deref(),
+		}
+		.dump_to(writer, write_options)
+		.map_err(Into::into)
+	}
+
+	fn clear(&mut self) {
+		*self = Self::default();
+	}
+}
+
+impl TagWriteExt for AiffTextChunks {
 	fn save_to<F>(
 		&self,
-		file: &mut F,
+		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
+	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
@@ -213,25 +237,6 @@ impl TagExt for AiffTextChunks {
 			comments: self.comments.as_deref(),
 		}
 		.write_to(file, write_options)
-	}
-
-	fn dump_to<W: Write>(
-		&self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		AiffTextChunksRef {
-			name: self.name.as_deref(),
-			author: self.author.as_deref(),
-			copyright: self.copyright.as_deref(),
-			annotations: self.annotations.as_deref(),
-			comments: self.comments.as_deref(),
-		}
-		.dump_to(writer, write_options)
-	}
-
-	fn clear(&mut self) {
-		*self = Self::default();
 	}
 }
 
@@ -320,11 +325,15 @@ where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(crate) fn write_to<F>(self, file: &mut F, _write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(
+		self,
+		file: VerifiedFile<'_, F>,
+		_write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
@@ -333,14 +342,16 @@ where
 		&mut self,
 		writer: &mut W,
 		_write_options: WriteOptions,
-	) -> Result<()> {
+	) -> Result<(), AiffTextChunksEncodingError> {
 		let temp = Self::create_text_chunks(self)?;
 		writer.write_all(&temp)?;
 
 		Ok(())
 	}
 
-	fn create_text_chunks(tag: &mut AiffTextChunksRef<'_, T, AI>) -> Result<Vec<u8>> {
+	fn create_text_chunks(
+		tag: &mut AiffTextChunksRef<'_, T, AI>,
+	) -> Result<Vec<u8>, AiffTextChunksEncodingError> {
 		fn write_chunk(writer: &mut Vec<u8>, key: &str, value: Option<&str>) {
 			if let Some(val) = value
 				&& let Ok(len) = u32::try_from(val.len())
@@ -363,7 +374,7 @@ where
 			&& !comments.is_empty()
 		{
 			let Ok(num_comments) = u16::try_from(comments.len()) else {
-				err!(TooMuchData);
+				return Err(TooMuchDataError.into());
 			};
 
 			text_chunks.extend(b"COMT");
@@ -377,7 +388,7 @@ where
 				let comt_len = comt.text.len();
 
 				if comt_len > u16::MAX as usize {
-					err!(TooMuchData);
+					return Err(TooMuchDataError.into());
 				}
 
 				text_chunks.extend((comt_len as u16).to_be_bytes());
@@ -390,7 +401,7 @@ where
 
 			let comt_chunk_len = text_chunks.len() - IFF_CHUNK_HEADER_SIZE as usize;
 			let Ok(comt_chunk_len) = u32::try_from(comt_chunk_len) else {
-				err!(TooMuchData);
+				return Err(TooMuchDataError.into());
 			};
 
 			text_chunks[4..8].copy_from_slice(&comt_chunk_len.to_be_bytes());
@@ -417,72 +428,44 @@ where
 		Ok(text_chunks)
 	}
 
-	fn write_to_inner<F>(file: &mut F, mut tag: AiffTextChunksRef<'_, T, AI>) -> Result<()>
+	fn write_to_inner<F>(
+		file: VerifiedFile<'_, F>,
+		mut tag: AiffTextChunksRef<'_, T, AI>,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
+		FileEncodingError: From<<F as Truncate>::Error>,
+		FileEncodingError: From<<F as Length>::Error>,
 	{
-		// FORM....AIFF
-		const FIRST_CHUNK_LEN: u64 = (IFF_CHUNK_HEADER_SIZE as u64) + 4;
+		let file = file.into_inner();
 
-		super::read::verify_aiff(file)?;
+		super::read::verify_aiff(file).map_err(FileParseError::from)?;
 		let file_len = file.len()?.saturating_sub(FIRST_CHUNK_LEN);
 
-		let text_chunks = Self::create_text_chunks(&mut tag)?;
+		let text_chunks = Self::create_text_chunks(&mut tag).map_err(TagEncodingError::from)?;
 
-		let mut chunks_to_remove = Vec::new();
-		let mut comm_end = None;
-
-		// TODO: Forcing the use of ParseOptions::default()
-		let parse_options = ParseOptions::default();
-		let mut chunks = Chunks::<_, BigEndian>::new(file, file_len);
-		while let Some(chunk) = chunks.next(parse_options.parsing_mode)? {
-			match &chunk.fourcc {
-				b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
-					// Need to add FIRST_CHUNK_LEN since we started the chunk reader at that offset
-					let start = chunk.start() + FIRST_CHUNK_LEN;
-
-					// Can't trust the written chunk size, since some encoders don't handle padding
-					// correctly, see Chunks::skip(). Since skip detects invalid padding, we just let it
-					// do the work and figure out where we are in the file afterwards.
-					chunks.skip()?;
-
-					let end = chunks.stream_position() + FIRST_CHUNK_LEN;
-
-					chunks_to_remove.push((start as usize, end as usize))
-				},
-				b"COMM" => {
-					chunks.skip()?;
-					comm_end = Some(chunks.stream_position() + FIRST_CHUNK_LEN);
-				},
-				_ => {},
-			}
-		}
-
-		let Some(comm_end) = comm_end else {
-			return Err(AiffParseError::missing_comm().into());
-		};
-
-		let file = chunks.into_inner();
+		let ExistingChunks {
+			text_chunks: mut existing_text_chunks,
+			comm_end_pos,
+		} = find_text_chunks(file, file_len).map_err(FileParseError::from)?;
 		file.rewind()?;
 
 		let mut file_bytes = Vec::new();
 		file.read_to_end(&mut file_bytes)?;
 
-		if chunks_to_remove.is_empty() {
-			file_bytes.splice((comm_end as usize)..(comm_end as usize), text_chunks);
+		if existing_text_chunks.is_empty() {
+			file_bytes.splice(comm_end_pos as usize..comm_end_pos as usize, text_chunks);
 		} else {
-			chunks_to_remove.sort_unstable();
-			chunks_to_remove.reverse();
+			existing_text_chunks.sort_unstable_by_key(|range| range.start);
+			existing_text_chunks.reverse();
 
-			let first = chunks_to_remove.pop().unwrap(); // Infallible
+			let first = existing_text_chunks.pop().unwrap(); // Infallible
 
-			for (s, e) in &chunks_to_remove {
-				file_bytes.drain(*s..*e);
+			for range in existing_text_chunks {
+				file_bytes.drain(range);
 			}
 
-			file_bytes.splice(first.0..first.1, text_chunks);
+			file_bytes.splice(first, text_chunks);
 		}
 
 		let total_size = ((file_bytes.len() - IFF_CHUNK_HEADER_SIZE as usize) as u32).to_be_bytes();
@@ -494,6 +477,57 @@ where
 
 		Ok(())
 	}
+}
+
+// FORM....AIFF
+const FIRST_CHUNK_LEN: u64 = (IFF_CHUNK_HEADER_SIZE as u64) + 4;
+
+struct ExistingChunks {
+	text_chunks: Vec<Range<usize>>,
+	comm_end_pos: u64,
+}
+
+fn find_text_chunks<F>(file: &mut F, file_len: u64) -> Result<ExistingChunks, AiffParseError>
+where
+	F: FileLike,
+{
+	let mut text_chunks = Vec::new();
+	let mut comm_end_pos = None;
+
+	// TODO: Forcing the use of ParseOptions::default()
+	let parse_options = ParseOptions::default();
+	let mut chunks = Chunks::<_, BigEndian>::new(file, file_len);
+	while let Some(chunk) = chunks.next(parse_options.parsing_mode)? {
+		match &chunk.fourcc {
+			b"NAME" | b"AUTH" | b"(c) " | b"ANNO" | b"COMT" => {
+				// Need to add FIRST_CHUNK_LEN since we started the chunk reader at that offset
+				let start = chunk.start() + FIRST_CHUNK_LEN;
+
+				// Can't trust the written chunk size, since some encoders don't handle padding
+				// correctly, see Chunks::skip(). Since skip detects invalid padding, we just let it
+				// do the work and figure out where we are in the file afterwards.
+				chunks.skip()?;
+
+				let end = chunks.stream_position() + FIRST_CHUNK_LEN;
+
+				text_chunks.push(start as usize..end as usize)
+			},
+			b"COMM" => {
+				chunks.skip()?;
+				comm_end_pos = Some(chunks.stream_position() + FIRST_CHUNK_LEN);
+			},
+			_ => {},
+		}
+	}
+
+	let Some(comm_end_pos) = comm_end_pos else {
+		return Err(AiffParseError::missing_comm());
+	};
+
+	Ok(ExistingChunks {
+		text_chunks,
+		comm_end_pos,
+	})
 }
 
 #[cfg(test)]
