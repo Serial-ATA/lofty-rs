@@ -99,8 +99,9 @@ where
 	let bits_per_sample = ((info >> 4) & 0b11111) + 1;
 	let channels = ((info >> 9) & 7) + 1;
 
-	// Read the remaining 32 bits of the total samples
-	let total_samples = stream_info.read_u32::<BigEndian>()? | (info << 28);
+	// Read the remaining 32 bits of the total samples (36 bits total)
+	let total_samples =
+		(u64::from(info & 0xF) << 32) | u64::from(stream_info.read_u32::<BigEndian>()?);
 
 	let signature = stream_info.read_u128::<BigEndian>()?;
 
@@ -113,7 +114,7 @@ where
 	};
 
 	if sample_rate > 0 && total_samples > 0 {
-		let length = (u64::from(total_samples) * 1000) / u64::from(sample_rate);
+		let length = (total_samples * 1000) / u64::from(sample_rate);
 		properties.duration = Duration::from_millis(length);
 
 		if length > 0 && file_length > 0 && stream_length > 0 {
