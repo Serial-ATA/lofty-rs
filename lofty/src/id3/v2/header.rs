@@ -1,6 +1,6 @@
 use crate::error::{Id3v2Error, Id3v2ErrorKind, Result};
 use crate::id3::v2::restrictions::TagRestrictions;
-use crate::id3::v2::util::synchsafe::SynchsafeInteger;
+use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
 use crate::macros::err;
 
 use std::io::Read;
@@ -141,32 +141,25 @@ impl Id3v2Header {
 			(version == Id3v2Version::V4 || version == Id3v2Version::V3) && flags & 0x40 == 0x40;
 
 		if extended_header {
-			extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
-
-			if extended_size < 6 {
-				return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
-			}
-
-			// Useless byte since there's only 1 byte for flags
-			let _num_flag_bytes = bytes.read_u8()?;
-
-			let extended_flags = bytes.read_u8()?;
-
-			// The only flags we care about here are the CRC and restrictions
-
-			if extended_flags & 0x20 == 0x20 {
-				flags_parsed.crc = true;
-
-				// We don't care about the existing CRC (5) or its length byte (1)
-				let mut crc = [0; 6];
-				bytes.read_exact(&mut crc)?;
-			}
-
-			if extended_flags & 0x10 == 0x10 {
-				// We don't care about the length byte, it is always 1
-				let _data_length = bytes.read_u8()?;
-
-				flags_parsed.restrictions = Some(TagRestrictions::from_byte(bytes.read_u8()?));
+			match version {
+				// In ID3v2.3, the extended header is considered separate from the frame header, and
+				// thus subject to unsynchronization
+				Id3v2Version::V3 => {
+					if flags_parsed.unsynchronisation {
+						let mut reader = UnsynchronizedStream::new(bytes);
+						extended_size = reader.read_u32::<BigEndian>()?;
+						read_extended_header(&mut reader, &mut flags_parsed, extended_size)?;
+					} else {
+						extended_size = bytes.read_u32::<BigEndian>()?;
+						read_extended_header(bytes, &mut flags_parsed, extended_size)?;
+					}
+				},
+				// In ID3v2.4, they seem to be considered one big header (?) so no flags apply to it
+				Id3v2Version::V4 => {
+					extended_size = bytes.read_u32::<BigEndian>()?.unsynch();
+					read_extended_header(bytes, &mut flags_parsed, extended_size)?;
+				},
+				_ => unreachable!(),
 			}
 		}
 
@@ -186,4 +179,38 @@ impl Id3v2Header {
 	pub(crate) fn full_tag_size(&self) -> u32 {
 		self.size + 10 + self.extended_size + if self.flags.footer { 10 } else { 0 }
 	}
+}
+
+fn read_extended_header<R: Read>(
+	reader: &mut R,
+	flags: &mut Id3v2TagFlags,
+	header_size: u32,
+) -> Result<()> {
+	if header_size < 6 {
+		return Err(Id3v2Error::new(Id3v2ErrorKind::BadExtendedHeaderSize).into());
+	}
+
+	// Useless byte since there's only 1 byte for flags
+	let _num_flag_bytes = reader.read_u8()?;
+
+	let extended_flags = reader.read_u8()?;
+
+	// The only flags we care about here are the CRC and restrictions
+
+	if extended_flags & 0x20 == 0x20 {
+		flags.crc = true;
+
+		// We don't care about the existing CRC (5) or its length byte (1)
+		let mut crc = [0; 6];
+		reader.read_exact(&mut crc)?;
+	}
+
+	if extended_flags & 0x10 == 0x10 {
+		// We don't care about the length byte, it is always 1
+		let _data_length = reader.read_u8()?;
+
+		flags.restrictions = Some(TagRestrictions::from_byte(reader.read_u8()?));
+	}
+
+	Ok(())
 }

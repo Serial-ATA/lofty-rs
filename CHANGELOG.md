@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**:
   - Fixed UTF-16 description string termination in `APIC` and `SYLT` frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/653)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/654))
   - Fixed `Id3v2Tag::remove_disk_total()`, which incorrectly preserved the track number rather than disk number ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656))
+  - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656))
+  - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656))
 
 ## [0.24.0] - 2026-04-12
 

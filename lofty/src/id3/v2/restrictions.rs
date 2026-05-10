@@ -68,7 +68,7 @@ impl TagRestrictions {
 		let restriction_flags = byte;
 
 		// xx000000
-		match restriction_flags & 0x0C {
+		match restriction_flags & 0xC0 {
 			64 => restrictions.size = TagSizeRestrictions::S_64F_128K,
 			128 => restrictions.size = TagSizeRestrictions::S_32F_40K,
 			192 => restrictions.size = TagSizeRestrictions::S_32F_4K,
@@ -113,7 +113,7 @@ impl TagRestrictions {
 			TagSizeRestrictions::S_128F_1M => {},
 			TagSizeRestrictions::S_64F_128K => byte |= 0x40,
 			TagSizeRestrictions::S_32F_40K => byte |= 0x80,
-			TagSizeRestrictions::S_32F_4K => byte |= 0x0C,
+			TagSizeRestrictions::S_32F_4K => byte |= 0xC0,
 		}
 
 		if self.text_encoding {
