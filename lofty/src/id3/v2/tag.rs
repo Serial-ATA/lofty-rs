@@ -746,11 +746,14 @@ impl Accessor for Id3v2Tag {
 	}
 
 	fn remove_disk_total(&mut self) {
-		let existing_track_number = self.track();
+		let existing_disk_number = self.disk();
 		let _ = self.remove(&DISC_ID);
 
-		if let Some(track) = existing_track_number {
-			self.insert(Frame::text(Cow::Borrowed("TPOS"), track.to_string()));
+		if let Some(disk) = existing_disk_number {
+			self.insert(Frame::text(
+				Cow::Borrowed(DISC_ID.as_str()),
+				disk.to_string(),
+			));
 		}
 	}
 
