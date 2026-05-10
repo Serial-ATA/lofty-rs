@@ -327,7 +327,7 @@ where
 	// Guaranteed to be `Some` at this point.
 	let method_symbol = flags.encryption.unwrap();
 
-	if method_symbol > 0x80 {
+	if method_symbol <= 0x80 {
 		return Err(
 			Id3v2Error::new(Id3v2ErrorKind::InvalidEncryptionMethodSymbol(method_symbol)).into(),
 		);
