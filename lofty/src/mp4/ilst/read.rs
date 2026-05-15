@@ -347,7 +347,10 @@ fn parse_int(bytes: &[u8]) -> Result<i32> {
 	Ok(match bytes.len() {
 		1 => i32::from(bytes[0]),
 		2 => i32::from(i16::from_be_bytes([bytes[0], bytes[1]])),
-		3 => i32::from_be_bytes([0, bytes[0], bytes[1], bytes[2]]),
+		3 => {
+			let pad = if bytes[0] & 0x80 != 0 { 0xFF } else { 0x00 };
+			i32::from_be_bytes([pad, bytes[0], bytes[1], bytes[2]])
+		},
 		4 => i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
 		_ => err!(BadAtom(
 			"Unexpected atom size for type \"BE signed integer\""

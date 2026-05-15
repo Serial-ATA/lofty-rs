@@ -458,8 +458,7 @@ fn update_offsets(
 			write_handle.write_u32::<BigEndian>((i64::from(read_offset) + difference) as u32)?;
 
 			log::trace!(
-				"Updated offset from {} to {}",
-				read_offset,
+				"Updated offset from {read_offset} to {}",
 				(i64::from(read_offset) + difference) as u32
 			);
 		}
@@ -469,12 +468,7 @@ fn update_offsets(
 	for co64 in moov.find_all_children(*b"co64", true) {
 		log::trace!("Found `co64` atom");
 
-		let co64_start = co64.start;
-		if !co64.extended {
-			decode_err!(@BAIL Mp4, "Expected `co64` atom to be extended");
-		}
-
-		write_handle.seek(SeekFrom::Start(co64_start + ATOM_HEADER_LEN + 8 + 4))?;
+		write_handle.seek(SeekFrom::Start(co64.start + ATOM_HEADER_LEN + 8 + 4))?;
 
 		let count = write_handle.read_u32::<BigEndian>()?;
 		for _ in 0..count {
@@ -487,8 +481,7 @@ fn update_offsets(
 			write_handle.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
 
 			log::trace!(
-				"Updated offset from {} to {}",
-				read_offset,
+				"Updated offset from {read_offset} to {}",
 				((read_offset as i64) + difference) as u64
 			);
 		}
@@ -525,8 +518,7 @@ fn update_offsets(
 			write_handle.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
 
 			log::trace!(
-				"Updated offset from {} to {}",
-				read_offset,
+				"Updated offset from {read_offset} to {}",
 				((read_offset as i64) + difference) as u64
 			);
 		}
@@ -643,7 +635,7 @@ where
 
 	drop(write_handle);
 
-	log::trace!("Built `ilst` atom, size: {} bytes", size);
+	log::trace!("Built `ilst` atom, size: {size} bytes");
 
 	Ok(ilst_writer.into_contents())
 }
