@@ -5,6 +5,7 @@ use crate::paginate::paginate;
 
 use std::fmt::{Debug, Formatter};
 use std::io::{Read, Seek, Write};
+use std::ops::Range;
 
 /// A container for packets in an OGG file
 pub struct Packets {
@@ -78,55 +79,49 @@ impl Packets {
 			});
 		}
 
-		let mut read = 0;
+		let mut packets_read = 0;
 
 		let mut packet_size = 0_u64;
 		let mut packet_bytes_already_read = None;
 		let mut current_packet_content;
-		'outer: loop {
-			if let Ok(header) = PageHeader::read(data) {
-				for i in header.segments {
-					packet_size += u64::from(i);
+		'outer: while let Ok(header) = PageHeader::read(data) {
+			for i in header.segments {
+				packet_size += u64::from(i);
 
-					if i < 255 {
-						if count != -1 {
-							read += 1;
-						}
-
-						let byte_count_to_read = Self::get_byte_count_to_read(
-							packet_size,
-							&mut packet_bytes_already_read,
-						);
-
-						current_packet_content = vec![0; byte_count_to_read as usize];
-						data.read_exact(&mut current_packet_content)?;
-
-						packet_sizes.push(packet_size);
-						packet_size = 0;
-						packet_bytes_already_read = None;
-
-						content.append(&mut current_packet_content);
-
-						if read == count {
-							break 'outer;
-						}
+				if i < 255 {
+					if count != -1 {
+						packets_read += 1;
 					}
-				}
 
-				// The packet continues on the next page, write what we can so far
-				if packet_size != 0 {
 					let byte_count_to_read =
 						Self::get_byte_count_to_read(packet_size, &mut packet_bytes_already_read);
 
 					current_packet_content = vec![0; byte_count_to_read as usize];
 					data.read_exact(&mut current_packet_content)?;
-					content.append(&mut current_packet_content);
-				}
 
-				continue;
+					packet_sizes.push(packet_size);
+					packet_size = 0;
+					packet_bytes_already_read = None;
+
+					content.append(&mut current_packet_content);
+
+					if packets_read == count {
+						break 'outer;
+					}
+				}
 			}
 
-			break;
+			// The packet continues on the next page, write what we can so far
+			if packet_size != 0 {
+				let byte_count_to_read =
+					Self::get_byte_count_to_read(packet_size, &mut packet_bytes_already_read);
+
+				current_packet_content = vec![0; byte_count_to_read as usize];
+				data.read_exact(&mut current_packet_content)?;
+				content.append(&mut current_packet_content);
+			}
+
+			continue;
 		}
 
 		if count != -1 && packet_sizes.len() != count as usize {
@@ -201,6 +196,24 @@ impl Packets {
 		self.packet_sizes.is_empty()
 	}
 
+	fn packet_span(&self, idx: usize) -> Option<Range<usize>> {
+		if idx >= self.packet_sizes.len() {
+			return None;
+		}
+
+		let start_pos = match idx {
+			// Packet 0 starts at pos 0
+			0 => 0,
+			other => self.packet_sizes[..other].iter().sum::<u64>() as usize,
+		};
+
+		if let Some(packet_size) = self.packet_sizes.get(idx) {
+			return Some(start_pos..start_pos + *packet_size as usize);
+		}
+
+		None
+	}
+
 	/// Gets the packet at a specified index, returning its contents
 	///
 	/// NOTES:
@@ -227,22 +240,7 @@ impl Packets {
 	/// # Ok(()) }
 	/// ```
 	pub fn get(&self, idx: usize) -> Option<&[u8]> {
-		if idx >= self.content.len() {
-			return None;
-		}
-
-		let start_pos = match idx {
-			// Packet 0 starts at pos 0
-			0 => 0,
-			// Anything else we have to get the size of the previous packet
-			other => self.packet_sizes[other - 1] as usize,
-		};
-
-		if let Some(packet_size) = self.packet_sizes.get(idx) {
-			return Some(&self.content[start_pos..start_pos + *packet_size as usize]);
-		}
-
-		None
+		self.packet_span(idx).map(|range| &self.content[range])
 	}
 
 	/// Sets the packet content, if it exists
@@ -278,23 +276,14 @@ impl Packets {
 	/// # Ok(()) }
 	/// ```
 	pub fn set(&mut self, idx: usize, content: impl Into<Vec<u8>>) -> bool {
-		if idx >= self.packet_sizes.len() {
+		let Some(range) = self.packet_span(idx) else {
 			return false;
-		}
-
-		let start_pos = match idx {
-			// Packet 0 starts at pos 0
-			0 => 0,
-			// Anything else we have to get the size of the previous packet
-			other => self.packet_sizes[other - 1] as usize,
 		};
 
 		let content = content.into();
 		let content_size = content.len();
 
-		let end_pos = start_pos + self.packet_sizes[idx] as usize;
-		self.content.splice(start_pos..end_pos, content);
-
+		self.content.splice(range, content);
 		self.packet_sizes[idx] = content_size as u64;
 
 		true
