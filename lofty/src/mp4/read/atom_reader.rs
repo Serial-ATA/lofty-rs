@@ -42,6 +42,11 @@ where
 		})
 	}
 
+	/// Get the total length of the reader, including bytes already read
+	pub(crate) fn len(&self) -> u64 {
+		self.len
+	}
+
 	/// Set new bounds for the reader
 	///
 	/// This is useful when reading an atom such as `moov`, where we only want to read it and its

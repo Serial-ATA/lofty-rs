@@ -493,6 +493,9 @@ fn read_stsd<R>(reader: &mut AtomReader<R>, properties: &mut Mp4Properties) -> R
 where
 	R: Read + Seek,
 {
+	const MIN_SUPPORTED_ENTRY_VERSION: u16 = 0;
+	const MAX_SUPPORTED_ENTRY_VERSION: u16 = 2;
+
 	// Skipping 4 bytes
 	// Version (1)
 	// Flags (3)
@@ -504,11 +507,64 @@ where
 			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
 		};
 
-		let AtomIdent::Fourcc(ref fourcc) = atom.ident else {
+		if atom.extended {
+			err!(BadAtom("Extended atoms are not supported in `stsd`"))
+		}
+
+		let AtomIdent::Fourcc(ref descriptor_format) = atom.ident else {
 			err!(BadAtom("Expected fourcc atom in `stsd` atom"))
 		};
 
-		match fourcc {
+		// Skipping 8 bytes
+		// Reserved (6)
+		// Data reference index (2)
+		reader.seek(SeekFrom::Current(8))?;
+
+		let stsd_version = reader.read_u16()?;
+		if !(MIN_SUPPORTED_ENTRY_VERSION..=MAX_SUPPORTED_ENTRY_VERSION).contains(&stsd_version) {
+			err!(BadAtom("Unsupported `stsd` version"))
+		}
+
+		// Skipping 6 bytes
+		// Revision level (2)
+		// Vendor (4)
+		reader.seek(SeekFrom::Current(6))?;
+
+		properties.channels = reader.read_u16()? as u8;
+
+		// Skipping 6 bytes
+		// Sample size (2)
+		// Compression ID (2)
+		// Packet size (2)
+		reader.seek(SeekFrom::Current(6))?;
+
+		// 16.16 fixed point number
+		properties.sample_rate = reader.read_u32()? >> 16;
+
+		let mut offset = reader.stream_position()?;
+		if stsd_version == 1 {
+			// Skipping 16 bytes
+			// Samples per packet (4)
+			// Bytes per packet (4)
+			// Bytes per frame (4)
+			// Bytes per sample (4)
+			offset = reader.seek(SeekFrom::Current(16))?;
+		} else if stsd_version == 2 {
+			let extension_struct_size = reader.read_u32()?;
+
+			// Skipping (at least) 32 bytes
+			// Sample rate 64 (8)
+			// Channel count (4)
+			// Reserved (4)
+			// Bits per channel (4)
+			// Format specific flags (4)
+			// Bytes per audio packet (4)
+			// LPCM frames per audio packet (4)
+			// Struct size (variable)
+			offset = reader.seek(SeekFrom::Current(32 + i64::from(extension_struct_size)))?;
+		}
+
+		match descriptor_format {
 			b"mp4a" => mp4a_properties(reader, properties)?,
 			b"alac" => alac_properties(reader, properties)?,
 			b"fLaC" => flac_properties(reader, properties)?,
@@ -519,15 +575,15 @@ where
 			// Special case to detect encrypted files
 			b"drms" => {
 				properties.drm_protected = true;
-				skip_atom(reader, atom.extended, atom.len)?;
+				skip_atom(reader, false, offset - atom.start)?;
 				continue;
 			},
 			_ => {
 				log::warn!(
 					"Found unsupported sample entry: {:?}",
-					fourcc.escape_ascii().to_string()
+					descriptor_format.escape_ascii().to_string()
 				);
-				skip_atom(reader, atom.extended, atom.len)?;
+				skip_atom(reader, false, offset - atom.start)?;
 				continue;
 			},
 		}
@@ -648,25 +704,6 @@ where
 
 	// Set the codec to AAC, which is a good guess if we fail before reaching the `esds`
 	properties.codec = Mp4Codec::AAC;
-
-	// Skipping 16 bytes
-	// Reserved (6)
-	// Data reference index (2)
-	// Version (2)
-	// Revision level (2)
-	// Vendor (4)
-	stsd.seek(SeekFrom::Current(16))?;
-
-	properties.channels = stsd.read_u16()? as u8;
-
-	// Skipping 4 bytes
-	// Sample size (2)
-	// Compression ID (2)
-	stsd.seek(SeekFrom::Current(4))?;
-
-	properties.sample_rate = stsd.read_u32()?;
-
-	stsd.seek(SeekFrom::Current(2))?;
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
 	let Ok(Some(esds)) = stsd.next() else {
@@ -812,19 +849,13 @@ where
 	R: Read + Seek,
 {
 	// With ALAC, we can expect the length to be exactly 88 (80 here since we removed the size and identifier)
-	if stsd.seek(SeekFrom::End(0))? != 80 {
+	if stsd.len() != 80 {
 		return Ok(());
 	}
 
 	// Unlike the "mp4a" atom, we cannot read the data that immediately follows it
 	// For ALAC, we have to skip the first "alac" atom entirely, and read the one that
 	// immediately follows it.
-	//
-	// We are skipping over 44 bytes total
-	// stsd information/alac atom header (16, see `read_properties`)
-	// First alac atom's content (28)
-	stsd.seek(SeekFrom::Start(44))?;
-
 	let Ok(Some(alac)) = stsd.next() else {
 		return Ok(());
 	};
@@ -869,28 +900,6 @@ where
 	R: Read + Seek,
 {
 	properties.codec = Mp4Codec::FLAC;
-
-	// Skipping 16 bytes
-	//
-	// Reserved (6)
-	// Data reference index (2)
-	// Version (2)
-	// Revision level (2)
-	// Vendor (4)
-	stsd.seek(SeekFrom::Current(16))?;
-
-	properties.channels = stsd.read_u16()? as u8;
-	properties.bit_depth = Some(stsd.read_u16()? as u8);
-
-	// Skipping 4 bytes
-	//
-	// Compression ID (2)
-	// Packet size (2)
-	stsd.seek(SeekFrom::Current(4))?;
-
-	properties.sample_rate = u32::from(stsd.read_u16()?);
-
-	let _reserved = stsd.read_u16()?;
 
 	// There should be a dfla atom, but it's not worth erroring if absent.
 	let Some(dfla) = stsd.next()? else {

@@ -227,8 +227,8 @@ impl AtomWriterCompanion<'_> {
 			// Overwrite existing extended size
 			self.write_u64::<BigEndian>(size)?;
 		} else {
-			for i in extended_size {
-				self.insert((start + 8 + u64::from(i)) as usize, i);
+			for (index, b) in extended_size.into_iter().enumerate() {
+				self.insert((start + 8 + index as u64) as usize, b);
 			}
 
 			self.seek(SeekFrom::Current(8))?;

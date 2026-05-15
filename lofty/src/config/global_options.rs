@@ -4,8 +4,8 @@ thread_local! {
 	static GLOBAL_OPTIONS: UnsafeCell<GlobalOptions> = UnsafeCell::new(GlobalOptions::default());
 }
 
-pub(crate) unsafe fn global_options() -> &'static GlobalOptions {
-	GLOBAL_OPTIONS.with(|global_options| unsafe { &*global_options.get() })
+pub(crate) unsafe fn global_options() -> GlobalOptions {
+	GLOBAL_OPTIONS.with(|global_options| unsafe { *global_options.get() })
 }
 
 /// Options that control all interactions with Lofty for the current thread
