@@ -230,7 +230,7 @@ fn save_to_existing(
 		ParseOptions::DEFAULT_PARSING_MODE,
 	)?;
 
-	if tree.is_empty() {
+	if ilst_idx.is_none() {
 		// Nothing to do
 		if remove_tag {
 			return Ok(());
@@ -241,6 +241,7 @@ fn save_to_existing(
 		replacement = ilst;
 		range = meta_end..meta_end;
 	} else {
+		let ilst_idx = ilst_idx.unwrap();
 		let existing_ilst = &tree[ilst_idx];
 		let existing_ilst_size = existing_ilst.len;
 

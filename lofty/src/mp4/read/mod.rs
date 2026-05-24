@@ -156,11 +156,11 @@ pub(super) fn atom_tree<R>(
 	mut len: u64,
 	up_to: &[u8],
 	parse_mode: ParsingMode,
-) -> Result<(usize, Vec<AtomInfo>)>
+) -> Result<(Option<usize>, Vec<AtomInfo>)>
 where
 	R: Read + Seek,
 {
-	let mut found_idx: usize = 0;
+	let mut found_idx: Option<usize> = None;
 	let mut buf = Vec::new();
 
 	let mut i = 0;
@@ -174,17 +174,14 @@ where
 		len = len.saturating_sub(atom.len);
 
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
-			i += 1;
-
 			if fourcc == up_to {
-				found_idx = i;
+				found_idx = Some(i);
 			}
+			i += 1;
 
 			buf.push(atom);
 		}
 	}
-
-	found_idx = found_idx.saturating_sub(1);
 
 	Ok((found_idx, buf))
 }
