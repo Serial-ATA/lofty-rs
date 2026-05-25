@@ -1,6 +1,6 @@
 use super::channel_mask::ChannelMask;
 use std::time::Duration;
-音频信息添加比特率模式
+
 /// Bitrate mode of an audio file
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[non_exhaustive]
