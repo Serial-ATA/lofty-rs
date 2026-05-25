@@ -11,4 +11,4 @@ mod file_properties;
 mod tests;
 
 pub use channel_mask::ChannelMask;
-pub use file_properties::FileProperties;
+pub use file_properties::{BitrateMode, FileProperties};

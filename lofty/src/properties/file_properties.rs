@@ -1,5 +1,15 @@
 use super::channel_mask::ChannelMask;
 use std::time::Duration;
+音频信息添加比特率模式
+/// Bitrate mode of an audio file
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[non_exhaustive]
+pub enum BitrateMode {
+	/// Constant Bitrate (CBR)
+	Cbr,
+	/// Variable Bitrate (VBR)
+	Vbr,
+}
 
 /// Various *immutable* audio properties
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -12,6 +22,7 @@ pub struct FileProperties {
 	pub(crate) bit_depth: Option<u8>,
 	pub(crate) channels: Option<u8>,
 	pub(crate) channel_mask: Option<ChannelMask>,
+	pub(crate) bitrate_mode: Option<BitrateMode>,
 }
 
 impl Default for FileProperties {
@@ -24,6 +35,7 @@ impl Default for FileProperties {
 			bit_depth: None,
 			channels: None,
 			channel_mask: None,
+			bitrate_mode: None,
 		}
 	}
 }
@@ -39,6 +51,7 @@ impl FileProperties {
 		bit_depth: Option<u8>,
 		channels: Option<u8>,
 		channel_mask: Option<ChannelMask>,
+		bitrate_mode: Option<BitrateMode>,
 	) -> Self {
 		Self {
 			duration,
@@ -48,6 +61,7 @@ impl FileProperties {
 			bit_depth,
 			channels,
 			channel_mask,
+			bitrate_mode,
 		}
 	}
 
@@ -86,6 +100,11 @@ impl FileProperties {
 		self.channel_mask
 	}
 
+	/// Bitrate mode of the audio
+	pub fn bitrate_mode(&self) -> Option<BitrateMode> {
+		self.bitrate_mode
+	}
+
 	/// Used for tests
 	#[doc(hidden)]
 	pub fn is_empty(&self) -> bool {
@@ -99,6 +118,7 @@ impl FileProperties {
 				bit_depth: None | Some(0),
 				channels: None | Some(0),
 				channel_mask: None,
+				bitrate_mode: None,
 			}
 		)
 	}

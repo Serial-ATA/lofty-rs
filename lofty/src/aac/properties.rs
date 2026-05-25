@@ -94,7 +94,8 @@ impl From<AACProperties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.channels),
 			channel_mask: input.channel_mask,
-		}
+			bitrate_mode: None,
+}
 	}
 }
 

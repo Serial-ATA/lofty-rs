@@ -204,7 +204,8 @@ impl From<Mp4Properties> for FileProperties {
 			bit_depth: input.bit_depth,
 			channels: Some(input.channels),
 			channel_mask: None,
-		}
+			bitrate_mode: None,
+}
 	}
 }
 

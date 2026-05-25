@@ -111,7 +111,8 @@ impl From<AiffProperties> for FileProperties {
 			bit_depth: Some(value.sample_size as u8),
 			channels: Some(value.channels as u8),
 			channel_mask: None,
-		}
+			bitrate_mode: Some(crate::properties::BitrateMode::Cbr),
+}
 	}
 }
 

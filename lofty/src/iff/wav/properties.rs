@@ -63,7 +63,8 @@ impl From<WavProperties> for FileProperties {
 			bit_depth: Some(bit_depth),
 			channels: Some(channels),
 			channel_mask,
-		}
+			bitrate_mode: Some(crate::properties::BitrateMode::Cbr),
+}
 	}
 }
 

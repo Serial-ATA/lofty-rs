@@ -34,7 +34,8 @@ impl From<MpcSv8Properties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.stream_header.channels),
 			channel_mask: None,
-		}
+			bitrate_mode: Some(crate::properties::BitrateMode::Vbr),
+}
 	}
 }
 

@@ -31,7 +31,8 @@ impl From<ApeProperties> for FileProperties {
 			bit_depth: Some(input.bit_depth),
 			channels: Some(input.channels),
 			channel_mask: None,
-		}
+			bitrate_mode: Some(crate::properties::BitrateMode::Vbr),
+}
 	}
 }
 

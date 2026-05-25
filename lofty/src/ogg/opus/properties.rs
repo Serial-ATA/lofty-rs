@@ -37,6 +37,7 @@ impl From<OpusProperties> for FileProperties {
 			} else {
 				Some(input.channel_mask)
 			},
+			bitrate_mode: Some(crate::properties::BitrateMode::Vbr),
 		}
 	}
 }

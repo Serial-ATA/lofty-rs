@@ -23,6 +23,7 @@ pub struct MpegProperties {
 	pub(crate) copyright: bool,
 	pub(crate) original: bool,
 	pub(crate) emphasis: Option<Emphasis>,
+	pub(crate) bitrate_mode: Option<crate::properties::BitrateMode>,
 }
 
 impl From<MpegProperties> for FileProperties {
@@ -40,6 +41,7 @@ impl From<MpegProperties> for FileProperties {
 			emphasis: _,
 			mode_extension: _,
 			original: _,
+			bitrate_mode,
 		} = input;
 		let channel_mask = match channel_mode {
 			ChannelMode::SingleChannel => Some(ChannelMask::mono()),
@@ -54,6 +56,7 @@ impl From<MpegProperties> for FileProperties {
 			bit_depth: None,
 			channels: Some(channels),
 			channel_mask,
+			bitrate_mode,
 		}
 	}
 }
@@ -118,6 +121,11 @@ impl MpegProperties {
 	pub fn emphasis(&self) -> Option<Emphasis> {
 		self.emphasis
 	}
+
+	/// Bitrate mode of the audio
+	pub fn bitrate_mode(&self) -> Option<crate::properties::BitrateMode> {
+		self.bitrate_mode
+	}
 }
 
 pub(super) fn read_properties<R>(
@@ -136,6 +144,11 @@ where
 
 	properties.version = first_frame_header.version;
 	properties.layer = first_frame_header.layer;
+	properties.bitrate_mode = match vbr_header.as_ref().map(|h| h.ty) {
+		Some(VbrHeaderType::Info) => Some(crate::properties::BitrateMode::Cbr),
+		Some(VbrHeaderType::Xing | VbrHeaderType::Vbri) => Some(crate::properties::BitrateMode::Vbr),
+		None => Some(crate::properties::BitrateMode::Cbr),
+	};
 	properties.channel_mode = first_frame_header.channel_mode;
 	properties.mode_extension = first_frame_header.mode_extension;
 	properties.copyright = first_frame_header.copyright;

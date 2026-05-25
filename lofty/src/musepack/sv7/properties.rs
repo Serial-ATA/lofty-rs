@@ -142,7 +142,8 @@ impl From<MpcSv7Properties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.channels),
 			channel_mask: None,
-		}
+			bitrate_mode: Some(crate::properties::BitrateMode::Vbr),
+}
 	}
 }
 

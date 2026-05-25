@@ -35,7 +35,8 @@ impl From<SpeexProperties> for FileProperties {
 			bit_depth: None,
 			channels: Some(input.channels),
 			channel_mask: None,
-		}
+			bitrate_mode: Some(if input.vbr { crate::properties::BitrateMode::Vbr } else { crate::properties::BitrateMode::Cbr }),
+}
 	}
 }
 
