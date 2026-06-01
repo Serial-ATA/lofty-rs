@@ -182,14 +182,14 @@ impl TryFrom<u8> for AudioObjectType {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub struct Mp4Properties {
-	pub(crate) codec: Mp4Codec,
+	pub(crate) codec: Option<Mp4Codec>,
 	pub(crate) extended_audio_object_type: Option<AudioObjectType>,
 	pub(crate) duration: Duration,
-	pub(crate) overall_bitrate: u32,
-	pub(crate) audio_bitrate: u32,
-	pub(crate) sample_rate: u32,
+	pub(crate) overall_bitrate: Option<u32>,
+	pub(crate) audio_bitrate: Option<u32>,
+	pub(crate) sample_rate: Option<u32>,
 	pub(crate) bit_depth: Option<u8>,
-	pub(crate) channels: u8,
+	pub(crate) channels: Option<u8>,
 	pub(crate) drm_protected: bool,
 	pub(crate) ftyp: String,
 }
@@ -198,11 +198,11 @@ impl From<Mp4Properties> for FileProperties {
 	fn from(input: Mp4Properties) -> Self {
 		Self {
 			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
+			overall_bitrate: input.overall_bitrate,
+			audio_bitrate: input.audio_bitrate,
+			sample_rate: input.sample_rate,
 			bit_depth: input.bit_depth,
-			channels: Some(input.channels),
+			channels: input.channels,
 			channel_mask: None,
 		}
 	}
@@ -215,17 +215,17 @@ impl Mp4Properties {
 	}
 
 	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
+	pub fn overall_bitrate(&self) -> Option<u32> {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
+	pub fn audio_bitrate(&self) -> Option<u32> {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
-	pub fn sample_rate(&self) -> u32 {
+	pub fn sample_rate(&self) -> Option<u32> {
 		self.sample_rate
 	}
 
@@ -235,13 +235,13 @@ impl Mp4Properties {
 	}
 
 	/// Channel count
-	pub fn channels(&self) -> u8 {
+	pub fn channels(&self) -> Option<u8> {
 		self.channels
 	}
 
 	/// Audio codec
-	pub fn codec(&self) -> &Mp4Codec {
-		&self.codec
+	pub fn codec(&self) -> Option<&Mp4Codec> {
+		self.codec.as_ref()
 	}
 
 	/// Extended audio object type
@@ -530,7 +530,7 @@ where
 		// Vendor (4)
 		reader.seek(SeekFrom::Current(6))?;
 
-		properties.channels = reader.read_u16()? as u8;
+		properties.channels = Some(reader.read_u16()? as u8);
 
 		// Skipping 6 bytes
 		// Sample size (2)
@@ -539,7 +539,7 @@ where
 		reader.seek(SeekFrom::Current(6))?;
 
 		// 16.16 fixed point number
-		properties.sample_rate = reader.read_u32()? >> 16;
+		properties.sample_rate = Some(reader.read_u32()? >> 16);
 
 		let mut offset = reader.stream_position()?;
 		if stsd_version == 1 {
@@ -664,7 +664,7 @@ where
 					/ u128::from(duration)) as u32;
 
 				// kb/s
-				properties.audio_bitrate = audio_bitrate_bps / 1000;
+				properties.audio_bitrate = Some(audio_bitrate_bps / 1000);
 			}
 		}
 
@@ -677,12 +677,12 @@ where
 		}
 
 		let overall_bitrate = u128::from(file_length * 8) / duration_millis;
-		properties.overall_bitrate = overall_bitrate as u32;
+		properties.overall_bitrate = Some(overall_bitrate as u32);
 
-		if properties.audio_bitrate == 0 {
+		if matches!(properties.audio_bitrate, None | Some(0)) {
 			log::warn!("Estimating audio bitrate from 'mdat' size");
 
-			properties.audio_bitrate = (u128::from(mdat_len * 8) / duration_millis) as u32;
+			properties.audio_bitrate = Some((u128::from(mdat_len * 8) / duration_millis) as u32);
 		}
 	}
 
@@ -703,7 +703,7 @@ where
 	const DECODER_SPECIFIC_DESCRIPTOR_TAG: u8 = 0x05;
 
 	// Set the codec to AAC, which is a good guess if we fail before reaching the `esds`
-	properties.codec = Mp4Codec::AAC;
+	properties.codec = Some(Mp4Codec::AAC);
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
 	let Ok(Some(esds)) = stsd.next() else {
@@ -735,11 +735,11 @@ where
 		if descriptor.tag == DECODER_CONFIG_TAG {
 			let codec = stsd.read_u8()?;
 
-			properties.codec = match codec {
+			properties.codec = Some(match codec {
 				0x40 | 0x41 | 0x66 | 0x67 | 0x68 => Mp4Codec::AAC,
 				0x69 | 0x6B => Mp4Codec::MP3,
 				_ => Mp4Codec::Unknown,
-			};
+			});
 
 			// Skipping 8 bytes
 			// Stream type (1)
@@ -797,11 +797,11 @@ where
 
 						// Just use the sample rate we already read above if this is invalid
 						if sample_rate > 0 {
-							properties.sample_rate = sample_rate;
+							properties.sample_rate = Some(sample_rate);
 						}
 					},
 					i if i < SAMPLE_RATES.len() as u8 => {
-						properties.sample_rate = SAMPLE_RATES[i as usize];
+						properties.sample_rate = Some(SAMPLE_RATES[i as usize]);
 
 						if extended_object_type {
 							let byte_c = stsd.read_u8()?;
@@ -817,7 +817,7 @@ where
 				// The channel configuration isn't always set, at least when testing with
 				// the Audio Lossless Coding reference software
 				if channel_conf > 0 {
-					properties.channels = channel_conf;
+					properties.channels = Some(channel_conf);
 				}
 
 				// We just check for ALS here, might extend it for more codes eventually
@@ -826,17 +826,17 @@ where
 					stsd.read_exact(&mut ident)?;
 
 					if &ident == b"\0ALS\0" {
-						properties.sample_rate = stsd.read_u32()?;
+						properties.sample_rate = Some(stsd.read_u32()?);
 
 						// Sample count
 						stsd.seek(SeekFrom::Current(4))?;
-						properties.channels = stsd.read_u16()? as u8 + 1;
+						properties.channels = Some(stsd.read_u16()? as u8 + 1);
 					}
 				}
 			}
 
 			if average_bitrate > 0 || properties.duration.is_zero() {
-				properties.audio_bitrate = average_bitrate / 1000;
+				properties.audio_bitrate = Some(average_bitrate / 1000);
 			}
 		}
 	}
@@ -864,7 +864,7 @@ where
 		return Ok(());
 	}
 
-	properties.codec = Mp4Codec::ALAC;
+	properties.codec = Some(Mp4Codec::ALAC);
 
 	// Skipping 9 bytes
 	// Version (4)
@@ -882,15 +882,15 @@ where
 	// Rice parameter limit (1)
 	stsd.seek(SeekFrom::Current(3))?;
 
-	properties.channels = stsd.read_u8()?;
+	properties.channels = Some(stsd.read_u8()?);
 
 	// Skipping 6 bytes
 	// Max run (2)
 	// Max frame size (4)
 	stsd.seek(SeekFrom::Current(6))?;
 
-	properties.audio_bitrate = stsd.read_u32()? / 1000;
-	properties.sample_rate = stsd.read_u32()?;
+	properties.audio_bitrate = Some(stsd.read_u32()? / 1000);
+	properties.sample_rate = Some(stsd.read_u32()?);
 
 	Ok(())
 }
@@ -899,7 +899,7 @@ fn flac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) 
 where
 	R: Read + Seek,
 {
-	properties.codec = Mp4Codec::FLAC;
+	properties.codec = Some(Mp4Codec::FLAC);
 
 	// There should be a dfla atom, but it's not worth erroring if absent.
 	let Some(dfla) = stsd.next()? else {
@@ -925,9 +925,9 @@ where
 	let flac_properties =
 		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
 
-	properties.sample_rate = flac_properties.sample_rate;
+	properties.sample_rate = Some(flac_properties.sample_rate);
 	properties.bit_depth = Some(flac_properties.bit_depth);
-	properties.channels = flac_properties.channels;
+	properties.channels = Some(flac_properties.channels);
 
 	// Bitrate values are calculated later...
 

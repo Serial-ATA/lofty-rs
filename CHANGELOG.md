@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+- **MP4**: `Mp4Properties::codec`, `overall_bitrate`, `audio_bitrate`, `sample_rate`, and `channels` are now `Option<_>`, returning `None` when not present rather than `0` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/661))
 - **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
 
 ### Fixed
