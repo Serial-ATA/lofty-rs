@@ -15,13 +15,13 @@ fn test_properties_aac() {
 	let f = get_file::<Mp4File>("tests/taglib/data/has-tags.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3708);
-	assert_eq!(f.properties().audio_bitrate(), 3);
-	assert_eq!(f.properties().channels(), 2);
-	assert_eq!(f.properties().sample_rate(), 44100);
+	assert_eq!(f.properties().audio_bitrate(), Some(3));
+	assert_eq!(f.properties().channels(), Some(2));
+	assert_eq!(f.properties().sample_rate(), Some(44100));
 	// NOTE: TagLib reports 16, but the stream is a lossy codec. We ignore it in this case.
 	assert!(f.properties().bit_depth().is_none());
 	assert!(!f.properties().is_drm_protected());
-	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
+	assert_eq!(f.properties().codec(), Some(&Mp4Codec::AAC));
 }
 
 #[test_log::test]
@@ -41,12 +41,12 @@ fn test_properties_aac_without_bitrate() {
 	let f = Mp4File::read_from(&mut std::io::Cursor::new(aac_data), ParseOptions::new()).unwrap();
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3708);
-	assert_eq!(f.properties().audio_bitrate(), 3);
-	assert_eq!(f.properties().channels(), 2);
-	assert_eq!(f.properties().sample_rate(), 44100);
+	assert_eq!(f.properties().audio_bitrate(), Some(3));
+	assert_eq!(f.properties().channels(), Some(2));
+	assert_eq!(f.properties().sample_rate(), Some(44100));
 	assert_eq!(f.properties().bit_depth(), None); // TagLib reports 16, but the stream is a lossy codec
 	assert!(!f.properties().is_drm_protected());
-	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
+	assert_eq!(f.properties().codec(), Some(&Mp4Codec::AAC));
 }
 
 #[test_log::test]
@@ -54,12 +54,12 @@ fn test_properties_alac() {
 	let f = get_file::<Mp4File>("tests/taglib/data/empty_alac.m4a");
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3705);
-	assert_eq!(f.properties().audio_bitrate(), 2); // TagLib is off by one (reports 3)
-	assert_eq!(f.properties().channels(), 2);
-	assert_eq!(f.properties().sample_rate(), 44100);
+	assert_eq!(f.properties().audio_bitrate(), Some(2)); // TagLib is off by one (reports 3)
+	assert_eq!(f.properties().channels(), Some(2));
+	assert_eq!(f.properties().sample_rate(), Some(44100));
 	assert_eq!(f.properties().bit_depth(), Some(16));
 	assert!(!f.properties().is_drm_protected());
-	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
+	assert_eq!(f.properties().codec(), Some(&Mp4Codec::ALAC));
 }
 
 #[test_log::test]
@@ -79,12 +79,12 @@ fn test_properties_alac_without_bitrate() {
 	let f = Mp4File::read_from(&mut std::io::Cursor::new(alac_data), ParseOptions::new()).unwrap();
 	assert_eq!(f.properties().duration().as_secs(), 3);
 	assert_eq!(f.properties().duration().as_millis(), 3705);
-	assert_eq!(f.properties().audio_bitrate(), 2); // TagLib is off by one (reports 3)
-	assert_eq!(f.properties().channels(), 2);
-	assert_eq!(f.properties().sample_rate(), 44100);
+	assert_eq!(f.properties().audio_bitrate(), Some(2)); // TagLib is off by one (reports 3)
+	assert_eq!(f.properties().channels(), Some(2));
+	assert_eq!(f.properties().sample_rate(), Some(44100));
 	assert_eq!(f.properties().bit_depth(), Some(16));
 	assert!(!f.properties().is_drm_protected());
-	assert_eq!(f.properties().codec(), &Mp4Codec::ALAC);
+	assert_eq!(f.properties().codec(), Some(&Mp4Codec::ALAC));
 }
 
 // TODO: FFmpeg reports a bitrate of 95kb/s, we report 104
@@ -94,12 +94,12 @@ fn test_properties_m4v() {
 	let f = get_file::<Mp4File>("tests/taglib/data/blank_video.m4v");
 	assert_eq!(f.properties().duration().as_secs(), 0);
 	assert_eq!(f.properties().duration().as_millis(), 975);
-	assert_eq!(f.properties().audio_bitrate(), 95); // TagLib is off by one (reports 96)
-	assert_eq!(f.properties().channels(), 2);
-	assert_eq!(f.properties().sample_rate(), 44100);
+	assert_eq!(f.properties().audio_bitrate(), Some(95)); // TagLib is off by one (reports 96)
+	assert_eq!(f.properties().channels(), Some(2));
+	assert_eq!(f.properties().sample_rate(), Some(44100));
 	assert_eq!(f.properties().bit_depth(), None); // TagLib reports 16, but the stream is a lossy codec
 	assert!(!f.properties().is_drm_protected());
-	assert_eq!(f.properties().codec(), &Mp4Codec::AAC);
+	assert_eq!(f.properties().codec(), Some(&Mp4Codec::AAC));
 }
 
 #[test_log::test]
@@ -403,7 +403,35 @@ fn test_repeated_save() {
 fn test_with_zero_length_atom() {
 	let f = get_file::<Mp4File>("tests/taglib/data/zero-length-mdat.m4a");
 	assert_eq!(f.properties().duration().as_millis(), 1115);
-	assert_eq!(f.properties().sample_rate(), 22050);
+	assert_eq!(f.properties().sample_rate(), Some(22050));
+}
+
+// Regression for https://github.com/Serial-ATA/lofty-rs/issues/661.
+//
+// For unsupported sample-entry codecs (anything outside `mp4a`/`alac`/`fLaC`/
+// `drms`), the QuickTime sound sample-entry slots Lofty reads up front are
+// just placeholders. Lofty used to surface those placeholder zeros as
+// `Some(0)` for channels and sample rate, masking the fact that nothing was
+// actually parsed. Now they read as `None`.
+#[test_log::test]
+#[allow(clippy::needless_range_loop)]
+fn test_properties_unsupported_codec_reports_none() {
+	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
+	let mut data = Vec::new();
+	file.read_to_end(&mut data).unwrap();
+
+	// Rewrite the `mp4a` sample-entry FourCC as an unsupported codec.
+	assert_eq!(&data[1890..1894], b"mp4a");
+	data[1890..1894].copy_from_slice(b"ec-3");
+
+	let f = Mp4File::read_from(&mut std::io::Cursor::new(data), ParseOptions::new()).unwrap();
+	assert_eq!(f.properties().duration().as_secs(), 3);
+	assert_eq!(f.properties().codec(), None);
+	assert_eq!(f.properties().channels(), None);
+	assert_eq!(f.properties().sample_rate(), None);
+	assert_eq!(f.properties().bit_depth(), None);
+	assert_eq!(f.properties().audio_object_type(), None);
+	assert!(!f.properties().is_drm_protected());
 }
 
 #[test_log::test]

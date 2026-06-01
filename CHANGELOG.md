@@ -9,10 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+- **MP4**: `Mp4Properties` accessors that may be unavailable are now `Option`-wrapped
+  to reflect that audio properties are absent for codecs Lofty does not dispatch
+  to a specialized parser ([issue](https://github.com/Serial-ATA/lofty-rs/issues/661)):
+  - `codec()` now returns `Option<&Mp4Codec>`
+  - `overall_bitrate()`, `audio_bitrate()`, `sample_rate()` now return `Option<u32>`
+  - `channels()` now returns `Option<u8>`
 - **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
 
 ### Fixed
 
+- **MP4**: `channels()` and `sample_rate()` no longer report `0` placeholder values
+  for codecs Lofty does not dispatch (e.g. `ec-3`); they correctly report `None`
+  ([issue](https://github.com/Serial-ATA/lofty-rs/issues/661))
 - **IFF**: Undersized ID3v2 chunks will no longer error outside of strict mode ([PR](https://github.com/Serial-ATA/lofty-rs/pull/644))
 - **Timestamp**: Support dot-separated dates (e.g. `2024.06.03`) ([issue](https://github.com/Serial-ATA/lofty-rs/issues/647)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/648))
 - **ID3v2**:
