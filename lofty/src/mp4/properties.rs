@@ -583,6 +583,11 @@ where
 					"Found unsupported sample entry: {:?}",
 					descriptor_format.escape_ascii().to_string()
 				);
+				// The QuickTime sample-entry slots above carry placeholders for
+				// codecs we don't dispatch (e.g. `ec-3`). Discard them rather
+				// than leak zeros into `FileProperties`.
+				properties.channels = None;
+				properties.sample_rate = None;
 				skip_atom(reader, false, offset - atom.start)?;
 				continue;
 			},

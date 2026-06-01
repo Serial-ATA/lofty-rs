@@ -406,6 +406,34 @@ fn test_with_zero_length_atom() {
 	assert_eq!(f.properties().sample_rate(), Some(22050));
 }
 
+// Regression for https://github.com/Serial-ATA/lofty-rs/issues/661.
+//
+// For unsupported sample-entry codecs (anything outside `mp4a`/`alac`/`fLaC`/
+// `drms`), the QuickTime sound sample-entry slots Lofty reads up front are
+// just placeholders. Lofty used to surface those placeholder zeros as
+// `Some(0)` for channels and sample rate, masking the fact that nothing was
+// actually parsed. Now they read as `None`.
+#[test_log::test]
+#[allow(clippy::needless_range_loop)]
+fn test_properties_unsupported_codec_reports_none() {
+	let mut file = temp_file!("tests/taglib/data/has-tags.m4a");
+	let mut data = Vec::new();
+	file.read_to_end(&mut data).unwrap();
+
+	// Rewrite the `mp4a` sample-entry FourCC as an unsupported codec.
+	assert_eq!(&data[1890..1894], b"mp4a");
+	data[1890..1894].copy_from_slice(b"ec-3");
+
+	let f = Mp4File::read_from(&mut std::io::Cursor::new(data), ParseOptions::new()).unwrap();
+	assert_eq!(f.properties().duration().as_secs(), 3);
+	assert_eq!(f.properties().codec(), None);
+	assert_eq!(f.properties().channels(), None);
+	assert_eq!(f.properties().sample_rate(), None);
+	assert_eq!(f.properties().bit_depth(), None);
+	assert_eq!(f.properties().audio_object_type(), None);
+	assert!(!f.properties().is_drm_protected());
+}
+
 #[test_log::test]
 #[ignore = "Marker test, Lofty treats empty values as valid"]
 fn test_empty_values_remove_items() {}
