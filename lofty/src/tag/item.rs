@@ -843,9 +843,9 @@ gen_item_keys!(
 		ReplayGainTrackGain,
 		/// The ReplayGain track peak value
 		ReplayGainTrackPeak,
-		/// The ReplayGain track R128 value
+		/// The EBU R128 track gain
 		R128TrackGain,
-		/// The ReplayGain album R128 value
+		/// The EBU R128 album gain
 		R128AlbumGain,
 
 		// URLs
