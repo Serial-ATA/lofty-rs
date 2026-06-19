@@ -429,6 +429,8 @@ gen_map!(
 	"REPLAYGAIN_ALBUM_PEAK"                   => ReplayGainAlbumPeak,
 	"REPLAYGAIN_TRACK_GAIN"                   => ReplayGainTrackGain,
 	"REPLAYGAIN_TRACK_PEAK"                   => ReplayGainTrackPeak,
+	"R128_TRACK_GAIN"                         => R128TrackGain,
+	"R128_ALBUM_GAIN"                         => R128AlbumGain,
 	"GENRE"                                   => Genre,
 	"COLOR"                                   => Color,
 	"MOOD"                                    => Mood,
@@ -841,6 +843,10 @@ gen_item_keys!(
 		ReplayGainTrackGain,
 		/// The ReplayGain track peak value
 		ReplayGainTrackPeak,
+		/// The ReplayGain track R128 value
+		R128TrackGain,
+		/// The ReplayGain album R128 value
+		R128AlbumGain,
 
 		// URLs
 		/// A URL link to the audio file

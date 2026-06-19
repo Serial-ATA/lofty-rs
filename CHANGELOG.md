@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `R128_TRACK_GAIN` and `R128_ALBUM_GAIN` ReplayGain tags
+   - [Opus specific field](https://datatracker.ietf.org/doc/html/rfc7845#section-5.2.1)
+     used by music players for adjusting header gain depending on playback type.
+
 ### Changed
 
 - **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
