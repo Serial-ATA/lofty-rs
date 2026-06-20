@@ -80,7 +80,7 @@ impl OpusProperties {
 
 	/// Output gain in dB
 	pub fn output_gain_db(&self) -> f32 {
-		self.output_gain as f32 / 256.0
+		f32::from(self.output_gain) / 256.0
 	}
 }
 
