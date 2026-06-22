@@ -73,3 +73,33 @@ fn read_no_properties() {
 fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/m4a_codec_aac.m4a", None);
 }
+
+#[test_log::test]
+fn hdlr_preservation_on_tag_recreation() {
+	use lofty::tag::Tag;
+	use std::fs;
+
+	let src = "tests/files/assets/minimal/m4a_codec_aac.m4a";
+	let temp_path = "tests/files/assets/minimal/temp_hdlr_test.m4a";
+	let _ = fs::remove_file(temp_path);
+	fs::copy(src, temp_path).unwrap();
+
+	// 1. Remove all tags
+	TagType::Mp4Ilst.remove_from_path(temp_path).unwrap();
+
+	// 2. Open the file and write a brand new tag
+	let mut tagged_file = Probe::open(temp_path).unwrap().read().unwrap();
+	let tag = Tag::new(TagType::Mp4Ilst);
+	tagged_file.insert_tag(tag);
+	tagged_file
+		.save_to_path(temp_path, lofty::config::WriteOptions::default())
+		.unwrap();
+
+	// 3. Read the file bytes and verify that "hdlr" is present
+	let bytes = fs::read(temp_path).unwrap();
+	let has_hdlr = bytes.windows(4).any(|w| w == b"hdlr");
+
+	let _ = fs::remove_file(temp_path);
+
+	assert!(has_hdlr, "Output M4A is missing the hdlr atom!");
+}
