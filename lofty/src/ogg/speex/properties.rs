@@ -1,5 +1,5 @@
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::error::FileParseError;
+use crate::file::FileType;
 use crate::ogg::find_last_page;
 use crate::properties::FileProperties;
 use crate::util::math::RoundedDivision;
@@ -90,7 +90,7 @@ pub(in crate::ogg) fn read_properties<R>(
 	data: &mut R,
 	first_page_header: &PageHeader,
 	packets: &Packets,
-) -> Result<SpeexProperties>
+) -> Result<SpeexProperties, FileParseError>
 where
 	R: Read + Seek,
 {
@@ -101,7 +101,10 @@ where
 	let identification_packet = packets.get(0).unwrap();
 
 	if identification_packet.len() < 80 {
-		decode_err!(@BAIL Speex, "Header packet too small");
+		return Err(FileParseError::message(
+			Some(FileType::Speex),
+			"header packet too small",
+		));
 	}
 
 	let mut properties = SpeexProperties::default();
@@ -115,7 +118,10 @@ where
 
 	properties.version = identification_packet_reader.read_u32::<LittleEndian>()?;
 	if properties.version > 1 {
-		decode_err!(@BAIL Speex, "Unknown Speex stream version");
+		return Err(FileParseError::message(
+			Some(FileType::Speex),
+			"unknown speex stream version",
+		));
 	}
 
 	// Total size of the speex header
@@ -130,7 +136,10 @@ where
 	let channels = identification_packet_reader.read_u32::<LittleEndian>()?;
 
 	if channels != 1 && channels != 2 {
-		decode_err!(@BAIL Speex, "Found invalid channel count, must be mono or stereo");
+		return Err(FileParseError::message(
+			Some(FileType::Speex),
+			"found invalid channel count, must be mono or stereo",
+		));
 	}
 
 	properties.channels = channels as u8;
