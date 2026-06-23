@@ -1,5 +1,5 @@
 use super::find_last_page;
-use crate::error::Result;
+use crate::error::FileParseError;
 use crate::properties::FileProperties;
 use crate::util::math::RoundedDivision;
 
@@ -89,7 +89,7 @@ pub(in crate::ogg) fn read_properties<R>(
 	data: &mut R,
 	first_page_header: &PageHeader,
 	packets: &Packets,
-) -> Result<VorbisProperties>
+) -> Result<VorbisProperties, FileParseError>
 where
 	R: Read + Seek,
 {

@@ -18,7 +18,7 @@ use std::path::Path;
 /// use lofty::file::EXTENSIONS;
 /// use std::fs;
 ///
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// for entry in fs::read_dir(".")? {
 /// 	let entry = entry?;
 ///
@@ -252,7 +252,7 @@ impl FileType {
 	/// use std::fs::File;
 	/// use std::io::Read;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_opus = "tests/files/assets/minimal/full_test.opus";
 	/// let mut file = File::open(path_to_opus)?;
 	///

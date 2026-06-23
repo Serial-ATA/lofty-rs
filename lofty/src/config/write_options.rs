@@ -79,7 +79,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -109,7 +109,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -139,7 +139,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -165,7 +165,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -196,7 +196,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v1_tag = Tag::new(TagType::Id3v1);
 	///
 	/// // ID3v1 is restricted to Latin-1, this string can't be written as-is!

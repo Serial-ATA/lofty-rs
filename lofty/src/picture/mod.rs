@@ -510,7 +510,7 @@ impl PictureBuilder {
 	/// ```rust
 	/// use lofty::picture::{Picture, PictureType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let picture_path = "band.jpg";
 	/// # let picture_path = "tests/files/assets/issue_37.jpg";
 	/// let picture_data = std::fs::read(picture_path)?;
@@ -532,7 +532,7 @@ impl PictureBuilder {
 	/// ```rust
 	/// use lofty::picture::{MimeType, Picture};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let picture_path = "band.jpg";
 	/// # let picture_path = "tests/files/assets/issue_37.jpg";
 	/// let picture_data = std::fs::read(picture_path)?;
@@ -554,7 +554,7 @@ impl PictureBuilder {
 	/// ```rust
 	/// use lofty::picture::Picture;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let picture_path = "band.jpg";
 	/// # let picture_path = "tests/files/assets/issue_37.jpg";
 	/// let picture_data = std::fs::read(picture_path)?;
@@ -663,7 +663,7 @@ impl Picture {
 	/// ```rust
 	/// use lofty::picture::{MimeType, Picture, PictureType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let picture_path = "band.jpg";
 	/// # let picture_path = "tests/files/assets/issue_37.jpg";
 	/// let picture_data = std::fs::read(picture_path)?;

@@ -51,7 +51,8 @@ where
 	let file = reader.into_inner();
 	file.rewind()?;
 
-	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)
+		.map_err(Into::<FileParseError>::into)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
 		return Err(FileParseError::from(Mp4ParseError::missing_moov()).into());

@@ -14,7 +14,7 @@ use std::io::Read;
 /// use std::io::{Cursor, Read};
 /// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
 ///
-/// fn main() -> lofty::error::Result<()> {
+/// fn main() -> Result<(), lofty::error::FileParseError> {
 /// // The content has two `0xFF 0x00` pairs, which will be removed
 /// let content = [0xFF, 0x00, 0x1A, 0xFF, 0x00, 0x15];
 ///
@@ -66,7 +66,7 @@ impl<R> UnsynchronizedStream<R> {
 	/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
 	/// use std::io::Cursor;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let reader = Cursor::new([0xFF, 0x00, 0x1A]);
 	/// let unsynchronized_reader = UnsynchronizedStream::new(reader);
 	///
@@ -85,7 +85,7 @@ impl<R> UnsynchronizedStream<R> {
 	/// use lofty::id3::v2::util::synchsafe::UnsynchronizedStream;
 	/// use std::io::Cursor;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let reader = Cursor::new([0xFF, 0x00, 0x1A]);
 	/// let unsynchronized_reader = UnsynchronizedStream::new(reader);
 	///

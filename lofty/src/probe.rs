@@ -3,7 +3,7 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
-use crate::error::{FileParseError, Result, UnknownFormatError};
+use crate::error::{FileParseError, UnknownFormatError};
 use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
 use crate::iff::aiff::AiffFile;
@@ -34,7 +34,7 @@ use std::path::Path;
 /// open file.
 ///
 /// ```rust,no_run
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// use lofty::file::FileType;
 /// use lofty::probe::Probe;
 ///
@@ -49,7 +49,7 @@ use std::path::Path;
 /// When a path isn't available, or is unreliable, content-based detection is also possible.
 ///
 /// ```rust,no_run
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// use lofty::file::FileType;
 /// use lofty::probe::Probe;
 ///
@@ -65,7 +65,7 @@ use std::path::Path;
 /// Or with another reader
 ///
 /// ```rust
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// use lofty::file::FileType;
 /// use lofty::probe::Probe;
 /// use std::io::Cursor;
@@ -98,7 +98,7 @@ impl<R: Read> Probe<R> {
 	/// use std::fs::File;
 	/// use std::io::BufReader;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let file = File::open(path)?;
 	/// let reader = BufReader::new(file);
@@ -128,7 +128,7 @@ impl<R: Read> Probe<R> {
 	/// use std::fs::File;
 	/// use std::io::BufReader;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let my_mp3_path = "tests/files/assets/minimal/full_test.mp3";
 	/// // We know the file is going to be an MP3,
 	/// // so we can skip the format detection
@@ -154,7 +154,7 @@ impl<R: Read> Probe<R> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let reader = std::io::Cursor::new(&[]);
 	/// let probe = Probe::new(reader);
 	///
@@ -173,7 +173,7 @@ impl<R: Read> Probe<R> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let reader = std::io::Cursor::new(&[]);
 	/// let mut probe = Probe::new(reader);
 	/// assert_eq!(probe.file_type(), None);
@@ -196,7 +196,7 @@ impl<R: Read> Probe<R> {
 	/// use lofty::config::ParseOptions;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let reader = std::io::Cursor::new(&[]);
 	/// // By default, properties will be read.
 	/// // In this example, we want to turn this off.
@@ -219,7 +219,7 @@ impl<R: Read> Probe<R> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let reader = std::io::Cursor::new(&[]);
 	/// let probe = Probe::new(reader);
 	///
@@ -247,7 +247,7 @@ impl Probe<BufReader<File>> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let probe = Probe::open("path/to/my.mp3")?;
 	///
 	/// // Guessed from the "mp3" extension, see `FileType::from_ext`
@@ -293,7 +293,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// # let file = std::fs::File::open(path)?;
 	/// # let reader = std::io::BufReader::new(file);
@@ -446,7 +446,7 @@ impl<R: Read + Seek> Probe<R> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// # let file = std::fs::File::open(path)?;
 	/// # let reader = std::io::BufReader::new(file);
@@ -510,7 +510,7 @@ impl<F: FileLike> Probe<F> {
 	/// use lofty::file::FileType;
 	/// use lofty::probe::Probe;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// # let file = std::fs::File::open(path)?;
 	/// let probe = Probe::new(file).guess_file_type()?;
@@ -518,7 +518,7 @@ impl<F: FileLike> Probe<F> {
 	/// let bound_tagged_file = probe.read_bound()?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read_bound(self) -> Result<BoundTaggedFile<F>> {
+	pub fn read_bound(self) -> Result<BoundTaggedFile<F>, FileParseError> {
 		let (tagged_file, file_handle) = self.read_inner()?;
 
 		Ok(BoundTaggedFile {
@@ -543,7 +543,7 @@ impl<F: FileLike> Probe<F> {
 /// use lofty::read_from;
 /// use std::fs::File;
 ///
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 /// let mut file = File::open(path)?;
 ///
@@ -570,7 +570,7 @@ pub fn read_from(file: &mut File) -> std::result::Result<TaggedFile, FileParseEr
 /// ```rust
 /// use lofty::read_from_path;
 ///
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 /// let parsed_file = read_from_path(path)?;
 /// # Ok(()) }

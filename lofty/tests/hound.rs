@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 
 use lofty::config::ParseOptions;
-use lofty::error::Result;
+use lofty::error::FileParseError;
 use lofty::iff::wav::WavFile;
 use lofty::prelude::*;
 
@@ -11,8 +11,8 @@ use std::fs;
 use std::fs::File;
 use std::path::Path;
 
-fn get_properties(path: &Path) -> Result<<WavFile as AudioFile>::Properties> {
-	let mut f = File::open(path).unwrap();
+fn get_properties(path: &Path) -> Result<<WavFile as AudioFile>::Properties, FileParseError> {
+	let mut f = File::open(path)?;
 	let wav_file = WavFile::read_from(&mut f, ParseOptions::new())?;
 	Ok(*wav_file.properties())
 }
