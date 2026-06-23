@@ -17,7 +17,6 @@ pub struct FlacParseError {
 		crate::error::SizeMismatchError,
 		crate::picture::error::PictureParseError,
 		crate::error::AllocationError,
-		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }

@@ -8,7 +8,7 @@ use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::iff::error::ChunkParseError;
 use crate::io::VerifiedFile;
 use crate::tag::TagType;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::ops::Range;
@@ -57,8 +57,6 @@ pub(in crate::id3::v2) fn write_to_chunk_file<F, B>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 	B: ByteOrder,
 {
 	let mut tag_chunk_size;

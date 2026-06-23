@@ -9,7 +9,6 @@ use crate::ape::tag::item::{ApeItem, ApeItemRef};
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_number};
-use crate::io::{Length, VerifiedFile};
 use crate::tag::item::ItemValueRef;
 use crate::tag::items::Timestamp;
 use crate::tag::{
@@ -17,7 +16,7 @@ use crate::tag::{
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Truncate};
+use crate::util::io::{FileLike, VerifiedFile};
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -484,8 +483,6 @@ impl TagWriteExt for ApeTag {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		ApeTagRef {
 			read_only: self.read_only,
@@ -653,7 +650,6 @@ where
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
 	{
 		write::write_to(file, self, write_options)
 	}

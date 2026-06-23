@@ -8,7 +8,7 @@ use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read};
@@ -23,8 +23,6 @@ pub(crate) fn write_to<F>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 {
 	match tag.tag_type() {
 		TagType::VorbisComments => {
@@ -53,7 +51,6 @@ pub(crate) fn write_to_inner<'a, F, II, IP>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {

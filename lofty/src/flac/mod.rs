@@ -19,7 +19,7 @@ use crate::ogg::OggPictureStorage;
 use crate::ogg::tag::{VorbisComments, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::TagExt;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 
@@ -64,8 +64,6 @@ impl FlacFile {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		// TODO: This is bad. `Id3v2Tag::save_to()` is probing the file, then we do a second probe with `VerifiedFile::new`
 		if let Some(ref id3v2) = self.id3v2_tag {

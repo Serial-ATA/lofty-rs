@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TagType**: `TagType::remove_from{_path}` now takes a `WriteOptions` to control padding behavior
   - By default, Lofty will attempt to replace tags with padding rather than *actually* removing them from
     to avoid rewriting the entire file. Disabling `WriteOptions::preferred_padding()` disables that behavior.
+- **Length/Truncate**: These traits no longer have an `Error` type, and instead use `std::io::Error`
 
 ### Fixed
 
@@ -29,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
 - **MusePack**: ID3v1 tags are now correctly treated as read-only
+
+### Removed
+
+* **LoftyError**: The monolithic `LoftyError` and `crate::error::Result` types have been removed
 
 ## [0.24.0] - 2026-04-12
 

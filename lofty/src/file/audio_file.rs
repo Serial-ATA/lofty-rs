@@ -2,7 +2,7 @@ use super::tagged_file::TaggedFile;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, FileParseError};
 use crate::tag::TagType;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::fs::OpenOptions;
 use std::io::{Read, Seek};
@@ -91,9 +91,7 @@ pub trait AudioFile: Into<TaggedFile> {
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
 	where
-		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>;
+		F: FileLike;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;

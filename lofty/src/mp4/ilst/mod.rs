@@ -20,7 +20,7 @@ use crate::tag::{
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 use advisory_rating::AdvisoryRating;
 use atom::{Atom, AtomData};
 use data_type::DataType;
@@ -649,8 +649,6 @@ impl TagWriteExt for Ilst {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		self.as_ref().write_to(file, write_options)
 	}

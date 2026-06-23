@@ -15,7 +15,7 @@ use crate::io::VerifiedFile;
 use crate::picture::{Picture, PictureType};
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -690,8 +690,6 @@ impl TagWriteExt for Tag {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		utils::write_tag(self, file, write_options)
 	}

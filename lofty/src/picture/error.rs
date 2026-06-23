@@ -20,7 +20,6 @@ pub struct PictureParseError {
 		crate::util::text::TextDecodingError,
 		UnknownImageFormatError,
 		data_encoding::DecodeError,
-		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }

@@ -11,7 +11,7 @@ use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::{FindId3v2Config, find_id3v2};
 use crate::io::VerifiedFile;
 use crate::macros::try_vec;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Not;
@@ -41,8 +41,6 @@ pub(crate) fn write_id3v2<'a, F, I>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 	I: Iterator<Item = Frame<'a>> + 'a,
 {
 	// IFF formats store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
