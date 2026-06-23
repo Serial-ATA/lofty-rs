@@ -465,8 +465,6 @@ pub enum ErrorKind {
 	// TODO: Remove this and `FileDecoding`
 	/// Errors that occur while decoding a file
 	FileParse(FileParseError),
-	/// Errors that occur while decoding a file
-	FileDecoding(FileDecodingError),
 	/// Errors that occur while encoding a file
 	FileEncoding(FileEncodingError),
 
@@ -505,61 +503,6 @@ pub enum ErrorKind {
 	Alloc(AllocationError),
 	/// This should **never** be encountered
 	Infallible(std::convert::Infallible),
-}
-
-/// An error that arises while decoding a file
-pub struct FileDecodingError {
-	format: Option<FileType>,
-	description: &'static str,
-}
-
-impl FileDecodingError {
-	/// Create a `FileDecodingError` from a [`FileType`] and description
-	#[must_use]
-	pub const fn new(format: FileType, description: &'static str) -> Self {
-		Self {
-			format: Some(format),
-			description,
-		}
-	}
-
-	/// Create a `FileDecodingError` without binding it to a [`FileType`]
-	pub fn from_description(description: &'static str) -> Self {
-		Self {
-			format: None,
-			description,
-		}
-	}
-
-	/// Returns the associated [`FileType`], if one exists
-	pub fn format(&self) -> Option<FileType> {
-		self.format
-	}
-
-	/// Returns the error description
-	pub fn description(&self) -> &str {
-		self.description
-	}
-}
-
-impl core::fmt::Debug for FileDecodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		if let Some(format) = self.format {
-			write!(f, "{:?}: {:?}", format, self.description)
-		} else {
-			write!(f, "{:?}", self.description)
-		}
-	}
-}
-
-impl core::fmt::Display for FileDecodingError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
-		if let Some(format) = self.format {
-			write!(f, "{:?}: {}", format, self.description)
-		} else {
-			write!(f, "{}", self.description)
-		}
-	}
 }
 
 /// Errors that could occur within Lofty
@@ -627,12 +570,6 @@ impl core::fmt::Debug for LoftyError {
 impl From<TimestampParseError> for LoftyError {
 	fn from(input: TimestampParseError) -> Self {
 		Self::new(ErrorKind::BadTimestamp(input))
-	}
-}
-
-impl From<FileDecodingError> for LoftyError {
-	fn from(input: FileDecodingError) -> Self {
-		Self::new(ErrorKind::FileDecoding(input))
 	}
 }
 
@@ -805,7 +742,6 @@ impl core::fmt::Display for LoftyError {
 			ErrorKind::TooMuchData => write!(f, "{}", TooMuchDataError),
 			ErrorKind::SizeMismatch => write!(f, "{}", SizeMismatchError),
 			ErrorKind::FileParse(e) => write!(f, "{e}"),
-			ErrorKind::FileDecoding(file_decode_err) => write!(f, "{file_decode_err}"),
 			ErrorKind::FileEncoding(file_encode_err) => write!(f, "{file_encode_err}"),
 
 			ErrorKind::Infallible(_) => write!(f, "A expected condition was not upheld"),

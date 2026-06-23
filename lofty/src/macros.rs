@@ -2,34 +2,6 @@ macro_rules! try_vec {
 	($elem:expr; $size:expr) => {{ $crate::util::alloc::fallible_vec_from_element($elem, $size) }};
 }
 
-// Shorthand for FileDecodingError::new(FileType::Foo, "Message")
-//
-// Usage:
-//
-// - decode_err!(Variant, Message)
-// - decode_err!(Message)
-//
-// or bail:
-//
-// - decode_err!(@BAIL Variant, Message)
-// - decode_err!(@BAIL Message)
-macro_rules! decode_err {
-	($file_ty:ident, $reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileDecodingError::new(
-			crate::file::FileType::$file_ty,
-			$reason,
-		))
-	};
-	($reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileDecodingError::from_description(
-			$reason,
-		))
-	};
-	(@BAIL $($file_ty:ident,)? $reason:literal) => {
-		return Err(decode_err!($($file_ty,)? $reason))
-	};
-}
-
 // A macro for handling the different `ParsingMode`s
 //
 // NOTE: All fields are optional, if `STRICT` or `RELAXED` are missing, it will
@@ -75,6 +47,5 @@ macro_rules! parse_mode_choice {
 	};
 }
 
-pub(crate) use decode_err;
 pub(crate) use parse_mode_choice;
 pub(crate) use try_vec;

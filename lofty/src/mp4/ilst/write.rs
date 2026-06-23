@@ -1,12 +1,10 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{
-	FileEncodingError, FileParseError, LoftyError, TagEncodingError, TooMuchDataError,
-};
+use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
-use crate::macros::{decode_err, try_vec};
+use crate::macros::try_vec;
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
@@ -377,7 +375,7 @@ fn pad_atom<W>(
 	writer: &mut W,
 	mut atom_size_difference: i64,
 	write_options: WriteOptions,
-) -> Result<(i64, u64), LoftyError>
+) -> Result<(i64, u64), FileEncodingError>
 where
 	W: Write + Seek,
 {
@@ -426,7 +424,7 @@ where
 	Ok((atom_size_difference, padding_size))
 }
 
-fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), LoftyError>
+fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), FileEncodingError>
 where
 	W: Write,
 {
@@ -441,7 +439,7 @@ fn update_offsets(
 	moov: &ContextualAtom,
 	difference: i64,
 	ilst_offset: u64,
-) -> Result<(), LoftyError> {
+) -> Result<(), FileEncodingError> {
 	log::debug!("Checking for offset atoms to update");
 
 	let mut write_handle = writer.start_write();
@@ -452,7 +450,11 @@ fn update_offsets(
 
 		let stco_start = stco.start;
 		if stco.extended {
-			decode_err!(@BAIL Mp4, "Found an extended `stco` atom");
+			return Err(FileParseError::from(AtomParseError::message(
+				Some(stco.ident.clone()),
+				"found an extended `stco` atom",
+			))
+			.into());
 		}
 
 		write_handle.seek(SeekFrom::Start(stco_start + ATOM_HEADER_LEN + 4))?;
@@ -508,7 +510,11 @@ fn update_offsets(
 
 		let tfhd_start = tfhd.start;
 		if tfhd.extended {
-			decode_err!(@BAIL Mp4, "Found an extended `tfhd` atom");
+			return Err(FileParseError::from(AtomParseError::message(
+				Some(tfhd.ident.clone()),
+				"found an extended `tfhd` atom",
+			))
+			.into());
 		}
 
 		// Skip atom header + version (1)
@@ -538,7 +544,7 @@ fn update_offsets(
 	Ok(())
 }
 
-fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, LoftyError> {
+fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, FileEncodingError> {
 	const UDTA_HEADER: [u8; 8] = [0, 0, 0, 0, b'u', b'd', b't', b'a'];
 
 	// `udta` + `meta` + `hdlr` + `ilst`
@@ -565,7 +571,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, LoftyError> {
 	Ok(udta_writer.into_contents())
 }
 
-fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<(), LoftyError> {
+fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<(), FileEncodingError> {
 	let mut write_handle = writer.start_write();
 
 	let start = write_handle.stream_position()?;

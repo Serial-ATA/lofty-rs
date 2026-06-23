@@ -11,9 +11,8 @@ pub(crate) mod speex;
 pub mod tag;
 pub(crate) mod vorbis;
 
-use crate::error::Result;
+use crate::error::FileParseError;
 use crate::io::{RevSearchEnd, RevSearchStart};
-use crate::macros::decode_err;
 use crate::util::io::ReadFindExt;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -30,11 +29,14 @@ pub use speex::properties::SpeexProperties;
 pub use vorbis::VorbisFile;
 pub use vorbis::properties::VorbisProperties;
 
-fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
+fn verify_signature(content: &[u8], sig: &[u8]) -> Result<(), FileParseError> {
 	let sig_len = sig.len();
 
 	if content.len() < sig_len || &content[..sig_len] != sig {
-		decode_err!(@BAIL Vorbis, "File missing magic signature");
+		return Err(FileParseError::message(
+			None,
+			"file missing magic signature",
+		));
 	}
 
 	Ok(())
@@ -43,7 +45,7 @@ fn verify_signature(content: &[u8], sig: &[u8]) -> Result<()> {
 /// Find the last page in the OGG stream.
 ///
 /// This will leave the reader at the end of the [`Page`].
-fn find_last_page<R>(data: &mut R) -> Result<Page>
+fn find_last_page<R>(data: &mut R) -> Result<Page, FileParseError>
 where
 	R: Read + Seek,
 {

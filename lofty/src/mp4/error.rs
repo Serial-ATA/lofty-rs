@@ -166,6 +166,12 @@ impl From<TextDecodingError> for AtomParseError {
 	}
 }
 
+impl From<AtomParseError> for FileParseError {
+	fn from(input: AtomParseError) -> Self {
+		Mp4ParseError::from(input).into()
+	}
+}
+
 // TODO: Remove this
 impl From<crate::error::LoftyError> for AtomParseError {
 	fn from(input: crate::error::LoftyError) -> Self {

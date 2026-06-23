@@ -1,5 +1,4 @@
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::iff::wav::error::WavParseError;
 use crate::properties::{ChannelMask, FileProperties};
 use crate::util::math::RoundedDivision;
 
@@ -126,7 +125,7 @@ struct FmtChunk {
 	extensible_info: Option<ExtensibleFmtChunk>,
 }
 
-fn read_fmt_chunk<R>(reader: &mut R, len: usize) -> Result<FmtChunk>
+fn read_fmt_chunk<R>(reader: &mut R, len: usize) -> Result<FmtChunk, WavParseError>
 where
 	R: ReadBytesExt,
 {
@@ -149,7 +148,9 @@ where
 
 	if format_tag == EXTENSIBLE {
 		if len < 40 {
-			decode_err!(@BAIL Wav, "Extensible format identified, invalid \"fmt \" chunk size found (< 40)");
+			return Err(WavParseError::message(
+				"extensible format identified, invalid \"fmt \" chunk size found (< 40)",
+			));
 		}
 
 		// cbSize (Size of extra format information) (2)
@@ -176,13 +177,17 @@ pub(super) fn read_properties(
 	mut total_samples: u32,
 	stream_len: u32,
 	file_length: u64,
-) -> Result<WavProperties> {
+) -> Result<WavProperties, WavParseError> {
 	if fmt.len() < 16 {
-		decode_err!(@BAIL Wav, "File does not contain a valid \"fmt \" chunk");
+		return Err(WavParseError::message(
+			"file does not contain a valid \"fmt \" chunk",
+		));
 	}
 
 	if stream_len == 0 {
-		decode_err!(@BAIL Wav, "File does not contain a \"data\" chunk");
+		return Err(WavParseError::message(
+			"file does not contain a \"data\" chunk",
+		));
 	}
 
 	let FmtChunk {
@@ -196,11 +201,13 @@ pub(super) fn read_properties(
 	} = read_fmt_chunk(fmt, fmt.len())?;
 
 	if channels == 0 {
-		decode_err!(@BAIL Wav, "File contains 0 channels");
+		return Err(WavParseError::message("file contains 0 channels"));
 	}
 
 	if bits_per_sample % 8 != 0 {
-		decode_err!(@BAIL Wav, "Bits per sample is not a multiple of 8");
+		return Err(WavParseError::message(
+			"bits per sample is not a multiple of 8",
+		));
 	}
 
 	let bytes_per_sample = block_align / u16::from(channels);
@@ -219,7 +226,9 @@ pub(super) fn read_properties(
 
 	let pcm = format_tag == PCM || format_tag == IEEE_FLOAT;
 	if !pcm && total_samples == 0 {
-		decode_err!(@BAIL Wav, "Non-PCM format identified, no \"fact\" chunk found");
+		return Err(WavParseError::message(
+			"non-PCM format identified, no \"fact\" chunk found",
+		));
 	}
 
 	if bits_per_sample > 0 && (total_samples == 0 || pcm) {

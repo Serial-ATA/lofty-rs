@@ -22,6 +22,14 @@ pub struct WavParseError {
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 
+impl WavParseError {
+	pub(super) fn message(message: &'static str) -> Self {
+		Self {
+			source: message.into(),
+		}
+	}
+}
+
 impl From<WavParseError> for FileParseError {
 	fn from(input: WavParseError) -> FileParseError {
 		Self::new(FileType::Wav, input.source)
