@@ -1,5 +1,5 @@
 use super::header::{ChannelMode, Emphasis, Header, Layer, MpegVersion, VbrHeader, VbrHeaderType};
-use crate::error::Result;
+use crate::mpeg::error::MpegParseError;
 use crate::mpeg::header::rev_search_for_frame_header;
 use crate::properties::{ChannelMask, FileProperties};
 use crate::util::math::RoundedDivision;
@@ -127,7 +127,7 @@ pub(super) fn read_properties<R>(
 	mut last_frame_offset: u64,
 	vbr_header: Option<VbrHeader>,
 	file_length: u64,
-) -> Result<()>
+) -> Result<(), MpegParseError>
 where
 	R: Read + Seek,
 {

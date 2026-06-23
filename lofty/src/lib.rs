@@ -17,7 +17,7 @@
 //! ### Using a path
 //!
 //! ```rust,no_run
-//! # fn main() -> lofty::error::Result<()> {
+//! # fn main() -> Result<(), lofty::error::FileParseError> {
 //! use lofty::probe::Probe;
 //! use lofty::read_from_path;
 //!
@@ -36,7 +36,7 @@
 //! ### Using an existing reader
 //!
 //! ```rust,no_run
-//! # fn main() -> lofty::error::Result<()> {
+//! # fn main() -> Result<(), lofty::error::FileParseError> {
 //! use lofty::config::ParseOptions;
 //! use lofty::read_from;
 //! use std::fs::File;
@@ -54,7 +54,7 @@
 //! ### Accessing tags
 //!
 //! ```rust,no_run
-//! # fn main() -> lofty::error::Result<()> {
+//! # fn main() -> Result<(), lofty::error::FileParseError> {
 //! use lofty::file::TaggedFileExt;
 //! use lofty::read_from_path;
 //!
@@ -74,7 +74,7 @@
 //! ## Using concrete file types
 //!
 //! ```rust
-//! # fn main() -> lofty::error::Result<()> {
+//! # fn main() -> Result<(), lofty::error::FileParseError> {
 //! use lofty::config::ParseOptions;
 //! use lofty::file::AudioFile;
 //! use lofty::mpeg::MpegFile;

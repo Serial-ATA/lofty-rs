@@ -23,9 +23,6 @@ use ogg_pager::PageError;
 pub use crate::util::alloc::AllocationError;
 pub use crate::util::text::{TextDecodingError, TextEncodingError};
 
-/// Alias for `Result<T, LoftyError>`
-pub type Result<T> = std::result::Result<T, LoftyError>;
-
 /// Failed to parse a file
 pub struct FileParseError {
 	ty: Option<FileType>,

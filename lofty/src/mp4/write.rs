@@ -2,7 +2,7 @@ use crate::config::ParsingMode;
 use crate::error::FileEncodingError;
 use crate::io::{FileLike, Length, Truncate};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
-use crate::mp4::error::AtomParseError;
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::mp4::read::{meta_is_full, skip_atom};
 
 use std::cell::{RefCell, RefMut};
@@ -130,7 +130,7 @@ impl AtomWriter {
 	pub(super) fn new_from_file<F>(
 		file: &mut F,
 		parse_mode: ParsingMode,
-	) -> crate::error::Result<Self>
+	) -> Result<Self, Mp4ParseError>
 	where
 		F: FileLike,
 		FileEncodingError: From<<F as Truncate>::Error>,
@@ -215,7 +215,7 @@ impl AtomWriterCompanion<'_> {
 		start: u64,
 		size: u64,
 		extended: bool,
-	) -> crate::error::Result<()> {
+	) -> std::io::Result<()> {
 		if u32::try_from(size).is_ok() {
 			// ???? (identifier)
 			self.write_u32::<BigEndian>(size as u32)?;

@@ -13,7 +13,7 @@ use super::Tag;
 /// use lofty::prelude::*;
 ///
 /// // Read the tag from a file
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let mut file = std::fs::OpenOptions::new().write(true).open("/path/to/file.mp3")?;
 /// # let parse_options = ParseOptions::default();
 /// let mut mpeg_file = <MpegFile as AudioFile>::read_from(&mut file, parse_options)?;

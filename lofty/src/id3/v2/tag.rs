@@ -400,7 +400,7 @@ impl Id3v2Tag {
 	///
 	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let mut tag = Id3v2Tag::new();
 	/// assert!(tag.is_empty());
 	///

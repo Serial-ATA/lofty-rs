@@ -1,4 +1,3 @@
-use crate::error::Result;
 use crate::properties::FileProperties;
 
 use std::io::Read;
@@ -74,7 +73,7 @@ pub(crate) fn read_properties<R>(
 	stream_info: &mut R,
 	stream_length: u64,
 	file_length: u64,
-) -> Result<FlacProperties>
+) -> std::io::Result<FlacProperties>
 where
 	R: Read,
 {
