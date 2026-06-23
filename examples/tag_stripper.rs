@@ -1,8 +1,8 @@
 #![allow(missing_docs)]
 
+use lofty::config::WriteOptions;
 use lofty::file::TaggedFileExt;
 use lofty::probe::Probe;
-use lofty::config::WriteOptions;
 
 use std::io::Write;
 

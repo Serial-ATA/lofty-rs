@@ -95,7 +95,7 @@ pub(crate) fn write_module(
 ) -> proc_macro2::TokenStream {
 	let applicable_formats = fields.iter().map(|f| {
 		let tag_ty =
-			syn::parse_str::<syn::Path>(&format!("::lofty::tag::TagType::{}", &f.tag_type))
+			syn::parse_str::<syn::Path>(&format!("::lofty::tag::TagType::{}", f.tag_type))
 				.unwrap();
 
 		let cfg_features = f.get_cfg_features();
