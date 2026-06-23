@@ -61,13 +61,8 @@ where
 				.map(|c| u16::from(*c))
 				.collect::<Vec<_>>();
 
-			match utf16_decode(&s) {
-				Ok(v) => {
-					log::warn!("Vendor string recovered as: '{v}'");
-					vendor = v;
-				},
-				Err(e) => return Err(e.into()),
-			}
+			vendor = utf16_decode(&s)?;
+			log::warn!("Vendor string recovered as: '{vendor}'");
 		},
 	}
 

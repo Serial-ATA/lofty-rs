@@ -338,7 +338,7 @@ impl<R: Read + Seek> Probe<R> {
 			&& let Ok(lock) = CUSTOM_RESOLVERS.lock()
 		{
 			#[allow(clippy::significant_drop_in_scrutinee)]
-			for (_, resolve) in lock.iter() {
+			for resolve in lock.values() {
 				if let ret @ Some(_) = resolve.guess(&buf[..buf_len]) {
 					return Ok(ret);
 				}

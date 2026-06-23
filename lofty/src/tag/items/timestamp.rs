@@ -177,7 +177,7 @@ impl Timestamp {
 	/// The maximum length of a timestamp in bytes
 	pub const MAX_LENGTH: usize = 19;
 
-	const SEPARATORS: [u8; 4] = [b'-', b'.', b'T', b':'];
+	const SEPARATORS: [u8; 4] = *b"-.T:";
 
 	/// Read a [`Timestamp`]
 	///
