@@ -7,7 +7,7 @@ use crate::tag::items::Timestamp;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 };
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -280,8 +280,6 @@ impl TagWriteExt for Id3v1Tag {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		Into::<Id3v1TagRef<'_>>::into(self).write_to(file, write_options)
 	}
@@ -446,8 +444,6 @@ impl Id3v1TagRef<'_> {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		super::write::write_id3v1(file, self, write_options)
 	}

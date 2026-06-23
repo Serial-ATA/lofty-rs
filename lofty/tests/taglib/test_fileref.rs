@@ -213,7 +213,7 @@ fn test_audio_properties() {
 #[ignore = "Marker test, Lofty does not replicate this API"]
 fn test_default_file_extensions() {}
 
-use lofty::io::{FileLike, Length, Truncate};
+use lofty::io::FileLike;
 use lofty::properties::FileProperties;
 use lofty::tag::items::Timestamp;
 use rusty_fork::rusty_fork_test;
@@ -249,8 +249,6 @@ rusty_fork_test! {
 			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> Result<(), FileEncodingError>
 			where
 				F: FileLike,
-				FileEncodingError: From<<F as Truncate>::Error>,
-				FileEncodingError: From<<F as Length>::Error>
 			{
 				unimplemented!()
 			}

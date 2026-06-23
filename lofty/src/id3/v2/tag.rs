@@ -23,7 +23,7 @@ use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 };
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 use conversion::Id3v2TagRef;
 
@@ -891,8 +891,6 @@ impl TagWriteExt for Id3v2Tag {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		Id3v2TagRef {
 			flags: self.flags,

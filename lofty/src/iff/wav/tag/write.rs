@@ -9,7 +9,7 @@ use crate::iff::wav::error::WavParseError;
 use crate::iff::wav::read::verify_wav;
 use crate::iff::wav::tag::error::RiffInfoListEncodingError;
 use crate::io::VerifiedFile;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -24,8 +24,6 @@ pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
 {
 	// The first chunk format is RIFF....WAVE

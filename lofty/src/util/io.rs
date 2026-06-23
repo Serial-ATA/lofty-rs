@@ -1,6 +1,6 @@
 //! Various traits for reading and writing to file-like objects
 
-use crate::error::{FileParseError, LoftyError, UnknownFormatError};
+use crate::error::{FileParseError, UnknownFormatError};
 use crate::util::math::F80;
 
 use crate::file::FileType;
@@ -45,38 +45,29 @@ impl<T> SeekStreamLen for T where T: Seek {}
 /// assert_eq!(data, vec![1, 2, 3]);
 /// ```
 pub trait Truncate {
-	/// The error type of the truncation operation
-	type Error: Into<LoftyError>;
-
 	/// Truncate a storage object to the specified length
 	///
 	/// # Errors
 	///
 	/// Errors depend on the object being truncated, which may not always be fallible.
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error>;
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()>;
 }
 
 impl Truncate for File {
-	type Error = std::io::Error;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		self.set_len(new_len)
 	}
 }
 
 impl Truncate for Vec<u8> {
-	type Error = std::convert::Infallible;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
 }
 
 impl Truncate for VecDeque<u8> {
-	type Error = std::convert::Infallible;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		self.truncate(new_len as usize);
 		Ok(())
 	}
@@ -86,9 +77,7 @@ impl<T> Truncate for Cursor<T>
 where
 	T: Truncate,
 {
-	type Error = <T as Truncate>::Error;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		self.get_mut().truncate(new_len)
 	}
 }
@@ -97,9 +86,7 @@ impl<T> Truncate for Box<T>
 where
 	T: Truncate,
 {
-	type Error = <T as Truncate>::Error;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		self.as_mut().truncate(new_len)
 	}
 }
@@ -108,9 +95,7 @@ impl<T> Truncate for &mut T
 where
 	T: Truncate,
 {
-	type Error = <T as Truncate>::Error;
-
-	fn truncate(&mut self, new_len: u64) -> std::result::Result<(), Self::Error> {
+	fn truncate(&mut self, new_len: u64) -> std::io::Result<()> {
 		(**self).truncate(new_len)
 	}
 }
@@ -132,37 +117,28 @@ where
 /// assert_eq!(data.len(), 5);
 /// ```
 pub trait Length {
-	/// The error type of the length operation
-	type Error: Into<LoftyError>;
-
 	/// Get the length of a storage object
 	///
 	/// # Errors
 	///
 	/// Errors depend on the object being read, which may not always be fallible.
-	fn len(&self) -> std::result::Result<u64, Self::Error>;
+	fn len(&self) -> std::io::Result<u64>;
 }
 
 impl Length for File {
-	type Error = std::io::Error;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		self.metadata().map(|m| m.len())
 	}
 }
 
 impl Length for Vec<u8> {
-	type Error = std::convert::Infallible;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Ok(self.len() as u64)
 	}
 }
 
 impl Length for VecDeque<u8> {
-	type Error = std::convert::Infallible;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Ok(self.len() as u64)
 	}
 }
@@ -171,9 +147,7 @@ impl<T> Length for Cursor<T>
 where
 	T: Length,
 {
-	type Error = <T as Length>::Error;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Length::len(self.get_ref())
 	}
 }
@@ -182,9 +156,7 @@ impl<T> Length for Box<T>
 where
 	T: Length,
 {
-	type Error = <T as Length>::Error;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Length::len(self.as_ref())
 	}
 }
@@ -193,9 +165,7 @@ impl<T> Length for &T
 where
 	T: Length,
 {
-	type Error = <T as Length>::Error;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Length::len(*self)
 	}
 }
@@ -204,9 +174,7 @@ impl<T> Length for &mut T
 where
 	T: Length,
 {
-	type Error = <T as Length>::Error;
-
-	fn len(&self) -> std::result::Result<u64, Self::Error> {
+	fn len(&self) -> std::io::Result<u64> {
 		Length::len(*self)
 	}
 }
@@ -261,20 +229,9 @@ impl<F> DerefMut for VerifiedFile<'_, F> {
 ///
 /// Take great care in implementing this for downstream types, as Lofty will assume that the
 /// trait implementations are correct. If this assumption were to be broken, files **may** become corrupted.
-pub trait FileLike: Read + Write + Seek + Truncate + Length
-where
-	<Self as Truncate>::Error: Into<LoftyError>,
-	<Self as Length>::Error: Into<LoftyError>,
-{
-}
+pub trait FileLike: Read + Write + Seek + Truncate + Length {}
 
-impl<T> FileLike for T
-where
-	T: Read + Write + Seek + Truncate + Length,
-	<T as Truncate>::Error: Into<LoftyError>,
-	<T as Length>::Error: Into<LoftyError>,
-{
-}
+impl<T> FileLike for T where T: Read + Write + Seek + Truncate + Length {}
 
 pub(crate) trait ReadExt: Read {
 	/// Read a big-endian [`F80`] from the current position.

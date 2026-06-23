@@ -9,7 +9,7 @@ use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::ogg::verify_signature;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::Tag;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -24,8 +24,6 @@ pub(crate) fn write_to<F>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 {
 	let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
@@ -45,8 +43,6 @@ pub(in crate::ogg) fn write<'a, F, II, IP>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {

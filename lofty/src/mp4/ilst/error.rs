@@ -27,10 +27,7 @@ impl From<IlstParseError> for TagParseError {
 #[derive(LoftyError)]
 #[error(message = "failed to write ilst tag")]
 pub(crate) struct IlstEncodingError {
-	#[error(from(
-		std::io::Error,
-		crate::error::LoftyError, // TODO: remove this
-	))]
+	#[error(from(std::io::Error,))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 

@@ -113,8 +113,6 @@ pub(crate) fn write_module(
 			pub(crate) fn write_to<F>(file: ::lofty::util::io::VerifiedFile<'_, F>, tag: &::lofty::tag::Tag, write_options: ::lofty::config::WriteOptions) -> ::core::result::Result<(), ::lofty::error::FileEncodingError>
 			where
 				F: ::lofty::io::FileLike,
-				::lofty::error::FileEncodingError: ::std::convert::From<<F as ::lofty::io::Truncate>::Error>,
-				::lofty::error::FileEncodingError: ::std::convert::From<<F as ::lofty::io::Length>::Error>,
 			{
 				match tag.tag_type() {
 					#( #applicable_formats )*

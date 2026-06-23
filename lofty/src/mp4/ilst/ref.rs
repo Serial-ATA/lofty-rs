@@ -7,7 +7,7 @@ use crate::error::FileEncodingError;
 use crate::io::VerifiedFile;
 use crate::mp4::ilst::error::IlstEncodingError;
 use crate::mp4::{Atom, AtomData, AtomIdent, Ilst};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::Write;
 
@@ -34,8 +34,6 @@ where
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		super::write::write_to(file, self, write_options)
 	}

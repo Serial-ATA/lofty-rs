@@ -4,7 +4,7 @@ use crate::config::{ParseOptions, WriteOptions};
 use crate::error::{FileEncodingError, FileParseError};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagSupport, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Read, Seek};
 
@@ -437,8 +437,6 @@ impl AudioFile for TaggedFile {
 	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		for tag in &self.tags {
 			// It's likely that users of `TaggedFile` aren't going to be aware of any read-only tags
@@ -547,11 +545,7 @@ impl<F> BoundTaggedFile<F> {
 	}
 }
 
-impl<F: FileLike> BoundTaggedFile<F>
-where
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
-{
+impl<F: FileLike> BoundTaggedFile<F> {
 	/// Create a new [`BoundTaggedFile`]
 	///
 	/// # Errors
@@ -672,8 +666,6 @@ impl<T> AudioFile for BoundTaggedFile<T> {
 	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		self.inner.save_to(file, write_options)
 	}

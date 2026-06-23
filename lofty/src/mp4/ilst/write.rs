@@ -14,7 +14,7 @@ use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, ver
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::picture::{MimeType, Picture};
 use crate::util::alloc::VecFallibleCapacity;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
@@ -36,8 +36,6 @@ pub(crate) fn write_to<'a, F, I>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	log::debug!("Attempting to write `ilst` tag to file");

@@ -7,7 +7,7 @@ use crate::id3::v2::{
 	AttachedPictureFrame, CommentFrame, Frame, FrameId, Id3v2TagFlags, KeyValueFrame,
 	PopularimeterFrame, UniqueFileIdentifierFrame, UnsynchronizedTextFrame, write,
 };
-use crate::io::{FileLike, Length, Truncate, VerifiedFile};
+use crate::io::{FileLike, VerifiedFile};
 use crate::prelude::ItemKey;
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::{Tag, TagItem, TagType};
@@ -501,8 +501,6 @@ impl<'a, I: Iterator<Item = Frame<'a>> + 'a> Id3v2TagRef<'a, I> {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		write::write_id3v2(file, self, write_options)
 	}

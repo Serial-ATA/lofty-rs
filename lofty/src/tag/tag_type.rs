@@ -1,7 +1,7 @@
 use super::{Tag, utils};
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, UnsupportedTagError};
-use crate::io::{FileLike, Length, Truncate, VerifiedFile};
+use crate::io::{FileLike, VerifiedFile};
 
 use std::fs::OpenOptions;
 use std::path::Path;
@@ -139,8 +139,6 @@ impl TagType {
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		let file = VerifiedFile::new(file)?;
 

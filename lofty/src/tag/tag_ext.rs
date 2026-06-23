@@ -1,6 +1,6 @@
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, UnsupportedTagError};
-use crate::io::{FileLike, Length, Truncate, VerifiedFile};
+use crate::io::{FileLike, VerifiedFile};
 use crate::tag::{Accessor, Tag, TagType};
 
 use std::path::Path;
@@ -104,8 +104,6 @@ pub trait TagExt: Accessor + TagWriteExt + Into<Tag> + Sized + private::Sealed {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		let file = VerifiedFile::new(file)?;
 
@@ -155,8 +153,6 @@ pub trait TagExt: Accessor + TagWriteExt + Into<Tag> + Sized + private::Sealed {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		self.tag_type().remove_from(file, write_options)
 	}
@@ -174,9 +170,7 @@ pub(crate) trait TagWriteExt {
 		write_options: WriteOptions,
 	) -> std::result::Result<(), FileEncodingError>
 	where
-		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>;
+		F: FileLike;
 }
 
 // https://rust-lang.github.io/api-guidelines/future-proofing.html#c-sealed

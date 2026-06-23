@@ -9,7 +9,7 @@ use crate::io::VerifiedFile;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 };
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use byteorder::BigEndian;
 use lofty_attr::tag;
@@ -226,8 +226,6 @@ impl TagWriteExt for AiffTextChunks {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		AiffTextChunksRef {
 			name: self.name.as_deref(),
@@ -332,8 +330,6 @@ where
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		AiffTextChunksRef::write_to_inner(file, self)
 	}
@@ -434,8 +430,6 @@ where
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		let file = file.into_inner();
 

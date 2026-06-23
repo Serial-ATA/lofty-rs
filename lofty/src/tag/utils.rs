@@ -8,7 +8,7 @@ use crate::io::VerifiedFile;
 use crate::mp4::Ilst;
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
@@ -25,8 +25,6 @@ pub(crate) fn write_tag<F>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 {
 	match file.format() {
 		FileType::Aac => aac::write::write_to(file, tag, write_options),

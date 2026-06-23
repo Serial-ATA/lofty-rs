@@ -5,7 +5,7 @@ use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::id3::v1::error::Id3v1EncodingError;
 use crate::id3::{ID3FindResults, find_id3v1};
 use crate::io::VerifiedFile;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 use crate::util::text::latin1_encode;
 
 use std::io::{Cursor, Seek, Write};
@@ -20,8 +20,6 @@ pub(crate) fn write_id3v1<F>(
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
-	FileEncodingError: From<<F as Length>::Error>,
 {
 	let file = file.into_inner();
 

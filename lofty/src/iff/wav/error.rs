@@ -17,7 +17,6 @@ pub struct WavParseError {
 		crate::iff::error::ChunkParseError,
 		crate::error::SizeMismatchError,
 		crate::error::UnknownFormatError,
-		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }

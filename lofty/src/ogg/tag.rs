@@ -15,7 +15,7 @@ use crate::tag::{
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -502,8 +502,6 @@ impl TagWriteExt for VorbisComments {
 	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		VorbisCommentsRef {
 			vendor: Cow::from(self.vendor.as_str()),
@@ -713,8 +711,6 @@ where
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		if file.format() == FileType::Flac {
 			return crate::flac::write::write_to_inner(file, self, write_options);

@@ -17,7 +17,6 @@ pub struct MpegParseError {
 		crate::id3::Lyrics3v2ParseError,
 		crate::error::FakeTagError,
 		crate::error::SizeMismatchError,
-		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }

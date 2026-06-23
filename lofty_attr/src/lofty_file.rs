@@ -448,8 +448,6 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 			fn save_to<F>(&self, file: &mut F, write_options: ::lofty::config::WriteOptions) -> ::core::result::Result<(), ::lofty::error::FileEncodingError>
 			where
 				F: ::lofty::io::FileLike,
-				::lofty::error::FileEncodingError: ::std::convert::From<<F as ::lofty::io::Truncate>::Error>,
-				::lofty::error::FileEncodingError: ::std::convert::From<<F as ::lofty::io::Length>::Error>,
 			{
 				use ::lofty::tag::TagExt as _;
 				use ::std::io::Seek as _;

@@ -1,9 +1,9 @@
 use crate::config::ParsingMode;
 use crate::error::FileEncodingError;
-use crate::io::{FileLike, Length, Truncate};
 use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::mp4::read::{meta_is_full, skip_atom};
+use crate::util::io::FileLike;
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
@@ -133,8 +133,6 @@ impl AtomWriter {
 	) -> Result<Self, Mp4ParseError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		let mut contents = Cursor::new(Vec::new());
 		file.read_to_end(contents.get_mut())?;
@@ -172,8 +170,6 @@ impl AtomWriter {
 	pub(super) fn save_to<F>(&mut self, file: &mut F) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		FileEncodingError: From<<F as Truncate>::Error>,
-		FileEncodingError: From<<F as Length>::Error>,
 	{
 		file.rewind()?;
 		file.truncate(0)?;

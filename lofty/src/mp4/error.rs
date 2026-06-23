@@ -171,13 +171,3 @@ impl From<AtomParseError> for FileParseError {
 		Mp4ParseError::from(input).into()
 	}
 }
-
-// TODO: Remove this
-impl From<crate::error::LoftyError> for AtomParseError {
-	fn from(input: crate::error::LoftyError) -> Self {
-		Self {
-			ident: None,
-			source: Box::new(input),
-		}
-	}
-}

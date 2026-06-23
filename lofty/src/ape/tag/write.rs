@@ -12,7 +12,7 @@ use crate::error::{
 use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::io::VerifiedFile;
 use crate::tag::item::ItemValueRef;
-use crate::util::io::{FileLike, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 use std::ops::Range;
@@ -28,7 +28,6 @@ pub(crate) fn write_to<'a, F, I>(
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
 {
 	let file = file.into_inner();
 
@@ -152,7 +151,6 @@ where
 fn write_tag<F>(ape_tags: ApeTags, new_tag: Vec<u8>, file: &mut F) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	FileEncodingError: From<<F as Truncate>::Error>,
 {
 	file.rewind()?;
 

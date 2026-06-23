@@ -21,7 +21,6 @@ pub struct ApeParseError {
 		crate::id3::Lyrics3v2ParseError,
 		crate::error::SizeMismatchError,
 		crate::error::FakeTagError,
-		crate::error::LoftyError, // TODO: Remove this
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
