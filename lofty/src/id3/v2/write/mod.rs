@@ -65,7 +65,11 @@ where
 				);
 			},
 			FileType::Aiff => {
-				return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
+				return chunk_file::write_to_chunk_file::<F, BigEndian>(
+					file,
+					&id3v2,
+					write_options,
+				);
 			},
 			_ => unreachable!(),
 		}

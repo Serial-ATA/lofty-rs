@@ -2,24 +2,6 @@ macro_rules! try_vec {
 	($elem:expr; $size:expr) => {{ $crate::util::alloc::fallible_vec_from_element($elem, $size) }};
 }
 
-// Shorthand for return Err(LoftyError::new(ErrorKind::Foo))
-//
-// Usage:
-// - err!(Variant)          -> return Err(LoftyError::new(ErrorKind::Variant))
-// - err!(Variant(Message)) -> return Err(LoftyError::new(ErrorKind::Variant(Message)))
-macro_rules! err {
-	($variant:ident) => {
-		return Err(crate::error::LoftyError::new(
-			crate::error::ErrorKind::$variant,
-		))
-	};
-	($variant:ident($reason:expr)) => {
-		return Err(crate::error::LoftyError::new(
-			crate::error::ErrorKind::$variant($reason),
-		))
-	};
-}
-
 // Shorthand for FileDecodingError::new(FileType::Foo, "Message")
 //
 // Usage:
@@ -94,6 +76,5 @@ macro_rules! parse_mode_choice {
 }
 
 pub(crate) use decode_err;
-pub(crate) use err;
 pub(crate) use parse_mode_choice;
 pub(crate) use try_vec;

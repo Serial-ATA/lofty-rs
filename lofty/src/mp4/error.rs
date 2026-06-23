@@ -11,6 +11,9 @@ use std::borrow::Cow;
 
 use lofty_attr::LoftyError;
 
+// Exports
+pub use super::ilst::atom::AtomMismatchError;
+
 /// Failed to parse a [`Mp4File`]
 ///
 /// [`Mp4File`]: crate::mp4::Mp4File

@@ -1,10 +1,12 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileEncodingError, FileParseError, LoftyError, TagEncodingError};
+use crate::error::{
+	FileEncodingError, FileParseError, LoftyError, TagEncodingError, TooMuchDataError,
+};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::{decode_err, try_vec};
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
@@ -223,7 +225,7 @@ fn save_to_existing(
 	ilst: Vec<u8>,
 	remove_tag: bool,
 	write_options: WriteOptions,
-) -> Result<(), LoftyError> {
+) -> Result<(), FileEncodingError> {
 	let mut replacement;
 	let range;
 
@@ -234,7 +236,8 @@ fn save_to_existing(
 		meta.len - ATOM_HEADER_LEN,
 		b"ilst",
 		ParseOptions::DEFAULT_PARSING_MODE,
-	)?;
+	)
+	.map_err(Into::<FileParseError>::into)?;
 
 	if tree.is_empty() {
 		// Nothing to do
@@ -304,7 +307,7 @@ fn save_to_existing(
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
-					err!(TooMuchData);
+					return Err(TooMuchDataError.into());
 				}
 
 				let remaining_space = remaining_space as u32;
