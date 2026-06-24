@@ -780,7 +780,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`][ErrorKind::NotAPicture] if
+	/// This function will return [`PictureParseError`] if
 	/// at any point it's unable to parse the data
 	pub fn from_flac_bytes(
 		bytes: &[u8],
@@ -908,7 +908,7 @@ impl Picture {
 	///
 	/// # Errors
 	///
-	/// This function will return [`NotAPicture`](ErrorKind::NotAPicture)
+	/// This function will return [`PictureParseError`]
 	/// if at any point it's unable to parse the data
 	pub fn from_ape_bytes(key: &str, bytes: &[u8]) -> Result<Self, PictureParseError> {
 		if bytes.is_empty() {

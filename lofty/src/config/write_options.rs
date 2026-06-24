@@ -187,7 +187,7 @@ impl WriteOptions {
 	///
 	/// If this is enabled, any invalid characters will be replaced with `'?'` (e.g `lфfty` in [`TextEncoding::Latin1`] will return `l?fty`).
 	///
-	/// If this is disabled, any writes with non-representable characters will return an [`ErrorKind::TextEncode`].
+	/// If this is disabled, any writes with non-representable characters will return an [`TextEncodingError`].
 	///
 	/// # Examples
 	///
@@ -210,7 +210,7 @@ impl WriteOptions {
 	///
 	/// [`TextEncoding`]: crate::util::text::TextEncoding
 	/// [`TextEncoding::Latin1`]: crate::util::text::TextEncoding::Latin1
-	/// [`ErrorKind::TextEncode`]: crate::error::ErrorKind::TextEncode
+	/// [`TextEncodingError`]: crate::error::TextEncodingError
 	pub fn lossy_text_encoding(&mut self, lossy_text_encoding: bool) -> Self {
 		self.lossy_text_encoding = lossy_text_encoding;
 		*self
