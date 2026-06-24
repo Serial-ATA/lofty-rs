@@ -859,12 +859,6 @@ impl TagExt for Id3v2Tag {
 		self.frames.is_empty()
 	}
 
-	/// Dumps the tag to a writer
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	/// * [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData)
 	fn dump_to<W: Write>(
 		&self,
 		writer: &mut W,

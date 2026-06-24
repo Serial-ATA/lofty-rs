@@ -9,16 +9,25 @@ use std::path::Path;
 /// Describes how a [`TagType`] is supported in a given [`FileType`]
 ///
 /// See [`FileType::tag_support()`]
+///
+/// [`FileType`]: crate::file::FileType
+/// [`FileType::tag_support()`]: crate::file::FileType::tag_support
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TagSupport {
 	/// The tag isn't supported in this [`FileType`]
+	///
+	/// [`FileType`]: crate::file::FileType
 	Unsupported,
 	/// The tag type can be *read* from this [`FileType`], but cannot be written back to it.
 	///
 	/// For example, ID3v2 tags can be read from, but not written to FLAC files.
+	///
+	/// [`FileType`]: crate::file::FileType
 	ReadOnly,
 	/// The tag type can be both read from and written to this [`FileType`].
+	///
+	/// [`FileType`]: crate::file::FileType
 	ReadWrite,
 }
 

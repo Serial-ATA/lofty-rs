@@ -2,7 +2,7 @@
 //!
 //! ## File notes
 //!
-//! The only supported tag format is [`VorbisComments`]
+//! The only supported tag format is [`VorbisComments`](tag::VorbisComments)
 pub(crate) mod constants;
 pub(crate) mod opus;
 mod picture_storage;
