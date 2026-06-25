@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+- **MP4**:
+  - `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+  - The `codec`, `overall_bitrate`, `audio_bitrate`, `sample_rate`, and `channels` fields of `Mp4Properties` are
+    now `Option`al ([issue](https://github.com/Serial-ATA/lofty-rs/issues/661)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/670))
 - **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
 - **VorbisComments**: Moved from `crate::ogg` to `crate::ogg::tag`
 - **TagType**: `TagType::remove_from{_path}` now takes a `WriteOptions` to control padding behavior
@@ -34,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 * **LoftyError**: The monolithic `LoftyError` and `crate::error::Result` types have been removed
+* **MP4**: `Mp4Codec::Unknown`, `Mp4Properties::codec()` now returns `None` for unknown codecs ([PR](https://github.com/Serial-ATA/lofty-rs/pull/670))
 
 ## [0.24.0] - 2026-04-12
 
