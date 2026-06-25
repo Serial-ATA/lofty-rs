@@ -1036,7 +1036,7 @@ where
 	}
 
 	Err(Mp4ParseError::message(
-		"files does not contain an \"mdat\" atom",
+		"file does not contain an \"mdat\" atom",
 	))
 }
 
