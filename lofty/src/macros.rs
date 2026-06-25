@@ -1,79 +1,5 @@
 macro_rules! try_vec {
-	($elem:expr; $size:expr) => {{ $crate::util::alloc::fallible_vec_from_element($elem, $size)? }};
-}
-
-// Shorthand for return Err(LoftyError::new(ErrorKind::Foo))
-//
-// Usage:
-// - err!(Variant)          -> return Err(LoftyError::new(ErrorKind::Variant))
-// - err!(Variant(Message)) -> return Err(LoftyError::new(ErrorKind::Variant(Message)))
-macro_rules! err {
-	($variant:ident) => {
-		return Err(crate::error::LoftyError::new(
-			crate::error::ErrorKind::$variant,
-		))
-	};
-	($variant:ident($reason:literal)) => {
-		return Err(crate::error::LoftyError::new(
-			crate::error::ErrorKind::$variant($reason),
-		))
-	};
-}
-
-// Shorthand for FileDecodingError::new(FileType::Foo, "Message")
-//
-// Usage:
-//
-// - decode_err!(Variant, Message)
-// - decode_err!(Message)
-//
-// or bail:
-//
-// - decode_err!(@BAIL Variant, Message)
-// - decode_err!(@BAIL Message)
-macro_rules! decode_err {
-	($file_ty:ident, $reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileDecodingError::new(
-			crate::file::FileType::$file_ty,
-			$reason,
-		))
-	};
-	($reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileDecodingError::from_description(
-			$reason,
-		))
-	};
-	(@BAIL $($file_ty:ident,)? $reason:literal) => {
-		return Err(decode_err!($($file_ty,)? $reason))
-	};
-}
-
-// Shorthand for FileEncodingError::new(FileType::Foo, "Message")
-//
-// Usage:
-//
-// - encode_err!(Variant, Message)
-// - encode_err!(Message)
-//
-// or bail:
-//
-// - encode_err!(@BAIL Variant, Message)
-// - encode_err!(@BAIL Message)
-macro_rules! encode_err {
-	($file_ty:ident, $reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileEncodingError::new(
-			crate::file::FileType::$file_ty,
-			$reason,
-		))
-	};
-	($reason:literal) => {
-		Into::<crate::error::LoftyError>::into(crate::error::FileEncodingError::from_description(
-			$reason,
-		))
-	};
-	(@BAIL $($file_ty:ident,)? $reason:literal) => {
-		return Err(encode_err!($($file_ty,)? $reason))
-	};
+	($elem:expr; $size:expr) => {{ $crate::util::alloc::fallible_vec_from_element($elem, $size) }};
 }
 
 // A macro for handling the different `ParsingMode`s
@@ -121,8 +47,5 @@ macro_rules! parse_mode_choice {
 	};
 }
 
-pub(crate) use decode_err;
-pub(crate) use encode_err;
-pub(crate) use err;
 pub(crate) use parse_mode_choice;
 pub(crate) use try_vec;

@@ -2,7 +2,7 @@
 
 use lofty::ape::ApeTag;
 use lofty::config::{GlobalOptions, ParseOptions};
-use lofty::error::Result as LoftyResult;
+use lofty::error::FileParseError;
 use lofty::file::FileType;
 use lofty::id3::v2::Id3v2Tag;
 use lofty::properties::FileProperties;
@@ -45,7 +45,10 @@ struct MyFile {
 
 impl MyFile {
 	#[allow(clippy::unnecessary_wraps)]
-	pub fn parse_my_file<R>(_reader: &mut R, _parse_options: ParseOptions) -> LoftyResult<Self>
+	pub fn parse_my_file<R>(
+		_reader: &mut R,
+		_parse_options: ParseOptions,
+	) -> Result<Self, FileParseError>
 	where
 		R: std::io::Read + std::io::Seek,
 	{

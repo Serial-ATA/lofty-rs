@@ -174,7 +174,7 @@ impl ParseOptions {
 /// use lofty::config::{ParseOptions, ParsingMode};
 /// use lofty::probe::Probe;
 ///
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// // We only want to read spec-compliant inputs
 /// let parsing_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
 /// let tagged_file = Probe::open("foo.mp3")?.options(parsing_options).read()?;

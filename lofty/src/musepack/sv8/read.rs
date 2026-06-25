@@ -1,10 +1,10 @@
 use super::properties::{EncoderInfo, MpcSv8Properties, ReplayGain, StreamHeader};
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
-use crate::macros::{decode_err, parse_mode_choice};
+use crate::musepack::error::MpcParseError;
 
 use std::io::Read;
 
+use crate::error::TooMuchDataError;
 use byteorder::ReadBytesExt;
 
 // TODO: Support chapter packets?
@@ -15,7 +15,10 @@ const ENCODER_INFO_KEY: [u8; 2] = *b"EI";
 const AUDIO_PACKET_KEY: [u8; 2] = *b"AP";
 const STREAM_END_KEY: [u8; 2] = *b"SE";
 
-pub(crate) fn read_from<R>(data: &mut R, parse_mode: ParsingMode) -> Result<MpcSv8Properties>
+pub(crate) fn read_from<R>(
+	data: &mut R,
+	parse_mode: ParsingMode,
+) -> Result<MpcSv8Properties, MpcParseError>
 where
 	R: Read,
 {
@@ -48,31 +51,37 @@ where
 	let stream_header = match stream_header {
 		Some(stream_header) => stream_header,
 		None => {
-			parse_mode_choice!(
-				parse_mode,
-				STRICT: decode_err!(@BAIL Mpc, "File is missing a Stream Header packet"),
-				DEFAULT: StreamHeader::default()
-			)
+			if parse_mode == ParsingMode::Strict {
+				return Err(MpcParseError::message(
+					"file is missing a Stream Header packet",
+				));
+			}
+
+			StreamHeader::default()
 		},
 	};
 
 	let replay_gain = match replay_gain {
 		Some(replay_gain) => replay_gain,
 		None => {
-			parse_mode_choice!(
-				parse_mode,
-				STRICT: decode_err!(@BAIL Mpc, "File is missing a ReplayGain packet"),
-				DEFAULT: ReplayGain::default()
-			)
+			if parse_mode == ParsingMode::Strict {
+				return Err(MpcParseError::message(
+					"file is missing a ReplayGain packet",
+				));
+			}
+
+			ReplayGain::default()
 		},
 	};
 
 	if stream_length == 0 && parse_mode == ParsingMode::Strict {
-		decode_err!(@BAIL Mpc, "File is missing an Audio packet");
+		return Err(MpcParseError::message("file is missing an Audio packet"));
 	}
 
 	if !found_stream_end && parse_mode == ParsingMode::Strict {
-		decode_err!(@BAIL Mpc, "File is missing a Stream End packet");
+		return Err(MpcParseError::message(
+			"file is missing a Stream End packet",
+		));
 	}
 
 	let properties =
@@ -95,7 +104,7 @@ impl<R: Read> PacketReader<R> {
 	}
 
 	/// Move the reader to the next packet, returning the next packet key and size
-	fn next(&mut self) -> Result<([u8; 2], u64)> {
+	fn next(&mut self) -> Result<([u8; 2], u64), MpcParseError> {
 		// Discard the rest of the current packet
 		std::io::copy(
 			&mut self.reader.by_ref().take(self.capacity),
@@ -113,7 +122,9 @@ impl<R: Read> PacketReader<R> {
 		self.reader.read_exact(&mut key)?;
 
 		if !key[0].is_ascii_uppercase() || !key[1].is_ascii_uppercase() {
-			decode_err!(@BAIL Mpc, "Packet key contains characters that are out of the allowed range")
+			return Err(MpcParseError::message(
+				"packet key contains characters that are out of the allowed range",
+			));
 		}
 
 		let (packet_size, packet_size_byte_count) = Self::read_size(&mut self.reader)?;
@@ -127,7 +138,7 @@ impl<R: Read> PacketReader<R> {
 	/// Read the variable-length packet size
 	///
 	/// This takes a reader since we need to both use it for packet reading *and* setting up the reader itself in `PacketReader::next`
-	pub fn read_size(reader: &mut R) -> Result<(u64, u8)> {
+	pub fn read_size(reader: &mut R) -> Result<(u64, u8), MpcParseError> {
 		let mut current;
 		let mut size = 0u64;
 
@@ -145,7 +156,7 @@ impl<R: Read> PacketReader<R> {
 
 			// Sizes cannot go above 9 bytes
 			if bytes_read > 9 {
-				return Err(LoftyError::new(ErrorKind::TooMuchData));
+				return Err(TooMuchDataError.into());
 			}
 
 			size = (size << 7) | u64::from(current & 0x7F);

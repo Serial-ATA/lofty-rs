@@ -1,20 +1,23 @@
+pub(super) mod error;
 pub(super) mod read;
 mod write;
 
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError};
+use crate::iff::chunk::valid_fourcc;
+use crate::io::VerifiedFile;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 	try_parse_timestamp,
 };
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
 
-use crate::iff::chunk::valid_fourcc;
+use crate::iff::wav::tag::error::RiffInfoListEncodingError;
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -200,7 +203,6 @@ impl<'a> IntoIterator for &'a RiffInfoList {
 }
 
 impl TagExt for RiffInfoList {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a str;
 
 	#[inline]
@@ -222,15 +224,33 @@ impl TagExt for RiffInfoList {
 		self.items.is_empty()
 	}
 
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), TagEncodingError> {
+		RIFFInfoListRef::new(
+			self.items
+				.iter()
+				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
+		)
+		.dump_to(writer, write_options)
+		.map_err(Into::into)
+	}
+
+	fn clear(&mut self) {
+		self.items.clear();
+	}
+}
+
+impl TagWriteExt for RiffInfoList {
 	fn save_to<F>(
 		&self,
-		file: &mut F,
+		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
+	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		RIFFInfoListRef::new(
 			self.items
@@ -238,23 +258,6 @@ impl TagExt for RiffInfoList {
 				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
 		)
 		.write_to(file, write_options)
-	}
-
-	fn dump_to<W: Write>(
-		&self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		RIFFInfoListRef::new(
-			self.items
-				.iter()
-				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
-		)
-		.dump_to(writer, write_options)
-	}
-
-	fn clear(&mut self) {
-		self.items.clear();
 	}
 }
 
@@ -327,11 +330,13 @@ where
 		RIFFInfoListRef { items }
 	}
 
-	pub(crate) fn write_to<F>(&mut self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(
+		&mut self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		write::write_riff_info(file, self, write_options)
 	}
@@ -340,7 +345,7 @@ where
 		&mut self,
 		writer: &mut W,
 		_write_options: WriteOptions,
-	) -> Result<()> {
+	) -> Result<(), RiffInfoListEncodingError> {
 		let mut temp = Vec::new();
 		write::create_riff_info(&mut self.items, &mut temp)?;
 

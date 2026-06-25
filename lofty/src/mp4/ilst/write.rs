@@ -1,17 +1,20 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{FileEncodingError, LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
 use crate::file::FileType;
-use crate::macros::{decode_err, err, try_vec};
+use crate::io::VerifiedFile;
+use crate::macros::try_vec;
 use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
+use crate::mp4::ilst::error::IlstEncodingError;
 use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
 use crate::mp4::write::{AtomWriter, AtomWriterCompanion, ContextualAtom};
 use crate::picture::{MimeType, Picture};
 use crate::util::alloc::VecFallibleCapacity;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
@@ -21,36 +24,36 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 const FULL_ATOM_SIZE: u64 = ATOM_HEADER_LEN + 4;
 const HDLR_SIZE: u64 = ATOM_HEADER_LEN + 25;
 
+fn handle_atom_parse_error(error: AtomParseError) -> FileEncodingError {
+	FileEncodingError::new(FileType::Mp4, error.into())
+}
+
 // TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 pub(crate) fn write_to<'a, F, I>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &mut IlstRef<'a, I>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
 	log::debug!("Attempting to write `ilst` tag to file");
 
 	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
+	let file = file.into_inner();
 	let mut reader = AtomReader::new(file, ParseOptions::DEFAULT_PARSING_MODE)?;
-	verify_mp4(&mut reader)?;
+	verify_mp4(&mut reader).map_err(FileParseError::from)?;
 
 	// Now we can just read the entire file into memory
 	let file = reader.into_inner();
 	file.rewind()?;
 
-	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)
+		.map_err(Into::<FileParseError>::into)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
-		return Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Could not find \"moov\" atom in target file",
-		)
-		.into());
+		return Err(FileParseError::from(Mp4ParseError::missing_moov()).into());
 	};
 
 	let moov_start = moov.info.start;
@@ -71,7 +74,7 @@ where
 	let mut write_handle = atom_writer.start_write();
 	write_handle.seek(SeekFrom::Start(moov_data_start))?;
 
-	let ilst = build_ilst(&mut tag.atoms)?;
+	let ilst = build_ilst(&mut tag.atoms).map_err(TagEncodingError::from)?;
 	let remove_tag = ilst.is_empty();
 
 	let udta = find_child_atom(
@@ -79,7 +82,8 @@ where
 		moov_len,
 		*b"udta",
 		ParseOptions::DEFAULT_PARSING_MODE,
-	)?;
+	)
+	.map_err(handle_atom_parse_error)?;
 
 	// Nothing to do
 	if remove_tag && udta.is_none() {
@@ -107,7 +111,8 @@ where
 			udta.len,
 			*b"meta",
 			ParseOptions::DEFAULT_PARSING_MODE,
-		)?;
+		)
+		.map_err(handle_atom_parse_error)?;
 
 		// Nothing to do
 		if remove_tag && meta.is_none() {
@@ -123,7 +128,7 @@ where
 				);
 
 				// We may encounter a non-full `meta` atom
-				meta_is_full(&mut write_handle)?;
+				meta_is_full(&mut write_handle).map_err(handle_atom_parse_error)?;
 				drop(write_handle);
 
 				// We can use the existing `udta` and `meta` atoms
@@ -217,7 +222,7 @@ fn save_to_existing(
 	ilst: Vec<u8>,
 	remove_tag: bool,
 	write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<(), FileEncodingError> {
 	let mut replacement;
 	let range;
 
@@ -228,7 +233,8 @@ fn save_to_existing(
 		meta.len - ATOM_HEADER_LEN,
 		b"ilst",
 		ParseOptions::DEFAULT_PARSING_MODE,
-	)?;
+	)
+	.map_err(Into::<FileParseError>::into)?;
 
 	if tree.is_empty() {
 		// Nothing to do
@@ -298,7 +304,7 @@ fn save_to_existing(
 
 				let remaining_space = available_space - ilst_len;
 				if remaining_space > u64::from(u32::MAX) {
-					err!(TooMuchData);
+					return Err(TooMuchDataError.into());
 				}
 
 				let remaining_space = remaining_space as u32;
@@ -368,7 +374,7 @@ fn pad_atom<W>(
 	writer: &mut W,
 	mut atom_size_difference: i64,
 	write_options: WriteOptions,
-) -> Result<(i64, u64)>
+) -> Result<(i64, u64), FileEncodingError>
 where
 	W: Write + Seek,
 {
@@ -417,13 +423,13 @@ where
 	Ok((atom_size_difference, padding_size))
 }
 
-fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<()>
+fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), FileEncodingError>
 where
 	W: Write,
 {
 	writer.write_u32::<BigEndian>(size)?;
 	writer.write_all(b"free")?;
-	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize])?;
+	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize]?)?;
 	Ok(())
 }
 
@@ -432,7 +438,7 @@ fn update_offsets(
 	moov: &ContextualAtom,
 	difference: i64,
 	ilst_offset: u64,
-) -> Result<()> {
+) -> Result<(), FileEncodingError> {
 	log::debug!("Checking for offset atoms to update");
 
 	let mut write_handle = writer.start_write();
@@ -443,7 +449,11 @@ fn update_offsets(
 
 		let stco_start = stco.start;
 		if stco.extended {
-			decode_err!(@BAIL Mp4, "Found an extended `stco` atom");
+			return Err(FileParseError::from(AtomParseError::message(
+				Some(stco.ident.clone()),
+				"found an extended `stco` atom",
+			))
+			.into());
 		}
 
 		write_handle.seek(SeekFrom::Start(stco_start + ATOM_HEADER_LEN + 4))?;
@@ -499,7 +509,11 @@ fn update_offsets(
 
 		let tfhd_start = tfhd.start;
 		if tfhd.extended {
-			decode_err!(@BAIL Mp4, "Found an extended `tfhd` atom");
+			return Err(FileParseError::from(AtomParseError::message(
+				Some(tfhd.ident.clone()),
+				"found an extended `tfhd` atom",
+			))
+			.into());
 		}
 
 		// Skip atom header + version (1)
@@ -529,7 +543,7 @@ fn update_offsets(
 	Ok(())
 }
 
-fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
+fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, FileEncodingError> {
 	const UDTA_HEADER: [u8; 8] = [0, 0, 0, 0, b'u', b'd', b't', b'a'];
 
 	// `udta` + `meta` + `hdlr` + `ilst`
@@ -556,7 +570,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>> {
 	Ok(udta_writer.into_contents())
 }
 
-fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
+fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<(), FileEncodingError> {
 	let mut write_handle = writer.start_write();
 
 	let start = write_handle.stream_position()?;
@@ -585,7 +599,9 @@ fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<()> {
 	Ok(())
 }
 
-pub(super) fn build_ilst<'a, I>(atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>) -> Result<Vec<u8>>
+pub(super) fn build_ilst<'a, I>(
+	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
+) -> Result<Vec<u8>, IlstEncodingError>
 where
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
@@ -640,7 +656,7 @@ where
 	Ok(ilst_writer.into_contents())
 }
 
-fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<()>
+fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<(), IlstEncodingError>
 where
 	W: Write,
 {
@@ -662,7 +678,10 @@ where
 	Ok(())
 }
 
-fn write_atom_data<'a, I>(data: I, writer: &mut AtomWriterCompanion<'_>) -> Result<()>
+fn write_atom_data<'a, I>(
+	data: I,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError>
 where
 	I: IntoIterator<Item = &'a AtomData> + 'a,
 {
@@ -681,7 +700,10 @@ where
 	Ok(())
 }
 
-fn write_signed_int(int: i32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_signed_int(
+	int: i32,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	write_int(DataType::BeSignedInteger, int.to_be_bytes(), 4, writer)
 }
 
@@ -697,7 +719,10 @@ fn bytes_to_occupy_uint(uint: u32) -> usize {
 	ret
 }
 
-fn write_unsigned_int(uint: u32, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_unsigned_int(
+	uint: u32,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	let bytes_needed = bytes_to_occupy_uint(uint);
 	write_int(
 		DataType::BeUnsignedInteger,
@@ -712,12 +737,12 @@ fn write_int(
 	bytes: [u8; 4],
 	bytes_needed: usize,
 	writer: &mut AtomWriterCompanion<'_>,
-) -> Result<()> {
+) -> Result<(), IlstEncodingError> {
 	debug_assert!(bytes_needed != 0);
 	write_data(flags, &bytes[4 - bytes_needed..], writer)
 }
 
-fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<(), IlstEncodingError> {
 	write_int(
 		DataType::BeSignedInteger,
 		i32::from(b).to_be_bytes(),
@@ -726,7 +751,10 @@ fn write_bool(b: bool, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
 	)
 }
 
-fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_picture(
+	picture: &Picture,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	match picture.mime_type {
 		// GIF is deprecated
 		Some(MimeType::Gif) => write_data(DataType::Gif, &picture.data, writer),
@@ -735,21 +763,21 @@ fn write_picture(picture: &Picture, writer: &mut AtomWriterCompanion<'_>) -> Res
 		Some(MimeType::Bmp) => write_data(DataType::Bmp, &picture.data, writer),
 		// We'll assume implicit (0) was the intended type
 		None => write_data(DataType::Reserved, &picture.data, writer),
-		_ => Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Attempted to write an unsupported picture format",
-		)
-		.into()),
+		_ => Err(IlstEncodingError::message(
+			"attempted to write a picture with an unsupported MIME type",
+		)),
 	}
 }
 
-fn write_data(flags: DataType, data: &[u8], writer: &mut AtomWriterCompanion<'_>) -> Result<()> {
+fn write_data(
+	flags: DataType,
+	data: &[u8],
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
 	if u32::from(flags) > DataType::MAX {
-		return Err(FileEncodingError::new(
-			FileType::Mp4,
-			"Attempted to write a code that cannot fit in 24 bits",
-		)
-		.into());
+		return Err(IlstEncodingError::message(
+			"attempted to write a code that cannot fit in 24 bits",
+		));
 	}
 
 	// .... DATA (version = 0) (flags) (locale = 0000) (data)

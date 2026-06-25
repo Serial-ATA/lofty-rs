@@ -5,7 +5,7 @@ mod tests;
 use super::frame::{EMPTY_CONTENT_DESCRIPTOR, Frame};
 use super::header::{Id3v2TagFlags, Id3v2Version};
 use crate::config::{WriteOptions, global_options};
-use crate::error::LoftyError;
+use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::v1::GENRES;
 use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 use crate::id3::v2::items::{
@@ -15,12 +15,15 @@ use crate::id3::v2::items::{
 use crate::id3::v2::util::mappings::TIPL_MAPPINGS;
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_SEPARATOR, format_number_pair};
 use crate::id3::v2::{FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
+use crate::io::VerifiedFile;
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
-use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::tag::{
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+};
+use crate::util::io::FileLike;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 use conversion::Id3v2TagRef;
 
@@ -397,7 +400,7 @@ impl Id3v2Tag {
 	///
 	/// const MOOD_FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TMOO"));
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// let mut tag = Id3v2Tag::new();
 	/// assert!(tag.is_empty());
 	///
@@ -837,7 +840,6 @@ impl Accessor for Id3v2Tag {
 }
 
 impl TagExt for Id3v2Tag {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a FrameId<'a>;
 
 	#[inline]
@@ -857,50 +859,38 @@ impl TagExt for Id3v2Tag {
 		self.frames.is_empty()
 	}
 
-	/// Writes the tag to a file
-	///
-	/// # Errors
-	///
-	/// * Attempting to write the tag to a format that does not support it
-	/// * Attempting to write an encrypted frame without a valid method symbol or data length indicator
-	/// * Attempting to write an invalid [`FrameId`]/[`Frame`] pairing
+	fn dump_to<W: Write>(
+		&self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), TagEncodingError> {
+		Id3v2TagRef {
+			flags: self.flags,
+			frames: self.frames.iter().map(Frame::downgrade).peekable(),
+		}
+		.dump_to(writer, write_options)
+		.map_err(Into::into)
+	}
+
+	fn clear(&mut self) {
+		self.frames.clear();
+	}
+}
+
+impl TagWriteExt for Id3v2Tag {
 	fn save_to<F>(
 		&self,
-		file: &mut F,
+		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		Id3v2TagRef {
 			flags: self.flags,
 			frames: self.frames.iter().map(Frame::downgrade).peekable(),
 		}
 		.write_to(file, write_options)
-	}
-
-	/// Dumps the tag to a writer
-	///
-	/// # Errors
-	///
-	/// * [`std::io::Error`]
-	/// * [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData)
-	fn dump_to<W: Write>(
-		&self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		Id3v2TagRef {
-			flags: self.flags,
-			frames: self.frames.iter().map(Frame::downgrade).peekable(),
-		}
-		.dump_to(writer, write_options)
-	}
-
-	fn clear(&mut self) {
-		self.frames.clear();
 	}
 }
 

@@ -4,6 +4,7 @@
 //!
 //! The only supported tag format is [`Ilst`].
 mod atom_info;
+pub mod error;
 pub(crate) mod ilst;
 mod moov;
 mod properties;
@@ -51,7 +52,7 @@ impl Mp4File {
 	/// use lofty::file::AudioFile;
 	/// use lofty::mp4::Mp4File;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
 	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, ParseOptions::new())?;
 	///

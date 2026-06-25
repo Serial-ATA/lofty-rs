@@ -5,7 +5,7 @@ use std::io::{Seek, SeekFrom};
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
 use lofty::flac::FlacFile;
-use lofty::ogg::VorbisComments;
+use lofty::ogg::tag::VorbisComments;
 use lofty::tag::Accessor;
 
 // TODO: We don't support FLAC in OGA (#172)

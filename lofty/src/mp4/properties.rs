@@ -1,8 +1,8 @@
 use super::atom_info::{AtomIdent, AtomInfo};
 use super::read::{AtomReader, find_child_atom, skip_atom};
 use crate::config::ParsingMode;
-use crate::error::{LoftyError, Result};
-use crate::macros::{decode_err, err, try_vec};
+use crate::macros::try_vec;
+use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::properties::FileProperties;
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::math::RoundedDivision;
@@ -13,12 +13,9 @@ use std::time::Duration;
 use byteorder::{BigEndian, ReadBytesExt};
 
 /// An MP4 file's audio codec
-#[derive(Default, Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Mp4Codec {
-	/// Some other codec unknown to Lofty
-	#[default]
-	Unknown,
 	/// Advanced Audio Coding
 	AAC,
 	/// Apple Lossless Audio Codec
@@ -126,7 +123,7 @@ pub enum AudioObjectType {
 }
 
 impl TryFrom<u8> for AudioObjectType {
-	type Error = LoftyError;
+	type Error = ();
 
 	#[rustfmt::skip]
 	fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
@@ -173,23 +170,26 @@ impl TryFrom<u8> for AudioObjectType {
 			44 => Ok(Self::LowDelayMpegSurround),
 			45 => Ok(Self::SpatialAudioObjectCodingDialogueEnhancement),
 			46 => Ok(Self::AudioSync),
-			_ => decode_err!(@BAIL Mp4, "Encountered an invalid audio object type"),
+			_ => Err(()),
 		}
 	}
 }
 
 /// An MP4 file's audio properties
+///
+/// Many fields are optional, as Lofty isn't suited to determine the properties of
+/// *all* MP4 files. The most common cases (and some uncommon ones!) should be covered, though.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub struct Mp4Properties {
-	pub(crate) codec: Mp4Codec,
+	pub(crate) codec: Option<Mp4Codec>,
 	pub(crate) extended_audio_object_type: Option<AudioObjectType>,
 	pub(crate) duration: Duration,
-	pub(crate) overall_bitrate: u32,
-	pub(crate) audio_bitrate: u32,
-	pub(crate) sample_rate: u32,
+	pub(crate) overall_bitrate: Option<u32>,
+	pub(crate) audio_bitrate: Option<u32>,
+	pub(crate) sample_rate: Option<u32>,
 	pub(crate) bit_depth: Option<u8>,
-	pub(crate) channels: u8,
+	pub(crate) channels: Option<u8>,
 	pub(crate) drm_protected: bool,
 	pub(crate) ftyp: String,
 }
@@ -198,11 +198,11 @@ impl From<Mp4Properties> for FileProperties {
 	fn from(input: Mp4Properties) -> Self {
 		Self {
 			duration: input.duration,
-			overall_bitrate: Some(input.overall_bitrate),
-			audio_bitrate: Some(input.audio_bitrate),
-			sample_rate: Some(input.sample_rate),
+			overall_bitrate: input.overall_bitrate,
+			audio_bitrate: input.audio_bitrate,
+			sample_rate: input.sample_rate,
 			bit_depth: input.bit_depth,
-			channels: Some(input.channels),
+			channels: input.channels,
 			channel_mask: None,
 		}
 	}
@@ -215,17 +215,17 @@ impl Mp4Properties {
 	}
 
 	/// Overall bitrate (kbps)
-	pub fn overall_bitrate(&self) -> u32 {
+	pub fn overall_bitrate(&self) -> Option<u32> {
 		self.overall_bitrate
 	}
 
 	/// Audio bitrate (kbps)
-	pub fn audio_bitrate(&self) -> u32 {
+	pub fn audio_bitrate(&self) -> Option<u32> {
 		self.audio_bitrate
 	}
 
 	/// Sample rate (Hz)
-	pub fn sample_rate(&self) -> u32 {
+	pub fn sample_rate(&self) -> Option<u32> {
 		self.sample_rate
 	}
 
@@ -235,13 +235,13 @@ impl Mp4Properties {
 	}
 
 	/// Channel count
-	pub fn channels(&self) -> u8 {
+	pub fn channels(&self) -> Option<u8> {
 		self.channels
 	}
 
 	/// Audio codec
-	pub fn codec(&self) -> &Mp4Codec {
-		&self.codec
+	pub fn codec(&self) -> Option<Mp4Codec> {
+		self.codec
 	}
 
 	/// Extended audio object type
@@ -267,7 +267,7 @@ impl Mp4Properties {
 	/// use lofty::file::AudioFile;
 	/// use lofty::mp4::Mp4File;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let mut m4a_reader = std::io::Cursor::new(&[]);
 	/// let m4a_file = Mp4File::read_from(&mut m4a_reader, ParseOptions::new())?;
 	///
@@ -285,10 +285,15 @@ struct AudioTrak {
 }
 
 /// Search through all the traks to find the first one with audio
-fn find_audio_trak<R>(reader: &mut AtomReader<R>, traks: &[AtomInfo]) -> Result<AudioTrak>
+fn find_audio_trak<R>(
+	reader: &mut AtomReader<R>,
+	traks: &[AtomInfo],
+) -> Result<AudioTrak, Mp4ParseError>
 where
 	R: Read + Seek,
 {
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"mdia");
+
 	let mut audio_track = false;
 	let mut mdhd = None;
 	let mut minf = None;
@@ -349,11 +354,13 @@ where
 	}
 
 	if !audio_track {
-		decode_err!(@BAIL Mp4, "File contains no audio tracks");
+		return Err(Mp4ParseError::message("file contains no audio tracks"));
 	}
 
 	let Some(mdhd) = mdhd else {
-		err!(BadAtom("Expected atom \"trak.mdia.mdhd\""));
+		return Err(
+			AtomParseError::message(Some(IDENT), "audio track has no \"mdhd\" atom").into(),
+		);
 	};
 
 	Ok(AudioTrak { mdhd, minf })
@@ -365,36 +372,45 @@ struct Mdhd {
 }
 
 impl Mdhd {
-	fn parse<R>(reader: &mut AtomReader<R>) -> Result<Self>
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"mdhd");
+
+	fn parse<R>(reader: &mut AtomReader<R>) -> Result<Self, AtomParseError>
 	where
 		R: Read + Seek,
 	{
-		let version = reader.read_u8()?;
-		let _flags = reader.read_uint(3)?;
+		fn parse_inner<R>(reader: &mut AtomReader<R>) -> Result<Mdhd, AtomParseError>
+		where
+			R: Read + Seek,
+		{
+			let version = reader.read_u8()?;
+			let _flags = reader.read_uint(3)?;
 
-		let (timescale, duration) = if version == 1 {
-			// We don't care about these two values
-			let _creation_time = reader.read_u64()?;
-			let _modification_time = reader.read_u64()?;
+			let (timescale, duration) = if version == 1 {
+				// We don't care about these two values
+				let _creation_time = reader.read_u64()?;
+				let _modification_time = reader.read_u64()?;
 
-			let timescale = reader.read_u32()?;
-			let duration = reader.read_u64()?;
+				let timescale = reader.read_u32()?;
+				let duration = reader.read_u64()?;
 
-			(timescale, duration)
-		} else {
-			let _creation_time = reader.read_u32()?;
-			let _modification_time = reader.read_u32()?;
+				(timescale, duration)
+			} else {
+				let _creation_time = reader.read_u32()?;
+				let _modification_time = reader.read_u32()?;
 
-			let timescale = reader.read_u32()?;
-			let duration = reader.read_u32()?;
+				let timescale = reader.read_u32()?;
+				let duration = reader.read_u32()?;
 
-			(timescale, u64::from(duration))
-		};
+				(timescale, u64::from(duration))
+			};
 
-		Ok(Mdhd {
-			timescale,
-			duration,
-		})
+			Ok(Mdhd {
+				timescale,
+				duration,
+			})
+		}
+
+		parse_inner(reader).map_err(|e| e.with_ident(Self::IDENT))
 	}
 }
 
@@ -414,26 +430,35 @@ struct Stts {
 }
 
 impl Stts {
-	fn parse<R>(reader: &mut R) -> Result<Self>
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stts");
+
+	fn parse<R>(reader: &mut R) -> Result<Self, AtomParseError>
 	where
 		R: Read,
 	{
-		let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
+		fn parse_inner<R>(reader: &mut R) -> Result<Stts, AtomParseError>
+		where
+			R: Read,
+		{
+			let _version_and_flags = reader.read_uint::<BigEndian>(4)?;
 
-		let entry_count = reader.read_u32::<BigEndian>()?;
-		let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
+			let entry_count = reader.read_u32::<BigEndian>()?;
+			let mut entries = Vec::try_with_capacity_stable(entry_count as usize)?;
 
-		for _ in 0..entry_count {
-			let sample_count = reader.read_u32::<BigEndian>()?;
-			let sample_duration = reader.read_u32::<BigEndian>()?;
+			for _ in 0..entry_count {
+				let sample_count = reader.read_u32::<BigEndian>()?;
+				let sample_duration = reader.read_u32::<BigEndian>()?;
 
-			entries.push(SttsEntry {
-				_sample_count: sample_count,
-				sample_duration,
-			});
+				entries.push(SttsEntry {
+					_sample_count: sample_count,
+					sample_duration,
+				});
+			}
+
+			Ok(Stts { entries })
 		}
 
-		Ok(Self { entries })
+		parse_inner(reader).map_err(|e| e.with_ident(Self::IDENT))
 	}
 }
 
@@ -443,157 +468,206 @@ struct Minf {
 }
 
 impl Minf {
+	const IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"minf");
+
 	fn parse<R>(
 		reader: &mut AtomReader<R>,
 		len: u64,
 		parse_mode: ParsingMode,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, AtomParseError>
 	where
 		R: Read + Seek,
 	{
-		let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
-			return Ok(None);
-		};
+		fn parse_inner<R>(
+			reader: &mut AtomReader<R>,
+			len: u64,
+			parse_mode: ParsingMode,
+		) -> Result<Option<Minf>, AtomParseError>
+		where
+			R: Read + Seek,
+		{
+			let Some(stbl) = find_child_atom(reader, len, *b"stbl", parse_mode)? else {
+				return Ok(None);
+			};
 
-		let mut stsd_data = None;
-		let mut stts = None;
+			let mut stsd_data = None;
+			let mut stts = None;
 
-		let mut read = 8;
-		while read < stbl.len {
-			let Some(atom) = reader.next()? else { break };
+			let mut read = 8;
+			while read < stbl.len {
+				let Some(atom) = reader.next()? else { break };
 
-			read += atom.len;
+				read += atom.len;
 
-			if let AtomIdent::Fourcc(fourcc) = atom.ident {
-				match &fourcc {
-					b"stsd" => {
-						let mut stsd = try_vec![0; (atom.len - 8) as usize];
-						reader.read_exact(&mut stsd)?;
-						stsd_data = Some(stsd);
-					},
-					b"stts" => stts = Some(Stts::parse(reader)?),
-					_ => {
-						skip_atom(reader, atom.extended, atom.len)?;
-					},
+				if let AtomIdent::Fourcc(fourcc) = atom.ident {
+					match &fourcc {
+						b"stsd" => {
+							fn parse_stsd<R>(
+								reader: &mut AtomReader<R>,
+								atom: &AtomInfo,
+							) -> Result<Vec<u8>, AtomParseError>
+							where
+								R: Read + Seek,
+							{
+								let mut stsd = try_vec![0; (atom.len - 8) as usize]?;
+								reader.read_exact(&mut stsd)?;
+								Ok(stsd)
+							}
+
+							stsd_data = Some(
+								parse_stsd(reader, &atom).map_err(|e| e.with_ident(atom.ident))?,
+							);
+						},
+						b"stts" => stts = Some(Stts::parse(reader)?),
+						_ => {
+							skip_atom(reader, atom.extended, atom.len)?;
+						},
+					}
+
+					continue;
 				}
-
-				continue;
 			}
+
+			let Some(stsd_data) = stsd_data else {
+				return Ok(None);
+			};
+
+			Ok(Some(Minf { stsd_data, stts }))
 		}
 
-		let Some(stsd_data) = stsd_data else {
-			return Ok(None);
-		};
-
-		Ok(Some(Minf { stsd_data, stts }))
+		parse_inner(reader, len, parse_mode).map_err(|e| e.with_ident_if_not_present(Self::IDENT))
 	}
 }
 
-fn read_stsd<R>(reader: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+const STSD_IDENT: AtomIdent<'static> = AtomIdent::Fourcc(*b"stsd");
+
+fn read_stsd<R>(
+	reader: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
 	const MIN_SUPPORTED_ENTRY_VERSION: u16 = 0;
 	const MAX_SUPPORTED_ENTRY_VERSION: u16 = 2;
 
-	// Skipping 4 bytes
-	// Version (1)
-	// Flags (3)
-	reader.seek(SeekFrom::Current(4))?;
-	let num_sample_entries = reader.read_u32()?;
+	fn read_inner<R>(
+		reader: &mut AtomReader<R>,
+		properties: &mut Mp4Properties,
+	) -> Result<(), AtomParseError>
+	where
+		R: Read + Seek,
+	{
+		// Skipping 4 bytes
+		// Version (1)
+		// Flags (3)
+		reader.seek(SeekFrom::Current(4))?;
+		let num_sample_entries = reader.read_u32()?;
 
-	for _ in 0..num_sample_entries {
-		let Some(atom) = reader.next()? else {
-			err!(BadAtom("Expected sample entry atom in `stsd` atom"))
-		};
+		for _ in 0..num_sample_entries {
+			let Some(atom) = reader.next()? else {
+				// ident gets set later
+				return Err(AtomParseError::message(None, "expected sample entry atom"));
+			};
 
-		if atom.extended {
-			err!(BadAtom("Extended atoms are not supported in `stsd`"))
+			if atom.extended {
+				return Err(AtomParseError::message(
+					None,
+					"extended atoms are not supported in `stsd`",
+				));
+			}
+
+			let AtomIdent::Fourcc(ref descriptor_format) = atom.ident else {
+				return Err(AtomParseError::message(None, "unexpected freeform atom"));
+			};
+
+			// Skipping 8 bytes
+			// Reserved (6)
+			// Data reference index (2)
+			reader.seek(SeekFrom::Current(8))?;
+
+			let stsd_version = reader.read_u16()?;
+			if !(MIN_SUPPORTED_ENTRY_VERSION..=MAX_SUPPORTED_ENTRY_VERSION).contains(&stsd_version)
+			{
+				return Err(AtomParseError::message(None, "unsupported `stsd` version"));
+			}
+
+			// Skipping 6 bytes
+			// Revision level (2)
+			// Vendor (4)
+			reader.seek(SeekFrom::Current(6))?;
+
+			properties.channels = Some(reader.read_u16()? as u8);
+
+			// Skipping 6 bytes
+			// Sample size (2)
+			// Compression ID (2)
+			// Packet size (2)
+			reader.seek(SeekFrom::Current(6))?;
+
+			// 16.16 fixed point number
+			properties.sample_rate = Some(reader.read_u32()? >> 16);
+
+			let mut offset = reader.stream_position()?;
+			if stsd_version == 1 {
+				// Skipping 16 bytes
+				// Samples per packet (4)
+				// Bytes per packet (4)
+				// Bytes per frame (4)
+				// Bytes per sample (4)
+				offset = reader.seek(SeekFrom::Current(16))?;
+			} else if stsd_version == 2 {
+				let extension_struct_size = reader.read_u32()?;
+
+				// Skipping (at least) 32 bytes
+				// Sample rate 64 (8)
+				// Channel count (4)
+				// Reserved (4)
+				// Bits per channel (4)
+				// Format specific flags (4)
+				// Bytes per audio packet (4)
+				// LPCM frames per audio packet (4)
+				// Struct size (variable)
+				offset = reader.seek(SeekFrom::Current(32 + i64::from(extension_struct_size)))?;
+			}
+
+			match descriptor_format {
+				b"mp4a" => mp4a_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"mp4a")))?,
+				b"alac" => alac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"alac")))?,
+				b"fLaC" => flac_properties(reader, properties)
+					.map_err(|e| e.with_ident_if_not_present(AtomIdent::Fourcc(*b"fLaC")))?,
+				// Maybe do these?
+				// TODO: dops (opus)
+				// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
+
+				// Special case to detect encrypted files
+				b"drms" => {
+					properties.drm_protected = true;
+					skip_atom(reader, false, offset - atom.start)
+						.map_err(|e| e.with_ident(atom.ident))?;
+					continue;
+				},
+				_ => {
+					log::warn!(
+						"Found unsupported sample entry: {:?}",
+						descriptor_format.escape_ascii().to_string()
+					);
+					skip_atom(reader, false, offset - atom.start)?;
+					continue;
+				},
+			}
+
+			// We only want to read the properties of the first stream
+			// that we can actually recognize
+			break;
 		}
 
-		let AtomIdent::Fourcc(ref descriptor_format) = atom.ident else {
-			err!(BadAtom("Expected fourcc atom in `stsd` atom"))
-		};
-
-		// Skipping 8 bytes
-		// Reserved (6)
-		// Data reference index (2)
-		reader.seek(SeekFrom::Current(8))?;
-
-		let stsd_version = reader.read_u16()?;
-		if !(MIN_SUPPORTED_ENTRY_VERSION..=MAX_SUPPORTED_ENTRY_VERSION).contains(&stsd_version) {
-			err!(BadAtom("Unsupported `stsd` version"))
-		}
-
-		// Skipping 6 bytes
-		// Revision level (2)
-		// Vendor (4)
-		reader.seek(SeekFrom::Current(6))?;
-
-		properties.channels = reader.read_u16()? as u8;
-
-		// Skipping 6 bytes
-		// Sample size (2)
-		// Compression ID (2)
-		// Packet size (2)
-		reader.seek(SeekFrom::Current(6))?;
-
-		// 16.16 fixed point number
-		properties.sample_rate = reader.read_u32()? >> 16;
-
-		let mut offset = reader.stream_position()?;
-		if stsd_version == 1 {
-			// Skipping 16 bytes
-			// Samples per packet (4)
-			// Bytes per packet (4)
-			// Bytes per frame (4)
-			// Bytes per sample (4)
-			offset = reader.seek(SeekFrom::Current(16))?;
-		} else if stsd_version == 2 {
-			let extension_struct_size = reader.read_u32()?;
-
-			// Skipping (at least) 32 bytes
-			// Sample rate 64 (8)
-			// Channel count (4)
-			// Reserved (4)
-			// Bits per channel (4)
-			// Format specific flags (4)
-			// Bytes per audio packet (4)
-			// LPCM frames per audio packet (4)
-			// Struct size (variable)
-			offset = reader.seek(SeekFrom::Current(32 + i64::from(extension_struct_size)))?;
-		}
-
-		match descriptor_format {
-			b"mp4a" => mp4a_properties(reader, properties)?,
-			b"alac" => alac_properties(reader, properties)?,
-			b"fLaC" => flac_properties(reader, properties)?,
-			// Maybe do these?
-			// TODO: dops (opus)
-			// TODO: wave (https://developer.apple.com/library/archive/documentation/QuickTime/QTFF/QTFFChap3/qtff3.html#//apple_ref/doc/uid/TP40000939-CH205-134202)
-
-			// Special case to detect encrypted files
-			b"drms" => {
-				properties.drm_protected = true;
-				skip_atom(reader, false, offset - atom.start)?;
-				continue;
-			},
-			_ => {
-				log::warn!(
-					"Found unsupported sample entry: {:?}",
-					descriptor_format.escape_ascii().to_string()
-				);
-				skip_atom(reader, false, offset - atom.start)?;
-				continue;
-			},
-		}
-
-		// We only want to read the properties of the first stream
-		// that we can actually recognize
-		break;
+		Ok(())
 	}
 
-	Ok(())
+	read_inner(reader, properties).map_err(|e| e.with_ident_if_not_present(STSD_IDENT))
 }
 
 pub(super) fn read_properties<R>(
@@ -601,7 +675,7 @@ pub(super) fn read_properties<R>(
 	traks: &[AtomInfo],
 	file_length: u64,
 	parse_mode: ParsingMode,
-) -> Result<Mp4Properties>
+) -> Result<Mp4Properties, Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -664,7 +738,7 @@ where
 					/ u128::from(duration)) as u32;
 
 				// kb/s
-				properties.audio_bitrate = audio_bitrate_bps / 1000;
+				properties.audio_bitrate = Some(audio_bitrate_bps / 1000);
 			}
 		}
 
@@ -677,12 +751,12 @@ where
 		}
 
 		let overall_bitrate = u128::from(file_length * 8) / duration_millis;
-		properties.overall_bitrate = overall_bitrate as u32;
+		properties.overall_bitrate = Some(overall_bitrate as u32);
 
-		if properties.audio_bitrate == 0 {
+		if matches!(properties.audio_bitrate, None | Some(0)) {
 			log::warn!("Estimating audio bitrate from 'mdat' size");
 
-			properties.audio_bitrate = (u128::from(mdat_len * 8) / duration_millis) as u32;
+			properties.audio_bitrate = Some((u128::from(mdat_len * 8) / duration_millis) as u32);
 		}
 	}
 
@@ -694,7 +768,10 @@ pub(crate) const SAMPLE_RATES: [u32; 15] = [
 	96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350, 0, 0,
 ];
 
-fn mp4a_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn mp4a_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -703,7 +780,7 @@ where
 	const DECODER_SPECIFIC_DESCRIPTOR_TAG: u8 = 0x05;
 
 	// Set the codec to AAC, which is a good guess if we fail before reaching the `esds`
-	properties.codec = Mp4Codec::AAC;
+	properties.codec = Some(Mp4Codec::AAC);
 
 	// This information is often followed by an esds (elementary stream descriptor) atom containing the bitrate
 	let Ok(Some(esds)) = stsd.next() else {
@@ -736,9 +813,9 @@ where
 			let codec = stsd.read_u8()?;
 
 			properties.codec = match codec {
-				0x40 | 0x41 | 0x66 | 0x67 | 0x68 => Mp4Codec::AAC,
-				0x69 | 0x6B => Mp4Codec::MP3,
-				_ => Mp4Codec::Unknown,
+				0x40 | 0x41 | 0x66 | 0x67 | 0x68 => Some(Mp4Codec::AAC),
+				0x69 | 0x6B => Some(Mp4Codec::MP3),
+				_ => None,
 			};
 
 			// Skipping 8 bytes
@@ -776,8 +853,10 @@ where
 					frequency_index = (byte_b >> 1) & 0x0F;
 				}
 
-				properties.extended_audio_object_type =
-					Some(AudioObjectType::try_from(object_type)?);
+				properties.extended_audio_object_type = Some(
+					AudioObjectType::try_from(object_type)
+						.map_err(|_| AtomParseError::message(None, "invalid audio object type"))?,
+				);
 
 				match frequency_index {
 					// 15 means the sample rate is stored in the next 24 bits
@@ -797,11 +876,11 @@ where
 
 						// Just use the sample rate we already read above if this is invalid
 						if sample_rate > 0 {
-							properties.sample_rate = sample_rate;
+							properties.sample_rate = Some(sample_rate);
 						}
 					},
 					i if i < SAMPLE_RATES.len() as u8 => {
-						properties.sample_rate = SAMPLE_RATES[i as usize];
+						properties.sample_rate = Some(SAMPLE_RATES[i as usize]);
 
 						if extended_object_type {
 							let byte_c = stsd.read_u8()?;
@@ -817,7 +896,7 @@ where
 				// The channel configuration isn't always set, at least when testing with
 				// the Audio Lossless Coding reference software
 				if channel_conf > 0 {
-					properties.channels = channel_conf;
+					properties.channels = Some(channel_conf);
 				}
 
 				// We just check for ALS here, might extend it for more codes eventually
@@ -826,17 +905,17 @@ where
 					stsd.read_exact(&mut ident)?;
 
 					if &ident == b"\0ALS\0" {
-						properties.sample_rate = stsd.read_u32()?;
+						properties.sample_rate = Some(stsd.read_u32()?);
 
 						// Sample count
 						stsd.seek(SeekFrom::Current(4))?;
-						properties.channels = stsd.read_u16()? as u8 + 1;
+						properties.channels = Some(stsd.read_u16()? as u8 + 1);
 					}
 				}
 			}
 
 			if average_bitrate > 0 || properties.duration.is_zero() {
-				properties.audio_bitrate = average_bitrate / 1000;
+				properties.audio_bitrate = Some(average_bitrate / 1000);
 			}
 		}
 	}
@@ -844,7 +923,10 @@ where
 	Ok(())
 }
 
-fn alac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn alac_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
@@ -864,7 +946,7 @@ where
 		return Ok(());
 	}
 
-	properties.codec = Mp4Codec::ALAC;
+	properties.codec = Some(Mp4Codec::ALAC);
 
 	// Skipping 9 bytes
 	// Version (4)
@@ -882,24 +964,27 @@ where
 	// Rice parameter limit (1)
 	stsd.seek(SeekFrom::Current(3))?;
 
-	properties.channels = stsd.read_u8()?;
+	properties.channels = Some(stsd.read_u8()?);
 
 	// Skipping 6 bytes
 	// Max run (2)
 	// Max frame size (4)
 	stsd.seek(SeekFrom::Current(6))?;
 
-	properties.audio_bitrate = stsd.read_u32()? / 1000;
-	properties.sample_rate = stsd.read_u32()?;
+	properties.audio_bitrate = Some(stsd.read_u32()? / 1000);
+	properties.sample_rate = Some(stsd.read_u32()?);
 
 	Ok(())
 }
 
-fn flac_properties<R>(stsd: &mut AtomReader<R>, properties: &mut Mp4Properties) -> Result<()>
+fn flac_properties<R>(
+	stsd: &mut AtomReader<R>,
+	properties: &mut Mp4Properties,
+) -> Result<(), AtomParseError>
 where
 	R: Read + Seek,
 {
-	properties.codec = Mp4Codec::FLAC;
+	properties.codec = Some(Mp4Codec::FLAC);
 
 	// There should be a dfla atom, but it's not worth erroring if absent.
 	let Some(dfla) = stsd.next()? else {
@@ -921,13 +1006,14 @@ where
 		return Ok(());
 	}
 
-	let stream_info_block = crate::flac::block::Block::read(stsd, |_| true)?;
+	let stream_info_block = crate::flac::block::Block::read(stsd, |_| true)
+		.map_err(|e| AtomParseError::new(STSD_IDENT, e.into()))?;
 	let flac_properties =
 		crate::flac::properties::read_properties(&mut &stream_info_block.content[..], 0, 0)?;
 
-	properties.sample_rate = flac_properties.sample_rate;
+	properties.sample_rate = Some(flac_properties.sample_rate);
 	properties.bit_depth = Some(flac_properties.bit_depth);
-	properties.channels = flac_properties.channels;
+	properties.channels = Some(flac_properties.channels);
 
 	// Bitrate values are calculated later...
 
@@ -935,7 +1021,7 @@ where
 }
 
 // Used to calculate the bitrate, when it isn't readily available to us
-fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64>
+fn mdat_length<R>(reader: &mut AtomReader<R>) -> Result<u64, Mp4ParseError>
 where
 	R: Read + Seek,
 {
@@ -949,7 +1035,9 @@ where
 		skip_atom(reader, atom.extended, atom.len)?;
 	}
 
-	decode_err!(@BAIL Mp4, "Failed to find \"mdat\" atom");
+	Err(Mp4ParseError::message(
+		"file does not contain an \"mdat\" atom",
+	))
 }
 
 struct Descriptor {
@@ -958,7 +1046,7 @@ struct Descriptor {
 }
 
 impl Descriptor {
-	fn read<R: Read>(reader: &mut R) -> Result<Descriptor> {
+	fn read<R: Read>(reader: &mut R) -> Result<Descriptor, AtomParseError> {
 		let tag = reader.read_u8()?;
 
 		// https://github.com/FFmpeg/FFmpeg/blob/84f5583078699e96b040f4f41b39720b683326d0/libavformat/isom.c#L283

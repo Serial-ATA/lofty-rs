@@ -1,5 +1,3 @@
-use crate::error::Result;
-use crate::macros::err;
 use crate::mp4::AtomIdent;
 use crate::mp4::ilst::data_type::DataType;
 use crate::picture::Picture;
@@ -108,6 +106,18 @@ impl<'a> Iterator for AtomDataStorageIter<'a> {
 	}
 }
 
+/// Attempting to use [`Atom::merge()`] with mismatching identifiers
+#[derive(Debug)]
+pub struct AtomMismatchError;
+
+impl core::fmt::Display for AtomMismatchError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.write_str("attempted to use `Atom::merge()` with mismatching identifiers")
+	}
+}
+
+impl core::error::Error for AtomMismatchError {}
+
 /// Represents an `MP4` atom
 #[derive(PartialEq, Clone)]
 pub struct Atom<'a> {
@@ -188,7 +198,7 @@ impl<'a> Atom<'a> {
 	/// ```rust
 	/// use lofty::mp4::{Atom, AtomData, AtomIdent};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::mp4::error::AtomMismatchError> {
 	/// // Create an artist atom
 	/// let mut atom = Atom::new(
 	/// 	AtomIdent::Fourcc(*b"\x49ART"),
@@ -206,9 +216,9 @@ impl<'a> Atom<'a> {
 	/// assert_eq!(atom.data().count(), 2);
 	/// # Ok(()) }
 	/// ```
-	pub fn merge(&mut self, other: Atom<'_>) -> Result<()> {
+	pub fn merge(&mut self, other: Atom<'_>) -> Result<(), AtomMismatchError> {
 		if self.ident != other.ident {
-			err!(AtomMismatch);
+			return Err(AtomMismatchError);
 		}
 
 		for data in other.data {

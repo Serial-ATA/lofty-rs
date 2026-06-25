@@ -1,10 +1,7 @@
 use super::{Tag, utils};
 use crate::config::WriteOptions;
-use crate::error::LoftyError;
-use crate::file::FileType;
-use crate::io::{FileLike, Length, Truncate};
-use crate::macros::err;
-use crate::probe::Probe;
+use crate::error::{FileEncodingError, UnsupportedTagError};
+use crate::io::{FileLike, VerifiedFile};
 
 use std::fs::OpenOptions;
 use std::path::Path;
@@ -12,16 +9,25 @@ use std::path::Path;
 /// Describes how a [`TagType`] is supported in a given [`FileType`]
 ///
 /// See [`FileType::tag_support()`]
+///
+/// [`FileType`]: crate::file::FileType
+/// [`FileType::tag_support()`]: crate::file::FileType::tag_support
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TagSupport {
 	/// The tag isn't supported in this [`FileType`]
+	///
+	/// [`FileType`]: crate::file::FileType
 	Unsupported,
 	/// The tag type can be *read* from this [`FileType`], but cannot be written back to it.
 	///
 	/// For example, ID3v2 tags can be read from, but not written to FLAC files.
+	///
+	/// [`FileType`]: crate::file::FileType
 	ReadOnly,
 	/// The tag type can be both read from and written to this [`FileType`].
+	///
+	/// [`FileType`]: crate::file::FileType
 	ReadWrite,
 }
 
@@ -118,9 +124,13 @@ impl TagType {
 	/// # Errors
 	///
 	/// See [`TagType::remove_from`]
-	pub fn remove_from_path(&self, path: impl AsRef<Path>) -> crate::error::Result<()> {
+	pub fn remove_from_path(
+		&self,
+		path: impl AsRef<Path>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError> {
 		let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-		self.remove_from(&mut file)
+		self.remove_from(&mut file, write_options)
 	}
 
 	#[allow(clippy::shadow_unrelated)]
@@ -131,29 +141,21 @@ impl TagType {
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	pub fn remove_from<F>(&self, file: &mut F) -> crate::error::Result<()>
+	pub fn remove_from<F>(
+		&self,
+		file: &mut F,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
-		let probe = Probe::new(file).guess_file_type()?;
-		let Some(file_type) = probe.file_type() else {
-			err!(UnknownFormat);
-		};
+		let file = VerifiedFile::new(file)?;
 
-		// TODO: This should not have to be manually updated
-		let special_exceptions = ((file_type == FileType::Ape
-			|| file_type == FileType::Mpc
-			|| file_type == FileType::Flac)
-			&& *self == TagType::Id3v2)
-			|| file_type == FileType::Mpc && *self == TagType::Id3v1;
-
-		if !special_exceptions && !file_type.tag_support(*self).is_readable() {
-			err!(UnsupportedTag);
+		// Read-only tags are always removable
+		if !file.format().tag_support(*self).is_readable() {
+			return Err(UnsupportedTagError.into());
 		}
 
-		let file = probe.into_inner();
-		utils::write_tag(&Tag::new(*self), file, file_type, WriteOptions::default()) // TODO
+		utils::write_tag(&Tag::new(*self), file, write_options)
 	}
 }

@@ -11,7 +11,7 @@ mod ownership_frame;
 mod popularimeter;
 mod private_frame;
 mod relative_volume_adjustment_frame;
-mod sync_text;
+pub(in crate::id3::v2) mod sync_text;
 mod text_information_frame;
 mod timestamp_frame;
 mod unique_file_identifier;

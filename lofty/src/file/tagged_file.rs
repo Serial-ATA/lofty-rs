@@ -1,10 +1,10 @@
 use super::audio_file::AudioFile;
 use super::file_type::FileType;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError};
 use crate::properties::FileProperties;
 use crate::tag::{Tag, TagExt, TagSupport, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::io::{Read, Seek};
 
@@ -17,7 +17,7 @@ pub trait TaggedFileExt {
 	/// ```rust
 	/// use lofty::file::{FileType, TaggedFileExt};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
@@ -33,7 +33,7 @@ pub trait TaggedFileExt {
 	/// ```rust
 	/// use lofty::file::{FileType, TaggedFileExt};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // An MP3 file with 3 tags
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -55,7 +55,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
@@ -74,7 +74,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
@@ -101,7 +101,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -123,7 +123,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -149,7 +149,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -175,7 +175,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::TaggedFileExt;
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file with an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -203,7 +203,7 @@ pub trait TaggedFileExt {
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
 	/// let mut tagged_file = lofty::read_from_path(path)?;
@@ -227,7 +227,7 @@ pub trait TaggedFileExt {
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// // A file we know has tags
 	/// let mut tagged_file = lofty::read_from_path(path)?;
@@ -254,7 +254,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::{AudioFile, TaggedFileExt};
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file without an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -279,7 +279,7 @@ pub trait TaggedFileExt {
 	/// use lofty::file::{AudioFile, TaggedFileExt};
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -301,7 +301,7 @@ pub trait TaggedFileExt {
 	/// ```rust
 	/// use lofty::file::TaggedFileExt;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
@@ -350,7 +350,7 @@ impl TaggedFile {
 	/// use lofty::file::{AudioFile, FileType, TaggedFileExt};
 	/// use lofty::tag::TagType;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_mp3 = "tests/files/assets/minimal/full_test.mp3";
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
@@ -420,7 +420,10 @@ impl TaggedFileExt for TaggedFile {
 impl AudioFile for TaggedFile {
 	type Properties = FileProperties;
 
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	fn read_from<R>(
+		reader: &mut R,
+		parse_options: ParseOptions,
+	) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized,
@@ -431,11 +434,9 @@ impl AudioFile for TaggedFile {
 			.read()
 	}
 
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		for tag in &self.tags {
 			// It's likely that users of `TaggedFile` aren't going to be aware of any read-only tags
@@ -481,7 +482,7 @@ impl<F> From<BoundTaggedFile<F>> for TaggedFile {
 /// use lofty::config::WriteOptions;
 /// use lofty::file::{AudioFile, TaggedFileExt};
 /// use lofty::tag::{Tag, TagType};
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
 /// // We create an empty tag
@@ -507,7 +508,7 @@ impl<F> From<BoundTaggedFile<F>> for TaggedFile {
 /// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
 /// use lofty::tag::{Tag, TagType};
 /// use std::fs::OpenOptions;
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// # let path = "tests/files/assets/minimal/full_test.mp3";
 ///
 /// // We create an empty tag
@@ -544,11 +545,7 @@ impl<F> BoundTaggedFile<F> {
 	}
 }
 
-impl<F: FileLike> BoundTaggedFile<F>
-where
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
-{
+impl<F: FileLike> BoundTaggedFile<F> {
 	/// Create a new [`BoundTaggedFile`]
 	///
 	/// # Errors
@@ -562,7 +559,7 @@ where
 	/// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
 	/// use lofty::tag::{Tag, TagType};
 	/// use std::fs::OpenOptions;
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	///
 	/// // We'll need to open our file for reading *and* writing
@@ -572,9 +569,10 @@ where
 	/// let bound_tagged_file = BoundTaggedFile::read_from(file, parse_options)?;
 	/// # Ok(()) }
 	/// ```
-	pub fn read_from(mut file: F, parse_options: ParseOptions) -> Result<Self> {
+	pub fn read_from(mut file: F, parse_options: ParseOptions) -> Result<Self, FileParseError> {
 		let inner = TaggedFile::read_from(&mut file, parse_options)?;
-		file.rewind()?;
+		file.rewind()
+			.map_err(|e| FileParseError::from(e).with_format(inner.ty))?;
 
 		Ok(Self {
 			inner,
@@ -595,7 +593,7 @@ where
 	/// use lofty::file::{AudioFile, BoundTaggedFile, TaggedFileExt};
 	/// use lofty::tag::{Tag, TagType};
 	/// use std::fs::OpenOptions;
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	///
 	/// // We'll need to open our file for reading *and* writing
@@ -610,7 +608,7 @@ where
 	/// bound_tagged_file.save(WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	pub fn save(&mut self, write_options: WriteOptions) -> Result<()> {
+	pub fn save(&mut self, write_options: WriteOptions) -> Result<(), FileEncodingError> {
 		self.inner.save_to(&mut self.file_handle, write_options)?;
 		self.inner.tags.retain(|tag| !tag.is_empty());
 
@@ -655,7 +653,7 @@ impl<F> TaggedFileExt for BoundTaggedFile<F> {
 impl<T> AudioFile for BoundTaggedFile<T> {
 	type Properties = FileProperties;
 
-	fn read_from<R>(_: &mut R, _: ParseOptions) -> Result<Self>
+	fn read_from<R>(_: &mut R, _: ParseOptions) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized,
@@ -665,11 +663,9 @@ impl<T> AudioFile for BoundTaggedFile<T> {
 		)
 	}
 
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		self.inner.save_to(file, write_options)
 	}

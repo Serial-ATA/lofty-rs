@@ -1,9 +1,9 @@
 use super::tagged_file::TaggedFile;
 use crate::config::{ParseOptions, WriteOptions};
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError};
 use crate::tag::TagType;
+use crate::util::io::FileLike;
 
-use crate::util::io::{FileLike, Length, Truncate};
 use std::fs::OpenOptions;
 use std::io::{Read, Seek};
 use std::path::Path;
@@ -19,8 +19,11 @@ pub trait AudioFile: Into<TaggedFile> {
 	///
 	/// # Errors
 	///
-	/// Errors depend on the file and tags being read. See [`LoftyError`](crate::error::LoftyError)
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	/// Errors depend on the file and tags being read. See [`FileParseError`](crate::error::FileParseError)
+	fn read_from<R>(
+		reader: &mut R,
+		parse_options: ParseOptions,
+	) -> std::result::Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 		Self: Sized;
@@ -39,7 +42,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// use lofty::config::WriteOptions;
 	/// use lofty::file::{AudioFile, TaggedFileExt};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
@@ -48,7 +51,11 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to_path(path, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to_path(&self, path: impl AsRef<Path>, write_options: WriteOptions) -> Result<()> {
+	fn save_to_path(
+		&self,
+		path: impl AsRef<Path>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError> {
 		self.save_to(
 			&mut OpenOptions::new().read(true).write(true).open(path)?,
 			write_options,
@@ -68,7 +75,7 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// use lofty::file::{AudioFile, TaggedFileExt};
 	/// use std::fs::OpenOptions;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// # let path = "tests/files/assets/minimal/full_test.mp3";
 	/// let mut tagged_file = lofty::read_from_path(path)?;
 	///
@@ -78,11 +85,13 @@ pub trait AudioFile: Into<TaggedFile> {
 	/// tagged_file.save_to(&mut file, WriteOptions::default())?;
 	/// # Ok(()) }
 	/// ```
-	fn save_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn save_to<F>(
+		&self,
+		file: &mut F,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>;
+		F: FileLike;
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;

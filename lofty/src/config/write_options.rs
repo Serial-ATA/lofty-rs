@@ -79,7 +79,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -109,7 +109,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -139,7 +139,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -165,7 +165,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
 	///
 	/// // ...
@@ -187,7 +187,7 @@ impl WriteOptions {
 	///
 	/// If this is enabled, any invalid characters will be replaced with `'?'` (e.g `lфfty` in [`TextEncoding::Latin1`] will return `l?fty`).
 	///
-	/// If this is disabled, any writes with non-representable characters will return an [`ErrorKind::TextEncode`].
+	/// If this is disabled, any writes with non-representable characters will return an [`TextEncodingError`].
 	///
 	/// # Examples
 	///
@@ -196,7 +196,7 @@ impl WriteOptions {
 	/// use lofty::prelude::*;
 	/// use lofty::tag::{Tag, TagType};
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
 	/// let mut id3v1_tag = Tag::new(TagType::Id3v1);
 	///
 	/// // ID3v1 is restricted to Latin-1, this string can't be written as-is!
@@ -210,7 +210,7 @@ impl WriteOptions {
 	///
 	/// [`TextEncoding`]: crate::util::text::TextEncoding
 	/// [`TextEncoding::Latin1`]: crate::util::text::TextEncoding::Latin1
-	/// [`ErrorKind::TextEncode`]: crate::error::ErrorKind::TextEncode
+	/// [`TextEncodingError`]: crate::error::TextEncodingError
 	pub fn lossy_text_encoding(&mut self, lossy_text_encoding: bool) -> Self {
 		self.lossy_text_encoding = lossy_text_encoding;
 		*self

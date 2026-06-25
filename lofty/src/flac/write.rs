@@ -1,13 +1,14 @@
 use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS, Block};
 use super::read::verify_flac;
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, FileParseError, SizeMismatchError, TagParseError};
 use crate::id3::{FindId3v2Config, find_id3v2};
-use crate::macros::{err, try_vec};
+use crate::io::VerifiedFile;
+use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::{Cursor, Read};
@@ -15,11 +16,13 @@ use std::iter::Peekable;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-pub(crate) fn write_to<F>(file: &mut F, tag: &Tag, write_options: WriteOptions) -> Result<()>
+pub(crate) fn write_to<F>(
+	file: VerifiedFile<'_, F>,
+	tag: &Tag,
+	write_options: WriteOptions,
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
 {
 	match tag.tag_type() {
 		TagType::VorbisComments => {
@@ -37,30 +40,31 @@ where
 		TagType::Id3v2 => {
 			crate::id3::v2::tag::conversion::Id3v2TagRef::empty().write_to(file, write_options)
 		},
-		_ => err!(UnsupportedTag),
+		_ => unreachable!("tag type verified beforehand"),
 	}
 }
 
 pub(crate) fn write_to_inner<'a, F, II, IP>(
-	file: &mut F,
+	file: VerifiedFile<'_, F>,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
+	let file = file.into_inner();
+
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;
 
 	let mut cursor = Cursor::new(file_bytes);
 
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(&mut cursor, FindId3v2Config::NO_READ_TAG)?;
+	find_id3v2(&mut cursor, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
 
-	let mut stream_info = verify_flac(&mut cursor)?;
+	let mut stream_info = verify_flac(&mut cursor).map_err(FileParseError::from)?;
 
 	let mut is_last_block = stream_info.last;
 	let mut has_blocks_to_remove = false;
@@ -83,7 +87,8 @@ where
 				true
 			},
 			_ => true,
-		})?;
+		})
+		.map_err(FileParseError::from)?;
 
 		// Retain the original vendor string
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS {
@@ -91,10 +96,10 @@ where
 
 			let vendor_len = reader.read_u32::<LittleEndian>()?;
 			if vendor_len as usize > reader.len() {
-				err!(SizeMismatch);
+				return Err(SizeMismatchError.into());
 			}
 
-			let mut vendor_raw = try_vec![0; vendor_len as usize];
+			let mut vendor_raw = try_vec![0; vendor_len as usize]?;
 			reader.read_exact(&mut vendor_raw)?;
 
 			match String::from_utf8(vendor_raw) {
@@ -177,7 +182,7 @@ fn encode_tag<'a, II, IP>(
 	vendor: &str,
 	mut comments_peek: Peekable<&mut II>,
 	pictures_peek: Peekable<&mut IP>,
-) -> Result<Vec<Block>>
+) -> Result<Vec<Block>, FileEncodingError>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,

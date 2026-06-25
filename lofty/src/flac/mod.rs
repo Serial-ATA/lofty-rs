@@ -5,19 +5,21 @@
 //! * See [`FlacFile`]
 
 pub(crate) mod block;
+pub mod error;
 pub(crate) mod properties;
 mod read;
 pub(crate) mod write;
 
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::FileEncodingError;
 use crate::file::{FileType, TaggedFile};
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::ogg::tag::VorbisCommentsRef;
-use crate::ogg::{OggPictureStorage, VorbisComments};
+use crate::io::VerifiedFile;
+use crate::ogg::OggPictureStorage;
+use crate::ogg::tag::{VorbisComments, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
 use crate::tag::TagExt;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 
@@ -55,16 +57,21 @@ pub struct FlacFile {
 
 impl FlacFile {
 	// We need a special write fn to append our pictures into a `VorbisComments` tag
-	fn write_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	fn write_to<F>(
+		&self,
+		file: &mut F,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
+		// TODO: This is bad. `Id3v2Tag::save_to()` is probing the file, then we do a second probe with `VerifiedFile::new`
 		if let Some(ref id3v2) = self.id3v2_tag {
 			id3v2.save_to(file, write_options)?;
 			file.rewind()?;
 		}
+
+		let file = VerifiedFile::new(file)?;
 
 		// We have an existing vorbis comments tag, we can just append our pictures to it
 		if let Some(ref vorbis_comments) = self.vorbis_comments_tag {

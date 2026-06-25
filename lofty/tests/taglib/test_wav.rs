@@ -197,7 +197,9 @@ fn test_strip_tags() {
 		assert!(f.id3v2().is_some());
 		assert!(f.riff_info().is_some());
 
-		TagType::RiffInfo.remove_from(&mut file).unwrap();
+		TagType::RiffInfo
+			.remove_from(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -219,7 +221,9 @@ fn test_strip_tags() {
 		assert!(f.id3v2().is_some());
 		assert!(f.riff_info().is_some());
 
-		TagType::Id3v2.remove_from(&mut file).unwrap();
+		TagType::Id3v2
+			.remove_from(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	file.rewind().unwrap();
 	{
@@ -290,9 +294,15 @@ fn test_file_with_garbage_appended() {
 	}
 	file.rewind().unwrap();
 	{
-		TagType::Id3v2.remove_from(&mut file).unwrap();
+		// NOTE: preferred_padding(0) is necessary. Our default behavior is to replace tags with padding
+		//       rather than actually remove tags from files, unlike TagLib.
+		TagType::Id3v2
+			.remove_from(&mut file, WriteOptions::default().preferred_padding(0))
+			.unwrap();
 		file.rewind().unwrap();
-		TagType::RiffInfo.remove_from(&mut file).unwrap();
+		TagType::RiffInfo
+			.remove_from(&mut file, WriteOptions::default())
+			.unwrap();
 	}
 	file.rewind().unwrap();
 	{

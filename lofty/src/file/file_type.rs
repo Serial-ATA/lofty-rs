@@ -18,7 +18,7 @@ use std::path::Path;
 /// use lofty::file::EXTENSIONS;
 /// use std::fs;
 ///
-/// # fn main() -> lofty::error::Result<()> {
+/// # fn main() -> Result<(), lofty::error::FileParseError> {
 /// for entry in fs::read_dir(".")? {
 /// 	let entry = entry?;
 ///
@@ -165,7 +165,7 @@ impl FileType {
 			(Id3v1, crate::id3::v1::Id3v1Tag),
 			(Id3v2, crate::id3::v2::Id3v2Tag),
 			(Mp4Ilst, crate::mp4::Ilst),
-			(VorbisComments, crate::ogg::VorbisComments),
+			(VorbisComments, crate::ogg::tag::VorbisComments),
 			(RiffInfo, crate::iff::wav::RiffInfoList),
 			(AiffText, crate::iff::aiff::AiffTextChunks),
 		)
@@ -252,7 +252,7 @@ impl FileType {
 	/// use std::fs::File;
 	/// use std::io::Read;
 	///
-	/// # fn main() -> lofty::error::Result<()> {
+	/// # fn main() -> Result<(), lofty::error::FileParseError> {
 	/// # let path_to_opus = "tests/files/assets/minimal/full_test.opus";
 	/// let mut file = File::open(path_to_opus)?;
 	///

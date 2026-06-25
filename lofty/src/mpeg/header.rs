@@ -1,6 +1,6 @@
 use super::constants::{BITRATES, PADDING_SIZES, SAMPLE_RATES, SAMPLES, SIDE_INFORMATION_SIZES};
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::error::FileParseError;
+use crate::mpeg::error::MpegParseError;
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -49,7 +49,10 @@ where
 // Unlike `search_for_frame_sync`, since this has the `Seek` bound, it will seek the reader
 // back to the start of the header.
 const REV_FRAME_SEARCH_BOUNDS: u64 = 1024;
-pub(super) fn rev_search_for_frame_header<R>(input: &mut R, pos: &mut u64) -> Result<Option<Header>>
+pub(super) fn rev_search_for_frame_header<R>(
+	input: &mut R,
+	pos: &mut u64,
+) -> Result<Option<Header>, FileParseError>
 where
 	R: Read + Seek,
 {
@@ -340,7 +343,7 @@ pub(super) struct VbrHeader {
 }
 
 impl VbrHeader {
-	pub(super) fn read(reader: &mut &[u8]) -> Result<Option<Self>> {
+	pub(super) fn read(reader: &mut &[u8]) -> Result<Option<Self>, MpegParseError> {
 		let reader_len = reader.len();
 
 		let mut header = [0; 4];
@@ -349,7 +352,9 @@ impl VbrHeader {
 		match &header {
 			b"Xing" | b"Info" => {
 				if reader_len < 16 {
-					decode_err!(@BAIL Mpeg, "Xing header has an invalid size (< 16)");
+					return Err(MpegParseError::message(
+						"Xing header has an invalid size (< 16)",
+					));
 				}
 
 				let mut flags = [0; 4];
@@ -375,7 +380,9 @@ impl VbrHeader {
 			},
 			b"VBRI" => {
 				if reader_len < 32 {
-					decode_err!(@BAIL Mpeg, "VBRI header has an invalid size (< 32)");
+					return Err(MpegParseError::message(
+						"VBRI header has an invalid size (< 32)",
+					));
 				}
 
 				// Skip 6 bytes

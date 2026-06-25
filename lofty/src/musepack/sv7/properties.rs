@@ -1,13 +1,13 @@
-use crate::error::Result;
-use crate::macros::decode_err;
 use crate::musepack::constants::{
 	FREQUENCY_TABLE, MPC_DECODER_SYNTH_DELAY, MPC_FRAME_LENGTH, MPC_OLD_GAIN_REF,
 };
+use crate::musepack::error::MpcParseError;
 use crate::properties::FileProperties;
 
 use std::io::Read;
 use std::time::Duration;
 
+use crate::error::TooMuchDataError;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 /// Used profile
@@ -262,13 +262,13 @@ impl MpcSv7Properties {
 		self.encoder_version
 	}
 
-	pub(crate) fn read<R>(reader: &mut R, stream_length: u64) -> Result<Self>
+	pub(crate) fn read<R>(reader: &mut R, stream_length: u64) -> Result<Self, MpcParseError>
 	where
 		R: Read,
 	{
 		let version = reader.read_u8()?;
 		if version & 0x0F != 7 {
-			decode_err!(@BAIL Mpc, "Expected stream version 7");
+			return Err(MpcParseError::message("expected stream version 7"));
 		}
 
 		let mut properties = MpcSv7Properties {
@@ -354,7 +354,7 @@ impl MpcSv7Properties {
 		properties.album_peak = set_replay_peak(album_peak);
 
 		if properties.last_frame_length > MPC_FRAME_LENGTH as u16 {
-			decode_err!(@BAIL Mpc, "Invalid last frame length");
+			return Err(TooMuchDataError.into());
 		}
 
 		if properties.sample_freq == 0 {

@@ -2,23 +2,25 @@ pub(super) mod advisory_rating;
 pub(super) mod atom;
 pub(super) mod constants;
 pub(super) mod data_type;
+pub(super) mod error;
 pub(super) mod read;
 mod r#ref;
 pub(crate) mod write;
 
 use super::AtomIdent;
 use crate::config::{WriteOptions, global_options};
-use crate::error::LoftyError;
+use crate::error::{FileEncodingError, TagEncodingError};
+use crate::io::VerifiedFile;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 	try_parse_timestamp,
 };
 use crate::util::flag_item;
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::util::io::FileLike;
 use advisory_rating::AdvisoryRating;
 use atom::{Atom, AtomData};
 use data_type::DataType;
@@ -605,7 +607,6 @@ impl Accessor for Ilst {
 }
 
 impl TagExt for Ilst {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a AtomIdent<'a>;
 
 	#[inline]
@@ -625,29 +626,31 @@ impl TagExt for Ilst {
 		self.atoms.is_empty()
 	}
 
-	fn save_to<F>(
-		&self,
-		file: &mut F,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		self.as_ref().write_to(file, write_options)
-	}
-
 	fn dump_to<W: Write>(
 		&self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		self.as_ref().dump_to(writer, write_options)
+	) -> std::result::Result<(), TagEncodingError> {
+		self.as_ref()
+			.dump_to(writer, write_options)
+			.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
 		self.atoms.clear();
+	}
+}
+
+impl TagWriteExt for Ilst {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
+	where
+		F: FileLike,
+	{
+		self.as_ref().write_to(file, write_options)
 	}
 }
 

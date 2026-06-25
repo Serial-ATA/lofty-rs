@@ -1,5 +1,6 @@
 //! WAV specific items
 
+pub mod error;
 mod properties;
 pub(crate) mod read;
 pub(crate) mod tag;

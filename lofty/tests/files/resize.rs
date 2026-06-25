@@ -51,7 +51,9 @@ fn tag_resize_test(path: &str, tag_type: TagType) {
 	let tagged_file = lofty::read_from(f.as_file_mut()).unwrap();
 	f.rewind().unwrap();
 	for tag in tagged_file.tags() {
-		tag.tag_type().remove_from(f.as_file_mut()).unwrap();
+		tag.tag_type()
+			.remove_from(f.as_file_mut(), WriteOptions::default())
+			.unwrap();
 		f.rewind().unwrap();
 	}
 

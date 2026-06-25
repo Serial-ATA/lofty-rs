@@ -9,18 +9,72 @@ pub mod v1;
 pub mod v2;
 
 use crate::config::ParsingMode;
-use crate::error::{ErrorKind, LoftyError, Result};
+use crate::error::TextDecodingError;
+use crate::id3::v1::error::Id3v1ParseError;
+use crate::id3::v2::error::Id3v2ParseError;
 use crate::macros::try_vec;
 use crate::util::text::utf8_decode_str;
 use v1::constants::ID3V1_TAG_MARKER;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
+use std::num::ParseIntError;
 use std::ops::Neg;
 
 pub(crate) struct ID3FindResults<Header, Content>(pub Option<Header>, pub Content);
 
-pub(crate) fn find_lyrics3v2<R>(data: &mut R) -> Result<ID3FindResults<(), u32>>
+/// Errors that can occur while parsing Lyrics3v2 tags
+pub struct Lyrics3v2ParseError {
+	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+}
+
+impl core::fmt::Display for Lyrics3v2ParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "failed to parse Lyrics3v2 tag")
+	}
+}
+
+impl core::fmt::Debug for Lyrics3v2ParseError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		f.debug_struct("Lyrics3v2ParseError")
+			.finish_non_exhaustive()
+	}
+}
+
+impl core::error::Error for Lyrics3v2ParseError {
+	#[allow(trivial_casts)]
+	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
+		Some(&*self.source as _)
+	}
+}
+
+impl From<std::io::Error> for Lyrics3v2ParseError {
+	fn from(input: std::io::Error) -> Self {
+		Self {
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<ParseIntError> for Lyrics3v2ParseError {
+	fn from(input: ParseIntError) -> Self {
+		Self {
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<TextDecodingError> for Lyrics3v2ParseError {
+	fn from(input: TextDecodingError) -> Self {
+		Self {
+			source: Box::new(input),
+		}
+	}
+}
+
+pub(crate) fn find_lyrics3v2<R>(
+	data: &mut R,
+) -> Result<ID3FindResults<(), u32>, Lyrics3v2ParseError>
 where
 	R: Read + Seek,
 {
@@ -40,11 +94,7 @@ where
 		header = Some(());
 
 		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
-		let lyrics_size = lyrics_size.parse::<u32>().map_err(|_| {
-			LoftyError::new(ErrorKind::TextDecode(
-				"Lyrics3v2 tag has an invalid size string",
-			))
-		})?;
+		let lyrics_size = lyrics_size.parse::<u32>()?;
 
 		size += lyrics_size;
 
@@ -59,7 +109,7 @@ pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
 	parse_mode: ParsingMode,
-) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>
+) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>, Id3v1ParseError>
 where
 	R: Read + Seek,
 {
@@ -122,7 +172,7 @@ impl FindId3v2Config {
 pub(crate) fn find_id3v2<R>(
 	data: &mut R,
 	config: FindId3v2Config,
-) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>>
+) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>, Id3v2ParseError>
 where
 	R: Read + Seek,
 {
@@ -153,7 +203,7 @@ where
 		log::debug!("Found an ID3v2 tag, parsing");
 
 		if config.read {
-			let mut tag = try_vec![0; id3v2_header.size as usize];
+			let mut tag = try_vec![0; id3v2_header.size as usize]?;
 			data.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)
@@ -175,7 +225,7 @@ where
 
 /// Searches for an ID3v2 tag in (potential) junk data between the start
 /// of the file and the first frame
-fn find_id3v2_in_junk<R>(reader: &mut R) -> Result<Option<u64>>
+fn find_id3v2_in_junk<R>(reader: &mut R) -> Result<Option<u64>, Id3v2ParseError>
 where
 	R: Read,
 {

@@ -1,16 +1,15 @@
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError};
 use crate::file::FileType;
-use crate::macros::err;
-use crate::tag::{Tag, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
-use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
-
 use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::{self, Id3v2TagFlags};
+use crate::io::VerifiedFile;
 use crate::mp4::Ilst;
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
+use crate::tag::{Tag, TagType};
+use crate::util::io::FileLike;
+use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
@@ -21,22 +20,19 @@ use std::io::Write;
 #[allow(unreachable_patterns)]
 pub(crate) fn write_tag<F>(
 	tag: &Tag,
-	file: &mut F,
-	file_type: FileType,
+	file: VerifiedFile<'_, F>,
 	write_options: WriteOptions,
-) -> Result<()>
+) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	LoftyError: From<<F as Truncate>::Error>,
-	LoftyError: From<<F as Length>::Error>,
 {
-	match file_type {
+	match file.format() {
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
-			crate::ogg::write::write_to(file, tag, file_type, write_options)
+			crate::ogg::tag::write::write_to(file, tag, write_options)
 		},
 		FileType::Mpc => musepack::write::write_to(file, tag, write_options),
 		FileType::Mpeg => mpeg::write::write_to(file, tag, write_options),
@@ -47,7 +43,7 @@ where
 		),
 		FileType::Wav => iff::wav::write::write_to(file, tag, write_options),
 		FileType::WavPack => wavpack::write::write_to(file, tag, write_options),
-		_ => err!(UnsupportedTag),
+		FileType::Custom(_) => unreachable!("custom file types don't support writing"),
 	}
 }
 
@@ -56,22 +52,27 @@ pub(crate) fn dump_tag<W: Write>(
 	tag: &Tag,
 	writer: &mut W,
 	write_options: WriteOptions,
-) -> Result<()> {
+) -> Result<(), TagEncodingError> {
 	match tag.tag_type() {
 		TagType::Ape => ApeTagRef {
 			read_only: false,
 			items: ape::tag::tagitems_into_ape(tag),
 		}
-		.dump_to(writer, write_options),
-		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag).dump_to(writer, write_options),
+		.dump_to(writer, write_options)
+		.map_err(Into::into),
+		TagType::Id3v1 => Into::<Id3v1TagRef<'_>>::into(tag)
+			.dump_to(writer, write_options)
+			.map_err(Into::into),
 		TagType::Id3v2 => Id3v2TagRef {
 			flags: Id3v2TagFlags::default(),
 			frames: v2::tag::conversion::tag_frames(tag).peekable(),
 		}
-		.dump_to(writer, write_options),
+		.dump_to(writer, write_options)
+		.map_err(Into::into),
 		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone())
 			.as_ref()
-			.dump_to(writer, write_options),
+			.dump_to(writer, write_options)
+			.map_err(Into::into),
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 
@@ -81,11 +82,13 @@ pub(crate) fn dump_tag<W: Write>(
 				pictures,
 			}
 			.dump_to(writer, write_options)
+			.map_err(Into::into)
 		},
 		TagType::RiffInfo => RIFFInfoListRef {
 			items: iff::wav::tag::tagitems_into_riff(tag.items()),
 		}
-		.dump_to(writer, write_options),
+		.dump_to(writer, write_options)
+		.map_err(Into::into),
 		TagType::AiffText => {
 			use crate::tag::item::ItemKey;
 
@@ -97,7 +100,8 @@ pub(crate) fn dump_tag<W: Write>(
 				comments: None,
 			}
 		}
-		.dump_to(writer, write_options),
+		.dump_to(writer, write_options)
+		.map_err(Into::into),
 		_ => Ok(()),
 	}
 }

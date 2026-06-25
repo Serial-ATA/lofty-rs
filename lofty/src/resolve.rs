@@ -2,7 +2,7 @@
 //!
 //! For a full example of a custom resolver, see [this](https://github.com/Serial-ATA/lofty-rs/tree/main/examples/custom_resolver).
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::FileParseError;
 use crate::file::{AudioFile, FileType, TaggedFile};
 use crate::tag::{TagSupport, TagType};
 
@@ -67,7 +67,7 @@ pub(crate) trait ObjectSafeFileResolver: Send + Sync {
 		&self,
 		reader: &mut dyn SeekRead,
 		parse_options: ParseOptions,
-	) -> Result<TaggedFile>;
+	) -> Result<TaggedFile, FileParseError>;
 }
 
 // A fake `FileResolver` implementer, so we don't need to construct the type in `register_custom_resolver`
@@ -93,7 +93,7 @@ impl<T: FileResolver> ObjectSafeFileResolver for GhostlyResolver<T> {
 		&self,
 		reader: &mut dyn SeekRead,
 		parse_options: ParseOptions,
-	) -> Result<TaggedFile> {
+	) -> Result<TaggedFile, FileParseError> {
 		Ok(<T as AudioFile>::read_from(&mut Box::new(reader), parse_options)?.into())
 	}
 }
@@ -128,6 +128,7 @@ pub fn register_custom_resolver<T: FileResolver + 'static>(name: &'static str) {
 #[cfg(test)]
 mod tests {
 	use crate::config::{GlobalOptions, ParseOptions};
+	use crate::error::FileParseError;
 	use crate::file::{FileType, TaggedFileExt};
 	use crate::id3::v2::Id3v2Tag;
 	use crate::properties::FileProperties;
@@ -179,7 +180,7 @@ mod tests {
 		fn read<R: Read + Seek + ?Sized>(
 			_reader: &mut R,
 			_parse_options: ParseOptions,
-		) -> crate::error::Result<Self> {
+		) -> Result<Self, FileParseError> {
 			let mut tag = Id3v2Tag::default();
 			tag.set_artist(String::from("All is well!"));
 

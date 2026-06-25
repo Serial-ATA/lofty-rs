@@ -1,5 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::{ErrorKind, Id3v2Error, Id3v2ErrorKind, LoftyError, Result};
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text, utf8_decode_str};
 
@@ -73,39 +74,54 @@ impl<'a> OwnershipFrame<'a> {
 	///
 	/// * Invalid text encoding
 	/// * Not enough data
-	pub fn parse<R>(reader: &mut R, frame_flags: FrameFlags) -> Result<Option<Self>>
+	pub fn parse<R>(
+		reader: &mut R,
+		frame_flags: FrameFlags,
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let Ok(encoding_byte) = reader.read_u8() else {
-			return Ok(None);
-		};
+		fn parse_inner<'a, R>(
+			reader: &mut R,
+			frame_flags: FrameFlags,
+		) -> Result<Option<OwnershipFrame<'a>>, FrameParseError>
+		where
+			R: Read,
+		{
+			let Ok(encoding_byte) = reader.read_u8() else {
+				return Ok(None);
+			};
 
-		let encoding = TextEncoding::from_u8(encoding_byte)
-			.ok_or_else(|| LoftyError::new(ErrorKind::TextDecode("Found invalid encoding")))?;
-		let price_paid = decode_text(
-			reader,
-			TextDecodeOptions::new()
-				.encoding(TextEncoding::Latin1)
-				.terminated(true),
-		)?
-		.content;
+			let encoding = TextEncoding::try_from(encoding_byte)?;
+			let price_paid = decode_text(
+				reader,
+				TextDecodeOptions::new()
+					.encoding(TextEncoding::Latin1)
+					.terminated(true),
+			)?
+			.content;
 
-		let mut date_bytes = [0u8; 8];
-		reader.read_exact(&mut date_bytes)?;
+			let mut date_bytes = [0u8; 8];
+			reader.read_exact(&mut date_bytes)?;
 
-		let date_of_purchase = utf8_decode_str(&date_bytes)?.to_owned();
+			let date_of_purchase = utf8_decode_str(&date_bytes)?.to_owned();
 
-		let seller = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
+			let seller = decode_text(reader, TextDecodeOptions::new().encoding(encoding))?.content;
 
-		let header = FrameHeader::new(FRAME_ID, frame_flags);
-		Ok(Some(OwnershipFrame {
-			header,
-			encoding,
-			price_paid: Cow::Owned(price_paid),
-			date_of_purchase: Cow::Owned(date_of_purchase),
-			seller: Cow::Owned(seller),
-		}))
+			let header = FrameHeader::new(FRAME_ID, frame_flags);
+			Ok(Some(OwnershipFrame {
+				header,
+				encoding,
+				price_paid: Cow::Owned(price_paid),
+				date_of_purchase: Cow::Owned(date_of_purchase),
+				seller: Cow::Owned(seller),
+			}))
+		}
+
+		parse_inner(reader, frame_flags).map_err(|mut e| {
+			e.set_id(FRAME_ID);
+			e
+		})
 	}
 
 	/// Convert an [`OwnershipFrame`] to a byte vec
@@ -116,7 +132,7 @@ impl<'a> OwnershipFrame<'a> {
 	///
 	/// * `date_of_purchase` is not at least 8 characters (it will be truncated if greater)
 	/// * [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be encoded in the specified [`TextEncoding`].
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		let mut encoding = self.encoding;
 		if write_options.use_id3v23 {
 			encoding = encoding.to_id3v23();
@@ -130,7 +146,10 @@ impl<'a> OwnershipFrame<'a> {
 			write_options.lossy_text_encoding,
 		)?);
 		if self.date_of_purchase.len() < 8 {
-			return Err(Id3v2Error::new(Id3v2ErrorKind::BadFrameLength).into());
+			return Err(FrameEncodingError::message(
+				Some(FRAME_ID),
+				"`date_of_purchase` field is too short (must be 8 characters)",
+			));
 		}
 
 		bytes.extend(self.date_of_purchase.as_bytes().iter().take(8));
