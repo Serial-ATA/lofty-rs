@@ -244,6 +244,7 @@ const OPUS_PROPERTIES: OpusProperties = OpusProperties {
 	channel_mask: ChannelMask::stereo(),
 	version: 1,
 	input_sample_rate: 48000,
+	output_gain: 0,
 };
 
 const SPEEX_PROPERTIES: SpeexProperties = SpeexProperties {
