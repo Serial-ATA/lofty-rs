@@ -4,7 +4,7 @@ use crate::ape::ApeTag;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::error::ApeTagEncodingError;
 use crate::ape::tag::read;
-use crate::config::{ParseOptions, WriteOptions};
+use crate::config::WriteOptions;
 use crate::error::{
 	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TagParseError,
 	TooMuchDataError,
@@ -77,11 +77,10 @@ where
 	// If one is found, it'll be removed and rewritten at the bottom, where it should be
 	let mut header_tag_location = None;
 
-	// TODO: Forcing the use of ParseOptions::default()
-	let parse_options = ParseOptions::new();
-
 	let start = file.stream_position()? as usize;
-	match read::read_ape_tag(file, false, parse_options).map_err(TagParseError::from)? {
+	match read::read_ape_tag(file, false, write_options.parse_options)
+		.map_err(TagParseError::from)?
+	{
 		(Some(mut existing_tag), Some(header)) => {
 			if write_options.respect_read_only {
 				// Only keep metadata around that's marked read only
@@ -100,7 +99,8 @@ where
 	}
 
 	// Skip over ID3v1 and Lyrics3v2 tags
-	find_id3v1(file, false, parse_options.parsing_mode).map_err(TagParseError::from)?;
+	find_id3v1(file, false, write_options.parse_options.parsing_mode)
+		.map_err(TagParseError::from)?;
 	find_lyrics3v2(file)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
@@ -113,9 +113,8 @@ where
 
 	// Also check this tag for any read only items
 	let start = file.stream_position()? as usize + 32;
-	// TODO: Forcing the use of ParseOptions::default()
 	if let (Some(mut existing_tag), Some(header)) =
-		read::read_ape_tag(file, true, ParseOptions::new()).map_err(TagParseError::from)?
+		read::read_ape_tag(file, true, write_options.parse_options).map_err(TagParseError::from)?
 	{
 		if write_options.respect_read_only {
 			existing_tag.items.retain(|i| i.read_only);

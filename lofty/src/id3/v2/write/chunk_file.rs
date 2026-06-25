@@ -80,10 +80,8 @@ where
 	// first chunk size, which (should) encompass the entire stream.
 	let file_len = file.len()?;
 
-	// TODO: Forcing ParseOptions::default()
-	let parse_options = ParseOptions::default();
-
-	let mut file_context = find_existing_id3v2_tag::<_, B>(file, file_len, format, parse_options)?;
+	let mut file_context =
+		find_existing_id3v2_tag::<_, B>(file, file_len, format, write_options.parse_options)?;
 	if let Some(existing_id3_tag) = file_context.existing_id3_tag.clone() {
 		let existing_tag_len = existing_id3_tag.end - existing_id3_tag.start;
 

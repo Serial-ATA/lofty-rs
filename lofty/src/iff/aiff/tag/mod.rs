@@ -326,12 +326,12 @@ where
 	pub(crate) fn write_to<F>(
 		self,
 		file: VerifiedFile<'_, F>,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
 	{
-		AiffTextChunksRef::write_to_inner(file, self)
+		AiffTextChunksRef::write_to_inner(file, self, write_options)
 	}
 
 	pub(crate) fn dump_to<W: Write>(
@@ -427,6 +427,7 @@ where
 	fn write_to_inner<F>(
 		file: VerifiedFile<'_, F>,
 		mut tag: AiffTextChunksRef<'_, T, AI>,
+		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
@@ -441,7 +442,8 @@ where
 		let ExistingChunks {
 			text_chunks: mut existing_text_chunks,
 			comm_end_pos,
-		} = find_text_chunks(file, file_len).map_err(FileParseError::from)?;
+		} = find_text_chunks(file, file_len, write_options.parse_options)
+			.map_err(FileParseError::from)?;
 		file.rewind()?;
 
 		let mut file_bytes = Vec::new();
@@ -481,15 +483,17 @@ struct ExistingChunks {
 	comm_end_pos: u64,
 }
 
-fn find_text_chunks<F>(file: &mut F, file_len: u64) -> Result<ExistingChunks, AiffParseError>
+fn find_text_chunks<F>(
+	file: &mut F,
+	file_len: u64,
+	parse_options: ParseOptions,
+) -> Result<ExistingChunks, AiffParseError>
 where
 	F: FileLike,
 {
 	let mut text_chunks = Vec::new();
 	let mut comm_end_pos = None;
 
-	// TODO: Forcing the use of ParseOptions::default()
-	let parse_options = ParseOptions::default();
 	let mut chunks = Chunks::<_, BigEndian>::new(file, file_len);
 	while let Some(chunk) = chunks.next(parse_options.parsing_mode)? {
 		match &chunk.fourcc {

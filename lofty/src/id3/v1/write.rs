@@ -1,6 +1,6 @@
 use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
-use crate::config::{ParseOptions, WriteOptions};
+use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::id3::v1::error::Id3v1EncodingError;
 use crate::id3::{ID3FindResults, find_id3v1};
@@ -24,10 +24,9 @@ where
 	let file = file.into_inner();
 
 	// This will seek us to the writing position
-	// TODO: Forcing the use of ParseOptions::default()
-	let parse_options = ParseOptions::default();
 	let ID3FindResults(header, _) =
-		find_id3v1(file, false, parse_options.parsing_mode).map_err(TagParseError::from)?;
+		find_id3v1(file, false, write_options.parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if tag.is_empty() && header.is_some() {
 		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just

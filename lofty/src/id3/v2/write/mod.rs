@@ -76,8 +76,9 @@ where
 	let file = file.into_inner();
 
 	// `find_id3v2` will seek us to the end of the tag
-	// TODO: Search through junk
-	find_id3v2(file, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
+	let mut id3v2_config = FindId3v2Config::NO_READ_TAG;
+	id3v2_config.allowed_junk_window = Some(write_options.parse_options.max_junk_bytes as u64);
+	find_id3v2(file, id3v2_config).map_err(TagParseError::from)?;
 
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;

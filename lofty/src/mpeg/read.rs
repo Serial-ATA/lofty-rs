@@ -69,8 +69,6 @@ where
 
 				continue;
 			},
-			// TODO: APE tags may suffer the same issue as ID3v2 tag described above.
-			//       They are not nearly as important to preserve, however.
 			[b'A', b'P', b'E', b'T'] => {
 				log::warn!(
 					"Encountered an APE tag at the beginning of the file, attempting to read"

@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ID3v2**:
     - `ChapterFrame` and `ChapterTableOfContentsFrame`
     - `FrameList`, a shared `Frame` storage used in `Id3v2Tag`, `ChapterFrame` and `ChapterTableOfContentsFrame`
+- **WriteOptions**: `WriteOptions::parse_options()` to control parsing behavior during a write ([issue](https://github.com/Serial-ATA/lofty-rs/issues/668)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/671))
 
 ### Changed
 

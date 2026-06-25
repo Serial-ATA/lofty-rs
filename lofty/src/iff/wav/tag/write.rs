@@ -1,5 +1,5 @@
 use super::RIFFInfoListRef;
-use crate::config::{ParseOptions, ParsingMode, WriteOptions};
+use crate::config::{ParsingMode, WriteOptions};
 use crate::error::{
 	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TooMuchDataError,
 };
@@ -20,7 +20,7 @@ use byteorder::{LittleEndian, WriteBytesExt};
 pub(in crate::iff::wav) fn write_riff_info<'a, F, I>(
 	file: VerifiedFile<'_, F>,
 	tag: &mut RIFFInfoListRef<'a, I>,
-	_write_options: WriteOptions,
+	write_options: WriteOptions,
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
@@ -47,12 +47,10 @@ where
 
 	file_bytes.seek(SeekFrom::Start(u64::from(FIRST_CHUNK_LEN)))?;
 
-	// TODO: Forcing the use of ParseOptions::default()
-	let parse_options = ParseOptions::default();
 	let Some(original_info_list_size) = find_info_list(
 		&mut file_bytes,
 		u64::from(original_stream_length - 4),
-		parse_options.parsing_mode,
+		write_options.parse_options.parsing_mode,
 	)
 	.map_err(FileParseError::from)?
 	else {
