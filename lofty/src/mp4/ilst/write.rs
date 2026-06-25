@@ -1,6 +1,6 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
-use crate::config::{ParseOptions, WriteOptions};
+use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
@@ -28,7 +28,6 @@ fn handle_atom_parse_error(error: AtomParseError) -> FileEncodingError {
 	FileEncodingError::new(FileType::Mp4, error.into())
 }
 
-// TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 pub(crate) fn write_to<'a, F, I>(
 	file: VerifiedFile<'_, F>,
 	tag: &mut IlstRef<'a, I>,
@@ -42,14 +41,14 @@ where
 
 	// Create a temporary `AtomReader`, just to verify that this is a valid MP4 file
 	let file = file.into_inner();
-	let mut reader = AtomReader::new(file, ParseOptions::DEFAULT_PARSING_MODE)?;
+	let mut reader = AtomReader::new(file, write_options.parse_options.parsing_mode)?;
 	verify_mp4(&mut reader).map_err(FileParseError::from)?;
 
 	// Now we can just read the entire file into memory
 	let file = reader.into_inner();
 	file.rewind()?;
 
-	let mut atom_writer = AtomWriter::new_from_file(file, ParseOptions::DEFAULT_PARSING_MODE)
+	let mut atom_writer = AtomWriter::new_from_file(file, write_options.parse_options.parsing_mode)
 		.map_err(Into::<FileParseError>::into)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
@@ -74,14 +73,14 @@ where
 	let mut write_handle = atom_writer.start_write();
 	write_handle.seek(SeekFrom::Start(moov_data_start))?;
 
-	let ilst = build_ilst(&mut tag.atoms).map_err(TagEncodingError::from)?;
+	let ilst = build_ilst(&mut tag.atoms, write_options).map_err(TagEncodingError::from)?;
 	let remove_tag = ilst.is_empty();
 
 	let udta = find_child_atom(
 		&mut write_handle,
 		moov_len,
 		*b"udta",
-		ParseOptions::DEFAULT_PARSING_MODE,
+		write_options.parse_options.parsing_mode,
 	)
 	.map_err(handle_atom_parse_error)?;
 
@@ -110,7 +109,7 @@ where
 			&mut write_handle,
 			udta.len,
 			*b"meta",
-			ParseOptions::DEFAULT_PARSING_MODE,
+			write_options.parse_options.parsing_mode,
 		)
 		.map_err(handle_atom_parse_error)?;
 
@@ -156,7 +155,8 @@ where
 
 				let bytes;
 				{
-					let meta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+					let meta_writer =
+						AtomWriter::new(buf, write_options.parse_options.parsing_mode);
 					create_meta(&meta_writer, &ilst)?;
 
 					bytes = meta_writer.into_contents();
@@ -182,7 +182,7 @@ where
 		log::trace!("No `udta` atom found, creating one");
 
 		// We have to create the `udta` atom
-		let bytes = create_udta(&ilst)?;
+		let bytes = create_udta(&ilst, write_options)?;
 		new_udta_size = bytes.len() as u64;
 
 		// We'll put the new `udta` atom right at the start of `moov`
@@ -213,7 +213,6 @@ where
 	Ok(())
 }
 
-// TODO: We are forcing the use of ParseOptions::DEFAULT_PARSING_MODE. This is not good. It should be caller-specified.
 fn save_to_existing(
 	writer: &AtomWriter,
 	moov: &ContextualAtom,
@@ -232,7 +231,7 @@ fn save_to_existing(
 		&mut write_handle,
 		meta.len - ATOM_HEADER_LEN,
 		b"ilst",
-		ParseOptions::DEFAULT_PARSING_MODE,
+		write_options.parse_options.parsing_mode,
 	)
 	.map_err(Into::<FileParseError>::into)?;
 
@@ -543,7 +542,7 @@ fn update_offsets(
 	Ok(())
 }
 
-fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, FileEncodingError> {
+fn create_udta(ilst: &[u8], write_options: WriteOptions) -> Result<Vec<u8>, FileEncodingError> {
 	const UDTA_HEADER: [u8; 8] = [0, 0, 0, 0, b'u', b'd', b't', b'a'];
 
 	// `udta` + `meta` + `hdlr` + `ilst`
@@ -552,7 +551,7 @@ fn create_udta(ilst: &[u8]) -> Result<Vec<u8>, FileEncodingError> {
 
 	buf.write_all(&UDTA_HEADER)?;
 
-	let udta_writer = AtomWriter::new(buf, ParseOptions::DEFAULT_PARSING_MODE);
+	let udta_writer = AtomWriter::new(buf, write_options.parse_options.parsing_mode);
 	let mut write_handle = udta_writer.start_write();
 
 	write_handle.seek(SeekFrom::Current(UDTA_HEADER.len() as i64))?; // Skip header
@@ -601,6 +600,7 @@ fn create_meta(writer: &AtomWriter, ilst: &[u8]) -> Result<(), FileEncodingError
 
 pub(super) fn build_ilst<'a, I>(
 	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
+	write_options: WriteOptions,
 ) -> Result<Vec<u8>, IlstEncodingError>
 where
 	I: IntoIterator<Item = &'a AtomData> + 'a,
@@ -614,7 +614,7 @@ where
 	}
 
 	let ilst_header = vec![0, 0, 0, 0, b'i', b'l', b's', b't'];
-	let ilst_writer = AtomWriter::new(ilst_header, ParseOptions::DEFAULT_PARSING_MODE);
+	let ilst_writer = AtomWriter::new(ilst_header, write_options.parse_options.parsing_mode);
 
 	let mut write_handle = ilst_writer.start_write();
 	write_handle.seek(SeekFrom::End(0))?;

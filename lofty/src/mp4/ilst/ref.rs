@@ -41,9 +41,9 @@ where
 	pub(crate) fn dump_to<W: Write>(
 		&mut self,
 		writer: &mut W,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<(), IlstEncodingError> {
-		let temp = super::write::build_ilst(&mut self.atoms)?;
+		let temp = super::write::build_ilst(&mut self.atoms, write_options)?;
 		writer.write_all(&temp)?;
 
 		Ok(())

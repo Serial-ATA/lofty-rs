@@ -1,4 +1,9 @@
 /// Options to control how Lofty parses a file
+///
+/// If you plan to write back to a file, you should reuse these options in
+/// [`WriteOptions::parse_options()`] for consistency.
+///
+/// [`WriteOptions::parse_options()`]: crate::config::WriteOptions::parse_options
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct ParseOptions {

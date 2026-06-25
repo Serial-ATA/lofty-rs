@@ -1,3 +1,5 @@
+use crate::config::ParseOptions;
+
 /// Options to control how Lofty writes to a file
 ///
 /// This acts as a dumping ground for all sorts of format-specific settings. As such, this is best
@@ -11,6 +13,7 @@ pub struct WriteOptions {
 	pub(crate) uppercase_id3v2_chunk: bool,
 	pub(crate) use_id3v23: bool,
 	pub(crate) lossy_text_encoding: bool,
+	pub(crate) parse_options: ParseOptions,
 }
 
 impl WriteOptions {
@@ -36,6 +39,7 @@ impl WriteOptions {
 			uppercase_id3v2_chunk: true,
 			use_id3v23: false,
 			lossy_text_encoding: true,
+			parse_options: ParseOptions::new(),
 		}
 	}
 
@@ -215,6 +219,32 @@ impl WriteOptions {
 		self.lossy_text_encoding = lossy_text_encoding;
 		*self
 	}
+
+	/// Set the parse options for this write
+	///
+	/// This *should* be the same set of [`ParseOptions`] used for the initial read.
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::config::{ParseOptions, WriteOptions};
+	/// use lofty::prelude::*;
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
+	/// let mut id3v2_tag = Tag::new(TagType::Id3v2);
+	///
+	/// // ...
+	///
+	/// // This file has a lot of junk, I'll need to increase the window!
+	/// let options = WriteOptions::new().parse_options(ParseOptions::new().max_junk_bytes(2048));
+	/// id3v2_tag.save_to_path("test.mp3", options)?;
+	/// # Ok(()) }
+	/// ```
+	pub fn parse_options(&mut self, parse_options: ParseOptions) -> Self {
+		self.parse_options = parse_options;
+		*self
+	}
 }
 
 impl Default for WriteOptions {
@@ -230,6 +260,7 @@ impl Default for WriteOptions {
 	///     uppercase_id3v2_chunk: true,
 	///     use_id3v23: false,
 	///     lossy_text_encoding: true,
+	///     parse_options: ParseOptions::default(),
 	/// }
 	/// ```
 	fn default() -> Self {

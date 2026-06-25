@@ -169,25 +169,28 @@ impl FindId3v2Config {
 	};
 }
 
+/// Attempt to find an ID3v2 tag header from the current position in the stream
+///
+/// If a tag is found, the position of `reader` will be at the end of the tag. Otherwise,
+/// the position will be unchanged.
 pub(crate) fn find_id3v2<R>(
-	data: &mut R,
+	reader: &mut R,
 	config: FindId3v2Config,
 ) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>, Id3v2ParseError>
 where
 	R: Read + Seek,
 {
-	log::debug!(
-		"Searching for an ID3v2 tag at offset: {}",
-		data.stream_position()?
-	);
+	let start = reader.stream_position()?;
+	log::debug!("Searching for an ID3v2 tag at offset: {start}");
 
 	let mut header = None;
 	let mut id3v2 = None;
 
 	if let Some(junk_window) = config.allowed_junk_window {
-		let mut id3v2_search_window = data.by_ref().take(junk_window);
+		let mut id3v2_search_window = reader.by_ref().take(junk_window);
 
 		let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? else {
+			reader.seek(SeekFrom::Start(start))?;
 			return Ok(ID3FindResults(None, None));
 		};
 
@@ -196,28 +199,28 @@ where
 			id3v2_offset
 		);
 
-		data.seek(SeekFrom::Current(-3))?;
+		reader.seek(SeekFrom::Current(-3))?;
 	}
 
-	if let Ok(id3v2_header) = Id3v2Header::parse(data) {
+	if let Ok(id3v2_header) = Id3v2Header::parse(reader) {
 		log::debug!("Found an ID3v2 tag, parsing");
 
 		if config.read {
 			let mut tag = try_vec![0; id3v2_header.size as usize]?;
-			data.read_exact(&mut tag)?;
+			reader.read_exact(&mut tag)?;
 
 			id3v2 = Some(tag)
 		} else {
-			data.seek(SeekFrom::Current(i64::from(id3v2_header.size)))?;
+			reader.seek(SeekFrom::Current(i64::from(id3v2_header.size)))?;
 		}
 
 		if id3v2_header.flags.footer {
-			data.seek(SeekFrom::Current(10))?;
+			reader.seek(SeekFrom::Current(10))?;
 		}
 
 		header = Some(id3v2_header);
 	} else {
-		data.seek(SeekFrom::Current(-10))?;
+		reader.seek(SeekFrom::Current(-10))?;
 	}
 
 	Ok(ID3FindResults(header, id3v2))
