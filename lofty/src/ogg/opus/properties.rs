@@ -1,6 +1,6 @@
 use super::find_last_page;
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::error::FileParseError;
+use crate::file::FileType;
 use crate::properties::{ChannelMask, FileProperties};
 use crate::util::math::RoundedDivision;
 
@@ -88,7 +88,7 @@ pub(in crate::ogg) fn read_properties<R>(
 	data: &mut R,
 	first_page_header: &PageHeader,
 	packets: &Packets,
-) -> Result<OpusProperties>
+) -> Result<OpusProperties, FileParseError>
 where
 	R: Read + Seek,
 {
@@ -115,7 +115,10 @@ where
 	if (channel_mapping_family == 0 && properties.channels > 2)
 		|| (channel_mapping_family == 1 && properties.channels > 8)
 	{
-		decode_err!(@BAIL Opus, "Invalid channel count for mapping family");
+		return Err(FileParseError::message(
+			Some(FileType::Opus),
+			"invalid channel count for mapping family",
+		));
 	}
 
 	properties.channel_mask =

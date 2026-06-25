@@ -3,7 +3,7 @@ use crate::temp_file;
 use std::io::{Read, Seek};
 
 use lofty::config::{GlobalOptions, ParseOptions, WriteOptions};
-use lofty::error::{ErrorKind, LoftyError};
+use lofty::error::{FileEncodingError, FileParseError};
 use lofty::file::{AudioFile, FileType, TaggedFile, TaggedFileExt};
 use lofty::resolve::FileResolver;
 use lofty::tag::{Accessor, Tag, TagExt, TagSupport, TagType};
@@ -186,13 +186,13 @@ fn test_opus() {
 fn test_unsupported() {
 	let f1 = lofty::read_from_path("tests/taglib/data/no-extension");
 	match f1 {
-		Err(err) if matches!(err.kind(), ErrorKind::UnknownFormat) => {},
+		Err(err) if err.is_unknown_format() => {},
 		_ => panic!("File with no extension got through `read_from_path!`"),
 	}
 
 	let f2 = lofty::read_from_path("tests/taglib/data/unsupported-extension.xx");
 	match f2 {
-		Err(err) if matches!(err.kind(), ErrorKind::UnknownFormat) => {},
+		Err(err) if err.is_unknown_format() => {},
 		_ => panic!("File with unsupported extension got through `read_from_path!`"),
 	}
 }
@@ -213,7 +213,7 @@ fn test_audio_properties() {
 #[ignore = "Marker test, Lofty does not replicate this API"]
 fn test_default_file_extensions() {}
 
-use lofty::io::{FileLike, Length, Truncate};
+use lofty::io::FileLike;
 use lofty::properties::FileProperties;
 use lofty::tag::items::Timestamp;
 use rusty_fork::rusty_fork_test;
@@ -238,7 +238,7 @@ rusty_fork_test! {
 		impl AudioFile for DummyResolver {
 			type Properties = ();
 
-			fn read_from<R>(_: &mut R, _: ParseOptions) -> lofty::error::Result<Self>
+			fn read_from<R>(_: &mut R, _: ParseOptions) -> Result<Self, FileParseError>
 			where
 				R: Read + Seek,
 				Self: Sized,
@@ -246,11 +246,9 @@ rusty_fork_test! {
 				Ok(Self)
 			}
 
-			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> lofty::error::Result<()>
+			fn save_to<F>(&self, _: &mut F, _: WriteOptions) -> Result<(), FileEncodingError>
 			where
 				F: FileLike,
-				LoftyError: From<<F as Truncate>::Error>,
-				LoftyError: From<<F as Length>::Error>
 			{
 				unimplemented!()
 			}

@@ -3,7 +3,8 @@ pub(super) mod properties;
 use super::find_last_page;
 use super::tag::VorbisComments;
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::FileParseError;
+use crate::file::FileType;
 use crate::ogg::constants::{VORBIS_COMMENT_HEAD, VORBIS_IDENT_HEAD};
 use properties::VorbisProperties;
 
@@ -25,7 +26,7 @@ pub struct VorbisFile {
 }
 
 impl VorbisFile {
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 	{
@@ -35,7 +36,8 @@ impl VorbisFile {
 			VORBIS_COMMENT_HEAD,
 			3,
 			parse_options,
-		)?;
+		)
+		.map_err(|e| e.with_format(FileType::Vorbis))?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {

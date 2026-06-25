@@ -1,13 +1,16 @@
 use crate::config::WriteOptions;
-use crate::error::{LoftyError, Result};
+use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::v1::constants::GENRES;
+use crate::id3::v1::error::Id3v1EncodingError;
+use crate::io::VerifiedFile;
 use crate::tag::items::Timestamp;
-use crate::tag::{Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType};
-use crate::util::io::{FileLike, Length, Truncate};
+use crate::tag::{
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+};
+use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
-use std::path::Path;
 
 use lofty_attr::tag;
 
@@ -209,7 +212,6 @@ impl Accessor for Id3v1Tag {
 }
 
 impl TagExt for Id3v1Tag {
-	type Err = LoftyError;
 	type RefKey<'a> = &'a ItemKey;
 
 	#[inline]
@@ -250,19 +252,6 @@ impl TagExt for Id3v1Tag {
 			&& self.genre.is_none()
 	}
 
-	fn save_to<F>(
-		&self,
-		file: &mut F,
-		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		Into::<Id3v1TagRef<'_>>::into(self).write_to(file, write_options)
-	}
-
 	/// Dumps the tag to a writer
 	///
 	/// # Errors
@@ -272,25 +261,27 @@ impl TagExt for Id3v1Tag {
 		&self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		Into::<Id3v1TagRef<'_>>::into(self).dump_to(writer, write_options)
-	}
-
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		TagType::Id3v1.remove_from_path(path)
-	}
-
-	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
-	where
-		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
-	{
-		TagType::Id3v1.remove_from(file)
+	) -> std::result::Result<(), TagEncodingError> {
+		Into::<Id3v1TagRef<'_>>::into(self)
+			.dump_to(writer, write_options)
+			.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
 		*self = Self::default();
+	}
+}
+
+impl TagWriteExt for Id3v1Tag {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike,
+	{
+		Into::<Id3v1TagRef<'_>>::into(self).write_to(file, write_options)
 	}
 }
 
@@ -446,11 +437,13 @@ impl Id3v1TagRef<'_> {
 			&& self.genre.is_none()
 	}
 
-	pub(crate) fn write_to<F>(&self, file: &mut F, write_options: WriteOptions) -> Result<()>
+	pub(crate) fn write_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
 		super::write::write_id3v1(file, self, write_options)
 	}
@@ -459,7 +452,7 @@ impl Id3v1TagRef<'_> {
 		&mut self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> Result<()> {
+	) -> Result<(), Id3v1EncodingError> {
 		let temp = super::write::encode(self, write_options)?;
 		writer.write_all(&temp)?;
 

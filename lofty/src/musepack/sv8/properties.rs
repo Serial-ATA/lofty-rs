@@ -1,8 +1,7 @@
 use super::read::PacketReader;
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::decode_err;
 use crate::musepack::constants::FREQUENCY_TABLE;
+use crate::musepack::error::MpcParseError;
 use crate::properties::FileProperties;
 use crate::util::math::RoundedDivision;
 
@@ -64,7 +63,10 @@ impl MpcSv8Properties {
 		self.stream_header.stream_version
 	}
 
-	pub(crate) fn read<R: Read>(reader: &mut R, parse_mode: ParsingMode) -> Result<Self> {
+	pub(in crate::musepack) fn read<R: Read>(
+		reader: &mut R,
+		parse_mode: ParsingMode,
+	) -> Result<Self, MpcParseError> {
 		super::read::read_from(reader, parse_mode)
 	}
 }
@@ -99,7 +101,7 @@ pub struct StreamHeader {
 }
 
 impl StreamHeader {
-	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self> {
+	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self, MpcParseError> {
 		// StreamHeader format:
 		//
 		// Field              | Size (bits)     | Value | Comment
@@ -176,7 +178,7 @@ pub struct ReplayGain {
 }
 
 impl ReplayGain {
-	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self> {
+	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self, MpcParseError> {
 		// ReplayGain format:
 		//
 		// Field 	          | Size (bits) | Value | Comment
@@ -218,7 +220,7 @@ pub struct EncoderInfo {
 }
 
 impl EncoderInfo {
-	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self> {
+	pub(super) fn read<R: Read>(reader: &mut PacketReader<R>) -> Result<Self, MpcParseError> {
 		// EncoderInfo format:
 		//
 		// Field 	| Size (bits) | Value
@@ -251,7 +253,7 @@ pub(super) fn read(
 	stream_header: StreamHeader,
 	replay_gain: ReplayGain,
 	encoder_info: Option<EncoderInfo>,
-) -> Result<MpcSv8Properties> {
+) -> Result<MpcSv8Properties, MpcParseError> {
 	let mut properties = MpcSv8Properties {
 		duration: Duration::ZERO,
 		average_bitrate: 0,
@@ -265,7 +267,9 @@ pub(super) fn read(
 	let sample_rate = stream_header.sample_rate;
 
 	if beginning_silence > sample_count {
-		decode_err!(@BAIL Mpc, "Beginning silence is greater than the total sample count");
+		return Err(MpcParseError::message(
+			"beginning silence is greater than the total sample count",
+		));
 	}
 
 	if sample_rate == 0 {

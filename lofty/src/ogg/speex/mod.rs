@@ -2,7 +2,8 @@ pub(super) mod properties;
 
 use super::tag::VorbisComments;
 use crate::config::ParseOptions;
-use crate::error::Result;
+use crate::error::FileParseError;
+use crate::file::FileType;
 use crate::ogg::constants::SPEEXHEADER;
 use properties::SpeexProperties;
 
@@ -24,11 +25,12 @@ pub struct SpeexFile {
 }
 
 impl SpeexFile {
-	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self>
+	fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<Self, FileParseError>
 	where
 		R: Read + Seek,
 	{
-		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2, parse_options)?;
+		let file_information = super::read::read_from(reader, SPEEXHEADER, &[], 2, parse_options)
+			.map_err(|e| e.with_format(FileType::Speex))?;
 
 		Ok(Self {
 			properties: if parse_options.read_properties {

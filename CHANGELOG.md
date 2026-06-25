@@ -8,12 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **OPUS**: Store Opus output gain in `OpusProperties` and add function `OpusProperties::output_gain_db`
+- **ItemKey**: `ItemKey::R128{Track,Album}Gain` for EBU-R128 loudness normalization tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/665))
+- **MP4**: `Display` impl for `AtomIdent`
+- **Opus**: `OpusProperties::output_gain_db()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/666))
 
 ### Changed
 
-- **MP4**: `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+- **MP4**:
+  - `Mp4File::ftyp()` was moved to `Mp4Properties::ftyp()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/650))
+  - The `codec`, `overall_bitrate`, `audio_bitrate`, `sample_rate`, and `channels` fields of `Mp4Properties` are
+    now `Option`al ([issue](https://github.com/Serial-ATA/lofty-rs/issues/661)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/670))
 - **MSRV**: Bumped to **1.89.0** ([PR](https://github.com/Serial-ATA/lofty-rs/pull/652))
+- **VorbisComments**: Moved from `crate::ogg` to `crate::ogg::tag`
+- **TagType**: `TagType::remove_from{_path}` now takes a `WriteOptions` to control padding behavior
+  - By default, Lofty will attempt to replace tags with padding rather than *actually* removing them from
+    to avoid rewriting the entire file. Disabling `WriteOptions::preferred_padding()` disables that behavior.
+- **Length/Truncate**: These traits no longer have an `Error` type, and instead use `std::io::Error`
 
 ### Fixed
 
@@ -24,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed `Id3v2Tag::remove_disk_total()`, which incorrectly preserved the track number rather than disk number ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
+- **MusePack**: ID3v1 tags are now correctly treated as read-only
+
+### Removed
+
+* **LoftyError**: The monolithic `LoftyError` and `crate::error::Result` types have been removed
+* **MP4**: `Mp4Codec::Unknown`, `Mp4Properties::codec()` now returns `None` for unknown codecs ([PR](https://github.com/Serial-ATA/lofty-rs/pull/670))
 
 ## [0.24.0] - 2026-04-12
 

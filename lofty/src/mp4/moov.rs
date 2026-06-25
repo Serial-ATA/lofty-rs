@@ -3,8 +3,9 @@ use super::ilst::Ilst;
 use super::ilst::read::parse_ilst;
 use super::read::{AtomReader, find_child_atom, meta_is_full, skip_atom};
 use crate::config::ParseOptions;
-use crate::error::Result;
-use crate::macros::decode_err;
+use crate::error::TagParseError;
+use crate::mp4::error::Mp4ParseError;
+use crate::mp4::ilst::error::IlstParseError;
 
 use std::io::{Read, Seek};
 
@@ -16,7 +17,7 @@ pub(crate) struct Moov {
 }
 
 impl Moov {
-	pub(super) fn find<R>(reader: &mut AtomReader<R>) -> Result<AtomInfo>
+	pub(super) fn find<R>(reader: &mut AtomReader<R>) -> Result<AtomInfo, Mp4ParseError>
 	where
 		R: Read + Seek,
 	{
@@ -31,10 +32,13 @@ impl Moov {
 			skip_atom(reader, atom.extended, atom.len)?;
 		}
 
-		moov.ok_or_else(|| decode_err!(Mp4, "No \"moov\" atom found"))
+		moov.ok_or_else(Mp4ParseError::missing_moov)
 	}
 
-	pub(super) fn parse<R>(reader: &mut AtomReader<R>, parse_options: ParseOptions) -> Result<Self>
+	pub(super) fn parse<R>(
+		reader: &mut AtomReader<R>,
+		parse_options: ParseOptions,
+	) -> Result<Self, Mp4ParseError>
 	where
 		R: Read + Seek,
 	{
@@ -54,7 +58,8 @@ impl Moov {
 						}
 					},
 					b"udta" if parse_options.read_tags => {
-						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)?;
+						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)
+							.map_err(TagParseError::from)?;
 						if let Some(ilst_parsed) = ilst_parsed {
 							let Some(mut existing_ilst) = ilst else {
 								ilst = Some(ilst_parsed);
@@ -86,7 +91,7 @@ fn ilst_from_udta<R>(
 	reader: &mut AtomReader<R>,
 	parse_options: ParseOptions,
 	len: u64,
-) -> Result<Option<Ilst>>
+) -> Result<Option<Ilst>, IlstParseError>
 where
 	R: Read + Seek,
 {

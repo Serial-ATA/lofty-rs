@@ -72,7 +72,7 @@ impl GlobalOptions {
 	/// The maximum number of bytes to allocate for any single tag item
 	///
 	/// This is a safety measure to prevent allocating too much memory for a single tag item. If a tag item
-	/// exceeds this limit, the allocator will return [`ErrorKind::TooMuchData`](crate::error::ErrorKind::TooMuchData).
+	/// exceeds this limit, the allocator will return [`AllocationError`].
 	///
 	/// # Examples
 	///
@@ -83,6 +83,8 @@ impl GlobalOptions {
 	/// let global_options = GlobalOptions::new().allocation_limit(32 * 1024 * 1024);
 	/// apply_global_options(global_options);
 	/// ```
+	///
+	/// [`AllocationError`]: crate::error::AllocationError
 	pub fn allocation_limit(&mut self, allocation_limit: usize) -> Self {
 		self.allocation_limit = allocation_limit;
 		*self

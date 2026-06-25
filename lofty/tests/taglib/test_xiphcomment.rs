@@ -4,7 +4,8 @@ use std::io::Seek;
 
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
-use lofty::ogg::{OggPictureStorage, VorbisComments, VorbisFile};
+use lofty::ogg::tag::VorbisComments;
+use lofty::ogg::{OggPictureStorage, VorbisFile};
 use lofty::picture::{MimeType, Picture, PictureInformation, PictureType};
 use lofty::tag::items::Timestamp;
 use lofty::tag::{Accessor, TagExt};

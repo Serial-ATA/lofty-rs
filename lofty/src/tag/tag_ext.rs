@@ -1,6 +1,6 @@
 use crate::config::WriteOptions;
-use crate::error::LoftyError;
-use crate::io::{FileLike, Length, Truncate};
+use crate::error::{FileEncodingError, TagEncodingError, UnsupportedTagError};
+use crate::io::{FileLike, VerifiedFile};
 use crate::tag::{Accessor, Tag, TagType};
 
 use std::path::Path;
@@ -9,11 +9,8 @@ use std::path::Path;
 ///
 /// This provides a set of methods to make interaction with all tags a similar
 /// experience.
-///
-/// This can be implemented downstream to provide a familiar interface for custom tags.
-pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
-	/// The associated error which can be returned from IO operations
-	type Err: From<std::io::Error> + From<LoftyError>;
+#[expect(private_bounds, reason = "`TagWriteExt` is internal")]
+pub trait TagExt: Accessor + TagWriteExt + Into<Tag> + Sized + private::Sealed {
 	/// The type of key used in the tag for non-mutating functions
 	type RefKey<'a>
 	where
@@ -83,8 +80,9 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 		&self,
 		path: P,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err> {
-		self.save_to(
+	) -> std::result::Result<(), FileEncodingError> {
+		TagExt::save_to(
+			self,
 			&mut std::fs::OpenOptions::new()
 				.read(true)
 				.write(true)
@@ -103,11 +101,20 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 		&self,
 		file: &mut F,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>
+	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>;
+	{
+		let file = VerifiedFile::new(file)?;
+
+		// Empty tag writes are allowed for read-only formats, since they'll be stripped
+		if !file.format().tag_support(self.tag_type()).is_writable() && !self.is_empty() {
+			return Err(FileEncodingError::from(UnsupportedTagError).with_format(file.format()));
+		}
+
+		let format = file.format();
+		<Self as TagWriteExt>::save_to(self, file, write_options).map_err(|e| e.with_format(format))
+	}
 
 	#[allow(clippy::missing_errors_doc)]
 	/// Dump the tag to a writer
@@ -117,15 +124,19 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 		&self,
 		writer: &mut W,
 		write_options: WriteOptions,
-	) -> std::result::Result<(), Self::Err>;
+	) -> std::result::Result<(), TagEncodingError>;
 
 	/// Remove a tag from a [`Path`]
 	///
 	/// # Errors
 	///
 	/// See [`TagExt::remove_from`]
-	fn remove_from_path<P: AsRef<Path>>(&self, path: P) -> std::result::Result<(), Self::Err> {
-		self.tag_type().remove_from_path(path).map_err(Into::into)
+	fn remove_from_path<P: AsRef<Path>>(
+		&self,
+		path: P,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError> {
+		self.tag_type().remove_from_path(path, write_options)
 	}
 
 	/// Remove a tag from a [`FileLike`]
@@ -135,19 +146,31 @@ pub trait TagExt: Accessor + Into<Tag> + Sized + private::Sealed {
 	/// * It is unable to guess the file format
 	/// * The format doesn't support the tag
 	/// * It is unable to write to the file
-	fn remove_from<F>(&self, file: &mut F) -> std::result::Result<(), Self::Err>
+	fn remove_from<F>(
+		&self,
+		file: &mut F,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
 	where
 		F: FileLike,
-		LoftyError: From<<F as Truncate>::Error>,
-		LoftyError: From<<F as Length>::Error>,
 	{
-		self.tag_type().remove_from(file).map_err(Into::into)
+		self.tag_type().remove_from(file, write_options)
 	}
 
 	/// Clear the tag, removing all items
 	///
 	/// NOTE: This will **not** remove any format-specific extras, such as flags
 	fn clear(&mut self);
+}
+
+pub(crate) trait TagWriteExt {
+	fn save_to<F>(
+		&self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike;
 }
 
 // https://rust-lang.github.io/api-guidelines/future-proofing.html#c-sealed
@@ -158,7 +181,7 @@ mod private {
 	use crate::iff::aiff::AiffTextChunks;
 	use crate::iff::wav::RiffInfoList;
 	use crate::mp4::Ilst;
-	use crate::ogg::VorbisComments;
+	use crate::ogg::tag::VorbisComments;
 	use crate::tag::Tag;
 
 	pub trait Sealed {}

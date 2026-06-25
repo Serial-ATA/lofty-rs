@@ -6,7 +6,6 @@ use std::io::Seek;
 use lofty::ape::ApeTag;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::AudioFile;
-use lofty::id3::v1::Id3v1Tag;
 use lofty::musepack::{MpcFile, MpcProperties};
 use lofty::probe::Probe;
 use lofty::tag::{Accessor, TagExt};
@@ -108,9 +107,7 @@ fn test_strip_and_properties() {
 		ape.set_title(String::from("APE"));
 		f.set_ape(ape);
 
-		let mut id3v1 = Id3v1Tag::new();
-		id3v1.set_title(String::from("ID3v1"));
-		f.set_id3v1(id3v1);
+		// NOTE: The TagLib test also writes an ID3v1 tag, which we don't allow (read-only)
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
@@ -120,8 +117,6 @@ fn test_strip_and_properties() {
 
 		assert_eq!(f.ape().unwrap().title().as_deref(), Some("APE"));
 		f.ape_mut().unwrap().clear();
-		assert_eq!(f.id3v1().unwrap().title().as_deref(), Some("ID3v1"));
-		f.id3v1_mut().unwrap().clear();
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 	}
 	file.rewind().unwrap();
@@ -156,9 +151,7 @@ fn test_repeated_save() {
 		f.save_to(&mut file, WriteOptions::default()).unwrap();
 		file.rewind().unwrap();
 
-		let mut id3v1 = Id3v1Tag::new();
-		id3v1.set_title(String::from("01234 56789 ABCDE FGHIJ"));
-		f.set_id3v1(id3v1);
+		// NOTE: The TagLib test also writes an ID3v1 tag, which we don't allow (read-only)
 		f.ape_mut().unwrap().set_title(String::from(
 			"01234 56789 ABCDE FGHIJ 01234 56789 ABCDE FGHIJ 01234 56789",
 		));
@@ -168,6 +161,5 @@ fn test_repeated_save() {
 	{
 		let f = MpcFile::read_from(&mut file, ParseOptions::new()).unwrap();
 		assert!(f.ape().is_some());
-		assert!(f.id3v1().is_some());
 	}
 }

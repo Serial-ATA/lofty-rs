@@ -114,14 +114,14 @@ const MP3_PROPERTIES: MpegProperties = MpegProperties {
 
 fn expected_mp4_aac_properties() -> Mp4Properties {
 	Mp4Properties {
-		codec: Mp4Codec::AAC,
+		codec: Some(Mp4Codec::AAC),
 		extended_audio_object_type: Some(AudioObjectType::AacLowComplexity),
 		duration: Duration::from_millis(1449),
-		overall_bitrate: 135,
-		audio_bitrate: 124,
-		sample_rate: 48000,
+		overall_bitrate: Some(135),
+		audio_bitrate: Some(124),
+		sample_rate: Some(48000),
 		bit_depth: None,
-		channels: 2,
+		channels: Some(2),
 		drm_protected: false,
 		ftyp: String::from("M4A "),
 	}
@@ -129,14 +129,14 @@ fn expected_mp4_aac_properties() -> Mp4Properties {
 
 fn expected_mp4_alac_properties() -> Mp4Properties {
 	Mp4Properties {
-		codec: Mp4Codec::ALAC,
+		codec: Some(Mp4Codec::ALAC),
 		extended_audio_object_type: None,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 331,
-		audio_bitrate: 326,
-		sample_rate: 48000,
+		overall_bitrate: Some(331),
+		audio_bitrate: Some(326),
+		sample_rate: Some(48000),
 		bit_depth: Some(16),
-		channels: 2,
+		channels: Some(2),
 		drm_protected: false,
 		ftyp: String::from("M4A "),
 	}
@@ -144,14 +144,14 @@ fn expected_mp4_alac_properties() -> Mp4Properties {
 
 fn expected_mp4_als_properties() -> Mp4Properties {
 	Mp4Properties {
-		codec: Mp4Codec::AAC,
+		codec: Some(Mp4Codec::AAC),
 		extended_audio_object_type: Some(AudioObjectType::AudioLosslessCoding),
 		duration: Duration::from_millis(1429),
-		overall_bitrate: 1083,
-		audio_bitrate: 1078,
-		sample_rate: 48000,
+		overall_bitrate: Some(1083),
+		audio_bitrate: Some(1078),
+		sample_rate: Some(48000),
 		bit_depth: None,
-		channels: 2,
+		channels: Some(2),
 		drm_protected: false,
 		ftyp: String::from("mp42"),
 	}
@@ -159,14 +159,14 @@ fn expected_mp4_als_properties() -> Mp4Properties {
 
 fn expected_mp4_flac_properties() -> Mp4Properties {
 	Mp4Properties {
-		codec: Mp4Codec::FLAC,
+		codec: Some(Mp4Codec::FLAC),
 		extended_audio_object_type: None,
 		duration: Duration::from_millis(1428),
-		overall_bitrate: 280,
-		audio_bitrate: 275,
-		sample_rate: 48000,
+		overall_bitrate: Some(280),
+		audio_bitrate: Some(275),
+		sample_rate: Some(48000),
 		bit_depth: Some(16),
-		channels: 2,
+		channels: Some(2),
 		drm_protected: false,
 		ftyp: String::from("isom"),
 	}

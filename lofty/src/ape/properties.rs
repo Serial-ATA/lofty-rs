@@ -1,6 +1,5 @@
+use crate::ape::error::ApeParseError;
 use crate::config::ParsingMode;
-use crate::error::Result;
-use crate::macros::decode_err;
 use crate::properties::FileProperties;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -77,13 +76,13 @@ pub(super) fn read_properties<R>(
 	stream_len: u64,
 	file_length: u64,
 	parse_mode: ParsingMode,
-) -> Result<ApeProperties>
+) -> Result<ApeProperties, ApeParseError>
 where
 	R: Read + Seek,
 {
 	let version = data
 		.read_u16::<LittleEndian>()
-		.map_err(|_| decode_err!(Ape, "Unable to read APE tag version"))?;
+		.map_err(|_| ApeParseError::message("unable to read APE tag version"))?;
 
 	// Property reading differs between versions
 	if version >= 3980 {
@@ -99,17 +98,14 @@ fn properties_gt_3980<R>(
 	stream_len: u64,
 	file_length: u64,
 	parse_mode: ParsingMode,
-) -> Result<ApeProperties>
+) -> Result<ApeProperties, ApeParseError>
 where
 	R: Read + Seek,
 {
 	// First read the file descriptor
 	let mut descriptor = [0; 46];
 	data.read_exact(&mut descriptor).map_err(|_| {
-		decode_err!(
-			Ape,
-			"Not enough data left in reader to finish file descriptor"
-		)
+		ApeParseError::message("not enough data left in reader to finish file descriptor")
 	})?;
 
 	// The only piece of information we need from the file descriptor
@@ -125,8 +121,9 @@ where
 
 	// Move on to the header
 	let mut header = [0; 24];
-	data.read_exact(&mut header)
-		.map_err(|_| decode_err!(Ape, "Not enough data left in reader to finish MAC header"))?;
+	data.read_exact(&mut header).map_err(|_| {
+		ApeParseError::message("not enough data left in reader to finish MAC header")
+	})?;
 
 	let mut properties = ApeProperties::default();
 	properties.version = version;
@@ -168,14 +165,15 @@ fn properties_lt_3980<R>(
 	stream_len: u64,
 	file_length: u64,
 	parse_mode: ParsingMode,
-) -> Result<ApeProperties>
+) -> Result<ApeProperties, ApeParseError>
 where
 	R: Read,
 {
 	// Versions < 3980 don't have a descriptor
 	let mut header = [0; 26];
-	data.read_exact(&mut header)
-		.map_err(|_| decode_err!(Ape, "Not enough data left in reader to finish MAC header"))?;
+	data.read_exact(&mut header).map_err(|_| {
+		ApeParseError::message("not enough data left in reader to finish MAC header")
+	})?;
 
 	let mut properties = ApeProperties::default();
 	properties.version = version;
@@ -230,13 +228,15 @@ where
 }
 
 /// Verifies the channel count falls within the bounds of the spec, and we have some audio frames to work with.
-fn verify(total_frames: u32, channels: u8) -> Result<()> {
+fn verify(total_frames: u32, channels: u8) -> Result<(), ApeParseError> {
 	if !(1..=32).contains(&channels) {
-		decode_err!(@BAIL Ape, "File has an invalid channel count (must be between 1 and 32 inclusive)");
+		return Err(ApeParseError::message(
+			"file has an invalid channel count (must be between 1 and 32 inclusive)",
+		));
 	}
 
 	if total_frames == 0 {
-		decode_err!(@BAIL Ape, "File contains no frames");
+		return Err(ApeParseError::message("file contains no frames"));
 	}
 
 	Ok(())

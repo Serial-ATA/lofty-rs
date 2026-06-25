@@ -1,20 +1,23 @@
 use super::header::{Header, HeaderCmpResult, VbrHeader, cmp_header, search_for_frame_sync};
 use super::{MpegFile, MpegProperties};
-use crate::ape::header::read_ape_header;
+use crate::ape::tag::header::read_ape_header;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::Result;
+use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
 use crate::io::SeekStreamLen;
-use crate::macros::{decode_err, err};
+use crate::mpeg::error::MpegParseError;
 use crate::mpeg::header::HEADER_MASK;
 
 use std::io::{Read, Seek, SeekFrom};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-pub(super) fn read_from<R>(reader: &mut R, parse_options: ParseOptions) -> Result<MpegFile>
+pub(super) fn read_from<R>(
+	reader: &mut R,
+	parse_options: ParseOptions,
+) -> Result<MpegFile, MpegParseError>
 where
 	R: Read + Seek,
 {
@@ -40,11 +43,12 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = Id3v2Header::parse(reader)?;
+				let header = Id3v2Header::parse(reader).map_err(TagParseError::from)?;
 				let skip_footer = header.flags.footer;
 
 				if parse_options.read_tags {
-					let id3v2 = parse_id3v2(reader, header, parse_options)?;
+					let id3v2 =
+						parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
 					if let Some(existing_tag) = &mut file.id3v2_tag {
 						// https://github.com/Serial-ATA/lofty-rs/issues/87
 						// Duplicate tags should have their frames appended to the previous
@@ -76,14 +80,17 @@ where
 				reader.read_exact(&mut header_remaining)?;
 
 				if &header_remaining == b"AGEX" {
-					let ape_header = read_ape_header(reader, false)?;
+					let ape_header = read_ape_header(reader, false).map_err(TagParseError::from)?;
 
 					if parse_options.read_tags {
-						file.ape_tag = Some(crate::ape::tag::read::read_ape_tag_with_header(
-							reader,
-							ape_header,
-							parse_options,
-						)?);
+						file.ape_tag = Some(
+							crate::ape::tag::read::read_ape_tag_with_header(
+								reader,
+								ape_header,
+								parse_options,
+							)
+							.map_err(TagParseError::from)?,
+						);
 					} else {
 						reader.seek(SeekFrom::Current(i64::from(ape_header.size)))?;
 					}
@@ -91,7 +98,7 @@ where
 					continue;
 				}
 
-				err!(FakeTag);
+				return Err(FakeTagError.into());
 			},
 			// Tags might be followed by junk bytes before the first MP3 frame begins
 			_ => {
@@ -120,11 +127,12 @@ where
 					};
 
 					if let ID3FindResults(Some(header), Some(id3v2_bytes)) =
-						crate::id3::find_id3v2(reader, config)?
+						crate::id3::find_id3v2(reader, config).map_err(TagParseError::from)?
 					{
 						let reader = &mut &*id3v2_bytes;
 
-						let id3v2 = parse_id3v2(reader, header, parse_options)?;
+						let id3v2 = parse_id3v2(reader, header, parse_options)
+							.map_err(TagParseError::from)?;
 
 						if let Some(existing_tag) = &mut file.id3v2_tag {
 							// https://github.com/Serial-ATA/lofty-rs/issues/87
@@ -148,7 +156,8 @@ where
 
 	#[allow(unused_variables)]
 	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)?;
+		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+			.map_err(TagParseError::from)?;
 
 	if header.is_some() {
 		file.id3v1_tag = id3v1;
@@ -158,14 +167,16 @@ where
 
 	reader.seek(SeekFrom::Current(-32))?;
 
-	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options)? {
+	match crate::ape::tag::read::read_ape_tag(reader, true, parse_options)
+		.map_err(TagParseError::from)?
+	{
 		(tag, Some(header)) => {
 			file.ape_tag = tag;
 
 			// Seek back to the start of the tag
 			let pos = reader.stream_position()?;
 			let Some(start_of_tag) = pos.checked_sub(u64::from(header.size)) else {
-				err!(SizeMismatch);
+				return Err(SizeMismatchError.into());
 			};
 
 			reader.seek(SeekFrom::Start(start_of_tag))?;
@@ -182,11 +193,11 @@ where
 	if parse_options.read_properties {
 		let Some(first_frame_header) = first_frame_header else {
 			// The search for sync bits was unsuccessful
-			decode_err!(@BAIL Mpeg, "File contains an invalid frame");
+			return Err(MpegParseError::message("file contains an invalid frame"));
 		};
 
 		if first_frame_header.sample_rate == 0 {
-			decode_err!(@BAIL Mpeg, "Sample rate is 0");
+			return Err(MpegParseError::message("sample rate is 0"));
 		}
 
 		let first_frame_offset = first_frame_offset;
@@ -216,7 +227,7 @@ where
 }
 
 // Searches for the next frame, comparing it to the following one
-fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>>
+fn find_next_frame<R>(reader: &mut R) -> Result<Option<(Header, u64)>, MpegParseError>
 where
 	R: Read + Seek,
 {

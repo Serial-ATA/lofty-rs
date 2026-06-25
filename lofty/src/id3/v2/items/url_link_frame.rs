@@ -1,8 +1,9 @@
-use crate::error::Result;
+use crate::config::WriteOptions;
+use crate::id3::v2::error::FrameParseError;
+use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId};
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
 
-use crate::config::WriteOptions;
 use std::borrow::Cow;
 use std::hash::Hash;
 use std::io::Read;
@@ -61,16 +62,20 @@ impl<'a> UrlLinkFrame<'a> {
 		reader: &mut R,
 		id: FrameId<'a>,
 		frame_flags: FrameFlags,
-	) -> Result<Option<Self>>
+	) -> Result<Option<Self>, FrameParseError>
 	where
 		R: Read,
 	{
-		let url = decode_text(
+		let url = match decode_text(
 			reader,
 			TextDecodeOptions::new()
 				.encoding(TextEncoding::Latin1)
 				.terminated(true),
-		)?;
+		) {
+			Ok(url) => url,
+			Err(e) => return Err(FrameParseError::new(Some(id.into_owned()), Box::new(e))),
+		};
+
 		if url.bytes_read == 0 {
 			return Ok(None);
 		}
@@ -87,7 +92,7 @@ impl<'a> UrlLinkFrame<'a> {
 	/// # Errors
 	///
 	/// If [`WriteOptions::lossy_text_encoding()`] is disabled and the content cannot be Latin-1 encoded.
-	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>> {
+	pub fn as_bytes(&self, write_options: WriteOptions) -> Result<Vec<u8>, FrameEncodingError> {
 		TextEncoding::Latin1
 			.encode(&self.content, false, write_options.lossy_text_encoding)
 			.map_err(Into::into)
