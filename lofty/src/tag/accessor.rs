@@ -35,6 +35,12 @@ macro_rules! accessor_trait {
 		/// Note that for tag formats supporting multiple values, the behavior of any setter methods is
 		/// to **overwrite**, not append. If multi-value support is needed, consider using the format-specific methods.
 		/// For example: [`Tag::push()`] or [`VorbisComments::push()`].
+		///
+		/// **`Accessor` is *not* an exhaustive list of everything a tag can store.** It only
+		/// covers a handful of fields that are common across formats. For anything else
+		/// (custom fields, format-specific fields, or fields that support multiple values),
+		/// use an [`ItemKey`](crate::tag::ItemKey) directly with methods such as
+		/// [`Tag::get_strings()`], [`Tag::take_strings()`], or [`Tag::get_items()`].
 		pub trait Accessor {
 			$(
 				accessor_trait! { @GETTER [$($name)+] $($ty),+ }

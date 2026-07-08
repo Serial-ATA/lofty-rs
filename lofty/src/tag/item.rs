@@ -482,6 +482,24 @@ macro_rules! gen_item_keys {
 		#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
+		///
+		/// `ItemKey` is the primary way to read and write tag items that go beyond the small
+		/// set of fields exposed by [`Accessor`] (title, artist, track
+		/// number, etc.). Most fields a tag format supports, well beyond `Accessor`'s common
+		/// subset, are reachable through an `ItemKey`, using methods such as
+		/// [`Tag::get_strings()`],
+		/// [`Tag::take_strings()`], or
+		/// [`Tag::get_items()`].
+		///
+		/// For example, `Accessor` has no getter for a MusicBrainz release ID, but it can
+		/// still be read with:
+		///
+		/// ```
+		/// use lofty::tag::{ItemKey, Tag, TagType};
+		///
+		/// # let tag = Tag::new(TagType::Id3v2);
+		/// let release_id = tag.get_strings(ItemKey::MusicBrainzReleaseId).next();
+		/// ```
 		pub enum ItemKey {
 			$(
 				$(#[$variant_meta])*

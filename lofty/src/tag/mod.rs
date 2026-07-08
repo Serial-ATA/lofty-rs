@@ -480,16 +480,67 @@ impl Tag {
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
+	///
+	/// Prefer this over [`Tag::get_strings()`] when the tag is not going to be written back to a
+	/// file, as it avoids cloning each value. If the tag *is* going to be written back, use
+	/// [`Tag::get_strings()`] instead, since `take_strings` removes the items from the tag.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lofty::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	/// tag.push(TagItem::new(
+	/// 	ItemKey::TrackArtist,
+	/// 	ItemValue::Text(String::from("Foo artist")),
+	/// ));
+	///
+	/// // We own the strings now, with no clone necessary.
+	/// let artists = tag.take_strings(ItemKey::TrackArtist).collect::<Vec<_>>();
+	/// assert_eq!(artists, vec![String::from("Foo artist")]);
+	///
+	/// // The item has been removed from the tag.
+	/// assert_eq!(tag.get_strings(ItemKey::TrackArtist).count(), 0);
+	/// ```
 	pub fn take_strings(&mut self, key: ItemKey) -> impl Iterator<Item = String> + use<'_> {
 		self.take(key).filter_map(|i| i.item_value.into_string())
 	}
 
 	/// Returns references to all [`TagItem`]s with the specified key
+	///
+	/// This is useful when a value's [`ItemValue`] variant is not known ahead of time, or when
+	/// more than just the value is needed (such as [`TagItem::description`] or
+	/// [`TagItem::lang`]). If only the text values are needed, prefer [`Tag::get_strings()`]
+	/// or [`Tag::take_strings()`], which avoid having to match on [`ItemValue`] manually.
 	pub fn get_items(&self, key: ItemKey) -> impl Iterator<Item = &TagItem> + Clone {
 		self.items.iter().filter(move |i| i.key() == key)
 	}
 
 	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
+	///
+	/// This is a convenience method that filters [`Tag::get_items()`] down to items whose value is
+	/// [`ItemValue::Text`], instead of matching on [`ItemValue`] manually. Any [`ItemKey`] can be
+	/// used here, not just the small set exposed through [`Accessor`]; see
+	/// the [`ItemKey`] documentation for details.
+	///
+	/// If the tag is going to be dropped or is not going to be written back to a file, consider
+	/// [`Tag::take_strings()`] instead, which avoids cloning each value.
+	///
+	/// # Examples
+	///
+	/// ```
+	/// use lofty::tag::{ItemKey, ItemValue, Tag, TagItem, TagType};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	/// tag.push(TagItem::new(
+	/// 	ItemKey::TrackArtist,
+	/// 	ItemValue::Text(String::from("Foo artist")),
+	/// ));
+	///
+	/// let artists = tag.get_strings(ItemKey::TrackArtist).collect::<Vec<_>>();
+	/// assert_eq!(artists, vec!["Foo artist"]);
+	/// ```
 	pub fn get_strings(&self, key: ItemKey) -> impl Iterator<Item = &str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
@@ -550,6 +601,38 @@ impl Tag {
 	}
 
 	/// Returns the first occurrence of the [`PictureType`]
+	///
+	/// Prefer this over manually iterating [`Tag::pictures()`] and comparing each
+	/// [`Picture::pic_type()`] when only one particular kind of picture (front cover, artist,
+	/// etc.) is needed.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::picture::{MimeType, Picture, PictureType};
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// let mut tag = Tag::new(TagType::Id3v2);
+	///
+	/// let front_cover = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::CoverFront)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
+	/// tag.push_picture(front_cover);
+	///
+	/// let back_cover = Picture::unchecked(Vec::new())
+	/// 	.pic_type(PictureType::CoverBack)
+	/// 	.mime_type(MimeType::Png)
+	/// 	.build();
+	/// tag.push_picture(back_cover);
+	///
+	/// assert_eq!(tag.pictures().len(), 2);
+	///
+	/// let front_cover = tag.get_picture_type(PictureType::CoverFront).unwrap();
+	/// assert_eq!(front_cover.pic_type(), PictureType::CoverFront);
+	///
+	/// assert!(tag.get_picture_type(PictureType::Band).is_none());
+	/// ```
 	pub fn get_picture_type(&self, picture_type: PictureType) -> Option<&Picture> {
 		self.pictures
 			.iter()
