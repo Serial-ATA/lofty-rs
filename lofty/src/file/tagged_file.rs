@@ -273,6 +273,8 @@ pub trait TaggedFileExt {
 
 	/// Removes a specific [`TagType`] and returns it
 	///
+	/// NOTE: This doesn't remove the tag from the file on disk. See [`TagType::remove_from()`].
+	///
 	/// # Examples
 	///
 	/// ```rust
@@ -538,7 +540,7 @@ impl<F> BoundTaggedFile<F> {
 	/// Consume this tagged file and return the internal file "buffer".
 	/// This allows you to reuse the internal file.
 	///
-	/// Any changes that haven't been commited will be discarded once you
+	/// Any changes that haven't been committed will be discarded once you
 	/// call this function.
 	pub fn into_inner(self) -> F {
 		self.file_handle

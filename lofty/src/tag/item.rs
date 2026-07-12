@@ -482,6 +482,15 @@ macro_rules! gen_item_keys {
 		#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 		#[non_exhaustive]
 		/// A generic representation of a tag's key
+		///
+		/// Unlike [`Accessor`](crate::tag::Accessor), which exposes only a handful of common fields,
+		/// [`ItemKey`] represents every supported metadata field.
+		///
+		/// Fields not covered by [`Accessor`](crate::tag::Accessor) can still be read or written
+		/// directly with methods such as [`Tag::get`](crate::tag::Tag::get),
+		/// [`Tag::get_string`](crate::tag::Tag::get_string), or [`Tag::insert`](crate::tag::Tag::insert).
+		///
+		/// NOTE: Some fields may have special behavior, check the documentation for each variant.
 		pub enum ItemKey {
 			$(
 				$(#[$variant_meta])*

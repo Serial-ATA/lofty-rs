@@ -381,7 +381,11 @@ fn get_getters<'a>(
 					#setter
 				}
 
-				/// Removes the tag
+				/// Removes the tag from the file, in memory
+				///
+				/// NOTE: This doesn't remove the tag from the file on disk. See [`TagType::remove_from()`].
+				///
+				/// [`TagType::remove_from()`]: crate::tag::TagType::remove_from
 				pub fn #remove_ident(&mut self) -> #ty_prefix #field_ty #ty_suffix {
 					#remover
 				}
