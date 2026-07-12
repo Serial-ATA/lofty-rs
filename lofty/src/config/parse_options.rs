@@ -201,7 +201,7 @@ pub enum ParsingMode {
 	///
 	/// This mode will attempt to fill in any holes where possible in otherwise valid, spec-compliant input.
 	///
-	/// NOTE: A readable input does *not* necessarily make it writeable.
+	/// NOTE: A readable input does *not* necessarily make it writable.
 	///
 	/// ## Examples of behavior
 	///

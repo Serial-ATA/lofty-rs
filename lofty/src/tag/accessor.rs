@@ -3,7 +3,10 @@ use crate::tag::items::Timestamp;
 use std::borrow::Cow;
 
 #[cfg(doc)]
-use crate::{ogg::tag::VorbisComments, tag::Tag};
+use crate::{
+	ogg::tag::VorbisComments,
+	tag::{ItemKey, Tag, TagType},
+};
 
 // This defines the `Accessor` trait, used to define unified getters/setters for commonly
 // accessed tag values.
@@ -27,14 +30,14 @@ use crate::{ogg::tag::VorbisComments, tag::Tag};
 // }
 macro_rules! accessor_trait {
 	($([$($name:tt)+] < $($ty:ty),+ >),+ $(,)?) => {
-		/// Provides accessors for common items
+		/// Provides convenience accessors for metadata fields common across tag formats.
 		///
-		/// This attempts to only provide methods for items that all tags have in common,
-		/// but there may be exceptions.
+		/// For tag formats supporting multiple values, setter methods **overwrite** existing
+		/// values, rather than append. If multi-value support is needed, consider using the
+		/// format-specific methods. For example: [`Tag::push()`] or [`VorbisComments::push()`].
 		///
-		/// Note that for tag formats supporting multiple values, the behavior of any setter methods is
-		/// to **overwrite**, not append. If multi-value support is needed, consider using the format-specific methods.
-		/// For example: [`Tag::push()`] or [`VorbisComments::push()`].
+		/// `Accessor` intentionally exposes only a small set of common tag metadata. Additional standard fields
+		/// remain available using [`ItemKey`] through the [`Tag`]'s item APIs.
 		pub trait Accessor {
 			$(
 				accessor_trait! { @GETTER [$($name)+] $($ty),+ }
@@ -66,8 +69,8 @@ macro_rules! accessor_trait {
 			///
 			/// For formats that support multiple definitions of the same item, this will only return the first occurrence.
 			///
-			/// To retrieve all occurrences of a given item, consider using the format-specific methods.
-			/// For example: [`Tag::get_items()`] or [`VorbisComments::get_all()`].
+			/// To retrieve all occurrences of an item, use [`Tag::get_items()`] or format-specific
+			/// methods such as [`VorbisComments::get_all()`].
 			///
 			/// # Example
 			///
@@ -111,6 +114,7 @@ macro_rules! accessor_trait {
 	(@REMOVE_METHOD [$name:tt $($other:tt)*], $ty:ty) => {
 		paste::paste! {
 			#[doc = "Removes the " $name $(" " $other)*]
+			///
 			/// # Example
 			///
 			/// ```rust,ignore

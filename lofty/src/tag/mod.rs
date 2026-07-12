@@ -479,7 +479,10 @@ impl Tag {
 		self.items.drain(..split_idx)
 	}
 
-	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string`]
+	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string()`]
+	///
+	/// Prefer this over manually calling [`Tag::take()`] when only the text values of an item are needed.
+	/// Unlike [`Tag::get_strings()`], this method consumes the matching items instead of borrowing them.
 	pub fn take_strings(&mut self, key: ItemKey) -> impl Iterator<Item = String> + use<'_> {
 		self.take(key).filter_map(|i| i.item_value.into_string())
 	}
@@ -489,7 +492,9 @@ impl Tag {
 		self.items.iter().filter(move |i| i.key() == key)
 	}
 
-	/// Returns references to all texts of [`TagItem`]s with the specified key, and [`ItemValue::Text`]
+	/// Returns references to the text values of all [`TagItem`]s with the specified key.
+	///
+	/// Prefer this over manually matching [`ItemValue`] variants when only text is needed.
 	pub fn get_strings(&self, key: ItemKey) -> impl Iterator<Item = &str> + Clone {
 		self.items.iter().filter_map(move |i| {
 			if i.key() == key {
@@ -550,6 +555,9 @@ impl Tag {
 	}
 
 	/// Returns the first occurrence of the [`PictureType`]
+	///
+	/// This is a convenience method for retrieving a picture by type without
+	/// manually searching through the slice returned by [`Tag::pictures`].
 	pub fn get_picture_type(&self, picture_type: PictureType) -> Option<&Picture> {
 		self.pictures
 			.iter()
