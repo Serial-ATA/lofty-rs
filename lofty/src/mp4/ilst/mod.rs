@@ -680,83 +680,85 @@ impl SplitTag for Ilst {
 		self.atoms.retain_mut(|atom| {
 			let Atom { ident, data } = atom;
 
-			let tag_item;
-			match data.first_mut() {
-				data @ (AtomData::UTF8(_) | AtomData::UTF16(_) | AtomData::Bool(_)) => {
-					let Some(key) = ItemKey::from_key(
-						TagType::Mp4Ilst,
-						&match ident {
-							AtomIdent::Fourcc(fourcc) => {
-								fourcc.iter().map(|b| *b as char).collect::<String>()
-							},
-							AtomIdent::Freeform { mean, name } => {
-								format!("----:{mean}:{name}")
-							},
-						},
-					) else {
-						return true; // Keep atom
-					};
+			let key_str = match ident {
+				AtomIdent::Fourcc(fourcc) => fourcc.iter().map(|b| *b as char).collect::<String>(),
+				AtomIdent::Freeform { mean, name } => {
+					format!("----:{mean}:{name}")
+				},
+			};
 
-					match data {
-						AtomData::UTF8(text) | AtomData::UTF16(text) => {
-							tag_item = TagItem::new(key, ItemValue::Text(std::mem::take(text)));
-						},
-						AtomData::Bool(b) => {
-							let text = if *b { "1".to_owned() } else { "0".to_owned() };
-							tag_item = TagItem::new(key, ItemValue::Text(text));
-						},
-						_ => unreachable!(),
-					}
+			let is_convertible = match data.first_mut() {
+				AtomData::UTF8(_) | AtomData::UTF16(_) | AtomData::Bool(_) => {
+					ItemKey::from_key(TagType::Mp4Ilst, &key_str).is_some()
 				},
-				AtomData::Picture(picture) => {
-					tag.pictures
-						.push(std::mem::replace(picture, Picture::EMPTY));
-					return false; // Atom consumed
-				},
-				// We have to special case track/disc numbers since they are stored together
+				AtomData::Picture(_) => true,
 				AtomData::Unknown {
 					code: DataType::Reserved,
 					data,
-				} if Vec::len(data) >= 6 => {
-					if let &mut AtomIdent::Fourcc(ref fourcc) = ident {
-						match fourcc {
-							b"trkn" => {
-								let current = u16::from_be_bytes([data[2], data[3]]);
-								let total = u16::from_be_bytes([data[4], data[5]]);
-
-								if current > 0 {
-									tag.insert_text(ItemKey::TrackNumber, current.to_string());
-								}
-								if total > 0 {
-									tag.insert_text(ItemKey::TrackTotal, total.to_string());
-								}
-								return false; // Atom consumed
-							},
-							b"disk" => {
-								let current = u16::from_be_bytes([data[2], data[3]]);
-								let total = u16::from_be_bytes([data[4], data[5]]);
-
-								if current > 0 {
-									tag.insert_text(ItemKey::DiscNumber, current.to_string());
-								}
-								if total > 0 {
-									tag.insert_text(ItemKey::DiscTotal, total.to_string());
-								}
-								return false; // Atom consumed
-							},
-							_ => {},
-						}
-					}
-
-					return true; // Keep atom
+				} if data.len() >= 6 => {
+					matches!(ident, AtomIdent::Fourcc(fourcc) if *fourcc == *b"trkn" || *fourcc == *b"disk")
 				},
-				_ => {
-					return true; // Keep atom
-				},
+				_ => false,
+			};
+			if !is_convertible {
+				// keep the non convertible ones
+				return true;
 			}
 
-			tag.items.push(tag_item);
-			false // Atom consumed
+			let taken = std::mem::replace(
+				data,
+				AtomDataStorage::Single(AtomData::Unknown {
+					code: DataType::Reserved,
+					data: Vec::with_capacity(0),
+				}),
+			);
+
+			let Some(key) = ItemKey::from_key(TagType::Mp4Ilst, &key_str) else {
+				return true;
+			};
+			for val in taken {
+				match val {
+					AtomData::UTF8(text) | AtomData::UTF16(text) => {
+						tag.items.push(TagItem::new(key, ItemValue::Text(text)));
+					},
+					AtomData::Bool(b) => {
+						let text = if b { "1".to_owned() } else { "0".to_owned() };
+						tag.items.push(TagItem::new(key, ItemValue::Text(text)));
+					},
+					AtomData::Picture(picture) => {
+						tag.pictures.push(picture);
+					},
+					AtomData::Unknown {
+						code: DataType::Reserved,
+						data,
+					} if data.len() >= 6 => match ident {
+						AtomIdent::Fourcc(x) if x == b"trkn" => {
+							let current = u16::from_be_bytes([data[2], data[3]]);
+							let total = u16::from_be_bytes([data[4], data[5]]);
+							if current > 0 {
+								tag.insert_text(ItemKey::TrackNumber, current.to_string());
+							}
+							if total > 0 {
+								tag.insert_text(ItemKey::TrackTotal, total.to_string());
+							}
+						},
+						AtomIdent::Fourcc(x) if x == b"disk" => {
+							let current = u16::from_be_bytes([data[2], data[3]]);
+							let total = u16::from_be_bytes([data[4], data[5]]);
+							if current > 0 {
+								tag.insert_text(ItemKey::DiscNumber, current.to_string());
+							}
+							if total > 0 {
+								tag.insert_text(ItemKey::DiscTotal, total.to_string());
+							}
+						},
+						_ => {},
+					},
+					_ => {},
+				}
+			}
+
+			false
 		});
 
 		if let Some(rating) = self.advisory_rating() {
