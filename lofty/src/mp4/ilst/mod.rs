@@ -895,6 +895,7 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
+	use std::borrow::Cow;
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
 	fn read_ilst(path: &str, parse_options: ParseOptions) -> Ilst {
@@ -1522,5 +1523,33 @@ mod tests {
 				data: vec![0, 6]
 			}
 		);
+	}
+
+	#[test_log::test]
+	fn retain_known_idents_with_unknown_types() {
+		// When we convert an `Atom` -> `TagItem`, we push each value as its own item. Since atoms can
+		// have multiple values of different types, we need to make sure we retain any values we can't
+		// convert.
+		let mut ilst = Ilst::new();
+
+		let mut atom = Atom::new(
+			AtomIdent::Freeform {
+				mean: Cow::Borrowed("com.apple.iTunes"),
+				name: Cow::Borrowed("ARTISTS"),
+			},
+			AtomData::UTF8(String::from("Serial-ATA")),
+		);
+
+		atom.push_data(AtomData::UTF8(String::from("Lofty")));
+		atom.push_data(AtomData::UnsignedInteger(42)); // Something unexpected
+
+		ilst.insert(atom);
+
+		let (remainder, tag) = ilst.split_tag();
+
+		assert_eq!(remainder.len(), 1);
+		let mut strings = tag.get_strings(ItemKey::TrackArtists);
+		assert_eq!(strings.next().unwrap(), "Serial-ATA");
+		assert_eq!(strings.next().unwrap(), "Lofty");
 	}
 }
