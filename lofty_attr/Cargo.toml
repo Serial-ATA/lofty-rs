@@ -11,7 +11,7 @@ repository.workspace = true
 license.workspace = true
 
 [dependencies]
-syn = { version = "2.0.72", features = ["full", "parsing"] }
+syn = { version = "3.0.2", features = ["full", "parsing"] }
 quote = "1.0.36"
 proc-macro2 = "1.0.86"
 
