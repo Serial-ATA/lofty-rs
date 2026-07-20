@@ -38,6 +38,8 @@ const GENRE: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9gen");
 const COMMENT: AtomIdent<'_> = AtomIdent::Fourcc(*b"\xa9cmt");
 const ADVISORY_RATING: AtomIdent<'_> = AtomIdent::Fourcc(*b"rtng");
 const COVR: AtomIdent<'_> = AtomIdent::Fourcc(*b"covr");
+const TRACK_NUMBER: AtomIdent<'_> = AtomIdent::Fourcc(*b"trkn");
+const DISC_NUMBER: AtomIdent<'_> = AtomIdent::Fourcc(*b"disk");
 
 macro_rules! impl_accessor {
 	($($name:ident => $const:ident;)+) => {
@@ -513,11 +515,11 @@ impl Accessor for Ilst {
 		let track_total = (self.track_total().unwrap_or(0) as u16).to_be_bytes();
 
 		let data = vec![0, 0, track[0], track[1], track_total[0], track_total[1]];
-		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+		self.replace_atom(Atom::unknown_implicit(TRACK_NUMBER, data));
 	}
 
 	fn remove_track(&mut self) {
-		let _ = self.remove(&AtomIdent::Fourcc(*b"trkn"));
+		let _ = self.remove(&TRACK_NUMBER);
 	}
 
 	fn track_total(&self) -> Option<u32> {
@@ -529,18 +531,18 @@ impl Accessor for Ilst {
 		let track = (self.track().unwrap_or(0) as u16).to_be_bytes();
 
 		let data = vec![0, 0, track[0], track[1], track_total[0], track_total[1]];
-		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+		self.replace_atom(Atom::unknown_implicit(TRACK_NUMBER, data));
 	}
 
 	fn remove_track_total(&mut self) {
 		let track = self.track();
-		let _ = self.remove(&AtomIdent::Fourcc(*b"trkn"));
+		let _ = self.remove(&TRACK_NUMBER);
 
 		if let Some(track) = track {
 			let track_bytes = (track as u16).to_be_bytes();
 			let data = vec![0, 0, track_bytes[0], track_bytes[1], 0, 0];
 
-			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"trkn"), data));
+			self.replace_atom(Atom::unknown_implicit(TRACK_NUMBER, data));
 		}
 	}
 
@@ -553,11 +555,11 @@ impl Accessor for Ilst {
 		let disk_total = (self.disk_total().unwrap_or(0) as u16).to_be_bytes();
 
 		let data = vec![0, 0, disk[0], disk[1], disk_total[0], disk_total[1]];
-		self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+		self.replace_atom(Atom::unknown_implicit(DISC_NUMBER, data));
 	}
 
 	fn remove_disk(&mut self) {
-		let _ = self.remove(&AtomIdent::Fourcc(*b"disk"));
+		let _ = self.remove(&DISC_NUMBER);
 	}
 
 	fn disk_total(&self) -> Option<u32> {
@@ -574,13 +576,13 @@ impl Accessor for Ilst {
 
 	fn remove_disk_total(&mut self) {
 		let disk = self.disk();
-		let _ = self.remove(&AtomIdent::Fourcc(*b"disk"));
+		let _ = self.remove(&DISC_NUMBER);
 
 		if let Some(disk) = disk {
 			let disk_bytes = (disk as u16).to_be_bytes();
 			let data = vec![0, 0, disk_bytes[0], disk_bytes[1], 0, 0];
 
-			self.replace_atom(Atom::unknown_implicit(AtomIdent::Fourcc(*b"disk"), data));
+			self.replace_atom(Atom::unknown_implicit(DISC_NUMBER, data));
 		}
 	}
 
@@ -674,89 +676,71 @@ impl Deref for SplitTagRemainder {
 impl SplitTag for Ilst {
 	type Remainder = SplitTagRemainder;
 
+	#[allow(clippy::let_and_return)] // For clarity
 	fn split_tag(mut self) -> (Self::Remainder, Tag) {
 		let mut tag = Tag::new(TagType::Mp4Ilst);
 
 		self.atoms.retain_mut(|atom| {
 			let Atom { ident, data } = atom;
 
-			let tag_item;
-			match data.first_mut() {
-				data @ (AtomData::UTF8(_) | AtomData::UTF16(_) | AtomData::Bool(_)) => {
-					let Some(key) = ItemKey::from_key(
-						TagType::Mp4Ilst,
-						&match ident {
-							AtomIdent::Fourcc(fourcc) => {
-								fourcc.iter().map(|b| *b as char).collect::<String>()
-							},
-							AtomIdent::Freeform { mean, name } => {
-								format!("----:{mean}:{name}")
-							},
-						},
-					) else {
-						return true; // Keep atom
-					};
-
-					match data {
-						AtomData::UTF8(text) | AtomData::UTF16(text) => {
-							tag_item = TagItem::new(key, ItemValue::Text(std::mem::take(text)));
-						},
-						AtomData::Bool(b) => {
-							let text = if *b { "1".to_owned() } else { "0".to_owned() };
-							tag_item = TagItem::new(key, ItemValue::Text(text));
-						},
-						_ => unreachable!(),
-					}
+			let key_str = match ident {
+				AtomIdent::Fourcc(fourcc) => fourcc.iter().map(|b| *b as char).collect::<String>(),
+				AtomIdent::Freeform { mean, name } => {
+					format!("----:{mean}:{name}")
 				},
-				AtomData::Picture(picture) => {
-					tag.pictures
-						.push(std::mem::replace(picture, Picture::EMPTY));
-					return false; // Atom consumed
-				},
-				// We have to special case track/disc numbers since they are stored together
-				AtomData::Unknown {
-					code: DataType::Reserved,
-					data,
-				} if Vec::len(data) >= 6 => {
-					if let &mut AtomIdent::Fourcc(ref fourcc) = ident {
-						match fourcc {
-							b"trkn" => {
-								let current = u16::from_be_bytes([data[2], data[3]]);
-								let total = u16::from_be_bytes([data[4], data[5]]);
+			};
 
-								if current > 0 {
-									tag.insert_text(ItemKey::TrackNumber, current.to_string());
-								}
-								if total > 0 {
-									tag.insert_text(ItemKey::TrackTotal, total.to_string());
-								}
-								return false; // Atom consumed
-							},
-							b"disk" => {
-								let current = u16::from_be_bytes([data[2], data[3]]);
-								let total = u16::from_be_bytes([data[4], data[5]]);
+			let Some(key) = ItemKey::from_key(TagType::Mp4Ilst, &key_str) else {
+				return true; // Keep atom
+			};
 
-								if current > 0 {
-									tag.insert_text(ItemKey::DiscNumber, current.to_string());
-								}
-								if total > 0 {
-									tag.insert_text(ItemKey::DiscTotal, total.to_string());
-								}
-								return false; // Atom consumed
-							},
-							_ => {},
+			// `AtomData::retain_mut()` returns a bool indicating whether every value in the atom
+			// was consumed. If so, we can discard the entire atom. Otherwise, we'll still need to keep
+			// it around for later
+			let atom_retained = data.retain_mut(|val| {
+				match val {
+					AtomData::UTF8(text) | AtomData::UTF16(text) => {
+						tag.items
+							.push(TagItem::new(key, ItemValue::Text(std::mem::take(text))));
+					},
+					AtomData::Bool(b) => {
+						let text = if *b { "1".to_owned() } else { "0".to_owned() };
+						tag.items.push(TagItem::new(key, ItemValue::Text(text)));
+					},
+					AtomData::Picture(picture) => {
+						tag.pictures
+							.push(std::mem::replace(picture, Picture::EMPTY));
+					},
+					// We have to special case track/disc numbers since they are stored together
+					AtomData::Unknown {
+						code: DataType::Reserved,
+						data,
+					} if data.len() >= 6 => {
+						let (number_key, total_key) = if *ident == TRACK_NUMBER {
+							(ItemKey::TrackNumber, ItemKey::TrackTotal)
+						} else if *ident == DISC_NUMBER {
+							(ItemKey::DiscNumber, ItemKey::DiscTotal)
+						} else {
+							return true; // Data retained
+						};
+
+						let current = u16::from_be_bytes([data[2], data[3]]);
+						let total = u16::from_be_bytes([data[4], data[5]]);
+						if current > 0 {
+							tag.insert_text(number_key, current.to_string());
 						}
-					}
+						if total > 0 {
+							tag.insert_text(total_key, total.to_string());
+						}
+					},
+					// Data retained
+					_ => return true,
+				}
 
-					return true; // Keep atom
-				},
-				_ => {
-					return true; // Keep atom
-				},
-			}
+				false // Data consumed
+			});
 
-			tag.items.push(tag_item);
-			false // Atom consumed
+			atom_retained
 		});
 
 		if let Some(rating) = self.advisory_rating() {
@@ -911,6 +895,7 @@ mod tests {
 	use crate::tag::utils::test_utils::read_path;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
 
+	use std::borrow::Cow;
 	use std::io::{Cursor, Read as _, Seek as _, Write as _};
 
 	fn read_ilst(path: &str, parse_options: ParseOptions) -> Ilst {
@@ -1538,5 +1523,33 @@ mod tests {
 				data: vec![0, 6]
 			}
 		);
+	}
+
+	#[test_log::test]
+	fn retain_known_idents_with_unknown_types() {
+		// When we convert an `Atom` -> `TagItem`, we push each value as its own item. Since atoms can
+		// have multiple values of different types, we need to make sure we retain any values we can't
+		// convert.
+		let mut ilst = Ilst::new();
+
+		let mut atom = Atom::new(
+			AtomIdent::Freeform {
+				mean: Cow::Borrowed("com.apple.iTunes"),
+				name: Cow::Borrowed("ARTISTS"),
+			},
+			AtomData::UTF8(String::from("Serial-ATA")),
+		);
+
+		atom.push_data(AtomData::UTF8(String::from("Lofty")));
+		atom.push_data(AtomData::UnsignedInteger(42)); // Something unexpected
+
+		ilst.insert(atom);
+
+		let (remainder, tag) = ilst.split_tag();
+
+		assert_eq!(remainder.len(), 1);
+		let mut strings = tag.get_strings(ItemKey::TrackArtists);
+		assert_eq!(strings.next().unwrap(), "Serial-ATA");
+		assert_eq!(strings.next().unwrap(), "Lofty");
 	}
 }

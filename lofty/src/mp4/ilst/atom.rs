@@ -13,13 +13,6 @@ pub(super) enum AtomDataStorage {
 }
 
 impl AtomDataStorage {
-	pub(super) fn first_mut(&mut self) -> &mut AtomData {
-		match self {
-			AtomDataStorage::Single(val) => val,
-			AtomDataStorage::Multiple(data) => data.first_mut().expect("not empty"),
-		}
-	}
-
 	pub(super) fn is_pictures(&self) -> bool {
 		match self {
 			AtomDataStorage::Single(v) => matches!(v, AtomData::Picture(_)),
@@ -32,6 +25,25 @@ impl AtomDataStorage {
 			0 => None,
 			1 => Some(AtomDataStorage::Single(v.remove(0))),
 			_ => Some(AtomDataStorage::Multiple(v)),
+		}
+	}
+
+	/// Retains only the elements specified by the predicate.
+	///
+	/// This method also returns a boolean indicating whether the storage is non-empty after applying
+	/// the predicate.
+	///
+	/// In the case that the storage is empty, it **must** be discarded.
+	pub(super) fn retain_mut<P>(&mut self, mut predicate: P) -> bool
+	where
+		P: FnMut(&mut AtomData) -> bool,
+	{
+		match self {
+			AtomDataStorage::Single(data) => predicate(data),
+			AtomDataStorage::Multiple(data) => {
+				data.retain_mut(predicate);
+				!data.is_empty()
+			},
 		}
 	}
 }
