@@ -141,7 +141,12 @@ where
 	let mut tag = Id3v2Tag::default();
 	tag.original_version = header.version;
 	tag.set_flags(header.flags);
-	tag.frames = read_all_frames_into_list(reader, header.version, parse_options)?;
+	tag.frames = read_all_frames_into_list(
+		reader,
+		header.version,
+		header.flags.unsynchronisation,
+		parse_options,
+	)?;
 
 	Ok(tag)
 }
@@ -149,12 +154,13 @@ where
 pub(super) fn read_all_frames_into_list(
 	reader: &mut dyn Read,
 	version: Id3v2Version,
+	tag_unsynchronisation: bool,
 	parse_options: ParseOptions,
 ) -> Result<FrameList<'static>, FrameParseError> {
 	let mut list = FrameList::default();
 
 	loop {
-		match ParsedFrame::read(reader, version, parse_options)? {
+		match ParsedFrame::read(reader, version, tag_unsynchronisation, parse_options)? {
 			ParsedFrame::Next(frame) => {
 				let frame_value_is_empty = frame.is_empty();
 				if let Some(replaced_frame) = list.insert(frame) {
@@ -251,5 +257,82 @@ mod tests {
 		);
 		assert_eq!(id3v2.track(), Some(1));
 		assert_eq!(id3v2.genre().as_deref(), Some("Classical"));
+	}
+
+	#[test_log::test]
+	fn unsynchronised_apic_is_decoded_once() {
+		// Regression test for https://github.com/Serial-ATA/lofty-rs/issues/678
+		//
+		// When an ID3v2.4 tag sets the header unsynchronisation flag (0x80) AND
+		// its frames also carry the per-frame unsynchronisation flag (0x02), the
+		// tag-level stream and the frame reader each de-unsynchronised the frame
+		// content, stripping a `00` after every `0xFF` twice. Text survived, but
+		// binary APIC data (a real JPEG is full of `FF 00` pairs) came back
+		// corrupt. This is the exact shape Bandcamp's MP3 tagger writes.
+		use crate::id3::v2::Frame;
+		use crate::id3::v2::header::Id3v2Header;
+
+		use std::io::Cursor;
+
+		fn unsynchronise(data: &[u8]) -> Vec<u8> {
+			let mut out = Vec::new();
+			for (i, b) in data.iter().enumerate() {
+				out.push(*b);
+				if *b == 0xFF && data.get(i + 1).is_some_and(|n| *n == 0x00 || *n >= 0xE0) {
+					out.push(0x00);
+				}
+			}
+			out
+		}
+
+		fn synchsafe(n: u32) -> [u8; 4] {
+			[
+				(n >> 21) as u8 & 0x7F,
+				(n >> 14) as u8 & 0x7F,
+				(n >> 7) as u8 & 0x7F,
+				n as u8 & 0x7F,
+			]
+		}
+
+		// Picture bytes containing an `FF 00` pair, like real JPEG data.
+		let image = [0xFF, 0xD8, 0xFF, 0xE0, 0xFF, 0x00, 0x59, 0xFF, 0xD9];
+
+		// APIC body: latin1 encoding, mime, front cover, empty description.
+		let mut body = vec![0x00];
+		body.extend_from_slice(b"image/jpeg\0");
+		body.push(3);
+		body.push(0);
+		body.extend_from_slice(&image);
+
+		// Frame with the data length indicator + unsynchronisation flags set.
+		let stored = unsynchronise(&body);
+		let mut frame = b"APIC".to_vec();
+		frame.extend_from_slice(&synchsafe(stored.len() as u32 + 4));
+		frame.extend_from_slice(&[0x00, 0x03]);
+		frame.extend_from_slice(&synchsafe(body.len() as u32));
+		frame.extend_from_slice(&stored);
+
+		// v2.4 tag with the header unsynchronisation flag set, as the spec
+		// requires when all frames carry the frame-level flag.
+		let mut tag = b"ID3\x04\x00\x80".to_vec();
+		tag.extend_from_slice(&synchsafe(frame.len() as u32));
+		tag.extend_from_slice(&frame);
+
+		let mut cursor = Cursor::new(tag);
+		let header = Id3v2Header::parse(&mut cursor).unwrap();
+		let id3v2 = parse_id3v2(&mut cursor, header, ParseOptions::new()).unwrap();
+
+		let picture = (&id3v2)
+			.into_iter()
+			.find_map(|frame| match frame {
+				Frame::Picture(frame) => Some(frame.picture.data()),
+				_ => None,
+			})
+			.expect("APIC frame should be present");
+
+		assert_eq!(
+			picture, image,
+			"picture data must be de-unsynchronised exactly once"
+		);
 	}
 }

@@ -24,6 +24,7 @@ impl ParsedFrame<'static> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
+		tag_unsynchronisation: bool,
 		parse_options: ParseOptions,
 	) -> Result<Self, FrameParseError>
 	where
@@ -149,10 +150,17 @@ impl ParsedFrame<'static> {
 			// * unsynchronized + compressed
 			// * unsynchronized + encrypted
 			// * unsynchronized
+			//
+			// When the tag header sets the unsynchronisation flag, `parse_id3v2` already
+			// wraps the whole tag in an `UnsynchronizedStream`, so the frame content
+			// reaching us here is de-unsynchronised. Applying the frame-level scheme again
+			// would strip a second `00` after every `0xFF` and corrupt binary frames such
+			// as APIC. Skip the frame-level pass in that case and let the remaining arms
+			// read the already-decoded bytes (see issue #678).
 			FrameFlags {
 				unsynchronisation: true,
 				..
-			} => {
+			} if !tag_unsynchronisation => {
 				let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
 
 				if flags.compression {

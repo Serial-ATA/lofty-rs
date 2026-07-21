@@ -194,7 +194,9 @@ impl ChapterFrame<'static> {
 		let start_offset = reader.read_u32::<BigEndian>()?;
 		let end_offset = reader.read_u32::<BigEndian>()?;
 
-		let children = read_all_frames_into_list(reader, version, parse_options)?;
+		// Embedded frames carry their own unsynchronisation flags; the tag-level
+		// stream does not apply here, so parse them as a self-contained tag.
+		let children = read_all_frames_into_list(reader, version, false, parse_options)?;
 
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(ChapterFrame {
