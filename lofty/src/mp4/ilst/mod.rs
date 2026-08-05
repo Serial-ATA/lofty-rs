@@ -1552,4 +1552,222 @@ mod tests {
 		assert_eq!(strings.next().unwrap(), "Serial-ATA");
 		assert_eq!(strings.next().unwrap(), "Lofty");
 	}
+
+	/// Builds a minimal MP4 with `moov` placed *before* `mdat`, and a single
+	/// `stco` entry pointing at the start of the `mdat` payload.
+	///
+	/// `include_udta` controls whether a (childless) `udta` atom is present,
+	/// which selects between the "create `udta`" and "create `meta`" paths.
+	fn faststart_mp4(include_udta: bool) -> Vec<u8> {
+		fn atom(fourcc: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+			let mut out = ((payload.len() + 8) as u32).to_be_bytes().to_vec();
+			out.extend_from_slice(fourcc);
+			out.extend_from_slice(payload);
+			out
+		}
+
+		const MDAT_PAYLOAD: &[u8] = b"media data goes here";
+
+		// stco with one entry; the value is patched in once the layout is known
+		let mut stco_payload = vec![0u8; 4]; // version + flags
+		stco_payload.extend_from_slice(&1u32.to_be_bytes()); // entry count
+		stco_payload.extend_from_slice(&0u32.to_be_bytes()); // placeholder offset
+
+		let stbl = atom(b"stbl", &atom(b"stco", &stco_payload));
+		let minf = atom(b"minf", &stbl);
+		let mdia = atom(b"mdia", &minf);
+		let trak = atom(b"trak", &mdia);
+
+		let mut moov_payload = trak;
+		if include_udta {
+			moov_payload.extend_from_slice(&atom(b"udta", &[]));
+		}
+		let moov = atom(b"moov", &moov_payload);
+
+		let ftyp = atom(b"ftyp", b"isom\x00\x00\x02\x00isomiso2");
+
+		let mut file = ftyp;
+		file.extend_from_slice(&moov);
+		let mdat_payload_start = file.len() + 8;
+		file.extend_from_slice(&atom(b"mdat", MDAT_PAYLOAD));
+
+		// Patch the `stco` entry to point at the real `mdat` payload
+		let stco_pos = file
+			.windows(4)
+			.position(|w| w == b"stco")
+			.expect("stco not found");
+		let entry_pos = stco_pos + 4 + 4 + 4;
+		file[entry_pos..entry_pos + 4].copy_from_slice(&(mdat_payload_start as u32).to_be_bytes());
+
+		file
+	}
+
+	/// Reads back the single `stco` entry and the actual `mdat` payload offset.
+	fn stco_entry_and_mdat_start(bytes: &[u8]) -> (u32, u32) {
+		let stco_pos = bytes
+			.windows(4)
+			.position(|w| w == b"stco")
+			.expect("stco not found");
+		let entry_pos = stco_pos + 4 + 4 + 4;
+		let stco_entry = u32::from_be_bytes(bytes[entry_pos..entry_pos + 4].try_into().unwrap());
+
+		let mdat_pos = bytes
+			.windows(4)
+			.position(|w| w == b"mdat")
+			.expect("mdat not found");
+		// `mdat` fourcc is preceded by its 4-byte size, payload follows the fourcc
+		let mdat_payload_start = (mdat_pos + 4) as u32;
+
+		(stco_entry, mdat_payload_start)
+	}
+
+	fn assert_chunk_offsets_updated(include_udta: bool) {
+		let original = faststart_mp4(include_udta);
+		let (original_entry, original_mdat) = stco_entry_and_mdat_start(&original);
+		assert_eq!(
+			original_entry, original_mdat,
+			"test fixture should start out consistent"
+		);
+
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&original).unwrap();
+		file.rewind().unwrap();
+
+		let mut tag = Ilst::default();
+		tag.insert(Atom {
+			ident: AtomIdent::Fourcc(*b"\xa9ART"),
+			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
+		});
+		tag.save_to(&mut file, WriteOptions::default()).unwrap();
+
+		file.rewind().unwrap();
+		let mut written = Vec::new();
+		file.read_to_end(&mut written).unwrap();
+
+		let (new_entry, new_mdat) = stco_entry_and_mdat_start(&written);
+		assert!(
+			new_mdat > original_mdat,
+			"the tag should have grown `moov`, pushing `mdat` later in the file"
+		);
+		assert_eq!(
+			new_entry, new_mdat,
+			"chunk offsets must be shifted by the same amount as the media data"
+		);
+	}
+
+	#[test_log::test]
+	fn create_udta_updates_chunk_offsets() {
+		assert_chunk_offsets_updated(false);
+	}
+
+	#[test_log::test]
+	fn create_meta_updates_chunk_offsets() {
+		assert_chunk_offsets_updated(true);
+	}
+
+	/// Recursively collects every `stco`/`co64` entry under `moov`, and returns
+	/// them alongside the offset of the `mdat` payload.
+	fn chunk_offsets_and_mdat_start(bytes: &[u8]) -> (Vec<u64>, u64) {
+		const CONTAINERS: [&[u8; 4]; 5] = [b"moov", b"trak", b"mdia", b"minf", b"stbl"];
+
+		fn read_u32(bytes: &[u8], pos: usize) -> u32 {
+			u32::from_be_bytes(bytes[pos..pos + 4].try_into().unwrap())
+		}
+
+		fn walk(bytes: &[u8], mut pos: usize, end: usize, offsets: &mut Vec<u64>) {
+			while pos + 8 <= end {
+				let size = read_u32(bytes, pos) as usize;
+				let fourcc = &bytes[pos + 4..pos + 8];
+				if size < 8 || pos + size > end {
+					return;
+				}
+
+				match fourcc {
+					b"stco" | b"co64" => {
+						let wide = fourcc == b"co64";
+						let count = read_u32(bytes, pos + 12) as usize;
+						for i in 0..count {
+							let entry = pos + 16 + (i * if wide { 8 } else { 4 });
+							offsets.push(if wide {
+								u64::from_be_bytes(bytes[entry..entry + 8].try_into().unwrap())
+							} else {
+								u64::from(read_u32(bytes, entry))
+							});
+						}
+					},
+					_ if CONTAINERS.iter().any(|c| *c == fourcc) => {
+						walk(bytes, pos + 8, pos + size, offsets);
+					},
+					_ => {},
+				}
+
+				pos += size;
+			}
+		}
+
+		let mut offsets = Vec::new();
+		let mut mdat_start = None;
+		let mut pos = 0;
+		while pos + 8 <= bytes.len() {
+			let size = read_u32(bytes, pos) as usize;
+			let fourcc = &bytes[pos + 4..pos + 8];
+			if size < 8 {
+				break;
+			}
+
+			if fourcc == b"moov" {
+				walk(bytes, pos + 8, pos + size, &mut offsets);
+			} else if fourcc == b"mdat" {
+				mdat_start = Some((pos + 8) as u64);
+			}
+
+			pos += size;
+		}
+
+		offsets.sort_unstable();
+		(offsets, mdat_start.expect("no `mdat` atom"))
+	}
+
+	/// A real (ffmpeg-generated, non-copyrighted) H.264/AAC file muxed with
+	/// `-movflags +faststart` and no `moov/udta`, so writing a tag forces the
+	/// `udta` to be created ahead of the media data.
+	#[test_log::test]
+	fn create_udta_updates_chunk_offsets_in_real_file() {
+		let file_bytes = read_path("tests/files/assets/faststart_no_udta.mp4");
+
+		let (original_offsets, original_mdat) = chunk_offsets_and_mdat_start(&file_bytes);
+		assert_eq!(
+			original_offsets.first().copied(),
+			Some(original_mdat),
+			"asset should start out with its first chunk at the `mdat` payload"
+		);
+
+		let mut file = tempfile::tempfile().unwrap();
+		file.write_all(&file_bytes).unwrap();
+		file.rewind().unwrap();
+
+		let mut tag = Ilst::default();
+		tag.insert(Atom {
+			ident: AtomIdent::Fourcc(*b"\xa9ART"),
+			data: AtomDataStorage::Single(AtomData::UTF8(String::from("Foo artist"))),
+		});
+		tag.save_to(&mut file, WriteOptions::default()).unwrap();
+
+		file.rewind().unwrap();
+		let mut written = Vec::new();
+		file.read_to_end(&mut written).unwrap();
+
+		let (new_offsets, new_mdat) = chunk_offsets_and_mdat_start(&written);
+		let shift = new_mdat - original_mdat;
+		assert!(shift > 0, "creating the `udta` should have moved `mdat`");
+		assert_eq!(new_offsets.len(), original_offsets.len());
+
+		for (old, new) in original_offsets.iter().zip(&new_offsets) {
+			assert_eq!(
+				*new,
+				*old + shift,
+				"every chunk offset must move with the media data"
+			);
+		}
+	}
 }

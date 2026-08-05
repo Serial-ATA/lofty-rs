@@ -171,6 +171,19 @@ where
 
 				// We'll put the new `meta` atom right at the start of `udta`
 				let meta_start_pos = (udta.start + ATOM_HEADER_LEN) as usize;
+
+				// Inserting the `meta` atom shifts everything after it, so any media data
+				// stored after `moov` needs its offsets updated. This has to happen before
+				// the splice, while the offset atoms are still at their original positions.
+				drop(write_handle);
+				update_offsets(
+					&atom_writer,
+					moov,
+					bytes.len() as i64,
+					meta_start_pos as u64,
+				)?;
+				write_handle = atom_writer.start_write();
+
 				write_handle.splice(meta_start_pos..meta_start_pos, bytes);
 
 				// TODO: We need to drop the handle at the end of each branch, which is annoying
@@ -187,6 +200,14 @@ where
 
 		// We'll put the new `udta` atom right at the start of `moov`
 		let udta_pos = (moov_start + ATOM_HEADER_LEN) as usize;
+
+		// Inserting the `udta` atom shifts everything after it, so any media data
+		// stored after `moov` needs its offsets updated. This has to happen before
+		// the splice, while the offset atoms are still at their original positions.
+		drop(write_handle);
+		update_offsets(&atom_writer, moov, bytes.len() as i64, udta_pos as u64)?;
+		let mut write_handle = atom_writer.start_write();
+
 		write_handle.splice(udta_pos..udta_pos, bytes);
 
 		drop(write_handle);
