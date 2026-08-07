@@ -38,6 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed `Id3v2Tag::remove_disk_total()`, which incorrectly preserved the track number rather than disk number ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
+  - Fixed parsing of tags with **both** tag-wide and frame-level unsynchronization flags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/678)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/690))
 - **MusePack**: ID3v1 tags are now correctly treated as read-only
 
 ### Removed
