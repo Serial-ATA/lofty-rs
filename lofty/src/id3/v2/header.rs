@@ -9,7 +9,7 @@ use std::io::Read;
 use byteorder::{BigEndian, ByteOrder, ReadBytesExt};
 
 /// The ID3v2 version
-#[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Id3v2Version {
 	/// ID3v2.2
 	V2,

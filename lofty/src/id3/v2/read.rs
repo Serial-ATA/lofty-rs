@@ -4,7 +4,7 @@ use super::tag::Id3v2Tag;
 use crate::config::ParseOptions;
 use crate::id3::v2::error::{FrameParseError, Id3v2ParseError};
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
-use crate::id3::v2::{Frame, FrameId, FrameList, Id3v2Version, TimestampFrame};
+use crate::id3::v2::{Frame, FrameId, FrameList, Id3v2TagFlags, Id3v2Version, TimestampFrame};
 use crate::tag::items::Timestamp;
 
 use std::borrow::Cow;
@@ -26,8 +26,12 @@ where
 
 	let mut tag_bytes = bytes.take(u64::from(header.size - header.extended_size));
 
+	// Prior to Id3v2.4, the tag-wide `unsynchronization` flag implied that unsynchronization was applied
+	// to the *entire* content of the tag following the header, since there was no frame-level flag.
+	// 2.4 added the `unsynchronization` flag to frame headers and made the tag-level flag equivalent to
+	// setting flag on every frame.
 	let mut ret;
-	if header.flags.unsynchronisation {
+	if header.flags.unsynchronisation && header.version < Id3v2Version::V4 {
 		// Unsynchronize the entire tag
 		let mut unsynchronized_reader = UnsynchronizedStream::new(tag_bytes);
 		ret = read_all_frames_into_tag(&mut unsynchronized_reader, header, parse_options)?;
@@ -141,7 +145,7 @@ where
 	let mut tag = Id3v2Tag::default();
 	tag.original_version = header.version;
 	tag.set_flags(header.flags);
-	tag.frames = read_all_frames_into_list(reader, header.version, parse_options)?;
+	tag.frames = read_all_frames_into_list(reader, header.version, header.flags, parse_options)?;
 
 	Ok(tag)
 }
@@ -149,12 +153,13 @@ where
 pub(super) fn read_all_frames_into_list(
 	reader: &mut dyn Read,
 	version: Id3v2Version,
+	flags: Id3v2TagFlags,
 	parse_options: ParseOptions,
 ) -> Result<FrameList<'static>, FrameParseError> {
 	let mut list = FrameList::default();
 
 	loop {
-		match ParsedFrame::read(reader, version, parse_options)? {
+		match ParsedFrame::read(reader, version, flags, parse_options)? {
 			ParsedFrame::Next(frame) => {
 				let frame_value_is_empty = frame.is_empty();
 				if let Some(replaced_frame) = list.insert(frame) {

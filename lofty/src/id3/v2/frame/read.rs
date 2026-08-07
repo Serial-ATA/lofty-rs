@@ -6,7 +6,7 @@ use crate::id3::v2::frame::content::parse_content;
 use crate::id3::v2::header::Id3v2Version;
 use crate::id3::v2::tag::ATTACHED_PICTURE_ID;
 use crate::id3::v2::util::synchsafe::{SynchsafeInteger, UnsynchronizedStream};
-use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId};
+use crate::id3::v2::{BinaryFrame, FrameFlags, FrameHeader, FrameId, Id3v2TagFlags};
 use crate::macros::try_vec;
 
 use std::borrow::Cow;
@@ -24,6 +24,7 @@ impl ParsedFrame<'static> {
 	pub(crate) fn read<R>(
 		reader: &mut R,
 		version: Id3v2Version,
+		tag_flags: Id3v2TagFlags,
 		parse_options: ParseOptions,
 	) -> Result<Self, FrameParseError>
 	where
@@ -60,6 +61,11 @@ impl ParsedFrame<'static> {
 		if !parse_options.read_cover_art && id == ATTACHED_PICTURE_ID {
 			skip_frame(Some(id), reader, size)?;
 			return Ok(Self::Skip);
+		}
+
+		// See `parse_id3v2()`
+		if tag_flags.unsynchronisation && version > Id3v2Version::V3 {
+			flags.unsynchronisation = true;
 		}
 
 		if size == 0 {
