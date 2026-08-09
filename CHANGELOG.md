@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed parsing of tags with **both** tag-wide and frame-level unsynchronization flags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/678)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/690))
 - **MusePack**: ID3v1 tags are now correctly treated as read-only
 - **MP4**: Fixed data loss in multi-value atom conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/675)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/676))
+- **TagType**: Made `TagType::remove_from_path()` behavior consistent with `lofty::read_from_path()` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/664)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/692))
+  - `lofty::read_from_path()` guesses the format based on the extension while `TagType::remove_from_path()` was
+    guessing based on the file content. This could lead to cases where one function would succeed while the other
+    would fail with `UnknownFormat`.
 
 ### Removed
 

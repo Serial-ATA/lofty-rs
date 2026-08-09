@@ -3,7 +3,6 @@ use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, UnsupportedTagError};
 use crate::io::{FileLike, VerifiedFile};
 
-use std::fs::OpenOptions;
 use std::path::Path;
 
 /// Describes how a [`TagType`] is supported in a given [`FileType`]
@@ -129,8 +128,8 @@ impl TagType {
 		path: impl AsRef<Path>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError> {
-		let mut file = OpenOptions::new().read(true).write(true).open(path)?;
-		self.remove_from(&mut file, write_options)
+		let file = VerifiedFile::new_from_path(path.as_ref())?;
+		self.do_remove(file, write_options)
 	}
 
 	#[allow(clippy::shadow_unrelated)]
@@ -150,12 +149,22 @@ impl TagType {
 		F: FileLike,
 	{
 		let file = VerifiedFile::new(file)?;
+		self.do_remove(file, write_options)
+	}
 
+	fn do_remove<F>(
+		self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> Result<(), FileEncodingError>
+	where
+		F: FileLike,
+	{
 		// Read-only tags are always removable
-		if !file.format().tag_support(*self).is_readable() {
+		if !file.format().tag_support(self).is_readable() {
 			return Err(UnsupportedTagError.into());
 		}
 
-		utils::write_tag(&Tag::new(*self), file, write_options)
+		utils::write_tag(&Tag::new(self), file, write_options)
 	}
 }

@@ -45,11 +45,12 @@ where
 	verify_mp4(&mut reader).map_err(FileParseError::from)?;
 
 	// Now we can just read the entire file into memory
-	let file = reader.into_inner();
+	let mut file = reader.into_inner();
 	file.rewind()?;
 
-	let mut atom_writer = AtomWriter::new_from_file(file, write_options.parse_options.parsing_mode)
-		.map_err(Into::<FileParseError>::into)?;
+	let mut atom_writer =
+		AtomWriter::new_from_file(&mut file, write_options.parse_options.parsing_mode)
+			.map_err(Into::<FileParseError>::into)?;
 
 	let Some(moov) = atom_writer.find_contextual_atom(*b"moov") else {
 		return Err(FileParseError::from(Mp4ParseError::missing_moov()).into());
@@ -208,7 +209,7 @@ where
 
 	drop(write_handle);
 
-	atom_writer.save_to(file)?;
+	atom_writer.save_to(&mut file)?;
 
 	Ok(())
 }

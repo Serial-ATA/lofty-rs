@@ -7,8 +7,9 @@ use crate::file::FileType;
 use crate::probe::Probe;
 use std::collections::VecDeque;
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+use std::io::{BufReader, Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::{Deref, DerefMut};
+use std::path::Path;
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
 pub(crate) trait SeekStreamLen: Seek {
@@ -179,12 +180,71 @@ where
 	}
 }
 
+pub(crate) enum FileSource<'a, F> {
+	/// Sourced from an already open file handle
+	Ref(&'a mut F),
+	/// Sourced from a path
+	Path(BufReader<File>),
+}
+
+impl<F: FileLike> Length for FileSource<'_, F> {
+	fn len(&self) -> std::io::Result<u64> {
+		match self {
+			Self::Ref(file) => Length::len(file),
+			Self::Path(file) => Length::len(file.get_ref()),
+		}
+	}
+}
+
+impl<F: FileLike> Truncate for FileSource<'_, F> {
+	fn truncate(&mut self, size: u64) -> std::io::Result<()> {
+		match self {
+			Self::Ref(file) => Truncate::truncate(file, size),
+			Self::Path(file) => Truncate::truncate(file.get_mut(), size),
+		}
+	}
+}
+
+impl<F: FileLike> Read for FileSource<'_, F> {
+	fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+		match self {
+			Self::Ref(file) => Read::read(file, buf),
+			Self::Path(file) => Read::read(file, buf),
+		}
+	}
+}
+
+impl<F: FileLike> Write for FileSource<'_, F> {
+	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+		match self {
+			Self::Ref(file) => Write::write(file, buf),
+			Self::Path(file) => Write::write(file.get_mut(), buf),
+		}
+	}
+
+	fn flush(&mut self) -> std::io::Result<()> {
+		match self {
+			Self::Ref(file) => Write::flush(file),
+			Self::Path(file) => Write::flush(file.get_mut()),
+		}
+	}
+}
+
+impl<F: FileLike> Seek for FileSource<'_, F> {
+	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
+		match self {
+			Self::Ref(file) => Seek::seek(file, pos),
+			Self::Path(file) => Seek::seek(file, pos),
+		}
+	}
+}
+
 /// Wrapper for a [`FileLike`] with a predetermined [`FileType`]
 ///
 /// Used for tag writes to prevent repeated format verification
 pub(crate) struct VerifiedFile<'a, F> {
 	format: FileType,
-	file: &'a mut F,
+	file: FileSource<'a, F>,
 }
 
 impl<'a, F: FileLike> VerifiedFile<'a, F> {
@@ -193,7 +253,7 @@ impl<'a, F: FileLike> VerifiedFile<'a, F> {
 		match probe.file_type() {
 			Some(format) => Ok(Self {
 				format,
-				file: probe.into_inner(),
+				file: FileSource::Ref(probe.into_inner()),
 			}),
 			None => Err(UnknownFormatError.into()),
 		}
@@ -203,22 +263,35 @@ impl<'a, F: FileLike> VerifiedFile<'a, F> {
 		self.format
 	}
 
-	pub(crate) fn into_inner(self) -> &'a mut F {
+	pub(crate) fn into_inner(self) -> FileSource<'a, F> {
 		self.file
 	}
 }
 
-impl<F> Deref for VerifiedFile<'_, F> {
-	type Target = F;
+impl VerifiedFile<'_, File> {
+	pub(crate) fn new_from_path(path: &Path) -> Result<Self, FileParseError> {
+		let probe = Probe::open(path)?;
+		match probe.file_type() {
+			Some(format) => Ok(Self {
+				format,
+				file: FileSource::Path(probe.into_inner()),
+			}),
+			None => Err(UnknownFormatError.into()),
+		}
+	}
+}
+
+impl<'a, F> Deref for VerifiedFile<'a, F> {
+	type Target = FileSource<'a, F>;
 
 	fn deref(&self) -> &Self::Target {
-		self.file
+		&self.file
 	}
 }
 
 impl<F> DerefMut for VerifiedFile<'_, F> {
 	fn deref_mut(&mut self) -> &mut Self::Target {
-		self.file
+		&mut self.file
 	}
 }
 

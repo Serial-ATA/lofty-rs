@@ -4,7 +4,7 @@ use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::id3::v1::error::Id3v1EncodingError;
 use crate::id3::{ID3FindResults, find_id3v1};
-use crate::io::VerifiedFile;
+use crate::io::{Length, Truncate, VerifiedFile};
 use crate::util::io::FileLike;
 use crate::util::text::latin1_encode;
 
@@ -21,11 +21,11 @@ pub(crate) fn write_id3v1<F>(
 where
 	F: FileLike,
 {
-	let file = file.into_inner();
+	let mut file = file.into_inner();
 
 	// This will seek us to the writing position
 	let ID3FindResults(header, _) =
-		find_id3v1(file, false, write_options.parse_options.parsing_mode)
+		find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
 			.map_err(TagParseError::from)?;
 
 	if tag.is_empty() && header.is_some() {

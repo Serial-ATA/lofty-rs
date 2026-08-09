@@ -8,11 +8,11 @@ use crate::iff::error::ChunkParseError;
 use crate::iff::wav::error::WavParseError;
 use crate::iff::wav::read::verify_wav;
 use crate::iff::wav::tag::error::RiffInfoListEncodingError;
-use crate::io::VerifiedFile;
+use crate::io::{Truncate, VerifiedFile};
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, WriteBytesExt};
 
@@ -29,8 +29,8 @@ where
 	// The first chunk format is RIFF....WAVE
 	const FIRST_CHUNK_LEN: u32 = IFF_CHUNK_HEADER_SIZE + 4;
 
-	let file = file.into_inner();
-	let original_stream_length = verify_wav(file).map_err(FileParseError::from)?;
+	let mut file = file.into_inner();
+	let original_stream_length = verify_wav(&mut file).map_err(FileParseError::from)?;
 
 	let mut riff_info_bytes = Vec::new();
 	create_riff_info(&mut tag.items, &mut riff_info_bytes).map_err(TagEncodingError::from)?;

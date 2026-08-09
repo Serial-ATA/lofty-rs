@@ -1,7 +1,7 @@
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
 use crate::file::FileType;
-use crate::io::VerifiedFile;
+use crate::io::{Truncate, VerifiedFile};
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
 use crate::ogg::tag::error::VorbisCommentsEncodingError;
@@ -55,18 +55,18 @@ where
 		_ => unreachable!("file type verified beforehand"),
 	};
 
-	let file = file.into_inner();
+	let mut file = file.into_inner();
 
 	// Read the first page header to get the stream serial number
 	let start = file.stream_position()?;
-	let first_page_header = PageHeader::read(file).map_err(FileParseError::from)?;
+	let first_page_header = PageHeader::read(&mut file).map_err(FileParseError::from)?;
 
 	let stream_serial = first_page_header.stream_serial;
 
 	file.seek(SeekFrom::Start(start))?;
 
 	let mut packets =
-		Packets::read_count(file, header_packet_count).map_err(FileParseError::from)?;
+		Packets::read_count(&mut file, header_packet_count).map_err(FileParseError::from)?;
 
 	let mut remaining_file_content = Vec::new();
 	file.read_to_end(&mut remaining_file_content)?;
@@ -111,7 +111,12 @@ where
 	file.truncate(0)?;
 
 	let pages_written = packets
-		.write_to(file, stream_serial, 0, CONTAINS_FIRST_PAGE_OF_BITSTREAM)
+		.write_to(
+			&mut file,
+			stream_serial,
+			0,
+			CONTAINS_FIRST_PAGE_OF_BITSTREAM,
+		)
 		.map_err(|e| FileEncodingError::new(format, e.into()))? as u32;
 
 	// Correct all remaining page sequence numbers
