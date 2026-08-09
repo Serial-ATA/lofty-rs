@@ -3,7 +3,7 @@ use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, SizeMismatchError, TagParseError};
 use crate::id3::{FindId3v2Config, find_id3v2};
-use crate::io::VerifiedFile;
+use crate::io::{Truncate, VerifiedFile};
 use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
@@ -11,7 +11,7 @@ use crate::tag::{Tag, TagType};
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
-use std::io::{Cursor, Read};
+use std::io::{Cursor, Read, Seek, Write};
 use std::iter::Peekable;
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -54,7 +54,7 @@ where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
-	let file = file.into_inner();
+	let mut file = file.into_inner();
 
 	let mut file_bytes = Vec::new();
 	file.read_to_end(&mut file_bytes)?;

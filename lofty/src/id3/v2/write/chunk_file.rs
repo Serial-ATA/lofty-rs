@@ -6,11 +6,11 @@ use crate::error::{
 use crate::file::FileType;
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::iff::error::ChunkParseError;
-use crate::io::VerifiedFile;
+use crate::io::{Length, Truncate, VerifiedFile};
 use crate::tag::TagType;
 use crate::util::io::FileLike;
 
-use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Range;
 
 use byteorder::{ByteOrder, WriteBytesExt};
@@ -73,7 +73,7 @@ where
 	}
 
 	let format = file.format();
-	let file = file.into_inner();
+	let mut file = file.into_inner();
 
 	// We only want to rely on the file size for the first chunk read.
 	// Since a file can have trailing junk, but otherwise be valid, we actually want to use the
@@ -81,7 +81,7 @@ where
 	let file_len = file.len()?;
 
 	let mut file_context =
-		find_existing_id3v2_tag::<_, B>(file, file_len, format, write_options.parse_options)?;
+		find_existing_id3v2_tag::<_, B>(&mut file, file_len, format, write_options.parse_options)?;
 	if let Some(existing_id3_tag) = file_context.existing_id3_tag.clone() {
 		let existing_tag_len = existing_id3_tag.end - existing_id3_tag.start;
 
@@ -95,7 +95,7 @@ where
 				file.truncate(existing_id3_tag.start)?;
 			} else {
 				file.seek(SeekFrom::Start(existing_id3_tag.start))?;
-				write_id3v2_chunk::<_, B>(tag, write_options, file)?;
+				write_id3v2_chunk::<_, B>(tag, write_options, &mut file)?;
 
 				if existing_tag_len > tag_chunk_size {
 					let remainder = existing_tag_len - tag_chunk_size;
@@ -137,7 +137,7 @@ where
 				log::trace!("Existing tag large enough to overwrite (padding size: {remainder})");
 
 				file.seek(SeekFrom::Start(existing_id3_tag.start))?;
-				write_id3v2_chunk::<_, B>(tag, write_options, file)?;
+				write_id3v2_chunk::<_, B>(tag, write_options, &mut file)?;
 
 				file.write_all(&JUNK_CHUNK_NAME)?;
 				file.write_u32::<B>(remainder as u32)?;

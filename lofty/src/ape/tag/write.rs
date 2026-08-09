@@ -29,9 +29,9 @@ where
 	I: Iterator<Item = ApeItemRef<'a>>,
 	F: FileLike,
 {
-	let file = file.into_inner();
+	let mut file = file.into_inner();
 
-	let mut original_tags = find_existing_ape_tags(file, write_options)?;
+	let mut original_tags = find_existing_ape_tags(&mut file, write_options)?;
 
 	// Preserve any metadata marked as read only
 	let tag;
@@ -47,7 +47,7 @@ where
 			.map_err(TagEncodingError::from)?;
 	}
 
-	write_tag(original_tags, tag, file)
+	write_tag(original_tags, tag, &mut file)
 }
 
 struct ApeTags {

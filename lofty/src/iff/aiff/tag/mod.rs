@@ -5,7 +5,7 @@ use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchD
 use crate::iff::aiff::error::AiffParseError;
 use crate::iff::aiff::tag::error::AiffTextChunksEncodingError;
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
-use crate::io::VerifiedFile;
+use crate::io::{Length, Truncate, VerifiedFile};
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 };
@@ -15,7 +15,7 @@ use byteorder::BigEndian;
 use lofty_attr::tag;
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::io::Write;
+use std::io::{Read, Seek, Write};
 use std::ops::Range;
 
 /// Represents an AIFF `COMT` chunk
@@ -432,9 +432,9 @@ where
 	where
 		F: FileLike,
 	{
-		let file = file.into_inner();
+		let mut file = file.into_inner();
 
-		super::read::verify_aiff(file).map_err(FileParseError::from)?;
+		super::read::verify_aiff(&mut file).map_err(FileParseError::from)?;
 		let file_len = file.len()?.saturating_sub(FIRST_CHUNK_LEN);
 
 		let text_chunks = Self::create_text_chunks(&mut tag).map_err(TagEncodingError::from)?;
@@ -442,7 +442,7 @@ where
 		let ExistingChunks {
 			text_chunks: mut existing_text_chunks,
 			comm_end_pos,
-		} = find_text_chunks(file, file_len, write_options.parse_options)
+		} = find_text_chunks(&mut file, file_len, write_options.parse_options)
 			.map_err(FileParseError::from)?;
 		file.rewind()?;
 
