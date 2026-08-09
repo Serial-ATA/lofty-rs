@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-08-09
+
 ### Added
 
 - **ItemKey**: `ItemKey::R128{Track,Album}Gain` for EBU-R128 loudness normalization tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/665))
@@ -48,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-* **LoftyError**: The monolithic `LoftyError` and `crate::error::Result` types have been removed
+* **LoftyError**: The monolithic `LoftyError` and `crate::error::Result` types have been removed ([PR](https://github.com/Serial-ATA/lofty-rs/pull/669))
 * **MP4**: `Mp4Codec::Unknown`, `Mp4Properties::codec()` now returns `None` for unknown codecs ([PR](https://github.com/Serial-ATA/lofty-rs/pull/670))
 
 ## [0.24.0] - 2026-04-12
@@ -1146,7 +1148,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.24.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.0...HEAD
+[0.25.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.24.0...0.25.0
 [0.24.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.3...0.24.0
 [0.23.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.2...0.23.3
 [0.23.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.1...0.23.2
