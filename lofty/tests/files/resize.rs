@@ -117,6 +117,14 @@ fn riff_info_resize() {
 }
 
 #[test_log::test]
+fn flac_resize() {
+	tag_resize_test(
+		"tests/files/assets/minimal/full_test.flac",
+		TagType::VorbisComments,
+	);
+}
+
+#[test_log::test]
 fn vorbis_comments_resize() {
 	tag_resize_test(
 		"tests/files/assets/minimal/full_test.opus",
