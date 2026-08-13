@@ -164,3 +164,82 @@ impl KeyValueFrame<'_> {
 		}
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use crate::config::WriteOptions;
+	use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, Id3v2Version, KeyValueFrame};
+	use crate::util::text::TextEncoding;
+
+	use std::borrow::Cow;
+
+	const FRAME_ID: FrameId<'static> = FrameId::Valid(Cow::Borrowed("TIPL"));
+
+	fn expected(encoding: TextEncoding) -> KeyValueFrame<'static> {
+		KeyValueFrame {
+			header: FrameHeader::new(FRAME_ID, FrameFlags::default()),
+			encoding,
+			key_value_pairs: Cow::Owned(vec![
+				("producer".into(), "Serial-ATA".into()),
+				("mixer".into(), "lofty-rs".into()),
+			]),
+		}
+	}
+
+	#[test_log::test]
+	fn tipl_decode() {
+		let cont = crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.tipl");
+
+		let parsed_tipl = KeyValueFrame::parse(
+			&mut &cont[..],
+			FRAME_ID,
+			FrameFlags::default(),
+			Id3v2Version::V4,
+		)
+		.unwrap()
+		.unwrap();
+
+		assert_eq!(parsed_tipl, expected(TextEncoding::Latin1));
+	}
+
+	#[test_log::test]
+	fn tipl_encode() {
+		let encoded = expected(TextEncoding::Latin1)
+			.as_bytes(WriteOptions::default())
+			.unwrap();
+
+		let expected_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test.tipl");
+
+		assert_eq!(encoded, expected_bytes);
+	}
+
+	#[test_log::test]
+	fn tipl_decode_utf16() {
+		let cont =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.tipl");
+
+		let parsed_tipl = KeyValueFrame::parse(
+			&mut &cont[..],
+			FRAME_ID,
+			FrameFlags::default(),
+			Id3v2Version::V4,
+		)
+		.unwrap()
+		.unwrap();
+
+		assert_eq!(parsed_tipl, expected(TextEncoding::UTF16));
+	}
+
+	#[test_log::test]
+	fn tipl_encode_utf_16() {
+		let encoded = expected(TextEncoding::UTF16)
+			.as_bytes(WriteOptions::default())
+			.unwrap();
+
+		let expected_bytes =
+			crate::tag::utils::test_utils::read_path("tests/tags/assets/id3v2/test_utf16.tipl");
+
+		assert_eq!(encoded, expected_bytes);
+	}
+}

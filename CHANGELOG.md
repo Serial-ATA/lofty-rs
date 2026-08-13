@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Fixed unconditional BOM stripping when parsing UTF-16 `KeyValueFrame`s ([issue](https://github.com/Serial-ATA/lofty-rs/issues/696)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/697))
+
 ## [0.25.0] - 2026-08-09
 
 ### Added
