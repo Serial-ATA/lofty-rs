@@ -372,8 +372,8 @@ where
 			}
 
 			match bom {
-				[0xFE, 0xFF] => utf16_decode_bytes(&raw_bytes[2..], u16::from_be_bytes)?,
-				[0xFF, 0xFE] => utf16_decode_bytes(&raw_bytes[2..], u16::from_le_bytes)?,
+				[0xFE, 0xFF] => utf16_decode_bytes(&raw_bytes, u16::from_be_bytes)?,
+				[0xFF, 0xFE] => utf16_decode_bytes(&raw_bytes, u16::from_le_bytes)?,
 				_ => return Err(TextDecodingError::utf16_bad_bom()),
 			}
 		},
