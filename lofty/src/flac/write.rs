@@ -152,10 +152,33 @@ where
 		blocks.push(padding_block);
 	}
 
-	if let Some(block) = blocks.last_mut() {
-		block.last = true
+	let mut encoded_metadata = encode_blocks(&blocks)?;
+
+	if will_write_padding
+		&& let Some(preferred_padding) = write_options.preferred_padding
+		&& (encoded_metadata.len() as u64) < metadata_range.end - metadata_range.start
+	{
+		// Keep the metadata region with the PADDING block already created above. Its header is
+		// part of the retained span, so only the remaining bytes become block content.
+		let padding_index = blocks.len() - 1;
+		let non_padding_len = encoded_metadata.len() - blocks[padding_index].len() as usize;
+		let available = metadata_range.end - metadata_range.start - non_padding_len as u64;
+		let padding_span = available.max(u64::from(preferred_padding) + 4).max(4);
+		let padding_content = usize::try_from(padding_span - 4).map_err(|_| SizeMismatchError)?;
+		let mut padding_block = Block::new_padding(padding_content)?;
+		padding_block.last = true;
+		blocks[padding_index] = padding_block;
+
+		encoded_metadata = encode_blocks(&blocks)?;
+	} else if let Some(block) = blocks.last_mut() {
+		block.last = true;
+		encoded_metadata = encode_blocks(&blocks)?;
 	}
 
+	Ok(replace_range(&mut file, metadata_range, &encoded_metadata)?)
+}
+
+fn encode_blocks(blocks: &[Block]) -> Result<Vec<u8>, FileEncodingError> {
 	let mut encoded_metadata = Vec::new();
 	for block in blocks {
 		block.write_to(&mut encoded_metadata)?;
@@ -166,9 +189,7 @@ where
 		);
 	}
 
-	replace_range(&mut file, metadata_range, &encoded_metadata)?;
-
-	Ok(())
+	Ok(encoded_metadata)
 }
 
 const MOVE_BUFFER_SIZE: usize = 64 * 1024;
