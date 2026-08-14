@@ -202,6 +202,23 @@ fn flac_preferred_padding_grows_when_shrink_gap_is_smaller() {
 }
 
 #[test_log::test]
+fn flac_preferred_padding_is_written_when_metadata_grows() {
+	let mut file = crate::util::temp_file("tests/files/assets/stream_info_last.flac");
+	let original_len = file.metadata().unwrap().len();
+
+	tag(TagType::VorbisComments, 1000)
+		.save_to(&mut file, WriteOptions::default().preferred_padding(16))
+		.unwrap();
+
+	let (_, padding) = flac_metadata_end(&mut file);
+	assert!(file.metadata().unwrap().len() > original_len);
+	assert!(padding.iter().sum::<usize>() >= 16);
+
+	file.rewind().unwrap();
+	lofty::flac::FlacFile::read_from(&mut file, lofty::config::ParseOptions::new()).unwrap();
+}
+
+#[test_log::test]
 fn flac_without_preferred_padding_still_shrinks() {
 	let mut file = flac_with_large_tag();
 	let original_len = file.metadata().unwrap().len();
