@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-08-15
+
 ### Changed
 
 - **FLAC**: Writes will no longer read the entire file into memory ([issue](https://github.com/Serial-ATA/lofty-rs/issues/694)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/695))
@@ -1159,7 +1161,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.0...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.1...HEAD
+[0.25.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.0...0.25.1
 [0.25.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.24.0...0.25.0
 [0.24.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.3...0.24.0
 [0.23.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.23.2...0.23.3
