@@ -690,8 +690,17 @@ impl SplitTag for Ilst {
 				},
 			};
 
-			let Some(key) = ItemKey::from_key(TagType::Mp4Ilst, &key_str) else {
-				return true; // Keep atom
+			/// AtomIdent -> ItemKey mapping
+			enum ItemKeyMapping {
+				Mapped(ItemKey),
+				/// `covr` atoms, which don't have an `ItemKey` mapping
+				Picture,
+			}
+
+			let key = match ItemKey::from_key(TagType::Mp4Ilst, &key_str) {
+				Some(key) => ItemKeyMapping::Mapped(key),
+				None if *ident == COVR => ItemKeyMapping::Picture,
+				None => return true, // Keep atom
 			};
 
 			// `AtomData::retain_mut()` returns a bool indicating whether every value in the atom
@@ -700,16 +709,22 @@ impl SplitTag for Ilst {
 			let atom_retained = data.retain_mut(|val| {
 				match val {
 					AtomData::UTF8(text) | AtomData::UTF16(text) => {
-						tag.items
-							.push(TagItem::new(key, ItemValue::Text(std::mem::take(text))));
+						if let ItemKeyMapping::Mapped(key) = &key {
+							tag.items
+								.push(TagItem::new(*key, ItemValue::Text(std::mem::take(text))));
+						}
 					},
 					AtomData::Bool(b) => {
-						let text = if *b { "1".to_owned() } else { "0".to_owned() };
-						tag.items.push(TagItem::new(key, ItemValue::Text(text)));
+						if let ItemKeyMapping::Mapped(key) = &key {
+							let text = if *b { "1".to_owned() } else { "0".to_owned() };
+							tag.items.push(TagItem::new(*key, ItemValue::Text(text)));
+						}
 					},
 					AtomData::Picture(picture) => {
-						tag.pictures
-							.push(std::mem::replace(picture, Picture::EMPTY));
+						if let ItemKeyMapping::Picture = key {
+							tag.pictures
+								.push(std::mem::replace(picture, Picture::EMPTY));
+						}
 					},
 					// We have to special case track/disc numbers since they are stored together
 					AtomData::Unknown {
@@ -840,15 +855,27 @@ impl MergeTag for SplitTagRemainder {
 			}
 		}
 
+		let mut covr = None;
 		for mut picture in tag.pictures {
 			// Just for correctness, since we can't actually
 			// assign a picture type in this format
 			picture.pic_type = PictureType::Other;
 
-			merged.atoms.push(Atom {
-				ident: COVR,
-				data: AtomDataStorage::Single(AtomData::Picture(picture)),
-			})
+			match &mut covr {
+				None => {
+					covr = Some(Atom {
+						ident: COVR,
+						data: AtomDataStorage::Single(AtomData::Picture(picture)),
+					});
+				},
+				Some(covr) => {
+					covr.push_data(AtomData::Picture(picture));
+				},
+			}
+		}
+
+		if let Some(covr) = covr {
+			merged.atoms.push(covr);
 		}
 
 		create_int_pair(&mut merged, *b"trkn", tracks);
@@ -1551,5 +1578,22 @@ mod tests {
 		let mut strings = tag.get_strings(ItemKey::TrackArtists);
 		assert_eq!(strings.next().unwrap(), "Serial-ATA");
 		assert_eq!(strings.next().unwrap(), "Lofty");
+	}
+
+	#[test_log::test]
+	fn picture_roundtrip() {
+		let mut ilst = Ilst::new();
+		let picture = Picture::unchecked(vec![1, 2, 3]).build();
+		let picture2 = Picture::unchecked(vec![4, 5, 6]).build();
+
+		ilst.insert_picture(picture.clone());
+		ilst.insert_picture(picture2.clone());
+		assert_eq!(ilst.pictures().unwrap().count(), 2);
+
+		let tag: Tag = ilst.into();
+		assert_eq!(tag.pictures().len(), 2);
+
+		let ilst: Ilst = tag.into();
+		assert_eq!(ilst.pictures().unwrap().count(), 2);
 	}
 }
