@@ -1,5 +1,7 @@
 use crate::config::ParseOptions;
 
+use std::num::NonZero;
+
 /// Options to control how Lofty writes to a file
 ///
 /// This acts as a dumping ground for all sorts of format-specific settings. As such, this is best
@@ -7,7 +9,7 @@ use crate::config::ParseOptions;
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub struct WriteOptions {
-	pub(crate) preferred_padding: Option<u32>,
+	pub(crate) preferred_padding: Option<NonZero<u32>>,
 	pub(crate) remove_others: bool,
 	pub(crate) respect_read_only: bool,
 	pub(crate) uppercase_id3v2_chunk: bool,
@@ -33,7 +35,7 @@ impl WriteOptions {
 	/// ```
 	pub const fn new() -> Self {
 		Self {
-			preferred_padding: Some(Self::DEFAULT_PREFERRED_PADDING),
+			preferred_padding: NonZero::new(Self::DEFAULT_PREFERRED_PADDING),
 			remove_others: false,
 			respect_read_only: true,
 			uppercase_id3v2_chunk: true,
@@ -65,10 +67,7 @@ impl WriteOptions {
 	/// let options = WriteOptions::new().preferred_padding(0);
 	/// ```
 	pub fn preferred_padding(mut self, preferred_padding: u32) -> Self {
-		match preferred_padding {
-			0 => self.preferred_padding = None,
-			_ => self.preferred_padding = Some(preferred_padding),
-		}
+		self.preferred_padding = NonZero::new(preferred_padding);
 		self
 	}
 

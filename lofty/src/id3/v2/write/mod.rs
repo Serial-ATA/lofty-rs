@@ -128,9 +128,11 @@ pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 	// https://mutagen-specs.readthedocs.io/en/latest/id3/id3v2.4.0-structure.html#padding:
 	//
 	// "[A tag] MUST NOT have any padding when a tag footer is added to the tag"
-	let padding_len = write_options.preferred_padding.unwrap_or(0) as usize;
-	if !has_footer {
-		len += padding_len;
+	let mut preferred_padding = write_options.preferred_padding;
+	if has_footer {
+		preferred_padding = None;
+	} else if let Some(preferred_padding) = preferred_padding {
+		len += preferred_padding.get() as usize;
 	}
 
 	// Go back to the start and write the final size
@@ -176,15 +178,15 @@ pub(super) fn create_tag<'a, I: Iterator<Item = Frame<'a>> + 'a>(
 		return Ok(id3v2.into_inner());
 	}
 
-	if padding_len == 0 {
+	let Some(padding_len) = preferred_padding else {
 		log::trace!("No padding requested, writing tag as-is");
 		return Ok(id3v2.into_inner());
-	}
+	};
 
-	log::trace!("Padding tag with {} bytes", padding_len);
+	log::trace!("Padding tag with {} bytes", padding_len.get());
 
 	id3v2.seek(SeekFrom::End(0))?;
-	id3v2.write_all(&try_vec![0; padding_len]?)?;
+	id3v2.write_all(&try_vec![0; padding_len.get() as usize]?)?;
 
 	Ok(id3v2.into_inner())
 }

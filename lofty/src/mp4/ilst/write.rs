@@ -416,9 +416,9 @@ where
 
 	// Otherwise, we'll have to just pad the default amount,
 	// and update the offsets.
-	write_free_atom(writer, preferred_padding)?;
-	atom_size_difference += i64::from(preferred_padding);
-	padding_size = u64::from(preferred_padding);
+	write_free_atom(writer, preferred_padding.get())?;
+	atom_size_difference += i64::from(preferred_padding.get());
+	padding_size = u64::from(preferred_padding.get());
 
 	Ok((atom_size_difference, padding_size))
 }
