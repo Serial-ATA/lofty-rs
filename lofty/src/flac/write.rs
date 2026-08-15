@@ -154,7 +154,7 @@ where
 			.saturating_sub(metadata_len)
 			.saturating_sub(Block::BLOCK_HEADER_SIZE as u64);
 		let padding_len = available_padding
-			.max(u64::from(preferred_padding))
+			.max(u64::from(preferred_padding.get()))
 			.min(u64::from(Block::MAX_CONTENT_SIZE));
 		let padding_len = usize::try_from(padding_len).map_err(|_| SizeMismatchError)?;
 
