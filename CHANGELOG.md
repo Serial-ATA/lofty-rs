@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **ID3v2**: Fixed unconditional BOM stripping when parsing UTF-16 `KeyValueFrame`s ([issue](https://github.com/Serial-ATA/lofty-rs/issues/696)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/697))
+- **MP4**:
+  - Fixed pictures being skipped in the `Ilst` -> `Tag` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/698)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/699))
+  - Fixed joining of `covr` atoms in the `Tag` -> `Ilst` conversion ([PR](https://github.com/Serial-ATA/lofty-rs/pull/699))
 
 ## [0.25.0] - 2026-08-09
 
