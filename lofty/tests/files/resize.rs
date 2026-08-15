@@ -7,8 +7,9 @@ use std::io::{Read, Seek};
 use std::path::Path;
 use std::process::Command;
 
-use lofty::config::WriteOptions;
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{AudioFile, TaggedFileExt};
+use lofty::flac::FlacFile;
 use lofty::tag::{Accessor, Tag, TagExt, TagType};
 
 fn tag(ty: TagType, size: usize) -> Tag {
@@ -136,7 +137,7 @@ fn flac_metadata_end(file: &mut File) -> (u64, Vec<usize>) {
 	loop {
 		let header = &data[offset..offset + 4];
 		let is_last = header[0] & 0x80 != 0;
-		let block_type = header[0] & 0x7f;
+		let block_type = header[0] & 0x7F;
 		let content_len =
 			usize::from(header[1]) << 16 | usize::from(header[2]) << 8 | usize::from(header[3]);
 		if block_type == 1 {
@@ -177,7 +178,7 @@ fn flac_preferred_padding_keeps_a_larger_shrink_gap() {
 	assert!(padding.iter().sum::<usize>() > 16);
 
 	file.rewind().unwrap();
-	lofty::flac::FlacFile::read_from(&mut file, lofty::config::ParseOptions::new()).unwrap();
+	FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 }
 
 #[test_log::test]
@@ -198,7 +199,7 @@ fn flac_preferred_padding_grows_when_shrink_gap_is_smaller() {
 	assert!(padding.iter().sum::<usize>() >= 100_000);
 
 	file.rewind().unwrap();
-	lofty::flac::FlacFile::read_from(&mut file, lofty::config::ParseOptions::new()).unwrap();
+	FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 }
 
 #[test_log::test]
@@ -215,7 +216,7 @@ fn flac_preferred_padding_is_written_when_metadata_grows() {
 	assert!(padding.iter().sum::<usize>() >= 16);
 
 	file.rewind().unwrap();
-	lofty::flac::FlacFile::read_from(&mut file, lofty::config::ParseOptions::new()).unwrap();
+	FlacFile::read_from(&mut file, ParseOptions::new()).unwrap();
 }
 
 #[test_log::test]
