@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **FLAC**: Writes will no longer read the entire file into memory ([issue](https://github.com/Serial-ATA/lofty-rs/issues/694)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/695))
+
 ### Fixed
 
 - **ID3v2**: Fixed unconditional BOM stripping when parsing UTF-16 `KeyValueFrame`s ([issue](https://github.com/Serial-ATA/lofty-rs/issues/696)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/697))
