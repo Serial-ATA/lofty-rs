@@ -1579,6 +1579,115 @@ fn single_value_frame() {
 	assert_eq!(artist_tag, "120");
 }
 
+#[test_log::test]
+fn id3v2_tag_insert_and_push_tipl_and_mbid() {
+	let mut tag = Tag::new(TagType::Id3v2);
+
+	// Insert TIPL items
+	assert!(tag.insert_text(ItemKey::Producer, String::from("Producer Name")));
+	assert!(tag.insert_text(ItemKey::Arranger, String::from("Arranger Name")));
+	assert!(tag.insert_text(ItemKey::Engineer, String::from("Engineer Name")));
+	assert!(tag.insert_text(ItemKey::MixDj, String::from("MixDj Name")));
+	assert!(tag.insert_text(ItemKey::MixEngineer, String::from("MixEngineer Name")));
+
+	// Insert MusicBrainz recording ID
+	assert!(tag.insert_text(
+		ItemKey::MusicBrainzRecordingId,
+		String::from("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
+	));
+
+	// Push an additional value for a multi-valued field
+	assert!(tag.push(TagItem::new(
+		ItemKey::Producer,
+		ItemValue::Text(String::from("Co-Producer Name"))
+	)));
+
+	assert_eq!(tag.item_count(), 7);
+	assert_eq!(tag.get_string(ItemKey::Arranger), Some("Arranger Name"));
+	assert_eq!(
+		tag.get_string(ItemKey::MusicBrainzRecordingId),
+		Some("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
+	);
+}
+
+#[test_log::test]
+fn id3v2_tag_item_new_checked() {
+	let keys = [
+		ItemKey::Producer,
+		ItemKey::Arranger,
+		ItemKey::Engineer,
+		ItemKey::MixDj,
+		ItemKey::MixEngineer,
+		ItemKey::MusicBrainzRecordingId,
+	];
+
+	for key in keys {
+		let item = TagItem::new_checked(
+			TagType::Id3v2,
+			key,
+			ItemValue::Text(String::from("Test Value")),
+		);
+		assert!(item.is_some());
+	}
+}
+
+#[test_log::test]
+fn remap_to_id3v2_preserves_tipl_and_mbid() {
+	let mut tag = Tag::new(TagType::VorbisComments);
+	tag.insert_text(ItemKey::Producer, String::from("Producer Name"));
+	tag.insert_text(ItemKey::Arranger, String::from("Arranger Name"));
+	tag.insert_text(ItemKey::Engineer, String::from("Engineer Name"));
+	tag.insert_text(ItemKey::MixDj, String::from("MixDj Name"));
+	tag.insert_text(ItemKey::MixEngineer, String::from("MixEngineer Name"));
+	tag.insert_text(
+		ItemKey::MusicBrainzRecordingId,
+		String::from("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0"),
+	);
+
+	assert_eq!(tag.item_count(), 6);
+
+	tag.re_map(TagType::Id3v2);
+
+	assert_eq!(tag.item_count(), 6);
+	assert_eq!(tag.get_string(ItemKey::Producer), Some("Producer Name"));
+	assert_eq!(tag.get_string(ItemKey::Arranger), Some("Arranger Name"));
+	assert_eq!(tag.get_string(ItemKey::Engineer), Some("Engineer Name"));
+	assert_eq!(tag.get_string(ItemKey::MixDj), Some("MixDj Name"));
+	assert_eq!(tag.get_string(ItemKey::MixEngineer), Some("MixEngineer Name"));
+	assert_eq!(
+		tag.get_string(ItemKey::MusicBrainzRecordingId),
+		Some("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
+	);
+}
+
+#[test_log::test]
+fn id3v2_tag_dump_roundtrip_tipl_and_mbid() {
+	let mut tag = Tag::new(TagType::Id3v2);
+	tag.insert_text(ItemKey::Producer, String::from("Producer Name"));
+	tag.insert_text(ItemKey::Arranger, String::from("Arranger Name"));
+	tag.insert_text(
+		ItemKey::MusicBrainzRecordingId,
+		String::from("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0"),
+	);
+
+	let mut tag_bytes = Vec::new();
+	tag.dump_to(&mut tag_bytes, WriteOptions::default()).unwrap();
+
+	let parsed_id3v2 = read_tag_with_options(&tag_bytes, ParseOptions::new());
+
+	// Ensure native frames are present
+	assert!(parsed_id3v2.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).is_some());
+	assert!(parsed_id3v2.get(&FrameId::Valid(Cow::Borrowed("UFID"))).is_some());
+
+	let roundtrip_tag: Tag = parsed_id3v2.into();
+	assert_eq!(roundtrip_tag.get_string(ItemKey::Producer), Some("Producer Name"));
+	assert_eq!(roundtrip_tag.get_string(ItemKey::Arranger), Some("Arranger Name"));
+	assert_eq!(
+		roundtrip_tag.get_string(ItemKey::MusicBrainzRecordingId),
+		Some("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
+	);
+}
+
 macro_rules! popm_tests {
 		(
 			$($tagger_name:ident => $(($tagger_value:expr, $mapped_value:literal)),+);* $(;)?
