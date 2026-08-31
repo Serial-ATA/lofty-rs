@@ -1653,7 +1653,10 @@ fn remap_to_id3v2_preserves_tipl_and_mbid() {
 	assert_eq!(tag.get_string(ItemKey::Arranger), Some("Arranger Name"));
 	assert_eq!(tag.get_string(ItemKey::Engineer), Some("Engineer Name"));
 	assert_eq!(tag.get_string(ItemKey::MixDj), Some("MixDj Name"));
-	assert_eq!(tag.get_string(ItemKey::MixEngineer), Some("MixEngineer Name"));
+	assert_eq!(
+		tag.get_string(ItemKey::MixEngineer),
+		Some("MixEngineer Name")
+	);
 	assert_eq!(
 		tag.get_string(ItemKey::MusicBrainzRecordingId),
 		Some("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
@@ -1671,17 +1674,32 @@ fn id3v2_tag_dump_roundtrip_tipl_and_mbid() {
 	);
 
 	let mut tag_bytes = Vec::new();
-	tag.dump_to(&mut tag_bytes, WriteOptions::default()).unwrap();
+	tag.dump_to(&mut tag_bytes, WriteOptions::default())
+		.unwrap();
 
 	let parsed_id3v2 = read_tag_with_options(&tag_bytes, ParseOptions::new());
 
 	// Ensure native frames are present
-	assert!(parsed_id3v2.get(&FrameId::Valid(Cow::Borrowed("TIPL"))).is_some());
-	assert!(parsed_id3v2.get(&FrameId::Valid(Cow::Borrowed("UFID"))).is_some());
+	assert!(
+		parsed_id3v2
+			.get(&FrameId::Valid(Cow::Borrowed("TIPL")))
+			.is_some()
+	);
+	assert!(
+		parsed_id3v2
+			.get(&FrameId::Valid(Cow::Borrowed("UFID")))
+			.is_some()
+	);
 
 	let roundtrip_tag: Tag = parsed_id3v2.into();
-	assert_eq!(roundtrip_tag.get_string(ItemKey::Producer), Some("Producer Name"));
-	assert_eq!(roundtrip_tag.get_string(ItemKey::Arranger), Some("Arranger Name"));
+	assert_eq!(
+		roundtrip_tag.get_string(ItemKey::Producer),
+		Some("Producer Name")
+	);
+	assert_eq!(
+		roundtrip_tag.get_string(ItemKey::Arranger),
+		Some("Arranger Name")
+	);
 	assert_eq!(
 		roundtrip_tag.get_string(ItemKey::MusicBrainzRecordingId),
 		Some("a4ec6700-5ddb-4d4f-98b0-f82a480c50e0")
