@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed the `Display` impl for `AtomIdent` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
   - Fixed the encoding of `Popularimeter`s in the `Tag` <-> `Ilst` conversions ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
 - **WriteOptions**: Stopped ignoring the specified `ParseOptions` during the initial file probe ([issue](https://github.com/Serial-ATA/lofty-rs/issue/711)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/712))
+- **MP4**: Fixed the corruption of offset atoms in files without pre-existing tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/686)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/715))
 
 ## [0.25.1] - 2026-08-15
 
