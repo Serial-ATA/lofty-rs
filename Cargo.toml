@@ -72,6 +72,7 @@ needless_continue                  = "allow" # All occurences of this lint are j
 unbuffered_bytes                   = "allow" # It is up to the caller to wrap their data in `BufReader`s
 struct_field_names                 = "allow"
 items_after_statements             = "allow"
+assert_is_empty                    = "allow"
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"

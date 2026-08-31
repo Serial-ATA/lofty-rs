@@ -9,6 +9,9 @@ mod tag_ext;
 mod tag_type;
 pub(crate) mod utils;
 
+#[cfg(test)]
+mod tests;
+
 use crate::config::{ParsingMode, WriteOptions};
 use crate::error::{FileEncodingError, TagEncodingError};
 use crate::io::VerifiedFile;
@@ -720,110 +723,5 @@ impl MergeTag for SplitTagRemainder {
 
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		tag
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::try_parse_timestamp;
-	use crate::config::WriteOptions;
-	use crate::picture::{Picture, PictureType};
-	use crate::prelude::*;
-	use crate::tag::utils::test_utils::read_path;
-	use crate::tag::{Tag, TagType};
-
-	use std::io::{Seek, Write};
-	use std::process::Command;
-
-	#[test_log::test]
-	fn issue_37() {
-		let file_contents = read_path("tests/files/assets/issue_37.ogg");
-		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
-		temp_file.write_all(&file_contents).unwrap();
-		temp_file.rewind().unwrap();
-
-		let mut tag = Tag::new(TagType::VorbisComments);
-
-		let mut picture =
-			Picture::from_reader(&mut &*read_path("tests/files/assets/issue_37.jpg")).unwrap();
-		picture.set_pic_type(PictureType::CoverFront);
-
-		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut(), WriteOptions::default())
-			.unwrap();
-
-		let cmd_output = Command::new("ffprobe")
-			.arg(temp_file.path().to_str().unwrap())
-			.output()
-			.unwrap();
-
-		assert!(cmd_output.status.success());
-
-		let stdout = String::from_utf8(cmd_output.stdout).unwrap();
-
-		assert!(!stdout.contains("CRC mismatch!"));
-		assert!(
-			!stdout.contains("Header processing failed: Invalid data found when processing input")
-		);
-	}
-
-	#[test_log::test]
-	fn issue_130_huge_picture() {
-		// Verify we have opus-tools available, otherwise skip
-		match Command::new("opusinfo").output() {
-			Err(e) if matches!(e.kind(), std::io::ErrorKind::NotFound) => {
-				eprintln!("Skipping test, `opus-tools` is not installed!");
-				return;
-			},
-			Err(e) => panic!("{}", e),
-			_ => {},
-		}
-
-		let file_contents = read_path("tests/files/assets/minimal/full_test.opus");
-		let mut temp_file = tempfile::NamedTempFile::new().unwrap();
-		temp_file.write_all(&file_contents).unwrap();
-		temp_file.rewind().unwrap();
-
-		let mut tag = Tag::new(TagType::VorbisComments);
-
-		// 81KB picture, which is big enough to surpass the maximum page size
-		let mut picture =
-			Picture::from_reader(&mut &*read_path("tests/files/assets/issue_37.jpg")).unwrap();
-		picture.set_pic_type(PictureType::CoverFront);
-
-		tag.push_picture(picture);
-		tag.save_to(temp_file.as_file_mut(), WriteOptions::default())
-			.unwrap();
-
-		let cmd_output = Command::new("opusinfo")
-			.arg(temp_file.path().to_str().unwrap())
-			.output()
-			.unwrap();
-
-		let stdout = String::from_utf8(cmd_output.stdout).unwrap();
-
-		assert!(cmd_output.status.success(), "{stdout}");
-		assert!(!stdout.contains("WARNING:"));
-	}
-
-	#[test_log::test]
-	fn should_preserve_empty_title() {
-		let mut tag = Tag::new(TagType::Id3v2);
-		tag.set_title(String::from("Foo title"));
-
-		assert_eq!(tag.title().as_deref(), Some("Foo title"));
-
-		tag.set_title(String::new());
-		assert_eq!(tag.title().as_deref(), Some(""));
-
-		tag.remove_title();
-		assert_eq!(tag.title(), None);
-	}
-
-	#[test_log::test]
-	fn should_not_parse_year_from_less_than_4_digits() {
-		assert!(try_parse_timestamp("198").is_none());
-		assert!(try_parse_timestamp("19").is_none());
-		assert!(try_parse_timestamp("1").is_none());
 	}
 }

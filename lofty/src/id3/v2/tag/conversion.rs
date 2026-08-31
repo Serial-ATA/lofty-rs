@@ -137,6 +137,8 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::Remixer
 			| ItemKey::Work
 			| ItemKey::Movement
+			| ItemKey::MovementNumber
+			| ItemKey::MovementTotal
 			| ItemKey::FileOwner
 			| ItemKey::CopyrightMessage
 			| ItemKey::Language
@@ -164,8 +166,12 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::MusicBrainzReleaseArtistId
 			| ItemKey::MusicBrainzWorkId
 			| ItemKey::MusicBrainzReleaseType
+			| ItemKey::MusicBrainzTrackId
+			| ItemKey::MusicBrainzReleaseId
+			| ItemKey::MusicBrainzReleaseGroupId
 			| ItemKey::ReleaseCountry
-			| ItemKey::Barcode => {
+			| ItemKey::Barcode
+			| ItemKey::Color => {
 				let (value, _) = take_item_text_and_description(item)?;
 
 				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
@@ -345,6 +351,10 @@ pub(crate) fn from_tag<'a>(
 					}
 				}
 
+				log::debug!(
+					"No mapping exists for item key `{:?}`, discarding",
+					item_key
+				);
 				None
 			},
 		}

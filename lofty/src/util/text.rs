@@ -478,14 +478,16 @@ pub(crate) fn utf16_decode_bytes(
 		return Ok(String::new());
 	}
 
-	let unverified: Vec<u16> = bytes
-		.chunks_exact(2)
+	let (chunks, _remainder) = bytes.as_chunks::<2>();
+
+	let unverified: Vec<u16> = chunks
+		.iter()
 		// In ID3v2, it is possible to have multiple UTF-16 strings separated by null.
 		// This also makes it possible for us to encounter multiple BOMs in a single string.
 		// We must filter them out.
 		.filter_map(|c| match c {
 			[0xFF, 0xFE] | [0xFE, 0xFF] => None,
-			_ => Some(endianness(c.try_into().unwrap())), // Infallible
+			_ => Some(endianness(*c)), // Infallible
 		})
 		.collect();
 

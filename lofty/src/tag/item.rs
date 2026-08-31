@@ -51,6 +51,12 @@ macro_rules! gen_map {
 
 			$(#[$meta])?
 			impl $NAME {
+				const SUPPORTED_KEYS: &'static [ItemKey] = &[
+					$(
+						$(ItemKey::$variant,)+
+					)+
+				];
+
 				pub(crate) fn get_item_key(&self, key: &str) -> Option<ItemKey> {
 					static INSTANCE: std::sync::LazyLock<HashMap<&'static str, &'static [ItemKey]>> = std::sync::LazyLock::new(|| {
 						let mut map = HashMap::new();
@@ -84,7 +90,7 @@ gen_map!(
 	"NAME"          => TrackTitle,
 	"AUTH"          => TrackArtist,
 	"(c) "          => CopyrightMessage,
-	"COMM" | "ANNO" => Comment
+	"ANNO" | "COMT" => Comment
 );
 
 gen_map!(
@@ -216,8 +222,7 @@ gen_map!(
 	"TOFN"                                  => OriginalFileName,
 	"TMED"                                  => OriginalMediaType,
 	"TENC"                                  => EncodedBy,
-	"TSSE"                                  => EncoderSoftware,
-	"TSSE"                                  => EncoderSettings,
+	"TSSE"                                  => EncoderSettings | EncoderSoftware,
 	"TDEN"                                  => EncodingTime,
 	"REPLAYGAIN_ALBUM_GAIN"                 => ReplayGainAlbumGain,
 	"REPLAYGAIN_ALBUM_PEAK"                 => ReplayGainAlbumPeak,
@@ -464,18 +469,43 @@ gen_map!(
 	"RELEASETYPE"							  => MusicBrainzReleaseType,
 );
 
+macro_rules! keys_of_type {
+	(@generate $variant_ty:ident [$d:tt] $($tokens:tt)*) => {{
+		paste::paste! {
+			macro_rules! keys_of_type_inner {
+				([$d($d items:expr,)*] @[<$variant_ty>] $d variant:ident $d($d remaining:tt)*) => {
+					keys_of_type_inner!([$d($d items,)* ItemKey::$d variant,] $d($d remaining)*)
+				};
+				([$d($d items:expr,)*] @$d _variant_ty:ident $d _variant:ident $d($d remaining:tt)*) => {
+					keys_of_type_inner!([$d($d items,)*] $d($d remaining)*)
+				};
+				([$d($d items:expr,)*] $d _variant:ident $d($d remaining:tt)*) => {
+					keys_of_type_inner!([$d($d items,)*] $d($d remaining)*)
+				};
+				([$d($d items:expr,)*]) => {
+					&[$d($d items,)*]
+				};
+			}
+
+			keys_of_type_inner!([] $($tokens)*)
+		}
+	}};
+	(@$variant_ty:ident $($tokens:tt)*) => {
+		keys_of_type!(@generate $variant_ty [$] $($tokens)*)
+	};
+}
+
 macro_rules! gen_item_keys {
 	(
 		MAPS => [
 			$(
-				$(#[$feat:meta])?
 				[$tag_type:pat, $MAP:ident]
 			),+
 		];
 		KEYS => [
 			$(
 				$(#[$variant_meta:meta])*
-				$variant_ident:ident
+				$(@$variant_ty:ident)? $variant_ident:ident
 			),+
 			$(,)?
 		]
@@ -500,6 +530,19 @@ macro_rules! gen_item_keys {
 		}
 
 		impl ItemKey {
+			/// All [`ItemKey`] variants
+			pub const VARIANTS: &'static [Self] = &[$(Self::$variant_ident),+];
+
+			/// Get all supported keys for a given [`TagType`]
+			pub fn supported_keys(tag_type: TagType) -> &'static [Self] {
+				match tag_type {
+					$(
+						$tag_type => $MAP::SUPPORTED_KEYS,
+					)+
+					TagType::Id3v1 => &crate::id3::v1::constants::VALID_ITEMKEYS,
+				}
+			}
+
 			/// Map a format specific key to an `ItemKey`, if a variant exists
 			///
 			/// NOTE: If used with ID3v2, this will only check against the ID3v2.4 keys.
@@ -507,7 +550,6 @@ macro_rules! gen_item_keys {
 			pub fn from_key(tag_type: TagType, key: &str) -> Option<Self> {
 				match tag_type {
 					$(
-						$(#[$feat])?
 						$tag_type => $MAP.get_item_key(key),
 					)+
 					_ => None
@@ -517,7 +559,6 @@ macro_rules! gen_item_keys {
 			pub fn map_key(self, tag_type: TagType) -> Option<&'static str> {
 				match tag_type {
 					$(
-						$(#[$feat])?
 						$tag_type => if let Some(key) = $MAP.get_key(self) {
 							return Some(key)
 						},
@@ -526,6 +567,53 @@ macro_rules! gen_item_keys {
 				}
 
 				None
+			}
+
+			/// Whether the key *should* represent a numeric value
+			///
+			/// # Examples
+			///
+			/// ```rust
+			/// use lofty::tag::ItemKey;
+			///
+			/// assert!(!ItemKey::AlbumTitle.is_numeric());
+			/// assert!(ItemKey::TrackNumber.is_numeric());
+			/// ```
+			pub fn is_numeric(self) -> bool {
+				const NUMERIC_KEYS: &[ItemKey] = keys_of_type!(@NUMERIC $($(@$variant_ty)? $variant_ident)+);
+				NUMERIC_KEYS.contains(&self)
+			}
+
+			/// Whether the key *should* represent a boolean flag value
+			///
+			/// # Examples
+			///
+			/// ```rust
+			/// use lofty::tag::ItemKey;
+			///
+			/// assert!(!ItemKey::AlbumTitle.is_numeric());
+			/// assert!(ItemKey::FlagCompilation.is_flag());
+			/// ```
+			pub fn is_flag(self) -> bool {
+				const FLAG_KEYS: &[ItemKey] = keys_of_type!(@FLAG $($(@$variant_ty)? $variant_ident)+);
+				FLAG_KEYS.contains(&self)
+			}
+
+			/// Whether the key *should* represent a [`Timestamp`] value
+			///
+			/// # Examples
+			///
+			/// ```rust
+			/// use lofty::tag::ItemKey;
+			///
+			/// assert!(!ItemKey::AlbumTitle.is_timestamp());
+			/// assert!(ItemKey::ReleaseDate.is_timestamp());
+			/// ```
+			///
+			/// [`Timestamp`]: crate::tag::items::Timestamp
+			pub fn is_timestamp(self) -> bool {
+				const TIMESTAMP_KEYS: &[ItemKey] = keys_of_type!(@TIMESTAMP $($(@$variant_ty)? $variant_ident)+);
+				TIMESTAMP_KEYS.contains(&self)
 			}
 		}
 	}
@@ -639,13 +727,13 @@ gen_item_keys!(
 
 		// Counts & Indexes
 		/// The disc number
-		DiscNumber,
+		@NUMERIC DiscNumber,
 		/// The total number of discs
-		DiscTotal,
+		@NUMERIC DiscTotal,
 		/// The track number
-		TrackNumber,
+		@NUMERIC TrackNumber,
 		/// The total number of tracks
-		TrackTotal,
+		@NUMERIC TrackTotal,
 		/// User-specific ratings (a.k.a. "Popularimeter")
 		///
 		/// This key is not intended to be used with arbitrary text.
@@ -675,7 +763,7 @@ gen_item_keys!(
 		/// [`popularimeter`]: crate::tag::items::popularimeter
 		Popularimeter,
 		/// The parental advisory rating
-		ParentalAdvisory,
+		@NUMERIC ParentalAdvisory,
 
 		// Dates
 		/// Recording date
@@ -686,7 +774,7 @@ gen_item_keys!(
 		/// [`ItemKey::ReleaseDate`] also exists, but its use is not generally recommended.
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#date-10>
-		RecordingDate,
+		@TIMESTAMP RecordingDate,
 
 		/// Release year
 		///
@@ -697,7 +785,7 @@ gen_item_keys!(
 		///
 		/// Since ID3v1 only supports years, when converting a [`Tag`] to an [`Id3v1Tag`], this key will
 		/// have priority over [`ItemKey::RecordingDate`].
-		Year,
+		@NUMERIC Year,
 
 		/// Release date
 		///
@@ -706,13 +794,13 @@ gen_item_keys!(
 		/// Note that this is **not widely used**, and you should likely be using [`ItemKey::RecordingDate`].
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#release-date-10>
-		ReleaseDate,
+		@TIMESTAMP ReleaseDate,
 
 		/// Original release date/year
 		///
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#original-release-date-1>
 		/// <https://picard-docs.musicbrainz.org/en/appendices/tag_mapping.html#original-release-year-1>
-		OriginalReleaseDate,
+		@TIMESTAMP OriginalReleaseDate,
 
 		// Identifiers
 		/// The International Standard Recording Code (ISRC)
@@ -721,7 +809,7 @@ gen_item_keys!(
 		///
 		/// [UPC]: https://en.wikipedia.org/wiki/Universal_Product_Code
 		/// [EAN]: https://en.wikipedia.org/wiki/European_Article_Number
-		Barcode,
+		@NUMERIC Barcode,
 		/// [AcoustID] audio identifiers
 		///
 		/// Note that this may appear multiple times in a single tag.
@@ -743,9 +831,9 @@ gen_item_keys!(
 		/// The movement name
 		Movement,
 		/// The movement number
-		MovementNumber,
+		@NUMERIC MovementNumber,
 		/// The total number of movements
-		MovementTotal,
+		@NUMERIC MovementTotal,
 		/// The country in which this was released
 		///
 		/// NOTE: This should contain an [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) code.
@@ -818,19 +906,19 @@ gen_item_keys!(
 		/// Whether the track is part of a compilation
 		///
 		/// NOTE: The value will always be `"1"` or `"0"` for `true` and `false`, respectively.
-		FlagCompilation,
+		@FLAG FlagCompilation,
 		/// Whether the track is a podcast
 		///
 		/// NOTE: The value will always be `"1"` or `"0"` for `true` and `false`, respectively.
-		FlagPodcast,
+		@FLAG FlagPodcast,
 
 		// File Information
 		/// The file owner/licensee
 		FileOwner,
 		/// The tagging date/time
-		TaggingTime,
+		@TIMESTAMP TaggingTime,
 		/// The audio length in milliseconds
-		Length,
+		@NUMERIC Length,
 		/// The original file name
 		OriginalFileName,
 		/// The original media type
@@ -844,7 +932,7 @@ gen_item_keys!(
 		/// The encoder settings
 		EncoderSettings,
 		/// The encoding date/time
-		EncodingTime,
+		@TIMESTAMP EncodingTime,
 		/// The ReplayGain album gain value
 		ReplayGainAlbumGain,
 		/// The ReplayGain album peak value
@@ -891,13 +979,13 @@ gen_item_keys!(
 		/// that are not restricted to integer values.
 		///
 		/// Not supported by ID3v2 that restricts BPM values to integers in `TBPM`.
-		Bpm,
+		@NUMERIC Bpm,
 		/// Non-fractional BPM value with integer precision
 		///
 		/// Only read and written if the tag format has a field for integer BPM values,
 		/// e.g. ID3v2 ([`TBPM` frame](https://github.com/id3/ID3v2.4/blob/516075e38ff648a6390e48aff490abed987d3199/id3v2.4.0-frames.txt#L376))
 		/// and MP4 (`tmpo` integer atom).
-		IntegerBpm,
+		@NUMERIC IntegerBpm,
 
 		// Legal
 		/// The copyright message

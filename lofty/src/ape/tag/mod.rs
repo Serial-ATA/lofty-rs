@@ -291,6 +291,7 @@ impl ApeTag {
 			},
 			key => {
 				let Some(mapped_key) = key.map_key(TagType::Ape) else {
+					log::debug!("No mapping exists for item key `{:?}`, discarding", key);
 					return;
 				};
 
@@ -551,18 +552,6 @@ impl SplitTag for ApeTag {
 				(ItemKey::DiscNumber | ItemKey::DiscTotal, ItemValue::Text(val))
 					if split_pair(val, &mut tag, ItemKey::DiscNumber, ItemKey::DiscTotal)
 						.is_some() =>
-				{
-					*item = ApeItem::EMPTY;
-					false // Item consumed
-				},
-				(ItemKey::MovementNumber | ItemKey::MovementTotal, ItemValue::Text(val))
-					if split_pair(
-						val,
-						&mut tag,
-						ItemKey::MovementNumber,
-						ItemKey::MovementTotal,
-					)
-					.is_some() =>
 				{
 					*item = ApeItem::EMPTY;
 					false // Item consumed
