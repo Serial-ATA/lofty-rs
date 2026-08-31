@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Fixed insertion of `TIPL` and MusicBrainz `UFID` frames via `Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/705)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/706))
+
 ## [0.25.1] - 2026-08-15
 
 ### Changed
