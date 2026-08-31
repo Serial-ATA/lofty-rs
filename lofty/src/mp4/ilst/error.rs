@@ -1,4 +1,4 @@
-use crate::error::{TagEncodingError, TagParseError};
+use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::tag::TagType;
 
 use std::borrow::Cow;
@@ -27,7 +27,7 @@ impl From<IlstParseError> for TagParseError {
 #[derive(LoftyError)]
 #[error(message = "failed to write ilst tag")]
 pub(crate) struct IlstEncodingError {
-	#[error(from(std::io::Error,))]
+	#[error(from(std::io::Error, FileEncodingError))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 

@@ -1,15 +1,15 @@
 use crate::config::ParsingMode;
-use crate::error::FileEncodingError;
-use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
+use crate::error::{FileEncodingError, FileParseError};
+use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::mp4::read::{meta_is_full, skip_atom};
 use crate::util::io::FileLike;
 
 use std::cell::{RefCell, RefMut};
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
-use std::ops::RangeBounds;
+use std::ops::{Bound, RangeBounds};
 
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 /// A wrapper around [`AtomInfo`] that allows us to track all of the children of containers we deem important
 #[derive(Debug)]
@@ -102,6 +102,16 @@ impl ContextualAtom {
 	}
 }
 
+pub(super) struct ContextualAtoms(Vec<ContextualAtom>);
+
+impl ContextualAtoms {
+	pub(super) fn find_atom(&self, fourcc: [u8; 4]) -> Option<&ContextualAtom> {
+		self.0
+			.iter()
+			.find(|atom| matches!(atom.info.ident, AtomIdent::Fourcc(ident) if ident == fourcc))
+	}
+}
+
 /// This is a simple wrapper around a [`Cursor`] that allows us to store additional atom information
 ///
 /// The `atoms` field contains all of the atoms within the file, with containers deemed important (see `IMPORTANT_CONTAINERS`)
@@ -110,7 +120,7 @@ impl ContextualAtom {
 /// Atoms that are not "important" containers are simply parsed at the top level, with all children being skipped.
 pub(super) struct AtomWriter {
 	contents: RefCell<Cursor<Vec<u8>>>,
-	atoms: Vec<ContextualAtom>,
+	atoms: ContextualAtoms,
 }
 
 impl AtomWriter {
@@ -120,7 +130,7 @@ impl AtomWriter {
 	pub(super) fn new(content: Vec<u8>, _parse_mode: ParsingMode) -> Self {
 		Self {
 			contents: RefCell::new(Cursor::new(content)),
-			atoms: Vec::new(),
+			atoms: ContextualAtoms(Vec::new()),
 		}
 	}
 
@@ -147,23 +157,32 @@ impl AtomWriter {
 
 		Ok(Self {
 			contents: RefCell::new(contents),
-			atoms,
+			atoms: ContextualAtoms(atoms),
 		})
 	}
 
-	pub(super) fn find_contextual_atom(&self, fourcc: [u8; 4]) -> Option<&ContextualAtom> {
-		self.atoms
-			.iter()
-			.find(|atom| matches!(atom.info.ident, AtomIdent::Fourcc(ident) if ident == fourcc))
+	pub(super) fn atoms(&self) -> &ContextualAtoms {
+		&self.atoms
 	}
 
 	pub(super) fn into_contents(self) -> Vec<u8> {
 		self.contents.into_inner().into_inner()
 	}
 
+	/// Start a write operation
+	///
+	/// # Panics
+	///
+	/// This will panic if a write is already active. Any previous handle **must** be dropped.
 	pub(super) fn start_write(&self) -> AtomWriterCompanion<'_> {
+		let contents = self.contents.borrow_mut();
+		let original_length = contents.get_ref().len();
 		AtomWriterCompanion {
-			contents: self.contents.borrow_mut(),
+			shift_pos: None,
+			original_length,
+			atoms: self.atoms(),
+			contents,
+			finished: false,
 		}
 	}
 
@@ -180,8 +199,14 @@ impl AtomWriter {
 }
 
 /// The actual handler of the writing operations
+///
+/// NOTE: The writer **must** be `finish()`ed before dropping
 pub(super) struct AtomWriterCompanion<'a> {
+	shift_pos: Option<u64>,
+	original_length: usize,
+	atoms: &'a ContextualAtoms,
 	contents: RefMut<'a, Cursor<Vec<u8>>>,
+	finished: bool,
 }
 
 impl AtomWriterCompanion<'_> {
@@ -189,7 +214,9 @@ impl AtomWriterCompanion<'_> {
 	///
 	/// NOTE: This will not affect the position of the inner [`Cursor`]
 	pub(super) fn insert(&mut self, index: usize, byte: u8) {
-		self.contents.get_mut().insert(index, byte);
+		let index = index as u64;
+		self.shift_pos = Some(self.shift_pos.map_or(index, |p| std::cmp::min(p, index)));
+		self.contents.get_mut().insert(index as usize, byte);
 	}
 
 	/// Replace the contents of the given range
@@ -198,6 +225,16 @@ impl AtomWriterCompanion<'_> {
 		R: RangeBounds<usize>,
 		I: IntoIterator<Item = u8>,
 	{
+		let lower_bound = match range.start_bound() {
+			Bound::Included(&bound) => bound as u64,
+			Bound::Excluded(&bound) => (bound + 1) as u64,
+			Bound::Unbounded => 0,
+		};
+
+		self.shift_pos = Some(
+			self.shift_pos
+				.map_or(lower_bound, |p| std::cmp::min(p, lower_bound)),
+		);
 		self.contents.get_mut().splice(range, replacement);
 	}
 
@@ -245,6 +282,159 @@ impl AtomWriterCompanion<'_> {
 
 	pub(super) fn len(&self) -> usize {
 		self.contents.get_ref().len()
+	}
+
+	/// Finishes the write operation and updates offset atoms if needed
+	pub(super) fn finish(mut self) -> Result<(), FileEncodingError> {
+		self.finished = true;
+		self.update_offsets()
+	}
+
+	/// Update `moov` offset atoms, if needed
+	///
+	/// This updates:
+	///
+	/// * `moov.stco`
+	/// * `moov.co64`
+	/// * `moov.moof.tfhd`
+	///
+	/// Whenever a write handle is finished.
+	fn update_offsets(&mut self) -> Result<(), FileEncodingError> {
+		let Some(shift_pos) = self.shift_pos else {
+			// No edits were made
+			return Ok(());
+		};
+
+		let difference = self.contents.get_ref().len() as i64 - self.original_length as i64;
+		if difference == 0 {
+			// Contents didn't shift at all
+			return Ok(());
+		}
+
+		let Some(moov) = self.atoms.find_atom(*b"moov") else {
+			return Ok(());
+		};
+
+		log::debug!("Checking for offset atoms to update");
+
+		// 32-bit offsets
+		for stco in moov.find_all_children(*b"stco", true) {
+			log::trace!("Found `stco` atom");
+
+			let mut stco_start = stco.start;
+			if stco.extended {
+				return Err(FileParseError::from(AtomParseError::message(
+					Some(stco.ident.clone()),
+					"found an extended `stco` atom",
+				))
+				.into());
+			}
+
+			if stco_start >= shift_pos {
+				stco_start = (stco_start as i64 + difference) as u64;
+			}
+
+			self.seek(SeekFrom::Start(stco_start + ATOM_HEADER_LEN + 4))?;
+
+			let count = self.read_u32::<BigEndian>()?;
+			for _ in 0..count {
+				let read_offset = self.read_u32::<BigEndian>()?;
+				if u64::from(read_offset) < shift_pos {
+					continue;
+				}
+				self.seek(SeekFrom::Current(-4))?;
+				self.write_u32::<BigEndian>((i64::from(read_offset) + difference) as u32)?;
+
+				log::trace!(
+					"Updated offset from {read_offset} to {}",
+					(i64::from(read_offset) + difference) as u32
+				);
+			}
+		}
+
+		// 64-bit offsets
+		for co64 in moov.find_all_children(*b"co64", true) {
+			log::trace!("Found `co64` atom");
+
+			let mut co64_start = co64.start;
+			if co64_start >= shift_pos {
+				co64_start = (co64_start as i64 + difference) as u64;
+			}
+
+			self.seek(SeekFrom::Start(co64_start + ATOM_HEADER_LEN + 8 + 4))?;
+
+			let count = self.read_u32::<BigEndian>()?;
+			for _ in 0..count {
+				let read_offset = self.read_u64::<BigEndian>()?;
+				if read_offset < shift_pos {
+					continue;
+				}
+
+				self.seek(SeekFrom::Current(-8))?;
+				self.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
+
+				log::trace!(
+					"Updated offset from {read_offset} to {}",
+					((read_offset as i64) + difference) as u64
+				);
+			}
+		}
+
+		let Some(moof) = self.atoms.find_atom(*b"moof") else {
+			return Ok(());
+		};
+
+		log::trace!("Found `moof` atom, checking for `tfhd` atoms to update");
+
+		// 64-bit offsets
+		for tfhd in moof.find_all_children(*b"tfhd", true) {
+			log::trace!("Found `tfhd` atom");
+
+			let mut tfhd_start = tfhd.start;
+			if tfhd.extended {
+				return Err(FileParseError::from(AtomParseError::message(
+					Some(tfhd.ident.clone()),
+					"found an extended `tfhd` atom",
+				))
+				.into());
+			}
+
+			if tfhd_start >= shift_pos {
+				tfhd_start = (tfhd_start as i64 + difference) as u64;
+			}
+
+			// Skip atom header + version (1)
+			self.seek(SeekFrom::Start(tfhd_start + ATOM_HEADER_LEN + 1))?;
+
+			let flags = self.read_u24::<BigEndian>()?;
+			let base_data_offset = (flags & 0b1) != 0;
+
+			if base_data_offset {
+				let read_offset = self.read_u64::<BigEndian>()?;
+				if read_offset < shift_pos {
+					continue;
+				}
+
+				self.seek(SeekFrom::Current(-8))?;
+				self.write_u64::<BigEndian>((read_offset as i64 + difference) as u64)?;
+
+				log::trace!(
+					"Updated offset from {read_offset} to {}",
+					((read_offset as i64) + difference) as u64
+				);
+			}
+		}
+
+		Ok(())
+	}
+}
+
+impl Drop for AtomWriterCompanion<'_> {
+	fn drop(&mut self) {
+		assert!(
+			self.finished || std::thread::panicking(),
+			"`AtomWriterCompanion` was not finished"
+		);
 	}
 }
 
@@ -314,5 +504,24 @@ impl<'a> Iterator for AtomFindAll<std::slice::Iter<'a, ContextualAtom>> {
 				return self.next();
 			}
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	#[should_panic(expected = "`AtomWriterCompanion` was not finished")]
+	fn unfinished_companion_panics() {
+		let writer = AtomWriter::new(Vec::new(), ParsingMode::Strict);
+		let _write_handle = writer.start_write();
+	}
+
+	#[test]
+	fn finished_companion_succeeds() {
+		let writer = AtomWriter::new(Vec::new(), ParsingMode::Strict);
+		let write_handle = writer.start_write();
+		assert!(write_handle.finish().is_ok());
 	}
 }
