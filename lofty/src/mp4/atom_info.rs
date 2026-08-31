@@ -68,7 +68,7 @@ impl core::fmt::Display for AtomIdent<'_> {
 	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
 		match self {
 			AtomIdent::Fourcc(fourcc) => write!(f, "{}", fourcc.escape_ascii()),
-			AtomIdent::Freeform { mean, name } => write!(f, "---:{mean}:{name}"),
+			AtomIdent::Freeform { mean, name } => write!(f, "----:{mean}:{name}"),
 		}
 	}
 }

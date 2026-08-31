@@ -641,7 +641,13 @@ impl MergeTag for SplitTagRemainder {
 			let mut key;
 			match item_key.map_key(TagType::VorbisComments) {
 				Some(mapped_key) => key = mapped_key.to_string(),
-				None => continue, // No mapping exists, discard the item
+				None => {
+					log::debug!(
+						"No mapping exists for item key `{:?}`, discarding",
+						item_key
+					);
+					continue;
+				},
 			}
 
 			// Special case for generic popularimeters, since emails are part of the field name

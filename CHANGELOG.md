@@ -6,12 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ItemKey**:
+  - `ItemKey::is_{numeric,timestamp,flag}` to determine the type of value an item *should* contain ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
+  - `ItemKey::supported_keys()` to get a list of all keys that a `TagType` supports ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
+
 ### Fixed
 
 - **ID3v2**:
   - Fixed insertion of `TIPL` and MusicBrainz `UFID` frames via `Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/705)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/706))
+  - Fixed `ItemKey::{MovementNumber, MovementTotal, MusicBrainzTrackId, MusicBrainzReleaseId, MusicBrainzReleaseGroupId, Color}` being dropped during the `Tag` -> `Id3v2Tag` conversion ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))  
   - Fixed the mapping of the ID3v2.2 `TOA` and `TXT` frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/704)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/708))
 - **WAV**: Fixed corruption when overwriting existing ID3v2 chunks with padding ([PR](https://github.com/Serial-ATA/lofty-rs/pull/709))
+- **Ilst**: Fixed the `Display` impl for `AtomIdent` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
 
 ## [0.25.1] - 2026-08-15
 

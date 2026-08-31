@@ -807,54 +807,57 @@ impl MergeTag for SplitTagRemainder {
 		for item in tag.items {
 			let key = item.item_key;
 
-			if let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) {
-				let ItemValue::Text(text) = item.item_value else {
-					continue;
-				};
+			let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) else {
+				log::debug!("No mapping exists for item key `{:?}`, discarding", key);
+				continue;
+			};
 
-				match key {
-					ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, text.as_str()),
-					ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, text.as_str()),
-					ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
-					ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
-					ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
-						let Some(data) = flag_item(text.as_str()) else {
-							continue;
-						};
+			let ItemValue::Text(text) = item.item_value else {
+				continue;
+			};
 
-						merged.atoms.push(Atom {
-							ident: ident.into_owned(),
-							data: AtomDataStorage::Single(AtomData::Bool(data)),
-						})
-					},
-					ItemKey::ParentalAdvisory => {
-						let Ok(rating) = text.parse::<u8>() else {
-							log::warn!(
-								"Parental advisory rating is not a number: {}, discarding",
-								text
-							);
-							continue;
-						};
+			match key {
+				ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, text.as_str()),
+				ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, text.as_str()),
+				ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
+				ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
+				ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
+					let Some(data) = flag_item(text.as_str()) else {
+						continue;
+					};
 
-						let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
-							log::warn!(
-								"Parental advisory rating is out of range: {rating}, discarding"
-							);
-							continue;
-						};
-
-						merged.atoms.push(Atom {
-							ident: ident.into_owned(),
-							data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(
-								parsed_rating.as_u8(),
-							))),
-						})
-					},
-					_ => merged.atoms.push(Atom {
+					merged.atoms.push(Atom {
 						ident: ident.into_owned(),
-						data: AtomDataStorage::Single(AtomData::UTF8(text)),
-					}),
-				}
+						data: AtomDataStorage::Single(AtomData::Bool(data)),
+					})
+				},
+				ItemKey::ParentalAdvisory => {
+					let Ok(rating) = text.parse::<u8>() else {
+						log::warn!(
+							"Parental advisory rating is not a number: {}, discarding",
+							text
+						);
+						continue;
+					};
+
+					let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
+						log::warn!(
+							"Parental advisory rating is out of range: {rating}, discarding"
+						);
+						continue;
+					};
+
+					merged.atoms.push(Atom {
+						ident: ident.into_owned(),
+						data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(
+							parsed_rating.as_u8(),
+						))),
+					})
+				},
+				_ => merged.atoms.push(Atom {
+					ident: ident.into_owned(),
+					data: AtomDataStorage::Single(AtomData::UTF8(text)),
+				}),
 			}
 		}
 

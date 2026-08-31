@@ -11,12 +11,13 @@ use crate::tag::{
 };
 use crate::util::io::FileLike;
 
-use byteorder::BigEndian;
-use lofty_attr::tag;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::io::{Read, Seek, Write};
 use std::ops::Range;
+
+use byteorder::BigEndian;
+use lofty_attr::tag;
 
 /// Represents an AIFF `COMT` chunk
 ///

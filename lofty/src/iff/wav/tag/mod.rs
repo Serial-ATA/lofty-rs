@@ -363,7 +363,10 @@ pub(crate) fn tagitems_into_riff<'a>(
 			return None;
 		};
 
-		let key = i.key().map_key(TagType::RiffInfo)?;
+		let Some(key) = i.key().map_key(TagType::RiffInfo) else {
+			log::debug!("No mapping exists for item key `{:?}`, discarding", i.key());
+			return None;
+		};
 
 		// Special case for generic popularimeters
 		if i.key() == ItemKey::Popularimeter {
