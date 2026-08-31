@@ -186,6 +186,7 @@ gen_map!(
 	"TPE3"                                  => Conductor,
 	"DIRECTOR"                              => Director,
 	"TEXT"                                  => Lyricist,
+	"TIPL"                                  => Producer | Arranger | Engineer | MixDj | MixEngineer,
 	"TPUB"                                  => Publisher | Label,
 	"TRSN"                                  => InternetRadioStationName,
 	"TRSO"                                  => InternetRadioStationOwner,
@@ -248,15 +249,15 @@ gen_map!(
 	// to attempt to parse and convert LRC text into one. So we can't reasonably support `ItemKey::Lyrics`,
 	// with it being overloaded with both synchronized and unsynchronized lyrics.
 	"USLT"                                  => UnsyncLyrics,
-	// Mapping of MusicBrainzRecordingId is implemented as a special case
+	"UFID"                                  => MusicBrainzRecordingId,
 	"MusicBrainz Release Track Id"          => MusicBrainzTrackId,
 	"MusicBrainz Album Id"                  => MusicBrainzReleaseId,
 	"MusicBrainz Release Group Id"          => MusicBrainzReleaseGroupId,
 	"MusicBrainz Artist Id"                 => MusicBrainzArtistId,
 	"MusicBrainz Album Artist Id"           => MusicBrainzReleaseArtistId,
 	"MusicBrainz Work Id"                   => MusicBrainzWorkId,
-	"MusicBrainz Album Type"				=> MusicBrainzReleaseType,
-	"MusicBrainz Album Release Country" 	=> ReleaseCountry,
+	"MusicBrainz Album Type"                => MusicBrainzReleaseType,
+	"MusicBrainz Album Release Country"     => ReleaseCountry,
 );
 
 gen_map!(
