@@ -140,7 +140,7 @@ where
 				write_id3v2_chunk::<_, B>(tag, write_options, &mut file)?;
 
 				file.write_all(&JUNK_CHUNK_NAME)?;
-				file.write_u32::<B>(remainder as u32)?;
+				file.write_u32::<B>((remainder - u64::from(IFF_CHUNK_HEADER_SIZE)) as u32)?;
 				return Ok(());
 			}
 		}
