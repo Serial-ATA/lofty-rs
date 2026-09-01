@@ -657,7 +657,8 @@ impl MergeTag for SplitTagRemainder {
 					continue;
 				};
 
-				if let Some(email) = popm.email() {
+				let email = popm.email();
+				if !email.is_empty() {
 					if !valid_vorbis_comments_key(email.as_bytes()) {
 						log::warn!("Popularimeter email contains invalid characters, skipping");
 						continue;
