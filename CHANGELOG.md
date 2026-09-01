@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **ID3v2**: Fixed insertion of `TIPL` and MusicBrainz `UFID` frames via `Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/705)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/706))
+- **ID3v2**:
+  - Fixed insertion of `TIPL` and MusicBrainz `UFID` frames via `Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/705)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/706))
+  - Fixed the mapping of the ID3v2.2 `TOA` and `TXT` frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/704)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/708))
 
 ## [0.25.1] - 2026-08-15
 
