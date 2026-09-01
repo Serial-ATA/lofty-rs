@@ -18,6 +18,7 @@ use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType};
 use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::Timestamp;
+use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
 	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
 	try_parse_timestamp,
@@ -713,6 +714,36 @@ impl SplitTag for Ilst {
 				match val {
 					AtomData::UTF8(text) | AtomData::UTF16(text) => {
 						if let ItemKeyMapping::Mapped(key) = &key {
+							if *key == ItemKey::Popularimeter {
+								let Ok(rate) = text.parse::<u8>() else {
+									log::warn!(
+										"Unable to parse popularimeter rating during tag split, \
+										 retaining"
+									);
+									return true; // Data retained
+								};
+
+								let Some(generic) = Popularimeter::mapped(
+									// We only have a rating available, so we'll just fall through to the custom
+									// rating provider. By default, the custom provider is MusicBee, which it *seems*
+									// like every other app uses for MP4 ratings. Not 100% sure...
+									"",
+									TagType::Mp4Ilst,
+									rate,
+									0,
+								) else {
+									log::warn!(
+										"Unable to find handler for popularimeter during tag \
+										 split, retaining"
+									);
+									return true; // Data retained
+								};
+
+								tag.items
+									.push(TagItem::new(*key, ItemValue::Text(generic.to_string())));
+								return false; // Data consumed
+							}
+
 							tag.items
 								.push(TagItem::new(*key, ItemValue::Text(std::mem::take(text))));
 						}
@@ -853,6 +884,20 @@ impl MergeTag for SplitTagRemainder {
 							parsed_rating.as_u8(),
 						))),
 					})
+				},
+				ItemKey::Popularimeter => {
+					let Ok(popm) = Popularimeter::from_str(&text) else {
+						log::warn!("Failed to parse popularimeter during tag merge, skipping");
+						continue;
+					};
+
+					// AFAICT the apps that support `rate` (which are very few and far between) only
+					// support the ratings as text for some reason?
+					let value = popm.mapped_value(TagType::Mp4Ilst);
+					merged.atoms.push(Atom {
+						ident: ident.into_owned(),
+						data: AtomDataStorage::Single(AtomData::UTF8(value.to_string())),
+					});
 				},
 				_ => merged.atoms.push(Atom {
 					ident: ident.into_owned(),

@@ -79,6 +79,20 @@ pub trait RatingProvider: Send + Sync {
 	/// Whether this provider should be used for the given email
 	fn supports_email(&self, email: &str) -> bool;
 
+	/// The default email to use if none is provided
+	///
+	/// Some formats, like [`Ilst`], support user ratings but don't attach them to an email.
+	/// When converting to a generic [`Popularimeter`], an email is required to determine the
+	/// [`RatingProvider`].
+	///
+	/// So, a conversion from [`Ilst`] to [`Tag`] will always use this email.
+	///
+	/// [`Ilst`]: crate::mp4::Ilst
+	/// [`Tag`]: crate::tag::Tag
+	fn default_email(&self) -> &'static str {
+		"" // TODO: Remove this default in the next major version
+	}
+
 	/// Converts a [`StarRating`] to a format-specific integer
 	fn rate(&self, tag_type: TagType, rating: StarRating) -> u8;
 
@@ -152,6 +166,10 @@ impl RatingProvider for DefaultRatingProvider {
 		true
 	}
 
+	fn default_email(&self) -> &'static str {
+		MUSICBEE_PROVIDER.default_email()
+	}
+
 	// MusicBee-style ratings seem to be the most widely used (?)
 	fn rate(&self, tag_type: TagType, rating: StarRating) -> u8 {
 		MUSICBEE_PROVIDER.rate(tag_type, rating)
@@ -175,6 +193,10 @@ pub struct MusicBeeProvider;
 impl RatingProvider for MusicBeeProvider {
 	fn supports_email(&self, email: &str) -> bool {
 		email == Popularimeter::MUSICBEE_EMAIL
+	}
+
+	fn default_email(&self) -> &'static str {
+		Popularimeter::MUSICBEE_EMAIL
 	}
 
 	fn rate(&self, tag_type: TagType, rating: StarRating) -> u8 {
@@ -224,6 +246,10 @@ impl RatingProvider for WindowsMediaPlayerProvider {
 		email == Popularimeter::WMP_EMAIL
 	}
 
+	fn default_email(&self) -> &'static str {
+		Popularimeter::WMP_EMAIL
+	}
+
 	fn rate(&self, _: TagType, rating: StarRating) -> u8 {
 		// WMP only supports ID3v2 ratings, and uses the same values as MusicBee
 		MusicBeeProvider.rate(TagType::Id3v2, rating)
@@ -242,6 +268,10 @@ pub struct PicardProvider;
 impl RatingProvider for PicardProvider {
 	fn supports_email(&self, email: &str) -> bool {
 		email == Popularimeter::PICARD_EMAIL
+	}
+
+	fn default_email(&self) -> &'static str {
+		Popularimeter::PICARD_EMAIL
 	}
 
 	fn rate(&self, tag_type: TagType, rating: StarRating) -> u8 {
@@ -333,7 +363,7 @@ impl<'a> Popularimeter<'a> {
 	/// use lofty::tag::items::popularimeter::{Popularimeter, StarRating};
 	///
 	/// let rating = Popularimeter::custom("foo@example.com", StarRating::Three, 5);
-	/// assert_eq!(rating.email(), Some("foo@example.com"));
+	/// assert_eq!(rating.email(), "foo@example.com");
 	/// assert_eq!(rating.rating(), StarRating::Three);
 	/// assert_eq!(rating.play_counter, 5);
 	/// ```
@@ -352,7 +382,7 @@ impl<'a> Popularimeter<'a> {
 		rate: u8,
 		play_counter: u64,
 	) -> Option<Self> {
-		let email = email.into();
+		let mut email = email.into();
 
 		let rating_provider;
 		match &*email {
@@ -361,6 +391,11 @@ impl<'a> Popularimeter<'a> {
 			Popularimeter::PICARD_EMAIL => rating_provider = PICARD_PROVIDER,
 			_ => {
 				rating_provider = custom_provider();
+				if email.is_empty() {
+					// The format didn't provide an email, so we'll use the default
+					email = rating_provider.default_email().into();
+				}
+
 				if !rating_provider.supports_email(&email) {
 					return None;
 				}
@@ -387,10 +422,12 @@ impl<'a> Popularimeter<'a> {
 	/// use lofty::tag::items::popularimeter::{Popularimeter, StarRating};
 	///
 	/// let rating = Popularimeter::custom("foo@example.com", StarRating::Three, 5);
-	/// assert_eq!(rating.email(), Some("foo@example.com"))
+	/// assert_eq!(rating.email(), "foo@example.com");
 	/// ```
-	pub fn email(&self) -> Option<&str> {
-		self.email.as_deref()
+	pub fn email(&self) -> &str {
+		self.email
+			.as_deref()
+			.unwrap_or_else(|| self.rating_provider.default_email())
 	}
 
 	/// The user's rating
@@ -505,6 +542,7 @@ mod tests {
 	use crate::ogg::tag::VorbisComments;
 	use crate::prelude::ItemKey;
 	use crate::tag::{Tag, TagType};
+	use rusty_fork::rusty_fork_test;
 
 	#[test_log::test]
 	fn popm_conversions() {
@@ -527,6 +565,8 @@ mod tests {
 				TagType::Mp4Ilst => {
 					let t: Ilst = tag.into();
 					tag = t.into();
+					// Unsupported
+					check_play_counter = false;
 				},
 				TagType::VorbisComments => {
 					let t: VorbisComments = tag.into();
@@ -556,68 +596,70 @@ mod tests {
 		}
 	}
 
-	#[test_log::test]
-	fn popm_custom_provider() {
-		let frame = PopularimeterFrame::new("foo@example.com", 128, 40);
+	rusty_fork_test! {
+		#[test_log::test]
+		fn popm_custom_provider() {
+			let frame = PopularimeterFrame::new("foo@example.com", 128, 40);
 
-		let mut tag = Id3v2Tag::new();
-		tag.insert(Frame::Popularimeter(frame.clone()));
+			let mut tag = Id3v2Tag::new();
+			tag.insert(Frame::Popularimeter(frame.clone()));
 
-		// By default, "128" should map to 3 stars
-		let tag: Tag = tag.into();
-		let popm = tag.ratings().next().unwrap();
+			// By default, "128" should map to 3 stars
+			let tag: Tag = tag.into();
+			let popm = tag.ratings().next().unwrap();
 
-		assert_eq!(popm.email(), Some("foo@example.com"));
-		assert_eq!(popm.rating(), StarRating::Three);
-		assert_eq!(popm.play_counter, 40);
+			assert_eq!(popm.email(), "foo@example.com");
+			assert_eq!(popm.rating(), StarRating::Three);
+			assert_eq!(popm.play_counter, 40);
 
-		// Now make a provider where 128 maps to one star
-		struct CustomRatingProvider;
+			// Now make a provider where 128 maps to one star
+			struct CustomRatingProvider;
 
-		impl RatingProvider for CustomRatingProvider {
-			fn supports_email(&self, email: &str) -> bool {
-				email.starts_with("foo")
-			}
+			impl RatingProvider for CustomRatingProvider {
+				fn supports_email(&self, email: &str) -> bool {
+					email.starts_with("foo")
+				}
 
-			fn rate(&self, tag_type: TagType, rating: StarRating) -> u8 {
-				match tag_type {
-					TagType::Id3v2 => match rating {
-						StarRating::One => 128,
+				fn rate(&self, tag_type: TagType, rating: StarRating) -> u8 {
+					match tag_type {
+						TagType::Id3v2 => match rating {
+							StarRating::One => 128,
+							_ => unreachable!(),
+						},
 						_ => unreachable!(),
-					},
-					_ => unreachable!(),
+					}
+				}
+
+				fn convert_raw(&self, tag_type: TagType, rating: u8) -> StarRating {
+					match tag_type {
+						TagType::Id3v2 => match rating {
+							128 => StarRating::One,
+							_ => unreachable!(),
+						},
+						_ => unreachable!(),
+					}
 				}
 			}
 
-			fn convert_raw(&self, tag_type: TagType, rating: u8) -> StarRating {
-				match tag_type {
-					TagType::Id3v2 => match rating {
-						128 => StarRating::One,
-						_ => unreachable!(),
-					},
-					_ => unreachable!(),
-				}
-			}
+			set_custom_rating_provider(CustomRatingProvider);
+
+			let mut tag = Id3v2Tag::new();
+			tag.insert(Frame::Popularimeter(frame.clone()));
+			// Some other email that the provider doesn't support
+			tag.insert(Frame::Popularimeter(PopularimeterFrame::new(
+				"bar@example.com",
+				128,
+				40,
+			)));
+
+			let tag: Tag = tag.into();
+			let mut ratings = tag.ratings();
+			let popm = ratings.next().unwrap();
+			assert!(ratings.next().is_none()); // The second popm should be ignored, since the email isn't supported
+
+			assert_eq!(popm.email(), "foo@example.com");
+			assert_eq!(popm.rating(), StarRating::One);
+			assert_eq!(popm.play_counter, 40);
 		}
-
-		set_custom_rating_provider(CustomRatingProvider);
-
-		let mut tag = Id3v2Tag::new();
-		tag.insert(Frame::Popularimeter(frame.clone()));
-		// Some other email that the provider doesn't support
-		tag.insert(Frame::Popularimeter(PopularimeterFrame::new(
-			"bar@example.com",
-			128,
-			40,
-		)));
-
-		let tag: Tag = tag.into();
-		let mut ratings = tag.ratings();
-		let popm = ratings.next().unwrap();
-		assert!(ratings.next().is_none()); // The second popm should be ignored, since the email isn't supported
-
-		assert_eq!(popm.email(), Some("foo@example.com"));
-		assert_eq!(popm.rating(), StarRating::One);
-		assert_eq!(popm.play_counter, 40);
 	}
 }

@@ -19,7 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed `ItemKey::{MovementNumber, MovementTotal, MusicBrainzTrackId, MusicBrainzReleaseId, MusicBrainzReleaseGroupId, Color}` being dropped during the `Tag` -> `Id3v2Tag` conversion ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))  
   - Fixed the mapping of the ID3v2.2 `TOA` and `TXT` frames ([issue](https://github.com/Serial-ATA/lofty-rs/issues/704)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/708))
 - **WAV**: Fixed corruption when overwriting existing ID3v2 chunks with padding ([PR](https://github.com/Serial-ATA/lofty-rs/pull/709))
-- **Ilst**: Fixed the `Display` impl for `AtomIdent` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
+- **Ilst**:
+  - Fixed the `Display` impl for `AtomIdent` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
+  - Fixed the encoding of `Popularimeter`s in the `Tag` <-> `Ilst` conversions ([PR](https://github.com/Serial-ATA/lofty-rs/pull/707))
 
 ## [0.25.1] - 2026-08-15
 
