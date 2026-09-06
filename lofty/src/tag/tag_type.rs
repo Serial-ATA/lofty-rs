@@ -148,7 +148,7 @@ impl TagType {
 	where
 		F: FileLike,
 	{
-		let file = VerifiedFile::new(file)?;
+		let file = VerifiedFile::new(file, write_options.parse_options)?;
 		self.do_remove(file, write_options)
 	}
 

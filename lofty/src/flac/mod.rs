@@ -71,7 +71,7 @@ impl FlacFile {
 			file.rewind()?;
 		}
 
-		let file = VerifiedFile::new(file)?;
+		let file = VerifiedFile::new(file, write_options.parse_options)?;
 
 		// We have an existing vorbis comments tag, we can just append our pictures to it
 		if let Some(ref vorbis_comments) = self.vorbis_comments_tag {

@@ -1,10 +1,11 @@
 //! Various traits for reading and writing to file-like objects
 
+use crate::config::ParseOptions;
 use crate::error::{FileParseError, UnknownFormatError};
-use crate::util::math::F80;
-
 use crate::file::FileType;
 use crate::probe::Probe;
+use crate::util::math::F80;
+
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom, Write};
@@ -248,8 +249,11 @@ pub(crate) struct VerifiedFile<'a, F> {
 }
 
 impl<'a, F: FileLike> VerifiedFile<'a, F> {
-	pub(crate) fn new(file: &'a mut F) -> Result<Self, FileParseError> {
-		let probe = Probe::new(file).guess_file_type()?;
+	pub(crate) fn new(
+		file: &'a mut F,
+		parse_options: ParseOptions,
+	) -> Result<Self, FileParseError> {
+		let probe = Probe::new(file).options(parse_options).guess_file_type()?;
 		match probe.file_type() {
 			Some(format) => Ok(Self {
 				format,
