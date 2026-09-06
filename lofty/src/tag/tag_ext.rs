@@ -1,7 +1,7 @@
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, UnsupportedTagError};
 use crate::io::{FileLike, VerifiedFile};
-use crate::tag::{Accessor, Tag, TagType};
+use crate::tag::{Accessor, Tag, TagSupport, TagType};
 
 use std::path::Path;
 
@@ -105,10 +105,11 @@ pub trait TagExt: Accessor + TagWriteExt + Into<Tag> + Sized + private::Sealed {
 	where
 		F: FileLike,
 	{
-		let file = VerifiedFile::new(file)?;
+		let file = VerifiedFile::new(file, write_options.parse_options)?;
 
 		// Empty tag writes are allowed for read-only formats, since they'll be stripped
-		if !file.format().tag_support(self.tag_type()).is_writable() && !self.is_empty() {
+		let support = file.format().tag_support(self.tag_type());
+		if support == TagSupport::Unsupported || (!support.is_writable() && !self.is_empty()) {
 			return Err(FileEncodingError::from(UnsupportedTagError).with_format(file.format()));
 		}
 
