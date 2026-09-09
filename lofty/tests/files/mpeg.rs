@@ -8,7 +8,7 @@ use lofty::probe::Probe;
 use lofty::tag::{Tag, TagType};
 
 use std::borrow::Cow;
-use std::io::Seek;
+use std::io::{Seek, Write};
 
 #[test_log::test]
 fn read() {
@@ -198,6 +198,35 @@ fn save_to_id3v2() {
 	assert!(tag.track_total().is_none());
 	assert!(tag.disk().is_none());
 	assert!(tag.disk_total().is_none());
+}
+
+#[test_log::test]
+fn test_tag_save_with_parse_options() {
+	let mut file = tempfile::tempfile().unwrap();
+
+	file.write_all(&vec![0; 2048]).unwrap();
+	file.write_all(&std::fs::read("tests/taglib/data/xing.mp3").unwrap())
+		.unwrap();
+	file.rewind().unwrap();
+
+	let _f = MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
+
+	let mut tag = Tag::new(TagType::Id3v2);
+	tag.set_title("Title B".to_string());
+
+	file.rewind().unwrap();
+
+	tag.save_to(
+		&mut file,
+		WriteOptions::new().parse_options(ParseOptions::new().max_junk_bytes(3000)),
+	)
+	.unwrap();
+
+	file.rewind().unwrap();
+
+	let f = MpegFile::read_from(&mut file, ParseOptions::new().max_junk_bytes(3000)).unwrap();
+
+	assert_eq!(f.id3v2().unwrap().title().as_deref(), Some("Title B"));
 }
 
 #[test_log::test]
