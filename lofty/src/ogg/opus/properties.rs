@@ -110,6 +110,13 @@ where
 	properties.output_gain = identification_packet_reader.read_i16::<LittleEndian>()?;
 
 	let channel_mapping_family = identification_packet_reader.read_u8()?;
+	if channel_mapping_family > 1 {
+		// TODO: Don't throw out the whole file, in the next major version just make the `ChannelMask` optional
+		return Err(FileParseError::message(
+			Some(FileType::Opus),
+			"invalid channel mapping family",
+		));
+	}
 
 	// https://datatracker.ietf.org/doc/html/rfc7845.html#section-5.1.1
 	if (channel_mapping_family == 0 && properties.channels > 2)
