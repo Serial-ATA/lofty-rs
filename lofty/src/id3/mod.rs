@@ -19,9 +19,15 @@ use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
 use std::num::ParseIntError;
-use std::ops::Neg;
+use std::ops::{Neg, Range};
 
-pub(crate) struct ID3FindResults<Header, Content>(pub Option<Header>, pub Content);
+#[derive(Debug)]
+pub(crate) struct ID3FindResults<Header, Content> {
+	pub header: Header,
+	pub content: Content,
+	/// The byte range of the tag
+	pub range: Range<u64>,
+}
 
 /// Errors that can occur while parsing Lyrics3v2 tags
 pub struct Lyrics3v2ParseError {
@@ -74,34 +80,37 @@ impl From<TextDecodingError> for Lyrics3v2ParseError {
 
 pub(crate) fn find_lyrics3v2<R>(
 	data: &mut R,
-) -> Result<ID3FindResults<(), u32>, Lyrics3v2ParseError>
+) -> Result<Option<ID3FindResults<(), u32>>, Lyrics3v2ParseError>
 where
 	R: Read + Seek,
 {
 	log::debug!("Searching for a Lyrics3v2 tag");
 
-	let mut header = None;
 	let mut size = 0_u32;
 
-	data.seek(SeekFrom::Current(-15))?;
+	let start = data.seek(SeekFrom::Current(-15))?;
 
 	let mut lyrics3v2 = [0; 15];
 	data.read_exact(&mut lyrics3v2)?;
 
-	if &lyrics3v2[7..] == b"LYRICS200" {
-		log::warn!("Encountered a Lyrics3v2 tag. This is an outdated format, and will be skipped.");
-
-		header = Some(());
-
-		let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
-		let lyrics_size = lyrics_size.parse::<u32>()?;
-
-		size += lyrics_size;
-
-		data.seek(SeekFrom::Current(i64::from(lyrics_size + 15).neg()))?;
+	if &lyrics3v2[7..] != b"LYRICS200" {
+		return Ok(None);
 	}
 
-	Ok(ID3FindResults(header, size))
+	log::warn!("Encountered a Lyrics3v2 tag. This is an outdated format, and will be skipped.");
+
+	let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
+	let lyrics_size = lyrics_size.parse::<u32>()?;
+
+	size += lyrics_size;
+
+	data.seek(SeekFrom::Current(i64::from(lyrics_size + 15).neg()))?;
+
+	Ok(Some(ID3FindResults {
+		header: (),
+		content: size,
+		range: start..(start + u64::from(size)),
+	}))
 }
 
 #[allow(unused_variables)]
@@ -109,35 +118,32 @@ pub(crate) fn find_id3v1<R>(
 	data: &mut R,
 	read: bool,
 	parse_mode: ParsingMode,
-) -> Result<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>, Id3v1ParseError>
+) -> Result<Option<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>, Id3v1ParseError>
 where
 	R: Read + Seek,
 {
 	log::debug!("Searching for an ID3v1 tag");
 
 	let mut id3v1 = None;
-	let mut header = None;
 
 	// Reader is too small to contain an ID3v2 tag
 	if data.seek(SeekFrom::End(-128)).is_err() {
 		data.seek(SeekFrom::End(0))?;
-		return Ok(ID3FindResults(header, id3v1));
+		return Ok(None);
 	}
 
 	let mut id3v1_header = [0; 3];
 	data.read_exact(&mut id3v1_header)?;
 
-	data.seek(SeekFrom::Current(-3))?;
+	let start = data.seek(SeekFrom::Current(-3))?;
 
 	// No ID3v1 tag found
 	if id3v1_header != ID3V1_TAG_MARKER {
 		data.seek(SeekFrom::End(0))?;
-		return Ok(ID3FindResults(header, id3v1));
+		return Ok(None);
 	}
 
 	log::debug!("Found an ID3v1 tag, parsing");
-
-	header = Some(());
 
 	if read {
 		let mut id3v1_tag = [0; 128];
@@ -148,7 +154,11 @@ where
 		id3v1 = Some(v1::tag::Id3v1Tag::parse(id3v1_tag, parse_mode)?)
 	}
 
-	Ok(ID3FindResults(header, id3v1))
+	Ok(Some(ID3FindResults {
+		header: (),
+		content: id3v1,
+		range: start..(start + 128),
+	}))
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -176,14 +186,13 @@ impl FindId3v2Config {
 pub(crate) fn find_id3v2<R>(
 	reader: &mut R,
 	config: FindId3v2Config,
-) -> Result<ID3FindResults<Id3v2Header, Option<Vec<u8>>>, Id3v2ParseError>
+) -> Result<Option<ID3FindResults<Id3v2Header, Option<Vec<u8>>>>, Id3v2ParseError>
 where
 	R: Read + Seek,
 {
 	let start = reader.stream_position()?;
 	log::debug!("Searching for an ID3v2 tag at offset: {start}");
 
-	let mut header = None;
 	let mut id3v2 = None;
 
 	if let Some(junk_window) = config.allowed_junk_window {
@@ -191,7 +200,7 @@ where
 
 		let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? else {
 			reader.seek(SeekFrom::Start(start))?;
-			return Ok(ID3FindResults(None, None));
+			return Ok(None);
 		};
 
 		log::warn!(
@@ -218,12 +227,16 @@ where
 			reader.seek(SeekFrom::Current(10))?;
 		}
 
-		header = Some(id3v2_header);
+		let end = reader.stream_position()?;
+		Ok(Some(ID3FindResults {
+			header: id3v2_header,
+			content: id3v2,
+			range: start..end,
+		}))
 	} else {
 		reader.seek(SeekFrom::Current(-10))?;
+		Ok(None)
 	}
-
-	Ok(ID3FindResults(header, id3v2))
 }
 
 /// Searches for an ID3v2 tag in (potential) junk data between the start

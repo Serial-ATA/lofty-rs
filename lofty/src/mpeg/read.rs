@@ -124,10 +124,13 @@ where
 						allowed_junk_window: Some(search_window_size),
 					};
 
-					if let ID3FindResults(Some(header), Some(id3v2_bytes)) =
-						crate::id3::find_id3v2(reader, config).map_err(TagParseError::from)?
+					if let Some(ID3FindResults {
+						header,
+						content: Some(content),
+						range: _,
+					}) = crate::id3::find_id3v2(reader, config).map_err(TagParseError::from)?
 					{
-						let reader = &mut &*id3v2_bytes;
+						let reader = &mut &*content;
 
 						let id3v2 = parse_id3v2(reader, header, parse_options)
 							.map_err(TagParseError::from)?;
@@ -153,12 +156,14 @@ where
 	}
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
-			.map_err(TagParseError::from)?;
-
-	if header.is_some() {
-		file.id3v1_tag = id3v1;
+	if let Some(ID3FindResults {
+		header,
+		content,
+		range: _,
+	}) = find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+		.map_err(TagParseError::from)?
+	{
+		file.id3v1_tag = content;
 	}
 
 	let _ = find_lyrics3v2(reader)?;

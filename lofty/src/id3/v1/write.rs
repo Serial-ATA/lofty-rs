@@ -12,7 +12,7 @@ use std::io::{Cursor, Seek, Write};
 
 use byteorder::WriteBytesExt;
 
-#[allow(clippy::shadow_unrelated)]
+#[allow(clippy::shadow_unrelated, clippy::collapsible_if)]
 pub(crate) fn write_id3v1<F>(
 	file: VerifiedFile<'_, F>,
 	tag: &Id3v1TagRef<'_>,
@@ -24,21 +24,24 @@ where
 	let mut file = file.into_inner();
 
 	// This will seek us to the writing position
-	let ID3FindResults(header, _) =
-		find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
-			.map_err(TagParseError::from)?;
+	if let Some(ID3FindResults {
+		header: _,
+		content: _,
+		range: _,
+	}) = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
+		.map_err(TagParseError::from)?
+	{
+		if tag.is_empty() {
+			// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
+			// shrink it down.
+			let new_length = file.len()?.saturating_sub(128);
+			file.truncate(new_length)?;
 
-	if tag.is_empty() && header.is_some() {
-		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
-		// shrink it down.
-		let new_length = file.len()?.saturating_sub(128);
-		file.truncate(new_length)?;
-
-		return Ok(());
+			return Ok(());
+		}
 	}
 
 	let tag = encode(tag, write_options).map_err(TagEncodingError::from)?;
-
 	file.write_all(&tag)?;
 
 	Ok(())
