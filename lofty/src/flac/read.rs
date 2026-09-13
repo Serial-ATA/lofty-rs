@@ -58,8 +58,11 @@ where
 	};
 
 	// It is possible for a FLAC file to contain an ID3v2 tag
-	if let ID3FindResults(Some(header), Some(content)) =
-		find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
+	if let Some(ID3FindResults {
+		header,
+		content: Some(content),
+		range: _,
+	}) = find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
 	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
 

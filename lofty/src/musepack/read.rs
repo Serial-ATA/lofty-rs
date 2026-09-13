@@ -34,8 +34,11 @@ where
 
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
-	if let ID3FindResults(Some(header), Some(content)) =
-		find_id3v2(reader, find_id3v2_config).map_err(TagParseError::from)?
+	if let Some(ID3FindResults {
+		header,
+		content,
+		range: _,
+	}) = find_id3v2(reader, find_id3v2_config).map_err(TagParseError::from)?
 	{
 		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
 		else {
@@ -44,22 +47,26 @@ where
 
 		stream_length = new_stream_length;
 
-		let reader = &mut &*content;
+		if let Some(content) = content {
+			let reader = &mut &*content;
 
-		let id3v2 = parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
-		file.id3v2_tag = Some(id3v2);
+			let id3v2 = parse_id3v2(reader, header, parse_options).map_err(TagParseError::from)?;
+			file.id3v2_tag = Some(id3v2);
+		}
 	}
 
 	// Save the current position, so we can go back and read the properties after the tags
 	let pos_past_id3v2 = reader.stream_position()?;
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
-			.map_err(TagParseError::from)?;
-
-	if header.is_some() {
-		file.id3v1_tag = id3v1;
+	if let Some(ID3FindResults {
+		header,
+		content,
+		range: _,
+	}) = find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+		.map_err(TagParseError::from)?
+	{
+		file.id3v1_tag = content;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
 			return Err(SizeMismatchError.into());
 		};
@@ -67,12 +74,18 @@ where
 		stream_length = new_stream_length;
 	}
 
-	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
-	let Some(new_stream_length) = stream_length.checked_sub(u64::from(lyrics3v2_size)) else {
-		return Err(SizeMismatchError.into());
-	};
+	if let Some(ID3FindResults {
+		header: _,
+		content: size,
+		range: _,
+	}) = find_lyrics3v2(reader)?
+	{
+		let Some(new_stream_length) = stream_length.checked_sub(u64::from(size)) else {
+			return Err(SizeMismatchError.into());
+		};
 
-	stream_length = new_stream_length;
+		stream_length = new_stream_length;
+	}
 
 	reader.seek(SeekFrom::Current(-32))?;
 
