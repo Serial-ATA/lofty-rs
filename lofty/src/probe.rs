@@ -3,6 +3,7 @@
 use crate::aac::AacFile;
 use crate::ape::ApeFile;
 use crate::config::{ParseOptions, global_options};
+use crate::dsf::DsfFile;
 use crate::error::{FileParseError, UnknownFormatError};
 use crate::file::{AudioFile, BoundTaggedFile, FileType, FileTypeGuessResult, TaggedFile};
 use crate::flac::FlacFile;
@@ -472,6 +473,7 @@ impl<R: Read + Seek> Probe<R> {
 				FileType::Aac => AacFile::read_from(reader, options)?.into(),
 				FileType::Aiff => AiffFile::read_from(reader, options)?.into(),
 				FileType::Ape => ApeFile::read_from(reader, options)?.into(),
+				FileType::Dsf => DsfFile::read_from(reader, options)?.into(),
 				FileType::Flac => FlacFile::read_from(reader, options)?.into(),
 				FileType::Mpeg => MpegFile::read_from(reader, options)?.into(),
 				FileType::Opus => OpusFile::read_from(reader, options)?.into(),

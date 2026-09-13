@@ -71,7 +71,11 @@ pub fn no_properties_test(path: impl AsRef<Path>) {
 		.unwrap()
 		.read()
 		.unwrap();
-	assert!(tagged_file.properties().is_empty());
+	assert!(
+		tagged_file.properties().is_empty(),
+		"{:?}",
+		tagged_file.properties()
+	);
 }
 
 /// Verify that the tag of type `tag_type` has an [`ItemKey::TrackArtist`] of `expected_value`

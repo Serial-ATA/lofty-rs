@@ -88,6 +88,7 @@ fn minimal_assets() -> Vec<(FileType, &'static str)> {
 				FileType::Aac => "tests/files/assets/minimal/full_test.aac",
 				FileType::Aiff => "tests/files/assets/minimal/full_test.aiff",
 				FileType::Ape => "tests/files/assets/minimal/full_test.ape",
+				FileType::Dsf => "tests/files/assets/minimal/full_test.dsf",
 				FileType::Flac => "tests/files/assets/minimal/full_test.flac",
 				FileType::Mpeg => "tests/files/assets/minimal/full_test.mp3",
 				FileType::Mp4 => "tests/files/assets/minimal/m4a_codec_alac.m4a",
