@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **DSF**: Added support for DSD Stream Format (DSF) files ([PR](https://github.com/Serial-ATA/lofty-rs/pull/718))
 - **Lyrics3**: Added support for Lyrics3 (v1 and v2) tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
     - These tags were previously skipped
 - **WriteOptions**: `WriteOptions::implicit_truncation()` to prevent automatic text field truncation

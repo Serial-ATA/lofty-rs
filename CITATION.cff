@@ -56,6 +56,13 @@ references:
     year: 2024
     format: "HyperText Markup Language"
     url: "https://www.monkeysaudio.com/developers.html"
+  # == DSF ==
+  - type: standard
+    title: "DSF File Format Specification"
+    authors:
+        - name: "Sony Corporation"
+    format: "Portable Document Format"
+    url: "https://dsd-guide.com/sites/default/files/white-papers/DSFFileFormatSpec_E.pdf"
   # == FLAC ==
   - type: standard
     title: "RFC 9639: Free Lossless Audio Codec (FLAC)"

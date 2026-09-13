@@ -171,6 +171,36 @@ impl ChannelMask {
 			_ => None,
 		}
 	}
+
+	/// Create a channel mask from a DSF channel type
+	///
+	/// See <https://dsd-guide.com/sites/default/files/white-papers/DSFFileFormatSpec_E.pdf> for the mapping.
+	pub const fn from_dsf_channel_type(channel_type: u8) -> Option<Self> {
+		match channel_type {
+			1 => Some(Self::mono()),
+			2 => Some(Self::stereo()),
+			3 => Some(Self::linear_surround()),
+			4 => Some(Self(
+				Self::FRONT_LEFT.bits()
+					| Self::FRONT_RIGHT.bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits(),
+			)),
+			5 => Some(Self(
+				Self::linear_surround().bits() | Self::LOW_FREQUENCY.bits(),
+			)),
+			6 => Some(Self(
+				Self::linear_surround().bits() | Self::BACK_LEFT.bits() | Self::BACK_RIGHT.bits(),
+			)),
+			7 => Some(Self(
+				Self::linear_surround().bits()
+					| Self::LOW_FREQUENCY.bits()
+					| Self::BACK_LEFT.bits()
+					| Self::BACK_RIGHT.bits(),
+			)),
+			_ => None,
+		}
+	}
 }
 
 impl BitOr for ChannelMask {
