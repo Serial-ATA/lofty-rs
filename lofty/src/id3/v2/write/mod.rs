@@ -43,34 +43,23 @@ where
 	F: FileLike,
 	I: Iterator<Item = Frame<'a>> + 'a,
 {
-	// IFF formats store the ID3v2 tag in an 'ID3 ' chunk rather than at the beginning of the file
-	let mut iff_format = false;
-	if file.format() == FileType::Wav || file.format() == FileType::Aiff {
-		iff_format = true;
-
-		// Footers in IFF formats don't make sense
-		tag.flags.footer = false;
-	}
-
 	let id3v2 = create_tag(tag, write_options).map_err(TagEncodingError::from)?;
-	if iff_format {
-		match file.format() {
-			FileType::Wav => {
-				return chunk_file::write_to_chunk_file::<F, LittleEndian>(
-					file,
-					&id3v2,
-					write_options,
-				);
-			},
-			FileType::Aiff => {
-				return chunk_file::write_to_chunk_file::<F, BigEndian>(
-					file,
-					&id3v2,
-					write_options,
-				);
-			},
-			_ => unreachable!(),
-		}
+	match file.format() {
+		FileType::Wav => {
+			// Footers in IFF formats don't make sense
+			tag.flags.footer = false;
+
+			return chunk_file::write_to_chunk_file::<F, LittleEndian>(file, &id3v2, write_options);
+		},
+		FileType::Aiff => {
+			tag.flags.footer = false;
+
+			return chunk_file::write_to_chunk_file::<F, BigEndian>(file, &id3v2, write_options);
+		},
+		FileType::Dsf => {
+			return chunk_file::write_to_dsf::<F>(file, &id3v2);
+		},
+		_ => {},
 	}
 
 	let mut file = file.into_inner();
