@@ -1,5 +1,6 @@
 use lofty::ape::ApeFile;
 use lofty::config::{ParseOptions, ParsingMode};
+use lofty::dsf::DsfFile;
 use lofty::flac::FlacFile;
 use lofty::iff::aiff::AiffFile;
 use lofty::iff::wav::WavFile;
@@ -41,6 +42,15 @@ fn zero_audio_ape() {
 	assert!(!read_file_with_properties::<ApeFile>(path));
 
 	assert!(read_file_no_properties::<ApeFile>(path))
+}
+
+#[test_log::test]
+fn zero_audio_dsf() {
+	let path = "tests/files/assets/zero/zero.dsf";
+
+	// Property reads require a `fmt ` chunk
+	assert!(!read_file_with_properties::<DsfFile>(path));
+	assert!(read_file_no_properties::<DsfFile>(path));
 }
 
 #[test_log::test]

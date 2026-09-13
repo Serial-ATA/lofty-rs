@@ -13,7 +13,7 @@ use crate::util::io::FileLike;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 use std::ops::Range;
 
-use byteorder::{ByteOrder, WriteBytesExt};
+use byteorder::{ByteOrder, LittleEndian, WriteBytesExt};
 
 const CHUNK_NAME_UPPER: [u8; 4] = *b"ID3 ";
 const CHUNK_NAME_LOWER: [u8; 4] = *b"id3 ";
@@ -261,4 +261,63 @@ where
 	}
 
 	Ok(context)
+}
+
+/// Write to an ID3v2 tag to a DSF file
+///
+/// DSF is technically a file consisting of chunks, but compared to [`write_to_chunk_file()`], the
+/// tag is stored completely differently.
+pub(in crate::id3::v2) fn write_to_dsf<F>(
+	mut file: VerifiedFile<'_, F>,
+	tag: &[u8],
+) -> Result<(), FileEncodingError>
+where
+	F: FileLike,
+{
+	let header =
+		crate::dsf::read::DsdChunk::read(&mut *file).map_err(Into::<FileParseError>::into)?;
+
+	let new_total_file_size;
+	let new_metadata_ptr;
+	match header.metadata_ptr {
+		Some(ptr) => {
+			if ptr.get() > header.total_file_size {
+				return Err(FileEncodingError::new(
+					FileType::Dsf,
+					String::from("existing metadata ptr is invalid").into(),
+				));
+			}
+
+			if tag.is_empty() {
+				// Drop the pointer and shrink the size
+				new_total_file_size = ptr.get();
+				new_metadata_ptr = 0;
+			} else {
+				new_total_file_size = ptr.get() + tag.len() as u64;
+				new_metadata_ptr = ptr.get();
+			}
+		},
+		None => {
+			if tag.is_empty() {
+				log::debug!("No tag to overwrite, nothing to do");
+				return Ok(());
+			}
+
+			new_total_file_size = header.total_file_size + tag.len() as u64;
+			new_metadata_ptr = header.total_file_size;
+		},
+	}
+
+	file.seek(SeekFrom::Current(-16))?;
+	file.write_u64::<LittleEndian>(new_total_file_size)?;
+	file.write_u64::<LittleEndian>(new_metadata_ptr)?;
+
+	if new_metadata_ptr == 0 {
+		file.truncate(new_total_file_size)?;
+		return Ok(());
+	}
+
+	file.splice(new_metadata_ptr.., &tag)?;
+
+	Ok(())
 }
