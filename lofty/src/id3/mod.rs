@@ -195,7 +195,7 @@ where
 		};
 
 		log::warn!(
-			"Found an ID3v2 tag preceded by junk data, offset: {}",
+			"Found a potential ID3v2 tag preceded by junk data, offset: {}",
 			id3v2_offset
 		);
 
@@ -220,7 +220,7 @@ where
 
 		header = Some(id3v2_header);
 	} else {
-		reader.seek(SeekFrom::Current(-10))?;
+		reader.seek(SeekFrom::Start(start))?;
 	}
 
 	Ok(ID3FindResults(header, id3v2))
@@ -246,4 +246,32 @@ where
 	}
 
 	Ok(None)
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::config::ParseOptions;
+
+	use std::io::Cursor;
+
+	#[test_log::test]
+	fn find_id3v2_seek_back() {
+		let mut data = [0; 32];
+		data[20..23].copy_from_slice(b"ID3");
+
+		let mut cursor = Cursor::new(data);
+		cursor.seek(SeekFrom::Start(5)).unwrap();
+
+		let mut config = FindId3v2Config::READ_TAG;
+		config.allowed_junk_window = Some(ParseOptions::DEFAULT_MAX_JUNK_BYTES as u64);
+
+		let result = find_id3v2(&mut cursor, config).unwrap();
+		assert!(result.0.is_none());
+		assert_eq!(
+			cursor.position(),
+			5,
+			"`find_id3v2` should seek back to the original position"
+		);
+	}
 }
