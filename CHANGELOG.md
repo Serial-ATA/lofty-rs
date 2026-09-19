@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.3] - 2026-09-19
+
 ### Fixed
 
 - **ID3v2**: Fixed mid-stream fake tags not seeking the writer back to the correct position ([issue](https://github.com/Serial-ATA/lofty-rs/issues/721)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/722))
@@ -1187,7 +1189,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.2...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.3...HEAD
+[0.25.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.2...0.25.3
 [0.25.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.1...0.25.2
 [0.25.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.0...0.25.1
 [0.25.0]: https://github.com/Serial-ATA/lofty-rs/compare/0.24.0...0.25.0
