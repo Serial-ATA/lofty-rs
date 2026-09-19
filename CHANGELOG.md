@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Fixed mid-stream fake tags not seeking the writer back to the correct position ([issue](https://github.com/Serial-ATA/lofty-rs/issues/721)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/722))
+
 ## [0.25.2] - 2026-09-13
 
 ### Added
