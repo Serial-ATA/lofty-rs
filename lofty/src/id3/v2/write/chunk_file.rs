@@ -102,7 +102,7 @@ where
 					updated_stream_len -= remainder;
 					file.truncate(existing_id3_tag.end - remainder)?;
 				} else {
-					updated_stream_len -= tag_chunk_size - existing_tag_len;
+					updated_stream_len += tag_chunk_size - existing_tag_len;
 				}
 			}
 
