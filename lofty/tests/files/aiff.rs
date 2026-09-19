@@ -1,10 +1,10 @@
-use lofty::config::ParseOptions;
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::FileType;
 use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 #[test_log::test]
 fn read() {
@@ -73,6 +73,26 @@ fn write() {
 		"Baz artist",
 		"Bar artist",
 		1,
+	);
+}
+
+#[test_log::test]
+fn growing_trailing_id3v2_updates_stream_size() {
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.aiff");
+	tagged_file
+		.tag_mut(TagType::Id3v2)
+		.unwrap()
+		.set_artist("A much longer artist name".repeat(100));
+	tagged_file.save(WriteOptions::default()).unwrap();
+
+	let mut file = tagged_file.into_inner();
+	let file_len = file.metadata().unwrap().len();
+	file.rewind().unwrap();
+	let mut header = [0; 8];
+	file.read_exact(&mut header).unwrap();
+	assert_eq!(
+		u64::from(u32::from_be_bytes(header[4..8].try_into().unwrap())) + 8,
+		file_len
 	);
 }
 

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Fixed encoding of stream lengths when growing tags in IFF containers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/724)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/725))
+
 ## [0.25.3] - 2026-09-19
 
 ### Fixed

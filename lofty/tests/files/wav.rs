@@ -1,10 +1,10 @@
-use lofty::config::ParseOptions;
+use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::FileType;
 use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
-use std::io::Seek;
+use std::io::{Read, Seek};
 
 #[test_log::test]
 fn read() {
@@ -73,6 +73,37 @@ fn write() {
 		"Baz artist",
 		"Bar artist",
 		1,
+	);
+}
+
+#[test_log::test]
+fn growing_trailing_id3v2_updates_stream_size() {
+	let mut file = crate::util::temp_file("tests/files/assets/minimal/wav_format_pcm.wav");
+	TagType::RiffInfo
+		.remove_from(&mut file, WriteOptions::default())
+		.unwrap();
+	file.rewind().unwrap();
+
+	let mut tagged_file = Probe::new(file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read_bound()
+		.unwrap();
+	tagged_file
+		.tag_mut(TagType::Id3v2)
+		.unwrap()
+		.set_artist("A much longer artist name".repeat(100));
+	tagged_file.save(WriteOptions::default()).unwrap();
+
+	let mut file = tagged_file.into_inner();
+	let file_len = file.metadata().unwrap().len();
+	file.rewind().unwrap();
+	let mut header = [0; 8];
+	file.read_exact(&mut header).unwrap();
+	assert_eq!(
+		u64::from(u32::from_le_bytes(header[4..8].try_into().unwrap())) + 8,
+		file_len
 	);
 }
 
