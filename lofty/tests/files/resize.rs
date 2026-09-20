@@ -8,7 +8,7 @@ use std::path::Path;
 use std::process::Command;
 
 use lofty::config::{ParseOptions, WriteOptions};
-use lofty::file::{AudioFile, TaggedFileExt};
+use lofty::file::{AudioFile, FileType, TaggedFileExt};
 use lofty::flac::FlacFile;
 use lofty::tag::{Accessor, Tag, TagExt, TagType};
 
@@ -79,52 +79,67 @@ fn tag_resize_test(path: &str, tag_type: TagType) {
 	check_file(f.path());
 }
 
-#[test_log::test]
-fn ape_resize() {
-	tag_resize_test("tests/files/assets/minimal/full_test.ape", TagType::Ape);
+fn minimal_assets() -> Vec<(FileType, &'static str)> {
+	FileType::VARIANTS
+		.iter()
+		.copied()
+		.map(|ty| {
+			let asset = match ty {
+				FileType::Aac => "tests/files/assets/minimal/full_test.aac",
+				FileType::Aiff => "tests/files/assets/minimal/full_test.aiff",
+				FileType::Ape => "tests/files/assets/minimal/full_test.ape",
+				FileType::Flac => "tests/files/assets/minimal/full_test.flac",
+				FileType::Mpeg => "tests/files/assets/minimal/full_test.mp3",
+				FileType::Mp4 => "tests/files/assets/minimal/m4a_codec_alac.m4a",
+				FileType::Mpc => "tests/files/assets/minimal/mpc_sv8.mpc",
+				FileType::Opus => "tests/files/assets/minimal/full_test.opus",
+				FileType::Vorbis => "tests/files/assets/minimal/full_test.ogg",
+				FileType::Speex => "tests/files/assets/minimal/full_test.spx",
+				FileType::Wav => "tests/files/assets/minimal/wav_format_pcm.wav",
+				FileType::WavPack => "tests/files/assets/minimal/full_test.wv",
+				_ => panic!("need an asset for {ty:?}!"),
+			};
+
+			(ty, asset)
+		})
+		.collect()
 }
 
-#[test_log::test]
-fn aiff_resize() {
-	tag_resize_test(
-		"tests/files/assets/minimal/full_test.aiff",
-		TagType::AiffText,
-	);
+macro_rules! resize_tests {
+	($($test_fn:ident => $tag_type:ident),* $(,)?) => {
+		const _: () = {
+			let specified = [$(TagType::$tag_type),*];
+			assert!(
+				specified.len() == TagType::VARIANTS.len(),
+				"missing tag type(s) in resize test!",
+			);
+		};
+
+		$(
+			#[test_log::test]
+			fn $test_fn() {
+				for (file_ty, asset) in minimal_assets() {
+					if !file_ty.tag_support(TagType::$tag_type).is_writable() {
+						continue;
+					}
+
+					log::info!("Testing `TagType::{:?}` in `FileType::{:?}`", TagType::$tag_type, file_ty);
+					tag_resize_test(asset, TagType::$tag_type);
+				}
+			}
+		)*
+	}
 }
 
-#[test_log::test]
-fn id3v2_resize() {
-	tag_resize_test("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
-}
-
-#[test_log::test]
-fn id3v1_resize() {
-	tag_resize_test("tests/files/assets/minimal/full_test.mp3", TagType::Id3v1);
-}
-
-#[test_log::test]
-fn ilst_resize() {
-	tag_resize_test(
-		"tests/files/assets/minimal/m4a_codec_aac.m4a",
-		TagType::Mp4Ilst,
-	);
-}
-
-#[test_log::test]
-fn riff_info_resize() {
-	tag_resize_test(
-		"tests/files/assets/minimal/wav_format_pcm.wav",
-		TagType::RiffInfo,
-	);
-}
-
-#[test_log::test]
-fn flac_resize() {
-	tag_resize_test(
-		"tests/files/assets/minimal/full_test.flac",
-		TagType::VorbisComments,
-	);
-}
+resize_tests!(
+	ape_resize => Ape,
+	aiff_resize => AiffText,
+	id3v2_resize => Id3v2,
+	id3v1_resize => Id3v1,
+	ilst_resize => Mp4Ilst,
+	riff_info_resize => RiffInfo,
+	vorbis_comments_resize => VorbisComments,
+);
 
 fn flac_metadata_end(file: &mut File) -> (u64, Vec<usize>) {
 	file.rewind().unwrap();
@@ -230,12 +245,4 @@ fn flac_without_preferred_padding_still_shrinks() {
 		.unwrap();
 
 	assert!(file.metadata().unwrap().len() < original_len);
-}
-
-#[test_log::test]
-fn vorbis_comments_resize() {
-	tag_resize_test(
-		"tests/files/assets/minimal/full_test.opus",
-		TagType::VorbisComments,
-	);
 }

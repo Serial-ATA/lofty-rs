@@ -78,6 +78,41 @@ pub enum FileType {
 }
 
 impl FileType {
+	/// This is **NOT** a public API
+	#[doc(hidden)]
+	pub const VARIANTS: &[Self] = {
+		match FileType::Ape {
+			FileType::Aac
+			| FileType::Aiff
+			| FileType::Ape
+			| FileType::Flac
+			| FileType::Mpeg
+			| FileType::Mp4
+			| FileType::Mpc
+			| FileType::Opus
+			| FileType::Vorbis
+			| FileType::Speex
+			| FileType::Wav
+			| FileType::WavPack
+			| FileType::Custom(_) => {},
+		}
+
+		&[
+			FileType::Aac,
+			FileType::Aiff,
+			FileType::Ape,
+			FileType::Flac,
+			FileType::Mpeg,
+			FileType::Mp4,
+			FileType::Mpc,
+			FileType::Opus,
+			FileType::Vorbis,
+			FileType::Speex,
+			FileType::Wav,
+			FileType::WavPack,
+		]
+	};
+
 	/// Returns the file type's "primary" [`TagType`], or the one most likely to be used in the target format
 	///
 	/// | [`FileType`]                      | [`TagType`]      |

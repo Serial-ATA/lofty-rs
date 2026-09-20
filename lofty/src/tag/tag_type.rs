@@ -118,6 +118,30 @@ pub enum TagType {
 }
 
 impl TagType {
+	/// This is **NOT** a public API
+	#[doc(hidden)]
+	pub const VARIANTS: &[Self] = {
+		match TagType::Ape {
+			TagType::Ape
+			| TagType::Id3v1
+			| TagType::Id3v2
+			| TagType::Mp4Ilst
+			| TagType::VorbisComments
+			| TagType::RiffInfo
+			| TagType::AiffText => {},
+		}
+
+		&[
+			TagType::Ape,
+			TagType::Id3v1,
+			TagType::Id3v2,
+			TagType::Mp4Ilst,
+			TagType::VorbisComments,
+			TagType::RiffInfo,
+			TagType::AiffText,
+		]
+	};
+
 	/// Remove a tag from a [`Path`]
 	///
 	/// # Errors
