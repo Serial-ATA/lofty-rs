@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **FileLike**: `FileLike::splice()` to replace a range of a file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/726))
+
+### Changed
+
+- **ID3v2**: Prepended tag writes will no longer read the entire file into memory ([PR](https://github.com/Serial-ATA/lofty-rs/pull/726))
+  - Prepended writes will now allocate a single `64KiB` buffer to work out of.
+
 ### Fixed
 
 - **ID3v2**: Fixed encoding of stream lengths when growing tags in IFF containers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/724)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/725))

@@ -21,12 +21,14 @@ where
 	let mut id3v1_tag = None;
 	let mut ape_tag = None;
 
-	let ID3FindResults(id3v1_header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
-			.map_err(TagParseError::from)?;
-
-	if id3v1_header.is_some() {
-		id3v1_tag = id3v1;
+	if let Some(ID3FindResults {
+		header: _,
+		content,
+		range: _,
+	}) = find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+		.map_err(TagParseError::from)?
+	{
+		id3v1_tag = content;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
 			return Err(SizeMismatchError.into());
 		};
@@ -35,12 +37,18 @@ where
 	}
 
 	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
-	let ID3FindResults(_, lyrics3v2_size) = find_lyrics3v2(reader)?;
-	let Some(new_stream_length) = stream_length.checked_sub(u64::from(lyrics3v2_size)) else {
-		return Err(SizeMismatchError.into());
-	};
+	if let Some(ID3FindResults {
+		header: _,
+		content: size,
+		range: _,
+	}) = find_lyrics3v2(reader)?
+	{
+		let Some(new_stream_length) = stream_length.checked_sub(u64::from(size)) else {
+			return Err(SizeMismatchError.into());
+		};
 
-	stream_length = new_stream_length;
+		stream_length = new_stream_length;
+	}
 
 	// Next, search for an APE tag footer
 	//
