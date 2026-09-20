@@ -1,6 +1,7 @@
 use crate::aac::{AACProperties, AacFile};
 use crate::ape::{ApeFile, ApeProperties};
 use crate::config::ParseOptions;
+use crate::dsf::{DsfFile, DsfProperties, FormatId};
 use crate::file::AudioFile;
 use crate::flac::{FlacFile, FlacProperties};
 use crate::iff::aiff::{AiffFile, AiffProperties};
@@ -55,6 +56,19 @@ const APE_PROPERTIES: ApeProperties = ApeProperties {
 	sample_rate: 48000,
 	bit_depth: 16,
 	channels: 2,
+};
+
+const DSF_PROPERTIES: DsfProperties = DsfProperties {
+	format_id: FormatId::DsdRaw,
+	duration: Duration::from_millis(1428),
+	overall_bitrate: 5697,
+	audio_bitrate: 5645,
+	sample_rate: 2_822_400,
+	bit_depth: 1,
+	channels: 2,
+	channel_mask: ChannelMask::stereo(),
+	sample_count: 4_030_505,
+	block_size: 4096,
 };
 
 const FLAC_PROPERTIES: FlacProperties = FlacProperties {
@@ -327,6 +341,14 @@ fn ape_properties() {
 	assert_eq!(
 		get_properties::<ApeFile>("tests/files/assets/minimal/full_test.ape"),
 		APE_PROPERTIES
+	);
+}
+
+#[test_log::test]
+fn dsf_properties() {
+	assert_eq!(
+		get_properties::<DsfFile>("tests/files/assets/minimal/full_test.dsf"),
+		DSF_PROPERTIES
 	);
 }
 

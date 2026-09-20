@@ -9,7 +9,7 @@ use crate::mp4::Ilst;
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::tag::{Tag, TagType};
 use crate::util::io::FileLike;
-use crate::{aac, ape, flac, iff, mpeg, musepack, wavpack};
+use crate::{aac, ape, dsf, flac, iff, mpeg, musepack, wavpack};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
@@ -30,6 +30,7 @@ where
 		FileType::Aac => aac::write::write_to(file, tag, write_options),
 		FileType::Aiff => iff::aiff::write::write_to(file, tag, write_options),
 		FileType::Ape => ape::write::write_to(file, tag, write_options),
+		FileType::Dsf => dsf::write::write_to(file, tag, write_options),
 		FileType::Flac => flac::write::write_to(file, tag, write_options),
 		FileType::Opus | FileType::Speex | FileType::Vorbis => {
 			crate::ogg::tag::write::write_to(file, tag, write_options)

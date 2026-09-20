@@ -39,8 +39,8 @@ use std::path::Path;
 /// ```
 pub const EXTENSIONS: &[&str] = &[
 	// Also update `FileType::from_ext()` below
-	"aac", "ape", "aiff", "aif", "afc", "aifc", "mp3", "mp2", "mp1", "wav", "wv", "opus", "flac",
-	"ogg", "mp4", "m4a", "m4b", "m4p", "m4r", "m4v", "3gp", "mpc", "mp+", "mpp", "spx",
+	"aac", "ape", "aiff", "aif", "afc", "aifc", "dsf", "mp3", "mp2", "mp1", "wav", "wv", "opus",
+	"flac", "ogg", "mp4", "m4a", "m4b", "m4p", "m4r", "m4v", "3gp", "mpc", "mp+", "mpp", "spx",
 ];
 
 /// The type of file read
@@ -55,6 +55,8 @@ pub enum FileType {
 	Aiff,
 	/// Monkey's Audio
 	Ape,
+	/// DSD Stream File
+	Dsf,
 	/// Free Lossless Audio Codec
 	Flac,
 	/// MPEG-1/2 Audio (MP1, MP2, MP3)
@@ -85,6 +87,7 @@ impl FileType {
 			FileType::Aac
 			| FileType::Aiff
 			| FileType::Ape
+			| FileType::Dsf
 			| FileType::Flac
 			| FileType::Mpeg
 			| FileType::Mp4
@@ -101,6 +104,7 @@ impl FileType {
 			FileType::Aac,
 			FileType::Aiff,
 			FileType::Ape,
+			FileType::Dsf,
 			FileType::Flac,
 			FileType::Mpeg,
 			FileType::Mp4,
@@ -137,7 +141,9 @@ impl FileType {
 	/// ```
 	pub fn primary_tag_type(&self) -> TagType {
 		match self {
-			FileType::Aac | FileType::Aiff | FileType::Mpeg | FileType::Wav => TagType::Id3v2,
+			FileType::Aac | FileType::Aiff | FileType::Dsf | FileType::Mpeg | FileType::Wav => {
+				TagType::Id3v2
+			},
 			FileType::Ape | FileType::Mpc | FileType::WavPack => TagType::Ape,
 			FileType::Flac | FileType::Opus | FileType::Vorbis | FileType::Speex => {
 				TagType::VorbisComments
@@ -238,6 +244,7 @@ impl FileType {
 			"aac" => Some(Self::Aac),
 			"ape" => Some(Self::Ape),
 			"aiff" | "aif" | "afc" | "aifc" => Some(Self::Aiff),
+			"dsf" => Some(Self::Dsf),
 			"mp3" | "mp2" | "mp1" => Some(Self::Mpeg),
 			"wav" | "wave" => Some(Self::Wav),
 			"wv" => Some(Self::WavPack),
@@ -343,7 +350,8 @@ impl FileType {
 
 		// Safe to index, since we return early on an empty buffer
 		match buf[0] {
-			77 if buf.starts_with(b"MAC") => Some(Self::Ape),
+			b'M' if buf.starts_with(b"MAC") => Some(Self::Ape),
+			b'D' if buf.starts_with(b"DSD ") => Some(Self::Dsf),
 			255 if buf.len() >= 2 && verify_frame_sync([buf[0], buf[1]]) => {
 				// ADTS and MPEG frame headers are way too similar
 
@@ -378,7 +386,7 @@ impl FileType {
 
 				Some(Self::Mpeg)
 			},
-			70 if buf.len() >= 12 && &buf[..4] == b"FORM" => {
+			b'F' if buf.len() >= 12 && &buf[..4] == b"FORM" => {
 				let id = &buf[8..12];
 
 				if id == b"AIFF" || id == b"AIFC" {
@@ -387,7 +395,7 @@ impl FileType {
 
 				None
 			},
-			79 if buf.len() >= 36 && &buf[..4] == b"OggS" => {
+			b'O' if buf.len() >= 36 && &buf[..4] == b"OggS" => {
 				if &buf[29..35] == b"vorbis" {
 					return Some(Self::Vorbis);
 				} else if &buf[28..36] == b"OpusHead" {
@@ -398,15 +406,15 @@ impl FileType {
 
 				None
 			},
-			102 if buf.starts_with(b"fLaC") => Some(Self::Flac),
-			82 if buf.len() >= 12 && &buf[..4] == b"RIFF" => {
+			b'f' if buf.starts_with(b"fLaC") => Some(Self::Flac),
+			b'R' if buf.len() >= 12 && &buf[..4] == b"RIFF" => {
 				if &buf[8..12] == b"WAVE" {
 					return Some(Self::Wav);
 				}
 
 				None
 			},
-			119 if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
+			b'w' if buf.len() >= 4 && &buf[..4] == b"wvpk" => Some(Self::WavPack),
 			_ if buf.len() >= 8 && &buf[4..8] == b"ftyp" => Some(Self::Mp4),
 			_ if buf.starts_with(b"MPCK") || buf.starts_with(b"MP+") => Some(Self::Mpc),
 			_ => None,
