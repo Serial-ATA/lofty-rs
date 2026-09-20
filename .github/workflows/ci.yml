@@ -71,7 +71,7 @@ jobs:
                     toolchain: stable
                     components: clippy
             -   run: |
-                    cargo clippy --all-features -- -Dwarnings
+                    cargo clippy --all-features --all-targets -- -Dwarnings
 
     style:
         name: Style

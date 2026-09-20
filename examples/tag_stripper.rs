@@ -41,14 +41,13 @@ fn main() {
 		print!("\nNumber to remove: ");
 		std::io::stdout().flush().unwrap();
 
-		if std::io::stdin().read_line(&mut input).is_ok() {
-			if let Ok(num) = str::parse::<usize>(input.trim()) {
-				if num < available_tag_types.len() {
-					to_remove = Some(num);
-					println!();
-					break;
-				}
-			}
+		if std::io::stdin().read_line(&mut input).is_ok()
+			&& let Ok(num) = str::parse::<usize>(input.trim())
+			&& num < available_tag_types.len()
+		{
+			to_remove = Some(num);
+			println!();
+			break;
 		}
 
 		input.clear();

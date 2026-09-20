@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.4] - 2026-09-20
+
 ### Added
 
 - **FileLike**: `FileLike::splice()` to replace a range of a file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/726))
@@ -1202,7 +1204,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.3...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.4...HEAD
+[0.25.4]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.3...0.25.4
 [0.25.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.2...0.25.3
 [0.25.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.1...0.25.2
 [0.25.1]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.0...0.25.1
