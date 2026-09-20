@@ -9,7 +9,7 @@ use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::util::synchsafe::SynchsafeInteger;
 use crate::id3::{FindId3v2Config, find_id3v2};
-use crate::io::{Truncate, VerifiedFile};
+use crate::io::VerifiedFile;
 use crate::macros::try_vec;
 use crate::util::io::FileLike;
 
@@ -75,19 +75,20 @@ where
 
 	let mut file = file.into_inner();
 
-	// `find_id3v2` will seek us to the end of the tag
 	let mut id3v2_config = FindId3v2Config::NO_READ_TAG;
 	id3v2_config.allowed_junk_window = Some(write_options.parse_options.max_junk_bytes as u64);
-	find_id3v2(&mut file, id3v2_config).map_err(TagParseError::from)?;
 
-	let mut file_bytes = Vec::new();
-	file.read_to_end(&mut file_bytes)?;
+	let replacement_range;
+	match find_id3v2(&mut file, id3v2_config).map_err(TagParseError::from)? {
+		Some(existing_tag) => {
+			replacement_range = existing_tag.range;
+		},
+		None => {
+			replacement_range = 0..0;
+		},
+	}
 
-	file_bytes.splice(0..0, id3v2);
-
-	file.rewind()?;
-	file.truncate(0)?;
-	file.write_all(&file_bytes)?;
+	file.splice(replacement_range, &id3v2)?;
 
 	Ok(())
 }

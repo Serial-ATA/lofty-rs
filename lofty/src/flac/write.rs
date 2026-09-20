@@ -3,7 +3,7 @@ use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, SizeMismatchError, TagParseError};
 use crate::id3::{FindId3v2Config, find_id3v2};
-use crate::io::{Length, VerifiedFile};
+use crate::io::VerifiedFile;
 use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
@@ -11,9 +11,8 @@ use crate::tag::{Tag, TagType};
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
-use std::io::{ErrorKind, Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 use std::iter::Peekable;
-use std::ops::Range;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
@@ -176,130 +175,7 @@ where
 		);
 	}
 
-	replace_range(&mut file, metadata_range, &encoded_metadata)?;
-
-	Ok(())
-}
-
-const MOVE_BUFFER_SIZE: usize = 64 * 1024;
-
-fn replace_range<F>(file: &mut F, range: Range<u64>, replacement: &[u8]) -> std::io::Result<()>
-where
-	F: FileLike,
-{
-	if range.start > range.end {
-		return Err(std::io::Error::new(
-			ErrorKind::InvalidInput,
-			"range start exceeds range end",
-		));
-	}
-
-	let file_len = Length::len(file)?;
-	if range.end > file_len {
-		return Err(std::io::Error::new(
-			ErrorKind::InvalidInput,
-			"range extends beyond file length",
-		));
-	}
-
-	let old_len = range.end - range.start;
-	let replacement_len = u64::try_from(replacement.len())
-		.map_err(|_| std::io::Error::new(ErrorKind::InvalidInput, "replacement is too large"))?;
-
-	let mut buffer = vec![0_u8; MOVE_BUFFER_SIZE];
-
-	match replacement_len.cmp(&old_len) {
-		std::cmp::Ordering::Greater => {
-			let difference = replacement_len - old_len;
-			// The ranges overlap, so move the tail backwards from EOF before writing metadata.
-			extend_storage(file, difference, &buffer)?;
-			shift_right(file, range.end, file_len, difference, &mut buffer)?;
-		},
-		std::cmp::Ordering::Less => {
-			let difference = old_len - replacement_len;
-			// Move forwards from the metadata boundary so writes cannot clobber unread tail data.
-			shift_left(file, range.end, file_len, difference, &mut buffer)?;
-			file.truncate(file_len - difference)?;
-		},
-		std::cmp::Ordering::Equal => {},
-	}
-
-	file.seek(SeekFrom::Start(range.start))?;
-	file.write_all(replacement)?;
-
-	Ok(())
-}
-
-fn extend_storage<F>(file: &mut F, amount: u64, zeros: &[u8]) -> std::io::Result<()>
-where
-	F: FileLike,
-{
-	file.seek(SeekFrom::End(0))?;
-
-	let mut remaining = amount;
-	while remaining != 0 {
-		let chunk_len = usize::try_from(remaining.min(zeros.len() as u64))
-			.expect("chunk length is bounded by the in-memory buffer");
-		file.write_all(&zeros[..chunk_len])?;
-		remaining -= chunk_len as u64;
-	}
-
-	Ok(())
-}
-
-fn shift_right<F>(
-	file: &mut F,
-	start: u64,
-	end: u64,
-	amount: u64,
-	buffer: &mut [u8],
-) -> std::io::Result<()>
-where
-	F: FileLike,
-{
-	let mut cursor = end;
-
-	while cursor > start {
-		let chunk_len = usize::try_from((cursor - start).min(buffer.len() as u64))
-			.expect("chunk length is bounded by the in-memory buffer");
-		let source = cursor - chunk_len as u64;
-
-		file.seek(SeekFrom::Start(source))?;
-		file.read_exact(&mut buffer[..chunk_len])?;
-
-		file.seek(SeekFrom::Start(source + amount))?;
-		file.write_all(&buffer[..chunk_len])?;
-
-		cursor = source;
-	}
-
-	Ok(())
-}
-
-fn shift_left<F>(
-	file: &mut F,
-	start: u64,
-	end: u64,
-	amount: u64,
-	buffer: &mut [u8],
-) -> std::io::Result<()>
-where
-	F: FileLike,
-{
-	let mut cursor = start;
-
-	while cursor < end {
-		let chunk_len = usize::try_from((end - cursor).min(buffer.len() as u64))
-			.expect("chunk length is bounded by the in-memory buffer");
-
-		file.seek(SeekFrom::Start(cursor))?;
-		file.read_exact(&mut buffer[..chunk_len])?;
-
-		file.seek(SeekFrom::Start(cursor - amount))?;
-		file.write_all(&buffer[..chunk_len])?;
-
-		cursor += chunk_len as u64;
-	}
+	file.splice(metadata_range, &encoded_metadata)?;
 
 	Ok(())
 }
@@ -324,58 +200,4 @@ where
 	}
 
 	Ok(metadata_blocks)
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	use std::io::Cursor;
-
-	fn apply_range(input: Vec<u8>, range: Range<usize>, replacement: &[u8]) {
-		let mut expected = input.clone();
-		drop(expected.splice(range.clone(), replacement.iter().copied()));
-
-		let mut cursor = Cursor::new(input);
-		replace_range(
-			&mut cursor,
-			(range.start as u64)..(range.end as u64),
-			replacement,
-		)
-		.expect("range replacement should succeed");
-
-		let actual = cursor.into_inner();
-		assert_eq!(actual, expected);
-	}
-
-	#[test]
-	fn replace_range_equal_size() {
-		apply_range(b"0123456789".to_vec(), 2..5, b"XYZ");
-	}
-
-	#[test]
-	fn replace_range_grows() {
-		apply_range(b"0123456789".to_vec(), 2..5, b"abcdef");
-	}
-
-	#[test]
-	fn replace_range_shrinks() {
-		apply_range(b"0123456789".to_vec(), 2..8, b"X");
-	}
-
-	#[test]
-	fn replace_range_grows_across_multiple_buffers() {
-		let mut input = b"prefix".to_vec();
-		input.extend((0..(MOVE_BUFFER_SIZE * 3 + 17)).map(|index| (index % 251) as u8));
-
-		apply_range(input, 1..4, b"a much longer metadata replacement");
-	}
-
-	#[test]
-	fn replace_range_shrinks_across_multiple_buffers() {
-		let mut input = b"prefix".to_vec();
-		input.extend((0..(MOVE_BUFFER_SIZE * 3 + 17)).map(|index| (index % 251) as u8));
-
-		apply_range(input, 1..4, b"x");
-	}
 }

@@ -2,6 +2,7 @@ use super::AacFile;
 use super::header::{ADTSHeader, HEADER_MASK};
 use crate::aac::error::AacParseError;
 use crate::config::{ParseOptions, ParsingMode};
+use crate::error::{SizeMismatchError, TagParseError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::{ID3FindResults, find_id3v1};
@@ -9,7 +10,6 @@ use crate::mpeg::header::{HeaderCmpResult, cmp_header, search_for_frame_sync};
 
 use std::io::{Read, Seek, SeekFrom};
 
-use crate::error::{SizeMismatchError, TagParseError};
 use byteorder::ReadBytesExt;
 
 #[allow(clippy::unnecessary_wraps)]
@@ -108,17 +108,19 @@ where
 	}
 
 	#[allow(unused_variables)]
-	let ID3FindResults(header, id3v1) =
-		find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
-			.map_err(TagParseError::from)?;
-
-	if header.is_some() {
+	if let Some(ID3FindResults {
+		header,
+		content,
+		range: _,
+	}) = find_id3v1(reader, parse_options.read_tags, parse_options.parsing_mode)
+		.map_err(TagParseError::from)?
+	{
 		let Some(new_stream_len) = stream_len.checked_sub(128) else {
 			return Err(SizeMismatchError.into());
 		};
 
 		stream_len = new_stream_len;
-		file.id3v1_tag = id3v1;
+		file.id3v1_tag = content;
 	}
 
 	if parse_options.read_properties {
