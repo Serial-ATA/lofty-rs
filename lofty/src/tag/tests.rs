@@ -8,10 +8,10 @@ use crate::mp4::Ilst;
 use crate::ogg::tag::VorbisComments;
 use crate::picture::{Picture, PictureType};
 use crate::tag::item::{ItemKey, ItemValue, TagItem};
+use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::{Popularimeter, StarRating};
 use crate::tag::{Accessor, Tag, TagExt, TagType, try_parse_timestamp};
 
-use crate::tag::items::Timestamp;
 use std::collections::HashSet;
 use std::io::{Seek, Write};
 use std::process::Command;
