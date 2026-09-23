@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
+use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, crc32, paginate};
 
 pub(crate) fn write_to<F>(
 	file: VerifiedFile<'_, F>,
@@ -34,6 +34,55 @@ where
 	};
 
 	write(file, &mut comments_ref, write_options)
+}
+
+// A raw OGG page: the 27-byte header, the segment table, and the body
+struct RawPage {
+	header: [u8; 27],
+	segments: Vec<u8>,
+	body: Vec<u8>,
+}
+
+impl RawPage {
+	// Parses a single page from the front of `data`, advancing it past the page
+	fn parse(data: &mut &[u8]) -> Result<Self, FileParseError> {
+		if data.len() < 27 {
+			return Err(FileParseError::message(None, "truncated page header"));
+		}
+		if &data[..4] != b"OggS" {
+			return Err(FileParseError::message(None, "missing page magic"));
+		}
+
+		let nsegs = data[26] as usize;
+		if nsegs == 0 || data.len() < 27 + nsegs {
+			return Err(FileParseError::message(None, "invalid segment table"));
+		}
+
+		let segments = data[27..27 + nsegs].to_vec();
+		let body_len: usize = segments.iter().map(|&b| b as usize).sum();
+		let total = 27 + nsegs + body_len;
+		if total > data.len() {
+			return Err(FileParseError::message(None, "truncated page body"));
+		}
+
+		let header = data[..27].try_into().unwrap();
+		let body = data[27 + nsegs..total].to_vec();
+		*data = &data[total..];
+
+		Ok(Self {
+			header,
+			segments,
+			body,
+		})
+	}
+
+	fn to_bytes(&self) -> Vec<u8> {
+		let mut bytes = Vec::with_capacity(27 + self.segments.len() + self.body.len());
+		bytes.extend_from_slice(&self.header);
+		bytes.extend_from_slice(&self.segments);
+		bytes.extend_from_slice(&self.body);
+		bytes
+	}
 }
 
 pub(in crate::ogg) fn write<'a, F, II, IP>(
@@ -57,23 +106,63 @@ where
 
 	let mut file = file.into_inner();
 
-	// Read the first page header to get the stream serial number
+	// Read the whole file and work at page granularity.
+	//
+	// NOTE: The header packets must not be read at packet granularity (e.g. via
+	// `Packets::read_count`): if the last header packet ends mid-page, the
+	// reader is left in the middle of a page, the remaining content no longer
+	// starts on a page boundary, and the audio pages can no longer be parsed.
 	let start = file.stream_position()?;
-	let first_page_header = PageHeader::read(&mut file).map_err(FileParseError::from)?;
-
-	let stream_serial = first_page_header.stream_serial;
-
 	file.seek(SeekFrom::Start(start))?;
+	let mut file_content = Vec::new();
+	file.read_to_end(&mut file_content)?;
 
-	let mut packets =
-		Packets::read_count(&mut file, header_packet_count).map_err(FileParseError::from)?;
+	let mut pages = Vec::new();
+	let mut rest = &file_content[..];
+	while !rest.is_empty() {
+		pages.push(RawPage::parse(&mut rest)?);
+	}
 
-	let mut remaining_file_content = Vec::new();
-	file.read_to_end(&mut remaining_file_content)?;
+	if pages.is_empty() {
+		return Err(FileParseError::message(None, "no pages found").into());
+	}
 
-	let comment_packet = packets
-		.get(1)
-		.ok_or_else(|| FileParseError::message(None, "missing comment packet"))?;
+	let stream_serial = u32::from_le_bytes(pages[0].header[14..18].try_into().unwrap());
+
+	// Reassemble the first `header_packet_count` packets from the pages.
+	//
+	// `last_header_page` is the page on which the last header packet ends and
+	// `audio_start_seg` is the index of the first segment on that page which
+	// belongs to audio data, i.e. the last header packet ended mid-page.
+	let mut header_packets: Vec<Vec<u8>> = Vec::with_capacity(header_packet_count as usize);
+	let mut current_packet: Vec<u8> = Vec::new();
+	let mut last_header_page = 0usize;
+	let mut audio_start_seg = 0usize;
+
+	'pages: for (page_idx, page) in pages.iter().enumerate() {
+		let mut body_off = 0usize;
+		for (seg_idx, &lacing) in page.segments.iter().enumerate() {
+			let n = lacing as usize;
+			current_packet.extend_from_slice(&page.body[body_off..body_off + n]);
+			body_off += n;
+
+			if lacing < 255 {
+				header_packets.push(std::mem::take(&mut current_packet));
+
+				if header_packets.len() == header_packet_count as usize {
+					last_header_page = page_idx;
+					audio_start_seg = seg_idx + 1;
+					break 'pages;
+				}
+			}
+		}
+	}
+
+	if header_packets.len() != header_packet_count as usize {
+		return Err(FileParseError::message(None, "missing header packets").into());
+	}
+
+	let comment_packet = &header_packets[1];
 
 	if let Some(comment_signature) = comment_signature {
 		verify_signature(comment_packet, comment_signature)?;
@@ -105,30 +194,72 @@ where
 		.map_err(TagEncodingError::from)?;
 
 	// Replace the old comment packet
-	packets.set(1, new_metadata_packet);
+	header_packets[1] = new_metadata_packet;
+
+	// Re-paginate the header packets into fresh pages
+	let header_pages = paginate(
+		header_packets.iter().map(Vec::as_slice),
+		stream_serial,
+		0,
+		CONTAINS_FIRST_PAGE_OF_BITSTREAM,
+	)
+	.map_err(|e| FileEncodingError::new(format, e.into()))?;
+
+	// The audio pages: the rest of the page on which the last header packet
+	// ended (if it ended mid-page), followed by all subsequent pages.
+	let mut audio_pages: Vec<Vec<u8>> = Vec::new();
+
+	{
+		let page = &pages[last_header_page];
+		if audio_start_seg < page.segments.len() {
+			// The last header packet ended mid-page: re-emit the remainder of
+			// the page as the first audio page, with the header packets'
+			// segments removed.
+			let segments = &page.segments[audio_start_seg..];
+			let body_len: usize = segments.iter().map(|&b| b as usize).sum();
+			let body = &page.body[page.body.len() - body_len..];
+
+			let mut raw = Vec::with_capacity(27 + segments.len() + body_len);
+			raw.extend_from_slice(&page.header);
+			raw.extend_from_slice(segments);
+			raw.extend_from_slice(body);
+
+			// The page now has fewer segments than the original
+			raw[26] = segments.len() as u8;
+
+			// The first packet on this page is now a fresh audio packet, so
+			// the page neither continues a packet from the previous page nor
+			// contains the first page of the bitstream.
+			raw[5] &= !0x03;
+
+			audio_pages.push(raw);
+		}
+	}
+
+	for page in &pages[last_header_page + 1..] {
+		audio_pages.push(page.to_bytes());
+	}
+
+	// Renumber the audio pages and fix up their checksums
+	for (idx, raw) in audio_pages.iter_mut().enumerate() {
+		let seq = (header_pages.len() + idx) as u32;
+		raw[18..22].copy_from_slice(&seq.to_le_bytes());
+
+		raw[22..26].fill(0);
+		let checksum = crc32(raw);
+		raw[22..26].copy_from_slice(&checksum.to_le_bytes());
+	}
 
 	file.rewind()?;
 	file.truncate(0)?;
 
-	let pages_written = packets
-		.write_to(
-			&mut file,
-			stream_serial,
-			0,
-			CONTAINS_FIRST_PAGE_OF_BITSTREAM,
-		)
-		.map_err(|e| FileEncodingError::new(format, e.into()))? as u32;
-
-	// Correct all remaining page sequence numbers
-	let mut pages_reader = Cursor::new(&remaining_file_content[..]);
-	let mut idx = 0;
-	while let Ok(mut page) = Page::read(&mut pages_reader) {
-		let header = page.header_mut();
-		header.sequence_number = pages_written + idx;
+	for mut page in header_pages {
 		page.gen_crc();
 		file.write_all(&page.as_bytes())?;
+	}
 
-		idx += 1;
+	for raw in &audio_pages {
+		file.write_all(raw)?;
 	}
 
 	Ok(())
