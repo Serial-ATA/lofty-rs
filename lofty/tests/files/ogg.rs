@@ -205,6 +205,65 @@ fn opus_issue_499_vinyl_track_number() {
 	assert_eq!(comments.get("TRACKNUMBER"), Some("a5"));
 }
 
+// Writing a tag used to drop every audio page when the setup header ends
+// mid-page (<https://github.com/Serial-ATA/lofty-rs/issues/729>)
+#[test_log::test]
+fn vorbis_issue_729() {
+	let data = std::fs::read("tests/files/assets/issue_729.ogg").unwrap();
+	let pages_before = count_ogg_pages(&data);
+	assert!(
+		pages_before > 3,
+		"fixture should contain audio pages, found {pages_before}"
+	);
+
+	let mut file = std::io::Cursor::new(data);
+	let mut tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read_bound()
+		.unwrap();
+
+	let tag = tagged_file.tag_mut(TagType::VorbisComments).unwrap();
+	tag.insert_unchecked(lofty::tag::TagItem::new(
+		ItemKey::TrackArtist,
+		lofty::tag::ItemValue::Text(String::from("Issue 729 artist")),
+	));
+	tagged_file.save(WriteOptions::default()).unwrap();
+	drop(tagged_file);
+
+	let data = file.into_inner();
+	let pages_after = count_ogg_pages(&data);
+
+	assert!(
+		pages_after >= pages_before,
+		"audio pages were dropped: {pages_before} before, {pages_after} after"
+	);
+}
+
+// Counts the OGG pages in `data` by walking the segment tables
+fn count_ogg_pages(data: &[u8]) -> usize {
+	let mut count = 0;
+	let mut rest = data;
+	while !rest.is_empty() {
+		if rest.len() < 27 || &rest[..4] != b"OggS" {
+			break;
+		}
+		let nsegs = rest[26] as usize;
+		if nsegs == 0 || rest.len() < 27 + nsegs {
+			break;
+		}
+		let body_len: usize = rest[27..27 + nsegs].iter().map(|&b| b as usize).sum();
+		let total = 27 + nsegs + body_len;
+		if total > rest.len() {
+			break;
+		}
+		count += 1;
+		rest = &rest[total..];
+	}
+	count
+}
+
 #[test_log::test]
 fn flac_remove_id3v2() {
 	crate::util::remove_tag_test("tests/files/assets/flac_with_id3v2.flac", TagType::Id3v2);
