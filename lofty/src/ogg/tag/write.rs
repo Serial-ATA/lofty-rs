@@ -85,6 +85,14 @@ impl RawPage {
 	}
 }
 
+// Renumber a page and recompute its checksum
+fn fixup_page(raw: &mut [u8], seq: u32) {
+	raw[18..22].copy_from_slice(&seq.to_le_bytes());
+	raw[22..26].fill(0);
+	let checksum = crc32(raw);
+	raw[22..26].copy_from_slice(&checksum.to_le_bytes());
+}
+
 pub(in crate::ogg) fn write<'a, F, II, IP>(
 	file: VerifiedFile<'_, F>,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
@@ -112,8 +120,6 @@ where
 	// `Packets::read_count`): if the last header packet ends mid-page, the
 	// reader is left in the middle of a page, the remaining content no longer
 	// starts on a page boundary, and the audio pages can no longer be parsed.
-	let start = file.stream_position()?;
-	file.seek(SeekFrom::Start(start))?;
 	let mut file_content = Vec::new();
 	file.read_to_end(&mut file_content)?;
 
@@ -122,6 +128,7 @@ where
 	while !rest.is_empty() {
 		pages.push(RawPage::parse(&mut rest)?);
 	}
+	drop(file_content);
 
 	if pages.is_empty() {
 		return Err(FileParseError::message(None, "no pages found").into());
@@ -205,9 +212,18 @@ where
 	)
 	.map_err(|e| FileEncodingError::new(format, e.into()))?;
 
-	// The audio pages: the rest of the page on which the last header packet
-	// ended (if it ended mid-page), followed by all subsequent pages.
-	let mut audio_pages: Vec<Vec<u8>> = Vec::new();
+	// The audio pages are written as they are renumbered and re-checksummed:
+	// first the rest of the page on which the last header packet ended (if it
+	// ended mid-page), then all subsequent pages.
+	let mut next_seq = header_pages.len() as u32;
+
+	file.rewind()?;
+	file.truncate(0)?;
+
+	for mut page in header_pages {
+		page.gen_crc();
+		file.write_all(&page.as_bytes())?;
+	}
 
 	{
 		let page = &pages[last_header_page];
@@ -232,34 +248,17 @@ where
 			// contains the first page of the bitstream.
 			raw[5] &= !0x03;
 
-			audio_pages.push(raw);
+			fixup_page(&mut raw, next_seq);
+			file.write_all(&raw)?;
+			next_seq += 1;
 		}
 	}
 
 	for page in &pages[last_header_page + 1..] {
-		audio_pages.push(page.to_bytes());
-	}
-
-	// Renumber the audio pages and fix up their checksums
-	for (idx, raw) in audio_pages.iter_mut().enumerate() {
-		let seq = (header_pages.len() + idx) as u32;
-		raw[18..22].copy_from_slice(&seq.to_le_bytes());
-
-		raw[22..26].fill(0);
-		let checksum = crc32(raw);
-		raw[22..26].copy_from_slice(&checksum.to_le_bytes());
-	}
-
-	file.rewind()?;
-	file.truncate(0)?;
-
-	for mut page in header_pages {
-		page.gen_crc();
-		file.write_all(&page.as_bytes())?;
-	}
-
-	for raw in &audio_pages {
-		file.write_all(raw)?;
+		let mut raw = page.to_bytes();
+		fixup_page(&mut raw, next_seq);
+		file.write_all(&raw)?;
+		next_seq += 1;
 	}
 
 	Ok(())
