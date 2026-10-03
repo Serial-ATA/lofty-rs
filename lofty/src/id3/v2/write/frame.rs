@@ -279,7 +279,11 @@ fn verify_frame(frame: &Frame<'_>) -> Result<(), FrameEncodingError> {
 		| ("RVA2", Frame::RelativeVolumeAdjustment(_))
 		| ("PRIV", Frame::Private(_))
 		| ("CHAP", Frame::Chapter(_))
-		| ("CTOC", Frame::TableOfContents(_)) => Ok(()),
+		| ("CTOC", Frame::TableOfContents(_))
+		// We write flag frames as text, but that isn't universal behavior. In reality, apps that
+		// rely on these flags *usually* just check the presence of the frame anyway, so their content
+		// doesn't matter.
+		| ("TCMP" | "PCST", _) => Ok(()),
 		(id, Frame::Text { .. }) if id.starts_with('T') => Ok(()),
 		(id, Frame::Url(_)) if id.starts_with('W') => Ok(()),
 		(_, frame_value) => Err(FrameEncodingError::message(

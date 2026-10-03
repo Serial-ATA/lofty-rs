@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v2**: Fixed write errors from `ItemKey::{Work, FlagCompilation, FlagPodcast}` conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/732)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/734))
+
 ## [0.25.4] - 2026-09-20
 
 ### Added

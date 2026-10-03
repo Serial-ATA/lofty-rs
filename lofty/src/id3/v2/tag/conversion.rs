@@ -135,7 +135,6 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::InternetRadioStationName
 			| ItemKey::InternetRadioStationOwner
 			| ItemKey::Remixer
-			| ItemKey::Work
 			| ItemKey::Movement
 			| ItemKey::MovementNumber
 			| ItemKey::MovementTotal
@@ -171,7 +170,8 @@ pub(crate) fn from_tag<'a>(
 			| ItemKey::MusicBrainzReleaseGroupId
 			| ItemKey::ReleaseCountry
 			| ItemKey::Barcode
-			| ItemKey::Color => {
+			| ItemKey::Color
+			| ItemKey::Work => {
 				let (value, _) = take_item_text_and_description(item)?;
 
 				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
