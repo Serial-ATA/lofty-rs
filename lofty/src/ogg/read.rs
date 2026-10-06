@@ -26,7 +26,7 @@ where
 	data.seek(SeekFrom::Start(start))?;
 
 	// Read the header packets
-	let packets = Packets::read_count(data, packets_to_read)?;
+	let (packets, _remainder) = Packets::read_count(data, packets_to_read)?;
 
 	let identification_packet = packets
 		.get(0)

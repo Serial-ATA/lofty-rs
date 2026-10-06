@@ -15,8 +15,15 @@ pub use packets::{Packets, PacketsIter};
 pub use paginate::paginate;
 
 const CONTINUED_PACKET: u8 = 0x01;
-pub(crate) const MAX_WRITTEN_SEGMENT_COUNT: usize = 32;
-pub(crate) const MAX_WRITTEN_CONTENT_SIZE: usize = MAX_WRITTEN_SEGMENT_COUNT * 255;
+/// The maximum number of page segments `ogg_pager` writes
+///
+/// See [`MAX_WRITTEN_CONTENT_SIZE`]
+pub const MAX_WRITTEN_SEGMENT_COUNT: usize = 32;
+/// The maximum page content size `ogg_pager` will write
+///
+/// OGG pages can contain up to [`MAX_CONTENT_SIZE`] bytes (~64KB), but `ogg_pager` caps the size
+/// of pages it writes to 8KB.
+pub const MAX_WRITTEN_CONTENT_SIZE: usize = MAX_WRITTEN_SEGMENT_COUNT * 255;
 
 /// The maximum page content size
 // NOTE: An OGG page can have up to 255 segments, or ~64KB. We cap it at 32 segments, or ~8KB when writing.
@@ -118,7 +125,7 @@ impl Page {
 
 #[cfg(test)]
 mod tests {
-	use crate::{Page, PageHeader, paginate};
+	use crate::{Packets, Page, PageHeader, paginate};
 	use std::io::Cursor;
 
 	pub fn segment_table(length: usize) -> Vec<u8> {
@@ -284,5 +291,28 @@ mod tests {
 		assert!(correct_number_of_segments);
 
 		assert_eq!(*page.header.segments.last().unwrap(), 0);
+	}
+
+	#[test]
+	fn packet_remainder() {
+		let packets_data = [b"123".to_vec(), b"456".to_vec()];
+
+		// `paginate()` splits the packets into separate pages. We'll need to splice them together...
+		let pages = paginate(packets_data.iter().map(Vec::as_slice), 1234, 0, 0).unwrap();
+		assert_eq!(pages.len(), 2);
+
+		let mut encoded = pages[0].as_bytes();
+		encoded[26] = 2; // Bump the segment count
+
+		encoded.insert(27, pages[1].content().len() as u8); // Second packet's segments
+		encoded.extend(pages[1].content());
+
+		let (packets, remainder) = Packets::read_count(&mut Cursor::new(encoded), 1).unwrap();
+		assert!(remainder.is_some());
+
+		let first_packet = packets.get(0).unwrap();
+		assert_eq!(first_packet, packets_data[0]);
+
+		assert_eq!(remainder.unwrap().content, packets_data[1]);
 	}
 }

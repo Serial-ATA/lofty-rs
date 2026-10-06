@@ -32,14 +32,22 @@ impl Packets {
 	/// let packets = Packets::read(&mut file)?;
 	/// # Ok(()) }
 	/// ```
+	///
+	/// See also: [`Self::read_count()`]
 	pub fn read<R>(data: &mut R) -> Result<Self>
 	where
 		R: Read + Seek,
 	{
-		Self::read_count(data, -1)
+		let (packets, remainder) = Self::read_count(data, -1)?;
+		debug_assert!(remainder.is_none(), "should have no remainer");
+
+		Ok(packets)
 	}
 
 	/// Read a specific number of packets from a reader
+	///
+	/// If the final packet doesn't end on a page boundary, this returns any remaining segments of
+	/// the final [`Page`]. Note that the returned [`Page`]'s `start` and `end` will not be accurate.
 	///
 	/// A special value of `-1` will read as many packets as possible,
 	/// in which case [`Packets::read`] should be used.
@@ -61,11 +69,11 @@ impl Packets {
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// // We know that the file has at least 2 packets in it
-	/// let packets = Packets::read_count(&mut file, 2)?;
+	/// let (packets, _remainder) = Packets::read_count(&mut file, 2)?;
 	/// # Ok(()) }
 	/// ```
 	#[allow(clippy::read_zero_byte_vec)]
-	pub fn read_count<R>(data: &mut R, count: isize) -> Result<Self>
+	pub fn read_count<R>(data: &mut R, count: isize) -> Result<(Self, Option<Page>)>
 	where
 		R: Read + Seek,
 	{
@@ -73,10 +81,13 @@ impl Packets {
 		let mut packet_sizes = Vec::new();
 
 		if count == 0 || count < -1 {
-			return Ok(Self {
-				content,
-				packet_sizes,
-			});
+			return Ok((
+				Self {
+					content,
+					packet_sizes,
+				},
+				None,
+			));
 		}
 
 		let mut packets_read = 0;
@@ -84,31 +95,73 @@ impl Packets {
 		let mut packet_size = 0_u64;
 		let mut packet_bytes_already_read = None;
 		let mut current_packet_content;
+		let mut remainder_page = None;
 		'outer: while let Ok(header) = PageHeader::read(data) {
-			for i in header.segments {
+			for (segment_idx, i) in header.segments.iter().copied().enumerate() {
 				packet_size += u64::from(i);
 
-				if i < 255 {
-					if count != -1 {
-						packets_read += 1;
-					}
-
-					let byte_count_to_read =
-						Self::get_byte_count_to_read(packet_size, &mut packet_bytes_already_read);
-
-					current_packet_content = vec![0; byte_count_to_read as usize];
-					data.read_exact(&mut current_packet_content)?;
-
-					packet_sizes.push(packet_size);
-					packet_size = 0;
-					packet_bytes_already_read = None;
-
-					content.append(&mut current_packet_content);
-
-					if packets_read == count {
-						break 'outer;
-					}
+				if i == 255 {
+					continue;
 				}
+
+				if count != -1 {
+					packets_read += 1;
+				}
+
+				let byte_count_to_read =
+					Self::get_byte_count_to_read(packet_size, &mut packet_bytes_already_read);
+
+				current_packet_content = vec![0; byte_count_to_read as usize];
+				data.read_exact(&mut current_packet_content)?;
+
+				packet_sizes.push(packet_size);
+				packet_size = 0;
+				packet_bytes_already_read = None;
+
+				content.append(&mut current_packet_content);
+
+				if packets_read != count {
+					continue;
+				}
+
+				if header.segments.len() == segment_idx + 1 {
+					break 'outer; // No segments left
+				}
+
+				let remaining_segments = &header.segments[segment_idx + 1..];
+				if !remaining_segments.is_empty() {
+					// Final packet doesn't end on a page boundary, collect up the rest of the page's content
+					let remaining_size = remaining_segments.iter().map(|&s| usize::from(s)).sum();
+					let mut remaining_content = vec![0; remaining_size];
+					data.read_exact(&mut remaining_content)?;
+
+					let has_finishing_packet = remaining_segments.iter().any(|&s| s < 255);
+					let new_abgp = if has_finishing_packet {
+						header.abgp
+					} else {
+						// A special value of '-1' (in two's complement) indicates that no packets
+						// finish on this page.
+						1_u64.wrapping_neg()
+					};
+
+					let new_header = PageHeader {
+						start: 0,
+						header_type_flag: header.header_type_flag & !crate::CONTINUED_PACKET,
+						abgp: new_abgp,
+						stream_serial: header.stream_serial,
+						sequence_number: header.sequence_number,
+						segments: remaining_segments.to_vec(),
+						checksum: 0,
+					};
+
+					remainder_page = Some(Page {
+						content: remaining_content,
+						header: new_header,
+						end: 0,
+					});
+				}
+
+				break 'outer;
 			}
 
 			// The packet continues on the next page, write what we can so far
@@ -128,10 +181,13 @@ impl Packets {
 			return Err(PageError::NotEnoughData);
 		}
 
-		Ok(Self {
-			content,
-			packet_sizes,
-		})
+		Ok((
+			Self {
+				content,
+				packet_sizes,
+			},
+			remainder_page,
+		))
 	}
 
 	fn get_byte_count_to_read(
@@ -165,7 +221,7 @@ impl Packets {
 	/// let mut file = std::fs::File::open(path)?;
 	///
 	/// // I want to read 2 packets
-	/// let packets = Packets::read_count(&mut file, 2)?;
+	/// let (packets, _remainder) = Packets::read_count(&mut file, 2)?;
 	///
 	/// // And that's what I received!
 	/// assert_eq!(packets.len(), 2);

@@ -15,7 +15,7 @@ use std::borrow::Cow;
 use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, Packets, Page, PageHeader};
+use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, MAX_WRITTEN_CONTENT_SIZE, Packets, PageHeader};
 
 pub(crate) fn write_to<F>(
 	file: VerifiedFile<'_, F>,
@@ -39,7 +39,7 @@ where
 pub(in crate::ogg) fn write<'a, F, II, IP>(
 	file: VerifiedFile<'_, F>,
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
-	_write_options: WriteOptions,
+	write_options: WriteOptions,
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
@@ -65,7 +65,7 @@ where
 
 	file.seek(SeekFrom::Start(start))?;
 
-	let mut packets =
+	let (mut packets, remainder_page) =
 		Packets::read_count(&mut file, header_packet_count).map_err(FileParseError::from)?;
 
 	let mut remaining_file_content = Vec::new();
@@ -101,8 +101,9 @@ where
 	tag.vendor = vendor_str;
 
 	let add_framing_bit = format == FileType::Vorbis;
-	let new_metadata_packet = create_metadata_packet(tag, comment_signature, add_framing_bit)
-		.map_err(TagEncodingError::from)?;
+	let new_metadata_packet =
+		create_metadata_packet(tag, comment_signature, add_framing_bit, write_options)
+			.map_err(TagEncodingError::from)?;
 
 	// Replace the old comment packet
 	packets.set(1, new_metadata_packet);
@@ -119,17 +120,32 @@ where
 		)
 		.map_err(|e| FileEncodingError::new(format, e.into()))? as u32;
 
-	// Correct all remaining page sequence numbers
-	let mut pages_reader = Cursor::new(&remaining_file_content[..]);
 	let mut idx = 0;
-	while let Ok(mut page) = Page::read(&mut pages_reader) {
-		let header = page.header_mut();
-		header.sequence_number = pages_written + idx;
-		page.gen_crc();
-		file.write_all(&page.as_bytes())?;
-
+	if let Some(page) = remainder_page {
+		write_page(&mut file, page, pages_written + idx)?;
 		idx += 1;
 	}
+
+	let mut remaining_pages = Cursor::new(&remaining_file_content[..]);
+	while let Ok(page) = ogg_pager::Page::read(&mut remaining_pages) {
+		write_page(&mut file, page, pages_written + idx)?;
+		idx += 1;
+	}
+
+	log::trace!("wrote {} pages", pages_written + idx);
+
+	Ok(())
+}
+
+fn write_page<W: Write>(
+	writer: &mut W,
+	mut page: ogg_pager::Page,
+	seq_number: u32,
+) -> std::io::Result<()> {
+	let header = page.header_mut();
+	header.sequence_number = seq_number;
+	page.gen_crc();
+	writer.write_all(&page.as_bytes())?;
 
 	Ok(())
 }
@@ -138,6 +154,7 @@ pub(in crate::ogg) fn create_metadata_packet<'a, II, IP>(
 	tag: &mut VorbisCommentsRef<'a, II, IP>,
 	comment_signature: &[u8],
 	add_framing_bit: bool,
+	write_options: WriteOptions,
 ) -> Result<Vec<u8>, VorbisCommentsEncodingError>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -168,6 +185,24 @@ where
 		//
 		// https://xiph.org/vorbis/doc/Vorbis_I_spec.html#x1-590004
 		new_comment_packet.get_mut().push(1);
+	}
+
+	if let Some(preferred_padding) = write_options.preferred_padding {
+		let current_len = new_comment_packet.get_ref().len();
+
+		// Always align padding to page boundaries
+		let page_boundary = (current_len + preferred_padding.get() as usize)
+			.div_ceil(MAX_WRITTEN_CONTENT_SIZE)
+			* MAX_WRITTEN_CONTENT_SIZE;
+
+		let padding_size = page_boundary - current_len;
+		log::debug!(
+			"padding comment packet with {padding_size} bytes \
+			 (preferred_padding={preferred_padding})"
+		);
+
+		let padding = try_vec![0; padding_size]?;
+		new_comment_packet.get_mut().extend(padding);
 	}
 
 	Ok(new_comment_packet.into_inner())
