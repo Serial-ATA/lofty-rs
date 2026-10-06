@@ -433,7 +433,7 @@ fn test_remove_metadata() {
 		assert!(f.ilst().is_some());
 		assert!(!f.ilst().unwrap().is_empty());
 		TagType::Mp4Ilst
-			.remove_from(&mut file, WriteOptions::default())
+			.remove_from(&mut file, WriteOptions::new().preferred_padding(0))
 			.unwrap();
 	}
 	file.rewind().unwrap();

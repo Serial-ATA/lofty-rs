@@ -17,6 +17,7 @@ use crate::util::alloc::VecFallibleCapacity;
 use crate::util::io::FileLike;
 
 use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::ops::Range;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -184,17 +185,13 @@ where
 	Ok(())
 }
 
-fn save_to_existing(
+/// Find an existing `ilst` atom in the file, with any surrounding padding
+fn find_existing_ilst(
 	writer: &mut AtomWriterCompanion<'_>,
-	(meta, udta): (AtomInfo, AtomInfo),
-	new_udta_size: &mut u64,
-	ilst: Vec<u8>,
+	meta: &AtomInfo,
 	remove_tag: bool,
 	write_options: WriteOptions,
-) -> Result<(), FileEncodingError> {
-	let mut replacement;
-	let range;
-
+) -> Result<Option<Range<u64>>, FileParseError> {
 	let (ilst_idx, tree) = atom_tree(
 		writer,
 		meta.len - ATOM_HEADER_LEN,
@@ -203,103 +200,116 @@ fn save_to_existing(
 	)
 	.map_err(Into::<FileParseError>::into)?;
 
-	if tree.is_empty() {
-		// Nothing to do
+	let Some(ilst_idx) = ilst_idx else {
+		// No existing `ilst`, we'll just append it at the end of `meta`
+		return Ok(None);
+	};
+
+	let existing_ilst = &tree[ilst_idx];
+	let existing_ilst_size = existing_ilst.len;
+
+	let mut range_start = existing_ilst.start;
+	let mut range_end = existing_ilst.start + existing_ilst_size;
+	if remove_tag {
+		// If we're just removing the tag, nothing else to do
+		return Ok(Some(range_start..range_end));
+	}
+
+	// Otherwise, search for any surrounding padding atoms we can use for this write...
+
+	// Check for one directly before the `ilst` atom
+	if ilst_idx > 0 {
+		let mut i = 0;
+		for atom in tree[..ilst_idx].iter().rev() {
+			if atom.ident != AtomIdent::Fourcc(*b"free") {
+				break;
+			}
+
+			range_start = atom.start;
+			i += 1;
+		}
+
+		log::trace!("Found {i} preceding `free` atoms")
+	}
+
+	// And after
+	if ilst_idx != tree.len() - 1 {
+		let mut i = 0;
+		for atom in &tree[ilst_idx + 1..] {
+			if atom.ident != AtomIdent::Fourcc(*b"free") {
+				break;
+			}
+
+			range_end += atom.len;
+			i += 1;
+		}
+
+		log::trace!("Found {i} succeeding `free` atoms")
+	}
+
+	Ok(Some(range_start..range_end))
+}
+
+fn save_to_existing(
+	writer: &mut AtomWriterCompanion<'_>,
+	(meta, udta): (AtomInfo, AtomInfo),
+	new_udta_size: &mut u64,
+	mut ilst: Vec<u8>,
+	remove_tag: bool,
+	write_options: WriteOptions,
+) -> Result<(), FileEncodingError> {
+	let range;
+
+	if let Some(existing_ilst) = find_existing_ilst(writer, &meta, remove_tag, write_options)? {
+		range = existing_ilst;
+	} else {
 		if remove_tag {
+			// Nothing to do, no `ilst` exists
 			return Ok(());
 		}
 
-		let meta_end = (meta.start + meta.len) as usize;
-
-		replacement = ilst;
+		let meta_end = meta.start + meta.len;
 		range = meta_end..meta_end;
-	} else {
-		let existing_ilst = &tree[ilst_idx];
-		let existing_ilst_size = existing_ilst.len;
-
-		let mut range_start = existing_ilst.start;
-		let range_end = existing_ilst.start + existing_ilst_size;
-
-		if remove_tag {
-			// We just need to strip out the `ilst` atom
-
-			replacement = Vec::new();
-			range = range_start as usize..range_end as usize;
-		} else {
-			// Check for some padding atoms we can utilize
-			let mut available_space = existing_ilst_size;
-
-			// Check for one directly before the `ilst` atom
-			if ilst_idx > 0 {
-				let mut i = ilst_idx;
-				while i != 0 {
-					let atom = &tree[i - 1];
-					if atom.ident != AtomIdent::Fourcc(*b"free") {
-						break;
-					}
-
-					available_space += atom.len;
-					range_start = atom.start;
-					i -= 1;
-				}
-
-				log::trace!("Found {} preceding `free` atoms", ilst_idx - i)
-			}
-
-			// And after
-			if ilst_idx != tree.len() - 1 {
-				let mut i = ilst_idx;
-				while i < tree.len() - 1 {
-					let atom = &tree[i + 1];
-					if atom.ident != AtomIdent::Fourcc(*b"free") {
-						break;
-					}
-
-					available_space += atom.len;
-					i += 1;
-				}
-
-				log::trace!("Found {} succeeding `free` atoms", i - ilst_idx)
-			}
-
-			let ilst_len = ilst.len() as u64;
-
-			// Check if we have enough padding to fit the `ilst` atom and a new `free` atom
-			if available_space > ilst_len && (available_space - ilst_len) > 8 {
-				// We have enough space to make use of the padding
-				log::trace!("Found enough padding to fit the tag, file size will not change");
-
-				let remaining_space = available_space - ilst_len;
-				if remaining_space > u64::from(u32::MAX) {
-					return Err(TooMuchDataError.into());
-				}
-
-				let remaining_space = remaining_space as u32;
-
-				writer.seek(SeekFrom::Start(range_start))?;
-				writer.write_all(&ilst)?;
-
-				// Write the remaining padding
-				write_free_atom(writer, remaining_space)?;
-
-				return Ok(());
-			}
-
-			replacement = ilst;
-			range = range_start as usize..range_end as usize;
-		}
 	}
 
-	let mut new_meta_size = (meta.len - range.len() as u64) + replacement.len() as u64;
+	let ilst_len = ilst.len() as u64;
+	let available_space = range.end - range.start;
+
+	// We'll ignore the preferred padding here to avoid unnecessarily rewriting the file.
+	// All that matters is that padding isn't _explicitly disabled_
+	if let Some(_preferred_padding) = write_options.preferred_padding
+		// Check if we have enough space to fit the `ilst` atom and a new `free` atom
+		&& available_space > ilst_len
+		&& (available_space - ilst_len) > ATOM_HEADER_LEN
+	{
+		log::trace!("Found enough padding to fit the tag, file size will not change");
+
+		let remaining_space = available_space - ilst_len;
+		if remaining_space > u64::from(u32::MAX) {
+			return Err(TooMuchDataError.into());
+		}
+
+		let remaining_space = remaining_space as u32;
+
+		writer.seek(SeekFrom::Start(range.start))?;
+		writer.write_all(&ilst)?;
+
+		// Write the remaining padding
+		write_free_atom(writer, remaining_space)?;
+
+		return Ok(());
+	}
+
+	let mut new_meta_size = (meta.len - available_space) + ilst.len() as u64;
 
 	let difference = (new_meta_size as i64) - (meta.len as i64);
-	if !replacement.is_empty() && difference != 0 {
+	if !ilst.is_empty() && difference != 0 {
 		log::trace!("Tag size changed, attempting to avoid offset update");
 
-		let mut ilst_writer = Cursor::new(replacement);
+		let mut ilst_writer = Cursor::new(ilst);
 		let (_, padding_size) = pad_atom(&mut ilst_writer, difference, write_options)?;
 
-		replacement = ilst_writer.into_inner();
+		ilst = ilst_writer.into_inner();
 		new_meta_size += padding_size;
 	}
 
@@ -316,7 +326,7 @@ fn save_to_existing(
 	}
 
 	// Replace the `ilst` atom
-	writer.splice(range, replacement);
+	writer.splice(range.start as usize..range.end as usize, ilst);
 
 	Ok(())
 }
@@ -374,10 +384,15 @@ where
 	Ok((atom_size_difference, padding_size))
 }
 
+/// Write a `free` atom at the current position
+///
+/// NOTE: `size` must include the [`ATOM_HEADER_LEN`]
 fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), FileEncodingError>
 where
 	W: Write,
 {
+	assert!(size > ATOM_HEADER_LEN as u32);
+
 	writer.write_u32::<BigEndian>(size)?;
 	writer.write_all(b"free")?;
 	writer.write_all(&try_vec![1; (size - ATOM_HEADER_LEN as u32) as usize]?)?;
