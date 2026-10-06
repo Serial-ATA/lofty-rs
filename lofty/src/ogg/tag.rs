@@ -745,9 +745,9 @@ where
 	pub(crate) fn dump_to<W: Write>(
 		&mut self,
 		writer: &mut W,
-		_write_options: WriteOptions,
+		write_options: WriteOptions,
 	) -> Result<(), VorbisCommentsEncodingError> {
-		let metadata_packet = write::create_metadata_packet(self, &[], false)?;
+		let metadata_packet = write::create_metadata_packet(self, &[], false, write_options)?;
 		writer.write_all(&metadata_packet)?;
 		Ok(())
 	}

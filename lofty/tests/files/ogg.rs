@@ -5,6 +5,7 @@ use lofty::prelude::*;
 use lofty::probe::Probe;
 use lofty::tag::TagType;
 
+use std::fs::File;
 use std::io::Seek;
 
 // The tests for OGG Opus/Vorbis/Speex are nearly identical
@@ -55,6 +56,53 @@ fn vorbis_read() {
 #[test_log::test]
 fn vorbis_write() {
 	write("tests/files/assets/minimal/full_test.ogg", FileType::Vorbis)
+}
+
+fn comments_len(file: &mut File) -> usize {
+	file.rewind().unwrap();
+
+	let packets = ogg_pager::Packets::read(file).unwrap();
+	let comments = packets.get(1).expect("should have comment packet");
+	comments.len()
+}
+
+#[test_log::test]
+fn vorbis_comments_padding_rounds() {
+	let original_len =
+		comments_len(&mut File::open("tests/files/assets/minimal/full_test.ogg").unwrap());
+	// Extra length for the implicit encoder field
+	let comment_delta = "....ENCODER=Lavf58.76.100".len();
+
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.ogg");
+
+	// Padding should always round up to the nearest page boundary
+	let preferred_padding = (ogg_pager::MAX_WRITTEN_CONTENT_SIZE / 2) as u32; // 4080
+	let actual_padding = 8085;
+
+	tagged_file
+		.save(WriteOptions::new().preferred_padding(preferred_padding))
+		.unwrap();
+
+	let mut f = tagged_file.into_inner();
+	let new_len = comments_len(&mut f);
+	assert_eq!(new_len, original_len + comment_delta + actual_padding);
+}
+
+#[test_log::test]
+fn vorbis_comments_disabled_padding() {
+	let original_len =
+		comments_len(&mut File::open("tests/files/assets/minimal/full_test.ogg").unwrap());
+	// Extra length for the implicit encoder field
+	let comment_delta = "....ENCODER=Lavf58.76.100".len();
+
+	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.ogg");
+	tagged_file
+		.save(WriteOptions::new().preferred_padding(0))
+		.unwrap();
+
+	let mut f = tagged_file.into_inner();
+	let new_len = comments_len(&mut f);
+	assert_eq!(new_len, original_len + comment_delta);
 }
 
 #[test_log::test]

@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **VorbisComments**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
+- **VorbisComments**:
+  - Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
+  - Added support for `WriteOptions::preferred_padding()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/744))
 - **ApeTag**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
 - **RiffInfoList**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
 
@@ -19,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - Fixed panics on failed ilst writes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/738)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
   - Fixed deletion of unrelated atoms when writing to files with no existing `ilst` atom ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
+- **OGG**: Fixed corruption when writing to files without page-aligned packets ([issue](https://github.com/Serial-ATA/lofty-rs/issues/729)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/744))
 
 ## [0.25.4] - 2026-09-20
 

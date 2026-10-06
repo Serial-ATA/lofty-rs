@@ -42,7 +42,11 @@ impl From<VorbisCommentsParseError> for TagParseError {
 #[derive(LoftyError)]
 #[error(message = "failed to parse Vorbis Comments tag")]
 pub(crate) struct VorbisCommentsEncodingError {
-	#[error(from(std::io::Error, crate::error::TooMuchDataError,))]
+	#[error(from(
+		std::io::Error,
+		crate::error::TooMuchDataError,
+		crate::error::AllocationError,
+	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 

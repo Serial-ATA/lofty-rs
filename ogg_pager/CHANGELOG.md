@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-10
+
+### Changed
+
+- `Packets::read_count()` now returns an additional `Page` if the final packet doesn't end on a page boundary ([PR](https://github.com/Serial-ATA/lofty-rs/pull/744))
+
 ## [0.7.2] - 2026-05-15
 
 ### Fixed
