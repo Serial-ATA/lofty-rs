@@ -156,11 +156,11 @@ pub(super) fn atom_tree<R>(
 	mut len: u64,
 	up_to: &[u8],
 	parse_mode: ParsingMode,
-) -> Result<(usize, Vec<AtomInfo>), Mp4ParseError>
+) -> Result<(Option<usize>, Vec<AtomInfo>), Mp4ParseError>
 where
 	R: Read + Seek,
 {
-	let mut found_idx: usize = 0;
+	let mut found_idx = None;
 	let mut buf = Vec::new();
 
 	let mut i = 0;
@@ -174,32 +174,36 @@ where
 		len = len.saturating_sub(atom.len);
 
 		if let AtomIdent::Fourcc(ref fourcc) = atom.ident {
-			i += 1;
-
-			if fourcc == up_to {
-				found_idx = i;
+			if fourcc == up_to && found_idx.is_none() {
+				found_idx = Some(i);
 			}
 
 			buf.push(atom);
+			i += 1;
 		}
 	}
-
-	found_idx = found_idx.saturating_sub(1);
 
 	Ok((found_idx, buf))
 }
 
+/// Check if the `meta` atom is "full"
+///
+/// A full `meta` atom should have the following:
+///
+/// * Size (4)
+/// * Ident (4) ("meta")
+/// * Version (1)
+/// * Flags (3)
+///
+/// However, some encoders write it as a normal atom:
+///
+/// * Size (4)
+/// * Ident (4) ("meta")
 pub(super) fn meta_is_full<R>(reader: &mut R) -> Result<bool, AtomParseError>
 where
 	R: Read + Seek,
 {
-	// A full `meta` atom should have the following:
-	//
-	// Version (1)
-	// Flags (3)
-	//
-	// However, it's possible that it is written as a normal atom,
-	// meaning this would be the size of the next atom.
+	// If this is a normal atom, this'll be the size of the next atom
 	let _version_flags = reader.read_u32::<BigEndian>()?;
 
 	// Check if the next four bytes is one of the nested `meta` atoms

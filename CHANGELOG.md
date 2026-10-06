@@ -16,7 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **ID3v2**: Fixed write errors from `ItemKey::{Work, FlagCompilation, FlagPodcast}` conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/732)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/734))
 - **AIFF**: Fixed parsing of `COMT` chunks with padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/736)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/737))
-- **MP4**: Fixed panics on failed ilst writes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/738)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
+- **MP4**:
+  - Fixed panics on failed ilst writes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/738)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
+  - Fixed deletion of unrelated atoms when writing to files with no existing `ilst` atom ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
 
 ## [0.25.4] - 2026-09-20
 
