@@ -122,12 +122,20 @@ where
 				{
 					let num_comments = chunk.read_u16::<BigEndian>()?;
 
-					for _ in 0..num_comments {
+					for i in 0..num_comments {
 						let timestamp = chunk.read_u32::<BigEndian>()?;
 						let marker_id = chunk.read_u16::<BigEndian>()?;
 						let size = chunk.read_u16::<BigEndian>()?;
 
 						let text = chunk.read_string(Some(u32::from(size)))?;
+
+						// Odd-sized comments are padded with a 0, which is NOT included in the size.
+						//
+						// The padding of the final comment is left for `Chunks::skip()`, since it
+						// may not have been written.
+						if size % 2 != 0 && i + 1 < num_comments {
+							chunk.read_u8()?;
+						}
 
 						comments.push(Comment {
 							timestamp,
