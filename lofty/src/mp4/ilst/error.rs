@@ -45,3 +45,9 @@ impl From<IlstEncodingError> for TagEncodingError {
 		TagEncodingError::new(TagType::Mp4Ilst, input.source)
 	}
 }
+
+impl From<IlstEncodingError> for FileEncodingError {
+	fn from(input: IlstEncodingError) -> Self {
+		TagEncodingError::from(input).into()
+	}
+}

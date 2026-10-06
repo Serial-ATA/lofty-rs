@@ -174,15 +174,23 @@ impl AtomWriter {
 	/// # Panics
 	///
 	/// This will panic if a write is already active. Any previous handle **must** be dropped.
-	pub(super) fn start_write(&self) -> AtomWriterCompanion<'_> {
+	pub(super) fn start_write<F, T, E>(&self, f: F) -> Result<T, FileEncodingError>
+	where
+		F: FnOnce(&mut AtomWriterCompanion<'_>) -> Result<T, E>,
+		E: Into<FileEncodingError>,
+	{
 		let contents = self.contents.borrow_mut();
 		let original_length = contents.get_ref().len();
-		AtomWriterCompanion {
+		let mut companion = AtomWriterCompanion {
 			shift_pos: None,
 			original_length,
 			atoms: self.atoms(),
 			contents,
-			finished: false,
+		};
+
+		match f(&mut companion) {
+			Ok(val) => companion.finish().map(|_| val),
+			Err(e) => Err(e.into()),
 		}
 	}
 
@@ -206,7 +214,6 @@ pub(super) struct AtomWriterCompanion<'a> {
 	original_length: usize,
 	atoms: &'a ContextualAtoms,
 	contents: RefMut<'a, Cursor<Vec<u8>>>,
-	finished: bool,
 }
 
 impl AtomWriterCompanion<'_> {
@@ -285,8 +292,7 @@ impl AtomWriterCompanion<'_> {
 	}
 
 	/// Finishes the write operation and updates offset atoms if needed
-	pub(super) fn finish(mut self) -> Result<(), FileEncodingError> {
-		self.finished = true;
+	fn finish(mut self) -> Result<(), FileEncodingError> {
 		self.update_offsets()
 	}
 
@@ -429,15 +435,6 @@ impl AtomWriterCompanion<'_> {
 	}
 }
 
-impl Drop for AtomWriterCompanion<'_> {
-	fn drop(&mut self) {
-		assert!(
-			self.finished || std::thread::panicking(),
-			"`AtomWriterCompanion` was not finished"
-		);
-	}
-}
-
 impl Seek for AtomWriterCompanion<'_> {
 	fn seek(&mut self, pos: SeekFrom) -> std::io::Result<u64> {
 		self.contents.seek(pos)
@@ -504,24 +501,5 @@ impl<'a> Iterator for AtomFindAll<std::slice::Iter<'a, ContextualAtom>> {
 				return self.next();
 			}
 		}
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	#[should_panic(expected = "`AtomWriterCompanion` was not finished")]
-	fn unfinished_companion_panics() {
-		let writer = AtomWriter::new(Vec::new(), ParsingMode::Strict);
-		let _write_handle = writer.start_write();
-	}
-
-	#[test]
-	fn finished_companion_succeeds() {
-		let writer = AtomWriter::new(Vec::new(), ParsingMode::Strict);
-		let write_handle = writer.start_write();
-		assert!(write_handle.finish().is_ok());
 	}
 }

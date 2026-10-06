@@ -1,7 +1,7 @@
 use super::data_type::DataType;
 use super::r#ref::IlstRef;
 use crate::config::WriteOptions;
-use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
+use crate::error::{FileEncodingError, FileParseError, TooMuchDataError};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
 use crate::macros::try_vec;
@@ -70,115 +70,114 @@ where
 		moov_data_start += 8;
 	}
 
-	let mut write_handle = atom_writer.start_write();
-	write_handle.seek(SeekFrom::Start(moov_data_start))?;
+	atom_writer.start_write(|write_handle| -> Result<(), FileEncodingError> {
+		write_handle.seek(SeekFrom::Start(moov_data_start))?;
 
-	let ilst = build_ilst(&mut tag.atoms, write_options).map_err(TagEncodingError::from)?;
-	let remove_tag = ilst.is_empty();
+		let ilst = build_ilst(&mut tag.atoms, write_options)?;
+		let remove_tag = ilst.is_empty();
 
-	let udta = find_child_atom(
-		&mut write_handle,
-		moov_len,
-		*b"udta",
-		write_options.parse_options.parsing_mode,
-	)
-	.map_err(handle_atom_parse_error)?;
-
-	// Nothing to do
-	if remove_tag && udta.is_none() {
-		write_handle.finish()?;
-		return Ok(());
-	}
-
-	// Total size of new atoms
-	let mut new_udta_size;
-	// Size of the existing udta atom
-	let mut existing_udta_size = 0;
-
-	// ilst is nested in udta.meta, so we need to check what atoms actually exist
-	if let Some(udta) = udta {
-		log::trace!(
-			"Found `udta` atom, offset: {}, size: {}",
-			udta.start,
-			udta.len
-		);
-
-		existing_udta_size = udta.len;
-		new_udta_size = existing_udta_size;
-
-		let meta = find_child_atom(
-			&mut write_handle,
-			udta.len,
-			*b"meta",
+		let udta = find_child_atom(
+			write_handle,
+			moov_len,
+			*b"udta",
 			write_options.parse_options.parsing_mode,
 		)
 		.map_err(handle_atom_parse_error)?;
 
 		// Nothing to do
-		if remove_tag && meta.is_none() {
-			write_handle.finish()?;
+		if remove_tag && udta.is_none() {
 			return Ok(());
 		}
 
-		match meta {
-			Some(meta) => {
-				log::trace!(
-					"Found `meta` atom, offset: {}, size: {}",
-					meta.start,
-					meta.len
-				);
+		// Total size of new atoms
+		let mut new_udta_size;
+		// Size of the existing udta atom
+		let mut existing_udta_size = 0;
 
-				// We may encounter a non-full `meta` atom
-				meta_is_full(&mut write_handle).map_err(handle_atom_parse_error)?;
+		// ilst is nested in udta.meta, so we need to check what atoms actually exist
+		if let Some(udta) = udta {
+			log::trace!(
+				"Found `udta` atom, offset: {}, size: {}",
+				udta.start,
+				udta.len
+			);
 
-				// We can use the existing `udta` and `meta` atoms
-				save_to_existing(
-					&mut write_handle,
-					(meta, udta),
-					&mut new_udta_size,
-					ilst,
-					remove_tag,
-					write_options,
-				)?
-			},
-			// We have to create the `meta` atom
-			None => {
-				log::trace!("No `meta` atom found, creating one");
+			existing_udta_size = udta.len;
+			new_udta_size = existing_udta_size;
 
-				existing_udta_size = udta.len;
+			let meta = find_child_atom(
+				write_handle,
+				udta.len,
+				*b"meta",
+				write_options.parse_options.parsing_mode,
+			)
+			.map_err(handle_atom_parse_error)?;
 
-				// We'll put the new `meta` atom right at the start of `udta`
-				let meta_start_pos = udta.start + ATOM_HEADER_LEN;
-				write_handle.seek(SeekFrom::Start(meta_start_pos))?;
-				let meta_size = create_meta(&mut write_handle, &ilst)?;
+			// Nothing to do
+			if remove_tag && meta.is_none() {
+				return Ok(());
+			}
 
-				new_udta_size = udta.len + meta_size;
-				write_handle.seek(SeekFrom::Start(udta.start))?;
-				write_handle.write_atom_size(udta.start, new_udta_size, udta.extended)?;
-			},
+			match meta {
+				Some(meta) => {
+					log::trace!(
+						"Found `meta` atom, offset: {}, size: {}",
+						meta.start,
+						meta.len
+					);
+
+					// We may encounter a non-full `meta` atom
+					meta_is_full(write_handle).map_err(handle_atom_parse_error)?;
+
+					// We can use the existing `udta` and `meta` atoms
+					save_to_existing(
+						write_handle,
+						(meta, udta),
+						&mut new_udta_size,
+						ilst,
+						remove_tag,
+						write_options,
+					)?
+				},
+				// We have to create the `meta` atom
+				None => {
+					log::trace!("No `meta` atom found, creating one");
+
+					existing_udta_size = udta.len;
+
+					// We'll put the new `meta` atom right at the start of `udta`
+					let meta_start_pos = udta.start + ATOM_HEADER_LEN;
+					write_handle.seek(SeekFrom::Start(meta_start_pos))?;
+					let meta_size = create_meta(write_handle, &ilst)?;
+
+					new_udta_size = udta.len + meta_size;
+					write_handle.seek(SeekFrom::Start(udta.start))?;
+					write_handle.write_atom_size(udta.start, new_udta_size, udta.extended)?;
+				},
+			}
+		} else {
+			log::trace!("No `udta` atom found, creating one");
+
+			// We have to create the `udta` atom. Put it right at the start of `moov`.
+			let udta_pos = moov_start + ATOM_HEADER_LEN;
+			write_handle.seek(SeekFrom::Start(udta_pos))?;
+			new_udta_size = create_udta(write_handle, &ilst, write_options)?;
 		}
-	} else {
-		log::trace!("No `udta` atom found, creating one");
 
-		// We have to create the `udta` atom. Put it right at the start of `moov`.
-		let udta_pos = moov_start + ATOM_HEADER_LEN;
-		write_handle.seek(SeekFrom::Start(udta_pos))?;
-		new_udta_size = create_udta(&mut write_handle, &ilst, write_options)?;
-	}
+		write_handle.seek(SeekFrom::Start(moov_start))?;
 
-	write_handle.seek(SeekFrom::Start(moov_start))?;
+		// Change the size of the moov atom
+		let new_moov_length = (moov_len - existing_udta_size) + new_udta_size;
 
-	// Change the size of the moov atom
-	let new_moov_length = (moov_len - existing_udta_size) + new_udta_size;
+		log::trace!(
+			"Updating `moov` atom size, old size: {}, new size: {}",
+			moov_len,
+			new_moov_length
+		);
+		write_handle.write_atom_size(moov_start, new_moov_length, moov_extended)?;
 
-	log::trace!(
-		"Updating `moov` atom size, old size: {}, new size: {}",
-		moov_len,
-		new_moov_length
-	);
-	write_handle.write_atom_size(moov_start, new_moov_length, moov_extended)?;
-
-	write_handle.finish()?;
+		Ok(())
+	})?;
 
 	atom_writer.save_to(&mut file)?;
 
@@ -403,19 +402,19 @@ fn create_udta(
 	buf.write_all(&UDTA_HEADER)?;
 
 	let udta_writer = AtomWriter::new(buf, write_options.parse_options.parsing_mode);
-	let mut write_handle = udta_writer.start_write();
+	udta_writer.start_write(|write_handle| -> Result<(), FileEncodingError> {
+		write_handle.seek(SeekFrom::Current(UDTA_HEADER.len() as i64))?; // Skip header
 
-	write_handle.seek(SeekFrom::Current(UDTA_HEADER.len() as i64))?; // Skip header
+		create_meta(write_handle, ilst)?;
 
-	create_meta(&mut write_handle, ilst)?;
+		// `udta` size
+		{
+			write_handle.rewind()?;
+			write_handle.write_atom_size(0, write_handle.len() as u64, false)?;
+		}
 
-	// `udta` size
-	{
-		write_handle.rewind()?;
-		write_handle.write_atom_size(0, write_handle.len() as u64, false)?;
-	}
-
-	write_handle.finish()?;
+		Ok(())
+	})?;
 
 	let udta = udta_writer.into_contents();
 	let udta_size = udta.len() as u64;
@@ -487,44 +486,46 @@ where
 	let ilst_header = vec![0, 0, 0, 0, b'i', b'l', b's', b't'];
 	let ilst_writer = AtomWriter::new(ilst_header, write_options.parse_options.parsing_mode);
 
-	let mut write_handle = ilst_writer.start_write();
-	write_handle.seek(SeekFrom::End(0))?;
+	ilst_writer.start_write(|write_handle| -> Result<(), IlstEncodingError> {
+		write_handle.seek(SeekFrom::End(0))?;
 
-	for atom in peek {
-		let start = write_handle.stream_position()?;
+		for atom in peek {
+			let start = write_handle.stream_position()?;
 
-		// Empty size, we get it later
-		write_handle.write_all(&[0; FOURCC_LEN as usize])?;
+			// Empty size, we get it later
+			write_handle.write_all(&[0; FOURCC_LEN as usize])?;
 
-		match atom.ident {
-			AtomIdent::Fourcc(ref fourcc) => write_handle.write_all(fourcc)?,
-			AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, &mut write_handle)?,
+			match atom.ident {
+				AtomIdent::Fourcc(ref fourcc) => write_handle.write_all(fourcc)?,
+				AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, write_handle)?,
+			}
+
+			write_atom_data(atom.data, write_handle)?;
+
+			let end = write_handle.stream_position()?;
+
+			let size = end - start;
+
+			write_handle.seek(SeekFrom::Start(start))?;
+
+			write_handle.write_atom_size(start, size, false)?;
+
+			write_handle.seek(SeekFrom::Start(end))?;
 		}
 
-		write_atom_data(atom.data, &mut write_handle)?;
+		let size = write_handle.len();
 
-		let end = write_handle.stream_position()?;
+		write_handle.rewind()?;
 
-		let size = end - start;
+		write_handle.write_atom_size(0, size as u64, false)?;
 
-		write_handle.seek(SeekFrom::Start(start))?;
+		Ok(())
+	})?;
 
-		write_handle.write_atom_size(start, size, false)?;
+	let ret = ilst_writer.into_contents();
+	log::trace!("Built `ilst` atom, size: {} bytes", ret.len());
 
-		write_handle.seek(SeekFrom::Start(end))?;
-	}
-
-	let size = write_handle.len();
-
-	write_handle.rewind()?;
-
-	write_handle.write_atom_size(0, size as u64, false)?;
-
-	write_handle.finish()?;
-
-	log::trace!("Built `ilst` atom, size: {size} bytes");
-
-	Ok(ilst_writer.into_contents())
+	Ok(ret)
 }
 
 fn write_freeform<W>(mean: &str, name: &str, writer: &mut W) -> Result<(), IlstEncodingError>
@@ -673,6 +674,9 @@ fn write_data(
 #[cfg(test)]
 mod tests {
 	use super::bytes_to_occupy_uint;
+	use crate::config::WriteOptions;
+	use crate::mp4::{Atom, AtomData, AtomIdent, DataType, Ilst};
+	use crate::tag::TagExt;
 
 	macro_rules! int_test {
 		(
@@ -726,5 +730,23 @@ mod tests {
 				expected: [255, 255, 255, 255],
 			},
 		}
+	}
+
+	#[test_log::test]
+	fn write_errors_propagate() {
+		// https://github.com/Serial-ATA/lofty-rs/issues/738
+
+		let mut tag = Ilst::new();
+
+		tag.insert(Atom::new(
+			AtomIdent::Fourcc(*b"fooo"),
+			AtomData::Unknown {
+				code: DataType::Other(DataType::MAX + 1),
+				data: vec![1, 2, 3],
+			},
+		));
+
+		tag.dump_to(&mut Vec::new(), WriteOptions::new())
+			.unwrap_err();
 	}
 }
