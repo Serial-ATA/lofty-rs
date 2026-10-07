@@ -531,7 +531,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::config::{ParseOptions, WriteOptions};
+	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::iff::aiff::{AiffTextChunks, Comment};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
@@ -646,7 +646,7 @@ mod tests {
 	}
 
 	#[test_log::test]
-	fn parse_padded_comments() {
+	fn parse_padded_comt() {
 		let aiff = [
 			b"FORM\0\0\0\0AIFF".as_slice(),
 			b"COMT\0\0\0\x2C\0\x02",
@@ -682,7 +682,7 @@ mod tests {
 	}
 
 	#[test_log::test]
-	fn parse_unpadded_final_comment() {
+	fn parse_unpadded_final_comt() {
 		// Some encoders may not pad the final comment, only the chunk
 		let aiff = [
 			b"FORM\0\0\0\0AIFF".as_slice(),
@@ -710,6 +710,57 @@ mod tests {
 			}])
 		);
 		assert_eq!(parsed_tag.name, Some(String::from("Foo title")));
+	}
+
+	#[test_log::test]
+	fn parse_comt_with_invalid_padding() {
+		let aiff = [
+			b"FORM\0\0\0\0AIFF".as_slice(),
+			b"COMT\0\0\0\x52\0\x04",
+			// Properly padded chunks
+			b"\0\0\x04\0\0\0\0\x0BFoo comment\0",
+			b"\0\0\x04\0\0\0\0\x0BBar comment\0",
+			b"\0\0\x04\0\0\0\0\x0BBaz comment",
+			b"\x45", // Garbage padding byte
+			b"\0\0\x04\0\0\0\0\x0BQux comment\0",
+			b"NAME\0\0\0\x09Foo title\0",
+		]
+		.concat();
+
+		// By default, we should parse all the comments we can (Foo and Bar) and drop anything else
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(aiff.clone()),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
+
+		assert_eq!(
+			parsed_tag.comments,
+			Some(vec![
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Foo comment"),
+				},
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Bar comment"),
+				},
+			])
+		);
+		assert_eq!(parsed_tag.name, Some(String::from("Foo title")));
+
+		// While strict mode should fail
+		let res = super::super::read::read_from(
+			&mut Cursor::new(aiff),
+			ParseOptions::new()
+				.read_properties(false)
+				.parsing_mode(ParsingMode::Strict),
+		);
+		assert!(res.is_err());
 	}
 
 	#[test_log::test]
