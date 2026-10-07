@@ -250,6 +250,11 @@ impl<R: Read + Seek> Chunk<'_, R> {
 		self.size
 	}
 
+	/// Get the number of unread bytes remaining in the chunk
+	pub fn remaining_size(&self) -> u32 {
+		*self.chunk_remaining_size
+	}
+
 	/// Get the start position of the chunk
 	pub fn start(&self) -> u64 {
 		self.start_pos

@@ -11,6 +11,14 @@ pub struct AiffTextChunksParseError {
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
 }
 
+impl AiffTextChunksParseError {
+	pub(crate) fn message(message: &'static str) -> Self {
+		Self {
+			source: message.into(),
+		}
+	}
+}
+
 impl From<AiffTextChunksParseError> for TagParseError {
 	fn from(input: AiffTextChunksParseError) -> Self {
 		TagParseError::new(TagType::AiffText, input.source)

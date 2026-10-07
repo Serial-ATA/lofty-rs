@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **ID3v2**: Fixed write errors from `ItemKey::{Work, FlagCompilation, FlagPodcast}` conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/732)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/734))
+- **AIFF**: Fixed parsing of `COMT` chunks with padding ([issue](https://github.com/Serial-ATA/lofty-rs/issues/736)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/737))
 
 ## [0.25.4] - 2026-09-20
 

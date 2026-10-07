@@ -531,7 +531,7 @@ where
 
 #[cfg(test)]
 mod tests {
-	use crate::config::{ParseOptions, WriteOptions};
+	use crate::config::{ParseOptions, ParsingMode, WriteOptions};
 	use crate::iff::aiff::{AiffTextChunks, Comment};
 	use crate::prelude::*;
 	use crate::tag::{ItemValue, Tag, TagItem, TagType};
@@ -603,6 +603,164 @@ mod tests {
 		.unwrap();
 
 		assert_eq!(parsed_tag, temp_parsed_tag);
+	}
+
+	#[test_log::test]
+	fn aiff_text_re_read_odd_sized_comments() {
+		// Odd-sized comments are followed by a pad byte, which needs to be skipped
+		// before reading the next comment
+		let tag = AiffTextChunks {
+			comments: Some(vec![
+				Comment {
+					timestamp: 1024,
+					marker_id: 40,
+					text: String::from("Corge comment"),
+				},
+				Comment {
+					timestamp: 2048,
+					marker_id: 0,
+					text: String::from("Waldo comment"),
+				},
+				Comment {
+					timestamp: 4096,
+					marker_id: 80,
+					text: String::from("Grault comment"),
+				},
+			]),
+			..AiffTextChunks::default()
+		};
+
+		// Create a fake AIFF signature
+		let mut writer = vec![b'F', b'O', b'R', b'M', 0, 0, 0, 0, b'A', b'I', b'F', b'F'];
+		tag.dump_to(&mut writer, WriteOptions::default()).unwrap();
+
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(writer),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
+
+		assert_eq!(tag, parsed_tag);
+	}
+
+	#[test_log::test]
+	fn parse_padded_comt() {
+		let aiff = [
+			b"FORM\0\0\0\0AIFF".as_slice(),
+			b"COMT\0\0\0\x2C\0\x02",
+			// Timestamp, marker ID, size, text, and the pad byte not included in the size
+			b"\0\0\x04\0\0\0\0\x0DCorge comment\0",
+			b"\0\0\x08\0\0\x28\0\x0CQuuz comment",
+		]
+		.concat();
+
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(aiff),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
+
+		assert_eq!(
+			parsed_tag.comments,
+			Some(vec![
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Corge comment"),
+				},
+				Comment {
+					timestamp: 2048,
+					marker_id: 40,
+					text: String::from("Quuz comment"),
+				},
+			])
+		);
+	}
+
+	#[test_log::test]
+	fn parse_unpadded_final_comt() {
+		// Some encoders may not pad the final comment, only the chunk
+		let aiff = [
+			b"FORM\0\0\0\0AIFF".as_slice(),
+			b"COMT\0\0\0\x17\0\x01",
+			b"\0\0\x04\0\0\0\0\x0DCorge comment",
+			b"\0", // Chunk padding
+			b"NAME\0\0\0\x09Foo title\0",
+		]
+		.concat();
+
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(aiff),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
+
+		assert_eq!(
+			parsed_tag.comments,
+			Some(vec![Comment {
+				timestamp: 1024,
+				marker_id: 0,
+				text: String::from("Corge comment"),
+			}])
+		);
+		assert_eq!(parsed_tag.name, Some(String::from("Foo title")));
+	}
+
+	#[test_log::test]
+	fn parse_comt_with_invalid_padding() {
+		let aiff = [
+			b"FORM\0\0\0\0AIFF".as_slice(),
+			b"COMT\0\0\0\x52\0\x04",
+			// Properly padded chunks
+			b"\0\0\x04\0\0\0\0\x0BFoo comment\0",
+			b"\0\0\x04\0\0\0\0\x0BBar comment\0",
+			b"\0\0\x04\0\0\0\0\x0BBaz comment",
+			b"\x45", // Garbage padding byte
+			b"\0\0\x04\0\0\0\0\x0BQux comment\0",
+			b"NAME\0\0\0\x09Foo title\0",
+		]
+		.concat();
+
+		// By default, we should parse all the comments we can (Foo and Bar) and drop anything else
+		let parsed_tag = super::super::read::read_from(
+			&mut Cursor::new(aiff.clone()),
+			ParseOptions::new().read_properties(false),
+		)
+		.unwrap()
+		.text_chunks_tag
+		.unwrap();
+
+		assert_eq!(
+			parsed_tag.comments,
+			Some(vec![
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Foo comment"),
+				},
+				Comment {
+					timestamp: 1024,
+					marker_id: 0,
+					text: String::from("Bar comment"),
+				},
+			])
+		);
+		assert_eq!(parsed_tag.name, Some(String::from("Foo title")));
+
+		// While strict mode should fail
+		let res = super::super::read::read_from(
+			&mut Cursor::new(aiff),
+			ParseOptions::new()
+				.read_properties(false)
+				.parsing_mode(ParsingMode::Strict),
+		);
+		assert!(res.is_err());
 	}
 
 	#[test_log::test]

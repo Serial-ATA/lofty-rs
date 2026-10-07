@@ -1,7 +1,7 @@
 use super::AiffFile;
 use super::properties::AiffProperties;
 use super::tag::{AiffTextChunks, Comment};
-use crate::config::ParseOptions;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{NotEnoughDataError, TagParseError, UnknownFormatError};
 use crate::id3::v2::tag::Id3v2Tag;
 use crate::iff::aiff::error::AiffParseError;
@@ -116,18 +116,42 @@ where
 				fn parse_comments<R>(
 					chunk: &mut Chunk<'_, R>,
 					comments: &mut Vec<Comment>,
+					parse_options: ParseOptions,
 				) -> Result<(), AiffTextChunksParseError>
 				where
 					R: Read + Seek,
 				{
 					let num_comments = chunk.read_u16::<BigEndian>()?;
 
-					for _ in 0..num_comments {
+					for i in 0..num_comments {
 						let timestamp = chunk.read_u32::<BigEndian>()?;
 						let marker_id = chunk.read_u16::<BigEndian>()?;
 						let size = chunk.read_u16::<BigEndian>()?;
 
 						let text = chunk.read_string(Some(u32::from(size)))?;
+
+						// Odd-sized comments are padded with a 0, which is NOT included in the size.
+						//
+						// The padding of the final comment is left for `Chunks::skip()`, since it
+						// may not have been written.
+						if size % 2 != 0 && i + 1 < num_comments {
+							let pad = chunk.read_u8()?;
+							if pad != 0 {
+								if parse_options.parsing_mode == ParsingMode::Strict {
+									return Err(AiffTextChunksParseError::message(
+										"`COMT` chunk has invalid padding",
+									));
+								}
+
+								// Just give up on the rest of the comments and continue on
+								log::warn!(
+									"`COMT` chunk has invalid padding, skipping {} bytes of \
+									 remaining comments",
+									chunk.remaining_size()
+								);
+								return Ok(());
+							}
+						}
 
 						comments.push(Comment {
 							timestamp,
@@ -139,7 +163,8 @@ where
 					Ok(())
 				}
 
-				parse_comments(&mut chunk, &mut comments).map_err(TagParseError::from)?;
+				parse_comments(&mut chunk, &mut comments, parse_options)
+					.map_err(TagParseError::from)?;
 			},
 			b"NAME" if text_chunks.name.is_none() && parse_options.read_tags => {
 				text_chunks.name = Some(
