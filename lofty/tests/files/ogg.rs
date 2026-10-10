@@ -233,7 +233,7 @@ fn read_no_properties_opus() {
 
 #[test_log::test]
 fn read_no_tags_opus() {
-	crate::util::no_tag_test("tests/files/assets/minimal/full_test.opus", Some(1));
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.opus", Some(0));
 }
 
 #[test_log::test]
@@ -243,7 +243,7 @@ fn read_no_properties_vorbis() {
 
 #[test_log::test]
 fn read_no_tags_vorbis() {
-	crate::util::no_tag_test("tests/files/assets/minimal/full_test.ogg", Some(1));
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.ogg", Some(0));
 }
 
 #[test_log::test]
@@ -253,5 +253,5 @@ fn read_no_properties_speex() {
 
 #[test_log::test]
 fn read_no_tags_speex() {
-	crate::util::no_tag_test("tests/files/assets/minimal/full_test.spx", Some(1));
+	crate::util::no_tag_test("tests/files/assets/minimal/full_test.spx", Some(0));
 }

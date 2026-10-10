@@ -9,8 +9,7 @@ use crate::id3::v2::{
 };
 use crate::io::{FileLike, VerifiedFile};
 use crate::prelude::ItemKey;
-use crate::tag::companion_tag::CompanionTag;
-use crate::tag::{Tag, TagItem, TagType};
+use crate::tag::{CompanionTag, Tag, TagItem, TagType};
 
 use super::V4_MULTI_VALUE_SEPARATOR;
 use crate::id3::v2::error::Id3v2EncodingError;

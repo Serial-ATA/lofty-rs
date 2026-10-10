@@ -6,14 +6,14 @@ mod write;
 
 use crate::ape::tag::error::ApeTagEncodingError;
 use crate::ape::tag::item::{ApeItem, ApeItemRef};
-use crate::config::WriteOptions;
+use crate::config::{WriteOptions, global_options};
 use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_number};
 use crate::tag::item::ItemValueRef;
 use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
-	try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt, try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, VerifiedFile};
@@ -610,12 +610,24 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<ApeTag> for Tag {
 	fn from(input: ApeTag) -> Self {
-		input.split_tag().1
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && !remainder.0.is_empty() {
+			tag.companion_tag = Some(CompanionTag::Ape(remainder.0));
+		}
+
+		tag
 	}
 }
 
 impl From<Tag> for ApeTag {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::ape)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
+		}
+
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }
@@ -1131,5 +1143,30 @@ mod tests {
 		assert_eq!(values.next().unwrap(), "Serial-ATA");
 		assert_eq!(values.next().unwrap(), "Lofty");
 		assert!(values.next().is_none());
+	}
+
+	#[test_log::test]
+	fn companion_tag_roundtrip() {
+		let mut ape = ApeTag::new();
+		ape.set_artist(String::from("Foo artist"));
+		ape.insert(
+			ApeItem::new(
+				String::from("WHAT"),
+				ItemValue::Text(String::from("Something format-specific")),
+			)
+			.unwrap(),
+		);
+		assert_eq!(ape.len(), 2);
+
+		let tag: Tag = ape.into();
+		assert_eq!(tag.artist().as_deref(), Some("Foo artist"));
+		assert_eq!(tag.len(), 1, "should hide the format-specific item");
+
+		let ape: ApeTag = tag.into();
+		assert_eq!(ape.len(), 2);
+		assert_eq!(
+			ape.get("WHAT").and_then(|item| item.value().text()),
+			Some("Something format-specific")
+		);
 	}
 }

@@ -16,12 +16,11 @@ use crate::error::{FileEncodingError, TagEncodingError};
 use crate::io::VerifiedFile;
 use crate::mp4::ilst::atom::AtomDataStorage;
 use crate::picture::{Picture, PictureType};
-use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
-	try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt, try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::FileLike;
@@ -941,7 +940,7 @@ impl From<Ilst> for Tag {
 		let (remainder, mut tag) = input.split_tag();
 
 		if unsafe { global_options().preserve_format_specific_items } && remainder.0.len() > 0 {
-			tag.companion_tag = Some(CompanionTag::Ilst(remainder.0));
+			tag.companion_tag = Some(CompanionTag::Mp4Ilst(remainder.0));
 		}
 
 		tag
@@ -951,7 +950,7 @@ impl From<Ilst> for Tag {
 impl From<Tag> for Ilst {
 	fn from(mut input: Tag) -> Self {
 		if unsafe { global_options().preserve_format_specific_items }
-			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::ilst)
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::mp4_ilst)
 		{
 			return SplitTagRemainder(companion).merge_tag(input);
 		}

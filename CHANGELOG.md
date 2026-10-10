@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **VorbisComments**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
+- **ApeTag**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
+- **RiffInfoList**: Added support for `GlobalOptions::preserve_format_specific_items()` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/741))
+
 ### Fixed
 
 - **ID3v2**: Fixed write errors from `ItemKey::{Work, FlagCompilation, FlagPodcast}` conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/732)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/734))

@@ -1,6 +1,6 @@
 //! Vorbis Comments implementation
 
-use crate::config::WriteOptions;
+use crate::config::{WriteOptions, global_options};
 use crate::error::{FileEncodingError, TagEncodingError};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
@@ -11,8 +11,8 @@ use crate::picture::{Picture, PictureInformation};
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
-	try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt, try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::FileLike;
@@ -590,6 +590,7 @@ impl SplitTag for VorbisComments {
 			.items
 			.iter()
 			.any(|i| i.key() == ItemKey::EncoderSoftware)
+			&& !self.vendor.is_empty()
 		{
 			tag.items.push(TagItem::new(
 				ItemKey::EncoderSoftware,
@@ -685,12 +686,27 @@ impl MergeTag for SplitTagRemainder {
 
 impl From<VorbisComments> for Tag {
 	fn from(input: VorbisComments) -> Self {
-		input.split_tag().1
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && !remainder.0.is_empty() {
+			tag.companion_tag = Some(CompanionTag::VorbisComments(remainder.0));
+		}
+
+		tag
 	}
 }
 
 impl From<Tag> for VorbisComments {
-	fn from(input: Tag) -> Self {
+	fn from(mut input: Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input
+				.companion_tag
+				.take()
+				.and_then(CompanionTag::vorbis_comments)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
+		}
+
 		SplitTagRemainder::default().merge_tag(input)
 	}
 }
@@ -1117,5 +1133,24 @@ mod tests {
 
 		assert_eq!(tag.get("DISCNUMBER"), Some("01"));
 		assert_eq!(tag.get("DISCTOTAL"), Some("05"));
+	}
+
+	#[test_log::test]
+	fn companion_tag_roundtrip() {
+		let mut comments = VorbisComments::new();
+		comments.set_artist(String::from("Foo artist"));
+		comments.insert(
+			String::from("WHAT"),
+			String::from("Something format-specific"),
+		);
+		assert_eq!(comments.len(), 2);
+
+		let tag: Tag = comments.into();
+		assert_eq!(tag.artist().as_deref(), Some("Foo artist"));
+		assert_eq!(tag.len(), 1, "should hide the format-specific item");
+
+		let comments: VorbisComments = tag.into();
+		assert_eq!(comments.len(), 2);
+		assert_eq!(comments.get("WHAT"), Some("Something format-specific"));
 	}
 }
