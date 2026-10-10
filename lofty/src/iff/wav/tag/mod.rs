@@ -2,22 +2,22 @@ pub(super) mod error;
 pub(super) mod read;
 mod write;
 
-use crate::config::WriteOptions;
+use crate::config::{WriteOptions, global_options};
 use crate::error::{FileEncodingError, TagEncodingError};
 use crate::iff::chunk::valid_fourcc;
+use crate::iff::wav::tag::error::RiffInfoListEncodingError;
 use crate::io::VerifiedFile;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
-	try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt, try_parse_timestamp,
 };
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
 use std::io::Write;
 
-use crate::iff::wav::tag::error::RiffInfoListEncodingError;
 use lofty_attr::tag;
 
 macro_rules! impl_accessor {
@@ -262,13 +262,28 @@ impl TagWriteExt for RiffInfoList {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct SplitTagRemainder;
+pub struct SplitTagRemainder(RiffInfoList);
 
 impl SplitTag for RiffInfoList {
 	type Remainder = SplitTagRemainder;
 
-	fn split_tag(self) -> (Self::Remainder, Tag) {
-		(SplitTagRemainder, self.into())
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
+		let mut tag = Tag::new(TagType::RiffInfo);
+
+		self.items.retain_mut(|(k, v)| {
+			let Some(item_key) = ItemKey::from_key(TagType::RiffInfo, k) else {
+				return true; // Item retained
+			};
+
+			tag.items.push(TagItem::new(
+				item_key,
+				ItemValue::Text(v.trim_matches('\0').to_string()),
+			));
+
+			false // Item consumed
+		});
+
+		(SplitTagRemainder(self), tag)
 	}
 }
 
@@ -276,23 +291,26 @@ impl MergeTag for SplitTagRemainder {
 	type Merged = RiffInfoList;
 
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
-		tag.into()
+		let Self(mut merged) = self;
+
+		for item in tag.items {
+			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value
+				&& let Some(key) = item.item_key.map_key(TagType::RiffInfo)
+			{
+				merged.items.push((key.to_string(), val))
+			}
+		}
+
+		merged
 	}
 }
 
 impl From<RiffInfoList> for Tag {
 	fn from(input: RiffInfoList) -> Self {
-		let mut tag = Self::new(TagType::RiffInfo);
+		let (remainder, mut tag) = input.split_tag();
 
-		for (k, v) in input.items {
-			let Some(item_key) = ItemKey::from_key(TagType::RiffInfo, &k) else {
-				continue;
-			};
-
-			tag.items.push(TagItem::new(
-				item_key,
-				ItemValue::Text(v.trim_matches('\0').to_string()),
-			));
+		if unsafe { global_options().preserve_format_specific_items } && !remainder.0.is_empty() {
+			tag.companion_tag = Some(CompanionTag::RiffInfo(remainder.0));
 		}
 
 		tag
@@ -300,18 +318,14 @@ impl From<RiffInfoList> for Tag {
 }
 
 impl From<Tag> for RiffInfoList {
-	fn from(input: Tag) -> Self {
-		let mut riff_info = RiffInfoList::default();
-
-		for item in input.items {
-			if let ItemValue::Text(val) | ItemValue::Locator(val) = item.item_value
-				&& let Some(key) = item.item_key.map_key(TagType::RiffInfo)
-			{
-				riff_info.items.push((key.to_string(), val))
-			}
+	fn from(mut input: Tag) -> Self {
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::riff_info)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
 		}
 
-		riff_info
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
@@ -481,5 +495,24 @@ mod tests {
 		assert_eq!(riff_info.get("IPRD"), Some("Baz album"));
 		assert_eq!(riff_info.get("ICMT"), Some("Qux comment"));
 		assert_eq!(riff_info.get("IPRT"), Some("1"));
+	}
+
+	#[test_log::test]
+	fn companion_tag_roundtrip() {
+		let mut riff_info = RiffInfoList::new();
+		riff_info.set_artist(String::from("Foo artist"));
+		riff_info.insert(
+			String::from("WHAT"),
+			String::from("Something format-specific"),
+		);
+		assert_eq!(riff_info.len(), 2);
+
+		let tag: Tag = riff_info.into();
+		assert_eq!(tag.artist().as_deref(), Some("Foo artist"));
+		assert_eq!(tag.len(), 1, "should hide the format-specific item");
+
+		let riff_info: RiffInfoList = tag.into();
+		assert_eq!(riff_info.len(), 2);
+		assert_eq!(riff_info.get("WHAT"), Some("Something format-specific"));
 	}
 }

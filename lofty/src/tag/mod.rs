@@ -1,7 +1,6 @@
 //! Utilities for generic tag handling
 
 mod accessor;
-pub(crate) mod companion_tag;
 pub(crate) mod item;
 pub mod items;
 mod split_merge_tag;
@@ -116,7 +115,7 @@ pub struct Tag {
 	tag_type: TagType,
 	pub(crate) pictures: Vec<Picture>,
 	pub(crate) items: Vec<TagItem>,
-	pub(crate) companion_tag: Option<companion_tag::CompanionTag>,
+	pub(crate) companion_tag: Option<CompanionTag>,
 }
 
 #[must_use]
@@ -724,4 +723,46 @@ impl MergeTag for SplitTagRemainder {
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		tag
 	}
+}
+
+macro_rules! companion_tags {
+	($($tag_ty:ident => $concrete_ty:ty),* $(,)?) => {
+		const _: () = {
+			match TagType::Ape {
+				$(TagType::$tag_ty => {}),*
+				// Special case, ID3v1 has no companion
+				TagType::Id3v1 => {},
+				// TODO
+				TagType::AiffText => {},
+			}
+		};
+
+		#[derive(Debug, Clone)]
+		pub(crate) enum CompanionTag {
+			$($tag_ty($concrete_ty)),*
+		}
+
+		impl CompanionTag {
+			paste::paste! {
+				$(
+				pub(crate) fn [<$tag_ty:snake>](self) -> Option<$concrete_ty> {
+					match self {
+						Self::$tag_ty(tag) => Some(tag),
+						_ => None,
+					}
+				}
+				)*
+			}
+		}
+	}
+}
+
+companion_tags! {
+	Ape => crate::ape::tag::ApeTag,
+	Id3v2 => crate::id3::v2::Id3v2Tag,
+	Mp4Ilst => crate::mp4::ilst::Ilst,
+	VorbisComments => crate::ogg::tag::VorbisComments,
+	RiffInfo => crate::iff::wav::tag::RiffInfoList,
+	// TODO: Retain AIFF text comments
+	// AiffText => crate::iff::aiff::tag::AiffTextChunks,
 }

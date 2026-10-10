@@ -18,11 +18,11 @@ use crate::id3::v2::util::pairs::{NUMBER_PAIR_SEPARATOR, format_number_pair};
 use crate::id3::v2::{FrameHeader, FrameId, KeyValueFrame, TimestampFrame};
 use crate::io::VerifiedFile;
 use crate::picture::Picture;
-use crate::tag::companion_tag::CompanionTag;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt,
 };
 use crate::util::io::FileLike;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
