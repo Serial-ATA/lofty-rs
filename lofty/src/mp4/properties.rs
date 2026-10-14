@@ -307,7 +307,7 @@ where
 		mdhd = None;
 		minf = None;
 
-		reader.seek(SeekFrom::Start(mdia.start + 8))?;
+		reader.seek(SeekFrom::Start(mdia.data_start()))?;
 
 		let mut read = 8;
 		while read < mdia.len {
@@ -493,8 +493,8 @@ impl Minf {
 			let mut stsd_data = None;
 			let mut stts = None;
 
-			let mut read = 8;
-			while read < stbl.len {
+			let mut read = 0;
+			while read < stbl.data_len() {
 				let Some(atom) = reader.next()? else { break };
 
 				read += atom.len;
@@ -509,7 +509,7 @@ impl Minf {
 							where
 								R: Read + Seek,
 							{
-								let mut stsd = try_vec![0; (atom.len - 8) as usize]?;
+								let mut stsd = try_vec![0; atom.data_len() as usize]?;
 								reader.read_exact(&mut stsd)?;
 								Ok(stsd)
 							}
@@ -682,7 +682,7 @@ where
 	// We need the mdhd and minf atoms from the audio track
 	let AudioTrak { mdhd, minf } = find_audio_trak(reader, traks)?;
 
-	reader.seek(SeekFrom::Start(mdhd.start + 8))?;
+	reader.seek(SeekFrom::Start(mdhd.data_start()))?;
 	let Mdhd {
 		timescale,
 		duration,
@@ -701,8 +701,9 @@ where
 		return Ok(properties);
 	};
 
-	reader.seek(SeekFrom::Start(minf_info.start + 8))?;
-	let Some(Minf { stsd_data, stts }) = Minf::parse(reader, minf_info.len, parse_mode)? else {
+	reader.seek(SeekFrom::Start(minf_info.data_start()))?;
+	let Some(Minf { stsd_data, stts }) = Minf::parse(reader, minf_info.data_len(), parse_mode)?
+	else {
 		return Ok(properties);
 	};
 
@@ -1029,7 +1030,7 @@ where
 
 	while let Ok(Some(atom)) = reader.next() {
 		if atom.ident == AtomIdent::Fourcc(*b"mdat") {
-			return Ok(atom.len - 8);
+			return Ok(atom.data_len());
 		}
 
 		skip_atom(reader, atom.extended, atom.len)?;

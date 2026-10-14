@@ -1,6 +1,6 @@
 use crate::config::ParsingMode;
-use crate::error::{FileEncodingError, FileParseError};
-use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, IDENTIFIER_LEN};
+use crate::error::FileEncodingError;
+use crate::mp4::atom_info::{AtomIdent, AtomInfo, IDENTIFIER_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::mp4::read::{meta_is_full, skip_atom};
 use crate::util::io::FileLike;
@@ -61,7 +61,7 @@ impl ContextualAtom {
 			},
 		}
 
-		let mut len = info.len - info.header_size();
+		let mut len = info.data_len();
 		let mut children = Vec::new();
 
 		// See meta_is_full for details
@@ -256,7 +256,9 @@ impl AtomWriterCompanion<'_> {
 		size: u64,
 		extended: bool,
 	) -> std::io::Result<()> {
-		if u32::try_from(size).is_ok() {
+		// If an atom already has an extended size, we'll just overwrite it instead of replacing it
+		// with a 32-bit size, even if it fits
+		if !extended && u32::try_from(size).is_ok() {
 			// ???? (identifier)
 			self.write_u32::<BigEndian>(size as u32)?;
 			self.seek(SeekFrom::Current(IDENTIFIER_LEN as i64))?;
@@ -278,7 +280,10 @@ impl AtomWriterCompanion<'_> {
 			self.write_u64::<BigEndian>(size)?;
 		} else {
 			for (index, b) in extended_size.into_iter().enumerate() {
-				self.insert((start + 8 + index as u64) as usize, b);
+				self.insert(
+					(start + (size_of::<u64>() as u64) + index as u64) as usize,
+					b,
+				);
 			}
 
 			self.seek(SeekFrom::Current(8))?;
@@ -328,19 +333,14 @@ impl AtomWriterCompanion<'_> {
 			log::trace!("Found `stco` atom");
 
 			let mut stco_start = stco.start;
-			if stco.extended {
-				return Err(FileParseError::from(AtomParseError::message(
-					Some(stco.ident.clone()),
-					"found an extended `stco` atom",
-				))
-				.into());
-			}
-
 			if stco_start >= shift_pos {
 				stco_start = (stco_start as i64 + difference) as u64;
 			}
 
-			self.seek(SeekFrom::Start(stco_start + ATOM_HEADER_LEN + 4))?;
+			// Header (4 or 8)
+			// Version (1)
+			// Flags (3)
+			self.seek(SeekFrom::Start(stco_start + stco.header_size() + 1 + 3))?;
 
 			let count = self.read_u32::<BigEndian>()?;
 			for _ in 0..count {
@@ -367,7 +367,10 @@ impl AtomWriterCompanion<'_> {
 				co64_start = (co64_start as i64 + difference) as u64;
 			}
 
-			self.seek(SeekFrom::Start(co64_start + ATOM_HEADER_LEN + 8 + 4))?;
+			// Header (4 or 8)
+			// Version (1)
+			// Flags (3)
+			self.seek(SeekFrom::Start(co64_start + co64.header_size() + 1 + 3))?;
 
 			let count = self.read_u32::<BigEndian>()?;
 			for _ in 0..count {
@@ -397,20 +400,13 @@ impl AtomWriterCompanion<'_> {
 			log::trace!("Found `tfhd` atom");
 
 			let mut tfhd_start = tfhd.start;
-			if tfhd.extended {
-				return Err(FileParseError::from(AtomParseError::message(
-					Some(tfhd.ident.clone()),
-					"found an extended `tfhd` atom",
-				))
-				.into());
-			}
-
 			if tfhd_start >= shift_pos {
 				tfhd_start = (tfhd_start as i64 + difference) as u64;
 			}
 
-			// Skip atom header + version (1)
-			self.seek(SeekFrom::Start(tfhd_start + ATOM_HEADER_LEN + 1))?;
+			// Header (4 or 8)
+			// Version (1)
+			self.seek(SeekFrom::Start(tfhd_start + tfhd.header_size() + 1))?;
 
 			let flags = self.read_u24::<BigEndian>()?;
 			let base_data_offset = (flags & 0b1) != 0;

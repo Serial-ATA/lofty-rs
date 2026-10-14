@@ -1,7 +1,7 @@
 mod atom_reader;
 
 use super::Mp4File;
-use super::atom_info::{AtomIdent, AtomInfo};
+use super::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, EXTENDED_ATOM_HEADER_LEN};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
@@ -61,7 +61,7 @@ where
 
 	// Find the `moov` atom and restrict the reader to its length
 	let moov_info = Moov::find(&mut reader)?;
-	reader.reset_bounds(moov_info.start + 8, moov_info.len - 8);
+	reader.reset_bounds(moov_info.data_start(), moov_info.data_len());
 
 	let moov = Moov::parse(&mut reader, parse_options)?;
 
@@ -97,16 +97,22 @@ pub(super) fn skip_atom<R>(reader: &mut R, extended: bool, len: u64) -> Result<(
 where
 	R: Read + Seek,
 {
-	log::trace!("Attempting to skip {} bytes", len - 8);
-
 	if !extended {
-		reader.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;
+		log::trace!("Attempting to skip {} bytes", len - ATOM_HEADER_LEN);
+		reader.seek(SeekFrom::Current(
+			i64::from(len as u32) - ATOM_HEADER_LEN as i64,
+		))?;
 		return Ok(());
 	}
 
+	log::trace!(
+		"Attempting to skip {} bytes",
+		len - EXTENDED_ATOM_HEADER_LEN
+	);
+
 	let pos = reader.stream_position()?;
 
-	let Some(pos) = pos.checked_add(len - 8) else {
+	let Some(pos) = pos.checked_add(len - EXTENDED_ATOM_HEADER_LEN) else {
 		return Err(TooMuchDataError.into());
 	};
 
@@ -130,7 +136,7 @@ where
 {
 	let mut ret = None;
 
-	while len > 8 {
+	while len >= ATOM_HEADER_LEN {
 		let Some(atom) = AtomInfo::read(reader, len, parse_mode)? else {
 			break;
 		};
@@ -165,7 +171,7 @@ where
 
 	let mut i = 0;
 
-	while len > 8 {
+	while len >= ATOM_HEADER_LEN {
 		let Some(atom) = AtomInfo::read(reader, len, parse_mode)? else {
 			break;
 		};
