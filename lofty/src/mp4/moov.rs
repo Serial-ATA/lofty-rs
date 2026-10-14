@@ -50,15 +50,18 @@ impl Moov {
 				match &fourcc {
 					b"trak" if parse_options.read_properties => {
 						// All we need from here is trak.mdia
-						if let Some(mdia) =
-							find_child_atom(reader, atom.len, *b"mdia", parse_options.parsing_mode)?
-						{
+						if let Some(mdia) = find_child_atom(
+							reader,
+							atom.data_len(),
+							*b"mdia",
+							parse_options.parsing_mode,
+						)? {
 							skip_atom(reader, mdia.extended, mdia.len)?;
 							traks.push(mdia);
 						}
 					},
 					b"udta" if parse_options.read_tags => {
-						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.len - 8)
+						let ilst_parsed = ilst_from_udta(reader, parse_options, atom.data_len())
 							.map_err(TagParseError::from)?;
 						if let Some(ilst_parsed) = ilst_parsed {
 							let Some(mut existing_ilst) = ilst else {
@@ -138,7 +141,7 @@ where
 
 		if atom.ident == AtomIdent::Fourcc(*b"ilst") {
 			found_ilst = true;
-			ilst_atom_size = atom.len;
+			ilst_atom_size = atom.data_len();
 			break;
 		}
 
@@ -147,7 +150,7 @@ where
 	}
 
 	if found_ilst {
-		return parse_ilst(reader, parse_options, ilst_atom_size - 8).map(Some);
+		return parse_ilst(reader, parse_options, ilst_atom_size).map(Some);
 	}
 
 	Ok(None)

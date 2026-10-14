@@ -12,7 +12,14 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 pub(super) const FOURCC_LEN: u64 = 4;
 pub(super) const IDENTIFIER_LEN: u64 = 4;
-pub(super) const ATOM_HEADER_LEN: u64 = FOURCC_LEN + IDENTIFIER_LEN;
+
+/// The size of a 32-bit atom header
+///
+/// Size (4)
+/// Identifier (4)
+pub(super) const ATOM_HEADER_LEN: u64 = size_of::<u32>() as u64 + IDENTIFIER_LEN;
+/// The size of an extended (64-bit) atom header
+pub(super) const EXTENDED_ATOM_HEADER_LEN: u64 = ATOM_HEADER_LEN + size_of::<u64>() as u64;
 
 /// Represents an `MP4` atom identifier
 #[derive(Eq, PartialEq, Debug, Clone)]
@@ -116,8 +123,11 @@ impl TryFrom<ItemKey> for AtomIdent<'static> {
 
 #[derive(Debug)]
 pub(crate) struct AtomInfo {
+	/// The start position of the atom's header
 	pub(crate) start: u64,
+	/// The length of the atom, including its header
 	pub(crate) len: u64,
+	/// Whether the atom is extended (has a 64-bit size)
 	pub(crate) extended: bool,
 	pub(crate) ident: AtomIdent<'static>,
 }
@@ -182,7 +192,7 @@ impl AtomInfo {
 			}
 		}
 
-		let (len, extended) = match len_raw {
+		let (len, extended, header_len) = match len_raw {
 			// The atom extends to the end of the file
 			0 => {
 				let pos = reader.stream_position()?;
@@ -190,14 +200,18 @@ impl AtomInfo {
 
 				reader.seek(SeekFrom::Start(pos))?;
 
-				(end - pos, false)
+				(end - pos, false, ATOM_HEADER_LEN)
 			},
 			// There's an extended length
-			1 => (reader.read_u64::<BigEndian>()?, true),
-			_ => (len_raw, false),
+			1 => (
+				reader.read_u64::<BigEndian>()?,
+				true,
+				EXTENDED_ATOM_HEADER_LEN,
+			),
+			_ => (len_raw, false, ATOM_HEADER_LEN),
 		};
 
-		if len < ATOM_HEADER_LEN {
+		if len < header_len {
 			// Seek to the end, since we can't recover from this
 			reader.seek(SeekFrom::End(0))?;
 
@@ -205,7 +219,7 @@ impl AtomInfo {
 		}
 
 		// `len` includes itself and the identifier
-		if (len - ATOM_HEADER_LEN) > reader_size {
+		if (len - header_len) > reader_size {
 			log::warn!(
 				"Atom size exceeds remaining data (ident={} len={}, remaining={})",
 				identifier.escape_ascii(),
@@ -228,7 +242,7 @@ impl AtomInfo {
 
 		let atom_ident;
 		if identifier == *b"----" && !in_freeform {
-			reader_size -= ATOM_HEADER_LEN;
+			reader_size -= header_len;
 			if reader_size < ATOM_HEADER_LEN {
 				return Err(NotEnoughDataError::new(Some(ATOM_HEADER_LEN as usize)).into());
 			}
@@ -246,12 +260,25 @@ impl AtomInfo {
 		}))
 	}
 
+	/// The size of the atom's header
+	///
+	/// This is the atom's length + identifier + extended size (if applicable)
 	pub(crate) fn header_size(&self) -> u64 {
 		if !self.extended {
 			return ATOM_HEADER_LEN;
 		}
 
-		ATOM_HEADER_LEN + 8
+		EXTENDED_ATOM_HEADER_LEN
+	}
+
+	/// The start position of the atom's data
+	pub(crate) fn data_start(&self) -> u64 {
+		self.start + self.header_size()
+	}
+
+	/// The size of the atom's data
+	pub(crate) fn data_len(&self) -> u64 {
+		self.len - self.header_size()
 	}
 }
 

@@ -56,30 +56,21 @@ where
 		return Err(FileParseError::from(Mp4ParseError::missing_moov()).into());
 	};
 
-	let moov_start = moov.info.start;
-	let moov_len = moov.info.len;
-	let moov_extended = moov.info.extended;
-
 	log::trace!(
 		"Found `moov` atom, offset: {}, size: {}",
-		moov_start,
-		moov_len
+		moov.info.start,
+		moov.info.len
 	);
 
-	let mut moov_data_start = moov_start + ATOM_HEADER_LEN;
-	if moov_extended {
-		moov_data_start += 8;
-	}
-
 	atom_writer.start_write(|write_handle| -> Result<(), FileEncodingError> {
-		write_handle.seek(SeekFrom::Start(moov_data_start))?;
+		write_handle.seek(SeekFrom::Start(moov.info.data_start()))?;
 
 		let ilst = build_ilst(&mut tag.atoms, write_options)?;
 		let remove_tag = ilst.is_empty();
 
 		let udta = find_child_atom(
 			write_handle,
-			moov_len,
+			moov.info.data_len(),
 			*b"udta",
 			write_options.parse_options.parsing_mode,
 		)
@@ -108,7 +99,7 @@ where
 
 			let meta = find_child_atom(
 				write_handle,
-				udta.len,
+				udta.data_len(),
 				*b"meta",
 				write_options.parse_options.parsing_mode,
 			)
@@ -147,7 +138,7 @@ where
 					existing_udta_size = udta.len;
 
 					// We'll put the new `meta` atom right at the start of `udta`
-					let meta_start_pos = udta.start + ATOM_HEADER_LEN;
+					let meta_start_pos = udta.data_start();
 					write_handle.seek(SeekFrom::Start(meta_start_pos))?;
 					let meta_size = create_meta(write_handle, &ilst)?;
 
@@ -160,22 +151,22 @@ where
 			log::trace!("No `udta` atom found, creating one");
 
 			// We have to create the `udta` atom. Put it right at the start of `moov`.
-			let udta_pos = moov_start + ATOM_HEADER_LEN;
+			let udta_pos = moov.info.data_start();
 			write_handle.seek(SeekFrom::Start(udta_pos))?;
 			new_udta_size = create_udta(write_handle, &ilst, write_options)?;
 		}
 
-		write_handle.seek(SeekFrom::Start(moov_start))?;
+		write_handle.seek(SeekFrom::Start(moov.info.start))?;
 
 		// Change the size of the moov atom
-		let new_moov_length = (moov_len - existing_udta_size) + new_udta_size;
+		let new_moov_length = (moov.info.len - existing_udta_size) + new_udta_size;
 
 		log::trace!(
 			"Updating `moov` atom size, old size: {}, new size: {}",
-			moov_len,
+			moov.info.len,
 			new_moov_length
 		);
-		write_handle.write_atom_size(moov_start, new_moov_length, moov_extended)?;
+		write_handle.write_atom_size(moov.info.start, new_moov_length, moov.info.extended)?;
 
 		Ok(())
 	})?;
@@ -194,7 +185,7 @@ fn find_existing_ilst(
 ) -> Result<Option<Range<u64>>, FileParseError> {
 	let (ilst_idx, tree) = atom_tree(
 		writer,
-		meta.len - ATOM_HEADER_LEN,
+		meta.data_len(),
 		b"ilst",
 		write_options.parse_options.parsing_mode,
 	)
