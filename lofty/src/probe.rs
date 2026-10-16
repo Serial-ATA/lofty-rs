@@ -19,7 +19,7 @@ use crate::ogg::vorbis::VorbisFile;
 use crate::resolve::CUSTOM_RESOLVERS;
 use crate::wavpack::WavPackFile;
 
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 
@@ -259,13 +259,20 @@ impl Probe<BufReader<File>> {
 		P: AsRef<Path>,
 	{
 		let path = path.as_ref();
+		Self::open_with(path, OpenOptions::new().read(true))
+	}
+
+	pub(crate) fn open_with(
+		path: &Path,
+		open_options: &OpenOptions,
+	) -> std::result::Result<Self, FileParseError> {
 		log::debug!("Probe: Opening `{}` for reading", path.display());
 
 		let file_type = FileType::from_path(path);
 		log::debug!("Probe: Guessed file type `{:?}` from extension", file_type);
 
 		Ok(Self {
-			inner: BufReader::new(File::open(path)?),
+			inner: BufReader::new(open_options.open(path)?),
 			options: None,
 			f_ty: file_type,
 		})

@@ -46,7 +46,7 @@ fn tag_resize_test(path: &str, tag_type: TagType) {
 		return;
 	}
 
-	let mut f = named_temp_file(path);
+	let mut f = named_temp_file(path, None);
 
 	// Need to clear out all of the tags. Our test assets use *every* supported tag type, but
 	// FFmpeg doesn't like APE files with ID3v2 tags.

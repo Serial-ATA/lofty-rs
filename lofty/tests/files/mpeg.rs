@@ -1,4 +1,4 @@
-use crate::util::temp_file;
+use crate::util::{named_temp_file, temp_file};
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{BoundTaggedFile, FileType};
 use lofty::id3::v2::{Frame, FrameId, Id3v2Tag, KeyValueFrame};
@@ -383,6 +383,36 @@ fn save_number_pair_of_track_and_disk_to_id3v2() {
 #[test_log::test]
 fn remove_id3v2() {
 	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Id3v2);
+}
+
+// https://github.com/Serial-ATA/lofty-rs/issues/750
+#[test_log::test]
+fn remove_id3v2_by_path() {
+	let mut file = named_temp_file("tests/files/assets/minimal/full_test.mp3", Some("mp3"));
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+	assert!(tagged_file.tag(TagType::Id3v2).is_some());
+
+	file.rewind().unwrap();
+
+	TagType::Id3v2
+		.remove_from_path(file.path(), WriteOptions::default())
+		.unwrap();
+
+	file.rewind().unwrap();
+
+	let tagged_file = Probe::new(&mut file)
+		.options(ParseOptions::new().read_properties(false))
+		.guess_file_type()
+		.unwrap()
+		.read()
+		.unwrap();
+	assert!(tagged_file.tag(TagType::Id3v2).is_none());
 }
 
 #[test_log::test]
