@@ -3,6 +3,7 @@ use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, UnsupportedTagError};
 use crate::io::{FileLike, VerifiedFile};
 
+use std::fs::OpenOptions;
 use std::path::Path;
 
 /// Describes how a [`TagType`] is supported in a given [`FileType`]
@@ -152,7 +153,8 @@ impl TagType {
 		path: impl AsRef<Path>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError> {
-		let file = VerifiedFile::new_from_path(path.as_ref())?;
+		let file =
+			VerifiedFile::new_from_path(path.as_ref(), OpenOptions::new().read(true).write(true))?;
 		self.do_remove(file, write_options)
 	}
 

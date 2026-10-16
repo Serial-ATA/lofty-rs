@@ -7,7 +7,7 @@ use crate::probe::Probe;
 use crate::util::math::F80;
 
 use std::collections::VecDeque;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Cursor, ErrorKind, Read, Seek, SeekFrom, Write};
 use std::ops::{Deref, DerefMut, Range};
 use std::path::Path;
@@ -273,8 +273,11 @@ impl<'a, F: FileLike> VerifiedFile<'a, F> {
 }
 
 impl VerifiedFile<'_, File> {
-	pub(crate) fn new_from_path(path: &Path) -> Result<Self, FileParseError> {
-		let probe = Probe::open(path)?;
+	pub(crate) fn new_from_path(
+		path: &Path,
+		open_options: &OpenOptions,
+	) -> Result<Self, FileParseError> {
+		let probe = Probe::open_with(path, open_options)?;
 		match probe.file_type() {
 			Some(format) => Ok(Self {
 				format,

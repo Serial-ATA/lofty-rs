@@ -12,10 +12,17 @@ use std::process::Command;
 use tempfile::NamedTempFile;
 
 /// Create a new temporary file and copy the contents of `path` into it
-pub fn named_temp_file(path: impl AsRef<Path>) -> NamedTempFile {
+pub fn named_temp_file(path: impl AsRef<Path>, extension: Option<&str>) -> NamedTempFile {
 	let content = std::fs::read(path).unwrap();
 
-	let mut file = NamedTempFile::new().unwrap();
+	let mut builder = tempfile::Builder::new();
+	let extension = extension.map(|extension| format!(".{extension}"));
+
+	if let Some(extension) = extension.as_ref() {
+		builder.suffix(extension);
+	}
+
+	let mut file = builder.tempfile().unwrap();
 	file.write_all(&content).unwrap();
 	file.rewind().unwrap();
 
@@ -24,7 +31,7 @@ pub fn named_temp_file(path: impl AsRef<Path>) -> NamedTempFile {
 
 /// Create a new temporary file and copy the contents of `path` into it
 pub fn temp_file(path: impl AsRef<Path>) -> File {
-	named_temp_file(path).into_file()
+	named_temp_file(path, None).into_file()
 }
 
 /// Copy `path` into a [`temp_file()`] and parse it via [`Probe`]
