@@ -5,6 +5,18 @@ use lofty::probe::Probe;
 
 use std::path::Path;
 
+/// Print full error traces
+///
+/// Parse errors by themselves don't give much context. Iterating through the sources helps
+/// narrow down their cause.
+fn report_err(mut err: &(dyn std::error::Error + 'static)) {
+	eprintln!("{err}");
+	while let Some(src) = err.source() {
+		eprintln!("Caused by: {src}");
+		err = src;
+	}
+}
+
 fn main() {
 	env_logger::init();
 
@@ -14,8 +26,10 @@ fn main() {
 	assert!(path.is_file(), "ERROR: Path is not a file!");
 
 	let tagged_file = Probe::open(path)
+		.inspect_err(|e| report_err(e))
 		.expect("ERROR: Bad path provided!")
 		.read()
+		.inspect_err(|e| report_err(e))
 		.expect("ERROR: Failed to read file!");
 
 	let tag = match tagged_file.primary_tag() {
