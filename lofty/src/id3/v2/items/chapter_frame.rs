@@ -181,6 +181,13 @@ impl ChapterFrame<'static> {
 			return Err(FrameParseError::unsupported_version(version));
 		}
 
+		if parse_options.container_depth >= ParseOptions::MAX_CONTAINER_DEPTH {
+			return Err(FrameParseError::container_nesting_too_deep(
+				FRAME_ID,
+				ParseOptions::MAX_CONTAINER_DEPTH,
+			));
+		}
+
 		let id = decode_text(
 			reader,
 			TextDecodeOptions::new()
@@ -194,8 +201,12 @@ impl ChapterFrame<'static> {
 		let start_offset = reader.read_u32::<BigEndian>()?;
 		let end_offset = reader.read_u32::<BigEndian>()?;
 
-		let children =
-			read_all_frames_into_list(reader, version, Id3v2TagFlags::default(), parse_options)?;
+		let children = read_all_frames_into_list(
+			reader,
+			version,
+			Id3v2TagFlags::default(),
+			parse_options.descend_into_container(),
+		)?;
 
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(ChapterFrame {
