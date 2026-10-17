@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **MP4**:
   - Fixed panics on failed ilst writes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/738)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
   - Fixed deletion of unrelated atoms when writing to files with no existing `ilst` atom ([PR](https://github.com/Serial-ATA/lofty-rs/pull/739))
+  - Fixed atoms with a 64-bit size being skipped 8 bytes too far, which made `moov` unfindable after a large `mdat` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/746)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/749))
 - **OGG**: Fixed corruption when writing to files without page-aligned packets ([issue](https://github.com/Serial-ATA/lofty-rs/issues/729)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/744))
 - **TagType**: `remove_from_path()` no longer opens the file in read-only mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/750)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/752))
 

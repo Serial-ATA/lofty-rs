@@ -5,7 +5,7 @@ use super::atom_info::{AtomIdent, AtomInfo};
 use super::moov::Moov;
 use super::properties::Mp4Properties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{NotEnoughDataError, TooMuchDataError, UnknownFormatError};
+use crate::error::{NotEnoughDataError, SizeMismatchError, TooMuchDataError, UnknownFormatError};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::util::io::SeekStreamLen;
 use crate::util::text::utf8_decode_str;
@@ -97,7 +97,12 @@ pub(super) fn skip_atom<R>(reader: &mut R, extended: bool, len: u64) -> Result<(
 where
 	R: Read + Seek,
 {
-	log::trace!("Attempting to skip {} bytes", len - 8);
+	// The reader is already past the header: 8 bytes, or 16 with a 64-bit size
+	let header_len = if extended { 16 } else { 8 };
+	let Some(skip_len) = len.checked_sub(header_len) else {
+		return Err(SizeMismatchError.into());
+	};
+	log::trace!("Attempting to skip {} bytes", skip_len);
 
 	if !extended {
 		reader.seek(SeekFrom::Current(i64::from(len as u32) - 8))?;
@@ -106,7 +111,7 @@ where
 
 	let pos = reader.stream_position()?;
 
-	let Some(pos) = pos.checked_add(len - 8) else {
+	let Some(pos) = pos.checked_add(skip_len) else {
 		return Err(TooMuchDataError.into());
 	};
 
@@ -221,5 +226,58 @@ where
 			reader.seek(SeekFrom::Current(-4))?;
 			Ok(true)
 		},
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::read_from;
+	use crate::config::ParseOptions;
+	use crate::tag::Accessor;
+
+	use std::io::Cursor;
+
+	fn atom(ident: [u8; 4], data: &[u8]) -> Vec<u8> {
+		let mut v = ((data.len() + 8) as u32).to_be_bytes().to_vec();
+		v.extend(ident);
+		v.extend(data);
+		v
+	}
+
+	// An atom with a 64-bit size field, as written for any `mdat` over 4 GiB
+	fn extended_atom(ident: [u8; 4], data: &[u8]) -> Vec<u8> {
+		let mut v = 1u32.to_be_bytes().to_vec();
+		v.extend(ident);
+		v.extend(((data.len() + 16) as u64).to_be_bytes());
+		v.extend(data);
+		v
+	}
+
+	fn moov_with_title() -> Vec<u8> {
+		let mut meta = vec![0; 4]; // version + flags
+		meta.extend(atom(
+			*b"hdlr",
+			&[&[0; 8][..], b"mdirappl", &[0; 9]].concat(),
+		));
+		meta.extend(atom(
+			*b"ilst",
+			&atom(*b"\xA9nam", &atom(*b"data", b"\0\0\0\x01\0\0\0\0Title")),
+		));
+		atom(*b"moov", &atom(*b"udta", &atom(*b"meta", &meta)))
+	}
+
+	fn read_title(file: Vec<u8>) -> Option<String> {
+		let options = ParseOptions::new().read_properties(false);
+		let mp4 = read_from(&mut Cursor::new(file), options).unwrap();
+		mp4.ilst_tag.and_then(|t| t.title().map(|t| t.to_string()))
+	}
+
+	#[test_log::test]
+	fn extended_atom_before_moov_is_skipped_correctly() {
+		let mut file = atom(*b"ftyp", b"isom\0\0\x02\0isomiso2mp41");
+		file.extend(extended_atom(*b"mdat", &[0; 8]));
+		file.extend(moov_with_title());
+
+		assert_eq!(read_title(file).as_deref(), Some("Title"));
 	}
 }
