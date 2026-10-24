@@ -1,6 +1,6 @@
 use crate::config::ParsingMode;
 use crate::error::SizeMismatchError;
-use crate::mp4::atom_info::AtomInfo;
+use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomInfo};
 use crate::mp4::error::AtomParseError;
 use crate::util::io::SeekStreamLen;
 
@@ -96,7 +96,7 @@ where
 			return Ok(None);
 		}
 
-		if self.remaining_size < 8 {
+		if self.remaining_size < ATOM_HEADER_LEN {
 			return Err(SizeMismatchError.into());
 		}
 
