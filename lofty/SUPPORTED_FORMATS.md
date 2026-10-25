@@ -3,6 +3,7 @@
 | AAC (ADTS)  | `ID3v2`, `ID3v1`             |
 | Ape         | `APE`, `ID3v2`\*, `ID3v1`    |
 | AIFF        | `ID3v2`, `Text Chunks`       |
+| DSF         | `ID3v2`                      |
 | FLAC        | `Vorbis Comments`, `ID3v2`\* |
 | MP3         | `ID3v2`, `ID3v1`, `APE`      |
 | MP4         | `iTunes-style ilst`          |

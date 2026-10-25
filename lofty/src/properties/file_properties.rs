@@ -89,6 +89,7 @@ impl FileProperties {
 	/// Used for tests
 	#[doc(hidden)]
 	pub fn is_empty(&self) -> bool {
+		// TODO: Conversions should never return Some(0) for empty fields
 		matches!(
 			self,
 			Self {
