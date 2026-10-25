@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.5] - 2026-10-25
+
 ### Added
 
 - **VorbisComments**:
@@ -1223,7 +1225,8 @@ See [ogg_pager's changelog](ogg_pager/CHANGELOG.md).
 ### Removed
 - `ErrorKind::BadExtension`
 
-[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.4...HEAD
+[Unreleased]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.5...HEAD
+[0.25.5]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.4...0.25.5
 [0.25.4]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.3...0.25.4
 [0.25.3]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.2...0.25.3
 [0.25.2]: https://github.com/Serial-ATA/lofty-rs/compare/0.25.1...0.25.2
