@@ -539,7 +539,10 @@ macro_rules! gen_item_keys {
 					$(
 						$tag_type => $MAP::SUPPORTED_KEYS,
 					)+
+
+					// Special cases for tags that don't have keyed fields
 					TagType::Id3v1 => &crate::id3::v1::constants::VALID_ITEMKEYS,
+					TagType::Lyrics3 => &crate::id3::lyrics3::v1::constants::VALID_ITEMKEYS,
 				}
 			}
 
@@ -1243,13 +1246,17 @@ impl TagItem {
 	}
 
 	pub(crate) fn re_map(&self, tag_type: TagType) -> bool {
-		if tag_type == TagType::Id3v1 {
-			use crate::id3::v1::constants::VALID_ITEMKEYS;
-
-			return VALID_ITEMKEYS.contains(&self.item_key);
+		match tag_type {
+			TagType::Id3v1 => {
+				use crate::id3::v1::constants::VALID_ITEMKEYS;
+				VALID_ITEMKEYS.contains(&self.item_key)
+			},
+			TagType::Lyrics3 => {
+				use crate::id3::lyrics3::v1::constants::VALID_ITEMKEYS;
+				VALID_ITEMKEYS.contains(&self.item_key)
+			},
+			_ => self.item_key.map_key(tag_type).is_some(),
 		}
-
-		self.item_key.map_key(tag_type).is_some()
 	}
 }
 

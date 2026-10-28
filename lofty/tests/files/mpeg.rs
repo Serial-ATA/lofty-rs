@@ -421,6 +421,11 @@ fn remove_id3v1() {
 }
 
 #[test_log::test]
+fn remove_lyrics3() {
+	crate::util::remove_tag_test("tests/files/assets/lyrics3.mp3", TagType::Lyrics3);
+}
+
+#[test_log::test]
 fn remove_ape() {
 	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
 }

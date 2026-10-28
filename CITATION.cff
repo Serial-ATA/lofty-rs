@@ -70,6 +70,13 @@ references:
     identifiers:
       - type: doi
         value: 10.17487/RFC9639
+  # == Lyrics3 ==
+  - type: website
+    title: "Lyrics3"
+    authors:
+        - family-names: Strnad
+          given-names: Peter
+    url: "https://id3.org/Lyrics3"
   # == MP4 ==
   - type: website
     title: "Complete List of all known MP4 / QuickTime 'ftyp' designations"

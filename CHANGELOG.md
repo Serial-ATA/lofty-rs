@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Lyrics3**: Added support for Lyrics3 tags
+    - These tags were previously skipped
 - **WriteOptions**: `WriteOptions::implicit_truncation()` to prevent automatic text field truncation
                     when exceeding the limits of a tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/766))
 

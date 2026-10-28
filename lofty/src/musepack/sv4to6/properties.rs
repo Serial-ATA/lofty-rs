@@ -153,10 +153,10 @@ impl MpcSv4to6Properties {
 		let pcm_frames = (MPC_FRAME_LENGTH * u64::from(properties.frame_count)).saturating_sub(576);
 
 		// Is this accurate? If not, it really doesn't matter.
-		properties.average_bitrate = ((stream_length as f64
-			* 8.0 * f64::from(properties.sample_rate))
-			/ (pcm_frames as f64)
-			/ (MPC_FRAME_LENGTH as f64)) as u32;
+		properties.average_bitrate =
+			((stream_length as f64 * 8.0 * f64::from(properties.sample_rate))
+				/ (pcm_frames as f64)
+				/ (MPC_FRAME_LENGTH as f64)) as u32;
 
 		Ok(properties)
 	}

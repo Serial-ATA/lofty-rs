@@ -18,7 +18,6 @@ pub struct ApeParseError {
 	#[error(from(
 		std::io::Error,
 		crate::error::TagParseError,
-		crate::id3::Lyrics3v2ParseError,
 		crate::error::SizeMismatchError,
 		crate::error::FakeTagError,
 	))]
