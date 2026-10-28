@@ -108,7 +108,12 @@ fn minimal_assets() -> Vec<(FileType, &'static str)> {
 macro_rules! resize_tests {
 	($($test_fn:ident => $tag_type:ident),* $(,)?) => {
 		const _: () = {
-			let specified = [$(TagType::$tag_type),*];
+			let specified = [
+				// Special case, FFmpeg doesn't even support Lyrics3 so no point in testing it
+				TagType::Lyrics3,
+
+				$(TagType::$tag_type),*
+			];
 			assert!(
 				specified.len() == TagType::VARIANTS.len(),
 				"missing tag type(s) in resize test!",

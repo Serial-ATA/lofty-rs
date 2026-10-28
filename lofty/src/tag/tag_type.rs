@@ -108,6 +108,8 @@ pub enum TagType {
 	Id3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
+	/// Represents a Lyrics3 (v1) tag
+	Lyrics3,
 	/// Represents an MP4 ilst atom
 	Mp4Ilst,
 	/// Represents vorbis comments
@@ -126,6 +128,7 @@ impl TagType {
 			TagType::Ape
 			| TagType::Id3v1
 			| TagType::Id3v2
+			| TagType::Lyrics3
 			| TagType::Mp4Ilst
 			| TagType::VorbisComments
 			| TagType::RiffInfo
@@ -136,6 +139,7 @@ impl TagType {
 			TagType::Ape,
 			TagType::Id3v1,
 			TagType::Id3v2,
+			TagType::Lyrics3,
 			TagType::Mp4Ilst,
 			TagType::VorbisComments,
 			TagType::RiffInfo,
