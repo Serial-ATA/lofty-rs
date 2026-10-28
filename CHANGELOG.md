@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **ID3v1**: Fixed the end of an APE tag being mistaken for an ID3v1 tag ([issue](https://github.com/Serial-ATA/lofty-rs/issues/762))
+
 ## [0.25.5] - 2026-10-25
 
 ### Added

@@ -8,6 +8,7 @@
 pub mod v1;
 pub mod v2;
 
+use crate::ape::constants::APE_PREAMBLE;
 use crate::config::ParsingMode;
 use crate::error::TextDecodingError;
 use crate::id3::v1::error::Id3v1ParseError;
@@ -142,6 +143,19 @@ where
 		data.seek(SeekFrom::End(0))?;
 		return Ok(None);
 	}
+
+	// If the stream ends with an APE tag footer, nothing follows the APE tag, so the "TAG" belongs to
+	// it (e.g. the "APETAGEX" preamble of its header), not to an ID3v1 tag.
+	data.seek(SeekFrom::End(-32))?;
+	let mut ape_preamble = [0; 8];
+	data.read_exact(&mut ape_preamble)?;
+	if &ape_preamble == APE_PREAMBLE {
+		log::debug!("Found an APE tag footer at the end of the stream, ignoring the ID3v1 marker");
+		data.seek(SeekFrom::End(0))?;
+		return Ok(None);
+	}
+
+	data.seek(SeekFrom::Start(start))?;
 
 	log::debug!("Found an ID3v1 tag, parsing");
 
