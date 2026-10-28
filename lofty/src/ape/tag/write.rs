@@ -9,7 +9,7 @@ use crate::error::{
 	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TagParseError,
 	TooMuchDataError,
 };
-use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3};
 use crate::io::VerifiedFile;
 use crate::tag::item::ItemValueRef;
 use crate::util::io::FileLike;
@@ -98,10 +98,10 @@ where
 		},
 	}
 
-	// Skip over ID3v1 and Lyrics3v2 tags
+	// Skip over ID3v1 and Lyrics3 tags
 	find_id3v1(file, false, write_options.parse_options.parsing_mode)
 		.map_err(TagParseError::from)?;
-	find_lyrics3v2(file)?;
+	find_lyrics3(file, false)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
 	let ape_position = file.stream_position()?;

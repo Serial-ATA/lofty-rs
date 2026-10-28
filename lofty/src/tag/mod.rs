@@ -730,8 +730,8 @@ macro_rules! companion_tags {
 		const _: () = {
 			match TagType::Ape {
 				$(TagType::$tag_ty => {}),*
-				// Special case, ID3v1 has no companion
-				TagType::Id3v1 => {},
+				// Special case, ID3v1 and Lyrics3 have no companion
+				TagType::Id3v1 | TagType::Lyrics3 => {},
 				// TODO
 				TagType::AiffText => {},
 			}

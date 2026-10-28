@@ -8,7 +8,7 @@ use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -124,20 +124,6 @@ where
 	{
 		id3v1_tag = content;
 		let Some(new_stream_length) = stream_len.checked_sub(128) else {
-			return Err(SizeMismatchError.into());
-		};
-
-		stream_len = new_stream_length;
-	}
-
-	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
-	if let Some(ID3FindResults {
-		header: _,
-		content: size,
-		range: _,
-	}) = find_lyrics3v2(data)?
-	{
-		let Some(new_stream_length) = stream_len.checked_sub(u64::from(size)) else {
 			return Err(SizeMismatchError.into());
 		};
 

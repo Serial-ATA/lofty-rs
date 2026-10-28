@@ -199,6 +199,7 @@ impl FileType {
 			(Ape, crate::ape::ApeTag),
 			(Id3v1, crate::id3::v1::Id3v1Tag),
 			(Id3v2, crate::id3::v2::Id3v2Tag),
+			(Lyrics3, crate::id3::lyrics3::v1::Lyrics3Tag),
 			(Mp4Ilst, crate::mp4::Ilst),
 			(VorbisComments, crate::ogg::tag::VorbisComments),
 			(RiffInfo, crate::iff::wav::RiffInfoList),

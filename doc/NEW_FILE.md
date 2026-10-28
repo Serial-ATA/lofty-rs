@@ -174,7 +174,7 @@ Some notes on file parsing:
 * You should only gather the information necessary for property reading (such as additional chunks) only if 
   `parse_options.read_properties` is true.
 * There should be no handling of properties here, that is saved for `properties.rs`
-* There are many utilities to easily find and parse tags, such as `crate::id3::{find_id3v2, find_id3v1, find_lyrics3v2}, crate::ape::tag::read::{read_ape_tag}, etc.`
+* There are many utilities to easily find and parse tags, such as `crate::id3::{find_id3v2, find_id3v1, find_lyrics3}, crate::ape::tag::read::{read_ape_tag}, etc.`
 * And most importantly, look at existing implementations! There is a high chance that what is being attempted has already been done
   in some capacity.
 

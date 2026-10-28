@@ -1,7 +1,6 @@
 //! Contains the errors that can arise within Lofty
 
 use crate::file::FileType;
-use crate::id3::Lyrics3v2ParseError;
 use crate::tag::TagType;
 
 use std::error::Error;
@@ -119,15 +118,6 @@ impl From<UnknownFormatError> for FileParseError {
 
 impl From<SizeMismatchError> for FileParseError {
 	fn from(input: SizeMismatchError) -> Self {
-		Self {
-			ty: None,
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<Lyrics3v2ParseError> for FileParseError {
-	fn from(input: Lyrics3v2ParseError) -> Self {
 		Self {
 			ty: None,
 			source: Box::new(input),
@@ -283,6 +273,12 @@ impl TagParseError {
 			ty: Some(ty),
 			source,
 		}
+	}
+
+	pub(crate) fn from_unknown_ty(
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self { ty: None, source }
 	}
 }
 
