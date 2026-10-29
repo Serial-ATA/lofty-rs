@@ -110,6 +110,8 @@ pub enum TagType {
 	Id3v2,
 	/// Represents a Lyrics3 (v1) tag
 	Lyrics3,
+	/// Represents a Lyrics3 (v2) tag
+	Lyrics3v2,
 	/// Represents an MP4 ilst atom
 	Mp4Ilst,
 	/// Represents vorbis comments
@@ -129,6 +131,7 @@ impl TagType {
 			| TagType::Id3v1
 			| TagType::Id3v2
 			| TagType::Lyrics3
+			| TagType::Lyrics3v2
 			| TagType::Mp4Ilst
 			| TagType::VorbisComments
 			| TagType::RiffInfo
@@ -140,12 +143,33 @@ impl TagType {
 			TagType::Id3v1,
 			TagType::Id3v2,
 			TagType::Lyrics3,
+			TagType::Lyrics3v2,
 			TagType::Mp4Ilst,
 			TagType::VorbisComments,
 			TagType::RiffInfo,
 			TagType::AiffText,
 		]
 	};
+
+	/// Whether this [`TagType`] conflicts with `other`
+	///
+	/// Conflicting tag types cannot be written to the same file. One will need to be removed.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::tag::TagType;
+	///
+	/// assert!(TagType::Lyrics3v2.conflicts_with(TagType::Lyrics3));
+	/// assert!(!TagType::Ape.conflicts_with(TagType::Id3v2));
+	/// ```
+	pub fn conflicts_with(self, other: Self) -> bool {
+		match self {
+			TagType::Lyrics3 => other == TagType::Lyrics3v2,
+			TagType::Lyrics3v2 => other == TagType::Lyrics3,
+			_ => false,
+		}
+	}
 
 	/// Remove a tag from a [`Path`]
 	///

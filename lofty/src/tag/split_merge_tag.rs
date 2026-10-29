@@ -71,6 +71,7 @@ pub trait MergeTag: private::Sealed {
 mod private {
 	use crate::ape::ApeTag;
 	use crate::id3::lyrics3::v1::Lyrics3Tag;
+	use crate::id3::lyrics3::v2::Lyrics3v2Tag;
 	use crate::id3::v1::Id3v1Tag;
 	use crate::id3::v2::Id3v2Tag;
 	use crate::iff::aiff::AiffTextChunks;
@@ -94,6 +95,9 @@ mod private {
 
 	impl Sealed for Lyrics3Tag {}
 	impl Sealed for crate::id3::lyrics3::v1::SplitTagRemainder {}
+
+	impl Sealed for Lyrics3v2Tag {}
+	impl Sealed for crate::id3::lyrics3::v2::SplitTagRemainder {}
 
 	impl Sealed for crate::mp4::Ilst {}
 	impl Sealed for crate::mp4::ilst::SplitTagRemainder {}

@@ -58,6 +58,10 @@ pub(crate) fn init_write_lookup(
 		Into::<lofty::id3::lyrics3::v1::Lyrics3TagRef<'_>>::into(tag).write_to(file, write_options)
 	});
 
+	insert!(map, Lyrics3v2, {
+		Into::<lofty::id3::lyrics3::v2::Lyrics3v2TagRef<'_>>::into(tag).write_to(file, write_options)
+	});
+
 	if id3v2_strippable {
 		insert!(map, Id3v2, {
 			lofty::id3::v2::tag::conversion::Id3v2TagRef::empty().write_to(file, write_options)

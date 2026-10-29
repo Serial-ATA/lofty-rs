@@ -10,6 +10,7 @@ pub use properties::MpegProperties;
 
 use crate::ape::tag::ApeTag;
 use crate::id3::lyrics3::v1::Lyrics3Tag;
+use crate::id3::lyrics3::v2::Lyrics3v2Tag;
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::tag::Id3v2Tag;
 
@@ -29,6 +30,9 @@ pub struct MpegFile {
 	/// A Lyrics3 tag
 	#[lofty(tag_type = "Lyrics3")]
 	pub(crate) lyrics3_tag: Option<Lyrics3Tag>,
+	/// A Lyrics3v2 tag
+	#[lofty(tag_type = "Lyrics3v2")]
+	pub(crate) lyrics3v2_tag: Option<Lyrics3v2Tag>,
 	/// An APEv1/v2 tag
 	#[lofty(tag_type = "Ape")]
 	pub(crate) ape_tag: Option<ApeTag>,

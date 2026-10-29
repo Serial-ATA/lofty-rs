@@ -170,10 +170,13 @@ where
 		header: _,
 		content,
 		range: _,
-	}) = find_lyrics3(reader, true)?
-		&& let Some(Lyrics3Tag::V1(tag)) = content
+	}) = find_lyrics3(reader, true, parse_options)?
+		&& let Some(tag) = content
 	{
-		file.lyrics3_tag = Some(tag);
+		match tag {
+			Lyrics3Tag::V1(tag) => file.lyrics3_tag = Some(tag),
+			Lyrics3Tag::V2(tag) => file.lyrics3v2_tag = Some(tag),
+		}
 	}
 
 	reader.seek(SeekFrom::Current(-32))?;

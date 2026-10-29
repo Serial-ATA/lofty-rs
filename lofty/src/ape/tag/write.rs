@@ -101,7 +101,7 @@ where
 	// Skip over ID3v1 and Lyrics3 tags
 	find_id3v1(file, false, write_options.parse_options.parsing_mode)
 		.map_err(TagParseError::from)?;
-	find_lyrics3(file, false)?;
+	find_lyrics3(file, false, write_options.parse_options)?;
 
 	// In case there's no ape tag already, this is the spot it belongs
 	let ape_position = file.stream_position()?;

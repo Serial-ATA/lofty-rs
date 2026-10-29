@@ -77,6 +77,14 @@ references:
         - family-names: Strnad
           given-names: Peter
     url: "https://id3.org/Lyrics3"
+  - type: website
+    title: "Lyrics3v2"
+    authors:
+        - family-names: Strnad
+          given-names: Peter
+        - family-names: Gingold
+          given-names: Alon
+    url: "https://id3.org/Lyrics3v2"
   # == MP4 ==
   - type: website
     title: "Complete List of all known MP4 / QuickTime 'ftyp' designations"

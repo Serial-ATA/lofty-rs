@@ -3,7 +3,7 @@ use super::tag::Id3v1Tag;
 use crate::config::ParsingMode;
 use crate::error::FakeTagError;
 use crate::id3::v1::error::Id3v1ParseError;
-use crate::util::text::latin1_decode;
+use crate::util::text::{ascii_number, latin1_decode};
 
 impl Id3v1Tag {
 	/// This is **NOT** a public API
@@ -70,12 +70,7 @@ fn decode_text(data: &[u8]) -> Option<String> {
 }
 
 fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, Id3v1ParseError> {
-	let (num_digits, year) = input
-		.iter()
-		.take_while(|c| (**c).is_ascii_digit())
-		.fold((0usize, 0u16), |(num_digits, year), c| {
-			(num_digits + 1, year * 10 + u16::from(*c - b'0'))
-		});
+	let (num_digits, year) = ascii_number(input);
 	if num_digits != 4 {
 		// The official test suite says that any year that isn't 4 characters should be a decoding failure.
 		// However, it seems most popular libraries (including us) will write "\0\0\0\0" for empty
@@ -87,5 +82,5 @@ fn try_parse_year(input: &[u8], parse_mode: ParsingMode) -> Result<Option<u16>, 
 		return Ok(None);
 	}
 
-	Ok(Some(year))
+	Ok(Some(year as u16))
 }

@@ -3,15 +3,12 @@ use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
 use crate::id3::lyrics3::v1::Lyrics3TagRef;
 use crate::id3::lyrics3::v1::errors::Lyrics3EncodingError;
+use crate::id3::lyrics3::write_latin1_string;
 use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3};
 use crate::io::VerifiedFile;
-use crate::macros::try_vec;
 use crate::util::io::FileLike;
-use crate::util::text::latin1_encode;
 
-use std::io::{Cursor, Write};
-
-use byteorder::WriteBytesExt;
+use crate::util::alloc::VecFallibleCapacity;
 
 #[allow(clippy::shadow_unrelated, clippy::collapsible_if)]
 pub(crate) fn write_lyrics3<F>(
@@ -27,7 +24,6 @@ where
 	let Some(ID3FindResults {
 		header: _,
 		content: _,
-		// Write immediately before the ID3v1 tag
 		range: mut tag_range,
 	}) = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
 		.map_err(TagParseError::from)?
@@ -38,11 +34,14 @@ where
 		.into());
 	};
 
+	// Write immediately before the ID3v1 tag
+	tag_range = tag_range.start..tag_range.start;
+
 	if let Some(ID3FindResults {
 		header: _,
 		content: _,
 		range,
-	}) = find_lyrics3(&mut file, false)?
+	}) = find_lyrics3(&mut file, false, write_options.parse_options)?
 	{
 		// Replace the existing tag
 		tag_range = range;
@@ -68,27 +67,20 @@ pub(super) fn encode(
 		));
 	}
 
-	let mut tag =
-		Cursor::new(try_vec![0; LYRICS3_HEADER.len() + lyrics.len() + LYRICS3_FOOTER.len()]?);
+	let mut tag = Vec::try_with_capacity_stable(
+		LYRICS3_HEADER.len() + lyrics.chars().count() + LYRICS3_FOOTER.len(),
+	)?;
 
-	tag.write_all(LYRICS3_HEADER.as_bytes())?;
+	tag.extend(LYRICS3_HEADER.as_bytes());
+	write_latin1_string(
+		"lyrics field",
+		&mut tag,
+		lyrics,
+		MAX_LYRICS_LEN,
+		write_options,
+		|| Lyrics3EncodingError::message("lyrics text contains invalid characters"),
+	)?;
+	tag.extend(LYRICS3_FOOTER.as_bytes());
 
-	for b in latin1_encode(lyrics, write_options.lossy_text_encoding).take(MAX_LYRICS_LEN) {
-		let mut b = b?;
-		if b == 255 {
-			if write_options.lossy_text_encoding {
-				b = b'?';
-			} else {
-				return Err(Lyrics3EncodingError::message(
-					"lyrics text contains invalid characters",
-				));
-			}
-		}
-
-		tag.write_u8(b)?;
-	}
-
-	tag.write_all(LYRICS3_FOOTER.as_bytes())?;
-
-	Ok(tag.into_inner())
+	Ok(tag)
 }

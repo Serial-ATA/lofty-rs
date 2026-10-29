@@ -28,6 +28,7 @@ pub(crate) struct Lyrics3EncodingError {
 	#[error(from(
 		std::io::Error,
 		crate::error::FakeTagError,
+		crate::error::TooMuchDataError,
 		crate::util::text::TextEncodingError,
 		crate::util::alloc::AllocationError,
 	))]

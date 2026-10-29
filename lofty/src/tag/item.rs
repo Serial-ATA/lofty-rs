@@ -543,6 +543,7 @@ macro_rules! gen_item_keys {
 					// Special cases for tags that don't have keyed fields
 					TagType::Id3v1 => &crate::id3::v1::constants::VALID_ITEMKEYS,
 					TagType::Lyrics3 => &crate::id3::lyrics3::v1::constants::VALID_ITEMKEYS,
+					TagType::Lyrics3v2 => &crate::id3::lyrics3::v2::constants::VALID_ITEMKEYS,
 				}
 			}
 
@@ -1253,6 +1254,10 @@ impl TagItem {
 			},
 			TagType::Lyrics3 => {
 				use crate::id3::lyrics3::v1::constants::VALID_ITEMKEYS;
+				VALID_ITEMKEYS.contains(&self.item_key)
+			},
+			TagType::Lyrics3v2 => {
+				use crate::id3::lyrics3::v2::constants::VALID_ITEMKEYS;
 				VALID_ITEMKEYS.contains(&self.item_key)
 			},
 			_ => self.item_key.map_key(tag_type).is_some(),
