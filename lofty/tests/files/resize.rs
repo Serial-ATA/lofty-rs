@@ -111,6 +111,7 @@ macro_rules! resize_tests {
 			let specified = [
 				// Special case, FFmpeg doesn't even support Lyrics3 so no point in testing it
 				TagType::Lyrics3,
+				TagType::Lyrics3v2,
 
 				$(TagType::$tag_type),*
 			];

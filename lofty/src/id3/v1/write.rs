@@ -2,9 +2,9 @@ use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, TagParseError, TooMuchDataError};
-use crate::id3::find_id3v1;
 use crate::id3::v1::error::Id3v1EncodingError;
-use crate::io::{Length, Truncate, VerifiedFile};
+use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3};
+use crate::io::VerifiedFile;
 use crate::util::io::FileLike;
 use crate::util::text::latin1_encode;
 
@@ -24,21 +24,37 @@ where
 	let mut file = file.into_inner();
 
 	// This will seek us to the writing position
-	let tag_exists = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
+	let existing_tag_range = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
 		.map_err(TagParseError::from)?
-		.is_some();
+		.map(
+			|ID3FindResults {
+			     header: _,
+			     content: _,
+			     range,
+			 }| range,
+		);
 
 	if tag.is_empty() {
-		if !tag_exists {
+		let Some(mut existing_tag_range) = existing_tag_range else {
 			log::debug!("No tag to overwrite, nothing to do");
 			return Ok(());
+		};
+
+		if let Some(ID3FindResults {
+			header: _,
+			content: _,
+			range,
+		}) = find_lyrics3(&mut file, false, write_options.parse_options)?
+		{
+			log::warn!("Stripping Lyrics3 tag");
+
+			// Extend back to remove the Lyrics3 tag too.
+			//
+			// Lyrics3 is an extension of ID3v1, and the spec mandates that it can't be standalone.
+			existing_tag_range.start = range.start;
 		}
 
-		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
-		// shrink it down.
-		let new_length = file.len()?.saturating_sub(128);
-		file.truncate(new_length)?;
-
+		file.splice(existing_tag_range, &[])?;
 		return Ok(());
 	}
 
