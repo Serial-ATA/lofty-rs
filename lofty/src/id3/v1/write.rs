@@ -2,8 +2,8 @@ use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
+use crate::id3::find_id3v1;
 use crate::id3::v1::error::Id3v1EncodingError;
-use crate::id3::{ID3FindResults, find_id3v1};
 use crate::io::{Length, Truncate, VerifiedFile};
 use crate::util::io::FileLike;
 use crate::util::text::latin1_encode;
@@ -24,21 +24,22 @@ where
 	let mut file = file.into_inner();
 
 	// This will seek us to the writing position
-	if let Some(ID3FindResults {
-		header: _,
-		content: _,
-		range: _,
-	}) = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
+	let tag_exists = find_id3v1(&mut file, false, write_options.parse_options.parsing_mode)
 		.map_err(TagParseError::from)?
-	{
-		if tag.is_empty() {
-			// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
-			// shrink it down.
-			let new_length = file.len()?.saturating_sub(128);
-			file.truncate(new_length)?;
+		.is_some();
 
+	if tag.is_empty() {
+		if !tag_exists {
+			log::debug!("No tag to overwrite, nothing to do");
 			return Ok(());
 		}
+
+		// An ID3v1 tag occupies the last 128 bytes of the file, so we can just
+		// shrink it down.
+		let new_length = file.len()?.saturating_sub(128);
+		file.truncate(new_length)?;
+
+		return Ok(());
 	}
 
 	let tag = encode(tag, write_options).map_err(TagEncodingError::from)?;
