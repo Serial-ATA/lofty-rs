@@ -6,10 +6,10 @@ use crate::file::FileType;
 use crate::probe::Probe;
 use crate::util::math::F80;
 
-use std::collections::VecDeque;
+use std::collections::{Bound, VecDeque};
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, Cursor, ErrorKind, Read, Seek, SeekFrom, Write};
-use std::ops::{Deref, DerefMut, Range};
+use std::ops::{Deref, DerefMut, Range, RangeBounds};
 use std::path::Path;
 
 // TODO: https://github.com/rust-lang/rust/issues/59359
@@ -322,19 +322,35 @@ pub trait FileLike: Read + Write + Seek + Truncate + Length {
 	///
 	/// * The `range` end is greater than the file length
 	/// * Any I/O error from the underlying writer
-	fn splice(&mut self, range: Range<u64>, replacement: &impl AsRef<[u8]>) -> std::io::Result<()> {
-		replace_range(self, range, replacement.as_ref())
+	fn splice<R>(&mut self, range: R, replacement: &impl AsRef<[u8]>) -> std::io::Result<()>
+	where
+		R: RangeBounds<u64>,
+	{
+		let (range, file_len) = convert_range_bounds(self, range)?;
+		replace_range(self, file_len, range, replacement.as_ref())
 	}
 }
 
-impl<T> FileLike for T where T: Read + Write + Seek + Truncate + Length {}
-
-const MOVE_BUFFER_SIZE: usize = 64 * 1024;
-
-fn replace_range<F>(file: &mut F, range: Range<u64>, replacement: &[u8]) -> std::io::Result<()>
+fn convert_range_bounds<F, R>(file: &F, range: R) -> std::io::Result<(Range<u64>, u64)>
 where
 	F: FileLike + ?Sized,
+	R: RangeBounds<u64>,
 {
+	let file_len = Length::len(file)?;
+
+	let start = match range.start_bound() {
+		Bound::Included(start) => *start,
+		Bound::Excluded(start) => *start + 1,
+		Bound::Unbounded => 0,
+	};
+
+	let end = match range.end_bound() {
+		Bound::Included(end) => *end + 1,
+		Bound::Excluded(end) => *end,
+		Bound::Unbounded => file_len,
+	};
+
+	let range = start..end;
 	if range.start > range.end {
 		return Err(std::io::Error::new(
 			ErrorKind::InvalidInput,
@@ -342,7 +358,6 @@ where
 		));
 	}
 
-	let file_len = Length::len(file)?;
 	if range.end > file_len {
 		return Err(std::io::Error::new(
 			ErrorKind::InvalidInput,
@@ -350,6 +365,22 @@ where
 		));
 	}
 
+	Ok((range, file_len))
+}
+
+impl<T> FileLike for T where T: Read + Write + Seek + Truncate + Length {}
+
+const MOVE_BUFFER_SIZE: usize = 64 * 1024;
+
+fn replace_range<F>(
+	file: &mut F,
+	file_len: u64,
+	range: Range<u64>,
+	replacement: &[u8],
+) -> std::io::Result<()>
+where
+	F: FileLike + ?Sized,
+{
 	let old_len = range.end - range.start;
 	let replacement_len = u64::try_from(replacement.len())
 		.map_err(|_| std::io::Error::new(ErrorKind::InvalidInput, "replacement is too large"))?;
@@ -360,7 +391,7 @@ where
 		file.write_all(replacement)?;
 
 		if replacement_len < old_len {
-			file.truncate(old_len - replacement_len)?;
+			file.truncate(range.start + replacement_len)?;
 		}
 
 		return Ok(());
@@ -802,12 +833,9 @@ mod tests {
 		drop(expected.splice(range.clone(), replacement.iter().copied()));
 
 		let mut cursor = Cursor::new(input);
-		replace_range(
-			&mut cursor,
-			(range.start as u64)..(range.end as u64),
-			replacement,
-		)
-		.expect("range replacement should succeed");
+		cursor
+			.splice((range.start as u64)..(range.end as u64), &replacement)
+			.expect("range replacement should succeed");
 
 		let actual = cursor.into_inner();
 		assert_eq!(actual, expected);
