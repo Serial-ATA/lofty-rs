@@ -1,0 +1,126 @@
+cff-version: 1.2.0
+title: Lofty
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - alias: Serial-ATA
+    website: "https://sata.lol"
+repository-code: 'https://github.com/Serial-ATA/lofty-rs'
+abstract: >-
+  Rust audio metadata library: parse, convert, and write
+  metadata to various audio formats.
+keywords:
+  - Rust
+  - Audio
+license:
+  - MIT
+  - Apache-2.0
+references:
+  # == AIFF ==
+  - type: standard
+    title: "Audio Interchange File Format: \"AIFF\""
+    authors:
+      - name: Apple Computer, Inc.
+    year: 1989
+    format: "Portable Document Format"
+    url: "https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/Docs/AIFF-1.3.pdf"
+    version: "1.3"
+  - type: standard
+    title: "Audio Interchange File Format AIFF-C"
+    authors:
+      - name: Apple Computer, Inc.
+    year: 1991
+    format: "Portable Document Format"
+    url: "https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/Docs/AIFF-C.9.26.91.pdf"
+  - type: website
+    title: "Audio File Format Specifications"
+    authors:
+      - family-names: Kabal
+        given-names: Peter
+    format: "HyperText Markup Language"
+    url: "https://www.mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/AIFF.html"
+  # == ALAC ==
+  - type: software
+    title: "ALAC"
+    authors:
+      - name: "Apple Inc"
+    url: "https://github.com/macosforge/alac"
+  # == APE ==
+  - type: software
+    title: "Monkey’s Audio SDK"
+    authors:
+      - family-names: Ashland
+        given-names: Matthew
+    year: 2024
+    format: "HyperText Markup Language"
+    url: "https://www.monkeysaudio.com/developers.html"
+  # == FLAC ==
+  - type: standard
+    title: "RFC 9639: Free Lossless Audio Codec (FLAC)"
+    authors:
+      - family-names: Beurden
+        given-names: M.Q.C.
+        name-particle: van
+      - family-names: Weaver
+        given-names: A.
+    year: 2024
+    url: "https://www.rfc-editor.org/info/rfc9639/"
+    identifiers:
+      - type: doi
+        value: 10.17487/RFC9639
+  # == MP4 ==
+  - type: website
+    title: "Complete List of all known MP4 / QuickTime 'ftyp' designations"
+    authors:
+      - family-names: Greenberg
+        given-names: Steven
+    year: 2009
+    url: "https://ftyps.com/"
+    version: "2.0"
+  - type: website
+    title: "MPEG-4 files"
+    authors:
+        - name: "The AtomicParsley developers"
+    url: "https://atomicparsley.sourceforge.net/mpeg-4files.html"
+  - type: website
+    title: "QuickTime container"
+    authors:
+        - name: "MultimediaWiki Contributors"
+    url: "https://wiki.multimedia.cx/index.php/QuickTime_container"
+  - type: website
+    title: "QuickTime File Format"
+    authors:
+        - name: "Apple Inc"
+    url: "https://developer.apple.com/documentation/quicktime-file-format"
+  # == Musepack ==
+  - type: website
+    title: "SV8 specification"
+    authors:
+        - name: "The Musepack developers"
+    year: 2009
+    url: "https://web.archive.org/web/20251113105851/http://trac.musepack.net/musepack/wiki/SV8Specification"
+  - type: website
+    title: "stream version 7 format specification"
+    authors:
+        - name: "The Musepack developers"
+    year: 2007
+    url: "https://web.archive.org/web/20250615142645/http://trac.musepack.net/musepack/wiki/SV7Specification"
+  - type: website
+    title: "MPEGplus/Musepack"
+    authors:
+        - name: "The Musepack developers"
+    publisher:
+        name: "ReallyRareWares"
+    notes: >-
+        Super old decoders, used to help understand older stream versions (6 and below)
+    url: "https://www.rarewares.org/rrw/mpegplus.php"
+  # == Other ==
+  - type: software
+    title: "TagLib"
+    authors:
+        - name: "The TagLib developers"
+    notes: >-
+        De-facto audio metadata library. Lofty contains a port of their full test suite under `lofty/tests/taglib`.
+    url: "https://github.com/taglib/taglib"
