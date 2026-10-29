@@ -59,7 +59,8 @@ pub(crate) fn init_write_lookup(
 	});
 
 	insert!(map, Lyrics3v2, {
-		Into::<lofty::id3::lyrics3::v2::Lyrics3v2TagRef<'_>>::into(tag).write_to(file, write_options)
+		Into::<lofty::id3::lyrics3::v2::Lyrics3v2TagRef<'_>>::into(tag)
+			.write_to(file, write_options)
 	});
 
 	if id3v2_strippable {
@@ -105,12 +106,9 @@ pub(crate) fn write_module(
 		let tag_ty =
 			syn::parse_str::<syn::Path>(&format!("::lofty::tag::TagType::{}", f.tag_type)).unwrap();
 
-		let cfg_features = f.get_cfg_features();
-
 		let block = lookup.get(&*tag_ty.segments[3].ident.to_string()).unwrap();
 
 		quote! {
-			#( #cfg_features )*
 			#tag_ty => #block,
 		}
 	});

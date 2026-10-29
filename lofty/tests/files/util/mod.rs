@@ -60,7 +60,7 @@ pub fn no_tag_test(path: impl AsRef<Path>, expected_len: Option<usize>) {
 		.unwrap();
 
 	let Some(expected_len) = expected_len else {
-		assert!(!tagged_file.contains_tag());
+		assert_eq!(tagged_file.tag_types().count(), 0);
 		return;
 	};
 

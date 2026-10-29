@@ -260,13 +260,13 @@ pub trait TaggedFileExt {
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	/// # let _ = tagged_file.remove(TagType::Id3v2); // sneaky
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(!tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	///
 	/// // Insert the ID3v2 tag
 	/// let new_id3v2_tag = Tag::new(TagType::Id3v2);
 	/// tagged_file.insert_tag(new_id3v2_tag);
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	fn insert_tag(&mut self, tag: Tag) -> Option<Tag>;
@@ -286,12 +286,12 @@ pub trait TaggedFileExt {
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	///
 	/// // Take the ID3v2 tag
 	/// let id3v2 = tagged_file.remove(TagType::Id3v2);
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(!tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	fn remove(&mut self, tag_type: TagType) -> Option<Tag>;
@@ -357,12 +357,12 @@ impl TaggedFile {
 	/// // Read an MP3 file containing an ID3v2 tag
 	/// let mut tagged_file = lofty::read_from_path(path_to_mp3)?;
 	///
-	/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	///
 	/// // Remap our MP3 file to WavPack, which doesn't support ID3v2
 	/// tagged_file.change_file_type(FileType::WavPack);
 	///
-	/// assert!(!tagged_file.contains_tag_type(TagType::Id3v2));
+	/// assert!(!tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 	/// # Ok(()) }
 	/// ```
 	pub fn change_file_type(&mut self, file_type: FileType) {
@@ -440,6 +440,10 @@ impl AudioFile for TaggedFile {
 	where
 		F: FileLike,
 	{
+		if let Some((first, second)) = self.conflicts().next() {
+			return Err(crate::error::ConflictingTagError(first, second).into());
+		}
+
 		for tag in &self.tags {
 			// It's likely that users of `TaggedFile` aren't going to be aware of any read-only tags
 			// if they happen to read any, so just skip them rather than error.
@@ -460,12 +464,8 @@ impl AudioFile for TaggedFile {
 		&self.properties
 	}
 
-	fn contains_tag(&self) -> bool {
-		!self.tags.is_empty()
-	}
-
-	fn contains_tag_type(&self, tag_type: TagType) -> bool {
-		self.tags.iter().any(|t| t.tag_type() == tag_type)
+	fn tag_types(&self) -> impl Iterator<Item = TagType> + Clone {
+		self.tags.iter().map(Tag::tag_type)
 	}
 }
 
@@ -499,7 +499,7 @@ impl<F> From<BoundTaggedFile<F>> for TaggedFile {
 /// // "foo.mp3", it would not have an ID3v2 tag. Lofty does not write empty tags, but this
 /// // change will not be reflected in `TaggedFile`.
 /// tagged_file.save_to_path("foo.mp3", WriteOptions::default())?;
-/// assert!(tagged_file.contains_tag_type(TagType::Id3v2));
+/// assert!(tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 /// # Ok(()) }
 /// ```
 ///
@@ -528,7 +528,7 @@ impl<F> From<BoundTaggedFile<F>> for TaggedFile {
 /// // Now when saving, we no longer have to specify a path, and the tags in the `BoundTaggedFile`
 /// // reflect those in the actual file on disk.
 /// bound_tagged_file.save(WriteOptions::default())?;
-/// assert!(!bound_tagged_file.contains_tag_type(TagType::Id3v2));
+/// assert!(!bound_tagged_file.tag_types().any(|t| t == TagType::Id3v2));
 /// # Ok(()) }
 /// ```
 pub struct BoundTaggedFile<F> {
@@ -676,11 +676,7 @@ impl<T> AudioFile for BoundTaggedFile<T> {
 		self.inner.properties()
 	}
 
-	fn contains_tag(&self) -> bool {
-		self.inner.contains_tag()
-	}
-
-	fn contains_tag_type(&self, tag_type: TagType) -> bool {
-		self.inner.contains_tag_type(tag_type)
+	fn tag_types(&self) -> impl Iterator<Item = TagType> + Clone {
+		self.inner.tag_types()
 	}
 }

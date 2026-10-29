@@ -45,7 +45,12 @@ use lofty_attr::tag;
 ///
 /// No special notes.
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "A Lyrics3 tag", supported_formats(Mpeg))]
+#[tag(
+	description = "A Lyrics3 tag",
+	tag_type = Lyrics3,
+	supported_formats(Mpeg),
+	conflicts_with(Lyrics3v2)
+)]
 pub struct Lyrics3Tag {
 	/// The lyrics of the audio
 	///

@@ -163,11 +163,17 @@ impl TagType {
 	/// assert!(TagType::Lyrics3v2.conflicts_with(TagType::Lyrics3));
 	/// assert!(!TagType::Ape.conflicts_with(TagType::Id3v2));
 	/// ```
-	pub fn conflicts_with(self, other: Self) -> bool {
+	pub const fn conflicts_with(self, other: Self) -> bool {
 		match self {
-			TagType::Lyrics3 => other == TagType::Lyrics3v2,
-			TagType::Lyrics3v2 => other == TagType::Lyrics3,
-			_ => false,
+			TagType::Ape => crate::ape::ApeTag::conflicts_with(other),
+			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::conflicts_with(other),
+			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::conflicts_with(other),
+			TagType::Lyrics3 => crate::id3::lyrics3::v1::Lyrics3Tag::conflicts_with(other),
+			TagType::Lyrics3v2 => crate::id3::lyrics3::v2::Lyrics3v2Tag::conflicts_with(other),
+			TagType::Mp4Ilst => crate::mp4::Ilst::conflicts_with(other),
+			TagType::VorbisComments => crate::ogg::tag::VorbisComments::conflicts_with(other),
+			TagType::RiffInfo => crate::iff::wav::RiffInfoList::conflicts_with(other),
+			TagType::AiffText => crate::iff::aiff::AiffTextChunks::conflicts_with(other),
 		}
 	}
 
