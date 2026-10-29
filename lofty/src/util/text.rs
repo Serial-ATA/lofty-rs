@@ -558,6 +558,21 @@ fn utf16_encode(
 	encoded
 }
 
+/// Attempt to parse a [`u64`] from an ascii digit string (e.g., "123")
+///
+/// NOTE: This will parse the `input` until it encounters a non-ascii digit. Be sure to only provide
+///       the digit string.
+///
+/// This returns (number of digits, product)
+pub(crate) fn ascii_number(input: &[u8]) -> (usize, u64) {
+	input
+		.iter()
+		.take_while(|c| (**c).is_ascii_digit())
+		.fold((0usize, 0_u64), |(num_digits, product), c| {
+			(num_digits + 1, product * 10 + u64::from(*c - b'0'))
+		})
+}
+
 #[cfg(test)]
 mod tests {
 	use crate::util::text::{TextDecodeOptions, TextEncoding};
