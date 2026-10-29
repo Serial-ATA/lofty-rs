@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **FileLike**: `FileLike::splice()` now accepts a generic `RangeBounds<u64>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/764))
+
 ## [0.25.5] - 2026-10-25
 
 ### Added
