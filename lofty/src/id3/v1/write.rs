@@ -1,7 +1,7 @@
 use super::constants::ID3V1_TAG_MARKER;
 use super::tag::Id3v1TagRef;
 use crate::config::WriteOptions;
-use crate::error::{FileEncodingError, TagEncodingError, TagParseError};
+use crate::error::{FileEncodingError, TagEncodingError, TagParseError, TooMuchDataError};
 use crate::id3::find_id3v1;
 use crate::id3::v1::error::Id3v1EncodingError;
 use crate::io::{Length, Truncate, VerifiedFile};
@@ -61,6 +61,10 @@ pub(super) fn encode(
 		cursor.rewind()?;
 
 		if let Some(val) = value {
+			if val.chars().count() > size && !write_options.implicit_truncation {
+				return Err(TooMuchDataError.into());
+			}
+
 			for b in latin1_encode(val, write_options.lossy_text_encoding).take(size) {
 				cursor.write_u8(b?)?;
 			}
