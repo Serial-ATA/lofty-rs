@@ -104,7 +104,12 @@ pub struct Image {
 ///
 /// No special notes.
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "A Lyrics3v2 tag", supported_formats(Mpeg))]
+#[tag(
+	description = "A Lyrics3v2 tag",
+	tag_type = Lyrics3v2,
+	supported_formats(Mpeg),
+	conflicts_with(Lyrics3)
+)]
 pub struct Lyrics3v2Tag {
 	/// Flags that apply to the entire tag
 	pub flags: Lyrics3v2TagFlags,
@@ -452,15 +457,13 @@ impl Lyrics3v2TagRef<'_> {
 			+ field_len(
 				self.extended_album_name,
 				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-			)
-			+ field_len(
-				self.extended_artist_name,
-				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-			)
-			+ field_len(
-				self.extended_track_title,
-				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-			);
+			) + field_len(
+			self.extended_artist_name,
+			constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
+		) + field_len(
+			self.extended_track_title,
+			constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
+		);
 
 		if !self.images.is_empty() {
 			len += FIELD_HEADER_LEN;

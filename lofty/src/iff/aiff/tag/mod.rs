@@ -65,7 +65,11 @@ pub struct Comment {
 ///
 /// Every item with the key [`ItemKey::Comment`] will be stored as an annotation.
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
-#[tag(description = "`AIFF` text chunks", supported_formats(Aiff))]
+#[tag(
+	description = "`AIFF` text chunks",
+	tag_type = AiffText,
+	supported_formats(Aiff)
+)]
 pub struct AiffTextChunks {
 	/// The name of the piece
 	pub name: Option<String>,

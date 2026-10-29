@@ -186,6 +186,15 @@ impl From<std::io::Error> for FileEncodingError {
 	}
 }
 
+impl From<ConflictingTagError> for FileEncodingError {
+	fn from(input: ConflictingTagError) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
 impl From<TagEncodingError> for FileEncodingError {
 	fn from(input: TagEncodingError) -> Self {
 		Self {
@@ -257,6 +266,20 @@ impl From<AllocationError> for FileEncodingError {
 		}
 	}
 }
+
+/// Attempted to save conflicting tag types to the same file
+///
+/// See [`TagType::conflicts_with()`]
+#[derive(Debug)]
+pub struct ConflictingTagError(pub TagType, pub TagType);
+
+impl core::fmt::Display for ConflictingTagError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "tag type `{:?}` conflicts with `{:?}`", self.0, self.1)
+	}
+}
+
+impl core::error::Error for ConflictingTagError {}
 
 /// An error that arises while parsing a tag
 pub struct TagParseError {

@@ -76,6 +76,7 @@ macro_rules! impl_accessor {
 #[derive(Default, PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "Vorbis comments",
+	tag_type = VorbisComments,
 	supported_formats(Flac, Opus, Speex, Vorbis)
 )]
 pub struct VorbisComments {

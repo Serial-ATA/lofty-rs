@@ -69,7 +69,7 @@ fn test_save_id3v2() {
 		tfile.set_id3v2(id3v2);
 		file.rewind().unwrap();
 		tfile.save_to(&mut file, WriteOptions::default()).unwrap();
-		assert!(tfile.contains_tag_type(TagType::Id3v2));
+		assert!(tfile.tag_types().any(|t| t == TagType::Id3v2));
 	}
 
 	file.rewind().unwrap();
@@ -91,7 +91,7 @@ fn test_save_id3v2() {
 
 	{
 		let tfile = AiffFile::read_from(&mut file, ParseOptions::new()).unwrap();
-		assert!(!tfile.contains_tag_type(TagType::Id3v2));
+		assert!(!tfile.tag_types().any(|t| t == TagType::Id3v2));
 	}
 }
 
@@ -113,7 +113,7 @@ fn test_save_id3v23() {
 		tfile
 			.save_to(&mut file, WriteOptions::default().use_id3v23(true))
 			.unwrap();
-		assert!(tfile.contains_tag_type(TagType::Id3v2));
+		assert!(tfile.tag_types().any(|t| t == TagType::Id3v2));
 	}
 	file.rewind().unwrap();
 	{

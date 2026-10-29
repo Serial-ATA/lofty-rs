@@ -4,8 +4,8 @@ use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
 use syn::spanned::Spanned;
 use syn::{
-	Error, Expr, ExprLit, ItemStruct, Lit, LitStr, Meta, MetaList, MetaNameValue, Path, Result,
-	Token,
+	Error, Expr, ExprLit, ExprPath, ItemStruct, Lit, LitStr, Meta, MetaList, MetaNameValue, Path,
+	Result, Token,
 };
 
 enum SupportedFormat {
@@ -41,6 +41,17 @@ impl SupportedFormat {
 	}
 }
 
+struct ConflictingFormat<'a>(&'a Path);
+
+impl ConflictingFormat<'_> {
+	fn emit_doc_comment(self) -> String {
+		format!(
+			"* [`TagType::{ty}`](crate::tag::TagType::{ty})\n",
+			ty = self.0.get_ident().unwrap()
+		)
+	}
+}
+
 pub(crate) struct LoftyTag {
 	attribute: LoftyTagAttribute,
 	input: ItemStruct,
@@ -54,6 +65,7 @@ impl LoftyTag {
 	pub(crate) fn emit(&self) -> TokenStream {
 		let ident = &self.input.ident;
 		let desc = &self.attribute.description;
+		let tag_type = &self.attribute.tag_type;
 
 		let supported_types_iter = self
 			.attribute
@@ -71,16 +83,65 @@ impl LoftyTag {
 			.iter()
 			.filter_map(SupportedFormat::read_only);
 
+		let conflicting_tag_types_iter = self
+			.attribute
+			.conflicting_tags
+			.iter()
+			.map(ConflictingFormat)
+			.map(ConflictingFormat::emit_doc_comment);
+		let conflict_docs = if self.attribute.conflicting_tags.is_empty() {
+			quote! {}
+		} else {
+			quote! {
+				/// ## Conflicting tag types
+				///
+				/// This tag has conflicts with the following tag types. This means it cannot
+				/// be written to a file alongside any of them. Conflicts must be resolved manually,
+				/// or writes will fail.
+				///
+				#( #[doc = #conflicting_tag_types_iter] )*
+				///
+			}
+		};
+
+		let conflicting_tag_types_iter = self.attribute.conflicting_tags.iter();
+		let conflict_fn_body = if self.attribute.conflicting_tags.is_empty() {
+			quote! { false }
+		} else {
+			quote! {
+				matches!(
+					tag_type,
+					#( ::lofty::tag::TagType:: #conflicting_tag_types_iter)|*
+				)
+			}
+		};
+
+		let conflicting_tag_types_iter = self.attribute.conflicting_tags.iter();
 		let input = &self.input;
 		TokenStream::from(quote! {
 			use ::lofty::_this_is_internal;
 
 			#[doc = #desc]
-			#[doc = "\n"]
-			#[doc = "## Supported file types\n\n"]
+			///
+			/// ## Supported file types
+			///
+			///
 			#( #[doc = #supported_types_iter] )*
-			#[doc = "\n"]
+			///
+			#conflict_docs
 			#input
+
+			const _: () = {
+				let mut i = 0;
+				while i < #ident::CONFLICTING_FORMATS.len() {
+					let conflicting_ty = #ident::CONFLICTING_FORMATS[i];
+					assert!(
+						conflicting_ty.conflicts_with(::lofty::tag::TagType:: #tag_type),
+						"conflicts must be commutative! make sure all conflicting types conflict with this type"
+					);
+					i += 1;
+				}
+			};
 
 			impl #ident {
 				pub(crate) const SUPPORTED_FORMATS: &'static [::lofty::file::FileType] = &[
@@ -90,6 +151,14 @@ impl LoftyTag {
 				pub(crate) const READ_ONLY_FORMATS: &'static [::lofty::file::FileType] = &[
 					#( ::lofty::file::FileType:: #read_only_file_types ),*
 				];
+
+				pub(crate) const CONFLICTING_FORMATS: &'static [::lofty::tag::TagType] = &[
+					#( ::lofty::tag::TagType:: #conflicting_tag_types_iter ),*
+				];
+
+				pub(crate) const fn conflicts_with(tag_type: ::lofty::tag::TagType) -> bool {
+					#conflict_fn_body
+				}
 			}
 		})
 	}
@@ -97,13 +166,17 @@ impl LoftyTag {
 
 pub(crate) struct LoftyTagAttribute {
 	description: LitStr,
+	tag_type: Path,
 	supported_formats: Vec<SupportedFormat>,
+	conflicting_tags: Vec<Path>,
 }
 
 impl Parse for LoftyTagAttribute {
 	fn parse(input: ParseStream<'_>) -> Result<Self> {
 		let mut description = None;
+		let mut tag_type = None;
 		let mut supported_formats = Vec::new();
+		let mut conflicting_tags = Vec::new();
 
 		let start_span = input.span();
 
@@ -117,8 +190,18 @@ impl Parse for LoftyTagAttribute {
 
 					description = Some(parse_description(mnv)?);
 				},
+				Meta::NameValue(mnv) if mnv.path.is_ident("tag_type") => {
+					if tag_type.is_some() {
+						return Err(Error::new(mnv.span(), "Duplicate `tag_type` entry"));
+					}
+
+					tag_type = Some(parse_tag_type(mnv)?);
+				},
 				Meta::List(list) if list.path.is_ident("supported_formats") => {
 					parse_supported_formats(list, &mut supported_formats)?;
+				},
+				Meta::List(list) if list.path.is_ident("conflicts_with") => {
+					parse_conflicts_with(list, &mut conflicting_tags)?;
 				},
 				_ => {
 					return Err(Error::new(
@@ -135,7 +218,9 @@ impl Parse for LoftyTagAttribute {
 
 		Ok(Self {
 			description: description.unwrap(),
+			tag_type: tag_type.unwrap(),
 			supported_formats,
+			conflicting_tags,
 		})
 	}
 }
@@ -149,6 +234,16 @@ fn parse_description(name_value: MetaNameValue) -> Result<LitStr> {
 		_ => Err(Error::new(
 			name_value.span(),
 			"Invalid `description` entry, expected string value",
+		)),
+	}
+}
+
+fn parse_tag_type(name_value: MetaNameValue) -> Result<Path> {
+	match name_value.value {
+		Expr::Path(ExprPath { path, .. }) => Ok(path),
+		_ => Err(Error::new(
+			name_value.span(),
+			"Invalid `tag_type` entry, expected identifier",
 		)),
 	}
 }
@@ -174,6 +269,13 @@ fn parse_supported_formats(
 			supported_formats.push(SupportedFormat::Full(meta.path));
 		}
 
+		Ok(())
+	})
+}
+
+fn parse_conflicts_with(meta_list: MetaList, conflicts_with: &mut Vec<Path>) -> Result<()> {
+	meta_list.parse_nested_meta(|meta| {
+		conflicts_with.push(meta.path);
 		Ok(())
 	})
 }
