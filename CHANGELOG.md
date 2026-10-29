@@ -8,10 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Lyrics3**: Added support for Lyrics3 (v1 and v2) tags
+- **Lyrics3**: Added support for Lyrics3 (v1 and v2) tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
     - These tags were previously skipped
 - **WriteOptions**: `WriteOptions::implicit_truncation()` to prevent automatic text field truncation
                     when exceeding the limits of a tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/766))
+- **AudioFile**:
+  - `AudioFile::tag_types()` to get all `TagType`s present in the file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+  - `AudioFile::conflicts()` to get all conflicting `TagType`s present in the file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+- **TagType**: `TagType::conflicts_with()` to check if a `TagType` conflicts with another ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+  - Conflicting tags cannot be written to a file, and will require manual intervention
 
 ### Changed
 
@@ -38,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FrameParseError` and `FrameEncodingError` can now be converted into `TagParseError` and `TagEncodingError`, respectively ([issue](https://github.com/Serial-ATA/lofty-rs/issues/728)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/776))
   - Fixed parsing and encoding of ID3v2.3 extended headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/761)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/777))
 - **APE**: Fixed parsing of headerless APEv2 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/759)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/779))
+
+### Removed
+
+- **AudioFile**: `AudioFile::{contains_tag, contains_tag_type}()`, use `AudioFile::tag_types()` instead ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
 
 ## [0.25.5] - 2026-10-25
 

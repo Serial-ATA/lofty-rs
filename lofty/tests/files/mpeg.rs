@@ -573,3 +573,42 @@ fn stripping_id3v1_removes_lyrics3v2() {
 	assert!(f.lyrics3v2().is_none());
 	assert!(f.id3v1().is_none());
 }
+
+#[test_log::test]
+fn lyrics3_tags_conflict() {
+	// Lyrics3 and Lyrics3v2 cannot co-exist
+
+	// Try saving Lyrics3 to a file with Lyrics3v2
+	let mut file = temp_file("tests/files/assets/lyrics3v2.mp3");
+	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	assert!(mpeg_file.lyrics3v2().is_some());
+	assert!(mpeg_file.lyrics3().is_none());
+
+	let mut lyrics3 = Lyrics3Tag::new();
+	lyrics3.lyrics = String::from("[00:00]Serial-ATA was here");
+
+	mpeg_file.set_lyrics3(lyrics3);
+	let err = mpeg_file
+		.save_to(&mut file, WriteOptions::new())
+		.unwrap_err();
+	assert_error_message(&err, "tag type `Lyrics3` conflicts with `Lyrics3v2`");
+
+	// Now the other way around
+	let mut file = temp_file("tests/files/assets/lyrics3.mp3");
+	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	assert!(mpeg_file.lyrics3().is_some());
+	assert!(mpeg_file.lyrics3v2().is_none());
+
+	let mut lyrics3v2 = Lyrics3v2Tag::new();
+	lyrics3v2.lyrics = Some(String::from("[00:00]Serial-ATA was here"));
+
+	mpeg_file.set_lyrics3v2(lyrics3v2);
+	let err = mpeg_file
+		.save_to(&mut file, WriteOptions::new())
+		.unwrap_err();
+	assert_error_message(&err, "tag type `Lyrics3` conflicts with `Lyrics3v2`");
+}

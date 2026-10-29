@@ -95,8 +95,78 @@ pub trait AudioFile: Into<TaggedFile> {
 
 	/// Returns a reference to the file's properties
 	fn properties(&self) -> &Self::Properties;
-	/// Checks if the file contains any tags
-	fn contains_tag(&self) -> bool;
-	/// Checks if the file contains the given [`TagType`]
-	fn contains_tag_type(&self, tag_type: TagType) -> bool;
+	/// Returns an iterator over the [`TagType`]s of the tags contained in the file
+	///
+	/// NOTE: The order of the tag types is not guaranteed to be stable
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::file::{AudioFile, TaggedFileExt};
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # let mp3_path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(mp3_path)?;
+	/// # tagged_file.clear();
+	///
+	/// // Starting off with an untagged file
+	/// assert!(tagged_file.tag_types().next().is_none());
+	///
+	/// tagged_file.insert_tag(Tag::new(TagType::Id3v2));
+	/// tagged_file.insert_tag(Tag::new(TagType::Id3v1));
+	///
+	/// let tag_types: Vec<_> = tagged_file.tag_types().collect();
+	/// assert_eq!(tag_types, vec![TagType::Id3v2, TagType::Id3v1]);
+	/// # Ok(()) }
+	/// ```
+	fn tag_types(&self) -> impl Iterator<Item = TagType> + Clone;
+	/// Find the conflicting tags present in the file, if any
+	///
+	/// NOTE: Conflicts can only arise from user edits. Lofty will never produce a file with conflicts
+	///       from parsing.
+	///
+	/// Returns an iterator of the conflicting [`TagType`]s.
+	///
+	/// See [`TagType::conflicts_with()`]
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::file::{AudioFile, TaggedFileExt};
+	/// use lofty::tag::{Tag, TagType};
+	///
+	/// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+	/// # let mp3_path = "tests/files/assets/minimal/full_test.mp3";
+	/// let mut tagged_file = lofty::read_from_path(mp3_path)?;
+	///
+	/// // The parser never produces a file with conflicts
+	/// assert!(tagged_file.conflicts().next().is_none());
+	///
+	/// // MP3 supports Lyrics3 and Lyrics3v2, but only one can exist at a time
+	/// tagged_file.insert_tag(Tag::new(TagType::Lyrics3));
+	/// tagged_file.insert_tag(Tag::new(TagType::Lyrics3v2));
+	///
+	/// assert_eq!(
+	/// 	tagged_file.conflicts().next(),
+	/// 	Some((TagType::Lyrics3, TagType::Lyrics3v2))
+	/// );
+	/// # Ok(()) }
+	/// ```
+	fn conflicts(&self) -> impl Iterator<Item = (TagType, TagType)> {
+		let mut outer = self.tag_types();
+		let mut current = outer.next().map(|t| (t, outer.clone()));
+
+		core::iter::from_fn(move || {
+			while let Some((tag_a, ref mut inner)) = current {
+				for tag_b in inner.by_ref() {
+					if tag_a.conflicts_with(tag_b) {
+						return Some((tag_a, tag_b));
+					}
+				}
+				current = outer.next().map(|t| (t, outer.clone()));
+			}
+			None
+		})
+	}
 }

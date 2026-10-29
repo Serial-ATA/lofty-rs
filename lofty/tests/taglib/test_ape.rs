@@ -123,7 +123,7 @@ fn test_strip_and_properties() {
 		assert_eq!(ape_file.id3v1().unwrap().title().as_deref(), Some("ID3v1"));
 		ape_file.remove_id3v1();
 
-		assert!(!ape_file.contains_tag());
+		assert_eq!(ape_file.tag_types().count(), 0);
 	}
 }
 

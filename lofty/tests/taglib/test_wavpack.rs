@@ -109,7 +109,7 @@ fn test_strip_and_properties() {
 		f.remove_ape();
 		assert_eq!(f.id3v1().unwrap().title.as_deref(), Some("ID3v1"));
 		f.remove_id3v1();
-		assert!(!f.contains_tag());
+		assert_eq!(f.tag_types().count(), 0);
 	}
 }
 
