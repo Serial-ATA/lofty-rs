@@ -15,6 +15,7 @@ pub struct WriteOptions {
 	pub(crate) uppercase_id3v2_chunk: bool,
 	pub(crate) use_id3v23: bool,
 	pub(crate) lossy_text_encoding: bool,
+	pub(crate) implicit_truncation: bool,
 	pub(crate) parse_options: ParseOptions,
 }
 
@@ -41,6 +42,7 @@ impl WriteOptions {
 			uppercase_id3v2_chunk: true,
 			use_id3v23: false,
 			lossy_text_encoding: true,
+			implicit_truncation: true,
 			parse_options: ParseOptions::new(),
 		}
 	}
@@ -216,6 +218,44 @@ impl WriteOptions {
 	/// [`TextEncodingError`]: crate::error::TextEncodingError
 	pub fn lossy_text_encoding(&mut self, lossy_text_encoding: bool) -> Self {
 		self.lossy_text_encoding = lossy_text_encoding;
+		*self
+	}
+
+	/// Whether to truncate text fields when the exceed tag limits
+	///
+	/// Some tag formats have abnormally small text field limits that may be easy
+	/// to exceed (e.g., [`Id3v1Tag`]).
+	///
+	/// If this is enabled, any fields that exceed the limit will simply be truncated to fit
+	/// (e.g., the below example would be truncated to "This is a super long comment").
+	///
+	/// If this is disabled, any writes with exceedingly large text fields will return a
+	/// [`TooMuchDataError`].
+	///
+	/// # Examples
+	///
+	/// ```rust,no_run
+	/// use lofty::config::WriteOptions;
+	/// use lofty::id3::v1::Id3v1Tag;
+	/// use lofty::prelude::*;
+	///
+	/// # fn main() -> Result<(), lofty::error::FileEncodingError> {
+	/// let mut id3v1_tag = Id3v1Tag::default();
+	///
+	/// id3v1_tag.comment = Some(String::from(
+	/// 	"This is a super long comment that doesn't fit",
+	/// ));
+	///
+	/// // With implicit truncation disabled, the write will fail!
+	/// let options = WriteOptions::new().implicit_truncation(false);
+	/// id3v1_tag.save_to_path("test.mp3", options)?;
+	/// # Ok(()) }
+	/// ```
+	///
+	/// [`Id3v1Tag`]: crate::id3::v1::Id3v1Tag
+	/// [`TooMuchDataError`]: crate::error::TooMuchDataError
+	pub fn implicit_truncation(&mut self, implicit_truncation: bool) -> Self {
+		self.implicit_truncation = implicit_truncation;
 		*self
 	}
 

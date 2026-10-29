@@ -179,16 +179,7 @@ impl Accessor for Id3v1Tag {
 	}
 
 	fn set_comment(&mut self, value: String) {
-		let mut resized = String::with_capacity(28);
-		for c in value.chars() {
-			if resized.len() + c.len_utf8() > 28 {
-				break;
-			}
-
-			resized.push(c);
-		}
-
-		self.comment = Some(resized);
+		self.comment = Some(value);
 	}
 
 	fn remove_comment(&mut self) {
@@ -588,6 +579,25 @@ mod tests {
 			.dump_to(
 				&mut Vec::new(),
 				WriteOptions::new().lossy_text_encoding(false),
+			)
+			.unwrap_err();
+	}
+
+	#[test_log::test]
+	fn implicit_truncation() {
+		let mut id3v1_tag = Id3v1Tag::default();
+		id3v1_tag.set_comment("X".repeat(29));
+
+		// By default, we'll just truncate the string
+		id3v1_tag
+			.dump_to(&mut Vec::new(), WriteOptions::new())
+			.unwrap();
+
+		// But it should fail with `implicit_truncation` disabled
+		id3v1_tag
+			.dump_to(
+				&mut Vec::new(),
+				WriteOptions::new().implicit_truncation(false),
 			)
 			.unwrap_err();
 	}

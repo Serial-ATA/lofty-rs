@@ -39,6 +39,7 @@ pub(crate) struct Id3v1EncodingError {
 	#[error(from(
 		std::io::Error,
 		crate::error::FakeTagError,
+		crate::error::TooMuchDataError,
 		crate::util::text::TextEncodingError,
 	))]
 	source: Box<dyn core::error::Error + Send + Sync + 'static>,
