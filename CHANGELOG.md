@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **FileLike**: `FileLike::splice()` now accepts a generic `RangeBounds<u64>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/764))
 
+### Fixed
+
+- **ID3v1**: Attempting to remove an ID3v1 tag from a file that doesn't contain one will no longer
+             write an empty tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/765))
+
 ## [0.25.5] - 2026-10-25
 
 ### Added
