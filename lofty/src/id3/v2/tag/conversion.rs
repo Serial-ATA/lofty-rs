@@ -112,47 +112,6 @@ pub(crate) fn from_tag<'a>(
 
 		let item_key = item.key();
 		match item_key {
-			// Multi-valued text key-to-frame mappings
-			// TODO: Extend this list of item keys as needed or desired
-			ItemKey::TrackArtist
-			| ItemKey::AlbumArtist
-			| ItemKey::TrackTitle
-			| ItemKey::AlbumTitle
-			| ItemKey::SetSubtitle
-			| ItemKey::TrackSubtitle
-			| ItemKey::OriginalAlbumTitle
-			| ItemKey::OriginalArtist
-			| ItemKey::OriginalLyricist
-			| ItemKey::ContentGroup
-			| ItemKey::AppleId3v2ContentGroup
-			| ItemKey::Genre
-			| ItemKey::Mood
-			| ItemKey::Composer
-			| ItemKey::Conductor
-			| ItemKey::Writer
-			| ItemKey::Lyricist
-			| ItemKey::InternetRadioStationName
-			| ItemKey::InternetRadioStationOwner
-			| ItemKey::Remixer
-			| ItemKey::Movement
-			| ItemKey::MovementNumber
-			| ItemKey::MovementTotal
-			| ItemKey::FileOwner
-			| ItemKey::CopyrightMessage
-			| ItemKey::Language
-			| ItemKey::Publisher => {
-				let (value, _) = take_item_text_and_description(item)?;
-
-				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
-				ctx.text_frames
-					.entry(frame_id)
-					.and_modify(|current| extend_text(current, &value))
-					.or_insert(value);
-
-				// Collected at the end
-				None
-			},
-
 			// Multi-valued TXXX key-to-frame mappings
 			ItemKey::TrackArtists
 			| ItemKey::AlbumArtists
@@ -181,6 +140,14 @@ pub(crate) fn from_tag<'a>(
 
 				// Collected at the end
 				None
+			},
+
+			// Single-valued text key-to-frame mappings
+			ItemKey::IntegerBpm => {
+				let mapped = item_key.map_key(TagType::Id3v2).expect("valid frame id");
+				let frame_id = FrameId::new(mapped).ok()?;
+				let (value, _) = take_item_text_and_description(item)?;
+				Some(new_text_frame(frame_id, value))
 			},
 
 			// Single-valued TXXX mappings
@@ -218,11 +185,11 @@ pub(crate) fn from_tag<'a>(
 			},
 
 			// Flag items
-			ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
+			_ if item_key.is_flag() => {
+				let frame_id = item.key().map_key(TagType::Id3v2)?;
+
 				let text = item.item_value.text()?;
 				let flag_value = flag_item(text)?;
-
-				let frame_id = item.key().map_key(TagType::Id3v2).expect("valid frame id");
 
 				Some(new_text_frame(
 					FrameId::Valid(Cow::Borrowed(frame_id)),
@@ -253,10 +220,9 @@ pub(crate) fn from_tag<'a>(
 			},
 
 			// Timestamps
-			ItemKey::RecordingDate | ItemKey::OriginalReleaseDate => {
+			_ if item_key.is_timestamp() => {
+				let frame_id = item_key.map_key(TagType::Id3v2)?;
 				let (text, _) = take_item_text_and_description(item)?;
-
-				let frame_id = item_key.map_key(TagType::Id3v2).expect("valid frame id");
 
 				let frame;
 				match Timestamp::from_str(&text) {
@@ -337,14 +303,28 @@ pub(crate) fn from_tag<'a>(
 				if let Some(mapped) = item_key.map_key(TagType::Id3v2)
 					&& mapped.len() == 4
 				{
-					let id = FrameId::new(mapped).ok()?;
+					// TODO: Extend this list of item keys as needed or desired
+					// Frame IDs that don't start with 'T' but are treated like text frames
+					const NON_STANDARD_TEXT_FRAMES: &[ItemKey] = &[
+						ItemKey::Movement,
+						ItemKey::MovementNumber,
+						ItemKey::MovementTotal,
+						ItemKey::AppleId3v2ContentGroup,
+					];
 
-					if id.as_str().starts_with('T') {
+					// Multi-valued text key-to-frame mappings
+					if mapped.starts_with('T') || NON_STANDARD_TEXT_FRAMES.contains(&item_key) {
 						let (value, _) = take_item_text_and_description(item)?;
-						return Some(new_text_frame(id, value));
-					}
 
-					if id.as_str().starts_with('W') {
+						ctx.text_frames
+							.entry(mapped)
+							.and_modify(|current| extend_text(current, &value))
+							.or_insert(value);
+
+						// Collected at the end
+						return None;
+					} else if mapped.starts_with('W') {
+						let id = FrameId::new(mapped).ok()?;
 						let (value, _) = take_item_text_and_description(item)?;
 						return Some(new_url_frame(id, value));
 					}
