@@ -2,7 +2,7 @@ use super::FlacFile;
 use super::block::Block;
 use super::properties::FlacProperties;
 use crate::config::{ParseOptions, ParsingMode};
-use crate::error::{SizeMismatchError, TagParseError};
+use crate::error::{NotEnoughDataError, SizeMismatchError, TagParseError};
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::flac::error::FlacParseError;
 use crate::id3::v2::read::parse_id3v2;
@@ -89,11 +89,11 @@ where
 
 		last_block = block.last;
 
-		if block.content.is_empty() {
-			continue;
-		}
-
 		if block.ty == BLOCK_ID_VORBIS_COMMENTS && parse_options.read_tags {
+			// Vendor string length (4)
+			// Field count (4)
+			const MIN_BLOCK_SIZE: usize = 8;
+
 			log::debug!("Encountered a Vorbis Comments block, parsing");
 
 			// NOTE: According to the spec
@@ -113,6 +113,15 @@ where
 				));
 			}
 
+			if block.content.len() < MIN_BLOCK_SIZE {
+				if parse_options.parsing_mode == ParsingMode::Strict {
+					return Err(NotEnoughDataError::new(Some(MIN_BLOCK_SIZE)).into());
+				}
+
+				log::warn!("VORBIS_COMMENT block too small, ignoring");
+				continue;
+			}
+
 			let vorbis_comments = read_comments(
 				&mut &*block.content,
 				block.content.len() as u64,
@@ -125,7 +134,25 @@ where
 		}
 
 		if block.ty == BLOCK_ID_PICTURE && parse_options.read_cover_art {
+			// Picture type (4)
+			// Media type length (4)
+			// Description length (4)
+			// Picture width (4)
+			// Picture height (4)
+			// Color depth (4)
+			// Color count (4)
+			const MIN_BLOCK_SIZE: usize = 28;
+
 			log::debug!("Encountered a FLAC picture block, parsing");
+
+			if block.content.len() < MIN_BLOCK_SIZE {
+				if parse_options.parsing_mode == ParsingMode::Strict {
+					return Err(NotEnoughDataError::new(Some(MIN_BLOCK_SIZE)).into());
+				}
+
+				log::warn!("PICTURE block too small, ignoring");
+				continue;
+			}
 
 			match Picture::from_flac_bytes(&block.content, false, parse_options.parsing_mode) {
 				Ok(picture) => flac_file.pictures.push(picture),

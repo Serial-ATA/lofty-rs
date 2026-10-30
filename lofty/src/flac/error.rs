@@ -15,6 +15,7 @@ pub struct FlacParseError {
 		std::io::Error,
 		crate::error::TagParseError,
 		crate::error::SizeMismatchError,
+		crate::error::NotEnoughDataError,
 		crate::picture::error::PictureParseError,
 		crate::error::AllocationError,
 	))]
