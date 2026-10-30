@@ -382,7 +382,7 @@ fn write_free_atom<W>(writer: &mut W, size: u32) -> Result<(), FileEncodingError
 where
 	W: Write,
 {
-	assert!(size > ATOM_HEADER_LEN as u32);
+	assert!(size >= ATOM_HEADER_LEN as u32);
 
 	writer.write_u32::<BigEndian>(size)?;
 	writer.write_all(b"free")?;
