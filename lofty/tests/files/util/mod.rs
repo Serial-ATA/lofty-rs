@@ -60,7 +60,7 @@ pub fn no_tag_test(path: impl AsRef<Path>, expected_len: Option<usize>) {
 		.unwrap();
 
 	let Some(expected_len) = expected_len else {
-		assert!(!tagged_file.contains_tag());
+		assert_eq!(tagged_file.tag_types().count(), 0);
 		return;
 	};
 
@@ -178,4 +178,25 @@ pub fn tool_installed(tool: &str) -> bool {
 		Err(e) => panic!("{}", e),
 		_ => true,
 	}
+}
+
+/// Assert that `err` contains the `message` somewhere in its source chain
+pub fn assert_error_message(mut err: &(dyn std::error::Error + 'static), message: &str) {
+	let mut found = false;
+	let mut actual_chain = err.to_string();
+	while let Some(src) = err.source() {
+		actual_chain = format!("{actual_chain}\n{src}");
+
+		found = src.to_string().contains(message);
+		if found {
+			break;
+		}
+
+		err = src;
+	}
+
+	assert!(
+		found,
+		"expected error to contain \"{message}\"\n\nactual:\n\n{actual_chain}"
+	)
 }

@@ -5,21 +5,25 @@
 //! ID3 does things differently than other tags, making them a little more cumbersome to work with.
 //! Check the other modules for important notes and warnings.
 
+pub mod lyrics3;
 pub mod v1;
 pub mod v2;
 
-use crate::config::ParsingMode;
-use crate::error::TextDecodingError;
+use crate::config::{ParseOptions, ParsingMode};
+use crate::error::{FakeTagError, TagParseError};
+use crate::id3::lyrics3::v1::constants::{LYRICS3_FOOTER, LYRICS3_HEADER};
+use crate::id3::lyrics3::v1::errors::Lyrics3ParseError;
+use crate::id3::lyrics3::v2::constants::{LYRICS3V2_FOOTER, LYRICS3V2_HEADER};
+use crate::id3::lyrics3::v2::errors::Lyrics3v2ParseError;
 use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::Id3v2ParseError;
+use crate::io::{ReadFindExt, RevSearchEnd};
 use crate::macros::try_vec;
-use crate::util::text::utf8_decode_str;
 use v1::constants::ID3V1_TAG_MARKER;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
-use std::num::ParseIntError;
-use std::ops::{Neg, Range};
+use std::ops::Range;
 
 #[derive(Debug)]
 pub(crate) struct ID3FindResults<Header, Content> {
@@ -29,93 +33,137 @@ pub(crate) struct ID3FindResults<Header, Content> {
 	pub range: Range<u64>,
 }
 
-/// Errors that can occur while parsing Lyrics3v2 tags
-pub struct Lyrics3v2ParseError {
-	source: Box<dyn core::error::Error + Send + Sync + 'static>,
+#[derive(Debug)]
+pub(crate) enum Lyrics3Tag {
+	V1(lyrics3::v1::Lyrics3Tag),
+	V2(lyrics3::v2::Lyrics3v2Tag),
 }
 
-impl core::fmt::Display for Lyrics3v2ParseError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		write!(f, "failed to parse Lyrics3v2 tag")
-	}
-}
-
-impl core::fmt::Debug for Lyrics3v2ParseError {
-	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-		f.debug_struct("Lyrics3v2ParseError")
-			.finish_non_exhaustive()
-	}
-}
-
-impl core::error::Error for Lyrics3v2ParseError {
-	#[allow(trivial_casts)]
-	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
-		Some(&*self.source as _)
-	}
-}
-
-impl From<std::io::Error> for Lyrics3v2ParseError {
-	fn from(input: std::io::Error) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<ParseIntError> for Lyrics3v2ParseError {
-	fn from(input: ParseIntError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-impl From<TextDecodingError> for Lyrics3v2ParseError {
-	fn from(input: TextDecodingError) -> Self {
-		Self {
-			source: Box::new(input),
-		}
-	}
-}
-
-pub(crate) fn find_lyrics3v2<R>(
-	data: &mut R,
-) -> Result<Option<ID3FindResults<(), u32>>, Lyrics3v2ParseError>
+/// Attempt to find a Lyrics3 (v1 or v2) tag at the current position
+///
+/// `read` determines if the tag is parsed, if one exists.
+///
+/// If found, the `reader` will be positioned at the start of the tag. Otherwise, it will be at the
+/// original position.
+pub(crate) fn find_lyrics3<R>(
+	reader: &mut R,
+	read: bool,
+	parse_options: ParseOptions,
+) -> Result<Option<ID3FindResults<(), Option<Lyrics3Tag>>>, TagParseError>
 where
 	R: Read + Seek,
 {
-	log::debug!("Searching for a Lyrics3v2 tag");
+	fn handle_v1<R>(
+		reader: &mut R,
+		read: bool,
+		tag_end_pos: u64,
+	) -> Result<(Range<u64>, Option<Lyrics3Tag>), Lyrics3ParseError>
+	where
+		R: Read + Seek,
+	{
+		const MAX_TAG_SIZE: u64 = LYRICS3_HEADER.len() as u64
+			+ lyrics3::v1::constants::MAX_LYRICS_LEN as u64
+			+ LYRICS3_FOOTER.len() as u64;
 
-	let mut size = 0_u32;
+		if !reader
+			.rfind(LYRICS3_HEADER.as_bytes())
+			.end_pos(RevSearchEnd::Pos(tag_end_pos.saturating_sub(MAX_TAG_SIZE)))
+			.search()?
+		{
+			return Err(FakeTagError.into());
+		}
 
-	let start = data.seek(SeekFrom::Current(-15))?;
+		let tag_start = reader.stream_position()?;
+		let range = tag_start..tag_end_pos;
 
-	let mut lyrics3v2 = [0; 15];
-	data.read_exact(&mut lyrics3v2)?;
+		let mut tag = None;
+		if read {
+			let mut content = try_vec![0; (range.end - range.start) as usize]?;
+			reader.read_exact(&mut content)?;
 
-	if &lyrics3v2[7..] != b"LYRICS200" {
+			tag = Some(lyrics3::v1::Lyrics3Tag::parse(&content)?);
+			reader.seek(SeekFrom::Start(range.start))?;
+		}
+
+		Ok((range, tag.map(Lyrics3Tag::V1)))
+	}
+
+	fn handle_v2<R>(
+		reader: &mut R,
+		read: bool,
+		tag_end_pos: u64,
+		parse_options: ParseOptions,
+	) -> Result<(Range<u64>, Option<Lyrics3Tag>), Lyrics3v2ParseError>
+	where
+		R: Read + Seek,
+	{
+		const MAX_TAG_SIZE: u64 = lyrics3::v2::constants::TAG_MAX_SIZE as u64 + 6 /* tag size */ + LYRICS3_FOOTER.len() as u64;
+
+		// Don't trust the encoded tag size at this point, just search for the header
+		if !reader
+			.rfind(LYRICS3V2_HEADER.as_bytes())
+			.end_pos(RevSearchEnd::Pos(tag_end_pos.saturating_sub(MAX_TAG_SIZE)))
+			.search()?
+		{
+			return Err(FakeTagError.into());
+		}
+
+		let tag_start = reader.stream_position()?;
+		let range = tag_start..tag_end_pos;
+
+		let mut tag = None;
+		if read {
+			let mut content = try_vec![0; (range.end - range.start) as usize]?;
+			reader.read_exact(&mut content)?;
+
+			tag = Some(lyrics3::v2::Lyrics3v2Tag::parse(&content, parse_options)?);
+			reader.seek(SeekFrom::Start(range.start))?;
+		}
+
+		Ok((range, tag.map(Lyrics3Tag::V2)))
+	}
+
+	log::debug!("Searching for a Lyrics3 tag");
+
+	reader
+		.seek(SeekFrom::Current(-(LYRICS3_FOOTER.len() as i64)))
+		.map_err(|e| TagParseError::from_unknown_ty(e.into()))?;
+
+	let mut lyrics3_footer = [0; LYRICS3_FOOTER.len()];
+	reader
+		.read_exact(&mut lyrics3_footer)
+		.map_err(|e| TagParseError::from_unknown_ty(e.into()))?;
+
+	let tag_end = reader
+		.stream_position()
+		.map_err(|e| TagParseError::from_unknown_ty(e.into()))?;
+
+	let range;
+	let tag;
+	if lyrics3_footer == LYRICS3_FOOTER.as_bytes() {
+		(range, tag) = handle_v1(reader, read, tag_end)?;
+	} else if lyrics3_footer == LYRICS3V2_FOOTER.as_bytes() {
+		(range, tag) = handle_v2(reader, read, tag_end, parse_options)?;
+	} else {
 		return Ok(None);
 	}
 
-	log::warn!("Encountered a Lyrics3v2 tag. This is an outdated format, and will be skipped.");
-
-	let lyrics_size = utf8_decode_str(&lyrics3v2[..7])?;
-	let lyrics_size = lyrics_size.parse::<u32>()?;
-
-	size += lyrics_size;
-
-	data.seek(SeekFrom::Current(i64::from(lyrics_size + 15).neg()))?;
-
 	Ok(Some(ID3FindResults {
 		header: (),
-		content: size,
-		range: start..(start + u64::from(size)),
+		content: tag,
+		range,
 	}))
 }
 
+/// Attempt to find an ID3v1 tag in the stream
+///
+/// `read` determines if the tag is parsed, if one exists.
+///
+/// If found, the `reader` will be positioned at the start of the tag. Otherwise, it will be at the
+/// end of the stream.
 #[allow(unused_variables)]
 pub(crate) fn find_id3v1<R>(
-	data: &mut R,
+	reader: &mut R,
 	read: bool,
 	parse_mode: ParsingMode,
 ) -> Result<Option<ID3FindResults<(), Option<v1::tag::Id3v1Tag>>>, Id3v1ParseError>
@@ -127,19 +175,19 @@ where
 	let mut id3v1 = None;
 
 	// Reader is too small to contain an ID3v2 tag
-	if data.seek(SeekFrom::End(-128)).is_err() {
-		data.seek(SeekFrom::End(0))?;
+	if reader.seek(SeekFrom::End(-128)).is_err() {
+		reader.seek(SeekFrom::End(0))?;
 		return Ok(None);
 	}
 
 	let mut id3v1_header = [0; 3];
-	data.read_exact(&mut id3v1_header)?;
+	reader.read_exact(&mut id3v1_header)?;
 
-	let start = data.seek(SeekFrom::Current(-3))?;
+	let start = reader.seek(SeekFrom::Current(-3))?;
 
 	// No ID3v1 tag found
 	if id3v1_header != ID3V1_TAG_MARKER {
-		data.seek(SeekFrom::End(0))?;
+		reader.seek(SeekFrom::End(0))?;
 		return Ok(None);
 	}
 
@@ -147,9 +195,9 @@ where
 
 	if read {
 		let mut id3v1_tag = [0; 128];
-		data.read_exact(&mut id3v1_tag)?;
+		reader.read_exact(&mut id3v1_tag)?;
 
-		data.seek(SeekFrom::End(-128))?;
+		reader.seek(SeekFrom::End(-128))?;
 
 		id3v1 = Some(v1::tag::Id3v1Tag::parse(id3v1_tag, parse_mode)?)
 	}

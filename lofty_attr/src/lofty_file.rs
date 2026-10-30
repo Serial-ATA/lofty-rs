@@ -6,7 +6,7 @@ use proc_macro2::{Ident, Span};
 use quote::{ToTokens, format_ident, quote, quote_spanned};
 use syn::parse::Parse;
 use syn::spanned::Spanned;
-use syn::{Attribute, Data, DataStruct, DeriveInput, Field, Fields, Type};
+use syn::{Data, DataStruct, DeriveInput, Field, Fields, Type};
 
 #[derive(Default)]
 pub struct InternalFileDetails {
@@ -219,17 +219,10 @@ impl LoftyFile {
 
 pub(crate) struct FieldContents {
 	name: Ident,
-	pub(crate) attrs: Vec<Attribute>,
 	needs_option: bool,
 	getter_name: Option<proc_macro2::TokenStream>,
 	ty: Type,
 	pub(crate) tag_type: proc_macro2::TokenStream,
-}
-
-impl FieldContents {
-	pub(crate) fn get_cfg_features(&self) -> impl Iterator<Item = &Attribute> {
-		self.attrs.iter().filter(|a| a.path().is_ident("cfg"))
-	}
 }
 
 fn get_fields<'a>(
@@ -274,20 +267,12 @@ fn get_fields<'a>(
 			return Ok(None);
 		};
 
-		let other_attrs = field
-			.attrs
-			.iter()
-			.filter(|a| !a.path().is_ident("lofty"))
-			.cloned()
-			.collect::<Vec<_>>();
-
 		let option_unwrapped = util::extract_type_from_option(&field.ty);
 		// `option_unwrapped` will be `Some` if the type was wrapped in an `Option`
 		let needs_option = option_unwrapped.is_some();
 
 		let contents = FieldContents {
 			name,
-			attrs: other_attrs,
 			getter_name,
 			ty: option_unwrapped.unwrap_or_else(|| field.ty.clone()),
 			tag_type,
@@ -362,9 +347,7 @@ fn get_getters<'a>(
 			}
 		};
 
-		let cfg_features = f.get_cfg_features();
 		quote! {
-			#( #cfg_features )*
 			impl #struct_name {
 				/// Returns a reference to the tag
 				pub fn #name(&self) -> #ty_prefix &#field_ty #ty_suffix {
@@ -395,19 +378,6 @@ fn get_getters<'a>(
 }
 
 fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenStream> {
-	fn tag_exists_iter(
-		tag_fields: &[FieldContents],
-	) -> impl Iterator<Item = proc_macro2::TokenStream> + use<'_> {
-		tag_fields.iter().map(|f| {
-			let name = &f.name;
-			if f.needs_option {
-				quote! { self.#name.is_some() }
-			} else {
-				quote! { true }
-			}
-		})
-	}
-
 	let Some(properties_field) = &file.struct_info.fields.properties else {
 		return Err(util::err(
 			file.struct_info.span,
@@ -426,10 +396,61 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 
 	let save_to_body = get_save_to_body(file.audiofile_impl.write_fn.as_ref(), tag_fields);
 
-	let tag_exists = tag_exists_iter(tag_fields);
-	let tag_exists_2 = tag_exists_iter(tag_fields);
+	let tag_types_iter = tag_fields.iter().map(|f| {
+		let name = &f.name;
+		let tag_type = &f.tag_type;
+		if f.needs_option {
+			quote! {
+				self.#name.is_some().then_some(::lofty::tag::TagType::#tag_type)
+			}
+		} else {
+			quote! {
+				Some(::lofty::tag::TagType::#tag_type)
+			}
+		}
+	});
+	let tag_types_body = quote! {
+		[#( #tag_types_iter ),*].into_iter().flatten()
+	};
 
-	let tag_type = tag_fields.iter().map(|f| &f.tag_type);
+	let conflicts_body = if tag_fields.len() < 2 {
+		quote! {
+			::core::iter::empty()
+		}
+	} else {
+		let mut pairs = Vec::new();
+		for (i, f1) in tag_fields.iter().enumerate() {
+			let name1 = &f1.name;
+			let tag_type1 = &f1.tag_type;
+			let exists1 = if f1.needs_option {
+				quote! { self.#name1.is_some() }
+			} else {
+				quote! { true }
+			};
+
+			for f2 in &tag_fields[i + 1..] {
+				let name2 = &f2.name;
+				let tag_type2 = &f2.tag_type;
+				let exists2 = if f2.needs_option {
+					quote! { self.#name2.is_some() }
+				} else {
+					quote! { true }
+				};
+
+				pairs.push(quote! {
+					(
+						::lofty::tag::TagType::#tag_type1.conflicts_with(::lofty::tag::TagType::#tag_type2)
+						&& #exists1
+						&& #exists2
+					).then_some((::lofty::tag::TagType::#tag_type1, ::lofty::tag::TagType::#tag_type2))
+				});
+			}
+		}
+
+		quote! {
+			[#( #pairs ),*].into_iter().flatten()
+		}
+	};
 
 	let properties_field_ty = &properties_field.ty;
 	let assert_properties_impl = quote_spanned! {properties_field_ty.span()=>
@@ -462,17 +483,12 @@ fn generate_audiofile_impl(file: &LoftyFile) -> syn::Result<proc_macro2::TokenSt
 				&self.properties
 			}
 
-			#[allow(unreachable_code)]
-			fn contains_tag(&self) -> bool {
-				#( #tag_exists )||*
+			fn tag_types(&self) -> impl ::core::iter::Iterator<Item = ::lofty::tag::TagType> + ::core::clone::Clone {
+				#tag_types_body
 			}
 
-			#[allow(unreachable_code, unused_variables)]
-			fn contains_tag_type(&self, tag_type: ::lofty::tag::TagType) -> bool {
-				match tag_type {
-					#( ::lofty::tag::TagType::#tag_type => { #tag_exists_2 } ),*
-					_ => false
-				}
+			fn conflicts(&self) -> impl ::core::iter::Iterator<Item = (::lofty::tag::TagType, ::lofty::tag::TagType)> {
+				#conflicts_body
 			}
 		}
 	};
@@ -508,6 +524,10 @@ fn get_save_to_body(
 		}
 	});
 	quote! {
+		if let Some((first, second)) = self.conflicts().next() {
+			return Err(::lofty::error::ConflictingTagError(first, second).into());
+		}
+
 		#(#tag_field_save)*
 		Ok(())
 	}

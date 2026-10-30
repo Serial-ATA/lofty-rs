@@ -113,6 +113,7 @@ macro_rules! impl_accessor {
 #[derive(PartialEq, Eq, Debug, Clone)]
 #[tag(
 	description = "An `ID3v2` tag",
+	tag_type = Id3v2,
 	supported_formats(Aac, Aiff, Mpeg, Wav, read_only(Ape, Flac, Mpc))
 )]
 pub struct Id3v2Tag {

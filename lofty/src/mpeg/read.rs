@@ -5,7 +5,7 @@ use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
+use crate::id3::{FindId3v2Config, ID3FindResults, Lyrics3Tag, find_id3v1, find_lyrics3};
 use crate::io::SeekStreamLen;
 use crate::mpeg::error::MpegParseError;
 use crate::mpeg::header::HEADER_MASK;
@@ -166,7 +166,18 @@ where
 		file.id3v1_tag = content;
 	}
 
-	let _ = find_lyrics3v2(reader)?;
+	if let Some(ID3FindResults {
+		header: _,
+		content,
+		range: _,
+	}) = find_lyrics3(reader, true, parse_options)?
+		&& let Some(tag) = content
+	{
+		match tag {
+			Lyrics3Tag::V1(tag) => file.lyrics3_tag = Some(tag),
+			Lyrics3Tag::V2(tag) => file.lyrics3v2_tag = Some(tag),
+		}
+	}
 
 	reader.seek(SeekFrom::Current(-32))?;
 

@@ -128,7 +128,11 @@ macro_rules! impl_flag_accessors {
 ///
 /// [`Picture`]s will also be preserved, but their [`PictureType`] will be overwritten with [`PictureType::Other`].
 #[derive(Default, PartialEq, Debug, Clone)]
-#[tag(description = "An MP4 ilst atom", supported_formats(Mp4))]
+#[tag(
+	description = "An MP4 ilst atom",
+	tag_type = Mp4Ilst,
+	supported_formats(Mp4)
+)]
 pub struct Ilst {
 	pub(crate) atoms: Vec<Atom<'static>>,
 }

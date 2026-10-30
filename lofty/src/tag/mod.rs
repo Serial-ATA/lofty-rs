@@ -730,8 +730,8 @@ macro_rules! companion_tags {
 		const _: () = {
 			match TagType::Ape {
 				$(TagType::$tag_ty => {}),*
-				// Special case, ID3v1 has no companion
-				TagType::Id3v1 => {},
+				// Special case, ID3v1 and Lyrics3 have no companion
+				TagType::Id3v1 | TagType::Lyrics3 => {},
 				// TODO
 				TagType::AiffText => {},
 			}
@@ -751,6 +751,14 @@ macro_rules! companion_tags {
 						_ => None,
 					}
 				}
+
+				#[allow(unused)]
+				pub(crate) fn [<$tag_ty:snake _ref>](&self) -> Option<&$concrete_ty> {
+					match self {
+						Self::$tag_ty(tag) => Some(tag),
+						_ => None,
+					}
+				}
 				)*
 			}
 		}
@@ -760,6 +768,7 @@ macro_rules! companion_tags {
 companion_tags! {
 	Ape => crate::ape::tag::ApeTag,
 	Id3v2 => crate::id3::v2::Id3v2Tag,
+	Lyrics3v2 => crate::id3::lyrics3::v2::Lyrics3v2Tag,
 	Mp4Ilst => crate::mp4::ilst::Ilst,
 	VorbisComments => crate::ogg::tag::VorbisComments,
 	RiffInfo => crate::iff::wav::tag::RiffInfoList,

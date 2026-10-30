@@ -91,6 +91,7 @@ macro_rules! impl_accessor {
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
 #[tag(
 	description = "An `APE` tag",
+	tag_type = Ape,
 	supported_formats(Ape, Mpeg, Mpc, WavPack)
 )]
 pub struct ApeTag {

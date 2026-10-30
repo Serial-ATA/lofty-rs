@@ -2,7 +2,7 @@ use super::WavPackFile;
 use super::properties::WavPackProperties;
 use crate::config::ParseOptions;
 use crate::error::{SizeMismatchError, TagParseError};
-use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3v2};
+use crate::id3::{ID3FindResults, find_id3v1};
 use crate::wavpack::error::WavPackParseError;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -30,20 +30,6 @@ where
 	{
 		id3v1_tag = content;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
-			return Err(SizeMismatchError.into());
-		};
-
-		stream_length = new_stream_length;
-	}
-
-	// Next, check for a Lyrics3v2 tag, and skip over it, as it's no use to us
-	if let Some(ID3FindResults {
-		header: _,
-		content: size,
-		range: _,
-	}) = find_lyrics3v2(reader)?
-	{
-		let Some(new_stream_length) = stream_length.checked_sub(u64::from(size)) else {
 			return Err(SizeMismatchError.into());
 		};
 

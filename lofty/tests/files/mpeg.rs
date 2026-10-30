@@ -1,6 +1,8 @@
-use crate::util::{named_temp_file, temp_file};
+use crate::util::{assert_error_message, named_temp_file, temp_file};
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{BoundTaggedFile, FileType};
+use lofty::id3::lyrics3::v1::Lyrics3Tag;
+use lofty::id3::lyrics3::v2::Lyrics3v2Tag;
 use lofty::id3::v2::{Frame, FrameId, Id3v2Tag, KeyValueFrame};
 use lofty::mpeg::MpegFile;
 use lofty::prelude::*;
@@ -421,6 +423,16 @@ fn remove_id3v1() {
 }
 
 #[test_log::test]
+fn remove_lyrics3() {
+	crate::util::remove_tag_test("tests/files/assets/lyrics3.mp3", TagType::Lyrics3);
+}
+
+#[test_log::test]
+fn remove_lyrics3v2() {
+	crate::util::remove_tag_test("tests/files/assets/lyrics3v2.mp3", TagType::Lyrics3v2);
+}
+
+#[test_log::test]
 fn remove_ape() {
 	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.mp3", TagType::Ape);
 }
@@ -481,4 +493,122 @@ fn read_no_properties() {
 #[test_log::test]
 fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/full_test.mp3", None);
+}
+
+#[test_log::test]
+fn lyrics3_requires_id3v1() {
+	let mut lyrics3 = Lyrics3Tag::default();
+	lyrics3.lyrics = String::from("[00:00]Serial-ATA was here");
+
+	// Has an ID3v1 tag, should work
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
+	lyrics3.save_to(&mut file, WriteOptions::new()).unwrap();
+
+	file.rewind().unwrap();
+	TagType::Id3v1
+		.remove_from(&mut file, WriteOptions::new())
+		.unwrap();
+
+	file.rewind().unwrap();
+	let err = lyrics3.save_to(&mut file, WriteOptions::new()).unwrap_err();
+	assert_error_message(&err, "the destination file must contain an ID3v1 tag");
+}
+
+#[test_log::test]
+fn stripping_id3v1_removes_lyrics3() {
+	// Lyrics3 is an extension of ID3v1, and the spec mandates that it cannot exist alone
+	let mut lyrics3 = Lyrics3Tag::default();
+	lyrics3.lyrics = String::from("[00:00]Serial-ATA was here");
+
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
+	lyrics3.save_to(&mut file, WriteOptions::new()).unwrap();
+
+	file.rewind().unwrap();
+	TagType::Id3v1
+		.remove_from(&mut file, WriteOptions::new())
+		.unwrap();
+
+	file.rewind().unwrap();
+	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert!(f.lyrics3().is_none());
+	assert!(f.id3v1().is_none());
+}
+
+#[test_log::test]
+fn lyrics3v2_requires_id3v1() {
+	let mut lyrics3v2 = Lyrics3v2Tag::default();
+	lyrics3v2.lyrics = Some(String::from("[00:00]Serial-ATA was here"));
+
+	// Has an ID3v1 tag, should work
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
+	lyrics3v2.save_to(&mut file, WriteOptions::new()).unwrap();
+
+	file.rewind().unwrap();
+	TagType::Id3v1
+		.remove_from(&mut file, WriteOptions::new())
+		.unwrap();
+
+	file.rewind().unwrap();
+	let err = lyrics3v2
+		.save_to(&mut file, WriteOptions::new())
+		.unwrap_err();
+	assert_error_message(&err, "the destination file must contain an ID3v1 tag");
+}
+
+#[test_log::test]
+fn stripping_id3v1_removes_lyrics3v2() {
+	let mut lyrics3v2 = Lyrics3v2Tag::default();
+	lyrics3v2.lyrics = Some(String::from("[00:00]Serial-ATA was here"));
+
+	let mut file = temp_file("tests/files/assets/minimal/full_test.mp3");
+	lyrics3v2.save_to(&mut file, WriteOptions::new()).unwrap();
+
+	file.rewind().unwrap();
+	TagType::Id3v1
+		.remove_from(&mut file, WriteOptions::new())
+		.unwrap();
+
+	file.rewind().unwrap();
+	let f = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert!(f.lyrics3v2().is_none());
+	assert!(f.id3v1().is_none());
+}
+
+#[test_log::test]
+fn lyrics3_tags_conflict() {
+	// Lyrics3 and Lyrics3v2 cannot co-exist
+
+	// Try saving Lyrics3 to a file with Lyrics3v2
+	let mut file = temp_file("tests/files/assets/lyrics3v2.mp3");
+	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	assert!(mpeg_file.lyrics3v2().is_some());
+	assert!(mpeg_file.lyrics3().is_none());
+
+	let mut lyrics3 = Lyrics3Tag::new();
+	lyrics3.lyrics = String::from("[00:00]Serial-ATA was here");
+
+	mpeg_file.set_lyrics3(lyrics3);
+	let err = mpeg_file
+		.save_to(&mut file, WriteOptions::new())
+		.unwrap_err();
+	assert_error_message(&err, "tag type `Lyrics3` conflicts with `Lyrics3v2`");
+
+	// Now the other way around
+	let mut file = temp_file("tests/files/assets/lyrics3.mp3");
+	let mut mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	assert!(mpeg_file.lyrics3().is_some());
+	assert!(mpeg_file.lyrics3v2().is_none());
+
+	let mut lyrics3v2 = Lyrics3v2Tag::new();
+	lyrics3v2.lyrics = Some(String::from("[00:00]Serial-ATA was here"));
+
+	mpeg_file.set_lyrics3v2(lyrics3v2);
+	let err = mpeg_file
+		.save_to(&mut file, WriteOptions::new())
+		.unwrap_err();
+	assert_error_message(&err, "tag type `Lyrics3` conflicts with `Lyrics3v2`");
 }

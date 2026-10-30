@@ -5,7 +5,7 @@ use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::config::ParseOptions;
 use crate::error::{SizeMismatchError, TagParseError};
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2};
 use crate::musepack::error::MpcParseError;
 use crate::util::io::SeekStreamLen;
 
@@ -68,19 +68,6 @@ where
 	{
 		file.id3v1_tag = content;
 		let Some(new_stream_length) = stream_length.checked_sub(128) else {
-			return Err(SizeMismatchError.into());
-		};
-
-		stream_length = new_stream_length;
-	}
-
-	if let Some(ID3FindResults {
-		header: _,
-		content: size,
-		range: _,
-	}) = find_lyrics3v2(reader)?
-	{
-		let Some(new_stream_length) = stream_length.checked_sub(u64::from(size)) else {
 			return Err(SizeMismatchError.into());
 		};
 

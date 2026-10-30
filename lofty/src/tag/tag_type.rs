@@ -108,6 +108,10 @@ pub enum TagType {
 	Id3v1,
 	/// This covers all ID3v2 versions since they all get upgraded to ID3v2.4
 	Id3v2,
+	/// Represents a Lyrics3 (v1) tag
+	Lyrics3,
+	/// Represents a Lyrics3 (v2) tag
+	Lyrics3v2,
 	/// Represents an MP4 ilst atom
 	Mp4Ilst,
 	/// Represents vorbis comments
@@ -126,6 +130,8 @@ impl TagType {
 			TagType::Ape
 			| TagType::Id3v1
 			| TagType::Id3v2
+			| TagType::Lyrics3
+			| TagType::Lyrics3v2
 			| TagType::Mp4Ilst
 			| TagType::VorbisComments
 			| TagType::RiffInfo
@@ -136,12 +142,40 @@ impl TagType {
 			TagType::Ape,
 			TagType::Id3v1,
 			TagType::Id3v2,
+			TagType::Lyrics3,
+			TagType::Lyrics3v2,
 			TagType::Mp4Ilst,
 			TagType::VorbisComments,
 			TagType::RiffInfo,
 			TagType::AiffText,
 		]
 	};
+
+	/// Whether this [`TagType`] conflicts with `other`
+	///
+	/// Conflicting tag types cannot be written to the same file. One will need to be removed.
+	///
+	/// # Examples
+	///
+	/// ```rust
+	/// use lofty::tag::TagType;
+	///
+	/// assert!(TagType::Lyrics3v2.conflicts_with(TagType::Lyrics3));
+	/// assert!(!TagType::Ape.conflicts_with(TagType::Id3v2));
+	/// ```
+	pub const fn conflicts_with(self, other: Self) -> bool {
+		match self {
+			TagType::Ape => crate::ape::ApeTag::conflicts_with(other),
+			TagType::Id3v1 => crate::id3::v1::Id3v1Tag::conflicts_with(other),
+			TagType::Id3v2 => crate::id3::v2::Id3v2Tag::conflicts_with(other),
+			TagType::Lyrics3 => crate::id3::lyrics3::v1::Lyrics3Tag::conflicts_with(other),
+			TagType::Lyrics3v2 => crate::id3::lyrics3::v2::Lyrics3v2Tag::conflicts_with(other),
+			TagType::Mp4Ilst => crate::mp4::Ilst::conflicts_with(other),
+			TagType::VorbisComments => crate::ogg::tag::VorbisComments::conflicts_with(other),
+			TagType::RiffInfo => crate::iff::wav::RiffInfoList::conflicts_with(other),
+			TagType::AiffText => crate::iff::aiff::AiffTextChunks::conflicts_with(other),
+		}
+	}
 
 	/// Remove a tag from a [`Path`]
 	///

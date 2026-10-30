@@ -257,12 +257,8 @@ rusty_fork_test! {
 				unimplemented!()
 			}
 
-			fn contains_tag(&self) -> bool {
-				unimplemented!()
-			}
-
-			fn contains_tag_type(&self, _: TagType) -> bool {
-				unimplemented!()
+			fn tag_types(&self) -> impl Iterator<Item = TagType> + Clone {
+				std::iter::empty()
 			}
 		}
 

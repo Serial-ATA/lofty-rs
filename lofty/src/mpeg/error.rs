@@ -14,7 +14,6 @@ pub struct MpegParseError {
 	#[error(from(
 		std::io::Error,
 		crate::error::TagParseError,
-		crate::id3::Lyrics3v2ParseError,
 		crate::error::FakeTagError,
 		crate::error::SizeMismatchError,
 	))]

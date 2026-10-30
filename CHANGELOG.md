@@ -8,8 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Lyrics3**: Added support for Lyrics3 (v1 and v2) tags ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+    - These tags were previously skipped
 - **WriteOptions**: `WriteOptions::implicit_truncation()` to prevent automatic text field truncation
                     when exceeding the limits of a tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/766))
+- **AudioFile**:
+  - `AudioFile::tag_types()` to get all `TagType`s present in the file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+  - `AudioFile::conflicts()` to get all conflicting `TagType`s present in the file ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+- **TagType**: `TagType::conflicts_with()` to check if a `TagType` conflicts with another ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
+  - Conflicting tags cannot be written to a file, and will require manual intervention
 
 ### Changed
 
@@ -19,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **ID3v1**: Attempting to remove an ID3v1 tag from a file that doesn't contain one will no longer
              write an empty tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/765))
+
+### Removed
+
+- **AudioFile**: `AudioFile::{contains_tag, contains_tag_type}()`, use `AudioFile::tag_types()` instead ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
 
 ## [0.25.5] - 2026-10-25
 

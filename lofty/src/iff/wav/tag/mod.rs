@@ -59,7 +59,11 @@ macro_rules! impl_accessor {
 ///
 /// Pictures will be discarded, as they aren't supported in this format.
 #[derive(Default, Debug, PartialEq, Eq, Clone)]
-#[tag(description = "A RIFF INFO LIST", supported_formats(Wav))]
+#[tag(
+	description = "A RIFF INFO LIST",
+	tag_type = RiffInfo,
+	supported_formats(Wav)
+)]
 pub struct RiffInfoList {
 	/// A collection of chunk-value pairs
 	pub(crate) items: Vec<(String, String)>,

@@ -1,7 +1,6 @@
 //! Contains the errors that can arise within Lofty
 
 use crate::file::FileType;
-use crate::id3::Lyrics3v2ParseError;
 use crate::tag::TagType;
 
 use std::error::Error;
@@ -126,15 +125,6 @@ impl From<SizeMismatchError> for FileParseError {
 	}
 }
 
-impl From<Lyrics3v2ParseError> for FileParseError {
-	fn from(input: Lyrics3v2ParseError) -> Self {
-		Self {
-			ty: None,
-			source: Box::new(input),
-		}
-	}
-}
-
 /// An error that arises while encoding a file
 pub struct FileEncodingError {
 	format: Option<FileType>,
@@ -189,6 +179,15 @@ impl From<core::convert::Infallible> for FileEncodingError {
 
 impl From<std::io::Error> for FileEncodingError {
 	fn from(input: std::io::Error) -> Self {
+		Self {
+			format: None,
+			source: Box::new(input),
+		}
+	}
+}
+
+impl From<ConflictingTagError> for FileEncodingError {
+	fn from(input: ConflictingTagError) -> Self {
 		Self {
 			format: None,
 			source: Box::new(input),
@@ -268,6 +267,20 @@ impl From<AllocationError> for FileEncodingError {
 	}
 }
 
+/// Attempted to save conflicting tag types to the same file
+///
+/// See [`TagType::conflicts_with()`]
+#[derive(Debug)]
+pub struct ConflictingTagError(pub TagType, pub TagType);
+
+impl core::fmt::Display for ConflictingTagError {
+	fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+		write!(f, "tag type `{:?}` conflicts with `{:?}`", self.0, self.1)
+	}
+}
+
+impl core::error::Error for ConflictingTagError {}
+
 /// An error that arises while parsing a tag
 pub struct TagParseError {
 	ty: Option<TagType>,
@@ -283,6 +296,12 @@ impl TagParseError {
 			ty: Some(ty),
 			source,
 		}
+	}
+
+	pub(crate) fn from_unknown_ty(
+		source: Box<dyn core::error::Error + Send + Sync + 'static>,
+	) -> Self {
+		Self { ty: None, source }
 	}
 }
 
