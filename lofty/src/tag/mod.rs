@@ -732,8 +732,6 @@ macro_rules! companion_tags {
 				$(TagType::$tag_ty => {}),*
 				// Special case, ID3v1 has no companion
 				TagType::Id3v1 => {},
-				// TODO
-				TagType::AiffText => {},
 			}
 		};
 
@@ -763,6 +761,5 @@ companion_tags! {
 	Mp4Ilst => crate::mp4::ilst::Ilst,
 	VorbisComments => crate::ogg::tag::VorbisComments,
 	RiffInfo => crate::iff::wav::tag::RiffInfoList,
-	// TODO: Retain AIFF text comments
-	// AiffText => crate::iff::aiff::tag::AiffTextChunks,
+	AiffText => crate::iff::aiff::tag::AiffTextChunks,
 }

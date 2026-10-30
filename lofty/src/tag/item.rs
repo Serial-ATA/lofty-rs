@@ -90,7 +90,7 @@ gen_map!(
 	"NAME"          => TrackTitle,
 	"AUTH"          => TrackArtist,
 	"(c) "          => CopyrightMessage,
-	"ANNO" | "COMT" => Comment
+	"ANNO"          => Comment
 );
 
 gen_map!(

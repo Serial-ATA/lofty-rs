@@ -1,13 +1,14 @@
 pub(super) mod error;
 
-use crate::config::{ParseOptions, WriteOptions};
+use crate::config::{ParseOptions, WriteOptions, global_options};
 use crate::error::{FileEncodingError, FileParseError, TagEncodingError, TooMuchDataError};
 use crate::iff::aiff::error::AiffParseError;
 use crate::iff::aiff::tag::error::AiffTextChunksEncodingError;
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::io::{Length, Truncate, VerifiedFile};
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
+	TagWriteExt,
 };
 use crate::util::io::FileLike;
 
@@ -180,7 +181,7 @@ impl TagExt for AiffTextChunks {
 			ItemKey::TrackTitle => self.name.is_some(),
 			ItemKey::TrackArtist => self.author.is_some(),
 			ItemKey::CopyrightMessage => self.copyright.is_some(),
-			ItemKey::Comment => self.annotations.is_some() || self.comments.is_some(),
+			ItemKey::Comment => self.annotations.is_some(),
 			_ => false,
 		}
 	}
@@ -240,51 +241,70 @@ impl TagWriteExt for AiffTextChunks {
 }
 
 #[derive(Debug, Clone, Default)]
-pub struct SplitTagRemainder;
+pub struct SplitTagRemainder(AiffTextChunks);
 
 impl SplitTag for AiffTextChunks {
 	type Remainder = SplitTagRemainder;
 
-	fn split_tag(self) -> (Self::Remainder, Tag) {
-		(SplitTagRemainder, self.into())
-	}
-}
+	fn split_tag(mut self) -> (Self::Remainder, Tag) {
+		let mut tag = Tag::new(TagType::AiffText);
 
-impl MergeTag for SplitTagRemainder {
-	type Merged = AiffTextChunks;
-
-	fn merge_tag(self, tag: Tag) -> Self::Merged {
-		tag.into()
-	}
-}
-
-impl From<AiffTextChunks> for Tag {
-	fn from(input: AiffTextChunks) -> Self {
-		let mut tag = Self::new(TagType::AiffText);
-
-		let push_item = |field: Option<String>, item_key: ItemKey, tag: &mut Tag| {
-			if let Some(text) = field {
+		let push_item = |field: &mut Option<String>, item_key: ItemKey, tag: &mut Tag| {
+			if let Some(text) = field.take() {
 				tag.items
 					.push(TagItem::new(item_key, ItemValue::Text(text)))
 			}
 		};
 
-		push_item(input.name, ItemKey::TrackTitle, &mut tag);
-		push_item(input.author, ItemKey::TrackArtist, &mut tag);
-		push_item(input.copyright, ItemKey::CopyrightMessage, &mut tag);
+		push_item(&mut self.name, ItemKey::TrackTitle, &mut tag);
+		push_item(&mut self.author, ItemKey::TrackArtist, &mut tag);
+		push_item(&mut self.copyright, ItemKey::CopyrightMessage, &mut tag);
 
-		if let Some(annotations) = input.annotations {
+		if let Some(annotations) = self.annotations.take() {
 			for anno in annotations {
 				tag.items
 					.push(TagItem::new(ItemKey::Comment, ItemValue::Text(anno)));
 			}
 		}
 
-		if let Some(comments) = input.comments {
-			for comt in comments {
-				tag.items
-					.push(TagItem::new(ItemKey::Comment, ItemValue::Text(comt.text)));
+		(SplitTagRemainder(self), tag)
+	}
+}
+
+impl MergeTag for SplitTagRemainder {
+	type Merged = AiffTextChunks;
+
+	fn merge_tag(self, mut tag: Tag) -> Self::Merged {
+		let SplitTagRemainder(mut merged) = self;
+
+		merged.name = merged
+			.name
+			.or_else(|| tag.take_strings(ItemKey::TrackTitle).next());
+		merged.author = merged
+			.author
+			.or_else(|| tag.take_strings(ItemKey::TrackArtist).next());
+		merged.copyright = merged
+			.copyright
+			.or_else(|| tag.take_strings(ItemKey::CopyrightMessage).next());
+		merged.annotations = merged.annotations.or_else(|| {
+			let annotations = tag.take_strings(ItemKey::Comment).collect::<Vec<_>>();
+			if annotations.is_empty() {
+				None
+			} else {
+				Some(annotations)
 			}
+		});
+
+		merged
+	}
+}
+
+impl From<AiffTextChunks> for Tag {
+	fn from(input: AiffTextChunks) -> Self {
+		let (remainder, mut tag) = input.split_tag();
+
+		if unsafe { global_options().preserve_format_specific_items } && !remainder.0.is_empty() {
+			tag.companion_tag = Some(CompanionTag::AiffText(remainder.0));
 		}
 
 		tag
@@ -293,18 +313,13 @@ impl From<AiffTextChunks> for Tag {
 
 impl From<Tag> for AiffTextChunks {
 	fn from(mut input: Tag) -> Self {
-		let name = input.take_strings(ItemKey::TrackTitle).next();
-		let author = input.take_strings(ItemKey::TrackArtist).next();
-		let copyright = input.take_strings(ItemKey::CopyrightMessage).next();
-		let annotations = input.take_strings(ItemKey::Comment).collect::<Vec<_>>();
-
-		Self {
-			name,
-			author,
-			copyright,
-			annotations: (!annotations.is_empty()).then_some(annotations),
-			comments: None,
+		if unsafe { global_options().preserve_format_specific_items }
+			&& let Some(companion) = input.companion_tag.take().and_then(CompanionTag::aiff_text)
+		{
+			return SplitTagRemainder(companion).merge_tag(input);
 		}
+
+		SplitTagRemainder::default().merge_tag(input)
 	}
 }
 
@@ -788,8 +803,6 @@ mod tests {
 		let mut comments = tag.get_strings(ItemKey::Comment);
 		assert_eq!(comments.next(), Some("Qux annotation"));
 		assert_eq!(comments.next(), Some("Quux annotation"));
-		assert_eq!(comments.next(), Some("Quuz comment"));
-		assert_eq!(comments.next(), Some("Corge comment"));
 		assert!(comments.next().is_none());
 	}
 
@@ -821,6 +834,34 @@ mod tests {
 			])
 		);
 		assert!(aiff_text.comments.is_none());
+	}
+
+	#[test_log::test]
+	fn aiff_text_special_items_roundtrip() {
+		let expected_comments = vec![
+			Comment {
+				timestamp: 10,
+				marker_id: 20,
+				text: String::from("foo"),
+			},
+			Comment {
+				timestamp: 30,
+				marker_id: 40,
+				text: String::from("bar"),
+			},
+		];
+
+		let aiff_text = AiffTextChunks {
+			comments: Some(expected_comments.clone()),
+			..AiffTextChunks::default()
+		};
+		assert_eq!(aiff_text.len(), 2);
+
+		let tag: Tag = aiff_text.into();
+		assert_eq!(tag.len(), 0);
+
+		let aiff_text: AiffTextChunks = tag.into();
+		assert_eq!(aiff_text.comments, Some(expected_comments));
 	}
 
 	#[test_log::test]
