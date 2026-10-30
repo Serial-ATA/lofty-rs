@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **FileLike**: `FileLike::splice()` now accepts a generic `RangeBounds<u64>` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/764))
+- **AiffTextChunks**: The `AiffTextChunks` -> `Tag` conversion will no longer convert `COMT` chunks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/742))
 
 ### Fixed
 
