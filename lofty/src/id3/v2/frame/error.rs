@@ -1,4 +1,5 @@
-use crate::error::{TextEncodingError, TooMuchDataError};
+use crate::error::{TagEncodingError, TagParseError, TextEncodingError, TooMuchDataError};
+use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::id3::v2::util::synchsafe::SynchOverflowError;
 use crate::id3::v2::{FrameId, Id3v2Version};
 use crate::tag::items::timestamp::TimestampParseError;
@@ -150,6 +151,12 @@ impl From<TimestampParseError> for FrameParseError {
 	}
 }
 
+impl From<FrameParseError> for TagParseError {
+	fn from(input: FrameParseError) -> Self {
+		Id3v2ParseError::from(input).into()
+	}
+}
+
 /// Failed to encode an ID3v2 frame
 pub struct FrameEncodingError {
 	id: Option<FrameId<'static>>,
@@ -272,5 +279,11 @@ impl core::error::Error for FrameEncodingError {
 	#[allow(trivial_casts)]
 	fn source(&self) -> Option<&(dyn core::error::Error + 'static)> {
 		self.source.as_ref().map(|e| &**e as _)
+	}
+}
+
+impl From<FrameEncodingError> for TagEncodingError {
+	fn from(input: FrameEncodingError) -> Self {
+		Id3v2EncodingError::from(input).into()
 	}
 }
