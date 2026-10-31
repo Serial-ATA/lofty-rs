@@ -301,7 +301,7 @@ impl<R: Read + Seek> Chunk<'_, R> {
 
 		let reader = &mut &*content;
 
-		let header = Id3v2Header::parse(reader)?;
+		let header = Id3v2Header::parse(reader, parse_options)?;
 		let id3v2 = parse_id3v2(reader, header, parse_options)?;
 
 		Ok(Some(id3v2))

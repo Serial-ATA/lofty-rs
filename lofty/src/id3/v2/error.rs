@@ -66,6 +66,8 @@ pub enum Id3v2HeaderError {
 	V2Compression,
 	/// Arises when an extended header has an invalid size (must be >= 6 bytes and less than the total tag size)
 	BadExtendedHeaderSize,
+	/// Arises when an extended header contains reserved flags
+	BadExtendedHeaderFlags,
 }
 
 impl core::fmt::Display for Id3v2HeaderError {
@@ -79,6 +81,9 @@ impl core::fmt::Display for Id3v2HeaderError {
 			Id3v2HeaderError::V2Compression => write!(f, "encountered a compressed ID3v2.2 tag"),
 			Id3v2HeaderError::BadExtendedHeaderSize => {
 				write!(f, "encountered an extended header with an invalid size")
+			},
+			Id3v2HeaderError::BadExtendedHeaderFlags => {
+				write!(f, "encountered an extended header with a invalid flags")
 			},
 		}
 	}
@@ -113,6 +118,7 @@ impl From<Id3v2ParseError> for TagParseError {
 pub(crate) struct Id3v2EncodingError {
 	#[error(from(
 		std::io::Error,
+		crate::error::TooMuchDataError,
 		super::frame::error::FrameEncodingError,
 		crate::id3::v2::util::synchsafe::SynchOverflowError,
 		crate::util::alloc::AllocationError,

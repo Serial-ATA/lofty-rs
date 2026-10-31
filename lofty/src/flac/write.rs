@@ -2,7 +2,7 @@ use super::block::{BLOCK_ID_PADDING, BLOCK_ID_PICTURE, BLOCK_ID_VORBIS_COMMENTS,
 use super::read::verify_flac;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, SizeMismatchError, TagParseError};
-use crate::id3::{FindId3v2Config, find_id3v2};
+use crate::id3::find_id3v2;
 use crate::io::VerifiedFile;
 use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
@@ -59,7 +59,7 @@ where
 	file.rewind()?;
 
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(&mut file, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
+	find_id3v2(&mut file, false, write_options.parse_options).map_err(TagParseError::from)?;
 
 	let mut stream_info = verify_flac(&mut file).map_err(FileParseError::from)?;
 

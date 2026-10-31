@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Some `ItemKey`s (e.g., `ItemKey::Isrc`) were only producing frames with a single value, even if the
       source `Tag` contained multiple.
   - `FrameParseError` and `FrameEncodingError` can now be converted into `TagParseError` and `TagEncodingError`, respectively ([issue](https://github.com/Serial-ATA/lofty-rs/issues/728)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/776))
+  - Fixed parsing and encoding of ID3v2.3 extended headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/761)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/777))
 
 ## [0.25.5] - 2026-10-25
 

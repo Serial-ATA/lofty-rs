@@ -6,7 +6,7 @@ use crate::error::{NotEnoughDataError, SizeMismatchError, TagParseError};
 use crate::flac::block::{BLOCK_ID_PICTURE, BLOCK_ID_STREAMINFO, BLOCK_ID_VORBIS_COMMENTS};
 use crate::flac::error::FlacParseError;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v2};
+use crate::id3::{ID3FindResults, find_id3v2};
 use crate::ogg::tag::read::read_comments;
 use crate::picture::Picture;
 
@@ -51,18 +51,12 @@ where
 		properties: FlacProperties::default(),
 	};
 
-	let find_id3v2_config = if parse_options.read_tags {
-		FindId3v2Config::READ_TAG
-	} else {
-		FindId3v2Config::NO_READ_TAG
-	};
-
 	// It is possible for a FLAC file to contain an ID3v2 tag
 	if let Some(ID3FindResults {
 		header,
 		content: Some(content),
 		range: _,
-	}) = find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
+	}) = find_id3v2(data, parse_options.read_tags, parse_options).map_err(TagParseError::from)?
 	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the FLAC file!");
 

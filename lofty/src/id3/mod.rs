@@ -8,7 +8,7 @@
 pub mod v1;
 pub mod v2;
 
-use crate::config::ParsingMode;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::error::TextDecodingError;
 use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::Id3v2ParseError;
@@ -161,31 +161,14 @@ where
 	}))
 }
 
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct FindId3v2Config {
-	pub(crate) read: bool,
-	pub(crate) allowed_junk_window: Option<u64>,
-}
-
-impl FindId3v2Config {
-	pub(crate) const NO_READ_TAG: Self = Self {
-		read: false,
-		allowed_junk_window: None,
-	};
-
-	pub(crate) const READ_TAG: Self = Self {
-		read: true,
-		allowed_junk_window: None,
-	};
-}
-
 /// Attempt to find an ID3v2 tag header from the current position in the stream
 ///
 /// If a tag is found, the position of `reader` will be at the end of the tag. Otherwise,
 /// the position will be unchanged.
 pub(crate) fn find_id3v2<R>(
 	reader: &mut R,
-	config: FindId3v2Config,
+	read: bool,
+	parse_options: ParseOptions,
 ) -> Result<Option<ID3FindResults<Id3v2Header, Option<Vec<u8>>>>, Id3v2ParseError>
 where
 	R: Read + Seek,
@@ -195,26 +178,26 @@ where
 
 	let mut id3v2 = None;
 
-	if let Some(junk_window) = config.allowed_junk_window {
-		let mut id3v2_search_window = reader.by_ref().take(junk_window);
+	let mut id3v2_search_window = reader.by_ref().take(parse_options.max_junk_bytes as u64);
 
-		let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? else {
-			reader.seek(SeekFrom::Start(start))?;
-			return Ok(None);
-		};
+	let Some(id3v2_offset) = find_id3v2_in_junk(&mut id3v2_search_window)? else {
+		reader.seek(SeekFrom::Start(start))?;
+		return Ok(None);
+	};
 
+	if id3v2_offset > 0 {
 		log::warn!(
 			"Found a potential ID3v2 tag preceded by junk data, offset: {}",
 			id3v2_offset
 		);
-
-		reader.seek(SeekFrom::Current(-3))?;
 	}
 
-	if let Ok(id3v2_header) = Id3v2Header::parse(reader) {
+	reader.seek(SeekFrom::Current(-3))?;
+
+	if let Ok(id3v2_header) = Id3v2Header::parse(reader, parse_options) {
 		log::debug!("Found an ID3v2 tag, parsing");
 
-		if config.read {
+		if read {
 			let mut tag = try_vec![0; id3v2_header.size as usize]?;
 			reader.read_exact(&mut tag)?;
 
@@ -271,15 +254,17 @@ mod tests {
 	#[test_log::test]
 	fn find_id3v2_seek_back() {
 		let mut data = [0; 32];
+		// Bury the tag in junk
 		data[20..23].copy_from_slice(b"ID3");
 
 		let mut cursor = Cursor::new(data);
 		cursor.seek(SeekFrom::Start(5)).unwrap();
 
-		let mut config = FindId3v2Config::READ_TAG;
-		config.allowed_junk_window = Some(ParseOptions::DEFAULT_MAX_JUNK_BYTES as u64);
-
-		assert!(find_id3v2(&mut cursor, config).unwrap().is_none());
+		assert!(
+			find_id3v2(&mut cursor, true, ParseOptions::new())
+				.unwrap()
+				.is_none()
+		);
 		assert_eq!(
 			cursor.position(),
 			5,

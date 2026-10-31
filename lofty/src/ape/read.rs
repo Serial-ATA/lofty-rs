@@ -8,7 +8,7 @@ use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v1::tag::Id3v1Tag;
 use crate::id3::v2::read::parse_id3v2;
 use crate::id3::v2::tag::Id3v2Tag;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
 
 use std::io::{Read, Seek, SeekFrom};
 
@@ -30,18 +30,12 @@ where
 	let mut id3v1_tag: Option<Id3v1Tag> = None;
 	let mut ape_tag: Option<ApeTag> = None;
 
-	let find_id3v2_config = if parse_options.read_tags {
-		FindId3v2Config::READ_TAG
-	} else {
-		FindId3v2Config::NO_READ_TAG
-	};
-
 	// ID3v2 tags are unsupported in APE files, but still possible
 	if let Some(ID3FindResults {
 		header,
 		content,
 		range: _,
-	}) = find_id3v2(data, find_id3v2_config).map_err(TagParseError::from)?
+	}) = find_id3v2(data, parse_options.read_tags, parse_options).map_err(TagParseError::from)?
 	{
 		log::warn!("Encountered an ID3v2 tag. This tag cannot be rewritten to the APE file!");
 

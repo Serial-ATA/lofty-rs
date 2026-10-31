@@ -9,7 +9,7 @@ use crate::error::{
 	FileEncodingError, FileParseError, SizeMismatchError, TagEncodingError, TagParseError,
 	TooMuchDataError,
 };
-use crate::id3::{FindId3v2Config, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::io::VerifiedFile;
 use crate::tag::item::ItemValueRef;
 use crate::util::io::FileLike;
@@ -65,7 +65,7 @@ where
 	F: FileLike,
 {
 	// We don't actually need the ID3v2 tag, but reading it will seek to the end of it if it exists
-	find_id3v2(file, FindId3v2Config::NO_READ_TAG).map_err(TagParseError::from)?;
+	find_id3v2(file, false, write_options.parse_options).map_err(TagParseError::from)?;
 
 	let mut ape_preamble = [0; 8];
 	file.read_exact(&mut ape_preamble)?;
