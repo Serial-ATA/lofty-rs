@@ -238,6 +238,13 @@ impl ChapterTableOfContentsFrame<'static> {
 			return Err(FrameParseError::unsupported_version(version));
 		}
 
+		if parse_options.container_depth >= ParseOptions::MAX_CONTAINER_DEPTH {
+			return Err(FrameParseError::container_nesting_too_deep(
+				FRAME_ID,
+				ParseOptions::MAX_CONTAINER_DEPTH,
+			));
+		}
+
 		let id = decode_text(
 			reader,
 			TextDecodeOptions::new()
@@ -260,8 +267,12 @@ impl ChapterTableOfContentsFrame<'static> {
 			entries.push(Cow::Owned(entry.content));
 		}
 
-		let children =
-			read_all_frames_into_list(reader, version, Id3v2TagFlags::default(), parse_options)?;
+		let children = read_all_frames_into_list(
+			reader,
+			version,
+			Id3v2TagFlags::default(),
+			parse_options.descend_into_container(),
+		)?;
 
 		let header = FrameHeader::new(FRAME_ID, frame_flags);
 		Ok(ChapterTableOfContentsFrame {
@@ -380,5 +391,70 @@ mod tests {
 		// Only 1 CTOC can be rooted, we end up discarding TOC2, TOC3, and TOC4 when encoding.
 		assert_eq!(toc_frames.len(), 1);
 		assert_eq!(toc_frames[0].id, "TOC1");
+	}
+
+	// Build the content bytes of a CTOC frame whose only child is another CTOC, nested
+	// `depth` levels deep
+	fn nested_ctoc_content(depth: usize) -> Vec<u8> {
+		let flags = CtocFlags {
+			top_level: false,
+			ordered: false,
+		};
+
+		let mut frame = ChapterTableOfContentsFrame::new(
+			"TOC",
+			flags,
+			Cow::Owned(Vec::new()),
+			FrameList::new(),
+		);
+
+		for _ in 0..depth {
+			let mut children = FrameList::new();
+			children.push(Frame::TableOfContents(frame));
+			frame =
+				ChapterTableOfContentsFrame::new("TOC", flags, Cow::Owned(Vec::new()), children);
+		}
+
+		frame
+			.as_bytes(Id3v2Version::V4, WriteOptions::default())
+			.unwrap()
+	}
+
+	// Regression test for too-deeply-nested containers: a CTOC frame nested far beyond any
+	// legitimate depth used to recurse without bound and overflow the stack, aborting the process.
+	// It must now be rejected with an error instead.
+	#[test_log::test]
+	fn ctoc_deeply_nested_is_rejected_not_aborted() {
+		let content = nested_ctoc_content(64);
+
+		let result = ChapterTableOfContentsFrame::parse(
+			&mut &content[..],
+			ParseOptions::default(),
+			Id3v2Version::V4,
+			FrameFlags::default(),
+		);
+
+		assert!(
+			result.is_err(),
+			"a pathologically nested CTOC frame must be rejected"
+		);
+	}
+
+	// A realistic nesting depth (well within the limit) must still parse successfully.
+	#[test_log::test]
+	fn ctoc_shallow_nesting_is_accepted() {
+		let content = nested_ctoc_content(2);
+
+		let result = ChapterTableOfContentsFrame::parse(
+			&mut &content[..],
+			ParseOptions::default(),
+			Id3v2Version::V4,
+			FrameFlags::default(),
+		);
+
+		assert!(
+			result.is_ok(),
+			"a realistically nested CTOC frame must still parse"
+		);
 	}
 }

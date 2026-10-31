@@ -63,6 +63,13 @@ impl FrameParseError {
 		)
 	}
 
+	pub(crate) fn container_nesting_too_deep(id: FrameId<'static>, max_depth: u8) -> Self {
+		Self::message(
+			Some(id),
+			format!("container frame is nested more than {max_depth} levels deep"),
+		)
+	}
+
 	pub(crate) fn unsupported_version(version: Id3v2Version) -> Self {
 		Self::message(
 			None,
