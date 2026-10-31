@@ -5,7 +5,7 @@ use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{FakeTagError, SizeMismatchError, TagParseError};
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_lyrics3v2};
+use crate::id3::{ID3FindResults, find_id3v1, find_lyrics3v2};
 use crate::io::SeekStreamLen;
 use crate::mpeg::error::MpegParseError;
 use crate::mpeg::header::HEADER_MASK;
@@ -43,7 +43,8 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = Id3v2Header::parse(reader).map_err(TagParseError::from)?;
+				let header =
+					Id3v2Header::parse(reader, parse_options).map_err(TagParseError::from)?;
 				let skip_footer = header.flags.footer;
 
 				if parse_options.read_tags {
@@ -116,19 +117,12 @@ where
 				{
 					reader.seek(SeekFrom::Start(0))?;
 
-					let search_window_size =
-						std::cmp::min(_first_frame_offset, parse_options.max_junk_bytes as u64);
-
-					let config = FindId3v2Config {
-						read: parse_options.read_tags,
-						allowed_junk_window: Some(search_window_size),
-					};
-
 					if let Some(ID3FindResults {
 						header,
 						content: Some(content),
 						range: _,
-					}) = crate::id3::find_id3v2(reader, config).map_err(TagParseError::from)?
+					}) = crate::id3::find_id3v2(reader, parse_options.read_tags, parse_options)
+						.map_err(TagParseError::from)?
 					{
 						let reader = &mut &*content;
 

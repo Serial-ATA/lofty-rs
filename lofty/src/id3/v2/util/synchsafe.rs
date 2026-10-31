@@ -159,6 +159,9 @@ impl core::error::Error for SynchOverflowError {}
 
 /// An integer that can be converted to and from synchsafe variants
 pub trait SynchsafeInteger: Sized {
+	/// The maximum synchsafe value for this integer type
+	const SYNCHSAFE_MAX: Self;
+
 	/// The integer type that this can be widened to for use in [`SynchsafeInteger::widening_synch`]
 	type WideningType;
 
@@ -243,16 +246,16 @@ macro_rules! impl_synchsafe {
 	) => {
 		#[allow(unused_parens)]
 		impl SynchsafeInteger for $ty {
+			const SYNCHSAFE_MAX: $ty = {
+				let num_bytes = core::mem::size_of::<$ty>();
+				// 7 bits are available per byte, shave off 1 bit per byte
+				<$ty>::MAX >> num_bytes
+			};
+
 			type WideningType = $widening_ty;
 
 			fn synch(self) -> Result<Self, SynchOverflowError> {
-				const MAXIMUM_INTEGER: $ty = {
-					let num_bytes = core::mem::size_of::<$ty>();
-					// 7 bits are available per byte, shave off 1 bit per byte
-					<$ty>::MAX >> num_bytes
-				};
-
-				if self > MAXIMUM_INTEGER {
+				if self > Self::SYNCHSAFE_MAX {
 					return Err(SynchOverflowError);
 				}
 

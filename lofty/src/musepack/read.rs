@@ -5,7 +5,7 @@ use super::{MpcFile, MpcProperties, MpcStreamVersion};
 use crate::config::ParseOptions;
 use crate::error::{SizeMismatchError, TagParseError};
 use crate::id3::v2::read::parse_id3v2;
-use crate::id3::{FindId3v2Config, ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
+use crate::id3::{ID3FindResults, find_id3v1, find_id3v2, find_lyrics3v2};
 use crate::musepack::error::MpcParseError;
 use crate::util::io::SeekStreamLen;
 
@@ -26,19 +26,13 @@ where
 
 	let mut stream_length = reader.stream_len_hack()?;
 
-	let find_id3v2_config = if parse_options.read_tags {
-		FindId3v2Config::READ_TAG
-	} else {
-		FindId3v2Config::NO_READ_TAG
-	};
-
 	// ID3v2 tags are unsupported in MPC files, but still possible
 	#[allow(unused_variables)]
 	if let Some(ID3FindResults {
 		header,
 		content,
 		range: _,
-	}) = find_id3v2(reader, find_id3v2_config).map_err(TagParseError::from)?
+	}) = find_id3v2(reader, parse_options.read_tags, parse_options).map_err(TagParseError::from)?
 	{
 		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
 		else {

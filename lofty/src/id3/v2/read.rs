@@ -206,16 +206,10 @@ mod tests {
 
 		use std::io::Cursor;
 
+		let parse_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
 		let mut f = Cursor::new(std::fs::read("tests/tags/assets/id3v2/zero.id3v2").unwrap());
-		let header = Id3v2Header::parse(&mut f).unwrap();
-		assert!(
-			parse_id3v2(
-				&mut f,
-				header,
-				ParseOptions::new().parsing_mode(ParsingMode::Strict)
-			)
-			.is_ok()
-		);
+		let header = Id3v2Header::parse(&mut f, parse_options).unwrap();
+		assert!(parse_id3v2(&mut f, header, parse_options).is_ok());
 	}
 
 	#[test_log::test]
@@ -228,15 +222,12 @@ mod tests {
 
 		// Contains a frame with a "+" in the ID, which is invalid.
 		// All other frames in the tag are valid, however.
+		let parse_options = ParseOptions::new().parsing_mode(ParsingMode::Relaxed);
 		let mut f = Cursor::new(
 			std::fs::read("tests/tags/assets/id3v2/bad_frame_otherwise_valid.id3v24").unwrap(),
 		);
-		let header = Id3v2Header::parse(&mut f).unwrap();
-		let id3v2 = parse_id3v2(
-			&mut f,
-			header,
-			ParseOptions::new().parsing_mode(ParsingMode::Relaxed),
-		);
+		let header = Id3v2Header::parse(&mut f, parse_options).unwrap();
+		let id3v2 = parse_id3v2(&mut f, header, parse_options);
 		assert!(id3v2.is_ok());
 
 		let id3v2 = id3v2.unwrap();

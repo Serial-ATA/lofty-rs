@@ -27,7 +27,7 @@ fn read_tag(path: &str) -> Id3v2Tag {
 fn read_tag_with_options(bytes: &[u8], parse_options: ParseOptions) -> Id3v2Tag {
 	let mut reader = Cursor::new(bytes);
 
-	let header = Id3v2Header::parse(&mut reader).unwrap();
+	let header = Id3v2Header::parse(&mut reader, parse_options).unwrap();
 	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options).unwrap()
 }
 
@@ -113,13 +113,10 @@ fn id3v2_re_read() {
 
 	let temp_reader = &mut &*writer;
 
-	let temp_header = Id3v2Header::parse(temp_reader).unwrap();
-	let temp_parsed_tag = crate::id3::v2::read::parse_id3v2(
-		temp_reader,
-		temp_header,
-		ParseOptions::new().parsing_mode(ParsingMode::Strict),
-	)
-	.unwrap();
+	let parse_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
+	let temp_header = Id3v2Header::parse(temp_reader, parse_options).unwrap();
+	let temp_parsed_tag =
+		crate::id3::v2::read::parse_id3v2(temp_reader, temp_header, parse_options).unwrap();
 
 	assert_eq!(parsed_tag, temp_parsed_tag);
 }
@@ -299,13 +296,9 @@ fn id3v24_footer() {
 
 	let mut reader = &mut &writer[..];
 
-	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let _ = crate::id3::v2::read::parse_id3v2(
-		reader,
-		header,
-		ParseOptions::new().parsing_mode(ParsingMode::Strict),
-	)
-	.unwrap();
+	let parse_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
+	let header = Id3v2Header::parse(&mut reader, parse_options).unwrap();
+	let _ = crate::id3::v2::read::parse_id3v2(reader, header, parse_options).unwrap();
 
 	assert_eq!(writer[3..10], writer[writer.len() - 7..])
 }
@@ -328,13 +321,9 @@ fn issue_36() {
 
 	let mut reader = &mut &writer[..];
 
-	let header = Id3v2Header::parse(&mut reader).unwrap();
-	let tag = crate::id3::v2::read::parse_id3v2(
-		reader,
-		header,
-		ParseOptions::new().parsing_mode(ParsingMode::Strict),
-	)
-	.unwrap();
+	let parse_options = ParseOptions::new().parsing_mode(ParsingMode::Strict);
+	let header = Id3v2Header::parse(&mut reader, parse_options).unwrap();
+	let tag = crate::id3::v2::read::parse_id3v2(reader, header, parse_options).unwrap();
 
 	assert_eq!(tag.len(), 1);
 	assert_eq!(

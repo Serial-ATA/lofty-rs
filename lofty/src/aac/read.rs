@@ -46,7 +46,8 @@ where
 				// Seek back to read the tag in full
 				reader.seek(SeekFrom::Current(-4))?;
 
-				let header = Id3v2Header::parse(reader).map_err(TagParseError::from)?;
+				let header =
+					Id3v2Header::parse(reader, parse_options).map_err(TagParseError::from)?;
 				let skip_footer = header.flags.footer;
 
 				let Some(new_stream_len) = stream_len.checked_sub(u64::from(header.size)) else {
