@@ -3,6 +3,7 @@ use super::item::ApeItemRef;
 use crate::ape::ApeTag;
 use crate::ape::constants::APE_PREAMBLE;
 use crate::ape::tag::error::ApeTagEncodingError;
+use crate::ape::tag::header::{CONTAINS_FOOTER, CONTAINS_HEADER, IS_HEADER};
 use crate::ape::tag::read;
 use crate::config::WriteOptions;
 use crate::error::{
@@ -255,7 +256,7 @@ where
 	// Bit 29 unset: this is the footer
 	// Bit 30 set: tag contains a footer
 	// Bit 31 set: tag contains a header
-	let mut footer_flags = (1_u32 << 30) | (1_u32 << 31);
+	let mut footer_flags = CONTAINS_FOOTER | CONTAINS_HEADER;
 
 	if tag.read_only {
 		// Bit 0 set: tag is read only
@@ -276,7 +277,7 @@ where
 	// Bit 29 set: this is the header
 	// Bit 30 set: tag contains a footer
 	// Bit 31 set: tag contains a header
-	let mut header_flags = (1_u32 << 29) | (1_u32 << 30) | (1_u32 << 31);
+	let mut header_flags = IS_HEADER | CONTAINS_FOOTER | CONTAINS_HEADER;
 
 	if tag.read_only {
 		// Bit 0 set: tag is read only
