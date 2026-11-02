@@ -24,6 +24,7 @@ use crate::tag::{
 };
 use crate::util::flag_item;
 use crate::util::io::FileLike;
+use crate::util::iter::VecExtractIfExt;
 use advisory_rating::AdvisoryRating;
 use atom::{Atom, AtomData};
 use data_type::DataType;
@@ -270,19 +271,10 @@ impl Ilst {
 	/// ```
 	pub fn remove<'a>(
 		&'a mut self,
-		ident: &AtomIdent<'_>,
+		ident: &'a AtomIdent<'_>,
 	) -> impl Iterator<Item = Atom<'static>> + use<'a> {
-		// TODO: drain_filter
-		let mut split_idx = 0_usize;
-
-		for read_idx in 0..self.atoms.len() {
-			if &self.atoms[read_idx].ident == ident {
-				self.atoms.swap(split_idx, read_idx);
-				split_idx += 1;
-			}
-		}
-
-		self.atoms.drain(..split_idx)
+		self.atoms
+			.extract_if_exhaustive(.., move |atom| atom.ident() == ident)
 	}
 
 	/// Retain atoms based on the predicate

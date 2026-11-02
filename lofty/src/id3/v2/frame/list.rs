@@ -3,6 +3,7 @@ use crate::TextEncoding;
 use crate::id3::v2::tag::new_picture_frame;
 use crate::id3::v2::{AttachedPictureFrame, ExtendedTextFrame, FrameId, TextInformationFrame};
 use crate::picture::{Picture, PictureType};
+use crate::util::iter::VecExtractIfExt;
 
 use std::borrow::Cow;
 use std::ops::Deref;
@@ -326,17 +327,9 @@ impl<'a> FrameList<'a> {
 	/// assert!(tag.is_empty());
 	/// ```
 	pub fn remove(&mut self, id: &FrameId<'_>) -> impl Iterator<Item = Frame<'a>> {
-		// TODO: drain_filter
-		let mut split_idx = 0_usize;
-
-		for read_idx in 0..self.0.len() {
-			if self.0[read_idx].id() == id {
-				self.0.to_mut().swap(split_idx, read_idx);
-				split_idx += 1;
-			}
-		}
-
-		self.0.to_mut().drain(..split_idx)
+		self.0
+			.to_mut()
+			.extract_if_exhaustive(.., move |frame| frame.id() == id)
 	}
 
 	/// Removes a certain [`PictureType`]

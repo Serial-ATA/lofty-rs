@@ -16,6 +16,7 @@ use crate::tag::{
 };
 use crate::util::flag_item;
 use crate::util::io::FileLike;
+use crate::util::iter::VecExtractIfExt;
 
 use std::borrow::Cow;
 use std::io::Write;
@@ -302,18 +303,10 @@ impl VorbisComments {
 	/// 	println!("We removed the title: {title}");
 	/// }
 	/// ```
-	pub fn remove<'a>(&'a mut self, key: &str) -> impl Iterator<Item = String> + use<'a> {
-		// TODO: drain_filter
-		let mut split_idx = 0_usize;
-
-		for read_idx in 0..self.items.len() {
-			if self.items[read_idx].0.eq_ignore_ascii_case(key) {
-				self.items.swap(split_idx, read_idx);
-				split_idx += 1;
-			}
-		}
-
-		self.items.drain(..split_idx).map(|(_, v)| v)
+	pub fn remove<'a>(&'a mut self, key: &'a str) -> impl Iterator<Item = String> + use<'a> {
+		self.items
+			.extract_if_exhaustive(.., move |(k, _v)| k == key)
+			.map(|(_, v)| v)
 	}
 }
 
