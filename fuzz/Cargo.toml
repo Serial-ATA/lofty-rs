@@ -15,6 +15,9 @@ libfuzzer-sys = "0.4"
 [dependencies.lofty]
 path = "../lofty"
 
+[lints]
+workspace = true
+
 [[bin]]
 name = "filetype_from_buffer"
 path = "fuzz_targets/filetype_from_buffer.rs"

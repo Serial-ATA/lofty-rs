@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 #![no_main]
 
 use std::io::Cursor;
