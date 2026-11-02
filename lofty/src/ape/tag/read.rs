@@ -130,3 +130,58 @@ pub(crate) fn read_ape_tag<R: Read + Seek>(
 
 	Ok((None, None))
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::ape::tag::header::{CONTAINS_FOOTER, CONTAINS_HEADER, IS_HEADER};
+	use crate::config::ParsingMode;
+
+	use std::io::Cursor;
+
+	#[test_log::test]
+	fn ape_without_header() {
+		let mut tag_bytes = std::fs::read("tests/tags/assets/test.apev2").unwrap();
+
+		// Trim out the header
+		tag_bytes.drain(..32);
+
+		// Replace the flags
+		let new_flags = CONTAINS_FOOTER;
+		let flags_pos = tag_bytes.len() - 12;
+		tag_bytes.splice(flags_pos..flags_pos + 4, new_flags.to_le_bytes());
+
+		let mut reader = Cursor::new(tag_bytes);
+		reader.seek(SeekFrom::End(-32)).unwrap(); // Start of the footer
+
+		read_ape_tag(
+			&mut reader,
+			true,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		)
+		.unwrap();
+	}
+
+	#[test_log::test]
+	fn ape_without_footer() {
+		let mut tag_bytes = std::fs::read("tests/tags/assets/test.apev2").unwrap();
+
+		// Trim out the footer
+		tag_bytes.truncate(tag_bytes.len() - 32);
+
+		// Replace the flags
+		let new_flags = CONTAINS_HEADER | IS_HEADER;
+		let flags_pos = APE_PREAMBLE.len()
+			+ size_of::<u32>() /*version*/
+			+ size_of::<u32>() /*size*/
+			+ size_of::<u32>() /*item count*/;
+		tag_bytes.splice(flags_pos..flags_pos + 4, new_flags.to_le_bytes());
+
+		read_ape_tag(
+			&mut Cursor::new(tag_bytes),
+			false,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		)
+		.unwrap();
+	}
+}
