@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **AiffTextChunks**: The `AiffTextChunks` -> `Tag` conversion will no longer convert `COMT` chunks ([issue](https://github.com/Serial-ATA/lofty-rs/issues/742))
 - **FLAC**: By default, undersized Vorbis Comments and Picture blocks will be skipped. Strict mode
             will now return a `NotEnoughDataError` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/733)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/775))
+- **Tag**: All `Tag::take_*` methods are now order-preserving ([issue](https://github.com/Serial-ATA/lofty-rs/issues/757)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
+- **Ilst**: `Ilst::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
+- **VorbisComments**: `VorbisComments::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
+- **ID3v2**: `FrameList::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
 
 ### Fixed
 

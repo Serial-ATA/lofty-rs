@@ -420,6 +420,8 @@ impl Tag {
 
 	/// Removes all items with the specified [`ItemKey`], and returns them
 	///
+	/// NOTE: If the returned iterator is not exhausted, any remaining items will be retained. See [`Vec::extract_if()`].
+	///
 	/// See also: [take_filter()](Self::take_filter)
 	pub fn take(&mut self, key: ItemKey) -> impl Iterator<Item = TagItem> + use<'_> {
 		self.take_filter(key, |_| true)
@@ -428,6 +430,8 @@ impl Tag {
 	/// Removes selected items with the specified [`ItemKey`], and returns them
 	///
 	/// Only takes items for which `filter()` returns `true`. All other items are retained.
+	///
+	/// NOTE: If the returned iterator is not exhausted, any remaining items will be retained. See [`Vec::extract_if()`].
 	///
 	/// Returns the selected items in order and preserves the ordering of the remaining items.
 	///
@@ -459,29 +463,21 @@ impl Tag {
 	/// // The comments that didn't match the filter are still present.
 	/// assert_eq!(tag.get_strings(ItemKey::Comment).count(), 1);
 	/// ```
-	pub fn take_filter<F>(
-		&mut self,
+	pub fn take_filter<'a, F>(
+		&'a mut self,
 		key: ItemKey,
 		mut filter: F,
-	) -> impl Iterator<Item = TagItem> + use<'_, F>
+	) -> impl Iterator<Item = TagItem> + use<'a, F>
 	where
-		F: FnMut(&TagItem) -> bool,
+		F: FnMut(&TagItem) -> bool + 'a,
 	{
-		// TODO: drain_filter
-		let mut split_idx = 0;
-
-		for read_idx in 0..self.items.len() {
-			let item = &self.items[read_idx];
-			if item.key() == key && filter(item) {
-				self.items.swap(split_idx, read_idx);
-				split_idx += 1;
-			}
-		}
-
-		self.items.drain(..split_idx)
+		self.items
+			.extract_if(.., move |item| item.key() == key && filter(item))
 	}
 
 	/// Removes all items with the specified [`ItemKey`], and filters them through [`ItemValue::into_string()`]
+	///
+	/// NOTE: If the returned iterator is not exhausted, any remaining items will be retained. See [`Vec::extract_if()`].
 	///
 	/// Prefer this over manually calling [`Tag::take()`] when only the text values of an item are needed.
 	/// Unlike [`Tag::get_strings()`], this method consumes the matching items instead of borrowing them.
