@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::error::FrameEncodingError;
 use crate::id3::v2::{FrameFlags, FrameHeader, FrameId, TimestampFormat};
@@ -224,6 +225,14 @@ pub struct EventTimingCodesFrame<'a> {
 	/// Events are guaranteed to be sorted by their timestamps when read. They can be inserted in
 	/// arbitrary order after the fact, and will be sorted again prior to writing.
 	pub events: Cow<'a, [Event]>,
+}
+
+impl FrameConstraints for EventTimingCodesFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Timestamp format (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 1;
 }
 
 impl<'a> EventTimingCodesFrame<'a> {

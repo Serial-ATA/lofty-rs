@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
@@ -19,6 +20,16 @@ pub struct KeyValueFrame<'a> {
 	pub encoding: TextEncoding,
 	/// The key value pairs. Keys can be specified multiple times
 	pub key_value_pairs: Cow<'a, [(Cow<'a, str>, Cow<'a, str>)]>,
+}
+
+impl FrameConstraints for KeyValueFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Text encoding (1)
+	// Key (1)
+	// Value (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 3;
 }
 
 impl<'a> KeyValueFrame<'a> {

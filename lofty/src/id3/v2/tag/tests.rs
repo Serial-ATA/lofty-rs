@@ -1,4 +1,5 @@
 use crate::config::{ParseOptions, ParsingMode};
+use crate::id3::v2::error::Id3v2ParseError;
 use crate::id3::v2::header::Id3v2Header;
 use crate::id3::v2::items::PopularimeterFrame;
 use crate::id3::v2::util::pairs::DEFAULT_NUMBER_IN_PAIR;
@@ -25,10 +26,16 @@ fn read_tag(path: &str) -> Id3v2Tag {
 }
 
 fn read_tag_with_options(bytes: &[u8], parse_options: ParseOptions) -> Id3v2Tag {
-	let mut reader = Cursor::new(bytes);
+	maybe_read_tag_with_options(bytes, parse_options).unwrap()
+}
 
-	let header = Id3v2Header::parse(&mut reader, parse_options).unwrap();
-	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options).unwrap()
+fn maybe_read_tag_with_options(
+	bytes: &[u8],
+	parse_options: ParseOptions,
+) -> Result<Id3v2Tag, Id3v2ParseError> {
+	let mut reader = Cursor::new(bytes);
+	let header = Id3v2Header::parse(&mut reader, parse_options)?;
+	crate::id3::v2::read::parse_id3v2(&mut reader, header, parse_options)
 }
 
 pub(in crate::id3::v2) fn dump_and_re_read(
@@ -1566,6 +1573,25 @@ fn single_value_frame() {
 
 	let artist_tag = tag.get_text(&FrameId::new("TBPM").unwrap()).unwrap();
 	assert_eq!(artist_tag, "120");
+}
+
+#[test_log::test]
+fn undersized_frames() {
+	// A COMM frame needs at least 5 bytes
+	let bad_tag = b"ID3\x04\x00\x00\x00\x00\x00\x20\
+COMM\x00\x00\x00\x01\x00\x00\x00\
+TPE1\x00\x00\x00\x0B\x00\x00\x00Serial-ATA";
+
+	// Relaxed mode should parse the tag fine, skipping the comment
+	let tag = maybe_read_tag_with_options(
+		bad_tag,
+		ParseOptions::new().parsing_mode(ParsingMode::Relaxed),
+	)
+	.unwrap();
+	assert_eq!(tag.artist().as_deref(), Some("Serial-ATA"));
+
+	// Anything else should fail entirely
+	maybe_read_tag_with_options(bad_tag, ParseOptions::new()).unwrap_err();
 }
 
 macro_rules! popm_tests {

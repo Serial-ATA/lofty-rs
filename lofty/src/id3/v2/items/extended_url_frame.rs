@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
@@ -41,6 +42,15 @@ impl Hash for ExtendedUrlFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.description.hash(state);
 	}
+}
+
+impl FrameConstraints for ExtendedUrlFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Text encoding (1)
+	// Description (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 2;
 }
 
 impl<'a> ExtendedUrlFrame<'a> {

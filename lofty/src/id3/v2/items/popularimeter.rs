@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::error::FrameEncodingError;
@@ -44,6 +45,16 @@ impl Hash for PopularimeterFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.email.hash(state);
 	}
+}
+
+impl FrameConstraints for PopularimeterFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Email (1)
+	// Rating (1)
+	// Play counter (4)
+	const MIN_CONTENT_SIZE_V4: u32 = 6;
 }
 
 impl<'a> PopularimeterFrame<'a> {

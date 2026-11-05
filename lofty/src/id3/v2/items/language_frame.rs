@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::content::verify_encoding;
@@ -24,6 +25,16 @@ struct LanguageFrame {
 	pub language: Lang,
 	pub description: String,
 	pub content: String,
+}
+
+impl FrameConstraints for LanguageFrame {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Text encoding (1)
+	// Language (3)
+	// Description (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 5;
 }
 
 impl LanguageFrame {
@@ -138,6 +149,12 @@ impl Hash for CommentFrame<'_> {
 		self.language.hash(state);
 		self.description.hash(state);
 	}
+}
+
+impl FrameConstraints for CommentFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V2;
+	const MIN_CONTENT_SIZE_V3: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V3;
+	const MIN_CONTENT_SIZE_V4: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V4;
 }
 
 impl<'a> CommentFrame<'a> {
@@ -271,6 +288,12 @@ impl Hash for UnsynchronizedTextFrame<'_> {
 		self.language.hash(state);
 		self.description.hash(state);
 	}
+}
+
+impl FrameConstraints for UnsynchronizedTextFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V2;
+	const MIN_CONTENT_SIZE_V3: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V3;
+	const MIN_CONTENT_SIZE_V4: u32 = <LanguageFrame as FrameConstraints>::MIN_CONTENT_SIZE_V4;
 }
 
 impl<'a> UnsynchronizedTextFrame<'a> {

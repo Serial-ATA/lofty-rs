@@ -1,4 +1,6 @@
-use crate::error::{TagEncodingError, TagParseError, TextEncodingError, TooMuchDataError};
+use crate::error::{
+	NotEnoughDataError, TagEncodingError, TagParseError, TextEncodingError, TooMuchDataError,
+};
 use crate::id3::v2::error::{Id3v2EncodingError, Id3v2ParseError};
 use crate::id3::v2::util::synchsafe::SynchOverflowError;
 use crate::id3::v2::{FrameId, Id3v2Version};
@@ -117,6 +119,15 @@ impl From<std::io::Error> for FrameParseError {
 
 impl From<AllocationError> for FrameParseError {
 	fn from(input: AllocationError) -> Self {
+		Self {
+			id: None,
+			source: Some(Box::new(input)),
+		}
+	}
+}
+
+impl From<NotEnoughDataError> for FrameParseError {
+	fn from(input: NotEnoughDataError) -> Self {
 		Self {
 			id: None,
 			source: Some(Box::new(input)),

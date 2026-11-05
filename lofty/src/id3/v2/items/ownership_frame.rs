@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::error::FrameEncodingError;
@@ -31,6 +32,16 @@ pub struct OwnershipFrame<'a> {
 	pub date_of_purchase: Cow<'a, str>,
 	/// The seller name
 	pub seller: Cow<'a, str>,
+}
+
+impl FrameConstraints for OwnershipFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Text encoding (1)
+	// Price paid (1)
+	// Date of purchase (8)
+	const MIN_CONTENT_SIZE_V4: u32 = 10;
 }
 
 impl<'a> OwnershipFrame<'a> {

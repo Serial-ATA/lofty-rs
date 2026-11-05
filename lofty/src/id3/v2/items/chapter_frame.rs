@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::id3::v2::error::{FrameEncodingError, FrameParseError};
 use crate::id3::v2::frame::list::FrameList;
@@ -59,6 +60,18 @@ impl Hash for ChapterFrame<'_> {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 		self.id.hash(state);
 	}
+}
+
+impl FrameConstraints for ChapterFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// ID (1)
+	// Start time (4)
+	// End time (4)
+	// Start offset (4)
+	// End offset (4)
+	const MIN_CONTENT_SIZE_V4: u32 = 17;
 }
 
 impl<'a> ChapterFrame<'a> {

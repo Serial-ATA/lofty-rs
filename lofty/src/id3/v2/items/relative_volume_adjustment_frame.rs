@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::{ParsingMode, WriteOptions};
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::error::FrameEncodingError;
@@ -111,6 +112,14 @@ impl Hash for RelativeVolumeAdjustmentFrame<'_> {
 	fn hash<H: Hasher>(&self, state: &mut H) {
 		self.identification.hash(state)
 	}
+}
+
+impl FrameConstraints for RelativeVolumeAdjustmentFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Identification (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 1;
 }
 
 impl<'a> RelativeVolumeAdjustmentFrame<'a> {
