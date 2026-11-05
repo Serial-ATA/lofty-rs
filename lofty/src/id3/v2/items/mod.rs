@@ -41,3 +41,14 @@ pub use text_information_frame::TextInformationFrame;
 pub use timestamp_frame::TimestampFrame;
 pub use unique_file_identifier::UniqueFileIdentifierFrame;
 pub use url_link_frame::UrlLinkFrame;
+
+pub(in crate::id3::v2) trait FrameConstraints {
+	/// The minimum content size in ID3v2.2
+	const MIN_CONTENT_SIZE_V2: u32;
+
+	/// The minimum content size in ID3v2.3
+	const MIN_CONTENT_SIZE_V3: u32;
+
+	/// The minimum content size in ID3v2.4
+	const MIN_CONTENT_SIZE_V4: u32;
+}

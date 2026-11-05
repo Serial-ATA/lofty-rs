@@ -20,7 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tag**: All `Tag::take_*` methods are now order-preserving ([issue](https://github.com/Serial-ATA/lofty-rs/issues/757)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
 - **Ilst**: `Ilst::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
 - **VorbisComments**: `VorbisComments::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
-- **ID3v2**: `FrameList::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
+- **ID3v2**:
+  - `FrameList::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
+  - Undersized frames will no longer error in relaxed mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/768)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/781))
+    - They will still produce an error in best attempt (default) and strict mode
 
 ### Fixed
 

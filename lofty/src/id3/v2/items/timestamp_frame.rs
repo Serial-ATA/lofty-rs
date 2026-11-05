@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::{ParsingMode, WriteOptions};
 use crate::id3::v2::error::FrameParseError;
 use crate::id3::v2::frame::error::FrameEncodingError;
@@ -29,6 +30,15 @@ impl Ord for TimestampFrame<'_> {
 	fn cmp(&self, other: &Self) -> std::cmp::Ordering {
 		self.timestamp.cmp(&other.timestamp)
 	}
+}
+
+impl FrameConstraints for TimestampFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 =
+		<super::TextInformationFrame<'_> as FrameConstraints>::MIN_CONTENT_SIZE_V2;
+	const MIN_CONTENT_SIZE_V3: u32 =
+		<super::TextInformationFrame<'_> as FrameConstraints>::MIN_CONTENT_SIZE_V3;
+	const MIN_CONTENT_SIZE_V4: u32 =
+		<super::TextInformationFrame<'_> as FrameConstraints>::MIN_CONTENT_SIZE_V4;
 }
 
 impl<'a> TimestampFrame<'a> {

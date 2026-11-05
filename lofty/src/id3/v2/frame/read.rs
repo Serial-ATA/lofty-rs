@@ -274,7 +274,7 @@ fn parse_frame<R: Read>(
 	version: Id3v2Version,
 	parse_options: ParseOptions,
 ) -> Result<ParsedFrame<'static>, FrameParseError> {
-	match parse_content(reader, id, flags, version, parse_options) {
+	match parse_content(reader, id, size, flags, version, parse_options) {
 		Some(result) => result.map(ParsedFrame::Next),
 		None => {
 			skip_frame(None, reader, size)?;

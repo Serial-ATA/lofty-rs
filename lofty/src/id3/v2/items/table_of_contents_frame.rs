@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::{ParseOptions, WriteOptions};
 use crate::error::TooMuchDataError;
 use crate::id3::v2::error::{FrameEncodingError, FrameParseError};
@@ -96,6 +97,16 @@ impl Hash for ChapterTableOfContentsFrame<'_> {
 	fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
 		self.id.hash(state);
 	}
+}
+
+impl FrameConstraints for ChapterTableOfContentsFrame<'_> {
+	const MIN_CONTENT_SIZE_V2: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// ID (1)
+	// Flags (1)
+	// Entry count (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 3;
 }
 
 impl<'a> ChapterTableOfContentsFrame<'a> {

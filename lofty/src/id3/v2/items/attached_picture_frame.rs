@@ -1,3 +1,4 @@
+use super::FrameConstraints;
 use crate::config::WriteOptions;
 use crate::error::TooMuchDataError;
 use crate::id3::v2::error::FrameParseError;
@@ -24,6 +25,22 @@ pub struct AttachedPictureFrame<'a> {
 	pub encoding: TextEncoding,
 	/// The picture itself
 	pub picture: Cow<'a, Picture>,
+}
+
+impl FrameConstraints for AttachedPictureFrame<'_> {
+	// Text encoding (1)
+	// Format (3)
+	// Picture type (1)
+	// Description (1)
+	const MIN_CONTENT_SIZE_V2: u32 = 6;
+
+	const MIN_CONTENT_SIZE_V3: u32 = <Self as FrameConstraints>::MIN_CONTENT_SIZE_V4;
+
+	// Text encoding (1)
+	// MIME type (1)
+	// Picture type (1)
+	// Description (1)
+	const MIN_CONTENT_SIZE_V4: u32 = 4;
 }
 
 impl<'a> AttachedPictureFrame<'a> {
