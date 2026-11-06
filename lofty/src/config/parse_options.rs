@@ -13,6 +13,8 @@ pub struct ParseOptions {
 	pub(crate) max_junk_bytes: usize,
 	pub(crate) read_cover_art: bool,
 	pub(crate) implicit_conversions: bool,
+	/// The current nesting depth of container frames (ID3v2 `CHAP`/`CTOC`)
+	pub(crate) container_depth: u8,
 }
 
 impl Default for ParseOptions {
@@ -42,6 +44,9 @@ impl ParseOptions {
 	/// Default number of junk bytes to read
 	pub const DEFAULT_MAX_JUNK_BYTES: usize = 1024;
 
+	/// The maximum nesting depth allowed for container frames (ID3v2 `CHAP`/`CTOC`)
+	pub(crate) const MAX_CONTAINER_DEPTH: u8 = 8;
+
 	/// Creates a new `ParseOptions`, alias for `Default` implementation
 	///
 	/// See also: [`ParseOptions::default`]
@@ -62,7 +67,14 @@ impl ParseOptions {
 			max_junk_bytes: Self::DEFAULT_MAX_JUNK_BYTES,
 			read_cover_art: true,
 			implicit_conversions: true,
+			container_depth: 0,
 		}
+	}
+
+	/// Return and increment the container depth after descending into a new sub-container
+	pub(crate) fn descend_into_container(mut self) -> Self {
+		self.container_depth = self.container_depth.saturating_add(1);
+		self
 	}
 
 	/// Whether or not to read the audio properties
