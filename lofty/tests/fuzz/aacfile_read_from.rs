@@ -9,3 +9,10 @@ fn panic1() {
 	);
 	let _ = AacFile::read_from(&mut reader, ParseOptions::new());
 }
+
+#[test_log::test]
+fn timeout1() {
+	crate::oom_test::<AacFile>(
+		"aacfile_read_from/timeout-619f1587ebc7d02fd9dcfa1d1a3717b48a9f91fb",
+	);
+}

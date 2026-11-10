@@ -26,7 +26,7 @@ pub(crate) struct ADTSHeader {
 impl ADTSHeader {
 	pub(super) fn read<R>(
 		reader: &mut R,
-		_parse_mode: ParsingMode,
+		parse_mode: ParsingMode,
 	) -> Result<Option<Self>, AacParseError>
 	where
 		R: Read + Seek,
@@ -106,6 +106,22 @@ impl ADTSHeader {
 
 		let len =
 			(u16::from(byte4 & 0b11) << 11) | (u16::from(byte5) << 3) | (u16::from(byte6) >> 5);
+
+		// The length includes the header, so anything shorter cannot be a frame
+		let header_len = if needs_crc_skip { 9 } else { 7 };
+		if len < header_len {
+			if parse_mode == ParsingMode::Strict {
+				return Err(AacParseError::message(
+					"file contains a frame shorter than its header",
+				));
+			}
+
+			log::warn!(
+				"Encountered an ADTS frame shorter than its header, properties may be incorrect"
+			);
+			return Ok(None);
+		}
+
 		let bitrate = ((u32::from(len) * sample_rate / 1024) * 8) / 1024;
 
 		if needs_crc_skip {
