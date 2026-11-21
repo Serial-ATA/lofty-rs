@@ -34,7 +34,6 @@ pub(crate) use properties::SAMPLE_RATES;
 /// An MP4 file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct Mp4File {
 	#[lofty(tag_type = "Mp4Ilst")]
 	/// The parsed `ilst` (metadata) atom, if it exists

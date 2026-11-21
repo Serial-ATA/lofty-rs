@@ -21,8 +21,8 @@ use crate::picture::Picture;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::items::{Timestamp, UNKNOWN_LANGUAGE};
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt,
 };
 use crate::util::io::FileLike;
 use crate::util::text::{TextDecodeOptions, TextEncoding, decode_text};
@@ -565,7 +565,6 @@ impl TagExt for Id3v2Tag {
 			frames: self.frames.iter().map(Frame::borrow).peekable(),
 		}
 		.dump_to(writer, write_options)
-		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
@@ -1000,5 +999,14 @@ impl From<Tag> for Id3v2Tag {
 		}
 
 		SplitTagRemainder::default().merge_tag(input)
+	}
+}
+
+impl TagRefExt for Id3v2Tag {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		conversion::Id3v2TagRef {
+			flags: Id3v2TagFlags::default(),
+			frames: conversion::tag_frames(tag).peekable(),
+		}
 	}
 }

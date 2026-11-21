@@ -10,8 +10,8 @@ use crate::io::VerifiedFile;
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt, try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt, try_parse_timestamp,
 };
 use crate::util::io::FileLike;
 
@@ -239,7 +239,6 @@ impl TagExt for RiffInfoList {
 				.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
 		)
 		.dump_to(writer, write_options)
-		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
@@ -333,6 +332,49 @@ impl From<Tag> for RiffInfoList {
 	}
 }
 
+impl TagRefExt for RiffInfoList {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		let items = tag
+			.items
+			.iter()
+			.filter_map(|i| {
+				let (ItemValue::Text(val) | ItemValue::Locator(val)) = i.value() else {
+					return None;
+				};
+
+				let Some(key) = i.key().map_key(TagType::RiffInfo) else {
+					log::debug!("No mapping exists for item key `{:?}`, discarding", i.key());
+					return None;
+				};
+
+				// Special case for generic popularimeters
+				if i.key() == ItemKey::Popularimeter {
+					let Ok(popm) = Popularimeter::from_str(val) else {
+						log::warn!("Failed to parse popularimeter during tag merge, skipping");
+						return None;
+					};
+
+					return Some((
+						key,
+						Cow::Owned(popm.mapped_value(TagType::RiffInfo).to_string()),
+					));
+				}
+
+				Some((key, Cow::Borrowed(val.as_str())))
+			})
+			.chain(
+				tag.companion_tag
+					.as_ref()
+					.and_then(CompanionTag::riff_info_ref)
+					.map_or(&[][..], |tag| tag.items.as_slice())
+					.iter()
+					.map(|(k, v)| (k.as_str(), Cow::Borrowed(v.as_str()))),
+			);
+
+		RIFFInfoListRef { items }
+	}
+}
+
 pub(crate) struct RIFFInfoListRef<'a, I>
 where
 	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
@@ -347,8 +389,15 @@ where
 	pub(crate) fn new(items: I) -> RIFFInfoListRef<'a, I> {
 		RIFFInfoListRef { items }
 	}
+}
 
-	pub(crate) fn write_to<F>(
+impl<'a, I> TagRef for RIFFInfoListRef<'a, I>
+where
+	I: Iterator<Item = (&'a str, Cow<'a, str>)>,
+{
+	type EncodingError = RiffInfoListEncodingError;
+
+	fn write_to<F>(
 		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
@@ -359,48 +408,12 @@ where
 		write::write_riff_info(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		_write_options: WriteOptions,
-	) -> Result<(), RiffInfoListEncodingError> {
+	fn encode(&mut self, _write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
 		let mut temp = Vec::new();
 		write::create_riff_info(&mut self.items, &mut temp)?;
 
-		writer.write_all(&temp)?;
-
-		Ok(())
+		Ok(temp)
 	}
-}
-
-pub(crate) fn tagitems_into_riff<'a>(
-	items: impl IntoIterator<Item = &'a TagItem>,
-) -> impl Iterator<Item = (&'a str, Cow<'a, str>)> {
-	items.into_iter().filter_map(|i| {
-		let (ItemValue::Text(val) | ItemValue::Locator(val)) = i.value() else {
-			return None;
-		};
-
-		let Some(key) = i.key().map_key(TagType::RiffInfo) else {
-			log::debug!("No mapping exists for item key `{:?}`, discarding", i.key());
-			return None;
-		};
-
-		// Special case for generic popularimeters
-		if i.key() == ItemKey::Popularimeter {
-			let Ok(popm) = Popularimeter::from_str(val) else {
-				log::warn!("Failed to parse popularimeter during tag merge, skipping");
-				return None;
-			};
-
-			return Some((
-				key,
-				Cow::Owned(popm.mapped_value(TagType::RiffInfo).to_string()),
-			));
-		}
-
-		Some((key, Cow::Borrowed(val.as_str())))
-	})
 }
 
 #[cfg(test)]

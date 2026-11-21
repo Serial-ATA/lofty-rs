@@ -19,7 +19,6 @@ use lofty_attr::LoftyFile;
 /// An MPEG file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct MpegFile {
 	/// An ID3v2 tag
 	#[lofty(tag_type = "Id3v2")]

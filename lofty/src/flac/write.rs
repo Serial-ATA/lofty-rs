@@ -7,7 +7,6 @@ use crate::io::VerifiedFile;
 use crate::macros::try_vec;
 use crate::ogg::tag::VorbisCommentsRef;
 use crate::picture::{Picture, PictureInformation};
-use crate::tag::{Tag, TagType};
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
@@ -15,34 +14,6 @@ use std::io::{Read, Seek};
 use std::iter::Peekable;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-
-pub(crate) fn write_to<F>(
-	file: VerifiedFile<'_, F>,
-	tag: &Tag,
-	write_options: WriteOptions,
-) -> Result<(), FileEncodingError>
-where
-	F: FileLike,
-{
-	match tag.tag_type() {
-		TagType::VorbisComments => {
-			let (vendor, items, pictures) = crate::ogg::tag::create_vorbis_comments_ref(tag);
-
-			let mut comments_ref = VorbisCommentsRef {
-				vendor: Cow::from(vendor),
-				items,
-				pictures,
-			};
-
-			write_to_inner(file, &mut comments_ref, write_options)
-		},
-		// This tag can *only* be removed in this format
-		TagType::Id3v2 => {
-			crate::id3::v2::tag::conversion::Id3v2TagRef::empty().write_to(file, write_options)
-		},
-		_ => unreachable!("tag type verified beforehand"),
-	}
-}
 
 pub(crate) fn write_to_inner<'a, F, II, IP>(
 	file: VerifiedFile<'_, F>,

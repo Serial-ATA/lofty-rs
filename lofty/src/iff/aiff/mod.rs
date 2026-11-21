@@ -17,7 +17,6 @@ pub use tag::{AiffTextChunks, Comment};
 /// An AIFF file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct AiffFile {
 	/// Any text chunks included in the file
 	#[lofty(tag_type = "AiffText")]

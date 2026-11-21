@@ -57,7 +57,6 @@ pub enum MpcStreamVersion {
 /// An MPC file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct MpcFile {
 	/// The stream version
 	pub(crate) stream_version: MpcStreamVersion,

@@ -7,8 +7,8 @@ use crate::iff::aiff::tag::error::AiffTextChunksEncodingError;
 use crate::iff::chunk::{Chunks, IFF_CHUNK_HEADER_SIZE};
 use crate::io::{Length, Truncate, VerifiedFile};
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt,
 };
 use crate::util::io::FileLike;
 
@@ -216,7 +216,6 @@ impl TagExt for AiffTextChunks {
 			comments: self.comments.as_deref(),
 		}
 		.dump_to(writer, write_options)
-		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
@@ -327,6 +326,22 @@ impl From<Tag> for AiffTextChunks {
 	}
 }
 
+impl TagRefExt for AiffTextChunks {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		AiffTextChunksRef {
+			name: tag.get_string(ItemKey::TrackTitle),
+			author: tag.get_string(ItemKey::TrackArtist),
+			copyright: tag.get_string(ItemKey::CopyrightMessage),
+			annotations: Some(tag.get_strings(ItemKey::Comment)),
+			comments: tag
+				.companion_tag
+				.as_ref()
+				.and_then(CompanionTag::aiff_text_ref)
+				.and_then(|companion| companion.comments.as_deref()),
+		}
+	}
+}
+
 pub(crate) struct AiffTextChunksRef<'a, T, AI>
 where
 	AI: IntoIterator<Item = T>,
@@ -338,13 +353,15 @@ where
 	pub comments: Option<&'a [Comment]>,
 }
 
-impl<T, AI> AiffTextChunksRef<'_, T, AI>
+impl<T, AI> TagRef for AiffTextChunksRef<'_, T, AI>
 where
 	T: AsRef<str>,
 	AI: IntoIterator<Item = T>,
 {
-	pub(crate) fn write_to<F>(
-		self,
+	type EncodingError = AiffTextChunksEncodingError;
+
+	fn write_to<F>(
+		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
@@ -354,17 +371,16 @@ where
 		AiffTextChunksRef::write_to_inner(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		_write_options: WriteOptions,
-	) -> Result<(), AiffTextChunksEncodingError> {
-		let temp = Self::create_text_chunks(self)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, _write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		Self::create_text_chunks(self)
 	}
+}
 
+impl<T, AI> AiffTextChunksRef<'_, T, AI>
+where
+	T: AsRef<str>,
+	AI: IntoIterator<Item = T>,
+{
 	fn create_text_chunks(
 		tag: &mut AiffTextChunksRef<'_, T, AI>,
 	) -> Result<Vec<u8>, AiffTextChunksEncodingError> {
@@ -446,7 +462,7 @@ where
 
 	fn write_to_inner<F>(
 		file: VerifiedFile<'_, F>,
-		mut tag: AiffTextChunksRef<'_, T, AI>,
+		tag: &mut AiffTextChunksRef<'_, T, AI>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
 	where
@@ -457,7 +473,7 @@ where
 		super::read::verify_aiff(&mut file).map_err(FileParseError::from)?;
 		let file_len = file.len()?.saturating_sub(FIRST_CHUNK_LEN);
 
-		let text_chunks = Self::create_text_chunks(&mut tag).map_err(TagEncodingError::from)?;
+		let text_chunks = Self::create_text_chunks(tag).map_err(TagEncodingError::from)?;
 
 		let ExistingChunks {
 			text_chunks: mut existing_text_chunks,

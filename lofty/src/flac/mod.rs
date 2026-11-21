@@ -18,7 +18,7 @@ use crate::io::VerifiedFile;
 use crate::ogg::OggPictureStorage;
 use crate::ogg::tag::{VorbisComments, VorbisCommentsRef};
 use crate::picture::{Picture, PictureInformation};
-use crate::tag::TagExt;
+use crate::tag::{TagExt, TagRef};
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;

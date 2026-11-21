@@ -170,7 +170,7 @@ impl<'a> Frame<'a> {
 
 impl Frame<'_> {
 	/// Create a borrowed copy of the [`Frame`].
-	pub(super) fn borrow(&self) -> Frame<'_> {
+	pub(crate) fn borrow(&self) -> Frame<'_> {
 		match self {
 			Frame::Comment(f) => Frame::Comment(f.borrow()),
 			Frame::UnsynchronizedText(f) => Frame::UnsynchronizedText(f.borrow()),

@@ -146,6 +146,21 @@ impl FileEncodingError {
 		self.format = Some(format);
 		self
 	}
+
+	/// Whether this error represents an [`UnsupportedTagError`]
+	pub fn is_unsupported_tag(&self) -> bool {
+		let mut source = self.source();
+
+		while let Some(s) = source {
+			if s.is::<UnsupportedTagError>() {
+				return true;
+			}
+
+			source = s.source();
+		}
+
+		false
+	}
 }
 
 impl core::fmt::Display for FileEncodingError {

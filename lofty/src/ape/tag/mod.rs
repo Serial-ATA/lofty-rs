@@ -12,8 +12,8 @@ use crate::id3::v2::util::pairs::{NUMBER_PAIR_KEYS, format_number_pair, set_numb
 use crate::tag::item::ItemValueRef;
 use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt, try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt, try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::{FileLike, VerifiedFile};
@@ -469,7 +469,6 @@ impl TagExt for ApeTag {
 			items: self.items.iter().map(Into::into),
 		}
 		.dump_to(writer, write_options)
-		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
@@ -633,6 +632,56 @@ impl From<Tag> for ApeTag {
 	}
 }
 
+impl TagRefExt for ApeTag {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		fn create_apeitemref_for_number_pair<'a>(
+			number: Option<&str>,
+			total: Option<&str>,
+			key: &'a str,
+		) -> Option<ApeItemRef<'a>> {
+			format_number_pair(number, total).map(|value| ApeItemRef {
+				read_only: false,
+				key,
+				value: ItemValueRef::Text(Cow::Owned(value)),
+			})
+		}
+
+		let items = tag
+			.items()
+			.filter(|item| !NUMBER_PAIR_KEYS.contains(&item.key()))
+			.filter_map(|i| {
+				i.key().map_key(TagType::Ape).map(|key| ApeItemRef {
+					read_only: false,
+					key,
+					value: (&i.item_value).into(),
+				})
+			})
+			.chain(create_apeitemref_for_number_pair(
+				tag.get_string(ItemKey::TrackNumber),
+				tag.get_string(ItemKey::TrackTotal),
+				"Track",
+			))
+			.chain(create_apeitemref_for_number_pair(
+				tag.get_string(ItemKey::DiscNumber),
+				tag.get_string(ItemKey::DiscTotal),
+				"Disc",
+			))
+			.chain(
+				tag.companion_tag
+					.as_ref()
+					.and_then(CompanionTag::ape_ref)
+					.map_or(&[][..], |tag| tag.items.as_slice())
+					.iter()
+					.map(Into::into),
+			);
+
+		ApeTagRef {
+			read_only: false,
+			items,
+		}
+	}
+}
+
 pub(crate) struct ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
@@ -641,11 +690,13 @@ where
 	pub(crate) items: I,
 }
 
-impl<'a, I> ApeTagRef<'a, I>
+impl<'a, I> TagRef for ApeTagRef<'a, I>
 where
 	I: Iterator<Item = ApeItemRef<'a>>,
 {
-	pub(crate) fn write_to<F>(
+	type EncodingError = ApeTagEncodingError;
+
+	fn write_to<F>(
 		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
@@ -656,50 +707,9 @@ where
 		write::write_to(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), ApeTagEncodingError> {
-		let temp = write::create_ape_tag(self, std::iter::empty(), write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		write::create_ape_tag(self, std::iter::empty(), write_options)
 	}
-}
-
-pub(crate) fn tagitems_into_ape(tag: &Tag) -> impl Iterator<Item = ApeItemRef<'_>> {
-	fn create_apeitemref_for_number_pair<'a>(
-		number: Option<&str>,
-		total: Option<&str>,
-		key: &'a str,
-	) -> Option<ApeItemRef<'a>> {
-		format_number_pair(number, total).map(|value| ApeItemRef {
-			read_only: false,
-			key,
-			value: ItemValueRef::Text(Cow::Owned(value)),
-		})
-	}
-
-	tag.items()
-		.filter(|item| !NUMBER_PAIR_KEYS.contains(&item.key()))
-		.filter_map(|i| {
-			i.key().map_key(TagType::Ape).map(|key| ApeItemRef {
-				read_only: false,
-				key,
-				value: (&i.item_value).into(),
-			})
-		})
-		.chain(create_apeitemref_for_number_pair(
-			tag.get_string(ItemKey::TrackNumber),
-			tag.get_string(ItemKey::TrackTotal),
-			"Track",
-		))
-		.chain(create_apeitemref_for_number_pair(
-			tag.get_string(ItemKey::DiscNumber),
-			tag.get_string(ItemKey::DiscTotal),
-			"Disc",
-		))
 }
 
 #[cfg(test)]

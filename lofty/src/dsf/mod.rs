@@ -15,7 +15,6 @@ pub use properties::{DsfProperties, FormatId};
 /// A DSD Stream File (DSF) file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct DsfFile {
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,

@@ -19,8 +19,8 @@ use crate::picture::{Picture, PictureType};
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt, try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt, try_parse_timestamp,
 };
 use crate::util::io::FileLike;
 use crate::util::iter::VecExtractIfExt;
@@ -631,9 +631,7 @@ impl TagExt for Ilst {
 		writer: &mut W,
 		write_options: WriteOptions,
 	) -> std::result::Result<(), TagEncodingError> {
-		self.as_ref()
-			.dump_to(writer, write_options)
-			.map_err(Into::into)
+		self.as_ref().dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -826,5 +824,13 @@ impl From<Tag> for Ilst {
 		}
 
 		SplitTagRemainder::default().merge_tag(input)
+	}
+}
+
+impl TagRefExt for Ilst {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		conversion::IlstRef {
+			atoms: conversion::tag_atoms(tag),
+		}
 	}
 }

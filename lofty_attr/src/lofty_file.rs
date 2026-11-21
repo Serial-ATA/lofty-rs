@@ -10,9 +10,7 @@ use syn::{Data, DataStruct, DeriveInput, Field, Fields, Type};
 
 #[derive(Default)]
 pub struct InternalFileDetails {
-	pub(crate) has_internal_write_module: bool,
 	pub(crate) has_internal_file_type: bool,
-	pub(crate) id3v2_strippable: bool,
 }
 
 #[derive(Default)]
@@ -84,7 +82,6 @@ impl Parse for LoftyFile {
 
 		let mut errors = Vec::new();
 
-		let mut has_internal_write_module = false;
 		for attr in &input.attrs {
 			if let Some(lofty_attr) = AttributeValue::from_attribute("lofty", attr)? {
 				match lofty_attr {
@@ -93,9 +90,6 @@ impl Parse for LoftyFile {
 							lofty_file.audiofile_impl.should_impl_audiofile = false
 						},
 						"no_into_taggedfile_impl" => lofty_file.should_impl_into_taggedfile = false,
-						"internal_write_module_do_not_use_anywhere_else" => {
-							has_internal_write_module = true
-						},
 						_ => errors.push(util::err(attr.span(), "Unknown attribute")),
 					},
 					AttributeValue::NameValue(lhs, rhs) => match &*lhs.to_string() {
@@ -113,28 +107,17 @@ impl Parse for LoftyFile {
 		let opt_file_type = internal::opt_internal_file_type(struct_name.to_string());
 
 		let has_internal_file_type = opt_file_type.is_some();
-		if !has_internal_file_type && has_internal_write_module {
-			// TODO: This is the best check we can do for now I think?
-			//       Definitely needs some work when a better solution comes out.
-			return Err(crate::util::err(
-				input.ident.span(),
-				"Attempted to use an internal attribute externally",
-			));
-		}
-
-		lofty_file.internal_details.has_internal_write_module = has_internal_write_module;
 		lofty_file.internal_details.has_internal_file_type = has_internal_file_type;
 
 		// Internal files do not specify a `#[lofty(file_type = "...")]`
 		if lofty_file.file_type.is_empty() && lofty_file.internal_details.has_internal_file_type {
-			let Some((ft, id3v2_strip)) = opt_file_type else {
+			let Some(ft) = opt_file_type else {
 				return Err(util::err(
 					input.ident.span(),
 					"Unable to locate file type for internal file",
 				));
 			};
 
-			lofty_file.internal_details.id3v2_strippable = id3v2_strip;
 			lofty_file.file_type = ft;
 		}
 
@@ -189,7 +172,7 @@ impl LoftyFile {
 
 		let getters = get_getters(&self.struct_info.fields.tags, &self.struct_info.name);
 
-		let mut ret = quote! {
+		let ret = quote! {
 			#( #assert_tag_impl_into )*
 
 			#audiofile_impl
@@ -198,20 +181,6 @@ impl LoftyFile {
 
 			#( #getters )*
 		};
-
-		// Create `write` module if internal
-		if self.internal_details.has_internal_write_module {
-			let lookup = internal::init_write_lookup(self.internal_details.id3v2_strippable);
-			let write_mod = internal::write_module(&self.struct_info.fields.tags, lookup);
-
-			ret = quote! {
-				#ret
-
-				use crate::_this_is_internal;
-
-				#write_mod
-			}
-		}
 
 		Ok(TokenStream::from(ret))
 	}

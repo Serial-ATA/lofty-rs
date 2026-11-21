@@ -7,12 +7,11 @@ use crate::mp4::ilst::error::IlstEncodingError;
 use crate::mp4::{AdvisoryRating, Atom, AtomData, AtomIdent, DataType, Ilst};
 use crate::picture::{Picture, PictureType};
 use crate::tag::items::popularimeter::Popularimeter;
-use crate::tag::{CompanionTag, ItemKey, ItemValue, Tag, TagItem, TagType};
+use crate::tag::{CompanionTag, ItemKey, ItemValue, Tag, TagItem, TagRef, TagType};
 use crate::util::flag_item;
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
-use std::io::Write;
 
 impl Ilst {
 	pub(crate) fn as_ref(&self) -> IlstRef<impl Iterator<Item = AtomRef<'_>>> {
@@ -26,11 +25,13 @@ pub(crate) struct IlstRef<I> {
 	pub(crate) atoms: I,
 }
 
-impl<'a, I: 'a> IlstRef<I>
+impl<'a, I: 'a> TagRef for IlstRef<I>
 where
 	I: Iterator<Item = AtomRef<'a>>,
 {
-	pub(crate) fn write_to<F>(
+	type EncodingError = IlstEncodingError;
+
+	fn write_to<F>(
 		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
@@ -41,15 +42,8 @@ where
 		super::write::write_to(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), IlstEncodingError> {
-		let temp = super::write::build_ilst(&mut self.atoms, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		super::write::build_ilst(&mut self.atoms, write_options)
 	}
 }
 
@@ -350,7 +344,10 @@ pub(super) fn merge_tag_into(atoms: &mut Vec<Atom<'static>>, tag: Tag) {
 /// tied to the data in the source `Tag`.
 pub(crate) fn tag_atoms(tag: &Tag) -> impl Iterator<Item = AtomRef<'_>> {
 	let companion_atoms = if unsafe { global_options().preserve_format_specific_items }
-		&& let Some(CompanionTag::Mp4Ilst(companion)) = tag.companion_tag.as_ref()
+		&& let Some(companion) = tag
+			.companion_tag
+			.as_ref()
+			.and_then(CompanionTag::mp4_ilst_ref)
 	{
 		companion.atoms.as_slice()
 	} else {

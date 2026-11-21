@@ -23,7 +23,7 @@ use std::borrow::Cow;
 use std::io::Write;
 
 // Exports
-pub(crate) use crate::tag::tag_ext::TagWriteExt;
+pub(crate) use crate::tag::tag_ext::{TagRef, TagRefExt, TagWriteExt};
 pub use accessor::Accessor;
 pub use item::{ItemKey, ItemValue, TagItem};
 pub use split_merge_tag::{MergeTag, SplitTag};
@@ -746,7 +746,6 @@ macro_rules! companion_tags {
 					}
 				}
 
-				#[allow(unused)]
 				pub(crate) fn [<$tag_ty:snake _ref>](&self) -> Option<&$concrete_ty> {
 					match self {
 						Self::$tag_ty(tag) => Some(tag),

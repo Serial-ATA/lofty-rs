@@ -17,7 +17,9 @@ use crate::error::{FileEncodingError, TagEncodingError};
 use crate::id3::lyrics3::v1::errors::Lyrics3EncodingError;
 use crate::io::{FileLike, VerifiedFile};
 use crate::prelude::ItemKey;
-use crate::tag::{Accessor, MergeTag, SplitTag, Tag, TagExt, TagType, TagWriteExt};
+use crate::tag::{
+	Accessor, MergeTag, SplitTag, Tag, TagExt, TagRef, TagRefExt, TagType, TagWriteExt,
+};
 
 use std::io::Write;
 
@@ -121,9 +123,7 @@ impl TagExt for Lyrics3Tag {
 		writer: &mut W,
 		write_options: WriteOptions,
 	) -> std::result::Result<(), TagEncodingError> {
-		Into::<Lyrics3TagRef<'_>>::into(self)
-			.dump_to(writer, write_options)
-			.map_err(Into::into)
+		Into::<Lyrics3TagRef<'_>>::into(self).dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -184,6 +184,14 @@ impl From<Tag> for Lyrics3Tag {
 	}
 }
 
+impl TagRefExt for Lyrics3Tag {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		Lyrics3TagRef {
+			lyrics: tag.get_string(ItemKey::Lyrics).filter(|s| !s.is_empty()),
+		}
+	}
+}
+
 pub(crate) struct Lyrics3TagRef<'a> {
 	pub lyrics: Option<&'a str>,
 }
@@ -200,17 +208,11 @@ impl<'a> Into<Lyrics3TagRef<'a>> for &'a Lyrics3Tag {
 	}
 }
 
-impl<'a> Into<Lyrics3TagRef<'a>> for &'a Tag {
-	fn into(self) -> Lyrics3TagRef<'a> {
-		Lyrics3TagRef {
-			lyrics: self.get_string(ItemKey::Lyrics).filter(|s| !s.is_empty()),
-		}
-	}
-}
+impl TagRef for Lyrics3TagRef<'_> {
+	type EncodingError = Lyrics3EncodingError;
 
-impl Lyrics3TagRef<'_> {
-	pub(crate) fn write_to<F>(
-		&self,
+	fn write_to<F>(
+		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
@@ -220,14 +222,7 @@ impl Lyrics3TagRef<'_> {
 		write::write_lyrics3(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), Lyrics3EncodingError> {
-		let temp = write::encode(self, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		write::encode(self, write_options)
 	}
 }
