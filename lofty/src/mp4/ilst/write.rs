@@ -1,17 +1,15 @@
+use super::conversion::{AtomDataRef, AtomDataStorageRef, AtomRef, IlstRef};
 use super::data_type::DataType;
-use super::r#ref::IlstRef;
 use crate::config::WriteOptions;
 use crate::error::{FileEncodingError, FileParseError, TooMuchDataError};
 use crate::file::FileType;
 use crate::io::VerifiedFile;
 use crate::macros::try_vec;
-use crate::mp4::AtomData;
 use crate::mp4::atom_info::{ATOM_HEADER_LEN, AtomIdent, AtomInfo, FOURCC_LEN};
 use crate::mp4::error::{AtomParseError, Mp4ParseError};
 use crate::mp4::ilst::error::IlstEncodingError;
-use crate::mp4::ilst::r#ref::AtomRef;
 use crate::mp4::read::{AtomReader, atom_tree, find_child_atom, meta_is_full, verify_mp4};
-use crate::mp4::write::{AtomWriter, AtomWriterCompanion};
+use crate::mp4::writer::{AtomWriter, AtomWriterCompanion};
 use crate::picture::{MimeType, Picture};
 use crate::util::alloc::VecFallibleCapacity;
 use crate::util::io::FileLike;
@@ -30,12 +28,12 @@ fn handle_atom_parse_error(error: AtomParseError) -> FileEncodingError {
 
 pub(crate) fn write_to<'a, F, I>(
 	file: VerifiedFile<'_, F>,
-	tag: &mut IlstRef<'a, I>,
+	tag: &mut IlstRef<I>,
 	write_options: WriteOptions,
 ) -> Result<(), FileEncodingError>
 where
 	F: FileLike,
-	I: IntoIterator<Item = &'a AtomData> + 'a,
+	I: Iterator<Item = AtomRef<'a>> + 'a,
 {
 	log::debug!("Attempting to write `ilst` tag to file");
 
@@ -474,13 +472,10 @@ fn create_meta(writer: &mut AtomWriterCompanion<'_>, ilst: &[u8]) -> Result<u64,
 	Ok((META_ATOM.len() + HDLR_ATOM.len() + ilst.len()) as u64)
 }
 
-pub(super) fn build_ilst<'a, I>(
-	atoms: &mut dyn Iterator<Item = AtomRef<'a, I>>,
+pub(super) fn build_ilst<'a>(
+	atoms: &mut impl Iterator<Item = AtomRef<'a>>,
 	write_options: WriteOptions,
-) -> Result<Vec<u8>, IlstEncodingError>
-where
-	I: IntoIterator<Item = &'a AtomData> + 'a,
-{
+) -> Result<Vec<u8>, IlstEncodingError> {
 	log::debug!("Building `ilst` atom");
 
 	let mut peek = atoms.peekable();
@@ -501,12 +496,12 @@ where
 			// Empty size, we get it later
 			write_handle.write_all(&[0; FOURCC_LEN as usize])?;
 
-			match atom.ident {
-				AtomIdent::Fourcc(ref fourcc) => write_handle.write_all(fourcc)?,
-				AtomIdent::Freeform { mean, name } => write_freeform(&mean, &name, write_handle)?,
+			match &atom.ident {
+				AtomIdent::Fourcc(fourcc) => write_handle.write_all(fourcc)?,
+				AtomIdent::Freeform { mean, name } => write_freeform(mean, name, write_handle)?,
 			}
 
-			write_atom_data(atom.data, write_handle)?;
+			write_atom_data(&atom.data, write_handle)?;
 
 			let end = write_handle.stream_position()?;
 
@@ -556,26 +551,41 @@ where
 	Ok(())
 }
 
-fn write_atom_data<'a, I>(
-	data: I,
+fn write_atom_data(
+	storage: &AtomDataStorageRef<'_>,
 	writer: &mut AtomWriterCompanion<'_>,
-) -> Result<(), IlstEncodingError>
-where
-	I: IntoIterator<Item = &'a AtomData> + 'a,
-{
-	for value in data {
-		match value {
-			AtomData::UTF8(text) => write_data(DataType::Utf8, text.as_bytes(), writer)?,
-			AtomData::UTF16(text) => write_data(DataType::Utf16, text.as_bytes(), writer)?,
-			AtomData::Picture(pic) => write_picture(pic, writer)?,
-			AtomData::SignedInteger(int) => write_signed_int(*int, writer)?,
-			AtomData::UnsignedInteger(uint) => write_unsigned_int(*uint, writer)?,
-			AtomData::Bool(b) => write_bool(*b, writer)?,
-			AtomData::Unknown { code, data } => write_data(*code, data, writer)?,
-		}
+) -> Result<(), IlstEncodingError> {
+	match storage {
+		AtomDataStorageRef::Borrowed(storage) => {
+			for value in *storage {
+				write_atom_data_ref(&AtomDataRef::from(value), writer)?;
+			}
+		},
+		AtomDataStorageRef::Single(value) => write_atom_data_ref(value, writer)?,
+		AtomDataStorageRef::Multiple(values) => {
+			for value in values {
+				write_atom_data_ref(value, writer)?;
+			}
+		},
 	}
 
 	Ok(())
+}
+
+fn write_atom_data_ref(
+	value: &AtomDataRef<'_>,
+	writer: &mut AtomWriterCompanion<'_>,
+) -> Result<(), IlstEncodingError> {
+	match value {
+		AtomDataRef::UTF8(text) => write_data(DataType::Utf8, text.as_bytes(), writer),
+		AtomDataRef::UTF16(text) => write_data(DataType::Utf16, text.as_bytes(), writer),
+		AtomDataRef::Picture(pic) => write_picture(pic, writer),
+		AtomDataRef::SignedInteger(int) => write_signed_int(*int, writer),
+		AtomDataRef::UnsignedInteger(uint) => write_unsigned_int(*uint, writer),
+		AtomDataRef::Bool(b) => write_bool(*b, writer),
+		AtomDataRef::IntPair(bytes) => write_data(DataType::Reserved, bytes, writer),
+		AtomDataRef::Unknown { code, data } => write_data(*code, data, writer),
+	}
 }
 
 fn write_signed_int(

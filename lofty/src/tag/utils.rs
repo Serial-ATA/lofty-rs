@@ -5,11 +5,11 @@ use crate::id3::v1::tag::Id3v1TagRef;
 use crate::id3::v2::tag::conversion::Id3v2TagRef;
 use crate::id3::v2::{self, Id3v2TagFlags};
 use crate::io::VerifiedFile;
-use crate::mp4::Ilst;
+use crate::mp4::ilst::conversion::IlstRef;
 use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::tag::{Tag, TagType};
 use crate::util::io::FileLike;
-use crate::{aac, ape, dsf, flac, iff, mpeg, musepack, wavpack};
+use crate::{aac, ape, dsf, flac, iff, mp4, mpeg, musepack, wavpack};
 use ape::tag::ApeTagRef;
 use iff::aiff::tag::AiffTextChunksRef;
 use iff::wav::tag::RIFFInfoListRef;
@@ -37,11 +37,7 @@ where
 		},
 		FileType::Mpc => musepack::write::write_to(file, tag, write_options),
 		FileType::Mpeg => mpeg::write::write_to(file, tag, write_options),
-		FileType::Mp4 => crate::mp4::ilst::write::write_to(
-			file,
-			&mut Into::<Ilst>::into(tag.clone()).as_ref(),
-			write_options,
-		),
+		FileType::Mp4 => mp4::write::write_to(file, tag, write_options),
 		FileType::Wav => iff::wav::write::write_to(file, tag, write_options),
 		FileType::WavPack => wavpack::write::write_to(file, tag, write_options),
 		FileType::Custom(_) => unreachable!("custom file types don't support writing"),
@@ -70,10 +66,11 @@ pub(crate) fn dump_tag<W: Write>(
 		}
 		.dump_to(writer, write_options)
 		.map_err(Into::into),
-		TagType::Mp4Ilst => Into::<Ilst>::into(tag.clone())
-			.as_ref()
-			.dump_to(writer, write_options)
-			.map_err(Into::into),
+		TagType::Mp4Ilst => IlstRef {
+			atoms: mp4::ilst::conversion::tag_atoms(tag),
+		}
+		.dump_to(writer, write_options)
+		.map_err(Into::into),
 		TagType::VorbisComments => {
 			let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
 

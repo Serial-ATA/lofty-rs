@@ -1,11 +1,11 @@
 pub(super) mod advisory_rating;
 pub(super) mod atom;
 pub(super) mod constants;
+pub(crate) mod conversion;
 pub(super) mod data_type;
 pub(super) mod error;
 pub(super) mod read;
-mod r#ref;
-pub(crate) mod write;
+pub(super) mod write;
 
 #[cfg(test)]
 mod tests;
@@ -22,7 +22,6 @@ use crate::tag::{
 	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
 	TagWriteExt, try_parse_timestamp,
 };
-use crate::util::flag_item;
 use crate::util::io::FileLike;
 use crate::util::iter::VecExtractIfExt;
 use advisory_rating::AdvisoryRating;
@@ -800,133 +799,8 @@ impl MergeTag for SplitTagRemainder {
 	type Merged = Ilst;
 
 	fn merge_tag(self, tag: Tag) -> Self::Merged {
-		fn convert_to_uint(space: &mut Option<u16>, cont: &str) {
-			if let Ok(num) = cont.parse::<u16>() {
-				*space = Some(num);
-			}
-		}
-
-		fn create_int_pair(tag: &mut Ilst, ident: [u8; 4], pair: (Option<u16>, Option<u16>)) {
-			match pair {
-				(None, None) => {},
-				_ => {
-					let current = pair.0.unwrap_or(0).to_be_bytes();
-					let total = pair.1.unwrap_or(0).to_be_bytes();
-
-					tag.atoms.push(Atom {
-						ident: AtomIdent::Fourcc(ident),
-						data: AtomDataStorage::Single(AtomData::Unknown {
-							code: DataType::Reserved,
-							data: vec![0, 0, current[0], current[1], total[0], total[1], 0, 0],
-						}),
-					})
-				},
-			}
-		}
-
 		let Self(mut merged) = self;
-
-		// Storage for integer pairs
-		let mut tracks: (Option<u16>, Option<u16>) = (None, None);
-		let mut discs: (Option<u16>, Option<u16>) = (None, None);
-
-		for item in tag.items {
-			let key = item.item_key;
-
-			let Ok(ident) = TryInto::<AtomIdent<'_>>::try_into(&key) else {
-				log::debug!("No mapping exists for item key `{:?}`, discarding", key);
-				continue;
-			};
-
-			let ItemValue::Text(text) = item.item_value else {
-				continue;
-			};
-
-			match key {
-				ItemKey::TrackNumber => convert_to_uint(&mut tracks.0, text.as_str()),
-				ItemKey::TrackTotal => convert_to_uint(&mut tracks.1, text.as_str()),
-				ItemKey::DiscNumber => convert_to_uint(&mut discs.0, text.as_str()),
-				ItemKey::DiscTotal => convert_to_uint(&mut discs.1, text.as_str()),
-				ItemKey::FlagCompilation | ItemKey::FlagPodcast => {
-					let Some(data) = flag_item(text.as_str()) else {
-						continue;
-					};
-
-					merged.atoms.push(Atom {
-						ident: ident.into_owned(),
-						data: AtomDataStorage::Single(AtomData::Bool(data)),
-					})
-				},
-				ItemKey::ParentalAdvisory => {
-					let Ok(rating) = text.parse::<u8>() else {
-						log::warn!(
-							"Parental advisory rating is not a number: {}, discarding",
-							text
-						);
-						continue;
-					};
-
-					let Ok(parsed_rating) = AdvisoryRating::try_from(rating) else {
-						log::warn!(
-							"Parental advisory rating is out of range: {rating}, discarding"
-						);
-						continue;
-					};
-
-					merged.atoms.push(Atom {
-						ident: ident.into_owned(),
-						data: AtomDataStorage::Single(AtomData::SignedInteger(i32::from(
-							parsed_rating.as_u8(),
-						))),
-					})
-				},
-				ItemKey::Popularimeter => {
-					let Ok(popm) = Popularimeter::from_str(&text) else {
-						log::warn!("Failed to parse popularimeter during tag merge, skipping");
-						continue;
-					};
-
-					// AFAICT the apps that support `rate` (which are very few and far between) only
-					// support the ratings as text for some reason?
-					let value = popm.mapped_value(TagType::Mp4Ilst);
-					merged.atoms.push(Atom {
-						ident: ident.into_owned(),
-						data: AtomDataStorage::Single(AtomData::UTF8(value.to_string())),
-					});
-				},
-				_ => merged.atoms.push(Atom {
-					ident: ident.into_owned(),
-					data: AtomDataStorage::Single(AtomData::UTF8(text)),
-				}),
-			}
-		}
-
-		let mut covr = None;
-		for mut picture in tag.pictures {
-			// Just for correctness, since we can't actually
-			// assign a picture type in this format
-			picture.pic_type = PictureType::Other;
-
-			match &mut covr {
-				None => {
-					covr = Some(Atom {
-						ident: COVR,
-						data: AtomDataStorage::Single(AtomData::Picture(picture)),
-					});
-				},
-				Some(covr) => {
-					covr.push_data(AtomData::Picture(picture));
-				},
-			}
-		}
-
-		if let Some(covr) = covr {
-			merged.atoms.push(covr);
-		}
-
-		create_int_pair(&mut merged, *b"trkn", tracks);
-		create_int_pair(&mut merged, *b"disk", discs);
-
+		conversion::merge_tag_into(&mut merged.atoms, tag);
 		merged
 	}
 }

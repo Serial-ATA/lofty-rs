@@ -50,6 +50,13 @@ pub(crate) fn init_write_lookup(
 		.write_to(file, write_options)
 	});
 
+	insert!(map, Mp4Ilst, {
+		lofty::mp4::ilst::conversion::IlstRef {
+			atoms: lofty::mp4::ilst::conversion::tag_atoms(tag),
+		}
+		.write_to(file, write_options)
+	});
+
 	insert!(map, Id3v1, {
 		Into::<lofty::id3::v1::tag::Id3v1TagRef<'_>>::into(tag).write_to(file, write_options)
 	});
