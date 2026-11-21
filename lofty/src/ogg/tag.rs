@@ -11,8 +11,8 @@ use crate::picture::{Picture, PictureInformation};
 use crate::tag::items::Timestamp;
 use crate::tag::items::popularimeter::Popularimeter;
 use crate::tag::{
-	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType,
-	TagWriteExt, try_parse_timestamp,
+	Accessor, CompanionTag, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef,
+	TagRefExt, TagType, TagWriteExt, try_parse_timestamp,
 };
 use crate::util::flag_item;
 use crate::util::io::FileLike;
@@ -479,7 +479,6 @@ impl TagExt for VorbisComments {
 			pictures: self.pictures.iter().map(|(p, i)| (p, *i)),
 		}
 		.dump_to(writer, write_options)
-		.map_err(Into::into)
 	}
 
 	fn clear(&mut self) {
@@ -705,6 +704,42 @@ impl From<Tag> for VorbisComments {
 	}
 }
 
+impl TagRefExt for VorbisComments {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		let vendor = tag.get_string(ItemKey::EncoderSoftware).unwrap_or("");
+
+		let items = tag
+			.items
+			.iter()
+			.filter_map(|i| match i.value() {
+				ItemValue::Text(val) | ItemValue::Locator(val) => i
+					.key()
+					.map_key(TagType::VorbisComments)
+					.map(|key| (key, val.as_str())),
+				_ => None,
+			})
+			.chain(
+				tag.companion_tag
+					.as_ref()
+					.and_then(CompanionTag::vorbis_comments_ref)
+					.map_or(&[][..], |tag| tag.items.as_slice())
+					.iter()
+					.map(|(k, v)| (k.as_str(), v.as_str())),
+			);
+
+		let pictures = tag
+			.pictures
+			.iter()
+			.map(|p| (p, PictureInformation::from_picture(p).unwrap_or_default()));
+
+		VorbisCommentsRef {
+			vendor: Cow::Borrowed(vendor),
+			items,
+			pictures,
+		}
+	}
+}
+
 pub(crate) struct VorbisCommentsRef<'a, II, IP>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
@@ -715,13 +750,15 @@ where
 	pub pictures: IP,
 }
 
-impl<'a, II, IP> VorbisCommentsRef<'a, II, IP>
+impl<'a, II, IP> TagRef for VorbisCommentsRef<'a, II, IP>
 where
 	II: Iterator<Item = (&'a str, &'a str)>,
 	IP: Iterator<Item = (&'a Picture, PictureInformation)>,
 {
+	type EncodingError = VorbisCommentsEncodingError;
+
 	#[allow(clippy::shadow_unrelated)]
-	pub(crate) fn write_to<F>(
+	fn write_to<F>(
 		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
@@ -736,39 +773,9 @@ where
 		write::write(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), VorbisCommentsEncodingError> {
-		let metadata_packet = write::create_metadata_packet(self, &[], false, write_options)?;
-		writer.write_all(&metadata_packet)?;
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		write::create_metadata_packet(self, &[], false, write_options)
 	}
-}
-
-pub(crate) fn create_vorbis_comments_ref(
-	tag: &Tag,
-) -> (
-	&str,
-	impl Iterator<Item = (&str, &str)>,
-	impl Iterator<Item = (&Picture, PictureInformation)>,
-) {
-	let vendor = tag.get_string(ItemKey::EncoderSoftware).unwrap_or("");
-
-	let items = tag.items.iter().filter_map(|i| match i.value() {
-		ItemValue::Text(val) | ItemValue::Locator(val) => i
-			.key()
-			.map_key(TagType::VorbisComments)
-			.map(|key| (key, val.as_str())),
-		_ => None,
-	});
-
-	let pictures = tag
-		.pictures
-		.iter()
-		.map(|p| (p, PictureInformation::from_picture(p).unwrap_or_default()));
-	(vendor, items, pictures)
 }
 
 #[cfg(test)]

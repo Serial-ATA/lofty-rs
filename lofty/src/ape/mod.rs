@@ -26,7 +26,6 @@ pub use tag::item::ApeItem;
 /// An APE file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct ApeFile {
 	/// An ID3v1 tag
 	#[lofty(tag_type = "Id3v1")]

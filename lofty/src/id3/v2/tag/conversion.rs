@@ -1,6 +1,7 @@
 use crate::TextEncoding;
 use crate::config::WriteOptions;
 use crate::error::FileEncodingError;
+use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::frame::MUSICBRAINZ_UFID_OWNER;
 use crate::id3::v2::util::pairs::new_number_pair_frame;
 use crate::id3::v2::{
@@ -9,10 +10,9 @@ use crate::id3::v2::{
 };
 use crate::io::{FileLike, VerifiedFile};
 use crate::prelude::ItemKey;
-use crate::tag::{CompanionTag, Tag, TagItem, TagType};
+use crate::tag::{CompanionTag, Tag, TagItem, TagRef, TagType};
 
 use super::V4_MULTI_VALUE_SEPARATOR;
-use crate::id3::v2::error::Id3v2EncodingError;
 use crate::id3::v2::tag::{
 	new_text_frame, new_timestamp_frame, new_url_frame, new_user_text_frame,
 };
@@ -24,22 +24,12 @@ use crate::util::flag_item;
 
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
-use std::io::Write;
 use std::iter::Peekable;
 use std::str::FromStr;
 
 pub(crate) struct Id3v2TagRef<'a, I: Iterator<Item = Frame<'a>> + 'a> {
 	pub(crate) flags: Id3v2TagFlags,
 	pub(crate) frames: Peekable<I>,
-}
-
-impl<'a> Id3v2TagRef<'a, std::iter::Empty<Frame<'a>>> {
-	pub(crate) fn empty() -> Self {
-		Self {
-			flags: Id3v2TagFlags::default(),
-			frames: std::iter::empty().peekable(),
-		}
-	}
 }
 
 /// Converts [`TagItem`]s to [`Frame`]s
@@ -440,40 +430,17 @@ pub(crate) fn from_tag<'a>(
 
 // Create an iterator of FrameRef from a Tag's items for Id3v2TagRef::new
 pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = Frame<'_>> {
-	#[derive(Clone)]
-	enum CompanionTagIter<F, E> {
-		Filled(F),
-		Empty(E),
-	}
+	let companion_frames = tag
+		.companion_tag
+		.as_ref()
+		.and_then(CompanionTag::id3v2_ref)
+		.map_or(&[][..], |companion| &*companion.frames)
+		.iter()
+		.map(Frame::borrow);
 
-	impl<'a, I> Iterator for CompanionTagIter<I, std::iter::Empty<Frame<'_>>>
-	where
-		I: Iterator<Item = Frame<'a>>,
-	{
-		type Item = Frame<'a>;
-
-		fn next(&mut self) -> Option<Self::Item> {
-			match self {
-				CompanionTagIter::Filled(iter) => iter.next(),
-				CompanionTagIter::Empty(_) => None,
-			}
-		}
-	}
-
-	fn create_framerefs_for_companion_tag(
-		companion: Option<&CompanionTag>,
-	) -> impl IntoIterator<Item = Frame<'_>> + Clone {
-		match companion {
-			Some(CompanionTag::Id3v2(companion)) => {
-				CompanionTagIter::Filled(companion.frames.iter().map(Frame::borrow))
-			},
-			_ => CompanionTagIter::Empty(std::iter::empty()),
-		}
-	}
-
-	let items = from_tag(tag.items().map(Cow::Borrowed)).into_iter().chain(
-		create_framerefs_for_companion_tag(tag.companion_tag.as_ref()),
-	);
+	let items = from_tag(tag.items().map(Cow::Borrowed))
+		.into_iter()
+		.chain(companion_frames);
 
 	let pictures = tag
 		.pictures()
@@ -483,8 +450,10 @@ pub(crate) fn tag_frames(tag: &Tag) -> impl Iterator<Item = Frame<'_>> {
 	items.chain(pictures)
 }
 
-impl<'a, I: Iterator<Item = Frame<'a>> + 'a> Id3v2TagRef<'a, I> {
-	pub(crate) fn write_to<F>(
+impl<'a, I: Iterator<Item = Frame<'a>> + 'a> TagRef for Id3v2TagRef<'a, I> {
+	type EncodingError = Id3v2EncodingError;
+
+	fn write_to<F>(
 		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
@@ -495,14 +464,7 @@ impl<'a, I: Iterator<Item = Frame<'a>> + 'a> Id3v2TagRef<'a, I> {
 		write::write_id3v2(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), Id3v2EncodingError> {
-		let temp = write::create_tag(self, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		write::create_tag(self, write_options)
 	}
 }

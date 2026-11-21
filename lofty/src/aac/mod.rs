@@ -19,7 +19,6 @@ pub use properties::AACProperties;
 /// An AAC (ADTS) file
 #[derive(LoftyFile, Default)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct AacFile {
 	#[lofty(tag_type = "Id3v2")]
 	pub(crate) id3v2_tag: Option<Id3v2Tag>,

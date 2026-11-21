@@ -47,6 +47,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed encoding of `WXXX` frame URLs ([issue](https://github.com/Serial-ATA/lofty-rs/issues/795)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/797))
 - **APE**: Fixed parsing of headerless APEv2 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/759)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/779))
 - **AAC**: Fixed infinite loop when reading ADTS frames with a length shorter than their header ([issue](https://github.com/Serial-ATA/lofty-rs/issues/783)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/785))
+- **VorbisComments**: Fixed preservation of format-specific items when saving through `Tag` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/790)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/793))
+- **ApeTag**: Fixed preservation of format-specific items when saving through `Tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/793))
+- **RiffInfoList**: Fixed preservation of format-specific items when saving through `Tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/793))
 - **misc**: Fixed compilation error on `no-default-features` builds ([issue](https://github.com/Serial-ATA/lofty-rs/issues/789)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/791))
 
 ### Removed

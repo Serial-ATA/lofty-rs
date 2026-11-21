@@ -5,7 +5,8 @@ use crate::id3::v1::error::Id3v1EncodingError;
 use crate::io::VerifiedFile;
 use crate::tag::items::Timestamp;
 use crate::tag::{
-	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagType, TagWriteExt,
+	Accessor, ItemKey, ItemValue, MergeTag, SplitTag, Tag, TagExt, TagItem, TagRef, TagRefExt,
+	TagType, TagWriteExt,
 };
 use crate::util::io::FileLike;
 
@@ -254,9 +255,7 @@ impl TagExt for Id3v1Tag {
 		writer: &mut W,
 		write_options: WriteOptions,
 	) -> std::result::Result<(), TagEncodingError> {
-		Into::<Id3v1TagRef<'_>>::into(self)
-			.dump_to(writer, write_options)
-			.map_err(Into::into)
+		Into::<Id3v1TagRef<'_>>::into(self).dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -366,6 +365,34 @@ impl From<Tag> for Id3v1Tag {
 	}
 }
 
+impl TagRefExt for Id3v1Tag {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		Id3v1TagRef {
+			title: tag.get_string(ItemKey::TrackTitle),
+			artist: tag.get_string(ItemKey::TrackArtist),
+			album: tag.get_string(ItemKey::AlbumTitle),
+			year: tag
+				.get_string(ItemKey::Year)
+				.and_then(|year| year.parse().ok())
+				.or_else(|| tag.date().map(|date| date.year)),
+			comment: tag.get_string(ItemKey::Comment),
+			track_number: tag
+				.get_string(ItemKey::TrackNumber)
+				.map(|g| g.parse::<u8>().ok())
+				.and_then(|g| g),
+			genre: tag
+				.get_string(ItemKey::Genre)
+				.map(|g| {
+					GENRES
+						.iter()
+						.position(|v| v == &g)
+						.map_or_else(|| g.parse::<u8>().ok(), |p| Some(p as u8))
+				})
+				.and_then(|g| g),
+		}
+	}
+}
+
 pub(crate) struct Id3v1TagRef<'a> {
 	pub title: Option<&'a str>,
 	pub artist: Option<&'a str>,
@@ -390,34 +417,6 @@ impl<'a> Into<Id3v1TagRef<'a>> for &'a Id3v1Tag {
 	}
 }
 
-impl<'a> Into<Id3v1TagRef<'a>> for &'a Tag {
-	fn into(self) -> Id3v1TagRef<'a> {
-		Id3v1TagRef {
-			title: self.get_string(ItemKey::TrackTitle),
-			artist: self.get_string(ItemKey::TrackArtist),
-			album: self.get_string(ItemKey::AlbumTitle),
-			year: self
-				.get_string(ItemKey::Year)
-				.and_then(|year| year.parse().ok())
-				.or_else(|| self.date().map(|date| date.year)),
-			comment: self.get_string(ItemKey::Comment),
-			track_number: self
-				.get_string(ItemKey::TrackNumber)
-				.map(|g| g.parse::<u8>().ok())
-				.and_then(|g| g),
-			genre: self
-				.get_string(ItemKey::Genre)
-				.map(|g| {
-					GENRES
-						.iter()
-						.position(|v| v == &g)
-						.map_or_else(|| g.parse::<u8>().ok(), |p| Some(p as u8))
-				})
-				.and_then(|g| g),
-		}
-	}
-}
-
 impl Id3v1TagRef<'_> {
 	pub(super) fn is_empty(&self) -> bool {
 		self.title.is_none()
@@ -428,9 +427,13 @@ impl Id3v1TagRef<'_> {
 			&& self.track_number.is_none()
 			&& self.genre.is_none()
 	}
+}
 
-	pub(crate) fn write_to<F>(
-		&self,
+impl TagRef for Id3v1TagRef<'_> {
+	type EncodingError = Id3v1EncodingError;
+
+	fn write_to<F>(
+		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
@@ -440,15 +443,8 @@ impl Id3v1TagRef<'_> {
 		super::write::write_id3v1(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), Id3v1EncodingError> {
-		let temp = super::write::encode(self, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		super::write::encode(self, write_options)
 	}
 }
 

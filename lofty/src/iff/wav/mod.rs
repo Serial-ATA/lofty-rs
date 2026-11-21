@@ -16,7 +16,6 @@ pub use tag::RiffInfoList;
 /// A WAV file
 #[derive(LoftyFile)]
 #[lofty(read_fn = "read::read_from")]
-#[lofty(internal_write_module_do_not_use_anywhere_else)]
 pub struct WavFile {
 	/// A RIFF INFO LIST
 	#[lofty(tag_type = "RiffInfo")]

@@ -16,7 +16,10 @@ use crate::error::{FileEncodingError, TagEncodingError};
 use crate::io::{FileLike, VerifiedFile};
 use crate::prelude::ItemKey;
 use crate::tag::items::Timestamp;
-use crate::tag::{Accessor, CompanionTag, MergeTag, SplitTag, Tag, TagExt, TagType, TagWriteExt};
+use crate::tag::{
+	Accessor, CompanionTag, MergeTag, SplitTag, Tag, TagExt, TagRef, TagRefExt, TagType,
+	TagWriteExt,
+};
 use errors::Lyrics3v2EncodingError;
 
 use std::io::Write;
@@ -229,9 +232,7 @@ impl TagExt for Lyrics3v2Tag {
 		writer: &mut W,
 		write_options: WriteOptions,
 	) -> std::result::Result<(), TagEncodingError> {
-		Into::<Lyrics3v2TagRef<'_>>::into(self)
-			.dump_to(writer, write_options)
-			.map_err(Into::into)
+		Into::<Lyrics3v2TagRef<'_>>::into(self).dump_to(writer, write_options)
 	}
 
 	fn clear(&mut self) {
@@ -346,6 +347,34 @@ impl From<Tag> for Lyrics3v2Tag {
 	}
 }
 
+impl TagRefExt for Lyrics3v2Tag {
+	fn as_tag_ref(tag: &Tag) -> impl TagRef {
+		let companion = tag
+			.companion_tag
+			.as_ref()
+			.and_then(CompanionTag::lyrics3v2_ref);
+
+		Lyrics3v2TagRef {
+			flags: companion.map(|tag| tag.flags).unwrap_or_default(),
+			lyrics: tag.get_string(ItemKey::Lyrics).filter(|s| !s.is_empty()),
+			info: tag.get_string(ItemKey::Comment).filter(|s| !s.is_empty()),
+			author: tag.get_string(ItemKey::Lyricist).filter(|s| !s.is_empty()),
+			extended_album_name: tag
+				.get_string(ItemKey::AlbumTitle)
+				.filter(|s| !s.is_empty()),
+			extended_artist_name: tag
+				.get_string(ItemKey::TrackArtist)
+				.filter(|s| !s.is_empty()),
+			extended_track_title: tag
+				.get_string(ItemKey::TrackTitle)
+				.filter(|s| !s.is_empty()),
+			images: companion
+				.map(|tag| tag.images.iter().map(Into::into).collect())
+				.unwrap_or_default(),
+		}
+	}
+}
+
 pub(crate) struct ImageRef<'a> {
 	pub filename: &'a str,
 	pub description: Option<&'a str>,
@@ -393,34 +422,6 @@ impl<'a> Into<Lyrics3v2TagRef<'a>> for &'a Lyrics3v2Tag {
 				.as_deref()
 				.filter(|s| !s.is_empty()),
 			images: self.images.iter().map(Into::into).collect(),
-		}
-	}
-}
-
-impl<'a> Into<Lyrics3v2TagRef<'a>> for &'a Tag {
-	fn into(self) -> Lyrics3v2TagRef<'a> {
-		let companion = self
-			.companion_tag
-			.as_ref()
-			.and_then(CompanionTag::lyrics3v2_ref);
-
-		Lyrics3v2TagRef {
-			flags: companion.map(|tag| tag.flags).unwrap_or_default(),
-			lyrics: self.get_string(ItemKey::Lyrics).filter(|s| !s.is_empty()),
-			info: self.get_string(ItemKey::Comment).filter(|s| !s.is_empty()),
-			author: self.get_string(ItemKey::Lyricist).filter(|s| !s.is_empty()),
-			extended_album_name: self
-				.get_string(ItemKey::AlbumTitle)
-				.filter(|s| !s.is_empty()),
-			extended_artist_name: self
-				.get_string(ItemKey::TrackArtist)
-				.filter(|s| !s.is_empty()),
-			extended_track_title: self
-				.get_string(ItemKey::TrackTitle)
-				.filter(|s| !s.is_empty()),
-			images: companion
-				.map(|tag| tag.images.iter().map(Into::into).collect())
-				.unwrap_or_default(),
 		}
 	}
 }
@@ -490,9 +491,13 @@ impl Lyrics3v2TagRef<'_> {
 
 		len
 	}
+}
 
-	pub(crate) fn write_to<F>(
-		&self,
+impl TagRef for Lyrics3v2TagRef<'_> {
+	type EncodingError = Lyrics3v2EncodingError;
+
+	fn write_to<F>(
+		&mut self,
 		file: VerifiedFile<'_, F>,
 		write_options: WriteOptions,
 	) -> Result<(), FileEncodingError>
@@ -502,14 +507,7 @@ impl Lyrics3v2TagRef<'_> {
 		write::write_lyrics3v2(file, self, write_options)
 	}
 
-	pub(crate) fn dump_to<W: Write>(
-		&mut self,
-		writer: &mut W,
-		write_options: WriteOptions,
-	) -> Result<(), Lyrics3v2EncodingError> {
-		let temp = write::encode(self, write_options)?;
-		writer.write_all(&temp)?;
-
-		Ok(())
+	fn encode(&mut self, write_options: WriteOptions) -> Result<Vec<u8>, Self::EncodingError> {
+		write::encode(self, write_options)
 	}
 }

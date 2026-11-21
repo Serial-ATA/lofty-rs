@@ -4,11 +4,10 @@ use crate::file::FileType;
 use crate::io::{Truncate, VerifiedFile};
 use crate::macros::try_vec;
 use crate::ogg::constants::{OPUSTAGS, VORBIS_COMMENT_HEAD};
+use crate::ogg::tag::VorbisCommentsRef;
 use crate::ogg::tag::error::VorbisCommentsEncodingError;
-use crate::ogg::tag::{VorbisCommentsRef, create_vorbis_comments_ref};
 use crate::ogg::verify_signature;
 use crate::picture::{Picture, PictureInformation};
-use crate::tag::Tag;
 use crate::util::io::FileLike;
 
 use std::borrow::Cow;
@@ -16,25 +15,6 @@ use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 use ogg_pager::{CONTAINS_FIRST_PAGE_OF_BITSTREAM, MAX_WRITTEN_CONTENT_SIZE, Packets, PageHeader};
-
-pub(crate) fn write_to<F>(
-	file: VerifiedFile<'_, F>,
-	tag: &Tag,
-	write_options: WriteOptions,
-) -> Result<(), FileEncodingError>
-where
-	F: FileLike,
-{
-	let (vendor, items, pictures) = create_vorbis_comments_ref(tag);
-
-	let mut comments_ref = VorbisCommentsRef {
-		vendor: Cow::from(vendor),
-		items,
-		pictures,
-	};
-
-	write(file, &mut comments_ref, write_options)
-}
 
 pub(in crate::ogg) fn write<'a, F, II, IP>(
 	file: VerifiedFile<'_, F>,

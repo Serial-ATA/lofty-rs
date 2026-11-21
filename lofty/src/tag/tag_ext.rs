@@ -164,6 +164,46 @@ pub trait TagExt: Accessor + TagWriteExt + Into<Tag> + Sized + private::Sealed {
 	fn clear(&mut self);
 }
 
+/// A reference to a concrete tag type (e.g., [`VorbisCommentsRef`] for [`VorbisComments`])
+///
+/// [`VorbisCommentsRef`]: crate::ogg::tag::VorbisCommentsRef
+/// [`VorbisComments`]: crate::ogg::tag::VorbisComments
+pub(crate) trait TagRef {
+	type EncodingError: Into<TagEncodingError> + From<std::io::Error>;
+
+	/// Attempt to write the tag to `file`
+	fn write_to<F>(
+		&mut self,
+		file: VerifiedFile<'_, F>,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), FileEncodingError>
+	where
+		F: FileLike;
+
+	/// Attempt to encode the tag to a byte vec
+	fn encode(
+		&mut self,
+		write_options: WriteOptions,
+	) -> std::result::Result<Vec<u8>, Self::EncodingError>;
+
+	/// Dump the tag to the given `writer`
+	fn dump_to<W: std::io::Write>(
+		&mut self,
+		writer: &mut W,
+		write_options: WriteOptions,
+	) -> std::result::Result<(), TagEncodingError> {
+		let bytes = self.encode(write_options).map_err(Into::into)?;
+		writer
+			.write_all(&bytes)
+			.map_err(|e| Self::EncodingError::from(e).into())
+	}
+}
+
+pub(crate) trait TagRefExt {
+	/// Create a concrete tag reference from a [`Tag`] reference
+	fn as_tag_ref(tag: &Tag) -> impl TagRef;
+}
+
 pub(crate) trait TagWriteExt {
 	fn save_to<F>(
 		&self,

@@ -5,10 +5,12 @@ use std::io::Seek;
 
 use lofty::config::{ParseOptions, ParsingMode, WriteOptions};
 use lofty::flac::FlacFile;
+use lofty::id3::v2::Id3v2Tag;
 use lofty::ogg::OggPictureStorage;
 use lofty::ogg::tag::VorbisComments;
 use lofty::picture::{Picture, PictureInformation, PictureType};
 use lofty::prelude::*;
+use lofty::tag::TagType;
 
 #[test_log::test]
 fn multiple_vorbis_comments() {
@@ -46,6 +48,35 @@ fn read_no_properties() {
 #[test_log::test]
 fn read_no_tags() {
 	crate::util::no_tag_test("tests/files/assets/minimal/full_test.flac", None);
+}
+
+#[test_log::test]
+fn remove_id3v2() {
+	crate::util::remove_tag_test("tests/files/assets/minimal/full_test.flac", TagType::Id3v2);
+}
+
+#[test_log::test]
+fn forbid_saving_id3v2() {
+	// Saving *directly* to a FLAC should error
+	let mut file = temp_file("tests/files/assets/stream_info_last.flac");
+
+	let mut tag = Id3v2Tag::new();
+	tag.set_artist(String::from("Foo artist"));
+
+	let err = tag.save_to(&mut file, WriteOptions::new()).unwrap_err();
+	file.rewind().unwrap();
+	assert!(err.is_unsupported_tag());
+
+	// But through TaggedFile, it will just be ignored
+	let mut tagged_file = lofty::read_from(&mut file).unwrap();
+	file.rewind().unwrap();
+
+	tagged_file.insert_tag(tag.into());
+	tagged_file.save_to(&mut file, WriteOptions::new()).unwrap();
+	file.rewind().unwrap();
+
+	let tagged_file = lofty::read_from(&mut file).unwrap();
+	assert!(tagged_file.tag(TagType::Id3v2).is_none());
 }
 
 #[test_log::test]
