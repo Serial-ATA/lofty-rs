@@ -457,13 +457,15 @@ impl Lyrics3v2TagRef<'_> {
 			+ field_len(
 				self.extended_album_name,
 				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-			) + field_len(
-			self.extended_artist_name,
-			constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-		) + field_len(
-			self.extended_track_title,
-			constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
-		);
+			)
+			+ field_len(
+				self.extended_artist_name,
+				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
+			)
+			+ field_len(
+				self.extended_track_title,
+				constants::BASIC_TEXT_FIELD_MAX_SIZE as usize,
+			);
 
 		if !self.images.is_empty() {
 			len += FIELD_HEADER_LEN;

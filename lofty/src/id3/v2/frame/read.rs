@@ -162,7 +162,8 @@ impl ParsedFrame<'static> {
 				let mut unsynchronized_reader = UnsynchronizedStream::new(reader);
 
 				if flags.compression {
-					let mut compression_reader = handle_compression(unsynchronized_reader)?;
+					let (id, mut compression_reader) =
+						handle_compression(id, unsynchronized_reader)?;
 
 					if flags.encryption.is_some() {
 						return handle_encryption(&mut compression_reader, size, id, flags);
@@ -198,7 +199,7 @@ impl ParsedFrame<'static> {
 			FrameFlags {
 				compression: true, ..
 			} => {
-				let mut compression_reader = handle_compression(reader)?;
+				let (id, mut compression_reader) = handle_compression(id, reader)?;
 
 				if flags.encryption.is_some() {
 					return handle_encryption(&mut compression_reader, size, id, flags);
@@ -232,14 +233,23 @@ impl ParsedFrame<'static> {
 
 #[cfg(feature = "id3v2_compression_support")]
 #[allow(clippy::unnecessary_wraps)]
-fn handle_compression<R: Read>(reader: R) -> Result<flate2::read::ZlibDecoder<R>, FrameParseError> {
-	Ok(flate2::read::ZlibDecoder::new(reader))
+fn handle_compression<R: Read>(
+	id: FrameId<'static>,
+	reader: R,
+) -> Result<(FrameId<'static>, flate2::read::ZlibDecoder<R>), FrameParseError> {
+	Ok((id, flate2::read::ZlibDecoder::new(reader)))
 }
 
 #[cfg(not(feature = "id3v2_compression_support"))]
 #[allow(clippy::unnecessary_wraps)]
-fn handle_compression<R>(_: R) -> Result<std::io::Empty, FrameParseError> {
-	Err(Id3v2Error::new(Id3v2ErrorKind::CompressedFrameEncountered).into())
+fn handle_compression<R>(
+	id: FrameId<'static>,
+	_: R,
+) -> Result<(FrameId<'static>, std::io::Empty), FrameParseError> {
+	Err(FrameParseError::message(
+		Some(id),
+		"encountered a compressed ID3v2 frame, support is disabled",
+	))
 }
 
 fn handle_encryption<R: Read>(
