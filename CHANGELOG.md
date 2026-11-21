@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FrameParseError` and `FrameEncodingError` can now be converted into `TagParseError` and `TagEncodingError`, respectively ([issue](https://github.com/Serial-ATA/lofty-rs/issues/728)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/776))
   - Fixed parsing and encoding of ID3v2.3 extended headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/761)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/777))
 - **APE**: Fixed parsing of headerless APEv2 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/759)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/779))
+- **misc**: Fixed compilation error on `no-default-features` builds ([issue](https://github.com/Serial-ATA/lofty-rs/issues/789)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/791))
 
 ### Removed
 

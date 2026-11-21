@@ -32,7 +32,8 @@ where
 		header,
 		content,
 		range: _,
-	}) = find_id3v2(reader, parse_options.read_tags, parse_options).map_err(TagParseError::from)?
+	}) =
+		find_id3v2(reader, parse_options.read_tags, parse_options).map_err(TagParseError::from)?
 	{
 		let Some(new_stream_length) = stream_length.checked_sub(u64::from(header.full_tag_size()))
 		else {
