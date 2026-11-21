@@ -2,7 +2,6 @@ use crate::config::ParsingMode;
 use crate::error::{NotEnoughDataError, SizeMismatchError};
 use crate::macros::try_vec;
 use crate::mp4::error::AtomParseError;
-use crate::tag::{ItemKey, TagType};
 use crate::util::text::utf8_decode;
 
 use std::borrow::Cow;
@@ -77,47 +76,6 @@ impl core::fmt::Display for AtomIdent<'_> {
 			AtomIdent::Fourcc(fourcc) => write!(f, "{}", fourcc.escape_ascii()),
 			AtomIdent::Freeform { mean, name } => write!(f, "----:{mean}:{name}"),
 		}
-	}
-}
-
-impl<'a> TryFrom<&'a ItemKey> for AtomIdent<'a> {
-	type Error = ();
-
-	fn try_from(value: &'a ItemKey) -> std::result::Result<Self, Self::Error> {
-		if let Some(mapped_key) = value.map_key(TagType::Mp4Ilst) {
-			if mapped_key.starts_with("----") {
-				let mut split = mapped_key.split(':');
-
-				split.next();
-
-				let mean = split.next();
-				let name = split.next();
-
-				if let (Some(mean), Some(name)) = (mean, name) {
-					return Ok(AtomIdent::Freeform {
-						mean: Cow::Borrowed(mean),
-						name: Cow::Borrowed(name),
-					});
-				}
-			} else {
-				let fourcc = mapped_key.chars().map(|c| c as u8).collect::<Vec<_>>();
-
-				if let Ok(fourcc) = TryInto::<[u8; 4]>::try_into(fourcc) {
-					return Ok(AtomIdent::Fourcc(fourcc));
-				}
-			}
-		}
-
-		Err(())
-	}
-}
-
-impl TryFrom<ItemKey> for AtomIdent<'static> {
-	type Error = ();
-
-	fn try_from(value: ItemKey) -> std::result::Result<Self, Self::Error> {
-		let ret: AtomIdent<'_> = (&value).try_into()?;
-		Ok(ret.into_owned())
 	}
 }
 
