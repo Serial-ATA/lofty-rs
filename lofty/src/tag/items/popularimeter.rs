@@ -69,6 +69,67 @@ pub enum StarRating {
 	Five = 5,
 }
 
+impl TryFrom<u8> for StarRating {
+	type Error = ();
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			1 => Ok(Self::One),
+			2 => Ok(Self::Two),
+			3 => Ok(Self::Three),
+			4 => Ok(Self::Four),
+			5 => Ok(Self::Five),
+			_ => Err(()),
+		}
+	}
+}
+
+impl From<StarRating> for u8 {
+	fn from(value: StarRating) -> Self {
+		value as u8
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for StarRating {
+	fn deserialize<D>(deserializer: D) -> Result<StarRating, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		use serde::de::{Error, Visitor};
+
+		struct StarRatingVisitor;
+
+		impl Visitor<'_> for StarRatingVisitor {
+			type Value = StarRating;
+
+			fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				formatter.write_str("a star rating 1..=5")
+			}
+
+			fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+			where
+				E: Error,
+			{
+				StarRating::try_from(v)
+					.map_err(|_| Error::custom(format!("star rating `{v}` out of range")))
+			}
+		}
+
+		deserializer.deserialize_u8(StarRatingVisitor)
+	}
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for StarRating {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		serializer.serialize_u8((*self).into())
+	}
+}
+
 /// A rating provider for [`Popularimeter`]s
 ///
 /// As there is no standard for ratings, there are multiple providers for popular applications
