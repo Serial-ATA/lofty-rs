@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **TagType**: `TagType::conflicts_with()` to check if a `TagType` conflicts with another ([PR](https://github.com/Serial-ATA/lofty-rs/pull/767))
   - Conflicting tags cannot be written to a file, and will require manual intervention
 - **Timestamp**: Added serde de/serialization support ([issue](https://github.com/Serial-ATA/lofty-rs/issues/786)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/799))
+- **StarRating**: Added serde de/serialization support ([issue](https://github.com/Serial-ATA/lofty-rs/issues/786)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/799))
 
 ### Changed
 
