@@ -1621,6 +1621,100 @@ fn wxxx_frame_encodings() {
 	}
 }
 
+#[test_log::test]
+fn tyer() {
+	// https://github.com/Serial-ATA/lofty-rs/issues/794
+	//
+	// Should support `TYER` with full dates
+	for (date, timestamp) in [
+		(
+			"2026",
+			Timestamp {
+				year: 2026,
+				..Timestamp::default()
+			},
+		),
+		(
+			"2026-11-22",
+			Timestamp {
+				year: 2026,
+				month: Some(11),
+				day: Some(22),
+				..Timestamp::default()
+			},
+		),
+	] {
+		let mut tag = Id3v2Tag::new();
+		tag.insert(Frame::Text(TextInformationFrame::new(
+			FrameId::Valid(Cow::Borrowed("TYER")),
+			TextEncoding::UTF16,
+			date,
+		)));
+
+		let mut tag_bytes = Vec::new();
+		tag.dump_to(&mut tag_bytes, WriteOptions::new().use_id3v23(true))
+			.unwrap();
+
+		let tag = maybe_read_tag_with_options(&tag_bytes, ParseOptions::new()).unwrap();
+
+		assert_eq!(tag.date(), Some(timestamp));
+	}
+
+	// But `TDAT` and `TIME` can still overwrite it
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TYER")),
+		TextEncoding::UTF16,
+		"2026-11-22",
+	)));
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TDAT")),
+		TextEncoding::UTF16,
+		"2110",
+	)));
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TIME")),
+		TextEncoding::UTF16,
+		"0908",
+	)));
+
+	let mut tag_bytes = Vec::new();
+	tag.dump_to(&mut tag_bytes, WriteOptions::new().use_id3v23(true))
+		.unwrap();
+
+	let tag = maybe_read_tag_with_options(&tag_bytes, ParseOptions::new()).unwrap();
+
+	assert_eq!(
+		tag.date(),
+		Some(Timestamp {
+			year: 2026,
+			month: Some(10),
+			day: Some(21),
+			hour: Some(9),
+			minute: Some(8),
+			second: None,
+		})
+	);
+
+	// And strict mode should fail it
+	let mut tag = Id3v2Tag::new();
+	tag.insert(Frame::Text(TextInformationFrame::new(
+		FrameId::Valid(Cow::Borrowed("TYER")),
+		TextEncoding::UTF16,
+		"2026-11-22",
+	)));
+
+	let mut tag_bytes = Vec::new();
+	tag.dump_to(&mut tag_bytes, WriteOptions::new().use_id3v23(true))
+		.unwrap();
+
+	maybe_read_tag_with_options(
+		&tag_bytes,
+		ParseOptions::new().parsing_mode(ParsingMode::Strict),
+	)
+	.unwrap_err();
+}
+
 macro_rules! popm_tests {
 		(
 			$($tagger_name:ident => $(($tagger_value:expr, $mapped_value:literal)),+);* $(;)?
