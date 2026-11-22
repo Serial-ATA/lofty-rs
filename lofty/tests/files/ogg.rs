@@ -92,8 +92,6 @@ fn vorbis_comments_padding_rounds() {
 fn vorbis_comments_disabled_padding() {
 	let original_len =
 		comments_len(&mut File::open("tests/files/assets/minimal/full_test.ogg").unwrap());
-	// Extra length for the implicit encoder field
-	let comment_delta = "....ENCODER=Lavf58.76.100".len();
 
 	let mut tagged_file = crate::util::read("tests/files/assets/minimal/full_test.ogg");
 	tagged_file
@@ -102,7 +100,7 @@ fn vorbis_comments_disabled_padding() {
 
 	let mut f = tagged_file.into_inner();
 	let new_len = comments_len(&mut f);
-	assert_eq!(new_len, original_len + comment_delta);
+	assert_eq!(new_len, original_len);
 }
 
 #[test_log::test]
@@ -140,8 +138,8 @@ fn read(path: &str, file_type: FileType) {
 
 	assert_eq!(file.file_type(), file_type);
 
-	// Expecting 2 items: vendor string and artist
-	crate::util::verify_artist(&file, TagType::VorbisComments, "Foo artist", 2);
+	// Expecting 1 item: artist
+	crate::util::verify_artist(&file, TagType::VorbisComments, "Foo artist", 1);
 }
 
 fn write(path: &str, file_type: FileType) {
@@ -154,7 +152,7 @@ fn write(path: &str, file_type: FileType) {
 		TagType::VorbisComments,
 		"Foo artist",
 		"Bar artist",
-		2,
+		1,
 	);
 
 	// Now reread the file
@@ -173,7 +171,7 @@ fn write(path: &str, file_type: FileType) {
 		TagType::VorbisComments,
 		"Bar artist",
 		"Foo artist",
-		2,
+		1,
 	);
 }
 
@@ -186,9 +184,9 @@ fn remove(path: &str, tag_type: TagType) {
 		.unwrap()
 		.read()
 		.unwrap();
-	// Verify we have both the vendor and artist
+	// Verify we have the artist
 	assert!(
-		tagged_file.tag(tag_type).is_some() && tagged_file.tag(tag_type).unwrap().item_count() == 2
+		tagged_file.tag(tag_type).is_some() && tagged_file.tag(tag_type).unwrap().item_count() == 1
 	);
 
 	file.rewind().unwrap();
@@ -204,8 +202,9 @@ fn remove(path: &str, tag_type: TagType) {
 		.read()
 		.unwrap();
 
-	// We can't completely remove the tag since metadata packets are mandatory, but it should only have to vendor now
-	assert_eq!(tagged_file.tag(tag_type).unwrap().item_count(), 1);
+	// We can't completely remove the tag since metadata packets are mandatory, but it should be empty
+	assert!(tagged_file.tag(tag_type).is_some());
+	assert!(tagged_file.tag(tag_type).unwrap().is_empty());
 }
 
 #[test_log::test]
