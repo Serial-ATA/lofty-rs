@@ -578,20 +578,6 @@ impl SplitTag for VorbisComments {
 			ITEM_CONSUMED // Item consumed
 		});
 
-		// We need to preserve the vendor string
-		if !tag
-			.items
-			.iter()
-			.any(|i| i.key() == ItemKey::EncoderSoftware)
-			&& !self.vendor.is_empty()
-		{
-			tag.items.push(TagItem::new(
-				ItemKey::EncoderSoftware,
-				// Preserve the original vendor by cloning
-				ItemValue::Text(self.vendor.clone()),
-			));
-		}
-
 		for (pic, _info) in std::mem::take(&mut self.pictures) {
 			tag.push_picture(pic)
 		}
@@ -603,16 +589,8 @@ impl SplitTag for VorbisComments {
 impl MergeTag for SplitTagRemainder {
 	type Merged = VorbisComments;
 
-	fn merge_tag(self, mut tag: Tag) -> Self::Merged {
+	fn merge_tag(self, tag: Tag) -> Self::Merged {
 		let Self(mut merged) = self;
-
-		if let Some(TagItem {
-			item_value: ItemValue::Text(val),
-			..
-		}) = tag.take(ItemKey::EncoderSoftware).next()
-		{
-			merged.vendor = val;
-		}
 
 		for item in tag.items {
 			let item_key = item.item_key;
@@ -706,8 +684,6 @@ impl From<Tag> for VorbisComments {
 
 impl TagRefExt for VorbisComments {
 	fn as_tag_ref(tag: &Tag) -> impl TagRef {
-		let vendor = tag.get_string(ItemKey::EncoderSoftware).unwrap_or("");
-
 		let items = tag
 			.items
 			.iter()
@@ -733,7 +709,7 @@ impl TagRefExt for VorbisComments {
 			.map(|p| (p, PictureInformation::from_picture(p).unwrap_or_default()));
 
 		VorbisCommentsRef {
-			vendor: Cow::Borrowed(vendor),
+			vendor: Cow::Borrowed(""),
 			items,
 			pictures,
 		}

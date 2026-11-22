@@ -33,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Undersized frames will no longer error in relaxed mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/768)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/781))
     - They will still produce an error in best attempt (default) and strict mode
   - v3 `TYER` frames with full dates are now supported in relaxed and best attempt (default) parse modes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/794)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/798))
+- **OGG**: Saving to OGG formats (Opus/Vorbis/Speex) will no longer write an implicit `ENCODER` field ([issue](https://github.com/Serial-ATA/lofty-rs/issues/788)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/800))
 
 ### Fixed
 
