@@ -173,6 +173,46 @@ impl FromStr for Timestamp {
 	}
 }
 
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Timestamp {
+	fn deserialize<D>(deserializer: D) -> Result<Timestamp, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		use serde::de::{Error, Visitor};
+
+		struct TimestampVisitor;
+
+		impl Visitor<'_> for TimestampVisitor {
+			type Value = Timestamp;
+
+			fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+				formatter.write_str("an ISO 8601 timestamp string")
+			}
+
+			fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>
+			where
+				E: Error,
+			{
+				Timestamp::from_str(s).map_err(|err| Error::custom(format!("{err}: {s:?}")))
+			}
+		}
+
+		deserializer.deserialize_str(TimestampVisitor)
+	}
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Timestamp {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		self.verify().map_err(serde::ser::Error::custom)?;
+		serializer.serialize_str(&self.to_string())
+	}
+}
+
 impl Timestamp {
 	/// The maximum length of a timestamp in bytes
 	pub const MAX_LENGTH: usize = 19;
