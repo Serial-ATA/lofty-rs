@@ -1594,6 +1594,33 @@ TPE1\x00\x00\x00\x0B\x00\x00\x00Serial-ATA";
 	maybe_read_tag_with_options(bad_tag, ParseOptions::new()).unwrap_err();
 }
 
+#[test_log::test]
+fn wxxx_frame_encodings() {
+	// https://github.com/Serial-ATA/lofty-rs/issues/795
+	for encoding in [TextEncoding::Latin1, TextEncoding::UTF16] {
+		let frame = ExtendedUrlFrame::new(encoding, "Description", "https://example.com");
+		let mut tag = Id3v2Tag::new();
+		tag.insert(Frame::from(frame));
+
+		let mut tag_bytes = Vec::new();
+		tag.dump_to(&mut tag_bytes, WriteOptions::new()).unwrap();
+
+		let tag = maybe_read_tag_with_options(
+			&tag_bytes,
+			ParseOptions::new().parsing_mode(ParsingMode::Strict),
+		)
+		.unwrap();
+
+		let Frame::UserUrl(wxxx) = tag.iter().next().unwrap() else {
+			unreachable!("should have a `WXXX` frame");
+		};
+
+		assert_eq!(wxxx.encoding, encoding);
+		assert_eq!(wxxx.description, "Description");
+		assert_eq!(wxxx.content, "https://example.com");
+	}
+}
+
 macro_rules! popm_tests {
 		(
 			$($tagger_name:ident => $(($tagger_value:expr, $mapped_value:literal)),+);* $(;)?
