@@ -160,7 +160,11 @@ impl<'a> ExtendedUrlFrame<'a> {
 				.encode(&self.description, true, write_options.lossy_text_encoding)?
 				.iter(),
 		);
-		bytes.extend(encoding.encode(&self.content, false, write_options.lossy_text_encoding)?);
+		bytes.extend(TextEncoding::Latin1.encode(
+			&self.content,
+			false,
+			write_options.lossy_text_encoding,
+		)?);
 
 		Ok(bytes)
 	}
