@@ -1,11 +1,10 @@
 use super::frame::read::ParsedFrame;
 use super::header::Id3v2Header;
 use super::tag::Id3v2Tag;
-use crate::config::ParseOptions;
+use crate::config::{ParseOptions, ParsingMode};
 use crate::id3::v2::error::{FrameParseError, Id3v2ParseError};
 use crate::id3::v2::util::synchsafe::UnsynchronizedStream;
 use crate::id3::v2::{Frame, FrameId, FrameList, Id3v2TagFlags, Id3v2Version, TimestampFrame};
-use crate::tag::items::Timestamp;
 
 use std::borrow::Cow;
 use std::io::Read;
@@ -47,37 +46,49 @@ where
 
 	// Construct TDRC frame from TYER, TDAT, and TIME frames
 	if parse_options.implicit_conversions && header.version == Id3v2Version::V3 {
-		construct_tdrc_from_v3(&mut ret);
+		construct_tdrc_from_v3(&mut ret, parse_options.parsing_mode)?;
 	}
 
 	Ok(ret)
 }
 
-fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
+fn construct_tdrc_from_v3(
+	tag: &mut Id3v2Tag,
+	parse_mode: ParsingMode,
+) -> Result<(), FrameParseError> {
+	const TYER: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TYER"));
 	const TDRC: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TDRC"));
 	const TDAT: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TDAT"));
 	const TIME: FrameId<'_> = FrameId::Valid(Cow::Borrowed("TIME"));
 
 	// Our TYER frame gets converted to TDRC earlier
 	let Some(year_frame) = tag.remove(&TDRC).next() else {
-		return;
+		return Ok(());
 	};
 
 	let Frame::Timestamp(year_frame) = year_frame else {
 		log::warn!("TYER frame is not a timestamp frame, retaining.");
 		tag.insert(year_frame);
-		return;
+		return Ok(());
 	};
 
-	// This is not a TYER frame
 	if year_frame.timestamp.month.is_some() {
-		return;
+		// This is not a spec-compliant TYER frame
+		//
+		// Some encoders write a full date in the TYER frame: <https://github.com/Serial-ATA/lofty-rs/issues/794>
+		//
+		// Even in that case, we'll still allow the `TDAT` and `TIME` frames to overwrite the timestamp.
+		if parse_mode == ParsingMode::Strict {
+			return Err(FrameParseError::message(
+				Some(TYER),
+				"invalid year frame, likely contains a full timestamp",
+			));
+		}
+
+		log::warn!("invalid `TYER` frame, the date may not be correct");
 	}
 
-	let mut tdrc = Timestamp {
-		year: year_frame.timestamp.year,
-		..Timestamp::default()
-	};
+	let mut tdrc = year_frame.timestamp;
 
 	let mut date_used = false;
 	let mut time_used = false;
@@ -86,7 +97,7 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 			break 'build;
 		};
 
-		if date.len() != 4 || !date.is_ascii() {
+		if date.len() != 4 || !date.chars().all(|c| c.is_ascii_digit()) {
 			log::warn!("Invalid TDAT frame, retaining.");
 			break 'build;
 		}
@@ -104,7 +115,7 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 			break 'build;
 		};
 
-		if time.len() != 4 || !time.is_ascii() {
+		if time.len() != 4 || !time.chars().all(|c| c.is_ascii_digit()) {
 			log::warn!("Invalid TIME frame, retaining.");
 			break 'build;
 		}
@@ -132,6 +143,8 @@ fn construct_tdrc_from_v3(tag: &mut Id3v2Tag) {
 	if time_used {
 		let _ = tag.remove(&TIME);
 	}
+
+	Ok(())
 }
 
 pub(super) fn read_all_frames_into_tag<R>(

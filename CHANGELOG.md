@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `FrameList::remove()` is now order-preserving ([PR](https://github.com/Serial-ATA/lofty-rs/pull/778))
   - Undersized frames will no longer error in relaxed mode ([issue](https://github.com/Serial-ATA/lofty-rs/issues/768)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/781))
     - They will still produce an error in best attempt (default) and strict mode
+  - v3 `TYER` frames with full dates are now supported in relaxed and best attempt (default) parse modes ([issue](https://github.com/Serial-ATA/lofty-rs/issues/794)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/798))
 
 ### Fixed
 
@@ -43,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       source `Tag` contained multiple.
   - `FrameParseError` and `FrameEncodingError` can now be converted into `TagParseError` and `TagEncodingError`, respectively ([issue](https://github.com/Serial-ATA/lofty-rs/issues/728)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/776))
   - Fixed parsing and encoding of ID3v2.3 extended headers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/761)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/777))
+  - Fixed encoding of `WXXX` frame URLs ([issue](https://github.com/Serial-ATA/lofty-rs/issues/795)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/797))
 - **APE**: Fixed parsing of headerless APEv2 tags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/759)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/779))
 - **AAC**: Fixed infinite loop when reading ADTS frames with a length shorter than their header ([issue](https://github.com/Serial-ATA/lofty-rs/issues/783)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/785))
 - **misc**: Fixed compilation error on `no-default-features` builds ([issue](https://github.com/Serial-ATA/lofty-rs/issues/789)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/791))
@@ -163,7 +165,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed handling of encryption method symbols when writing ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of extended headers in ID3v2.3 ([issue](https://github.com/Serial-ATA/lofty-rs/issues/656)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/657))
   - Fixed parsing of tags with **both** tag-wide and frame-level unsynchronization flags ([issue](https://github.com/Serial-ATA/lofty-rs/issues/678)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/690))
-  - Fixed encoding of `WXXX` frame URLs ([issue](https://github.com/Serial-ATA/lofty-rs/issues/795)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/797))
 - **MusePack**: ID3v1 tags are now correctly treated as read-only
 - **MP4**: Fixed data loss in multi-value atom conversions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/675)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/676))
 - **TagType**: Made `TagType::remove_from_path()` behavior consistent with `lofty::read_from_path()` ([issue](https://github.com/Serial-ATA/lofty-rs/issues/664)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/692))
