@@ -39,8 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **ID3v1**: Attempting to remove an ID3v1 tag from a file that doesn't contain one will no longer
-             write an empty tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/765))
+- **ID3v1**:
+  - Attempting to remove an ID3v1 tag from a file that doesn't contain one will no longer
+    write an empty tag ([PR](https://github.com/Serial-ATA/lofty-rs/pull/765))
+  - Fixed a potential parsing collision with APE tag footers ([issue](https://github.com/Serial-ATA/lofty-rs/issues/762)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/763))
 - **ID3v2**:
   - Fixed creation of multi-value text frames in `Tag` -> `Id3v2Tag` conversion ([issue](https://github.com/Serial-ATA/lofty-rs/issues/769)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/773))
     - Some `ItemKey`s (e.g., `ItemKey::Isrc`) were only producing frames with a single value, even if the

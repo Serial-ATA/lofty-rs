@@ -9,6 +9,7 @@ pub mod lyrics3;
 pub mod v1;
 pub mod v2;
 
+use crate::ape::constants::APE_PREAMBLE;
 use crate::config::{ParseOptions, ParsingMode};
 use crate::error::{FakeTagError, TagParseError};
 use crate::id3::lyrics3::v1::constants::{LYRICS3_FOOTER, LYRICS3_HEADER};
@@ -19,7 +20,6 @@ use crate::id3::v1::error::Id3v1ParseError;
 use crate::id3::v2::error::Id3v2ParseError;
 use crate::io::{ReadFindExt, RevSearchEnd};
 use crate::macros::try_vec;
-use v1::constants::ID3V1_TAG_MARKER;
 use v2::header::Id3v2Header;
 
 use std::io::{Read, Seek, SeekFrom};
@@ -174,21 +174,29 @@ where
 
 	let mut id3v1 = None;
 
-	// Reader is too small to contain an ID3v2 tag
-	if reader.seek(SeekFrom::End(-128)).is_err() {
+	// Need to search a few extra bytes before to make sure we aren't parsing an APE tag
+	if reader.seek(SeekFrom::End(-131)).is_err() {
+		// Reader is too small to contain an ID3v1 tag
 		reader.seek(SeekFrom::End(0))?;
 		return Ok(None);
 	}
 
-	let mut id3v1_header = [0; 3];
+	let mut id3v1_header = [0; 8];
 	reader.read_exact(&mut id3v1_header)?;
 
-	let start = reader.seek(SeekFrom::Current(-3))?;
-
-	// No ID3v1 tag found
-	if id3v1_header != ID3V1_TAG_MARKER {
-		reader.seek(SeekFrom::End(0))?;
-		return Ok(None);
+	let start;
+	match &id3v1_header {
+		// The "TAG" marker can *potentially* collide with the APE preamble "APETAGEX"
+		APE_PREAMBLE => {
+			reader.seek(SeekFrom::End(0))?;
+			return Ok(None);
+		},
+		[_, _, _, b'T', b'A', b'G', ..] => start = reader.seek(SeekFrom::Current(-5))?,
+		// No ID3v1 tag found
+		_ => {
+			reader.seek(SeekFrom::End(0))?;
+			return Ok(None);
+		},
 	}
 
 	log::debug!("Found an ID3v1 tag, parsing");

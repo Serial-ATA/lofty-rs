@@ -1,4 +1,5 @@
 use crate::util::{assert_error_message, named_temp_file, temp_file};
+use lofty::ape::ApeTag;
 use lofty::config::{ParseOptions, WriteOptions};
 use lofty::file::{BoundTaggedFile, FileType};
 use lofty::id3::lyrics3::v1::Lyrics3Tag;
@@ -10,7 +11,7 @@ use lofty::probe::Probe;
 use lofty::tag::{Tag, TagType};
 
 use std::borrow::Cow;
-use std::io::{Seek, Write};
+use std::io::{Cursor, Seek, Write};
 
 #[test_log::test]
 fn read() {
@@ -93,6 +94,44 @@ fn issue_87_duplicate_id3v2() {
 		Some("Lavf58.62.100")
 	);
 	assert_eq!(id3v2_tag.title().as_deref(), Some("title test"));
+}
+
+#[test_log::test]
+fn issue_762_ape_header_mistaken_for_id3v1() {
+	// https://github.com/Serial-ATA/lofty-rs/issues/762
+
+	// Ten silent MPEG-1 Layer III frames
+	let mut frame = vec![0; 417];
+	frame[..4].copy_from_slice(&[0xFF, 0xFB, 0x90, 0x64]);
+	let mut file = Cursor::new(frame.repeat(10));
+
+	// An APE tag of 131 bytes puts the "TAG" in its header's "APETAGEX" 128 bytes from the end
+	let mut ape = ApeTag::new();
+	let title = &"x".repeat(53);
+	ape.set_title(title.clone());
+	ape.save_to(&mut file, WriteOptions::default()).unwrap();
+	let len = file.get_ref().len();
+	assert_eq!(&file.get_ref()[len - 131..len - 123], b"APETAGEX");
+
+	file.rewind().unwrap();
+	let mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert!(mpeg_file.id3v1().is_none());
+	assert_eq!(
+		mpeg_file.ape().unwrap().title().as_deref(),
+		Some(title.as_str())
+	);
+
+	// Removing an ID3v1 tag must not truncate the APE tag
+	file.rewind().unwrap();
+	TagType::Id3v1
+		.remove_from(&mut file, WriteOptions::default())
+		.unwrap();
+	file.rewind().unwrap();
+	let mpeg_file = MpegFile::read_from(&mut file, ParseOptions::new()).unwrap();
+	assert_eq!(
+		mpeg_file.ape().unwrap().title().as_deref(),
+		Some(title.as_str())
+	);
 }
 
 #[test_log::test]
