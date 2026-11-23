@@ -23,3 +23,11 @@ fn panic2() {
 		crate::get_reader("opusfile_read_from/crash-4b996e995a9692795e28fbae6df0050b9fc3591b");
 	let _ = OpusFile::read_from(&mut reader, ParseOptions::new());
 }
+
+// Zero channels with mapping family 0
+#[test_log::test]
+fn panic3() {
+	let mut reader =
+		crate::get_reader("opusfile_read_from/crash-54a4e05eb26ff141da8dc9a67b170857ae8aa2a6");
+	let _ = OpusFile::read_from(&mut reader, ParseOptions::new());
+}
