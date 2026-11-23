@@ -147,7 +147,7 @@ where
 			.saturating_sub(u64::from(pre_skip));
 		if total_samples > 0 {
 			// Best case scenario
-			let length = (total_samples * 1000).div_round(48000);
+			let length = (u128::from(total_samples) * 1000).div_round(48000) as u64;
 
 			// Get the stream length by subtracting the length of the header packets
 
@@ -158,8 +158,12 @@ where
 			let stream_len = file_length - header_size as u64;
 
 			properties.duration = Duration::from_millis(length);
-			properties.overall_bitrate = ((file_length * 8) / length) as u32;
-			properties.audio_bitrate = ((stream_len * 8) / length) as u32;
+			if let Some(overall_bitrate) = (file_length * 8).checked_div(length) {
+				properties.overall_bitrate = overall_bitrate as u32;
+			}
+			if let Some(audio_bitrate) = (stream_len * 8).checked_div(length) {
+				properties.audio_bitrate = audio_bitrate as u32;
+			}
 		} else {
 			log::warn!("Opus: The file contains invalid PCM values, unable to calculate length");
 		}
