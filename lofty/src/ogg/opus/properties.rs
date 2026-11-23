@@ -119,7 +119,8 @@ where
 	}
 
 	// https://datatracker.ietf.org/doc/html/rfc7845.html#section-5.1.1
-	if (channel_mapping_family == 0 && properties.channels > 2)
+	if properties.channels == 0
+		|| (channel_mapping_family == 0 && properties.channels > 2)
 		|| (channel_mapping_family == 1 && properties.channels > 8)
 	{
 		return Err(FileParseError::message(
