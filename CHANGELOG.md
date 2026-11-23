@@ -56,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ApeTag**: Fixed preservation of format-specific items when saving through `Tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/793))
 - **RiffInfoList**: Fixed preservation of format-specific items when saving through `Tag` ([PR](https://github.com/Serial-ATA/lofty-rs/pull/793))
 - **misc**: Fixed compilation error on `no-default-features` builds ([issue](https://github.com/Serial-ATA/lofty-rs/issues/789)) ([PR](https://github.com/Serial-ATA/lofty-rs/pull/791))
+- **Opus**: Fixed panics when reading properties of a file with very large or very small absolute granule positions ([issue](https://github.com/Serial-ATA/lofty-rs/issues/801))
 
 ### Removed
 
